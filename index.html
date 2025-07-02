@@ -201,91 +201,316 @@
             letter-spacing: 1px;
         }
         
-        .sites-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
+        /* Cat Section Styles */
+        .cat-section {
+            text-align: center;
+            padding: 60px 0;
         }
         
-        .site-card {
-            border: 3px solid #000;
-            padding: 0;
-            background-color: #fff;
-            transition: all 0.2s ease;
-        }
-        
-        .site-card:hover {
-            background-color: #000;
-            color: #fff;
-        }
-        
-        .site-card-header {
-            background-color: #000;
-            color: #fff;
-            padding: 20px;
-            border-bottom: 3px solid #000;
-        }
-        
-        .site-card:hover .site-card-header {
-            background-color: #fff;
-            color: #000;
-        }
-        
-        .site-card h3 {
-            margin: 0;
-            font-size: 1.3rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .site-card-body {
-            padding: 25px;
-        }
-        
-        .site-card p {
-            margin-bottom: 25px;
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-        
-        .site-link {
+        .cat-container {
             display: inline-block;
-            background-color: #000;
-            color: #fff;
-            text-decoration: none;
-            padding: 15px 25px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border: 2px solid #000;
-            transition: all 0.2s ease;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.1s ease;
         }
         
-        .site-card:hover .site-link {
+        .cat-container:hover {
+            transform: scale(1.05);
+        }
+        
+        .cat-container.clicked {
+            animation: popAnimation 0.3s ease;
+        }
+        
+        @keyframes popAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        
+        .cat {
+            width: 240px;
+            height: 200px;
+            margin: 0 auto 40px;
+            position: relative;
+        }
+        
+        /* Cat Body */
+        .cat-body {
+            width: 140px;
+            height: 100px;
+            background-color: #000;
+            border-radius: 50px;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        /* Cat Chest - white patch */
+        .cat-chest {
+            width: 40px;
+            height: 60px;
             background-color: #fff;
-            color: #000;
+            border-radius: 20px;
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
         }
         
-        .site-link:hover {
+        /* Cat Head */
+        .cat-head {
+            width: 120px;
+            height: 100px;
+            background-color: #000;
+            border-radius: 60px;
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        /* Cat Ears */
+        .cat-ear {
+            width: 35px;
+            height: 45px;
+            background-color: #000;
+            position: absolute;
+            top: -5px;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+        
+        .cat-ear.left {
+            left: 18px;
+            transform: rotate(-20deg);
+        }
+        
+        .cat-ear.right {
+            right: 18px;
+            transform: rotate(20deg);
+        }
+        
+        /* Inner ears - pink */
+        .cat-ear-inner {
+            width: 20px;
+            height: 25px;
+            background-color: #ffb3ba;
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+        
+        /* Cat Eyes - larger and more expressive */
+        .cat-eye {
+            width: 18px;
+            height: 18px;
+            background-color: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 40px;
+            border: 2px solid #000;
+        }
+        
+        .cat-eye.left {
+            left: 22px;
+        }
+        
+        .cat-eye.right {
+            right: 22px;
+        }
+        
+        /* Cat pupils */
+        .cat-pupil {
+            width: 8px;
+            height: 12px;
+            background-color: #000;
+            border-radius: 4px;
+            position: absolute;
+            top: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        /* Eye shine */
+        .cat-eye-shine {
+            width: 4px;
+            height: 4px;
+            background-color: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 5px;
+            left: 8px;
+        }
+        
+        /* Cat Nose - pink and heart-shaped */
+        .cat-nose {
+            width: 12px;
+            height: 10px;
+            background-color: #ffb3ba;
+            position: absolute;
+            top: 58px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            border-radius: 6px 6px 0 6px;
+        }
+        
+        /* Cat Mouth - W shape */
+        .cat-mouth {
+            position: absolute;
+            top: 68px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .cat-mouth::before,
+        .cat-mouth::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 8px;
+            border: 2px solid #fff;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .cat-mouth::before {
+            left: -8px;
+        }
+        
+        .cat-mouth::after {
+            right: -8px;
+        }
+        
+        /* Cat Whiskers */
+        .cat-whiskers {
+            position: absolute;
+            top: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 2px;
+        }
+        
+        .cat-whisker {
+            position: absolute;
+            height: 2px;
+            background-color: #fff;
+            border-radius: 1px;
+        }
+        
+        .cat-whisker.left-1 {
+            width: 25px;
+            left: 5px;
+            top: -5px;
+            transform: rotate(-10deg);
+        }
+        
+        .cat-whisker.left-2 {
+            width: 30px;
+            left: 0px;
+            top: 0px;
+        }
+        
+        .cat-whisker.left-3 {
+            width: 25px;
+            left: 5px;
+            top: 5px;
+            transform: rotate(10deg);
+        }
+        
+        .cat-whisker.right-1 {
+            width: 25px;
+            right: 5px;
+            top: -5px;
+            transform: rotate(10deg);
+        }
+        
+        .cat-whisker.right-2 {
+            width: 30px;
+            right: 0px;
+            top: 0px;
+        }
+        
+        .cat-whisker.right-3 {
+            width: 25px;
+            right: 5px;
+            top: 5px;
+            transform: rotate(-10deg);
+        }
+        
+        /* Cat Paws */
+        .cat-paw {
+            width: 25px;
+            height: 15px;
+            background-color: #000;
+            border-radius: 12px;
+            position: absolute;
+            bottom: -5px;
+        }
+        
+        .cat-paw.left {
+            left: 25px;
+        }
+        
+        .cat-paw.right {
+            right: 25px;
+        }
+        
+        /* Cat Tail - more curved and fluffy */
+        .cat-tail {
+            width: 12px;
+            height: 80px;
+            background-color: #000;
+            border-radius: 6px;
+            position: absolute;
+            bottom: 30px;
+            right: -25px;
+            transform: rotate(25deg);
+            animation: tailWag 4s ease-in-out infinite;
+        }
+        
+        /* Tail tip - white */
+        .cat-tail::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 12px;
+            height: 20px;
+            background-color: #fff;
+            border-radius: 6px 6px 0 0;
+        }
+        
+        @keyframes tailWag {
+            0%, 100% { transform: rotate(25deg); }
+            25% { transform: rotate(35deg); }
+            75% { transform: rotate(15deg); }
+        }
+        
+        /* Counter Styles */
+        .cat-counter {
             background-color: #000;
             color: #fff;
+            padding: 30px;
+            border: 3px solid #000;
+            display: inline-block;
+            min-width: 200px;
         }
         
-        .disabled-card {
-            opacity: 0.5;
+        .counter-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
         }
         
-        .disabled-card .site-card-header {
-            background-color: #666;
-        }
-        
-        .news-date {
-            color: #666;
-            font-size: 0.85rem;
+        .counter-label {
+            font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            font-weight: bold;
         }
         
         .footer {
@@ -301,6 +526,46 @@
             margin: 10px 0;
             text-transform: uppercase;
             letter-spacing: 1px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .cat {
+                width: 180px;
+                height: 150px;
+            }
+            
+            .cat-body {
+                width: 105px;
+                height: 75px;
+            }
+            
+            .cat-head {
+                width: 90px;
+                height: 75px;
+            }
+            
+            .cat-ear {
+                width: 26px;
+                height: 34px;
+            }
+            
+            .cat-eye {
+                width: 14px;
+                height: 14px;
+            }
+            
+            .cat-whisker.left-1,
+            .cat-whisker.left-3,
+            .cat-whisker.right-1,
+            .cat-whisker.right-3 {
+                width: 18px;
+            }
+            
+            .cat-whisker.left-2,
+            .cat-whisker.right-2 {
+                width: 22px;
+            }
         }
     </style>
 </head>
@@ -344,60 +609,54 @@
                 </div>
             </div>
             
-
-            
-            <!-- WEBSITE NEWS SECTION - EDIT BELOW THIS LINE -->
+            <!-- Interactive Cat Section -->
             <div class="category">
-                <h2 class="category-title">Website News</h2>
-                <div class="sites-grid">
-                    <!-- 
-                    INSTRUCTIONS FOR EDITING WEBSITE NEWS:
-                    
-                    1. To add a new news item, copy the entire <div class="site-card"> block below
-                    2. Edit the <h3> tag to change the news title
-                    3. Edit the <p> tag to change the news description
-                    4. Change the date in the <span class="news-date"> tag
-                    5. To remove a news item, delete the entire <div class="site-card"> block
-                    
-                    Example news item structure:
-                    <div class="site-card">
-                        <div class="site-card-header">
-                            <h3>Your News Title Here</h3>
-                        </div>
-                        <div class="site-card-body">
-                            <p>Your news description goes here. Describe what's new or what you've updated.</p>
-                            <span class="news-date">DD.MM.YYYY</span>
-                        </div>
-                    </div>
-                    -->
-                    
-                    <!-- NEWS ITEM 1 - EDIT OR REPLACE THIS -->
-                    <div class="site-card">
-                        <div class="site-card-header">
-                            <h3>Website Launch</h3>
-                        </div>
-                        <div class="site-card-body">
-                            <p>Welcome to my new website! This is the official launch of Ulmer's digital platform. More content and features coming soon.</p>
-                            <span class="news-date">02.07.2025</span>
-                        </div>
-                    </div>
-                    
-                    <!-- NEWS ITEM 2 - EDIT OR REPLACE THIS -->
-                    <div class="site-card clickable-card" onclick="window.open('https://dulle1846.github.io/ulmweb/ewige_tabelle.html', '_blank')">
-                        <div class="site-card-header">
-                            <h3>LFA League Added</h3>
-                        </div>
-                        <div class="site-card-body">
-                            <p>Added the fictional football league all-time table. Check out the complete statistics and club data in the LFA section.</p>
-                            <span class="news-date">02.07.2025</span>
+                <h2 class="category-title">Interactive Cat</h2>
+                <div class="cat-section">
+                    <div class="cat-container" id="catContainer">
+                        <div class="cat">
+                            <div class="cat-ear left">
+                                <div class="cat-ear-inner"></div>
+                            </div>
+                            <div class="cat-ear right">
+                                <div class="cat-ear-inner"></div>
+                            </div>
+                            <div class="cat-head">
+                                <div class="cat-eye left">
+                                    <div class="cat-pupil"></div>
+                                    <div class="cat-eye-shine"></div>
+                                </div>
+                                <div class="cat-eye right">
+                                    <div class="cat-pupil"></div>
+                                    <div class="cat-eye-shine"></div>
+                                </div>
+                                <div class="cat-whiskers">
+                                    <div class="cat-whisker left-1"></div>
+                                    <div class="cat-whisker left-2"></div>
+                                    <div class="cat-whisker left-3"></div>
+                                    <div class="cat-whisker right-1"></div>
+                                    <div class="cat-whisker right-2"></div>
+                                    <div class="cat-whisker right-3"></div>
+                                </div>
+                                <div class="cat-nose"></div>
+                                <div class="cat-mouth"></div>
+                            </div>
+                            <div class="cat-body">
+                                <div class="cat-chest"></div>
+                                <div class="cat-paw left"></div>
+                                <div class="cat-paw right"></div>
+                            </div>
+                            <div class="cat-tail"></div>
                         </div>
                     </div>
                     
-                    <!-- ADD MORE NEWS ITEMS HERE BY COPYING THE STRUCTURE ABOVE -->
-                    
+                    <div class="cat-counter">
+                        <span class="counter-number" id="clickCounter">0</span>
+                        <div class="counter-label">Cat Clicks</div>
+                    </div>
                 </div>
             </div>
-            <!-- END OF WEBSITE NEWS SECTION - EDIT ABOVE THIS LINE -->
+            
         </div>
         
         <div class="footer">
@@ -406,5 +665,100 @@
             <p>Operator: Ulmer • 2025</p>
         </div>
     </div>
+    <script>
+        // Cat click functionality with persistent counter
+        class CatClicker {
+            constructor() {
+                this.storageKey = 'catClickCount';
+                this.catContainer = document.getElementById('catContainer');
+                this.counterDisplay = document.getElementById('clickCounter');
+                this.clickCount = this.loadClickCount();
+                
+                this.init();
+            }
+            
+            init() {
+                // Load and display the saved click count
+                this.updateCounterDisplay();
+                
+                // Add click event listener to the cat
+                this.catContainer.addEventListener('click', () => {
+                    this.handleCatClick();
+                });
+                
+                // Add keyboard accessibility (space or enter)
+                this.catContainer.addEventListener('keydown', (event) => {
+                    if (event.key === ' ' || event.key === 'Enter') {
+                        event.preventDefault();
+                        this.handleCatClick();
+                    }
+                });
+                
+                // Make cat focusable for keyboard navigation
+                this.catContainer.setAttribute('tabindex', '0');
+                this.catContainer.setAttribute('role', 'button');
+                this.catContainer.setAttribute('aria-label', 'Click the cat to increase the counter');
+            }
+            
+            handleCatClick() {
+                // Increment counter
+                this.clickCount++;
+                
+                // Save to localStorage
+                this.saveClickCount();
+                
+                // Update display
+                this.updateCounterDisplay();
+                
+                // Trigger pop animation
+                this.triggerPopAnimation();
+            }
+            
+            triggerPopAnimation() {
+                // Remove any existing animation class
+                this.catContainer.classList.remove('clicked');
+                
+                // Force reflow to ensure the class removal takes effect
+                this.catContainer.offsetHeight;
+                
+                // Add animation class
+                this.catContainer.classList.add('clicked');
+                
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    this.catContainer.classList.remove('clicked');
+                }, 300);
+            }
+            
+            loadClickCount() {
+                try {
+                    const saved = localStorage.getItem(this.storageKey);
+                    return saved ? parseInt(saved, 10) : 0;
+                } catch (error) {
+                    console.warn('Could not load click count from localStorage:', error);
+                    return 0;
+                }
+            }
+            
+            saveClickCount() {
+                try {
+                    localStorage.setItem(this.storageKey, this.clickCount.toString());
+                } catch (error) {
+                    console.warn('Could not save click count to localStorage:', error);
+                }
+            }
+            
+            updateCounterDisplay() {
+                if (this.counterDisplay) {
+                    this.counterDisplay.textContent = this.clickCount;
+                }
+            }
+        }
+        
+        // Initialize the cat clicker when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new CatClicker();
+        });
+    </script>
 </body>
 </html>
