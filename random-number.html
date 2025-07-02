@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Random Number Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f0f2f5;
+      margin: 0;
+    }
+    .container {
+      background-color: #ffffff;
+      padding: 2rem;
+      border-radius: 0.75rem; /* rounded-xl */
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+    }
+    iframe {
+      border-radius: 0.5rem; /* rounded-lg */
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">True Random Number Generator</h1>
+    <!-- The core random number generator iframe from RANDOM.ORG -->
+    <iframe
+      src="https://www.random.org/widgets/integers/iframe.php?title=True%20Random%20Number&amp;width=160&amp;height=235&amp;border=yes&amp;bgcolor=%23FFFFFF&amp;txtcolor=%23777777&amp;altbgcolor=%23CCCCFF&amp;alttxtcolor=%23000000&amp;defaultmin=1&amp;defaultmax=100&amp;fixed=no"
+      frameborder="0"
+      width="160"
+      height="235"
+      style="min-height:235px;"
+      scrolling="no"
+      longdesc="https://www.random.org/integers/"
+      class="mx-auto"
+    >
+      Your browser does not support iframes. Please visit <a href="https://www.random.org/integers/">RANDOM.ORG</a> to generate numbers.
+    </iframe>
+    <p class="mt-4 text-sm text-gray-600">Numbers provided by RANDOM.ORG's true random number generator.</p>
+  </div>
+</body>
+</html>
