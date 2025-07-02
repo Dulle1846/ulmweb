@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ewige Tabelle - Fiktionelle Erste Liga</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            padding: 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            color: white;
+            padding: 15px 8px;
+            text-align: center;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 3px solid #3498db;
+        }
+        
+        td {
+            padding: 12px 8px;
+            text-align: center;
+            border-bottom: 1px solid #ecf0f1;
+            transition: background-color 0.3s ease;
+        }
+        
+        tr:hover td {
+            background-color: #f8f9fa;
+            transform: scale(1.01);
+        }
+        
+        .team-name {
+            text-align: left !important;
+            font-weight: 600;
+            color: #2c3e50;
+            padding-left: 15px;
+        }
+        
+        .rank {
+            font-weight: bold;
+            color: #3498db;
+            font-size: 1.1em;
+        }
+        
+        .points {
+            font-weight: bold;
+            color: #27ae60;
+            font-size: 1.1em;
+        }
+        
+        .positive {
+            color: #27ae60;
+            font-weight: 600;
+        }
+        
+        .negative {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        .stats-summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-top: 3px solid #3498db;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 8px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚽ Ewige Tabelle</h1>
+            <p>Fiktionelle Erste Liga - Alle Zeiten Statistiken</p>
+        </div>
+        
+        <div class="table-container">
+            <table id="ewigeTabelle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Verein</th>
+                        <th>Saisons</th>
+                        <th>Spiele</th>
+                        <th>S</th>
+                        <th>U</th>
+                        <th>N</th>
+                        <th>Tore</th>
+                        <th>GT</th>
+                        <th>TD</th>
+                        <th>Punkte</th>
+                        <th>Ø Punkte</th>
+                    </tr>
+                </thead>
+                <tbody id="tabellenBody">
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="stats-summary">
+            <h3>📊 Liga Statistiken</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalSeasons">0</div>
+                    <div class="stat-label">Ausgewertete Saisons</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTeams">0</div>
+                    <div class="stat-label">Verschiedene Vereine</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalGames">0</div>
+                    <div class="stat-label">Gespielte Spiele</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalGoals">0</div>
+                    <div class="stat-label">Erzielte Tore</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Daten aus den Screenshots extrahiert
+        const saisonDaten = [
+            // Saison 1 (erste 2 Bilder)
+            {
+                "Hansa Kolsche": {spiele: 38, siege: 20, unent: 5, nied: 13, tore: 65, gegen: 52, punkte: 65},
+                "Lords and Plebs FC": {spiele: 38, siege: 20, unent: 4, nied: 14, tore: 56, gegen: 44, punkte: 64},
+                "Eisenberg FC": {spiele: 38, siege: 17, unent: 9, nied: 12, tore: 63, gegen: 51, punkte: 60},
+                "Sturm Bałtka Fußball": {spiele: 38, siege: 18, unent: 6, nied: 14, tore: 56, gegen: 61, punkte: 60},
+                "Borussia Walste": {spiele: 38, siege: 18, unent: 5, nied: 15, tore: 59, gegen: 51, punkte: 59},
+                "Wyvern Rot-Weiß": {spiele: 38, siege: 18, unent: 5, nied: 15, tore: 54, gegen: 46, punkte: 59},
+                "SC Loewenburg": {spiele: 38, siege: 17, unent: 8, nied: 13, tore: 58, gegen: 56, punkte: 59},
+                "FC Haschborg": {spiele: 38, siege: 16, unent: 9, nied: 13, tore: 60, gegen: 51, punkte: 57},
+                "Thuringia West": {spiele: 38, siege: 17, unent: 6, nied: 15, tore: 70, gegen: 63, punkte: 57},
+                "FC Woha Kickers": {spiele: 38, siege: 16, unent: 9, nied: 13, tore: 44, gegen: 51, punkte: 57},
+                "SV Utrespor": {spiele: 38, siege: 16, unent: 7, nied: 15, tore: 50, gegen: 45, punkte: 55},
+                "SSV Gevla 1907": {spiele: 38, siege: 16, unent: 5, nied: 17, tore: 63, gegen: 67, punkte: 53},
+                "King's Team": {spiele: 38, siege: 15, unent: 8, nied: 15, tore: 43, gegen: 52, punkte: 53},
+                "1829 Feuerbrandt": {spiele: 38, siege: 16, unent: 3, nied: 19, tore: 49, gegen: 51, punkte: 51},
+                "SK Sturm Beatrixa": {spiele: 38, siege: 13, unent: 8, nied: 17, tore: 43, gegen: 40, punkte: 47},
+                "Legio Loewenburg": {spiele: 38, siege: 14, unent: 5, nied: 19, tore: 46, gegen: 49, punkte: 47},
+                "VfR Wengen": {spiele: 38, siege: 12, unent: 9, nied: 17, tore: 53, gegen: 62, punkte: 45},
+                "1. FC Kaisercław": {spiele: 38, siege: 11, unent: 10, nied: 17, tore: 44, gegen: 51, punkte: 43},
+                "Jugend Bellask": {spiele: 38, siege: 12, unent: 7, nied: 19, tore: 58, gegen: 77, punkte: 43},
+                "FC Kingsund": {spiele: 38, siege: 10, unent: 8, nied: 20, tore: 46, gegen: 60, punkte: 38}
+            },
+            
+            // Saison 2 (Bild 3)
+            {
+                "SV Utrespor": {spiele: 38, siege: 17, unent: 4, nied: 17, tore: 55, gegen: 56, punkte: 55},
+                "Hansa Kolsche": {spiele: 38, siege: 16, unent: 5, nied: 17, tore: 61, gegen: 56, punkte: 53},
+                "FC Haschborg": {spiele: 38, siege: 15, unent: 7, nied: 16, tore: 58, gegen: 46, punkte: 52},
+                "Legio Loewenburg": {spiele: 38, siege: 14, unent: 7, nied: 17, tore: 52, gegen: 57, punkte: 49},
+                "FC Woha Kickers": {spiele: 38, siege: 12, unent: 10, nied: 16, tore: 48, gegen: 56, punkte: 46},
+                "1829 Feuerbrandt": {spiele: 38, siege: 12, unent: 8, nied: 18, tore: 46, gegen: 65, punkte: 44},
+                "Wyvern Rot-Weiß": {spiele: 38, siege: 13, unent: 3, nied: 22, tore: 41, gegen: 62, punkte: 42},
+                "BFC Neustadt": {spiele: 38, siege: 9, unent: 14, nied: 15, tore: 47, gegen: 58, punkte: 41},
+                "Thuringia West": {spiele: 38, siege: 11, unent: 5, nied: 22, tore: 40, gegen: 54, punkte: 38},
+                "SC Loewenburg": {spiele: 38, siege: 9, unent: 8, nied: 21, tore: 40, gegen: 60, punkte: 35}
+            },
+            
+            // Saison 3 (Bild 4)
+            {
+                "SSV Gevla 1907": {spiele: 38, siege: 23, unent: 3, nied: 12, tore: 72, gegen: 50, punkte: 72},
+                "Lords and Plebs FC": {spiele: 38, siege: 21, unent: 5, nied: 12, tore: 64, gegen: 51, punkte: 68},
+                "Sturm Bałtka Fußball": {spiele: 38, siege: 20, unent: 6, nied: 12, tore: 68, gegen: 59, punkte: 66},
+                "VfR Wengen": {spiele: 38, siege: 20, unent: 3, nied: 15, tore: 57, gegen: 47, punkte: 63},
+                "1. FC Kaisercław": {spiele: 38, siege: 19, unent: 5, nied: 14, tore: 50, gegen: 45, punkte: 62},
+                "SV Haschborg 04": {spiele: 38, siege: 18, unent: 7, nied: 13, tore: 52, gegen: 49, punkte: 61},
+                "SK Sturm Beatrixa": {spiele: 38, siege: 17, unent: 7, nied: 14, tore: 61, gegen: 54, punkte: 58},
+                "Eisenberg FC": {spiele: 38, siege: 17, unent: 7, nied: 14, tore: 62, gegen: 56, punkte: 58},
+                "King's Team": {spiele: 38, siege: 17, unent: 6, nied: 15, tore: 66, gegen: 62, punkte: 57},
+                "Borussia Walste": {spiele: 38, siege: 15, unent: 10, nied: 13, tore: 59, gegen: 56, punkte: 55}
+            },
+            
+            // Saison 4 (Bilder 5-6)
+            {
+                "SK Sturm Beatrixa": {spiele: 38, siege: 21, unent: 6, nied: 11, tore: 64, gegen: 43, punkte: 69},
+                "Eisenberg FC": {spiele: 38, siege: 20, unent: 9, nied: 9, tore: 59, gegen: 42, punkte: 69},
+                "SV Rosenville": {spiele: 38, siege: 20, unent: 7, nied: 11, tore: 59, gegen: 49, punkte: 67},
+                "Sturm Bałtka Fußball": {spiele: 38, siege: 21, unent: 3, nied: 14, tore: 56, gegen: 45, punkte: 66},
+                "VfR Wengen": {spiele: 38, siege: 19, unent: 8, nied: 11, tore: 52, gegen: 37, punkte: 65},
+                "Legio Loewenburg": {spiele: 38, siege: 17, unent: 9, nied: 12, tore: 66, gegen: 63, punkte: 60},
+                "SV Utrespor": {spiele: 38, siege: 15, unent: 9, nied: 14, tore: 64, gegen: 61, punkte: 54},
+                "SV Haschborg 04": {spiele: 38, siege: 15, unent: 8, nied: 15, tore: 60, gegen: 62, punkte: 53},
+                "Borussia Walste": {spiele: 38, siege: 17, unent: 2, nied: 19, tore: 63, gegen: 69, punkte: 53},
+                "Lords and Plebs FC": {spiele: 38, siege: 14, unent: 10, nied: 14, tore: 49, gegen: 49, punkte: 52},
+                "1. FC Kaisercław": {spiele: 38, siege: 15, unent: 6, nied: 17, tore: 53, gegen: 53, punkte: 51},
+                "FC Haschborg": {spiele: 38, siege: 14, unent: 8, nied: 16, tore: 51, gegen: 51, punkte: 50},
+                "SSV Gevla 1907": {spiele: 38, siege: 14, unent: 8, nied: 16, tore: 55, gegen: 59, punkte: 50},
+                "FC Woha Kickers": {spiele: 38, siege: 14, unent: 7, nied: 17, tore: 39, gegen: 50, punkte: 49},
+                "Eintracht Altenwar": {spiele: 38, siege: 12, unent: 10, nied: 16, tore: 44, gegen: 42, punkte: 46},
+                "1829 Feuerbrandt": {spiele: 38, siege: 12, unent: 9, nied: 17, tore: 63, gegen: 67, punkte: 45},
+                "Wyvern Rot-Weiß": {spiele: 38, siege: 12, unent: 9, nied: 17, tore: 44, gegen: 52, punkte: 45},
+                "Hansa Kolsche": {spiele: 38, siege: 12, unent: 7, nied: 19, tore: 45, gegen: 59, punkte: 43},
+                "BFC Neustadt": {spiele: 38, siege: 11, unent: 8, nied: 19, tore: 48, gegen: 63, punkte: 41},
+                "King's Team": {spiele: 38, siege: 10, unent: 7, nied: 21, tore: 48, gegen: 66, punkte: 37}
+            },
+            
+            // Saison 5 (Bilder 7-8)
+            {
+                "SK Sturm Beatrixa": {spiele: 38, siege: 23, unent: 9, nied: 6, tore: 66, gegen: 40, punkte: 78},
+                "Hansa Kolsche": {spiele: 38, siege: 18, unent: 7, nied: 13, tore: 54, gegen: 52, punkte: 61},
+                "Borussia Walste": {spiele: 38, siege: 17, unent: 8, nied: 13, tore: 58, gegen: 46, punkte: 59},
+                "Sturm Bałtka Fußball": {spiele: 38, siege: 17, unent: 8, nied: 13, tore: 47, gegen: 45, punkte: 59},
+                "1. FC Kaisercław": {spiele: 38, siege: 18, unent: 4, nied: 16, tore: 62, gegen: 50, punkte: 58},
+                "FC Haschborg": {spiele: 38, siege: 15, unent: 13, nied: 10, tore: 59, gegen: 49, punkte: 58},
+                "SV Rosenville": {spiele: 38, siege: 16, unent: 10, nied: 12, tore: 45, gegen: 35, punkte: 58},
+                "FC Woha Kickers": {spiele: 38, siege: 16, unent: 9, nied: 13, tore: 63, gegen: 59, punkte: 57},
+                "VfR Wengen": {spiele: 38, siege: 16, unent: 8, nied: 14, tore: 61, gegen: 53, punkte: 56},
+                "Eintracht Altenwar": {spiele: 38, siege: 16, unent: 7, nied: 15, tore: 50, gegen: 45, punkte: 55},
+                "Legio Loewenburg": {spiele: 38, siege: 16, unent: 5, nied: 17, tore: 50, gegen: 51, punkte: 53},
+                "King's Team": {spiele: 38, siege: 16, unent: 5, nied: 17, tore: 53, gegen: 58, punkte: 53},
+                "SV Haschborg 04": {spiele: 38, siege: 14, unent: 9, nied: 15, tore: 48, gegen: 44, punkte: 51},
+                "SC Loewenburg": {spiele: 38, siege: 15, unent: 6, nied: 17, tore: 44, gegen: 53, punkte: 51},
+                "Eisenberg FC": {spiele: 38, siege: 14, unent: 7, nied: 17, tore: 52, gegen: 51, punkte: 49},
+                "1829 Feuerbrandt": {spiele: 38, siege: 14, unent: 6, nied: 18, tore: 50, gegen: 61, punkte: 48},
+                "Lords and Plebs FC": {spiele: 38, siege: 12, unent: 6, nied: 20, tore: 42, gegen: 57, punkte: 42},
+                "SSV Gevla 1907": {spiele: 38, siege: 12, unent: 6, nied: 20, tore: 39, gegen: 56, punkte: 42},
+                "FC Sturm Kaersting": {spiele: 38, siege: 11, unent: 8, nied: 19, tore: 46, gegen: 70, punkte: 41},
+                "SV Utrespor": {spiele: 38, siege: 11, unent: 5, nied: 22, tore: 43, gegen: 57, punkte: 38}
+            }
+        ];
+
+        // Ewige Tabelle berechnen
+        function berechneEwigeTabelle() {
+            const ewigeStats = {};
+            
+            saisonDaten.forEach(saison => {
+                Object.entries(saison).forEach(([team, stats]) => {
+                    if (!ewigeStats[team]) {
+                        ewigeStats[team] = {
+                            saisons: 0,
+                            spiele: 0,
+                            siege: 0,
+                            unentschieden: 0,
+                            niederlagen: 0,
+                            tore: 0,
+                            gegentore: 0,
+                            punkte: 0
+                        };
+                    }
+                    
+                    ewigeStats[team].saisons++;
+                    ewigeStats[team].spiele += stats.spiele;
+                    ewigeStats[team].siege += stats.siege;
+                    ewigeStats[team].unentschieden += stats.unent;
+                    ewigeStats[team].niederlagen += stats.nied;
+                    ewigeStats[team].tore += stats.tore;
+                    ewigeStats[team].gegentore += stats.gegen;
+                    ewigeStats[team].punkte += stats.punkte;
+                });
+            });
+            
+            // Nach Punkten sortieren
+            const sortierteTeams = Object.entries(ewigeStats).sort((a, b) => {
+                if (b[1].punkte !== a[1].punkte) return b[1].punkte - a[1].punkte;
+                if ((b[1].tore - b[1].gegentore) !== (a[1].tore - a[1].gegentore)) {
+                    return (b[1].tore - b[1].gegentore) - (a[1].tore - a[1].gegentore);
+                }
+                return b[1].tore - a[1].tore;
+            });
+            
+            return sortierteTeams;
+        }
+
+        // Tabelle rendern
+        function renderTabelle() {
+            const ewigeTabelle = berechneEwigeTabelle();
+            const tbody = document.getElementById('tabellenBody');
+            
+            tbody.innerHTML = '';
+            
+            ewigeTabelle.forEach(([team, stats], index) => {
+                const tordifferenz = stats.tore - stats.gegentore;
+                const avgPunkte = (stats.punkte / stats.saisons).toFixed(1);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="rank">${index + 1}</td>
+                    <td class="team-name">${team}</td>
+                    <td>${stats.saisons}</td>
+                    <td>${stats.spiele}</td>
+                    <td>${stats.siege}</td>
+                    <td>${stats.unentschieden}</td>
+                    <td>${stats.niederlagen}</td>
+                    <td>${stats.tore}</td>
+                    <td>${stats.gegentore}</td>
+                    <td class="${tordifferenz >= 0 ? 'positive' : 'negative'}">${tordifferenz >= 0 ? '+' : ''}${tordifferenz}</td>
+                    <td class="points">${stats.punkte}</td>
+                    <td>${avgPunkte}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Statistiken aktualisieren
+            updateStats(ewigeTabelle);
+        }
+
+        function updateStats(tabelle) {
+            const totalTeams = tabelle.length;
+            const totalSeasons = saisonDaten.length;
+            const totalGames = tabelle.reduce((sum, [, stats]) => sum + stats.spiele, 0);
+            const totalGoals = tabelle.reduce((sum, [, stats]) => sum + stats.tore, 0);
+            
+            document.getElementById('totalSeasons').textContent = totalSeasons;
+            document.getElementById('totalTeams').textContent = totalTeams;
+            document.getElementById('totalGames').textContent = totalGames.toLocaleString();
+            document.getElementById('totalGoals').textContent = totalGoals.toLocaleString();
+        }
+
+        // Beim Laden der Seite
+        document.addEventListener('DOMContentLoaded', renderTabelle);
+    </script>
+</body>
+</html>
