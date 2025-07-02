@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UlmWeb Terminal</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #0f0; /* Green text for terminal feel */
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* Hide body overflow, terminal handles its own scrolling */
+        }
+
+        .terminal-container {
+            width: 90%;
+            max-width: 900px;
+            height: 80vh; /* Make it take up most of the viewport height */
+            background-color: #1a1a1a; /* Slightly lighter black for terminal background */
+            border: 2px solid #0f0;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5); /* Green glow effect */
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            border-radius: 8px; /* Slightly rounded corners */
+        }
+
+        .terminal-output {
+            flex-grow: 1;
+            overflow-y: auto; /* Enable scrolling for output */
+            padding-right: 10px; /* Space for scrollbar */
+            white-space: pre-wrap; /* Preserve formatting and wrap text */
+            word-break: break-word; /* Break long words */
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: #0f0; /* Default output color */
+        }
+
+        /* Custom scrollbar for terminal output */
+        .terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-output::-webkit-scrollbar-track {
+            background: #2a2a2a;
+            border-radius: 10px;
+        }
+
+        .terminal-output::-webkit-scrollbar-thumb {
+            background: #008000; /* Darker green */
+            border-radius: 10px;
+        }
+
+        .terminal-output::-webkit-scrollbar-thumb:hover {
+            background: #00cc00; /* Lighter green on hover */
+        }
+
+        .terminal-input-line {
+            display: flex;
+            align-items: baseline;
+            margin-top: 15px;
+            border-top: 1px dashed rgba(0, 255, 0, 0.3);
+            padding-top: 10px;
+        }
+
+        .prompt {
+            color: #00ffff; /* Cyan for the prompt */
+            margin-right: 8px;
+            font-weight: bold;
+            flex-shrink: 0; /* Prevent prompt from shrinking */
+        }
+
+        #terminalInput {
+            background: transparent;
+            border: none;
+            color: #fff; /* White for user input */
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            outline: none;
+            flex-grow: 1; /* Input takes remaining space */
+            caret-color: #fff; /* White blinking cursor */
+        }
+
+        /* Specific output styles */
+        .output-info { color: #00ffff; } /* Cyan for informational messages */
+        .output-error { color: #ff0000; } /* Red for errors */
+        .output-success { color: #00ff00; } /* Bright green for success */
+        .output-warning { color: #ffff00; } /* Yellow for warnings */
+        .output-highlight { color: #f0f; } /* Pink for special highlights */
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: inline-block;
+            background-color: #ffd700; /* Gold button */
+            color: #000; /* Black text on gold */
+            padding: 10px 20px;
+            text-decoration: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 3px solid #000;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+            box-shadow: 4px 4px 0px #000; /* Black shadow */
+            z-index: 1000; /* Ensure it's above other content */
+        }
+
+        .back-link:hover {
+            background-color: #000; /* Black on hover */
+            color: #ffd700; /* Gold text on hover */
+            box-shadow: 4px 4px 0px #ffd700; /* Gold shadow on hover */
+            transform: translateY(-2px);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .terminal-container {
+                width: 95%;
+                height: 90vh;
+                padding: 15px;
+            }
+            .terminal-output {
+                font-size: 0.85rem;
+            }
+            #terminalInput {
+                font-size: 0.85rem;
+            }
+            .prompt {
+                font-size: 0.9rem;
+            }
+            .back-link {
+                padding: 8px 15px;
+                font-size: 0.8rem;
+                top: 10px;
+                left: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Back to Main</a>
+
+    <div class="terminal-container">
+        <div class="terminal-output" id="terminalOutput">
+            <span class="output-info">UlmWeb Terminal v1.0.0</span><br>
+            <span class="output-info">Type 'help' for a list of commands.</span><br><br>
+        </div>
+        <div class="terminal-input-line">
+            <span class="prompt">user@ulmweb:~ $</span>
+            <input type="text" id="terminalInput" autofocus>
+        </div>
+    </div>
+
+    <script>
+        const terminalOutput = document.getElementById('terminalOutput');
+        const terminalInput = document.getElementById('terminalInput');
+        let commandHistory = [];
+        let historyIndex = -1;
+
+        // Function to append output to the terminal
+        function appendOutput(message, className = '') {
+            const line = document.createElement('div');
+            line.textContent = message;
+            if (className) {
+                line.classList.add(className);
+            }
+            terminalOutput.appendChild(line);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight; // Auto-scroll to bottom
+        }
+
+        // Function to process commands
+        function processCommand(command) {
+            const parts = command.trim().split(' ');
+            const cmd = parts[0].toLowerCase();
+            const args = parts.slice(1);
+
+            appendOutput(`user@ulmweb:~ $ ${command}`); // Echo the command
+
+            switch (cmd) {
+                case 'help':
+                    appendOutput('Available commands:', 'output-info');
+                    appendOutput('  help         - Displays this help message.');
+                    appendOutput('  about        - Information about this terminal and UlmWeb.');
+                    appendOutput('  clear        - Clears the terminal screen.');
+                    appendOutput('  echo [text]  - Repeats the provided text.');
+                    appendOutput('  date         - Shows the current date and time.');
+                    appendOutput('  whoami       - Displays the current user.');
+                    appendOutput('  ls           - Lists "files" in the current "directory".');
+                    appendOutput('  dir          - Alias for ls.');
+                    appendOutput('  catfacts     - Get a random cat fact!');
+                    appendOutput('  ulm          - Learn about SSV Ulm 1846.');
+                    appendOutput('  connect [service] - Attempt to connect to a specified service (github, lfa).');
+                    appendOutput('  ping         - Send a ping request.');
+                    appendOutput('  secret       - Discover a hidden message.');
+                    appendOutput('  exit         - Close the terminal session.');
+                    break;
+                case 'about':
+                    appendOutput('UlmWeb Terminal v1.0.0', 'output-info');
+                    appendOutput('Developed by Ulmer for the UlmWeb network.');
+                    appendOutput('This is a simulated command line interface for fun and exploration.');
+                    appendOutput('All data is fictional and generated locally.');
+                    break;
+                case 'clear':
+                    terminalOutput.innerHTML = ''; // Clear all content
+                    break;
+                case 'echo':
+                    if (args.length > 0) {
+                        appendOutput(args.join(' '));
+                    } else {
+                        appendOutput('Usage: echo [text]', 'output-warning');
+                    }
+                    break;
+                case 'date':
+                    appendOutput(new Date().toLocaleString(), 'output-success');
+                    break;
+                case 'whoami':
+                    appendOutput('Current User: Guest', 'output-highlight');
+                    break;
+                case 'ls':
+                case 'dir':
+                    appendOutput('Directory listing for /home/user:', 'output-info');
+                    appendOutput('  main_page.html');
+                    appendOutput('  directory.html');
+                    appendOutput('  log_stream.log');
+                    appendOutput('  lfa_stats.db');
+                    appendOutput('  ulm_fan_art.txt');
+                    appendOutput('  .bashrc');
+                    appendOutput('  .profile');
+                    break;
+                case 'catfacts':
+                    const catFacts = [
+                        "A cat's purr can mean contentment, but it can also be a sign of nervousness or pain.",
+                        "Cats can make over 100 different sounds, while dogs can only make about 10.",
+                        "The average cat sleeps 70% of its life.",
+                        "A group of cats is called a clowder.",
+                        "Cats have five toes on each front paw, but only four toes on each back paw.",
+                        "The oldest cat on record lived to be 38 years old!",
+                        "Cats use their whiskers to 'feel' the world around them and aid in navigation.",
+                        "A cat's nose print is unique, much like a human's fingerprint."
+                    ];
+                    appendOutput(catFacts[Math.floor(Math.random() * catFacts.length)], 'output-highlight');
+                    break;
+                case 'ulm':
+                    appendOutput('SSV Ulm 1846 - Die Spatzen!', 'output-success');
+                    appendOutput('Founded: 1846');
+                    appendOutput('Colors: Black & White (with Gold accents)');
+                    appendOutput('Home Stadium: Donaustadion');
+                    appendOutput('Motto: Einmal Spatz, immer Spatz! (Once a Sparrow, always a Sparrow!)');
+                    appendOutput('For more info, check the SSV Ulm 1846 Fan Art page or the LFA Eternal Table on the main site!');
+                    break;
+                case 'connect':
+                    const service = args[0] ? args[0].toLowerCase() : '';
+                    if (service === 'github') {
+                        appendOutput('Attempting to connect to GitHub...', 'output-info');
+                        setTimeout(() => {
+                            appendOutput('Connection established. Redirecting to GitHub repository...', 'output-success');
+                            window.open('https://github.com/Dulle1846/ulmweb', '_blank');
+                        }, 1500);
+                    } else if (service === 'lfa') {
+                        appendOutput('Attempting to connect to LFA database...', 'output-info');
+                        setTimeout(() => {
+                            appendOutput('Connection established. Opening LFA Eternal Table...', 'output-success');
+                            window.open('ewige_tabelle.html', '_blank');
+                        }, 1500);
+                    } else {
+                        appendOutput('Usage: connect [github|lfa]', 'output-warning');
+                    }
+                    break;
+                case 'ping':
+                    appendOutput('Pinging 127.0.0.1 with 32 bytes of data:', 'output-info');
+                    setTimeout(() => { appendOutput('Reply from 127.0.0.1: bytes=32 time<1ms TTL=128', 'output-success'); }, 500);
+                    setTimeout(() => { appendOutput('Reply from 127.0.0.1: bytes=32 time<1ms TTL=128', 'output-success'); }, 1000);
+                    setTimeout(() => { appendOutput('Reply from 127.0.0.1: bytes=32 time<1ms TTL=128', 'output-success'); }, 1500);
+                    setTimeout(() => { appendOutput('Ping statistics for 127.0.0.1:', 'output-info');
+                                       appendOutput('    Packets: Sent = 3, Received = 3, Lost = 0 (0% loss),', 'output-info');
+                                       appendOutput('Approximate round trip times in milli-seconds:', 'output-info');
+                                       appendOutput('    Minimum = 0ms, Maximum = 0ms, Average = 0ms', 'output-info'); }, 2000);
+                    break;
+                case 'secret':
+                    appendOutput('Access Granted. Initiating secret transmission...', 'output-success');
+                    setTimeout(() => {
+                        appendOutput(`
+  _______ __          __   __
+ |   _   |  |        |  |_|  |__
+ |.  |   |  |________|   _   |  |_.--.--.
+ |.  |   |  |________|  |   |   _|  |  |
+ |:  1   |  |        |  |   |  | |  |  |
+ |::.. . |__|        |__|   |__| |__|__|
+ \`-----'
+                        `, 'output-highlight');
+                        appendOutput('Message decoded: "The Spatzen will rise again!"', 'output-highlight');
+                    }, 1000);
+                    break;
+                case 'exit':
+                    appendOutput('Exiting terminal. Goodbye!', 'output-info');
+                    setTimeout(() => {
+                        window.location.href = 'index.html'; // Redirect back to main page
+                    }, 1000);
+                    break;
+                default:
+                    appendOutput(`Command not found: ${command}. Type 'help' for assistance.`, 'output-error');
+                    break;
+            }
+            appendOutput(''); // Add an empty line after each command output
+        }
+
+        // Handle input on Enter key press
+        terminalInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const command = terminalInput.value.trim();
+                if (command) {
+                    commandHistory.push(command);
+                    historyIndex = commandHistory.length; // Reset history index to end
+                    processCommand(command);
+                    terminalInput.value = ''; // Clear input field
+                }
+            } else if (event.key === 'ArrowUp') {
+                // Navigate command history up
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    terminalInput.value = commandHistory[historyIndex];
+                    event.preventDefault(); // Prevent cursor from moving to start of line
+                }
+            } else if (event.key === 'ArrowDown') {
+                // Navigate command history down
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    terminalInput.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    terminalInput.value = ''; // Clear input if at end of history
+                }
+                event.preventDefault(); // Prevent cursor from moving to end of line
+            }
+        });
+
+        // Focus the input when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            terminalInput.focus();
+        });
+
+        // Re-focus input if user clicks outside terminal
+        document.addEventListener('click', (event) => {
+            if (!terminalContainer.contains(event.target)) {
+                terminalInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>
