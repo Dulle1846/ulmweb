@@ -58,38 +58,30 @@
             border: 3px solid #000;
             border-radius: 12px;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
-            font-size: 1.3rem;
-            margin-bottom: 40px;
-        }
-        .since-row {
-            display: flex;
-            flex-wrap: wrap;
             justify-content: center;
-            gap: 30px;
-            margin: 10px 0;
+            font-size: 1.8rem;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
         .since-item {
-            background: #fff;
-            color: #000;
-            border-radius: 8px;
-            padding: 18px 24px;
-            margin: 0 10px;
-            font-size: 1.4rem;
+            color: #fff;
             font-weight: bold;
-            min-width: 110px;
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        }
+        .since-number {
+            font-size: 2.2rem;
+            color: #fff;
         }
         .since-label {
-            display: block;
-            font-size: 0.9rem;
+            font-size: 1rem;
             font-weight: normal;
-            color: #444;
-            margin-top: 8px;
+            color: #ccc;
+            margin-left: 5px;
             letter-spacing: 1px;
-            text-transform: uppercase;
+            text-transform: lowercase;
         }
         .footer {
             text-align: center;
@@ -105,10 +97,16 @@
             letter-spacing: 1px;
         }
         @media (max-width: 768px) {
-            .since-item {
-                font-size: 1.1rem;
-                min-width: 80px;
-                padding: 10px 8px;
+            .since-counter {
+                font-size: 1.2rem;
+                padding: 20px 15px;
+                gap: 10px;
+            }
+            .since-number {
+                font-size: 1.6rem;
+            }
+            .since-label {
+                font-size: 0.9rem;
             }
             .clock-title {
                 font-size: 1.2rem;
@@ -128,19 +126,15 @@
             </a>
         </div>
         <div class="content">
-            <div class="clock-title">Online Since (This Session)</div>
+            <div class="clock-title">Online Since (Automatic)</div>
             <div class="since-counter" id="sinceCounter">
-                <div class="since-row">
-                    <div class="since-item"><span id="years">0</span><span class="since-label">Years</span></div>
-                    <div class="since-item"><span id="months">0</span><span class="since-label">Months</span></div>
-                    <div class="since-item"><span id="weeks">0</span><span class="since-label">Weeks</span></div>
-                    <div class="since-item"><span id="days">0</span><span class="since-label">Days</span></div>
-                </div>
-                <div class="since-row">
-                    <div class="since-item"><span id="hours">0</span><span class="since-label">Hours</span></div>
-                    <div class="since-item"><span id="minutes">0</span><span class="since-label">Minutes</span></div>
-                    <div class="since-item"><span id="seconds">0</span><span class="since-label">Seconds</span></div>
-                </div>
+                <div class="since-item"><span class="since-number" id="years">0</span><span class="since-label">years</span></div>
+                <div class="since-item"><span class="since-number" id="months">0</span><span class="since-label">months</span></div>
+                <div class="since-item"><span class="since-number" id="weeks">0</span><span class="since-label">weeks</span></div>
+                <div class="since-item"><span class="since-number" id="days">0</span><span class="since-label">days</span></div>
+                <div class="since-item"><span class="since-number" id="hours">0</span><span class="since-label">hours</span></div>
+                <div class="since-item"><span class="since-number" id="minutes">0</span><span class="since-label">minutes</span></div>
+                <div class="since-item"><span class="since-number" id="seconds">0</span><span class="since-label">seconds</span></div>
             </div>
         </div>
         <div class="footer">
@@ -150,8 +144,9 @@
         </div>
     </div>
     <script>
-        // Start counting from the moment the page loads
-        const startDate = new Date();
+        // Fixed launch date - when the website actually went online
+        // Set to today's date when the website was launched
+        const startDate = new Date('2025-07-02T19:38:00Z'); // July 2, 2025 launch time
 
         function updateSinceCounter() {
             const now = new Date();
@@ -227,6 +222,12 @@
 
         updateSinceCounter();
         setInterval(updateSinceCounter, 1000);
+
+        // Track page visit
+        fetch('/api/visit', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        }).catch(err => console.log('Visit tracking failed:', err));
     </script>
 </body>
 </html>
