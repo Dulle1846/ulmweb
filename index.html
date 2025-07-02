@@ -59,6 +59,7 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             transition: all 0.2s ease;
+            display: block;
         }
         
         .dropdown {
@@ -156,10 +157,20 @@
             padding: 30px;
             text-align: center;
             border-right: 2px solid #000;
+            transition: all 0.2s ease;
         }
         
         .stat-item:last-child {
             border-right: none;
+        }
+        
+        .stat-item.clickable {
+            cursor: pointer;
+        }
+        
+        .stat-item.clickable:hover {
+            background-color: #fff;
+            color: #000;
         }
         
         .stat-number {
@@ -327,7 +338,7 @@
                     <span class="stat-number">02.07</span>
                     <div class="stat-label">Start Date</div>
                 </div>
-                <div class="stat-item">
+                <div class="stat-item clickable" onclick="window.location.href='#'">
                     <span class="stat-number">2025</span>
                     <div class="stat-label">Year</div>
                 </div>
