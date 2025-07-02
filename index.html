@@ -1,53 +1,292 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dulle's Website</title>
+    <title>Ulmer's Website</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: 'Courier New', monospace;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-            background-color: #f4f4f4;
+            padding: 40px 20px;
+            line-height: 1.5;
+            background-color: #000;
+            color: #fff;
+            min-height: 100vh;
         }
         
         .container {
-            background-color: white;
+            background-color: #fff;
+            color: #000;
+            padding: 0;
+            border: 4px solid #000;
+        }
+        
+        .header {
+            background-color: #000;
+            color: #fff;
             padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        }
-        
-        h1 {
-            color: #333;
             text-align: center;
-            margin-bottom: 20px;
+            border-bottom: 4px solid #000;
         }
         
-        p {
+        .header h1 {
+            font-size: 3rem;
+            margin: 0 0 10px 0;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        
+        .nav-bar {
+            background-color: #000;
+            border-bottom: 4px solid #000;
+            padding: 0;
+        }
+        
+        .nav-items {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+        }
+        
+        .nav-item {
+            background-color: #000;
+            color: #fff;
+            padding: 20px 40px;
+            text-decoration: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-right: 2px solid #fff;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-item:last-child {
+            border-right: none;
+        }
+        
+        .nav-item:hover {
+            background-color: #fff;
+            color: #000;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0;
+            margin-bottom: 60px;
+            border: 2px solid #000;
+        }
+        
+        .stat-item {
+            background-color: #000;
+            color: #fff;
+            padding: 30px;
+            text-align: center;
+            border-right: 2px solid #000;
+        }
+        
+        .stat-item:last-child {
+            border-right: none;
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .category {
+            margin-bottom: 60px;
+        }
+        
+        .category-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #000;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .sites-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+        
+        .site-card {
+            border: 3px solid #000;
+            padding: 0;
+            background-color: #fff;
+            transition: all 0.2s ease;
+        }
+        
+        .site-card:hover {
+            background-color: #000;
+            color: #fff;
+        }
+        
+        .site-card-header {
+            background-color: #000;
+            color: #fff;
+            padding: 20px;
+            border-bottom: 3px solid #000;
+        }
+        
+        .site-card:hover .site-card-header {
+            background-color: #fff;
+            color: #000;
+        }
+        
+        .site-card h3 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .site-card-body {
+            padding: 25px;
+        }
+        
+        .site-card p {
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .site-link {
+            display: inline-block;
+            background-color: #000;
+            color: #fff;
+            text-decoration: none;
+            padding: 15px 25px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid #000;
+            transition: all 0.2s ease;
+        }
+        
+        .site-card:hover .site-link {
+            background-color: #fff;
+            color: #000;
+        }
+        
+        .site-link:hover {
+            background-color: #000;
+            color: #fff;
+        }
+        
+        .disabled-card {
+            opacity: 0.5;
+        }
+        
+        .disabled-card .site-card-header {
+            background-color: #666;
+        }
+        
+        .disabled-text {
             color: #666;
-            text-align: center;
-            font-size: 18px;
-            margin-bottom: 15px;
+            font-style: italic;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
-        .signature {
-            text-align: right;
-            font-style: italic;
-            color: #888;
-            margin-top: 30px;
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 40px;
+            border-top: 4px solid #000;
+            background-color: #000;
+            color: #fff;
+        }
+        
+        .footer p {
+            margin: 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Willkommen!</h1>
-        <p>Herzlich Willkommen auf meiner Website!</p>
-        <p>Über die nächsten Wochen wird dies hier kontinuierlich erweitert.</p>
-        <p class="signature">Euer Dulle</p>
+        <div class="header">
+            <a href="https://dulle1846.github.io/ulmweb/" style="color: #fff; text-decoration: none;">
+                <h1>ULMER'S WEBSITE</h1>
+            </a>
+        </div>
+        
+        <div class="nav-bar">
+            <div class="nav-items">
+                <a href="https://github.com/Dulle1846/ulmweb/blob/ulmweb-branch/ewige_tabelle.html" class="nav-item">LFA</a>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-number">2</span>
+                    <div class="stat-label">Active Sites</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">02.07</span>
+                    <div class="stat-label">Start Date</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">2025</span>
+                    <div class="stat-label">Year</div>
+                </div>
+            </div>
+            
+
+            
+            <div class="category">
+                <h2 class="category-title">In Development</h2>
+                <div class="sites-grid">
+                    <div class="site-card disabled-card">
+                        <div class="site-card-header">
+                            <h3>Blog Section</h3>
+                        </div>
+                        <div class="site-card-body">
+                            <p>Planned section for personal posts, thoughts and documentation of various projects.</p>
+                            <span class="disabled-text">In Planning</span>
+                        </div>
+                    </div>
+                    
+                    <div class="site-card disabled-card">
+                        <div class="site-card-header">
+                            <h3>Archive</h3>
+                        </div>
+                        <div class="site-card-body">
+                            <p>Collection of documents, images and other digital content for long-term storage.</p>
+                            <span class="disabled-text">In Planning</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Website Status: Active</p>
+            <p>Operator: Ulmer • 2025</p>
+        </div>
     </div>
 </body>
 </html>
