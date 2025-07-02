@@ -9,8 +9,8 @@ GITHUB_REPO_NAME = "ulmweb"
 
 # The name of the HTML file that this script will generate/update.
 # This is used to identify the "current page" in the directory.
-# If your directory page is named something else (e.g., 'site_map.html'), update this.
-DIRECTORY_PAGE_FILENAME = "directory.html"
+# This MUST match the filename you deploy on GitHub Pages (e.g., ulmweb_directory.html).
+DIRECTORY_PAGE_FILENAME = "ulmweb_directory.html" # Updated to match your deployed filename
 
 # Your GitHub Personal Access Token (PAT).
 # It's highly recommended to set this as an environment variable for security,
@@ -361,13 +361,19 @@ def generate_directory_html():
     site_cards_html = []
     total_pages = 0
 
+    print("--- Starting HTML Directory Generation ---")
     try:
+        print(f"Attempting to fetch files from: {GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}")
         files = get_repo_files(GITHUB_REPO_OWNER, GITHUB_REPO_NAME, GITHUB_TOKEN)
-        
+        print(f"Found {len(files)} items in the repository root.")
+
+        html_files_found = 0
         for file_info in files:
             # Process only HTML files
             if file_info['type'] == 'file' and file_info['name'].endswith('.html'):
+                html_files_found += 1
                 file_name = file_info['name']
+                print(f"Processing HTML file: {file_name}")
                 
                 # Default values for page information
                 page_title = file_name.replace('.html', '').replace('-', ' ').title()
@@ -403,7 +409,9 @@ def generate_directory_html():
                 # --- Attempt to extract title and description from the actual HTML file ---
                 # This makes the script more intelligent for new, unknown HTML files.
                 try:
+                    print(f"Fetching content for {file_name}...")
                     html_content = get_file_content(GITHUB_REPO_OWNER, GITHUB_REPO_NAME, file_name, GITHUB_TOKEN)
+                    print(f"Successfully fetched content for {file_name}. Length: {len(html_content)} bytes.")
                     soup = BeautifulSoup(html_content, 'html.parser')
                     
                     # Extract title from <title> tag
@@ -422,9 +430,9 @@ def generate_directory_html():
                             page_description = snippet[:150] + "..." if len(snippet) > 150 else snippet
 
                 except requests.exceptions.RequestException as e:
-                    print(f"Warning: Could not fetch content for {file_name} from GitHub. Using default title/description. Error: {e}")
+                    print(f"ERROR: Could not fetch content for {file_name} from GitHub. Using default title/description. Error: {e}")
                 except Exception as e:
-                    print(f"Warning: Error parsing HTML for {file_name}. Using default title/description. Error: {e}")
+                    print(f"ERROR: Error parsing HTML for {file_name}. Using default title/description. Error: {e}")
 
                 # Construct the site card HTML using the collected data
                 card_html = SITE_CARD_TEMPLATE.format(
@@ -438,16 +446,23 @@ def generate_directory_html():
                 site_cards_html.append(card_html)
                 total_pages += 1
         
-        # Combine all parts to form the complete HTML page
+        print(f"Total HTML files processed: {html_files_found}")
+        print(f"Generated {len(site_cards_html)} site cards.")
+        
         full_html = HTML_HEADER + "\n".join(site_cards_html) + HTML_FOOTER.format(total_pages=total_pages)
+        print("--- HTML Directory Generation Complete ---")
         return full_html
 
     except requests.exceptions.RequestException as e:
-        return f"Error fetching repository files: {e}. Please ensure the repository is public or your GITHUB_TOKEN environment variable is set correctly and has access."
+        error_msg = f"CRITICAL ERROR: Failed to fetch repository files: {e}. Please ensure the repository name/owner are correct, it's public, or your GITHUB_TOKEN environment variable is set correctly and has 'repo' or 'public_repo' access."
+        print(error_msg)
+        return error_msg
     except Exception as e:
-        return f"An unexpected error occurred: {e}"
+        error_msg = f"CRITICAL ERROR: An unexpected error occurred during generation: {e}"
+        print(error_msg)
+        return error_msg
 
 # Example of how to run this script locally:
-# if __name__ == "__main__":
-#     generated_html = generate_directory_html()
-#     print(generated_html)
+if __name__ == "__main__":
+    generated_html = generate_directory_html()
+    print(generated_html)
