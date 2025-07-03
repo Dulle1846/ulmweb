@@ -1,18 +1,23 @@
+// api/_middleware.js
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); // Nur wenn du es hier auch nutzen würdest, aktuell nicht
+const NodeCache = require('node-cache'); // Import für Cache
 
-// Rate Limiting Storage (in production use Redis/Database)
-const loginAttempts = new Map();
+// Cache für Login-Versuche (ersetzt einfaches Map-Objekt für Persistenz in Serverless)
+// HINWEIS: Für echte Produktion sollte eine externe Datenbank wie Redis verwendet werden,
+// da dieser Cache bei jedem Function-Warmup zurückgesetzt werden könnte.
+const loginAttemptsCache = new NodeCache({ stdTTL: 900, checkperiod: 120 }); // TTL 15 Minuten
+
 const MAX_ATTEMPTS = 3;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 Minuten
 
 function checkRateLimit(ip) {
-  const key = `login_${ip}`;
-  const attempts = loginAttempts.get(key) || { count: 0, lastAttempt: 0 };
+  const key = `login_attempts_${ip}`;
+  let attempts = loginAttemptsCache.get(key) || { count: 0, lastAttempt: 0 };
 
   const now = Date.now();
   if (now - attempts.lastAttempt > LOCKOUT_TIME) {
-    attempts.count = 0;
+    attempts.count = 0; // Reset nach Lockout-Zeit
   }
 
   if (attempts.count >= MAX_ATTEMPTS) {
@@ -23,33 +28,32 @@ function checkRateLimit(ip) {
 }
 
 function recordFailedAttempt(ip) {
-  const key = `login_${ip}`;
-  const attempts = loginAttempts.get(key) || { count: 0, lastAttempt: 0 };
+  const key = `login_attempts_${ip}`;
+  let attempts = loginAttemptsCache.get(key) || { count: 0, lastAttempt: 0 };
   attempts.count++;
   attempts.lastAttempt = Date.now();
-  loginAttempts.set(key, attempts);
+  loginAttemptsCache.set(key, attempts);
 }
 
 function resetAttempts(ip) {
-  const key = `login_${ip}`;
-  loginAttempts.delete(key);
+  const key = `login_attempts_${ip}`;
+  loginAttemptsCache.del(key);
 }
 
 // IP Whitelist Check
 function isAllowedIP(ip) {
-  const allowedIPs = process.env.ALLOWED_IPS?.split(',') || [];
+  const allowedIPsEnv = process.env.ALLOWED_IPS;
+  if (!allowedIPsEnv) {
+    console.warn("ALLOWED_IPS environment variable is not set. IP Whitelist is disabled.");
+    return true; // Keine Whitelist konfiguriert, also alle IPs erlauben
+  }
+  const allowedIPs = allowedIPsEnv.split(',').map(s => s.trim());
   return allowedIPs.includes(ip) || allowedIPs.includes('*');
-}
-
-// CSRF Token Generation (Aktuell nicht voll genutzt, aber Teil des Backends)
-function generateCSRFToken() {
-  return require('crypto').randomBytes(32).toString('hex');
 }
 
 module.exports = {
   checkRateLimit,
   recordFailedAttempt,
   resetAttempts,
-  isAllowedIP,
-  generateCSRFToken
+  isAllowedIP
 };
