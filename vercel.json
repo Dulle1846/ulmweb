@@ -8,9 +8,9 @@
     }
   },
   "env": {
-    "ADMIN_USERNAME": "@ADMIN_USERNAME",          // Hier geändert!
-    "ADMIN_PASSWORD_HASH": "@ADMIN_PASSWORD_HASH", // Hier geändert!
-    "JWT_SECRET": "@JWT_SECRET",                   // Hier geändert!
-    "ALLOWED_IPS": "@ALLOWED_IPS"                 // Hier geändert!
+    "ADMIN_USERNAME": "@ADMIN_USERNAME",
+    "ADMIN_PASSWORD_HASH": "@ADMIN_PASSWORD_HASH",
+    "JWT_SECRET": "@JWT_SECRET",
+    "ALLOWED_IPS": "@ALLOWED_IPS"
   }
 }
