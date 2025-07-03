@@ -27,7 +27,6 @@
             width: 100%;
             max-width: 800px;
             border: 1px solid #444; /* Darker border */
-            /* backdrop-filter removed as it doesn't fit the NS aesthetic */
         }
 
         .header {
@@ -262,29 +261,6 @@
         </div>
 
         <div class="input-group">
-            <label>Google Sheet Details:</label>
-            <p style="font-size: 0.95rem; color: #B0B0B0; word-break: break-all;">
-                To use this, you need a **Google Cloud API Key**, your **Spreadsheet ID**, and the **Sheet's GID**.
-                <br>
-                **WARNING: Your API Key will be visible in the browser's source code. For production environments, a backend server is highly recommended to protect your API key.**
-                <br><br>
-                **Spreadsheet ID:** <span id="displaySpreadsheetId"></span>
-                <br>
-                **Sheet GID:** <span id="displayGid"></span>
-            </p>
-            <p style="font-size: 0.85rem; color: #FFCC00;">
-                **Instructions:**
-                <ol style="margin-left: 20px; list-style-type: decimal;">
-                    <li>Go to <a href="https://console.cloud.google.com/" target="_blank" style="color: #66CCFF;">Google Cloud Console</a>, create a project.</li>
-                    <li>Enable "Google Sheets API" in the API Library.</li>
-                    <li>Create an "API Key" under "APIs & Services > Credentials".</li>
-                    <li>Make your Google Sheet publicly readable (Share > "Anyone with the link" > "Viewer").</li>
-                    <li>Find your Spreadsheet ID from its URL: <code>https://docs.google.com/spreadsheets/d/<b>YOUR_SPREADSHEET_ID</b>/edit</code></li>
-                    <li>Find your Sheet's GID from its URL (if not the first sheet): <code>.../edit#gid=<b>YOUR_GID</b></code> (usually 0 for the first sheet).</li>
-                    <li>**Your API Key, Spreadsheet ID, and GID are already configured in the JavaScript code below.**</li>
-                </ol>
-            </p>
-            
             <label for="userAgent">Your NationStates User-Agent (important!):</label>
             <input type="text" id="userAgent" placeholder="e.g., Your Nation">
             <p style="font-size: 0.85rem; color: #B0B0B0;">
@@ -314,7 +290,7 @@
         let lastRequestTime = 0;
         let isChecking = false;
 
-        // --- IMPORTANT: GOOGLE SHEETS API DETAILS ARE CONFIGURED HERE ---
+        // --- GOOGLE SHEETS API DETAILS ---
         // Your API Key from Google Cloud Console (APIs & Services -> Credentials)
         const GOOGLE_API_KEY = "AIzaSyAQccIFHE6nNyBhJF_5KFBb6dKF5WKsDGQ"; 
         // Your Spreadsheet ID from your Google Sheet URL
@@ -322,8 +298,7 @@
         // Your Sheet's GID from your Google Sheet URL (e.g., 0 for the first sheet)
         const SHEET_GID = "0"; // Assuming your citizen data is on the first sheet (gid=0)
 
-        // The range of cells to fetch. IMPORTANT: ENSURE THIS SHEET NAME MATCHES YOUR GOOGLE SHEET TAB EXACTLY.
-        // As per your instruction, the sheet tab is named "Citizens".
+        // The range of cells to fetch. IMPORTANT: This must match your Google Sheet tab name exactly.
         const SHEET_RANGE = "Citizens!A:Z"; // Fetches all data from column A to Z on 'Citizens' tab
 
         const userAgentInput = document.getElementById('userAgent');
@@ -331,16 +306,11 @@
         const messageDisplay = document.getElementById('messageDisplay');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const resultsList = document.getElementById('resultsList');
-        const displaySpreadsheetId = document.getElementById('displaySpreadsheetId');
-        const displayGid = document.getElementById('displayGid'); // Corrected typo here
 
-        // Initialize with default User-Agent placeholder and display sheet details
+        // Initialize with default User-Agent placeholder
         document.addEventListener('DOMContentLoaded', () => {
             userAgentInput.value = 'UlmerCitizenChecker/1.0 (Your Nation; contact@example.com)';
-            displaySpreadsheetId.textContent = SPREADSHEET_ID;
-            displayGid.textContent = SHEET_GID;
-
-            displayMessage('info', 'Google Sheets API configured. Please ensure your Google Sheet is publicly readable and the sheet tab name in `SHEET_RANGE` is correct (currently set to "Citizens").');
+            displayMessage('info', 'Google Sheets API configured. Click "Check Citizens" to begin.');
         });
 
         function displayMessage(type, message) {
@@ -394,12 +364,15 @@
                 if (!sheetsResponse.ok) {
                     const errorJson = await sheetsResponse.json();
                     let errorMessage = errorJson.error.message || sheetsResponse.statusText;
-                    if (errorMessage.includes("Unable to parse range")) {
-                         errorMessage += ". This often means the sheet tab name in 'SHEET_RANGE' (currently '" + SHEET_RANGE.split('!')[0] + "') is incorrect. Please check your Google Sheet tab name exactly.";
-                    } else if (errorMessage.includes("API key not valid")) {
-                        errorMessage += ". Please ensure your API key is correct and enabled for Google Sheets API.";
-                    } else if (errorMessage.includes("Request had insufficient authentication scopes")) {
-                        errorMessage += ". Please ensure your Google Sheet is shared as 'Anyone with the link can view'.";
+                    // Provide more specific error guidance
+                    if (sheetsResponse.status === 400 && errorMessage.includes("Unable to parse range")) {
+                         errorMessage = "Error: Invalid sheet name or range. Please ensure the sheet tab name in `SHEET_RANGE` (currently 'Citizens') is correct and the range 'A:Z' covers your data.";
+                    } else if (sheetsResponse.status === 403 && errorMessage.includes("API key not valid")) {
+                        errorMessage = "Error: API key not valid. Please ensure your API key is correct and enabled for Google Sheets API.";
+                    } else if (sheetsResponse.status === 403 && errorMessage.includes("Request had insufficient authentication scopes")) {
+                        errorMessage = "Error: Insufficient permissions. Please ensure your Google Sheet is shared as 'Anyone with the link can view'.";
+                    } else if (sheetsResponse.status === 404) {
+                        errorMessage = "Error: Spreadsheet not found. Please ensure the Spreadsheet ID is correct.";
                     }
                     throw new Error(`Error fetching from Google Sheets API: ${errorMessage}`);
                 }
@@ -447,27 +420,29 @@
         function parseGoogleSheetsData(values) {
             if (!values || values.length === 0) return [];
 
-            const headers = values[0].map(header => header.trim()); // First row is headers
             const data = [];
 
+            // Start from the second row (index 1) for data, assuming first row is headers
             for (let i = 1; i < values.length; i++) {
                 const rowValues = values[i];
                 if (rowValues.length === 0 || rowValues.every(val => val.trim() === '')) {
                     // Skip empty rows
                     continue;
                 }
-                const row = {};
-                headers.forEach((header, index) => {
-                    row[header] = rowValues[index] || ''; // Use empty string if value is undefined
-                });
-                data.push(row);
+                
+                const citizen = {
+                    Name: rowValues[0] || '', // Column A (index 0) for Name
+                    ResidentNationLink: rowValues[2] || '', // Column C (index 2) for Resident Nation Link
+                    WANationLink: rowValues[3] || '' // Column D (index 3) for WA Nation Link
+                };
+                data.push(citizen);
             }
             return data;
         }
 
         async function checkCitizenCompliance(citizen, userAgent) {
-            const waNationLink = citizen['WA Nation Link']; // Assuming header is 'WA Nation Link'
-            const residentNationLink = citizen['Resident Nation Link']; // Assuming header is 'Resident Nation Link'
+            const waNationLink = citizen.WANationLink; 
+            const residentNationLink = citizen.ResidentNationLink; 
 
             let isWaMember = false;
             let isInVibonia = false;
@@ -498,7 +473,7 @@
                 const waXml = await fetchNationStatesApi(waUrl, userAgent);
                 if (waXml) {
                     const parser = new DOMParser();
-                    const xmlDoc = xmlParser.parseFromString(waXml, "application/xml"); // Corrected variable name
+                    const xmlDoc = parser.parseFromString(waXml, "application/xml");
                     const waStatus = xmlDoc.querySelector('NATION > WA')?.textContent;
                     isWaMember = (waStatus === 'Member' || waStatus === 'Delegate');
                 }
@@ -510,7 +485,7 @@
                 const residentXml = await fetchNationStatesApi(residentUrl, userAgent);
                 if (residentXml) {
                     const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(residentXml, "application/xml"); // Corrected variable name
+                    const xmlDoc = parser.parseFromString(residentXml, "application/xml");
                     const regionName = xmlDoc.querySelector('NATION > REGION')?.textContent;
                     // NationStates API normalizes region names to lowercase with underscores
                     isInVibonia = (regionName?.toLowerCase() === 'vibonia');
