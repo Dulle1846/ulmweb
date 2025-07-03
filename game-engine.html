@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Match Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden; /* Prevent scrollbar from loading screen */
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(26, 32, 44, 0.95); /* Darker overlay */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: #63b3ed;
+            font-size: 1.5rem;
+            font-weight: 600;
+            gap: 1rem;
+            transition: opacity 0.5s ease-out;
+        }
+        .loading-spinner {
+            border: 8px solid #4a5568;
+            border-top: 8px solid #63b3ed;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .container {
+            background-color: #2d3748; /* Slightly lighter dark for container */
+            border-radius: 1rem; /* Rounded corners */
+            padding: 2rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 700px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 0.5s ease-in;
+        }
+        .header {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #63b3ed; /* Blue header */
+        }
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: #1a202c;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #4a5568;
+        }
+        .team-score {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #a0aec0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .team-name-input {
+            background-color: #1a202c;
+            border: 1px solid #4a5568;
+            border-radius: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #cbd5e0;
+            text-align: center;
+            width: auto; /* Allow content to dictate width */
+            min-width: 100px; /* Minimum width */
+            max-width: 200px; /* Prevent it from getting too wide and breaking layout */
+            outline: none;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .team-name-input:focus {
+            border-color: #63b3ed;
+        }
+        .score-separator {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #a0aec0;
+        }
+        .match-time {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #a0aec0; /* Greyish color for time */
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        .event-log {
+            background-color: #1a202c;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            text-align: left;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            border: 1px solid #4a5568;
+        }
+        .event-log p {
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .event-log p:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            background-color: #1a202c;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            border: 1px solid #4a5568;
+            margin-top: 1rem;
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.3rem 0.5rem;
+            background-color: #2d3748;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .stat-label {
+            color: #cbd5e0;
+            font-weight: 500;
+        }
+        .stat-value {
+            color: #a0aec0;
+            font-weight: 600;
+        }
+        .buttons-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background-color: #48bb78; /* Green */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #38a169;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #ecc94b; /* Yellow */
+            color: #2d3748;
+        }
+        .btn-secondary:hover {
+            background-color: #d69e2e;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background-color: #f56565; /* Red */
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #e53e3e;
+            transform: translateY(-2px);
+        }
+        /* Scrollbar styling */
+        .event-log::-webkit-scrollbar {
+            width: 8px;
+        }
+        .event-log::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 10px;
+        }
+        .event-log::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 10px;
+        }
+        .event-log::-webkit-scrollbar-thumb:hover {
+            background: #63b3ed;
+        }
+        .loading-message {
+            color: #63b3ed;
+            font-style: italic;
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p>Generating initial match data...</p>
+        <p class="loading-message-detail">This might take a moment to fetch diverse templates and words from the AI.</p>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <h1 class="header">Football Match Simulator</h1>
+        <div class="scoreboard">
+            <div class="team-score">
+                <input type="text" id="teamA_name" class="team-name-input" value="Team A">
+                <span id="scoreA">0</span>
+            </div>
+            <span class="score-separator">-</span>
+            <div class="team-score">
+                <input type="text" id="teamB_name" class="team-name-input" value="Team B">
+                <span id="scoreB">0</span>
+            </div>
+        </div>
+        <div class="match-time" id="matchTime">Minute 0</div>
+
+        <h2 class="text-xl font-semibold text-gray-300 mt-4 mb-2">Match Statistics</h2>
+        <div class="statistics-grid">
+            <div class="stat-item">
+                <span class="stat-label">Possession</span>
+                <span class="stat-value" id="possessionA">0%</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Possession</span>
+                <span class="stat-value" id="possessionB">0%</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">xG</span>
+                <span class="stat-value" id="xgA">0.0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">xG</span>
+                <span class="stat-value" id="xgB">0.0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Passes</span>
+                <span class="stat-value" id="passesA">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Passes</span>
+                <span class="stat-value" id="passesB">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Shots on Target</span>
+                <span class="stat-value" id="shotsOnTargetA">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Shots on Target</span>
+                <span class="stat-value" id="shotsOnTargetB">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Fouls</span>
+                <span class="stat-value" id="foulsA">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Fouls</span>
+                <span class="stat-value" id="foulsB">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Yellow Cards</span>
+                <span class="stat-value" id="yellowCardsA">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Yellow Cards</span>
+                <span class="stat-value" id="yellowCardsB">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Red Cards</span>
+                <span class="stat-value" id="redCardsA">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Red Cards</span>
+                <span class="stat-value" id="redCardsB">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Corners</span>
+                <span class="stat-value" id="cornersA">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Corners</span>
+                <span class="stat-value" id="cornersB">0</span>
+            </div>
+        </div>
+
+        <h2 class="text-xl font-semibold text-gray-300 mt-4 mb-2">Event Log</h2>
+        <div class="event-log" id="eventLog">
+            <p class="loading-message">Match data is being generated...</p>
+        </div>
+        <div class="buttons-container">
+            <button class="btn btn-primary" id="startButton">Start Match</button>
+            <button class="btn btn-secondary" id="pauseButton" disabled>Pause Match</button>
+            <button class="btn btn-danger" id="resetButton" disabled>Reset Match</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase imports - Although not used for persistence in this specific app,
+        // these are included as standard practice for Canvas apps that might
+        // later incorporate authentication or database features.
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase configuration, provided by the Canvas environment.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app;
+        let db;
+        let auth;
+        let userId;
+
+        // Initialize Firebase and authenticate
+        async function initializeFirebase() {
+            try {
+                if (Object.keys(firebaseConfig).length > 0) {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    userId = auth.currentUser?.uid || crypto.randomUUID();
+                    console.log("Firebase initialized and authenticated. User ID:", userId);
+                } else {
+                    console.warn("Firebase config not provided. Running without Firebase.");
+                    userId = crypto.randomUUID(); // Generate a random ID if no auth
+                }
+            } catch (error) {
+                console.error("Error initializing Firebase or authenticating:", error);
+                userId = crypto.randomUUID(); // Fallback to random ID on error
+            }
+        }
+
+        initializeFirebase();
+
+        // --- Match Simulation Logic ---
+        let currentMinute = 0;
+        let matchInterval;
+        const standardMatchDuration = 90; // Standard match duration in minutes
+        let totalMatchDuration = standardMatchDuration; // Will include injury time
+        let injuryTimeMinutes = 0;
+        const simulationSpeed = 3000; // 3 seconds per simulated minute
+
+        let scoreA = 0;
+        let scoreB = 0;
+
+        // Match Statistics
+        let teamAStats = { possession: 50, xg: 0.0, passes: 0, shotsOnTarget: 0, fouls: 0, yellowCards: 0, redCards: 0, corners: 0 };
+        let teamBStats = { possession: 50, xg: 0.0, passes: 0, shotsOnTarget: 0, fouls: 0, yellowCards: 0, redCards: 0, corners: 0 };
+        let totalPossessionEvents = 0; // To track possession distribution
+
+        const matchTimeDisplay = document.getElementById('matchTime');
+        const eventLogDisplay = document.getElementById('eventLog');
+        const scoreADisplay = document.getElementById('scoreA');
+        const scoreBDisplay = document.getElementById('scoreB');
+        const startButton = document.getElementById('startButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const resetButton = document.getElementById('resetButton');
+
+        const teamANameInput = document.getElementById('teamA_name');
+        const teamBNameInput = document.getElementById('teamB_name');
+
+        // Stat Displays
+        const possessionADisplay = document.getElementById('possessionA');
+        const possessionBDisplay = document.getElementById('possessionB');
+        const xgADisplay = document.getElementById('xgA');
+        const xgBDisplay = document.getElementById('xgB');
+        const passesADisplay = document.getElementById('passesA');
+        const passesBDisplay = document.getElementById('passesB');
+        const shotsOnTargetADisplay = document.getElementById('shotsOnTargetA');
+        const shotsOnTargetBDisplay = document.getElementById('shotsOnTargetB');
+        const foulsADisplay = document.getElementById('foulsA');
+        const foulsBDisplay = document.getElementById('foulsB');
+        const yellowCardsADisplay = document.getElementById('yellowCardsA');
+        const yellowCardsBDisplay = document.getElementById('yellowCardsB');
+        const redCardsADisplay = document.getElementById('redCardsA');
+        const redCardsBDisplay = document.getElementById('redCardsB');
+        const cornersADisplay = document.getElementById('cornersA');
+        const cornersBDisplay = document.getElementById('cornersB');
+
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const mainContainer = document.getElementById('mainContainer');
+
+        // Map event types to emojis
+        const eventEmojis = {
+            'goalA': '⚽🥅',
+            'goalB': '⚽🥅',
+            'yellowCard': '🟨',
+            'redCard': '🟥',
+            'penalty': '🎯',
+            'substitution': '🔄',
+            'foul': '💥',
+            'save': '🧤',
+            'corner': '🚩',
+            'offside': '📏',
+            'fanReaction': '📣👏',
+            'injury': '🤕',
+            'VAR': '📺',
+            'whistle': ' thổi',
+            'other': '🏃‍♂️',
+            'injuryTime': '⏱️'
+        };
+
+        // Event templates and word lists (smaller fallback, relying on dynamic generation)
+        let allMatchTemplates = [];
+        let endGameTemplates = [];
+        let eventCategories = {
+            actions: [],
+            players: [],
+            locations: [],
+            outcomes: [],
+            fan_reactions: [],
+            referee_actions: [],
+            card_types: [],
+            injury_severity: [],
+            VAR_outcomes: [],
+            tactics: [],
+            weather: [],
+            commentary_adjectives: [],
+            ball_movement: [],
+            player_emotions: [],
+            coach_reactions: [],
+            match_intensity: [],
+            set_pieces: []
+        };
+
+        // Initial small set of fallback data
+        const initialFallbackTemplates = [
+            { template: "Kick-off! The match begins.", type: "other" },
+            { template: "{TeamA} [actions] [players] [locations] [outcomes].", type: "other" },
+            { template: "A strong [actions] wins possession for {TeamB} [locations].", type: "foul" },
+            { template: "{TeamA}'s [players] takes a shot, but it's [outcomes].", type: "other" },
+            { template: "Goalkeeper makes a [commentary_adjectives] [actions].", type: "save" },
+            { template: "Corner awarded to {TeamB} [locations].", type: "corner" },
+            { template: "[fan_reactions] for their team!", type: "fanReaction" },
+            { template: "A long ball over the top is [outcomes] by the defense.", type: "other" },
+            { template: "[players] goes down, but quickly gets back up.", type: "other" },
+            { template: "Offside call against {TeamA}.", type: "offside" },
+            { template: "GOAL! {TeamA} scores with a [commentary_adjectives] strike!", type: "goalA" },
+            { template: "GOAL! {TeamB} equalizes with a powerful header!", type: "goalB" },
+            { template: "The referee [referee_actions] for a foul.", type: "whistle" },
+            { template: "VAR check in progress for a potential penalty.", type: "VAR" },
+            { template: "Penalty awarded to {TeamA}!", type: "penalty" },
+            { template: "Player needs [injury_severity] after a collision.", type: "injury" },
+            { template: "Substitution for {TeamA}.", type: "substitution" },
+            { template: "Yellow card shown for a late challenge.", type: "yellowCard" },
+            { template: "Red card for a dangerous tackle.", type: "redCard" }
+        ];
+
+        const initialFallbackEndGameTemplates = [
+            { template: "Last-minute winner! Unbelievable scenes for {TeamA}!", type: "goalA" },
+            { template: "Desperate defending to hold onto the lead.", type: "other" },
+            { template: "Four minutes of [injuryTime] announced.", type: "injuryTime" },
+            { template: "Full-time whistle blows, match ends!", type: "whistle" }
+        ];
+
+        const initialFallbackCategories = {
+            actions: ["passes the ball", "takes a shot", "makes a tackle", "dribbles past", "clears the danger", "crosses the ball"],
+            players: ["the striker", "the midfielder", "the defender", "the captain", "a substitute", "the winger"],
+            locations: ["in the midfield", "near the penalty box", "on the wing", "at the edge of the area"],
+            outcomes: ["but it's cleared", "resulting in a corner", "which goes wide", "saved by the keeper", "blocked by a defender"],
+            fan_reactions: ["The crowd roars", "Fans are on their feet", "A collective gasp", "Boos echo"],
+            referee_actions: ["blows his whistle", "signals for a free-kick", "waves play on"],
+            card_types: ["yellow card", "red card"],
+            injury_severity: ["a minor knock", "needs treatment"],
+            VAR_outcomes: ["decision stands", "penalty awarded", "goal disallowed"],
+            tactics: ["patiently", "with pace", "aggressively"],
+            weather: ["rain is falling", "the sun is shining"],
+            commentary_adjectives: ["brilliant", "crucial", "powerful", "clinical"],
+            ball_movement: ["rolls", "bounces", "flies", "skips"],
+            player_emotions: ["frustrated", "elated", "tired", "focused"],
+            coach_reactions: ["animated", "calm", "furious", "applauding"],
+            match_intensity: ["high", "low", "building", "fading"],
+            set_pieces: ["free-kick", "corner", "throw-in"]
+        };
+
+        allMatchTemplates = initialFallbackTemplates;
+        endGameTemplates = initialFallbackEndGameTemplates;
+        eventCategories = initialFallbackCategories;
+
+
+        // Function to fetch a larger set of templates and words from the LLM in the background
+        async function fetchMoreEventsInBackground() {
+            try {
+                const numTemplatesPerCall = 100; // Request more templates in initial load
+                const numWordsPerCall = 50; // For each category
+
+                const fullSchema = {
+                    type: "OBJECT",
+                    properties: {
+                        templates: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    template: { "type": "STRING" },
+                                    type: { "type": "STRING", "enum": ["goalA", "goalB", "yellowCard", "redCard", "penalty", "substitution", "foul", "save", "corner", "offside", "fanReaction", "injury", "VAR", "whistle", "other", "injuryTime"] }
+                                },
+                                required: ["template", "type"]
+                            }
+                        },
+                        actions: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        players: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        locations: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        outcomes: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        fan_reactions: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        referee_actions: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        card_types: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        injury_severity: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        VAR_outcomes: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        tactics: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        weather: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        commentary_adjectives: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        ball_movement: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        player_emotions: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        coach_reactions: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        match_intensity: { "type": "ARRAY", "items": { "type": "STRING" } },
+                        set_pieces: { "type": "ARRAY", "items": { "type": "STRING" } }
+                    },
+                    required: ["templates", "actions", "players", "locations", "outcomes", "fan_reactions", "referee_actions", "card_types", "injury_severity", "VAR_outcomes", "tactics", "weather", "commentary_adjectives", "ball_movement", "player_emotions", "coach_reactions", "match_intensity", "set_pieces"]
+                };
+
+                let chatHistoryGeneral = [{
+                    role: "user",
+                    parts: [{
+                        text: `Generate a JSON object containing:
+                        - "templates": an array of ${numTemplatesPerCall} diverse football match event templates. Each template should be a JSON object with a 'template' string (using placeholders like [action], [player], [location], {TeamA}, {TeamB}) and a 'type' (from 'goalA', 'goalB', 'yellowCard', 'redCard', 'penalty', 'substitution', 'foul', 'save', 'corner', 'offside', 'fanReaction', 'injury', 'VAR', 'whistle', 'other', 'injuryTime').
+                        - "actions": an array of ${numWordsPerCall} unique football actions.
+                        - "players": an array of ${numWordsPerCall} unique player descriptions.
+                        - "locations": an array of ${numWordsPerCall} unique field locations.
+                        - "outcomes": an array of ${numWordsPerCall} unique event outcomes.
+                        - "fan_reactions": an array of ${numWordsPerCall} unique fan reactions.
+                        - "referee_actions": an array of ${numWordsPerCall} unique referee actions.
+                        - "card_types": an array of ${numWordsPerCall} unique card types (e.g., "yellow card", "red card").
+                        - "injury_severity": an array of ${numWordsPerCall} unique injury descriptions.
+                        - "VAR_outcomes": an array of ${numWordsPerCall} unique VAR outcomes.
+                        - "tactics": an array of ${numWordsPerCall} unique tactical descriptions.
+                        - "weather": an array of ${numWordsPerCall} unique weather conditions.
+                        - "commentary_adjectives": an array of ${numWordsPerCall} unique commentary adjectives.
+                        - "ball_movement": an array of ${numWordsPerCall} unique ball movement descriptions.
+                        - "player_emotions": an array of ${numWordsPerCall} unique player emotions.
+                        - "coach_reactions": an array of ${numWordsPerCall} unique coach reactions.
+                        - "match_intensity": an array of ${numWordsPerCall} unique match intensity descriptions.
+                        - "set_pieces": an array of ${numWordsPerCall} unique set piece descriptions.
+                        Ensure high diversity and realism for all lists. Do not include any numbering or special characters outside the JSON structure.`
+                    }]
+                }];
+
+                const payloadGeneral = {
+                    contents: chatHistoryGeneral,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: fullSchema
+                    }
+                };
+
+                const apiKey = "";
+                const apiUrlGeneral = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const responseGeneral = await fetch(apiUrlGeneral, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payloadGeneral)
+                });
+                const resultGeneral = await responseGeneral.json();
+                if (resultGeneral.candidates && resultGeneral.candidates.length > 0 &&
+                    resultGeneral.candidates[0].content && resultGeneral.candidates[0].content.parts &&
+                    resultGeneral.candidates[0].content.parts.length > 0) {
+                    const jsonString = resultGeneral.candidates[0].content.parts[0].text;
+                    try {
+                        const data = JSON.parse(jsonString);
+                        allMatchTemplates = allMatchTemplates.concat(data.templates);
+                        Object.keys(eventCategories).forEach(cat => {
+                            if (data[cat]) eventCategories[cat] = eventCategories[cat].concat(data[cat]);
+                        });
+                        console.log(`Initial fetch: ${data.templates.length} general templates and ${Object.values(data).filter(Array.isArray).flat().length - data.templates.length} words.`);
+                    } catch (parseError) {
+                        console.error("Error parsing initial general events JSON:", parseError, "Raw JSON:", jsonString);
+                    }
+                } else {
+                    console.error(`Failed to generate initial general events data:`, resultGeneral);
+                }
+
+                // Request end-game specific templates
+                let chatHistoryEndGame = [{
+                    role: "user",
+                    parts: [{
+                        text: `Generate a JSON object containing:
+                        - "templates": an array of ${Math.floor(numTemplatesPerCall / 5)} realistic football match event templates that typically happen towards the end of a match (e.g., last-minute winner, desperate defending, injury time, controversial decisions). Each template should be a JSON object with a 'template' string (using placeholders like [action], [player], [location], {TeamA}, {TeamB}) and a 'type' (from 'goalA', 'goalB', 'yellowCard', 'redCard', 'penalty', 'substitution', 'foul', 'save', 'corner', 'offside', 'fanReaction', 'injury', 'VAR', 'whistle', 'other', 'injuryTime'). Prioritize types like 'goalA', 'goalB', 'redCard', 'penalty', 'VAR', 'whistle', 'fanReaction' for end-game scenarios. Ensure unique and dramatic templates. Do not include any numbering or special characters outside the JSON structure.`
+                    }]
+                }];
+                const payloadEndGame = {
+                    contents: chatHistoryEndGame,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                             type: "OBJECT",
+                             properties: {
+                                 templates: {
+                                     type: "ARRAY",
+                                     items: {
+                                         type: "OBJECT",
+                                         properties: {
+                                             template: { "type": "STRING" },
+                                             type: { "type": "STRING", "enum": ["goalA", "goalB", "yellowCard", "redCard", "penalty", "substitution", "foul", "save", "corner", "offside", "fanReaction", "injury", "VAR", "whistle", "other", "injuryTime"] }
+                                         },
+                                         required: ["template", "type"]
+                                     }
+                                 }
+                             },
+                             required: ["templates"]
+                         }
+                    }
+                };
+
+                const apiUrlEndGame = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const responseEndGame = await fetch(apiUrlEndGame, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payloadEndGame)
+                });
+                const resultEndGame = await responseEndGame.json();
+                if (resultEndGame.candidates && resultEndGame.candidates.length > 0 &&
+                    resultEndGame.candidates[0].content && resultEndGame.candidates[0].content.parts &&
+                    resultEndGame.candidates[0].content.parts.length > 0) {
+                    const jsonString = resultEndGame.candidates[0].content.parts[0].text;
+                    try {
+                        const data = JSON.parse(jsonString);
+                        endGameTemplates = endGameTemplates.concat(data.templates);
+                        console.log(`Initial fetch: ${data.templates.length} end-game templates.`);
+                    } catch (parseError) {
+                        console.error("Error parsing initial end-game events JSON:", parseError, "Raw JSON:", jsonString);
+                    }
+                } else {
+                    console.error(`Failed to generate initial end-game events data:`, resultEndGame);
+                }
+
+            } catch (error) {
+                console.error("Error fetching initial events in background:", error);
+            } finally {
+                // This block will always execute, ensuring UI is revealed
+                loadingOverlay.style.opacity = '0';
+                loadingOverlay.style.pointerEvents = 'none'; // Disable interactions
+                mainContainer.style.opacity = '1';
+                eventLogDisplay.innerHTML = '<p>Match simulation is ready. Press Start to begin!</p>';
+                startButton.disabled = false;
+                resetButton.disabled = false;
+                console.log(`Simulator ready. Total templates: ${allMatchTemplates.length + endGameTemplates.length}, Total words: ${Object.values(eventCategories).flat().length}.`);
+            }
+        }
+
+        // Function to fetch a smaller batch of templates/words dynamically during the game
+        async function fetchDynamicContent(contentType, count, categoryName = null) {
+            try {
+                let promptText;
+                let schema;
+
+                if (contentType === 'templates') {
+                    promptText = `Generate ${count} diverse and realistic football match event templates. Each template should be a JSON object with a 'template' string (using placeholders like [action], [player], [location], {TeamA}, {TeamB}) and a 'type' (from 'goalA', 'goalB', 'yellowCard', 'redCard', 'penalty', 'substitution', 'foul', 'save', 'corner', 'offside', 'fanReaction', 'injury', 'VAR', 'whistle', 'other', 'injuryTime'). Focus on unique and descriptive scenarios. Use "{TeamA}" and "{TeamB}" as placeholders for team names. Do not include any numbering or special characters outside the JSON structure.`;
+                    schema = {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                template: { "type": "STRING" },
+                                type: { "type": "STRING", "enum": ["goalA", "goalB", "yellowCard", "redCard", "penalty", "substitution", "foul", "save", "corner", "offside", "fanReaction", "injury", "VAR", "whistle", "other", "injuryTime"] }
+                            },
+                            required: ["template", "type"]
+                        }
+                    };
+                } else if (contentType === 'endGameTemplates') {
+                     promptText = `Generate ${count} realistic football match event templates that typically happen towards the end of a match (e.g., last-minute winner, desperate defending, injury time, controversial decisions). Each template should be a JSON object with a 'template' string (using placeholders like [action], [player], [location], {TeamA}, {TeamB}) and a 'type' (from 'goalA', 'goalB', 'redCard', 'penalty', 'VAR', 'whistle', 'fanReaction', 'goalA', 'goalB', 'injuryTime', 'other'). Prioritize types like 'goalA', 'goalB', 'redCard', 'penalty', 'VAR', 'whistle', 'fanReaction' for end-game scenarios. Ensure unique and dramatic templates. Use "{TeamA}" and "{TeamB}" as placeholders for team names. Do not include any numbering or special characters outside the JSON structure.`;
+                     schema = {
+                         type: "ARRAY",
+                         items: {
+                             type: "OBJECT",
+                             properties: {
+                                 template: { "type": "STRING" },
+                                 type: { "type": "STRING", "enum": ["goalA", "goalB", "yellowCard", "redCard", "penalty", "substitution", "foul", "save", "corner", "offside", "fanReaction", "injury", "VAR", "whistle", "other", "injuryTime"] }
+                             },
+                             required: ["template", "type"]
+                         }
+                     };
+                }
+                else if (contentType === 'category' && categoryName) {
+                    promptText = `Generate an array of ${count} unique and diverse words/phrases for the category "${categoryName}" in a football match context. Do not include any numbering or special characters outside the JSON array.`;
+                    schema = { type: "ARRAY", items: { "type": "STRING" } };
+                } else {
+                    console.error("Invalid dynamic content request.");
+                    return;
+                }
+
+                let chatHistory = [{ role: "user", parts: [{ text: promptText }] }];
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: schema
+                    }
+                };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    try {
+                        const data = JSON.parse(jsonString);
+                        if (contentType === 'templates') {
+                            allMatchTemplates = allMatchTemplates.concat(data);
+                            console.log(`Dynamically fetched ${data.length} general templates. Total: ${allMatchTemplates.length}`);
+                        } else if (contentType === 'endGameTemplates') {
+                            endGameTemplates = endGameTemplates.concat(data);
+                            console.log(`Dynamically fetched ${data.length} end-game templates. Total: ${endGameTemplates.length}`);
+                        } else if (contentType === 'category' && categoryName) {
+                            eventCategories[categoryName] = eventCategories[categoryName].concat(data);
+                            console.log(`Dynamically fetched ${data.length} words for '${categoryName}'. Total: ${eventCategories[categoryName].length}`);
+                        }
+                    } catch (parseError) {
+                        console.error(`Error parsing dynamic ${contentType} JSON for ${categoryName || ''}:`, parseError, "Raw JSON:", jsonString);
+                    }
+                } else {
+                    console.error(`Failed to generate dynamic ${contentType} data for ${categoryName || ''}:`, result);
+                }
+            } catch (error) {
+                console.error(`Error fetching dynamic ${contentType} data for ${categoryName || ''}:`, error);
+            }
+        }
+
+        // Helper function to get a random item from an array
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        // Function to replace placeholders in a template
+        function replacePlaceholders(template) {
+            let description = template;
+            description = description.replace(/{TeamA}/g, teamANameInput.value || "Team A");
+            description = description.replace(/{TeamB}/g, teamBNameInput.value || "Team B");
+
+            // Replace category placeholders
+            for (const category in eventCategories) {
+                const placeholder = `[${category}]`;
+                if (description.includes(placeholder) && eventCategories[category].length > 0) {
+                    description = description.replace(placeholder, getRandomItem(eventCategories[category]));
+                }
+            }
+            return description;
+        }
+
+        // Function to update the display
+        function updateDisplay() {
+            let timeText = `Minute ${currentMinute}`;
+            if (currentMinute > standardMatchDuration) {
+                timeText += ` (+${currentMinute - standardMatchDuration})`;
+            }
+            matchTimeDisplay.textContent = timeText;
+            scoreADisplay.textContent = scoreA;
+            scoreBDisplay.textContent = scoreB;
+
+            // Update statistics display
+            possessionADisplay.textContent = `${teamAStats.possession.toFixed(0)}%`;
+            possessionBDisplay.textContent = `${teamBStats.possession.toFixed(0)}%`;
+            xgADisplay.textContent = teamAStats.xg.toFixed(1);
+            xgBDisplay.textContent = teamBStats.xg.toFixed(1);
+            passesADisplay.textContent = teamAStats.passes;
+            passesBDisplay.textContent = teamBStats.passes;
+            shotsOnTargetADisplay.textContent = teamAStats.shotsOnTarget;
+            shotsOnTargetBDisplay.textContent = teamBStats.shotsOnTarget;
+            foulsADisplay.textContent = teamAStats.fouls;
+            foulsBDisplay.textContent = teamBStats.fouls;
+            yellowCardsADisplay.textContent = teamAStats.yellowCards;
+            yellowCardsBDisplay.textContent = teamBStats.yellowCards;
+            redCardsADisplay.textContent = teamAStats.redCards;
+            redCardsBDisplay.textContent = teamBStats.redCards;
+            cornersADisplay.textContent = teamAStats.corners;
+            cornersBDisplay.textContent = teamBStats.corners;
+
+            eventLogDisplay.scrollTop = eventLogDisplay.scrollHeight; // Scroll to bottom
+        }
+
+        // Function to update statistics based on event type
+        function updateStatistics(eventType) {
+            totalPossessionEvents++; // Increment for every event to normalize possession
+
+            // Simple possession update: bias towards team involved in event
+            let teamAContribution = 0;
+            let teamBContribution = 0;
+
+            if (eventType.includes('A')) {
+                teamAContribution = 1;
+            } else if (eventType.includes('B')) {
+                teamBContribution = 1;
+            } else { // Neutral events, distribute randomly
+                if (Math.random() < 0.5) {
+                    teamAContribution = 1;
+                } else {
+                    teamBContribution = 1;
+                }
+            }
+
+            // Distribute possession based on contributions
+            // This is a simplified model. A more complex model would track ball events.
+            teamAStats.possession = (teamAStats.possession * (totalPossessionEvents - 1) + (teamAContribution * 100)) / totalPossessionEvents;
+            teamBStats.possession = (teamBStats.possession * (totalPossessionEvents - 1) + (teamBContribution * 100)) / totalPossessionEvents;
+
+            // Normalize possession to ensure it sums to 100% (or close to it)
+            let totalCurrentPossession = teamAStats.possession + teamBStats.possession;
+            if (totalCurrentPossession > 0) {
+                teamAStats.possession = (teamAStats.possession / totalCurrentPossession) * 100;
+                teamBStats.possession = (teamBStats.possession / totalCurrentPossession) * 100;
+            }
+
+
+            switch (eventType) {
+                case 'goalA':
+                    teamAStats.xg += Math.random() * (0.7 - 0.3) + 0.3; // xG for a goal
+                    teamAStats.shotsOnTarget++;
+                    break;
+                case 'goalB':
+                    teamBStats.xg += Math.random() * (0.7 - 0.3) + 0.3; // xG for a goal
+                    teamBStats.shotsOnTarget++;
+                    break;
+                case 'yellowCard':
+                    if (Math.random() < 0.5) teamAStats.yellowCards++; else teamBStats.yellowCards++;
+                    if (Math.random() < 0.5) teamAStats.fouls++; else teamBStats.fouls++; // Yellow card implies a foul
+                    break;
+                case 'redCard':
+                    if (Math.random() < 0.5) teamAStats.redCards++; else teamBStats.redCards++;
+                    if (Math.random() < 0.5) teamAStats.fouls++; else teamBStats.fouls++; // Red card implies a foul
+                    break;
+                case 'penalty':
+                    if (Math.random() < 0.5) teamAStats.xg += 0.76; else teamBStats.xg += 0.76; // High xG for penalty
+                    if (Math.random() < 0.5) teamAStats.fouls++; else teamBStats.fouls++; // Penalty implies a foul
+                    break;
+                case 'foul':
+                    if (Math.random() < 0.5) teamAStats.fouls++; else teamBStats.fouls++;
+                    break;
+                case 'save':
+                    if (Math.random() < 0.5) teamAStats.shotsOnTarget++; else teamBStats.shotsOnTarget++; // A save means a shot on target
+                    if (Math.random() < 0.5) teamAStats.xg += Math.random() * 0.2; else teamBStats.xg += Math.random() * 0.2; // Small xG for a save
+                    break;
+                case 'corner':
+                    if (Math.random() < 0.5) teamAStats.corners++; else teamBStats.corners++;
+                    break;
+                case 'other': // Generic events, often involve passes
+                    if (Math.random() < 0.5) teamAStats.passes += Math.floor(Math.random() * 5) + 1;
+                    else teamBStats.passes += Math.floor(Math.random() * 5) + 1;
+                    break;
+                // For events like 'offside', 'fanReaction', 'injury', 'VAR', 'whistle', 'injuryTime' no direct stat update other than possession
+            }
+        }
+
+        // Function to add an event to the log and update score if applicable
+        function addEvent(event) {
+            const p = document.createElement('p');
+            const emojiSpan = document.createElement('span');
+            emojiSpan.textContent = eventEmojis[event.type] || eventEmojis['other']; // Get emoji based on type
+            emojiSpan.style.marginRight = '0.5rem'; // Add some spacing
+            p.appendChild(emojiSpan);
+
+            // Generate description from template
+            const description = replacePlaceholders(event.template);
+
+            p.appendChild(document.createTextNode(`[Minute ${currentMinute}] ${description}`));
+            eventLogDisplay.appendChild(p);
+
+            // Update score based on event type
+            if (event.type === 'goalA') {
+                scoreA++;
+            } else if (event.type === 'goalB') {
+                scoreB++;
+            }
+
+            // Update statistics
+            updateStatistics(event.type);
+            updateDisplay();
+        }
+
+        // Function to generate a random event
+        function generateRandomEvent() {
+            let eventToUse;
+            // Trigger dynamic event fetching if event pool is low
+            // The thresholds are now smaller as we rely on continuous generation
+            if (allMatchTemplates.length < 50 && !isFetchingDynamicGeneralTemplates) {
+                isFetchingDynamicGeneralTemplates = true;
+                fetchDynamicContent('templates', 50).finally(() => { isFetchingDynamicGeneralTemplates = false; });
+            }
+            if (endGameTemplates.length < 10 && currentMinute >= (standardMatchDuration - 15) && !isFetchingDynamicEndGameTemplates) {
+                 isFetchingDynamicEndGameTemplates = true;
+                 fetchDynamicContent('endGameTemplates', 10).finally(() => { isFetchingDynamicEndGameTemplates = false; });
+            }
+
+            // Also check if any category is running low
+            for (const category in eventCategories) {
+                if (eventCategories[category].length < 10 && !isFetchingDynamicCategories[category]) {
+                    isFetchingDynamicCategories[category] = true;
+                    fetchDynamicContent('category', 20, category).finally(() => { isFetchingDynamicCategories[category] = false; });
+                }
+            }
+
+            // Introduce end-game events from minute 80 onwards with a higher probability
+            if (currentMinute >= (standardMatchDuration - 10) && endGameTemplates.length > 0 && Math.random() < 0.6) { // 60% chance for end-game event in last 10 mins
+                eventToUse = getRandomItem(endGameTemplates);
+            } else if (allMatchTemplates.length > 0) {
+                eventToUse = getRandomItem(allMatchTemplates);
+            } else {
+                // Fallback to a very generic event if no templates are loaded for some reason
+                eventToUse = { template: "A generic football action occurs.", type: "other" };
+            }
+            addEvent(eventToUse);
+        }
+
+        let isFetchingDynamicGeneralTemplates = false;
+        let isFetchingDynamicEndGameTemplates = false;
+        let isFetchingDynamicCategories = {}; // Track fetching status for each category
+
+        // Function to start the match simulation
+        function startMatch() {
+            if (matchInterval) return; // Prevent multiple intervals
+            if (currentMinute >= totalMatchDuration) {
+                addEvent({ template: "Match has already ended. Please reset to play again.", type: "other" });
+                return;
+            }
+
+            // Remove the initial loading message if it's still there
+            const loadingMessageElement = eventLogDisplay.querySelector('.loading-message');
+            if (loadingMessageElement) {
+                eventLogDisplay.removeChild(loadingMessageElement);
+            }
+
+            addEvent({ template: "Match started!", type: "other" });
+            matchInterval = setInterval(() => {
+                currentMinute++;
+                if (currentMinute === standardMatchDuration + 1 && injuryTimeMinutes === 0) {
+                    // Announce injury time at the start of added time
+                    injuryTimeMinutes = Math.floor(Math.random() * 6) + 2; // 2 to 7 minutes of injury time
+                    totalMatchDuration = standardMatchDuration + injuryTimeMinutes;
+                    addEvent({ template: `The referee has indicated ${injuryTimeMinutes} minutes of added time!`, type: "injuryTime" });
+                }
+
+                if (currentMinute <= totalMatchDuration) {
+                    generateRandomEvent();
+                } else {
+                    pauseMatch(); // Use pauseMatch to clear interval
+                    addEvent({ template: "Full-time! The match has concluded.", type: "whistle" });
+                    startButton.disabled = true; // Disable start button after full time
+                }
+            }, simulationSpeed); // Use simulationSpeed
+            startButton.disabled = true;
+            pauseButton.disabled = false;
+            resetButton.disabled = false;
+            teamANameInput.disabled = true;
+            teamBNameInput.disabled = true;
+        }
+
+        // Function to pause the match simulation
+        function pauseMatch() {
+            clearInterval(matchInterval);
+            matchInterval = null;
+            addEvent({ template: "Match paused.", type: "other" });
+            startButton.disabled = false;
+            pauseButton.disabled = true;
+            resetButton.disabled = false;
+            teamANameInput.disabled = false;
+            teamBNameInput.disabled = false;
+        }
+
+        // Function to reset the match simulation
+        function resetMatch() {
+            pauseMatch(); // Use pauseMatch to clear interval
+            currentMinute = 0;
+            scoreA = 0;
+            scoreB = 0;
+            totalMatchDuration = standardMatchDuration; // Reset total duration
+            injuryTimeMinutes = 0; // Reset injury time
+
+            // Reset statistics
+            teamAStats = { possession: 50, xg: 0.0, passes: 0, shotsOnTarget: 0, fouls: 0, yellowCards: 0, redCards: 0, corners: 0 };
+            teamBStats = { possession: 50, xg: 0.0, passes: 0, shotsOnTarget: 0, fouls: 0, yellowCards: 0, redCards: 0, corners: 0 };
+            totalPossessionEvents = 0;
+
+            eventLogDisplay.innerHTML = '<p>Match simulation is ready. Press Start to begin!</p>';
+            updateDisplay();
+            startButton.disabled = false;
+            pauseButton.disabled = true;
+            resetButton.disabled = true;
+            teamANameInput.disabled = false;
+            teamBNameInput.disabled = false;
+
+            // Clear existing templates and re-fetch initial ones to ensure freshness
+            allMatchTemplates = initialFallbackTemplates;
+            endGameTemplates = initialFallbackEndGameTemplates;
+            eventCategories = initialFallbackCategories;
+            eventLogDisplay.innerHTML = '<p class="loading-message">Re-loading match data in background...</p>';
+            fetchMoreEventsInBackground();
+        }
+
+        // Event Listeners for buttons
+        startButton.addEventListener('click', startMatch);
+        pauseButton.addEventListener('click', pauseMatch);
+        resetButton.addEventListener('click', resetMatch);
+
+        // Initial state setup on page load
+        window.onload = async () => {
+            updateDisplay(); // Initialize score, time, and stats display
+            startButton.disabled = true; // Disable start button until data is loaded
+            pauseButton.disabled = true;
+            resetButton.disabled = true;
+            mainContainer.style.opacity = '0'; // Hide main content initially
+            loadingOverlay.style.opacity = '1'; // Show loading overlay
+
+            try {
+                // Start fetching initial events in the background
+                await fetchMoreEventsInBackground();
+            } catch (error) {
+                console.error("Error during initial data fetch, proceeding with fallback data:", error);
+                // The finally block below will ensure UI is revealed even if this catch is hit
+            } finally {
+                // Always hide loading overlay and show main content
+                loadingOverlay.style.opacity = '0';
+                loadingOverlay.style.pointerEvents = 'none'; // Disable interactions
+                mainContainer.style.opacity = '1';
+                eventLogDisplay.innerHTML = '<p>Match simulation is ready. Press Start to begin!</p>';
+                startButton.disabled = false;
+                resetButton.disabled = false;
+                console.log(`Simulator ready. Total templates: ${allMatchTemplates.length + endGameTemplates.length}, Total words: ${Object.values(eventCategories).flat().length}.`);
+            }
+        };
+
+    </script>
+</body>
+</html>
