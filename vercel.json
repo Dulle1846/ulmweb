@@ -18,9 +18,9 @@
     }
   },
   "env": {
-    "ADMIN_USERNAME": "@admin_username",
-    "ADMIN_PASSWORD_HASH": "@admin_password_hash",
-    "JWT_SECRET": "@jwt_secret",
-    "ALLOWED_IPS": "@allowed_ips"
+    "ADMIN_USERNAME": "admin",
+    "ADMIN_PASSWORD_HASH": "$2a$12$cS4WsezjC8xLpinF3b9h3OV68zaTyNp.i/190SRKq0XXfqyvVOy.C",
+    "JWT_SECRET": "tyu6xw0bxnetnkqxow9l0tp7104ua6v7",
+    "ALLOWED_IPS": "109.42.242.23"
   }
 }
