@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -105,7 +105,10 @@
         .btn:disabled {
             opacity: 0.4; /* Slightly lighter opacity for disabled */
             cursor: not-allowed;
+            box-shadow: none;
             transform: none;
+            background: #555; /* Grey when disabled */
+            border-color: #444;
         }
 
         /* Error Message Styles - White Background, Black Text, Grey Border */
@@ -189,7 +192,7 @@
             display: none; /* Ensure they are hidden if accidentally present */
         }
 
-        /* New button style for NS API Documentation */
+        /* New button style for NS API Documentation and Citizen Checker */
         .ns-api-btn {
             background: #000; /* Black background */
             color: white;
@@ -199,7 +202,7 @@
             cursor: pointer;
             font-weight: 600;
             transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-            margin-bottom: 10px; /* Space between this and logout button */
+            margin-bottom: 10px; /* Space between buttons */
             display: block; /* Make it a block element to take full width */
             text-align: center; /* Center the text */
             text-decoration: none; /* Remove underline for link */
@@ -237,13 +240,13 @@
 </head>
 <body>
     <div class="container">
-        <a href="/" class="back-link">← Zurück zur Website</a>
+        <a href="/" class="back-link">← Back to Website</a>
 
         <!-- Login Form -->
         <div class="login-form" id="loginForm">
             <div class="header">
                 <h1>System Maintenance</h1>
-                <p>Autorisierter Zugang erforderlich</p>
+                <p>Authorized Access Required</p>
             </div>
 
             <div class="error" id="errorMessage"></div>
@@ -251,16 +254,16 @@
 
             <form id="loginFormElement">
                 <div class="form-group">
-                    <label for="username">Benutzername</label>
+                    <label for="username">Username</label>
                     <input type="text" id="username" name="username" required autocomplete="username">
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Passwort</label>
+                    <label for="password">Password</label>
                     <input type="password" id="password" name="password" required autocomplete="current-password">
                 </div>
 
-                <button type="submit" class="btn" id="loginBtn">Anmelden</button>
+                <button type="submit" class="btn" id="loginBtn">Log In</button>
             </form>
         </div>
 
@@ -268,19 +271,22 @@
         <div class="dashboard" id="dashboard">
             <div class="header">
                 <h1>Admin Dashboard</h1>
-                <p>Willkommen im Verwaltungsbereich</p>
+                <p>Welcome to the administration area</p>
             </div>
 
             <!-- New button for NS API Documentation -->
-            <a href="ns-api-documentation.html" class="ns-api-btn">NS API Dokumentation</a>
+            <a href="ns-api-documentation.html" class="ns-api-btn">NS API Documentation</a>
+            
+            <!-- New button for Citizen Registry Checker -->
+            <a href="citizen-checker.html" class="ns-api-btn">Citizen Registry Checker</a>
 
-            <button class="btn logout-btn" onclick="logout()">Abmelden</button>
+            <button class="btn logout-btn" onclick="logout()">Log Out</button>
         </div>
 
         <!-- Loading -->
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Laden...</p>
+            <p>Loading...</p>
         </div>
     </div>
 
@@ -327,16 +333,16 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    showSuccess('Anmeldung erfolgreich!');
+                    showSuccess('Login successful!');
                     expiryTime = Date.now() + (data.expiresIn * 1000);
                     setTimeout(() => {
                         loadDashboard();
                     }, 1000);
                 } else {
-                    showError(data.error || 'Anmeldung fehlgeschlagen');
+                    showError(data.error || 'Login failed');
                 }
             } catch (error) {
-                showError('Netzwerkfehler. Bitte versuchen Sie es erneut.');
+                showError('Network error. Please try again.');
             } finally {
                 hideLoading();
             }
@@ -374,11 +380,11 @@
                     // Start session timer
                     startSessionTimer();
                 } else {
-                    showError('Fehler beim Laden des Dashboards');
+                    showError('Error loading dashboard');
                     logout();
                 }
             } catch (error) {
-                showError('Netzwerkfehler beim Laden des Dashboards');
+                showError('Network error loading dashboard');
                 logout();
             } finally {
                 hideLoading();
@@ -396,12 +402,12 @@
 
                 if (remaining <= 0) {
                     clearInterval(sessionTimer);
-                    showError('Session abgelaufen. Bitte melden Sie sich erneut an.');
+                    showError('Session expired. Please log in again.');
                     logout();
                 } else {
                     // Update the session expiry text, even if other session info is removed
                     // You might want to remove this line if you want no session expiry display at all
-                    document.getElementById('sessionExpiry').textContent = `Session läuft ab in: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    // document.getElementById('sessionExpiry').textContent = `Session expires in: ${minutes}:${seconds.toString().padStart(2, '0')}`;
                 }
             }, 1000);
         }
@@ -424,25 +430,6 @@
             document.getElementById('loginFormElement').reset();
             hideMessages();
         }
-
-        // Removed Admin Actions (placeholders) - functions are no longer needed
-        /*
-        function editContent() {
-            alert('Content-Editor wird hier implementiert');
-        }
-
-        function viewLogs() {
-            alert('Log-Viewer wird hier implementiert');
-        }
-
-        function manageSettings() {
-            alert('Einstellungen werden hier implementiert');
-        }
-
-        function createBackup() {
-            alert('Backup-Funktion wird hier implementiert');
-        }
-        */
 
         // Utility Functions
         function showLoading() {
