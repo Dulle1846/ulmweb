@@ -1,4 +1,14 @@
 {
+  "rewrites": [
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ],
   "functions": {
     "api/auth/login.js": {
       "maxDuration": 10
@@ -8,9 +18,9 @@
     }
   },
   "env": {
-    "ADMIN_USERNAME": "@ADMIN_USERNAME",
-    "ADMIN_PASSWORD_HASH": "@ADMIN_PASSWORD_HASH",
-    "JWT_SECRET": "@JWT_SECRET",
-    "ALLOWED_IPS": "@ALLOWED_IPS"
+    "ADMIN_USERNAME": "@admin_username",
+    "ADMIN_PASSWORD_HASH": "@admin_password_hash",
+    "JWT_SECRET": "@jwt_secret",
+    "ALLOWED_IPS": "@allowed_ips"
   }
 }
