@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citizen Registry Checker (NationStates)</title>
+    <style>
+        /* General Styling - NationStates-like Theme */
+        body {
+            font-family: 'Arial', sans-serif; /* Common sans-serif like NS */
+            background-color: #262B30; /* Dark blue-grey background from NS */
+            color: #E0E0E0; /* Light grey text */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top */
+            padding: 40px 20px;
+            box-sizing: border-box;
+            line-height: 1.6;
+        }
+
+        .container {
+            background: #33383D; /* Slightly lighter dark background for container */
+            border-radius: 8px; /* Slightly less rounded corners */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); /* Darker, more subtle shadow */
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
+            border: 1px solid #444; /* Darker border */
+            /* backdrop-filter removed as it doesn't fit the NS aesthetic */
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #444; /* Separator line */
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #66CCFF; /* NationStates blue accent */
+            margin-bottom: 10px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            font-weight: bold;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: #B0B0B0; /* Lighter grey for description */
+        }
+
+        /* Input and Button Styles */
+        .input-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px; /* Less margin */
+            font-weight: 600;
+            color: #E0E0E0;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px; /* Slightly less padding */
+            border: 1px solid #555; /* Darker border */
+            border-radius: 5px; /* Less rounded */
+            font-size: 0.95rem;
+            background-color: #2C3136; /* Darker input background */
+            color: #E0E0E0;
+            resize: vertical;
+            min-height: 40px; /* Smaller min-height for input */
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #66CCFF; /* NS blue focus border */
+            box-shadow: 0 0 0 2px rgba(102, 204, 255, 0.4); /* Softer shadow */
+        }
+
+        .btn {
+            padding: 10px 20px; /* Smaller padding */
+            background: #0088CC; /* Solid NS blue */
+            color: white;
+            border: 1px solid #006699; /* Darker border for button */
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: bold; /* Bold text */
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            width: auto;
+            align-self: flex-end;
+        }
+
+        .btn:hover {
+            background: #0099DD; /* Lighter blue on hover */
+            transform: translateY(-1px); /* Subtle lift */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            background: #0077BB; /* Darker blue on active */
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+            background: #555; /* Grey when disabled */
+            border-color: #444;
+        }
+
+        /* Message Display - Adjusted for dark theme */
+        .message-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            display: none; /* Hidden by default */
+            background-color: #444; /* Darker background for messages */
+            color: #E0E0E0; /* Light text for messages */
+            border: 1px solid #555;
+        }
+
+        .message-box.error {
+            background-color: #660000; /* Dark red */
+            color: #FFCCCC; /* Light red text */
+            border: 1px solid #AA0000;
+        }
+
+        .message-box.success {
+            background-color: #005500; /* Dark green */
+            color: #CCFFCC; /* Light green text */
+            border: 1px solid #008800;
+        }
+
+        .message-box.info {
+            background-color: #003366; /* Dark blue */
+            color: #CCEEFF; /* Light blue text */
+            border: 1px solid #0066AA;
+        }
+
+        /* Results Area */
+        .results-section {
+            margin-top: 30px;
+            background: #2C3136; /* Darker background for results section */
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #444;
+        }
+
+        .results-section h2 {
+            font-size: 1.8rem;
+            color: #66CCFF; /* NS blue accent */
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 1px solid #444;
+            padding-bottom: 15px;
+        }
+
+        .results-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .result-item {
+            background-color: #33383D; /* Item background */
+            padding: 12px; /* Slightly less padding */
+            margin-bottom: 8px; /* Less margin */
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            border-left: 5px solid transparent;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .result-item.compliant {
+            border-left-color: #00AA00; /* Darker green for compliant */
+        }
+
+        .result-item.non-compliant {
+            border-left-color: #AA0000; /* Darker red for non-compliant */
+        }
+
+        .result-item strong {
+            color: #FFCC00; /* NationStates yellow/gold for citizen name */
+        }
+
+        .result-status {
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 3px;
+        }
+
+        .result-status.yes {
+            background-color: #00AA00; /* Solid green background */
+            color: white;
+        }
+
+        .result-status.no {
+            background-color: #AA0000; /* Solid red background */
+            color: white;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            color: #66CCFF; /* NS blue */
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid #66CCFF; /* NS blue spinner */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .btn {
+                width: 100%;
+                align-self: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Citizen Registry Checker</h1>
+            <p>Check NationStates citizens for World Assembly membership and "Vibonia" region residency.</p>
+        </div>
+
+        <div class="input-group">
+            <label for="csvUrl">Google Sheet CSV URL (must be public):</label>
+            <input type="text" id="csvUrl" value="https://docs.google.com/spreadsheets/d/1WT0rxWWsEK0Xg_uiijNIHjp156O6-9ABfj3anvczH9I/export?format=csv&gid=0" readonly>
+            
+            <label for="userAgent">Your NationStates User-Agent (important!):</label>
+            <input type="text" id="userAgent" placeholder="e.g., YourNation/1.0 (YourNationName; contact@example.com)">
+            <p style="font-size: 0.85rem; color: #B0B0B0;">
+                A User-Agent is mandatory for NationStates API requests. Please enter your nation's name and a contact email or app name here.
+            </p>
+
+            <button class="btn" id="checkButton" onclick="startCheck()">Check Citizens</button>
+        </div>
+
+        <div id="messageDisplay" class="message-box"></div>
+
+        <div class="results-section">
+            <h2>Check Results</h2>
+            <div id="loadingIndicator" class="loading-spinner" style="display: none;">
+                <div class="spinner"></div>
+                <span>Loading data and checking citizens...</span>
+            </div>
+            <ul id="resultsList" class="results-list">
+                <!-- Results will be dynamically inserted here -->
+                <li style="color: #B0B0B0; text-align: center;">Results will appear here after checking.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const MIN_REQUEST_INTERVAL = 600; // NationStates API rate limit: 1 request every 600ms
+        let lastRequestTime = 0;
+        let isChecking = false;
+
+        const csvUrlInput = document.getElementById('csvUrl');
+        const userAgentInput = document.getElementById('userAgent');
+        const checkButton = document.getElementById('checkButton');
+        const messageDisplay = document.getElementById('messageDisplay');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const resultsList = document.getElementById('resultsList');
+
+        // Initialize with default User-Agent and a placeholder CSV URL
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default User-Agent with a placeholder for the user's nation name
+            userAgentInput.value = 'UlmerCitizenChecker/1.0 (YourNationName; ulmer.contact@example.com)';
+            
+            // The CSV URL is now readonly and pre-filled
+            displayMessage('info', 'Please ensure your Google Sheet is publicly published as CSV and the URL is correct.');
+        });
+
+        function displayMessage(type, message) {
+            messageDisplay.className = `message-box ${type}`;
+            messageDisplay.innerHTML = message;
+            messageDisplay.style.display = 'block';
+        }
+
+        function hideMessage() {
+            messageDisplay.style.display = 'none';
+        }
+
+        function showLoading(message = 'Loading data...') {
+            loadingIndicator.querySelector('span').textContent = message;
+            loadingIndicator.style.display = 'flex';
+            checkButton.disabled = true;
+            resultsList.innerHTML = ''; // Clear previous results
+        }
+
+        function hideLoading() {
+            loadingIndicator.style.display = 'none';
+            checkButton.disabled = false;
+        }
+
+        async function startCheck() {
+            if (isChecking) return; // Prevent multiple clicks
+
+            hideMessage();
+            resultsList.innerHTML = ''; // Clear previous results
+            showLoading('Starting check...');
+            isChecking = true;
+
+            const csvUrl = csvUrlInput.value.trim();
+            const userAgent = userAgentInput.value.trim();
+
+            if (!csvUrl) {
+                displayMessage('error', 'Please enter the URL of your Google Sheet CSV file.');
+                hideLoading();
+                isChecking = false;
+                return;
+            }
+
+            if (!userAgent || userAgent.includes('YourNationName')) { // Check for empty or default placeholder
+                displayMessage('error', 'Please enter a valid User-Agent and replace "YourNationName" with your nation\'s name.');
+                hideLoading();
+                isChecking = false;
+                return;
+            }
+
+            try {
+                // 1. Fetch CSV Data
+                displayMessage('info', 'Loading citizen data...');
+                const csvResponse = await fetch(csvUrl);
+                if (!csvResponse.ok) {
+                    throw new Error(`Error loading CSV file: ${csvResponse.statusText}. Ensure the URL is correct and the file is public.`);
+                }
+                const csvText = await csvResponse.text();
+                const citizens = parseCSV(csvText);
+
+                if (citizens.length === 0) {
+                    displayMessage('info', 'No citizen data found in the CSV file. Ensure the CSV file contains data.');
+                    hideLoading();
+                    isChecking = false;
+                    return;
+                }
+
+                displayMessage('info', `Found: ${citizens.length} citizens. Starting check...`);
+
+                // 2. Process Each Citizen
+                for (let i = 0; i < citizens.length; i++) {
+                    const citizen = citizens[i];
+                    showLoading(`Checking citizen ${i + 1} of ${citizens.length}: ${citizen.Name || 'Unknown'}...`);
+                    const compliant = await checkCitizenCompliance(citizen, userAgent);
+                    addResultToDisplay(citizen.Name, compliant);
+                }
+
+                displayMessage('success', '✅ Check completed!');
+            } catch (error) {
+                displayMessage('error', `An error occurred: ${error.message}`);
+            } finally {
+                hideLoading();
+                isChecking = false;
+            }
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) return [];
+
+            const headers = lines[0].split(',').map(header => header.trim());
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(value => value.trim());
+                if (values.length !== headers.length) {
+                    console.warn(`Skipping row ${i + 1}: Column count mismatch.`);
+                    continue;
+                }
+                const row = {};
+                headers.forEach((header, index) => {
+                    row[header] = values[index];
+                });
+                data.push(row);
+            }
+            return data;
+        }
+
+        async function checkCitizenCompliance(citizen, userAgent) {
+            const waNationLink = citizen['WA Nation Link']; // Assuming header is 'WA Nation Link'
+            const residentNationLink = citizen['Resident Nation Link']; // Assuming header is 'Resident Nation Link'
+
+            let isWaMember = false;
+            let isInVibonia = false;
+
+            // Extract nation names from links (simple regex, might need refinement for complex URLs)
+            const getNationNameFromLink = (link) => {
+                try {
+                    const url = new URL(link);
+                    const pathParts = url.pathname.split('/');
+                    // Example: /nation/testlandia -> testlandia
+                    // Example: /region/the_pacific -> the_pacific (not a nation)
+                    const nationIndex = pathParts.indexOf('nation');
+                    if (nationIndex > -1 && pathParts.length > nationIndex + 1) {
+                        return pathParts[nationIndex + 1];
+                    }
+                } catch (e) {
+                    console.warn(`Invalid link ${link}: ${e.message}`);
+                }
+                return null;
+            };
+
+            const waNationName = getNationNameFromLink(waNationLink);
+            const residentNationName = getNationNameFromLink(residentNationLink);
+
+            // Check WA Nation
+            if (waNationName) {
+                const waUrl = `https://www.nationstates.net/cgi-bin/api.cgi?nation=${encodeURIComponent(waNationName)}&q=wa`;
+                const waXml = await fetchNationStatesApi(waUrl, userAgent);
+                if (waXml) {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(waXml, "application/xml");
+                    const waStatus = xmlDoc.querySelector('NATION > WA')?.textContent;
+                    isWaMember = (waStatus === 'Member' || waStatus === 'Delegate');
+                }
+            }
+
+            // Check Resident Nation
+            if (residentNationName) {
+                const residentUrl = `https://www.nationstates.net/cgi-bin/api.cgi?nation=${encodeURIComponent(residentNationName)}&q=region`;
+                const residentXml = await fetchNationStatesApi(residentUrl, userAgent);
+                if (residentXml) {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(residentXml, "application/xml");
+                    const regionName = xmlDoc.querySelector('NATION > REGION')?.textContent;
+                    // NationStates API normalizes region names to lowercase with underscores
+                    isInVibonia = (regionName?.toLowerCase() === 'vibonia');
+                }
+            }
+            
+            // A citizen is compliant if BOTH conditions are met
+            return isWaMember && isInVibonia;
+        }
+
+        async function fetchNationStatesApi(url, userAgent) {
+            const waitTime = checkRateLimit();
+            if (waitTime > 0) {
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'User-Agent': userAgent
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`API Error for URL ${url}: ${response.status} - ${errorText}`);
+                    return null;
+                }
+
+                return await response.text();
+            } catch (error) {
+                console.error(`Network error fetching ${url}: ${error.message}`);
+                return null;
+            }
+        }
+
+        function checkRateLimit() {
+            const now = Date.now();
+            const timeSinceLastRequest = now - lastRequestTime;
+            
+            if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+                const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+                return waitTime;
+            }
+            
+            lastRequestTime = now;
+            return 0;
+        }
+
+        function addResultToDisplay(citizenName, compliant) {
+            const listItem = document.createElement('li');
+            listItem.className = `result-item ${compliant ? 'compliant' : 'non-compliant'}`;
+            listItem.innerHTML = `
+                <span><strong>${citizenName || 'Unknown'}</strong></span>
+                <span class="result-status ${compliant ? 'yes' : 'no'}">${compliant ? 'Yes' : 'No'}</span>
+            `;
+            resultsList.appendChild(listItem);
+        }
+    </script>
+</body>
+</html>
