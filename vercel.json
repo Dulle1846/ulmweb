@@ -6,5 +6,11 @@
     "api/admin/*.js": {
       "maxDuration": 30
     }
+  },
+  "env": {
+    "ADMIN_USERNAME": "@admin_username",
+    "ADMIN_PASSWORD_HASH": "@admin_password_hash",
+    "JWT_SECRET": "@jwt_secret",
+    "ALLOWED_IPS": "@allowed_ips"
   }
 }
