@@ -18,7 +18,7 @@
             min-height: 100vh;
             padding: 20px;
             box-sizing: border-box;
-            overflow: hidden; /* Prevent scrollbar from loading screen */
+            /* Removed overflow: hidden; to allow scrolling */
         }
         .loading-overlay {
             position: fixed;
@@ -384,7 +384,7 @@
         const standardMatchDuration = 90; // Standard match duration in minutes
         let totalMatchDuration = standardMatchDuration; // Will include injury time
         let injuryTimeMinutes = 0;
-        const simulationSpeed = 3000; // 3 seconds per simulated minute
+        const baseSimulationSpeed = 3000; // Base 3 seconds per simulated minute
 
         let scoreA = 0;
         let scoreB = 0;
@@ -523,12 +523,50 @@
         endGameTemplates = initialFallbackEndGameTemplates;
         eventCategories = initialFallbackCategories;
 
+        // Probabilities for different event types to occur (can be tuned for game balance)
+        const eventProbabilities = {
+            'other': 0.35, // General play, passes, dribbles
+            'foul': 0.15,
+            'corner': 0.1,
+            'save': 0.08,
+            'goalA': 0.03, // Low probability for goals
+            'goalB': 0.03,
+            'yellowCard': 0.05,
+            'redCard': 0.01,
+            'penalty': 0.005,
+            'substitution': 0.02,
+            'offside': 0.03,
+            'fanReaction': 0.05,
+            'injury': 0.01,
+            'VAR': 0.01,
+            'whistle': 0.02 // For random minor whistles during play
+        };
+
+        /**
+         * Selects a random event type based on predefined probabilities.
+         * @param {Object} probabilities - An object where keys are event types and values are their probabilities.
+         * @returns {string} The selected event type.
+         */
+        function selectRandomWeightedEventType(probabilities) {
+            let sum = 0;
+            const r = Math.random(); // A random number between 0 and 1
+
+            // Iterate through the probabilities to find which event type falls within the random number's range
+            for (const type in probabilities) {
+                sum += probabilities[type];
+                if (r <= sum) {
+                    return type;
+                }
+            }
+            return 'other'; // Fallback to 'other' if no type is selected (shouldn't happen with correct probabilities summing to 1)
+        }
+
 
         // Function to fetch a larger set of templates and words from the LLM in the background
         async function fetchMoreEventsInBackground() {
             try {
-                const numTemplatesPerCall = 100; // Request more templates in initial load
-                const numWordsPerCall = 50; // For each category
+                const numTemplatesPerCall = 200; // Increased initial templates
+                const numWordsPerCall = 100; // Increased initial words for each category
 
                 const fullSchema = {
                     type: "OBJECT",
@@ -569,24 +607,24 @@
                     role: "user",
                     parts: [{
                         text: `Generate a JSON object containing:
-                        - "templates": an array of ${numTemplatesPerCall} diverse football match event templates. Each template should be a JSON object with a 'template' string (using placeholders like [action], [player], [location], {TeamA}, {TeamB}) and a 'type' (from 'goalA', 'goalB', 'yellowCard', 'redCard', 'penalty', 'substitution', 'foul', 'save', 'corner', 'offside', 'fanReaction', 'injury', 'VAR', 'whistle', 'other', 'injuryTime').
-                        - "actions": an array of ${numWordsPerCall} unique football actions.
-                        - "players": an array of ${numWordsPerCall} unique player descriptions.
-                        - "locations": an array of ${numWordsPerCall} unique field locations.
-                        - "outcomes": an array of ${numWordsPerCall} unique event outcomes.
-                        - "fan_reactions": an array of ${numWordsPerCall} unique fan reactions.
-                        - "referee_actions": an array of ${numWordsPerCall} unique referee actions.
-                        - "card_types": an array of ${numWordsPerCall} unique card types (e.g., "yellow card", "red card").
-                        - "injury_severity": an array of ${numWordsPerCall} unique injury descriptions.
-                        - "VAR_outcomes": an array of ${numWordsPerCall} unique VAR outcomes.
-                        - "tactics": an array of ${numWordsPerCall} unique tactical descriptions.
-                        - "weather": an array of ${numWordsPerCall} unique weather conditions.
-                        - "commentary_adjectives": an array of ${numWordsPerCall} unique commentary adjectives.
-                        - "ball_movement": an array of ${numWordsPerCall} unique ball movement descriptions.
-                        - "player_emotions": an array of ${numWordsPerCall} unique player emotions.
-                        - "coach_reactions": an array of ${numWordsPerCall} unique coach reactions.
-                        - "match_intensity": an array of ${numWordsPerCall} unique match intensity descriptions.
-                        - "set_pieces": an array of ${numWordsPerCall} unique set piece descriptions.
+                        - "templates": an array of ${numTemplatesPerCall} diverse and realistic football match event templates. Each template should be a JSON object with a 'template' string (using placeholders like [action], [player], [location], {TeamA}, {TeamB}) and a 'type' (from 'goalA', 'goalB', 'yellowCard', 'redCard', 'penalty', 'substitution', 'foul', 'save', 'corner', 'offside', 'fanReaction', 'injury', 'VAR', 'whistle', 'other', 'injuryTime').
+                        - "actions": an array of ${numWordsPerCall} unique, diverse, and realistic football actions (e.g., "makes a sliding tackle", "delivers a pinpoint cross", "attempts a bicycle kick", "executes a perfect through ball").
+                        - "players": an array of ${numWordsPerCall} unique and varied player descriptions (e.g., "the veteran midfielder", "the young prodigy", "the towering defender", "the nimble winger").
+                        - "locations": an array of ${numWordsPerCall} unique and specific field locations (e.g., "deep in their own half", "on the edge of the eighteen-yard box", "along the touchline", "just outside the D").
+                        - "outcomes": an array of ${numWordsPerCall} unique and realistic event outcomes (e.g., "but it's brilliantly saved", "leading to a goal kick", "which sails over the bar", "resulting in a throw-in").
+                        - "fan_reactions": an array of ${numWordsPerCall} unique and expressive fan reactions (e.g., "The home crowd erupts", "A collective groan echoes", "Fans wave their scarves wildly", "A nervous silence falls").
+                        - "referee_actions": an array of ${numWordsPerCall} unique referee actions (e.g., "points to the spot", "consults his watch", "signals for a free-kick", "issues a stern warning").
+                        - "card_types": an array of ${numWordsPerCall} unique card types (e.g., "yellow card for dissent", "straight red card for a dangerous challenge").
+                        - "injury_severity": an array of ${numWordsPerCall} unique injury descriptions (e.g., "a minor ankle twist", "needs immediate medical attention", "a suspected hamstring strain").
+                        - "VAR_outcomes": an array of ${numWordsPerCall} unique VAR outcomes (e.g., "decision overturned, penalty awarded", "goal stands after review", "no foul given").
+                        - "tactics": an array of ${numWordsPerCall} unique tactical descriptions (e.g., "playing a high press", "sitting deep defensively", "counter-attacking swiftly", "dominating possession").
+                        - "weather": an array of ${numWordsPerCall} unique weather conditions (e.g., "under a clear sky", "in pouring rain", "on a muddy pitch", "with a strong crosswind").
+                        - "commentary_adjectives": an array of ${numWordsPerCall} unique commentary adjectives (e.g., "thunderous", "sublime", "controversial", "clinical", "audacious").
+                        - "ball_movement": an array of ${numWordsPerCall} unique ball movement descriptions (e.g., "skids across the wet turf", "fizzles past the post", "loops over the defense", "nestles in the top corner").
+                        - "player_emotions": an array of ${numWordsPerCall} unique player emotions (e.g., "frustrated by the call", "elated after the goal", "visibly tired", "focused intently").
+                        - "coach_reactions": an array of ${numWordsPerCall} unique coach reactions (e.g., "animated on the sidelines", "calmly issuing instructions", "furious at the referee", "applauding the effort").
+                        - "match_intensity": an array of ${numWordsPerCall} unique match intensity descriptions (e.g., "a frantic pace", "a cagey affair", "building momentum", "fading in the final minutes").
+                        - "set_pieces": an array of ${numWordsPerCall} unique set piece descriptions (e.g., "a well-worked free-kick", "a dangerous corner delivery", "a long throw-in into the box").
                         Ensure high diversity and realism for all lists. Do not include any numbering or special characters outside the JSON structure.`
                     }]
                 }];
@@ -695,7 +733,13 @@
             }
         }
 
-        // Function to fetch a smaller batch of templates/words dynamically during the game
+        /**
+         * Function to fetch a smaller batch of templates/words dynamically during the game.
+         * This helps ensure fresh content without a huge initial load.
+         * @param {string} contentType - 'templates', 'endGameTemplates', or 'category'.
+         * @param {number} count - Number of items to fetch.
+         * @param {string} [categoryName=null] - The name of the category if contentType is 'category'.
+         */
         async function fetchDynamicContent(contentType, count, categoryName = null) {
             try {
                 let promptText;
@@ -729,7 +773,7 @@
                      };
                 }
                 else if (contentType === 'category' && categoryName) {
-                    promptText = `Generate an array of ${count} unique and diverse words/phrases for the category "${categoryName}" in a football match context. Do not include any numbering or special characters outside the JSON array.`;
+                    promptText = `Generate an array of ${count} unique and diverse words/phrases for the category "${categoryName}" in a football match context. Ensure high diversity and realism. Do not include any numbering or special characters outside the JSON array.`;
                     schema = { type: "ARRAY", items: { "type": "STRING" } };
                 } else {
                     console.error("Invalid dynamic content request.");
@@ -795,8 +839,13 @@
             // Replace category placeholders
             for (const category in eventCategories) {
                 const placeholder = `[${category}]`;
+                // Only replace if the category array is not empty
                 if (description.includes(placeholder) && eventCategories[category].length > 0) {
                     description = description.replace(placeholder, getRandomItem(eventCategories[category]));
+                } else if (description.includes(placeholder) && eventCategories[category].length === 0) {
+                    // Fallback if the category is empty (should be rare with increased initial fetch)
+                    console.warn(`Category '${category}' is empty, cannot replace placeholder.`);
+                    description = description.replace(placeholder, `[${category} - data missing]`);
                 }
             }
             return description;
@@ -898,8 +947,8 @@
                     if (Math.random() < 0.5) teamAStats.corners++; else teamBStats.corners++;
                     break;
                 case 'other': // Generic events, often involve passes
-                    if (Math.random() < 0.5) teamAStats.passes += Math.floor(Math.random() * 5) + 1;
-                    else teamBStats.passes += Math.floor(Math.random() * 5) + 1;
+                    if (Math.random() < 0.5) teamAStats.passes += Math.floor(Math.random() * 5) + 1 + Math.floor(Math.random() * 3); // More variable pass count
+                    else teamBStats.passes += Math.floor(Math.random() * 5) + 1 + Math.floor(Math.random() * 3); // More variable pass count
                     break;
                 // For events like 'offside', 'fanReaction', 'injury', 'VAR', 'whistle', 'injuryTime' no direct stat update other than possession
             }
@@ -934,8 +983,41 @@
         // Function to generate a random event
         function generateRandomEvent() {
             let eventToUse;
-            // Trigger dynamic event fetching if event pool is low
-            // The thresholds are now smaller as we rely on continuous generation
+            let selectedEventType;
+
+            // Determine if it's end-game and select type accordingly
+            if (currentMinute >= (standardMatchDuration - 10) && endGameTemplates.length > 0 && Math.random() < 0.6) {
+                // If end-game, prioritize dramatic events
+                selectedEventType = selectRandomWeightedEventType({
+                    'goalA': 0.2, 'goalB': 0.2, 'redCard': 0.1, 'penalty': 0.05, 'VAR': 0.05,
+                    'fanReaction': 0.15, 'injuryTime': 0.1, 'whistle': 0.05, 'other': 0.1
+                });
+            } else {
+                // Otherwise, use general event probabilities
+                selectedEventType = selectRandomWeightedEventType(eventProbabilities);
+            }
+
+            // Filter templates by the selected event type
+            let availableTemplates = allMatchTemplates.filter(t => t.type === selectedEventType);
+
+            // If no specific templates found for the type, fall back to general or end-game pool
+            if (availableTemplates.length === 0) {
+                console.warn(`No templates found for type: ${selectedEventType}. Falling back to general pool.`);
+                if (currentMinute >= (standardMatchDuration - 10) && endGameTemplates.length > 0) {
+                    availableTemplates = endGameTemplates;
+                } else {
+                    availableTemplates = allMatchTemplates;
+                }
+            }
+
+            // If still no templates, use a generic fallback
+            if (availableTemplates.length === 0) {
+                eventToUse = { template: "A generic football action occurs.", type: "other" };
+            } else {
+                eventToUse = getRandomItem(availableTemplates);
+            }
+            
+            // Trigger dynamic content fetching if event pool is low
             if (allMatchTemplates.length < 50 && !isFetchingDynamicGeneralTemplates) {
                 isFetchingDynamicGeneralTemplates = true;
                 fetchDynamicContent('templates', 50).finally(() => { isFetchingDynamicGeneralTemplates = false; });
@@ -953,15 +1035,6 @@
                 }
             }
 
-            // Introduce end-game events from minute 80 onwards with a higher probability
-            if (currentMinute >= (standardMatchDuration - 10) && endGameTemplates.length > 0 && Math.random() < 0.6) { // 60% chance for end-game event in last 10 mins
-                eventToUse = getRandomItem(endGameTemplates);
-            } else if (allMatchTemplates.length > 0) {
-                eventToUse = getRandomItem(allMatchTemplates);
-            } else {
-                // Fallback to a very generic event if no templates are loaded for some reason
-                eventToUse = { template: "A generic football action occurs.", type: "other" };
-            }
             addEvent(eventToUse);
         }
 
@@ -1000,7 +1073,7 @@
                     addEvent({ template: "Full-time! The match has concluded.", type: "whistle" });
                     startButton.disabled = true; // Disable start button after full time
                 }
-            }, simulationSpeed); // Use simulationSpeed
+            }, baseSimulationSpeed + (Math.random() - 0.5) * 1000); // Randomize speed slightly
             startButton.disabled = true;
             pauseButton.disabled = false;
             resetButton.disabled = false;
