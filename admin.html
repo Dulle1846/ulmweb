@@ -289,11 +289,6 @@
                     <input type="password" id="password" name="password" required autocomplete="current-password">
                 </div>
 
-                <div class="form-group">
-                    <label for="totpCode">2FA Code (optional)</label>
-                    <input type="text" id="totpCode" name="totpCode" placeholder="000000" maxlength="6">
-                </div>
-
                 <button type="submit" class="btn" id="loginBtn">Anmelden</button>
             </form>
         </div>
@@ -362,7 +357,6 @@
 
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const totpCode = document.getElementById('totpCode').value; // Auch wenn 2FA aus ist, muss es hier stehen
 
             showLoading();
             hideMessages();
@@ -375,8 +369,7 @@
                     },
                     body: JSON.stringify({
                         username: username,
-                        password: password,
-                        totpCode: totpCode // Wird an Backend gesendet, aber dort nur verarbeitet, wenn TOTP_SECRET gesetzt ist
+                        password: password
                     })
                 });
 
@@ -531,14 +524,6 @@
         }
 
         // Auto-logout on page visibility change (security)
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden && dashboard.style.display === 'block') {
-                // Optional: logout when tab becomes hidden
-                // logout();
-            }
-        });
-
-        // Prevent right-click context menu in production
         document.addEventListener('contextmenu', function(e) {
             e.preventDefault();
         });
