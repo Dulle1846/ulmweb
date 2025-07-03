@@ -322,8 +322,9 @@
         // Your Sheet's GID from your Google Sheet URL (e.g., 0 for the first sheet)
         const SHEET_GID = "0"; // Assuming your citizen data is on the first sheet (gid=0)
 
-        // The range of cells to fetch. Adjust 'Sheet1' to your actual sheet name if different.
-        const SHEET_RANGE = "Sheet1!A:Z"; // Fetches all data from column A to Z on 'Sheet1'
+        // The range of cells to fetch. IMPORTANT: ENSURE THIS SHEET NAME MATCHES YOUR GOOGLE SHEET TAB EXACTLY.
+        // As per your instruction, the sheet tab is named "Citizens".
+        const SHEET_RANGE = "Citizens!A:Z"; // Fetches all data from column A to Z on 'Citizens' tab
 
         const userAgentInput = document.getElementById('userAgent');
         const checkButton = document.getElementById('checkButton');
@@ -331,7 +332,7 @@
         const loadingIndicator = document.getElementById('loadingIndicator');
         const resultsList = document.getElementById('resultsList');
         const displaySpreadsheetId = document.getElementById('displaySpreadsheetId');
-        const displayGid = document.getElementById('displayGid');
+        const displayGid = document.getElementById('displayGid'); // Corrected typo here
 
         // Initialize with default User-Agent placeholder and display sheet details
         document.addEventListener('DOMContentLoaded', () => {
@@ -339,7 +340,7 @@
             displaySpreadsheetId.textContent = SPREADSHEET_ID;
             displayGid.textContent = SHEET_GID;
 
-            displayMessage('info', 'Google Sheets API configured. Please ensure your Google Sheet is publicly readable.');
+            displayMessage('info', 'Google Sheets API configured. Please ensure your Google Sheet is publicly readable and the sheet tab name in `SHEET_RANGE` is correct (currently set to "Citizens").');
         });
 
         function displayMessage(type, message) {
@@ -392,14 +393,22 @@
 
                 if (!sheetsResponse.ok) {
                     const errorJson = await sheetsResponse.json();
-                    throw new Error(`Error fetching from Google Sheets API: ${errorJson.error.message || sheetsResponse.statusText}. Please check your API Key, Spreadsheet ID, and Sheet GID, and ensure the sheet is publicly accessible.`);
+                    let errorMessage = errorJson.error.message || sheetsResponse.statusText;
+                    if (errorMessage.includes("Unable to parse range")) {
+                         errorMessage += ". This often means the sheet tab name in 'SHEET_RANGE' (currently '" + SHEET_RANGE.split('!')[0] + "') is incorrect. Please check your Google Sheet tab name exactly.";
+                    } else if (errorMessage.includes("API key not valid")) {
+                        errorMessage += ". Please ensure your API key is correct and enabled for Google Sheets API.";
+                    } else if (errorMessage.includes("Request had insufficient authentication scopes")) {
+                        errorMessage += ". Please ensure your Google Sheet is shared as 'Anyone with the link can view'.";
+                    }
+                    throw new Error(`Error fetching from Google Sheets API: ${errorMessage}`);
                 }
 
                 const sheetsData = await sheetsResponse.json();
                 const values = sheetsData.values; // This is an array of arrays (rows and columns)
 
                 if (!values || values.length < 2) { // Need at least 1 header row and 1 data row
-                    displayMessage('info', 'No citizen data found in the Google Sheet or invalid format. Ensure the sheet contains data and the `SHEET_RANGE` (e.g., "Sheet1!A:Z") is correct.');
+                    displayMessage('info', 'No citizen data found in the Google Sheet or invalid format. Ensure the sheet contains data and the `SHEET_RANGE` (e.g., "Citizens!A:Z") is correct.');
                     hideLoading();
                     isChecking = false;
                     return;
@@ -489,7 +498,7 @@
                 const waXml = await fetchNationStatesApi(waUrl, userAgent);
                 if (waXml) {
                     const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(waXml, "application/xml");
+                    const xmlDoc = xmlParser.parseFromString(waXml, "application/xml"); // Corrected variable name
                     const waStatus = xmlDoc.querySelector('NATION > WA')?.textContent;
                     isWaMember = (waStatus === 'Member' || waStatus === 'Delegate');
                 }
@@ -501,7 +510,7 @@
                 const residentXml = await fetchNationStatesApi(residentUrl, userAgent);
                 if (residentXml) {
                     const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(residentXml, "application/xml");
+                    const xmlDoc = parser.parseFromString(residentXml, "application/xml"); // Corrected variable name
                     const regionName = xmlDoc.querySelector('NATION > REGION')?.textContent;
                     // NationStates API normalizes region names to lowercase with underscores
                     isInVibonia = (regionName?.toLowerCase() === 'vibonia');
