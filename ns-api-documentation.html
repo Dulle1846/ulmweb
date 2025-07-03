@@ -336,8 +336,8 @@
             </div>
             
             <div class="rate-limit-info">
-                <strong>Rate Limit:</strong> Maximal 1 Anfrage alle 600ms (0.6 Sekunden). 
-                Diese Dokumentation respektiert automatisch diese Limits.
+                <strong>Rate Limit:</strong> Maximal 1 Anfrage alle <span id="rateLimitValue">600ms</span> (0.6 Sekunden). 
+                Diese Dokumentation respektiert automatisch diese Limits, um die API nicht zu überlasten.
             </div>
         </div>
 
@@ -374,7 +374,7 @@
                     <div class="shards-grid" id="nationShards">
                         <div class="shard-tag selected" data-shard="name">name</div>
                         <div class="shard-tag" data-shard="fullname">fullname</div>
-                        <div class="shard-tag" data-shard="type">type</div>
+                        <div class="shard-tag" data-shard="type">type</div> <!-- The 'type' shard is here -->
                         <div class="shard-tag" data-shard="motto">motto</div>
                         <div class="shard-tag" data-shard="category">category</div>
                         <div class="shard-tag" data-shard="population">population</div>
@@ -417,7 +417,8 @@
                     <h4 style="margin: 15px 0 10px 0; color: #667eea;">Verfügbare Shards:</h4>
                     <div class="shards-grid" id="regionShards">
                         <div class="shard-tag selected" data-shard="name">name</div>
-                        <div class="shard-tag" data-shard="factbook">factbook</div>
+                        <!-- Replaced 'factbook' with 'wabadges' and updated label -->
+                        <div class="shard-tag" data-shard="wabadges">World Assembly Badges</div> 
                         <div class="shard-tag" data-shard="numnations">numnations</div>
                         <div class="shard-tag" data-shard="nations">nations</div>
                         <div class="shard-tag" data-shard="delegate">delegate</div>
@@ -430,7 +431,6 @@
                         <div class="shard-tag" data-shard="embassies">embassies</div>
                         <div class="shard-tag" data-shard="tags">tags</div>
                         <div class="shard-tag" data-shard="census">census</div>
-                        <div class="shard-tag" data-shard="wabadges">wabadges</div>
                     </div>
                     
                     <div class="response-area" id="regionResponse">Wähle eine Region und klicke auf "Abfragen"...</div>
