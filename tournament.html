@@ -122,6 +122,15 @@
       margin-bottom: 20px;
       color: #aaa;
     }
+
+    .history-log {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 15px;
+      background-color: rgba(30,30,30,0.8);
+      border-radius: 5px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -130,6 +139,7 @@
   <div class="button-container">
     <button class="main-button" id="drawButton">Draw Club</button>
     <button class="main-button" id="playButton" disabled>Play Matches</button>
+    <button class="main-button" id="historyButton">History</button>
     <button class="main-button" id="resetButton" disabled>Reset Tournament</button>
   </div>
 
@@ -137,62 +147,89 @@
 
   <div class="tournament-container">
     <div class="tournament-tree" id="tournament-tree"></div>
+    <div class="history-log" id="history-log"></div>
   </div>
 
   <script>
-    // Vollständige Liste aller Vereine von der 1. bis 6. Liga
+    // COMPLETE LIST OF ALL GERMAN CLUBS (1st-6th division)
     const clubs = [
-      // Bundesliga (1. Liga) 18 Vereine
-      "FC Bayern München", "Borussia Dortmund", "RB Leipzig", "Bayer Leverkusen", "VfB Stuttgart", 
-      "Eintracht Frankfurt", "SC Freiburg", "TSG Hoffenheim", "1. FSV Mainz 05", "Werder Bremen", 
-      "Borussia Mönchengladbach", "VfL Bochum", "FC Augsburg", "1. FC Union Berlin", "1. FC Köln", 
+      // 1. Bundesliga (2023/24)
+      "FC Bayern München", "Borussia Dortmund", "RB Leipzig", "Bayer Leverkusen", "VfB Stuttgart",
+      "Eintracht Frankfurt", "SC Freiburg", "TSG Hoffenheim", "1. FSV Mainz 05", "Werder Bremen",
+      "Borussia Mönchengladbach", "VfL Bochum", "FC Augsburg", "1. FC Union Berlin", "1. FC Köln",
       "SV Darmstadt 98", "FC Heidenheim", "VfL Wolfsburg",
-      
-      // 2. Bundesliga 18 Vereine
-      "Hamburger SV", "Fortuna Düsseldorf", "1. FC Nürnberg", "Hertha BSC", "SC Paderborn 07", 
-      "Holstein Kiel", "Hannover 96", "FC St. Pauli", "1. FC Kaiserslautern", "Karlsruher SC", 
-      "SpVgg Greuther Fürth", "SV Elversberg", "Eintracht Braunschweig", "VfL Osnabrück", 
+
+      // 2. Bundesliga (2023/24)
+      "Hamburger SV", "Fortuna Düsseldorf", "1. FC Nürnberg", "Hertha BSC", "SC Paderborn 07",
+      "Holstein Kiel", "Hannover 96", "FC St. Pauli", "1. FC Kaiserslautern", "Karlsruher SC",
+      "SpVgg Greuther Fürth", "SV Elversberg", "Eintracht Braunschweig", "VfL Osnabrück",
       "SV Wehen Wiesbaden", "SSV Ulm 1846", "Hansa Rostock", "Arminia Bielefeld",
-      
-      // 3. Liga 20 Vereine
-      "Preußen Münster", "Rot-Weiss Essen", "Viktoria Köln", "1. FC Saarbrücken", "Hallescher FC", 
-      "MSV Duisburg", "SC Freiburg II", "Waldhof Mannheim", "SC Verl", "SV Sandhausen", 
-      "FC Ingolstadt 04", "SpVgg Unterhaching", "Dynamo Dresden", "Erzgebirge Aue", 
+
+      // 3. Liga (2023/24)
+      "Preußen Münster", "Rot-Weiss Essen", "Viktoria Köln", "1. FC Saarbrücken", "Hallescher FC",
+      "MSV Duisburg", "SC Freiburg II", "Waldhof Mannheim", "SC Verl", "SV Sandhausen",
+      "FC Ingolstadt 04", "SpVgg Unterhaching", "Dynamo Dresden", "Erzgebirge Aue",
       "Borussia Dortmund II", "1860 München", "VfB Lübeck", "Jahn Regensburg", "FC Viktoria Köln", "SV Meppen",
-      
-      // Regionalliga (4. Liga) - 5 Regionen mit je 18-20 Vereinen = ~95 Vereine
-      // Nord (18)
-      "FC St. Pauli II", "VfB Oldenburg", "Hannover 96 II", "Werder Bremen II", "Teutonia Ottensen", 
+
+      // Regionalliga (4. Liga - 2023/24)
+      // Nord
+      "FC St. Pauli II", "VfB Oldenburg", "Hannover 96 II", "Werder Bremen II", "Teutonia Ottensen",
       "Phönix Lübeck", "Drochtersen/Assel", "Havelse", "Weiche Flensburg", "Eintracht Norderstedt",
       "Holstein Kiel II", "VfB Lübeck II", "Altona 93", "SC Spelle-Venhaus", "Heider SV", "Lüneburger SK Hansa",
       "Bremer SV", "FC Teutonia Ottensen",
-      // West (18)
-      "Fortuna Köln", "Rot-Weiß Oberhausen", "Wuppertaler SV", "Alemannia Aachen", "Schalke 04 II", 
+      // West
+      "Fortuna Köln", "Rot-Weiß Oberhausen", "Wuppertaler SV", "Alemannia Aachen", "Schalke 04 II",
       "FC Köln II", "Lippstadt 08", "Rödinghausen", "Borussia M'gladbach II", "SC Fortuna Köln",
       "SV Straelen", "FC Wegberg-Beeck", "SV Lippstadt 08", "FC Schalke 04 II", "Bonner SC", "SC Wiedenbrück",
       "SV Rödinghausen", "FC Gütersloh",
-      // Südwest (18)
-      "FSV Frankfurt", "TSV Steinbach", "Kickers Offenbach", "FC 08 Homburg", "SV Elversberg II", 
+      // Südwest
+      "FSV Frankfurt", "TSV Steinbach", "Kickers Offenbach", "FC 08 Homburg", "SV Elversberg II",
       "Eintracht Trier", "Bahlinger SC", "Mainz 05 II", "SV Waldhof Mannheim II", "FK Pirmasens",
       "TSG Balingen", "FC Astoria Walldorf", "TSV Schott Mainz", "TuS Koblenz", "FC Kaiserslautern", "SV Eintracht Trier 05",
       "FSV Salmrohr", "SC Hauenstein",
-      // Bayern (20)
-      "Bayern München II", "Nürnberg II", "Augsburg II", "Würzburger Kickers", "Viktoria Aschaffenburg", 
+      // Bayern
+      "Bayern München II", "Nürnberg II", "Augsburg II", "Würzburger Kickers", "Viktoria Aschaffenburg",
       "Schweinfurt 05", "Aubstadt", "Buchbach", "TSV 1860 Rosenheim", "VfR Garching",
       "DJK Vilzing", "ASV Neumarkt", "FC Pipinsried", "SpVgg Ansbach 09", "TSV Rain am Lech", "SV Schalding-Heining",
       "FC Memmingen", "SpVgg Bayreuth", "VfB Eichstätt", "TSV 1860 München II",
-      // Nordost (20)
-      "Energie Cottbus", "Chemnitzer FC", "BFC Dynamo", "Lokomotive Leipzig", "ZFC Meuselwitz", 
+      // Nordost
+      "Energie Cottbus", "Chemnitzer FC", "BFC Dynamo", "Lokomotive Leipzig", "ZFC Meuselwitz",
       "Altglienicke", "VSG Altglienicke", "Hertha BSC II", "FC Carl Zeiss Jena II", "FSV Union Fürstenwalde",
       "FC Eilenburg", "FSV Optik Rathenow", "SV Babelsberg 03", "Tennis Borussia Berlin", "FC Viktoria 1889 Berlin", "Berliner AK 07",
       "SV Lichtenberg 47", "FC Rot-Weiß Erfurt", "FSV 63 Luckenwalde", "1. FC Frankfurt",
-      
-      // Oberliga (5. Liga) - ~300 Vereine (vereinfacht)
-      // Auswahl bekannter Vereine und Aufsteiger
-      "KFC Uerdingen", "Wormatia Worms", "VfR Mannheim", "FSV Zwickau", "Blau-Weiß 90 Berlin", 
-      "Tennis Borussia Berlin", "VfB Stuttgart II", "Eintracht Frankfurt II", "Dresdner SC", 
-      "VfB Leipzig", "FC Carl Zeiss Jena", "Rot-Weiss Frankfurt", "Viktoria Berlin", 
-      "Berliner AK 07", "SV Babelsberg 03", "FC Viktoria 1889 Berlin", "1. FC Magdeburg II", 
+
+      // Oberliga (5. Liga - 2023/24)
+      // Nord
+      "Bremer SV", "Weiche Flensburg", "Heider SV", "Eintracht Norderstedt", "Altona 93",
+      "FC St. Pauli II", "Hannover 96 II", "VfB Lübeck II", "Holstein Kiel II", "Teutonia Ottensen",
+      // Süd
+      "FC Pipinsried", "Schalding-Heining", "VfB Eichstätt", "Greuther Fürth II", "Bayern München II",
+      "Nürnberg II", "Augsburg II", "Würzburger Kickers", "Viktoria Aschaffenburg", "Schweinfurt 05",
+      // Westfalen
+      "Sportfreunde Lotte", "SC Wiedenbrück", "SV Rödinghausen II", "Preußen Münster II", "Borussia Dortmund II",
+      "Schalke 04 II", "Rot-Weiß Oberhausen", "Wuppertaler SV", "Alemannia Aachen", "Fortuna Köln",
+      // Hessen
+      "TSV Eintracht Stadtallendorf", "FC Gießen", "Baunatal", "FSC Lohfelden", "FSV Frankfurt",
+      "Kickers Offenbach", "SV Waldhof Mannheim II", "FC 08 Homburg", "Eintracht Frankfurt II", "SV Wehen Wiesbaden II",
+      // Baden-Württemberg
+      "Stuttgarter Kickers", "FC Nöttingen", "Göppinger SV", "Bissingen", "TSG Balingen",
+      "FC Astoria Walldorf", "SV Sandhausen II", "Karlsruher SC II", "VfB Stuttgart II", "SSV Ulm 1846 II",
+      // Bayern
+      "TSV 1860 Rosenheim", "VfR Garching", "DJK Vilzing", "ASV Neumarkt", "FC Memmingen",
+      "SpVgg Bayreuth", "VfB Eichstätt", "TSV 1860 München II", "FC Pipinsried", "Schalding-Heining",
+      // Nordost-Nord
+      "Torgelower SV Greif", "FC Mecklenburg Schwerin", "Malchower SV", "Greifswalder FC", "Hansa Rostock II",
+      "FC St. Pauli II", "VfB Lübeck II", "Holstein Kiel II", "Eintracht Norderstedt", "Altona 93",
+      // Nordost-Süd
+      "VfB Auerbach", "FC Eilenburg", "Bischofswerdaer FV", "Inter Leipzig", "Chemnitzer FC II",
+      "Dynamo Dresden II", "Erzgebirge Aue II", "FC Carl Zeiss Jena II", "FSV Zwickau II", "VfB Leipzig",
+
+      // Verbandsliga/Landesliga (6. Liga - 2023/24)
+      // Selected clubs from all regions
+      "KFC Uerdingen", "Wormatia Worms", "VfR Mannheim", "FSV Zwickau", "Blau-Weiß 90 Berlin",
+      "Tennis Borussia Berlin", "VfB Stuttgart II", "Eintracht Frankfurt II", "Dresdner SC",
+      "VfB Leipzig", "FC Carl Zeiss Jena", "Rot-Weiss Frankfurt", "Viktoria Berlin",
+      "Berliner AK 07", "SV Babelsberg 03", "FC Viktoria 1889 Berlin", "1. FC Magdeburg II",
       "Chemie Leipzig", "FC Erzgebirge Aue II", "FSV Union Fürstenwalde", "FC Rot-Weiß Erfurt",
       "Stuttgarter Kickers", "KSV Hessen Kassel", "SV Darmstadt 98 II", "1. FC Saarbrücken II",
       "FC Homburg", "FK Pirmasens", "SV Elversberg II", "Eintracht Trier II",
@@ -206,27 +243,40 @@
       "TSG 1899 Hoffenheim II", "SC Freiburg II", "SV Werder Bremen II", "VfL Bochum II",
       "FC Augsburg II", "1. FC Union Berlin II", "1. FSV Mainz 05 II", "Arminia Bielefeld II",
       
-      // Verbandsliga/Landesliga (6. Liga) - Auswahl
-      "FC Emmendingen", "SV Linx", "FC Nöttingen", "FC Denzlingen", "FV Ravensburg",
-      "TSG Balingen II", "SSV Reutlingen", "SV Göppingen", "VfR Aalen II", "SG Sonnenhof Großaspach II",
-      "TSV Grunbach", "VfB Friedrichshafen", "FC Wangen", "FC Fribourg", "SV Oberachern",
-      "FC 08 Villingen", "SV Schluchtern", "FC Astoria Walldorf II", "TSG Weinheim", "FV Löchgau",
-      "TSV Essingen", "SV Kickers Pforzheim", "FC Germania Friedrichstal", "VfR Mannheim II", "SV Waldhof Mannheim II",
-      "FK Clausen", "FC Hertha Wiesbach", "SV Auersmacher", "FC Homburg II", "SV Elversberg III",
-      "1. FC Kaiserslautern II", "TuS Koblenz II", "Eintracht Trier II", "FV Engers 07", "TuS Montabaur",
-      "SG 99 Andernach", "FV Dudenhofen", "TSV Schott Mainz II", "SV Gonsenheim", "FSV Viktoria Jägersburg"
+      // Additional historic/well-known clubs
+      "Kickers Offenbach", "Alemannia Aachen", "Wuppertaler SV", "Rot-Weiss Essen",
+      "FC 08 Homburg", "SV Darmstadt 98", "1. FC Kaiserslautern", "MSV Duisburg",
+      "Fortuna Düsseldorf", "Hannover 96", "Karlsruher SC", "1. FC Nürnberg",
+      "FC St. Pauli", "VfL Osnabrück", "Arminia Bielefeld", "Dynamo Dresden",
+      "FC Carl Zeiss Jena", "1. FC Magdeburg", "Hansa Rostock", "Energie Cottbus",
+      "FC Erzgebirge Aue", "FSV Zwickau", "VfB Leipzig", "Chemnitzer FC",
+      "1. FC Lokomotive Leipzig", "BFC Dynamo", "Union Berlin", "Tennis Borussia Berlin",
+      "Blau-Weiß 90 Berlin", "Viktoria Berlin", "FC Viktoria 1889 Berlin", "Berliner AK 07",
+      "SV Babelsberg 03", "FSV Union Fürstenwalde", "FC Rot-Weiß Erfurt", "FC Carl Zeiss Jena",
+      "1. FC Saarbrücken", "SV Elversberg", "FC 08 Homburg", "FK Pirmasens",
+      "Eintracht Trier", "SV Waldhof Mannheim", "Kickers Offenbach", "FSV Frankfurt",
+      "SV Wehen Wiesbaden", "SV Sandhausen", "SV Darmstadt 98", "1. FC Kaiserslautern",
+      "1. FC Nürnberg", "FC St. Pauli", "Hannover 96", "Karlsruher SC",
+      "Arminia Bielefeld", "Dynamo Dresden", "FC Carl Zeiss Jena", "1. FC Magdeburg",
+      "Hansa Rostock", "Energie Cottbus", "FC Erzgebirge Aue", "FSV Zwickau",
+      "VfB Leipzig", "Chemnitzer FC", "1. FC Lokomotive Leipzig", "BFC Dynamo"
     ];
 
-    let availableClubs = [...clubs];
+    // Remove duplicates and create unique club list
+    const uniqueClubs = [...new Set(clubs)];
+    let availableClubs = [...uniqueClubs];
     let drawnClubs = [];
     let currentRound = 0;
-    const totalRounds = 6; // 64 -> 32 -> 16 -> 8 -> 4 -> 2 -> 1
+    const totalRounds = 6; // 32 → 16 → 8 → 4 → 2 → 1
+    let tournamentHistory = [];
 
     const treeContainer = document.getElementById('tournament-tree');
     const drawButton = document.getElementById('drawButton');
     const playButton = document.getElementById('playButton');
+    const historyButton = document.getElementById('historyButton');
     const resetButton = document.getElementById('resetButton');
     const clubCount = document.getElementById('clubCount');
+    const historyLog = document.getElementById('history-log');
 
     function updateClubCount() {
       clubCount.textContent = `Verfügbare Vereine: ${availableClubs.length} | Ausgeloste Vereine: ${drawnClubs.length}`;
@@ -234,7 +284,7 @@
 
     function createInitialBracket() {
       treeContainer.innerHTML = '';
-      let matches = 32; // Start with round of 32 (5 rounds total: 32->16->8->4->2)
+      let matches = 32; // Start with round of 32
       
       for (let r = 0; r < totalRounds; r++) {
         const roundDiv = document.createElement('div');
@@ -327,6 +377,8 @@
       }
 
       // Play all matches in current round
+      const roundResults = [];
+      
       for (let match of currentRoundMatches) {
         const t1 = match.querySelector('[data-team="1"]');
         const t2 = match.querySelector('[data-team="2"]');
@@ -354,16 +406,24 @@
           t1.innerHTML = `${t1.textContent} <span class="score">${finalScore1}</span>`;
           t2.innerHTML = `${t2.textContent} <span class="score">${finalScore2}</span>`;
           
-          // Mark winner
+          // Mark winner and add to history
           if (finalScore1 > finalScore2) {
             t1.classList.add('winner');
             promoteWinner(t1.textContent, match.dataset.round, match.dataset.match);
+            roundResults.push(`${t1.textContent} ${finalScore1}-${finalScore2} ${t2.textContent}`);
           } else {
             t2.classList.add('winner');
             promoteWinner(t2.textContent, match.dataset.round, match.dataset.match);
+            roundResults.push(`${t1.textContent} ${finalScore1}-${finalScore2} ${t2.textContent}`);
           }
         }
       }
+
+      // Add round results to history
+      tournamentHistory.push({
+        round: currentRound,
+        matches: roundResults
+      });
 
       currentRound++;
       
@@ -371,6 +431,13 @@
         playButton.textContent = 'Turnier beendet';
         playButton.disabled = true;
         resetButton.disabled = false;
+        
+        // Add tournament winner to history
+        const finalMatch = treeContainer.querySelector(`.round[data-round="${totalRounds-1}"] .match`);
+        const winner = finalMatch.querySelector('.winner').textContent;
+        tournamentHistory.push({
+          winner: winner
+        });
       } else {
         playButton.textContent = `Runde ${currentRound + 1} spielen`;
       }
@@ -394,10 +461,28 @@
       }
     }
 
+    function showHistory() {
+      historyLog.innerHTML = '<h3>Turnierverlauf</h3>';
+      
+      tournamentHistory.forEach(entry => {
+        if (entry.winner) {
+          historyLog.innerHTML += `<p><strong>Turniersieger: ${entry.winner}</strong></p>`;
+        } else {
+          historyLog.innerHTML += `<h4>Runde ${entry.round + 1}</h4>`;
+          entry.matches.forEach(match => {
+            historyLog.innerHTML += `<p>${match}</p>`;
+          });
+        }
+      });
+      
+      historyLog.style.display = 'block';
+    }
+
     function resetTournament() {
-      availableClubs = [...clubs];
+      availableClubs = [...uniqueClubs];
       drawnClubs = [];
       currentRound = 0;
+      tournamentHistory = [];
       
       drawButton.textContent = 'Draw Club';
       drawButton.disabled = false;
@@ -409,10 +494,12 @@
       
       createInitialBracket();
       updateClubCount();
+      historyLog.style.display = 'none';
     }
 
     drawButton.addEventListener('click', drawNextClub);
     playButton.addEventListener('click', playMatches);
+    historyButton.addEventListener('click', showHistory);
     resetButton.addEventListener('click', resetTournament);
 
     // Initialize
