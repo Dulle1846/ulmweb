@@ -1,562 +1,263 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>German Football Tournament</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Arial', sans-serif;
-            background-color: #121212;
-            color: white;
-            overflow: hidden;
-            height: 100vh;
-            position: relative;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>German Football Tournament</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background-color: #121212;
+      color: white;
+      overflow-x: hidden;
+      overflow-y: auto;
+      height: 100vh;
+      position: relative;
+    }
 
-        /* Floating clubs */
-        .floating-club {
-            position: absolute;
-            background: #2a2a2a;
-            color: #f0f0f0;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            z-index: 1;
-            white-space: nowrap;
-            animation: float 30s infinite linear;
-            will-change: transform;
-        }
+    .floating-club {
+      position: absolute;
+      background: #2a2a2a;
+      color: #f0f0f0;
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      z-index: 1;
+      animation: float 20s infinite linear;
+      white-space: nowrap;
+      pointer-events: none;
+    }
 
-        @keyframes float {
-            0% { transform: translate(0, 0); }
-            25% { transform: translate(20vw, 10vh); }
-            50% { transform: translate(40vw, 5vh); }
-            75% { transform: translate(20vw, -5vh); }
-            100% { transform: translate(0, 0); }
-        }
+    @keyframes float {
+      0% { transform: translateY(0px) translateX(0px); }
+      25% { transform: translateY(10vh) translateX(10px); }
+      50% { transform: translateY(20vh) translateX(0px); }
+      75% { transform: translateY(10vh) translateX(-10px); }
+      100% { transform: translateY(0px) translateX(0px); }
+    }
 
-        /* Screen layout */
-        .screen {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            width: 100vw;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 10;
-        }
+    .main-button {
+      position: relative;
+      z-index: 100;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px;
+      transition: transform 0.2s;
+    }
 
-        .screen.active {
-            display: flex;
-        }
+    .main-button:hover {
+      transform: scale(1.05);
+    }
 
-        /* Buttons */
-        .main-button {
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 20px 0;
-            transition: all 0.3s;
-        }
+    .tournament-tree {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      margin: 40px auto;
+      width: 95%;
+      max-width: 1400px;
+      padding: 10px;
+      background-color: rgba(30,30,30,0.8);
+      border-radius: 10px;
+    }
 
-        .main-button:hover {
-            background: #45a049;
-            transform: translateY(-3px);
-        }
+    .round {
+      flex: 0 0 auto;
+      margin: 0 10px;
+      min-width: 180px;
+    }
 
-        /* Tournament tree */
-        .tournament-tree {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0;
-            padding: 20px;
-            background-color: rgba(30,30,30,0.7);
-            border-radius: 10px;
-            width: 90%;
-            max-width: 1200px;
-        }
+    .match {
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      padding: 5px;
+    }
 
-        .round {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            margin: 0 10px;
-            min-width: 180px;
-        }
+    .team {
+      padding: 3px;
+      margin: 2px 0;
+      background-color: #333;
+      border-radius: 3px;
+    }
 
-        .match {
-            background-color: #252525;
-            border: 1px solid #333;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 10px 0;
-            min-height: 60px;
-        }
+    .winner {
+      background-color: #4CAF50;
+      font-weight: bold;
+    }
 
-        .team {
-            padding: 5px;
-            margin: 2px 0;
-            background-color: #333;
-            border-radius: 3px;
-        }
-
-        .winner {
-            background-color: #4CAF50;
-            font-weight: bold;
-        }
-
-        /* Match simulation */
-        .match-simulation {
-            background-color: rgba(40,40,40,0.8);
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            width: 80%;
-            max-width: 600px;
-        }
-
-        .match-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-        }
-
-        .match-timer {
-            font-size: 1.2rem;
-            text-align: center;
-            margin: 10px 0;
-        }
-
-        .field {
-            width: 100%;
-            height: 150px;
-            background-color: #2a5c2a;
-            position: relative;
-            border-radius: 5px;
-        }
-
-        .field-line {
-            position: absolute;
-            height: 100%;
-            width: 2px;
-            background-color: white;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .ball {
-            position: absolute;
-            width: 15px;
-            height: 15px;
-            background-color: white;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2;
-        }
-
-        /* History */
-        #history-list {
-            width: 90%;
-            max-width: 800px;
-            margin: 20px 0;
-        }
-
-        .history-item {
-            background-color: #252525;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-    </style>
+    h1 {
+      position: relative;
+      z-index: 100;
+      text-align: center;
+      margin-top: 30px;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+    }
+  </style>
 </head>
 <body>
-    <!-- Initial Screen -->
-    <div class="screen active" id="initial-screen">
-        <div id="floating-clubs-container"></div>
-        <h1>German Football Tournament</h1>
-        <button class="main-button" id="startButton">Start Tournament</button>
+  <div class="screen active" id="initial-screen">
+    <div id="floating-clubs-container"></div>
+    <h1>German Football Tournament</h1>
+    <div style="text-align:center">
+      <button class="main-button" id="drawButton">Draw Club</button>
+      <button class="main-button" id="historyButton">History</button>
     </div>
-    
-    <!-- Drawing Screen -->
-    <div class="screen" id="draw-screen">
-        <div id="floating-clubs-container-draw"></div>
-        <h1>Tournament Draw</h1>
-        <div class="tournament-tree" id="tournament-tree"></div>
-        <button class="main-button" id="drawButton">Draw Next Club</button>
-    </div>
-    
-    <!-- Simulation Screen -->
-    <div class="screen" id="simulation-screen">
-        <h1>Tournament Simulation</h1>
-        <div class="tournament-tree" id="simulation-tree"></div>
-        <div class="match-simulation">
-            <div class="match-info">
-                <div id="team1-name">Team 1</div>
-                <div id="score">0 - 0</div>
-                <div id="team2-name">Team 2</div>
-            </div>
-            <div class="match-timer">00:00</div>
-            <div class="field">
-                <div class="field-line"></div>
-                <div class="ball"></div>
-            </div>
-        </div>
-        <button class="main-button" id="simulateButton">Simulate Match</button>
-    </div>
-    
-    <!-- History Screen -->
-    <div class="screen" id="history-screen">
-        <h1>Tournament History</h1>
-        <div id="history-list"></div>
-        <button class="main-button" id="backButton">Back to Main</button>
-    </div>
+    <div class="tournament-tree" id="tournament-tree"></div>
+    <div id="history-log" style="max-width:800px;margin:20px auto;display:none;"></div>
+  </div>
 
-    <script>
-        // Clubs data
-        const clubs = [
-            "Bayern Munich", "Borussia Dortmund", "RB Leipzig", "Bayer Leverkusen",
-            "Wolfsburg", "Eintracht Frankfurt", "Hertha Berlin", "Schalke 04",
-            "Hamburger SV", "Stuttgart", "Werder Bremen", "Hannover 96",
-            "FC Köln", "Mainz 05", "Augsburg", "Freiburg"
-        ];
+  <script>
+    const clubs = [
+      // Bundesliga (1. Liga)
+      "FC Bayern München", "Borussia Dortmund", "RB Leipzig", "Bayer Leverkusen", "VfB Stuttgart", 
+      "Eintracht Frankfurt", "SC Freiburg", "TSG Hoffenheim", "1. FSV Mainz 05", "Werder Bremen", 
+      "Borussia Mönchengladbach", "VfL Bochum", "FC Augsburg", "1. FC Union Berlin", "1. FC Köln", 
+      "SV Darmstadt 98", "FC Heidenheim", "VfL Wolfsburg",
+      
+      // 2. Bundesliga
+      "Hamburger SV", "Fortuna Düsseldorf", "1. FC Nürnberg", "Hertha BSC", "SC Paderborn 07", 
+      "Holstein Kiel", "Hannover 96", "FC St. Pauli", "1. FC Kaiserslautern", "Karlsruher SC", 
+      "SpVgg Greuther Fürth", "SV Elversberg", "Eintracht Braunschweig", "VfL Osnabrück", 
+      "SV Wehen Wiesbaden", "SSV Ulm 1846", "Hansa Rostock", "Arminia Bielefeld",
+      
+      // 3. Liga
+      "Preußen Münster", "Rot-Weiss Essen", "Viktoria Köln", "1. FC Saarbrücken", "Hallescher FC", 
+      "MSV Duisburg", "SC Freiburg II", "Waldhof Mannheim", "SC Verl", "SV Sandhausen", 
+      "FC Ingolstadt 04", "SpVgg Unterhaching", "Dynamo Dresden", "Erzgebirge Aue", 
+      "Borussia Dortmund II", "1860 München", "VfB Lübeck", "Jahn Regensburg",
+      
+      // Regionalliga (4. Liga)
+      // Nord
+      "FC St. Pauli II", "VfB Oldenburg", "Hannover 96 II", "Werder Bremen II", "Teutonia Ottensen", 
+      "Phönix Lübeck", "Drochtersen/Assel", "Havelse",
+      // West
+      "Fortuna Köln", "Rot-Weiß Oberhausen", "Wuppertaler SV", "Alemannia Aachen", "Schalke 04 II", 
+      "FC Köln II", "Lippstadt 08", "Rödinghausen",
+      // Südwest
+      "FSV Frankfurt", "TSV Steinbach", "Kickers Offenbach", "FC 08 Homburg", "SV Elversberg II", 
+      "Eintracht Trier", "Bahlinger SC", "Mainz 05 II",
+      // Bayern
+      "Bayern München II", "Nürnberg II", "Augsburg II", "Würzburger Kickers", "Viktoria Aschaffenburg", 
+      "Schweinfurt 05", "Aubstadt", "Buchbach",
+      // Nordost
+      "Energie Cottbus", "Chemnitzer FC", "BFC Dynamo", "Lokomotive Leipzig", "ZFC Meuselwitz", 
+      "Altglienicke", "VSG Altglienicke", "Hertha BSC II",
+      
+      // Oberliga (5. Liga)
+      // Nord
+      "Bremer SV", "Weiche Flensburg", "Heider SV", "Eintracht Norderstedt", "Altona 93", 
+      // Süd
+      "FC Pipinsried", "Schalding-Heining", "VfB Eichstätt", "Greuther Fürth II", 
+      // Westfalen
+      "Sportfreunde Lotte", "SC Wiedenbrück", "SV Rödinghausen II", "Preußen Münster II", 
+      // Hessen
+      "TSV Eintracht Stadtallendorf", "FC Gießen", "Baunatal", "FSC Lohfelden", 
+      // Baden-Württemberg
+      "Stuttgarter Kickers", "FC Nöttingen", "Göppinger SV", "Bissingen", 
+      // Bayern
+      "TSV 1860 Rosenheim", "VfR Garching", "DJK Vilzing", "ASV Neumarkt", 
+      // Nordost-Nord
+      "Torgelower SV Greif", "FC Mecklenburg Schwerin", "Malchower SV", "Greifswalder FC", 
+      // Nordost-Süd
+      "VfB Auerbach", "FC Eilenburg", "Bischofswerdaer FV", "Inter Leipzig",
+      
+      // Verbandsliga/Landesliga (6. Liga)
+      // Ausgewählte bekannte Vereine
+      "KFC Uerdingen", "Wormatia Worms", "VfR Mannheim", "FSV Zwickau", "Blau-Weiß 90 Berlin", 
+      "Tennis Borussia Berlin", "VfB Stuttgart II", "Eintracht Frankfurt II", "Dresdner SC", 
+      "VfB Leipzig", "FC Carl Zeiss Jena", "Rot-Weiss Frankfurt", "Viktoria Berlin", 
+      "Berliner AK 07", "SV Babelsberg 03", "FC Viktoria 1889 Berlin", "1. FC Magdeburg II", 
+      "Chemie Leipzig", "FC Erzgebirge Aue II", "FSV Union Fürstenwalde", "FC Rot-Weiß Erfurt"
+    ];
 
-        // DOM elements
-        const initialScreen = document.getElementById('initial-screen');
-        const drawScreen = document.getElementById('draw-screen');
-        const simulationScreen = document.getElementById('simulation-screen');
-        const historyScreen = document.getElementById('history-screen');
-        const startButton = document.getElementById('startButton');
-        const drawButton = document.getElementById('drawButton');
-        const simulateButton = document.getElementById('simulateButton');
-        const backButton = document.getElementById('backButton');
-        const tournamentTree = document.getElementById('tournament-tree');
-        const simulationTree = document.getElementById('simulation-tree');
-        const floatingClubsContainer = document.getElementById('floating-clubs-container');
-        const floatingClubsContainerDraw = document.getElementById('floating-clubs-container-draw');
-        const historyList = document.getElementById('history-list');
-        const team1Name = document.getElementById('team1-name');
-        const team2Name = document.getElementById('team2-name');
-        const scoreDisplay = document.getElementById('score');
-        const timerDisplay = document.querySelector('.match-timer');
-        const ball = document.querySelector('.ball');
+    let availableClubs = [...clubs];
 
-        // Game state
-        let availableClubs = [];
-        let tournamentRounds = [];
-        let currentRound = 0;
-        let currentMatch = 0;
-        let tournamentHistory = JSON.parse(localStorage.getItem('tournamentHistory')) || [];
+    const floatingClubsContainer = document.getElementById('floating-clubs-container');
+    const treeContainer = document.getElementById('tournament-tree');
+    const drawButton = document.getElementById('drawButton');
 
-        // Initialize floating clubs
-        function initFloatingClubs() {
-            floatingClubsContainer.innerHTML = '';
-            floatingClubsContainerDraw.innerHTML = '';
-            
-            for (let i = 0; i < clubs.length; i++) {
-                const club = document.createElement('div');
-                club.className = 'floating-club';
-                club.textContent = clubs[i];
-                club.dataset.club = clubs[i];
-                
-                // Random position
-                club.style.left = `${Math.random() * 80 + 10}%`;
-                club.style.top = `${Math.random() * 80 + 10}%`;
-                
-                // Random animation
-                club.style.animationDuration = `${20 + Math.random() * 20}s`;
-                club.style.animationDelay = `${Math.random() * 5}s`;
-                
-                floatingClubsContainer.appendChild(club.cloneNode(true));
-                floatingClubsContainerDraw.appendChild(club);
-            }
+    function initFloatingClubs() {
+      floatingClubsContainer.innerHTML = '';
+      clubs.forEach(club => {
+        const el = document.createElement('div');
+        el.className = 'floating-club';
+        el.textContent = club;
+        el.style.left = `${Math.random() * 100}%`;
+        el.style.top = `${Math.random() * 100}%`;
+        el.style.animationDuration = `${10 + Math.random() * 20}s`;
+        el.style.animationDelay = `${Math.random() * 5}s`;
+        floatingClubsContainer.appendChild(el);
+      });
+    }
+
+    function createInitialBracket() {
+      treeContainer.innerHTML = '';
+      let roundCount = 6;
+      let matches = 64;
+
+      for (let r = 0; r < roundCount; r++) {
+        const roundDiv = document.createElement('div');
+        roundDiv.className = 'round';
+        roundDiv.innerHTML = `<h3>${r === roundCount-1 ? 'Finale' : r === roundCount-2 ? 'Halbfinale' : r === roundCount-3 ? 'Viertelfinale' : `${matches}te Runde`}</h3>`;
+        for (let m = 0; m < matches; m++) {
+          const matchDiv = document.createElement('div');
+          matchDiv.className = 'match';
+
+          const team1 = document.createElement('div');
+          team1.className = 'team';
+          team1.dataset.team = "1";
+          const team2 = document.createElement('div');
+          team2.className = 'team';
+          team2.dataset.team = "2";
+
+          matchDiv.appendChild(team1);
+          matchDiv.appendChild(team2);
+          roundDiv.appendChild(matchDiv);
         }
+        matches = matches / 2;
+        treeContainer.appendChild(roundDiv);
+      }
+    }
 
-        // Generate tournament tree
-        function generateTournamentTree() {
-            tournamentTree.innerHTML = '';
-            simulationTree.innerHTML = '';
-            
-            const rounds = ["Round of 16", "Quarterfinals", "Semifinals", "Final"];
-            
-            rounds.forEach((round, roundIndex) => {
-                const roundDiv = document.createElement('div');
-                roundDiv.className = 'round';
-                roundDiv.innerHTML = `<h3>${round}</h3>`;
-                
-                const matchesCount = 16 / Math.pow(2, roundIndex + 1);
-                for (let i = 0; i < matchesCount; i++) {
-                    const matchDiv = document.createElement('div');
-                    matchDiv.className = 'match';
-                    matchDiv.dataset.round = roundIndex;
-                    matchDiv.dataset.match = i;
-                    
-                    if (roundIndex === 0) {
-                        matchDiv.innerHTML = `
-                            <div class="team" data-team="1"></div>
-                            <div class="vs">vs</div>
-                            <div class="team" data-team="2"></div>
-                        `;
-                    } else {
-                        matchDiv.innerHTML = `<div class="team">TBD</div>`;
-                    }
-                    
-                    roundDiv.appendChild(matchDiv);
-                }
-                
-                tournamentTree.appendChild(roundDiv.cloneNode(true));
-                simulationTree.appendChild(roundDiv);
-            });
+    function drawNextClub() {
+      if (availableClubs.length === 0) {
+        drawButton.textContent = 'Start Simulation';
+        drawButton.disabled = true;
+        return;
+      }
+      const randomIndex = Math.floor(Math.random() * availableClubs.length);
+      const club = availableClubs.splice(randomIndex, 1)[0];
+      const firstRound = treeContainer.querySelector('.round');
+      const matchList = firstRound.querySelectorAll('.match');
+
+      for (let match of matchList) {
+        const t1 = match.querySelector('[data-team="1"]');
+        const t2 = match.querySelector('[data-team="2"]');
+        if (!t1.textContent) {
+          t1.textContent = club;
+          return;
+        } else if (!t2.textContent) {
+          t2.textContent = club;
+          return;
         }
+      }
+    }
 
-        // Draw next club
-        function drawNextClub() {
-            if (availableClubs.length === 0) {
-                drawButton.disabled = true;
-                setTimeout(() => {
-                    switchScreen(simulationScreen);
-                    startTournament();
-                }, 1000);
-                return;
-            }
-            
-            const randomIndex = Math.floor(Math.random() * availableClubs.length);
-            const club = availableClubs.splice(randomIndex, 1)[0];
-            
-            const matches = document.querySelectorAll('#draw-screen .round:first-child .match');
-            for (let match of matches) {
-                const team1 = match.querySelector('[data-team="1"]');
-                const team2 = match.querySelector('[data-team="2"]');
-                
-                if (team1.textContent === '') {
-                    team1.textContent = club;
-                    team1.dataset.club = club;
-                    break;
-                } else if (team2.textContent === '') {
-                    team2.textContent = club;
-                    team2.dataset.club = club;
-                    break;
-                }
-            }
-            
-            const floatingClubs = floatingClubsContainerDraw.querySelectorAll('.floating-club');
-            for (let clubElement of floatingClubs) {
-                if (clubElement.textContent === club) {
-                    clubElement.style.opacity = '0';
-                    setTimeout(() => clubElement.remove(), 500);
-                    break;
-                }
-            }
-        }
+    drawButton.addEventListener('click', drawNextClub);
 
-        // Start tournament
-        function startTournament() {
-            currentRound = 0;
-            currentMatch = 0;
-            
-            const roundOf16Matches = document.querySelectorAll('#simulation-tree .round:first-child .match');
-            const teams = [];
-            
-            roundOf16Matches.forEach(match => {
-                const team1 = match.querySelector('[data-team="1"]').textContent;
-                const team2 = match.querySelector('[data-team="2"]').textContent;
-                teams.push({team1, team2});
-            });
-            
-            tournamentRounds = [
-                teams,
-                Array(8).fill(null),
-                Array(4).fill(null),
-                Array(2).fill(null)
-            ];
-            
-            simulateButton.textContent = "Simulate First Match";
-            simulateButton.disabled = false;
-        }
-
-        // Simulate match
-        function simulateMatch() {
-            simulateButton.disabled = true;
-            
-            const match = tournamentRounds[currentRound][currentMatch];
-            team1Name.textContent = match.team1;
-            team2Name.textContent = match.team2;
-            
-            let homeGoals = 0;
-            let awayGoals = 0;
-            let timer = 0;
-            
-            const matchInterval = setInterval(() => {
-                timer++;
-                const minutes = Math.floor(timer / 60);
-                const seconds = timer % 60;
-                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                
-                ball.style.left = `${50 + (Math.random() * 20 - 10)}%`;
-                ball.style.top = `${50 + (Math.random() * 10 - 5)}%`;
-                
-                if (timer < 90) {
-                    if (Math.random() < 0.05) {
-                        if (Math.random() < 0.5) {
-                            homeGoals++;
-                            ball.style.left = '90%';
-                            setTimeout(() => ball.style.left = '50%', 300);
-                        } else {
-                            awayGoals++;
-                            ball.style.left = '10%';
-                            setTimeout(() => ball.style.left = '50%', 300);
-                        }
-                        scoreDisplay.textContent = `${homeGoals} - ${awayGoals}`;
-                    }
-                } else {
-                    clearInterval(matchInterval);
-                    
-                    if (homeGoals === awayGoals) {
-                        setTimeout(() => {
-                            if (Math.random() < 0.5) {
-                                homeGoals++;
-                                scoreDisplay.textContent = `${homeGoals} - ${awayGoals}`;
-                            } else {
-                                awayGoals++;
-                                scoreDisplay.textContent = `${homeGoals} - ${awayGoals}`;
-                            }
-                            finishMatch(homeGoals, awayGoals);
-                        }, 1000);
-                    } else {
-                        finishMatch(homeGoals, awayGoals);
-                    }
-                }
-            }, 100);
-            
-            function finishMatch(home, away) {
-                const winner = home > away ? match.team1 : match.team2;
-                
-                const roundElements = document.querySelectorAll('#simulation-tree .round');
-                const currentRoundElement = roundElements[currentRound];
-                const currentMatchElement = currentRoundElement.querySelectorAll('.match')[currentMatch];
-                
-                currentMatchElement.querySelectorAll('.team').forEach(team => {
-                    if (team.textContent === winner) {
-                        team.classList.add('winner');
-                    }
-                });
-                
-                if (currentRound < 3) {
-                    const nextRound = currentRound + 1;
-                    const nextMatch = Math.floor(currentMatch / 2);
-                    
-                    if (!tournamentRounds[nextRound][nextMatch]) {
-                        tournamentRounds[nextRound][nextMatch] = {team1: '', team2: ''};
-                    }
-                    
-                    if (currentMatch % 2 === 0) {
-                        tournamentRounds[nextRound][nextMatch].team1 = winner;
-                    } else {
-                        tournamentRounds[nextRound][nextMatch].team2 = winner;
-                    }
-                    
-                    const nextRoundElement = roundElements[nextRound];
-                    const nextMatchElement = nextRoundElement.querySelectorAll('.match')[nextMatch];
-                    
-                    if (currentMatch % 2 === 0) {
-                        nextMatchElement.querySelector('.team').textContent = winner;
-                    } else {
-                        nextMatchElement.querySelector('.team').textContent += ` / ${winner}`;
-                    }
-                } else {
-                    tournamentHistory.unshift({
-                        date: new Date().toLocaleString(),
-                        winner: winner,
-                        bracket: tournamentRounds
-                    });
-                    
-                    localStorage.setItem('tournamentHistory', JSON.stringify(tournamentHistory));
-                    
-                    simulateButton.textContent = "Tournament Finished";
-                    simulateButton.style.display = 'none';
-                    
-                    setTimeout(() => {
-                        alert(`Tournament Champion: ${winner}!`);
-                        switchScreen(historyScreen);
-                        loadHistory();
-                    }, 2000);
-                    return;
-                }
-                
-                currentMatch++;
-                if (currentMatch >= tournamentRounds[currentRound].length) {
-                    currentRound++;
-                    currentMatch = 0;
-                }
-                
-                simulateButton.textContent = `Simulate Next Match (${currentRound+1}.${currentMatch+1})`;
-                simulateButton.disabled = false;
-            }
-        }
-
-        // Load history
-        function loadHistory() {
-            historyList.innerHTML = '';
-            
-            if (tournamentHistory.length === 0) {
-                historyList.innerHTML = '<p>No tournaments played yet</p>';
-                return;
-            }
-            
-            tournamentHistory.forEach(tournament => {
-                const tournamentElement = document.createElement('div');
-                tournamentElement.className = 'history-item';
-                tournamentElement.innerHTML = `
-                    <h3>${tournament.date}</h3>
-                    <p>Winner: <strong>${tournament.winner}</strong></p>
-                `;
-                historyList.appendChild(tournamentElement);
-            });
-        }
-
-        // Switch screens
-        function switchScreen(screen) {
-            initialScreen.classList.remove('active');
-            drawScreen.classList.remove('active');
-            simulationScreen.classList.remove('active');
-            historyScreen.classList.remove('active');
-            
-            screen.classList.add('active');
-        }
-
-        // Event listeners
-        startButton.addEventListener('click', () => {
-            availableClubs = [...clubs];
-            initFloatingClubs();
-            generateTournamentTree();
-            switchScreen(drawScreen);
-        });
-        
-        drawButton.addEventListener('click', drawNextClub);
-        
-        simulateButton.addEventListener('click', simulateMatch);
-        
-        backButton.addEventListener('click', () => {
-            switchScreen(initialScreen);
-            initFloatingClubs();
-        });
-
-        // Initialize
-        initFloatingClubs();
-        loadHistory();
-    </script>
+    initFloatingClubs();
+    createInitialBracket();
+  </script>
 </body>
 </html>
