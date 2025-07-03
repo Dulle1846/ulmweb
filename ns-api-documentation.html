@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NationStates API Dokumentation</title>
     <style>
+        /* Global Reset */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* Body Styles */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -18,12 +20,14 @@
             color: #333;
         }
 
+        /* Container Styles */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
 
+        /* Header Styles */
         .header {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -47,6 +51,31 @@
             margin-bottom: 20px;
         }
 
+        /* User Agent Info Box */
+        .user-agent-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+
+        .user-agent-info strong {
+            color: #d63031;
+        }
+
+        /* Rate Limit Info Box */
+        .rate-limit-info {
+            background: #d1ecf1;
+            border: 1px solid #b8daff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #0c5460;
+        }
+
+        /* User Section Styles */
         .user-section {
             background: rgba(255, 255, 255, 0.9);
             border-radius: 15px;
@@ -83,6 +112,7 @@
             border-color: #667eea;
         }
 
+        /* Button Styles */
         .btn {
             padding: 12px 24px;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -114,6 +144,7 @@
             box-shadow: 0 6px 20px rgba(54, 209, 220, 0.4);
         }
 
+        /* API Section Styles */
         .api-section {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
@@ -203,6 +234,7 @@
             margin-top: 15px;
         }
 
+        /* Loading Spinner Styles */
         .loading {
             display: flex;
             align-items: center;
@@ -224,28 +256,28 @@
             100% { transform: rotate(360deg); }
         }
 
-        .user-agent-info {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 10px;
-            padding: 15px;
+        /* Error/Success Messages */
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #f56565;
             margin-bottom: 20px;
-            color: #856404;
+            display: none;
         }
 
-        .user-agent-info strong {
-            color: #d63031;
-        }
-
-        .rate-limit-info {
-            background: #d1ecf1;
-            border: 1px solid #b8daff;
-            border-radius: 10px;
-            padding: 15px;
+        .success {
+            background: #efe;
+            color: #2d5a2d;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #48bb78;
             margin-bottom: 20px;
-            color: #0c5460;
+            display: none;
         }
 
+        /* Tabs */
         .tabs {
             display: flex;
             background: rgba(255, 255, 255, 0.1);
@@ -277,6 +309,19 @@
         .tab-content.active {
             display: block;
         }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+            .input-group input, .input-group button {
+                width: 100%;
+            }
+            .shards-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+        }
     </style>
 </head>
 <body>
@@ -298,6 +343,8 @@
 
         <div class="user-section">
             <h3>👤 Benutzerverwaltung</h3>
+            <div class="error" id="errorMessage"></div>
+            <div class="success" id="successMessage"></div>
             <div class="input-group">
                 <input type="text" id="userAgent" placeholder="Dein User-Agent (z.B. MeinApp/1.0 (kontakt@example.com))" />
                 <button class="btn" onclick="saveUserAgent()">Speichern</button>
@@ -306,9 +353,9 @@
         </div>
 
         <div class="tabs">
-            <div class="tab active" onclick="switchTab('nation')">Nation API</div>
-            <div class="tab" onclick="switchTab('region')">Region API</div>
-            <div class="tab" onclick="switchTab('world')">World API</div>
+            <div class="tab active" onclick="switchTab(event, 'nation')">Nation API</div>
+            <div class="tab" onclick="switchTab(event, 'region')">Region API</div>
+            <div class="tab" onclick="switchTab(event, 'world')">World API</div>
         </div>
 
         <div id="nation-tab" class="tab-content active">
@@ -428,21 +475,46 @@
         let lastRequestTime = 0;
         const MIN_REQUEST_INTERVAL = 600; // 600ms minimum between requests
 
+        // DOM Elements for messages
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        // Utility Functions for messages
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+
         // User Agent Management
         function saveUserAgent() {
+            hideMessages(); // Hide messages on new action
             const userAgent = document.getElementById('userAgent').value.trim();
             if (!userAgent) {
-                alert('Bitte gib einen gültigen User-Agent ein!');
+                showError('Bitte gib einen gültigen User-Agent ein!');
                 return;
             }
             
             currentUserAgent = userAgent;
+            showSuccess(`✅ User-Agent gespeichert: <strong>${userAgent}</strong>`);
             document.getElementById('userStatus').innerHTML = `✅ User-Agent gespeichert: <strong>${userAgent}</strong>`;
-            document.getElementById('userStatus').style.color = '#28a745';
+            document.getElementById('userStatus').style.color = '#28a745'; // Keep this for immediate visual feedback
         }
 
         // Tab Management
-        function switchTab(tabName) {
+        function switchTab(event, tabName) {
+            hideMessages(); // Hide messages when switching tabs
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -488,8 +560,9 @@
 
         // Generic API request function
         async function makeApiRequest(url, responseElementId) {
+            hideMessages(); // Hide messages on new request
             if (!currentUserAgent) {
-                alert('Bitte speichere zuerst deinen User-Agent!');
+                showError('Bitte speichere zuerst deinen User-Agent!');
                 return;
             }
 
@@ -497,7 +570,7 @@
             const responseElement = document.getElementById(responseElementId);
             
             if (waitTime > 0) {
-                responseElement.innerHTML = `⏱️ Rate Limit: Warte ${waitTime}ms...`;
+                responseElement.innerHTML = `<div class="loading"><div class="spinner"></div>⏱️ Rate Limit: Warte ${Math.ceil(waitTime / 1000)} Sekunden...</div>`;
                 setTimeout(() => makeApiRequest(url, responseElementId), waitTime);
                 return;
             }
@@ -505,39 +578,39 @@
             responseElement.innerHTML = '<div class="loading"><div class="spinner"></div>Lade Daten...</div>';
 
             try {
-                // In a real implementation, you would make the actual API call here
-                // For demo purposes, we'll simulate a response
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                const mockResponse = {
-                    timestamp: new Date().toISOString(),
-                    url: url,
-                    status: 'success',
-                    data: {
-                        message: 'Dies ist eine Demo-Antwort.',
-                        note: 'In einer echten Implementierung würde hier die tatsächliche API-Antwort stehen.',
-                        requested_url: url,
-                        user_agent: currentUserAgent
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'User-Agent': currentUserAgent
                     }
-                };
+                });
 
-                responseElement.innerHTML = JSON.stringify(mockResponse, null, 2);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    responseElement.innerHTML = `❌ API Fehler (${response.status}): <pre>${errorText || 'Unbekannter Fehler'}</pre>`;
+                    return;
+                }
+
+                const xmlText = await response.text();
+                responseElement.textContent = xmlText; // Display raw XML response
+
             } catch (error) {
-                responseElement.innerHTML = `❌ Fehler: ${error.message}`;
+                responseElement.innerHTML = `❌ Netzwerkfehler: ${error.message}`;
             }
         }
 
         // Nation API Query
         function queryNation() {
+            hideMessages(); // Hide messages on new query
             const nationName = document.getElementById('nationName').value.trim();
             if (!nationName) {
-                alert('Bitte gib einen Nation-Namen ein!');
+                showError('Bitte gib einen Nation-Namen ein!');
                 return;
             }
 
             const shards = getSelectedShards('nationShards');
             if (shards.length === 0) {
-                alert('Bitte wähle mindestens einen Shard aus!');
+                showError('Bitte wähle mindestens einen Shard aus!');
                 return;
             }
 
@@ -547,15 +620,16 @@
 
         // Region API Query
         function queryRegion() {
+            hideMessages(); // Hide messages on new query
             const regionName = document.getElementById('regionName').value.trim();
             if (!regionName) {
-                alert('Bitte gib einen Region-Namen ein!');
+                showError('Bitte gib einen Region-Namen ein!');
                 return;
             }
 
             const shards = getSelectedShards('regionShards');
             if (shards.length === 0) {
-                alert('Bitte wähle mindestens einen Shard aus!');
+                showError('Bitte wähle mindestens einen Shard aus!');
                 return;
             }
 
@@ -565,9 +639,10 @@
 
         // World API Query
         function queryWorld() {
+            hideMessages(); // Hide messages on new query
             const shards = getSelectedShards('worldShards');
             if (shards.length === 0) {
-                alert('Bitte wähle mindestens einen Shard aus!');
+                showError('Bitte wähle mindestens einen Shard aus!');
                 return;
             }
 
@@ -575,12 +650,18 @@
             makeApiRequest(url, 'worldResponse');
         }
 
-        // Initialize
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             setupShardSelection();
             
-            // Set example user agent
-            document.getElementById('userAgent').value = 'MeinApp/1.0 (kontakt@example.com)';
+            // Set example user agent and immediately save it
+            const defaultUserAgent = 'MeinApp/1.0 (kontakt@example.com)';
+            document.getElementById('userAgent').value = defaultUserAgent;
+            currentUserAgent = defaultUserAgent; // Initialize currentUserAgent directly
+            document.getElementById('userStatus').innerHTML = `✅ User-Agent geladen: <strong>${currentUserAgent}</strong>`;
+            document.getElementById('userStatus').style.color = '#28a745';
+
+            hideMessages(); // Ensure messages are hidden initially
         });
     </script>
 </body>
