@@ -22,9 +22,11 @@
       z-index: 1000;
       display: flex;
       justify-content: center;
-      background-color: rgba(18, 18, 18, 0.7);
+      background-color: rgba(18, 18, 18, 0.9);
       padding: 10px;
       backdrop-filter: blur(5px);
+      border-radius: 10px;
+      margin: 10px;
     }
 
     .main-button {
@@ -36,21 +38,24 @@
       border-radius: 5px;
       cursor: pointer;
       margin: 0 10px;
-      transition: transform 0.2s;
+      transition: all 0.3s ease;
     }
 
     .main-button:hover {
       transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
     }
 
     .main-button:disabled {
       background: #666;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
 
     .tournament-container {
       padding: 20px;
-      padding-top: 80px;
+      padding-top: 20px;
     }
 
     .tournament-tree {
@@ -59,77 +64,161 @@
       overflow-x: auto;
       margin: 0 auto;
       width: 95%;
-      max-width: 1400px;
+      max-width: 1600px;
       padding: 10px;
-      background-color: rgba(30,30,30,0.8);
+      background-color: rgba(30,30,30,0.9);
       border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
     .round {
       flex: 0 0 auto;
       margin: 0 10px;
-      min-width: 180px;
+      min-width: 200px;
     }
 
     .round h3 {
       text-align: center;
       margin-top: 0;
       color: #4CAF50;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
 
     .match {
-      background: #222;
+      background: linear-gradient(135deg, #222, #333);
       border: 1px solid #444;
-      border-radius: 5px;
+      border-radius: 8px;
       margin-bottom: 10px;
-      padding: 5px;
+      padding: 8px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .match:hover {
+      border-color: #4CAF50;
+      box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+    }
+
+    .match.playable {
+      border-color: #4CAF50;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
     }
 
     .team {
-      padding: 8px;
+      padding: 10px;
       margin: 4px 0;
-      background-color: #333;
-      border-radius: 3px;
+      background-color: rgba(51, 51, 51, 0.8);
+      border-radius: 5px;
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s ease;
+      min-height: 20px;
+    }
+
+    .team.empty {
+      background-color: rgba(85, 85, 85, 0.5);
+      color: #999;
     }
 
     .score {
       margin-left: 10px;
       font-weight: bold;
       color: #4CAF50;
+      font-size: 1.1rem;
     }
 
     .winner {
-      background-color: #4CAF50;
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
       font-weight: bold;
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.5);
+    }
+
+    .loser {
+      background-color: rgba(100, 100, 100, 0.6);
+      color: #ccc;
     }
 
     h1 {
       text-align: center;
       margin-top: 20px;
       color: #fff;
-      text-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
-      position: sticky;
-      top: 0;
-      background-color: #121212;
-      padding: 15px 0;
-      z-index: 999;
+      text-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .club-count {
       text-align: center;
-      margin-bottom: 20px;
-      color: #aaa;
+      margin: 20px 0;
+      color: #4CAF50;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .progress-bar {
+      width: 80%;
+      height: 10px;
+      background-color: #333;
+      border-radius: 5px;
+      margin: 10px auto;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #45a049);
+      transition: width 0.5s ease;
     }
 
     .history-log {
-      max-width: 800px;
+      max-width: 1000px;
       margin: 20px auto;
-      padding: 15px;
-      background-color: rgba(30,30,30,0.8);
-      border-radius: 5px;
+      padding: 20px;
+      background-color: rgba(30,30,30,0.9);
+      border-radius: 10px;
       display: none;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .history-round {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: rgba(50,50,50,0.5);
+      border-radius: 8px;
+    }
+
+    .history-round h4 {
+      color: #4CAF50;
+      margin-top: 0;
+    }
+
+    .history-match {
+      margin: 8px 0;
+      padding: 8px;
+      background-color: rgba(40,40,40,0.8);
+      border-radius: 5px;
+    }
+
+    .tournament-winner {
+      text-align: center;
+      padding: 30px;
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      border-radius: 15px;
+      margin: 20px 0;
+      font-size: 1.5rem;
+      font-weight: bold;
+      box-shadow: 0 10px 30px rgba(76, 175, 80, 0.5);
     }
   </style>
 </head>
@@ -143,7 +232,10 @@
     <button class="main-button" id="resetButton" disabled>Reset Tournament</button>
   </div>
 
-  <div class="club-count" id="clubCount">Verfügbare Vereine: 0 | Ausgeloste Vereine: 0</div>
+  <div class="club-count" id="clubCount">Verfügbare Vereine: 0 | Ausgeloste Vereine: 0/64</div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
 
   <div class="tournament-container">
     <div class="tournament-tree" id="tournament-tree"></div>
@@ -169,24 +261,24 @@
       "Preußen Münster", "Rot-Weiss Essen", "Viktoria Köln", "1. FC Saarbrücken", "Hallescher FC",
       "MSV Duisburg", "SC Freiburg II", "Waldhof Mannheim", "SC Verl", "SV Sandhausen",
       "FC Ingolstadt 04", "SpVgg Unterhaching", "Dynamo Dresden", "Erzgebirge Aue",
-      "Borussia Dortmund II", "1860 München", "VfB Lübeck", "Jahn Regensburg", "FC Viktoria Köln", "SV Meppen",
+      "Borussia Dortmund II", "1860 München", "VfB Lübeck", "Jahn Regensburg", "SV Meppen",
 
       // Regionalliga (4. Liga - 2023/24)
       // Nord
       "FC St. Pauli II", "VfB Oldenburg", "Hannover 96 II", "Werder Bremen II", "Teutonia Ottensen",
       "Phönix Lübeck", "Drochtersen/Assel", "Havelse", "Weiche Flensburg", "Eintracht Norderstedt",
-      "Holstein Kiel II", "VfB Lübeck II", "Altona 93", "SC Spelle-Venhaus", "Heider SV", "Lüneburger SK Hansa",
-      "Bremer SV", "FC Teutonia Ottensen",
+      "Holstein Kiel II", "Altona 93", "SC Spelle-Venhaus", "Heider SV", "Lüneburger SK Hansa",
+      "Bremer SV", "VfB Lübeck II", "FC Teutonia Ottensen",
       // West
       "Fortuna Köln", "Rot-Weiß Oberhausen", "Wuppertaler SV", "Alemannia Aachen", "Schalke 04 II",
       "FC Köln II", "Lippstadt 08", "Rödinghausen", "Borussia M'gladbach II", "SC Fortuna Köln",
-      "SV Straelen", "FC Wegberg-Beeck", "SV Lippstadt 08", "FC Schalke 04 II", "Bonner SC", "SC Wiedenbrück",
-      "SV Rödinghausen", "FC Gütersloh",
+      "SV Straelen", "FC Wegberg-Beeck", "SV Lippstadt 08", "Bonner SC", "SC Wiedenbrück",
+      "SV Rödinghausen", "FC Gütersloh", "Sportfreunde Lotte",
       // Südwest
       "FSV Frankfurt", "TSV Steinbach", "Kickers Offenbach", "FC 08 Homburg", "SV Elversberg II",
-      "Eintracht Trier", "Bahlinger SC", "Mainz 05 II", "SV Waldhof Mannheim II", "FK Pirmasens",
-      "TSG Balingen", "FC Astoria Walldorf", "TSV Schott Mainz", "TuS Koblenz", "FC Kaiserslautern", "SV Eintracht Trier 05",
-      "FSV Salmrohr", "SC Hauenstein",
+      "Eintracht Trier", "Bahlinger SC", "Mainz 05 II", "FK Pirmasens",
+      "TSG Balingen", "FC Astoria Walldorf", "TSV Schott Mainz", "TuS Koblenz", "SV Eintracht Trier 05",
+      "FSV Salmrohr", "SC Hauenstein", "Wormatia Worms", "VfR Mannheim",
       // Bayern
       "Bayern München II", "Nürnberg II", "Augsburg II", "Würzburger Kickers", "Viktoria Aschaffenburg",
       "Schweinfurt 05", "Aubstadt", "Buchbach", "TSV 1860 Rosenheim", "VfR Garching",
@@ -194,72 +286,23 @@
       "FC Memmingen", "SpVgg Bayreuth", "VfB Eichstätt", "TSV 1860 München II",
       // Nordost
       "Energie Cottbus", "Chemnitzer FC", "BFC Dynamo", "Lokomotive Leipzig", "ZFC Meuselwitz",
-      "Altglienicke", "VSG Altglienicke", "Hertha BSC II", "FC Carl Zeiss Jena II", "FSV Union Fürstenwalde",
+      "Altglienicke", "VSG Altglienicke", "Hertha BSC II", "FC Carl Zeiss Jena", "FSV Union Fürstenwalde",
       "FC Eilenburg", "FSV Optik Rathenow", "SV Babelsberg 03", "Tennis Borussia Berlin", "FC Viktoria 1889 Berlin", "Berliner AK 07",
       "SV Lichtenberg 47", "FC Rot-Weiß Erfurt", "FSV 63 Luckenwalde", "1. FC Frankfurt",
 
-      // Oberliga (5. Liga - 2023/24)
-      // Nord
-      "Bremer SV", "Weiche Flensburg", "Heider SV", "Eintracht Norderstedt", "Altona 93",
-      "FC St. Pauli II", "Hannover 96 II", "VfB Lübeck II", "Holstein Kiel II", "Teutonia Ottensen",
-      // Süd
-      "FC Pipinsried", "Schalding-Heining", "VfB Eichstätt", "Greuther Fürth II", "Bayern München II",
-      "Nürnberg II", "Augsburg II", "Würzburger Kickers", "Viktoria Aschaffenburg", "Schweinfurt 05",
-      // Westfalen
-      "Sportfreunde Lotte", "SC Wiedenbrück", "SV Rödinghausen II", "Preußen Münster II", "Borussia Dortmund II",
-      "Schalke 04 II", "Rot-Weiß Oberhausen", "Wuppertaler SV", "Alemannia Aachen", "Fortuna Köln",
-      // Hessen
-      "TSV Eintracht Stadtallendorf", "FC Gießen", "Baunatal", "FSC Lohfelden", "FSV Frankfurt",
-      "Kickers Offenbach", "SV Waldhof Mannheim II", "FC 08 Homburg", "Eintracht Frankfurt II", "SV Wehen Wiesbaden II",
-      // Baden-Württemberg
-      "Stuttgarter Kickers", "FC Nöttingen", "Göppinger SV", "Bissingen", "TSG Balingen",
-      "FC Astoria Walldorf", "SV Sandhausen II", "Karlsruher SC II", "VfB Stuttgart II", "SSV Ulm 1846 II",
-      // Bayern
-      "TSV 1860 Rosenheim", "VfR Garching", "DJK Vilzing", "ASV Neumarkt", "FC Memmingen",
-      "SpVgg Bayreuth", "VfB Eichstätt", "TSV 1860 München II", "FC Pipinsried", "Schalding-Heining",
-      // Nordost-Nord
+      // Additional clubs to reach 64+
+      "Stuttgarter Kickers", "FC Nöttingen", "Göppinger SV", "Bissingen", "KSV Hessen Kassel",
+      "FC Gießen", "Baunatal", "FSC Lohfelden", "TSV Eintracht Stadtallendorf", "SV Waldhof Mannheim II",
       "Torgelower SV Greif", "FC Mecklenburg Schwerin", "Malchower SV", "Greifswalder FC", "Hansa Rostock II",
-      "FC St. Pauli II", "VfB Lübeck II", "Holstein Kiel II", "Eintracht Norderstedt", "Altona 93",
-      // Nordost-Süd
-      "VfB Auerbach", "FC Eilenburg", "Bischofswerdaer FV", "Inter Leipzig", "Chemnitzer FC II",
-      "Dynamo Dresden II", "Erzgebirge Aue II", "FC Carl Zeiss Jena II", "FSV Zwickau II", "VfB Leipzig",
-
-      // Verbandsliga/Landesliga (6. Liga - 2023/24)
-      // Selected clubs from all regions
-      "KFC Uerdingen", "Wormatia Worms", "VfR Mannheim", "FSV Zwickau", "Blau-Weiß 90 Berlin",
-      "Tennis Borussia Berlin", "VfB Stuttgart II", "Eintracht Frankfurt II", "Dresdner SC",
-      "VfB Leipzig", "FC Carl Zeiss Jena", "Rot-Weiss Frankfurt", "Viktoria Berlin",
-      "Berliner AK 07", "SV Babelsberg 03", "FC Viktoria 1889 Berlin", "1. FC Magdeburg II",
-      "Chemie Leipzig", "FC Erzgebirge Aue II", "FSV Union Fürstenwalde", "FC Rot-Weiß Erfurt",
-      "Stuttgarter Kickers", "KSV Hessen Kassel", "SV Darmstadt 98 II", "1. FC Saarbrücken II",
-      "FC Homburg", "FK Pirmasens", "SV Elversberg II", "Eintracht Trier II",
-      "FC 08 Homburg II", "TSG Hoffenheim II", "SSV Ulm 1846 II", "SV Sandhausen II",
-      "FC Ingolstadt 04 II", "SpVgg Unterhaching II", "Dynamo Dresden II", "Erzgebirge Aue II",
-      "FC Hansa Rostock II", "FC St. Pauli II", "Hamburger SV II", "VfL Wolfsburg II",
-      "Hannover 96 II", "Eintracht Braunschweig II", "VfL Osnabrück II", "SV Meppen II",
-      "Preußen Münster II", "Rot-Weiss Essen II", "Viktoria Köln II", "1. FC Köln II",
-      "Fortuna Düsseldorf II", "Bayer Leverkusen II", "Borussia Dortmund II", "Schalke 04 II",
-      "FC Bayern München II", "1. FC Nürnberg II", "VfB Stuttgart II", "Eintracht Frankfurt II",
-      "TSG 1899 Hoffenheim II", "SC Freiburg II", "SV Werder Bremen II", "VfL Bochum II",
-      "FC Augsburg II", "1. FC Union Berlin II", "1. FSV Mainz 05 II", "Arminia Bielefeld II",
-      
-      // Additional historic/well-known clubs
-      "Kickers Offenbach", "Alemannia Aachen", "Wuppertaler SV", "Rot-Weiss Essen",
-      "FC 08 Homburg", "SV Darmstadt 98", "1. FC Kaiserslautern", "MSV Duisburg",
-      "Fortuna Düsseldorf", "Hannover 96", "Karlsruher SC", "1. FC Nürnberg",
-      "FC St. Pauli", "VfL Osnabrück", "Arminia Bielefeld", "Dynamo Dresden",
-      "FC Carl Zeiss Jena", "1. FC Magdeburg", "Hansa Rostock", "Energie Cottbus",
-      "FC Erzgebirge Aue", "FSV Zwickau", "VfB Leipzig", "Chemnitzer FC",
-      "1. FC Lokomotive Leipzig", "BFC Dynamo", "Union Berlin", "Tennis Borussia Berlin",
-      "Blau-Weiß 90 Berlin", "Viktoria Berlin", "FC Viktoria 1889 Berlin", "Berliner AK 07",
-      "SV Babelsberg 03", "FSV Union Fürstenwalde", "FC Rot-Weiß Erfurt", "FC Carl Zeiss Jena",
-      "1. FC Saarbrücken", "SV Elversberg", "FC 08 Homburg", "FK Pirmasens",
-      "Eintracht Trier", "SV Waldhof Mannheim", "Kickers Offenbach", "FSV Frankfurt",
-      "SV Wehen Wiesbaden", "SV Sandhausen", "SV Darmstadt 98", "1. FC Kaiserslautern",
-      "1. FC Nürnberg", "FC St. Pauli", "Hannover 96", "Karlsruher SC",
-      "Arminia Bielefeld", "Dynamo Dresden", "FC Carl Zeiss Jena", "1. FC Magdeburg",
-      "Hansa Rostock", "Energie Cottbus", "FC Erzgebirge Aue", "FSV Zwickau",
-      "VfB Leipzig", "Chemnitzer FC", "1. FC Lokomotive Leipzig", "BFC Dynamo"
+      "VfB Auerbach", "FC Eilenburg II", "Bischofswerdaer FV", "Inter Leipzig", "Chemnitzer FC II",
+      "KFC Uerdingen", "FSV Zwickau", "Blau-Weiß 90 Berlin", "Dresdner SC", "VfB Leipzig",
+      "Chemie Leipzig", "FC Erzgebirge Aue II", "1. FC Magdeburg", "Rot-Weiss Frankfurt", "Viktoria Berlin",
+      "SV Darmstadt 98 II", "1. FC Saarbrücken II", "FC Homburg", "TSG Hoffenheim II", "SSV Ulm 1846 II",
+      "FC Ingolstadt 04 II", "SpVgg Unterhaching II", "VfL Wolfsburg II", "Eintracht Braunschweig II",
+      "SV Meppen II", "Preußen Münster II", "Rot-Weiss Essen II", "1. FC Köln II", "Fortuna Düsseldorf II",
+      "Bayer Leverkusen II", "VfB Stuttgart II", "Eintracht Frankfurt II", "SC Freiburg II", "SV Werder Bremen II",
+      "VfL Bochum II", "FC Augsburg II", "1. FC Union Berlin II", "1. FSV Mainz 05 II", "Arminia Bielefeld II",
+      "FC Carl Zeiss Jena II", "Dynamo Dresden II", "Erzgebirge Aue II", "FSV Zwickau II", "VfB Leipzig II"
     ];
 
     // Remove duplicates and create unique club list
@@ -267,8 +310,9 @@
     let availableClubs = [...uniqueClubs];
     let drawnClubs = [];
     let currentRound = 0;
-    const totalRounds = 6; // 32 → 16 → 8 → 4 → 2 → 1
+    const totalRounds = 6; // 64 → 32 → 16 → 8 → 4 → 2 → 1
     let tournamentHistory = [];
+    let currentMatchesToPlay = [];
 
     const treeContainer = document.getElementById('tournament-tree');
     const drawButton = document.getElementById('drawButton');
@@ -277,14 +321,17 @@
     const resetButton = document.getElementById('resetButton');
     const clubCount = document.getElementById('clubCount');
     const historyLog = document.getElementById('history-log');
+    const progressFill = document.getElementById('progressFill');
 
     function updateClubCount() {
-      clubCount.textContent = `Verfügbare Vereine: ${availableClubs.length} | Ausgeloste Vereine: ${drawnClubs.length}`;
+      clubCount.textContent = `Verfügbare Vereine: ${availableClubs.length} | Ausgeloste Vereine: ${drawnClubs.length}/64`;
+      const progress = (drawnClubs.length / 64) * 100;
+      progressFill.style.width = progress + '%';
     }
 
     function createInitialBracket() {
       treeContainer.innerHTML = '';
-      let matches = 32; // Start with round of 32
+      let matches = 32; // Start with 32 matches (64 teams)
       
       for (let r = 0; r < totalRounds; r++) {
         const roundDiv = document.createElement('div');
@@ -296,7 +343,8 @@
         else if (r === totalRounds-2) roundName = 'Halbfinale';
         else if (r === totalRounds-3) roundName = 'Viertelfinale';
         else if (r === totalRounds-4) roundName = 'Achtelfinale';
-        else roundName = `${matches}te Runde`;
+        else if (r === totalRounds-5) roundName = 'Sechzehntelfinale';
+        else roundName = 'Zweiunddreißigstelfinale';
         
         roundDiv.innerHTML = `<h3>${roundName}</h3>`;
         
@@ -307,14 +355,14 @@
           matchDiv.dataset.round = r;
 
           const team1 = document.createElement('div');
-          team1.className = 'team';
+          team1.className = 'team empty';
           team1.dataset.team = "1";
-          team1.dataset.score = "0";
+          team1.textContent = 'TBD';
 
           const team2 = document.createElement('div');
-          team2.className = 'team';
+          team2.className = 'team empty';
           team2.dataset.team = "2";
-          team2.dataset.score = "0";
+          team2.textContent = 'TBD';
 
           matchDiv.appendChild(team1);
           matchDiv.appendChild(team2);
@@ -326,156 +374,255 @@
     }
 
     function drawNextClub() {
-      if (availableClubs.length === 0) {
-        drawButton.textContent = 'Alle Vereine ausgelost';
-        drawButton.disabled = true;
-        playButton.disabled = false;
-        return;
+      if (currentRound === 0) {
+        // First round - draw all 64 clubs
+        if (drawnClubs.length >= 64) {
+          drawButton.textContent = 'Alle 64 Vereine ausgelost';
+          drawButton.disabled = true;
+          playButton.disabled = false;
+          playButton.textContent = 'Spiele Zweiunddreißigstelfinale';
+          setupCurrentRoundMatches();
+          return;
+        }
+        
+        if (availableClubs.length === 0) {
+          alert('Keine Vereine mehr verfügbar!');
+          return;
+        }
+        
+        const randomIndex = Math.floor(Math.random() * availableClubs.length);
+        const club = availableClubs.splice(randomIndex, 1)[0];
+        drawnClubs.push(club);
+        
+        const firstRound = treeContainer.querySelector('.round[data-round="0"]');
+        const matchList = firstRound.querySelectorAll('.match');
+
+        for (let match of matchList) {
+          const t1 = match.querySelector('[data-team="1"]');
+          const t2 = match.querySelector('[data-team="2"]');
+          
+          if (t1.textContent === 'TBD') {
+            t1.textContent = club;
+            t1.classList.remove('empty');
+            updateClubCount();
+            return;
+          } else if (t2.textContent === 'TBD') {
+            t2.textContent = club;
+            t2.classList.remove('empty');
+            updateClubCount();
+            return;
+          }
+        }
+      } else {
+        // Later rounds - draw matchups from winners
+        drawCurrentRound();
+      }
+    }
+
+    function drawCurrentRound() {
+      const currentRoundDiv = treeContainer.querySelector(`.round[data-round="${currentRound}"]`);
+      const matches = currentRoundDiv.querySelectorAll('.match');
+      
+      // Get all winners from previous round
+      const previousRoundDiv = treeContainer.querySelector(`.round[data-round="${currentRound - 1}"]`);
+      const previousMatches = previousRoundDiv.querySelectorAll('.match');
+      const winners = [];
+      
+      previousMatches.forEach(match => {
+        const winner = match.querySelector('.winner');
+        if (winner) {
+          winners.push(winner.textContent.replace(/ <span class="score">.*?<\/span>/, ''));
+        }
+      });
+      
+      // Shuffle winners for random matchups
+      for (let i = winners.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [winners[i], winners[j]] = [winners[j], winners[i]];
       }
       
-      const randomIndex = Math.floor(Math.random() * availableClubs.length);
-      const club = availableClubs.splice(randomIndex, 1)[0];
-      drawnClubs.push(club);
-      
-      const firstRound = treeContainer.querySelector('.round[data-round="0"]');
-      const matchList = firstRound.querySelectorAll('.match');
-
-      for (let match of matchList) {
+      // Assign winners to matches
+      let winnerIndex = 0;
+      matches.forEach(match => {
         const t1 = match.querySelector('[data-team="1"]');
         const t2 = match.querySelector('[data-team="2"]');
         
-        if (!t1.textContent) {
-          t1.textContent = club;
-          updateClubCount();
-          return;
-        } else if (!t2.textContent) {
-          t2.textContent = club;
-          updateClubCount();
-          return;
+        if (winnerIndex < winners.length) {
+          t1.textContent = winners[winnerIndex];
+          t1.classList.remove('empty');
+          winnerIndex++;
         }
+        
+        if (winnerIndex < winners.length) {
+          t2.textContent = winners[winnerIndex];
+          t2.classList.remove('empty');
+          winnerIndex++;
+        }
+      });
+      
+      drawButton.disabled = true;
+      playButton.disabled = false;
+      setupCurrentRoundMatches();
+    }
+
+    function setupCurrentRoundMatches() {
+      // Clear previous playable matches
+      document.querySelectorAll('.match.playable').forEach(match => {
+        match.classList.remove('playable');
+      });
+      
+      currentMatchesToPlay = [];
+      const currentRoundDiv = treeContainer.querySelector(`.round[data-round="${currentRound}"]`);
+      const matches = currentRoundDiv.querySelectorAll('.match');
+      
+      matches.forEach(match => {
+        const t1 = match.querySelector('[data-team="1"]');
+        const t2 = match.querySelector('[data-team="2"]');
+        
+        if (t1.textContent !== 'TBD' && t2.textContent !== 'TBD' && !t1.classList.contains('winner')) {
+          match.classList.add('playable');
+          currentMatchesToPlay.push(match);
+        }
+      });
+      
+      updatePlayButton();
+    }
+
+    function updatePlayButton() {
+      const roundNames = ['Zweiunddreißigstelfinale', 'Sechzehntelfinale', 'Achtelfinale', 'Viertelfinale', 'Halbfinale', 'Finale'];
+      
+      if (currentMatchesToPlay.length > 0) {
+        playButton.textContent = `${roundNames[currentRound]} - Nächstes Spiel (${currentMatchesToPlay.length} übrig)`;
+        playButton.disabled = false;
+      } else {
+        playButton.textContent = 'Alle Spiele gespielt';
+        playButton.disabled = true;
       }
     }
 
     function playMatches() {
-      const currentRoundMatches = treeContainer.querySelector(`.round[data-round="${currentRound}"]`).querySelectorAll('.match');
-      let allMatchesPlayed = true;
-
-      // Check if all teams are set for this round
-      for (let match of currentRoundMatches) {
-        const t1 = match.querySelector('[data-team="1"]');
-        const t2 = match.querySelector('[data-team="2"]');
-        
-        if (!t1.textContent || !t2.textContent) {
-          allMatchesPlayed = false;
-          break;
-        }
-      }
-
-      if (!allMatchesPlayed) {
-        alert("Nicht alle Paarungen sind komplett! Bitte erst alle Teams für diese Runde setzen.");
+      if (currentMatchesToPlay.length === 0) {
+        updatePlayButton();
         return;
       }
 
-      // Play all matches in current round
-      const roundResults = [];
+      // Play only the next match
+      const match = currentMatchesToPlay.shift();
+      const t1 = match.querySelector('[data-team="1"]');
+      const t2 = match.querySelector('[data-team="2"]');
       
-      for (let match of currentRoundMatches) {
-        const t1 = match.querySelector('[data-team="1"]');
-        const t2 = match.querySelector('[data-team="2"]');
-        
-        // Only play if not already played
-        if (!t1.dataset.score || t1.dataset.score === "0") {
-          const score1 = Math.floor(Math.random() * 5); // 0-4 goals
-          const score2 = Math.floor(Math.random() * 5); // 0-4 goals
-          
-          // Add penalty shootout chance for draws
-          let finalScore1 = score1;
-          let finalScore2 = score2;
-          
-          if (score1 === score2) {
-            // 50% chance for penalty shootout (1-1 becomes 1-1 (4-5))
-            if (Math.random() > 0.5) {
-              finalScore1 = score1 + (Math.random() > 0.5 ? 0 : 1);
-              finalScore2 = score2 + (finalScore1 > score1 ? 0 : 1);
-            }
-          }
-          
-          t1.dataset.score = finalScore1;
-          t2.dataset.score = finalScore2;
-          
-          t1.innerHTML = `${t1.textContent} <span class="score">${finalScore1}</span>`;
-          t2.innerHTML = `${t2.textContent} <span class="score">${finalScore2}</span>`;
-          
-          // Mark winner and add to history
-          if (finalScore1 > finalScore2) {
-            t1.classList.add('winner');
-            promoteWinner(t1.textContent, match.dataset.round, match.dataset.match);
-            roundResults.push(`${t1.textContent} ${finalScore1}-${finalScore2} ${t2.textContent}`);
+      // Generate realistic scores
+      let score1 = Math.floor(Math.random() * 4); // 0-3 goals
+      let score2 = Math.floor(Math.random() * 4); // 0-3 goals
+      
+      // Handle draws with extra time/penalties
+      if (score1 === score2) {
+        if (Math.random() > 0.7) {
+          // Extra time goal
+          if (Math.random() > 0.5) {
+            score1++;
           } else {
-            t2.classList.add('winner');
-            promoteWinner(t2.textContent, match.dataset.round, match.dataset.match);
-            roundResults.push(`${t1.textContent} ${finalScore1}-${finalScore2} ${t2.textContent}`);
+            score2++;
+          }
+        } else {
+          // Penalty shootout
+          if (Math.random() > 0.5) {
+            score1++;
+          } else {
+            score2++;
           }
         }
       }
-
-      // Add round results to history
-      tournamentHistory.push({
-        round: currentRound,
-        matches: roundResults
-      });
-
-      currentRound++;
       
-      if (currentRound >= totalRounds) {
-        playButton.textContent = 'Turnier beendet';
-        playButton.disabled = true;
-        resetButton.disabled = false;
-        
-        // Add tournament winner to history
-        const finalMatch = treeContainer.querySelector(`.round[data-round="${totalRounds-1}"] .match`);
-        const winner = finalMatch.querySelector('.winner').textContent;
-        tournamentHistory.push({
-          winner: winner
-        });
+      t1.innerHTML = `${t1.textContent} <span class="score">${score1}</span>`;
+      t2.innerHTML = `${t2.textContent} <span class="score">${score2}</span>`;
+      
+      // Mark winner and loser
+      let winner, result;
+      if (score1 > score2) {
+        t1.classList.add('winner');
+        t2.classList.add('loser');
+        winner = t1.textContent.replace(/ <span class="score">.*?<\/span>/, '');
+        result = `${winner} ${score1}-${score2} ${t2.textContent}`;
       } else {
-        playButton.textContent = `Runde ${currentRound + 1} spielen`;
+        t2.classList.add('winner');
+        t1.classList.add('loser');
+        winner = t2.textContent.replace(/ <span class="score">.*?<\/span>/, '');
+        result = `${t1.textContent} ${score1}-${score2} ${winner}`;
       }
-    }
+      
+      match.classList.remove('playable');
+      
+      // Add match result to history
+      if (!tournamentHistory[currentRound]) {
+        const roundNames = ['Zweiunddreißigstelfinale', 'Sechzehntelfinale', 'Achtelfinale', 'Viertelfinale', 'Halbfinale', 'Finale'];
+        tournamentHistory[currentRound] = {
+          round: currentRound,
+          roundName: roundNames[currentRound],
+          matches: []
+        };
+      }
+      tournamentHistory[currentRound].matches.push(result);
 
-    function promoteWinner(teamName, currentRound, matchIndex) {
-      const nextRound = parseInt(currentRound) + 1;
-      if (nextRound >= totalRounds) return;
-      
-      const nextRoundMatches = treeContainer.querySelector(`.round[data-round="${nextRound}"]`).querySelectorAll('.match');
-      const targetMatchIndex = Math.floor(parseInt(matchIndex) / 2);
-      const targetMatch = nextRoundMatches[targetMatchIndex];
-      
-      const t1 = targetMatch.querySelector('[data-team="1"]');
-      const t2 = targetMatch.querySelector('[data-team="2"]');
-      
-      if (!t1.textContent) {
-        t1.textContent = teamName;
-      } else if (!t2.textContent) {
-        t2.textContent = teamName;
+      // Check if all matches in current round are done
+      if (currentMatchesToPlay.length === 0) {
+        // Round completed
+        if (currentRound === totalRounds - 1) {
+          // Tournament finished
+          tournamentHistory.push({
+            winner: winner
+          });
+          
+          playButton.textContent = 'Turnier beendet';
+          playButton.disabled = true;
+          resetButton.disabled = false;
+          
+          // Show winner celebration
+          setTimeout(() => {
+            alert(`🏆 Turniersieger: ${winner}! 🏆`);
+          }, 500);
+        } else {
+          // Prepare next round
+          currentRound++;
+          const roundNames = ['Zweiunddreißigstelfinale', 'Sechzehntelfinale', 'Achtelfinale', 'Viertelfinale', 'Halbfinale', 'Finale'];
+          drawButton.textContent = `Lose ${roundNames[currentRound]} aus`;
+          drawButton.disabled = false;
+          playButton.textContent = 'Erst Auslosung abwarten';
+          playButton.disabled = true;
+        }
+      } else {
+        // More matches to play in current round
+        updatePlayButton();
       }
     }
 
     function showHistory() {
       historyLog.innerHTML = '<h3>Turnierverlauf</h3>';
       
-      tournamentHistory.forEach(entry => {
-        if (entry.winner) {
-          historyLog.innerHTML += `<p><strong>Turniersieger: ${entry.winner}</strong></p>`;
-        } else {
-          historyLog.innerHTML += `<h4>Runde ${entry.round + 1}</h4>`;
-          entry.matches.forEach(match => {
-            historyLog.innerHTML += `<p>${match}</p>`;
-          });
-        }
-      });
+      if (tournamentHistory.length === 0) {
+        historyLog.innerHTML += '<p>Noch keine Spiele gespielt.</p>';
+      } else {
+        tournamentHistory.forEach(entry => {
+          if (entry.winner) {
+            historyLog.innerHTML += `<div class="tournament-winner">🏆 Turniersieger: ${entry.winner} 🏆</div>`;
+          } else {
+            const roundDiv = document.createElement('div');
+            roundDiv.className = 'history-round';
+            roundDiv.innerHTML = `<h4>${entry.roundName}</h4>`;
+            
+            entry.matches.forEach(match => {
+              const matchDiv = document.createElement('div');
+              matchDiv.className = 'history-match';
+              matchDiv.textContent = match;
+              roundDiv.appendChild(matchDiv);
+            });
+            
+            historyLog.appendChild(roundDiv);
+          }
+        });
+      }
       
-      historyLog.style.display = 'block';
+      historyLog.style.display = historyLog.style.display === 'none' ? 'block' : 'none';
     }
 
     function resetTournament() {
@@ -483,6 +630,7 @@
       drawnClubs = [];
       currentRound = 0;
       tournamentHistory = [];
+      currentMatchesToPlay = [];
       
       drawButton.textContent = 'Draw Club';
       drawButton.disabled = false;
@@ -497,6 +645,7 @@
       historyLog.style.display = 'none';
     }
 
+    // Event listeners
     drawButton.addEventListener('click', drawNextClub);
     playButton.addEventListener('click', playMatches);
     historyButton.addEventListener('click', showHistory);
