@@ -90,6 +90,14 @@
       margin: 4px 0;
       background-color: #333;
       border-radius: 3px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .score {
+      margin-left: 10px;
+      font-weight: bold;
+      color: #4CAF50;
     }
 
     .winner {
@@ -108,6 +116,12 @@
       padding: 15px 0;
       z-index: 999;
     }
+
+    .club-count {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #aaa;
+    }
   </style>
 </head>
 <body>
@@ -115,102 +129,142 @@
   
   <div class="button-container">
     <button class="main-button" id="drawButton">Draw Club</button>
-    <button class="main-button" id="historyButton">History</button>
+    <button class="main-button" id="playButton" disabled>Play Matches</button>
+    <button class="main-button" id="resetButton" disabled>Reset Tournament</button>
   </div>
+
+  <div class="club-count" id="clubCount">Verfügbare Vereine: 0 | Ausgeloste Vereine: 0</div>
 
   <div class="tournament-container">
     <div class="tournament-tree" id="tournament-tree"></div>
-    <div id="history-log" style="max-width:800px;margin:20px auto;display:none;"></div>
   </div>
 
   <script>
+    // Vollständige Liste aller Vereine von der 1. bis 6. Liga
     const clubs = [
-      // Bundesliga (1. Liga)
+      // Bundesliga (1. Liga) 18 Vereine
       "FC Bayern München", "Borussia Dortmund", "RB Leipzig", "Bayer Leverkusen", "VfB Stuttgart", 
       "Eintracht Frankfurt", "SC Freiburg", "TSG Hoffenheim", "1. FSV Mainz 05", "Werder Bremen", 
       "Borussia Mönchengladbach", "VfL Bochum", "FC Augsburg", "1. FC Union Berlin", "1. FC Köln", 
       "SV Darmstadt 98", "FC Heidenheim", "VfL Wolfsburg",
       
-      // 2. Bundesliga
+      // 2. Bundesliga 18 Vereine
       "Hamburger SV", "Fortuna Düsseldorf", "1. FC Nürnberg", "Hertha BSC", "SC Paderborn 07", 
       "Holstein Kiel", "Hannover 96", "FC St. Pauli", "1. FC Kaiserslautern", "Karlsruher SC", 
       "SpVgg Greuther Fürth", "SV Elversberg", "Eintracht Braunschweig", "VfL Osnabrück", 
       "SV Wehen Wiesbaden", "SSV Ulm 1846", "Hansa Rostock", "Arminia Bielefeld",
       
-      // 3. Liga
+      // 3. Liga 20 Vereine
       "Preußen Münster", "Rot-Weiss Essen", "Viktoria Köln", "1. FC Saarbrücken", "Hallescher FC", 
       "MSV Duisburg", "SC Freiburg II", "Waldhof Mannheim", "SC Verl", "SV Sandhausen", 
       "FC Ingolstadt 04", "SpVgg Unterhaching", "Dynamo Dresden", "Erzgebirge Aue", 
-      "Borussia Dortmund II", "1860 München", "VfB Lübeck", "Jahn Regensburg",
+      "Borussia Dortmund II", "1860 München", "VfB Lübeck", "Jahn Regensburg", "FC Viktoria Köln", "SV Meppen",
       
-      // Regionalliga (4. Liga)
-      // Nord
+      // Regionalliga (4. Liga) - 5 Regionen mit je 18-20 Vereinen = ~95 Vereine
+      // Nord (18)
       "FC St. Pauli II", "VfB Oldenburg", "Hannover 96 II", "Werder Bremen II", "Teutonia Ottensen", 
-      "Phönix Lübeck", "Drochtersen/Assel", "Havelse",
-      // West
+      "Phönix Lübeck", "Drochtersen/Assel", "Havelse", "Weiche Flensburg", "Eintracht Norderstedt",
+      "Holstein Kiel II", "VfB Lübeck II", "Altona 93", "SC Spelle-Venhaus", "Heider SV", "Lüneburger SK Hansa",
+      "Bremer SV", "FC Teutonia Ottensen",
+      // West (18)
       "Fortuna Köln", "Rot-Weiß Oberhausen", "Wuppertaler SV", "Alemannia Aachen", "Schalke 04 II", 
-      "FC Köln II", "Lippstadt 08", "Rödinghausen",
-      // Südwest
+      "FC Köln II", "Lippstadt 08", "Rödinghausen", "Borussia M'gladbach II", "SC Fortuna Köln",
+      "SV Straelen", "FC Wegberg-Beeck", "SV Lippstadt 08", "FC Schalke 04 II", "Bonner SC", "SC Wiedenbrück",
+      "SV Rödinghausen", "FC Gütersloh",
+      // Südwest (18)
       "FSV Frankfurt", "TSV Steinbach", "Kickers Offenbach", "FC 08 Homburg", "SV Elversberg II", 
-      "Eintracht Trier", "Bahlinger SC", "Mainz 05 II",
-      // Bayern
+      "Eintracht Trier", "Bahlinger SC", "Mainz 05 II", "SV Waldhof Mannheim II", "FK Pirmasens",
+      "TSG Balingen", "FC Astoria Walldorf", "TSV Schott Mainz", "TuS Koblenz", "FC Kaiserslautern", "SV Eintracht Trier 05",
+      "FSV Salmrohr", "SC Hauenstein",
+      // Bayern (20)
       "Bayern München II", "Nürnberg II", "Augsburg II", "Würzburger Kickers", "Viktoria Aschaffenburg", 
-      "Schweinfurt 05", "Aubstadt", "Buchbach",
-      // Nordost
+      "Schweinfurt 05", "Aubstadt", "Buchbach", "TSV 1860 Rosenheim", "VfR Garching",
+      "DJK Vilzing", "ASV Neumarkt", "FC Pipinsried", "SpVgg Ansbach 09", "TSV Rain am Lech", "SV Schalding-Heining",
+      "FC Memmingen", "SpVgg Bayreuth", "VfB Eichstätt", "TSV 1860 München II",
+      // Nordost (20)
       "Energie Cottbus", "Chemnitzer FC", "BFC Dynamo", "Lokomotive Leipzig", "ZFC Meuselwitz", 
-      "Altglienicke", "VSG Altglienicke", "Hertha BSC II",
+      "Altglienicke", "VSG Altglienicke", "Hertha BSC II", "FC Carl Zeiss Jena II", "FSV Union Fürstenwalde",
+      "FC Eilenburg", "FSV Optik Rathenow", "SV Babelsberg 03", "Tennis Borussia Berlin", "FC Viktoria 1889 Berlin", "Berliner AK 07",
+      "SV Lichtenberg 47", "FC Rot-Weiß Erfurt", "FSV 63 Luckenwalde", "1. FC Frankfurt",
       
-      // Oberliga (5. Liga)
-      // Nord
-      "Bremer SV", "Weiche Flensburg", "Heider SV", "Eintracht Norderstedt", "Altona 93", 
-      // Süd
-      "FC Pipinsried", "Schalding-Heining", "VfB Eichstätt", "Greuther Fürth II", 
-      // Westfalen
-      "Sportfreunde Lotte", "SC Wiedenbrück", "SV Rödinghausen II", "Preußen Münster II", 
-      // Hessen
-      "TSV Eintracht Stadtallendorf", "FC Gießen", "Baunatal", "FSC Lohfelden", 
-      // Baden-Württemberg
-      "Stuttgarter Kickers", "FC Nöttingen", "Göppinger SV", "Bissingen", 
-      // Bayern
-      "TSV 1860 Rosenheim", "VfR Garching", "DJK Vilzing", "ASV Neumarkt", 
-      // Nordost-Nord
-      "Torgelower SV Greif", "FC Mecklenburg Schwerin", "Malchower SV", "Greifswalder FC", 
-      // Nordost-Süd
-      "VfB Auerbach", "FC Eilenburg", "Bischofswerdaer FV", "Inter Leipzig",
-      
-      // Verbandsliga/Landesliga (6. Liga)
-      // Ausgewählte bekannte Vereine
+      // Oberliga (5. Liga) - ~300 Vereine (vereinfacht)
+      // Auswahl bekannter Vereine und Aufsteiger
       "KFC Uerdingen", "Wormatia Worms", "VfR Mannheim", "FSV Zwickau", "Blau-Weiß 90 Berlin", 
       "Tennis Borussia Berlin", "VfB Stuttgart II", "Eintracht Frankfurt II", "Dresdner SC", 
       "VfB Leipzig", "FC Carl Zeiss Jena", "Rot-Weiss Frankfurt", "Viktoria Berlin", 
       "Berliner AK 07", "SV Babelsberg 03", "FC Viktoria 1889 Berlin", "1. FC Magdeburg II", 
-      "Chemie Leipzig", "FC Erzgebirge Aue II", "FSV Union Fürstenwalde", "FC Rot-Weiß Erfurt"
+      "Chemie Leipzig", "FC Erzgebirge Aue II", "FSV Union Fürstenwalde", "FC Rot-Weiß Erfurt",
+      "Stuttgarter Kickers", "KSV Hessen Kassel", "SV Darmstadt 98 II", "1. FC Saarbrücken II",
+      "FC Homburg", "FK Pirmasens", "SV Elversberg II", "Eintracht Trier II",
+      "FC 08 Homburg II", "TSG Hoffenheim II", "SSV Ulm 1846 II", "SV Sandhausen II",
+      "FC Ingolstadt 04 II", "SpVgg Unterhaching II", "Dynamo Dresden II", "Erzgebirge Aue II",
+      "FC Hansa Rostock II", "FC St. Pauli II", "Hamburger SV II", "VfL Wolfsburg II",
+      "Hannover 96 II", "Eintracht Braunschweig II", "VfL Osnabrück II", "SV Meppen II",
+      "Preußen Münster II", "Rot-Weiss Essen II", "Viktoria Köln II", "1. FC Köln II",
+      "Fortuna Düsseldorf II", "Bayer Leverkusen II", "Borussia Dortmund II", "Schalke 04 II",
+      "FC Bayern München II", "1. FC Nürnberg II", "VfB Stuttgart II", "Eintracht Frankfurt II",
+      "TSG 1899 Hoffenheim II", "SC Freiburg II", "SV Werder Bremen II", "VfL Bochum II",
+      "FC Augsburg II", "1. FC Union Berlin II", "1. FSV Mainz 05 II", "Arminia Bielefeld II",
+      
+      // Verbandsliga/Landesliga (6. Liga) - Auswahl
+      "FC Emmendingen", "SV Linx", "FC Nöttingen", "FC Denzlingen", "FV Ravensburg",
+      "TSG Balingen II", "SSV Reutlingen", "SV Göppingen", "VfR Aalen II", "SG Sonnenhof Großaspach II",
+      "TSV Grunbach", "VfB Friedrichshafen", "FC Wangen", "FC Fribourg", "SV Oberachern",
+      "FC 08 Villingen", "SV Schluchtern", "FC Astoria Walldorf II", "TSG Weinheim", "FV Löchgau",
+      "TSV Essingen", "SV Kickers Pforzheim", "FC Germania Friedrichstal", "VfR Mannheim II", "SV Waldhof Mannheim II",
+      "FK Clausen", "FC Hertha Wiesbach", "SV Auersmacher", "FC Homburg II", "SV Elversberg III",
+      "1. FC Kaiserslautern II", "TuS Koblenz II", "Eintracht Trier II", "FV Engers 07", "TuS Montabaur",
+      "SG 99 Andernach", "FV Dudenhofen", "TSV Schott Mainz II", "SV Gonsenheim", "FSV Viktoria Jägersburg"
     ];
 
     let availableClubs = [...clubs];
+    let drawnClubs = [];
+    let currentRound = 0;
+    const totalRounds = 6; // 64 -> 32 -> 16 -> 8 -> 4 -> 2 -> 1
 
     const treeContainer = document.getElementById('tournament-tree');
     const drawButton = document.getElementById('drawButton');
+    const playButton = document.getElementById('playButton');
+    const resetButton = document.getElementById('resetButton');
+    const clubCount = document.getElementById('clubCount');
+
+    function updateClubCount() {
+      clubCount.textContent = `Verfügbare Vereine: ${availableClubs.length} | Ausgeloste Vereine: ${drawnClubs.length}`;
+    }
 
     function createInitialBracket() {
       treeContainer.innerHTML = '';
-      let roundCount = 6;
-      let matches = 64;
-
-      for (let r = 0; r < roundCount; r++) {
+      let matches = 32; // Start with round of 32 (5 rounds total: 32->16->8->4->2)
+      
+      for (let r = 0; r < totalRounds; r++) {
         const roundDiv = document.createElement('div');
         roundDiv.className = 'round';
-        roundDiv.innerHTML = `<h3>${r === roundCount-1 ? 'Finale' : r === roundCount-2 ? 'Halbfinale' : r === roundCount-3 ? 'Viertelfinale' : `${matches}te Runde`}</h3>`;
+        roundDiv.dataset.round = r;
+        
+        let roundName;
+        if (r === totalRounds-1) roundName = 'Finale';
+        else if (r === totalRounds-2) roundName = 'Halbfinale';
+        else if (r === totalRounds-3) roundName = 'Viertelfinale';
+        else if (r === totalRounds-4) roundName = 'Achtelfinale';
+        else roundName = `${matches}te Runde`;
+        
+        roundDiv.innerHTML = `<h3>${roundName}</h3>`;
+        
         for (let m = 0; m < matches; m++) {
           const matchDiv = document.createElement('div');
           matchDiv.className = 'match';
+          matchDiv.dataset.match = m;
+          matchDiv.dataset.round = r;
 
           const team1 = document.createElement('div');
           team1.className = 'team';
           team1.dataset.team = "1";
+          team1.dataset.score = "0";
+
           const team2 = document.createElement('div');
           team2.className = 'team';
           team2.dataset.team = "2";
+          team2.dataset.score = "0";
 
           matchDiv.appendChild(team1);
           matchDiv.appendChild(team2);
@@ -223,31 +277,147 @@
 
     function drawNextClub() {
       if (availableClubs.length === 0) {
-        drawButton.textContent = 'Turnier starten';
+        drawButton.textContent = 'Alle Vereine ausgelost';
         drawButton.disabled = true;
+        playButton.disabled = false;
         return;
       }
+      
       const randomIndex = Math.floor(Math.random() * availableClubs.length);
       const club = availableClubs.splice(randomIndex, 1)[0];
-      const firstRound = treeContainer.querySelector('.round');
+      drawnClubs.push(club);
+      
+      const firstRound = treeContainer.querySelector('.round[data-round="0"]');
       const matchList = firstRound.querySelectorAll('.match');
 
       for (let match of matchList) {
         const t1 = match.querySelector('[data-team="1"]');
         const t2 = match.querySelector('[data-team="2"]');
+        
         if (!t1.textContent) {
           t1.textContent = club;
+          updateClubCount();
           return;
         } else if (!t2.textContent) {
           t2.textContent = club;
+          updateClubCount();
           return;
         }
       }
     }
 
-    drawButton.addEventListener('click', drawNextClub);
+    function playMatches() {
+      const currentRoundMatches = treeContainer.querySelector(`.round[data-round="${currentRound}"]`).querySelectorAll('.match');
+      let allMatchesPlayed = true;
 
+      // Check if all teams are set for this round
+      for (let match of currentRoundMatches) {
+        const t1 = match.querySelector('[data-team="1"]');
+        const t2 = match.querySelector('[data-team="2"]');
+        
+        if (!t1.textContent || !t2.textContent) {
+          allMatchesPlayed = false;
+          break;
+        }
+      }
+
+      if (!allMatchesPlayed) {
+        alert("Nicht alle Paarungen sind komplett! Bitte erst alle Teams für diese Runde setzen.");
+        return;
+      }
+
+      // Play all matches in current round
+      for (let match of currentRoundMatches) {
+        const t1 = match.querySelector('[data-team="1"]');
+        const t2 = match.querySelector('[data-team="2"]');
+        
+        // Only play if not already played
+        if (!t1.dataset.score || t1.dataset.score === "0") {
+          const score1 = Math.floor(Math.random() * 5); // 0-4 goals
+          const score2 = Math.floor(Math.random() * 5); // 0-4 goals
+          
+          // Add penalty shootout chance for draws
+          let finalScore1 = score1;
+          let finalScore2 = score2;
+          
+          if (score1 === score2) {
+            // 50% chance for penalty shootout (1-1 becomes 1-1 (4-5))
+            if (Math.random() > 0.5) {
+              finalScore1 = score1 + (Math.random() > 0.5 ? 0 : 1);
+              finalScore2 = score2 + (finalScore1 > score1 ? 0 : 1);
+            }
+          }
+          
+          t1.dataset.score = finalScore1;
+          t2.dataset.score = finalScore2;
+          
+          t1.innerHTML = `${t1.textContent} <span class="score">${finalScore1}</span>`;
+          t2.innerHTML = `${t2.textContent} <span class="score">${finalScore2}</span>`;
+          
+          // Mark winner
+          if (finalScore1 > finalScore2) {
+            t1.classList.add('winner');
+            promoteWinner(t1.textContent, match.dataset.round, match.dataset.match);
+          } else {
+            t2.classList.add('winner');
+            promoteWinner(t2.textContent, match.dataset.round, match.dataset.match);
+          }
+        }
+      }
+
+      currentRound++;
+      
+      if (currentRound >= totalRounds) {
+        playButton.textContent = 'Turnier beendet';
+        playButton.disabled = true;
+        resetButton.disabled = false;
+      } else {
+        playButton.textContent = `Runde ${currentRound + 1} spielen`;
+      }
+    }
+
+    function promoteWinner(teamName, currentRound, matchIndex) {
+      const nextRound = parseInt(currentRound) + 1;
+      if (nextRound >= totalRounds) return;
+      
+      const nextRoundMatches = treeContainer.querySelector(`.round[data-round="${nextRound}"]`).querySelectorAll('.match');
+      const targetMatchIndex = Math.floor(parseInt(matchIndex) / 2);
+      const targetMatch = nextRoundMatches[targetMatchIndex];
+      
+      const t1 = targetMatch.querySelector('[data-team="1"]');
+      const t2 = targetMatch.querySelector('[data-team="2"]');
+      
+      if (!t1.textContent) {
+        t1.textContent = teamName;
+      } else if (!t2.textContent) {
+        t2.textContent = teamName;
+      }
+    }
+
+    function resetTournament() {
+      availableClubs = [...clubs];
+      drawnClubs = [];
+      currentRound = 0;
+      
+      drawButton.textContent = 'Draw Club';
+      drawButton.disabled = false;
+      
+      playButton.textContent = 'Play Matches';
+      playButton.disabled = true;
+      
+      resetButton.disabled = true;
+      
+      createInitialBracket();
+      updateClubCount();
+    }
+
+    drawButton.addEventListener('click', drawNextClub);
+    playButton.addEventListener('click', playMatches);
+    resetButton.addEventListener('click', resetTournament);
+
+    // Initialize
     createInitialBracket();
+    updateClubCount();
   </script>
 </body>
 </html>
