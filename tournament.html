@@ -53,6 +53,14 @@
       box-shadow: none;
     }
 
+    .main-button.end-tournament {
+      background: #FF6B6B;
+    }
+
+    .main-button.end-tournament:hover {
+      box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+    }
+
     .tournament-container {
       padding: 20px;
       padding-top: 20px;
@@ -220,6 +228,27 @@
       font-weight: bold;
       box-shadow: 0 10px 30px rgba(76, 175, 80, 0.5);
     }
+
+    .tournament-summary {
+      background-color: rgba(30,30,30,0.9);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .tournament-summary h3 {
+      color: #4CAF50;
+      margin-top: 0;
+    }
+
+    .participants-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 5px;
+      margin: 10px 0;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
@@ -313,6 +342,9 @@
     const totalRounds = 6; // 64 → 32 → 16 → 8 → 4 → 2 → 1
     let tournamentHistory = [];
     let currentMatchesToPlay = [];
+    let tournamentCompleted = false;
+    let tournamentWinner = null;
+    let participatingClubs = [];
 
     const treeContainer = document.getElementById('tournament-tree');
     const drawButton = document.getElementById('drawButton');
@@ -381,6 +413,7 @@
           drawButton.disabled = true;
           playButton.disabled = false;
           playButton.textContent = 'Spiele Zweiunddreißigstelfinale';
+          participatingClubs = [...drawnClubs]; // Save participating clubs
           setupCurrentRoundMatches();
           return;
         }
@@ -431,7 +464,19 @@
       previousMatches.forEach(match => {
         const winner = match.querySelector('.winner');
         if (winner) {
-          winners.push(winner.textContent.replace(/ <span class="score">.*?<\/span>/, ''));
+          // Extract team name without score
+          const teamName = winner.textContent.split(' ')[0];
+          // If team name has multiple words, reconstruct it
+          const words = winner.textContent.split(' ');
+          let name = '';
+          for (let i = 0; i < words.length; i++) {
+            if (!words[i].match(/^\d+$/)) { // Not a number (score)
+              name += words[i] + ' ';
+            } else {
+              break;
+            }
+          }
+          winners.push(name.trim());
         }
       });
       
@@ -479,7 +524,7 @@
         const t1 = match.querySelector('[data-team="1"]');
         const t2 = match.querySelector('[data-team="2"]');
         
-        if (t1.textContent !== 'TBD' && t2.textContent !== 'TBD' && !t1.classList.contains('winner')) {
+        if (t1.textContent !== 'TBD' && t2.textContent !== 'TBD' && !t1.classList.contains('winner') && !t2.classList.contains('winner')) {
           match.classList.add('playable');
           currentMatchesToPlay.push(match);
         }
@@ -511,6 +556,9 @@
       const t1 = match.querySelector('[data-team="1"]');
       const t2 = match.querySelector('[data-team="2"]');
       
+      const team1Name = t1.textContent;
+      const team2Name = t2.textContent;
+      
       // Generate realistic scores
       let score1 = Math.floor(Math.random() * 4); // 0-3 goals
       let score2 = Math.floor(Math.random() * 4); // 0-3 goals
@@ -534,21 +582,21 @@
         }
       }
       
-      t1.innerHTML = `${t1.textContent} <span class="score">${score1}</span>`;
-      t2.innerHTML = `${t2.textContent} <span class="score">${score2}</span>`;
+      t1.innerHTML = `${team1Name} <span class="score">${score1}</span>`;
+      t2.innerHTML = `${team2Name} <span class="score">${score2}</span>`;
       
       // Mark winner and loser
       let winner, result;
       if (score1 > score2) {
         t1.classList.add('winner');
         t2.classList.add('loser');
-        winner = t1.textContent.replace(/ <span class="score">.*?<\/span>/, '');
-        result = `${winner} ${score1}-${score2} ${t2.textContent}`;
+        winner = team1Name;
+        result = `${team1Name} ${score1}-${score2} ${team2Name}`;
       } else {
         t2.classList.add('winner');
         t1.classList.add('loser');
-        winner = t2.textContent.replace(/ <span class="score">.*?<\/span>/, '');
-        result = `${t1.textContent} ${score1}-${score2} ${winner}`;
+        winner = team2Name;
+        result = `${team1Name} ${score1}-${score2} ${team2Name}`;
       }
       
       match.classList.remove('playable');
@@ -569,13 +617,14 @@
         // Round completed
         if (currentRound === totalRounds - 1) {
           // Tournament finished
-          tournamentHistory.push({
-            winner: winner
-          });
+          tournamentCompleted = true;
+          tournamentWinner = winner;
           
           playButton.textContent = 'Turnier beendet';
           playButton.disabled = true;
           resetButton.disabled = false;
+          historyButton.textContent = 'End Tournament';
+          historyButton.classList.add('end-tournament');
           
           // Show winner celebration
           setTimeout(() => {
@@ -597,63 +646,25 @@
     }
 
     function showHistory() {
-      historyLog.innerHTML = '<h3>Turnierverlauf</h3>';
-      
-      if (tournamentHistory.length === 0) {
-        historyLog.innerHTML += '<p>Noch keine Spiele gespielt.</p>';
-      } else {
+      if (tournamentCompleted && historyButton.textContent === 'End Tournament') {
+        // Show final tournament summary
+        historyLog.innerHTML = `
+          <h3>Turnier beendet</h3>
+          <div class="tournament-winner">🏆 Turniersieger: ${tournamentWinner} 🏆</div>
+          <div class="tournament-summary">
+            <h3>Turnier-Zusammenfassung</h3>
+            <p><strong>Teilnehmende Vereine:</strong> ${participatingClubs.length}</p>
+            <div class="participants-list">
+              ${participatingClubs.map(club => `<div>${club}</div>`).join('')}
+            </div>
+          </div>
+        `;
+        
+        // Add all round results
         tournamentHistory.forEach(entry => {
-          if (entry.winner) {
-            historyLog.innerHTML += `<div class="tournament-winner">🏆 Turniersieger: ${entry.winner} 🏆</div>`;
-          } else {
-            const roundDiv = document.createElement('div');
-            roundDiv.className = 'history-round';
-            roundDiv.innerHTML = `<h4>${entry.roundName}</h4>`;
-            
-            entry.matches.forEach(match => {
-              const matchDiv = document.createElement('div');
-              matchDiv.className = 'history-match';
-              matchDiv.textContent = match;
-              roundDiv.appendChild(matchDiv);
-            });
-            
-            historyLog.appendChild(roundDiv);
-          }
-        });
-      }
-      
-      historyLog.style.display = historyLog.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function resetTournament() {
-      availableClubs = [...uniqueClubs];
-      drawnClubs = [];
-      currentRound = 0;
-      tournamentHistory = [];
-      currentMatchesToPlay = [];
-      
-      drawButton.textContent = 'Draw Club';
-      drawButton.disabled = false;
-      
-      playButton.textContent = 'Play Matches';
-      playButton.disabled = true;
-      
-      resetButton.disabled = true;
-      
-      createInitialBracket();
-      updateClubCount();
-      historyLog.style.display = 'none';
-    }
-
-    // Event listeners
-    drawButton.addEventListener('click', drawNextClub);
-    playButton.addEventListener('click', playMatches);
-    historyButton.addEventListener('click', showHistory);
-    resetButton.addEventListener('click', resetTournament);
-
-    // Initialize
-    createInitialBracket();
-    updateClubCount();
-  </script>
-</body>
-</html>
+          const roundDiv = document.createElement('div');
+          roundDiv.className = 'history-round';
+          roundDiv.innerHTML = `<h4>${entry.roundName}</h4>`;
+          
+          entry.matches.forEach(match => {
+            const matchDiv = document.createElement
