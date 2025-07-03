@@ -13,35 +13,21 @@
       color: white;
       overflow-x: hidden;
       overflow-y: auto;
-      height: 100vh;
-      position: relative;
+      min-height: 100vh;
     }
 
-    .floating-club {
-      position: absolute;
-      background: #2a2a2a;
-      color: #f0f0f0;
-      padding: 5px 10px;
-      border-radius: 15px;
-      font-size: 0.8rem;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-      z-index: 1;
-      animation: float 20s infinite linear;
-      white-space: nowrap;
-      pointer-events: none;
-    }
-
-    @keyframes float {
-      0% { transform: translateY(0px) translateX(0px); }
-      25% { transform: translateY(10vh) translateX(10px); }
-      50% { transform: translateY(20vh) translateX(0px); }
-      75% { transform: translateY(10vh) translateX(-10px); }
-      100% { transform: translateY(0px) translateX(0px); }
+    .button-container {
+      position: sticky;
+      top: 10px;
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      background-color: rgba(18, 18, 18, 0.7);
+      padding: 10px;
+      backdrop-filter: blur(5px);
     }
 
     .main-button {
-      position: relative;
-      z-index: 100;
       padding: 15px 30px;
       font-size: 1.2rem;
       background: #4CAF50;
@@ -49,7 +35,7 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      margin: 10px;
+      margin: 0 10px;
       transition: transform 0.2s;
     }
 
@@ -57,11 +43,21 @@
       transform: scale(1.05);
     }
 
+    .main-button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    .tournament-container {
+      padding: 20px;
+      padding-top: 80px;
+    }
+
     .tournament-tree {
       display: flex;
       flex-wrap: nowrap;
       overflow-x: auto;
-      margin: 40px auto;
+      margin: 0 auto;
       width: 95%;
       max-width: 1400px;
       padding: 10px;
@@ -75,6 +71,12 @@
       min-width: 180px;
     }
 
+    .round h3 {
+      text-align: center;
+      margin-top: 0;
+      color: #4CAF50;
+    }
+
     .match {
       background: #222;
       border: 1px solid #444;
@@ -84,8 +86,8 @@
     }
 
     .team {
-      padding: 3px;
-      margin: 2px 0;
+      padding: 8px;
+      margin: 4px 0;
       background-color: #333;
       border-radius: 3px;
     }
@@ -96,23 +98,27 @@
     }
 
     h1 {
-      position: relative;
-      z-index: 100;
       text-align: center;
-      margin-top: 30px;
+      margin-top: 20px;
       color: #fff;
       text-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+      position: sticky;
+      top: 0;
+      background-color: #121212;
+      padding: 15px 0;
+      z-index: 999;
     }
   </style>
 </head>
 <body>
-  <div class="screen active" id="initial-screen">
-    <div id="floating-clubs-container"></div>
-    <h1>German Football Tournament</h1>
-    <div style="text-align:center">
-      <button class="main-button" id="drawButton">Draw Club</button>
-      <button class="main-button" id="historyButton">History</button>
-    </div>
+  <h1>German Football Tournament</h1>
+  
+  <div class="button-container">
+    <button class="main-button" id="drawButton">Draw Club</button>
+    <button class="main-button" id="historyButton">History</button>
+  </div>
+
+  <div class="tournament-container">
     <div class="tournament-tree" id="tournament-tree"></div>
     <div id="history-log" style="max-width:800px;margin:20px auto;display:none;"></div>
   </div>
@@ -183,23 +189,8 @@
 
     let availableClubs = [...clubs];
 
-    const floatingClubsContainer = document.getElementById('floating-clubs-container');
     const treeContainer = document.getElementById('tournament-tree');
     const drawButton = document.getElementById('drawButton');
-
-    function initFloatingClubs() {
-      floatingClubsContainer.innerHTML = '';
-      clubs.forEach(club => {
-        const el = document.createElement('div');
-        el.className = 'floating-club';
-        el.textContent = club;
-        el.style.left = `${Math.random() * 100}%`;
-        el.style.top = `${Math.random() * 100}%`;
-        el.style.animationDuration = `${10 + Math.random() * 20}s`;
-        el.style.animationDelay = `${Math.random() * 5}s`;
-        floatingClubsContainer.appendChild(el);
-      });
-    }
 
     function createInitialBracket() {
       treeContainer.innerHTML = '';
@@ -232,7 +223,7 @@
 
     function drawNextClub() {
       if (availableClubs.length === 0) {
-        drawButton.textContent = 'Start Simulation';
+        drawButton.textContent = 'Turnier starten';
         drawButton.disabled = true;
         return;
       }
@@ -256,7 +247,6 @@
 
     drawButton.addEventListener('click', drawNextClub);
 
-    initFloatingClubs();
     createInitialBracket();
   </script>
 </body>
