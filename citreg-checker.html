@@ -262,13 +262,33 @@
         </div>
 
         <div class="input-group">
-            <label for="csvUrl">Google Sheet CSV URL (must be public):</label>
-            <input type="text" id="csvUrl" value="https://docs.google.com/spreadsheets/d/1WT0rxWWsEK0Xg_uiijNIHjp156O6-9ABfj3anvczH9I/export?format=csv&gid=0" readonly>
+            <label>Google Sheet Details:</label>
+            <p style="font-size: 0.95rem; color: #B0B0B0; word-break: break-all;">
+                To use this, you need a **Google Cloud API Key**, your **Spreadsheet ID**, and the **Sheet's GID**.
+                <br>
+                **WARNING: Your API Key will be visible in the browser's source code. For production environments, a backend server is highly recommended to protect your API key.**
+                <br><br>
+                **Spreadsheet ID:** <span id="displaySpreadsheetId"></span>
+                <br>
+                **Sheet GID:** <span id="displayGid"></span>
+            </p>
+            <p style="font-size: 0.85rem; color: #FFCC00;">
+                **Instructions:**
+                <ol style="margin-left: 20px; list-style-type: decimal;">
+                    <li>Go to <a href="https://console.cloud.google.com/" target="_blank" style="color: #66CCFF;">Google Cloud Console</a>, create a project.</li>
+                    <li>Enable "Google Sheets API" in the API Library.</li>
+                    <li>Create an "API Key" under "APIs & Services > Credentials".</li>
+                    <li>Make your Google Sheet publicly readable (Share > "Anyone with the link" > "Viewer").</li>
+                    <li>Find your Spreadsheet ID from its URL: <code>https://docs.google.com/spreadsheets/d/<b>YOUR_SPREADSHEET_ID</b>/edit</code></li>
+                    <li>Find your Sheet's GID from its URL (if not the first sheet): <code>.../edit#gid=<b>YOUR_GID</b></code> (usually 0 for the first sheet).</li>
+                    <li>**Your API Key, Spreadsheet ID, and GID are already configured in the JavaScript code below.**</li>
+                </ol>
+            </p>
             
             <label for="userAgent">Your NationStates User-Agent (important!):</label>
-            <input type="text" id="userAgent" placeholder="e.g., YourNation/1.0 (YourNationName; contact@example.com)">
+            <input type="text" id="userAgent" placeholder="e.g., Your Nation">
             <p style="font-size: 0.85rem; color: #B0B0B0;">
-                A User-Agent is mandatory for NationStates API requests. Please enter your nation's name and a contact email or app name here.
+                A User-Agent is mandatory for NationStates API requests. Please enter your nation's name here.
             </p>
 
             <button class="btn" id="checkButton" onclick="startCheck()">Check Citizens</button>
@@ -294,20 +314,32 @@
         let lastRequestTime = 0;
         let isChecking = false;
 
-        const csvUrlInput = document.getElementById('csvUrl');
+        // --- IMPORTANT: GOOGLE SHEETS API DETAILS ARE CONFIGURED HERE ---
+        // Your API Key from Google Cloud Console (APIs & Services -> Credentials)
+        const GOOGLE_API_KEY = "AIzaSyAQccIFHE6nNyBhJF_5KFBb6dKF5WKsDGQ"; 
+        // Your Spreadsheet ID from your Google Sheet URL
+        const SPREADSHEET_ID = "1WT0rxWWsEK0Xg_uiijNIHjp156O6-9ABfj3anvczH9I"; 
+        // Your Sheet's GID from your Google Sheet URL (e.g., 0 for the first sheet)
+        const SHEET_GID = "0"; // Assuming your citizen data is on the first sheet (gid=0)
+
+        // The range of cells to fetch. Adjust 'Sheet1' to your actual sheet name if different.
+        const SHEET_RANGE = "Sheet1!A:Z"; // Fetches all data from column A to Z on 'Sheet1'
+
         const userAgentInput = document.getElementById('userAgent');
         const checkButton = document.getElementById('checkButton');
         const messageDisplay = document.getElementById('messageDisplay');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const resultsList = document.getElementById('resultsList');
+        const displaySpreadsheetId = document.getElementById('displaySpreadsheetId');
+        const displayGid = document.getElementById('displayGid');
 
-        // Initialize with default User-Agent and a placeholder CSV URL
+        // Initialize with default User-Agent placeholder and display sheet details
         document.addEventListener('DOMContentLoaded', () => {
-            // Set default User-Agent with a placeholder for the user's nation name
-            userAgentInput.value = 'UlmerCitizenChecker/1.0 (YourNationName; ulmer.contact@example.com)';
-            
-            // The CSV URL is now readonly and pre-filled
-            displayMessage('info', 'Please ensure your Google Sheet is publicly published as CSV and the URL is correct.');
+            userAgentInput.value = 'UlmerCitizenChecker/1.0 (Your Nation; contact@example.com)';
+            displaySpreadsheetId.textContent = SPREADSHEET_ID;
+            displayGid.textContent = SHEET_GID;
+
+            displayMessage('info', 'Google Sheets API configured. Please ensure your Google Sheet is publicly readable.');
         });
 
         function displayMessage(type, message) {
@@ -340,35 +372,43 @@
             showLoading('Starting check...');
             isChecking = true;
 
-            const csvUrl = csvUrlInput.value.trim();
             const userAgent = userAgentInput.value.trim();
 
-            if (!csvUrl) {
-                displayMessage('error', 'Please enter the URL of your Google Sheet CSV file.');
-                hideLoading();
-                isChecking = false;
-                return;
-            }
-
-            if (!userAgent || userAgent.includes('YourNationName')) { // Check for empty or default placeholder
-                displayMessage('error', 'Please enter a valid User-Agent and replace "YourNationName" with your nation\'s name.');
+            if (!userAgent || userAgent.toLowerCase().includes('your nation')) {
+                displayMessage('error', 'Please enter a valid User-Agent and replace "Your Nation" with your nation\'s name.');
                 hideLoading();
                 isChecking = false;
                 return;
             }
 
             try {
-                // 1. Fetch CSV Data
-                displayMessage('info', 'Loading citizen data...');
-                const csvResponse = await fetch(csvUrl);
-                if (!csvResponse.ok) {
-                    throw new Error(`Error loading CSV file: ${csvResponse.statusText}. Ensure the URL is correct and the file is public.`);
+                // 1. Fetch data using Google Sheets API
+                displayMessage('info', 'Loading citizen data from Google Sheet...');
+                const sheetsApiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_RANGE)}?key=${GOOGLE_API_KEY}`;
+                
+                const sheetsResponse = await fetch(sheetsApiUrl);
+                
+                console.log(`Google Sheets API Response Status: ${sheetsResponse.status}`);
+
+                if (!sheetsResponse.ok) {
+                    const errorJson = await sheetsResponse.json();
+                    throw new Error(`Error fetching from Google Sheets API: ${errorJson.error.message || sheetsResponse.statusText}. Please check your API Key, Spreadsheet ID, and Sheet GID, and ensure the sheet is publicly accessible.`);
                 }
-                const csvText = await csvResponse.text();
-                const citizens = parseCSV(csvText);
+
+                const sheetsData = await sheetsResponse.json();
+                const values = sheetsData.values; // This is an array of arrays (rows and columns)
+
+                if (!values || values.length < 2) { // Need at least 1 header row and 1 data row
+                    displayMessage('info', 'No citizen data found in the Google Sheet or invalid format. Ensure the sheet contains data and the `SHEET_RANGE` (e.g., "Sheet1!A:Z") is correct.');
+                    hideLoading();
+                    isChecking = false;
+                    return;
+                }
+
+                const citizens = parseGoogleSheetsData(values);
 
                 if (citizens.length === 0) {
-                    displayMessage('info', 'No citizen data found in the CSV file. Ensure the CSV file contains data.');
+                    displayMessage('info', 'No citizen data found after parsing Google Sheet. Check column headers (e.g., "Name", "WA Nation Link", "Resident Nation Link") and data content.');
                     hideLoading();
                     isChecking = false;
                     return;
@@ -387,28 +427,29 @@
                 displayMessage('success', '✅ Check completed!');
             } catch (error) {
                 displayMessage('error', `An error occurred: ${error.message}`);
+                console.error('Full error:', error);
             } finally {
                 hideLoading();
                 isChecking = false;
             }
         }
 
-        function parseCSV(csvText) {
-            const lines = csvText.split('\n').filter(line => line.trim() !== '');
-            if (lines.length === 0) return [];
+        // Parses the 2D array from Google Sheets API into an array of objects
+        function parseGoogleSheetsData(values) {
+            if (!values || values.length === 0) return [];
 
-            const headers = lines[0].split(',').map(header => header.trim());
+            const headers = values[0].map(header => header.trim()); // First row is headers
             const data = [];
 
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(value => value.trim());
-                if (values.length !== headers.length) {
-                    console.warn(`Skipping row ${i + 1}: Column count mismatch.`);
+            for (let i = 1; i < values.length; i++) {
+                const rowValues = values[i];
+                if (rowValues.length === 0 || rowValues.every(val => val.trim() === '')) {
+                    // Skip empty rows
                     continue;
                 }
                 const row = {};
                 headers.forEach((header, index) => {
-                    row[header] = values[index];
+                    row[header] = rowValues[index] || ''; // Use empty string if value is undefined
                 });
                 data.push(row);
             }
@@ -434,7 +475,7 @@
                         return pathParts[nationIndex + 1];
                     }
                 } catch (e) {
-                    console.warn(`Invalid link ${link}: ${e.message}`);
+                    // console.warn(`Invalid link ${link}: ${e.message}`); // Suppress frequent warnings
                 }
                 return null;
             };
