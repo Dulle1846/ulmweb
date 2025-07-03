@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/auth/login.js": {
+      "maxDuration": 10
+    },
+    "api/admin/*.js": {
+      "maxDuration": 30
+    }
+  }
+}
