@@ -189,6 +189,29 @@
             display: none; /* Ensure they are hidden if accidentally present */
         }
 
+        /* New button style for NS API Documentation */
+        .ns-api-btn {
+            background: #000; /* Black background */
+            color: white;
+            border: 2px solid #fff; /* White border for contrast */
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            margin-bottom: 10px; /* Space between this and logout button */
+            display: block; /* Make it a block element to take full width */
+            text-align: center; /* Center the text */
+            text-decoration: none; /* Remove underline for link */
+        }
+
+        .ns-api-btn:hover {
+            background: #333; /* Darker grey on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+
         /* Back Link */
         .back-link {
             position: absolute;
@@ -248,8 +271,8 @@
                 <p>Willkommen im Verwaltungsbereich</p>
             </div>
 
-            <!-- Removed Session Information and Stats Boxes -->
-            <!-- Removed Admin Action Buttons -->
+            <!-- New button for NS API Documentation -->
+            <a href="ns-api-documentation.html" class="ns-api-btn">NS API Dokumentation</a>
 
             <button class="btn logout-btn" onclick="logout()">Abmelden</button>
         </div>
