@@ -70,64 +70,64 @@
         .dropdown-content {
             display: none;
             position: absolute;
-            background-color: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(5px);
-            min-width: 600px;
-            border: 3px solid #000;
+            background-color: #2a2a2a;
+            min-width: 250px;
+            border: 2px solid #444;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             z-index: 1000;
             top: 100%;
-            left: 0;
-            transition: all 0.3s ease;
+            left: 50%;
+            transform: translateX(-50%) translateY(-5px);
+            transition: all 0.2s ease;
             opacity: 0;
-            transform: translateY(-10px);
+            padding: 8px 0;
         }
         
         .dropdown:hover .dropdown-content {
-            display: flex;
+            display: block;
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .dropdown-section {
+            padding: 0;
         }
         
         .dropdown-header {
-            background-color: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            padding: 15px 20px;
+            background-color: transparent;
+            color: #ccc;
+            padding: 8px 16px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
-            font-size: 0.95rem;
-            border-right: 2px solid #000;
-            min-width: 300px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .dropdown-links {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
+            font-size: 0.8rem;
+            border-bottom: 1px solid #444;
+            margin-bottom: 4px;
         }
         
         .dropdown-item {
             display: block;
-            background-color: rgba(255, 255, 255, 0.9);
-            color: #000;
-            padding: 15px 20px;
+            background-color: transparent;
+            color: #fff;
+            padding: 8px 16px;
             text-decoration: none;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+            font-weight: normal;
+            text-transform: none;
+            letter-spacing: 0.5px;
             transition: all 0.2s ease;
-        }
-        
-        .dropdown-item:last-child {
-            border-bottom: none;
+            font-size: 0.9rem;
         }
         
         .dropdown-item:hover {
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: #444;
             color: #fff;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background-color: #444;
+            margin: 8px 0;
         }
         
         .nav-item:hover {
@@ -615,17 +615,27 @@
         <div class="nav-bar">
             <div class="nav-items">
                 <div class="dropdown">
-                    <a href="#" class="nav-item">NationStates</a>
+                    <a href="#" class="nav-item">Menu</a>
                     <div class="dropdown-content">
-                        <div class="dropdown-header">Lionsroarian Football Association</div>
-                        <div class="dropdown-links">
+                        <div class="dropdown-section">
+                            <div class="dropdown-header">NationStates</div>
                             <a href="https://ulmweb.vercel.app/ewige_tabelle.html" class="dropdown-item">Eternal Table</a>
                             <a href="https://docs.google.com/spreadsheets/d/1i8hPIO_RSehkTR6psLVytSXrBpGgsdr7IX4cztfYu8s/edit?usp=sharing" class="dropdown-item" target="_blank">Google Spreadsheet</a>
                         </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-section">
+                            <div class="dropdown-header">Generators</div>
+                            <a href="random-number.html" class="dropdown-item">Random Number</a>
+                            <a href="random-wheel.html" class="dropdown-item">Random Wheel</a>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-section">
+                            <div class="dropdown-header">Other</div>
+                            <a href="https://github.com/Dulle1846/ulmweb" class="dropdown-item" target="_blank">GitHub Repository</a>
+                            <a href="tournament.html" class="dropdown-item">Tournament</a>
+                        </div>
                     </div>
                 </div>
-                <a href="https://github.com/Dulle1846/ulmweb" class="nav-item" target="_blank">Github</a>
-                <a href="tournament.html" class="nav-item" target="_blank">Tournament</a>
             </div>
         </div>
         
