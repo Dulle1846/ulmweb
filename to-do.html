@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meine To-Do-Liste</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      background: linear-gradient(to bottom, #f7fafc, #edf2f7);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    .task-item {
+      transition: all 0.2s ease-in-out;
+    }
+    .task-item.completed {
+      background-color: #e2e8f0;
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+    .tab-active {
+      background-color: #3182ce;
+      color: white;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4">
+  <div class="container mx-auto max-w-lg">
+    <div id="login-section" class="text-center">
+      <h1 class="text-3xl font-bold text-gray-800 mb-6">Meine To-Do-Liste</h1>
+      <div id="g_id_onload"
+           data-client_id="YOUR_GOOGLE_CLIENT_ID"
+           data-callback="handleCredentialResponse"
+           data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+      <p class="mt-4 text-gray-600">Melde dich mit Google an, um deine Aufgaben zu speichern.</p>
+    </div>
+
+    <div id="todo-app" class="hidden">
+      <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Mein Tag</h1>
+      <div class="mb-4 flex space-x-2">
+        <input 
+          id="task-input" 
+          type="text" 
+          placeholder="Neue Aufgabe hinzufügen" 
+          class="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+        <input 
+          id="due-date-input" 
+          type="date" 
+          class="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+        <button 
+          onclick="addTask()" 
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+        >
+          Hinzufügen
+        </button>
+      </div>
+
+      <div class="flex mb-4">
+        <button 
+          onclick="showTasks()" 
+          id="tasks-tab" 
+          class="flex-1 p-2 bg-gray-200 hover:bg-blue-600 hover:text-white rounded-l-lg tab-active"
+        >
+          Aktive Aufgaben
+        </button>
+        <button 
+          onclick="showHistory()" 
+          id="history-tab" 
+          class="flex-1 p-2 bg-gray-200 hover:bg-blue-600 hover:text-white rounded-r-lg"
+        >
+          Historie
+        </button>
+      </div>
+
+      <ul id="task-list" class="space-y-2"></ul>
+      <ul id="history-list" class="space-y-2 hidden"></ul>
+      <button 
+        onclick="signOut()" 
+        class="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+      >
+        Abmelden
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let tasks = [];
+    let history = [];
+    let userId = null;
+
+    // Google Sign-In Callback
+    function handleCredentialResponse(response) {
+      const data = parseJwt(response.credential);
+      userId = data.sub; // Google Benutzer-ID
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('todo-app').classList.remove('hidden');
+      loadTasks();
+      renderTasks();
+    }
+
+    // JWT Token parsen
+    function parseJwt(token) {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    }
+
+    // Abmelden
+    function signOut() {
+      userId = null;
+      tasks = [];
+      history = [];
+      document.getElementById('todo-app').classList.add('hidden');
+      document.getElementById('login-section').classList.remove('hidden');
+      document.getElementById('task-list').innerHTML = '';
+      document.getElementById('history-list').innerHTML = '';
+    }
+
+    // Aufgaben laden
+    function loadTasks() {
+      const storedTasks = JSON.parse(localStorage.getItem(`tasks_${userId}`)) || [];
+      const storedHistory = JSON.parse(localStorage.getItem(`history_${userId}`)) || [];
+      tasks = storedTasks;
+      history = storedHistory;
+    }
+
+    // Aufgaben rendern
+    function renderTasks() {
+      const taskList = document.getElementById('task-list');
+      taskList.innerHTML = '';
+      tasks.forEach((task, index) => {
+        const li = document.createElement('li');
+        li.className = `task-item flex items-center justify-between p-3 bg-white rounded-lg shadow ${task.completed ? 'completed' : ''}`;
+        li.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <input 
+              type="checkbox" 
+              ${task.completed ? 'checked' : ''} 
+              onchange="toggleTask(${index})" 
+              class="h-5 w-5 text-blue-600"
+            >
+            <span>${task.text}${task.dueDate ? ` (Fällig: ${task.dueDate})` : ''}</span>
+          </div>
+          <button 
+            onclick="deleteTask(${index})" 
+            class="text-red-500 hover:text-red-700"
+          >
+            Löschen
+          </button>
+        `;
+        taskList.appendChild(li);
+      });
+      saveTasks();
+    }
+
+    // Historie rendern
+    function renderHistory() {
+      const historyList = document.getElementById('history-list');
+      historyList.innerHTML = '';
+      history.forEach((task, index) => {
+        const li = document.createElement('li');
+        li.className = 'task-item p-3 bg-white rounded-lg shadow';
+        li.innerHTML = `
+          <span>${task.text} (Fällig: ${task.dueDate || 'Keine'}, Erledigt: ${task.completedDate})</span>
+          <button 
+            onclick="deleteHistory(${index})" 
+            class="text-red-500 hover:text-red-700"
+          >
+            Löschen
+          </button>
+        `;
+        historyList.appendChild(li);
+      });
+      saveHistory();
+    }
+
+    // Aufgabe hinzufügen
+    function addTask() {
+      const input = document.getElementById('task-input');
+      const dueDateInput = document.getElementById('due-date-input');
+      const text = input.value.trim();
+      const dueDate = dueDateInput.value;
+      if (text && userId) {
+        tasks.push({ text, dueDate, completed: false });
+        input.value = '';
+        dueDateInput.value = '';
+        renderTasks();
+      }
+    }
+
+    // Aufgabe abhaken/unauschecken
+    function toggleTask(index) {
+      if (!tasks[index].completed) {
+        tasks[index].completed = true;
+        const completedTask = tasks.splice(index, 1)[0];
+        completedTask.completedDate = new Date().toLocaleDateString('de-DE');
+        history.push(completedTask);
+      } else {
+        tasks[index].completed = false;
+      }
+      renderTasks();
+      renderHistory();
+    }
+
+    // Aufgabe löschen
+    function deleteTask(index) {
+      tasks.splice(index, 1);
+      renderTasks();
+    }
+
+    // Historie-Eintrag löschen
+    function deleteHistory(index) {
+      history.splice(index, 1);
+      renderHistory();
+    }
+
+    // Aufgaben und Historie speichern
+    function saveTasks() {
+      if (userId) {
+        localStorage.setItem(`tasks_${userId}`, JSON.stringify(tasks));
+      }
+    }
+    function saveHistory() {
+      if (userId) {
+        localStorage.setItem(`history_${userId}`, JSON.stringify(history));
+      }
+    }
+
+    // Tabs umschalten
+    function showTasks() {
+      document.getElementById('task-list').classList.remove('hidden');
+      document.getElementById('history-list').classList.add('hidden');
+      document.getElementById('tasks-tab').classList.add('tab-active');
+      document.getElementById('history-tab').classList.remove('tab-active');
+    }
+    function showHistory() {
+      document.getElementById('task-list').classList.add('hidden');
+      document.getElementById('history-list').classList.remove('hidden');
+      document.getElementById('tasks-tab').classList.remove('tab-active');
+      document.getElementById('history-tab').classList.add('tab-active');
+      renderHistory();
+    }
+
+    // Aufgabe mit Enter-Taste hinzufügen
+    document.getElementById('task-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addTask();
+    });
+  </script>
+</body>
+</html>
