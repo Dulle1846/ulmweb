@@ -2,158 +2,166 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Interactive Fantasy Tavern</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Medieval Fantasy Tavern</title>
   <style>
-    /* Reset some default styles */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    /* Global reset and tavern background */
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body, html {
+      width:100%; height:100%;
+      overflow:hidden;
+      background: #422a12 url('https://i.imgur.com/4YQpK1g.png') repeat-y; /* subtle wood texture */
+      display:flex; justify-content:center; align-items:center;
+      font-family: 'Cinzel', serif;
     }
 
-    body {
-      font-family: 'Georgia', serif;
-      background-color: #2b1d0e; /* Dark tavern-like background */
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    h1 {
-      font-size: 2.5em;
-      color: #ffd700; /* Gold color for a fantasy feel */
-      text-shadow: 2px 2px 4px #000;
-    }
-
-    .tavern-scene {
+    /* Main tavern container */
+    #tavern {
       position: relative;
-      width: 80%;
-      max-width: 800px;
-      height: 400px;
-      background-image: url('https://images.unsplash.com/photo-1549924231-f129b911e442?ixlib=rb-4.0.1&auto=format&fit=crop&w=1470&q=80'); /* Placeholder background */
-      background-size: cover;
-      background-position: center;
-      border: 5px solid #654321; /* Oak frame for the tavern scene */
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    }
-
-    /* Character styles */
-    .character {
-      position: absolute;
-      bottom: 0;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .character:hover {
-      transform: scale(1.1);
-    }
-
-    /* Positioning characters within the scene */
-    .bard {
-      left: 15%;
-      width: 80px;
-      height: 150px;
-    }
-
-    .knight {
-      right: 15%;
-      width: 80px;
-      height: 150px;
-    }
-
-    /* Message box styles */
-    .message-box {
-      margin-top: 20px;
-      width: 80%;
-      max-width: 800px;
-      min-height: 50px;
-      padding: 15px;
-      background-color: rgba(0, 0, 0, 0.7);
+      width: 90vw; height: 80vh;
+      background: #5c3a1d;
+      border: 8px solid #3c220f;
       border-radius: 8px;
-      font-size: 1.2em;
-      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.7);
+      overflow: hidden;
+    }
+
+    /* Fireplace */
+    #fireplace {
+      position: absolute;
+      bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 300px; height: 200px;
+      background: #3c220f;
+      border-top-left-radius: 100px;
+      border-top-right-radius: 100px;
+    }
+    .fire {
+      position: absolute;
+      bottom: 10px; left:50%; transform: translateX(-50%);
+      width: 80px; height: 80px;
+      background: radial-gradient(circle at 50% 50%, #ffd452 20%, #ff6b00 80%);
+      border-radius: 50% 50% 40% 40%;
+      animation: flicker 0.15s infinite alternate;
+    }
+    @keyframes flicker {
+      from { transform: translateX(-50%) scale(1); opacity: 1; }
+      to   { transform: translateX(-49%) scale(1.1); opacity: 0.8; }
+    }
+
+    /* Patrons */
+    .person {
+      position: absolute;
+      bottom: 20px;
+      width: 60px; height: 120px;
+      background: #7b4f24;
+      border-radius: 10px 10px 0 0;
+      transform-origin: bottom center;
+      animation: sway 3s ease-in-out infinite;
+    }
+    @keyframes sway {
+      0%,100% { transform: rotate(0deg); }
+      50%     { transform: rotate(2deg); }
+    }
+    #p1 { left:20%; animation-delay: 0s; }
+    #p2 { left:40%; animation-delay: 1s; }
+    #p3 { left:60%; animation-delay: 0.5s; }
+
+    /* Window and weather */
+    #window {
+      position: absolute;
+      top: 20px; right: 20px;
+      width: 150px; height: 120px;
+      background: #001;
+      border: 6px solid #3c220f;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    /* Weather icons/text */
+    #weather {
+      position: absolute;
+      top: 8px; left: 8px;
+      color: #ddd; font-size: 16px;
+    }
+    /* Rain effect */
+    .rain {
+      position: absolute; top:0; left:0; width:100%; height:100%;
+    }
+    .rain:after {
+      content: ""; position:absolute; width:2px; height:15px;
+      background: rgba(200,200,255,0.6);
+      animation: drop 0.5s linear infinite;
+    }
+    @keyframes drop {
+      0%   { transform: translateY(-20px) translateX(0); opacity:1; }
+      100% { transform: translateY(120px) translateX(5px); opacity:0; }
+    }
+    /* Snow effect */
+    .snow {
+      position: absolute; top:0; left:0; width:100%; height:100%;
+      pointer-events:none;
+    }
+    .snow:after {
+      content: "❆"; position:absolute;
+      font-size:14px; color: #eef;
+      animation: fall 3s linear infinite;
+    }
+    @keyframes fall {
+      0%   { transform: translateY(-10px) translateX(0); opacity:1; }
+      100% { transform: translateY(130px) translateX(20px); opacity:0; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Welcome to the Fantasy Tavern!</h1>
-  </header>
-
-  <div class="tavern-scene" id="tavernScene">
-    <!-- Characters as clickable images -->
-    <img 
-      src="https://images.unsplash.com/photo-1616719178203-0a55f8279f68?ixlib=rb-4.0.1&auto=format&fit=crop&w=80&q=80" 
-      alt="Bard" 
-      class="character bard" 
-      id="bard"
-      title="Click to talk to the Bard"
-    />
-
-    <img 
-      src="https://images.unsplash.com/photo-1628857034910-e8e4a3b1f8c0?ixlib=rb-4.0.1&auto=format&fit=crop&w=80&q=80" 
-      alt="Knight" 
-      class="character knight" 
-      id="knight"
-      title="Click to talk to the Knight"
-    />
-  </div>
-
-  <div class="message-box" id="messageBox">
-    Welcome! Click on a character to hear their story or get a quest.
+  <div id="tavern">
+    <div id="fireplace">
+      <div class="fire"></div>
+    </div>
+    <div class="person" id="p1"></div>
+    <div class="person" id="p2"></div>
+    <div class="person" id="p3"></div>
+    <div id="window">
+      <div id="weather">Loading...</div>
+    </div>
   </div>
 
   <script>
-    // JavaScript for interactivity
+    // Replace with your OpenWeatherMap API key
+    const API_KEY = 'YOUR_API_KEY';
+    const CITY_ID = '2950159'; // Berlin, DE (change as you like)
+    const url = `https://api.openweathermap.org/data/2.5/weather?id=${CITY_ID}&units=metric&appid=${API_KEY}`;
 
-    // Get references to elements  
-    const messageBox = document.getElementById('messageBox');
-    const bard = document.getElementById('bard');
-    const knight = document.getElementById('knight');
+    function updateWeather(data) {
+      const desc = data.weather[0].main.toLowerCase();
+      const temp = Math.round(data.main.temp);
+      const wEl = document.getElementById('weather');
+      wEl.textContent = `${desc.charAt(0).toUpperCase()+desc.slice(1)}, ${temp}°C`;
 
-    // Define character dialogues  
-    const dialogues = {
-      bard: [
-        "Greetings, traveler! Want to hear a song?",
-        "I've traveled far and wide. Care for a tale?",
-        "Stay a while and listen!"
-      ],
-      knight: [
-        "Halt! What brings you to these parts?",
-        "I defend the realm from danger.",
-        "May your sword be sharp and your heart brave!"
-      ]
-    };
+      const win = document.getElementById('window');
+      // Clear previous weather effects
+      win.querySelectorAll('.rain, .snow').forEach(el => el.remove());
 
-    // Function to handle click and display dialogue  
-    function talk(character) {
-      const options = dialogues[character];
-      // Pick a random dialogue  
-      const message = options[Math.floor(Math.random() * options.length)];
-      // Update the message box  
-      messageBox.textContent = message;
+      if (desc.includes('rain')) {
+        const rain = document.createElement('div');
+        rain.className = 'rain';
+        win.append(rain);
+      } else if (desc.includes('snow')) {
+        const snow = document.createElement('div');
+        snow.className = 'snow';
+        win.append(snow);
+      }
+      // Clear for clear or clouds—only text shown
     }
 
-    // Add event listeners  
-    bard.addEventListener('click', () => talk('bard'));
-    knight.addEventListener('click', () => talk('knight'));
+    fetch(url)
+      .then(res => res.json())
+      .then(updateWeather)
+      .catch(err => {
+        console.error(err);
+        document.getElementById('weather').textContent = '—';
+      });
 
-    // Optional: Add a way to reset or clear message  
-    messageBox.addEventListener('click', () => {
-      messageBox.textContent = "Welcome! Click on a character to hear their story or get a quest.";
-    });
+    // Auto-refresh every 10 minutes
+    setInterval(() => fetch(url).then(r => r.json()).then(updateWeather), 600000);
   </script>
 </body>
 </html>
