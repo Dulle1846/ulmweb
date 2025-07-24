@@ -3,165 +3,204 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Medieval Fantasy Tavern</title>
+  <title>Fantasy Tavern</title>
   <style>
-    /* Global reset and tavern background */
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body, html {
-      width:100%; height:100%;
-      overflow:hidden;
-      background: #422a12 url('https://i.imgur.com/4YQpK1g.png') repeat-y; /* subtle wood texture */
-      display:flex; justify-content:center; align-items:center;
-      font-family: 'Cinzel', serif;
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Georgia', serif;
+      background-color: #1e1a14;
+      color: #fff;
+      overflow: hidden;
     }
 
-    /* Main tavern container */
-    #tavern {
+    .tavern {
+      width: 100vw;
+      height: 100vh;
+      background: url('https://i.imgur.com/DsBKVBI.jpg') center/cover no-repeat;
       position: relative;
-      width: 90vw; height: 80vh;
-      background: #5c3a1d;
-      border: 8px solid #3c220f;
-      border-radius: 8px;
-      box-shadow: inset 0 0 50px rgba(0,0,0,0.7);
+    }
+
+    /* Window to show weather outside */
+    .window {
+      position: absolute;
+      top: 50px;
+      right: 50px;
+      width: 200px;
+      height: 150px;
+      background: rgba(0,0,0,0.4);
+      border: 4px solid #5b432a;
+      box-shadow: inset 0 0 10px #000;
       overflow: hidden;
+    }
+
+    .weather {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .raindrop, .snowflake {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+    }
+
+    .raindrop {
+      width: 2px;
+      height: 10px;
+      animation: fall 1s linear infinite;
+    }
+
+    .snowflake {
+      width: 5px;
+      height: 5px;
+      animation: snow 4s linear infinite;
+    }
+
+    @keyframes fall {
+      0% { transform: translateY(-10px); }
+      100% { transform: translateY(160px); }
+    }
+
+    @keyframes snow {
+      0% { transform: translateY(-5px); opacity: 1; }
+      100% { transform: translateY(160px); opacity: 0; }
     }
 
     /* Fireplace */
-    #fireplace {
+    .fireplace {
       position: absolute;
-      bottom: 0; left: 50%; transform: translateX(-50%);
-      width: 300px; height: 200px;
-      background: #3c220f;
-      border-top-left-radius: 100px;
-      border-top-right-radius: 100px;
-    }
-    .fire {
-      position: absolute;
-      bottom: 10px; left:50%; transform: translateX(-50%);
-      width: 80px; height: 80px;
-      background: radial-gradient(circle at 50% 50%, #ffd452 20%, #ff6b00 80%);
-      border-radius: 50% 50% 40% 40%;
-      animation: flicker 0.15s infinite alternate;
-    }
-    @keyframes flicker {
-      from { transform: translateX(-50%) scale(1); opacity: 1; }
-      to   { transform: translateX(-49%) scale(1.1); opacity: 0.8; }
+      bottom: 30px;
+      left: 50px;
+      width: 120px;
+      height: 150px;
+      background: url('https://i.imgur.com/AgYg8RY.png') center/contain no-repeat;
     }
 
-    /* Patrons */
-    .person {
+    .flames {
       position: absolute;
-      bottom: 20px;
-      width: 60px; height: 120px;
-      background: #7b4f24;
-      border-radius: 10px 10px 0 0;
-      transform-origin: bottom center;
-      animation: sway 3s ease-in-out infinite;
+      bottom: 40px;
+      left: 75px;
+      width: 40px;
+      height: 60px;
+      background: radial-gradient(ellipse at center, #ff4500 0%, #ff8c00 40%, transparent 70%);
+      animation: flame-flicker 0.4s infinite alternate ease-in-out;
+      border-radius: 50%;
     }
-    @keyframes sway {
-      0%,100% { transform: rotate(0deg); }
-      50%     { transform: rotate(2deg); }
-    }
-    #p1 { left:20%; animation-delay: 0s; }
-    #p2 { left:40%; animation-delay: 1s; }
-    #p3 { left:60%; animation-delay: 0.5s; }
 
-    /* Window and weather */
-    #window {
+    @keyframes flame-flicker {
+      0% { transform: scale(1) translateY(0); opacity: 1; }
+      100% { transform: scale(1.1) translateY(-5px); opacity: 0.7; }
+    }
+
+    /* Patrons (slight idle animation) */
+    .patron {
       position: absolute;
-      top: 20px; right: 20px;
-      width: 150px; height: 120px;
-      background: #001;
-      border: 6px solid #3c220f;
-      border-radius: 4px;
-      overflow: hidden;
+      width: 80px;
+      height: 160px;
+      background: url('https://i.imgur.com/qHtDzox.png') center/contain no-repeat;
+      animation: idle-sway 2.5s infinite alternate ease-in-out;
     }
-    /* Weather icons/text */
-    #weather {
+
+    .patron:nth-child(1) {
+      bottom: 40px;
+      right: 200px;
+    }
+
+    .patron:nth-child(2) {
+      bottom: 40px;
+      right: 300px;
+      animation-delay: 1s;
+    }
+
+    @keyframes idle-sway {
+      0% { transform: rotate(-1deg) translateY(0); }
+      100% { transform: rotate(1deg) translateY(2px); }
+    }
+
+    /* Controls */
+    .controls {
       position: absolute;
-      top: 8px; left: 8px;
-      color: #ddd; font-size: 16px;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      background: rgba(0,0,0,0.5);
+      padding: 10px 15px;
+      border-radius: 5px;
     }
-    /* Rain effect */
-    .rain {
-      position: absolute; top:0; left:0; width:100%; height:100%;
+
+    .controls button {
+      background: #5b432a;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      margin-right: 5px;
+      cursor: pointer;
+      font-family: 'Georgia';
     }
-    .rain:after {
-      content: ""; position:absolute; width:2px; height:15px;
-      background: rgba(200,200,255,0.6);
-      animation: drop 0.5s linear infinite;
-    }
-    @keyframes drop {
-      0%   { transform: translateY(-20px) translateX(0); opacity:1; }
-      100% { transform: translateY(120px) translateX(5px); opacity:0; }
-    }
-    /* Snow effect */
-    .snow {
-      position: absolute; top:0; left:0; width:100%; height:100%;
-      pointer-events:none;
-    }
-    .snow:after {
-      content: "❆"; position:absolute;
-      font-size:14px; color: #eef;
-      animation: fall 3s linear infinite;
-    }
-    @keyframes fall {
-      0%   { transform: translateY(-10px) translateX(0); opacity:1; }
-      100% { transform: translateY(130px) translateX(20px); opacity:0; }
+
+    .controls button:hover {
+      background: #7a5c3c;
     }
   </style>
 </head>
 <body>
-  <div id="tavern">
-    <div id="fireplace">
-      <div class="fire"></div>
+  <div class="tavern">
+    <div class="controls">
+      <button onclick="setWeather('rain')">🌧 Rain</button>
+      <button onclick="setWeather('snow')">❄ Snow</button>
+      <button onclick="clearWeather()">☀ Clear</button>
     </div>
-    <div class="person" id="p1"></div>
-    <div class="person" id="p2"></div>
-    <div class="person" id="p3"></div>
-    <div id="window">
-      <div id="weather">Loading...</div>
+
+    <div class="window">
+      <div id="weather" class="weather"></div>
     </div>
+
+    <div class="fireplace">
+      <div class="flames"></div>
+    </div>
+
+    <div class="patron"></div>
+    <div class="patron"></div>
   </div>
 
   <script>
-    // Replace with your OpenWeatherMap API key
-    const API_KEY = 'YOUR_API_KEY';
-    const CITY_ID = '2950159'; // Berlin, DE (change as you like)
-    const url = `https://api.openweathermap.org/data/2.5/weather?id=${CITY_ID}&units=metric&appid=${API_KEY}`;
+    const weatherContainer = document.getElementById('weather');
 
-    function updateWeather(data) {
-      const desc = data.weather[0].main.toLowerCase();
-      const temp = Math.round(data.main.temp);
-      const wEl = document.getElementById('weather');
-      wEl.textContent = `${desc.charAt(0).toUpperCase()+desc.slice(1)}, ${temp}°C`;
-
-      const win = document.getElementById('window');
-      // Clear previous weather effects
-      win.querySelectorAll('.rain, .snow').forEach(el => el.remove());
-
-      if (desc.includes('rain')) {
-        const rain = document.createElement('div');
-        rain.className = 'rain';
-        win.append(rain);
-      } else if (desc.includes('snow')) {
-        const snow = document.createElement('div');
-        snow.className = 'snow';
-        win.append(snow);
+    function createWeatherElement(type) {
+      const el = document.createElement('div');
+      if (type === 'rain') {
+        el.classList.add('raindrop');
+        el.style.left = Math.random() * 100 + '%';
+        el.style.animationDuration = (0.8 + Math.random() * 0.5) + 's';
+      } else if (type === 'snow') {
+        el.classList.add('snowflake');
+        el.style.left = Math.random() * 100 + '%';
+        el.style.animationDuration = (3 + Math.random() * 2) + 's';
       }
-      // Clear for clear or clouds—only text shown
+      return el;
     }
 
-    fetch(url)
-      .then(res => res.json())
-      .then(updateWeather)
-      .catch(err => {
-        console.error(err);
-        document.getElementById('weather').textContent = '—';
-      });
+    let weatherType = null;
+    let weatherInterval = null;
 
-    // Auto-refresh every 10 minutes
-    setInterval(() => fetch(url).then(r => r.json()).then(updateWeather), 600000);
+    function setWeather(type) {
+      clearWeather();
+      weatherType = type;
+      weatherInterval = setInterval(() => {
+        const el = createWeatherElement(type);
+        weatherContainer.appendChild(el);
+        setTimeout(() => weatherContainer.removeChild(el), 4000);
+      }, 100);
+    }
+
+    function clearWeather() {
+      clearInterval(weatherInterval);
+      weatherContainer.innerHTML = '';
+      weatherType = null;
+    }
   </script>
 </body>
 </html>
