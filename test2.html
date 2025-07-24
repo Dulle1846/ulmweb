@@ -1,112 +1,159 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fantasy Tavern</title>
-    <link rel="stylesheet" href="fantasy-tavern.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Fantasy Tavern</title>
+  <style>
+    /* Reset some default styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Georgia', serif;
+      background-color: #2b1d0e; /* Dark tavern-like background */
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      color: #ffd700; /* Gold color for a fantasy feel */
+      text-shadow: 2px 2px 4px #000;
+    }
+
+    .tavern-scene {
+      position: relative;
+      width: 80%;
+      max-width: 800px;
+      height: 400px;
+      background-image: url('https://images.unsplash.com/photo-1549924231-f129b911e442?ixlib=rb-4.0.1&auto=format&fit=crop&w=1470&q=80'); /* Placeholder background */
+      background-size: cover;
+      background-position: center;
+      border: 5px solid #654321; /* Oak frame for the tavern scene */
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    /* Character styles */
+    .character {
+      position: absolute;
+      bottom: 0;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .character:hover {
+      transform: scale(1.1);
+    }
+
+    /* Positioning characters within the scene */
+    .bard {
+      left: 15%;
+      width: 80px;
+      height: 150px;
+    }
+
+    .knight {
+      right: 15%;
+      width: 80px;
+      height: 150px;
+    }
+
+    /* Message box styles */
+    .message-box {
+      margin-top: 20px;
+      width: 80%;
+      max-width: 800px;
+      min-height: 50px;
+      padding: 15px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 8px;
+      font-size: 1.2em;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+  </style>
 </head>
 <body>
-    <div id="tavern">
-        <h1>Welcome to the Mystic Moon Tavern!</h1>
-        <div class="tavern-exterior">
-            <img src="tavern-exterior.png" alt="Tavern Exterior" class="tavern-picture">
-            <div class="exterior-overlay"></div>
-        </div>
-        <div class="tavern-interior">
-            <img src="tavern-interior.png" alt="Tavern Interior" class="tavern-picture">
-            <div class="interior-overlay"></div>
-            <div class="interior-content">
-                <p>Step inside the warm and cozy Mystic Moon Tavern, where travelers from all walks of life gather to share tales of their adventures and enjoy a pint of our finest ale.</p>
-                <button onclick="toggleExterior()">Enter Tavern</button>
-            </div>
-        </div>
-    </div>
-    <script>
-        function toggleExterior() {
-            const tavern = document.getElementById('tavern');
-            const exterior = tavern.querySelector('.tavern-exterior');
-            const interior = tavern.querySelector('.tavern-interior');
+  <header>
+    <h1>Welcome to the Fantasy Tavern!</h1>
+  </header>
 
-            if (exterior.style.display === 'none') {
-                interior.style.display = 'none';
-                exterior.style.display = 'block';
-            } else {
-                exterior.style.display = 'none';
-                interior.style.display = 'block';
-            }
-        }
-    </script>
+  <div class="tavern-scene" id="tavernScene">
+    <!-- Characters as clickable images -->
+    <img 
+      src="https://images.unsplash.com/photo-1616719178203-0a55f8279f68?ixlib=rb-4.0.1&auto=format&fit=crop&w=80&q=80" 
+      alt="Bard" 
+      class="character bard" 
+      id="bard"
+      title="Click to talk to the Bard"
+    />
+
+    <img 
+      src="https://images.unsplash.com/photo-1628857034910-e8e4a3b1f8c0?ixlib=rb-4.0.1&auto=format&fit=crop&w=80&q=80" 
+      alt="Knight" 
+      class="character knight" 
+      id="knight"
+      title="Click to talk to the Knight"
+    />
+  </div>
+
+  <div class="message-box" id="messageBox">
+    Welcome! Click on a character to hear their story or get a quest.
+  </div>
+
+  <script>
+    // JavaScript for interactivity
+
+    // Get references to elements  
+    const messageBox = document.getElementById('messageBox');
+    const bard = document.getElementById('bard');
+    const knight = document.getElementById('knight');
+
+    // Define character dialogues  
+    const dialogues = {
+      bard: [
+        "Greetings, traveler! Want to hear a song?",
+        "I've traveled far and wide. Care for a tale?",
+        "Stay a while and listen!"
+      ],
+      knight: [
+        "Halt! What brings you to these parts?",
+        "I defend the realm from danger.",
+        "May your sword be sharp and your heart brave!"
+      ]
+    };
+
+    // Function to handle click and display dialogue  
+    function talk(character) {
+      const options = dialogues[character];
+      // Pick a random dialogue  
+      const message = options[Math.floor(Math.random() * options.length)];
+      // Update the message box  
+      messageBox.textContent = message;
+    }
+
+    // Add event listeners  
+    bard.addEventListener('click', () => talk('bard'));
+    knight.addEventListener('click', () => talk('knight'));
+
+    // Optional: Add a way to reset or clear message  
+    messageBox.addEventListener('click', () => {
+      messageBox.textContent = "Welcome! Click on a character to hear their story or get a quest.";
+    });
+  </script>
 </body>
 </html>
-```
-
-```css
-#tavern {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}
-
-.tavern-picture {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
-    z-index: -1;
-}
-
-.exterior-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgb(0, 0, 0, 0.6);
-    display: none;
-}
-
-.interior-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgb(0, 0, 0, 0.6);
-}
-
-.interior-content {
-    color: white;
-    font-size: 2rem;
-    font-weight: bold;
-    text-align: center;
-    padding: 20px;
-    margin: 0 auto;
-    position: relative;
-    z-index: 1;
-}
-
-button {
-    margin-top: 20px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    background-color: #f0a0a0;
-    color: black;
-    font-size: 1.5rem;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-button:hover {
-    background-color: #cc6666;
-}
-```
-
-Replace `tavern-exterior.png` and `tavern-interior.png` with your own images for the tavern exterior and interior. This code sets up a simple webpage with a fantasy tavern theme. When you click "Enter Tavern", the exterior image appears with an overlay and the interior image is hidden. You can add more interactivity and
