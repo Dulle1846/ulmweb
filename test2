@@ -1,0 +1,112 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Tavern</title>
+    <link rel="stylesheet" href="fantasy-tavern.css">
+</head>
+<body>
+    <div id="tavern">
+        <h1>Welcome to the Mystic Moon Tavern!</h1>
+        <div class="tavern-exterior">
+            <img src="tavern-exterior.png" alt="Tavern Exterior" class="tavern-picture">
+            <div class="exterior-overlay"></div>
+        </div>
+        <div class="tavern-interior">
+            <img src="tavern-interior.png" alt="Tavern Interior" class="tavern-picture">
+            <div class="interior-overlay"></div>
+            <div class="interior-content">
+                <p>Step inside the warm and cozy Mystic Moon Tavern, where travelers from all walks of life gather to share tales of their adventures and enjoy a pint of our finest ale.</p>
+                <button onclick="toggleExterior()">Enter Tavern</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function toggleExterior() {
+            const tavern = document.getElementById('tavern');
+            const exterior = tavern.querySelector('.tavern-exterior');
+            const interior = tavern.querySelector('.tavern-interior');
+
+            if (exterior.style.display === 'none') {
+                interior.style.display = 'none';
+                exterior.style.display = 'block';
+            } else {
+                exterior.style.display = 'none';
+                interior.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
+```
+
+```css
+#tavern {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.tavern-picture {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: -1;
+}
+
+.exterior-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgb(0, 0, 0, 0.6);
+    display: none;
+}
+
+.interior-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgb(0, 0, 0, 0.6);
+}
+
+.interior-content {
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 20px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #f0a0a0;
+    color: black;
+    font-size: 1.5rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #cc6666;
+}
+```
+
+Replace `tavern-exterior.png` and `tavern-interior.png` with your own images for the tavern exterior and interior. This code sets up a simple webpage with a fantasy tavern theme. When you click "Enter Tavern", the exterior image appears with an overlay and the interior image is hidden. You can add more interactivity and
