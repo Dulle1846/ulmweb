@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>LTO RSS Feed auf GitHub Pages</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #rss-feed ul { list-style-type: none; padding: 0; }
+    #rss-feed li { margin-bottom: 1em; }
+    #rss-feed small { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Aktuelle News von LTO</h1>
+  <div id="rss-feed">Lade News ...</div>
+
+  <script>
+    fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.lto.de/rss/feed.xml')
+      .then(response => response.json())
+      .then(data => {
+        const container = document.getElementById('rss-feed');
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = "Keine News gefunden.";
+          return;
+        }
+        let html = '<ul>';
+        data.items.slice(0, 10).forEach(item => {
+          html += `<li>
+            <a href="${item.link}" target="_blank" rel="noopener">${item.title}</a><br>
+            <small>${item.pubDate.substring(0, 10)}${item.author ? ' – ' + item.author : ''}</small>
+          </li>`;
+        });
+        html += '</ul>';
+        container.innerHTML = html;
+      })
+      .catch(() => {
+        document.getElementById('rss-feed').innerHTML = "RSS-Feed konnte nicht geladen werden.";
+      });
+  </script>
+</body>
+</html>
