@@ -23,15 +23,15 @@
     </div>
     <script>
         async function fetchRSS() {
-            const CORS_PROXY = "https://api.allorigins.win/get?url=";
+            const CORS_PROXY = "https://corsproxy.io/?";
             const FEED_URL = "https://www.baden-wuerttemberg.de/de/service/rss/xml/rss-alle-meldungen";
             const feedContainer = document.getElementById('feed');
 
             try {
                 const response = await fetch(CORS_PROXY + encodeURIComponent(FEED_URL));
-                const data = await response.json();
+                const xmlText = await response.text();
                 const parser = new DOMParser();
-                const xml = parser.parseFromString(data.contents, "text/xml");
+                const xml = parser.parseFromString(xmlText, "text/xml");
                 const items = xml.querySelectorAll("item");
                 if (items.length === 0) {
                     feedContainer.innerHTML = "<p>Keine Meldungen gefunden.</p>";
