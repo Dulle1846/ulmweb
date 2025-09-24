@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>RSS Feed Anzeige - Baden-Württemberg</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f6f6f6; margin: 0; padding: 0;}
+        .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 0 12px #ccc; padding: 32px;}
+        h1 { color: #23487a; }
+        .rss-item { margin-bottom: 32px; border-bottom: 1px solid #eee; padding-bottom: 16px;}
+        .rss-item:last-child { border-bottom: none; }
+        .rss-title { font-size: 1.2em; color: #23487a; text-decoration: none; }
+        .rss-date { font-size: 0.9em; color: #888; margin-top: 4px;}
+        .rss-desc { margin-top: 8px; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Aktuelle Meldungen aus Baden-Württemberg</h1>
+        <div id="feed"></div>
+    </div>
+    <script>
+        async function fetchRSS() {
+            const CORS_PROXY = "https://api.allorigins.win/get?url=";
+            const FEED_URL = "https://www.baden-wuerttemberg.de/de/service/rss/xml/rss-alle-meldungen";
+            const feedContainer = document.getElementById('feed');
+
+            try {
+                const response = await fetch(CORS_PROXY + encodeURIComponent(FEED_URL));
+                const data = await response.json();
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(data.contents, "text/xml");
+                const items = xml.querySelectorAll("item");
+                if (items.length === 0) {
+                    feedContainer.innerHTML = "<p>Keine Meldungen gefunden.</p>";
+                    return;
+                }
+                let html = "";
+                items.forEach(item => {
+                    const title = item.querySelector("title")?.textContent || "Kein Titel";
+                    const link = item.querySelector("link")?.textContent || "#";
+                    const pubDate = new Date(item.querySelector("pubDate")?.textContent || "");
+                    const desc = item.querySelector("description")?.textContent || "";
+                    html += `
+                        <div class="rss-item">
+                            <a class="rss-title" href="${link}" target="_blank" rel="noopener">${title}</a>
+                            <div class="rss-date">${pubDate.toLocaleString('de-DE')}</div>
+                            <div class="rss-desc">${desc}</div>
+                        </div>
+                    `;
+                });
+                feedContainer.innerHTML = html;
+            } catch (e) {
+                feedContainer.innerHTML = '<p class="error">Fehler beim Laden des RSS Feeds: ' + e.message + '</p>';
+            }
+        }
+
+        fetchRSS();
+    </script>
+</body>
+</html>
