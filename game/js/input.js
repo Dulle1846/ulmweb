@@ -1,8 +1,10 @@
-// ── Mouse / Keyboard Handlers ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  INPUT — Maus, Tastatur, Zoom-Mausrad
+// ═══════════════════════════════════════════════════════════════
 
-import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT } from './config.js';
+import { WORLD_W, WORLD_H, CELL } from './config.js';
 import { state } from './state.js';
-import { clampCamera } from './camera.js';
+import { clampCamera, applyZoomDelta, screenToWorld } from './camera.js';
 import { placeCurrentCard, skipCard } from './systems/cards.js';
 import { researchTech } from './systems/tech.js';
 import { createParticle } from './rendering/particles.js';
@@ -12,24 +14,36 @@ import { distance } from './utils.js';
 export function setupInput() {
     const canvas = state.canvas;
 
+    // ── Drag-State ───────────────────────────────────────────
     let isDragging = false;
     let pointerMoved = false;
-    let lastMouseX = 0;
-    let lastMouseY = 0;
-    let pointerStartX = 0;
-    let pointerStartY = 0;
+    let lastMX = 0, lastMY = 0;
+    let startMX = 0, startMY = 0;
 
+    // ── Mausrad → Zoom ───────────────────────────────────────
+    canvas.addEventListener("wheel", e => {
+        e.preventDefault();
+
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        applyZoomDelta(e.deltaY, mx, my);
+    }, { passive: false });
+
+    // ── Drag-Start ───────────────────────────────────────────
     canvas.addEventListener("mousedown", e => {
         if (e.button === 0) {
             isDragging = true;
             pointerMoved = false;
-            lastMouseX = e.clientX;
-            lastMouseY = e.clientY;
-            pointerStartX = e.clientX;
-            pointerStartY = e.clientY;
+            lastMX = e.clientX;
+            lastMY = e.clientY;
+            startMX = e.clientX;
+            startMY = e.clientY;
         }
     });
 
+    // ── Drag-Ende ────────────────────────────────────────────
     window.addEventListener("mouseup", e => {
         if (isDragging && !pointerMoved && e.button === 0) {
             clickOnCanvas(e);
@@ -37,30 +51,98 @@ export function setupInput() {
         isDragging = false;
     });
 
+    // ── Drag-Bewegung ────────────────────────────────────────
     canvas.addEventListener("mousemove", e => {
         if (!isDragging) return;
 
-        const dx = e.clientX - lastMouseX;
-        const dy = e.clientY - lastMouseY;
+        const dx = e.clientX - lastMX;
+        const dy = e.clientY - lastMY;
 
-        if (Math.hypot(e.clientX - pointerStartX, e.clientY - pointerStartY) > 6) {
+        if (Math.hypot(e.clientX - startMX, e.clientY - startMY) > 6) {
             pointerMoved = true;
         }
 
-        state.camera.x -= dx * 1.6;
-        state.camera.y -= dy * 1.6;
+        // Drag-Geschwindigkeit ist unabhängig vom Zoom
+        state.camera.x -= dx;
+        state.camera.y -= dy;
         clampCamera();
 
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
+        lastMX = e.clientX;
+        lastMY = e.clientY;
     });
 
+    // ── Rechtsklick ──────────────────────────────────────────
     canvas.addEventListener("contextmenu", e => {
         e.preventDefault();
         clickOnCanvas(e);
     });
 
-    // keyboard
+    // ── Touch-Support (Pinch-Zoom + Drag) ────────────────────
+    let touches = [];
+    let lastPinchDist = 0;
+
+    canvas.addEventListener("touchstart", e => {
+        e.preventDefault();
+        touches = [...e.touches];
+        if (touches.length === 1) {
+            isDragging = true;
+            pointerMoved = false;
+            lastMX = touches[0].clientX;
+            lastMY = touches[0].clientY;
+            startMX = lastMX;
+            startMY = lastMY;
+        } else if (touches.length === 2) {
+            lastPinchDist = Math.hypot(
+                touches[0].clientX - touches[1].clientX,
+                touches[0].clientY - touches[1].clientY
+            );
+        }
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", e => {
+        e.preventDefault();
+        const ts = [...e.touches];
+
+        if (ts.length === 1 && isDragging) {
+            const dx = ts[0].clientX - lastMX;
+            const dy = ts[0].clientY - lastMY;
+            if (Math.hypot(ts[0].clientX - startMX, ts[0].clientY - startMY) > 6) {
+                pointerMoved = true;
+            }
+            state.camera.x -= dx;
+            state.camera.y -= dy;
+            clampCamera();
+            lastMX = ts[0].clientX;
+            lastMY = ts[0].clientY;
+        } else if (ts.length === 2) {
+            const dist = Math.hypot(
+                ts[0].clientX - ts[1].clientX,
+                ts[0].clientY - ts[1].clientY
+            );
+            if (lastPinchDist > 0) {
+                const rect = canvas.getBoundingClientRect();
+                const cx = (ts[0].clientX + ts[1].clientX) / 2 - rect.left;
+                const cy = (ts[0].clientY + ts[1].clientY) / 2 - rect.top;
+                const delta = (lastPinchDist - dist) * 3;
+                applyZoomDelta(delta, cx, cy);
+            }
+            lastPinchDist = dist;
+        }
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", e => {
+        if (e.touches.length === 0) {
+            if (isDragging && !pointerMoved) {
+                const fakeEvent = { clientX: lastMX, clientY: lastMY };
+                clickOnCanvas(fakeEvent);
+            }
+            isDragging = false;
+            lastPinchDist = 0;
+        }
+        touches = [...e.touches];
+    });
+
+    // ── Tastatur ─────────────────────────────────────────────
     window.addEventListener("keydown", e => {
         if (e.key === "/" && document.getElementById("big-message").classList.contains("hidden")) {
             showHelp();
@@ -70,9 +152,16 @@ export function setupInput() {
             togglePause();
             e.preventDefault();
         }
+        // +/- zum Zoomen
+        if (e.key === "+" || e.key === "=") {
+            applyZoomDelta(-120, state.canvas.width / 2, state.canvas.height / 2);
+        }
+        if (e.key === "-") {
+            applyZoomDelta(120, state.canvas.width / 2, state.canvas.height / 2);
+        }
     });
 
-    // UI buttons
+    // ── UI-Buttons ───────────────────────────────────────────
     document.getElementById("pause-btn").addEventListener("click", togglePause);
     document.getElementById("speed-1").addEventListener("click", () => setSpeed(1));
     document.getElementById("speed-2").addEventListener("click", () => setSpeed(2));
@@ -97,7 +186,6 @@ export function setupInput() {
         document.getElementById("big-message").classList.add("hidden");
     });
 
-    // tech tree clicks (event delegation)
     document.getElementById("tab-content").addEventListener("click", e => {
         const item = e.target.closest(".tech-item");
         if (item && item.dataset.unlocked === "false") {
@@ -107,6 +195,10 @@ export function setupInput() {
     });
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  KLICK-VERARBEITUNG
+// ═══════════════════════════════════════════════════════════════
+
 function clickOnCanvas(e) {
     if (state.gameOver || state.isPaused) return;
 
@@ -114,34 +206,41 @@ function clickOnCanvas(e) {
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
-    const worldX = (mx + state.camera.x) / TILE_SIZE;
-    const worldY = (my + state.camera.y) / TILE_SIZE;
+    const world = screenToWorld(mx, my);
+    const tx = Math.floor(world.x);
+    const ty = Math.floor(world.y);
 
-    const tx = Math.floor(worldX);
-    const ty = Math.floor(worldY);
+    if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) return;
 
-    if (tx < 0 || ty < 0 || tx >= WORLD_WIDTH || ty >= WORLD_HEIGHT) return;
-
-    const clickedEntity = state.entities.find(ent =>
-        !ent.dead && ent.isEnemy() && distance(ent.x, ent.y, worldX, worldY) < 0.8
+    // Feind angreifen
+    const clickedEnemy = state.entities.find(ent =>
+        !ent.dead && ent.isEnemy() && distance(ent.x, ent.y, world.x, world.y) < 0.8
     );
 
-    if (clickedEntity && clickedEntity.isEnemy()) {
-        clickedEntity.hp -= 60;
-        createParticle(clickedEntity.x * TILE_SIZE + 24, clickedEntity.y * TILE_SIZE + 12, "#ec4899", 30);
-        if (clickedEntity.hp < 0) clickedEntity.dead = true;
+    if (clickedEnemy) {
+        clickedEnemy.hp -= 60;
+        createParticle(
+            clickedEnemy.x * CELL + 24,
+            clickedEnemy.y * CELL + 12,
+            "#ec4899", 30
+        );
+        if (clickedEnemy.hp < 0) clickedEnemy.dead = true;
         return;
     }
 
+    // Karte platzieren
     if (state.currentCard) {
         placeCurrentCard(tx, ty);
     }
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  UI-STEUERUNG
+// ═══════════════════════════════════════════════════════════════
+
 function togglePause() {
     state.isPaused = !state.isPaused;
-    const pauseBtn = document.getElementById("pause-btn");
-    pauseBtn.style.backgroundColor = state.isPaused ? "#450a0a" : "";
+    document.getElementById("pause-btn").style.backgroundColor = state.isPaused ? "#450a0a" : "";
     document.getElementById("pause-text").textContent = state.isPaused ? "PLAY" : "PAUSE";
 }
 
@@ -171,10 +270,10 @@ function switchTab(n) {
 function showHelp() {
     showBigMessage(
         "HOW TO PLAY",
-        `• Click the CARD to place buildings<br>
-         • Drag the map to explore<br>
-         • Survive raids and keep morale high<br>
-         • Research technologies to improve your kingdom<br><br>
+        `• Scroll to zoom in/out (3 visual levels)<br>
+         • Click to place buildings from your card<br>
+         • Drag to explore the wilderness<br>
+         • Survive raids and keep morale high<br><br>
          <span class="text-amber-400">Build. Protect. Prosper.</span>`,
         6500
     );
