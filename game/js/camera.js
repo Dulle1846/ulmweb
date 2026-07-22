@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  CAMERA — Viewport, stufenloser Zoom, Zoom-to-Cursor
+//  CAMERA — Stufenloser Zoom, smooth, ohne Sprünge
 // ═══════════════════════════════════════════════════════════════
 
 import {
@@ -9,50 +9,59 @@ import {
 } from './config.js';
 import { state } from './state.js';
 
-// ── Zoom anwenden (aufgerufen pro Frame) ──────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  HAUPT-UPDATE (pro Frame)
+// ═══════════════════════════════════════════════════════════════
 
-export function updateCamera(dt) {
-    // Smoothes Zoom-Interpolieren
+export function updateCamera() {
+    // Sanftes Zoom-Interpolieren
     const diff = state.zoomTarget - state.zoom;
-    if (Math.abs(diff) > 0.001) {
-        state.zoom += diff * Math.min(1, ZOOM_LERP * dt * 60);
+    if (Math.abs(diff) > 0.0001) {
+        state.zoom += diff * 0.15;
     } else {
         state.zoom = state.zoomTarget;
     }
 
     // Zoom-Level berechnen
-    if (state.zoom < ZOOM_THRESHOLD_1_2) {
-        state.zoomLevel = 1;
-    } else if (state.zoom < ZOOM_THRESHOLD_2_3) {
-        state.zoomLevel = 2;
-    } else {
-        state.zoomLevel = 3;
-    }
+    if (state.zoom < ZOOM_THRESHOLD_1_2)      state.zoomLevel = 1;
+    else if (state.zoom < ZOOM_THRESHOLD_2_3) state.zoomLevel = 2;
+    else                                       state.zoomLevel = 3;
 
     clampCamera();
 }
 
-// ── Zoom per Mausrad ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  ZOOM PER MAUSRAD
+// ═══════════════════════════════════════════════════════════════
 
 export function applyZoomDelta(delta, mouseScreenX, mouseScreenY) {
-    const oldZoom = state.zoomTarget;
+    // Wir zoomen auf eine "interne" Variable, die wir dann sanft
+    // Richtung state.zoomTarget bewegen. So fühlt sich der Zoom
+    // flüssig an, egal wie schnell der User scrollt.
 
-    // Exponentieller Zoom (wie CK3)
-    const factor = Math.exp(-delta * ZOOM_SPEED);
-    state.zoomTarget = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.zoomTarget * factor));
+    const worldUnderMouseX = (mouseScreenX + state.camera.x) / (CELL * state.zoom);
+    const worldUnderMouseY = (mouseScreenY + state.camera.y) / (CELL * state.zoom);
 
-    // Zoom-to-cursor: Weltpunkt unter der Maus beibehalten
-    const worldXBefore = (mouseScreenX + state.camera.x) / (CELL * oldZoom);
-    const worldYBefore = (mouseScreenY + state.camera.y) / (CELL * oldZoom);
+    // Sanfter Faktor: deltaY 100 = 0.92x rein, 0.92x raus
+    const sensitivity = 0.0015;
+    const factor = Math.exp(delta * sensitivity);
 
-    const worldXAfter = (mouseScreenX + state.camera.x) / (CELL * state.zoomTarget);
-    const worldYAfter = (mouseScreenY + state.camera.y) / (CELL * state.zoomTarget);
+    const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.zoomTarget * factor));
+    state.zoomTarget = newZoom;
 
-    state.camera.x += (worldXBefore - worldXAfter) * CELL * state.zoomTarget;
-    state.camera.y += (worldYBefore - worldYAfter) * CELL * state.zoomTarget;
+    // KAMERA-KORREKTUR: Berechne die neue Kamera-Position so,
+    // dass der Weltpunkt unter der Maus gleich bleibt.
+    // (Zoom-to-cursor)
+    const newCamX = worldUnderMouseX * CELL * newZoom - mouseScreenX;
+    const newCamY = worldUnderMouseY * CELL * newZoom - mouseScreenY;
+
+    state.camera.x = newCamX;
+    state.camera.y = newCamY;
 }
 
-// ── Kamera begrenzen ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  KAMERA BEGRENZEN
+// ═══════════════════════════════════════════════════════════════
 
 export function clampCamera() {
     const worldPixelW = WORLD_W * CELL * state.zoom;
@@ -60,14 +69,27 @@ export function clampCamera() {
     const cw = state.canvas.width;
     const ch = state.canvas.height;
 
-    // Erlaube etwas Überziehen, damit man die Ränder sieht
-    const margin = 100;
+    // Wenn die Welt kleiner als der Viewport ist → zentrieren
+    if (worldPixelW < cw) {
+        state.camera.x = -(cw - worldPixelW) / 2;
+    } else {
+        // Sanftes Limit: erlaube max. 50% Überstand am Rand
+        const maxX = worldPixelW - cw;
+        const minX = 0;
+        state.camera.x = Math.max(-maxX * 0.3, Math.min(state.camera.x, maxX * 1.3));
+    }
 
-    state.camera.x = Math.max(-margin, Math.min(state.camera.x, worldPixelW - cw + margin));
-    state.camera.y = Math.max(-margin, Math.min(state.camera.y, worldPixelH - ch + margin));
+    if (worldPixelH < ch) {
+        state.camera.y = -(ch - worldPixelH) / 2;
+    } else {
+        const maxY = worldPixelH - ch;
+        state.camera.y = Math.max(-maxY * 0.3, Math.min(state.camera.y, maxY * 1.3));
+    }
 }
 
-// ── Kamera zentrieren ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  KAMERA ZENTRIEREN
+// ═══════════════════════════════════════════════════════════════
 
 export function centerCamera() {
     const cx = WORLD_W / 2;
@@ -77,14 +99,18 @@ export function centerCamera() {
     state.camera.y = cy * CELL * state.zoom - state.canvas.height / 2;
 }
 
-// ── Canvas-Größe anpassen ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  CANVAS-GRÖSSE
+// ═══════════════════════════════════════════════════════════════
 
 export function resize() {
     state.canvas.width = window.innerWidth - 290;
     state.canvas.height = window.innerHeight - 56;
 }
 
-// ── Bildschirm → Welt Konvertierung ──────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  KOORDINATEN-KONVERTIERUNG
+// ═══════════════════════════════════════════════════════════════
 
 export function screenToWorld(sx, sy) {
     return {
