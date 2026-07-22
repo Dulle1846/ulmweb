@@ -1,4 +1,6 @@
-// ── Entity Types & Entity Class ────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  TYPES — Enums, Hilfsfunktionen, Entity-Klasse
+// ═══════════════════════════════════════════════════════════════
 
 export const TYPE = {
     KEEP: 0,
@@ -29,50 +31,95 @@ export const TYPE = {
     RUIN: 50,
 };
 
+// ── HP-Tabelle ────────────────────────────────────────────────
+
+const MAX_HP = {
+    [TYPE.KEEP]:     1200,
+    [TYPE.HOUSE]:    180,
+    [TYPE.FARM]:     90,
+    [TYPE.LUMBER]:   110,
+    [TYPE.QUARRY]:   140,
+    [TYPE.WALL]:     450,
+    [TYPE.TOWER]:    220,
+    [TYPE.TAVERN]:   160,
+    [TYPE.TEMPLE]:   210,
+    [TYPE.BARRACKS]: 280,
+    [TYPE.MILL]:     130,
+    [TYPE.STABLE]:   170,
+    [TYPE.WONDER]:   9999,
+    [TYPE.VILLAGER]: 35,
+    [TYPE.GUARD]:    160,
+    [TYPE.ARCHER]:   95,
+    [TYPE.KNIGHT]:   240,
+    [TYPE.PRIEST]:   70,
+    [TYPE.GOBLIN]:   45,
+    [TYPE.ORC]:      110,
+    [TYPE.TROLL]:    240,
+    [TYPE.DEER]:     25,
+};
+
 function getMaxHpForType(type) {
-    switch (type) {
-        case TYPE.KEEP:     return 1200;
-        case TYPE.HOUSE:    return 180;
-        case TYPE.FARM:     return 90;
-        case TYPE.LUMBER:   return 110;
-        case TYPE.QUARRY:   return 140;
-        case TYPE.WALL:     return 450;
-        case TYPE.TOWER:    return 220;
-        case TYPE.TAVERN:   return 160;
-        case TYPE.TEMPLE:   return 210;
-        case TYPE.BARRACKS: return 280;
-        case TYPE.MILL:     return 130;
-        case TYPE.STABLE:   return 170;
-        case TYPE.WONDER:   return 9999;
-        case TYPE.VILLAGER: return 35;
-        case TYPE.GUARD:    return 160;
-        case TYPE.ARCHER:   return 95;
-        case TYPE.KNIGHT:   return 240;
-        case TYPE.PRIEST:   return 70;
-        case TYPE.GOBLIN:   return 45;
-        case TYPE.ORC:      return 110;
-        case TYPE.TROLL:    return 240;
-        case TYPE.DEER:     return 25;
-        default:            return 100;
-    }
+    return MAX_HP[type] ?? 100;
 }
+
+// ── Emoji-Zuordnung nach Job ──────────────────────────────────
+
+export const JOB_ICONS = {
+    farmer:      "🌾",
+    woodcutter:  "🪓",
+    miner:       "⛏️",
+    innkeeper:   "🍺",
+    acolyte:     "✨",
+    miller:      "⚙️",
+    stablehand:  "🐴",
+    guard:       "🛡️",
+    archer:      "🏹",
+    knight:      "⚔️",
+    king:        "👑",
+    priest:      "🙏",
+    wanderer:    "🧳",
+    fleeing:     "💨",
+    idle:        "◆",
+};
+
+// ── Entity-Klasse ─────────────────────────────────────────────
 
 export class Entity {
     constructor(x, y, type) {
         this.x = x;
         this.y = y;
         this.type = type;
+
         this.hp = getMaxHpForType(type);
         this.maxHp = this.hp;
         this.dead = false;
         this.age = 0;
-        this.facing = Math.random() > 0.5 ? 1 : -1;
+
+        // ── Animation ────────────────────────────────────────
         this.anim = Math.random() * 100;
+        this.facing = Math.random() > 0.5 ? 1 : -1;
+        this.visualState = "idle";   // idle | walk | work | flee
+
+        // ── Position & Bewegung ──────────────────────────────
+        this.anchor = { x, y };
+        this.home = { x, y };
         this.targetX = x;
         this.targetY = y;
-        this.state = "idle";
+        this.velocityX = 0;
+        this.velocityY = 0;
+
+        // ── Routinen-System ──────────────────────────────────
+        this.routinePhase = 0;
+        this.routineTimer = Math.floor(Math.random() * 60) + 20;
+        this.movePause = 0;
+
+        // ── Job ──────────────────────────────────────────────
         this.job = null;
-        this.home = null;
+        this.jobRefreshTimer = 0;
+        this.workplace = null;
+
+        // ── Sonstiges ────────────────────────────────────────
+        this.isKing = false;
         this.moraleMod = 0;
         this.tint = Math.floor(Math.random() * 4);
     }
@@ -87,5 +134,9 @@ export class Entity {
 
     isEnemy() {
         return this.type >= 30 && this.type < 40;
+    }
+
+    isFriendly() {
+        return this.type >= 20 && this.type < 30;
     }
 }
