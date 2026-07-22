@@ -1,5 +1,6 @@
 // ── Main Tick Loop ─────────────────────────────────────────────
 
+import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT } from '../config.js';
 import { state } from '../state.js';
 import { resetIncome } from '../systems/resources.js';
 import { updateMorale } from '../systems/morale.js';
@@ -24,12 +25,6 @@ export function updateSimulation() {
     }
 
     state.seasonIndex = Math.floor(state.dayOfYear / 100) % 4;
-
-    // gentle camera drift
-    if (state.tick % 80 === 0) {
-        const { WORLD_WIDTH, WORLD_HEIGHT } = await_config();
-        // handled inside camera module if desired
-    }
 
     resetIncome();
     updateBuildingIncome();
