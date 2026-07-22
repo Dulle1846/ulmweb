@@ -1,9 +1,351 @@
-// ── Entity Drawing ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  ENTITY DRAWING — Gebäude, Feinde, Rollen-Icons
+// ═══════════════════════════════════════════════════════════════
 
-import { TILE_SIZE } from '../config.js';
-import { TYPE } from '../types.js';
+import { TILE_SIZE, ICON_RADIUS, ROLE_COLORS } from '../config.js';
+import { TYPE, JOB_ICONS } from '../types.js';
 
-// ── helpers ──
+// ═══════════════════════════════════════════════════════════════
+//  HAUPT-FUNKTION
+// ═══════════════════════════════════════════════════════════════
+
+export function drawEntity(ctx, e, tick) {
+    if (e.dead) return;
+
+    const px = e.x * TILE_SIZE + TILE_SIZE / 2;
+    const py = e.y * TILE_SIZE + TILE_SIZE / 2;
+    const bob = Math.sin(tick * 0.1 + e.anim) * 2.5;
+    e.anim += 0.08;
+
+    const isIcon = e.isFriendly() && !e.isBuilding();
+
+    // ── Schatten ─────────────────────────────────────────────
+    if (!isIcon) {
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = "#111";
+        ctx.beginPath();
+        ctx.ellipse(px + 3, py + 18 + bob * 0.3, 18, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+
+    // ── Zeichnung je Typ ─────────────────────────────────────
+    switch (e.type) {
+        case TYPE.KEEP:     drawKeep(ctx, px, py, tick); break;
+        case TYPE.HOUSE:    drawHouse(ctx, px, py, tick); break;
+        case TYPE.FARM:     drawFarm(ctx, px, py, tick, e); break;
+        case TYPE.LUMBER:   drawLumber(ctx, px, py); break;
+        case TYPE.QUARRY:   drawQuarry(ctx, px, py); break;
+        case TYPE.TOWER:    drawTower(ctx, px, py); break;
+        case TYPE.WALL:     drawWall(ctx, px, py); break;
+        case TYPE.TAVERN:   drawTavern(ctx, px, py, tick); break;
+        case TYPE.TEMPLE:   drawTemple(ctx, px, py, tick); break;
+        case TYPE.BARRACKS: drawBarracks(ctx, px, py); break;
+        case TYPE.MILL:     drawMill(ctx, px, py, tick); break;
+        case TYPE.STABLE:   drawStable(ctx, px, py); break;
+
+        // Befreundete Einheiten → Rollen-Icons
+        case TYPE.VILLAGER:
+        case TYPE.GUARD:
+        case TYPE.ARCHER:
+        case TYPE.KNIGHT:
+        case TYPE.PRIEST:
+            drawRoleIcon(ctx, e, px, py, tick);
+            break;
+
+        // Feinde → feindliche Icons
+        case TYPE.GOBLIN: drawEnemyIcon(ctx, e, px, py, tick, "👺", "#6b2c2c"); break;
+        case TYPE.ORC:    drawEnemyIcon(ctx, e, px, py, tick, "👹", "#4a5c2a"); break;
+        case TYPE.TROLL:  drawEnemyIcon(ctx, e, px, py, tick, "🧌", "#3a4a3a"); break;
+        case TYPE.DEER:   drawDeer(ctx, px, py, tick, e); break;
+    }
+
+    // ── Health Bar ───────────────────────────────────────────
+    if (e.hp < e.maxHp && e.hp > 0) {
+        const pct = e.hp / e.maxHp;
+        const barY = isIcon ? py - 28 : py - 32;
+        ctx.fillStyle = "#111";
+        ctx.fillRect(px - 18, barY, 36, 5);
+        ctx.fillStyle = pct > 0.4 ? "#22cc44" : "#ee2222";
+        ctx.fillRect(px - 17, barY + 1, 34 * pct, 3);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ROLLEN-ICONS — Befreundete Einheiten
+// ═══════════════════════════════════════════════════════════════
+
+function drawRoleIcon(ctx, e, px, py, tick) {
+    const now = performance.now() / 1000;
+    const speed = Math.hypot(e.velocityX || 0, e.velocityY || 0);
+    const isMoving = speed > 0.05;
+    const isWorking = e.visualState === "work";
+    const isFleeing = e.visualState === "flee";
+
+    const baseRadius = ICON_RADIUS[e.type] || 13;
+    const badgeColor = ROLE_COLORS[e.type] || "#52525b";
+    const emoji = getEmoji(e);
+
+    // ── Lauf-Animation ───────────────────────────────────────
+    const walkCycle = Math.sin(now * 10 + e.anim);
+    const bobAmount = isMoving
+        ? walkCycle * 2.5
+        : Math.sin(now * 2 + e.anim) * 0.6;
+
+    const lean = isMoving
+        ? Math.max(-0.15, Math.min(0.15, (e.velocityX || 0) * 0.06))
+        : 0;
+
+    ctx.save();
+    ctx.translate(px, py - 4 + bobAmount);
+    ctx.rotate(lean);
+
+    // ── Schatten ─────────────────────────────────────────────
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.ellipse(2, baseRadius + 6 - bobAmount, baseRadius * 0.9, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // ── Äußerer Ring (Statusfarbe) ───────────────────────────
+    const statusColor = isFleeing ? "#ef4444" : isWorking ? "#f59e0b" : badgeColor;
+    ctx.fillStyle = "#111";
+    ctx.beginPath();
+    ctx.arc(0, 0, baseRadius + 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = statusColor;
+    ctx.beginPath();
+    ctx.arc(0, 0, baseRadius + 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── Innerer Badge ────────────────────────────────────────
+    const innerColor = isWorking
+        ? lightenColor(badgeColor, 0.25)
+        : badgeColor;
+
+    ctx.fillStyle = innerColor;
+    ctx.beginPath();
+    ctx.arc(0, 0, baseRadius - 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── Glanz-Highlight ──────────────────────────────────────
+    ctx.fillStyle = "rgba(255,255,255,0.14)";
+    ctx.beginPath();
+    ctx.ellipse(-baseRadius * 0.25, -baseRadius * 0.35, baseRadius * 0.5, baseRadius * 0.35, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── Emoji ────────────────────────────────────────────────
+    const fontSize = Math.round(baseRadius * 1.25);
+    ctx.font = `${fontSize}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(emoji, 0, 1);
+
+    // ── Füße beim Laufen ────────────────────────────────────
+    if (isMoving) {
+        const footPhase = walkCycle;
+        const footY = baseRadius + 3;
+
+        ctx.fillStyle = "#1a1410";
+        ctx.beginPath();
+        ctx.ellipse(-4 + footPhase * 3, footY, 3.5, 2.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(4 - footPhase * 3, footY, 3.5, 2.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // ── Krone beim König ─────────────────────────────────────
+    if (e.isKing) {
+        ctx.fillStyle = "#f2c744";
+        const crownY = -baseRadius - 8;
+        ctx.beginPath();
+        ctx.moveTo(-7, crownY + 6);
+        ctx.lineTo(-7, crownY);
+        ctx.lineTo(-3, crownY + 4);
+        ctx.lineTo(0, crownY - 3);
+        ctx.lineTo(3, crownY + 4);
+        ctx.lineTo(7, crownY);
+        ctx.lineTo(7, crownY + 6);
+        ctx.closePath();
+        ctx.fill();
+
+        // kleine Edelsteine
+        ctx.fillStyle = "#ef4444";
+        ctx.beginPath();
+        ctx.arc(0, crownY + 1, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.restore();
+
+    // ── Arbeitseffekte (auerhalb des transform) ──────────────
+    if (isWorking && e.job) {
+        drawWorkParticles(ctx, e, px, py, now);
+    }
+
+    // ── Flucht-Staubwolken ───────────────────────────────────
+    if (isFleeing && isMoving) {
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = "#d6cbb8";
+        const dustX = px - (e.velocityX || 0) * 8;
+        const dustY = py + baseRadius - 2;
+        ctx.beginPath();
+        ctx.arc(dustX - 4, dustY, 3, 0, Math.PI * 2);
+        ctx.arc(dustX + 3, dustY + 2, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+}
+
+function getEmoji(entity) {
+    // König hat Vorrang
+    if (entity.isKing) return JOB_ICONS.king;
+
+    // Feinde haben eigene Emojis
+    if (entity.type === TYPE.GOBLIN) return "👺";
+    if (entity.type === TYPE.ORC)    return "👹";
+    if (entity.type === TYPE.TROLL)  return "🧌";
+
+    // Militär
+    if (entity.type === TYPE.GUARD)  return JOB_ICONS.guard;
+    if (entity.type === TYPE.ARCHER) return JOB_ICONS.archer;
+    if (entity.type === TYPE.KNIGHT) return JOB_ICONS.knight;
+    if (entity.type === TYPE.PRIEST) return JOB_ICONS.priest;
+
+    // Dorfbewohner nach Job
+    if (entity.type === TYPE.VILLAGER) {
+        return JOB_ICONS[entity.job] || JOB_ICONS.wanderer;
+    }
+
+    return JOB_ICONS.idle;
+}
+
+function drawWorkParticles(ctx, e, px, py, now) {
+    const particleCount = 3;
+    const radius = ICON_RADIUS[e.type] || 13;
+
+    for (let i = 0; i < particleCount; i++) {
+        const phase = (now * 2 + i * 2.1) % 3;
+        if (phase > 2) continue;
+
+        const t = phase / 2;
+        const angle = (i / particleCount) * Math.PI * 2 + now;
+        const dist = radius + 4 + t * 10;
+        const alpha = 1 - t;
+
+        const ppx = px + Math.cos(angle) * dist;
+        const ppy = py - 6 + Math.sin(angle) * dist * 0.6 - t * 8;
+
+        let color;
+        switch (e.job) {
+            case "farmer":     color = "#a3e635"; break;
+            case "woodcutter": color = "#d4a054"; break;
+            case "miner":      color = "#9ca3af"; break;
+            case "miller":     color = "#fef3c7"; break;
+            default:           color = "#fde047"; break;
+        }
+
+        ctx.globalAlpha = alpha * 0.6;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(ppx, ppy, 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+}
+
+function lightenColor(hex, amount) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const nr = Math.min(255, r + Math.floor((255 - r) * amount));
+    const ng = Math.min(255, g + Math.floor((255 - g) * amount));
+    const nb = Math.min(255, b + Math.floor((255 - b) * amount));
+    return `rgb(${nr},${ng},${nb})`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FEINDLICHE EINHEITEN — als Icons
+// ═══════════════════════════════════════════════════════════════
+
+function drawEnemyIcon(ctx, e, px, py, tick, emoji, color) {
+    const now = performance.now() / 1000;
+    const speed = Math.hypot(e.velocityX || 0, e.velocityY || 0);
+    const isMoving = speed > 0.05;
+    const baseRadius = ICON_RADIUS[e.type] || 12;
+
+    const bob = isMoving
+        ? Math.sin(now * 9 + e.anim) * 3
+        : Math.sin(now * 2.5 + e.anim) * 0.8;
+
+    ctx.save();
+    ctx.translate(px, py - 4 + bob);
+
+    // Schatten
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.ellipse(2, baseRadius + 5, baseRadius * 0.85, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Äußerer Ring
+    ctx.fillStyle = "#111";
+    ctx.beginPath();
+    ctx.arc(0, 0, baseRadius + 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(0, 0, baseRadius + 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Innerer Badge
+    ctx.fillStyle = lightenColor(color, 0.2);
+    ctx.beginPath();
+    ctx.arc(0, 0, baseRadius - 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Glanz
+    ctx.fillStyle = "rgba(255,255,255,0.1)";
+    ctx.beginPath();
+    ctx.ellipse(-3, -4, 5, 3, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Emoji
+    const fontSize = Math.round(baseRadius * 1.2);
+    ctx.font = `${fontSize}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(emoji, 0, 1);
+
+    // Füße
+    if (isMoving) {
+        const step = Math.sin(now * 10 + e.anim);
+        ctx.fillStyle = "#1a1410";
+        ctx.beginPath();
+        ctx.ellipse(-3 + step * 3, baseRadius + 2, 3, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(3 - step * 3, baseRadius + 2, 3, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.restore();
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HILFSFUNKTIONEN
+// ═══════════════════════════════════════════════════════════════
 
 function outlinedRect(ctx, x, y, w, h, fill, outline = "#1a1208") {
     ctx.fillStyle = outline;
@@ -23,120 +365,18 @@ function outlinedCircle(ctx, x, y, r, fill, outline = "#1a1208") {
     ctx.fill();
 }
 
-function drawFace(ctx, x, y, skin = "#f0c8a0", eyeColor = "#1a1208") {
-    outlinedCircle(ctx, x, y, 8, skin);
-    ctx.fillStyle = eyeColor;
-    ctx.fillRect(x - 4, y - 2, 2.5, 3.5);
-    ctx.fillRect(x + 2, y - 2, 2.5, 3.5);
-    ctx.fillStyle = "rgba(230,120,110,0.4)";
-    ctx.beginPath();
-    ctx.arc(x - 5, y + 3, 2, 0, Math.PI * 2);
-    ctx.arc(x + 5, y + 3, 2, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-// ── main draw function ──
-
-export function drawEntity(ctx, e, tick) {
-    if (e.dead) return;
-
-    const px = e.x * TILE_SIZE + TILE_SIZE / 2;
-    const py = e.y * TILE_SIZE + TILE_SIZE / 2;
-    const bob = Math.sin(tick * 0.1 + e.anim) * 2.5;
-    e.anim += 0.08;
-
-    // shadow
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = "#111";
-    ctx.beginPath();
-    ctx.ellipse(px + 3, py + 18 + bob * 0.3, 18, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-
-    switch (e.type) {
-        case TYPE.KEEP:
-            drawKeep(ctx, px, py, tick);
-            break;
-        case TYPE.HOUSE:
-            drawHouse(ctx, px, py, tick);
-            break;
-        case TYPE.FARM:
-            drawFarm(ctx, px, py, tick, e);
-            break;
-        case TYPE.LUMBER:
-            drawLumber(ctx, px, py);
-            break;
-        case TYPE.QUARRY:
-            drawQuarry(ctx, px, py);
-            break;
-        case TYPE.TOWER:
-            drawTower(ctx, px, py);
-            break;
-        case TYPE.WALL:
-            drawWall(ctx, px, py);
-            break;
-        case TYPE.TAVERN:
-            drawTavern(ctx, px, py, tick);
-            break;
-        case TYPE.TEMPLE:
-            drawTemple(ctx, px, py, tick);
-            break;
-        case TYPE.BARRACKS:
-            drawBarracks(ctx, px, py);
-            break;
-        case TYPE.MILL:
-            drawMill(ctx, px, py, tick);
-            break;
-        case TYPE.STABLE:
-            drawStable(ctx, px, py);
-            break;
-        case TYPE.VILLAGER:
-            drawVillager(ctx, px, py, bob, tick, e);
-            break;
-        case TYPE.GUARD:
-            drawGuard(ctx, px, py);
-            break;
-        case TYPE.ARCHER:
-            drawArcher(ctx, px, py);
-            break;
-        case TYPE.KNIGHT:
-            drawKnight(ctx, px, py);
-            break;
-        case TYPE.PRIEST:
-            drawPriest(ctx, px, py, tick);
-            break;
-        case TYPE.GOBLIN:
-            drawGoblin(ctx, px, py, tick, e);
-            break;
-        case TYPE.ORC:
-            drawOrc(ctx, px, py, tick, e);
-            break;
-        case TYPE.TROLL:
-            drawTroll(ctx, px, py, tick, e);
-            break;
-        case TYPE.DEER:
-            drawDeer(ctx, px, py, tick, e);
-            break;
-    }
-
-    // health bar
-    if (e.hp < e.maxHp && e.hp > 0) {
-        const pct = e.hp / e.maxHp;
-        ctx.fillStyle = "black";
-        ctx.fillRect(px - 18, py - 32, 36, 5);
-        ctx.fillStyle = pct > 0.4 ? "#22cc44" : "#ee2222";
-        ctx.fillRect(px - 17, py - 31, 34 * pct, 3);
-    }
-}
-
-// ── individual draw functions ──
+// ═══════════════════════════════════════════════════════════════
+//  GEBÄUDE-ZEICHNUNGEN (unverändert)
+// ═══════════════════════════════════════════════════════════════
 
 function drawKeep(ctx, px, py, tick) {
     outlinedRect(ctx, px - 34, py - 36, 68, 52, "#8a8578");
     ctx.fillStyle = "#767162";
     for (let r = 0; r < 3; r++) {
         for (let c = 0; c < 4; c++) {
-            if ((r + c) % 2 === 0) ctx.fillRect(px - 30 + c * 16, py - 30 + r * 15, 13, 11);
+            if ((r + c) % 2 === 0) {
+                ctx.fillRect(px - 30 + c * 16, py - 30 + r * 15, 13, 11);
+            }
         }
     }
     ctx.fillStyle = "#6e695c";
@@ -160,19 +400,19 @@ function drawKeep(ctx, px, py, tick) {
         ctx.lineTo(px + i * 6, py + 16);
         ctx.stroke();
     }
-    const flagWave = Math.sin(tick * 0.15) * 3;
+    const fw = Math.sin(tick * 0.15) * 3;
     ctx.fillStyle = "#8a7a6a";
     ctx.fillRect(px - 1, py - 84, 3, 24);
     ctx.fillStyle = "#d92626";
     ctx.beginPath();
     ctx.moveTo(px + 2, py - 84);
-    ctx.lineTo(px + 24, py - 80 + flagWave);
+    ctx.lineTo(px + 24, py - 80 + fw);
     ctx.lineTo(px + 2, py - 72);
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = "#facc15";
     ctx.beginPath();
-    ctx.arc(px + 9, py - 78 + flagWave * 0.4, 2.5, 0, Math.PI * 2);
+    ctx.arc(px + 9, py - 78 + fw * 0.4, 2.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#ffdf80";
     ctx.fillRect(px - 6, py - 54, 5, 7);
@@ -238,17 +478,17 @@ function drawFarm(ctx, px, py, tick, e) {
     for (let i = 0; i < 4; i++) {
         ctx.fillRect(px - 21, py - 10 + i * 7, 42, 3);
     }
-    const wheatSway = Math.sin(tick * 0.06 + e.anim) * 1.5;
+    const ws = Math.sin(tick * 0.06 + e.anim) * 1.5;
     for (let i = -2; i <= 2; i++) {
         ctx.strokeStyle = "#c9a83c";
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.moveTo(px + i * 9, py + 14);
-        ctx.quadraticCurveTo(px + i * 9 + wheatSway, py - 2, px + i * 9 + wheatSway * 1.6, py - 16);
+        ctx.quadraticCurveTo(px + i * 9 + ws, py - 2, px + i * 9 + ws * 1.6, py - 16);
         ctx.stroke();
         ctx.fillStyle = "#f2d264";
         ctx.beginPath();
-        ctx.ellipse(px + i * 9 + wheatSway * 1.6, py - 19, 3, 6, wheatSway * 0.1, 0, Math.PI * 2);
+        ctx.ellipse(px + i * 9 + ws * 1.6, py - 19, 3, 6, ws * 0.1, 0, Math.PI * 2);
         ctx.fill();
     }
     ctx.fillStyle = "#5d4028";
@@ -406,11 +646,11 @@ function drawTavern(ctx, px, py, tick) {
     ctx.moveTo(px + 21, py - 18);
     ctx.lineTo(px + 30, py - 18);
     ctx.stroke();
-    const signSway = Math.sin(tick * 0.1) * 2;
+    const sw = Math.sin(tick * 0.1) * 2;
     ctx.fillStyle = "#e0a33c";
-    ctx.fillRect(px + 26 + signSway, py - 16, 8, 9);
+    ctx.fillRect(px + 26 + sw, py - 16, 8, 9);
     ctx.fillStyle = "#fff";
-    ctx.fillRect(px + 27 + signSway, py - 15, 6, 2.5);
+    ctx.fillRect(px + 27 + sw, py - 15, 6, 2.5);
 }
 
 function drawTemple(ctx, px, py, tick) {
@@ -539,365 +779,8 @@ function drawStable(ctx, px, py) {
     ctx.strokeRect(px + 21.5, py + 9.5, 7, 5);
 }
 
-function drawVillager(ctx, px, py, bob, tick, e) {
-    const shirtColors = ["#3b6db3", "#c23c2c", "#d4a23c", "#6a9948"];
-    const shirt = shirtColors[e.tint % shirtColors.length];
-    const step = Math.sin(tick * 0.18 + e.anim) * (e.state === "walk" ? 3 : 0);
-
-    ctx.fillStyle = "#4a3826";
-    ctx.fillRect(px - 6, py + 8 + bob, 4.5, 9 + step * 0.5);
-    ctx.fillRect(px + 2, py + 8 + bob, 4.5, 9 - step * 0.5);
-    outlinedRect(ctx, px - 8, py - 4 + bob, 16, 15, shirt);
-    ctx.fillStyle = "#5d4028";
-    ctx.fillRect(px - 8, py + 7 + bob, 16, 3);
-    ctx.fillStyle = shirt;
-    ctx.fillRect(px - 12, py - 2 + bob, 4, 10);
-    ctx.fillRect(px + 8, py - 2 + bob, 4, 10);
-    drawFace(ctx, px, py - 14 + bob);
-    ctx.fillStyle = ["#4a3220", "#2a2a2a", "#8a5a2a", "#6e4f30"][e.tint % 4];
-    ctx.beginPath();
-    ctx.arc(px, py - 17 + bob, 8, Math.PI, 0);
-    ctx.fill();
-}
-
-function drawGuard(ctx, px, py) {
-    ctx.fillStyle = "#2a2a3a";
-    ctx.fillRect(px - 6, py + 10, 5, 8);
-    ctx.fillRect(px + 2, py + 10, 5, 8);
-    outlinedRect(ctx, px - 10, py - 6, 20, 18, "#5a6a8a");
-    ctx.fillStyle = "#7a8aaa";
-    ctx.fillRect(px - 7, py - 3, 6, 10);
-    drawFace(ctx, px, py - 16);
-    ctx.fillStyle = "#1a1208";
-    ctx.beginPath();
-    ctx.arc(px, py - 18, 10.5, Math.PI, 0);
-    ctx.fill();
-    ctx.fillStyle = "#8a95a8";
-    ctx.beginPath();
-    ctx.arc(px, py - 18, 8.5, Math.PI, 0);
-    ctx.fill();
-    ctx.fillRect(px - 8.5, py - 18, 17, 3.5);
-    ctx.fillStyle = "#c23c2c";
-    ctx.fillRect(px - 1.5, py - 30, 3, 6);
-    ctx.strokeStyle = "#6e4f30";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(px + 13, py + 12);
-    ctx.lineTo(px + 13, py - 26);
-    ctx.stroke();
-    ctx.fillStyle = "#b8b2a4";
-    ctx.beginPath();
-    ctx.moveTo(px + 10, py - 25);
-    ctx.lineTo(px + 13, py - 34);
-    ctx.lineTo(px + 16, py - 25);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#8a5f38";
-    ctx.beginPath();
-    ctx.arc(px - 13, py + 2, 6.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#b8934a";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-}
-
-function drawArcher(ctx, px, py) {
-    ctx.fillStyle = "#3d2c1a";
-    ctx.fillRect(px - 6, py + 8, 5, 9);
-    ctx.fillRect(px + 2, py + 8, 5, 9);
-    outlinedRect(ctx, px - 9, py - 5, 18, 15, "#4a7a3a");
-    ctx.strokeStyle = "#5d4028";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(px - 8, py - 4);
-    ctx.lineTo(px + 8, py + 8);
-    ctx.stroke();
-    drawFace(ctx, px, py - 15);
-    ctx.fillStyle = "#3a5f2e";
-    ctx.beginPath();
-    ctx.arc(px, py - 17, 9, Math.PI * 0.9, Math.PI * 0.1);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(px - 9, py - 16);
-    ctx.lineTo(px, py - 30);
-    ctx.lineTo(px + 9, py - 16);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "#8a5f38";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(px + 13, py - 4, 11, -Math.PI * 0.45, Math.PI * 0.45);
-    ctx.stroke();
-    ctx.strokeStyle = "#d9d2c0";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(px + 13, py - 14);
-    ctx.lineTo(px + 13, py + 6);
-    ctx.stroke();
-    ctx.fillStyle = "#6e4f30";
-    ctx.fillRect(px - 15, py - 10, 6, 14);
-    ctx.strokeStyle = "#e0c050";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(px - 13, py - 10);
-    ctx.lineTo(px - 11, py - 15);
-    ctx.moveTo(px - 10, py - 10);
-    ctx.lineTo(px - 9, py - 14);
-    ctx.stroke();
-}
-
-function drawKnight(ctx, px, py) {
-    ctx.fillStyle = "#5a6578";
-    ctx.fillRect(px - 7, py + 10, 6, 9);
-    ctx.fillRect(px + 2, py + 10, 6, 9);
-    outlinedRect(ctx, px - 12, py - 8, 24, 20, "#7a8598");
-    ctx.fillStyle = "#c9a83c";
-    ctx.fillRect(px - 12, py - 8, 24, 3);
-    ctx.fillRect(px - 2, py - 8, 4, 20);
-    outlinedCircle(ctx, px - 13, py - 6, 5, "#8a95a8");
-    outlinedCircle(ctx, px + 13, py - 6, 5, "#8a95a8");
-    ctx.fillStyle = "#1a1208";
-    ctx.fillRect(px - 9, py - 30, 18, 18);
-    ctx.fillStyle = "#95a0b5";
-    ctx.fillRect(px - 7.5, py - 28.5, 15, 15);
-    ctx.fillStyle = "#1a1208";
-    ctx.fillRect(px - 6, py - 23, 12, 2.5);
-    ctx.fillStyle = "#f2c744";
-    ctx.beginPath();
-    ctx.moveTo(px - 8, py - 30);
-    ctx.lineTo(px - 8, py - 36);
-    ctx.lineTo(px - 4, py - 31);
-    ctx.lineTo(px, py - 37);
-    ctx.lineTo(px + 4, py - 31);
-    ctx.lineTo(px + 8, py - 36);
-    ctx.lineTo(px + 8, py - 30);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "#d9d2c0";
-    ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    ctx.moveTo(px + 16, py + 6);
-    ctx.lineTo(px + 24, py - 18);
-    ctx.stroke();
-    ctx.strokeStyle = "#c9a83c";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(px + 14, py + 1);
-    ctx.lineTo(px + 22, py + 5);
-    ctx.stroke();
-    ctx.fillStyle = "#a82828";
-    ctx.beginPath();
-    ctx.moveTo(px - 12, py - 6);
-    ctx.quadraticCurveTo(px - 22, py + 4, px - 16, py + 14);
-    ctx.lineTo(px - 12, py + 10);
-    ctx.closePath();
-    ctx.fill();
-}
-
-function drawPriest(ctx, px, py, tick) {
-    ctx.fillStyle = "#1a1208";
-    ctx.beginPath();
-    ctx.moveTo(px - 12, py + 18);
-    ctx.lineTo(px - 9, py - 10);
-    ctx.lineTo(px + 9, py - 10);
-    ctx.lineTo(px + 12, py + 18);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#e8e2d2";
-    ctx.beginPath();
-    ctx.moveTo(px - 10, py + 16);
-    ctx.lineTo(px - 7.5, py - 8);
-    ctx.lineTo(px + 7.5, py - 8);
-    ctx.lineTo(px + 10, py + 16);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#c9a83c";
-    ctx.fillRect(px - 6, py - 8, 3, 20);
-    ctx.fillRect(px + 3, py - 8, 3, 20);
-    drawFace(ctx, px, py - 16);
-    ctx.strokeStyle = "#8a7a5a";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(px, py - 17, 8, Math.PI * 0.85, Math.PI * 0.15);
-    ctx.stroke();
-    ctx.strokeStyle = "#8a6238";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(px + 13, py + 14);
-    ctx.lineTo(px + 13, py - 22);
-    ctx.stroke();
-    const holyGlow = 0.4 + Math.sin(tick * 0.1) * 0.25;
-    ctx.fillStyle = `rgba(250, 220, 100, ${holyGlow})`;
-    ctx.beginPath();
-    ctx.arc(px + 13, py - 25, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#f2c744";
-    ctx.beginPath();
-    ctx.arc(px + 13, py - 25, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-function drawGoblin(ctx, px, py, tick, e) {
-    const hop = Math.abs(Math.sin(tick * 0.25 + e.anim)) * 4;
-    outlinedRect(ctx, px - 9, py - 2 - hop, 18, 14, "#5a8a3a");
-    ctx.fillStyle = "#6e5a3a";
-    ctx.beginPath();
-    ctx.moveTo(px - 8, py + 10 - hop);
-    ctx.lineTo(px - 4, py + 15 - hop);
-    ctx.lineTo(px, py + 10 - hop);
-    ctx.lineTo(px + 4, py + 15 - hop);
-    ctx.lineTo(px + 8, py + 10 - hop);
-    ctx.closePath();
-    ctx.fill();
-    outlinedCircle(ctx, px, py - 13 - hop, 10, "#6ea847");
-    ctx.fillStyle = "#1a1208";
-    ctx.beginPath();
-    ctx.moveTo(px - 9, py - 15 - hop);
-    ctx.lineTo(px - 20, py - 22 - hop);
-    ctx.lineTo(px - 8, py - 10 - hop);
-    ctx.closePath();
-    ctx.moveTo(px + 9, py - 15 - hop);
-    ctx.lineTo(px + 20, py - 22 - hop);
-    ctx.lineTo(px + 8, py - 10 - hop);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#6ea847";
-    ctx.beginPath();
-    ctx.moveTo(px - 8, py - 15 - hop);
-    ctx.lineTo(px - 17, py - 20 - hop);
-    ctx.lineTo(px - 7, py - 11 - hop);
-    ctx.closePath();
-    ctx.moveTo(px + 8, py - 15 - hop);
-    ctx.lineTo(px + 17, py - 20 - hop);
-    ctx.lineTo(px + 7, py - 11 - hop);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#fff";
-    ctx.beginPath();
-    ctx.arc(px - 4, py - 14 - hop, 3, 0, Math.PI * 2);
-    ctx.arc(px + 4, py - 14 - hop, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#d92626";
-    ctx.beginPath();
-    ctx.arc(px - 4, py - 14 - hop, 1.5, 0, Math.PI * 2);
-    ctx.arc(px + 4, py - 14 - hop, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#1a1208";
-    ctx.fillRect(px - 5, py - 8 - hop, 10, 3);
-    ctx.fillStyle = "#fff";
-    ctx.beginPath();
-    ctx.moveTo(px - 4, py - 8 - hop);
-    ctx.lineTo(px - 2.5, py - 5.5 - hop);
-    ctx.lineTo(px - 1, py - 8 - hop);
-    ctx.moveTo(px + 1, py - 8 - hop);
-    ctx.lineTo(px + 2.5, py - 5.5 - hop);
-    ctx.lineTo(px + 4, py - 8 - hop);
-    ctx.fill();
-    ctx.strokeStyle = "#8a867c";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(px + 11, py + 2 - hop);
-    ctx.lineTo(px + 18, py - 8 - hop);
-    ctx.stroke();
-}
-
-function drawOrc(ctx, px, py, tick, e) {
-    const stomp = Math.abs(Math.sin(tick * 0.15 + e.anim)) * 2;
-    outlinedRect(ctx, px - 15, py - 10 - stomp, 30, 26, "#4a6b35");
-    ctx.fillStyle = "#3d5a2c";
-    ctx.fillRect(px - 2, py - 10 - stomp, 4, 26);
-    ctx.fillRect(px - 12, py - 4 - stomp, 8, 5);
-    ctx.fillRect(px + 4, py - 4 - stomp, 8, 5);
-    ctx.fillStyle = "#4a4038";
-    ctx.beginPath();
-    ctx.moveTo(px - 18, py - 10 - stomp);
-    ctx.lineTo(px - 14, py - 20 - stomp);
-    ctx.lineTo(px - 8, py - 10 - stomp);
-    ctx.closePath();
-    ctx.fill();
-    outlinedCircle(ctx, px, py - 20 - stomp, 11, "#5a7a42");
-    ctx.fillStyle = "#3d5a2c";
-    ctx.fillRect(px - 9, py - 27 - stomp, 18, 4);
-    ctx.fillStyle = "#f2d264";
-    ctx.beginPath();
-    ctx.arc(px - 5, py - 21 - stomp, 2.5, 0, Math.PI * 2);
-    ctx.arc(px + 5, py - 21 - stomp, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#1a1208";
-    ctx.beginPath();
-    ctx.arc(px - 5, py - 21 - stomp, 1, 0, Math.PI * 2);
-    ctx.arc(px + 5, py - 21 - stomp, 1, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#e8e2d2";
-    ctx.beginPath();
-    ctx.moveTo(px - 7, py - 13 - stomp);
-    ctx.lineTo(px - 6, py - 19 - stomp);
-    ctx.lineTo(px - 3, py - 13 - stomp);
-    ctx.closePath();
-    ctx.moveTo(px + 7, py - 13 - stomp);
-    ctx.lineTo(px + 6, py - 19 - stomp);
-    ctx.lineTo(px + 3, py - 13 - stomp);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#5d4028";
-    ctx.save();
-    ctx.translate(px + 17, py - 4 - stomp);
-    ctx.rotate(-0.5);
-    ctx.fillRect(-3, -22, 6, 26);
-    ctx.beginPath();
-    ctx.arc(0, -22, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#8a867c";
-    ctx.beginPath();
-    ctx.arc(-5, -25, 2, 0, Math.PI * 2);
-    ctx.arc(4, -27, 2, 0, Math.PI * 2);
-    ctx.arc(2, -17, 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-}
-
-function drawTroll(ctx, px, py, tick, e) {
-    const breathe = Math.sin(tick * 0.08 + e.anim) * 2;
-    outlinedRect(ctx, px - 24, py - 18 - breathe, 48, 36, "#5a6b4a");
-    ctx.fillStyle = "#6e8058";
-    ctx.beginPath();
-    ctx.ellipse(px, py + 2 - breathe, 16, 12, 0, 0, Math.PI * 2);
-    ctx.fill();
-    outlinedCircle(ctx, px, py - 28 - breathe, 12, "#6a7d55");
-    ctx.fillStyle = "#1a1208";
-    ctx.fillRect(px - 8, py - 33 - breathe, 6, 3);
-    ctx.fillRect(px + 2, py - 33 - breathe, 6, 3);
-    ctx.fillStyle = "#f2d264";
-    ctx.beginPath();
-    ctx.arc(px - 5, py - 29 - breathe, 2, 0, Math.PI * 2);
-    ctx.arc(px + 5, py - 29 - breathe, 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#55684a";
-    ctx.fillRect(px - 9, py - 22 - breathe, 18, 6);
-    ctx.fillStyle = "#e8e2d2";
-    ctx.beginPath();
-    ctx.moveTo(px - 7, py - 22 - breathe);
-    ctx.lineTo(px - 5, py - 27 - breathe);
-    ctx.lineTo(px - 3, py - 22 - breathe);
-    ctx.moveTo(px + 3, py - 22 - breathe);
-    ctx.lineTo(px + 5, py - 27 - breathe);
-    ctx.lineTo(px + 7, py - 22 - breathe);
-    ctx.fill();
-    ctx.fillStyle = "#5a6b4a";
-    ctx.fillRect(px - 32, py - 14 - breathe, 9, 28);
-    ctx.fillRect(px + 23, py - 14 - breathe, 9, 28);
-    outlinedCircle(ctx, px - 28, py + 15, 6, "#6a7d55");
-    outlinedCircle(ctx, px + 28, py + 15, 6, "#6a7d55");
-    ctx.fillStyle = "#3f6b3f";
-    ctx.beginPath();
-    ctx.arc(px - 18, py - 18 - breathe, 4, 0, Math.PI * 2);
-    ctx.arc(px + 14, py - 19 - breathe, 3, 0, Math.PI * 2);
-    ctx.fill();
-}
-
 function drawDeer(ctx, px, py, tick, e) {
     const graze = Math.sin(tick * 0.05 + e.anim) > 0.6;
-
     outlinedRect(ctx, px - 13, py - 6, 26, 13, "#9c7a4e");
     ctx.fillStyle = "#d9c9a8";
     ctx.fillRect(px - 10, py + 3, 20, 4);
@@ -906,7 +789,6 @@ function drawDeer(ctx, px, py, tick, e) {
     ctx.fillRect(px - 4, py + 7, 3, 10);
     ctx.fillRect(px + 3, py + 7, 3, 10);
     ctx.fillRect(px + 9, py + 7, 3, 10);
-
     const headY = graze ? py + 2 : py - 16;
     ctx.fillStyle = "#9c7a4e";
     ctx.beginPath();
