@@ -1,145 +1,214 @@
-// ── Terrain Drawing ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  TERRAIN RENDERING — Smooth Perlin, LOD, Dekoration
+// ═══════════════════════════════════════════════════════════════
 
-import { TILE_SIZE } from '../config.js';
+import { WORLD_W, WORLD_H, CELL, BIOME } from '../config.js';
+import { state } from '../state.js';
+import { getHeightAt } from '../world/world.js';
 
-export function drawTerrain(ctx, x, y, tile, tick) {
-    const px = x * TILE_SIZE;
-    const py = y * TILE_SIZE;
+// ═══════════════════════════════════════════════════════════════
+//  TERRAIN ZEICHNEN
+// ═══════════════════════════════════════════════════════════════
 
-    // deterministic per-tile seed
-    const seed = ((x * 73856093) ^ (y * 19349663)) >>> 0;
-    const s1 = (seed % 100) / 100;
-    const s2 = ((seed >> 4) % 100) / 100;
+export function drawTerrain(ctx) {
+    const zoom = state.zoom;
+    const cam = state.camera;
+    const canvas = state.canvas;
+    const tc = state.terrainCanvas;
 
-    if (tile.terrain === "water") {
-        ctx.fillStyle = "#1a5276";
-        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-        const waveOff = Math.sin(tick * 0.08 + x * 1.3 + y * 0.7) * 4;
-        ctx.fillStyle = "#2980b9";
-        ctx.fillRect(px + 4, py + 12 + waveOff, TILE_SIZE - 12, 4);
-        ctx.fillStyle = "rgba(174, 214, 241, 0.35)";
-        ctx.fillRect(px + 10, py + 28 - waveOff, TILE_SIZE - 22, 3);
-        return;
+    if (!tc) return;
+
+    const res = state.terrainResolution;
+
+    // Welcher Bereich des Terrain-Canvas ist sichtbar?
+    const srcX = (cam.x / (CELL * zoom)) * res;
+    const srcY = (cam.y / (CELL * zoom)) * res;
+    const srcW = (canvas.width / (CELL * zoom)) * res;
+    const srcH = (canvas.height / (CELL * zoom)) * res;
+
+    // Clamp
+    const sx = Math.max(0, Math.floor(srcX));
+    const sy = Math.max(0, Math.floor(srcY));
+    const sw = Math.min(tc.width - sx, Math.ceil(srcW) + 2);
+    const sh = Math.min(tc.height - sy, Math.ceil(srcH) + 2);
+
+    if (sw <= 0 || sh <= 0) return;
+
+    // Zeichne den sichtbaren Ausschnitt des vorgerenderten Terrains
+    ctx.save();
+    ctx.imageSmoothingEnabled = zoom < 1.5;
+
+    const destX = -(cam.x % (CELL * zoom * (1 / res)));
+    const destY = -(cam.y % (CELL * zoom * (1 / res)));
+
+    ctx.drawImage(
+        tc,
+        sx, sy, sw, sh,
+        Math.floor((sx * CELL * zoom / res) - cam.x),
+        Math.floor((sy * CELL * zoom / res) - cam.y),
+        Math.ceil(sw * CELL * zoom / res),
+        Math.ceil(sh * CELL * zoom / res)
+    );
+
+    ctx.restore();
+
+    // ── Fog of War ───────────────────────────────────────────
+    drawFogOfWar(ctx, zoom, cam, canvas);
+
+    // ── Level-2/3 Dekorationen ───────────────────────────────
+    if (state.zoomLevel >= 2) {
+        drawTerrainDecorations(ctx, zoom, cam, canvas);
     }
+}
 
-    // grass base
-    const grassShades = ["#3e7c3e", "#478a47", "#3a743a"];
-    ctx.fillStyle = grassShades[(x + y * 3) % 3];
-    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+// ═══════════════════════════════════════════════════════════════
+//  FOG OF WAR
+// ═══════════════════════════════════════════════════════════════
 
-    if ((x + y) % 2 === 0) {
-        ctx.fillStyle = "rgba(255,255,255,0.03)";
-        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+function drawFogOfWar(ctx, zoom, cam, canvas) {
+    const cellPx = CELL * zoom;
+
+    const startX = Math.max(0, Math.floor(cam.x / cellPx) - 1);
+    const startY = Math.max(0, Math.floor(cam.y / cellPx) - 1);
+    const endX = Math.min(WORLD_W, Math.ceil((cam.x + canvas.width) / cellPx) + 1);
+    const endY = Math.min(WORLD_H, Math.ceil((cam.y + canvas.height) / cellPx) + 1);
+
+    ctx.fillStyle = "rgba(8, 10, 8, 0.92)";
+
+    for (let x = startX; x < endX; x++) {
+        for (let y = startY; y < endY; y++) {
+            if (state.explored[x] && state.explored[x][y]) continue;
+
+            const px = x * cellPx - cam.x;
+            const py = y * cellPx - cam.y;
+
+            ctx.fillRect(px, py, cellPx + 1, cellPx + 1);
+        }
     }
+}
 
-    if (tile.terrain === "forest") {
-        const tx2 = px + TILE_SIZE / 2;
-        const ty2 = py + TILE_SIZE / 2;
-        const sway = Math.sin(tick * 0.05 + x * 0.9 + y * 1.4) * 1.5;
+// ═══════════════════════════════════════════════════════════════
+//  DEKORATIONEN (Bäume, Steine, Blumen) — nur Level 2+
+// ═══════════════════════════════════════════════════════════════
 
-        ctx.fillStyle = "#5d4028";
-        ctx.fillRect(tx2 - 4, ty2 + 2, 8, 16);
-        ctx.fillStyle = "#4a3220";
-        ctx.fillRect(tx2 - 4, ty2 + 2, 3, 16);
+function drawTerrainDecorations(ctx, zoom, cam, canvas) {
+    const cellPx = CELL * zoom;
+    const tick = state.tick;
 
-        ctx.fillStyle = "#1e4620";
-        ctx.beginPath();
-        ctx.arc(tx2 + sway, ty2 - 4, 19, 0, Math.PI * 2);
-        ctx.fill();
+    const startX = Math.max(0, Math.floor(cam.x / cellPx) - 1);
+    const startY = Math.max(0, Math.floor(cam.y / cellPx) - 1);
+    const endX = Math.min(WORLD_W, Math.ceil((cam.x + canvas.width) / cellPx) + 1);
+    const endY = Math.min(WORLD_H, Math.ceil((cam.y + canvas.height) / cellPx) + 1);
 
-        ctx.fillStyle = "#2d6b30";
-        ctx.beginPath();
-        ctx.arc(tx2 + sway, ty2 - 4, 16, 0, Math.PI * 2);
-        ctx.arc(tx2 - 9 + sway, ty2 + 2, 11, 0, Math.PI * 2);
-        ctx.arc(tx2 + 9 + sway, ty2 + 2, 11, 0, Math.PI * 2);
-        ctx.fill();
+    // LOD: Bei mittlerem Zoom weniger Dekos
+    const step = zoom < 1.0 ? 2 : 1;
 
-        ctx.fillStyle = "#4a9e4e";
-        ctx.beginPath();
-        ctx.arc(tx2 - 5 + sway, ty2 - 10, 8, 0, Math.PI * 2);
-        ctx.fill();
+    for (let x = startX; x < endX; x += step) {
+        for (let y = startY; y < endY; y += step) {
+            if (!state.explored[x] || !state.explored[x][y]) continue;
+
+            const h = getHeightAt(x + 0.5, y + 0.5);
+            const seed = ((x * 73856093) ^ (y * 19349663)) >>> 0;
+            const s1 = (seed % 100) / 100;
+            const s2 = ((seed >> 4) % 100) / 100;
+
+            const px = x * cellPx - cam.x + cellPx / 2;
+            const py = y * cellPx - cam.y + cellPx / 2;
+
+            // Bäume bei forest
+            if (h >= BIOME.FOREST && h < BIOME.ROCK && s1 > 0.3) {
+                drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom);
+            }
+
+            // Steine bei rock
+            if (h >= BIOME.ROCK && h < BIOME.SNOW && s1 > 0.5) {
+                drawRock(ctx, px, py, cellPx, zoom);
+            }
+
+            // Blumen bei Gras (nur Level 3)
+            if (state.zoomLevel >= 3 && h >= BIOME.GRASS && h < BIOME.DENSE_GRASS && s2 > 0.88) {
+                drawFlower(ctx, px, py, cellPx, s1);
+            }
+
+            // Grashalme (nur Level 3)
+            if (state.zoomLevel >= 3 && h >= BIOME.SAND && h < BIOME.FOREST && s1 > 0.75) {
+                drawGrassTufts(ctx, px, py, cellPx, s2);
+            }
+        }
+    }
+}
+
+function drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom) {
+    const scale = cellPx / 48;
+    const sway = Math.sin(tick * 0.05 + s1 * 10 + s2 * 7) * 1.5 * scale;
+
+    // Stamm
+    ctx.fillStyle = "#5d4028";
+    ctx.fillRect(px - 3 * scale, py + 2 * scale, 6 * scale, 14 * scale);
+
+    // Krone
+    ctx.fillStyle = "#2d6b30";
+    ctx.beginPath();
+    ctx.arc(px + sway, py - 4 * scale, 14 * scale, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Highlight
+    ctx.fillStyle = "#4a9e4e";
+    ctx.beginPath();
+    ctx.arc(px - 4 * scale + sway, py - 8 * scale, 7 * scale, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (zoom > 1.2) {
         ctx.fillStyle = "#65c46a";
         ctx.beginPath();
-        ctx.arc(tx2 - 7 + sway, ty2 - 12, 4, 0, Math.PI * 2);
+        ctx.arc(px - 6 * scale + sway, py - 10 * scale, 3 * scale, 0, Math.PI * 2);
         ctx.fill();
-    } else if (tile.terrain === "rock") {
-        const rx = px + TILE_SIZE / 2;
-        const ry = py + TILE_SIZE / 2;
+    }
+}
 
-        ctx.fillStyle = "#3d3d3d";
-        ctx.beginPath();
-        ctx.moveTo(rx - 16, ry + 14);
-        ctx.lineTo(rx - 12, ry - 6);
-        ctx.lineTo(rx - 2, ry - 14);
-        ctx.lineTo(rx + 12, ry - 8);
-        ctx.lineTo(rx + 16, ry + 14);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = "#6e6e6e";
-        ctx.beginPath();
-        ctx.moveTo(rx - 12, ry + 12);
-        ctx.lineTo(rx - 9, ry - 4);
-        ctx.lineTo(rx - 1, ry - 11);
-        ctx.lineTo(rx + 9, ry - 6);
-        ctx.lineTo(rx + 12, ry + 12);
-        ctx.closePath();
-        ctx.fill();
+function drawRock(ctx, px, py, cellPx, zoom) {
+    const s = cellPx / 48;
+    ctx.fillStyle = "#6e6e6e";
+    ctx.beginPath();
+    ctx.moveTo(px - 10 * s, py + 8 * s);
+    ctx.lineTo(px - 6 * s, py - 6 * s);
+    ctx.lineTo(px + 6 * s, py - 4 * s);
+    ctx.lineTo(px + 10 * s, py + 8 * s);
+    ctx.closePath();
+    ctx.fill();
+
+    if (zoom > 1.0) {
         ctx.fillStyle = "#9a9a9a";
         ctx.beginPath();
-        ctx.moveTo(rx - 8, ry - 2);
-        ctx.lineTo(rx - 2, ry - 9);
-        ctx.lineTo(rx + 3, ry - 5);
-        ctx.lineTo(rx - 4, ry + 1);
+        ctx.moveTo(px - 5 * s, py);
+        ctx.lineTo(px - 1 * s, py - 5 * s);
+        ctx.lineTo(px + 3 * s, py - 2 * s);
+        ctx.lineTo(px - 2 * s, py + 2 * s);
         ctx.closePath();
         ctx.fill();
-
-        if (s1 > 0.5) {
-            ctx.fillStyle = "#5a5a5a";
-            ctx.beginPath();
-            ctx.arc(px + 10 + s2 * 8, py + TILE_SIZE - 8, 3, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    } else if (tile.terrain === "ruins") {
-        ctx.fillStyle = "#2a2a2a";
-        ctx.fillRect(px + 10, py + 26, TILE_SIZE - 18, 10);
-        ctx.fillStyle = "#8a8577";
-        ctx.fillRect(px + 16, py + 8, 10, 22);
-        ctx.fillStyle = "#a29b8a";
-        ctx.fillRect(px + 16, py + 8, 4, 22);
-        ctx.fillStyle = "#6e695e";
-        ctx.fillRect(px + 14, py + 5, 14, 5);
-        ctx.fillStyle = "#7d7869";
-        ctx.beginPath();
-        ctx.arc(px + 32, py + 30, 4, 0, Math.PI * 2);
-        ctx.arc(px + 12, py + 34, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#3f6b3f";
-        ctx.fillRect(px + 16, py + 24, 10, 4);
     }
+}
 
-    // grass decorations
-    if (tile.terrain === "grass") {
-        if (s1 > 0.72) {
-            ctx.strokeStyle = "#2c5a2c";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(px + 8 + s2 * 24, py + TILE_SIZE - 6);
-            ctx.lineTo(px + 6 + s2 * 24, py + TILE_SIZE - 15);
-            ctx.moveTo(px + 12 + s2 * 24, py + TILE_SIZE - 6);
-            ctx.lineTo(px + 14 + s2 * 24, py + TILE_SIZE - 14);
-            ctx.stroke();
-        }
-        if (s2 > 0.9) {
-            const fx = px + 10 + s1 * 26;
-            const fy = py + 10 + s2 * 20;
-            ctx.fillStyle = s1 > 0.85 ? "#e8638c" : "#f5f1d0";
-            ctx.beginPath();
-            ctx.arc(fx, fy, 3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#f2c744";
-            ctx.beginPath();
-            ctx.arc(fx, fy, 1.4, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
+function drawFlower(ctx, px, py, cellPx, s1) {
+    const r = cellPx * 0.06;
+    ctx.fillStyle = s1 > 0.5 ? "#e8638c" : "#f5f1d0";
+    ctx.beginPath();
+    ctx.arc(px, py, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f2c744";
+    ctx.beginPath();
+    ctx.arc(px, py, r * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawGrassTufts(ctx, px, py, cellPx, s2) {
+    const s = cellPx / 48;
+    ctx.strokeStyle = "#2c5a2c";
+    ctx.lineWidth = 1.5 * s;
+    ctx.beginPath();
+    ctx.moveTo(px, py + 4 * s);
+    ctx.lineTo(px - 2 * s, py - 5 * s);
+    ctx.moveTo(px + 3 * s, py + 4 * s);
+    ctx.lineTo(px + 5 * s, py - 4 * s);
+    ctx.stroke();
 }
