@@ -448,6 +448,7 @@
                 this.job = null
                 this.home = null
                 this.moraleMod = 0
+                this.tint = Math.floor(Math.random() * 4) // stable color variation (no flicker)
             }
             
             getMaxHp() {
@@ -623,55 +624,187 @@
             const px = x * TILE_SIZE
             const py = y * TILE_SIZE
             
+            // deterministic per-tile "random" so nothing flickers between frames
+            const seed = ((x * 73856093) ^ (y * 19349663)) >>> 0
+            const s1 = (seed % 100) / 100
+            const s2 = ((seed >> 4) % 100) / 100
+            
             if (tile.terrain === "water") {
-                ctx.fillStyle = "#0b4a6b"
+                ctx.fillStyle = "#1a5276"
                 ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE)
-                ctx.fillStyle = "#1e6e94"
-                ctx.fillRect(px + 4, py + 8, TILE_SIZE - 14, 6)
+                // gentle animated waves (smooth, not flickering)
+                const waveOff = Math.sin(tick * 0.08 + x * 1.3 + y * 0.7) * 4
+                ctx.fillStyle = "#2980b9"
+                ctx.fillRect(px + 4, py + 12 + waveOff, TILE_SIZE - 12, 4)
+                ctx.fillStyle = "rgba(174, 214, 241, 0.35)"
+                ctx.fillRect(px + 10, py + 28 - waveOff, TILE_SIZE - 22, 3)
                 return
             }
             
-            // grass base
-            const grassShade = (x + y) % 3 === 0 ? "#1f3a1f" : "#254525"
-            ctx.fillStyle = grassShade
+            // grass base — warmer cartoon greens
+            const grassShades = ["#3e7c3e", "#478a47", "#3a743a"]
+            ctx.fillStyle = grassShades[(x + y * 3) % 3]
             ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE)
             
+            // subtle checker texture
+            if ((x + y) % 2 === 0) {
+                ctx.fillStyle = "rgba(255,255,255,0.03)"
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE)
+            }
+            
             if (tile.terrain === "forest") {
-                ctx.fillStyle = "#143014"
-                ctx.fillRect(px + 6, py + 10, TILE_SIZE - 18, TILE_SIZE - 16)
+                const tx = px + TILE_SIZE / 2
+                const ty = py + TILE_SIZE / 2
+                const sway = Math.sin(tick * 0.05 + x * 0.9 + y * 1.4) * 1.5
                 
-                ctx.fillStyle = "#1a6b1a"
+                // trunk
+                ctx.fillStyle = "#5d4028"
+                ctx.fillRect(tx - 4, ty + 2, 8, 16)
+                ctx.fillStyle = "#4a3220"
+                ctx.fillRect(tx - 4, ty + 2, 3, 16)
+                
+                // canopy with cartoon outline
+                ctx.fillStyle = "#1e4620"
                 ctx.beginPath()
-                ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2 - 4, 18, 0, Math.PI * 2)
+                ctx.arc(tx + sway, ty - 4, 19, 0, Math.PI * 2)
                 ctx.fill()
                 
-                ctx.fillStyle = "#22a022"
+                ctx.fillStyle = "#2d6b30"
                 ctx.beginPath()
-                ctx.arc(px + TILE_SIZE/2 - 6, py + TILE_SIZE/2 - 14, 13, 0, Math.PI * 2)
+                ctx.arc(tx + sway, ty - 4, 16, 0, Math.PI * 2)
+                ctx.arc(tx - 9 + sway, ty + 2, 11, 0, Math.PI * 2)
+                ctx.arc(tx + 9 + sway, ty + 2, 11, 0, Math.PI * 2)
+                ctx.fill()
+                
+                // highlight blob (cartoon shine)
+                ctx.fillStyle = "#4a9e4e"
+                ctx.beginPath()
+                ctx.arc(tx - 5 + sway, ty - 10, 8, 0, Math.PI * 2)
+                ctx.fill()
+                ctx.fillStyle = "#65c46a"
+                ctx.beginPath()
+                ctx.arc(tx - 7 + sway, ty - 12, 4, 0, Math.PI * 2)
                 ctx.fill()
             } 
             else if (tile.terrain === "rock") {
-                ctx.fillStyle = "#444444"
-                ctx.fillRect(px + 8, py + 14, TILE_SIZE - 22, TILE_SIZE - 28)
-                ctx.fillStyle = "#666"
-                ctx.fillRect(px + 22, py + 8, 14, 18)
+                const rx = px + TILE_SIZE / 2
+                const ry = py + TILE_SIZE / 2
+                // boulder with outline
+                ctx.fillStyle = "#3d3d3d"
+                ctx.beginPath()
+                ctx.moveTo(rx - 16, ry + 14)
+                ctx.lineTo(rx - 12, ry - 6)
+                ctx.lineTo(rx - 2, ry - 14)
+                ctx.lineTo(rx + 12, ry - 8)
+                ctx.lineTo(rx + 16, ry + 14)
+                ctx.closePath()
+                ctx.fill()
+                ctx.fillStyle = "#6e6e6e"
+                ctx.beginPath()
+                ctx.moveTo(rx - 12, ry + 12)
+                ctx.lineTo(rx - 9, ry - 4)
+                ctx.lineTo(rx - 1, ry - 11)
+                ctx.lineTo(rx + 9, ry - 6)
+                ctx.lineTo(rx + 12, ry + 12)
+                ctx.closePath()
+                ctx.fill()
+                // highlight
+                ctx.fillStyle = "#9a9a9a"
+                ctx.beginPath()
+                ctx.moveTo(rx - 8, ry - 2)
+                ctx.lineTo(rx - 2, ry - 9)
+                ctx.lineTo(rx + 3, ry - 5)
+                ctx.lineTo(rx - 4, ry + 1)
+                ctx.closePath()
+                ctx.fill()
+                // small pebble
+                if (s1 > 0.5) {
+                    ctx.fillStyle = "#5a5a5a"
+                    ctx.beginPath()
+                    ctx.arc(px + 10 + s2 * 8, py + TILE_SIZE - 8, 3, 0, Math.PI * 2)
+                    ctx.fill()
+                }
             } 
             else if (tile.terrain === "ruins") {
-                ctx.fillStyle = "#222"
-                ctx.fillRect(px + 12, py + 22, TILE_SIZE - 22, 12)
-                ctx.fillStyle = "#555"
-                ctx.fillRect(px + 18, py + 10, 8, 18)
+                // broken column + rubble
+                ctx.fillStyle = "#2a2a2a"
+                ctx.fillRect(px + 10, py + 26, TILE_SIZE - 18, 10)
+                ctx.fillStyle = "#8a8577"
+                ctx.fillRect(px + 16, py + 8, 10, 22)
+                ctx.fillStyle = "#a29b8a"
+                ctx.fillRect(px + 16, py + 8, 4, 22)
+                ctx.fillStyle = "#6e695e"
+                ctx.fillRect(px + 14, py + 5, 14, 5)
+                // rubble stones
+                ctx.fillStyle = "#7d7869"
+                ctx.beginPath()
+                ctx.arc(px + 32, py + 30, 4, 0, Math.PI * 2)
+                ctx.arc(px + 12, py + 34, 3, 0, Math.PI * 2)
+                ctx.fill()
+                // moss
+                ctx.fillStyle = "#3f6b3f"
+                ctx.fillRect(px + 16, py + 24, 10, 4)
             }
             
-            // little grass tufts
-            if (tile.terrain !== "water" && Math.random() > 0.6) {
-                ctx.strokeStyle = "#1a3a1a"
-                ctx.lineWidth = 2
-                ctx.beginPath()
-                ctx.moveTo(px + 12, py + TILE_SIZE - 6)
-                ctx.lineTo(px + 18, py + TILE_SIZE - 22)
-                ctx.stroke()
+            // deterministic grass tufts & flowers (no flicker)
+            if (tile.terrain === "grass") {
+                if (s1 > 0.72) {
+                    ctx.strokeStyle = "#2c5a2c"
+                    ctx.lineWidth = 2
+                    ctx.beginPath()
+                    ctx.moveTo(px + 8 + s2 * 24, py + TILE_SIZE - 6)
+                    ctx.lineTo(px + 6 + s2 * 24, py + TILE_SIZE - 15)
+                    ctx.moveTo(px + 12 + s2 * 24, py + TILE_SIZE - 6)
+                    ctx.lineTo(px + 14 + s2 * 24, py + TILE_SIZE - 14)
+                    ctx.stroke()
+                }
+                if (s2 > 0.9) {
+                    // little flower
+                    const fx = px + 10 + s1 * 26
+                    const fy = py + 10 + s2 * 20
+                    ctx.fillStyle = s1 > 0.85 ? "#e8638c" : "#f5f1d0"
+                    ctx.beginPath()
+                    ctx.arc(fx, fy, 3, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#f2c744"
+                    ctx.beginPath()
+                    ctx.arc(fx, fy, 1.4, 0, Math.PI * 2)
+                    ctx.fill()
+                }
             }
+        }
+        
+        // cartoon outline helper
+        function outlinedRect(x, y, w, h, fill, outline = "#1a1208") {
+            ctx.fillStyle = outline
+            ctx.fillRect(x - 2, y - 2, w + 4, h + 4)
+            ctx.fillStyle = fill
+            ctx.fillRect(x, y, w, h)
+        }
+        
+        function outlinedCircle(x, y, r, fill, outline = "#1a1208") {
+            ctx.fillStyle = outline
+            ctx.beginPath()
+            ctx.arc(x, y, r + 2, 0, Math.PI * 2)
+            ctx.fill()
+            ctx.fillStyle = fill
+            ctx.beginPath()
+            ctx.arc(x, y, r, 0, Math.PI * 2)
+            ctx.fill()
+        }
+        
+        function drawFace(x, y, skin = "#f0c8a0", eyeColor = "#1a1208") {
+            outlinedCircle(x, y, 8, skin)
+            // eyes
+            ctx.fillStyle = eyeColor
+            ctx.fillRect(x - 4, y - 2, 2.5, 3.5)
+            ctx.fillRect(x + 2, y - 2, 2.5, 3.5)
+            // rosy cheeks
+            ctx.fillStyle = "rgba(230,120,110,0.4)"
+            ctx.beginPath()
+            ctx.arc(x - 5, y + 3, 2, 0, Math.PI * 2)
+            ctx.arc(x + 5, y + 3, 2, 0, Math.PI * 2)
+            ctx.fill()
         }
         
         function drawEntity(e) {
@@ -691,147 +824,957 @@
             ctx.globalAlpha = 1
             
             switch (e.type) {
-                case TYPE.KEEP:
-                    ctx.fillStyle = "#555555"
-                    ctx.fillRect(px - 32, py - 38, 64, 52)
-                    ctx.fillStyle = "#333333"
-                    ctx.fillRect(px - 26, py - 48, 52, 18)
-                    ctx.fillStyle = "#992222"
-                    ctx.fillRect(px - 12, py - 58, 24, 14)
-                    // flag
+                case TYPE.KEEP: {
+                    // main body with outline
+                    outlinedRect(px - 34, py - 36, 68, 52, "#8a8578")
+                    // stone texture blocks
+                    ctx.fillStyle = "#767162"
+                    for (let r = 0; r < 3; r++) {
+                        for (let c = 0; c < 4; c++) {
+                            if ((r + c) % 2 === 0) ctx.fillRect(px - 30 + c * 16, py - 30 + r * 15, 13, 11)
+                        }
+                    }
+                    // battlements
+                    ctx.fillStyle = "#6e695c"
+                    for (let i = 0; i < 5; i++) {
+                        ctx.fillRect(px - 34 + i * 15, py - 46, 10, 12)
+                    }
+                    // central tower
+                    outlinedRect(px - 12, py - 62, 24, 28, "#9a9587")
+                    ctx.fillStyle = "#6e695c"
+                    ctx.fillRect(px - 12, py - 68, 7, 8)
+                    ctx.fillRect(px + 5, py - 68, 7, 8)
+                    // gate
+                    ctx.fillStyle = "#2a1f14"
+                    ctx.beginPath()
+                    ctx.arc(px, py + 6, 11, Math.PI, 0)
+                    ctx.fill()
+                    ctx.fillRect(px - 11, py + 6, 22, 10)
+                    // gate bars
+                    ctx.strokeStyle = "#4a3826"
+                    ctx.lineWidth = 2
+                    for (let i = -1; i <= 1; i++) {
+                        ctx.beginPath()
+                        ctx.moveTo(px + i * 6, py - 2)
+                        ctx.lineTo(px + i * 6, py + 16)
+                        ctx.stroke()
+                    }
+                    // waving flag
+                    const flagWave = Math.sin(tick * 0.15) * 3
+                    ctx.fillStyle = "#8a7a6a"
+                    ctx.fillRect(px - 1, py - 84, 3, 24)
+                    ctx.fillStyle = "#d92626"
+                    ctx.beginPath()
+                    ctx.moveTo(px + 2, py - 84)
+                    ctx.lineTo(px + 24, py - 80 + flagWave)
+                    ctx.lineTo(px + 2, py - 72)
+                    ctx.closePath()
+                    ctx.fill()
                     ctx.fillStyle = "#facc15"
                     ctx.beginPath()
-                    ctx.moveTo(px + 14, py - 50)
-                    ctx.lineTo(px + 38, py - 56)
-                    ctx.lineTo(px + 14, py - 64)
+                    ctx.arc(px + 9, py - 78 + flagWave * 0.4, 2.5, 0, Math.PI * 2)
                     ctx.fill()
+                    // windows glow
+                    ctx.fillStyle = "#ffdf80"
+                    ctx.fillRect(px - 6, py - 54, 5, 7)
+                    ctx.fillRect(px + 2, py - 54, 5, 7)
                     break
+                }
                     
-                case TYPE.HOUSE:
-                    ctx.fillStyle = "#9c6644"
-                    ctx.fillRect(px - 19, py - 12, 38, 26)
-                    ctx.fillStyle = "#3a2c1f"
+                case TYPE.HOUSE: {
+                    // walls (timber-frame cottage)
+                    outlinedRect(px - 19, py - 12, 38, 28, "#e8d5b0")
+                    // timber beams
+                    ctx.fillStyle = "#6b4a2e"
+                    ctx.fillRect(px - 19, py - 12, 38, 3)
+                    ctx.fillRect(px - 19, py + 13, 38, 3)
+                    ctx.fillRect(px - 2, py - 12, 4, 28)
+                    // roof with outline
+                    ctx.fillStyle = "#1a1208"
                     ctx.beginPath()
-                    ctx.moveTo(px - 24, py - 14)
-                    ctx.lineTo(px, py - 34)
-                    ctx.lineTo(px + 24, py - 14)
+                    ctx.moveTo(px - 27, py - 10)
+                    ctx.lineTo(px, py - 38)
+                    ctx.lineTo(px + 27, py - 10)
+                    ctx.closePath()
                     ctx.fill()
-                    ctx.fillStyle = "#f3e6c8"
-                    ctx.fillRect(px - 9, py - 4, 7, 9)
+                    ctx.fillStyle = "#b5432e"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 23, py - 12)
+                    ctx.lineTo(px, py - 34)
+                    ctx.lineTo(px + 23, py - 12)
+                    ctx.closePath()
+                    ctx.fill()
+                    // roof highlight
+                    ctx.fillStyle = "#d15a42"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 16, py - 14)
+                    ctx.lineTo(px - 2, py - 29)
+                    ctx.lineTo(px + 4, py - 26)
+                    ctx.lineTo(px - 10, py - 14)
+                    ctx.closePath()
+                    ctx.fill()
+                    // door
+                    ctx.fillStyle = "#5d4028"
+                    ctx.fillRect(px - 14, py + 2, 9, 14)
+                    ctx.fillStyle = "#f2c744"
+                    ctx.beginPath()
+                    ctx.arc(px - 7.5, py + 9, 1.3, 0, Math.PI * 2)
+                    ctx.fill()
+                    // window with warm light
+                    ctx.fillStyle = "#4a3826"
+                    ctx.fillRect(px + 4, py - 4, 11, 10)
+                    ctx.fillStyle = "#ffd77a"
+                    ctx.fillRect(px + 5.5, py - 2.5, 8, 7)
+                    ctx.strokeStyle = "#4a3826"
+                    ctx.lineWidth = 1.5
+                    ctx.beginPath()
+                    ctx.moveTo(px + 9.5, py - 3)
+                    ctx.lineTo(px + 9.5, py + 5)
+                    ctx.stroke()
+                    // chimney + smoke puff
+                    ctx.fillStyle = "#7d7264"
+                    ctx.fillRect(px + 10, py - 32, 7, 12)
+                    const puff = (tick * 0.5) % 30
+                    ctx.fillStyle = `rgba(220,220,220,${0.5 - puff / 70})`
+                    ctx.beginPath()
+                    ctx.arc(px + 13 + puff * 0.15, py - 36 - puff * 0.6, 3.5 + puff * 0.12, 0, Math.PI * 2)
+                    ctx.fill()
                     break
+                }
                     
-                case TYPE.FARM:
-                    ctx.fillStyle = "#5c7c2e"
-                    ctx.fillRect(px - 22, py - 18, 44, 28)
-                    ctx.fillStyle = "#3e5a1a"
-                    ctx.fillRect(px - 18, py - 22, 36, 8)
-                    // wheat
-                    ctx.fillStyle = "#e0c050"
+                case TYPE.FARM: {
+                    // tilled soil plot with outline
+                    outlinedRect(px - 23, py - 14, 46, 32, "#6e4f30")
+                    // soil rows
+                    ctx.fillStyle = "#5a3f25"
+                    for (let i = 0; i < 4; i++) {
+                        ctx.fillRect(px - 21, py - 10 + i * 7, 42, 3)
+                    }
+                    // wheat stalks with sway
+                    const wheatSway = Math.sin(tick * 0.06 + e.anim) * 1.5
                     for (let i = -2; i <= 2; i++) {
-                        ctx.fillRect(px + i * 8, py - 26, 4, 18)
+                        ctx.strokeStyle = "#c9a83c"
+                        ctx.lineWidth = 2.5
+                        ctx.beginPath()
+                        ctx.moveTo(px + i * 9, py + 14)
+                        ctx.quadraticCurveTo(px + i * 9 + wheatSway, py - 2, px + i * 9 + wheatSway * 1.6, py - 16)
+                        ctx.stroke()
+                        // wheat head
+                        ctx.fillStyle = "#f2d264"
+                        ctx.beginPath()
+                        ctx.ellipse(px + i * 9 + wheatSway * 1.6, py - 19, 3, 6, wheatSway * 0.1, 0, Math.PI * 2)
+                        ctx.fill()
+                    }
+                    // little scarecrow
+                    ctx.fillStyle = "#5d4028"
+                    ctx.fillRect(px + 17, py - 22, 2.5, 20)
+                    ctx.fillRect(px + 11, py - 17, 15, 2.5)
+                    ctx.fillStyle = "#e0a33c"
+                    ctx.beginPath()
+                    ctx.arc(px + 18, py - 25, 4, 0, Math.PI * 2)
+                    ctx.fill()
+                    break
+                }
+                    
+                case TYPE.LUMBER: {
+                    // log cabin
+                    outlinedRect(px - 18, py - 8, 36, 26, "#7a5230")
+                    // horizontal log lines
+                    ctx.strokeStyle = "#5d4028"
+                    ctx.lineWidth = 2
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath()
+                        ctx.moveTo(px - 18, py - 2 + i * 8)
+                        ctx.lineTo(px + 18, py - 2 + i * 8)
+                        ctx.stroke()
+                    }
+                    // slanted roof
+                    ctx.fillStyle = "#4a5d3a"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 22, py - 6)
+                    ctx.lineTo(px, py - 22)
+                    ctx.lineTo(px + 22, py - 6)
+                    ctx.closePath()
+                    ctx.fill()
+                    // stacked logs beside
+                    ctx.fillStyle = "#8a6238"
+                    ctx.beginPath()
+                    ctx.arc(px - 26, py + 12, 5, 0, Math.PI * 2)
+                    ctx.arc(px - 26, py + 3, 5, 0, Math.PI * 2)
+                    ctx.arc(px - 32, py + 8, 5, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#d9b380"
+                    ctx.beginPath()
+                    ctx.arc(px - 26, py + 12, 2.5, 0, Math.PI * 2)
+                    ctx.arc(px - 26, py + 3, 2.5, 0, Math.PI * 2)
+                    ctx.arc(px - 32, py + 8, 2.5, 0, Math.PI * 2)
+                    ctx.fill()
+                    // axe in stump
+                    ctx.fillStyle = "#6e4f30"
+                    ctx.fillRect(px + 22, py + 6, 10, 10)
+                    ctx.strokeStyle = "#8a8578"
+                    ctx.lineWidth = 3
+                    ctx.beginPath()
+                    ctx.moveTo(px + 27, py + 8)
+                    ctx.lineTo(px + 33, py - 2)
+                    ctx.stroke()
+                    break
+                }
+                    
+                case TYPE.QUARRY: {
+                    // rocky pit
+                    outlinedRect(px - 22, py - 10, 44, 28, "#5f5b52")
+                    ctx.fillStyle = "#4a463e"
+                    ctx.beginPath()
+                    ctx.ellipse(px, py + 4, 16, 10, 0, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#2e2b26"
+                    ctx.beginPath()
+                    ctx.ellipse(px, py + 4, 10, 6, 0, 0, Math.PI * 2)
+                    ctx.fill()
+                    // wooden crane frame
+                    ctx.strokeStyle = "#5d4028"
+                    ctx.lineWidth = 3
+                    ctx.beginPath()
+                    ctx.moveTo(px - 14, py - 8)
+                    ctx.lineTo(px - 4, py - 26)
+                    ctx.lineTo(px + 10, py - 20)
+                    ctx.stroke()
+                    // rope + bucket
+                    ctx.strokeStyle = "#8a7a5a"
+                    ctx.lineWidth = 1.5
+                    ctx.beginPath()
+                    ctx.moveTo(px + 10, py - 20)
+                    ctx.lineTo(px + 10, py - 4)
+                    ctx.stroke()
+                    ctx.fillStyle = "#6e5a3a"
+                    ctx.fillRect(px + 6, py - 4, 8, 6)
+                    // stone piles
+                    ctx.fillStyle = "#8a867c"
+                    ctx.beginPath()
+                    ctx.arc(px - 16, py + 12, 4, 0, Math.PI * 2)
+                    ctx.arc(px - 10, py + 14, 3.5, 0, Math.PI * 2)
+                    ctx.fill()
+                    break
+                }
+                    
+                case TYPE.TOWER: {
+                    // stone tower with taper
+                    ctx.fillStyle = "#1a1208"
+                    ctx.fillRect(px - 15, py - 44, 30, 60)
+                    ctx.fillStyle = "#8a8578"
+                    ctx.fillRect(px - 13, py - 42, 26, 56)
+                    // brick pattern
+                    ctx.fillStyle = "#767162"
+                    for (let r = 0; r < 5; r++) {
+                        ctx.fillRect(px - 13 + (r % 2) * 7, py - 38 + r * 10, 12, 7)
+                    }
+                    // top platform
+                    outlinedRect(px - 19, py - 52, 38, 12, "#6e695c")
+                    // battlements
+                    ctx.fillStyle = "#6e695c"
+                    ctx.fillRect(px - 19, py - 58, 8, 8)
+                    ctx.fillRect(px - 4, py - 58, 8, 8)
+                    ctx.fillRect(px + 11, py - 58, 8, 8)
+                    // arrow slit
+                    ctx.fillStyle = "#1a1208"
+                    ctx.fillRect(px - 2, py - 30, 4, 12)
+                    // archer silhouette on top with animated bow
+                    ctx.fillStyle = "#3a4a2e"
+                    ctx.fillRect(px - 4, py - 66, 8, 9)
+                    ctx.beginPath()
+                    ctx.arc(px, py - 68, 3.5, 0, Math.PI * 2)
+                    ctx.fill()
+                    break
+                }
+                    
+                case TYPE.WALL: {
+                    outlinedRect(px - 22, py - 16, 44, 34, "#8a8578")
+                    // brick rows
+                    ctx.strokeStyle = "#6e695c"
+                    ctx.lineWidth = 2
+                    for (let r = 0; r < 3; r++) {
+                        ctx.beginPath()
+                        ctx.moveTo(px - 22, py - 6 + r * 10)
+                        ctx.lineTo(px + 22, py - 6 + r * 10)
+                        ctx.stroke()
+                        for (let c = 0; c < 3; c++) {
+                            ctx.beginPath()
+                            ctx.moveTo(px - 14 + c * 14 + (r % 2) * 7, py - 16 + r * 10)
+                            ctx.lineTo(px - 14 + c * 14 + (r % 2) * 7, py - 6 + r * 10)
+                            ctx.stroke()
+                        }
+                    }
+                    // battlements
+                    ctx.fillStyle = "#6e695c"
+                    for (let i = 0; i < 4; i++) {
+                        ctx.fillRect(px - 22 + i * 12, py - 24, 8, 9)
                     }
                     break
+                }
                     
-                case TYPE.LUMBER:
-                    ctx.fillStyle = "#664422"
-                    ctx.fillRect(px - 18, py - 8, 36, 28)
-                    ctx.fillStyle = "#223311"
-                    ctx.fillRect(px - 22, py - 24, 12, 22)
-                    ctx.fillRect(px + 12, py - 28, 14, 26)
-                    break
-                    
-                case TYPE.TOWER:
-                    ctx.fillStyle = "#777777"
-                    ctx.fillRect(px - 13, py - 42, 26, 54)
-                    ctx.fillStyle = "#444444"
-                    ctx.fillRect(px - 19, py - 48, 38, 14)
-                    ctx.fillStyle = "#aa2222"
-                    ctx.fillRect(px - 6, py - 54, 12, 8)
-                    break
-                    
-                case TYPE.VILLAGER:
-                    const shirtColor = ["#3b6db3", "#c23c2c", "#d4a23c"][Math.floor(e.anim) % 3]
-                    ctx.fillStyle = shirtColor
-                    ctx.fillRect(px - 8, py - 2 + bob, 16, 18)
-                    ctx.fillStyle = "#f0d3b0"
+                case TYPE.TAVERN: {
+                    // cozy two-story inn
+                    outlinedRect(px - 21, py - 16, 42, 32, "#a3764a")
+                    ctx.fillStyle = "#8a5f38"
+                    ctx.fillRect(px - 21, py - 16, 42, 14)
+                    // roof
+                    ctx.fillStyle = "#1a1208"
                     ctx.beginPath()
-                    ctx.arc(px, py - 12 + bob, 8, 0, Math.PI * 2)
+                    ctx.moveTo(px - 28, py - 14)
+                    ctx.lineTo(px, py - 40)
+                    ctx.lineTo(px + 28, py - 14)
+                    ctx.closePath()
                     ctx.fill()
-                    ctx.fillStyle = "#222"
-                    ctx.fillRect(px - 4, py - 16 + bob, 3, 4)
-                    break
-                    
-                case TYPE.GUARD:
-                    ctx.fillStyle = "#223366"
-                    ctx.fillRect(px - 10, py - 8, 20, 26)
-                    ctx.fillStyle = "#ddd"
+                    ctx.fillStyle = "#5a4632"
                     ctx.beginPath()
-                    ctx.arc(px, py - 18, 9, 0, Math.PI * 2)
+                    ctx.moveTo(px - 24, py - 16)
+                    ctx.lineTo(px, py - 36)
+                    ctx.lineTo(px + 24, py - 16)
+                    ctx.closePath()
                     ctx.fill()
-                    ctx.fillStyle = "#112233"
-                    ctx.fillRect(px - 13, py - 26, 26, 9)
-                    break
-                    
-                case TYPE.KNIGHT:
-                    ctx.fillStyle = "#222233"
-                    ctx.fillRect(px - 14, py - 12, 28, 22)
-                    ctx.fillStyle = "#aa9922"
-                    ctx.fillRect(px - 18, py - 24, 36, 14)
-                    ctx.fillStyle = "#eeddaa"
+                    // glowing windows
+                    ctx.fillStyle = "#ffd77a"
+                    ctx.fillRect(px - 15, py - 12, 8, 7)
+                    ctx.fillRect(px + 7, py - 12, 8, 7)
+                    ctx.fillRect(px - 15, py + 2, 8, 8)
+                    // door
+                    ctx.fillStyle = "#3d2c1a"
+                    ctx.fillRect(px + 4, py + 2, 11, 14)
+                    // hanging mug sign
+                    ctx.strokeStyle = "#4a3826"
+                    ctx.lineWidth = 2
                     ctx.beginPath()
-                    ctx.arc(px, py - 22, 11, 0, Math.PI * 2)
+                    ctx.moveTo(px + 21, py - 18)
+                    ctx.lineTo(px + 30, py - 18)
+                    ctx.stroke()
+                    const signSway = Math.sin(tick * 0.1) * 2
+                    ctx.fillStyle = "#e0a33c"
+                    ctx.fillRect(px + 26 + signSway, py - 16, 8, 9)
+                    ctx.fillStyle = "#fff"
+                    ctx.fillRect(px + 27 + signSway, py - 15, 6, 2.5)
+                    break
+                }
+                    
+                case TYPE.TEMPLE: {
+                    // white marble temple
+                    outlinedRect(px - 22, py - 14, 44, 30, "#e8e2d2")
+                    // columns
+                    ctx.fillStyle = "#c9c2b0"
+                    for (let i = 0; i < 4; i++) {
+                        ctx.fillRect(px - 18 + i * 11, py - 12, 5, 26)
+                    }
+                    // pediment roof
+                    ctx.fillStyle = "#1a1208"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 28, py - 12)
+                    ctx.lineTo(px, py - 34)
+                    ctx.lineTo(px + 28, py - 12)
+                    ctx.closePath()
                     ctx.fill()
-                    ctx.fillStyle = "#aa2222"
-                    ctx.fillRect(px - 5, py - 34, 10, 8)
-                    break
-                    
-                case TYPE.GOBLIN:
-                    ctx.fillStyle = "#225522"
-                    ctx.fillRect(px - 13, py - 4, 26, 16)
-                    ctx.fillStyle = "#114411"
+                    ctx.fillStyle = "#d9d2c0"
                     ctx.beginPath()
-                    ctx.ellipse(px, py - 14, 13, 11, 0, 0, Math.PI * 2)
+                    ctx.moveTo(px - 24, py - 14)
+                    ctx.lineTo(px, py - 31)
+                    ctx.lineTo(px + 24, py - 14)
+                    ctx.closePath()
                     ctx.fill()
-                    ctx.fillStyle = "#ffdd66"
-                    ctx.fillRect(px - 7, py - 21, 4, 6)
-                    ctx.fillRect(px + 3, py - 21, 4, 6)
-                    break
-                    
-                case TYPE.ORC:
-                    ctx.fillStyle = "#442222"
-                    ctx.fillRect(px - 18, py - 12, 36, 28)
-                    ctx.fillStyle = "#663333"
+                    // golden symbol with glow pulse
+                    const glow = 0.5 + Math.sin(tick * 0.08) * 0.3
+                    ctx.fillStyle = `rgba(250, 204, 21, ${glow})`
                     ctx.beginPath()
-                    ctx.arc(px, py - 22, 14, 0, Math.PI * 2)
+                    ctx.arc(px, py - 22, 7, 0, Math.PI * 2)
                     ctx.fill()
-                    break
-                    
-                case TYPE.PRIEST:
-                    ctx.fillStyle = "#ddccaa"
-                    ctx.fillRect(px - 12, py - 22, 24, 32)
-                    ctx.fillStyle = "#334488"
-                    ctx.fillRect(px - 16, py - 8, 32, 12)
-                    ctx.fillStyle = "#eed"
+                    ctx.fillStyle = "#f2c744"
                     ctx.beginPath()
-                    ctx.arc(px, py - 26, 10, 0, Math.PI * 2)
+                    ctx.arc(px, py - 22, 4, 0, Math.PI * 2)
                     ctx.fill()
                     break
+                }
                     
-                case TYPE.TROLL:
-                    ctx.fillStyle = "#334422"
-                    ctx.fillRect(px - 26, py - 22, 52, 36)
-                    ctx.fillStyle = "#112211"
-                    ctx.fillRect(px - 14, py - 40, 28, 18)
-                    break
-                    
-                case TYPE.DEER:
-                    ctx.fillStyle = "#665533"
-                    ctx.fillRect(px - 14, py - 4, 28, 14)
-                    ctx.fillStyle = "#998866"
+                case TYPE.BARRACKS: {
+                    // sturdy military hall
+                    outlinedRect(px - 24, py - 12, 48, 30, "#6e5a48")
+                    ctx.fillStyle = "#5a4a3c"
+                    ctx.fillRect(px - 24, py - 12, 48, 6)
+                    // flat crenelated roof
+                    ctx.fillStyle = "#4a3e32"
+                    for (let i = 0; i < 5; i++) {
+                        ctx.fillRect(px - 24 + i * 11, py - 19, 7, 8)
+                    }
+                    // banner
+                    ctx.fillStyle = "#8a2e2e"
+                    ctx.fillRect(px - 4, py - 10, 8, 16)
+                    ctx.fillStyle = "#f2c744"
                     ctx.beginPath()
-                    ctx.arc(px - 4, py - 18, 6, 0, Math.PI * 2)
+                    ctx.arc(px, py - 4, 2.5, 0, Math.PI * 2)
+                    ctx.fill()
+                    // crossed swords over door
+                    ctx.strokeStyle = "#b8b2a4"
+                    ctx.lineWidth = 2.5
+                    ctx.beginPath()
+                    ctx.moveTo(px - 16, py + 2)
+                    ctx.lineTo(px - 8, py + 12)
+                    ctx.moveTo(px - 8, py + 2)
+                    ctx.lineTo(px - 16, py + 12)
+                    ctx.stroke()
+                    // door
+                    ctx.fillStyle = "#2e2318"
+                    ctx.fillRect(px + 8, py + 2, 12, 16)
+                    break
+                }
+                    
+                case TYPE.MILL: {
+                    // mill body
+                    outlinedRect(px - 14, py - 16, 28, 32, "#c9b28a")
+                    ctx.fillStyle = "#a8916c"
+                    ctx.fillRect(px - 14, py - 16, 28, 8)
+                    // roof cap
+                    ctx.fillStyle = "#8a5f38"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 18, py - 14)
+                    ctx.lineTo(px, py - 30)
+                    ctx.lineTo(px + 18, py - 14)
+                    ctx.closePath()
+                    ctx.fill()
+                    // rotating blades!
+                    const angle = tick * 0.04
+                    ctx.save()
+                    ctx.translate(px, py - 18)
+                    ctx.rotate(angle)
+                    ctx.fillStyle = "#e8dcc0"
+                    ctx.strokeStyle = "#5d4028"
+                    ctx.lineWidth = 2
+                    for (let i = 0; i < 4; i++) {
+                        ctx.rotate(Math.PI / 2)
+                        ctx.fillRect(-3, 0, 6, 26)
+                        ctx.strokeRect(-3, 0, 6, 26)
+                    }
+                    ctx.restore()
+                    // hub
+                    outlinedCircle(px, py - 18, 4, "#5d4028")
+                    // door
+                    ctx.fillStyle = "#4a3826"
+                    ctx.fillRect(px - 5, py + 4, 10, 12)
+                    break
+                }
+                    
+                case TYPE.STABLE: {
+                    // open barn
+                    outlinedRect(px - 22, py - 10, 44, 26, "#9c2e2e")
+                    // white cross-frame (classic barn)
+                    ctx.strokeStyle = "#e8e2d2"
+                    ctx.lineWidth = 3
+                    ctx.strokeRect(px - 18, py - 6, 16, 18)
+                    ctx.beginPath()
+                    ctx.moveTo(px - 18, py - 6)
+                    ctx.lineTo(px - 2, py + 12)
+                    ctx.moveTo(px - 2, py - 6)
+                    ctx.lineTo(px - 18, py + 12)
+                    ctx.stroke()
+                    // roof
+                    ctx.fillStyle = "#5a4632"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 27, py - 8)
+                    ctx.lineTo(px, py - 28)
+                    ctx.lineTo(px + 27, py - 8)
+                    ctx.closePath()
+                    ctx.fill()
+                    // horse head peeking out
+                    ctx.fillStyle = "#7a5a3a"
+                    ctx.beginPath()
+                    ctx.ellipse(px + 11, py + 2, 6, 8, 0.3, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#5a4028"
+                    ctx.beginPath()
+                    ctx.moveTo(px + 7, py - 5)
+                    ctx.lineTo(px + 9, py - 10)
+                    ctx.lineTo(px + 11, py - 5)
+                    ctx.closePath()
+                    ctx.fill()
+                    ctx.fillStyle = "#1a1208"
+                    ctx.beginPath()
+                    ctx.arc(px + 13, py, 1.5, 0, Math.PI * 2)
+                    ctx.fill()
+                    // hay bale
+                    ctx.fillStyle = "#e0c050"
+                    ctx.fillRect(px + 20, py + 8, 10, 8)
+                    ctx.strokeStyle = "#b89a30"
+                    ctx.lineWidth = 1.5
+                    ctx.strokeRect(px + 21.5, py + 9.5, 7, 5)
+                    break
+                }
+                    
+                case TYPE.VILLAGER: {
+                    const shirtColors = ["#3b6db3", "#c23c2c", "#d4a23c", "#6a9948"]
+                    const shirt = shirtColors[e.tint % shirtColors.length]
+                    const step = Math.sin(tick * 0.18 + e.anim) * (e.state === "walk" ? 3 : 0)
+                    // legs
+                    ctx.fillStyle = "#4a3826"
+                    ctx.fillRect(px - 6, py + 8 + bob, 4.5, 9 + step * 0.5)
+                    ctx.fillRect(px + 2, py + 8 + bob, 4.5, 9 - step * 0.5)
+                    // body with outline
+                    outlinedRect(px - 8, py - 4 + bob, 16, 15, shirt)
+                    // belt
+                    ctx.fillStyle = "#5d4028"
+                    ctx.fillRect(px - 8, py + 7 + bob, 16, 3)
+                    // arms
+                    ctx.fillStyle = shirt
+                    ctx.fillRect(px - 12, py - 2 + bob, 4, 10)
+                    ctx.fillRect(px + 8, py - 2 + bob, 4, 10)
+                    // head with cartoon face
+                    drawFace(px, py - 14 + bob)
+                    // hair (varies by tint too)
+                    ctx.fillStyle = ["#4a3220", "#2a2a2a", "#8a5a2a", "#6e4f30"][e.tint % 4]
+                    ctx.beginPath()
+                    ctx.arc(px, py - 17 + bob, 8, Math.PI, 0)
                     ctx.fill()
                     break
+                }
+                    
+                case TYPE.GUARD: {
+                    // legs
+                    ctx.fillStyle = "#2a2a3a"
+                    ctx.fillRect(px - 6, py + 10, 5, 8)
+                    ctx.fillRect(px + 2, py + 10, 5, 8)
+                    // armored body
+                    outlinedRect(px - 10, py - 6, 20, 18, "#5a6a8a")
+                    // chest plate shine
+                    ctx.fillStyle = "#7a8aaa"
+                    ctx.fillRect(px - 7, py - 3, 6, 10)
+                    // head
+                    drawFace(px, py - 16)
+                    // helmet with outline
+                    ctx.fillStyle = "#1a1208"
+                    ctx.beginPath()
+                    ctx.arc(px, py - 18, 10.5, Math.PI, 0)
+                    ctx.fill()
+                    ctx.fillStyle = "#8a95a8"
+                    ctx.beginPath()
+                    ctx.arc(px, py - 18, 8.5, Math.PI, 0)
+                    ctx.fill()
+                    ctx.fillRect(px - 8.5, py - 18, 17, 3.5)
+                    // red plume
+                    ctx.fillStyle = "#c23c2c"
+                    ctx.fillRect(px - 1.5, py - 30, 3, 6)
+                    // spear
+                    ctx.strokeStyle = "#6e4f30"
+                    ctx.lineWidth = 2.5
+                    ctx.beginPath()
+                    ctx.moveTo(px + 13, py + 12)
+                    ctx.lineTo(px + 13, py - 26)
+                    ctx.stroke()
+                    ctx.fillStyle = "#b8b2a4"
+                    ctx.beginPath()
+                    ctx.moveTo(px + 10, py - 25)
+                    ctx.lineTo(px + 13, py - 34)
+                    ctx.lineTo(px + 16, py - 25)
+                    ctx.closePath()
+                    ctx.fill()
+                    // shield
+                    ctx.fillStyle = "#8a5f38"
+                    ctx.beginPath()
+                    ctx.arc(px - 13, py + 2, 6.5, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.strokeStyle = "#b8934a"
+                    ctx.lineWidth = 2
+                    ctx.stroke()
+                    break
+                }
+                    
+                case TYPE.ARCHER: {
+                    // legs
+                    ctx.fillStyle = "#3d2c1a"
+                    ctx.fillRect(px - 6, py + 8, 5, 9)
+                    ctx.fillRect(px + 2, py + 8, 5, 9)
+                    // green tunic
+                    outlinedRect(px - 9, py - 5, 18, 15, "#4a7a3a")
+                    // quiver strap
+                    ctx.strokeStyle = "#5d4028"
+                    ctx.lineWidth = 2.5
+                    ctx.beginPath()
+                    ctx.moveTo(px - 8, py - 4)
+                    ctx.lineTo(px + 8, py + 8)
+                    ctx.stroke()
+                    // head + hood
+                    drawFace(px, py - 15)
+                    ctx.fillStyle = "#3a5f2e"
+                    ctx.beginPath()
+                    ctx.arc(px, py - 17, 9, Math.PI * 0.9, Math.PI * 0.1)
+                    ctx.fill()
+                    ctx.beginPath()
+                    ctx.moveTo(px - 9, py - 16)
+                    ctx.lineTo(px, py - 30)
+                    ctx.lineTo(px + 9, py - 16)
+                    ctx.closePath()
+                    ctx.fill()
+                    // bow
+                    ctx.strokeStyle = "#8a5f38"
+                    ctx.lineWidth = 2.5
+                    ctx.beginPath()
+                    ctx.arc(px + 13, py - 4, 11, -Math.PI * 0.45, Math.PI * 0.45)
+                    ctx.stroke()
+                    ctx.strokeStyle = "#d9d2c0"
+                    ctx.lineWidth = 1
+                    ctx.beginPath()
+                    ctx.moveTo(px + 13, py - 14)
+                    ctx.lineTo(px + 13, py + 6)
+                    ctx.stroke()
+                    // quiver on back
+                    ctx.fillStyle = "#6e4f30"
+                    ctx.fillRect(px - 15, py - 10, 6, 14)
+                    ctx.strokeStyle = "#e0c050"
+                    ctx.lineWidth = 1.5
+                    ctx.beginPath()
+                    ctx.moveTo(px - 13, py - 10)
+                    ctx.lineTo(px - 11, py - 15)
+                    ctx.moveTo(px - 10, py - 10)
+                    ctx.lineTo(px - 9, py - 14)
+                    ctx.stroke()
+                    break
+                }
+                    
+                case TYPE.KNIGHT: {
+                    // legs armored
+                    ctx.fillStyle = "#5a6578"
+                    ctx.fillRect(px - 7, py + 10, 6, 9)
+                    ctx.fillRect(px + 2, py + 10, 6, 9)
+                    // heavy armor body
+                    outlinedRect(px - 12, py - 8, 24, 20, "#7a8598")
+                    // gold trim
+                    ctx.fillStyle = "#c9a83c"
+                    ctx.fillRect(px - 12, py - 8, 24, 3)
+                    ctx.fillRect(px - 2, py - 8, 4, 20)
+                    // pauldrons
+                    outlinedCircle(px - 13, py - 6, 5, "#8a95a8")
+                    outlinedCircle(px + 13, py - 6, 5, "#8a95a8")
+                    // helmet (great helm with visor)
+                    ctx.fillStyle = "#1a1208"
+                    ctx.fillRect(px - 9, py - 30, 18, 18)
+                    ctx.fillStyle = "#95a0b5"
+                    ctx.fillRect(px - 7.5, py - 28.5, 15, 15)
+                    // visor slit
+                    ctx.fillStyle = "#1a1208"
+                    ctx.fillRect(px - 6, py - 23, 12, 2.5)
+                    // golden crown (this is a royal knight!)
+                    ctx.fillStyle = "#f2c744"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 8, py - 30)
+                    ctx.lineTo(px - 8, py - 36)
+                    ctx.lineTo(px - 4, py - 31)
+                    ctx.lineTo(px, py - 37)
+                    ctx.lineTo(px + 4, py - 31)
+                    ctx.lineTo(px + 8, py - 36)
+                    ctx.lineTo(px + 8, py - 30)
+                    ctx.closePath()
+                    ctx.fill()
+                    // sword
+                    ctx.strokeStyle = "#d9d2c0"
+                    ctx.lineWidth = 3.5
+                    ctx.beginPath()
+                    ctx.moveTo(px + 16, py + 6)
+                    ctx.lineTo(px + 24, py - 18)
+                    ctx.stroke()
+                    ctx.strokeStyle = "#c9a83c"
+                    ctx.lineWidth = 2.5
+                    ctx.beginPath()
+                    ctx.moveTo(px + 14, py + 1)
+                    ctx.lineTo(px + 22, py + 5)
+                    ctx.stroke()
+                    // red cape
+                    ctx.fillStyle = "#a82828"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 12, py - 6)
+                    ctx.quadraticCurveTo(px - 22, py + 4, px - 16, py + 14)
+                    ctx.lineTo(px - 12, py + 10)
+                    ctx.closePath()
+                    ctx.fill()
+                    break
+                }
+                    
+                case TYPE.PRIEST: {
+                    // robe (long, flowing)
+                    ctx.fillStyle = "#1a1208"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 12, py + 18)
+                    ctx.lineTo(px - 9, py - 10)
+                    ctx.lineTo(px + 9, py - 10)
+                    ctx.lineTo(px + 12, py + 18)
+                    ctx.closePath()
+                    ctx.fill()
+                    ctx.fillStyle = "#e8e2d2"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 10, py + 16)
+                    ctx.lineTo(px - 7.5, py - 8)
+                    ctx.lineTo(px + 7.5, py - 8)
+                    ctx.lineTo(px + 10, py + 16)
+                    ctx.closePath()
+                    ctx.fill()
+                    // golden stole
+                    ctx.fillStyle = "#c9a83c"
+                    ctx.fillRect(px - 6, py - 8, 3, 20)
+                    ctx.fillRect(px + 3, py - 8, 3, 20)
+                    // head
+                    drawFace(px, py - 16)
+                    // bald with fringe (tonsure)
+                    ctx.strokeStyle = "#8a7a5a"
+                    ctx.lineWidth = 3
+                    ctx.beginPath()
+                    ctx.arc(px, py - 17, 8, Math.PI * 0.85, Math.PI * 0.15)
+                    ctx.stroke()
+                    // holy glow staff
+                    ctx.strokeStyle = "#8a6238"
+                    ctx.lineWidth = 2.5
+                    ctx.beginPath()
+                    ctx.moveTo(px + 13, py + 14)
+                    ctx.lineTo(px + 13, py - 22)
+                    ctx.stroke()
+                    const holyGlow = 0.4 + Math.sin(tick * 0.1) * 0.25
+                    ctx.fillStyle = `rgba(250, 220, 100, ${holyGlow})`
+                    ctx.beginPath()
+                    ctx.arc(px + 13, py - 25, 7, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#f2c744"
+                    ctx.beginPath()
+                    ctx.arc(px + 13, py - 25, 3.5, 0, Math.PI * 2)
+                    ctx.fill()
+                    break
+                }
+                    
+                case TYPE.GOBLIN: {
+                    const hop = Math.abs(Math.sin(tick * 0.25 + e.anim)) * 4
+                    // scrappy body
+                    outlinedRect(px - 9, py - 2 - hop, 18, 14, "#5a8a3a")
+                    // ragged loincloth
+                    ctx.fillStyle = "#6e5a3a"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 8, py + 10 - hop)
+                    ctx.lineTo(px - 4, py + 15 - hop)
+                    ctx.lineTo(px, py + 10 - hop)
+                    ctx.lineTo(px + 4, py + 15 - hop)
+                    ctx.lineTo(px + 8, py + 10 - hop)
+                    ctx.closePath()
+                    ctx.fill()
+                    // big head
+                    outlinedCircle(px, py - 13 - hop, 10, "#6ea847")
+                    // huge pointy ears
+                    ctx.fillStyle = "#1a1208"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 9, py - 15 - hop)
+                    ctx.lineTo(px - 20, py - 22 - hop)
+                    ctx.lineTo(px - 8, py - 10 - hop)
+                    ctx.closePath()
+                    ctx.moveTo(px + 9, py - 15 - hop)
+                    ctx.lineTo(px + 20, py - 22 - hop)
+                    ctx.lineTo(px + 8, py - 10 - hop)
+                    ctx.closePath()
+                    ctx.fill()
+                    ctx.fillStyle = "#6ea847"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 8, py - 15 - hop)
+                    ctx.lineTo(px - 17, py - 20 - hop)
+                    ctx.lineTo(px - 7, py - 11 - hop)
+                    ctx.closePath()
+                    ctx.moveTo(px + 8, py - 15 - hop)
+                    ctx.lineTo(px + 17, py - 20 - hop)
+                    ctx.lineTo(px + 7, py - 11 - hop)
+                    ctx.closePath()
+                    ctx.fill()
+                    // menacing red eyes
+                    ctx.fillStyle = "#fff"
+                    ctx.beginPath()
+                    ctx.arc(px - 4, py - 14 - hop, 3, 0, Math.PI * 2)
+                    ctx.arc(px + 4, py - 14 - hop, 3, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#d92626"
+                    ctx.beginPath()
+                    ctx.arc(px - 4, py - 14 - hop, 1.5, 0, Math.PI * 2)
+                    ctx.arc(px + 4, py - 14 - hop, 1.5, 0, Math.PI * 2)
+                    ctx.fill()
+                    // jagged grin with teeth
+                    ctx.fillStyle = "#1a1208"
+                    ctx.fillRect(px - 5, py - 8 - hop, 10, 3)
+                    ctx.fillStyle = "#fff"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 4, py - 8 - hop)
+                    ctx.lineTo(px - 2.5, py - 5.5 - hop)
+                    ctx.lineTo(px - 1, py - 8 - hop)
+                    ctx.moveTo(px + 1, py - 8 - hop)
+                    ctx.lineTo(px + 2.5, py - 5.5 - hop)
+                    ctx.lineTo(px + 4, py - 8 - hop)
+                    ctx.fill()
+                    // crude dagger
+                    ctx.strokeStyle = "#8a867c"
+                    ctx.lineWidth = 2.5
+                    ctx.beginPath()
+                    ctx.moveTo(px + 11, py + 2 - hop)
+                    ctx.lineTo(px + 18, py - 8 - hop)
+                    ctx.stroke()
+                    break
+                }
+                    
+                case TYPE.ORC: {
+                    const stomp = Math.abs(Math.sin(tick * 0.15 + e.anim)) * 2
+                    // massive body
+                    outlinedRect(px - 15, py - 10 - stomp, 30, 26, "#4a6b35")
+                    // muscle definition
+                    ctx.fillStyle = "#3d5a2c"
+                    ctx.fillRect(px - 2, py - 10 - stomp, 4, 26)
+                    ctx.fillRect(px - 12, py - 4 - stomp, 8, 5)
+                    ctx.fillRect(px + 4, py - 4 - stomp, 8, 5)
+                    // shoulder armor spikes
+                    ctx.fillStyle = "#4a4038"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 18, py - 10 - stomp)
+                    ctx.lineTo(px - 14, py - 20 - stomp)
+                    ctx.lineTo(px - 8, py - 10 - stomp)
+                    ctx.closePath()
+                    ctx.fill()
+                    // head
+                    outlinedCircle(px, py - 20 - stomp, 11, "#5a7a42")
+                    // angry brow
+                    ctx.fillStyle = "#3d5a2c"
+                    ctx.fillRect(px - 9, py - 27 - stomp, 18, 4)
+                    // eyes
+                    ctx.fillStyle = "#f2d264"
+                    ctx.beginPath()
+                    ctx.arc(px - 5, py - 21 - stomp, 2.5, 0, Math.PI * 2)
+                    ctx.arc(px + 5, py - 21 - stomp, 2.5, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#1a1208"
+                    ctx.beginPath()
+                    ctx.arc(px - 5, py - 21 - stomp, 1, 0, Math.PI * 2)
+                    ctx.arc(px + 5, py - 21 - stomp, 1, 0, Math.PI * 2)
+                    ctx.fill()
+                    // tusks!
+                    ctx.fillStyle = "#e8e2d2"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 7, py - 13 - stomp)
+                    ctx.lineTo(px - 6, py - 19 - stomp)
+                    ctx.lineTo(px - 3, py - 13 - stomp)
+                    ctx.closePath()
+                    ctx.moveTo(px + 7, py - 13 - stomp)
+                    ctx.lineTo(px + 6, py - 19 - stomp)
+                    ctx.lineTo(px + 3, py - 13 - stomp)
+                    ctx.closePath()
+                    ctx.fill()
+                    // big club
+                    ctx.fillStyle = "#5d4028"
+                    ctx.save()
+                    ctx.translate(px + 17, py - 4 - stomp)
+                    ctx.rotate(-0.5)
+                    ctx.fillRect(-3, -22, 6, 26)
+                    ctx.beginPath()
+                    ctx.arc(0, -22, 7, 0, Math.PI * 2)
+                    ctx.fill()
+                    // spikes on club
+                    ctx.fillStyle = "#8a867c"
+                    ctx.beginPath()
+                    ctx.arc(-5, -25, 2, 0, Math.PI * 2)
+                    ctx.arc(4, -27, 2, 0, Math.PI * 2)
+                    ctx.arc(2, -17, 2, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.restore()
+                    break
+                }
+                    
+                case TYPE.TROLL: {
+                    const breathe = Math.sin(tick * 0.08 + e.anim) * 2
+                    // hulking body
+                    outlinedRect(px - 24, py - 18 - breathe, 48, 36, "#5a6b4a")
+                    // belly
+                    ctx.fillStyle = "#6e8058"
+                    ctx.beginPath()
+                    ctx.ellipse(px, py + 2 - breathe, 16, 12, 0, 0, Math.PI * 2)
+                    ctx.fill()
+                    // small head on big body
+                    outlinedCircle(px, py - 28 - breathe, 12, "#6a7d55")
+                    // grumpy face
+                    ctx.fillStyle = "#1a1208"
+                    ctx.fillRect(px - 8, py - 33 - breathe, 6, 3)
+                    ctx.fillRect(px + 2, py - 33 - breathe, 6, 3)
+                    ctx.fillStyle = "#f2d264"
+                    ctx.beginPath()
+                    ctx.arc(px - 5, py - 29 - breathe, 2, 0, Math.PI * 2)
+                    ctx.arc(px + 5, py - 29 - breathe, 2, 0, Math.PI * 2)
+                    ctx.fill()
+                    // huge under-bite jaw with teeth
+                    ctx.fillStyle = "#55684a"
+                    ctx.fillRect(px - 9, py - 22 - breathe, 18, 6)
+                    ctx.fillStyle = "#e8e2d2"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 7, py - 22 - breathe)
+                    ctx.lineTo(px - 5, py - 27 - breathe)
+                    ctx.lineTo(px - 3, py - 22 - breathe)
+                    ctx.moveTo(px + 3, py - 22 - breathe)
+                    ctx.lineTo(px + 5, py - 27 - breathe)
+                    ctx.lineTo(px + 7, py - 22 - breathe)
+                    ctx.fill()
+                    // massive arms
+                    ctx.fillStyle = "#5a6b4a"
+                    ctx.fillRect(px - 32, py - 14 - breathe, 9, 28)
+                    ctx.fillRect(px + 23, py - 14 - breathe, 9, 28)
+                    // knuckles on ground
+                    outlinedCircle(px - 28, py + 15, 6, "#6a7d55")
+                    outlinedCircle(px + 28, py + 15, 6, "#6a7d55")
+                    // moss growing on shoulders
+                    ctx.fillStyle = "#3f6b3f"
+                    ctx.beginPath()
+                    ctx.arc(px - 18, py - 18 - breathe, 4, 0, Math.PI * 2)
+                    ctx.arc(px + 14, py - 19 - breathe, 3, 0, Math.PI * 2)
+                    ctx.fill()
+                    break
+                }
+                    
+                case TYPE.DEER: {
+                    const graze = Math.sin(tick * 0.05 + e.anim) > 0.6
+                    // body
+                    outlinedRect(px - 13, py - 6, 26, 13, "#9c7a4e")
+                    // white belly
+                    ctx.fillStyle = "#d9c9a8"
+                    ctx.fillRect(px - 10, py + 3, 20, 4)
+                    // legs
+                    ctx.fillStyle = "#7a5f3c"
+                    ctx.fillRect(px - 11, py + 7, 3, 10)
+                    ctx.fillRect(px - 4, py + 7, 3, 10)
+                    ctx.fillRect(px + 3, py + 7, 3, 10)
+                    ctx.fillRect(px + 9, py + 7, 3, 10)
+                    // neck + head (grazes down sometimes)
+                    const headY = graze ? py + 2 : py - 16
+                    ctx.fillStyle = "#9c7a4e"
+                    ctx.beginPath()
+                    ctx.moveTo(px + 9, py - 4)
+                    ctx.lineTo(px + 16, headY)
+                    ctx.lineTo(px + 20, headY + 2)
+                    ctx.lineTo(px + 13, py - 1)
+                    ctx.closePath()
+                    ctx.fill()
+                    outlinedCircle(px + 18, headY, 5, "#a8865a")
+                    // eye
+                    ctx.fillStyle = "#1a1208"
+                    ctx.beginPath()
+                    ctx.arc(px + 19, headY - 1, 1.3, 0, Math.PI * 2)
+                    ctx.fill()
+                    // antlers
+                    if (!graze) {
+                        ctx.strokeStyle = "#6e5a3a"
+                        ctx.lineWidth = 2
+                        ctx.beginPath()
+                        ctx.moveTo(px + 16, headY - 4)
+                        ctx.lineTo(px + 13, headY - 12)
+                        ctx.moveTo(px + 14.5, headY - 8)
+                        ctx.lineTo(px + 11, headY - 11)
+                        ctx.moveTo(px + 20, headY - 4)
+                        ctx.lineTo(px + 22, headY - 12)
+                        ctx.stroke()
+                    }
+                    // white tail
+                    ctx.fillStyle = "#e8e2d2"
+                    ctx.beginPath()
+                    ctx.arc(px - 13, py - 3, 3, 0, Math.PI * 2)
+                    ctx.fill()
+                    break
+                }
             }
             
             // health bar for non-full hp
@@ -1501,62 +2444,78 @@
             if (card.cost.food) resources.food -= card.cost.food
         }
         
-        function placeCurrentCard() {
-            if (!currentCard || gameOver) return
-            
-            // find a random grass tile in view
-            const cx = Math.floor((camera.x + canvas.width / 2) / TILE_SIZE)
-            const cy = Math.floor((camera.y + canvas.height / 2) / TILE_SIZE)
-            
-            let placed = false
-            
-            for (let i = 0; i < 40; i++) {
-                const tx = cx + randInt(-9, 9)
-                const ty = cy + randInt(-9, 9)
-                
-                if (tx < 3 || tx > WORLD_WIDTH - 3 || ty < 3 || ty > WORLD_HEIGHT - 3) continue
-                
-                const tile = world[tx][ty]
-                if (!tile || tile.terrain === "water") continue
-                if (buildingAt(tx, ty)) continue
-                
-                if (!canAfford(currentCard)) {
-                    createFloater(canvas.width / 2, 220, "CANNOT AFFORD", "#f43f5e")
-                    return
-                }
-                
-                payForCard(currentCard)
-                
-                const newEntity = spawnEntity(tx, ty, currentCard.type)
-                
-                // give villagers homes
-                if (currentCard.type === TYPE.HOUSE) {
-                    for (let k = 0; k < 3; k++) {
-                        const v = spawnEntity(tx + randInt(-2, 2), ty + randInt(-2, 2), TYPE.VILLAGER)
-                        v.home = { x: tx, y: ty }
+        function findNearestBuildableTile(centerX, centerY) {
+            for (let radius = 0; radius <= 12; radius++) {
+                for (let offsetX = -radius; offsetX <= radius; offsetX++) {
+                    for (let offsetY = -radius; offsetY <= radius; offsetY++) {
+                        if (Math.abs(offsetX) !== radius && Math.abs(offsetY) !== radius) continue
+
+                        const tx = centerX + offsetX
+                        const ty = centerY + offsetY
+                        const tile = world[tx] && world[tx][ty]
+
+                        if (!tile || tile.terrain === "water" || buildingAt(tx, ty)) continue
+                        return { tx, ty }
                     }
                 }
-                
-                // spawn particles
-                for (let k = 0; k < 18; k++) {
-                    createParticle(
-                        tx * TILE_SIZE + rand(0, TILE_SIZE), 
-                        ty * TILE_SIZE + rand(0, TILE_SIZE), 
-                        "#fde047", 32, rand(-2.5, 2.5), rand(-4, -0.6), 5
-                    )
+            }
+            return null
+        }
+
+        function placeCurrentCard(targetX, targetY) {
+            if (!currentCard || gameOver) return
+
+            const fallbackX = Math.floor((camera.x + canvas.width / 2) / TILE_SIZE)
+            const fallbackY = Math.floor((camera.y + canvas.height / 2) / TILE_SIZE)
+            const requestedTile = Number.isInteger(targetX) && Number.isInteger(targetY)
+                ? { tx: targetX, ty: targetY }
+                : findNearestBuildableTile(fallbackX, fallbackY)
+
+            if (!requestedTile) {
+                createFloater(fallbackX * TILE_SIZE, fallbackY * TILE_SIZE, "NO SPACE NEARBY", "#f59e0b")
+                return
+            }
+
+            const { tx, ty } = requestedTile
+            const tile = world[tx] && world[tx][ty]
+
+            if (!tile || tile.terrain === "water") {
+                createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "CANNOT BUILD HERE", "#f59e0b")
+                return
+            }
+
+            if (buildingAt(tx, ty)) {
+                createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "SPACE OCCUPIED", "#f59e0b")
+                return
+            }
+
+            if (!canAfford(currentCard)) {
+                createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "CANNOT AFFORD", "#f43f5e")
+                return
+            }
+
+            payForCard(currentCard)
+            spawnEntity(tx, ty, currentCard.type)
+
+            // Cottages bring new residents into the simulation.
+            if (currentCard.type === TYPE.HOUSE) {
+                for (let k = 0; k < 3; k++) {
+                    const v = spawnEntity(tx + randInt(-2, 2), ty + randInt(-2, 2), TYPE.VILLAGER)
+                    v.home = { x: tx, y: ty }
                 }
-                
-                createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE + 10, "BUILT!", "#a3e635")
-                revealArea(tx, ty, 9)
-                placed = true
-                break
             }
-            
-            if (placed) {
-                drawNewCard()
-            } else {
-                createFloater(300, 220, "NO SPACE NEARBY", "#f59e0b")
+
+            for (let k = 0; k < 18; k++) {
+                createParticle(
+                    tx * TILE_SIZE + rand(0, TILE_SIZE),
+                    ty * TILE_SIZE + rand(0, TILE_SIZE),
+                    "#fde047", 32, rand(-2.5, 2.5), rand(-4, -0.6), 5
+                )
             }
+
+            createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE + 10, "BUILT!", "#a3e635")
+            revealArea(tx, ty, 9)
+            drawNewCard()
             
             renderUI()
         }
@@ -1578,9 +2537,6 @@
             const mx = e.clientX - rect.left
             const my = e.clientY - rect.top
             
-            // if clicked on card area ignore (handled separately)
-            if (my > canvas.height - 190) return
-            
             const worldX = (mx + camera.x) / TILE_SIZE
             const worldY = (my + camera.y) / TILE_SIZE
             
@@ -1589,9 +2545,9 @@
             
             if (tx < 0 || ty < 0 || tx >= WORLD_WIDTH || ty >= WORLD_HEIGHT) return
             
-            // if there is an enemy - attack with click?
+            // Use a small radius so clicking an enemy sprite is reliable.
             const clickedEntity = entities.find(ent => {
-                return Math.floor(ent.x) === tx && Math.floor(ent.y) === ty
+                return !ent.dead && ent.isEnemy() && distance(ent.x, ent.y, worldX, worldY) < 0.8
             })
             
             if (clickedEntity && clickedEntity.isEnemy()) {
@@ -1601,9 +2557,9 @@
                 return
             }
             
-            // otherwise try to place if card is ready
+            // Buildings and units are placed on the exact tile that was clicked.
             if (currentCard) {
-                placeCurrentCard()
+                placeCurrentCard(tx, ty)
             }
         }
         
@@ -1740,20 +2696,28 @@
             
             // mouse controls
             let isDragging = false
+            let pointerMoved = false
             let lastMouseX = 0
             let lastMouseY = 0
+            let pointerStartX = 0
+            let pointerStartY = 0
             
             canvas.addEventListener("mousedown", e => {
                 if (e.button === 0) {
                     isDragging = true
+                    pointerMoved = false
                     lastMouseX = e.clientX
                     lastMouseY = e.clientY
-                } else if (e.button === 2) {
-                    clickOnCanvas(e)
+                    pointerStartX = e.clientX
+                    pointerStartY = e.clientY
                 }
             })
             
-            window.addEventListener("mouseup", () => {
+            window.addEventListener("mouseup", e => {
+                if (isDragging && !pointerMoved && e.button === 0) {
+                    // A short press is a world interaction; movement remains map panning.
+                    clickOnCanvas(e)
+                }
                 isDragging = false
             })
             
@@ -1762,6 +2726,10 @@
                 
                 const dx = e.clientX - lastMouseX
                 const dy = e.clientY - lastMouseY
+
+                if (Math.hypot(e.clientX - pointerStartX, e.clientY - pointerStartY) > 6) {
+                    pointerMoved = true
+                }
                 
                 camera.x -= dx * 1.6
                 camera.y -= dy * 1.6
@@ -1773,8 +2741,6 @@
                 lastMouseX = e.clientX
                 lastMouseY = e.clientY
             })
-            
-            canvas.addEventListener("click", clickOnCanvas)
             
             // right click context menu disable
             canvas.addEventListener("contextmenu", e => {
