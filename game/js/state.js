@@ -1,73 +1,77 @@
-// ── Global Mutable Game State ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  STATE — Globaler veränderlicher Spielzustand
+// ═══════════════════════════════════════════════════════════════
 
 export const state = {
-    // Canvas references (set during init)
+    // Canvas
     canvas: null,
     ctx: null,
     minimapCanvas: null,
     minimapCtx: null,
 
-    // Camera
+    // ── Kamera ───────────────────────────────────────────────
     camera: { x: 0, y: 0 },
+    zoom: 1.0,
+    zoomTarget: 1.0,
+    zoomLevel: 2,               // 1, 2 oder 3 — wird per Frame berechnet
 
-    // Timing
+    // ── Timing ───────────────────────────────────────────────
     tick: 0,
     gameSpeed: 1,
     isPaused: false,
     tickAccumulator: 0,
     lastFrameTime: 0,
 
-    // Win / Lose
+    // ── Win / Lose ───────────────────────────────────────────
     gameOver: false,
     victory: false,
 
-    // Kingdom
+    // ── Königreich ───────────────────────────────────────────
     kingdomName: "ELDRIA",
 
-    // Resources
     resources: {
-        wood: 180,
-        stone: 95,
-        gold: 45,
-        food: 120,
-        research: 0,
+        wood: 180, stone: 95, gold: 45, food: 120, research: 0,
     },
-
     incomeThisTick: {
         wood: 0, stone: 0, gold: 0, food: 0, research: 0,
     },
 
-    // Morale & time
     morale: 72,
     seasonIndex: 0,
     year: 1,
     dayOfYear: 0,
 
-    // Cards
+    // ── Karten ───────────────────────────────────────────────
     currentCard: null,
     availableCards: [],
 
-    // UI
+    // ── UI ────────────────────────────────────────────────────
     selectedTab: 0,
     eventLog: [],
 
-    // Tech
+    // ── Technologie ──────────────────────────────────────────
     techs: [],
     unlockedTechs: new Set(),
 
-    // World
+    // ── Welt ─────────────────────────────────────────────────
     entities: [],
     particles: [],
     floaters: [],
-    world: [],
+
+    // Terrain-Daten: heightMap[y * W + x], biomeMap, colorMap
+    heightMap: null,
+    moistureMap: null,
+    terrainCanvas: null,        // vorgerendertes Terrain-Bild
+    terrainDirty: true,         // neu zeichnen nötig?
+
     explored: [],
 
-    // Events & weather
+    // ── Events / Wetter ──────────────────────────────────────
     lastRandomEvent: 0,
     weather: "clear",
     weatherTimer: 0,
 
-    // Stats
+    // ── Statistiken ──────────────────────────────────────────
     kingHp: 240,
     totalRaidsSurvived: 0,
 };
