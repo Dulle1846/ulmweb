@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASTLEFORGE • Eternal Realm</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        :root {
+            --font-retro: 'Press Start 2P', system-ui;
+        }
+        
+        canvas {
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+        
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 2px,
+                rgba(0, 0, 0, 0.08) 2px,
+                rgba(0, 0, 0, 0.08) 4px
+            );
+            pointer-events: none;
+            z-index: 50;
+            animation: flicker 4s infinite alternate;
+        }
+        
+        @keyframes flicker {
+            0% { opacity: 0.4; }
+            100% { opacity: 0.65; }
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white overflow-hidden">
+    <div class="absolute top-0 left-0 w-full h-full flex flex-col">
+        <!-- header -->
+        <div class="bg-black border-b border-amber-400 h-14 flex items-center px-6 justify-between z-30">
+            <div class="flex items-center gap-x-3">
+                <div class="w-8 h-8 bg-amber-400 flex items-center justify-center text-black text-xl leading-none pt-0.5">♜</div>
+                <div>
+                    <div class="font-mono text-xl tracking-tighter text-amber-300">CASTLEFORGE</div>
+                    <div id="kingdom-name" class="text-[10px] text-amber-500 font-medium tracking-[2px]">THE REALM OF ELDRIA</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-x-8 text-xs font-mono">
+                <div id="date-display" class="flex items-center gap-x-5">
+                    <div class="flex items-center gap-x-1.5">
+                        <span id="season" class="text-emerald-400">SPRING</span>
+                        <span class="text-zinc-500">•</span>
+                        <span id="year" class="text-amber-300">YEAR 1</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-2">
+                    <div class="text-rose-300 text-[10px] font-medium">MORALE</div>
+                    <div class="w-48 h-2 bg-zinc-900 border border-zinc-700 rounded">
+                        <div id="morale-bar" class="h-2 bg-gradient-to-r from-rose-400 to-yellow-300 rounded transition-all" style="width: 78%"></div>
+                    </div>
+                    <div id="morale-value" class="tabular-nums w-8 text-right text-yellow-300">78</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-x-6 text-sm font-mono">
+                <div id="pause-btn"
+                     class="flex items-center gap-x-2 bg-zinc-900 hover:bg-zinc-800 px-4 h-8 rounded border border-zinc-700 cursor-pointer">
+                    <span id="pause-text">PAUSE</span>
+                </div>
+                <div class="flex items-center gap-x-px bg-zinc-900 rounded border border-zinc-700">
+                    <div id="speed-1" 
+                         class="speed-btn px-3 py-1 text-xs hover:bg-zinc-800 border-r border-zinc-700 cursor-pointer bg-amber-400 text-black">1×</div>
+                    <div id="speed-2" 
+                         class="speed-btn px-3 py-1 text-xs hover:bg-zinc-800 border-r border-zinc-700 cursor-pointer">2×</div>
+                    <div id="speed-4" 
+                         class="speed-btn px-3 py-1 text-xs hover:bg-zinc-800 cursor-pointer">4×</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex flex-1 overflow-hidden relative" id="main-container">
+            <div class="flex-1 relative" id="canvas-wrapper">
+                <canvas id="canvas" class="absolute inset-0"></canvas>
+                
+                <div id="floating-messages" class="absolute top-20 left-1/2 -translate-x-1/2 flex flex-col gap-2 pointer-events-none z-40"></div>
+                
+                <div class="absolute bottom-8 right-8 bg-black border-2 border-amber-300 p-2 rounded shadow-2xl">
+                    <canvas id="minimap" width="140" height="140" class="bg-emerald-950"></canvas>
+                    <div class="absolute top-3 right-3 text-[8px] font-mono bg-black/70 px-1.5 py-px text-amber-200">MAP</div>
+                </div>
+                
+                <div id="hint-box"
+                     class="absolute bottom-36 left-8 bg-zinc-900 border border-amber-400 text-amber-200 text-xs p-4 max-w-[220px] leading-tight cursor-pointer hidden">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="uppercase tracking-widest text-[10px]">Tip</div>
+                        <div class="text-amber-500 text-lg leading-none">✕</div>
+                    </div>
+                    <div id="hint-text" class="opacity-80"></div>
+                </div>
+            </div>
+            
+            <!-- sidebar -->
+            <div class="w-72 bg-zinc-950 border-l border-amber-400 flex flex-col">
+                <div class="p-4 border-b border-amber-400 bg-black">
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-emerald-900">
+                            <div class="w-5 h-5 flex items-center justify-center text-emerald-400">🌲</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-emerald-300 tabular-nums" id="res-wood">248</div>
+                                <div class="text-[10px] text-zinc-500 -mt-0.5">WOOD</div>
+                            </div>
+                            <div id="wood-income" class="text-[10px] text-emerald-400 font-mono">+4</div>
+                        </div>
+                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-slate-700">
+                            <div class="w-5 h-5 flex items-center justify-center text-slate-400">🪨</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-slate-300 tabular-nums" id="res-stone">132</div>
+                                <div class="text-[10px] text-zinc-500 -mt-0.5">STONE</div>
+                            </div>
+                            <div id="stone-income" class="text-[10px] text-slate-400 font-mono">+3</div>
+                        </div>
+                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-yellow-700">
+                            <div class="w-5 h-5 flex items-center justify-center text-yellow-400">💰</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-yellow-300 tabular-nums" id="res-gold">67</div>
+                                <div class="text-[10px] text-zinc-500 -mt-0.5">GOLD</div>
+                            </div>
+                            <div id="gold-income" class="text-[10px] text-yellow-400 font-mono">+2</div>
+                        </div>
+                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-orange-700">
+                            <div class="w-5 h-5 flex items-center justify-center text-orange-400">🌾</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-orange-300 tabular-nums" id="res-food">91</div>
+                                <div class="text-[10px] text-zinc-500 -mt-0.5">FOOD</div>
+                            </div>
+                            <div id="food-income" class="text-[10px] text-orange-400 font-mono">+7</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex-1 flex flex-col p-4">
+                    <div class="uppercase text-amber-400 text-[10px] tracking-[1px] mb-2 flex items-center justify-between">
+                        <div>CURRENT CARD</div>
+                        <div id="skip-card-btn"
+                             class="text-[9px] px-3 py-1 bg-red-950 hover:bg-red-900 border border-red-900 rounded cursor-pointer">SKIP • -3G</div>
+                    </div>
+                    
+                    <div id="card-container" 
+                         class="group bg-zinc-900 border-2 border-dashed border-amber-300 h-60 rounded-2xl flex flex-col items-center justify-center p-6 cursor-pointer hover:border-amber-200 transition-colors relative overflow-hidden">
+                        
+                        <div id="card-icon" class="text-7xl mb-6 transition-transform group-active:scale-90"></div>
+                        <div id="card-name" class="font-mono text-xl text-center text-amber-200">COTTAGE</div>
+                        <div id="card-desc" class="text-center text-zinc-400 text-xs leading-tight mt-1 max-w-[160px]">Houses 4 villagers. Increases morale slightly.</div>
+                        
+                        <div class="absolute bottom-6 left-0 right-0 flex justify-center gap-6 text-xs font-mono">
+                            <div id="card-cost-wood" class="flex items-center gap-1">
+                                <span class="text-emerald-400">🌲</span><span class="tabular-nums">22</span>
+                            </div>
+                            <div id="card-cost-stone" class="flex items-center gap-1">
+                                <span class="text-slate-400">🪨</span><span class="tabular-nums">8</span>
+                            </div>
+                            <div id="card-cost-gold" class="flex items-center gap-1">
+                                <span class="text-yellow-400">💰</span><span class="tabular-nums">0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute -top-1 -right-1 bg-emerald-300 text-black text-[10px] font-bold px-4 py-1 rotate-12 shadow-inner">PLAY</div>
+                    </div>
+                    
+                    <div class="flex text-[10px] mt-8 border-b border-zinc-700">
+                        <div id="tab-0" class="tab-button flex-1 text-center py-3 border-b-2 border-amber-400 text-amber-400">EVENT LOG</div>
+                        <div id="tab-1" class="tab-button flex-1 text-center py-3 text-zinc-400">STATS</div>
+                        <div id="tab-2" class="tab-button flex-1 text-center py-3 text-zinc-400">TECH</div>
+                    </div>
+                    
+                    <div id="tab-content" class="flex-1 bg-zinc-900 rounded-b-3xl p-4 text-xs font-mono overflow-auto"></div>
+                </div>
+                
+                <div class="h-11 bg-black border-t border-amber-400 text-[10px] font-mono flex items-center px-4 text-zinc-500 justify-between">
+                    <div>TICK <span id="tick-count" class="text-amber-400 tabular-nums">12480</span></div>
+                    <div id="help-btn" class="cursor-pointer hover:text-amber-300">?</div>
+                    <div id="population" class="text-emerald-400">POP 24 / 36</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="big-message" class="hidden absolute inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div class="max-w-md text-center">
+            <div id="big-title" class="text-6xl font-bold text-amber-300 mb-2 tracking-tighter"></div>
+            <div id="big-subtitle" class="text-zinc-400 mb-12"></div>
+            <button id="big-message-close"
+                    class="px-10 py-4 border border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-black transition-colors font-mono text-sm tracking-widest">
+                CONTINUE
+            </button>
+        </div>
+    </div>
+    
+    <div class="scanlines"></div>
+    
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
