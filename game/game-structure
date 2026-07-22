@@ -1,0 +1,31 @@
+game/
+├── index.html                 # Nur HTML-Struktur + Script-Imports
+├── js/
+│   ├── config.js             # Konstanten (TILE_SIZE, SEASONS, etc)
+│   ├── types.js              # Entity-Klasse, TYPE-Enums
+│   ├── state.js              # Globale Game State
+│   ├── world/
+│   │   ├── world.js          # Terrain-Gen, Exploration
+│   │   ├── entities.js       # Entity Management, Spawn
+│   │   └── weather.js        # Weather System
+│   ├── systems/
+│   │   ├── resources.js      # Resource Tracking & Income
+│   │   ├── morale.js         # Morale System
+│   │   ├── tech.js           # Tech Tree & Unlocks
+│   │   ├── cards.js          # Card Deck & Placement
+│   │   └── events.js         # Random Events System
+│   ├── simulation/
+│   │   ├── simulation.js     # Main Tick Loop
+│   │   ├── villagers.js      # Villager AI/Behavior
+│   │   ├── combat.js         # Combat & Raids
+│   │   └── buildings.js      # Building Effects & Income
+│   ├── rendering/
+│   │   ├── renderer.js       # Main Render Pipeline
+│   │   ├── terrain.js        # Terrain Drawing
+│   │   ├── entities.js       # Entity Drawing
+│   │   ├── ui.js             # UI Elements (Header, Sidebar)
+│   │   ├── minimap.js        # Minimap Rendering
+│   │   └── particles.js      # Particle & Floaters
+│   ├── camera.js             # Camera/Viewport Logic
+│   ├── input.js              # Mouse/Keyboard Handlers
+│   └── main.js               # Bootstrap & Game Loop
