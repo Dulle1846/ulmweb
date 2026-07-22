@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASTLEFORGE • Eternal Realm</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap');
+        
+        :root {
+            --font-retro: 'Press Start 2P', system-ui;
+        }
+        
+        canvas {
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+        
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 2px,
+                rgba(0, 0, 0, 0.08) 2px,
+                rgba(0, 0, 0, 0.08) 4px
+            );
+            pointer-events: none;
+            z-index: 50;
+            animation: flicker 4s infinite alternate;
+        }
+        
+        @keyframes flicker {
+            0% { opacity: 0.4; }
+            100% { opacity: 0.65; }
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white overflow-hidden">
+    <div class="absolute top-0 left-0 w-full h-full flex flex-col">
+        <!-- header -->
+        <div class="bg-black border-b border-amber-400 h-14 flex items-center px-6 justify-between z-30">
+            <div class="flex items-center gap-x-3">
+                <div class="w-8 h-8 bg-amber-400 flex items-center justify-center text-black text-xl leading-none pt-0.5">♜</div>
+                <div>
+                    <div class="font-mono text-xl tracking-tighter text-amber-300">CASTLEFORGE</div>
+                    <div id="kingdom-name" class="text-[10px] text-amber-500 font-medium tracking-[2px]">THE REALM OF ELDRIA</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-x-8 text-xs font-mono">
+                <!-- season + year -->
+                <div id="date-display" class="flex items-center gap-x-5">
+                    <div class="flex items-center gap-x-1.5">
+                        <span id="season" class="text-emerald-400">SPRING</span>
+                        <span class="text-zinc-500">•</span>
+                        <span id="year" class="text-amber-300">YEAR 1</span>
+                    </div>
+                </div>
+                
+                <!-- morale -->
+                <div class="flex items-center gap-x-2">
+                    <div class="text-rose-300 text-[10px] font-medium">MORALE</div>
+                    <div class="w-48 h-2 bg-zinc-900 border border-zinc-700 rounded">
+                        <div id="morale-bar" class="h-2 bg-gradient-to-r from-rose-400 to-yellow-300 rounded transition-all" style="width: 78%"></div>
+                    </div>
+                    <div id="morale-value" class="tabular-nums w-8 text-right text-yellow-300">78</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-x-6 text-sm font-mono">
+                <div onclick="togglePause()" id="pause-btn"
+                     class="flex items-center gap-x-2 bg-zinc-900 hover:bg-zinc-800 px-4 h-8 rounded border border-zinc-700 cursor-pointer">
+                    <span id="pause-text">PAUSE</span>
+                </div>
+                <div class="flex items-center gap-x-px bg-zinc-900 rounded border border-zinc-700">
+                    <div onclick="setSpeed(1)" id="speed-1" 
+                         class="speed-btn px-3 py-1 text-xs hover:bg-zinc-800 border-r border-zinc-700 cursor-pointer bg-amber-400 text-black">1×</div>
+                    <div onclick="setSpeed(2)" id="speed-2" 
+                         class="speed-btn px-3 py-1 text-xs hover:bg-zinc-800 border-r border-zinc-700 cursor-pointer">2×</div>
+                    <div onclick="setSpeed(4)" id="speed-4" 
+                         class="speed-btn px-3 py-1 text-xs hover:bg-zinc-800 cursor-pointer">4×</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex flex-1 overflow-hidden relative" id="main-container">
+            <!-- canvas container -->
+            <div class="flex-1 relative" id="canvas-wrapper">
+                <canvas id="canvas" class="absolute inset-0"></canvas>
+                
+                <!-- floating messages -->
+                <div id="floating-messages" class="absolute top-20 left-1/2 -translate-x-1/2 flex flex-col gap-2 pointer-events-none z-40"></div>
+                
+                <!-- mini map -->
+                <div class="absolute bottom-8 right-8 bg-black border-2 border-amber-300 p-2 rounded shadow-2xl">
+                    <canvas id="minimap" width="140" height="140" class="bg-emerald-950"></canvas>
+                    <div class="absolute top-3 right-3 text-[8px] font-mono bg-black/70 px-1.5 py-px text-amber-200">MAP</div>
+                </div>
+                
+                <!-- tutorial hint -->
+                <div onclick="dismissHint()" id="hint-box"
+                     class="absolute bottom-36 left-8 bg-zinc-900 border border-amber-400 text-amber-200 text-xs p-4 max-w-[220px] leading-tight cursor-pointer hidden">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="uppercase tracking-widest text-[10px]">Tip</div>
+                        <div class="text-amber-500 text-lg leading-none">✕</div>
+                    </div>
+                    <div id="hint-text" class="opacity-80"></div>
+                </div>
+            </div>
+            
+            <!-- sidebar -->
+            <div class="w-72 bg-zinc-950 border-l border-amber-400 flex flex-col">
+                <!-- resources -->
+                <div class="p-4 border-b border-amber-400 bg-black">
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-emerald-900">
+                            <div class="w-5 h-5 flex items-center justify-center text-emerald-400">🌲</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-emerald-300 tabular-nums" id="res-wood">248</div>
+                                <div class="text-[10px] text-zinc-500 -mt-0.5">WOOD</div>
+                            </div>
+                            <div id="wood-income" class="text-[10px] text-emerald-400 font-mono">+4</div>
+                        </div>
+                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-slate-700">
+                            <div class="w-5 h-5 flex items-center justify-center text-slate-400">🪨</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-slate-300 tabular-nums" id="res-stone">132</div>
+                                <div class="text-[10px] text-zinc-500 -mt-0.5">STONE</div>
+                            </div>
+                            <div id="stone-income" class="text-[10px] text-slate-400 font-mono">+3</div>
+                        </div>
+                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-yellow-700">
+                            <div class="w-5 h-5 flex items-center justify-center text-yellow-400">💰</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-yellow-300 tabular-nums" id="res-gold">67</div>
+                                <div class="text-[10px] text-zinc-500 -mt-0.5">GOLD</div>
+                            </div>
+                            <div id="gold-income" class="text-[10px] text-yellow-400 font-mono">+2</div>
+                        </div>
+                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-orange-700">
+                            <div class="w-5 h-5 flex items-center justify-center text-orange-400">🌾</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-orange-300 tabular-nums" id="res-food">91</div>
+                                <div class="text-[10px] text-zinc-500 -mt-0.5">FOOD</div>
+                            </div>
+                            <div id="food-income" class="text-[10px] text-orange-400 font-mono">+7</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- current card -->
+                <div class="flex-1 flex flex-col p-4">
+                    <div class="uppercase text-amber-400 text-[10px] tracking-[1px] mb-2 flex items-center justify-between">
+                        <div>CURRENT CARD</div>
+                        <div onclick="skipCard()" 
+                             class="text-[9px] px-3 py-1 bg-red-950 hover:bg-red-900 border border-red-900 rounded cursor-pointer">SKIP • -3G</div>
+                    </div>
+                    
+                    <div id="card-container" 
+                         onclick="if(currentCard) placeCurrentCard()"
+                         class="group bg-zinc-900 border-2 border-dashed border-amber-300 h-60 rounded-2xl flex flex-col items-center justify-center p-6 cursor-pointer hover:border-amber-200 transition-colors relative overflow-hidden">
+                        
+                        <div id="card-icon" class="text-7xl mb-6 transition-transform group-active:scale-90"></div>
+                        <div id="card-name" class="font-mono text-xl text-center text-amber-200">COTTAGE</div>
+                        <div id="card-desc" class="text-center text-zinc-400 text-xs leading-tight mt-1 max-w-[160px]">Houses 4 villagers. Increases morale slightly.</div>
+                        
+                        <div class="absolute bottom-6 left-0 right-0 flex justify-center gap-6 text-xs font-mono">
+                            <div id="card-cost-wood" class="flex items-center gap-1">
+                                <span class="text-emerald-400">🌲</span><span class="tabular-nums">22</span>
+                            </div>
+                            <div id="card-cost-stone" class="flex items-center gap-1">
+                                <span class="text-slate-400">🪨</span><span class="tabular-nums">8</span>
+                            </div>
+                            <div id="card-cost-gold" class="flex items-center gap-1">
+                                <span class="text-yellow-400">💰</span><span class="tabular-nums">0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute -top-1 -right-1 bg-emerald-300 text-black text-[10px] font-bold px-4 py-1 rotate-12 shadow-inner">PLAY</div>
+                    </div>
+                    
+                    <!-- tabs -->
+                    <div class="flex text-[10px] mt-8 border-b border-zinc-700">
+                        <div onclick="switchTab(0)" id="tab-0"
+                             class="tab-button flex-1 text-center py-3 border-b-2 border-amber-400 text-amber-400">EVENT LOG</div>
+                        <div onclick="switchTab(1)" id="tab-1"
+                             class="tab-button flex-1 text-center py-3 text-zinc-400">STATS</div>
+                        <div onclick="switchTab(2)" id="tab-2"
+                             class="tab-button flex-1 text-center py-3 text-zinc-400">TECH</div>
+                    </div>
+                    
+                    <!-- tab content -->
+                    <div id="tab-content" class="flex-1 bg-zinc-900 rounded-b-3xl p-4 text-xs font-mono overflow-auto">
+                        <!-- populated by JS -->
+                    </div>
+                </div>
+                
+                <!-- footer info -->
+                <div class="h-11 bg-black border-t border-amber-400 text-[10px] font-mono flex items-center px-4 text-zinc-500 justify-between">
+                    <div>TICK <span id="tick-count" class="text-amber-400 tabular-nums">12480</span></div>
+                    <div onclick="showHelp()" class="cursor-pointer hover:text-amber-300">?</div>
+                    <div id="population" class="text-emerald-400">POP 24 / 36</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- overlay for messages -->
+    <div id="big-message" 
+         onclick="this.classList.add('hidden')"
+         class="hidden absolute inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div class="max-w-md text-center">
+            <div id="big-title" class="text-6xl font-bold text-amber-300 mb-2 tracking-tighter"></div>
+            <div id="big-subtitle" class="text-zinc-400 mb-12"></div>
+            <button onclick="event.stopImmediatePropagation(); document.getElementById('big-message').classList.add('hidden');" 
+                    class="px-10 py-4 border border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-black transition-colors font-mono text-sm tracking-widest">
+                CONTINUE
+            </button>
+        </div>
+    </div>
+    
+    <div class="scanlines"></div>
+    
+    <script>
+        // ========================================================
+        // CASTLEFORGE — Expanded Kingdom Sandbox (2026 Edition)
+        // Much deeper simulation, random events, tech, morale, etc.
+        // ========================================================
+        
+        const TILE_SIZE = 48
+        const WORLD_WIDTH = 160
+        const WORLD_HEIGHT = 160
+        
+        let canvas, ctx, minimapCanvas, minimapCtx
+        let camera = { x: 0, y: 0 }
+        let tick = 0
+        let gameSpeed = 1
+        let isPaused = false
+        
+        // Time-based tick system: x1 = ~3 ticks/sec, x2 = ~6, x4 = ~12
+        const BASE_TICK_INTERVAL = 333 // ms between ticks at x1
+        let tickAccumulator = 0
+        let lastFrameTime = 0
+        let gameOver = false
+        let victory = false
+        
+        let kingdomName = "ELDRIA"
+        
+        // Resources
+        let resources = {
+            wood: 180,
+            stone: 95,
+            gold: 45,
+            food: 120,
+            research: 0
+        }
+        
+        let incomeThisTick = {
+            wood: 0, stone: 0, gold: 0, food: 0, research: 0
+        }
+        
+        // Game state
+        let morale = 72
+        let seasonIndex = 0
+        const SEASONS = ["SPRING", "SUMMER", "AUTUMN", "WINTER"]
+        let year = 1
+        let dayOfYear = 0
+        
+        let currentCard = null
+        let selectedTab = 0
+        let eventLog = []
+        let techs = []
+        let unlockedTechs = new Set()
+        
+        let entities = []
+        let particles = []
+        let floaters = []
+        let world = []
+        let explored = []
+        
+        let lastRandomEvent = 0
+        let weather = "clear" // clear, rain, snow, storm
+        let weatherTimer = 0
+        
+        let kingHp = 240
+        let totalRaidsSurvived = 0
+        
+        // Types
+        const TYPE = {
+            KEEP: 0,
+            HOUSE: 1,
+            FARM: 2,
+            LUMBER: 3,
+            QUARRY: 4,
+            TOWER: 5,
+            WALL: 6,
+            TAVERN: 7,
+            TEMPLE: 8,
+            BARRACKS: 9,
+            MILL: 10,
+            STABLE: 11,
+            WONDER: 12,
+            
+            VILLAGER: 20,
+            GUARD: 21,
+            ARCHER: 22,
+            KNIGHT: 23,
+            PRIEST: 24,
+            
+            GOBLIN: 30,
+            ORC: 31,
+            TROLL: 32,
+            
+            DEER: 40,
+            RUIN: 50
+        }
+        
+        // Tech tree
+        function initTechTree() {
+            techs = [
+                { id: "irrigation", name: "IRRIGATION", cost: 35, unlocked: false, effect: "Farms produce 40% more food", icon: "💧" },
+                { id: "steel", name: "STEEL FORGING", cost: 55, unlocked: false, effect: "All military units +25 HP", icon: "⚔️" },
+                { id: "scholarship", name: "SCHOLARSHIP", cost: 40, unlocked: false, effect: "Research income +2", icon: "📜" },
+                { id: "feudalism", name: "FEUDAL SYSTEM", cost: 70, unlocked: false, effect: "Houses give +1 morale", icon: "🏛️" },
+                { id: "alchemy", name: "ALCHEMY", cost: 85, unlocked: false, effect: "Gold mines occasionally spawn gold", icon: "🧪" },
+            ]
+        }
+        
+        // Card definitions
+        const CARD_DECK = [
+            {
+                type: TYPE.HOUSE,
+                name: "COTTAGE",
+                desc: "Houses 3 villagers. +1 morale",
+                cost: { wood: 30, stone: 10 },
+                icon: "🏠"
+            },
+            {
+                type: TYPE.FARM,
+                name: "FARMSTEAD",
+                desc: "Generates food every season",
+                cost: { wood: 25, food: 5 },
+                icon: "🌾"
+            },
+            {
+                type: TYPE.LUMBER,
+                name: "LUMBERYARD",
+                desc: "Steady wood production",
+                cost: { gold: 15 },
+                icon: "🪵"
+            },
+            {
+                type: TYPE.QUARRY,
+                name: "STONE QUARRY",
+                desc: "Stone & occasional gold",
+                cost: { wood: 35, food: 15 },
+                icon: "⛰️"
+            },
+            {
+                type: TYPE.TOWER,
+                name: "WATCHTOWER",
+                desc: "Long range defense",
+                cost: { wood: 40, stone: 30 },
+                icon: "🏰"
+            },
+            {
+                type: TYPE.WALL,
+                name: "FORTIFIED WALL",
+                desc: "Strong barrier vs raiders",
+                cost: { stone: 45 },
+                icon: "🧱"
+            },
+            {
+                type: TYPE.TAVERN,
+                name: "THE TAVERN",
+                desc: "Boosts morale and gold",
+                cost: { wood: 55, gold: 25, food: 15 },
+                icon: "🍺"
+            },
+            {
+                type: TYPE.TEMPLE,
+                name: "HOLY TEMPLE",
+                desc: "Increases morale & heals",
+                cost: { stone: 60, gold: 35 },
+                icon: "⛪"
+            },
+            {
+                type: TYPE.BARRACKS,
+                name: "BARRACKS",
+                desc: "Trains guards & knights",
+                cost: { wood: 45, stone: 35 },
+                icon: "🛡️"
+            },
+            {
+                type: TYPE.MILL,
+                name: "WATER MILL",
+                desc: "Boosts nearby farms",
+                cost: { wood: 65, stone: 20 },
+                icon: "⚙️"
+            },
+            {
+                type: TYPE.STABLE,
+                name: "STABLES",
+                desc: "Breeds war horses for knights",
+                cost: { wood: 50, food: 40 },
+                icon: "🐎"
+            },
+            {
+                type: TYPE.KNIGHT,
+                name: "ROYAL KNIGHT",
+                desc: "Powerful mounted warrior",
+                cost: { gold: 45, food: 25 },
+                icon: "🗡️",
+                unit: true
+            },
+            {
+                type: TYPE.PRIEST,
+                name: "SHRINE PRIEST",
+                desc: "Heals allies, boosts morale",
+                cost: { gold: 30, food: 20 },
+                icon: "🙏",
+                unit: true
+            }
+        ]
+        
+        let availableCards = []
+        
+        class Entity {
+            constructor(x, y, type) {
+                this.x = x
+                this.y = y
+                this.type = type
+                this.hp = this.getMaxHp()
+                this.maxHp = this.hp
+                this.dead = false
+                this.age = 0
+                this.facing = Math.random() > 0.5 ? 1 : -1
+                this.anim = Math.random() * 100
+                this.targetX = x
+                this.targetY = y
+                this.state = "idle"
+                this.job = null
+                this.home = null
+                this.moraleMod = 0
+            }
+            
+            getMaxHp() {
+                switch(this.type) {
+                    case TYPE.KEEP: return 1200
+                    case TYPE.HOUSE: return 180
+                    case TYPE.FARM: return 90
+                    case TYPE.LUMBER: return 110
+                    case TYPE.QUARRY: return 140
+                    case TYPE.WALL: return 450
+                    case TYPE.TOWER: return 220
+                    case TYPE.TAVERN: return 160
+                    case TYPE.TEMPLE: return 210
+                    case TYPE.BARRACKS: return 280
+                    case TYPE.MILL: return 130
+                    case TYPE.STABLE: return 170
+                    case TYPE.WONDER: return 9999
+                    case TYPE.VILLAGER: return 35
+                    case TYPE.GUARD: return 160
+                    case TYPE.ARCHER: return 95
+                    case TYPE.KNIGHT: return 240
+                    case TYPE.PRIEST: return 70
+                    case TYPE.GOBLIN: return 45
+                    case TYPE.ORC: return 110
+                    case TYPE.TROLL: return 240
+                    case TYPE.DEER: return 25
+                    default: return 100
+                }
+            }
+            
+            isBuilding() {
+                return this.type < 20
+            }
+            
+            isUnit() {
+                return this.type >= 20 && this.type < 30
+            }
+            
+            isEnemy() {
+                return this.type >= 30 && this.type < 40
+            }
+        }
+        
+        function rand(min, max) {
+            return Math.random() * (max - min) + min
+        }
+        
+        function randInt(min, max) {
+            return Math.floor(rand(min, max))
+        }
+        
+        function distance(x1, y1, x2, y2) {
+            return Math.hypot(x1 - x2, y1 - y2)
+        }
+        
+        function initWorld() {
+            world = []
+            explored = []
+            
+            for (let x = 0; x < WORLD_WIDTH; x++) {
+                world[x] = []
+                explored[x] = []
+                for (let y = 0; y < WORLD_HEIGHT; y++) {
+                    explored[x][y] = false
+                    
+                    const r = Math.random()
+                    
+                    if (r < 0.07) {
+                        world[x][y] = { terrain: "water", variant: randInt(0, 3) }
+                    } else if (r < 0.3) {
+                        world[x][y] = { terrain: "forest", variant: randInt(0, 4) }
+                    } else if (r < 0.37) {
+                        world[x][y] = { terrain: "rock", variant: randInt(0, 3) }
+                    } else if (r < 0.4) {
+                        world[x][y] = { terrain: "ruins", variant: randInt(0, 2) }
+                    } else {
+                        world[x][y] = { terrain: "grass", variant: randInt(0, 5) }
+                    }
+                }
+            }
+            
+            // Central fertile valley
+            const cx = Math.floor(WORLD_WIDTH / 2)
+            const cy = Math.floor(WORLD_HEIGHT / 2)
+            
+            for (let x = cx - 18; x <= cx + 18; x++) {
+                for (let y = cy - 18; y <= cy + 18; y++) {
+                    if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) continue
+                    if (world[x][y].terrain === "water") continue
+                    world[x][y].terrain = "grass"
+                    world[x][y].variant = 0
+                }
+            }
+            
+            // Reveal starting area
+            revealArea(cx, cy, 22)
+        }
+        
+        function revealArea(tx, ty, radius) {
+            for (let x = tx - radius; x <= tx + radius; x++) {
+                for (let y = ty - radius; y <= ty + radius; y++) {
+                    if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) continue
+                    if (distance(tx, ty, x, y) < radius) {
+                        explored[x][y] = true
+                    }
+                }
+            }
+        }
+        
+        function spawnEntity(tx, ty, type) {
+            const entity = new Entity(tx, ty, type)
+            
+            // special initializations
+            if (type === TYPE.VILLAGER) {
+                entity.home = { x: tx, y: ty }
+            }
+            
+            if (type === TYPE.KEEP) {
+                entity.hp = 1200
+            }
+            
+            entities.push(entity)
+            return entity
+        }
+        
+        function buildingAt(tx, ty) {
+            return entities.find(e => {
+                return !e.dead && e.isBuilding() && Math.floor(e.x) === tx && Math.floor(e.y) === ty
+            })
+        }
+        
+        function getEntitiesOfType(type) {
+            return entities.filter(e => !e.dead && e.type === type)
+        }
+        
+        function initStartingKingdom() {
+            const cx = Math.floor(WORLD_WIDTH / 2)
+            const cy = Math.floor(WORLD_HEIGHT / 2)
+            
+            // Main keep
+            spawnEntity(cx, cy, TYPE.KEEP)
+            
+            // Initial buildings
+            spawnEntity(cx - 5, cy - 3, TYPE.HOUSE)
+            spawnEntity(cx + 6, cy - 6, TYPE.HOUSE)
+            spawnEntity(cx - 3, cy + 7, TYPE.HOUSE)
+            
+            spawnEntity(cx + 8, cy + 4, TYPE.FARM)
+            spawnEntity(cx + 9, cy + 5, TYPE.FARM)
+            spawnEntity(cx - 8, cy - 8, TYPE.LUMBER)
+            spawnEntity(cx + 2, cy + 10, TYPE.QUARRY)
+            spawnEntity(cx - 10, cy + 2, TYPE.TEMPLE)
+            
+            // Units
+            const king = spawnEntity(cx + 1, cy - 2, TYPE.KNIGHT)
+            king.hp = 300 // the king is a knight
+            
+            for (let i = 0; i < 6; i++) {
+                const v = spawnEntity(
+                    cx + randInt(-6, 6), 
+                    cy + randInt(-6, 6), 
+                    TYPE.VILLAGER
+                )
+                v.home = { x: cx + randInt(-4, 4), y: cy + randInt(-4, 4) }
+            }
+            
+            // A few guards
+            spawnEntity(cx - 4, cy - 1, TYPE.GUARD)
+            spawnEntity(cx + 4, cy + 1, TYPE.GUARD)
+        }
+        
+        function drawTerrain(x, y, tile) {
+            const px = x * TILE_SIZE
+            const py = y * TILE_SIZE
+            
+            if (tile.terrain === "water") {
+                ctx.fillStyle = "#0b4a6b"
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE)
+                ctx.fillStyle = "#1e6e94"
+                ctx.fillRect(px + 4, py + 8, TILE_SIZE - 14, 6)
+                return
+            }
+            
+            // grass base
+            const grassShade = (x + y) % 3 === 0 ? "#1f3a1f" : "#254525"
+            ctx.fillStyle = grassShade
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE)
+            
+            if (tile.terrain === "forest") {
+                ctx.fillStyle = "#143014"
+                ctx.fillRect(px + 6, py + 10, TILE_SIZE - 18, TILE_SIZE - 16)
+                
+                ctx.fillStyle = "#1a6b1a"
+                ctx.beginPath()
+                ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2 - 4, 18, 0, Math.PI * 2)
+                ctx.fill()
+                
+                ctx.fillStyle = "#22a022"
+                ctx.beginPath()
+                ctx.arc(px + TILE_SIZE/2 - 6, py + TILE_SIZE/2 - 14, 13, 0, Math.PI * 2)
+                ctx.fill()
+            } 
+            else if (tile.terrain === "rock") {
+                ctx.fillStyle = "#444444"
+                ctx.fillRect(px + 8, py + 14, TILE_SIZE - 22, TILE_SIZE - 28)
+                ctx.fillStyle = "#666"
+                ctx.fillRect(px + 22, py + 8, 14, 18)
+            } 
+            else if (tile.terrain === "ruins") {
+                ctx.fillStyle = "#222"
+                ctx.fillRect(px + 12, py + 22, TILE_SIZE - 22, 12)
+                ctx.fillStyle = "#555"
+                ctx.fillRect(px + 18, py + 10, 8, 18)
+            }
+            
+            // little grass tufts
+            if (tile.terrain !== "water" && Math.random() > 0.6) {
+                ctx.strokeStyle = "#1a3a1a"
+                ctx.lineWidth = 2
+                ctx.beginPath()
+                ctx.moveTo(px + 12, py + TILE_SIZE - 6)
+                ctx.lineTo(px + 18, py + TILE_SIZE - 22)
+                ctx.stroke()
+            }
+        }
+        
+        function drawEntity(e) {
+            if (e.dead) return
+            
+            const px = e.x * TILE_SIZE + TILE_SIZE / 2
+            const py = e.y * TILE_SIZE + TILE_SIZE / 2
+            const bob = Math.sin(tick * 0.1 + e.anim) * 2.5
+            e.anim += 0.08
+            
+            // shadow
+            ctx.globalAlpha = 0.3
+            ctx.fillStyle = "#111"
+            ctx.beginPath()
+            ctx.ellipse(px + 3, py + 18 + bob * 0.3, 18, 6, 0, 0, Math.PI * 2)
+            ctx.fill()
+            ctx.globalAlpha = 1
+            
+            switch (e.type) {
+                case TYPE.KEEP:
+                    ctx.fillStyle = "#555555"
+                    ctx.fillRect(px - 32, py - 38, 64, 52)
+                    ctx.fillStyle = "#333333"
+                    ctx.fillRect(px - 26, py - 48, 52, 18)
+                    ctx.fillStyle = "#992222"
+                    ctx.fillRect(px - 12, py - 58, 24, 14)
+                    // flag
+                    ctx.fillStyle = "#facc15"
+                    ctx.beginPath()
+                    ctx.moveTo(px + 14, py - 50)
+                    ctx.lineTo(px + 38, py - 56)
+                    ctx.lineTo(px + 14, py - 64)
+                    ctx.fill()
+                    break
+                    
+                case TYPE.HOUSE:
+                    ctx.fillStyle = "#9c6644"
+                    ctx.fillRect(px - 19, py - 12, 38, 26)
+                    ctx.fillStyle = "#3a2c1f"
+                    ctx.beginPath()
+                    ctx.moveTo(px - 24, py - 14)
+                    ctx.lineTo(px, py - 34)
+                    ctx.lineTo(px + 24, py - 14)
+                    ctx.fill()
+                    ctx.fillStyle = "#f3e6c8"
+                    ctx.fillRect(px - 9, py - 4, 7, 9)
+                    break
+                    
+                case TYPE.FARM:
+                    ctx.fillStyle = "#5c7c2e"
+                    ctx.fillRect(px - 22, py - 18, 44, 28)
+                    ctx.fillStyle = "#3e5a1a"
+                    ctx.fillRect(px - 18, py - 22, 36, 8)
+                    // wheat
+                    ctx.fillStyle = "#e0c050"
+                    for (let i = -2; i <= 2; i++) {
+                        ctx.fillRect(px + i * 8, py - 26, 4, 18)
+                    }
+                    break
+                    
+                case TYPE.LUMBER:
+                    ctx.fillStyle = "#664422"
+                    ctx.fillRect(px - 18, py - 8, 36, 28)
+                    ctx.fillStyle = "#223311"
+                    ctx.fillRect(px - 22, py - 24, 12, 22)
+                    ctx.fillRect(px + 12, py - 28, 14, 26)
+                    break
+                    
+                case TYPE.TOWER:
+                    ctx.fillStyle = "#777777"
+                    ctx.fillRect(px - 13, py - 42, 26, 54)
+                    ctx.fillStyle = "#444444"
+                    ctx.fillRect(px - 19, py - 48, 38, 14)
+                    ctx.fillStyle = "#aa2222"
+                    ctx.fillRect(px - 6, py - 54, 12, 8)
+                    break
+                    
+                case TYPE.VILLAGER:
+                    const shirtColor = ["#3b6db3", "#c23c2c", "#d4a23c"][Math.floor(e.anim) % 3]
+                    ctx.fillStyle = shirtColor
+                    ctx.fillRect(px - 8, py - 2 + bob, 16, 18)
+                    ctx.fillStyle = "#f0d3b0"
+                    ctx.beginPath()
+                    ctx.arc(px, py - 12 + bob, 8, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#222"
+                    ctx.fillRect(px - 4, py - 16 + bob, 3, 4)
+                    break
+                    
+                case TYPE.GUARD:
+                    ctx.fillStyle = "#223366"
+                    ctx.fillRect(px - 10, py - 8, 20, 26)
+                    ctx.fillStyle = "#ddd"
+                    ctx.beginPath()
+                    ctx.arc(px, py - 18, 9, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#112233"
+                    ctx.fillRect(px - 13, py - 26, 26, 9)
+                    break
+                    
+                case TYPE.KNIGHT:
+                    ctx.fillStyle = "#222233"
+                    ctx.fillRect(px - 14, py - 12, 28, 22)
+                    ctx.fillStyle = "#aa9922"
+                    ctx.fillRect(px - 18, py - 24, 36, 14)
+                    ctx.fillStyle = "#eeddaa"
+                    ctx.beginPath()
+                    ctx.arc(px, py - 22, 11, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#aa2222"
+                    ctx.fillRect(px - 5, py - 34, 10, 8)
+                    break
+                    
+                case TYPE.GOBLIN:
+                    ctx.fillStyle = "#225522"
+                    ctx.fillRect(px - 13, py - 4, 26, 16)
+                    ctx.fillStyle = "#114411"
+                    ctx.beginPath()
+                    ctx.ellipse(px, py - 14, 13, 11, 0, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.fillStyle = "#ffdd66"
+                    ctx.fillRect(px - 7, py - 21, 4, 6)
+                    ctx.fillRect(px + 3, py - 21, 4, 6)
+                    break
+                    
+                case TYPE.ORC:
+                    ctx.fillStyle = "#442222"
+                    ctx.fillRect(px - 18, py - 12, 36, 28)
+                    ctx.fillStyle = "#663333"
+                    ctx.beginPath()
+                    ctx.arc(px, py - 22, 14, 0, Math.PI * 2)
+                    ctx.fill()
+                    break
+                    
+                case TYPE.PRIEST:
+                    ctx.fillStyle = "#ddccaa"
+                    ctx.fillRect(px - 12, py - 22, 24, 32)
+                    ctx.fillStyle = "#334488"
+                    ctx.fillRect(px - 16, py - 8, 32, 12)
+                    ctx.fillStyle = "#eed"
+                    ctx.beginPath()
+                    ctx.arc(px, py - 26, 10, 0, Math.PI * 2)
+                    ctx.fill()
+                    break
+                    
+                case TYPE.TROLL:
+                    ctx.fillStyle = "#334422"
+                    ctx.fillRect(px - 26, py - 22, 52, 36)
+                    ctx.fillStyle = "#112211"
+                    ctx.fillRect(px - 14, py - 40, 28, 18)
+                    break
+                    
+                case TYPE.DEER:
+                    ctx.fillStyle = "#665533"
+                    ctx.fillRect(px - 14, py - 4, 28, 14)
+                    ctx.fillStyle = "#998866"
+                    ctx.beginPath()
+                    ctx.arc(px - 4, py - 18, 6, 0, Math.PI * 2)
+                    ctx.fill()
+                    break
+            }
+            
+            // health bar for non-full hp
+            if (e.hp < e.maxHp && e.hp > 0) {
+                const pct = e.hp / e.maxHp
+                ctx.fillStyle = "black"
+                ctx.fillRect(px - 18, py - 32, 36, 5)
+                ctx.fillStyle = pct > 0.4 ? "#22cc44" : "#ee2222"
+                ctx.fillRect(px - 17, py - 31, 34 * pct, 3)
+            }
+        }
+        
+        function createParticle(x, y, color, life, vx = 0, vy = 0, size = 4) {
+            particles.push({
+                x: x,
+                y: y,
+                vx: vx || rand(-1.5, 1.5),
+                vy: vy || rand(-2.5, 0.5),
+                life: life,
+                maxLife: life,
+                color: color,
+                size: size
+            })
+        }
+        
+        function createFloater(x, y, text, color = "#ffeb9c") {
+            floaters.push({
+                x: x,
+                y: y,
+                text: text,
+                vy: -1.2,
+                life: 55,
+                color: color
+            })
+        }
+        
+        function triggerRandomEvent() {
+            const events = [
+                {
+                    title: "Bountiful Harvest",
+                    desc: "The fields are rich! +40 food",
+                    fn: () => {
+                        resources.food += 40
+                        createFloater(400, 200, "+40 FOOD", "#a3e635")
+                    }
+                },
+                {
+                    title: "Goblin Ambush",
+                    desc: "A raiding party appears near the border!",
+                    fn: () => {
+                        const cx = Math.floor(WORLD_WIDTH / 2)
+                        const cy = Math.floor(WORLD_HEIGHT / 2)
+                        for (let i = 0; i < 6; i++) {
+                            const ex = cx + randInt(-35, 35)
+                            const ey = cy + randInt(-35, 35)
+                            spawnEntity(ex, ey, Math.random() > 0.6 ? TYPE.GOBLIN : TYPE.ORC)
+                        }
+                        addLog("GOBLIN RAID INCOMING", "#f43f5e")
+                    }
+                },
+                {
+                    title: "Traveling Merchant",
+                    desc: "A merchant caravan arrives. Trade offered.",
+                    fn: () => {
+                        resources.gold += 25
+                        resources.wood += 15
+                        addLog("MERCHANT TRADE COMPLETE", "#eab308")
+                    }
+                },
+                {
+                    title: "Miraculous Spring",
+                    desc: "A sacred spring was discovered. Morale +18",
+                    fn: () => {
+                        morale = Math.min(100, morale + 18)
+                        addLog("HOLY SPRING FOUND", "#67e8f9")
+                    }
+                },
+                {
+                    title: "Plague Outbreak",
+                    desc: "Villagers are sick. -12 morale. -20 food",
+                    fn: () => {
+                        morale = Math.max(10, morale - 12)
+                        resources.food = Math.max(0, resources.food - 20)
+                        addLog("THE PLAGUE SPREADS", "#a78bfa")
+                        
+                        // kill some villagers
+                        const villagers = getEntitiesOfType(TYPE.VILLAGER)
+                        if (villagers.length > 3) {
+                            villagers.slice(0, 3).forEach(v => v.dead = true)
+                        }
+                    }
+                },
+                {
+                    title: "Ancient Relic Found",
+                    desc: "An old crown was recovered. +30 research",
+                    fn: () => {
+                        resources.research += 30
+                        addLog("RELIC DISCOVERED", "#c084fc")
+                    }
+                },
+                {
+                    title: "Festival of the Sun",
+                    desc: "The people celebrate! +25 morale",
+                    fn: () => {
+                        morale = Math.min(100, morale + 25)
+                        resources.food -= 10
+                        addLog("THE SUN FESTIVAL!", "#f59e0b")
+                    }
+                }
+            ]
+            
+            const chosen = events[randInt(0, events.length)]
+            addLog(chosen.title.toUpperCase(), "#facc15")
+            chosen.fn()
+            
+            // show floating banner
+            showBigMessage(chosen.title, chosen.desc, 2200)
+        }
+        
+        function addLog(text, color = "#a3a3a3") {
+            eventLog.unshift({
+                text: text,
+                color: color,
+                tick: tick
+            })
+            if (eventLog.length > 12) eventLog.pop()
+        }
+        
+        function updateSimulation() {
+            if (isPaused || gameOver) return
+            
+            tick += gameSpeed
+            dayOfYear++
+            
+            if (dayOfYear > 400) {
+                dayOfYear = 0
+                year++
+            }
+            
+            seasonIndex = Math.floor(dayOfYear / 100) % 4
+            
+            // update camera slightly if needed
+            if (tick % 80 === 0) {
+                const centerX = WORLD_WIDTH * TILE_SIZE / 2
+                const centerY = WORLD_HEIGHT * TILE_SIZE / 2
+                camera.x = centerX - canvas.width / 2 + Math.sin(tick / 200) * 80
+                camera.y = centerY - canvas.height / 2 + Math.cos(tick / 300) * 50
+            }
+            
+            // income
+            incomeThisTick = { wood: 0, stone: 0, gold: 0, food: 0, research: 0 }
+            
+            const farms = getEntitiesOfType(TYPE.FARM)
+            const lumbers = getEntitiesOfType(TYPE.LUMBER)
+            const quarries = getEntitiesOfType(TYPE.QUARRY)
+            const taverns = getEntitiesOfType(TYPE.TAVERN)
+            const temples = getEntitiesOfType(TYPE.TEMPLE)
+            const mills = getEntitiesOfType(TYPE.MILL)
+            
+            // production
+            if (tick % 18 === 0) {
+                // farms
+                farms.forEach(f => {
+                    let amt = 3
+                    if (seasonIndex === 0 || seasonIndex === 1) amt = 5 // spring + summer
+                    
+                    // nearby mills boost
+                    const nearbyMill = mills.some(m => distance(m.x, m.y, f.x, f.y) < 6)
+                    if (nearbyMill) amt = Math.floor(amt * 1.6)
+                    
+                    resources.food += amt
+                    incomeThisTick.food += amt
+                    
+                    if (Math.random() < 0.2) {
+                        createParticle(f.x * TILE_SIZE + 20, f.y * TILE_SIZE + 12, "#bef575", 26, 0, -1.5)
+                    }
+                })
+                
+                lumbers.forEach(() => {
+                    const amt = 3 + (Math.random() > 0.6 ? 2 : 0)
+                    resources.wood += amt
+                    incomeThisTick.wood += amt
+                })
+                
+                quarries.forEach(q => {
+                    resources.stone += 4
+                    incomeThisTick.stone += 4
+                    
+                    if (Math.random() < 0.13) {
+                        resources.gold += 1
+                        incomeThisTick.gold += 1
+                        createFloater(q.x * TILE_SIZE, q.y * TILE_SIZE - 20, "GOLD VEIN!", "#fde047")
+                    }
+                })
+            }
+            
+            // taverns and temples
+            if (tick % 55 === 0) {
+                taverns.forEach(() => {
+                    resources.gold += 2
+                    incomeThisTick.gold += 2
+                    morale = Math.min(100, morale + 0.6)
+                })
+                
+                temples.forEach(() => {
+                    morale = Math.min(100, morale + 1.2)
+                    incomeThisTick.research += 1
+                    resources.research += 1
+                })
+            }
+            
+            // update villagers
+            const villagers = getEntitiesOfType(TYPE.VILLAGER)
+            villagers.forEach(v => {
+                v.age++
+                
+                if (v.state === "idle") {
+                    if (Math.random() < 0.04) {
+                        v.state = "walk"
+                        v.targetX = v.x + randInt(-7, 7)
+                        v.targetY = v.y + randInt(-7, 7)
+                    }
+                } else if (v.state === "walk") {
+                    const dx = v.targetX - v.x
+                    const dy = v.targetY - v.y
+                    const len = Math.hypot(dx, dy)
+                    
+                    if (len > 0.2) {
+                        v.x += (dx / len) * 0.07
+                        v.y += (dy / len) * 0.07
+                    } else {
+                        v.state = "idle"
+                    }
+                }
+                
+                // villagers eat food
+                if (tick % 220 === 0 && resources.food > 4) {
+                    resources.food -= 1
+                }
+            })
+            
+            // combat update
+            updateCombat()
+            
+            // random events
+            if (tick - lastRandomEvent > 520 + randInt(0, 700)) {
+                lastRandomEvent = tick
+                if (Math.random() < 0.7) triggerRandomEvent()
+            }
+            
+            // weather cycle
+            weatherTimer--
+            if (weatherTimer <= 0) {
+                const weathers = ["clear", "rain", "snow"]
+                weather = weathers[randInt(0, weathers.length)]
+                weatherTimer = randInt(280, 1100)
+                
+                if (weather === "rain") addLog("IT BEGINS TO RAIN", "#22d3ee")
+                if (weather === "snow") addLog("SNOW FALLS OVER THE LAND", "#e0f2fe")
+            }
+            
+            // morale decay / growth
+            if (tick % 45 === 0) {
+                let moraleDelta = 0
+                
+                // buildings influence
+                moraleDelta += getEntitiesOfType(TYPE.TAVERN).length * 0.6
+                moraleDelta += getEntitiesOfType(TYPE.TEMPLE).length * 1.4
+                moraleDelta -= getEntitiesOfType(TYPE.GOBLIN).length * 2
+                
+                // population pressure
+                if (villagers.length > 35) moraleDelta -= 0.4
+                
+                morale = Math.max(8, Math.min(100, morale + moraleDelta))
+            }
+            
+            // update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i]
+                p.x += p.vx
+                p.y += p.vy
+                p.vy += 0.1 // gravity for some
+                p.life--
+                if (p.life <= 0) particles.splice(i, 1)
+            }
+            
+            // update floaters
+            for (let i = floaters.length - 1; i >= 0; i--) {
+                const f = floaters[i]
+                f.y += f.vy
+                f.life--
+                if (f.life <= 0) floaters.splice(i, 1)
+            }
+            
+            // clean dead
+            entities = entities.filter(e => !e.dead)
+            
+            // win condition
+            if (year >= 12 && morale > 80 && !victory) {
+                victory = true
+                showBigMessage("YOUR KINGDOM ENDURES", "A LEGEND WAS BORN", 8000)
+            }
+            
+            // lose condition
+            if (morale < 12 && tick > 800) {
+                gameOver = true
+                showBigMessage("THE REALM FELL", "MORALE COLLAPSED", 5000)
+            }
+            
+            updateMinimap()
+        }
+        
+        function updateCombat() {
+            const enemies = entities.filter(e => e.isEnemy() && !e.dead)
+            const defenders = entities.filter(e => (e.type === TYPE.GUARD || e.type === TYPE.KNIGHT || e.type === TYPE.ARCHER || e.type === TYPE.TOWER) && !e.dead)
+            
+            enemies.forEach(enemy => {
+                // find target
+                let target = null
+                let bestDist = Infinity
+                
+                defenders.forEach(def => {
+                    const d = distance(enemy.x, enemy.y, def.x, def.y)
+                    if (d < bestDist) {
+                        bestDist = d
+                        target = def
+                    }
+                })
+                
+                if (!target) {
+                    // go for keep
+                    const keep = getEntitiesOfType(TYPE.KEEP)[0]
+                    if (keep) target = keep
+                }
+                
+                if (!target) return
+                
+                const dx = target.x - enemy.x
+                const dy = target.y - enemy.y
+                const distToTarget = Math.hypot(dx, dy)
+                
+                if (distToTarget > 1.8) {
+                    enemy.x += Math.sign(dx) * 0.065
+                    enemy.y += Math.sign(dy) * 0.065
+                } else {
+                    // attack
+                    if (tick % 13 === 0) {
+                        target.hp -= enemy.type === TYPE.TROLL ? 32 : 13
+                        createParticle(target.x * TILE_SIZE + rand(-10, 10), target.y * TILE_SIZE - 10, "#f43f5e", 18, rand(-3, 3), rand(-4, -1))
+                        
+                        if (target.hp <= 0) {
+                            target.dead = true
+                            if (target.type === TYPE.KEEP) gameOver = true
+                        }
+                    }
+                }
+                
+                // trap damage simulation
+                if (Math.random() < 0.02) {
+                    enemy.hp -= 22
+                    if (enemy.hp < 0) enemy.dead = true
+                }
+            })
+            
+            // defenders attack
+            defenders.forEach(def => {
+                let closestEnemy = null
+                let record = Infinity
+                
+                enemies.forEach(en => {
+                    const d = distance(def.x, def.y, en.x, en.y)
+                    if (d < record) {
+                        record = d
+                        closestEnemy = en
+                    }
+                })
+                
+                if (!closestEnemy || record > 7) return
+                
+                if (tick % (def.type === TYPE.ARCHER ? 22 : 14) === 0) {
+                    closestEnemy.hp -= def.type === TYPE.KNIGHT ? 34 : 18
+                    
+                    createParticle(
+                        closestEnemy.x * TILE_SIZE + 12, 
+                        closestEnemy.y * TILE_SIZE - 18, 
+                        "#fde047", 22, rand(-1, 4), -3
+                    )
+                    
+                    if (closestEnemy.hp <= 0) {
+                        closestEnemy.dead = true
+                        createFloater(closestEnemy.x * TILE_SIZE, closestEnemy.y * TILE_SIZE, "SLAIN", "#eab308")
+                    }
+                }
+            })
+        }
+        
+        function drawWorld() {
+            ctx.save()
+            ctx.translate(-camera.x, -camera.y)
+            
+            const startX = Math.floor(camera.x / TILE_SIZE) - 1
+            const startY = Math.floor(camera.y / TILE_SIZE) - 1
+            const endX = Math.floor((camera.x + canvas.width) / TILE_SIZE) + 3
+            const endY = Math.floor((camera.y + canvas.height) / TILE_SIZE) + 3
+            
+            for (let x = Math.max(0, startX); x < Math.min(WORLD_WIDTH, endX); x++) {
+                for (let y = Math.max(0, startY); y < Math.min(WORLD_HEIGHT, endY); y++) {
+                    if (!explored[x][y]) {
+                        ctx.fillStyle = "#111111"
+                        ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                        continue
+                    }
+                    
+                    drawTerrain(x, y, world[x][y])
+                }
+            }
+            
+            // sort entities by Y for pseudo-depth
+            const sortedEntities = [...entities].sort((a, b) => a.y - b.y)
+            
+            sortedEntities.forEach(entity => {
+                if (explored[Math.floor(entity.x)] && explored[Math.floor(entity.x)][Math.floor(entity.y)]) {
+                    drawEntity(entity)
+                }
+            })
+            
+            // particles
+            particles.forEach(p => {
+                const alpha = p.life / p.maxLife
+                ctx.globalAlpha = alpha * 0.9
+                ctx.fillStyle = p.color
+                ctx.fillRect(p.x - camera.x, p.y - camera.y, p.size, p.size * 0.6)
+            })
+            ctx.globalAlpha = 1
+            
+            // floaters
+            ctx.textAlign = "center"
+            ctx.font = "600 13px monospace"
+            floaters.forEach(f => {
+                const alpha = Math.max(0, f.life / 44)
+                ctx.globalAlpha = alpha
+                ctx.fillStyle = f.color
+                ctx.fillText(f.text, f.x - camera.x, f.y - camera.y)
+            })
+            ctx.globalAlpha = 1
+            ctx.textAlign = "left"
+            
+            ctx.restore()
+        }
+        
+        function updateMinimap() {
+            if (!minimapCtx) return
+            
+            minimapCtx.fillStyle = "#052e16"
+            minimapCtx.fillRect(0, 0, 140, 140)
+            
+            const scale = 140 / WORLD_WIDTH
+            
+            // draw explored terrain in miniature
+            for (let x = 0; x < WORLD_WIDTH; x += 6) {
+                for (let y = 0; y < WORLD_HEIGHT; y += 6) {
+                    if (!explored[x] || !explored[x][y]) continue
+                    
+                    const terrain = world[x][y].terrain
+                    
+                    if (terrain === "water") minimapCtx.fillStyle = "#0c4a6e"
+                    else if (terrain === "forest") minimapCtx.fillStyle = "#166534"
+                    else minimapCtx.fillStyle = "#365314"
+                    
+                    minimapCtx.fillRect(x * scale, y * scale, 5, 5)
+                }
+            }
+            
+            // entities dots
+            entities.forEach(e => {
+                if (e.dead) return
+                let color = "#eab308"
+                if (e.isEnemy()) color = "#e11d48"
+                if (e.type === TYPE.KEEP) color = "#854d0e"
+                
+                minimapCtx.fillStyle = color
+                minimapCtx.fillRect(e.x * scale - 1, e.y * scale - 1, 3, 3)
+            })
+            
+            // camera viewport
+            const camX = (camera.x / (WORLD_WIDTH * TILE_SIZE)) * 140
+            const camY = (camera.y / (WORLD_HEIGHT * TILE_SIZE)) * 140
+            const camW = (canvas.width / (WORLD_WIDTH * TILE_SIZE)) * 140
+            const camH = (canvas.height / (WORLD_HEIGHT * TILE_SIZE)) * 140
+            
+            minimapCtx.strokeStyle = "#fcd34d"
+            minimapCtx.lineWidth = 2
+            minimapCtx.strokeRect(camX, camY, camW, camH)
+        }
+        
+        function renderUI() {
+            // resources
+            document.getElementById("res-wood").textContent = Math.floor(resources.wood)
+            document.getElementById("res-stone").textContent = Math.floor(resources.stone)
+            document.getElementById("res-gold").textContent = Math.floor(resources.gold)
+            document.getElementById("res-food").textContent = Math.floor(resources.food)
+            
+            document.getElementById("wood-income").innerHTML = incomeThisTick.wood > 0 ? `+${incomeThisTick.wood}` : ""
+            document.getElementById("stone-income").innerHTML = incomeThisTick.stone > 0 ? `+${incomeThisTick.stone}` : ""
+            document.getElementById("gold-income").innerHTML = incomeThisTick.gold > 0 ? `+${incomeThisTick.gold}` : ""
+            document.getElementById("food-income").innerHTML = incomeThisTick.food > 0 ? `+${incomeThisTick.food}` : ""
+            
+            // morale
+            const moraleEl = document.getElementById("morale-bar")
+            moraleEl.style.width = `${morale}%`
+            document.getElementById("morale-value").textContent = Math.floor(morale)
+            
+            if (morale < 30) moraleEl.style.background = "rgb(190 18 60)"
+            
+            // date
+            document.getElementById("season").textContent = SEASONS[seasonIndex]
+            document.getElementById("year").textContent = `YEAR ${year}`
+            
+            document.getElementById("tick-count").textContent = tick
+            
+            // population
+            const pops = getEntitiesOfType(TYPE.VILLAGER).length
+            const houses = getEntitiesOfType(TYPE.HOUSE).length
+            document.getElementById("population").innerHTML = `POP <span class="text-white">${pops}</span> <span class="text-zinc-400">/ ${houses * 4}</span>`
+            
+            // current card
+            if (currentCard) {
+                document.getElementById("card-icon").innerHTML = currentCard.icon
+                document.getElementById("card-name").textContent = currentCard.name
+                document.getElementById("card-desc").textContent = currentCard.desc
+                
+                const woodCostEl = document.getElementById("card-cost-wood")
+                const stoneCostEl = document.getElementById("card-cost-stone")
+                const goldCostEl = document.getElementById("card-cost-gold")
+                
+                woodCostEl.style.display = currentCard.cost.wood ? "flex" : "none"
+                if (currentCard.cost.wood) woodCostEl.children[1].textContent = currentCard.cost.wood
+                
+                stoneCostEl.style.display = currentCard.cost.stone ? "flex" : "none"
+                if (currentCard.cost.stone) stoneCostEl.children[1].textContent = currentCard.cost.stone
+                
+                goldCostEl.style.display = currentCard.cost.gold ? "flex" : "none"
+                if (currentCard.cost.gold) goldCostEl.children[1].textContent = currentCard.cost.gold
+            }
+            
+            // render event log if selected
+            if (selectedTab === 0) {
+                let html = `<div class="space-y-3 text-xs">`
+                
+                eventLog.forEach(entry => {
+                    html += `
+                    <div class="flex gap-3">
+                        <div class="font-mono text-[10px] text-zinc-600 w-12 shrink-0">${entry.tick}</div>
+                        <div style="color:${entry.color}">${entry.text}</div>
+                    </div>`
+                })
+                
+                html += `</div>`
+                document.getElementById("tab-content").innerHTML = html
+            } 
+            else if (selectedTab === 1) {
+                const totalBuildings = entities.filter(e => e.isBuilding() && !e.dead).length
+                const totalMilitary = entities.filter(e => (e.type === TYPE.GUARD || e.type === TYPE.KNIGHT || e.type === TYPE.ARCHER) && !e.dead).length
+                
+                let html = `
+                    <div class="text-[10px] space-y-6">
+                        <div>
+                            <div class="text-amber-300 mb-3">KINGDOM STATISTICS</div>
+                            <div class="grid grid-cols-2 gap-x-8 gap-y-5 text-xs">
+                                <div class="flex justify-between"><span class="text-zinc-400">Buildings</span><span class="font-medium">${totalBuildings}</span></div>
+                                <div class="flex justify-between"><span class="text-zinc-400">Military</span><span class="font-medium">${totalMilitary}</span></div>
+                                <div class="flex justify-between"><span class="text-zinc-400">Raids survived</span><span class="font-medium">${totalRaidsSurvived}</span></div>
+                                <div class="flex justify-between"><span class="text-zinc-400">Research points</span><span class="font-medium">${resources.research}</span></div>
+                                <div class="flex justify-between"><span class="text-zinc-400">Current morale</span><span class="font-medium">${Math.floor(morale)}</span></div>
+                                <div class="flex justify-between"><span class="text-zinc-400">Weather</span><span class="font-medium uppercase">${weather}</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-zinc-700">
+                            <div class="text-amber-300 mb-3">PRODUCTION THIS CYCLE</div>
+                            <div class="flex justify-between text-emerald-300"><span>WOOD</span><span class="font-medium">${incomeThisTick.wood}</span></div>
+                            <div class="flex justify-between text-sky-300"><span>STONE</span><span class="font-medium">${incomeThisTick.stone}</span></div>
+                            <div class="flex justify-between text-yellow-300"><span>GOLD</span><span class="font-medium">${incomeThisTick.gold}</span></div>
+                            <div class="flex justify-between text-orange-300"><span>FOOD</span><span class="font-medium">${incomeThisTick.food}</span></div>
+                        </div>
+                    </div>
+                `
+                document.getElementById("tab-content").innerHTML = html
+            } 
+            else if (selectedTab === 2) {
+                let html = `<div class="text-xs">`
+                
+                techs.forEach(tech => {
+                    const isUnlocked = unlockedTechs.has(tech.id)
+                    html += `
+                    <div onclick="${!isUnlocked ? `researchTech('${tech.id}');event.stopImmediatePropagation()` : ''}" 
+                         class="flex items-center gap-x-4 border ${isUnlocked ? 'border-emerald-400 bg-emerald-950/30' : 'border-transparent bg-zinc-950 hover:bg-zinc-900'} p-4 rounded-2xl mb-3 cursor-pointer">
+                        <div class="text-4xl w-12">${tech.icon}</div>
+                        <div class="flex-1">
+                            <div class="flex justify-between">
+                                <div class="font-medium">${tech.name}</div>
+                                ${isUnlocked ? `<span class="text-emerald-400 text-[10px] tracking-widest">RESEARCHED</span>` : `<span class="font-mono text-yellow-300">${tech.cost}R</span>`}
+                            </div>
+                            <div class="text-zinc-400 text-[10px]">${tech.effect}</div>
+                        </div>
+                    </div>`
+                })
+                
+                html += `</div>`
+                document.getElementById("tab-content").innerHTML = html
+            }
+        }
+        
+        function researchTech(id) {
+            const tech = techs.find(t => t.id === id)
+            if (!tech || unlockedTechs.has(id)) return
+            if (resources.research < tech.cost) {
+                createFloater(300, 200, "NOT ENOUGH RESEARCH", "#f87171")
+                return
+            }
+            
+            resources.research -= tech.cost
+            unlockedTechs.add(id)
+            
+            // apply permanent effects
+            if (id === "irrigation") {
+                addLog("IRRIGATION UNLOCKED — FARMS BUFFED", "#4ade80")
+            }
+            if (id === "scholarship") {
+                addLog("KNOWLEDGE FLOWS", "#67e8f9")
+            }
+            
+            createFloater(340, 160, "TECH ACQUIRED!", "#67e8f9")
+            renderUI()
+        }
+        
+        function drawNewCard() {
+            if (availableCards.length === 0) {
+                availableCards = [...CARD_DECK]
+            }
+            
+            const idx = randInt(0, availableCards.length)
+            currentCard = availableCards[idx]
+            availableCards.splice(idx, 1)
+            
+            // occasionally give a free unit card
+            if (Math.random() < 0.2 && currentCard.unit !== true) {
+                currentCard = CARD_DECK.find(c => c.unit) || currentCard
+            }
+            
+            renderUI()
+        }
+        
+        function canAfford(card) {
+            if (!card || !card.cost) return false
+            if (card.cost.wood && resources.wood < card.cost.wood) return false
+            if (card.cost.stone && resources.stone < card.cost.stone) return false
+            if (card.cost.gold && resources.gold < card.cost.gold) return false
+            if (card.cost.food && resources.food < card.cost.food) return false
+            return true
+        }
+        
+        function payForCard(card) {
+            if (card.cost.wood) resources.wood -= card.cost.wood
+            if (card.cost.stone) resources.stone -= card.cost.stone
+            if (card.cost.gold) resources.gold -= card.cost.gold
+            if (card.cost.food) resources.food -= card.cost.food
+        }
+        
+        function placeCurrentCard() {
+            if (!currentCard || gameOver) return
+            
+            // find a random grass tile in view
+            const cx = Math.floor((camera.x + canvas.width / 2) / TILE_SIZE)
+            const cy = Math.floor((camera.y + canvas.height / 2) / TILE_SIZE)
+            
+            let placed = false
+            
+            for (let i = 0; i < 40; i++) {
+                const tx = cx + randInt(-9, 9)
+                const ty = cy + randInt(-9, 9)
+                
+                if (tx < 3 || tx > WORLD_WIDTH - 3 || ty < 3 || ty > WORLD_HEIGHT - 3) continue
+                
+                const tile = world[tx][ty]
+                if (!tile || tile.terrain === "water") continue
+                if (buildingAt(tx, ty)) continue
+                
+                if (!canAfford(currentCard)) {
+                    createFloater(canvas.width / 2, 220, "CANNOT AFFORD", "#f43f5e")
+                    return
+                }
+                
+                payForCard(currentCard)
+                
+                const newEntity = spawnEntity(tx, ty, currentCard.type)
+                
+                // give villagers homes
+                if (currentCard.type === TYPE.HOUSE) {
+                    for (let k = 0; k < 3; k++) {
+                        const v = spawnEntity(tx + randInt(-2, 2), ty + randInt(-2, 2), TYPE.VILLAGER)
+                        v.home = { x: tx, y: ty }
+                    }
+                }
+                
+                // spawn particles
+                for (let k = 0; k < 18; k++) {
+                    createParticle(
+                        tx * TILE_SIZE + rand(0, TILE_SIZE), 
+                        ty * TILE_SIZE + rand(0, TILE_SIZE), 
+                        "#fde047", 32, rand(-2.5, 2.5), rand(-4, -0.6), 5
+                    )
+                }
+                
+                createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE + 10, "BUILT!", "#a3e635")
+                revealArea(tx, ty, 9)
+                placed = true
+                break
+            }
+            
+            if (placed) {
+                drawNewCard()
+            } else {
+                createFloater(300, 220, "NO SPACE NEARBY", "#f59e0b")
+            }
+            
+            renderUI()
+        }
+        
+        function skipCard() {
+            if (resources.gold < 3) {
+                createFloater(280, 180, "NEED 3 GOLD", "#fda4af")
+                return
+            }
+            resources.gold -= 3
+            drawNewCard()
+            createFloater(280, 180, "CARD SKIPPED", "#a5b4fc")
+        }
+        
+        function clickOnCanvas(e) {
+            if (gameOver || isPaused) return
+            
+            const rect = canvas.getBoundingClientRect()
+            const mx = e.clientX - rect.left
+            const my = e.clientY - rect.top
+            
+            // if clicked on card area ignore (handled separately)
+            if (my > canvas.height - 190) return
+            
+            const worldX = (mx + camera.x) / TILE_SIZE
+            const worldY = (my + camera.y) / TILE_SIZE
+            
+            const tx = Math.floor(worldX)
+            const ty = Math.floor(worldY)
+            
+            if (tx < 0 || ty < 0 || tx >= WORLD_WIDTH || ty >= WORLD_HEIGHT) return
+            
+            // if there is an enemy - attack with click?
+            const clickedEntity = entities.find(ent => {
+                return Math.floor(ent.x) === tx && Math.floor(ent.y) === ty
+            })
+            
+            if (clickedEntity && clickedEntity.isEnemy()) {
+                clickedEntity.hp -= 60
+                createParticle(clickedEntity.x * TILE_SIZE + 24, clickedEntity.y * TILE_SIZE + 12, "#ec4899", 30)
+                if (clickedEntity.hp < 0) clickedEntity.dead = true
+                return
+            }
+            
+            // otherwise try to place if card is ready
+            if (currentCard) {
+                placeCurrentCard()
+            }
+        }
+        
+        function showBigMessage(title, subtitle, timeout = 1800) {
+            const overlay = document.getElementById("big-message")
+            document.getElementById("big-title").innerHTML = title
+            document.getElementById("big-subtitle").innerHTML = subtitle
+            overlay.classList.remove("hidden")
+            overlay.style.opacity = 1
+            
+            setTimeout(() => {
+                overlay.style.opacity = 0
+                setTimeout(() => {
+                    if (!overlay.classList.contains("hidden")) overlay.classList.add("hidden")
+                }, 800)
+            }, timeout)
+        }
+        
+        function setSpeed(n) {
+            gameSpeed = n
+            document.querySelectorAll(".speed-btn").forEach(el => {
+                if (parseFloat(el.textContent) === n) {
+                    el.classList.add("bg-amber-400", "text-black")
+                } else {
+                    el.classList.remove("bg-amber-400", "text-black")
+                }
+            })
+        }
+        
+        function togglePause() {
+            isPaused = !isPaused
+            const pauseBtn = document.getElementById("pause-btn")
+            pauseBtn.style.backgroundColor = isPaused ? "#450a0a" : ""
+            document.getElementById("pause-text").textContent = isPaused ? "PLAY" : "PAUSE"
+        }
+        
+        function switchTab(n) {
+            selectedTab = n
+            document.querySelectorAll(".tab-button").forEach((el, i) => {
+                if (i === n) {
+                    el.classList.add("border-b-2", "border-amber-400", "text-amber-400")
+                } else {
+                    el.classList.remove("border-b-2", "border-amber-400", "text-amber-400")
+                }
+            })
+            renderUI()
+        }
+        
+        function showHelp() {
+            showBigMessage(
+                "HOW TO PLAY", 
+                `• Click the CARD to place buildings<br>
+                 • Drag the map to explore<br>
+                 • Survive raids and keep morale high<br>
+                 • Research technologies to improve your kingdom<br><br>
+                 <span class="text-amber-400">Build. Protect. Prosper.</span>`, 
+                6500
+            )
+        }
+        
+        function dismissHint() {
+            document.getElementById("hint-box").classList.add("hidden")
+        }
+        
+        function gameLoop(timestamp) {
+            if (lastFrameTime === 0) lastFrameTime = timestamp
+            const deltaTime = timestamp - lastFrameTime
+            lastFrameTime = timestamp
+            
+            if (!isPaused && !gameOver && !victory) {
+                tickAccumulator += deltaTime * gameSpeed
+                while (tickAccumulator >= BASE_TICK_INTERVAL) {
+                    tickAccumulator -= BASE_TICK_INTERVAL
+                    updateSimulation()
+                }
+            }
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            ctx.fillStyle = "#0a120a"
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            
+            drawWorld()
+            renderUI()
+            
+            // subtle vignette
+            const grad = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.6,
+                canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.9
+            )
+            grad.addColorStop(0, "transparent")
+            grad.addColorStop(1, "rgba(9, 13, 9, 0.6)")
+            ctx.fillStyle = grad
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            
+            requestAnimationFrame(gameLoop)
+        }
+        
+        function resize() {
+            canvas.width = window.innerWidth - 290 // leave space for sidebar
+            canvas.height = window.innerHeight - 56
+        }
+        
+        function init() {
+            canvas = document.getElementById("canvas")
+            ctx = canvas.getContext("2d", { alpha: true })
+            
+            minimapCanvas = document.getElementById("minimap")
+            minimapCtx = minimapCanvas.getContext("2d")
+            
+            resize()
+            window.addEventListener("resize", resize)
+            
+            // Tailwind script run
+            function initTailwind() {
+                // already loaded via CDN
+            }
+            initTailwind()
+            
+            initWorld()
+            initStartingKingdom()
+            initTechTree()
+            
+            // start camera in middle
+            camera.x = (WORLD_WIDTH * TILE_SIZE / 2) - canvas.width / 2 + 120
+            camera.y = (WORLD_HEIGHT * TILE_SIZE / 2) - canvas.height / 2 - 80
+            
+            // initial card
+            drawNewCard()
+            
+            // initial log entries
+            addLog("KINGDOM FOUNDED", "#67e8f9")
+            addLog("WELCOME TO ELDRIA", "#facc15")
+            addLog("DRAW YOUR FIRST CARD", "#a3a3a3")
+            
+            // mouse controls
+            let isDragging = false
+            let lastMouseX = 0
+            let lastMouseY = 0
+            
+            canvas.addEventListener("mousedown", e => {
+                if (e.button === 0) {
+                    isDragging = true
+                    lastMouseX = e.clientX
+                    lastMouseY = e.clientY
+                } else if (e.button === 2) {
+                    clickOnCanvas(e)
+                }
+            })
+            
+            window.addEventListener("mouseup", () => {
+                isDragging = false
+            })
+            
+            canvas.addEventListener("mousemove", e => {
+                if (!isDragging) return
+                
+                const dx = e.clientX - lastMouseX
+                const dy = e.clientY - lastMouseY
+                
+                camera.x -= dx * 1.6
+                camera.y -= dy * 1.6
+                
+                // clamp camera
+                camera.x = Math.max(0, Math.min(camera.x, WORLD_WIDTH * TILE_SIZE - canvas.width))
+                camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT * TILE_SIZE - canvas.height))
+                
+                lastMouseX = e.clientX
+                lastMouseY = e.clientY
+            })
+            
+            canvas.addEventListener("click", clickOnCanvas)
+            
+            // right click context menu disable
+            canvas.addEventListener("contextmenu", e => {
+                e.preventDefault()
+                clickOnCanvas(e)
+            })
+            
+            // keyboard
+            window.addEventListener("keydown", e => {
+                if (e.key === "/" && document.getElementById("big-message").classList.contains("hidden")) {
+                    showHelp()
+                    e.preventDefault()
+                }
+                
+                if (e.metaKey && e.key === "k") {
+                    togglePause()
+                    e.preventDefault()
+                }
+            })
+            
+            // demo enemy raid after some time
+            setTimeout(() => {
+                if (!gameOver) {
+                    const cx = Math.floor(WORLD_WIDTH / 2) + 30
+                    const cy = Math.floor(WORLD_HEIGHT / 2) + 22
+                    for (let i = 0; i < 7; i++) {
+                        spawnEntity(cx + randInt(-4, 8), cy + randInt(-6, 6), TYPE.GOBLIN)
+                    }
+                    totalRaidsSurvived++
+                    addLog("FIRST RAID DETECTED", "#e11d48")
+                }
+            }, 6200)
+            
+            // demo hint
+            setTimeout(() => {
+                const hint = document.getElementById("hint-box")
+                document.getElementById("hint-text").innerHTML = `Click anywhere on the map while holding a card to place buildings.<br><br>Drag to explore the wilderness.`
+                hint.classList.remove("hidden")
+            }, 2100)
+            
+            // kick off loop
+            requestAnimationFrame(gameLoop)
+            
+            // show welcome
+            setTimeout(() => {
+                showBigMessage("CASTLEFORGE", "A KINGDOM SIMULATION<br><span class='text-xs text-amber-400'>CLICK THE CARD TO BUILD • DRAG TO PAN</span>", 2100)
+            }, 420)
+            
+            // kingdom name randomizer
+            const names = ["ELDRIA", "VALKOR", "THORNWALL", "SILVERHOLD", "DUSKREACH", "AETHERFELL"]
+            kingdomName = names[randInt(0, names.length)]
+            document.getElementById("kingdom-name").textContent = "THE REALM OF " + kingdomName
+        }
+        
+        window.onload = init
+    </script>
+</body>
+</html>
