@@ -151,3 +151,10 @@ export const BUILDING_ICON = {
     8:  "⛪", 9:  "🛡️", 10: "⚙️", 11: "🐎",
     12: "✨",
 };
+
+// ═══════════════════════════════════════════════════════════════
+//  BACKWARD COMPATIBILITY — für Dateien, die wir nicht neu schrieben
+// ═══════════════════════════════════════════════════════════════
+export const WORLD_WIDTH  = WORLD_W;
+export const WORLD_HEIGHT = WORLD_H;
+export const TILE_SIZE    = CELL;
