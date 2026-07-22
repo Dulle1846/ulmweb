@@ -1,0 +1,37 @@
+// ── Tech Tree & Unlocks ────────────────────────────────────────
+
+import { state } from '../state.js';
+import { addLog } from './events.js';
+import { createFloater } from '../rendering/particles.js';
+
+export function initTechTree() {
+    state.techs = [
+        { id: "irrigation",  name: "IRRIGATION",    cost: 35, unlocked: false, effect: "Farms produce 40% more food",          icon: "💧" },
+        { id: "steel",       name: "STEEL FORGING",  cost: 55, unlocked: false, effect: "All military units +25 HP",           icon: "⚔️" },
+        { id: "scholarship", name: "SCHOLARSHIP",    cost: 40, unlocked: false, effect: "Research income +2",                  icon: "📜" },
+        { id: "feudalism",   name: "FEUDAL SYSTEM",  cost: 70, unlocked: false, effect: "Houses give +1 morale",               icon: "🏛️" },
+        { id: "alchemy",     name: "ALCHEMY",        cost: 85, unlocked: false, effect: "Gold mines occasionally spawn gold",  icon: "🧪" },
+    ];
+}
+
+export function researchTech(id) {
+    const tech = state.techs.find(t => t.id === id);
+    if (!tech || state.unlockedTechs.has(id)) return;
+
+    if (state.resources.research < tech.cost) {
+        createFloater(300, 200, "NOT ENOUGH RESEARCH", "#f87171");
+        return;
+    }
+
+    state.resources.research -= tech.cost;
+    state.unlockedTechs.add(id);
+
+    if (id === "irrigation") {
+        addLog("IRRIGATION UNLOCKED — FARMS BUFFED", "#4ade80");
+    }
+    if (id === "scholarship") {
+        addLog("KNOWLEDGE FLOWS", "#67e8f9");
+    }
+
+    createFloater(340, 160, "TECH ACQUIRED!", "#67e8f9");
+}
