@@ -8,171 +8,151 @@
     <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
-    <div class="game-shell">
-        <header class="topbar">
-            <div class="brand">
-                <div class="brand-mark" aria-hidden="true">♜</div>
-                <div>
-                    <div class="brand-title">KINGS &amp; CARDS</div>
-                    <div id="kingdom-name" class="brand-subtitle">THE REALM OF ELDRIA</div>
-                </div>
+<div class="game-shell">
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">♜</div>
+            <div><div class="brand-title">KINGS &amp; CARDS</div><div id="kingdom-name" class="brand-subtitle">THE REALM OF ELDRIA</div></div>
+        </div>
+        <div class="header-middle">
+            <div class="date-block"><div class="date-label">Realm calendar</div><div class="date-value"><span id="season">SPRING</span> · <span id="year">YEAR 1</span></div></div>
+            <div class="morale-block"><div class="morale-topline"><span>REALM MORALE</span><span id="morale-value">72</span></div><div class="morale-track"><div id="morale-bar"></div></div></div>
+            <div class="player-chip">👤 <span id="player-name">GUEST</span></div>
+        </div>
+        <div class="header-actions">
+            <button id="save-btn" class="control-button" type="button" title="Save · Ctrl+S">SAVE</button>
+            <button id="load-btn" class="control-button" type="button" title="Load · Ctrl+O">LOAD</button>
+            <button id="settings-btn" class="control-button" type="button" title="Settings">⚙</button>
+            <button id="pause-btn" class="control-button" type="button" aria-label="Pause simulation"><span id="pause-text">PAUSE</span></button>
+            <div class="speed-group" role="group" aria-label="Simulation speed">
+                <button id="speed-1" class="speed-button is-active" data-speed="1" type="button">1×</button>
+                <button id="speed-2" class="speed-button" data-speed="2" type="button">2×</button>
+                <button id="speed-4" class="speed-button" data-speed="4" type="button">4×</button>
             </div>
+        </div>
+    </header>
 
-            <div class="header-middle">
-                <div class="date-block">
-                    <div class="date-label">Realm calendar</div>
-                    <div class="date-value"><span id="season">SPRING</span> <span aria-hidden="true">·</span> <span id="year">YEAR 1</span></div>
-                </div>
-                <div class="morale-block">
-                    <div class="morale-topline">
-                        <span>REALM MORALE</span>
-                        <span id="morale-value">72</span>
-                    </div>
-                    <div class="morale-track">
-                        <div id="morale-bar"></div>
-                    </div>
-                </div>
+    <main id="main-container" class="game-layout">
+        <section id="canvas-wrapper" class="world-stage" aria-label="World map">
+            <canvas id="canvas" aria-label="Interactive kingdom map"></canvas>
+            <div class="stage-topline">
+                <div class="stage-chip">WORLD VIEW <strong>· ELDRIA</strong> <span id="zoom-level-name">ROOFTOPS</span> <span id="zoom-value">×1.00</span></div>
+                <div class="stage-chip">DRAG TO PAN</div>
             </div>
-
-            <div class="header-actions">
-                <button id="pause-btn" class="control-button" type="button" aria-label="Pause simulation">
-                    <span id="pause-text">PAUSE</span>
-                </button>
-                <div class="speed-group" role="group" aria-label="Simulation speed">
-                    <button id="speed-1" class="speed-button is-active" data-speed="1" type="button">1×</button>
-                    <button id="speed-2" class="speed-button" data-speed="2" type="button">2×</button>
-                    <button id="speed-4" class="speed-button" data-speed="4" type="button">4×</button>
+            <div class="zoom-panel" aria-label="Zoom controls">
+                <button id="zoom-out" class="zoom-button" type="button" aria-label="Zoom out">−</button>
+                <div class="zoom-presets" role="group" aria-label="Zoom detail level">
+                    <button class="zoom-preset" data-zoom-level="1" type="button" aria-label="Landscape view" title="1 · Landscape">1</button>
+                    <button class="zoom-preset" data-zoom-level="2" type="button" aria-label="District view" title="2 · Districts">2</button>
+                    <button class="zoom-preset" data-zoom-level="3" type="button" aria-label="Rooftop view" title="3 · Rooftops">3</button>
+                    <button class="zoom-preset" data-zoom-level="4" type="button" aria-label="Interior view" title="4 · Interiors">4</button>
                 </div>
+                <button id="zoom-in" class="zoom-button" type="button" aria-label="Zoom in">+</button>
             </div>
-        </header>
+            <div id="placement-status" class="placement-status">DRAG A CARD ONTO THE MAP</div>
+            <div class="minimap-frame"><div class="minimap-heading"><span>WORLD MAP</span><span>ELDRIA</span></div><canvas id="minimap" width="140" height="140" aria-label="Minimap"></canvas></div>
+            <div id="hint-box" class="hint-box hidden" role="button" tabindex="0" aria-label="Dismiss tip">
+                <div class="hint-title"><span>FIELD NOTE</span><span>×</span></div><div id="hint-text">Scroll to move through the realm's four levels of detail.</div>
+            </div>
+            <div id="hand-dock" class="hand-dock">
+                <div class="hand-dock-heading"><span>YOUR HAND</span><span id="hand-count">5 / 5</span><span class="hand-help">SELECT OR DRAG A CARD</span></div>
+                <div id="card-hand" class="card-hand" aria-label="Cards in your hand"></div>
+            </div>
+        </section>
 
-        <main id="main-container" class="game-layout">
-            <section id="canvas-wrapper" class="world-stage" aria-label="World map">
-                <canvas id="canvas" aria-label="Interactive kingdom map"></canvas>
-
-                <div class="stage-topline">
-                    <div class="stage-chip">WORLD VIEW <strong>· ELDRIA</strong> <span id="zoom-level-name">ROOFTOPS</span> <span id="zoom-value">×1.00</span></div>
-                    <div class="stage-chip">DRAG TO PAN</div>
-                </div>
-
-                <div class="zoom-panel" aria-label="Zoom controls">
-                    <button id="zoom-out" class="zoom-button" type="button" aria-label="Zoom out">−</button>
-                    <div class="zoom-presets" role="group" aria-label="Zoom detail level">
-                        <button class="zoom-preset" data-zoom-level="1" type="button" aria-label="Landscape view" title="1 · Landscape">1</button>
-                        <button class="zoom-preset" data-zoom-level="2" type="button" aria-label="District view" title="2 · Districts">2</button>
-                        <button class="zoom-preset" data-zoom-level="3" type="button" aria-label="Rooftop view" title="3 · Rooftops">3</button>
-                        <button class="zoom-preset" data-zoom-level="4" type="button" aria-label="Interior view" title="4 · Interiors">4</button>
-                    </div>
-                    <button id="zoom-in" class="zoom-button" type="button" aria-label="Zoom in">+</button>
-                </div>
-
-                <div id="placement-status" class="placement-status">DRAG A CARD ONTO THE MAP</div>
-
-                <div class="minimap-frame">
-                    <div class="minimap-heading"><span>WORLD MAP</span><span>ELDRIA</span></div>
-                    <canvas id="minimap" width="140" height="140" aria-label="Minimap"></canvas>
-                </div>
-
-                <div id="hint-box" class="hint-box hidden" role="button" tabindex="0" aria-label="Dismiss tip">
-                    <div class="hint-title"><span>FIELD NOTE</span><span>×</span></div>
-                    <div id="hint-text">Scroll to move through the realm's four levels of detail.</div>
+        <aside class="side-panel" aria-label="Kingdom management">
+            <section class="resource-section">
+                <div class="section-heading"><span>ROYAL STORES</span><span class="subtle">TREASURY &amp; SUPPLIES</span></div>
+                <div class="resource-grid">
+                    <div class="resource-card wood"><div class="resource-symbol">🌲</div><div class="resource-copy"><div id="res-wood" class="resource-value">180</div><div class="resource-name">WOOD</div></div><div id="wood-income" class="resource-income"></div></div>
+                    <div class="resource-card stone"><div class="resource-symbol">⛰</div><div class="resource-copy"><div id="res-stone" class="resource-value">95</div><div class="resource-name">STONE</div></div><div id="stone-income" class="resource-income"></div></div>
+                    <div class="resource-card gold"><div class="resource-symbol">✦</div><div class="resource-copy"><div id="res-gold" class="resource-value">75</div><div class="resource-name">GOLD</div></div><div id="gold-income" class="resource-income"></div></div>
+                    <div class="resource-card food"><div class="resource-symbol">🌾</div><div class="resource-copy"><div id="res-food" class="resource-value">120</div><div class="resource-name">FOOD</div></div><div id="food-income" class="resource-income"></div></div>
                 </div>
             </section>
 
-            <aside class="side-panel" aria-label="Kingdom management">
-                <section class="resource-section">
-                    <div class="section-heading">
-                        <span>ROYAL STORES</span>
-                        <span class="subtle">TREASURY & SUPPLIES</span>
+            <section class="card-section">
+                <div class="card-section-heading"><div class="card-section-title">SELECTED CARD</div><button id="skip-card-btn" class="skip-button" type="button">DISCARD · 3 GOLD</button></div>
+                <div id="card-container" class="card-container" role="button" tabindex="0" aria-label="Drag the selected card onto the map">
+                    <div id="card-icon" class="card-icon">🏠</div><div id="card-name" class="card-name">COTTAGE</div><div id="card-desc" class="card-desc">Houses 3 villagers.</div>
+                    <div class="card-costs">
+                        <div id="card-cost-wood" class="card-cost"><span>🌲</span><span>30</span></div>
+                        <div id="card-cost-stone" class="card-cost"><span>⛰</span><span>10</span></div>
+                        <div id="card-cost-gold" class="card-cost"><span>✦</span><span>0</span></div>
+                        <div id="card-cost-food" class="card-cost"><span>🌾</span><span>0</span></div>
                     </div>
-                    <div class="resource-grid">
-                        <div class="resource-card wood">
-                            <div class="resource-symbol" aria-hidden="true">🌲</div>
-                            <div class="resource-copy">
-                                <div id="res-wood" class="resource-value">180</div>
-                                <div class="resource-name">WOOD</div>
-                            </div>
-                            <div id="wood-income" class="resource-income"></div>
-                        </div>
-                        <div class="resource-card stone">
-                            <div class="resource-symbol" aria-hidden="true">⛰</div>
-                            <div class="resource-copy">
-                                <div id="res-stone" class="resource-value">95</div>
-                                <div class="resource-name">STONE</div>
-                            </div>
-                            <div id="stone-income" class="resource-income"></div>
-                        </div>
-                        <div class="resource-card gold">
-                            <div class="resource-symbol" aria-hidden="true">✦</div>
-                            <div class="resource-copy">
-                                <div id="res-gold" class="resource-value">45</div>
-                                <div class="resource-name">GOLD</div>
-                            </div>
-                            <div id="gold-income" class="resource-income"></div>
-                        </div>
-                        <div class="resource-card food">
-                            <div class="resource-symbol" aria-hidden="true">🌾</div>
-                            <div class="resource-copy">
-                                <div id="res-food" class="resource-value">120</div>
-                                <div class="resource-name">FOOD</div>
-                            </div>
-                            <div id="food-income" class="resource-income"></div>
-                        </div>
-                    </div>
-                </section>
+                    <div class="card-play-tag">PLAY</div>
+                </div>
+                <div class="card-instruction">DRAG FROM YOUR HAND ONTO THE WORLD MAP</div>
+            </section>
 
-                <section class="card-section">
-                    <div class="card-section-heading">
-                        <div class="card-section-title">BUILDING DECK</div>
-                        <button id="skip-card-btn" class="skip-button" type="button">DISCARD · 3 GOLD</button>
-                    </div>
+            <nav class="tabs" aria-label="Kingdom information">
+                <button id="tab-0" class="tab-button is-active" type="button">EVENT LOG</button>
+                <button id="tab-1" class="tab-button" type="button">STATISTICS</button>
+                <button id="tab-2" class="tab-button" type="button">TRADE</button>
+            </nav>
+            <section id="tab-content" class="tab-content" aria-live="polite"></section>
+            <footer class="panel-footer">
+                <span>SIM TICK <strong id="tick-count">0</strong></span>
+                <button id="help-btn" class="footer-help" type="button" aria-label="How to play">?</button>
+                <span id="population">POP <strong>8</strong> / 12</span>
+            </footer>
+        </aside>
+    </main>
+</div>
 
-                    <div id="card-container" class="card-container" role="button" tabindex="0"
-                         aria-label="Drag the current card onto a valid map tile to build">
-                        <div id="card-icon" class="card-icon">🏠</div>
-                        <div id="card-name" class="card-name">COTTAGE</div>
-                        <div id="card-desc" class="card-desc">Houses 3 villagers. +1 morale</div>
-
-                        <div class="card-costs">
-                            <div id="card-cost-wood" class="card-cost"><span>🌲</span><span>30</span></div>
-                            <div id="card-cost-stone" class="card-cost"><span>⛰</span><span>10</span></div>
-                            <div id="card-cost-gold" class="card-cost"><span>✦</span><span>0</span></div>
-                        </div>
-                        <div class="card-play-tag">BUILD</div>
-                    </div>
-                    <div class="card-instruction">DRAG THIS CARD ONTO THE WORLD MAP</div>
-                </section>
-
-                <nav class="tabs" aria-label="Kingdom information">
-                    <button id="tab-0" class="tab-button is-active" type="button">EVENT LOG</button>
-                    <button id="tab-1" class="tab-button" type="button">STATISTICS</button>
-                    <button id="tab-2" class="tab-button" type="button">RESEARCH</button>
-                </nav>
-
-                <section id="tab-content" class="tab-content" aria-live="polite"></section>
-
-                <footer class="panel-footer">
-                    <span>SIM TICK <strong id="tick-count">0</strong></span>
-                    <button id="help-btn" class="footer-help" type="button" aria-label="How to play">?</button>
-                    <span id="population">POP <strong>8</strong> / 12</span>
-                </footer>
-            </aside>
-        </main>
-    </div>
-
-    <div id="card-drag-ghost" aria-hidden="true">
-        <span id="drag-ghost-icon" class="drag-ghost-icon"></span>
-        <span id="drag-ghost-name" class="drag-ghost-name"></span>
-    </div>
-
-    <div id="big-message" class="big-message hidden" role="dialog" aria-modal="true" aria-labelledby="big-title">
-        <div class="big-message-card">
-            <div id="big-title"></div>
-            <div id="big-subtitle"></div>
-            <button id="big-message-close" class="message-button" type="button">CONTINUE</button>
+<div id="start-screen" class="screen-overlay">
+    <div class="start-panel">
+        <div class="start-emblem">♜</div>
+        <div class="start-kicker">A LIVING REALM SIMULATOR</div>
+        <h1>KINGS <span>&amp;</span> CARDS</h1>
+        <p class="start-lead">Build a settlement. Shape its fortunes. Discover what the cards bring.</p>
+        <div class="start-form">
+            <label for="player-name-input">PLAYER PROFILE</label>
+            <input id="player-name-input" type="text" maxlength="32" placeholder="Enter your player name" autocomplete="nickname">
+            <div class="profile-note">Local profile for this browser. Online accounts and secure admin roles will be connected to a server backend in a later infrastructure step.</div>
+            <label for="world-seed-input">WORLD SEED</label>
+            <div class="seed-row"><input id="world-seed-input" type="number" min="1" step="1"><button id="random-seed-btn" class="secondary-button" type="button">RANDOMIZE</button></div>
+            <button id="start-new-game-btn" class="primary-button" type="button">FOUND A NEW REALM</button>
+            <button id="continue-game-btn" class="secondary-button" type="button" disabled>NO SAVED REALM</button>
+            <button id="load-game-btn" class="text-button" type="button">LOAD LOCAL SAVE</button>
+            <button id="start-settings-btn" class="text-button" type="button">SETTINGS</button>
         </div>
+        <div id="status-message" class="status-message"></div>
+        <div class="start-footer">A NEW WORLD IS GENERATED FROM ITS SEED · ONE ORIGINAL LOOPING SOUNDTRACK</div>
     </div>
+</div>
 
-    <script type="module" src="js/app/main.js"></script>
+<div id="settings-modal" class="screen-overlay hidden">
+    <div class="modal-panel settings-panel">
+        <div class="modal-heading"><div><div class="start-kicker">REALM OPTIONS</div><h2>SETTINGS</h2></div><button id="settings-close" class="modal-close" type="button" aria-label="Close settings">×</button></div>
+        <div class="setting-row"><div><strong>Original soundtrack</strong><small>One original instrumental theme, composed for a continuous loop.</small></div><label class="toggle"><input id="settings-music-toggle" type="checkbox" checked><span></span></label></div>
+        <div class="setting-row volume-setting"><div><strong>Music volume</strong><small>Adjust the soundtrack level.</small></div><input id="settings-music-volume" type="range" min="0" max="100" value="22"></div>
+        <div class="shortcut-list">
+            <h3>KEYBOARD &amp; SHORTCUTS</h3>
+            <div><span>Pause / Resume</span><kbd>SPACE</kbd></div><div><span>Zoom detail levels</span><kbd>1–4</kbd></div>
+            <div><span>Zoom in / out</span><kbd>+ / −</kbd></div><div><span>Pan the world</span><kbd>W A S D / ARROWS</kbd></div>
+            <div><span>Toggle music</span><kbd>M</kbd></div><div><span>Save / Load</span><kbd>CTRL+S / CTRL+O</kbd></div>
+            <div><span>Help / close</span><kbd>? / ESC</kbd></div>
+        </div>
+        <div class="profile-note">Saves are currently stored per local browser profile. Do not use this as secure multi-user authentication or cloud backup.</div>
+    </div>
+</div>
+
+<div id="realm-event-modal" class="screen-overlay event-overlay hidden">
+    <div class="modal-panel event-panel">
+        <div id="realm-event-kicker" class="start-kicker">REALM ISSUE</div>
+        <h2 id="realm-event-title">A Bountiful Harvest</h2>
+        <p id="realm-event-description"></p>
+        <div id="realm-event-choices" class="event-choices"></div>
+    </div>
+</div>
+
+<div id="card-drag-ghost" aria-hidden="true"><span id="drag-ghost-icon" class="drag-ghost-icon"></span><span id="drag-ghost-name" class="drag-ghost-name"></span></div>
+<div id="action-toast" class="action-toast" role="status"></div>
+<div id="big-message" class="big-message hidden" role="dialog" aria-modal="true" aria-labelledby="big-title">
+    <div class="big-message-card"><div id="big-title"></div><div id="big-subtitle"></div><button id="big-message-close" class="message-button" type="button">CONTINUE</button></div>
+</div>
+<script type="module" src="js/app/main.js"></script>
 </body>
 </html>

@@ -1,23 +1,12 @@
-// ── Morale System ──────────────────────────────────────────────
-
-import { TYPE } from '../core/types.js';
-import { state } from '../core/state.js';
-import { getEntitiesOfType } from '../world/entities.js';
-
-export function updateMorale() {
-    if (state.tick % 45 !== 0) return;
-
-    let moraleDelta = 0;
-
-    moraleDelta += getEntitiesOfType(TYPE.TAVERN).length * 0.6;
-    moraleDelta += getEntitiesOfType(TYPE.TEMPLE).length * 1.4;
-    if (state.unlockedTechs.has('feudalism')) {
-        moraleDelta += getEntitiesOfType(TYPE.HOUSE).length;
-    }
-    moraleDelta -= state.entities.filter(e => !e.dead && e.isEnemy()).length * 2;
-
-    const villagers = getEntitiesOfType(TYPE.VILLAGER);
-    if (villagers.length > 35) moraleDelta -= 0.4;
-
-    state.morale = Math.max(8, Math.min(100, state.morale + moraleDelta));
+// Morale responds to civic buildings, threats and population pressure.
+import { TYPE } from "../core/types.js";
+import { state } from "../core/state.js";
+import { getEntitiesOfType } from "../world/entities.js";
+export function updateMorale(){
+    if(state.tick%45!==0)return;
+    let delta=getEntitiesOfType(TYPE.TAVERN).length*0.6+getEntitiesOfType(TYPE.TEMPLE).length*1.4;
+    delta-=state.entities.filter(entity=>!entity.dead&&entity.isEnemy()).length*2;
+    if(getEntitiesOfType(TYPE.VILLAGER).length>35)delta-=0.4;
+    if(state.resources.food<10)delta-=1.1;
+    state.morale=Math.max(0,Math.min(100,state.morale+delta));
 }

@@ -880,3 +880,154 @@ button:focus-visible, [role="button"]:focus-visible {
     .resource-name { font-size: 7px; }
     .date-value { font-size: 13px; }
 }
+
+
+/* ── Version 2.0: player shell, card hand, settings and realm issues ── */
+.player-chip {
+    display:flex;align-items:center;gap:7px;padding:7px 10px;
+    border:1px solid rgba(221,190,126,.18);border-radius:8px;
+    color:#dfd1b6;background:rgba(255,255,255,.035);
+    font-size:9px;font-weight:800;letter-spacing:.08em;white-space:nowrap;
+}
+.hand-dock {
+    position:absolute;z-index:12;left:50%;bottom:14px;transform:translateX(-50%);
+    width:min(780px,calc(100% - 300px));padding:9px 12px 10px;
+    border:1px solid rgba(221,190,126,.42);border-radius:13px;
+    background:rgba(12,19,21,.91);box-shadow:0 14px 36px rgba(0,0,0,.38);
+    backdrop-filter:blur(15px);
+}
+.hand-dock-heading {display:flex;align-items:center;gap:10px;padding:0 3px 7px;color:#d9bd83;font-size:8px;font-weight:900;letter-spacing:.18em}
+.hand-dock-heading span:nth-child(2){color:#f1e8d2}
+.hand-help {margin-left:auto;color:#83928a;font-size:7px}
+.card-hand {display:flex;justify-content:center;gap:8px;min-height:88px}
+.hand-card {
+    display:flex;flex:1 1 0;min-width:0;max-width:138px;min-height:82px;
+    flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    padding:7px 5px;border:1px solid rgba(220,190,132,.25);border-radius:9px;
+    background:linear-gradient(150deg,rgba(58,72,72,.97),rgba(25,37,39,.98));
+    color:#e9ddc2;cursor:grab;touch-action:none;user-select:none;
+    transition:transform 130ms ease,border-color 130ms ease,background 130ms ease,box-shadow 130ms ease;
+}
+.hand-card:hover {transform:translateY(-5px);border-color:rgba(241,215,159,.8);box-shadow:0 8px 18px rgba(0,0,0,.3)}
+.hand-card.is-selected {transform:translateY(-7px);border-color:#e1bf7f;background:linear-gradient(150deg,#5a5948,#2e3937);box-shadow:0 0 0 1px rgba(225,191,127,.25),0 10px 22px rgba(0,0,0,.35)}
+.hand-card:active {cursor:grabbing}
+.hand-card-icon {font-size:22px;line-height:1.1}
+.hand-card-name {max-width:100%;overflow:hidden;color:#f4e3bb;font-family:Georgia,serif;font-size:9px;font-weight:800;letter-spacing:.05em;text-overflow:ellipsis;white-space:nowrap}
+.hand-card-category {max-width:100%;overflow:hidden;color:#95a39b;font-size:7px;letter-spacing:.08em;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.card-instruction {display:none}
+.screen-overlay {
+    position:fixed;z-index:1000;inset:0;display:grid;place-items:center;overflow:auto;
+    padding:24px;background:rgba(5,10,12,.86);backdrop-filter:blur(12px);
+}
+.screen-overlay.hidden {display:none}
+.start-panel,.modal-panel {
+    width:min(620px,94vw);padding:34px;border:1px solid rgba(221,190,126,.5);
+    border-radius:19px;background:
+    radial-gradient(circle at 50% 0%,rgba(214,180,115,.14),transparent 48%),
+    linear-gradient(145deg,#263438,#121c1f);
+    box-shadow:0 28px 100px rgba(0,0,0,.6);color:#e9e1d0;
+}
+.start-panel {text-align:center}
+.start-emblem {display:grid;place-items:center;width:58px;height:58px;margin:0 auto 13px;border:1px solid rgba(241,215,159,.6);border-radius:15px;background:linear-gradient(145deg,#e1c28a,#957344);color:#1c2828;font-family:Georgia,serif;font-size:36px}
+.start-kicker {color:#c9ad75;font-size:9px;font-weight:900;letter-spacing:.23em}
+.start-panel h1 {margin:12px 0 6px;color:#f1d79f;font-family:Georgia,serif;font-size:clamp(32px,6vw,49px);letter-spacing:.13em}
+.start-panel h1 span {color:#b49a6e}
+.start-lead {margin:8px 0 23px;color:#b1bdb5;font-size:12px;line-height:1.5}
+.start-form {display:flex;flex-direction:column;gap:9px;max-width:410px;margin:0 auto;text-align:left}
+.start-form label {margin-top:6px;color:#c7b893;font-size:8px;font-weight:900;letter-spacing:.16em}
+.start-form input {
+    width:100%;min-height:39px;padding:0 12px;border:1px solid rgba(221,190,126,.28);border-radius:7px;
+    outline:none;background:rgba(5,11,13,.5);color:#f0e8d7;font:inherit;font-size:12px;
+}
+.start-form input:focus {border-color:#d7b676;box-shadow:0 0 0 2px rgba(215,182,118,.13)}
+.seed-row {display:flex;gap:8px}.seed-row input{flex:1;min-width:0}
+.primary-button,.secondary-button,.text-button {
+    min-height:40px;padding:0 15px;border-radius:7px;cursor:pointer;
+    font-size:9px;font-weight:900;letter-spacing:.12em;transition:background 130ms ease,border-color 130ms ease;
+}
+.primary-button {margin-top:10px;border:1px solid #edcf91;background:linear-gradient(180deg,#e4c78e,#b69258);color:#1b2525}
+.primary-button:hover {background:linear-gradient(180deg,#f0d7a3,#c5a36b)}
+.secondary-button {border:1px solid rgba(221,190,126,.35);background:rgba(255,255,255,.04);color:#e2d2b1}
+.secondary-button:hover {background:rgba(221,190,126,.12)}
+.secondary-button:disabled {opacity:.42;cursor:not-allowed}
+.text-button {border:0;background:transparent;color:#a9b6ae}
+.text-button:hover {color:#f1d79f}
+.profile-note {margin:6px 0 3px;color:#819089;font-size:9px;line-height:1.5}
+.start-footer {margin-top:22px;color:#687b73;font-size:7px;font-weight:800;letter-spacing:.14em}
+.status-message {min-height:18px;margin-top:11px;color:#f0bb83;font-size:10px}
+.status-message.is-visible {color:#e5c78a}
+.modal-panel {width:min(560px,94vw);padding:26px}
+.modal-heading {display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.modal-heading h2,.event-panel h2 {margin:6px 0 0;color:#f1d79f;font-family:Georgia,serif;font-size:27px}
+.modal-close {width:32px;height:32px;border:1px solid rgba(221,190,126,.22);border-radius:7px;background:transparent;color:#d9c9a8;font-size:22px;cursor:pointer}
+.setting-row {display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 0;border-bottom:1px solid rgba(221,190,126,.13)}
+.setting-row strong {display:block;color:#e7ddc9;font-size:11px}
+.setting-row small {display:block;margin-top:4px;color:#87968e;font-size:9px;line-height:1.4}
+.volume-setting input {width:150px;accent-color:#d6b77e}
+.toggle {position:relative;width:42px;height:24px;flex:0 0 42px}
+.toggle input {position:absolute;opacity:0}
+.toggle span {position:absolute;inset:0;border:1px solid rgba(221,190,126,.3);border-radius:30px;background:#111b1c;cursor:pointer}
+.toggle span:before {position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#87918b;content:"";transition:transform 140ms ease,background 140ms ease}
+.toggle input:checked+span {background:rgba(177,143,83,.35);border-color:#d4b477}
+.toggle input:checked+span:before {transform:translateX(18px);background:#f1d79f}
+.shortcut-list {margin:20px 0}
+.shortcut-list h3 {margin:0 0 8px;color:#c9ad75;font-size:8px;letter-spacing:.17em}
+.shortcut-list>div {display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(221,190,126,.08);color:#aab5ad;font-size:10px}
+kbd {padding:4px 6px;border:1px solid rgba(221,190,126,.2);border-radius:5px;background:rgba(0,0,0,.2);color:#e9d7b2;font:8px monospace}
+.event-overlay {z-index:1100}
+.event-panel {width:min(540px,94vw);text-align:left}
+.event-panel h2 {font-size:30px}
+.event-panel p {margin:12px 0 20px;color:#b6c0b7;font-size:12px;line-height:1.55}
+.event-choices {display:flex;flex-direction:column;gap:9px}
+.event-choice {display:flex;flex-direction:column;gap:5px;padding:13px 15px;border:1px solid rgba(221,190,126,.28);border-radius:8px;background:rgba(5,12,14,.35);color:#e9ddc2;text-align:left;cursor:pointer}
+.event-choice:hover {border-color:#dfbd7e;background:rgba(217,184,120,.11)}
+.event-choice strong {font-size:11px}.event-choice span {color:#95a49b;font-size:9px}
+.action-toast {position:fixed;z-index:1200;bottom:24px;left:50%;transform:translate(-50%,12px);padding:9px 15px;border:1px solid rgba(221,190,126,.3);border-radius:8px;background:rgba(13,21,23,.95);color:#e7d4ad;font-size:9px;font-weight:900;letter-spacing:.12em;opacity:0;pointer-events:none;transition:opacity 150ms ease,transform 150ms ease}
+.action-toast.is-visible {transform:translate(-50%,0);opacity:1}
+.trade-summary {display:flex;justify-content:space-between;gap:8px;margin-bottom:7px;color:#c9ad75;font-size:8px;font-weight:900;letter-spacing:.13em}
+.trade-summary strong {color:#f1d79f}
+.trade-note {margin-bottom:12px;color:#82928a;font-size:9px;line-height:1.4}
+.trade-partners {display:flex;flex-direction:column;gap:10px}
+.trade-partner {padding:10px;border:1px solid rgba(221,190,126,.14);border-radius:8px;background:rgba(255,255,255,.025)}
+.trade-partner-head {display:flex;justify-content:space-between;gap:8px;margin-bottom:8px}
+.trade-partner-head strong {display:block;color:#e7dcc4;font-size:10px}
+.trade-partner-head small {display:block;margin-top:3px;color:#82928a;font-size:8px}
+.trade-treasury {color:#d8b979;font-size:8px;white-space:nowrap}
+.trade-resource {display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid rgba(221,190,126,.08)}
+.trade-resource strong {display:block;color:#c9c5b6;font-size:8px;letter-spacing:.1em}
+.trade-resource small {display:block;margin-top:3px;color:#84938b;font-size:8px}
+.trade-actions {display:flex;gap:5px}
+.trade-actions button {min-height:25px;padding:0 7px;border:1px solid rgba(221,190,126,.2);border-radius:5px;background:rgba(217,184,120,.06);color:#dcc794;font-size:7px;font-weight:900;cursor:pointer}
+.trade-actions button:hover {background:rgba(217,184,120,.18);border-color:#d5b87e}
+@media(max-width:1050px) {
+    .hand-dock {width:min(700px,calc(100% - 270px))}
+}
+@media(max-width:790px) {
+    .player-chip {display:none}
+    .hand-dock {width:calc(100% - 22px);bottom:8px;padding:6px}
+    .card-hand {gap:4px;min-height:65px}
+    .hand-card {min-height:62px;padding:5px 3px}
+    .hand-card-icon {font-size:17px}
+    .hand-card-name {font-size:7px}
+    .hand-card-category {font-size:6px}
+    .hand-help {display:none}
+    .hint-box {bottom:90px}
+    .side-panel {max-height:46%}
+}
+@media(max-width:480px) {
+    .header-actions {gap:3px}
+    .header-actions .control-button {padding:0 6px;font-size:7px}
+    .header-actions .speed-button {min-width:25px}
+    .hand-dock-heading {font-size:7px}
+    .hand-card-category {display:none}
+    .hand-card {min-height:54px}
+    .side-panel {flex-basis:48%}
+}
+
+.price-chart {display:flex;flex-direction:column;gap:7px;margin:10px 0 13px;padding:9px;border:1px solid rgba(221,190,126,.12);border-radius:8px;background:rgba(0,0,0,.12)}
+.price-chart-row {display:grid;grid-template-columns:44px 1fr 42px;align-items:end;gap:8px}
+.price-chart-row>strong {align-self:center;color:#9ba79d;font-size:8px;letter-spacing:.1em}
+.price-chart-row>b {align-self:center;color:#e4c78d;font-family:Georgia,serif;font-size:10px;text-align:right}
+.price-bars {display:flex;align-items:end;gap:3px;height:50px;padding:3px 0 0;border-bottom:1px solid rgba(221,190,126,.15)}
+.price-bar {flex:1;min-width:3px;border-radius:2px 2px 0 0;background:linear-gradient(180deg,#e2c182,#8b7246);opacity:.78}
+.price-bar:last-child {background:linear-gradient(180deg,#f1d79f,#b68d4e);opacity:1}

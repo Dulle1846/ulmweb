@@ -19,8 +19,19 @@ export function drawWorld() {
     drawTerrain(ctx);
 
     // ── Entities (sortiert nach Y für Pseudo-Tiefe) ──────────
-    const sorted = [...state.entities]
-        .filter(e => !e.dead)
+    const cellPx = CELL * zoom;
+    const margin = cellPx * 4;
+    const left = camera.x - margin;
+    const top = camera.y - margin;
+    const right = camera.x + canvas.width + margin;
+    const bottom = camera.y + canvas.height + margin;
+    const sorted = state.entities
+        .filter(e => {
+            if (e.dead) return false;
+            const x = e.x * cellPx;
+            const y = e.y * cellPx;
+            return x >= left && x <= right && y >= top && y <= bottom;
+        })
         .sort((a, b) => a.y - b.y);
 
     sorted.forEach(entity => {

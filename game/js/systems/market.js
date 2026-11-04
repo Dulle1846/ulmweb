@@ -1,0 +1,92 @@
+// Regional barter and commodity market. Gold is the settlement currency.
+import { state } from "../core/state.js";
+import { addLog } from "./events.js";
+
+export const MARKET_RESOURCES = Object.freeze(["wood","stone","food"]);
+export const BASE_PRICES = Object.freeze({ wood:2, stone:3, food:2 });
+
+export const TRADE_PARTNERS = Object.freeze([
+    { id:"northmere", name:"Northmere Guild", region:"Northern Marches", specialty:"WOOD", treasury:420, stock:{wood:90,stone:35,food:60} },
+    { id:"ironvale", name:"Ironvale Caravans", region:"Eastern Highlands", specialty:"STONE", treasury:520, stock:{wood:25,stone:110,food:35} },
+    { id:"goldcoast", name:"Goldcoast League", region:"Southern Coast", specialty:"FOOD", treasury:760, stock:{wood:45,stone:30,food:125} },
+    { id:"redpass", name:"Redpass Companies", region:"Western Frontier", specialty:"SUPPLIES", treasury:300, stock:{wood:60,stone:55,food:25} }
+]);
+
+export function createMarketState() {
+    return {
+        prices:{...BASE_PRICES},
+        partners:TRADE_PARTNERS.map(partner=>({...partner,stock:{...partner.stock}})),
+        priceTrend:{wood:0,stone:0,food:0},
+        lastUpdateTick:0,
+        priceHistory:{wood:[BASE_PRICES.wood],stone:[BASE_PRICES.stone],food:[BASE_PRICES.food]},
+        totalTrades:0,
+        totalGoldTraded:0
+    };
+}
+
+function ensureMarket() {
+    if (!state.market) state.market = createMarketState();
+    if (!Array.isArray(state.market.partners) || state.market.partners.length === 0) {
+        state.market = createMarketState();
+    }
+    state.market.prices ||= { ...BASE_PRICES };
+    state.market.priceTrend ||= { wood: 0, stone: 0, food: 0 };
+    state.market.priceHistory ||= { wood: [state.market.prices.wood], stone: [state.market.prices.stone], food: [state.market.prices.food] };
+}
+
+export function updateMarket() {
+    ensureMarket();
+    if (state.tick - state.market.lastUpdateTick < 90) return;
+    state.market.lastUpdateTick = state.tick;
+    const seasonFactor = [0.92,1.08,1.22,1.38][state.seasonIndex] || 1;
+    for (const resource of MARKET_RESOURCES) {
+        const drift = (Math.random() - 0.5) * 0.18;
+        state.market.priceTrend[resource] = Math.max(-0.35,Math.min(0.45,(state.market.priceTrend[resource]||0)*0.65+drift));
+        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource])*100)/100);
+        const history = state.market.priceHistory[resource] || (state.market.priceHistory[resource] = []);
+        history.push(state.market.prices[resource]);
+        if (history.length > 16) history.shift();
+    }
+}
+
+export function getTradePartners() {
+    ensureMarket();
+    return state.market.partners;
+}
+
+export function executeTrade(partnerId, resource, direction, quantity = 5) {
+    ensureMarket();
+    updateMarket();
+    const partner = state.market.partners.find(item=>item.id===partnerId);
+    if (!partner || !MARKET_RESOURCES.includes(resource) || !["buy","sell"].includes(direction)) {
+        return {ok:false,reason:"INVALID TRADE"};
+    }
+    const amount = Math.max(1,Math.min(25,Math.floor(Number(quantity)||1)));
+    const price = state.market.prices[resource];
+    if (direction === "buy") {
+        const cost = Math.ceil(price*amount);
+        if ((partner.stock[resource]||0)<amount) return {ok:false,reason:"PARTNER OUT OF STOCK"};
+        if (state.resources.gold<cost) return {ok:false,reason:"NOT ENOUGH GOLD"};
+        state.resources.gold-=cost;
+        state.resources[resource]+=amount;
+        partner.stock[resource]-=amount;
+        partner.treasury+=cost;
+        state.market.totalGoldTraded+=cost;
+        state.statistics.totalTrades++;
+        addLog("TRADE: BOUGHT "+amount+" "+resource.toUpperCase()+" FROM "+partner.name,"#e3bd71");
+        state.market.totalTrades++;
+        return {ok:true,amount,gold:cost};
+    }
+    const payout = Math.floor(price*amount*0.82);
+    if ((state.resources[resource]||0)<amount) return {ok:false,reason:"NOT ENOUGH "+resource.toUpperCase()};
+    if (partner.treasury<payout) return {ok:false,reason:"PARTNER TREASURY TOO LOW"};
+    state.resources[resource]-=amount;
+    state.resources.gold+=payout;
+    partner.stock[resource]=(partner.stock[resource]||0)+amount;
+    partner.treasury-=payout;
+    state.market.totalGoldTraded+=payout;
+    state.market.totalTrades++;
+    state.statistics.totalTrades++;
+    addLog("TRADE: SOLD "+amount+" "+resource.toUpperCase()+" TO "+partner.name,"#e3bd71");
+    return {ok:true,amount,gold:payout};
+}

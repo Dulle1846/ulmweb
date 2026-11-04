@@ -20,6 +20,8 @@ game/
 │   │   ├── main.js                    # Composition Root: initialisiert und verbindet Module
 │   │   └── game-loop.js               # Frame-Schleife, Simulationstakt und Rendering-Aufruf
 │   ├── core/
+│   │   ├── persistence.js             # Browserprofile, Settings und versionierte lokale Saves
+│   │   ├── soundtrack.js              # Originaler prozeduraler Loop-Soundtrack
 │   │   ├── config.js                   # Spielkonstanten und statische Definitionen
 │   │   ├── state.js                    # Gemeinsamer Laufzeitzustand (schrittweise zu entkoppeln)
 │   │   ├── types.js                    # Entitätstypen und Entity-Klasse
@@ -32,11 +34,12 @@ game/
 │   │   ├── entities.js                # Erzeugen und Abfragen von Weltentitäten
 │   │   └── weather.js                 # Wetterzustand und Wetterwechsel
 │   ├── systems/
-│   │   ├── resources.js               # Ressourcen und Kosten
+│   │   ├── resources.js               # Vier Ressourcen und Kosten
 │   │   ├── morale.js                  # Moralregeln
-│   │   ├── tech.js                    # Forschung und Technologieeffekte
-│   │   ├── cards.js                   # Kartendeck und Platzierungsregeln
-│   │   └── events.js                  # Zufallsereignisse
+│   │   ├── cards.js                   # 5er-Hand, Kartenziehen und Platzierungsregeln
+│   │   ├── card-catalog.js            # 100 Kategorien, Archetypen und Varianten
+│   │   ├── market.js                  # Händler, Bestände, Goldhandel und Preisverlauf
+│   │   └── events.js                  # Entscheidungsbasierte Realm Issues und Event Log
 │   ├── simulation/
 │   │   ├── simulation.js              # Autoritativer logischer Simulationstick
 │   │   ├── villagers.js               # Dorfbewohnerverhalten und Bewegung

@@ -83,8 +83,12 @@ function fbm(x, y, octaves, persistence, lacunarity) {
 //  TERRAIN-GENERIERUNG
 // ═══════════════════════════════════════════════════════════════
 
-export function initWorld() {
-    initPerlin(42 + Math.floor(Math.random() * 99999));
+export function initWorld(seed = state.worldSeed) {
+    const worldSeed = Number.isSafeInteger(Number(seed)) && Number(seed) > 0
+        ? Number(seed)
+        : 1 + Math.floor(Math.random() * 2147483000);
+    state.worldSeed = worldSeed;
+    initPerlin(worldSeed);
 
     const W = WORLD_W;
     const H = WORLD_H;

@@ -12,14 +12,6 @@ import { randInt } from '../core/utils.js';
 export function spawnEntity(tx, ty, type) {
     const entity = new Entity(tx, ty, type);
 
-    if (
-        state.unlockedTechs.has("steel") &&
-        [TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT].includes(type)
-    ) {
-        entity.hp += 25;
-        entity.maxHp += 25;
-    }
-
     if (entity.isUnit()) {
         entity.home = { x: tx, y: ty };
         entity.anchor = { x: tx, y: ty };
@@ -41,8 +33,10 @@ export function buildingAt(tx, ty) {
 }
 
 // Check the full rectangular footprint, not only the building's centre tile.
-export function buildingOverlaps(tx, ty, type) {
-    const candidate = BUILDING_SIZE[type] || { w: 1, h: 1 };
+export function buildingOverlaps(tx, ty, type, footprintScale = 1) {
+    const scale = Math.max(0.25, Math.min(6, Number(footprintScale) || 1));
+    const baseCandidate = BUILDING_SIZE[type] || { w: 1, h: 1 };
+    const candidate = { w: baseCandidate.w * scale, h: baseCandidate.h * scale };
     const left = tx + 0.5 - candidate.w / 2;
     const right = tx + 0.5 + candidate.w / 2;
     const top = ty + 0.5 - candidate.h / 2;
@@ -56,8 +50,13 @@ export function buildingOverlaps(tx, ty, type) {
         const otherTop = e.y + 0.5 - size.h / 2;
         const otherBottom = e.y + 0.5 + size.h / 2;
 
-        return left < otherRight && right > otherLeft &&
-            top < otherBottom && bottom > otherTop;
+        const scale = Math.max(0.25, Number(e.footprintScale) || 1);
+        const scaledLeft = e.x + 0.5 - size.w * scale / 2;
+        const scaledRight = e.x + 0.5 + size.w * scale / 2;
+        const scaledTop = e.y + 0.5 - size.h * scale / 2;
+        const scaledBottom = e.y + 0.5 + size.h * scale / 2;
+        return left < scaledRight && right > scaledLeft &&
+            top < scaledBottom && bottom > scaledTop;
     });
 }
 
@@ -116,6 +115,7 @@ export function initStartingKingdom() {
     const farm2 = spawnEntity(cx + 9, cy + 5, TYPE.FARM);
     const lumber = spawnEntity(cx - 8, cy - 8, TYPE.LUMBER);
     const quarry = spawnEntity(cx + 2, cy + 10, TYPE.QUARRY);
+    const goldmine = spawnEntity(cx + 12, cy - 10, TYPE.GOLDMINE);
     const temple = spawnEntity(cx - 10, cy + 2, TYPE.TEMPLE);
 
     // König – markiert als König, bleibt nah an der Burg
@@ -135,6 +135,7 @@ export function initStartingKingdom() {
         { x: cx + 10, y: cy + 6, home: farm2 },
         { x: cx - 9, y: cy - 7,  home: lumber },
         { x: cx + 1, y: cy + 9,  home: quarry },
+        { x: cx + 11, y: cy - 9, home: goldmine },
         { x: cx - 11, y: cy + 3, home: temple },
     ];
 

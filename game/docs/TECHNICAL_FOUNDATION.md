@@ -155,3 +155,20 @@ A foundation change is complete only when:
 - The save format remains valid or is migrated where necessary.
 - Documentation and dependency notes are updated.
 - The change is isolated enough to review and revert safely.
+
+
+## 2.0 playable foundation milestone
+
+The active game now boots from a start screen and waits for a player action before starting a realm. The first implementation includes local profile IDs, versioned localStorage saves, random numeric terrain seeds, a procedural original music loop, keyboard shortcuts, and a five-card hand.
+
+The card catalog has 100 categories. Each category can produce a playable archetype, while scale, rarity and context generate variants on demand. The 100,000 figure is a theoretical combination space (100 categories × 10 scales × 10 rarities × 10 contexts), not 100,000 hand-authored unique cards.
+
+The active economy uses wood, stone, gold and food. Gold mines produce gold; the regional market trades wood, stone and food for gold with four fictional partners, finite stock and moving seasonal prices. Decision-based realm issues now present player choices and record resolutions in the Event Log. Statistics expose population, buildings, military, morale, raids, trade and card activity.
+
+Research has been removed from the active UI, state and production rules. The old technology module is removed from the active source tree.
+
+Performance changes: render entities are culled to an expanded visible region; movement work is capped to a 30 Hz accumulator; minimap rebuilds are throttled to 4 Hz; DOM refresh is throttled instead of rebuilding at display refresh rate.
+
+**Account boundary:** current player profiles and saves are local to one browser profile. They are not server-authenticated accounts, do not protect an admin identity, and do not sync between devices. A real user/admin system requires server-side authentication and a database, which is intentionally not simulated by this static client.
+
+Verification is driven by the 44-test suite plus browser smoke tests. Full account sync, broad-authored card content, deep supply chains, advanced pathfinding and balance simulation remain follow-on work.

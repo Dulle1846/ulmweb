@@ -26,20 +26,25 @@ export function drawEntity(ctx, e, tick, zoom, cam) {
     if (sx < -cellPx * 4 || sx > state.canvas.width + cellPx * 4) return;
     if (sy < -cellPx * 4 || sy > state.canvas.height + cellPx * 4) return;
 
-    // Level 1 is a clean landscape view: terrain only.
-    if (zl === 1) return;
+    // Landscape: inhabitants are tiny readable silhouettes; districts use profession badges.
+    if (zl === 1) {
+        if (e.isFriendly()) drawPersonMiniature(ctx, e, sx, sy, cellPx);
+        else if (e.isEnemy()) drawPersonMiniature(ctx, e, sx, sy, cellPx, "#b84a43");
+        else if (e.type === TYPE.DEER) drawPersonMiniature(ctx, e, sx, sy, cellPx, "#a8865a");
+        return;
+    }
 
     if (e.isBuilding()) {
         if (zl === 2)      drawBuildingZone(ctx, e, sx, sy, cellPx);
         else if (zl === 3) drawBuildingLevel2(ctx, e, sx, sy, cellPx, tick);
         else               drawBuildingLevel3(ctx, e, sx, sy, cellPx, tick);
     } else if (e.isFriendly()) {
-        // People are intentionally hidden at district scale, shown as role icons above it.
-        if (zl >= 3) drawPersonIcon(ctx, e, sx, sy, cellPx, tick);
+        if (zl === 2) drawPersonRoleIcon(ctx, e, sx, sy, cellPx);
+        else drawPersonIcon(ctx, e, sx, sy, cellPx, tick);
     } else if (e.isEnemy()) {
-        if (zl >= 3) drawEnemyIcon(ctx, e, sx, sy, cellPx, tick);
+        drawEnemyIcon(ctx, e, sx, sy, cellPx, tick);
     } else if (e.type === TYPE.DEER) {
-        if (zl >= 3) drawPersonDot(ctx, e, sx, sy, cellPx, "#a8865a");
+        drawPersonDot(ctx, e, sx, sy, cellPx, "#a8865a");
     }
 
     // Health bars are only useful once individual entities are readable.
@@ -68,6 +73,8 @@ const DISTRICT_LABELS = {
     [TYPE.FARM]: "FARMLAND",
     [TYPE.LUMBER]: "TIMBER",
     [TYPE.QUARRY]: "QUARRY",
+    [TYPE.GOLDMINE]: "GOLD MINE",
+    [TYPE.BARREL]: "SUPPLIES",
     [TYPE.TOWER]: "DEFENCE",
     [TYPE.WALL]: "WALL",
     [TYPE.TAVERN]: "TRADE",
@@ -78,8 +85,14 @@ const DISTRICT_LABELS = {
     [TYPE.WONDER]: "LANDMARK"
 };
 
+function getBuildingSize(entity) {
+    const base = BUILDING_SIZE[entity.type] || { w: 1, h: 1 };
+    const scale = Math.max(0.25, Math.min(6, Number(entity.footprintScale) || 1));
+    return { w: base.w * scale, h: base.h * scale };
+}
+
 function drawBuildingZone(ctx, e, sx, sy, cellPx) {
-    const size = BUILDING_SIZE[e.type] || { w: 1, h: 1 };
+    const size = getBuildingSize(e);
     const width = size.w * cellPx;
     const height = size.h * cellPx;
     const centerX = sx + cellPx / 2;
@@ -116,7 +129,7 @@ function drawBuildingZone(ctx, e, sx, sy, cellPx) {
 // ═══════════════════════════════════════════════════════════════
 
 function drawBuildingLevel2(ctx, e, sx, sy, cellPx, tick) {
-    const bs = BUILDING_SIZE[e.type] || { w: 1, h: 1 };
+    const bs = getBuildingSize(e);
     const roofColor = BUILDING_ROOF_COLOR[e.type] || "#666";
     const scale = cellPx / CELL;
 
@@ -179,7 +192,7 @@ function drawBuildingLevel2(ctx, e, sx, sy, cellPx, tick) {
 // ═══════════════════════════════════════════════════════════════
 
 function drawBuildingLevel3(ctx, e, sx, sy, cellPx, tick) {
-    const bs = BUILDING_SIZE[e.type] || { w: 1, h: 1 };
+    const bs = getBuildingSize(e);
     const roofColor = BUILDING_ROOF_COLOR[e.type] || "#666";
     const scale = cellPx / CELL;
 
@@ -493,6 +506,43 @@ function drawPersonDot(ctx, e, sx, sy, cellPx, overrideColor) {
     ctx.fill();
 }
 
+function drawPersonMiniature(ctx, entity, sx, sy, cellPx, overrideColor) {
+    const scale = cellPx / CELL;
+    const px = sx + cellPx / 2;
+    const py = sy + cellPx / 2;
+    const color = overrideColor || ROLE_COLORS[entity.type] || "#91a58f";
+    const radius = Math.max(1.1, 2.2 * scale);
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.beginPath();
+    ctx.ellipse(px + 0.5 * scale, py + 2 * scale, radius * 1.25, radius * 0.75, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(px, py + 1.2 * scale, radius * 0.8, radius * 1.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e1c9a0";
+    ctx.beginPath();
+    ctx.arc(px, py - radius * 0.9, Math.max(0.9, radius * 0.42), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawPersonRoleIcon(ctx, e, sx, sy, cellPx) {
+    const px = sx + cellPx / 2;
+    const py = sy + cellPx / 2;
+    const radius = Math.max(5, Math.min(10, cellPx * 0.34));
+    ctx.save();
+    ctx.fillStyle = "rgba(9,15,17,0.92)";
+    ctx.beginPath(); ctx.arc(px, py, radius + 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = ROLE_COLORS[e.type] || "#65756b";
+    ctx.beginPath(); ctx.arc(px, py, radius, 0, Math.PI * 2); ctx.fill();
+    ctx.font = Math.max(8, Math.min(13, cellPx * 0.54)) + "px \"Apple Color Emoji\",\"Segoe UI Emoji\",sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(getEmoji(e), px, py + 0.5);
+    ctx.restore();
+}
+
 function drawPersonIcon(ctx, e, sx, sy, cellPx, tick) {
     if (state.zoomLevel >= 4) {
         drawPersonTopDown(ctx, e, sx, sy, cellPx);
@@ -611,18 +661,6 @@ function drawPersonTopDown(ctx, entity, sx, sy, cellPx) {
     ctx.beginPath();
     ctx.ellipse(1 * scale, 2 * scale, 5.8 * scale, 9 * scale, 0, 0, Math.PI * 2);
     ctx.fill();
-
-    // Animated legs and boots, visible from above.
-    ctx.strokeStyle = "#302c27";
-    ctx.lineWidth = Math.max(1.5, 2.1 * scale);
-    ctx.lineCap = "round";
-    const stride = gait * 3.2 * scale;
-    ctx.beginPath();
-    ctx.moveTo(-2.2 * scale, 3 * scale);
-    ctx.lineTo(-2.6 * scale - stride, 8.2 * scale);
-    ctx.moveTo(2.2 * scale, 3 * scale);
-    ctx.lineTo(2.6 * scale + stride, 8.2 * scale);
-    ctx.stroke();
 
     // Torso.
     ctx.fillStyle = "#171d1b";

@@ -14,6 +14,9 @@ import { flushPresentationEffects } from '../presentation/effects.js';
 
 export function startGameLoop() {
     state.lastFrameTime = 0;
+    state.lastUiRender = 0;
+    state.lastMinimapRender = 0;
+    state.movementAccumulator = 0;
     requestAnimationFrame(gameLoop);
 }
 
@@ -45,13 +48,24 @@ function gameLoop(timestamp) {
     }
 
     if (!state.isPaused && !state.gameOver && !state.victory) {
-        updateFriendlyMovement(deltaSeconds * state.gameSpeed);
+        state.movementAccumulator += deltaSeconds;
+        const movementStep = 1 / 30;
+        let movementSteps = 0;
+        while (state.movementAccumulator >= movementStep && movementSteps < 3) {
+            updateFriendlyMovement(movementStep * state.gameSpeed);
+            state.movementAccumulator -= movementStep;
+            movementSteps++;
+        }
+        if (movementSteps === 3) state.movementAccumulator = Math.min(state.movementAccumulator, movementStep);
     }
 
     flushPresentationEffects();
 
-    // The minimap viewport follows camera movement even while the simulation is paused.
-    updateMinimap();
+    // The minimap is expensive (it scans explored terrain); 4 Hz is enough for a moving viewport.
+    if (timestamp - state.lastMinimapRender >= 250) {
+        updateMinimap();
+        state.lastMinimapRender = timestamp;
+    }
 
     const { ctx, canvas } = state;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -59,7 +73,10 @@ function gameLoop(timestamp) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     drawWorld();
-    renderUI();
+    if (timestamp - state.lastUiRender >= 120) {
+        renderUI();
+        state.lastUiRender = timestamp;
+    }
     drawVignette();
 
     requestAnimationFrame(gameLoop);

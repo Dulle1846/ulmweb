@@ -21,6 +21,7 @@ const JOB_MAP = [
     { building: TYPE.FARM,    job: "farmer" },
     { building: TYPE.LUMBER,  job: "woodcutter" },
     { building: TYPE.QUARRY,  job: "miner" },
+    { building: TYPE.GOLDMINE, job: "goldminer" },
     { building: TYPE.TAVERN,  job: "innkeeper" },
     { building: TYPE.TEMPLE,  job: "acolyte" },
     { building: TYPE.MILL,    job: "miller" },
@@ -64,9 +65,16 @@ export function updateFriendlyMovement(deltaSeconds) {
 
     const units = state.entities.filter(e => !e.dead && MOVING_TYPES.has(e.type));
     const enemies = state.entities.filter(e => !e.dead && e.isEnemy());
+    const buckets = new Map();
+    const bucketSize = FLEE_DISTANCE;
+    for (const enemy of enemies) {
+        const key = Math.floor(enemy.x / bucketSize) + ":" + Math.floor(enemy.y / bucketSize);
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(enemy);
+    }
 
     units.forEach(unit => {
-        const threat = findThreat(unit, enemies);
+        const threat = findThreat(unit, buckets, bucketSize);
         if (threat) {
             handleFlee(unit, threat, deltaSeconds);
             return;
@@ -79,13 +87,22 @@ export function updateFriendlyMovement(deltaSeconds) {
 //  FLUCHT
 // ═══════════════════════════════════════════════════════════════
 
-function findThreat(unit, enemies) {
+function findThreat(unit, buckets, bucketSize) {
     if (unit.type === TYPE.GUARD || unit.type === TYPE.KNIGHT) return null;
     let closest = null;
     let closestDist = FLEE_DISTANCE;
-    for (const e of enemies) {
-        const d = Math.hypot(unit.x - e.x, unit.y - e.y);
-        if (d < closestDist) { closestDist = d; closest = e; }
+    const minX = Math.floor((unit.x - FLEE_DISTANCE) / bucketSize);
+    const maxX = Math.floor((unit.x + FLEE_DISTANCE) / bucketSize);
+    const minY = Math.floor((unit.y - FLEE_DISTANCE) / bucketSize);
+    const maxY = Math.floor((unit.y + FLEE_DISTANCE) / bucketSize);
+    for (let bx = minX; bx <= maxX; bx++) {
+        for (let by = minY; by <= maxY; by++) {
+            const local = buckets.get(bx + ":" + by) || [];
+            for (const enemy of local) {
+                const d = Math.hypot(unit.x - enemy.x, unit.y - enemy.y);
+                if (d < closestDist) { closestDist = d; closest = enemy; }
+            }
+        }
     }
     return closest;
 }
@@ -93,7 +110,8 @@ function findThreat(unit, enemies) {
 function handleFlee(unit, threat, dt) {
     unit.visualState = "flee";
     const keep = getEntitiesOfType(TYPE.KEEP)[0];
-    const target = keep || { x: unit.anchor.x, y: unit.anchor.y };
+    const anchor = unit.anchor || unit.home || { x: unit.x, y: unit.y };
+    const target = keep || anchor;
     const dx = target.x - unit.x;
     const dy = target.y - unit.y;
     const dist = Math.hypot(dx, dy);
@@ -189,8 +207,15 @@ function moveToward(unit, dt) {
     const nx = unit.x + unit.velocityX * dt;
     const ny = unit.y + unit.velocityY * dt;
 
+    let moved = false;
     if (isWalkable(nx, ny, unit)) {
-        unit.x = nx; unit.y = ny;
+        unit.x = nx; unit.y = ny; moved = true;
+    } else if (isWalkable(nx, unit.y, unit)) {
+        unit.x = nx; moved = true;
+    } else if (isWalkable(unit.x, ny, unit)) {
+        unit.y = ny; moved = true;
+    }
+    if (moved) {
         unit.state = "walk";
         unit.visualState = "walk";
         if (Math.abs(unit.velocityX) > 0.02) unit.facing = unit.velocityX > 0 ? 1 : -1;
@@ -198,7 +223,8 @@ function moveToward(unit, dt) {
         unit.velocityX = 0; unit.velocityY = 0;
         unit.movePause = rand(0.3, 1.0);
         unit.visualState = "idle";
-        setTargetNear(unit, unit.anchor.x, unit.anchor.y, WANDER_RADIUS[unit.type] || 12);
+        const anchor = unit.anchor || unit.home || {x:unit.x,y:unit.y};
+        setTargetNear(unit, anchor.x, anchor.y, WANDER_RADIUS[unit.type] || 12);
     }
 }
 
@@ -238,13 +264,20 @@ function assignJob(villager) {
             if (d < bestDist) { bestDist = d; best = { workplace: b, job: m.job }; }
         }
     }
-    if (best && bestDist <= 40) {
+    const nextWorkplace = best && bestDist <= 40 ? best.workplace : null;
+    if (villager.workplace !== nextWorkplace) {
+        villager.routinePhase = 4; // First advance enters GO_TO_WORK instead of skipping it.
+        villager.routineTimer = 1;
+        villager.velocityX = 0;
+        villager.velocityY = 0;
+    }
+    if (nextWorkplace) {
         villager.job = best.job;
-        villager.workplace = best.workplace;
-        villager.anchor = { x: best.workplace.x, y: best.workplace.y };
+        villager.workplace = nextWorkplace;
+        villager.anchor = { x: nextWorkplace.x, y: nextWorkplace.y };
     } else {
         villager.job = "wanderer";
         villager.workplace = null;
-        villager.anchor = { ...villager.home };
+        villager.anchor = { ...(villager.home || {x:villager.x,y:villager.y}) };
     }
 }

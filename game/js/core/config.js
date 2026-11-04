@@ -126,6 +126,8 @@ export const BUILDING_SIZE = {
     10: { w: 1.4, h: 1.4 },   // MILL
     11: { w: 2, h: 1.4 },   // STABLE
     12: { w: 4, h: 4 },   // WONDER
+    13: { w: 2.2, h: 2 }, // GOLDMINE
+    14: { w: 0.7, h: 0.7 }, // BARREL
 };
 
 // Gebäude-Dachfarben (für Level-1-Icons und Level-2-Top-Down)
@@ -143,6 +145,8 @@ export const BUILDING_ROOF_COLOR = {
     10: "#8a5f38",  // MILL  — Holz
     11: "#5a4632",  // STABLE — Braun
     12: "#f2c744",  // WONDER — Gold
+    13: "#b99139",  // GOLDMINE — Gold ore
+    14: "#795a3b",  // BARREL — Supplies
 };
 
 // Gebäude-Icons für Level 1
@@ -150,7 +154,7 @@ export const BUILDING_ICON = {
     0:  "🏰", 1:  "🏠", 2:  "🌾", 3:  "🪵",
     4:  "⛰️", 5:  "🗼", 6:  "🧱", 7:  "🍺",
     8:  "⛪", 9:  "🛡️", 10: "⚙️", 11: "🐎",
-    12: "✨",
+    12: "✨", 13: "⛏️", 14: "🛢️",
 };
 
 // ═══════════════════════════════════════════════════════════════
