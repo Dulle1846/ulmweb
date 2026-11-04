@@ -71,6 +71,30 @@ function hasBuildableTerrain(tx, ty, type) {
     return true;
 }
 
+export function getCardPlacementPreview(tx, ty) {
+    const card = state.currentCard;
+    if (!card || !Number.isInteger(tx) || !Number.isInteger(ty)) return null;
+
+    const size = BUILDING_SIZE[card.type] || { w: 1, h: 1 };
+    const terrainValid = hasBuildableTerrain(tx, ty, card.type);
+    const occupied = buildingOverlaps(tx, ty, card.type);
+    const affordable = canAfford(card);
+
+    let reason = null;
+    if (!terrainValid) reason = "INVALID TERRAIN";
+    else if (occupied) reason = "SPACE OCCUPIED";
+    else if (!affordable) reason = "CANNOT AFFORD";
+
+    return {
+        tx, ty,
+        type: card.type,
+        width: size.w,
+        height: size.h,
+        valid: reason === null,
+        reason
+    };
+}
+
 function findNearestBuildableTile(centerX, centerY) {
     for (let radius = 0; radius <= 12; radius++) {
         for (let offsetX = -radius; offsetX <= radius; offsetX++) {
@@ -108,18 +132,15 @@ export function placeCurrentCard(targetX, targetY) {
 
     const { tx, ty } = requestedTile;
 
-    if (!hasBuildableTerrain(tx, ty, state.currentCard.type)) {
-        queueFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "CANNOT BUILD HERE", "#f59e0b");
-        return;
-    }
-
-    if (buildingOverlaps(tx, ty, state.currentCard.type)) {
-        queueFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "SPACE OCCUPIED", "#f59e0b");
-        return;
-    }
-
-    if (!canAfford(state.currentCard)) {
-        queueFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "CANNOT AFFORD", "#f43f5e");
+    const preview = getCardPlacementPreview(tx, ty);
+    if (!preview?.valid) {
+        const message = preview?.reason || "CANNOT BUILD HERE";
+        queueFloater(
+            tx * TILE_SIZE + TILE_SIZE / 2,
+            ty * TILE_SIZE,
+            message,
+            message === "CANNOT AFFORD" ? "#f43f5e" : "#f59e0b"
+        );
         return;
     }
 
