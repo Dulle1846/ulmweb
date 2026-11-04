@@ -100,7 +100,8 @@ try{
         throw new Error("no legal map placement was found for an affordable hand card");
     }
     await page.waitForTimeout(150);
-    assert.ok((await page.locator("#tab-content").innerText()).includes("PLAYED "),"a valid drag should play the selected card");
+    assert.equal(Number.parseInt(await page.locator("#hand-count").innerText(),10),countBeforeClick-1,"a valid drag must consume exactly the selected card");
+    assert.match(await page.locator("#tab-content").innerText(),/\\b(BUILT|RECRUITED|PLAYED)\\s/,"a valid drag should record the card action");
 
     // Event decisions can overlay the map during a long accelerated test.
     if(await eventModal.isVisible())await page.locator("#realm-event-choices button").first().click();
