@@ -22,9 +22,21 @@ async function collectJavaScriptFiles(directory) {
     return files;
 }
 
+async function fileExists(path) {
+    try {
+        await access(path);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 const files = await collectJavaScriptFiles(sourceRoot);
 const failures = [];
 const missingImports = [];
+const missingUiIds = [];
+const duplicateUiIds = [];
+const missingAssets = [];
 
 for (const file of files) {
     const result = spawnSync(process.execPath, ["--check", file], {
@@ -43,22 +55,62 @@ for (const file of files) {
         if (!specifier.startsWith(".")) continue;
 
         const target = resolve(dirname(file), specifier);
-        try {
-            await access(target);
-        } catch {
-            missingImports.push({ file, specifier, target });
+        if (!(await fileExists(target))) {
+            missingImports.push({ file, specifier });
         }
     }
 }
 
-if (failures.length > 0 || missingImports.length > 0) {
+const htmlPath = resolve(gameRoot, "index.html");
+const html = await readFile(htmlPath, "utf8");
+const declaredIds = [...html.matchAll(/\bid\s*=\s*["']([^"']+)["']/g)].map(match => match[1]);
+const declaredIdSet = new Set(declaredIds);
+
+for (const id of new Set(declaredIds)) {
+    if (declaredIds.filter(value => value === id).length > 1) {
+        duplicateUiIds.push(id);
+    }
+}
+
+const referencedIds = new Set();
+for (const file of files) {
+    const source = await readFile(file, "utf8");
+    for (const match of source.matchAll(/(?:getElementById|setText)\(\s*["']([^"']+)["']/g)) {
+        referencedIds.add(match[1]);
+    }
+}
+
+for (const id of referencedIds) {
+    if (!declaredIdSet.has(id)) missingUiIds.push(id);
+}
+
+const localAssets = [
+    ...html.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi),
+    ...html.matchAll(/<link\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi)
+];
+
+for (const match of localAssets) {
+    const asset = match[1];
+    if (/^(?:https?:)?\/\//i.test(asset) || asset.startsWith("data:")) continue;
+    if (!(await fileExists(resolve(gameRoot, asset)))) missingAssets.push(asset);
+}
+
+if (failures.length || missingImports.length || missingUiIds.length ||
+    duplicateUiIds.length || missingAssets.length) {
     for (const failure of failures) {
         console.error("Syntax error in " + failure.file + "\n" + failure.output);
     }
     for (const missing of missingImports) {
         console.error("Missing import in " + missing.file + ": " + missing.specifier);
     }
+    for (const id of missingUiIds) console.error("Missing HTML id referenced by JS: " + id);
+    for (const id of duplicateUiIds) console.error("Duplicate HTML id: " + id);
+    for (const asset of missingAssets) console.error("Missing local HTML asset: " + asset);
     process.exitCode = 1;
 } else {
-    console.log("Syntax and relative-import checks passed for " + files.length + " JavaScript source files.");
+    console.log(
+        "Passed: syntax and relative imports for " + files.length +
+        " source files; " + referencedIds.size +
+        " referenced UI ids; local HTML assets."
+    );
 }
