@@ -114,6 +114,7 @@ function createSaveSnapshot(){
         weather:state.weather,weatherTimer:state.weatherTimer,
         entities:state.entities.map((entity,index)=>serializeEntity(entity,indexes)),
         hand:state.hand.map(card=>({...card,cost:{...card.cost}})),
+        cardRewardQueue:(state.cardRewardQueue||[]).map(card=>({...card,cost:{...card.cost}})),
         selectedCardInstanceId:state.selectedCardInstanceId,
         availableCards:state.availableCards.map(card=>({...card,cost:{...card.cost}})),
         activeEvent:state.activeEvent,
@@ -190,7 +191,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
     if(hasSavedCamera)state.camera={x:snapshot.camera.x,y:snapshot.camera.y};
     if(Number.isFinite(snapshot.zoom)){state.zoom=snapshot.zoom;state.zoomTarget=snapshot.zoom;state.zoomLevel=3;}
-    restoreHand(snapshot.hand,snapshot.selectedCardInstanceId,snapshot.availableCards,snapshot.nextCardDrawTick);
+    restoreHand(snapshot.hand,snapshot.selectedCardInstanceId,snapshot.availableCards,snapshot.nextCardDrawTick,snapshot.cardRewardQueue);
     if(hasSavedCamera)clampCamera();else centerCamera();
     document.getElementById("start-screen").classList.add("hidden");
     if(!loopStarted){loopStarted=true;startGameLoop();}
