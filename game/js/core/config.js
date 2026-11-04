@@ -17,7 +17,7 @@ export const SEASONS = ["SPRING", "SUMMER", "AUTUMN", "WINTER"];
 export const ZOOM_MIN          = 0.055;
 export const ZOOM_MAX          = 4.2;
 export const ZOOM_SPEED        = 0.00135;      // Faktor pro wheel-delta-Pixel
-export const ZOOM_LERP         = 0.12;        // Smoothing pro Frame (0–1)
+export const ZOOM_LERP         = 0.12;        // Frame-rate-independent smoothing at a 60 Hz reference rate
 
 // Vier visuelle Zoom-Ebenen: Landschaft, Bezirke, Dächer, Innenräume.
 export const ZOOM_THRESHOLD_DISTRICTS = 0.14;
