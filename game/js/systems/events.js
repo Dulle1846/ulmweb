@@ -8,6 +8,7 @@ import { EVENT_CHAINS } from "./event-chains.js";
 import { getWorkforceSnapshot } from "./economy.js";
 import { canAccommodateVillagers } from "./population.js";
 import { createCardForCategory } from "./card-catalog.js";
+import { applyPoliticalEffects,getPoliticalSnapshot } from "./politics.js";
 
 export function addLog(text,color="#a3a3a3",kind="realm"){
  const entry={id:++state.eventSequence,text:String(text),color,tick:state.tick,kind};
@@ -54,10 +55,22 @@ const CARD_REWARDS=Object.freeze({
  wildlife:"deer",fishing:"river-weirs",invention:"clockmakers",diplomacy:"embassies",
  ruins:"forgotten-tombs",guild:"guildhalls",monster:"griffins",border:"border-rangers"
 });
+const POLITICAL_EVENT_EFFECTS=Object.freeze({
+ harvest:{legitimacy:1,commons:1},shortage:{legitimacy:-1,commons:-2},discovery:{legitimacy:1,nobility:1},
+ caravan:{legitimacy:1,guilds:2},illness:{legitimacy:-1,clergy:1,commons:-1},bandits:{legitimacy:-1,nobility:-1},
+ festival:{legitimacy:1,commons:2},migration:{commons:1,nobility:-1},storm:{commons:-1,nobility:-1},
+ feud:{nobility:-2,legitimacy:-1},faith:{clergy:2,commons:1},wildlife:{commons:1},
+ craft:{guilds:2,legitimacy:1},diplomacy:{nobility:1,guilds:1},ruins:{nobility:1,clergy:1},
+ crime:{guilds:-2,legitimacy:-1},omens:{clergy:2},fishing:{commons:1,guilds:1},winter:{commons:-1},
+ succession:{nobility:-2,legitimacy:-2},pilgrimage:{clergy:2,commons:1},fire:{commons:-1,nobility:-1},
+ invention:{guilds:2,legitimacy:1},rebellion:{commons:-3,legitimacy:-2},guild:{guilds:-2,legitimacy:-1},
+ flood:{commons:-2,nobility:-1},plague:{commons:-2,clergy:1,legitimacy:-2},taxation:{commons:-2,legitimacy:-1},
+ monster:{nobility:-1,commons:-1},border:{nobility:1,legitimacy:1}
+});
 export const EVENT_VARIANT_COUNT=FAMILIES.length*PLACES.length*STAGES.length*DETAILS.length*5;
 const pick=items=>items[randInt(0,items.length)];
 function chooseFamily(){
- const hidden=state.hiddenRealm||{},workforce=getWorkforceSnapshot();
+ const hidden=state.hiddenRealm||{},workforce=getWorkforceSnapshot(),politics=getPoliticalSnapshot();
  const food=Math.max(0,state.resources.food||0);
  const foodShortage=Math.max(0,state.economy?.lastLedger?.foodShortage||0);
  const unpaidCosts=Math.max(0,(state.economy?.lastLedger?.unpaidWages||0)+(state.economy?.lastLedger?.unpaidUpkeep||0));
@@ -69,6 +82,11 @@ function chooseFamily(){
   if(f.id==="rebellion")situational+=Math.min(5,unpaidCosts*1.5+Math.max(0,hidden.tension||0)*0.08);
   if(f.id==="illness")situational+=workforce.population>25?1.2:0;
   if(f.id==="caravan")situational+=Math.max(0,hidden.prosperity||0)*0.025;
+  if(f.id==="rebellion")situational+=Math.max(0,50-politics.factions.commons)*0.1;
+  if(f.id==="guild")situational+=Math.max(0,50-politics.factions.guilds)*0.1;
+  if(f.id==="faith")situational+=Math.max(0,50-politics.factions.clergy)*0.08;
+  if(f.id==="succession")situational+=Math.max(0,50-politics.factions.nobility)*0.08;
+  if(f.id==="taxation")situational+=Math.max(0,55-politics.legitimacy)*0.06;
   const baseWeight=1+
    (f.tension>0?Math.max(0,hidden.tension||0)*f.tension/80:0)+
    (f.prosperity>0?Math.max(0,hidden.prosperity||0)*f.prosperity/90:0)+
@@ -98,6 +116,11 @@ export function triggerRandomEvent(){
  if(family.id==="migration"&&canSpawnEntity(TYPE.VILLAGER)&&canAccommodateVillagers(1)){choices[0].effects.villagers=1;choices[0].description+=" A new resident may join the realm.";}
  const cardReward=CARD_REWARDS[family.id];
  if(cardReward){choices[0].effects.cardReward=cardReward;choices[0].description+=" The crown may also secure a related card for its next draw.";}
+ const politicalImpact=POLITICAL_EVENT_EFFECTS[family.id];
+ if(politicalImpact){
+  choices[0].effects.politics={...politicalImpact};
+  choices[1].effects.politics=Object.fromEntries(Object.entries(politicalImpact).map(([key,value])=>[key,-value*0.45]));
+ }
  state.activeEvent={id:"issue-"+(++state.issueSequence),family:family.id,title,description,icon:family.id,createdAtTick:state.tick,threadStart:EVENT_CHAINS[family.id]?family.id:null,choices};
  addLog("ISSUE: "+title,"#e4bd72","issue");return state.activeEvent;
 }
@@ -137,6 +160,7 @@ export function resolveEventChoice(index){
    addLog("A CARD HAS BEEN SECURED: "+rewardCard.categoryName.toUpperCase(),"#e4bd72","card");
   }else addLog("THE CARD ARCHIVE IS FULL — THE REWARD WAS NOT STORED","#e9857b","card");
  }
+ if(effects.politics&&typeof effects.politics==="object")applyPoliticalEffects(effects.politics);
  if(Number.isFinite(effects.morale))state.morale=Math.max(0,Math.min(100,state.morale+effects.morale));
  const hidden=state.hiddenRealm||(state.hiddenRealm={tension:0,prosperity:0,mystery:0,memories:[]});
  for(const key of ["tension","prosperity","mystery"])hidden[key]=Math.max(-30,Math.min(100,(hidden[key]||0)+(effects.hidden?.[key]||0)));
