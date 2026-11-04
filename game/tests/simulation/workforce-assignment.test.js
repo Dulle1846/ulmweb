@@ -45,3 +45,29 @@ test("a villager is released from a destroyed workplace on reassignment",()=>{
     assert.equal(villager.workplace,null);
     assert.equal(villager.job,"wanderer");
 });
+
+test("villager age advances once per settlement year, never once per simulation tick",()=>{
+    resetState();
+    state.isPaused=false;
+    state.gameOver=false;
+    state.year=2;
+    state.dayOfYear=1;
+    const villager=spawnEntity(80,80,TYPE.VILLAGER);
+    villager.age=20;
+    villager.lastAgedYear=1;
+    villager.jobRefreshTimer=1000;
+    villager.routineTimer=1000;
+
+    updateVillagers();
+    assert.equal(villager.age,20);
+
+    state.dayOfYear=0;
+    updateVillagers();
+    assert.equal(villager.age,21);
+    updateVillagers();
+    assert.equal(villager.age,21);
+
+    state.year=3;
+    updateVillagers();
+    assert.equal(villager.age,22);
+});
