@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test && node scripts/check-syntax.js"
   },
   "engines": {
     "node": ">=20"
