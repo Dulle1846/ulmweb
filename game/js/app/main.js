@@ -7,6 +7,7 @@ import { initStartingKingdom,spawnEntity,canSpawnEntity } from "../world/entitie
 import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
 import { normalizePoliticalState } from "../systems/politics.js";
+import { normalizeHouseholdAssignments } from "../systems/population.js";
 import { addLog } from "../systems/events.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera } from "../presentation/camera.js";
@@ -75,6 +76,7 @@ function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     state.worldOptions={...worldOptions};
     initWorld(seed,state.worldOptions);
     initStartingKingdom();
+    normalizeHouseholdAssignments();
     drawStartingHand();
     state.camera.x=0;state.camera.y=0;
     centerCamera();
@@ -95,7 +97,7 @@ function serializeEntity(entity,indexByEntity){
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
         routinePhase:entity.routinePhase,routineTimer:entity.routineTimer,movePause:entity.movePause,
         job:entity.job,jobRefreshTimer:entity.jobRefreshTimer,workplaceIndex:entity.workplace?indexByEntity.get(entity.workplace)??null:null,
-        isKing:entity.isKing,moraleMod:entity.moraleMod,tint:entity.tint
+        isKing:entity.isKing,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null
     };
 }
 
@@ -155,7 +157,7 @@ function loadSnapshotIntoGame(profile,snapshot){
             visualState:dto.visualState,anchor:dto.anchor||{x:dto.x,y:dto.y},home:dto.home||{x:dto.x,y:dto.y},
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
             routinePhase:dto.routinePhase??4,routineTimer:dto.routineTimer??30,movePause:dto.movePause||0,
-            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),moraleMod:dto.moraleMod||0,tint:dto.tint||0
+            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null
         });
         restored.push(entity);
     }
@@ -188,6 +190,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     const populationGrowth=Number(state.economy.populationGrowth);
     state.economy.populationGrowth=Number.isFinite(populationGrowth)?Math.max(0,populationGrowth):0;
     normalizePoliticalState(snapshot.politics);
+    normalizeHouseholdAssignments();
     state.market=snapshot.market||createMarketState();
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===WORLD_W)state.explored=snapshot.explored;
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
