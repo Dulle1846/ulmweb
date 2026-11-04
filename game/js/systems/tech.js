@@ -1,6 +1,7 @@
 // ── Tech Tree & Unlocks ────────────────────────────────────────
 
 import { state } from '../state.js';
+import { TYPE } from '../types.js';
 import { addLog } from './events.js';
 import { createFloater } from '../rendering/particles.js';
 
@@ -25,6 +26,16 @@ export function researchTech(id) {
 
     state.resources.research -= tech.cost;
     state.unlockedTechs.add(id);
+
+    if (id === "steel") {
+        const militaryTypes = new Set([TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT]);
+        state.entities.forEach(entity => {
+            if (militaryTypes.has(entity.type)) {
+                entity.maxHp += 25;
+                entity.hp += 25;
+            }
+        });
+    }
 
     if (id === "irrigation") {
         addLog("IRRIGATION UNLOCKED — FARMS BUFFED", "#4ade80");
