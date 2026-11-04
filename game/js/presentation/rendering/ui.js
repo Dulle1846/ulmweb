@@ -6,6 +6,7 @@ import { getTradePartners,MARKET_RESOURCES } from "../../systems/market.js";
 import { getWorkforceSnapshot } from "../../systems/economy.js";
 import { EVENT_CHAINS } from "../../systems/event-chains.js";
 import { getHousingSnapshot } from "../../systems/population.js";
+import { getPoliticalSnapshot } from "../../systems/politics.js";
 
 let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
@@ -75,7 +76,7 @@ function renderEvents(container){
 function renderStatistics(container){
     const buildings=state.entities.filter(e=>!e.dead&&e.isBuilding()).length;
     const military=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER].includes(e.type)).length;
-    const workforce=getWorkforceSnapshot(),housing=getHousingSnapshot(),economy=state.economy||{};
+    const workforce=getWorkforceSnapshot(),housing=getHousingSnapshot(),economy=state.economy||{},politics=getPoliticalSnapshot();
     const stats=[
         ["POPULATION",workforce.population],["EMPLOYED",workforce.employed],
         ["UNEMPLOYED",workforce.unemployed],["HOUSING",housing.population+" / "+housing.capacity],
@@ -103,6 +104,8 @@ function renderStatistics(container){
         ["TAVERN PROVISIONS",Number(production.tavernFoodConsumed||0).toFixed(1)+" food"],
         ["TAVERN GOLD EARNED",Number(production.tavernGoldProduced||0).toFixed(1)+" gold"]
     ].map(([label,value])=>'<div class="stat-cell"><div class="stat-label">'+label+'</div><div class="stat-value">'+esc(value)+'</div></div>').join("");
+    const politicalRows=[["ROYAL LEGITIMACY",politics.legitimacy],["COMMONERS",politics.factions.commons],["NOBILITY",politics.factions.nobility],["GUILDS",politics.factions.guilds],["CLERGY",politics.factions.clergy]];
+    const politicalMarkup='<div class="stat-heading" style="margin-top:14px">THE ROYAL COUNCIL</div><div class="stat-grid">'+politicalRows.map(([label,value])=>'<div class="stat-cell political-stat"><div class="stat-label">'+label+'</div><div class="stat-value">'+Number(value).toFixed(0)+'%</div><div class="faction-meter"><i style="width:'+Math.max(0,Math.min(100,Number(value)))+'%"></i></div></div>').join("")+'</div>';
     const activeThreads=state.hiddenRealm?.activeThreads||[];
     const chronicles=activeThreads.length?activeThreads.map(thread=>{
         const stages=EVENT_CHAINS[thread.id]||[],stage=stages[thread.stage];
@@ -111,7 +114,7 @@ function renderStatistics(container){
     container.innerHTML='<div class="stat-heading">KINGDOM OVERVIEW</div><div class="stat-grid">'+cells+'</div>'+
         '<div class="stat-heading" style="margin-top:14px">ROYAL STORES</div><div class="stat-grid">'+resources+'</div>'+
         '<div class="stat-heading" style="margin-top:14px">THE ROYAL LEDGER</div><div class="stat-grid">'+economyCells+'</div>'+
-        '<div class="stat-heading" style="margin-top:14px">THE CHRONICLES</div><div class="stat-grid">'+chronicles+'</div>';
+        politicalMarkup+'<div class="stat-heading" style="margin-top:14px">THE CHRONICLES</div><div class="stat-grid">'+chronicles+'</div>';
 }
 
 function renderTrade(container){
