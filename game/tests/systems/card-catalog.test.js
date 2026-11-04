@@ -32,3 +32,18 @@ test("every category creates a playable archetype and all effects resolve",()=>{
         if(card.kind==="effect")assert.ok(["harvest","gold-rush","festival","supply-cache"].includes(card.effect));
     }
 });
+
+test("second-stage randomization preserves the authored base name without duplicating context",()=>{
+    const prototype=createCardForCategory("blacksmiths");
+    const variant=createCardVariant(prototype,{scale:"large",rarity:"rare",context:"frontier"});
+    assert.equal(variant.baseName,"Blacksmiths");
+    assert.match(variant.name,/Blacksmiths/);
+    assert.equal((variant.name.match(/OF THE HEARTLAND/g)||[]).length,0);
+    assert.equal((variant.name.match(/OF THE FRONTIER/g)||[]).length,1);
+});
+test("the expanded taxonomy exposes ten new thematic groups",()=>{
+    const groups=new Set(CARD_CATEGORIES.map(category=>category.group));
+    for(const group of ["weather","underworld","spirits","relics","botany","geology","administration","frontier","urbanism","scholarship"]){
+        assert.ok(groups.has(group),group+" group is missing");
+    }
+});
