@@ -74,4 +74,5 @@ export const state = {
     // ── Statistiken ──────────────────────────────────────────
     kingHp: 240,
     totalRaidsSurvived: 0,
+    raidActive: false,
 };
