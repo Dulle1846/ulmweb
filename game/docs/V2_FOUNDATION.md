@@ -1,6 +1,6 @@
 # Kings & Cards — Current playable foundation
 
-**Current verified commit:** `f7a85b10d7e3bef81eb3fefcf4f4931af30bf14a`  
+**Current verified commit:** `496e7a0ed484d3527b6aaec6954a19fa7fad9cda`  
 **Development branch:** `ulmweb-branch`  
 **Public build:** https://kings-and-cards.pages.dev/
 

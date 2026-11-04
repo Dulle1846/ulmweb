@@ -1,6 +1,6 @@
 # Kings & Cards — Technical foundation (current implementation)
 
-**Current reviewed commit:** `f7a85b10d7e3bef81eb3fefcf4f4931af30bf14a`  
+**Current reviewed commit:** `496e7a0ed484d3527b6aaec6954a19fa7fad9cda`  
 **Development branch:** `ulmweb-branch`
 
 This document separates verified current behaviour from future architectural goals.
@@ -98,7 +98,7 @@ These guards address identified structural costs and runaway growth. They do not
 
 Latest GitHub Actions run for the reviewed commit:
 
-- 53 automated tests passed; zero failed.
+- 54 automated tests passed; zero failed.
 - JavaScript syntax and relative imports passed for 34 source files.
 - 77 referenced UI IDs, duplicate IDs and local HTML assets passed validation.
 

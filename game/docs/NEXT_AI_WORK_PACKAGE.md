@@ -6,7 +6,7 @@ This is a handoff brief for a separate AI session or contributor. It is intentio
 
 - Repository: `Dulle1846/ulmweb`
 - Working branch: `ulmweb-branch`
-- Current reviewed base: `f7a85b10d7e3bef81eb3fefcf4f4931af30bf14a` (verify the live branch head before editing).
+- Current reviewed base: `496e7a0ed484d3527b6aaec6954a19fa7fad9cda` (verify the live branch head before editing).
 - Game root: `game/`
 - UI language and all player-facing game text: English.
 - Conversation and explanations to the user: German.
