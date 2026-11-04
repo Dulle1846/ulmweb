@@ -14,14 +14,15 @@ export const SEASONS = ["SPRING", "SUMMER", "AUTUMN", "WINTER"];
 //  ZOOM
 // ═══════════════════════════════════════════════════════════════
 
-export const ZOOM_MIN          = 0.22;
-export const ZOOM_MAX          = 3.5;
-export const ZOOM_SPEED        = 0.0012;      // Faktor pro wheel-delta-Pixel
+export const ZOOM_MIN          = 0.055;
+export const ZOOM_MAX          = 4.2;
+export const ZOOM_SPEED        = 0.00135;      // Faktor pro wheel-delta-Pixel
 export const ZOOM_LERP         = 0.12;        // Smoothing pro Frame (0–1)
 
-// Schwellenwerte zwischen den drei visuellen Leveln
-export const ZOOM_THRESHOLD_1_2 = 0.65;       // unter → Level 1, über → Level 2
-export const ZOOM_THRESHOLD_2_3 = 1.6;        // unter → Level 2, über → Level 3
+// Vier visuelle Zoom-Ebenen: Landschaft, Bezirke, Dächer, Innenräume.
+export const ZOOM_THRESHOLD_DISTRICTS = 0.14;
+export const ZOOM_THRESHOLD_ROOFTOPS = 0.55;
+export const ZOOM_THRESHOLD_INTERIORS = 1.55;
 
 // ═══════════════════════════════════════════════════════════════
 //  PERLIN NOISE — Terrain
