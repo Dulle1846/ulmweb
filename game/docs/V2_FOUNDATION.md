@@ -66,7 +66,7 @@ The save snapshot includes the world seed and forge settings, simulation clock, 
 
 On the current commit:
 
-- GitHub Actions: **53 tests passed, 0 failed**.
+- GitHub Actions: **54 tests passed, 0 failed**.
 - Syntax/import/HTML validation: 34 JavaScript source files, 77 referenced UI IDs and local HTML assets passed.
 - Browser smoke test: parchment start screen, all four sliders, empty starting hand, first delayed card and its sprite were verified.
 - Browser integration test: changed world-forge values survived save/reload; saved hand state survived; discarding spent no gold and resulted in a replacement card; a random realm issue appeared, accepted a choice and recorded the resolution.

@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
-import {drawStartingHand,updateCardDraw,skipCard,CARD_DECK} from "../../js/systems/cards.js";
+import {WORLD_W,WORLD_H} from "../../js/core/config.js";
+import {createCardForCategory} from "../../js/systems/card-catalog.js";
+import {drawStartingHand,updateCardDraw,skipCard,placeCurrentCard,CARD_DECK} from "../../js/systems/cards.js";
 
 test("the playable deck covers all four hundred catalogue categories",()=>{
     assert.equal(CARD_DECK.length,400);
@@ -40,4 +42,31 @@ test("discarding a card costs no resources and schedules a later replacement",()
     assert.equal(state.hand.length,0);
     assert.equal(state.resources.gold,gold);
     assert.ok(state.nextCardDrawTick>state.tick);
+});
+
+test("playing a building card removes it and schedules its randomized replacement",()=>{
+    resetState();
+    state.terrainResolution=1;
+    state.terrainPixW=WORLD_W;
+    state.terrainPixH=WORLD_H;
+    state.heightMap=new Float32Array(WORLD_W*WORLD_H).fill(0.5);
+    state.explored=Array.from({length:WORLD_W},()=>Array(WORLD_H).fill(false));
+    const card=createCardForCategory("cottages");
+    card.instanceId="card-play-test";
+    state.hand=[card];
+    state.currentCard=card;
+    state.selectedCardInstanceId=card.instanceId;
+    state.tick=100;
+    const woodBefore=state.resources.wood;
+    assert.equal(placeCurrentCard(40,40),true);
+    assert.equal(state.hand.length,0);
+    assert.equal(state.currentCard,null);
+    assert.ok(state.nextCardDrawTick>state.tick);
+    assert.ok(state.resources.wood<woodBefore);
+    const nextDue=state.nextCardDrawTick;
+    state.tick=nextDue-1;
+    assert.equal(updateCardDraw(),false);
+    state.tick=nextDue;
+    assert.equal(updateCardDraw(),true);
+    assert.equal(state.hand.length,1);
 });
