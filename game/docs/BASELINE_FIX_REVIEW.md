@@ -6,7 +6,7 @@
 
 ## Scope and validation boundary
 
-The full game source under `game/js/` and the game entry page were reviewed statically. The user's Chrome screenshot from the baseline run confirmed the card-placement failure recorded below. The updated code has not yet been run in the user's browser, and no automated test runner or build command was found in the reviewed game directory. Therefore, these changes are **implemented but not runtime-verified**.
+The full game source under `game/js/` and the game entry page were reviewed statically. The user's Chrome screenshot from the baseline run confirmed the card-placement failure recorded below. A minimal Node.js test runner now covers the simulation clock and presentation-effect contract. Its ten unit tests pass in a local test run; a full browser retest of the updated game has not yet been performed. Therefore, these changes are **implemented but not browser-runtime-verified**.
 
 ## Repairs made
 
