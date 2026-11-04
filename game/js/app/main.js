@@ -172,7 +172,10 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.activeEvent=snapshot.activeEvent||null;
     state.issueSequence=snapshot.issueSequence||0;
     state.nextIssueAtTick=snapshot.nextIssueAtTick||0;
-    state.hiddenRealm=snapshot.hiddenRealm||{tension:0,prosperity:0,mystery:0,memories:[]};
+    state.hiddenRealm={tension:0,prosperity:0,mystery:0,memories:[],activeThreads:[],completedThreads:[],...(snapshot.hiddenRealm||{})};
+    state.hiddenRealm.memories=Array.isArray(state.hiddenRealm.memories)?state.hiddenRealm.memories:[];
+    state.hiddenRealm.activeThreads=Array.isArray(state.hiddenRealm.activeThreads)?state.hiddenRealm.activeThreads:[];
+    state.hiddenRealm.completedThreads=Array.isArray(state.hiddenRealm.completedThreads)?state.hiddenRealm.completedThreads:[];
     state.availableCards=Array.isArray(snapshot.availableCards)
         ? snapshot.availableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [];
