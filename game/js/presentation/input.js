@@ -313,7 +313,7 @@ function togglePause() {
 
 function setSpeed(speed) {
     state.gameSpeed = speed;
-    document.querySelectorAll(".speed-btn").forEach(button => {
+    document.querySelectorAll(".speed-button").forEach(button => {
         button.classList.toggle("is-active", Number(button.dataset.speed) === speed);
     });
 }
