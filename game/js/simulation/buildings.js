@@ -25,8 +25,10 @@ export function updateBuildingIncome() {
             if (state.seasonIndex === 0 || state.seasonIndex === 1) amt = 5;
 
             const nearbyMill = mills.some(m => distance(m.x, m.y, f.x, f.y) < 6);
-            if (nearbyMill) amt = Math.floor(amt * 1.6);
-            if (state.unlockedTechs.has('irrigation')) amt = Math.floor(amt * 1.4);
+            let productionMultiplier = 1;
+            if (nearbyMill) productionMultiplier *= 1.6;
+            if (state.unlockedTechs.has('irrigation')) productionMultiplier *= 1.4;
+            amt = Math.floor(amt * productionMultiplier);
 
             addResource('food', amt);
 
