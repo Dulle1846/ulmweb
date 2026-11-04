@@ -22,11 +22,12 @@ export function getHousingSnapshot() {
 }
 
 export function canAccommodateVillagers(count = 1) {
-    const requested = Math.max(0, Math.floor(Number(count) || 0));
-    return getHousingSnapshot().available >= requested;
+    const numericCount = Number(count);
+    if (!Number.isSafeInteger(numericCount) || numericCount < 0) return false;
+    return getHousingSnapshot().available >= numericCount;
 }
 
-// A single household may join at the start of a new year when food, morale and
+// A new resident may join at the start of a new year when food, morale and
 // housing all support it. The year marker prevents duplicate growth on reload.
 export function updatePopulation() {
     if (state.tick <= 0 || state.year <= 1) return null;
