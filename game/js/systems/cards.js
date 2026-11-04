@@ -19,8 +19,13 @@ let nextCardInstance=1;
 function makeHandCard(card){return {...card,instanceId:"card-"+(nextCardInstance++)};}
 export function drawNewCard(){
     if(state.hand.length>=HAND_LIMIT)return null;
-    if(!state.availableCards.length)state.availableCards=[...CARD_DECK];
-    const index=randInt(0,state.availableCards.length),[prototype]=state.availableCards.splice(index,1);
+    state.cardRewardQueue=Array.isArray(state.cardRewardQueue)?state.cardRewardQueue:[];
+    let prototype=state.cardRewardQueue.length?state.cardRewardQueue.shift():null;
+    if(!prototype){
+        if(!state.availableCards.length)state.availableCards=[...CARD_DECK];
+        const index=randInt(0,state.availableCards.length);
+        [prototype]=state.availableCards.splice(index,1);
+    }
     const scales=["standard","standard","small","large","grand"];
     const rarityPool=(state.hiddenRealm?.prosperity||0)>18
         ?["common","common","uncommon","fine","rare","epic"]
@@ -33,7 +38,7 @@ export function drawNewCard(){
     return handCard;
 }
 export function drawStartingHand(){
-    state.hand=[];state.availableCards=[...CARD_DECK];state.currentCard=null;state.selectedCardInstanceId=null;
+    state.hand=[];state.availableCards=[...CARD_DECK];state.cardRewardQueue=[];state.currentCard=null;state.selectedCardInstanceId=null;
     state.nextCardDrawTick=state.tick+28+randInt(0,44);
 }
 export function updateCardDraw(){
@@ -156,7 +161,7 @@ export function placeCurrentCard(targetX,targetY){
     }
     consumeCurrentCard();return true;
 }
-export function restoreHand(savedHand,selectedId,savedAvailableCards,nextDrawTick){
+export function restoreHand(savedHand,selectedId,savedAvailableCards,nextDrawTick,savedRewards=[]){
     state.hand=Array.isArray(savedHand)?savedHand.map(card=>({...card,instanceId:card.instanceId||"card-"+(nextCardInstance++)})): [];
     const numericIds=state.hand.map(card=>Number(String(card.instanceId).replace("card-",""))||0);
     if(numericIds.length)nextCardInstance=Math.max(nextCardInstance,Math.max(...numericIds)+1);
@@ -166,5 +171,6 @@ export function restoreHand(savedHand,selectedId,savedAvailableCards,nextDrawTic
     state.availableCards=Array.isArray(savedAvailableCards)
         ? savedAvailableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [...CARD_DECK];
+    state.cardRewardQueue=Array.isArray(savedRewards)?savedRewards.slice(0,12).map(card=>({...card,cost:{...(card.cost||{})}})):[];
     state.nextCardDrawTick=Number.isFinite(nextDrawTick)?nextDrawTick:(state.hand.length<HAND_LIMIT?state.tick+24+randInt(0,48):0);
 }
