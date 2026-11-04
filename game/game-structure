@@ -1,6 +1,10 @@
 game/
 ├── index.html                         # Englische Spieloberfläche; lädt den App-Einstieg
 ├── docs/                              # Technische Projektdokumentation
+├── package.json                       # Minimaler Node.js-Testlauf ohne Zusatzabhängigkeiten
+├── tests/
+│   └── core/
+│       └── simulation-clock.test.js   # Tests für feste Simulationsschritte
 ├── js/
 │   ├── app/
 │   │   ├── main.js                    # Composition Root: initialisiert und verbindet Module
