@@ -1,5 +1,7 @@
 game/
 ├── index.html                         # Englische Spieloberfläche; lädt den App-Einstieg
+├── css/
+│   └── game.css                       # Responsives Design der neuen Spieloberfläche
 ├── docs/                              # Technische Projektdokumentation
 ├── package.json                       # Minimaler Node.js-Testlauf ohne Zusatzabhängigkeiten
 ├── scripts/
@@ -18,6 +20,7 @@ game/
 │   │   ├── config.js                   # Spielkonstanten und statische Definitionen
 │   │   ├── state.js                    # Gemeinsamer Laufzeitzustand (schrittweise zu entkoppeln)
 │   │   ├── types.js                    # Entitätstypen und Entity-Klasse
+│   │   └── zoom-model.js              # Vier Zoomstufen, Interpolation und Kameraanker
 │   │   ├── utils.js                    # Allgemeine Hilfsfunktionen
 │   │   ├── presentation-effects.js     # Darstellungsaufträge aus Domain-/Simulationsmodulen
 │   │   └── simulation-clock.js         # Browserunabhängige Berechnung fester Simulationstakte
@@ -42,6 +45,7 @@ game/
 │   │   ├── input.js                  # Maus-, Touch-, Tastatur- und UI-Eingaben
 │   │   └── rendering/
 │   │       ├── renderer.js           # Zentrale Render-Pipeline
+│   │       ├── placement-preview.js  # Live-Vorschau des Kartengebäudes mit Gültigkeitsprüfung
 │   │       ├── terrain.js            # Terrainzeichnung und Fog of War
 │   │       ├── entities.js           # Gebäude- und Einheitenzeichnung
 │   │       ├── ui.js                 # HTML-Oberfläche und Informationsansichten
