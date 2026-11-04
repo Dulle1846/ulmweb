@@ -9,9 +9,12 @@ game/
 ├── tests/
 │   ├── core/
 │   │   ├── simulation-clock.test.js   # Tests für feste Simulationsschritte
-│   │   └── presentation-effects.test.js # Tests für den Darstellungsauftrag-Vertrag
-│   └── world/
-│       └── building-occupancy.test.js # Tests für Gebäude-Fußabdrücke und Belegung
+│   │   ├── presentation-effects.test.js # Tests für den Darstellungsauftrag-Vertrag
+│   │   └── zoom-model.test.js          # Tests für vier Zoomstufen und Kameraanker
+│   ├── world/
+│   │   └── building-occupancy.test.js # Tests für Gebäude-Fußabdrücke und Belegung
+│   └── systems/
+│       └── card-placement-preview.test.js # Tests für Bauvorschau und Ablehnungsgründe
 ├── js/
 │   ├── app/
 │   │   ├── main.js                    # Composition Root: initialisiert und verbindet Module
