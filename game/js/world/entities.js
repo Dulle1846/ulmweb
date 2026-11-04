@@ -13,7 +13,8 @@ const MAX_WORLD_ENTITIES=900;
 const MAX_MOBILE_ENTITIES=420;
 const MOBILE_TYPES=new Set([TYPE.VILLAGER,TYPE.GUARD,TYPE.ARCHER,TYPE.KNIGHT,TYPE.PRIEST,TYPE.DEER,TYPE.GOBLIN,TYPE.ORC,TYPE.TROLL]);
 export function canSpawnEntity(type, count = 1) {
-    const requested = Math.max(0, Math.floor(Number(count) || 0));
+    const requested = Number(count);
+    if (!Number.isSafeInteger(requested) || requested < 0) return false;
     if (requested === 0) return true;
     let total=0,mobile=0;
     for(const entity of state.entities){
