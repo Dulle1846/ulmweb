@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {resetState,state} from "../../js/core/state.js";
+import {resetState,state} from "../js/core/state.js";
 import {
     MAX_PENDING_PRESENTATION_EFFECTS,
     queueParticle,
     queueMessage,
     drainPresentationEffects
-} from "../../js/core/presentation-effects.js";
-import {createParticle,createFloater} from "../../js/presentation/rendering/particles.js";
+} from "../js/core/presentation-effects.js";
+import {createParticle,createFloater} from "../js/presentation/rendering/particles.js";
 
 test("transient presentation requests remain bounded and preserve important messages",()=>{
     resetState();
