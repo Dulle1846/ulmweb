@@ -37,7 +37,7 @@ test("an issue remains unresolved when a choice cannot be paid",()=>{
 });
 
 test("the emergent issue generator combines over twenty thousand narrative variants",()=>{
-    assert.ok(EVENT_VARIANT_COUNT>=20000);
+    assert.ok(EVENT_VARIANT_COUNT>=100000);
 });
 
 test("a multi-stage chronicle is scheduled, advanced and archived after its final choice",()=>{
@@ -88,4 +88,19 @@ test("migration choices cannot add residents when the realm has no vacant housin
     assert.equal(state.resources.food,100);
     assert.equal(state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length,0);
     assert.ok(state.activeEvent);
+});
+
+test("a resolved discovery can secure a related card for the next draw",()=>{
+    state.cardRewardQueue=[];
+    state.activeEvent={
+        id:"reward-test",family:"discovery",title:"A hidden seam",
+        choices:[{label:"Claim the discovery",effects:{cardReward:"gold-mines"}}]
+    };
+    assert.equal(resolveEventChoice(0),true);
+    assert.equal(state.cardRewardQueue.length,1);
+    assert.equal(state.cardRewardQueue[0].category,"gold-mines");
+    assert.ok(state.eventLog.some(entry=>entry.text.includes("GOLD MINES")));
+});
+test("event variants exceed one hundred thousand combinations",()=>{
+    assert.ok(EVENT_VARIANT_COUNT>=100000);
 });
