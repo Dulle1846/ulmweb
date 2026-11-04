@@ -25,9 +25,9 @@ For the current development stage, these documents focus on making the existing 
 6. Prefer small, explicit contracts over assumptions about other modules' internal state.
 7. Design for new modules we cannot predict, but do not build speculative infrastructure without a concrete use case.
 
-## Current working branch
+## Aktueller Entwicklungsstand
 
-Documentation and foundation work is being prepared on `foundation/technical-baseline`. The default development branch remains `ulmweb-branch`; it has not been changed by this documentation work.
+`ulmweb-branch` ist der gemeinsame Entwicklungsstand. Technische Dokumentation und Quellcode liegen gemeinsam unter `game/`; es gibt keine separate Parallelstruktur für die Grundlagenarbeit. Der tatsächliche Modulbaum steht in [`../game-structure`](../game-structure).
 
 ## Reviewed baseline
 
