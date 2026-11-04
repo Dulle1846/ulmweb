@@ -3,7 +3,7 @@
 import { TYPE } from '../types.js';
 import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT } from '../config.js';
 import { state } from '../state.js';
-import { spawnEntity, buildingAt } from '../world/entities.js';
+import { spawnEntity, buildingOverlaps } from '../world/entities.js';
 import { revealArea, isWaterAt } from '../world/world.js';
 import { canAfford, payForCard } from './resources.js';
 import { createParticle, createFloater } from '../rendering/particles.js';
@@ -62,7 +62,7 @@ function findNearestBuildableTile(centerX, centerY) {
                 const tx = centerX + offsetX;
                 const ty = centerY + offsetY;
                 if (tx < 0 || ty < 0 || tx >= WORLD_WIDTH || ty >= WORLD_HEIGHT) continue;
-                if (isWaterAt(tx + 0.5, ty + 0.5) || buildingAt(tx, ty)) continue;
+                if (isWaterAt(tx + 0.5, ty + 0.5) || buildingOverlaps(tx, ty, state.currentCard.type)) continue;
                 return { tx, ty };
             }
         }
@@ -100,7 +100,7 @@ export function placeCurrentCard(targetX, targetY) {
         return;
     }
 
-    if (buildingAt(tx, ty)) {
+    if (buildingOverlaps(tx, ty, state.currentCard.type)) {
         createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "SPACE OCCUPIED", "#f59e0b");
         return;
     }
