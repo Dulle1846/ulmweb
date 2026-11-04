@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════
-//  ENTITY DRAWING — 3 Zoom-Levels, Gebäude mit Innenräumen
+//  ENTITY DRAWING — Four detail levels: landscape, districts, rooftops, interiors
 // ═══════════════════════════════════════════════════════════════
 
 import {
     CELL, ICON_RADIUS, ROLE_COLORS,
-    BUILDING_SIZE, BUILDING_ROOF_COLOR, BUILDING_ICON,
+    BUILDING_SIZE, BUILDING_ROOF_COLOR,
 } from '../../core/config.js';
 import { TYPE, JOB_ICONS } from '../../core/types.js';
 import { state } from '../../core/state.js';
@@ -56,38 +56,6 @@ export function drawEntity(ctx, e, tick, zoom, cam) {
         ctx.fillStyle = pct > 0.4 ? "#22cc44" : "#ee2222";
         ctx.fillRect(bx + 0.5, by + 0.5, (bw - 1) * pct, bh - 1);
     }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  LEVEL 1 — Icons mit Label
-// ═══════════════════════════════════════════════════════════════
-
-function drawBuildingLevel1(ctx, e, sx, sy, cellPx) {
-    const bs = BUILDING_SIZE[e.type] || { w: 1, h: 1 };
-    const roofColor = BUILDING_ROOF_COLOR[e.type] || "#666";
-    const icon = BUILDING_ICON[e.type] || "◆";
-    const scale = cellPx / CELL;
-
-    const w = bs.w * cellPx;
-    const h = bs.h * cellPx;
-    const cx = sx + cellPx / 2;
-    const cy = sy + cellPx / 2;
-
-    // Farbiger Rechteck (Dachfarbe)
-    ctx.fillStyle = "#111";
-    ctx.fillRect(cx - w / 2 - 1, cy - h / 2 - 1, w + 2, h + 2);
-    ctx.fillStyle = roofColor;
-    ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
-
-    // Icon
-    const fontSize = Math.max(10, Math.floor(16 * scale));
-    ctx.font = `${fontSize}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(icon, cx, cy);
-
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -618,33 +586,10 @@ function drawPersonIcon(ctx, e, sx, sy, cellPx, tick) {
     ctx.textBaseline = "alphabetic";
 }
 
-function drawEnemyDot(ctx, sx, sy, cellPx, color) {
-    const scale = cellPx / CELL;
-    const radius = Math.max(2.5, 4 * scale);
-    const px = sx + cellPx / 2;
-    const py = sy + cellPx / 2;
-
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(px, py, radius, 0, Math.PI * 2);
-    ctx.fill();
-}
-
 function drawEnemyIcon(ctx, e, sx, sy, cellPx, tick) {
     const emoji = e.type === TYPE.GOBLIN ? "👺" : e.type === TYPE.ORC ? "👹" : "🧌";
     const color = ROLE_COLORS[e.type] || "#6b2c2c";
-
-    // Reuse person icon mit Enemy-Farbe
-    const saved = e.visualState;
-    e.visualState = "walk";
-    const savedJob = e.job;
-    e.job = null;
-
-    // Temporär
-    const origType = e.type;
     drawPersonIconGeneric(ctx, e, sx, sy, cellPx, tick, emoji, color);
-    e.visualState = saved;
-    e.job = savedJob;
 }
 
 function drawPersonIconGeneric(ctx, e, sx, sy, cellPx, tick, emoji, color) {
