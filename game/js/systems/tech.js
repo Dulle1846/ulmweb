@@ -3,7 +3,7 @@
 import { state } from '../core/state.js';
 import { TYPE } from '../core/types.js';
 import { addLog } from './events.js';
-import { createFloater } from '../presentation/rendering/particles.js';
+import { queueFloater } from '../core/presentation-effects.js';
 
 export function initTechTree() {
     state.techs = [
@@ -20,7 +20,7 @@ export function researchTech(id) {
     if (!tech || state.unlockedTechs.has(id)) return;
 
     if (state.resources.research < tech.cost) {
-        createFloater(300, 200, "NOT ENOUGH RESEARCH", "#f87171");
+        queueFloater(300, 200, "NOT ENOUGH RESEARCH", "#f87171");
         return;
     }
 
@@ -44,5 +44,5 @@ export function researchTech(id) {
         addLog("KNOWLEDGE FLOWS", "#67e8f9");
     }
 
-    createFloater(340, 160, "TECH ACQUIRED!", "#67e8f9");
+    queueFloater(340, 160, "TECH ACQUIRED!", "#67e8f9");
 }
