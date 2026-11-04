@@ -128,3 +128,7 @@ button,input{font-family:Georgia,"Palatino Linotype",serif}
 @media(prefers-reduced-motion:reduce){
     *,*:before,*:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
 }
+
+.faction-meter{height:5px;margin-top:5px;overflow:hidden;border:1px solid #8b6c42;background:#3e2b1c44}
+.faction-meter i{display:block;height:100%;background:linear-gradient(90deg,#8d4c3b,#c9a65f,#70804b);box-shadow:0 0 5px #e3c17a66}
+.political-stat .stat-value{display:flex;align-items:center;justify-content:space-between;gap:8px}
