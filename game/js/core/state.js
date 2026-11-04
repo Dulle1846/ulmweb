@@ -57,6 +57,7 @@ export const state = {
     entities: [],
     particles: [],
     floaters: [],
+    pendingPresentationEffects: [],
 
     // Terrain-Daten: heightMap[y * W + x], biomeMap, colorMap
     heightMap: null,
