@@ -4,6 +4,7 @@ import { resetIncome } from "../systems/resources.js";
 import { updateMorale } from "../systems/morale.js";
 import { checkRandomEvents,addLog } from "../systems/events.js";
 import { updateMarket } from "../systems/market.js";
+import { updateEconomy } from "../systems/economy.js";
 import { updateCardDraw } from "../systems/cards.js";
 import { updateWeather } from "../world/weather.js";
 import { updateBuildingIncome } from "./buildings.js";
@@ -16,7 +17,7 @@ export function updateSimulation(){
     if(state.dayOfYear>=400){state.dayOfYear=0;state.year++;}
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
     resetIncome();updateBuildingIncome();updateVillagers();updateCombat();checkRandomEvents();updateCardDraw();
-    updateWeather();updateMorale();updateMarket();
+    updateWeather();updateMorale();updateMarket();updateEconomy();
     state.entities=state.entities.filter(entity=>!entity.dead);
     if(state.raidActive&&!state.entities.some(entity=>entity.isEnemy())){
         state.totalRaidsSurvived++;state.raidActive=false;addLog("RAID DEFEATED — THE REALM HOLDS","#a5d6a7","military");
