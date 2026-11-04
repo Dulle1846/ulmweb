@@ -17,7 +17,7 @@ export function updateCamera() {
     // Sanftes Zoom-Interpolieren
     const diff = state.zoomTarget - state.zoom;
     if (Math.abs(diff) > 0.0001) {
-        state.zoom += diff * 0.15;
+        state.zoom += diff * ZOOM_LERP;
     } else {
         state.zoom = state.zoomTarget;
     }
