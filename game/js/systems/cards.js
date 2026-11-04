@@ -7,6 +7,7 @@ import { revealArea,isWaterAt } from "../world/world.js";
 import { canAfford,payForCard,addResource } from "./resources.js";
 import { CARD_PROTOTYPES,CARD_CATEGORIES,CARD_VARIANT_DIMENSIONS,createCardForCategory,createCardVariant } from "./card-catalog.js";
 import { addLog } from "./events.js";
+import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE } from "./population.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
 import { rand,randInt } from "../core/utils.js";
 export const CARD_DECK=Object.freeze(CARD_CATEGORIES.map(category=>{
@@ -116,6 +117,18 @@ export function placeCurrentCard(targetX,targetY){
     if(card.kind!=="effect"&&!canSpawnEntity(card.type)){
         queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"REALM CAPACITY REACHED","#f59e0b");
         return false;
+    }
+    if(card.kind==="person"&&card.type===TYPE.VILLAGER&&!canAccommodateVillagers(1)){
+        queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"NO HOUSING AVAILABLE","#f59e0b");
+        return false;
+    }
+    if(card.kind!=="effect"&&card.type===TYPE.HOUSE){
+        const housing=getHousingSnapshot();
+        if(housing.available+RESIDENTS_PER_HOUSE<3||
+            !canSpawnEntity(TYPE.HOUSE,4)||!canSpawnEntity(TYPE.VILLAGER,3)){
+            queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"HOUSING OR REALM CAPACITY REACHED","#f59e0b");
+            return false;
+        }
     }
     if(!payForCard(card))return false;
     if(card.kind==="effect"){
