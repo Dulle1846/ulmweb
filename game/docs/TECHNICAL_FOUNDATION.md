@@ -10,7 +10,7 @@ This document records what exists today and the engineering rules toward which t
 - Browser-based application using native JavaScript ES modules.
 - Entry point: `game/index.html`, which loads `game/js/app/main.js`.
 - Rendering: HTML Canvas 2D.
-- UI shell: HTML elements styled with Tailwind's browser CDN build.
+- UI shell: semantic HTML elements with the dedicated responsive stylesheet `game/css/game.css`.
 - Main animation loop: `requestAnimationFrame`.
 - No bundler/build step is required. A minimal `game/package.json` now exposes Node's built-in test runner; the first automated tests cover the pure simulation-clock helper.
 
@@ -20,11 +20,11 @@ This document records what exists today and the engineering rules toward which t
 |---|---|
 | `app/main.js` | Composition root: initializes browser surfaces, world, starting settlement, UI/input and timed startup events |
 | `app/game-loop.js` | Frame scheduling, fixed-step clock consumption, movement and render orchestration |
-| `core/*` | Shared configuration, state, entity types, utilities, fixed-step simulation clock and presentation-effect contract |
+| `core/*` | Shared configuration, state, entity types, utilities, four-level zoom model, fixed-step clock and presentation-effect contract |
 | `presentation/camera.js` | View transform, zoom, bounds and coordinate conversion |
 | `presentation/input.js` | Pointer, touch, keyboard and UI event handlers |
 | `presentation/effects.js` | Converts declarative effect requests from core into concrete Canvas/UI effects |
-| `presentation/rendering/*` | Terrain/entities drawing, UI, minimap and particles/floaters |
+| `presentation/rendering/*` | Terrain/entities drawing, UI, minimap, particles/floaters and live building-placement preview |
 | `world/*` | Terrain maps, biome queries, exploration, entity creation/queries and weather |
 | `systems/*` | Resource, morale, technology, card and random-event rules |
 | `simulation/*` | Logical ticks, building income, villager behaviour and combat |
@@ -36,6 +36,11 @@ This document records what exists today and the engineering rules toward which t
 The current code is a modular monolith with these real folders: `app/`, `core/`, `world/`, `systems/`, `simulation/` and `presentation/`. The HTML entry point is only a bootstrap reference; application wiring lives in the composition root. Presentation owns camera/input/rendering modules. Shared modules (`config.js`, `state.js`, `types.js`, `utils.js`) now live under `core/`. The state object is still globally mutable and needs clearer ownership/partitioning; folder placement alone does not make that contract formal.
 
 Domain and simulation modules no longer import Canvas, UI or rendering modules. They enqueue declarative presentation effects through the core contract; `presentation/effects.js` maps those requests to the active visual implementation. The application loop owns the adapter and the visual update cadence.
+
+
+### Visual zoom and building interaction
+
+The presentation now has four detail bands: landscape, districts, rooftops and interiors. The pure zoom rules live in `core/zoom-model.js`; camera anchoring, interpolation and viewport bounds live in `presentation/camera.js`. Card placement uses the same validation for preview and final drop: terrain across the full footprint, world bounds, occupancy and affordability. The map preview is rendered by `presentation/rendering/placement-preview.js`. Full details are in [Zoom and Building Placement](ZOOM_AND_BUILDING_PLACEMENT.md).
 
 ## 3. Current world and entity data
 
@@ -127,7 +132,7 @@ Target requirements:
 
 ## 8. Quality and performance
 
-The game now has a minimal test command using Node's built-in test runner (`cd game && npm test`). It runs unit tests for the fixed-step clock, presentation-effect contract and building-footprint occupancy, then checks the syntax of all JavaScript source files under `js/`. Broader system and browser integration coverage is still missing.
+The game now has a minimal test command using Node's built-in test runner (`cd game && npm test`). It runs 21 unit tests covering fixed-step time, the presentation-effect contract, building footprints and four-level zoom math. It then checks JavaScript syntax and relative import targets for all source files under `js/`. Broader game-system integration tests and browser interaction verification are still missing.
 
 The foundation should add:
 
