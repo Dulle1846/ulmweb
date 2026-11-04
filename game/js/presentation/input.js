@@ -120,7 +120,7 @@ export function setupInput(){
         const inside=event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom;
         // The hand dock and zoom/minimap controls overlay the canvas rectangle.
         // Releasing on one of those controls must never place the selected card.
-        const releasedOnMap=event.target===canvas;
+        const releasedOnMap=document.elementFromPoint(event.clientX,event.clientY)===canvas;
         if(inside&&releasedOnMap&&state.cardPreview?.valid)placeCurrentCard(state.cardPreview.tx,state.cardPreview.ty);
         endCardDrag();
         renderUI();
