@@ -104,3 +104,19 @@ test("a resolved discovery can secure a related card for the next draw",()=>{
 test("event variants exceed one hundred thousand combinations",()=>{
     assert.ok(EVENT_VARIANT_COUNT>=100000);
 });
+
+test("realm issue decisions alter legitimacy and the affected social faction",()=>{
+    const originalRandom=Math.random;
+    const before={...state.politics.factions};
+    const legitimacy=state.politics.legitimacy;
+    Math.random=()=>0;
+    try{
+        const issue=triggerRandomEvent();
+        assert.equal(issue.family,"harvest");
+        assert.equal(resolveEventChoice(0),true);
+        assert.equal(state.politics.factions.commons,before.commons+1);
+        assert.equal(state.politics.legitimacy,legitimacy+1);
+    }finally{
+        Math.random=originalRandom;
+    }
+});
