@@ -124,7 +124,7 @@ export function placeCurrentCard(targetX,targetY){
     }
     if(card.kind!=="effect"&&card.type===TYPE.HOUSE){
         const housing=getHousingSnapshot();
-        if(housing.available+RESIDENTS_PER_HOUSE<3||
+        if(housing.capacity-housing.population+RESIDENTS_PER_HOUSE<3||
             !canSpawnEntity(TYPE.HOUSE,4)||!canSpawnEntity(TYPE.VILLAGER,3)){
             queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"HOUSING OR REALM CAPACITY REACHED","#f59e0b");
             return false;
