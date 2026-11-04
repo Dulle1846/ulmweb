@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {resetState,state} from "../../js/core/state.js";
-import {TYPE} from "../../js/core/types.js";
-import {spawnEntity} from "../../js/world/entities.js";
-import {canAccommodateVillagers,getHousingSnapshot,updatePopulation} from "../../js/systems/population.js";
+import {resetState,state} from "../js/core/state.js";
+import {TYPE} from "../js/core/types.js";
+import {spawnEntity} from "../js/world/entities.js";
+import {canAccommodateVillagers,getHousingSnapshot,updatePopulation} from "../js/systems/population.js";
 
 beforeEach(()=>{
     resetState();
