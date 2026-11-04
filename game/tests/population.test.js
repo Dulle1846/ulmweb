@@ -24,6 +24,8 @@ test("housing capacity follows four residents per living house",()=>{
     assert.equal(housing.available,1);
     assert.equal(canAccommodateVillagers(1),true);
     assert.equal(canAccommodateVillagers(2),false);
+    assert.equal(canAccommodateVillagers(-1),false);
+    assert.equal(canAccommodateVillagers(NaN),false);
 });
 
 test("a supported settlement gains one resident at most once per year",()=>{
