@@ -12,9 +12,9 @@ export function addLog(text,color="#a3a3a3",kind="realm"){
  const entry={id:++state.eventSequence,text:String(text),color,tick:state.tick,kind};
  state.eventLog.unshift(entry);if(state.eventLog.length>100)state.eventLog.length=100;return entry;
 }
-const PLACES=["the lower fields","the eastern orchards","the old river road","the northern watch","the abbey lands","the market square"];
-const STAGES=["At dawn","Before the evening bell","Beyond the old stone bridge","Under a pale sky","Near the forest edge","At the king's own table"];
-const DETAILS=["a sealed letter has arrived","the village elders have sent a petition","workers report an unusual discovery","a trusted steward has raised a concern","travellers bring an unsettling rumour","the matter has reached the royal household"];
+const PLACES=["the lower fields","the eastern orchards","the old river road","the northern watch","the abbey lands","the market square","the western marshes","the old quarry road","the royal granaries","the border villages"];
+const STAGES=["At dawn","Before the evening bell","Beyond the old stone bridge","Under a pale sky","Near the forest edge","At the king's own table","As the harvest moon rises","During the first winter frost","After the midnight watch","At the opening of the spring fair"];
+const DETAILS=["a sealed letter has arrived","the village elders have sent a petition","workers report an unusual discovery","a trusted steward has raised a concern","travellers bring an unsettling rumour","the matter has reached the royal household","a long-forgotten record has resurfaced","a guild has refused its customary duty","an unfamiliar banner has been sighted","a strange pattern has appeared in the old accounts"];
 const FAMILY_ROWS=[
  ["harvest",["A Bountiful Harvest","The Fields Sing","The Granaries Overflow","The Reapers' Fortune","The Harvest Moon Rises"],"food",34,10,4,-2,0],
  ["shortage",["A Sudden Shortage","The Stores Run Thin","A Hard Winter Approaches","The Empty Cart","The Quartermaster's Alarm"],"wood",26,12,-2,3,0],
@@ -39,7 +39,13 @@ const FAMILY_ROWS=[
  ["pilgrimage",["The Pilgrim Road Fills","A Thousand Footsteps","The Travellers' Blessing","A Long Procession","The Wayfarers' Camp"],"food",17,8,1,-1,1],
  ["fire",["A Fire in the Ward","Smoke Above the Rooftops","The Bell of Alarm","A Night of Sparks","The Burning Storehouse"],"wood",12,16,-2,5,0],
  ["invention",["A Curious Invention","The Clockwork Bird","A New Kind of Mill","The Alchemist's Engine","The Scholar's Contraption"],"stone",23,14,2,0,3],
- ["rebellion",["Whispers of Rebellion","The Unquiet Quarter","A Banner in the Night","The Tax Collectors Turn Back","The People's Assembly"],"gold",11,24,-2,7,2]
+ ["rebellion",["Whispers of Rebellion","The Unquiet Quarter","A Banner in the Night","The Tax Collectors Turn Back","The People's Assembly"],"gold",11,24,-2,7,2],
+ ["guild",["The Guilds Demand a Charter","A Masterwork Dispute","The Hall of Weavers","The Blacksmiths' Petition","A Guild Without a Master"],"wood",20,12,2,3,0],
+ ["flood",["The River Breaks Its Banks","Water in the Lower Ward","The Drowned Causeway","A Bridge Swept Away","The Great Thaw"],"wood",16,18,-2,4,1],
+ ["plague",["The Red Fever","A Sickness Behind Closed Doors","The Healers' Vigil","A Strange Rash","The Bells of Quarantine"],"food",14,20,-2,6,2],
+ ["taxation",["The King's Levy","A Disputed Tithe","The Collector's Return","A Village Refuses Payment","The Royal Assessment"],"gold",19,13,-1,5,0],
+ ["monster",["A Beast Beyond the Palisade","The Tracks of a Giant","A Shadow on the Ridge","The Shepherd's Warning","The Thing in the Old Mine"],"stone",17,15,-1,4,5],
+ ["border",["A Disputed Boundary","The Watchfires Answer","Riders at the Frontier","A Missing Boundary Stone","The Unmarked Road"],"wood",18,14,0,5,2]
 ];
 const FAMILIES=FAMILY_ROWS.map(([id,titles,resource,gain,cost,prosperity,tension,mystery])=>({id,titles,resource,gain,cost,prosperity,tension,mystery}));
 export const EVENT_VARIANT_COUNT=FAMILIES.length*PLACES.length*STAGES.length*DETAILS.length*5;
