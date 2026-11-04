@@ -19,7 +19,7 @@ export function updateSimulation(){
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
     resetIncome();
     const newcomer=updatePopulation();
-    if(newcomer)addLog("A NEW HOUSEHOLD HAS JOINED THE REALM"," #a3d6a7".trim(),"population");
+    if(newcomer)addLog("A NEW HOUSEHOLD HAS JOINED THE REALM","#a3d6a7","population");
     updateBuildingIncome();updateVillagers();updateCombat();checkRandomEvents();updateCardDraw();
     updateWeather();updateMorale();updateMarket();updateEconomy();
     state.entities=state.entities.filter(entity=>!entity.dead);
