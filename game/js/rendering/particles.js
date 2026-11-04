@@ -3,12 +3,12 @@
 import { state } from '../state.js';
 import { rand } from '../utils.js';
 
-export function createParticle(x, y, color, life, vx = 0, vy = 0, size = 4) {
+export function createParticle(x, y, color, life, vx = null, vy = null, size = 4) {
     state.particles.push({
         x,
         y,
-        vx: vx || rand(-1.5, 1.5),
-        vy: vy || rand(-2.5, 0.5),
+        vx: vx ?? rand(-1.5, 1.5),
+        vy: vy ?? rand(-2.5, 0.5),
         life,
         maxLife: life,
         color,
