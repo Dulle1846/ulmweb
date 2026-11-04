@@ -15,6 +15,7 @@ For the current development stage, these documents focus on making the existing 
 - [F0 Baseline Checklist](F0_BASELINE_CHECKLIST.md) — repeatable manual browser smoke-test procedure.
 - [Baseline Fix Review](BASELINE_FIX_REVIEW.md) — source repairs, known gaps and verification still required.
 - [Source Structure](../game-structure) — current directory tree and module responsibilities.
+- [Zoom and Building Placement](ZOOM_AND_BUILDING_PLACEMENT.md) — four detail levels, camera behaviour and drag-and-drop validation.
 
 ## How to maintain these documents
 
