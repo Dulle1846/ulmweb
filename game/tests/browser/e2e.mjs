@@ -124,9 +124,12 @@ try{
     assert.equal(await page.locator("#settings-modal").isVisible(),false);
 
     await page.locator("#pause-btn").click();
+    // A simulation tick may already be queued when the pause action lands.
+    // Let that in-flight frame settle, then assert that no later tick advances.
+    await page.waitForTimeout(120);
     const pausedTick=(await page.locator("#tick-count").innerText()).trim();
     await page.waitForTimeout(500);
-    assert.equal((await page.locator("#tick-count").innerText()).trim(),pausedTick,"paused simulation tick must remain fixed");
+    assert.equal((await page.locator("#tick-count").innerText()).trim(),pausedTick,"paused simulation tick must remain fixed after the in-flight frame settles");
     await page.locator("#pause-btn").click();
     await page.waitForFunction(previous=>document.querySelector("#tick-count")?.textContent.trim()!==previous,pausedTick,{timeout:5000});
 
