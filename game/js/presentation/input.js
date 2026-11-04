@@ -18,7 +18,7 @@ export function setupInput(){
     const dragGhost=document.getElementById("card-drag-ghost");
     const placementStatus=document.getElementById("placement-status");
     let isPanning=false,pointerMoved=false,lastX=0,lastY=0,startX=0,startY=0;
-    let cardPointerId=null,lastPinchDistance=0;
+    let cardPointerId=null,lastPinchDistance=0,cardPreviewFrame=0,pendingCardPointer=null;
 
     canvas.addEventListener("wheel",event=>{
         event.preventDefault();
@@ -102,10 +102,19 @@ export function setupInput(){
 
     window.addEventListener("pointermove",event=>{
         if(cardPointerId!==event.pointerId)return;
-        updateCardDrag(event);
+        pendingCardPointer={pointerId:event.pointerId,clientX:event.clientX,clientY:event.clientY};
+        if(!cardPreviewFrame){
+            cardPreviewFrame=requestAnimationFrame(()=>{
+                cardPreviewFrame=0;
+                const latest=pendingCardPointer;pendingCardPointer=null;
+                if(latest&&cardPointerId===latest.pointerId)updateCardDrag(latest);
+            });
+        }
     });
     window.addEventListener("pointerup",event=>{
         if(cardPointerId!==event.pointerId)return;
+        if(cardPreviewFrame)cancelAnimationFrame(cardPreviewFrame);
+        cardPreviewFrame=0;pendingCardPointer=null;
         updateCardDrag(event);
         const rect=canvas.getBoundingClientRect();
         const inside=event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom;
@@ -131,6 +140,8 @@ export function setupInput(){
         }
     }
     function endCardDrag(){
+        if(cardPreviewFrame)cancelAnimationFrame(cardPreviewFrame);
+        cardPreviewFrame=0;pendingCardPointer=null;
         cardPointerId=null;state.cardPreview=null;
         cardContainer?.classList.remove("is-dragging");
         document.body.classList.remove("card-dragging");
