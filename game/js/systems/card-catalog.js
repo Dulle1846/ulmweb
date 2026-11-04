@@ -126,7 +126,7 @@ const CONTEXT={spring:"OF THE THAW",summer:"OF HIGH SUMMER",autumn:"OF THE HARVE
 export const CARD_PROTOTYPES=Object.freeze(PROTOTYPES.map(p=>Object.freeze({...p,kind:p.kind||(p.unit?"unit":"building"),unit:Boolean(p.unit||["unit","person","animal"].includes(p.kind)),group:CARD_CATEGORIES.find(c=>c.id===p.category)?.group||"settlement",categoryName:CARD_CATEGORIES.find(c=>c.id===p.category)?.name||"General"})));
 function categoryPrototype(category){
  const curated=PROTOTYPES.find(p=>p.category===category.id);
- if(curated)return {...curated,unit:Boolean(curated.unit||["unit","person","animal"].includes(curated.kind)),group:category.group,categoryName:category.name};
+ if(curated)return {...curated,kind:curated.kind||(curated.unit?"unit":"building"),unit:Boolean(curated.unit||["unit","person","animal"].includes(curated.kind)),group:category.group,categoryName:category.name};
  const a=ARCHETYPES[category.group]||ARCHETYPES.civic;
  let [type,kind,icon,cost,desc]=a;
  let effect;
