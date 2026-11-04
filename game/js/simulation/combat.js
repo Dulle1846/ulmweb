@@ -4,6 +4,7 @@ import { TYPE } from '../types.js';
 import { state } from '../state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 import { createParticle, createFloater } from '../rendering/particles.js';
+import { showBigMessage } from '../rendering/ui.js';
 import { rand, distance } from '../utils.js';
 
 export function updateCombat() {
@@ -47,7 +48,10 @@ export function updateCombat() {
                 );
                 if (target.hp <= 0) {
                     target.dead = true;
-                    if (target.type === TYPE.KEEP) state.gameOver = true;
+                    if (target.type === TYPE.KEEP) {
+                        state.gameOver = true;
+                        showBigMessage("THE REALM FELL", "THE KEEP WAS DESTROYED", 5000);
+                    }
                 }
             }
         }
@@ -55,7 +59,7 @@ export function updateCombat() {
         // trap damage
         if (Math.random() < 0.02) {
             enemy.hp -= 22;
-            if (enemy.hp < 0) enemy.dead = true;
+            if (enemy.hp <= 0) enemy.dead = true;
         }
     });
 
