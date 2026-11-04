@@ -60,17 +60,23 @@ export function updateMinimap() {
 
     // Kamera-Viewport
     const zoom = state.zoom;
-    const camX = (state.camera.x / (WORLD_W * CELL * zoom)) * mw;
-    const camY = (state.camera.y / (WORLD_H * CELL * zoom)) * mh;
-    const camW = (state.canvas.width / (WORLD_W * CELL * zoom)) * mw;
-    const camH = (state.canvas.height / (WORLD_H * CELL * zoom)) * mh;
+    const worldPixelW = WORLD_W * CELL * zoom;
+    const worldPixelH = WORLD_H * CELL * zoom;
+    const left = Math.max(0, Math.min(WORLD_W, state.camera.x / (CELL * zoom)));
+    const top = Math.max(0, Math.min(WORLD_H, state.camera.y / (CELL * zoom)));
+    const right = Math.max(left, Math.min(WORLD_W, (state.camera.x + state.canvas.width) / (CELL * zoom)));
+    const bottom = Math.max(top, Math.min(WORLD_H, (state.camera.y + state.canvas.height) / (CELL * zoom)));
+    const camX = left * scaleX;
+    const camY = top * scaleY;
+    const camW = Math.max(0, (right - left) * scaleX);
+    const camH = Math.max(0, (bottom - top) * scaleY);
 
     mctx.strokeStyle = "#fcd34d";
     mctx.lineWidth = 1.5;
     mctx.strokeRect(camX, camY, camW, camH);
 
-    // Zoom-Level Text
-    const labels = ["", "L1", "L2", "L3"];
+    // Four-level zoom indicator.
+    const labels = ["", "L1", "L2", "L3", "L4"];
     mctx.fillStyle = "#fcd34d";
     mctx.font = "bold 9px monospace";
     mctx.fillText(labels[state.zoomLevel], 3, 10);
