@@ -18,8 +18,11 @@ const MOVING_TYPES = new Set([
 ]);
 
 const blockedBuildingTiles=new Set();
+let blockedEntityCount=-1,blockedWorldSeed=-1,blockedWorldEpoch=-1,blockedBuildingVersion=-1;
 
 export function rebuildBlockedBuildingTiles(){
+    const version=state.buildingCollisionVersion||0;
+    if(blockedEntityCount===state.entities.length&&blockedWorldSeed===state.worldSeed&&blockedWorldEpoch===state.worldEpoch&&blockedBuildingVersion===version)return;
     blockedBuildingTiles.clear();
     for(const entity of state.entities){
         if(entity.dead||!entity.isBuilding())continue;
@@ -35,6 +38,10 @@ export function rebuildBlockedBuildingTiles(){
             }
         }
     }
+    blockedEntityCount=state.entities.length;
+    blockedWorldSeed=state.worldSeed;
+    blockedWorldEpoch=state.worldEpoch;
+    blockedBuildingVersion=version;
 }
 
 const JOB_MAP = [
