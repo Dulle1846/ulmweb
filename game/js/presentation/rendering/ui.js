@@ -77,6 +77,7 @@ function renderStatistics(container){
     const stats=[
         ["POPULATION",workforce.population],["EMPLOYED",workforce.employed],
         ["UNEMPLOYED",workforce.unemployed],["HOUSING",housing.population+" / "+housing.capacity],
+        ["NATURAL GROWTH",Math.max(0,Number(economy.populationGrowth)||0)],
         ["VACANT HOMES",housing.available],["BUILDINGS",buildings],
         ["MILITARY",military],["MORALE",Math.floor(state.morale)],
         ["RAIDS SURVIVED",state.totalRaidsSurvived],["TRADES",state.statistics.totalTrades],
