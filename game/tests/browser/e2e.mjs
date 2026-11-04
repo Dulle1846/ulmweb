@@ -101,7 +101,17 @@ try{
         throw new Error("no legal map canvas target was found; last target: "+lastTarget);
     }
     await page.waitForTimeout(150);
-    assert.equal(Number.parseInt(await page.locator("#hand-count").innerText(),10),countBeforeClick-1,"a valid drag must consume exactly the selected card");
+    const handAfterDrag=Number.parseInt(await page.locator("#hand-count").innerText(),10);
+    console.log("Drag diagnostic:",JSON.stringify({
+        lastTarget,
+        selectedCard:await page.locator("#card-name").innerText(),
+        handBefore:countBeforeClick,
+        handAfter:handAfterDrag,
+        toast:await page.locator("#action-toast").innerText(),
+        placement:await page.locator("#placement-status").innerText(),
+        eventVisible:await eventModal.isVisible()
+    }));
+    assert.equal(handAfterDrag,countBeforeClick-1,"a valid drag must consume exactly the selected card");
     assert.ok((await page.locator("#card-hand .hand-card").count())<countBeforeClick,"successful placement must remove the consumed card from the hand");
 
     // Event decisions can overlay the map during a long accelerated test.
