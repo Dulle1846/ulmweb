@@ -4,6 +4,7 @@ import { TYPE } from "../../core/types.js";
 import { state } from "../../core/state.js";
 import { getEntitiesOfType } from "../../world/entities.js";
 import { getTradePartners,MARKET_RESOURCES } from "../../systems/market.js";
+import { getWorkforceSnapshot } from "../../systems/economy.js";
 
 let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
@@ -52,6 +53,7 @@ function tabSignature(){
     if(state.selectedTab===0)return "events:"+state.eventLog.slice(0,40).map(e=>e.id).join(",");
     if(state.selectedTab===1)return ["stats",state.tick,state.entities.length,state.totalRaidsSurvived,state.statistics.totalTrades,
         state.statistics.totalBuildingsBuilt,state.statistics.totalUnitsRecruited,Math.floor(state.morale),
+        state.economy?.daysElapsed,state.economy?.foodConsumed,state.economy?.taxesCollected,state.economy?.wagesPaid,state.economy?.upkeepPaid,
         ...Object.values(state.resources)].join("|");
     return "trade:"+state.tick+":"+JSON.stringify(state.market?.prices||{})+":"+
         (state.market?.partners||[]).map(p=>p.id+":"+JSON.stringify(p.stock)+":"+p.treasury).join("|");
@@ -69,8 +71,10 @@ function renderEvents(container){
 function renderStatistics(container){
     const buildings=state.entities.filter(e=>!e.dead&&e.isBuilding()).length;
     const military=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER].includes(e.type)).length;
+    const workforce=getWorkforceSnapshot(),economy=state.economy||{};
     const stats=[
-        ["POPULATION",getEntitiesOfType(TYPE.VILLAGER).length],["BUILDINGS",buildings],
+        ["POPULATION",workforce.population],["EMPLOYED",workforce.employed],
+        ["UNEMPLOYED",workforce.unemployed],["BUILDINGS",buildings],
         ["MILITARY",military],["MORALE",Math.floor(state.morale)],
         ["RAIDS SURVIVED",state.totalRaidsSurvived],["TRADES",state.statistics.totalTrades],
         ["BUILDINGS BUILT",state.statistics.totalBuildingsBuilt],["UNITS RECRUITED",state.statistics.totalUnitsRecruited],
@@ -80,8 +84,18 @@ function renderStatistics(container){
     const resources=["wood","stone","gold","food"].map(key=>
         '<div class="stat-cell"><div class="stat-label">'+key.toUpperCase()+'</div><div class="stat-value">'+Math.floor(state.resources[key]||0).toLocaleString("en-US")+'</div></div>'
     ).join("");
+    const ledger=economy.lastLedger||{};
+    const economyCells=[
+        ["DAYS SIMULATED",economy.daysElapsed||0],
+        ["FOOD CONSUMED",Number(ledger.foodConsumed||0).toFixed(1)],
+        ["TAXES COLLECTED",Number(ledger.taxesCollected||0).toFixed(2)+" gold"],
+        ["WAGES PAID",Number(ledger.wagesPaid||0).toFixed(2)+" gold"],
+        ["BUILDING UPKEEP",Number(ledger.upkeepPaid||0).toFixed(2)+" gold"],
+        ["UNPAID COSTS",(Number(ledger.unpaidWages||0)+Number(ledger.unpaidUpkeep||0)).toFixed(2)+" gold"]
+    ].map(([label,value])=>'<div class="stat-cell"><div class="stat-label">'+label+'</div><div class="stat-value">'+esc(value)+'</div></div>').join("");
     container.innerHTML='<div class="stat-heading">KINGDOM OVERVIEW</div><div class="stat-grid">'+cells+'</div>'+
-        '<div class="stat-heading" style="margin-top:14px">ROYAL STORES</div><div class="stat-grid">'+resources+'</div>';
+        '<div class="stat-heading" style="margin-top:14px">ROYAL STORES</div><div class="stat-grid">'+resources+'</div>'+
+        '<div class="stat-heading" style="margin-top:14px">THE ROYAL LEDGER</div><div class="stat-grid">'+economyCells+'</div>';
 }
 
 function renderTrade(container){
