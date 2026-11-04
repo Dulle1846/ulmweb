@@ -16,10 +16,10 @@ import { showBigMessage } from '../rendering/ui.js';
 export function updateSimulation() {
     if (state.isPaused || state.gameOver) return;
 
-    state.tick += state.gameSpeed;
+    state.tick += 1;
     state.dayOfYear++;
 
-    if (state.dayOfYear > 400) {
+    if (state.dayOfYear >= 400) {
         state.dayOfYear = 0;
         state.year++;
     }
@@ -38,6 +38,12 @@ export function updateSimulation() {
 
     // clean dead
     state.entities = state.entities.filter(e => !e.dead);
+
+    // Count a raid only after every enemy in the active wave is defeated.
+    if (state.raidActive && !state.entities.some(e => e.isEnemy())) {
+        state.totalRaidsSurvived++;
+        state.raidActive = false;
+    }
 
     // win condition
     if (state.year >= 12 && state.morale > 80 && !state.victory) {
