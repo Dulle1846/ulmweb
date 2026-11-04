@@ -1,31 +1,38 @@
 game/
-├── index.html                 # Nur HTML-Struktur + Script-Imports
+├── index.html                         # Englische Spieloberfläche; lädt den App-Einstieg
+├── docs/                              # Technische Projektdokumentation
 ├── js/
-│   ├── config.js             # Konstanten (TILE_SIZE, SEASONS, etc)
-│   ├── types.js              # Entity-Klasse, TYPE-Enums
-│   ├── state.js              # Globale Game State
+│   ├── app/
+│   │   ├── main.js                    # Composition Root: initialisiert und verbindet Module
+│   │   └── game-loop.js               # Frame-Schleife, Simulationstakt und Rendering-Aufruf
+│   ├── core/
+│   │   └── simulation-clock.js         # Browserunabhängige Berechnung fester Simulationstakte
 │   ├── world/
-│   │   ├── world.js          # Terrain-Gen, Exploration
-│   │   ├── entities.js       # Entity Management, Spawn
-│   │   └── weather.js        # Weather System
+│   │   ├── world.js                   # Terrain-Generierung, Biome und Erkundung
+│   │   ├── entities.js                # Erzeugen und Abfragen von Weltentitäten
+│   │   └── weather.js                 # Wetterzustand und Wetterwechsel
 │   ├── systems/
-│   │   ├── resources.js      # Resource Tracking & Income
-│   │   ├── morale.js         # Morale System
-│   │   ├── tech.js           # Tech Tree & Unlocks
-│   │   ├── cards.js          # Card Deck & Placement
-│   │   └── events.js         # Random Events System
+│   │   ├── resources.js               # Ressourcen und Kosten
+│   │   ├── morale.js                  # Moralregeln
+│   │   ├── tech.js                    # Forschung und Technologieeffekte
+│   │   ├── cards.js                   # Kartendeck und Platzierungsregeln
+│   │   └── events.js                  # Zufallsereignisse
 │   ├── simulation/
-│   │   ├── simulation.js     # Main Tick Loop
-│   │   ├── villagers.js      # Villager AI/Behavior
-│   │   ├── combat.js         # Combat & Raids
-│   │   └── buildings.js      # Building Effects & Income
-│   ├── rendering/
-│   │   ├── renderer.js       # Main Render Pipeline
-│   │   ├── terrain.js        # Terrain Drawing
-│   │   ├── entities.js       # Entity Drawing
-│   │   ├── ui.js             # UI Elements (Header, Sidebar)
-│   │   ├── minimap.js        # Minimap Rendering
-│   │   └── particles.js      # Particle & Floaters
-│   ├── camera.js             # Camera/Viewport Logic
-│   ├── input.js              # Mouse/Keyboard Handlers
-│   └── main.js               # Bootstrap & Game Loop
+│   │   ├── simulation.js              # Autoritativer logischer Simulationstick
+│   │   ├── villagers.js               # Dorfbewohnerverhalten und Bewegung
+│   │   ├── combat.js                  # Kampf und Raids
+│   │   └── buildings.js               # Gebäudeproduktion und Effekte
+│   ├── presentation/
+│   │   ├── camera.js                 # Kamera, Zoom und Koordinatenumrechnung
+│   │   ├── input.js                  # Maus-, Touch-, Tastatur- und UI-Eingaben
+│   │   └── rendering/
+│   │       ├── renderer.js           # Zentrale Render-Pipeline
+│   │       ├── terrain.js            # Terrainzeichnung und Fog of War
+│   │       ├── entities.js           # Gebäude- und Einheitenzeichnung
+│   │       ├── ui.js                 # HTML-Oberfläche und Informationsansichten
+│   │       ├── minimap.js            # Minimap
+│   │       └── particles.js          # Partikel und schwebende Meldungen
+│   ├── config.js                     # Bestehende Spielkonstanten (später in core zu bündeln)
+│   ├── state.js                      # Bestehender zentraler Laufzeitzustand (schrittweise aufzuteilen)
+│   ├── types.js                      # Entitätstypen und Entity-Klasse (später in core/domain zu ordnen)
+│   └── utils.js                      # Bestehende allgemeine Hilfsfunktionen
