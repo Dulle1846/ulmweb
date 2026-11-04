@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#111a1d">
     <title>KINGS &amp; CARDS • Eternal Realm</title>
     <link rel="stylesheet" href="css/game.css">
+    <link rel="stylesheet" href="css/medieval.css">
 </head>
 <body>
 <div class="game-shell">
@@ -55,7 +56,7 @@
                 <div class="hint-title"><span>FIELD NOTE</span><span>×</span></div><div id="hint-text">Scroll to move through the realm's four levels of detail.</div>
             </div>
             <div id="hand-dock" class="hand-dock">
-                <div class="hand-dock-heading"><span>YOUR HAND</span><span id="hand-count">5 / 5</span><span class="hand-help">SELECT OR DRAG A CARD</span></div>
+                <div class="hand-dock-heading"><span>YOUR HAND</span><span id="hand-count">0 / 5</span><span class="hand-help">SELECT OR DRAG A CARD</span></div>
                 <div id="card-hand" class="card-hand" aria-label="Cards in your hand"></div>
             </div>
         </section>
@@ -72,7 +73,7 @@
             </section>
 
             <section class="card-section">
-                <div class="card-section-heading"><div class="card-section-title">SELECTED CARD</div><button id="skip-card-btn" class="skip-button" type="button">DISCARD · 3 GOLD</button></div>
+                <div class="card-section-heading"><div class="card-section-title">SELECTED CARD</div><button id="skip-card-btn" class="skip-button" type="button">DISCARD</button></div>
                 <div id="card-container" class="card-container" role="button" tabindex="0" aria-label="Drag the selected card onto the map">
                     <div id="card-icon" class="card-icon">🏠</div><div id="card-name" class="card-name">COTTAGE</div><div id="card-desc" class="card-desc">Houses 3 villagers.</div>
                     <div class="card-costs">
@@ -113,6 +114,14 @@
             <div class="profile-note">Local profile for this browser. Online accounts and secure admin roles will be connected to a server backend in a later infrastructure step.</div>
             <label for="world-seed-input">WORLD SEED</label>
             <div class="seed-row"><input id="world-seed-input" type="number" min="1" step="1"><button id="random-seed-btn" class="secondary-button" type="button">RANDOMIZE</button></div>
+            <section class="world-forge" aria-label="World generation options">
+                <div class="forge-heading"><span>THE WORLD FORGE</span><span>SHAPE THE UNKNOWN</span></div>
+                <label class="forge-slider"><span>LANDMASS <output id="world-landmass-value">50</output></span><input id="world-landmass" type="range" min="0" max="100" value="50"></label>
+                <label class="forge-slider"><span>RUGGEDNESS <output id="world-ruggedness-value">55</output></span><input id="world-ruggedness" type="range" min="0" max="100" value="55"></label>
+                <label class="forge-slider"><span>FORESTS <output id="world-forests-value">52</output></span><input id="world-forests" type="range" min="0" max="100" value="52"></label>
+                <label class="forge-slider"><span>WATER LEVEL <output id="world-water-value">48</output></span><input id="world-water" type="range" min="0" max="100" value="48"></label>
+                <div class="forge-note">The same seed and settings always forge the same landscape.</div>
+            </section>
             <button id="start-new-game-btn" class="primary-button" type="button">FOUND A NEW REALM</button>
             <button id="continue-game-btn" class="secondary-button" type="button" disabled>NO SAVED REALM</button>
             <button id="load-game-btn" class="text-button" type="button">LOAD LOCAL SAVE</button>

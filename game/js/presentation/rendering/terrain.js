@@ -101,7 +101,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
     const endY = Math.min(WORLD_H, Math.ceil((cam.y + canvas.height) / cellPx) + 1);
 
     // LOD: Bei mittlerem Zoom weniger Dekos
-    const step = zoom < 1.0 ? 2 : 1;
+    const step = zoom < 0.22 ? 8 : zoom < 0.55 ? 5 : zoom < 1.05 ? 3 : zoom < 1.7 ? 2 : 1;
+    const forestLine=BIOME.FOREST-(((state.worldOptions?.forests??52)-50)*0.0016);
 
     for (let x = startX; x < endX; x += step) {
         for (let y = startY; y < endY; y += step) {
@@ -116,7 +117,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             const py = y * cellPx - cam.y + cellPx / 2;
 
             // Bäume bei forest
-            if (h >= BIOME.FOREST && h < BIOME.ROCK && s1 > 0.3) {
+            if (h >= forestLine && h < BIOME.ROCK && s1 > 0.3) {
                 drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom);
             }
 

@@ -14,6 +14,7 @@ export function createParticle(x, y, color, life, vx = null, vy = null, size = 4
         color,
         size,
     });
+    if(state.particles.length>350)state.particles.splice(0,state.particles.length-350);
 }
 
 export function createFloater(x, y, text, color = "#ffeb9c") {
@@ -25,6 +26,7 @@ export function createFloater(x, y, text, color = "#ffeb9c") {
         life: 55,
         color,
     });
+    if(state.floaters.length>100)state.floaters.splice(0,state.floaters.length-100);
 }
 
 export function updateParticles() {

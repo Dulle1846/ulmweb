@@ -3,7 +3,7 @@ import { WORLD_W,WORLD_H } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { state,resetState } from "../core/state.js";
 import { initWorld } from "../world/world.js";
-import { initStartingKingdom,spawnEntity } from "../world/entities.js";
+import { initStartingKingdom,spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
 import { addLog } from "../systems/events.js";
@@ -51,10 +51,22 @@ function resetForRun(profile){
     state.zoom=1;state.zoomTarget=1;state.zoomLevel=3;
 }
 
-function startNewRealm(seed,profile){
+function readWorldOptions(){
+    const value=id=>Number(document.getElementById(id)?.value);
+    return {landmass:value("world-landmass"),ruggedness:value("world-ruggedness"),forests:value("world-forests"),water:value("world-water")};
+}
+function syncWorldForge(options){
+    for(const key of ["landmass","ruggedness","forests","water"]){
+        const input=document.getElementById("world-"+key),output=document.getElementById("world-"+key+"-value");
+        if(input&&Number.isFinite(Number(options?.[key])))input.value=String(options[key]);
+        if(output)output.textContent=input?.value||"50";
+    }
+}
+function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     resetForRun(profile);
     state.worldSeed=seed;
-    initWorld(seed);
+    state.worldOptions={...worldOptions};
+    initWorld(seed,state.worldOptions);
     initStartingKingdom();
     drawStartingHand();
     state.camera.x=0;state.camera.y=0;
@@ -84,6 +96,9 @@ function createSaveSnapshot(){
     const indexes=new Map(state.entities.map((entity,index)=>[entity,index]));
     return {
         playerName:state.playerName,kingdomName:state.kingdomName,worldSeed:state.worldSeed,
+        worldOptions:{...state.worldOptions},nextCardDrawTick:state.nextCardDrawTick,
+        nextIssueAtTick:state.nextIssueAtTick,issueSequence:state.issueSequence,
+        hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),
         camera:{...state.camera},zoom:state.zoom,
         explored:state.explored.map(column=>column.map(Boolean)),
         tick:state.tick,year:state.year,dayOfYear:state.dayOfYear,seasonIndex:state.seasonIndex,
@@ -119,11 +134,14 @@ function saveCurrentGame(){
 function loadSnapshotIntoGame(profile,snapshot){
     resetForRun(profile);
     state.worldSeed=snapshot.worldSeed||randomSeed();
-    initWorld(state.worldSeed);
+    state.worldOptions=snapshot.worldOptions||{landmass:50,ruggedness:55,forests:52,water:48};
+    initWorld(state.worldSeed,state.worldOptions);
     state.entities=[];
     const restored=[];
     for(const dto of snapshot.entities||[]){
+        if(!canSpawnEntity(dto.type)){restored.push(null);continue;}
         const entity=spawnEntity(dto.x,dto.y,dto.type);
+        if(!entity){restored.push(null);continue;}
         Object.assign(entity,{
             hp:dto.hp,maxHp:dto.maxHp,dead:dto.dead,age:dto.age,anim:dto.anim,facing:dto.facing,
             visualState:dto.visualState,anchor:dto.anchor||{x:dto.x,y:dto.y},home:dto.home||{x:dto.x,y:dto.y},
@@ -134,7 +152,7 @@ function loadSnapshotIntoGame(profile,snapshot){
         restored.push(entity);
     }
     (snapshot.entities||[]).forEach((dto,index)=>{
-        if(Number.isInteger(dto.workplaceIndex)&&restored[dto.workplaceIndex])restored[index].workplace=restored[dto.workplaceIndex];
+        if(Number.isInteger(dto.workplaceIndex)&&restored[dto.workplaceIndex]&&restored[index])restored[index].workplace=restored[dto.workplaceIndex];
     });
     state.tick=snapshot.tick||0;state.year=snapshot.year||1;state.dayOfYear=snapshot.dayOfYear||0;
     state.seasonIndex=snapshot.seasonIndex||0;state.morale=snapshot.morale??72;
@@ -146,6 +164,9 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.kingdomName=snapshot.kingdomName||"ELDRIA";state.eventLog=Array.isArray(snapshot.eventLog)?snapshot.eventLog:[];
     state.eventSequence=snapshot.eventSequence||state.eventLog.reduce((max,e)=>Math.max(max,e.id||0),0);
     state.activeEvent=snapshot.activeEvent||null;
+    state.issueSequence=snapshot.issueSequence||0;
+    state.nextIssueAtTick=snapshot.nextIssueAtTick||0;
+    state.hiddenRealm=snapshot.hiddenRealm||{tension:0,prosperity:0,mystery:0,memories:[]};
     state.availableCards=Array.isArray(snapshot.availableCards)
         ? snapshot.availableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [];
@@ -155,8 +176,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
     if(hasSavedCamera)state.camera={x:snapshot.camera.x,y:snapshot.camera.y};
     if(Number.isFinite(snapshot.zoom)){state.zoom=snapshot.zoom;state.zoomTarget=snapshot.zoom;state.zoomLevel=3;}
-    restoreHand(snapshot.hand,snapshot.selectedCardInstanceId);
-    state.availableCards=[];
+    restoreHand(snapshot.hand,snapshot.selectedCardInstanceId,snapshot.availableCards,snapshot.nextCardDrawTick);
     if(hasSavedCamera)clampCamera();else centerCamera();
     document.getElementById("start-screen").classList.add("hidden");
     if(!loopStarted){loopStarted=true;startGameLoop();}
@@ -171,6 +191,7 @@ function loadCurrentGame(){
     if(!save){showStatus("No saved realm exists for "+profile.displayName+".");return false;}
     try{
         loadSnapshotIntoGame(profile,save.snapshot);
+        syncWorldForge(state.worldOptions);
         showStatus("Loaded realm · "+new Date(save.savedAt).toLocaleString());
         addLog("SAVE LOADED","#a3d6a7","system");
         return true;
@@ -196,6 +217,11 @@ function bindMenu(){
     }
     const seedInput=document.getElementById("world-seed-input");
     if(seedInput)seedInput.value=String(randomSeed());
+    const forgeDefaults={landmass:50,ruggedness:55,forests:52,water:48};
+    syncWorldForge(forgeDefaults);
+    for(const key of Object.keys(forgeDefaults)){
+        document.getElementById("world-"+key)?.addEventListener("input",()=>syncWorldForge(readWorldOptions()));
+    }
     document.getElementById("random-seed-btn")?.addEventListener("click",()=>{if(seedInput)seedInput.value=String(randomSeed());});
     document.getElementById("start-new-game-btn")?.addEventListener("click",()=>{
         try{
@@ -203,7 +229,7 @@ function bindMenu(){
             const typed=nameInput?.value?.trim();
             const player=active&&(!typed||typed===active.displayName)?active:createLocalProfile(typed||"Realm Keeper");
             const seed=Number(seedInput?.value);
-            startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player);
+            startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player,readWorldOptions());
         }catch(error){showStatus(error.message);}
     });
     continueButton?.addEventListener("click",loadCurrentGame);

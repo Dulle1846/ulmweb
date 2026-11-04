@@ -36,13 +36,14 @@ export function updateVillagers() {
     if (state.isPaused || state.gameOver) return;
 
     const villagers = getEntitiesOfType(TYPE.VILLAGER);
+    const workplaces=new Map(JOB_MAP.map(job=>[job,getEntitiesOfType(job.building)]));
 
     villagers.forEach(v => {
         v.age++;
 
         v.jobRefreshTimer--;
         if (v.jobRefreshTimer <= 0) {
-            assignJob(v);
+            assignJob(v,workplaces);
             v.jobRefreshTimer = 80 + Math.floor(Math.random() * 120);
         }
 
@@ -65,6 +66,7 @@ export function updateFriendlyMovement(deltaSeconds) {
 
     const units = state.entities.filter(e => !e.dead && MOVING_TYPES.has(e.type));
     const enemies = state.entities.filter(e => !e.dead && e.isEnemy());
+    const keep=state.entities.find(e=>!e.dead&&e.type===TYPE.KEEP)||null;
     const buckets = new Map();
     const bucketSize = FLEE_DISTANCE;
     for (const enemy of enemies) {
@@ -76,7 +78,7 @@ export function updateFriendlyMovement(deltaSeconds) {
     units.forEach(unit => {
         const threat = findThreat(unit, buckets, bucketSize);
         if (threat) {
-            handleFlee(unit, threat, deltaSeconds);
+            handleFlee(unit, threat, deltaSeconds, keep);
             return;
         }
         handleRoutineMovement(unit, deltaSeconds);
@@ -107,9 +109,8 @@ function findThreat(unit, buckets, bucketSize) {
     return closest;
 }
 
-function handleFlee(unit, threat, dt) {
+function handleFlee(unit, threat, dt, keep=null) {
     unit.visualState = "flee";
-    const keep = getEntitiesOfType(TYPE.KEEP)[0];
     const anchor = unit.anchor || unit.home || { x: unit.x, y: unit.y };
     const target = keep || anchor;
     const dx = target.x - unit.x;
@@ -256,10 +257,10 @@ function isWalkable(x, y) {
     return !buildingAt(tx, ty);
 }
 
-function assignJob(villager) {
+function assignJob(villager,workplaces=null) {
     let best = null, bestDist = Infinity;
     for (const m of JOB_MAP) {
-        for (const b of getEntitiesOfType(m.building)) {
+        for (const b of (workplaces?.get(m)||getEntitiesOfType(m.building))) {
             const d = Math.hypot(villager.x - b.x, villager.y - b.y);
             if (d < bestDist) { bestDist = d; best = { workplace: b, job: m.job }; }
         }

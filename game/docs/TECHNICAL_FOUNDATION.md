@@ -10,7 +10,7 @@ This document records what exists today and the engineering rules toward which t
 - Browser-based application using native JavaScript ES modules.
 - Entry point: `game/index.html`, which loads `game/js/app/main.js`.
 - Rendering: HTML Canvas 2D.
-- UI shell: semantic HTML elements with the dedicated responsive stylesheet `game/css/game.css`.
+- UI shell: semantic HTML elements with responsive base styling plus a parchment / manuscript presentation layer in `game/css/medieval.css`.
 - Main animation loop: `requestAnimationFrame`.
 - No bundler/build step is required. A minimal `game/package.json` now exposes Node's built-in test runner; the first automated tests cover the pure simulation-clock helper.
 
@@ -48,7 +48,7 @@ The current terrain representation is not a grid of tile objects.
 
 - World dimensions are `WORLD_W = 160` and `WORLD_H = 160`.
 - `CELL = 48` is the logical cell size at zoom 1.
-- Terrain generation stores `heightMap` and `moistureMap` in typed arrays at four samples per logical world unit.
+- Terrain generation stores `heightMap` and `moistureMap` in typed arrays at three samples per logical world unit.
 - `terrainCanvas` is a prerendered visual cache.
 - `explored` stores exploration visibility.
 - Dynamic objects are stored in `state.entities` as `Entity` instances.

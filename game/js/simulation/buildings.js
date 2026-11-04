@@ -7,10 +7,12 @@ import { addResource } from "../systems/resources.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
 import { distance } from "../core/utils.js";
 export function updateBuildingIncome(){
-    const tick=state.tick,farms=getEntitiesOfType(TYPE.FARM),lumbers=getEntitiesOfType(TYPE.LUMBER);
+    const tick=state.tick,productionTick=tick%18===0,civicTick=tick%55===0;
+    if(!productionTick&&!civicTick)return;
+    const farms=getEntitiesOfType(TYPE.FARM),lumbers=getEntitiesOfType(TYPE.LUMBER);
     const quarries=getEntitiesOfType(TYPE.QUARRY),goldMines=getEntitiesOfType(TYPE.GOLDMINE);
     const taverns=getEntitiesOfType(TYPE.TAVERN),temples=getEntitiesOfType(TYPE.TEMPLE),mills=getEntitiesOfType(TYPE.MILL);
-    if(tick%18===0){
+    if(productionTick){
         farms.forEach(f=>{
             const base=(state.seasonIndex===0||state.seasonIndex===1)?5:3;
             const nearbyMill=mills.some(m=>distance(m.x,m.y,f.x,f.y)<6);
@@ -24,7 +26,7 @@ export function updateBuildingIncome(){
             if(Math.random()<0.07)queueFloater(mine.x*TILE_SIZE,mine.y*TILE_SIZE-18,"GOLD VEIN","#fde047");
         });
     }
-    if(tick%55===0){
+    if(civicTick){
         taverns.forEach(()=>{addResource("gold",2);state.morale=Math.min(100,state.morale+0.6);});
         temples.forEach(()=>{state.morale=Math.min(100,state.morale+1.2);});
     }

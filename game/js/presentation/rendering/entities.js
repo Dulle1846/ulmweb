@@ -677,9 +677,9 @@ function drawPersonTopDown(ctx, entity, sx, sy, cellPx) {
     ctx.lineWidth = Math.max(1.2, 1.8 * scale);
     ctx.beginPath();
     ctx.moveTo(-3.4 * scale, -1.4 * scale);
-    ctx.lineTo(-6.1 * scale, 1.2 * scale - stride * 0.24);
+    ctx.lineTo(-6.1 * scale, 1.2 * scale - gait * 0.24);
     ctx.moveTo(3.4 * scale, -1.4 * scale);
-    ctx.lineTo(6.1 * scale, 1.2 * scale + stride * 0.24);
+    ctx.lineTo(6.1 * scale, 1.2 * scale + gait * 0.24);
     ctx.stroke();
 
     // Head and hair.

@@ -4,6 +4,7 @@ import { resetIncome } from "../systems/resources.js";
 import { updateMorale } from "../systems/morale.js";
 import { checkRandomEvents,addLog } from "../systems/events.js";
 import { updateMarket } from "../systems/market.js";
+import { updateCardDraw } from "../systems/cards.js";
 import { updateWeather } from "../world/weather.js";
 import { updateBuildingIncome } from "./buildings.js";
 import { updateVillagers } from "./villagers.js";
@@ -14,7 +15,7 @@ export function updateSimulation(){
     state.tick++;state.dayOfYear++;
     if(state.dayOfYear>=400){state.dayOfYear=0;state.year++;}
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
-    resetIncome();updateBuildingIncome();updateVillagers();updateCombat();checkRandomEvents();
+    resetIncome();updateBuildingIncome();updateVillagers();updateCombat();checkRandomEvents();updateCardDraw();
     updateWeather();updateMorale();updateMarket();
     state.entities=state.entities.filter(entity=>!entity.dead);
     if(state.raidActive&&!state.entities.some(entity=>entity.isEnemy())){

@@ -23,17 +23,29 @@ export function showBigMessage(title,subtitle,timeout=1800){
     if(timeout>0)messageTimeout=setTimeout(()=>overlay.classList.add("hidden"),timeout);
 }
 
+const GROUP_SPRITES={
+ settlement:"icon-keep",agriculture:"icon-wheat",husbandry:"icon-horse",forestry:"icon-tree",industry:"icon-anvil",
+ mining:"icon-pick",craft:"icon-hammer",civic:"icon-townhall",trade:"icon-coins",education:"icon-book",faith:"icon-chalice",
+ defense:"icon-shield",military:"icon-sword",nature:"icon-leaf",animals:"icon-stag",people:"icon-bust",court:"icon-crown",
+ travel:"icon-compass",magic:"icon-rune",mysteries:"icon-eye",events:"icon-scroll",law:"icon-scales",maritime:"icon-anchor",
+ infrastructure:"icon-bridge",medicine:"icon-herb",diplomacy:"icon-dove",culture:"icon-lyre",engineering:"icon-gear",
+ fishing:"icon-fish",alchemy:"icon-flask",cuisine:"icon-bowl",textiles:"icon-spool",architecture:"icon-arch",
+ finance:"icon-coins",communication:"icon-raven",music:"icon-lyre",warfare:"icon-sword",politics:"icon-scroll",
+ monsters:"icon-dragon",seasons:"icon-sun"
+};
 function renderHand(){
-    const container=document.getElementById("card-hand");if(!container)return;
-    const signature=state.hand.map(c=>c.instanceId+":"+c.name).join("|")+":"+state.selectedCardInstanceId;
-    if(signature===lastHandSignature)return;
-    lastHandSignature=signature;
-    container.innerHTML=state.hand.map(card=>
-        '<button type="button" class="hand-card '+(card.instanceId===state.selectedCardInstanceId?"is-selected":"")+'" data-card-id="'+esc(card.instanceId)+'" aria-label="Select '+esc(card.name)+'">'+
-        '<span class="hand-card-icon">'+esc(card.icon)+'</span><span class="hand-card-name">'+esc(card.name)+'</span>'+
-        '<span class="hand-card-category">'+esc(card.categoryName||card.kind||"CARD")+'</span></button>'
-    ).join("");
-    setText("hand-count",state.hand.length+" / 5");
+ const container=document.getElementById("card-hand");if(!container)return;
+ const signature=state.hand.map(c=>c.instanceId+":"+c.name+":"+c.rarity).join("|")+":"+state.selectedCardInstanceId;
+ if(signature===lastHandSignature)return;
+ lastHandSignature=signature;
+ container.innerHTML=state.hand.map(card=>{
+  const sprite=GROUP_SPRITES[card.group]||"icon-scroll";
+  return '<button type="button" class="hand-card rarity-'+esc(card.rarity||"common")+(card.instanceId===state.selectedCardInstanceId?" is-selected":"")+'" data-card-id="'+esc(card.instanceId)+'" aria-label="Select '+esc(card.name)+'">'+
+   '<span class="hand-card-banner"><svg class="hand-card-sprite" aria-hidden="true"><use href="assets/realm-sprites.svg#'+sprite+'"></use></svg><span>'+esc(card.icon)+'</span></span>'+
+   '<span class="hand-card-name">'+esc(card.name)+'</span><span class="hand-card-category">'+esc(card.categoryName||card.group||card.kind||"CARD")+'</span>'+
+   '<span class="hand-card-rarity">'+esc(card.rarity||"common")+'</span></button>';
+ }).join("");
+ setText("hand-count",state.hand.length+" / 5");
 }
 
 function tabSignature(){

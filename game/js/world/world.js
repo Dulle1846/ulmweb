@@ -83,7 +83,18 @@ function fbm(x, y, octaves, persistence, lacunarity) {
 //  TERRAIN-GENERIERUNG
 // ═══════════════════════════════════════════════════════════════
 
-export function initWorld(seed = state.worldSeed) {
+export function normalizeWorldOptions(options={}) {
+    const defaults={landmass:50,ruggedness:55,forests:52,water:48};
+    const normalized={};
+    for(const [key,fallback] of Object.entries(defaults)){
+        const value=Number(options?.[key]);
+        normalized[key]=Number.isFinite(value)?Math.max(0,Math.min(100,Math.round(value))):fallback;
+    }
+    return normalized;
+}
+
+export function initWorld(seed = state.worldSeed, options=state.worldOptions) {
+    state.worldOptions=normalizeWorldOptions(options);
     const worldSeed = Number.isSafeInteger(Number(seed)) && Number(seed) > 0
         ? Number(seed)
         : 1 + Math.floor(Math.random() * 2147483000);
@@ -92,7 +103,7 @@ export function initWorld(seed = state.worldSeed) {
 
     const W = WORLD_W;
     const H = WORLD_H;
-    const resolution = 4;               // Sub-Pixel-Auflösung für Smooth Terrain
+    const resolution = 3;               // Lower memory footprint with smooth terrain
     const pixW = W * resolution;
     const pixH = H * resolution;
 
@@ -112,6 +123,11 @@ export function initWorld(seed = state.worldSeed) {
                 NOISE_PERSISTENCE,
                 NOISE_LACUNARITY
             );
+            const options=state.worldOptions;
+            const roughness=0.45+(options.ruggedness/100)*1.35;
+            const landBias=(options.landmass-50)*0.0016;
+            const waterBias=(50-options.water)*0.00135;
+            h=Math.max(0,Math.min(1,0.5+(h-0.5)*roughness+landBias+waterBias));
 
             // Zentrales Tal abflachen (fruchtbar)
             const dcx = (wx - W / 2) / (W * 0.2);
@@ -123,11 +139,12 @@ export function initWorld(seed = state.worldSeed) {
             }
 
             // Feuchtigkeit (zweite Noise-Schicht)
-            const m = fbm(
+            const rawMoisture = fbm(
                 (wx + 500) * NOISE_SCALE * 1.3,
                 (wy + 500) * NOISE_SCALE * 1.3,
-                4, 0.5, 2.0
+                3, 0.5, 2.0
             );
+            const m=Math.max(0,Math.min(1,rawMoisture+(state.worldOptions.forests-50)*0.002));
 
             state.heightMap[py * pixW + px] = h;
             state.moistureMap[py * pixW + px] = m;
@@ -193,6 +210,8 @@ export function prerenderTerrain() {
 }
 
 function getTerrainColor(h, m, px, py) {
+    // Forest density is controlled by the world forge.
+    const forestShift=((state.worldOptions?.forests??52)-50)*0.0016;
     // Bestimme Biom
     let base;
     if (h < BIOME.DEEP_WATER)        base = BIOME_COLORS.DEEP_WATER;
@@ -200,8 +219,8 @@ function getTerrainColor(h, m, px, py) {
     else if (h < BIOME.SAND)          base = BIOME_COLORS.SAND;
     else if (h < BIOME.GRASS)         base = BIOME_COLORS.GRASS;
     else if (h < BIOME.DENSE_GRASS)   base = BIOME_COLORS.DENSE_GRASS;
-    else if (h < BIOME.FOREST)        base = BIOME_COLORS.FOREST;
-    else if (h < BIOME.DENSE_FOREST)  base = BIOME_COLORS.DENSE_FOREST;
+    else if (h < BIOME.FOREST-forestShift)        base = BIOME_COLORS.FOREST;
+    else if (h < BIOME.DENSE_FOREST-forestShift)  base = BIOME_COLORS.DENSE_FOREST;
     else if (h < BIOME.ROCK)          base = BIOME_COLORS.ROCK;
     else                               base = BIOME_COLORS.SNOW;
 
@@ -236,10 +255,11 @@ export function getHeightAt(wx, wy) {
 
 export function getBiomeAt(wx, wy) {
     const h = getHeightAt(wx, wy);
+    const forestShift=((state.worldOptions?.forests??52)-50)*0.0016;
     if (h < BIOME.SHALLOW_WATER) return "water";
     if (h < BIOME.SAND) return "sand";
     if (h < BIOME.DENSE_GRASS) return "grass";
-    if (h < BIOME.DENSE_FOREST) return "forest";
+    if (h < BIOME.DENSE_FOREST-forestShift) return "forest";
     if (h < BIOME.ROCK) return "rock";
     return "snow";
 }

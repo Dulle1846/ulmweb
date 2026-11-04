@@ -2,14 +2,17 @@
 import { TYPE } from "../core/types.js";
 import { TILE_SIZE,WORLD_WIDTH,WORLD_HEIGHT,BUILDING_SIZE } from "../core/config.js";
 import { state } from "../core/state.js";
-import { spawnEntity,buildingOverlaps } from "../world/entities.js";
+import { spawnEntity,buildingOverlaps,canSpawnEntity } from "../world/entities.js";
 import { revealArea,isWaterAt } from "../world/world.js";
 import { canAfford,payForCard,addResource } from "./resources.js";
 import { CARD_PROTOTYPES,CARD_CATEGORIES,CARD_VARIANT_DIMENSIONS,createCardForCategory,createCardVariant } from "./card-catalog.js";
 import { addLog } from "./events.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
 import { rand,randInt } from "../core/utils.js";
-export const CARD_DECK=Object.freeze(CARD_CATEGORIES.map(category=>createCardForCategory(category.id)));
+export const CARD_DECK=Object.freeze(CARD_CATEGORIES.map(category=>{
+    const card=createCardForCategory(category.id);
+    return {...card,id:category.id,name:card.baseName||card.name};
+}));
 const HAND_LIMIT=5;
 let nextCardInstance=1;
 function makeHandCard(card){return {...card,instanceId:"card-"+(nextCardInstance++)};}
@@ -18,9 +21,10 @@ export function drawNewCard(){
     if(!state.availableCards.length)state.availableCards=[...CARD_DECK];
     const index=randInt(0,state.availableCards.length),[prototype]=state.availableCards.splice(index,1);
     const scales=["standard","standard","small","large","grand"];
-    const rarities=["common","common","uncommon","fine","rare"];
-    const scale=scales[randInt(0,scales.length)];
-    const rarity=rarities[randInt(0,rarities.length)];
+    const rarityPool=(state.hiddenRealm?.prosperity||0)>18
+        ?["common","common","uncommon","fine","rare","epic"]
+        :["common","common","common","uncommon","fine","rare"];
+    const scale=scales[randInt(0,scales.length)],rarity=rarityPool[randInt(0,rarityPool.length)];
     const context=CARD_VARIANT_DIMENSIONS.contexts[randInt(0,CARD_VARIANT_DIMENSIONS.contexts.length)];
     const card=createCardVariant(prototype,{scale,rarity,context});
     const handCard=makeHandCard(card);state.hand.push(handCard);
@@ -29,8 +33,15 @@ export function drawNewCard(){
 }
 export function drawStartingHand(){
     state.hand=[];state.availableCards=[...CARD_DECK];state.currentCard=null;state.selectedCardInstanceId=null;
-    for(let i=0;i<HAND_LIMIT;i++)drawNewCard();
-    if(state.hand.length)selectCard(state.hand[0].instanceId);
+    state.nextCardDrawTick=state.tick+28+randInt(0,44);
+}
+export function updateCardDraw(){
+    if(state.hand.length>=HAND_LIMIT){state.nextCardDrawTick=0;return false;}
+    if(!Number.isFinite(state.nextCardDrawTick)||state.nextCardDrawTick<=0)state.nextCardDrawTick=state.tick+22+randInt(0,38);
+    if(state.tick<state.nextCardDrawTick)return false;
+    const card=drawNewCard();
+    state.nextCardDrawTick=state.hand.length<HAND_LIMIT?state.tick+22+randInt(0,68):0;
+    return Boolean(card);
 }
 export function selectCard(instanceId){
     const card=state.hand.find(item=>item.instanceId===instanceId);if(!card)return false;
@@ -41,12 +52,12 @@ function consumeCurrentCard(){
     if(index>=0)state.hand.splice(index,1);
     state.currentCard=null;state.selectedCardInstanceId=null;
     if(state.hand.length)selectCard(state.hand[0].instanceId);
-    drawNewCard();
+    state.nextCardDrawTick=state.hand.length<HAND_LIMIT?state.tick+18+randInt(0,54):0;
 }
 export function skipCard(){
     if(!state.currentCard)return false;
-    if(state.resources.gold<3){queueFloater(280,180,"NEED 3 GOLD","#fda4af");return false;}
-    state.resources.gold-=3;addLog("CARD DISCARDED — 3 GOLD","#d8a1a1","card");
+    const discarded=state.currentCard.name;
+    addLog("CARD DISCARDED — "+discarded,"#d8a1a1","card");
     consumeCurrentCard();queueFloater(280,180,"CARD DISCARDED","#a5b4fc");return true;
 }
 function footprintFor(card){
@@ -102,6 +113,10 @@ export function placeCurrentCard(targetX,targetY){
         queueFloater(tx*TILE_SIZE+TILE_SIZE/2,ty*TILE_SIZE,message,message==="CANNOT AFFORD"?"#f43f5e":"#f59e0b");
         return false;
     }
+    if(card.kind!=="effect"&&!canSpawnEntity(card.type)){
+        queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"REALM CAPACITY REACHED","#f59e0b");
+        return false;
+    }
     if(!payForCard(card))return false;
     if(card.kind==="effect"){
         const result=resolveEffectCard(card);
@@ -116,8 +131,9 @@ export function placeCurrentCard(targetX,targetY){
         }else{
             state.statistics.totalBuildingsBuilt++;
             if(card.type===TYPE.HOUSE)for(let i=0;i<3;i++){
+                if(!canSpawnEntity(TYPE.VILLAGER))break;
                 const villager=spawnEntity(tx+randInt(-2,2),ty+randInt(-2,2),TYPE.VILLAGER);
-                villager.home={x:tx,y:ty};villager.anchor={x:tx,y:ty};villager.jobRefreshTimer=0;
+                if(villager){villager.home={x:tx,y:ty};villager.anchor={x:tx,y:ty};villager.jobRefreshTimer=0;}
             }
             revealArea(tx,ty,9);
         }
@@ -127,12 +143,15 @@ export function placeCurrentCard(targetX,targetY){
     }
     consumeCurrentCard();return true;
 }
-export function restoreHand(savedHand,selectedId){
-    state.hand=Array.isArray(savedHand)?savedHand.map(card=>({...card,instanceId:card.instanceId||"card-"+(nextCardInstance++)})):[];
-    const numericIds=state.hand.map(card=>Number(String(card.instanceId).match(/card-(\d+)/)?.[1]||0));
+export function restoreHand(savedHand,selectedId,savedAvailableCards,nextDrawTick){
+    state.hand=Array.isArray(savedHand)?savedHand.map(card=>({...card,instanceId:card.instanceId||"card-"+(nextCardInstance++)})): [];
+    const numericIds=state.hand.map(card=>Number(String(card.instanceId).replace("card-",""))||0);
     if(numericIds.length)nextCardInstance=Math.max(nextCardInstance,Math.max(...numericIds)+1);
     state.selectedCardInstanceId=null;state.currentCard=null;
     const selected=state.hand.find(card=>card.instanceId===selectedId)||state.hand[0];
     if(selected)selectCard(selected.instanceId);
-    if(!state.hand.length)drawStartingHand();
+    state.availableCards=Array.isArray(savedAvailableCards)
+        ? savedAvailableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
+        : [...CARD_DECK];
+    state.nextCardDrawTick=Number.isFinite(nextDrawTick)?nextDrawTick:(state.hand.length<HAND_LIMIT?state.tick+24+randInt(0,48):0);
 }

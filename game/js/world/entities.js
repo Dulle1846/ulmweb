@@ -9,7 +9,21 @@ import { randInt } from '../core/utils.js';
 
 // ── Entity erstellen ──────────────────────────────────────────
 
+const MAX_WORLD_ENTITIES=900;
+const MAX_MOBILE_ENTITIES=420;
+const MOBILE_TYPES=new Set([TYPE.VILLAGER,TYPE.GUARD,TYPE.ARCHER,TYPE.KNIGHT,TYPE.PRIEST,TYPE.DEER,TYPE.GOBLIN,TYPE.ORC,TYPE.TROLL]);
+export function canSpawnEntity(type) {
+    let total=0,mobile=0;
+    for(const entity of state.entities){
+        if(entity.dead)continue;
+        total++;
+        if(MOBILE_TYPES.has(entity.type))mobile++;
+    }
+    return total<MAX_WORLD_ENTITIES&&(!MOBILE_TYPES.has(type)||mobile<MAX_MOBILE_ENTITIES);
+}
+
 export function spawnEntity(tx, ty, type) {
+    if(!canSpawnEntity(type))return null;
     const entity = new Entity(tx, ty, type);
 
     if (entity.isUnit()) {

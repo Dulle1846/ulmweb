@@ -1,7 +1,7 @@
 import test,{beforeEach} from "node:test";
 import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
-import {triggerRandomEvent,resolveEventChoice,addLog} from "../../js/systems/events.js";
+import {triggerRandomEvent,resolveEventChoice,addLog,EVENT_VARIANT_COUNT} from "../../js/systems/events.js";
 
 beforeEach(()=>{
     resetState();
@@ -32,4 +32,8 @@ test("an issue remains unresolved when a choice cannot be paid",()=>{
         assert.equal(resolveEventChoice(costlyIndex),false);
         assert.equal(state.activeEvent.id,issue.id);
     }
+});
+
+test("the emergent issue generator combines over twenty thousand narrative variants",()=>{
+    assert.ok(EVENT_VARIANT_COUNT>=20000);
 });

@@ -8,6 +8,10 @@ import { drawTerrain } from './terrain.js';
 import { drawEntity } from './entities.js';
 import { drawPlacementPreview } from './placement-preview.js';
 
+let visibleEntitiesCache=[];
+let visibleEntitiesUntil=0;
+let visibleEntitiesKey="";
+
 // ═══════════════════════════════════════════════════════════════
 //  WELT ZEICHNEN
 // ═══════════════════════════════════════════════════════════════
@@ -25,16 +29,17 @@ export function drawWorld() {
     const top = camera.y - margin;
     const right = camera.x + canvas.width + margin;
     const bottom = camera.y + canvas.height + margin;
-    const sorted = state.entities
-        .filter(e => {
-            if (e.dead) return false;
-            const x = e.x * cellPx;
-            const y = e.y * cellPx;
-            return x >= left && x <= right && y >= top && y <= bottom;
-        })
-        .sort((a, b) => a.y - b.y);
-
-    sorted.forEach(entity => {
+    const cacheKey=[state.entities.length,Math.floor(camera.x/(cellPx*2)),Math.floor(camera.y/(cellPx*2)),canvas.width,canvas.height,Math.round(zoom*100)].join(":");
+    const now=performance.now();
+    if(now>=visibleEntitiesUntil||cacheKey!==visibleEntitiesKey){
+        visibleEntitiesKey=cacheKey;visibleEntitiesUntil=now+100;
+        visibleEntitiesCache=state.entities.filter(e=>{
+            if(e.dead)return false;
+            const x=e.x*cellPx,y=e.y*cellPx;
+            return x>=left&&x<=right&&y>=top&&y<=bottom;
+        }).sort((a,b)=>a.y-b.y);
+    }
+    visibleEntitiesCache.forEach(entity => {
         // Nur sichtbare (explored) Entities
         const ex = Math.floor(entity.x);
         const ey = Math.floor(entity.y);
