@@ -5,7 +5,7 @@ import { state } from "../../core/state.js";
 import { getTradePartners,MARKET_RESOURCES } from "../../systems/market.js";
 import { getWorkforceSnapshot } from "../../systems/economy.js";
 import { EVENT_CHAINS } from "../../systems/event-chains.js";
-import { getHousingSnapshot } from "../../systems/population.js";
+import { getHousingSnapshot,getHouseholdSnapshot } from "../../systems/population.js";
 import { getPoliticalSnapshot } from "../../systems/politics.js";
 
 let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRenderedIssueId=null;
@@ -76,11 +76,12 @@ function renderEvents(container){
 function renderStatistics(container){
     const buildings=state.entities.filter(e=>!e.dead&&e.isBuilding()).length;
     const military=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER].includes(e.type)).length;
-    const workforce=getWorkforceSnapshot(),housing=getHousingSnapshot(),economy=state.economy||{},politics=getPoliticalSnapshot();
+    const workforce=getWorkforceSnapshot(),housing=getHousingSnapshot(),households=getHouseholdSnapshot(),economy=state.economy||{},politics=getPoliticalSnapshot();
     const stats=[
         ["POPULATION",workforce.population],["EMPLOYED",workforce.employed],
         ["UNEMPLOYED",workforce.unemployed],["HOUSING",housing.population+" / "+housing.capacity],
         ["NATURAL GROWTH",Math.max(0,Number(economy.populationGrowth)||0)],
+        ["HOUSEHOLDS",households.households],["UNHOUSED",households.unhoused],
         ["VACANT HOMES",housing.available],["BUILDINGS",buildings],
         ["MILITARY",military],["MORALE",Math.floor(state.morale)],
         ["RAIDS SURVIVED",state.totalRaidsSurvived],["TRADES",state.statistics.totalTrades],
