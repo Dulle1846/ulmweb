@@ -7,6 +7,15 @@ import { addResource } from "../systems/resources.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
 import { distance } from "../core/utils.js";
 import { getWorkforceSnapshot,getBuildingEfficiency } from "../systems/economy.js";
+function getProductionLedger(){
+    const economy=state.economy||(state.economy={});
+    const ledger=economy.productionChains||(economy.productionChains={});
+    for(const key of ["millWoodConsumed","millBonusFood","tavernFoodConsumed","tavernGoldProduced"]){
+        const value=Number(ledger[key]);
+        ledger[key]=Number.isFinite(value)&&value>=0?value:0;
+    }
+    return ledger;
+}
 export function updateBuildingIncome(){
     const tick=state.tick,productionTick=tick%18===0,civicTick=tick%55===0;
     if(!productionTick&&!civicTick)return;
@@ -15,8 +24,7 @@ export function updateBuildingIncome(){
     const quarries=getEntitiesOfType(TYPE.QUARRY),goldMines=getEntitiesOfType(TYPE.GOLDMINE);
     const taverns=getEntitiesOfType(TYPE.TAVERN),temples=getEntitiesOfType(TYPE.TEMPLE),mills=getEntitiesOfType(TYPE.MILL);
     if(productionTick){
-        const chains=state.economy||(state.economy={});
-        const production=chains.productionChains||(chains.productionChains={millWoodConsumed:0,millBonusFood:0,tavernFoodConsumed:0,tavernGoldProduced:0});
+        const production=getProductionLedger();
         const activeMills=new Map();
         // A mill is a real production link: it consumes timber to improve nearby farms.
         mills.forEach(mill=>{
@@ -50,8 +58,7 @@ export function updateBuildingIncome(){
         });
     }
     if(civicTick){
-        const chains=state.economy||(state.economy={});
-        const production=chains.productionChains||(chains.productionChains={millWoodConsumed:0,millBonusFood:0,tavernFoodConsumed:0,tavernGoldProduced:0});
+        const production=getProductionLedger();
         // Taverns convert surplus food into trade income; without provisions they cannot operate.
         taverns.forEach(building=>{
             const efficiency=getBuildingEfficiency(building,workforce);
