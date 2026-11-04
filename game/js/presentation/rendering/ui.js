@@ -44,7 +44,7 @@ function renderHand(){
  lastHandSignature=signature;
  container.innerHTML=state.hand.map(card=>{
   const sprite=GROUP_SPRITES[card.group]||"icon-scroll";
-  return '<button type="button" class="hand-card rarity-'+esc(card.rarity||"common")+(card.instanceId===state.selectedCardInstanceId?" is-selected":"")+'" data-card-id="'+esc(card.instanceId)+'" aria-label="Select '+esc(card.name)+'">'+
+  return '<button type="button" class="hand-card rarity-'+esc(card.rarity||"common")+(card.instanceId===state.selectedCardInstanceId?" is-selected":"")+'" data-card-group="'+esc(card.group||"general")+'" data-card-id="'+esc(card.instanceId)+'" title="'+esc(card.desc||card.name)+'" aria-label="Select '+esc(card.name)+': '+esc(card.desc||"")+'">'+
    '<span class="hand-card-banner"><svg class="hand-card-sprite" aria-hidden="true"><use href="assets/realm-sprites.svg#'+sprite+'"></use></svg><span>'+esc(card.icon)+'</span></span>'+
    '<span class="hand-card-name">'+esc(card.name)+'</span><span class="hand-card-category">'+esc(card.categoryName||card.group||card.kind||"CARD")+'</span>'+
    '<span class="hand-card-rarity">'+esc(card.rarity||"common")+'</span></button>';
