@@ -2,11 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
 import {TYPE} from "../../js/core/types.js";
+import {WORLD_W,WORLD_H} from "../../js/core/config.js";
 import {spawnEntity} from "../../js/world/entities.js";
 import {updateVillagers} from "../../js/simulation/villagers.js";
 
 test("villagers never overfill a workplace beyond its staffing capacity",()=>{
     resetState();
+    state.terrainResolution=1;
+    state.terrainPixW=WORLD_W;
+    state.terrainPixH=WORLD_H;
+    state.heightMap=new Float32Array(WORLD_W*WORLD_H).fill(0.5);
     state.isPaused=false;
     state.gameOver=false;
     const farm=spawnEntity(80,80,TYPE.FARM);
