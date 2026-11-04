@@ -40,8 +40,8 @@ Priority meanings:
 
 ### F2 — Establish test and debugging foundations (P1)
 
-- [ ] Choose a minimal test runner compatible with the current JavaScript module setup.
-- [ ] Add unit tests for pure calculations and individual system rules.
+- [x] Choose a minimal test runner compatible with the current JavaScript module setup (Node built-in `node:test`, no third-party packages).
+- [ ] Expand unit tests for pure calculations and individual system rules (initial fixed-step clock tests now exist).
 - [ ] Add deterministic integration tests for core update sequences.
 - [ ] Add a browser smoke test for module loading and game initialization.
 - [ ] Make runtime errors easy to capture and reproduce.
