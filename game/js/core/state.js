@@ -22,7 +22,7 @@ function createInitialState() {
         terrainResolution:0,terrainPixW:0,terrainPixH:0,
         lastRandomEvent:0,weather:"clear",weatherTimer:0,
         kingHp:240,totalRaidsSurvived:0,raidActive:false,
-        market:null,economy:{daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:1,lastLedger:null},statistics:{totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0}
+        market:null,politics:{legitimacy:65,factions:{commons:68,nobility:58,guilds:55,clergy:62},settlements:0},economy:{daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:1,lastLedger:null},statistics:{totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0}
     };
 }
 export const state=createInitialState();
