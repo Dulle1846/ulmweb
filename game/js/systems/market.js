@@ -40,9 +40,12 @@ export function updateMarket() {
     state.market.lastUpdateTick = state.tick;
     const seasonFactor = [0.92,1.08,1.22,1.38][state.seasonIndex] || 1;
     for (const resource of MARKET_RESOURCES) {
-        const drift = (Math.random() - 0.5) * 0.18;
-        state.market.priceTrend[resource] = Math.max(-0.35,Math.min(0.45,(state.market.priceTrend[resource]||0)*0.65+drift));
-        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource])*100)/100);
+        const drift = (Math.random() - 0.5) * 0.12;
+        const regionalStock = state.market.partners.reduce((total,partner)=>total+(partner.stock[resource]||0),0);
+        const targetStock = 90 * state.market.partners.length;
+        const scarcityPressure = Math.max(-0.22,Math.min(0.38,(targetStock-regionalStock)/targetStock*0.32));
+        state.market.priceTrend[resource] = Math.max(-0.45,Math.min(0.55,(state.market.priceTrend[resource]||0)*0.68+drift+scarcityPressure*0.12));
+        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource]+scarcityPressure)*100)/100);
         const history = state.market.priceHistory[resource] || (state.market.priceHistory[resource] = []);
         history.push(state.market.prices[resource]);
         if (history.length > 16) history.shift();
