@@ -110,6 +110,8 @@ export function resize() {
     const centerWorldY = oldHeight > 0 ? (state.camera.y + oldHeight / 2) / (CELL * state.zoom) : WORLD_H / 2;
 
     if (state.canvas.width !== width || state.canvas.height !== height) {
+        // A resize changes screen coordinates; preserve the view centre and release a cursor anchor.
+        state.zoomAnchor = null;
         state.canvas.width = width;
         state.canvas.height = height;
         state.camera.x = centerWorldX * CELL * state.zoom - width / 2;
