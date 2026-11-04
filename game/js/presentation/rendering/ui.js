@@ -6,6 +6,7 @@ import { state } from '../../core/state.js';
 import { getEntitiesOfType } from '../../world/entities.js';
 
 let messageTimeout = null;
+let lastTabSignature = null;
 
 function setText(id, value) {
     const element = document.getElementById(id);
@@ -107,8 +108,36 @@ export function renderUI() {
     renderTabContent();
 }
 
+function getTabSignature() {
+    if (state.selectedTab === 0) {
+        return "events|" + state.eventLog.map(entry =>
+            [entry.tick, entry.color, entry.text].join(":")
+        ).join("|");
+    }
+
+    if (state.selectedTab === 1) {
+        const buildings = state.entities.filter(entity => entity.isBuilding() && !entity.dead).length;
+        const military = state.entities.filter(entity =>
+            [TYPE.GUARD, TYPE.KNIGHT, TYPE.ARCHER].includes(entity.type) && !entity.dead
+        ).length;
+        return [
+            "stats", buildings, military, state.totalRaidsSurvived,
+            Math.floor(state.resources.research), Math.floor(state.morale),
+            state.weather, state.incomeThisTick.wood, state.incomeThisTick.stone,
+            state.incomeThisTick.gold, state.incomeThisTick.food
+        ].join("|");
+    }
+
+    return "tech|" + state.techs.map(tech =>
+        [tech.id, tech.cost, tech.effect, state.unlockedTechs.has(tech.id)].join(":")
+    ).join("|");
+}
+
 function renderTabContent() {
     const container = document.getElementById("tab-content");
+    const signature = getTabSignature();
+    if (signature === lastTabSignature) return;
+    lastTabSignature = signature;
 
     if (state.selectedTab === 0) {
         const rows = state.eventLog.map(entry =>
