@@ -33,7 +33,9 @@ const GROUP_SPRITES={
  infrastructure:"icon-bridge",medicine:"icon-herb",diplomacy:"icon-dove",culture:"icon-lyre",engineering:"icon-gear",
  fishing:"icon-fish",alchemy:"icon-flask",cuisine:"icon-bowl",textiles:"icon-spool",architecture:"icon-arch",
  finance:"icon-coins",communication:"icon-raven",music:"icon-lyre",warfare:"icon-sword",politics:"icon-scroll",
- monsters:"icon-dragon",seasons:"icon-sun"
+ monsters:"icon-dragon",seasons:"icon-sun",weather:"icon-weather",underworld:"icon-underworld",
+ spirits:"icon-spirit",relics:"icon-relic",botany:"icon-botany",geology:"icon-geology",
+ administration:"icon-admin",frontier:"icon-frontier",urbanism:"icon-urban",scholarship:"icon-scholar"
 };
 function renderHand(){
  const container=document.getElementById("card-hand");if(!container)return;
