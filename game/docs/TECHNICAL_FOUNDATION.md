@@ -1,174 +1,129 @@
-# Technical Foundation
+# Kings & Cards — Technical foundation (current implementation)
 
-**Status:** Initial working baseline  
-**Reviewed commit:** `dae4edd7fcb1204d794f68dc4475ac149beb5cbc`
+**Current reviewed commit:** `f7a85b10d7e3bef81eb3fefcf4f4931af30bf14a`  
+**Development branch:** `ulmweb-branch`
 
-This document records what exists today and the engineering rules toward which the codebase should evolve. It is not a specification of future gameplay features.
+This document separates verified current behaviour from future architectural goals.
 
-## 1. Current runtime
+## 1. Runtime and entry points
 
-- Browser-based application using native JavaScript ES modules.
-- Entry point: `game/index.html`, which loads `game/js/app/main.js`.
-- Rendering: HTML Canvas 2D.
-- UI shell: semantic HTML elements with responsive base styling plus a parchment / manuscript presentation layer in `game/css/medieval.css`.
-- Main animation loop: `requestAnimationFrame`.
-- No bundler/build step is required. A minimal `game/package.json` now exposes Node's built-in test runner; the first automated tests cover the pure simulation-clock helper.
+- Browser application using native JavaScript ES modules.
+- Entry point: `game/index.html`; composition root: `game/js/app/main.js`.
+- Rendering: Canvas 2D, plus semantic HTML controls and CSS.
+- Current art direction: `game/css/medieval.css`, with reusable vector symbols in `game/assets/realm-sprites.svg`.
+- Main loop: `game/js/app/game-loop.js`, driven by `requestAnimationFrame`.
+- No bundler is required. The test command is `cd game && npm test`, using Node's built-in test runner.
 
-## 2. Current module layout
+## 2. Current module responsibilities
 
-| Area | Current responsibility |
+| Module | Responsibility |
 |---|---|
-| `app/main.js` | Composition root: initializes browser surfaces, world, starting settlement, UI/input and timed startup events |
-| `app/game-loop.js` | Frame scheduling, fixed-step clock consumption, movement and render orchestration |
-| `core/*` | Shared configuration, state, entity types, utilities, four-level zoom model, fixed-step clock and presentation-effect contract |
-| `presentation/camera.js` | View transform, zoom, bounds and coordinate conversion |
-| `presentation/input.js` | Pointer, touch, keyboard and UI event handlers |
-| `presentation/effects.js` | Converts declarative effect requests from core into concrete Canvas/UI effects |
-| `presentation/rendering/*` | Terrain/entities drawing, UI, minimap, particles/floaters and live building-placement preview |
-| `world/*` | Terrain maps, biome queries, exploration, entity creation/queries and weather |
-| `systems/*` | Resource, morale, technology, card and random-event rules |
-| `simulation/*` | Logical ticks, building income, villager behaviour and combat |
+| `app/main.js` | Browser composition, profile selection, realm startup, save DTO serialization/deserialization |
+| `app/game-loop.js` | Fixed-step clock, movement cadence, presentation updates, render scheduling and runtime fail-stop |
+| `core/*` | Shared state/config/types/utilities, persistence helpers, simulation clock, presentation-effect contract, soundtrack |
+| `world/world.js` | Seeded Perlin terrain, world-forge settings, height/moisture maps, terrain prerender, exploration and biome queries |
+| `world/entities.js` | Entity spawn/cap checks, entity queries and building footprint overlap |
+| `systems/cards.js` | Card deck/hand, timed draws, selection, placement preview, play/discard consumption |
+| `systems/card-catalog.js` | 400 category records, archetypes, card variant dimensions and on-demand variant generation |
+| `systems/events.js` | Issue families, issue scheduling, choice resolution, bounded event history and hidden realm pressures |
+| `systems/resources.js`, `morale.js`, `market.js` | Resource accounting, morale, production/economy support and regional trade |
+| `simulation/simulation.js` | One authoritative logical simulation tick and coordination of systems |
+| `simulation/villagers.js` | Workplace assignment, daily routine phases, movement, threat avoidance and building collision index |
+| `simulation/combat.js` | Enemy/defender target selection through spatial buckets |
+| `simulation/buildings.js` | Scheduled production and civic building effects |
+| `presentation/*` | Camera, pointer/keyboard input, HTML UI, canvas rendering, minimap, particles and effect adapters |
 
+The application is a modular monolith, not yet an isolated ECS or worker-based simulation. `state.js` remains a globally mutable state object. This is an acknowledged limitation and a future refactoring target.
 
+## 3. World representation and generation
 
-### Implemented source structure
+- Logical world dimensions: 160×160.
+- `CELL = 48` pixels at zoom 1.
+- Terrain stores height and moisture in typed arrays at three samples per logical world unit (480×480 samples per map).
+- A prerendered terrain canvas is a disposable visual cache.
+- Exploration is a column-major boolean map.
+- Dynamic objects are `Entity` instances in `state.entities`.
+- The numeric seed initializes the Perlin permutation. Four world-forge values (landmass, ruggedness, forest density, water level) alter generated height/moisture fields.
 
-The current code is a modular monolith with these real folders: `app/`, `core/`, `world/`, `systems/`, `simulation/` and `presentation/`. The HTML entry point is only a bootstrap reference; application wiring lives in the composition root. Presentation owns camera/input/rendering modules. Shared modules (`config.js`, `state.js`, `types.js`, `utils.js`) now live under `core/`. The state object is still globally mutable and needs clearer ownership/partitioning; folder placement alone does not make that contract formal.
+The terrain module currently uses browser canvas APIs for prerendering; a future worker/offscreen-canvas boundary would need an explicit browser compatibility contract.
 
-Domain and simulation modules no longer import Canvas, UI or rendering modules. They enqueue declarative presentation effects through the core contract; `presentation/effects.js` maps those requests to the active visual implementation. The application loop owns the adapter and the visual update cadence.
+## 4. Card and issue data models
 
+### Cards
 
-### Visual zoom and building interaction
+The deck contains one archetype per category. Cards are drawn by randomly selecting from the remaining category deck and applying scale, rarity and context dimensions. Variants are created on demand, not eagerly preallocated. The theoretical variant space is 400 categories × 10 scales × 10 rarities × 10 contexts = 400,000.
 
-The presentation now has four detail bands: landscape, districts, rooftops and interiors. At the deepest level, people use animated top-down figures rather than the larger rooftop role badges. The pure zoom rules live in `core/zoom-model.js`; camera anchoring, interpolation and viewport bounds live in `presentation/camera.js`. Card placement uses the same validation for preview and final drop: terrain across the full footprint, world bounds, occupancy and affordability. The map preview is rendered by `presentation/rendering/placement-preview.js`. Full details are in [Zoom and Building Placement](ZOOM_AND_BUILDING_PLACEMENT.md).
+The hand is capped at five. A new realm starts with an empty hand; the first draw is scheduled 28–72 ticks later. Later draws and replacement draws use randomized tick intervals. Playing or discarding removes the current card and schedules its replacement. The card hand, remaining deck, selection and next-draw tick are persisted.
 
-## 3. Current world and entity data
+### Realm issues
 
-The current terrain representation is not a grid of tile objects.
+There are 24 event families, with a current combinatorial narrative space of 25,920. Event issue scheduling uses simulation ticks. Each issue currently exposes two choices whose effects can change resources, morale, villagers and hidden realm values. The values tension, prosperity and mystery influence later family weighting. The event log is bounded to 100 entries and hidden decision memories to 24 entries.
 
-- World dimensions are `WORLD_W = 160` and `WORLD_H = 160`.
-- `CELL = 48` is the logical cell size at zoom 1.
-- Terrain generation stores `heightMap` and `moistureMap` in typed arrays at three samples per logical world unit.
-- `terrainCanvas` is a prerendered visual cache.
-- `explored` stores exploration visibility.
-- Dynamic objects are stored in `state.entities` as `Entity` instances.
-- Building occupancy is currently inferred from entities through queries such as `buildingAt()`; there is no declared `state.world` grid in the reviewed `state.js`.
+The event system is currently data-driven procedural narrative. It is not yet a large library of individually authored branching quest chains.
 
-The terrain data, visual cache, exploration data and dynamic entities should remain conceptually distinct. A future occupancy/spatial index may be introduced, but it must have one documented source of truth and must not duplicate terrain state accidentally.
+## 5. Save/load and identity
 
-## 4. Current execution model
+Profiles are browser-local display-name profiles. Saves are versioned JSON envelopes stored in localStorage with profile-specific keys.
 
-- `app/main.js` initializes the application and starts `app/game-loop.js`.
-- `app/game-loop.js` runs the frame loop with `requestAnimationFrame`.
-- Simulation updates are driven by an accumulator using `BASE_TICK_INTERVAL = 333` ms.
-- The accumulator adds elapsed frame time multiplied by `state.gameSpeed`.
-- Friendly unit movement is updated separately per rendered frame.
-- Rendering is performed per frame.
-- Each logical simulation update advances `state.tick` by exactly one. `core/simulation-clock.js` calculates the number of fixed steps from elapsed frame time and selected game speed. The helper is pure and can be tested independently.
+The snapshot serializes authoritative state: seed/world options, clock, entities, workplace references by entity-array index, resources, hand/deck/draw schedule, active issue/schedule/hidden pressures, log, market, camera and exploration. It does not store Canvas contexts, DOM nodes or event listeners.
 
-### Target time-system invariants
+There is no server authentication, admin authorization, cloud database or cross-device sync. The current product stage explicitly accepts browser-local saves. Any future online identity/cloud save feature must introduce real server-side authentication and authorization rather than treating a client-side profile name as identity.
 
-1. One simulation update advances exactly one logical simulation tick.
-2. Game speed changes how frequently logical ticks are processed, not the size of an individual tick.
-3. Pausing stops simulation time while allowing rendering and interface updates to continue.
-4. Frame-based visual effects must not change authoritative simulation outcomes.
-5. Tick, day, season and year conversions must be explicit and tested.
-6. Large frame delays must be handled without unbounded catch-up work.
+## 6. Runtime timing
 
-## 5. Target architectural boundaries
+- Authoritative simulation tick interval: 333 ms at 1×.
+- Each logical simulation update increments `state.tick` exactly once.
+- `core/simulation-clock.js` converts elapsed time and game speed into fixed simulation steps.
+- Friendly unit movement has a separate 30 Hz accumulator, with at most three movement substeps per rendered frame.
+- Minimap refresh is throttled to 400 ms; HTML UI refresh is throttled to 160 ms.
+- Frame delta and simulation catch-up are bounded to avoid unbounded work after stalls.
+- If an uncaught frame error occurs, the loop pauses the realm, displays a fault message and stops scheduling more frames. Reload is currently the recovery path.
 
-These are engineering rules to introduce progressively; they are not all satisfied by the current implementation.
+## 7. Performance safeguards
 
-### Core data and configuration
-- Configuration contains constants and static definitions, not runtime behaviour.
-- Entity/type definitions describe serializable domain data.
-- Runtime state has a documented schema and clear ownership.
-- State mutations occur through explicit system operations rather than arbitrary UI/rendering code.
+These optimizations are implemented and covered by targeted tests where possible:
 
-### World and simulation
-- World data owns terrain, regions, exploration and spatial queries.
-- Simulation systems consume and update authoritative game data.
-- Simulation code must not depend on DOM elements or Canvas contexts.
-- Randomness must be injected through an explicit random source, not called directly through `Math.random()` throughout gameplay systems.
+1. **Visible entity cache:** the renderer filters/sorts the visible entity set on a short-lived cache instead of every frame.
+2. **Terrain decoration LOD:** decoration sampling density changes with zoom.
+3. **Fog cache:** a 160×160 offscreen fog image is rebuilt only after exploration changes, then drawn with one image operation.
+4. **Building occupancy index:** a tile-key set is rebuilt from building footprints; movement collision is a constant-time lookup rather than scanning the entity list for every unit step.
+5. **Workplace grouping:** villager workplace lists are assembled in one entity pass.
+6. **Combat spatial buckets:** local target searches inspect nearby buckets rather than all entity pairs.
+7. **Population/effect caps:** 900 total entities, 420 mobile entities, 350 particles and 100 floaters.
+8. **Cadence control:** movement 30 Hz, minimap 2.5 Hz, UI 6.25 Hz.
 
-### Presentation and input
-- Rendering reads authoritative state and draws it; it does not decide game rules.
-- UI displays state and sends commands/actions to the application layer.
-- Input translates user actions into commands; it should not implement game rules itself.
-- DOM and Canvas objects remain outside serializable game data.
+These guards address identified structural costs and runaway growth. They do not yet constitute a reproducible FPS benchmark across hardware. Profiling at high population, on integrated graphics and on low-end mobile devices remains a required follow-up.
 
-### Orchestration and dependencies
-- `main.js` composes modules and starts the runtime; it should not become the home for gameplay rules.
-- Lower-level domain modules should not import rendering or UI modules.
-- Avoid circular module dependencies. Shared contracts should live in small lower-level modules.
-- Each module should have a narrow, documented responsibility.
+## 8. Quality and verified checks
 
-## 6. Determinism and identity
+Latest GitHub Actions run for the reviewed commit:
 
-The current terrain generator initializes its Perlin permutation table from a randomly chosen seed, but the seed is not stored in game state. Other systems call `Math.random()` directly. The current project therefore does not provide reproducible whole-world generation or deterministic simulation.
+- 53 automated tests passed; zero failed.
+- JavaScript syntax and relative imports passed for 34 source files.
+- 77 referenced UI IDs, duplicate IDs and local HTML assets passed validation.
 
-Target requirements:
+Live browser checks verified the parchment start screen, four world-forge sliders, empty starting hand, timed first card, SVG symbol rendering, changed forge settings surviving save/reload, card discard/replacement, and issue popup/choice resolution.
 
-- Store a world seed as part of the authoritative game state.
-- Provide a seeded random-number generator through an explicit API.
-- Keep random streams separate where useful (for example, world generation and simulation) so unrelated changes do not reshuffle every outcome.
-- Give persistent entities stable unique IDs.
-- Do not use array positions as long-term entity identity.
-- Make random-generator state serializable for save/load and reproducible debugging.
+The browser automation could not perform a true continuous mouse drag gesture. Pointer-based handlers are implemented; manual mouse validation remains outstanding.
 
-## 7. Persistence
+## 9. Known limitations and next engineering steps
 
-No save/load implementation or save schema is present in the reviewed game files.
+- Many of the 400 card categories currently use generic group archetypes. Only the initial prototype set is individually curated. Add specific card effects and balance in a data-driven manner.
+- The 24 issue families generate many text variants, but bespoke multi-stage story chains, named characters and callback events remain future content.
+- Character AI uses simple job assignment, routine phases and movement. It does not yet model family, friendship/rivalry, personality traits, political allegiance or persistent autobiographical memory.
+- Pathfinding is local collision avoidance, not robust route planning.
+- The economy is a first barter model, not a full chain of labour, wages, transport, taxation and regional markets.
+- Whole-simulation determinism is incomplete: terrain uses the world seed, while many gameplay systems still call `Math.random()`. Seeded random streams and serializable RNG state are future work.
+- The global mutable state should gradually be split behind clear domain contracts.
+- Browser-local profiles are acceptable now; cloud saves/admin identity require a real backend and explicit security design.
 
-Persistence should be designed before the simulation becomes much larger. The saved representation should contain authoritative data only, not DOM nodes, Canvas contexts, prerendered canvases or other disposable runtime caches.
+## 10. Technical completion standard
 
-Target requirements:
-
-- A versioned save format.
-- Explicit serialization and deserialization boundaries.
-- Stable entity IDs and valid reference restoration.
-- Schema migration strategy.
-- Validation of loaded data and graceful handling of incompatible saves.
-
-## 8. Quality and performance
-
-The game now has a minimal test command using Node's built-in test runner (`cd game && npm test`). It runs 21 unit tests covering fixed-step time, the presentation-effect contract, building footprints and four-level zoom math. It then checks JavaScript syntax, relative imports, referenced DOM IDs, duplicate HTML IDs and local CSS/JS asset paths. Broader game-system integration tests and browser interaction verification are still missing.
-
-The foundation should add:
-
-- Unit tests for pure calculations and individual system rules.
-- Integration tests for interactions between systems.
-- Deterministic simulation tests using fixed seeds.
-- Browser smoke tests for initialization, input and rendering.
-- A repeatable way to detect runtime errors.
-- Performance measurements before introducing optimization complexity.
-
-Performance work should be evidence-driven. Keep authoritative simulation data separate from visual caches, and introduce spatial partitioning, simulation levels of detail or worker execution only when measurements justify them.
-
-## 9. Technical completion standard
-
-A foundation change is complete only when:
-
-- The implementation matches its documented responsibility.
-- The relevant automated test or reproducible manual verification passes.
-- No new runtime errors are introduced.
-- The save format remains valid or is migrated where necessary.
-- Documentation and dependency notes are updated.
-- The change is isolated enough to review and revert safely.
-
-
-## 2.0 playable foundation milestone
-
-The active game now boots from a start screen and waits for a player action before starting a realm. The first implementation includes local profile IDs, versioned localStorage saves, random numeric terrain seeds, a procedural original music loop, keyboard shortcuts, and a five-card hand.
-
-The card catalog has 100 categories. Each category can produce a playable archetype, while scale, rarity and context generate variants on demand. The 100,000 figure is a theoretical combination space (100 categories × 10 scales × 10 rarities × 10 contexts), not 100,000 hand-authored unique cards.
-
-The active economy uses wood, stone, gold and food. Gold mines produce gold; the regional market trades wood, stone and food for gold with four fictional partners, finite stock and moving seasonal prices. Decision-based realm issues now present player choices and record resolutions in the Event Log. Statistics expose population, buildings, military, morale, raids, trade and card activity.
-
-Research has been removed from the active UI, state and production rules. The old technology module is removed from the active source tree.
-
-Performance changes: render entities are culled to an expanded visible region; movement work is capped to a 30 Hz accumulator; minimap rebuilds are throttled to 4 Hz; DOM refresh is throttled instead of rebuilding at display refresh rate.
-
-**Account boundary:** current player profiles and saves are local to one browser profile. They are not server-authenticated accounts, do not protect an admin identity, and do not sync between devices. A real user/admin system requires server-side authentication and a database, which is intentionally not simulated by this static client.
-
-Verification is driven by the 44-test suite plus browser smoke tests. Full account sync, broad-authored card content, deep supply chains, advanced pathfinding and balance simulation remain follow-on work.
+Every substantive change should:
+- have a focused module responsibility and explicit state contract;
+- add or update unit/integration tests;
+- preserve save compatibility or migrate it;
+- be reviewed against the current branch head before committing;
+- pass `npm test` and the repository's syntax/DOM/asset validator;
+- receive a browser smoke test when it affects UI, pointer interaction, saving or live simulation;
+- document what was actually verified and what remains untested.
