@@ -80,7 +80,13 @@ export function updateVillagers() {
     }
 
     villagers.forEach(v => {
-        v.age++;
+        // Age is measured in settlement years, not in simulation ticks.
+        // The year guard also prevents duplicate ageing if this system is
+        // invoked more than once during the year-boundary tick.
+        if (state.dayOfYear === 0 && v.lastAgedYear !== state.year) {
+            v.age = Math.max(0, Number(v.age) || 0) + 1;
+            v.lastAgedYear = state.year;
+        }
 
         v.jobRefreshTimer--;
         if (v.jobRefreshTimer <= 0) {
