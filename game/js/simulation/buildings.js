@@ -17,8 +17,8 @@ export function updateBuildingIncome(){
     if(productionTick){
         farms.forEach(f=>{
             const base=(state.seasonIndex===0||state.seasonIndex===1)?5:3;
-            const nearbyMill=mills.some(m=>distance(m.x,m.y,f.x,f.y)<6);
-            addResource("food",Math.floor(base*(nearbyMill?1.6:1)));
+            const nearbyMill=mills.some(m=>distance(m.x,m.y,f.x,f.y)<6&&getBuildingEfficiency(m,workforce)>0);
+            addResource("food",base*getBuildingEfficiency(f,workforce)*(nearbyMill?1.6:1));
             if(Math.random()<0.12)queueParticle(f.x*TILE_SIZE+20,f.y*TILE_SIZE+12,"#bef575",26,0,-1.5);
         });
         lumbers.forEach(building=>addResource("wood",(3+(Math.random()>0.6?2:0))*getBuildingEfficiency(building,workforce)));
