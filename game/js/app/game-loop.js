@@ -39,7 +39,6 @@ function gameLoop(timestamp) {
             updateSimulation();
             updateParticles();
             updateFloaters();
-            updateMinimap();
 
             if (state.gameOver || state.victory) break;
         }
@@ -50,6 +49,9 @@ function gameLoop(timestamp) {
     }
 
     flushPresentationEffects();
+
+    // The minimap viewport follows camera movement even while the simulation is paused.
+    updateMinimap();
 
     const { ctx, canvas } = state;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
