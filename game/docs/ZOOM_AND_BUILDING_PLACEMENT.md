@@ -58,6 +58,7 @@ Automatisierte Abdeckung (derzeit 27 Unit-Tests im Gesamtprojekt):
 - Alle Zoom-Presets.
 - Zoombegrenzung und Interpolation.
 - Kameraanker unter dem Cursor.
+- JavaScript-Syntax, relative Modulimporte, HTML-ID-Verträge und lokale Frontend-Assets.
 - Gebäudefußabdrücke und Überschneidungen.
 - Vollständige relative Modulimports und JavaScript-Syntax.
 
