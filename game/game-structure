@@ -5,9 +5,11 @@ game/
 ├── scripts/
 │   └── check-syntax.js                # Prüft die Syntax aller JavaScript-Quelldateien
 ├── tests/
-│   └── core/
-│       ├── simulation-clock.test.js   # Tests für feste Simulationsschritte
-│       └── presentation-effects.test.js # Tests für den Darstellungsauftrag-Vertrag
+│   ├── core/
+│   │   ├── simulation-clock.test.js   # Tests für feste Simulationsschritte
+│   │   └── presentation-effects.test.js # Tests für den Darstellungsauftrag-Vertrag
+│   └── world/
+│       └── building-occupancy.test.js # Tests für Gebäude-Fußabdrücke und Belegung
 ├── js/
 │   ├── app/
 │   │   ├── main.js                    # Composition Root: initialisiert und verbindet Module
