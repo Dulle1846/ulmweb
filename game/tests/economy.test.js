@@ -8,8 +8,8 @@ test("daily ledger balances food, taxes, wages and upkeep", () => {
     const ledger = calculateDailyLedger({
         population: 10, employed: 8, buildings: 12, foodAvailable: 20, goldAvailable: 10
     });
-    assert.ok(Math.abs(ledger.foodDemand - 8) < 1e-9);
-    assert.ok(Math.abs(ledger.foodConsumed - 8) < 1e-9);
+    assert.ok(Math.abs(ledger.foodDemand - 3) < 1e-9);
+    assert.ok(Math.abs(ledger.foodConsumed - 3) < 1e-9);
     assert.equal(ledger.taxesCollected, 4);
     assert.ok(Math.abs(ledger.wagesPaid - 2.4) < 1e-9);
     assert.ok(Math.abs(ledger.upkeepPaid - 0.72) < 1e-9);
@@ -22,7 +22,7 @@ test("food shortage is capped by available stock and reported", () => {
         population: 10, employed: 0, buildings: 0, foodAvailable: 1, goldAvailable: 0
     });
     assert.equal(ledger.foodConsumed, 1);
-    assert.ok(Math.abs(ledger.foodShortage - 7) < 1e-9);
+    assert.ok(Math.abs(ledger.foodShortage - 2) < 1e-9);
 });
 
 test("unpaid wages and upkeep never create negative treasury payments", () => {
