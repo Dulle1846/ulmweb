@@ -56,12 +56,18 @@ function readWorldOptions(){
     return {landmass:value("world-landmass"),ruggedness:value("world-ruggedness"),forests:value("world-forests"),water:value("world-water")};
 }
 function syncWorldForge(options){
-    for(const key of ["landmass","ruggedness","forests","water"]){
-        const input=document.getElementById("world-"+key),output=document.getElementById("world-"+key+"-value");
+    const controls=[
+        ["landmass",document.getElementById("world-landmass"),document.getElementById("world-landmass-value")],
+        ["ruggedness",document.getElementById("world-ruggedness"),document.getElementById("world-ruggedness-value")],
+        ["forests",document.getElementById("world-forests"),document.getElementById("world-forests-value")],
+        ["water",document.getElementById("world-water"),document.getElementById("world-water-value")]
+    ];
+    for(const [key,input,output] of controls){
         if(input&&Number.isFinite(Number(options?.[key])))input.value=String(options[key]);
         if(output)output.textContent=input?.value||"50";
     }
 }
+
 function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     resetForRun(profile);
     state.worldSeed=seed;
@@ -219,9 +225,10 @@ function bindMenu(){
     if(seedInput)seedInput.value=String(randomSeed());
     const forgeDefaults={landmass:50,ruggedness:55,forests:52,water:48};
     syncWorldForge(forgeDefaults);
-    for(const key of Object.keys(forgeDefaults)){
-        document.getElementById("world-"+key)?.addEventListener("input",()=>syncWorldForge(readWorldOptions()));
-    }
+    document.getElementById("world-landmass")?.addEventListener("input",()=>syncWorldForge(readWorldOptions()));
+    document.getElementById("world-ruggedness")?.addEventListener("input",()=>syncWorldForge(readWorldOptions()));
+    document.getElementById("world-forests")?.addEventListener("input",()=>syncWorldForge(readWorldOptions()));
+    document.getElementById("world-water")?.addEventListener("input",()=>syncWorldForge(readWorldOptions()));
     document.getElementById("random-seed-btn")?.addEventListener("click",()=>{if(seedInput)seedInput.value=String(randomSeed());});
     document.getElementById("start-new-game-btn")?.addEventListener("click",()=>{
         try{
