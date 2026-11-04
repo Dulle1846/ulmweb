@@ -55,6 +55,7 @@ try{
     assert.ok(countBeforeClick>=3);
     const eventModal=page.locator("#realm-event-modal");
     if(await eventModal.isVisible())await page.locator("#realm-event-choices button").first().click();
+    await page.locator("#speed-1").click();
 
     // Clicking a card selects it; it must not accidentally place it merely
     // because the hand dock overlays the canvas element's bounding rectangle.
