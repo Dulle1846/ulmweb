@@ -6,6 +6,7 @@ import { CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
 import { drawTerrain } from './terrain.js';
 import { drawEntity } from './entities.js';
+import { drawPlacementPreview } from './placement-preview.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  WELT ZEICHNEN
@@ -30,6 +31,9 @@ export function drawWorld() {
             drawEntity(ctx, entity, tick, zoom, camera);
         }
     });
+
+    // ── Card placement preview ───────────────────────────────
+    drawPlacementPreview(ctx);
 
     // ── Partikel ─────────────────────────────────────────────
     const cellPx = CELL * zoom;
@@ -95,23 +99,28 @@ function drawZoomIndicator(ctx, canvas) {
     const zl = state.zoomLevel;
     const zoom = state.zoom;
 
-    const labels = ["", "KINGDOM", "SETTLEMENT", "INTERIOR"];
+    const labels = ["", "LANDSCAPE", "DISTRICTS", "ROOFTOPS", "INTERIORS"];
     const label = labels[zl];
 
     ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(8, canvas.height - 32, 140, 24);
+    ctx.fillStyle = "rgba(8, 15, 18, 0.82)";
+    ctx.strokeStyle = "rgba(212, 175, 93, 0.38)";
+    ctx.lineWidth = 1;
+    ctx.fillRect(12, canvas.height - 40, 206, 28);
+    ctx.strokeRect(12.5, canvas.height - 39.5, 205, 27);
 
-    ctx.fillStyle = "#fcd34d";
-    ctx.font = "600 10px monospace";
+    ctx.fillStyle = "#ead9b3";
+    ctx.font = "700 10px 'Trebuchet MS', sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(`${label}  ×${zoom.toFixed(1)}`, 14, canvas.height - 16);
+    ctx.fillText(label, 22, canvas.height - 22);
+    ctx.fillStyle = "#b9a98a";
+    ctx.font = "10px monospace";
+    ctx.fillText(`×${zoom.toFixed(2)}`, 130, canvas.height - 22);
 
-    // Drei kleine Punkte für die Levels
-    for (let i = 1; i <= 3; i++) {
-        ctx.fillStyle = i === zl ? "#fcd34d" : "#444";
+    for (let i = 1; i <= 4; i++) {
+        ctx.fillStyle = i === zl ? "#dfba70" : "rgba(226, 216, 193, 0.28)";
         ctx.beginPath();
-        ctx.arc(120 + i * 12, canvas.height - 20, 3, 0, Math.PI * 2);
+        ctx.arc(174 + i * 10, canvas.height - 26, i === zl ? 3.4 : 2.4, 0, Math.PI * 2);
         ctx.fill();
     }
 
