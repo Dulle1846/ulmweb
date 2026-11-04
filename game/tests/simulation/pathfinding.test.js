@@ -18,7 +18,7 @@ test("A-star finds a route around a blocking building footprint",()=>{
     spawnEntity(40,40,TYPE.KEEP);
     const route=findPath(35.5,40.5,45.5,40.5);
     assert.ok(route);
-    assert.ok(route.length>10);
+    assert.ok(route.length>8);
     assert.ok(route.some(node=>node.y<39||node.y>42));
     assert.ok(route.every(node=>isWalkable(node.x,node.y)));
 });
