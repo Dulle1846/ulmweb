@@ -13,28 +13,30 @@ Priority meanings:
 ### F0 — Establish a safe baseline
 
 - [x] Confirm the default development branch and reviewed baseline commit: `ulmweb-branch` at `dae4edd7fcb1204d794f68dc4475ac149beb5cbc`.
-- [ ] Run the baseline game in a browser and record startup/runtime errors.
+- [x] Initialen Browser-Baseline-Test ausgeführt und den reproduzierbaren Kartenplatzierungsfehler inklusive Konsolen-Stacktrace festgehalten. Die übrigen manuellen Tests sind noch offen.
 - [x] Create a reproducible smoke-test checklist in [F0_BASELINE_CHECKLIST.md](F0_BASELINE_CHECKLIST.md). Test results remain unrecorded until execution.
-- [x] Keep baseline review separate from implementation changes; documentation work is isolated on `foundation/technical-baseline`.
+- [x] Baseline-Beobachtung und anschließende Reparatur nachvollziehbar dokumentiert.
 
-**Current status:** F0 is in progress. Repository/source inspection and the test procedure are prepared. Browser execution and result capture are still outstanding.
+**Current status:** F0 is teilweise abgeschlossen. Der Browserstart und der konkrete Kartenplatzierungsfehler wurden dokumentiert. Die vollständige Checkliste und der erneute Browserlauf nach den Reparaturen stehen noch aus.
 
-**Browser evidence (2026-11-04):** The user's Chrome session loaded the game but card placement raised a `state.world` TypeError in `systems/cards.js`. This failure was reproduced in the screenshot and the code path has been repaired on `foundation/technical-baseline`. F0 remains open until the full smoke-test list is repeated against the repaired branch.
+**Browser evidence (2026-11-04):** The Chrome-Screenshot zeigte ein geladenes Spiel, aber einen `state.world`-TypeError beim Kartenplatzieren. Der Codepfad wurde repariert und in `ulmweb-branch` übernommen. F0 bleibt offen, bis die vollständigen Smoke-Tests und der erneute Browserlauf gegen den reparierten Stand erfolgt sind.
 
-**Repair review:** See [Baseline Fix Review](BASELINE_FIX_REVIEW.md). Source fixes are committed for review; they are not marked complete until browser verification succeeds.
+**Repair review:** See [Baseline Fix Review](BASELINE_FIX_REVIEW.md). Die Codekorrekturen sind übernommen; als Laufzeitfehler behoben gelten sie erst nach erfolgreichem Browser-Nachtest.
 
 **Exit condition:** The team can reliably start the game and distinguish existing failures from regressions.
 
 ### F1 — Stabilize critical runtime behaviour (P0)
 
-- [ ] Resolve the `state.world` mismatch in card placement.
-- [ ] Define one authoritative terrain/buildability query path.
-- [ ] Define building occupancy and bounds checks.
-- [ ] Correct the double application of game speed.
-- [ ] Define tick/calendar conversion and add timing tests.
+- [x] Resolve the `state.world` mismatch in card placement (Browser-Nachtest noch ausstehend).
+- [x] Use the terrain query as authoritative buildability source.
+- [x] Add full-footprint occupancy, terrain and world-boundary checks.
+- [x] Correct the double application of game speed.
+- [x] Define one logical tick per update and a 400-day year; timing tests remain open.
 - [ ] Add regression tests for card placement and simulation speed.
 
 **Exit condition:** Card placement works on valid terrain, rejects invalid/occupied locations, and simulation speed behaves consistently at 1x, 2x and 4x.
+
+**F1 implementation status:** The core source corrections are in place. Browser verification and automated regression tests remain required before closing F1.
 
 ### F2 — Establish test and debugging foundations (P1)
 
