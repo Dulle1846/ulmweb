@@ -12,8 +12,10 @@ test("a staffed gold mine creates recurring gold income without research unlocks
     state.resources.gold=0;
     state.incomeThisTick={wood:0,stone:0,gold:0,food:0};
     const mine=spawnEntity(80,80,TYPE.GOLDMINE);
-    const miner=spawnEntity(81,80,TYPE.VILLAGER);
-    miner.workplace=mine;
+    for(let index=0;index<3;index++){
+        const miner=spawnEntity(81+index,80,TYPE.VILLAGER);
+        miner.workplace=mine;
+    }
     updateBuildingIncome();
     assert.equal(state.resources.gold,2);
     assert.equal(state.incomeThisTick.gold,2);
