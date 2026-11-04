@@ -1,0 +1,136 @@
+import assert from "node:assert/strict";
+import {createServer} from "node:http";
+import {readFile} from "node:fs/promises";
+import {extname,resolve,sep} from "node:path";
+import {chromium} from "playwright";
+
+const root=process.cwd();
+const mime={
+    ".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",
+    ".css":"text/css; charset=utf-8",".svg":"image/svg+xml",".json":"application/json",
+    ".png":"image/png",".jpg":"image/jpeg",".webp":"image/webp",".mp3":"audio/mpeg",".wav":"audio/wav"
+};
+const server=createServer(async(req,res)=>{
+    try{
+        const pathname=decodeURIComponent(new URL(req.url,"http://127.0.0.1").pathname);
+        const relative=pathname==="/"?"index.html":pathname.slice(1);
+        const file=resolve(root,relative);
+        if(file!==root&&!file.startsWith(root+sep)){res.writeHead(403).end("Forbidden");return;}
+        const data=await readFile(file);
+        res.writeHead(200,{"content-type":mime[extname(file)]||"application/octet-stream","cache-control":"no-store"});
+        res.end(data);
+    }catch{
+        res.writeHead(404,{"content-type":"text/plain"}).end("Not found");
+    }
+});
+await new Promise(resolveListen=>server.listen(4173,"127.0.0.1",resolveListen));
+const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage"]});
+const errors=[];
+try{
+    const context=await browser.newContext({viewport:{width:1600,height:1000},reducedMotion:"reduce"});
+    const page=await context.newPage();
+    page.on("pageerror",error=>errors.push(error.message));
+    await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
+    assert.equal(await page.title(),"KINGS & CARDS • Eternal Realm");
+    assert.equal(await page.locator("#start-screen").isVisible(),true);
+
+    for(const [id,value] of [["world-landmass","72"],["world-ruggedness","64"],["world-forests","81"],["world-water","43"]]){
+        await page.locator("#"+id).evaluate((el,next)=>{
+            el.value=next;el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}));
+        },value);
+    }
+    await page.locator("#world-seed-input").fill("20261104");
+    await page.locator("#player-name-input").fill("CI-Browser-Check");
+    await page.locator("#start-new-game-btn").click();
+    await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
+    assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
+
+    await page.locator("#speed-4").click();
+    await page.waitForFunction(()=>{
+        const value=document.querySelector("#hand-count")?.textContent||"0 / 5";
+        return Number.parseInt(value,10)>=3;
+    },null,{timeout:45000});
+    const countBeforeClick=Number.parseInt(await page.locator("#hand-count").innerText(),10);
+    const cardButtons=page.locator("#card-hand .hand-card");
+    assert.ok(countBeforeClick>=3);
+
+    // Clicking a card selects it; it must not accidentally place it merely
+    // because the hand dock overlays the canvas element's bounding rectangle.
+    let chosenIndex=-1;
+    for(let i=0;i<await cardButtons.count();i++){
+        await cardButtons.nth(i).click();
+        const affordable=await page.evaluate(()=>{
+            const resources={};
+            for(const key of ["wood","stone","gold","food"])resources[key]=Number(document.querySelector("#res-"+key)?.textContent||0);
+            return ["wood","stone","gold","food"].every(key=>{
+                const amount=Number(document.querySelector("#card-cost-"+key+" span:nth-child(2)")?.textContent||0);
+                return amount<=resources[key];
+            });
+        });
+        if(affordable){chosenIndex=i;break;}
+    }
+    assert.ok(chosenIndex>=0,"at least one of the first three cards should be affordable");
+    assert.equal(Number.parseInt(await page.locator("#hand-count").innerText(),10),countBeforeClick,"selecting a card must not remove it");
+    const logBeforeClick=await page.locator("#tab-content").innerText();
+    assert.equal(logBeforeClick.includes("PLAYED "),false,"clicking the hand must not play a card");
+
+    // Exercise an actual pointer drag. Search a small safe interior grid for a
+    // legal placement preview; the random map seed can change valid terrain.
+    const cardBox=await cardButtons.nth(chosenIndex).boundingBox();
+    const canvasBox=await page.locator("#canvas").boundingBox();
+    assert.ok(cardBox&&canvasBox);
+    await page.mouse.move(cardBox.x+cardBox.width/2,cardBox.y+cardBox.height/2);
+    await page.mouse.down();
+    let placed=false;
+    for(const fy of [0.30,0.38,0.46,0.54,0.62,0.70]){
+        for(const fx of [0.22,0.32,0.42,0.52,0.62,0.72,0.82]){
+            const x=canvasBox.x+canvasBox.width*fx,y=canvasBox.y+canvasBox.height*fy;
+            await page.mouse.move(x,y,{steps:3});
+            await page.waitForTimeout(35);
+            if(await page.locator("#placement-status").getAttribute("data-valid")==="true"){
+                await page.mouse.up();placed=true;break;
+            }
+        }
+        if(placed)break;
+    }
+    if(!placed){
+        await page.mouse.up();
+        throw new Error("no legal map placement was found for an affordable hand card");
+    }
+    await page.waitForTimeout(150);
+    assert.ok((await page.locator("#tab-content").innerText()).includes("PLAYED "),"a valid drag should play the selected card");
+
+    // Event decisions can overlay the map during a long accelerated test.
+    const eventModal=page.locator("#realm-event-modal");
+    if(await eventModal.isVisible())await page.locator("#realm-event-choices button").first().click();
+
+    await page.locator("#settings-btn").click();
+    assert.equal(await page.locator("#settings-modal").isVisible(),true);
+    await page.locator("#settings-close").click();
+    assert.equal(await page.locator("#settings-modal").isVisible(),false);
+
+    await page.locator("#pause-btn").click();
+    const pausedTick=(await page.locator("#tick-count").innerText()).trim();
+    await page.waitForTimeout(500);
+    assert.equal((await page.locator("#tick-count").innerText()).trim(),pausedTick,"paused simulation tick must remain fixed");
+    await page.locator("#pause-btn").click();
+    await page.waitForFunction(previous=>document.querySelector("#tick-count")?.textContent.trim()!==previous,pausedTick,null,{timeout:5000});
+
+    await page.locator("#pause-btn").click();
+    const savedTick=(await page.locator("#tick-count").innerText()).trim();
+    const savedHand=(await page.locator("#hand-count").innerText()).trim();
+    await page.locator("#save-btn").click();
+    await page.waitForFunction(()=>document.querySelector("#action-toast")?.textContent.includes("Realm saved"),null,{timeout:5000});
+    await page.locator("#load-btn").click();
+    await page.waitForFunction(()=>document.querySelector("#action-toast")?.textContent.includes("Loaded realm"),null,{timeout:5000});
+    assert.equal((await page.locator("#tick-count").innerText()).trim(),savedTick,"save/load must restore the exact simulation tick");
+    assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
+    await page.locator("#pause-btn").click();
+
+    assert.deepEqual(errors,[],"browser runtime must not emit uncaught page errors");
+    console.log("Browser E2E passed: world forge, seed, empty/timed hand, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.");
+    await context.close();
+}finally{
+    await browser.close();
+    await new Promise(resolveClose=>server.close(resolveClose));
+}
