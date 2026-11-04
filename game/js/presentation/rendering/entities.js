@@ -5,7 +5,6 @@
 import {
     CELL, ICON_RADIUS, ROLE_COLORS,
     BUILDING_SIZE, BUILDING_ROOF_COLOR, BUILDING_ICON,
-    ZOOM_THRESHOLD_1_2, ZOOM_THRESHOLD_2_3,
 } from '../../core/config.js';
 import { TYPE, JOB_ICONS } from '../../core/types.js';
 import { state } from '../../core/state.js';
@@ -27,29 +26,24 @@ export function drawEntity(ctx, e, tick, zoom, cam) {
     if (sx < -cellPx * 4 || sx > state.canvas.width + cellPx * 4) return;
     if (sy < -cellPx * 4 || sy > state.canvas.height + cellPx * 4) return;
 
+    // Level 1 is a clean landscape view: terrain only.
+    if (zl === 1) return;
+
     if (e.isBuilding()) {
-        if (zl === 1)      drawBuildingLevel1(ctx, e, sx, sy, cellPx);
-        else if (zl === 2) drawBuildingLevel2(ctx, e, sx, sy, cellPx, tick);
+        if (zl === 2)      drawBuildingZone(ctx, e, sx, sy, cellPx);
+        else if (zl === 3) drawBuildingLevel2(ctx, e, sx, sy, cellPx, tick);
         else               drawBuildingLevel3(ctx, e, sx, sy, cellPx, tick);
     } else if (e.isFriendly()) {
-        // Level 1: unsichtbar
-        if (zl === 1) return;
-        if (zl === 2) drawPersonDot(ctx, e, sx, sy, cellPx);
-        else          drawPersonIcon(ctx, e, sx, sy, cellPx, tick);
+        // People are intentionally hidden at district scale, shown as role icons above it.
+        if (zl >= 3) drawPersonIcon(ctx, e, sx, sy, cellPx, tick);
     } else if (e.isEnemy()) {
-        if (zl === 1) {
-            drawEnemyDot(ctx, sx, sy, cellPx, "#e11d48");
-        } else if (zl === 2) {
-            drawPersonDot(ctx, e, sx, sy, cellPx, "#e11d48");
-        } else {
-            drawEnemyIcon(ctx, e, sx, sy, cellPx, tick);
-        }
+        if (zl >= 3) drawEnemyIcon(ctx, e, sx, sy, cellPx, tick);
     } else if (e.type === TYPE.DEER) {
-        if (zl >= 2) drawPersonDot(ctx, e, sx, sy, cellPx, "#a8865a");
+        if (zl >= 3) drawPersonDot(ctx, e, sx, sy, cellPx, "#a8865a");
     }
 
-    // Health bar (Level 2+)
-    if (zl >= 2 && e.hp < e.maxHp && e.hp > 0) {
+    // Health bars are only useful once individual entities are readable.
+    if (zl >= 3 && e.hp < e.maxHp && e.hp > 0) {
         const pct = e.hp / e.maxHp;
         const scale = cellPx / CELL;
         const bw = 30 * scale;
@@ -97,7 +91,60 @@ function drawBuildingLevel1(ctx, e, sx, sy, cellPx) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LEVEL 2 — Draufsicht, Dachform
+//  LEVEL 2 — District view: building zones, no individual people
+// ═══════════════════════════════════════════════════════════════
+
+const DISTRICT_LABELS = {
+    [TYPE.KEEP]: "KEEP",
+    [TYPE.HOUSE]: "RESIDENTIAL",
+    [TYPE.FARM]: "FARMLAND",
+    [TYPE.LUMBER]: "TIMBER",
+    [TYPE.QUARRY]: "QUARRY",
+    [TYPE.TOWER]: "DEFENCE",
+    [TYPE.WALL]: "WALL",
+    [TYPE.TAVERN]: "TRADE",
+    [TYPE.TEMPLE]: "TEMPLE",
+    [TYPE.BARRACKS]: "MILITARY",
+    [TYPE.MILL]: "MILL",
+    [TYPE.STABLE]: "STABLE",
+    [TYPE.WONDER]: "LANDMARK"
+};
+
+function drawBuildingZone(ctx, e, sx, sy, cellPx) {
+    const size = BUILDING_SIZE[e.type] || { w: 1, h: 1 };
+    const width = size.w * cellPx;
+    const height = size.h * cellPx;
+    const centerX = sx + cellPx / 2;
+    const centerY = sy + cellPx / 2;
+    const left = centerX - width / 2;
+    const top = centerY - height / 2;
+    const color = BUILDING_ROOF_COLOR[e.type] || "#8b8172";
+
+    ctx.save();
+    ctx.fillStyle = "rgba(8, 15, 18, 0.48)";
+    ctx.fillRect(left + 2, top + 2, width, height);
+    ctx.fillStyle = hexWithAlpha(color, 0.5);
+    ctx.fillRect(left, top, width, height);
+    ctx.strokeStyle = hexWithAlpha(color, 0.98);
+    ctx.lineWidth = Math.max(1, Math.min(2.2, cellPx * 0.045));
+    ctx.strokeRect(left + 0.5, top + 0.5, Math.max(0, width - 1), Math.max(0, height - 1));
+
+    if (width >= 28 && height >= 16) {
+        const label = DISTRICT_LABELS[e.type] || "BUILDING";
+        const fontSize = Math.max(6, Math.min(9, cellPx * 0.18));
+        ctx.font = `700 ${fontSize}px "Trebuchet MS", sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(12, 18, 17, 0.78)";
+        ctx.fillRect(left + 2, centerY - fontSize * 0.8, width - 4, fontSize * 1.7);
+        ctx.fillStyle = "#f4ead5";
+        ctx.fillText(label, centerX, centerY, width - 8);
+    }
+    ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LEVEL 3 — Rooftop view with readable activity icons
 // ═══════════════════════════════════════════════════════════════
 
 function drawBuildingLevel2(ctx, e, sx, sy, cellPx, tick) {
@@ -160,7 +207,7 @@ function drawBuildingLevel2(ctx, e, sx, sy, cellPx, tick) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LEVEL 3 — Gebäude mit sichtbaren Innenräumen
+//  LEVEL 4 — Gebäude mit sichtbaren Innenräumen
 // ═══════════════════════════════════════════════════════════════
 
 function drawBuildingLevel3(ctx, e, sx, sy, cellPx, tick) {
@@ -407,7 +454,7 @@ function drawInterior(ctx, e, left, top, w, h, scale, tick) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  PERSONEN — Punkte (Level 2) und Icons (Level 3)
+//  PERSONEN — Aktivitäts-Icons in den Zoom-Stufen 3 und 4
 // ═══════════════════════════════════════════════════════════════
 
 function drawPersonDot(ctx, e, sx, sy, cellPx, overrideColor) {
