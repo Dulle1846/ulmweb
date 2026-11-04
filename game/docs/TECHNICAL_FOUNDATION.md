@@ -20,19 +20,19 @@ This document records what exists today and the engineering rules toward which t
 |---|---|
 | `app/main.js` | Composition root: initializes browser surfaces, world, starting settlement, UI/input and timed startup events |
 | `app/game-loop.js` | Frame scheduling, fixed-step clock consumption, movement and render orchestration |
-| `core/simulation-clock.js` | Pure fixed-step accumulator calculation with no browser or game-state dependency |
+| `core/*` | Shared configuration, state, entity types, utilities and the pure fixed-step simulation clock |
 | `presentation/camera.js` | View transform, zoom, bounds and coordinate conversion |
 | `presentation/input.js` | Pointer, touch, keyboard and UI event handlers |
 | `presentation/rendering/*` | Terrain/entities drawing, UI, minimap and particles/floaters |
 | `world/*` | Terrain maps, biome queries, exploration, entity creation/queries and weather |
 | `systems/*` | Resource, morale, technology, card and random-event rules |
 | `simulation/*` | Logical ticks, building income, villager behaviour and combat |
-| `config.js`, `types.js`, `state.js`, `utils.js` | Existing shared foundation modules still at the JS root; moving/partitioning them into explicit core/domain contracts is a subsequent step |
+
 
 
 ### Implemented source structure
 
-The current code is a modular monolith with these real folders: `app/`, `core/`, `world/`, `systems/`, `simulation/` and `presentation/`. The HTML entry point is only a bootstrap reference; application wiring lives in the composition root. Presentation owns camera/input/rendering modules. The shared legacy modules (`config.js`, `state.js`, `types.js`, `utils.js`) remain at the JS root temporarily and are not yet a fully formalized core contract.
+The current code is a modular monolith with these real folders: `app/`, `core/`, `world/`, `systems/`, `simulation/` and `presentation/`. The HTML entry point is only a bootstrap reference; application wiring lives in the composition root. Presentation owns camera/input/rendering modules. Shared modules (`config.js`, `state.js`, `types.js`, `utils.js`) now live under `core/`. The state object is still globally mutable and needs clearer ownership/partitioning; folder placement alone does not make that contract formal.
 
 The separation is intentionally incremental: some domain/system modules still call presentation effects directly. Removing those dependencies is a later boundary-enforcement task, not something this folder move alone claims to have solved.
 
