@@ -17,10 +17,12 @@ export function updateCombat() {
     const TILE_SIZE = 48; // inline to avoid circular
 
     enemies.forEach(enemy => {
+        if (enemy.dead) return;
         let target = null;
         let bestDist = Infinity;
 
         defenders.forEach(def => {
+            if (def.dead) return;
             const d = distance(enemy.x, enemy.y, def.x, def.y);
             if (d < bestDist) { bestDist = d; target = def; }
         });
@@ -65,10 +67,12 @@ export function updateCombat() {
 
     // defenders attack
     defenders.forEach(def => {
+        if (def.dead) return;
         let closestEnemy = null;
         let record = Infinity;
 
         enemies.forEach(en => {
+            if (en.dead) return;
             const d = distance(def.x, def.y, en.x, en.y);
             if (d < record) { record = d; closestEnemy = en; }
         });
