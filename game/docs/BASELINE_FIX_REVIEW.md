@@ -28,24 +28,31 @@ The full game source under `game/js/` and the game entry page were reviewed stat
 
 - `game/js/app/main.js`
 - `game/js/app/game-loop.js`
+- `game/js/core/config.js`
+- `game/js/core/state.js`
+- `game/js/core/types.js`
+- `game/js/core/utils.js`
 - `game/js/core/simulation-clock.js`
 - `game/js/presentation/camera.js`
 - `game/js/presentation/input.js`
-- `game/js/presentation/rendering/particles.js`
-- `game/js/presentation/rendering/ui.js`
 - `game/js/presentation/rendering/entities.js`
 - `game/js/presentation/rendering/minimap.js`
+- `game/js/presentation/rendering/particles.js`
 - `game/js/presentation/rendering/renderer.js`
 - `game/js/presentation/rendering/terrain.js`
+- `game/js/presentation/rendering/ui.js`
 - `game/js/simulation/buildings.js`
 - `game/js/simulation/combat.js`
 - `game/js/simulation/simulation.js`
-- `game/js/state.js`
+- `game/js/simulation/villagers.js`
 - `game/js/systems/cards.js`
 - `game/js/systems/events.js`
 - `game/js/systems/morale.js`
+- `game/js/systems/resources.js`
 - `game/js/systems/tech.js`
 - `game/js/world/entities.js`
+- `game/js/world/weather.js`
+- `game/js/world/world.js`
 
 ## Findings deliberately not redesigned
 
