@@ -90,14 +90,18 @@ function renderStatistics(container){
     const resources=["wood","stone","gold","food"].map(key=>
         '<div class="stat-cell"><div class="stat-label">'+key.toUpperCase()+'</div><div class="stat-value">'+Math.floor(state.resources[key]||0).toLocaleString("en-US")+'</div></div>'
     ).join("");
-    const ledger=economy.lastLedger||{};
+    const ledger=economy.lastLedger||{},production=economy.productionChains||{};
     const economyCells=[
         ["DAYS SIMULATED",economy.daysElapsed||0],
         ["FOOD CONSUMED",Number(ledger.foodConsumed||0).toFixed(1)],
         ["TAXES COLLECTED",Number(ledger.taxesCollected||0).toFixed(2)+" gold"],
         ["WAGES PAID",Number(ledger.wagesPaid||0).toFixed(2)+" gold"],
         ["BUILDING UPKEEP",Number(ledger.upkeepPaid||0).toFixed(2)+" gold"],
-        ["UNPAID COSTS",(Number(ledger.unpaidWages||0)+Number(ledger.unpaidUpkeep||0)).toFixed(2)+" gold"]
+        ["UNPAID COSTS",(Number(ledger.unpaidWages||0)+Number(ledger.unpaidUpkeep||0)).toFixed(2)+" gold"],
+        ["MILL TIMBER USED",Number(production.millWoodConsumed||0).toFixed(1)+" wood"],
+        ["MILL BONUS FOOD",Number(production.millBonusFood||0).toFixed(1)+" food"],
+        ["TAVERN PROVISIONS",Number(production.tavernFoodConsumed||0).toFixed(1)+" food"],
+        ["TAVERN GOLD EARNED",Number(production.tavernGoldProduced||0).toFixed(1)+" gold"]
     ].map(([label,value])=>'<div class="stat-cell"><div class="stat-label">'+label+'</div><div class="stat-value">'+esc(value)+'</div></div>').join("");
     const activeThreads=state.hiddenRealm?.activeThreads||[];
     const chronicles=activeThreads.length?activeThreads.map(thread=>{
