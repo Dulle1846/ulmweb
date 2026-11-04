@@ -14,7 +14,7 @@ function createInitialState() {
         nextCardDrawTick:0,issueSequence:0,nextIssueAtTick:0,
         worldOptions:{landmass:50,ruggedness:55,forests:52,water:48},
         hiddenRealm:{tension:0,prosperity:0,mystery:0,memories:[]},
-        frameFaulted:false,frameErrorCount:0,
+        frameFaulted:false,frameErrorCount:0,worldEpoch:0,buildingCollisionVersion:0,
         selectedTab:0,eventLog:[],activeEvent:null,eventSequence:0,
         entities:[],particles:[],floaters:[],pendingPresentationEffects:[],
         heightMap:null,moistureMap:null,terrainCanvas:null,terrainDirty:true,explored:[],
@@ -30,5 +30,6 @@ export function resetState() {
     const fresh=createInitialState();
     for(const key of Object.keys(state))delete state[key];
     Object.assign(state,fresh);
+    state.worldEpoch=(state.worldEpoch||0)+1;
     return state;
 }
