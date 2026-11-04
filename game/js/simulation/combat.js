@@ -3,8 +3,7 @@
 import { TYPE } from '../core/types.js';
 import { state } from '../core/state.js';
 import { getEntitiesOfType } from '../world/entities.js';
-import { createParticle, createFloater } from '../presentation/rendering/particles.js';
-import { showBigMessage } from '../presentation/rendering/ui.js';
+import { queueParticle, queueFloater, queueMessage } from '../core/presentation-effects.js';
 import { rand, distance } from '../core/utils.js';
 
 export function updateCombat() {
@@ -43,7 +42,7 @@ export function updateCombat() {
         } else {
             if (tick % 13 === 0) {
                 target.hp -= enemy.type === TYPE.TROLL ? 32 : 13;
-                createParticle(
+                queueParticle(
                     target.x * TILE_SIZE + rand(-10, 10),
                     target.y * TILE_SIZE - 10,
                     "#f43f5e", 18, rand(-3, 3), rand(-4, -1)
@@ -52,7 +51,7 @@ export function updateCombat() {
                     target.dead = true;
                     if (target.type === TYPE.KEEP) {
                         state.gameOver = true;
-                        showBigMessage("THE REALM FELL", "THE KEEP WAS DESTROYED", 5000);
+                        queueMessage("THE REALM FELL", "THE KEEP WAS DESTROYED", 5000);
                     }
                 }
             }
@@ -82,7 +81,7 @@ export function updateCombat() {
         if (tick % (def.type === TYPE.ARCHER ? 22 : 14) === 0) {
             closestEnemy.hp -= def.type === TYPE.KNIGHT ? 34 : 18;
 
-            createParticle(
+            queueParticle(
                 closestEnemy.x * TILE_SIZE + 12,
                 closestEnemy.y * TILE_SIZE - 18,
                 "#fde047", 22, rand(-1, 4), -3
@@ -90,7 +89,7 @@ export function updateCombat() {
 
             if (closestEnemy.hp <= 0) {
                 closestEnemy.dead = true;
-                createFloater(closestEnemy.x * TILE_SIZE, closestEnemy.y * TILE_SIZE, "SLAIN", "#eab308");
+                queueFloater(closestEnemy.x * TILE_SIZE, closestEnemy.y * TILE_SIZE, "SLAIN", "#eab308");
             }
         }
     });
