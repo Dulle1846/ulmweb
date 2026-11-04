@@ -76,8 +76,8 @@ export function placeCurrentCard(targetX, targetY) {
     const canvas = state.canvas;
     const camera = state.camera;
 
-    const fallbackX = Math.floor((camera.x + canvas.width / 2) / TILE_SIZE);
-    const fallbackY = Math.floor((camera.y + canvas.height / 2) / TILE_SIZE);
+    const fallbackX = Math.floor((camera.x + canvas.width / 2) / (TILE_SIZE * state.zoom));
+    const fallbackY = Math.floor((camera.y + canvas.height / 2) / (TILE_SIZE * state.zoom));
 
     const requestedTile = Number.isInteger(targetX) && Number.isInteger(targetY)
         ? { tx: targetX, ty: targetY }
