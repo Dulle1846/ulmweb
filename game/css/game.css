@@ -157,6 +157,10 @@ button:focus-visible, [role="button"]:focus-visible {
     box-shadow: 0 0 11px rgba(214, 180, 115, 0.25);
     transition: width 180ms ease, background 180ms ease;
 }
+#morale-bar.is-low {
+    background: linear-gradient(90deg, #a94343, #df8273);
+    box-shadow: 0 0 11px rgba(220, 91, 82, 0.24);
+}
 
 .header-actions {
     display: flex;
@@ -658,6 +662,7 @@ button:focus-visible, [role="button"]:focus-visible {
     scrollbar-width: thin;
 }
 .event-list { display: flex; flex-direction: column; gap: 9px; }
+.empty-state { padding: 16px 8px; color: #89958e; font-size: 10px; text-align: center; }
 .event-row {
     display: grid;
     grid-template-columns: 42px 1fr;
