@@ -5,7 +5,7 @@ import { TILE_SIZE } from '../core/config.js';
 import { state } from '../core/state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 import { addResource } from '../systems/resources.js';
-import { createParticle, createFloater } from '../presentation/rendering/particles.js';
+import { queueParticle, queueFloater } from '../core/presentation-effects.js';
 import { distance } from '../core/utils.js';
 
 export function updateBuildingIncome() {
@@ -33,7 +33,7 @@ export function updateBuildingIncome() {
             addResource('food', amt);
 
             if (Math.random() < 0.2) {
-                createParticle(f.x * TILE_SIZE + 20, f.y * TILE_SIZE + 12, "#bef575", 26, 0, -1.5);
+                queueParticle(f.x * TILE_SIZE + 20, f.y * TILE_SIZE + 12, "#bef575", 26, 0, -1.5);
             }
         });
 
@@ -47,7 +47,7 @@ export function updateBuildingIncome() {
 
             if (Math.random() < (state.unlockedTechs.has('alchemy') ? 0.26 : 0.13)) {
                 addResource('gold', 1);
-                createFloater(q.x * TILE_SIZE, q.y * TILE_SIZE - 20, "GOLD VEIN!", "#fde047");
+                queueFloater(q.x * TILE_SIZE, q.y * TILE_SIZE - 20, "GOLD VEIN!", "#fde047");
             }
         });
     }
