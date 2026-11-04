@@ -6,6 +6,7 @@ import { initWorld } from "../world/world.js";
 import { initStartingKingdom,spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
+import { normalizePoliticalState } from "../systems/politics.js";
 import { addLog } from "../systems/events.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera } from "../presentation/camera.js";
@@ -119,7 +120,7 @@ function createSaveSnapshot(){
         availableCards:state.availableCards.map(card=>({...card,cost:{...card.cost}})),
         activeEvent:state.activeEvent,
         eventLog:state.eventLog.slice(0,100),eventSequence:state.eventSequence,
-        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),market:JSON.parse(JSON.stringify(state.market)),
+        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),market:JSON.parse(JSON.stringify(state.market)),
         totalPopulation:state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length
     };
 }
@@ -186,6 +187,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.economy.lastGrowthYear=Number.isFinite(growthYear)?Math.max(1,Math.min(state.year,Math.floor(growthYear))):state.year;
     const populationGrowth=Number(state.economy.populationGrowth);
     state.economy.populationGrowth=Number.isFinite(populationGrowth)?Math.max(0,populationGrowth):0;
+    normalizePoliticalState(snapshot.politics);
     state.market=snapshot.market||createMarketState();
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===WORLD_W)state.explored=snapshot.explored;
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
