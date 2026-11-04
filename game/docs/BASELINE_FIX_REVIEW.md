@@ -2,7 +2,7 @@
 
 **Review date:** 2026-11-04  
 **Code baseline:** `ulmweb-branch` at `dae4edd7fcb1204d794f68dc4475ac149beb5cbc`  
-**Repair branch:** `foundation/technical-baseline`
+**Übernommener Reparaturstand:** `ulmweb-branch` (PR #5; anschließend strukturell weiterentwickelt)
 
 ## Scope and validation boundary
 
@@ -26,11 +26,17 @@ The full game source under `game/js/` and the game entry page were reviewed stat
 
 ## Files changed
 
-- `game/js/camera.js`
-- `game/js/input.js`
-- `game/js/main.js`
-- `game/js/rendering/particles.js`
-- `game/js/rendering/ui.js`
+- `game/js/app/main.js`
+- `game/js/app/game-loop.js`
+- `game/js/core/simulation-clock.js`
+- `game/js/presentation/camera.js`
+- `game/js/presentation/input.js`
+- `game/js/presentation/rendering/particles.js`
+- `game/js/presentation/rendering/ui.js`
+- `game/js/presentation/rendering/entities.js`
+- `game/js/presentation/rendering/minimap.js`
+- `game/js/presentation/rendering/renderer.js`
+- `game/js/presentation/rendering/terrain.js`
 - `game/js/simulation/buildings.js`
 - `game/js/simulation/combat.js`
 - `game/js/simulation/simulation.js`
