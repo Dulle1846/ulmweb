@@ -259,15 +259,6 @@ function moveToward(unit, dt) {
     const nx = unit.x + unit.velocityX * dt;
     const ny = unit.y + unit.velocityY * dt;
 
-    if(!isWalkable(nx,ny,unit)){
-        const route=findPath(unit.x,unit.y,unit.targetX,unit.targetY);
-        if(route?.length){
-            unit.path=route;unit.pathIndex=0;unit.pathTargetX=targetTileX;unit.pathTargetY=targetTileY;
-            unit.pathVersion=state.buildingCollisionVersion||0;
-            if(followCachedPath(unit,dt))return;
-        }
-    }
-
     let moved = false;
     if (isWalkable(nx, ny, unit)) {
         unit.x = nx; unit.y = ny; moved = true;
@@ -275,6 +266,16 @@ function moveToward(unit, dt) {
         unit.x = nx; moved = true;
     } else if (isWalkable(unit.x, ny, unit)) {
         unit.y = ny; moved = true;
+    }
+    // Cheap axis sliding handles most small obstacles. Invoke A* only when
+    // both axis alternatives are blocked, avoiding path searches on ordinary frames.
+    if(!moved){
+        const route=findPath(unit.x,unit.y,unit.targetX,unit.targetY);
+        if(route?.length){
+            unit.path=route;unit.pathIndex=0;unit.pathTargetX=targetTileX;unit.pathTargetY=targetTileY;
+            unit.pathVersion=state.buildingCollisionVersion||0;
+            if(followCachedPath(unit,dt))return;
+        }
     }
     if (moved) {
         unit.state = "walk";
