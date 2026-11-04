@@ -4,6 +4,7 @@ import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { randInt } from "../core/utils.js";
+import { EVENT_CHAINS } from "./event-chains.js";
 
 export function addLog(text,color="#a3a3a3",kind="realm"){
  const entry={id:++state.eventSequence,text:String(text),color,tick:state.tick,kind};
@@ -64,8 +65,21 @@ export function triggerRandomEvent(){
   {label:pick(["Leave the matter to the local guilds","Choose the cautious course","Demand a public accounting","Let the old custom stand"]),description:"Spend "+cost+" "+secondary.toUpperCase()+" and take a different path.",effects:{resources:{[secondary]:-cost,[family.resource]:Math.max(3,Math.floor(gain*.35))},morale:randInt(-3,3),hidden:{tension:-family.tension*.35,prosperity:1,mystery:family.mystery?1:0}}}
  ];
  if(family.id==="migration"&&canSpawnEntity(TYPE.VILLAGER)){choices[0].effects.villagers=1;choices[0].description+=" A new resident may join the realm.";}
- state.activeEvent={id:"issue-"+(++state.issueSequence),family:family.id,title,description,icon:family.id,createdAtTick:state.tick,choices};
+ state.activeEvent={id:"issue-"+(++state.issueSequence),family:family.id,title,description,icon:family.id,createdAtTick:state.tick,threadStart:EVENT_CHAINS[family.id]?family.id:null,choices};
  addLog("ISSUE: "+title,"#e4bd72","issue");return state.activeEvent;
+}
+function triggerThreadEvent(thread){
+ const stages=EVENT_CHAINS[thread.id],stage=stages?.[thread.stage];
+ if(!stage)return false;
+ state.activeEvent={
+  id:"thread-"+thread.id+"-"+thread.stage+"-"+(++state.issueSequence),
+  family:"chronicle",title:stage.title,description:stage.description,
+  icon:"chronicle",createdAtTick:state.tick,
+  thread:{id:thread.id,stage:thread.stage},
+  choices:stage.choices.map(choice=>({...choice,effects:{...(choice.effects||{}),resources:{...(choice.effects?.resources||{})},hidden:{...(choice.effects?.hidden||{})}}}))
+ };
+ addLog("CHRONICLE: "+stage.title,"#c5a66b","chronicle");
+ return true;
 }
 export function resolveEventChoice(index){
  const issue=state.activeEvent;if(!issue)return false;
@@ -85,11 +99,36 @@ export function resolveEventChoice(index){
  hidden.memories=Array.isArray(hidden.memories)?hidden.memories:[];
  hidden.memories.unshift({family:issue.family,choice:choice.label,tick:state.tick});
  if(hidden.memories.length>24)hidden.memories.length=24;
+ hidden.activeThreads=Array.isArray(hidden.activeThreads)?hidden.activeThreads:[];
+ hidden.completedThreads=Array.isArray(hidden.completedThreads)?hidden.completedThreads:[];
+ if(issue.threadStart&&Math.random()<0.5&&!hidden.activeThreads.some(thread=>thread.id===issue.threadStart)){
+  hidden.activeThreads.push({id:issue.threadStart,stage:0,startedAtTick:state.tick,nextAtTick:state.tick+130+randInt(0,90)});
+  addLog("A LONGER STORY BEGINS: "+issue.threadStart.toUpperCase(),"#c5a66b","chronicle");
+ }
+ if(issue.thread){
+  const thread=hidden.activeThreads.find(item=>item.id===issue.thread.id);
+  if(thread){
+   if(thread.stage+1<EVENT_CHAINS[thread.id].length){
+    thread.stage++;thread.nextAtTick=state.tick+130+randInt(0,90);
+    addLog("THE CHRONICLE CONTINUES: "+thread.id.toUpperCase(),"#c5a66b","chronicle");
+   }else{
+    hidden.activeThreads=hidden.activeThreads.filter(item=>item!==thread);
+    hidden.completedThreads.unshift({id:thread.id,completedAtTick:state.tick,finalChoice:choice.label});
+    if(hidden.completedThreads.length>20)hidden.completedThreads.length=20;
+    addLog("CHRONICLE CONCLUDED: "+thread.id.toUpperCase(),"#c5a66b","chronicle");
+   }
+  }
+ }
  addLog(issue.title.toUpperCase()+": "+choice.label,"#a5d6a7","resolution");
  state.statistics.totalEventsResolved++;state.activeEvent=null;return true;
 }
 export function checkRandomEvents(){
  if(state.activeEvent)return;
+ const hidden=state.hiddenRealm||(state.hiddenRealm={tension:0,prosperity:0,mystery:0,memories:[]});
+ hidden.activeThreads=Array.isArray(hidden.activeThreads)?hidden.activeThreads:[];
+ const readyThread=hidden.activeThreads.filter(thread=>state.tick>=thread.nextAtTick)
+  .sort((a,b)=>a.nextAtTick-b.nextAtTick)[0];
+ if(readyThread){triggerThreadEvent(readyThread);return;}
  if(!Number.isFinite(state.nextIssueAtTick)||state.nextIssueAtTick<=0)state.nextIssueAtTick=state.tick+145+randInt(0,95);
  if(state.tick<state.nextIssueAtTick)return;
  state.nextIssueAtTick=state.tick+220+randInt(0,520);
