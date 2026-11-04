@@ -1,9 +1,11 @@
 // Settlement economy: workforce, household consumption, wages, taxes and upkeep.
+// Financial ledgers settle every 20 in-game days; rates below are daily values.
 import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { addResource } from "./resources.js";
 
-export const ECONOMY_INTERVAL = 220;
+export const ECONOMY_INTERVAL = 20;
+export const DAYS_PER_LEDGER = 20;
 export const BUILDING_WORKFORCE = Object.freeze({
     [TYPE.FARM]: 4,
     [TYPE.LUMBER]: 3,
@@ -21,12 +23,12 @@ export function calculateDailyLedger({ population, employed, buildings, foodAvai
     const people = Math.floor(clampNonNegative(population));
     const workers = Math.min(people, Math.floor(clampNonNegative(employed)));
     const buildingCount = Math.floor(clampNonNegative(buildings));
-    const foodDemand = people * 0.28;
+    const foodDemand = people * 0.04 * DAYS_PER_LEDGER;
     const foodConsumed = Math.min(clampNonNegative(foodAvailable), foodDemand);
     const foodShortage = Math.max(0, foodDemand - foodConsumed);
-    const taxesAssessed = workers * 0.16;
-    const wagesAssessed = workers * 0.10;
-    const upkeepAssessed = buildingCount * 0.035;
+    const taxesAssessed = workers * 0.025 * DAYS_PER_LEDGER;
+    const wagesAssessed = workers * 0.015 * DAYS_PER_LEDGER;
+    const upkeepAssessed = buildingCount * 0.003 * DAYS_PER_LEDGER;
     const treasuryAfterTaxes = clampNonNegative(goldAvailable) + taxesAssessed;
     const wagesPaid = Math.min(treasuryAfterTaxes, wagesAssessed);
     const upkeepPaid = Math.min(Math.max(0, treasuryAfterTaxes - wagesPaid), upkeepAssessed);
@@ -94,7 +96,7 @@ export function updateEconomy() {
     }
 
     const totals = state.economy || (state.economy = {});
-    totals.daysElapsed = (totals.daysElapsed || 0) + 1;
+    totals.daysElapsed = (totals.daysElapsed || 0) + DAYS_PER_LEDGER;
     for (const key of ["foodConsumed", "taxesCollected", "wagesPaid", "upkeepPaid", "unpaidWages", "unpaidUpkeep"]) {
         totals[key] = (totals[key] || 0) + ledger[key];
     }
