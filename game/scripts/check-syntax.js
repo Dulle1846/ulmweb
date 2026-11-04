@@ -36,7 +36,7 @@ for (const file of files) {
     }
 
     const source = await readFile(file, "utf8");
-    const imports = source.matchAll(/(?:from\s*|import\s*\\()\s*['"]([^'"]+)['"]/g);
+    const imports = source.matchAll(/(?:from\s*|import\s*\()\s*['"]([^'"]+)['"]/g);
 
     for (const match of imports) {
         const specifier = match[1];
