@@ -1,0 +1,30 @@
+name: Game Quality
+
+on:
+  push:
+    branches:
+      - ulmweb-branch
+    paths:
+      - "game/**"
+      - ".github/workflows/game-quality.yml"
+  pull_request:
+    branches:
+      - ulmweb-branch
+    paths:
+      - "game/**"
+      - ".github/workflows/game-quality.yml"
+
+jobs:
+  game-quality:
+    name: Game tests and syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run game tests and syntax check
+        working-directory: game
+        run: npm test
