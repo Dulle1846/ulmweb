@@ -151,6 +151,7 @@ export function setupInput() {
     window.addEventListener("pointerup", event => {
         if (cardPointerId !== event.pointerId) return;
 
+        updateCardDrag(event);
         const rect = canvas.getBoundingClientRect();
         const insideCanvas = event.clientX >= rect.left && event.clientX <= rect.right &&
             event.clientY >= rect.top && event.clientY <= rect.bottom;
@@ -250,7 +251,11 @@ export function setupInput() {
             placementStatus.textContent = state.cardPreview
                 ? (state.cardPreview.valid ? "RELEASE TO BUILD" : state.cardPreview.reason)
                 : "DROP ON THE WORLD MAP";
-            placementStatus.dataset.valid = String(Boolean(state.cardPreview?.valid));
+            if (state.cardPreview) {
+                placementStatus.dataset.valid = String(state.cardPreview.valid);
+            } else {
+                delete placementStatus.dataset.valid;
+            }
         }
     }
 
