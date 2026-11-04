@@ -69,10 +69,15 @@ function chooseFamily(){
   if(f.id==="rebellion")situational+=Math.min(5,unpaidCosts*1.5+Math.max(0,hidden.tension||0)*0.08);
   if(f.id==="illness")situational+=workforce.population>25?1.2:0;
   if(f.id==="caravan")situational+=Math.max(0,hidden.prosperity||0)*0.025;
-  return Math.max(.25,1+
+  const baseWeight=1+
    (f.tension>0?Math.max(0,hidden.tension||0)*f.tension/80:0)+
    (f.prosperity>0?Math.max(0,hidden.prosperity||0)*f.prosperity/90:0)+
-   (f.mystery>0?Math.max(0,hidden.mystery||0)*f.mystery/100:0)+situational);
+   (f.mystery>0?Math.max(0,hidden.mystery||0)*f.mystery/100:0)+situational;
+  const recentCount=(Array.isArray(hidden.memories)?hidden.memories.slice(0,8):[])
+   .filter(memory=>memory.family===f.id).length;
+  // The realm remembers what just happened: repeated families become less likely,
+  // while their long-term tension/prosperity/mystery still influence future stories.
+  return Math.max(.15,baseWeight/(1+recentCount*.65));
  });
  let roll=Math.random()*weights.reduce((a,b)=>a+b,0);
  for(let i=0;i<FAMILIES.length;i++){roll-=weights[i];if(roll<=0)return FAMILIES[i];}
