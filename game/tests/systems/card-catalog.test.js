@@ -37,7 +37,7 @@ test("second-stage randomization preserves the authored base name without duplic
     const prototype=createCardForCategory("blacksmiths");
     const variant=createCardVariant(prototype,{scale:"large",rarity:"rare",context:"frontier"});
     assert.equal(variant.baseName,"BLACKSMITHS");
-    assert.match(variant.name,/Blacksmiths/);
+    assert.match(variant.name,/BLACKSMITHS/);
     assert.equal((variant.name.match(/OF THE HEARTLAND/g)||[]).length,0);
     assert.equal((variant.name.match(/OF THE FRONTIER/g)||[]).length,1);
 });
