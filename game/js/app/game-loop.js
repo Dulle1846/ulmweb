@@ -8,6 +8,9 @@ import { updateFriendlyMovement } from '../simulation/villagers.js';
 import { drawWorld, drawVignette } from '../presentation/rendering/renderer.js';
 import { renderUI } from '../presentation/rendering/ui.js';
 import { updateCamera } from '../presentation/camera.js';
+import { updateParticles, updateFloaters } from '../presentation/rendering/particles.js';
+import { updateMinimap } from '../presentation/rendering/minimap.js';
+import { flushPresentationEffects } from '../presentation/effects.js';
 
 export function startGameLoop() {
     state.lastFrameTime = 0;
@@ -34,12 +37,19 @@ function gameLoop(timestamp) {
         state.tickAccumulator = clock.remainderMs;
         for (let step = 0; step < clock.steps; step++) {
             updateSimulation();
+            updateParticles();
+            updateFloaters();
+            updateMinimap();
+
+            if (state.gameOver || state.victory) break;
         }
     }
 
     if (!state.isPaused && !state.gameOver && !state.victory) {
         updateFriendlyMovement(deltaSeconds * state.gameSpeed);
     }
+
+    flushPresentationEffects();
 
     const { ctx, canvas } = state;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
