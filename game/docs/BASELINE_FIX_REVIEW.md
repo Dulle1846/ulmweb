@@ -6,7 +6,7 @@
 
 ## Scope and validation boundary
 
-The full game source under `game/js/` and the game entry page were reviewed statically. The user's Chrome screenshot from the baseline run confirmed the card-placement failure recorded below. A minimal Node.js test runner now covers the simulation clock and presentation-effect contract. The automated suite now includes 21 unit tests; the latest GitHub Actions run will be used to verify the current feature branch; a full browser retest of the updated game has not yet been performed. Therefore, these changes are **implemented but not browser-runtime-verified**.
+The full game source under `game/js/` and the game entry page were reviewed statically. The user's Chrome screenshot from the baseline run confirmed the card-placement failure recorded below. A minimal Node.js test runner now covers the simulation clock and presentation-effect contract. The automated suite now includes 27 unit tests; the current GitHub Actions run is queued and browser verification is still outstanding; a full browser retest of the updated game has not yet been performed. Therefore, these changes are **implemented but not browser-runtime-verified**.
 
 ## Repairs made
 
