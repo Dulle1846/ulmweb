@@ -1,10 +1,10 @@
 // ── Card Deck & Placement ──────────────────────────────────────
 
 import { TYPE } from '../types.js';
-import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT } from '../config.js';
+import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, BUILDING_SIZE } from '../config.js';
 import { state } from '../state.js';
-import { spawnEntity, buildingAt } from '../world/entities.js';
-import { revealArea } from '../world/world.js';
+import { spawnEntity, buildingOverlaps } from '../world/entities.js';
+import { revealArea, isWaterAt } from '../world/world.js';
 import { canAfford, payForCard } from './resources.js';
 import { createParticle, createFloater } from '../rendering/particles.js';
 import { renderUI } from '../rendering/ui.js';
@@ -53,6 +53,26 @@ export function skipCard() {
     createFloater(280, 180, "CARD SKIPPED", "#a5b4fc");
 }
 
+function hasBuildableTerrain(tx, ty, type) {
+    const size = BUILDING_SIZE[type] || { w: 1, h: 1 };
+    const left = tx + 0.5 - size.w / 2;
+    const right = tx + 0.5 + size.w / 2;
+    const top = ty + 0.5 - size.h / 2;
+    const bottom = ty + 0.5 + size.h / 2;
+
+    if (left < 0 || top < 0 || right > WORLD_WIDTH || bottom > WORLD_HEIGHT) return false;
+
+    for (let x = Math.floor(left); x < right; x++) {
+        for (let y = Math.floor(top); y < bottom; y++) {
+            const sampleX = (Math.max(left, x) + Math.min(right, x + 1)) / 2;
+            const sampleY = (Math.max(top, y) + Math.min(bottom, y + 1)) / 2;
+            if (isWaterAt(sampleX, sampleY)) return false;
+        }
+    }
+
+    return true;
+}
+
 function findNearestBuildableTile(centerX, centerY) {
     for (let radius = 0; radius <= 12; radius++) {
         for (let offsetX = -radius; offsetX <= radius; offsetX++) {
@@ -61,9 +81,8 @@ function findNearestBuildableTile(centerX, centerY) {
 
                 const tx = centerX + offsetX;
                 const ty = centerY + offsetY;
-                const tile = state.world[tx] && state.world[tx][ty];
-
-                if (!tile || tile.terrain === "water" || buildingAt(tx, ty)) continue;
+                if (!hasBuildableTerrain(tx, ty, state.currentCard.type)) continue;
+                if (buildingOverlaps(tx, ty, state.currentCard.type)) continue;
                 return { tx, ty };
             }
         }
@@ -77,8 +96,8 @@ export function placeCurrentCard(targetX, targetY) {
     const canvas = state.canvas;
     const camera = state.camera;
 
-    const fallbackX = Math.floor((camera.x + canvas.width / 2) / TILE_SIZE);
-    const fallbackY = Math.floor((camera.y + canvas.height / 2) / TILE_SIZE);
+    const fallbackX = Math.floor((camera.x + canvas.width / 2) / (TILE_SIZE * state.zoom));
+    const fallbackY = Math.floor((camera.y + canvas.height / 2) / (TILE_SIZE * state.zoom));
 
     const requestedTile = Number.isInteger(targetX) && Number.isInteger(targetY)
         ? { tx: targetX, ty: targetY }
@@ -90,14 +109,13 @@ export function placeCurrentCard(targetX, targetY) {
     }
 
     const { tx, ty } = requestedTile;
-    const tile = state.world[tx] && state.world[tx][ty];
 
-    if (!tile || tile.terrain === "water") {
+    if (!hasBuildableTerrain(tx, ty, state.currentCard.type)) {
         createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "CANNOT BUILD HERE", "#f59e0b");
         return;
     }
 
-    if (buildingAt(tx, ty)) {
+    if (buildingOverlaps(tx, ty, state.currentCard.type)) {
         createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "SPACE OCCUPIED", "#f59e0b");
         return;
     }

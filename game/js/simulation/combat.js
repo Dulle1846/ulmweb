@@ -4,6 +4,7 @@ import { TYPE } from '../types.js';
 import { state } from '../state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 import { createParticle, createFloater } from '../rendering/particles.js';
+import { showBigMessage } from '../rendering/ui.js';
 import { rand, distance } from '../utils.js';
 
 export function updateCombat() {
@@ -16,10 +17,12 @@ export function updateCombat() {
     const TILE_SIZE = 48; // inline to avoid circular
 
     enemies.forEach(enemy => {
+        if (enemy.dead) return;
         let target = null;
         let bestDist = Infinity;
 
         defenders.forEach(def => {
+            if (def.dead) return;
             const d = distance(enemy.x, enemy.y, def.x, def.y);
             if (d < bestDist) { bestDist = d; target = def; }
         });
@@ -47,7 +50,10 @@ export function updateCombat() {
                 );
                 if (target.hp <= 0) {
                     target.dead = true;
-                    if (target.type === TYPE.KEEP) state.gameOver = true;
+                    if (target.type === TYPE.KEEP) {
+                        state.gameOver = true;
+                        showBigMessage("THE REALM FELL", "THE KEEP WAS DESTROYED", 5000);
+                    }
                 }
             }
         }
@@ -55,16 +61,18 @@ export function updateCombat() {
         // trap damage
         if (Math.random() < 0.02) {
             enemy.hp -= 22;
-            if (enemy.hp < 0) enemy.dead = true;
+            if (enemy.hp <= 0) enemy.dead = true;
         }
     });
 
     // defenders attack
     defenders.forEach(def => {
+        if (def.dead) return;
         let closestEnemy = null;
         let record = Infinity;
 
         enemies.forEach(en => {
+            if (en.dead) return;
             const d = distance(def.x, def.y, en.x, en.y);
             if (d < record) { record = d; closestEnemy = en; }
         });

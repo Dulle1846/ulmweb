@@ -30,6 +30,7 @@ export function triggerRandomEvent() {
             title: "Goblin Ambush",
             desc: "A raiding party appears near the border!",
             fn: () => {
+                state.raidActive = true;
                 for (let i = 0; i < 6; i++) {
                     spawnEntity(
                         cx + randInt(-35, 35),
@@ -83,7 +84,7 @@ export function triggerRandomEvent() {
             desc: "The people celebrate! +25 morale",
             fn: () => {
                 state.morale = Math.min(100, state.morale + 25);
-                state.resources.food -= 10;
+                state.resources.food = Math.max(0, state.resources.food - 10);
                 addLog("THE SUN FESTIVAL!", "#f59e0b");
             },
         },

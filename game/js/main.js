@@ -65,11 +65,11 @@ function init() {
             if (!state.gameOver) {
                 const cx = Math.floor(WORLD_W / 2) + 30;
                 const cy = Math.floor(WORLD_H / 2) + 22;
+                state.raidActive = true;
                 for (let i = 0; i < 7; i++) {
                     const e = spawnEntity(cx + randInt(-4, 8), cy + randInt(-6, 6), TYPE.GOBLIN);
                     e.anchor = { x: cx, y: cy };
                 }
-                state.totalRaidsSurvived++;
                 addLog("FIRST RAID DETECTED", "#e11d48");
             }
         }, 6200);
@@ -103,7 +103,7 @@ function gameLoop(timestamp) {
 
     // ── Simulationstick ──────────────────────────────────────
     if (!state.isPaused && !state.gameOver && !state.victory) {
-        state.tickAccumulator += deltaTime * state.gameSpeed;
+        state.tickAccumulator += Math.min(deltaTime, 100) * state.gameSpeed;
         while (state.tickAccumulator >= BASE_TICK_INTERVAL) {
             state.tickAccumulator -= BASE_TICK_INTERVAL;
             updateSimulation();

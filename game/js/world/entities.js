@@ -2,7 +2,7 @@
 //  ENTITIES — Spawn, Verwaltung, Startaufbau
 // ═══════════════════════════════════════════════════════════════
 
-import { WORLD_WIDTH, WORLD_HEIGHT } from '../config.js';
+import { WORLD_WIDTH, WORLD_HEIGHT, BUILDING_SIZE } from '../config.js';
 import { TYPE, Entity } from '../types.js';
 import { state } from '../state.js';
 import { randInt } from '../utils.js';
@@ -11,6 +11,14 @@ import { randInt } from '../utils.js';
 
 export function spawnEntity(tx, ty, type) {
     const entity = new Entity(tx, ty, type);
+
+    if (
+        state.unlockedTechs.has("steel") &&
+        [TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT].includes(type)
+    ) {
+        entity.hp += 25;
+        entity.maxHp += 25;
+    }
 
     if (entity.isUnit()) {
         entity.home = { x: tx, y: ty };
@@ -29,12 +37,28 @@ export function spawnEntity(tx, ty, type) {
 // ── Hilfsabfragen ─────────────────────────────────────────────
 
 export function buildingAt(tx, ty) {
-    return state.entities.find(e =>
-        !e.dead &&
-        e.isBuilding() &&
-        Math.floor(e.x) === tx &&
-        Math.floor(e.y) === ty
-    );
+    return buildingOverlaps(tx, ty, null);
+}
+
+// Check the full rectangular footprint, not only the building's centre tile.
+export function buildingOverlaps(tx, ty, type) {
+    const candidate = BUILDING_SIZE[type] || { w: 1, h: 1 };
+    const left = tx + 0.5 - candidate.w / 2;
+    const right = tx + 0.5 + candidate.w / 2;
+    const top = ty + 0.5 - candidate.h / 2;
+    const bottom = ty + 0.5 + candidate.h / 2;
+
+    return state.entities.some(e => {
+        if (e.dead || !e.isBuilding()) return false;
+        const size = BUILDING_SIZE[e.type] || { w: 1, h: 1 };
+        const otherLeft = e.x + 0.5 - size.w / 2;
+        const otherRight = e.x + 0.5 + size.w / 2;
+        const otherTop = e.y + 0.5 - size.h / 2;
+        const otherBottom = e.y + 0.5 + size.h / 2;
+
+        return left < otherRight && right > otherLeft &&
+            top < otherBottom && bottom > otherTop;
+    });
 }
 
 export function getEntitiesOfType(type) {

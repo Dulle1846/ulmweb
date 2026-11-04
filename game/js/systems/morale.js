@@ -11,7 +11,10 @@ export function updateMorale() {
 
     moraleDelta += getEntitiesOfType(TYPE.TAVERN).length * 0.6;
     moraleDelta += getEntitiesOfType(TYPE.TEMPLE).length * 1.4;
-    moraleDelta -= getEntitiesOfType(TYPE.GOBLIN).length * 2;
+    if (state.unlockedTechs.has('feudalism')) {
+        moraleDelta += getEntitiesOfType(TYPE.HOUSE).length;
+    }
+    moraleDelta -= state.entities.filter(e => !e.dead && e.isEnemy()).length * 2;
 
     const villagers = getEntitiesOfType(TYPE.VILLAGER);
     if (villagers.length > 35) moraleDelta -= 0.4;
