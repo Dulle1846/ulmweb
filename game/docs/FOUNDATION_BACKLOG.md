@@ -81,11 +81,11 @@ Priority meanings:
 
 ### F6 — Enforce module boundaries (P1)
 
-- [ ] Document allowed import directions.
-- [ ] Move shared domain contracts into lower-level modules where necessary.
+- [x] Document allowed import directions in `EXTENSIBILITY_AND_MODULE_DESIGN.md`.
+- [x] Move shared foundation modules and the cross-layer presentation-effect contract into `core/`.
 - [x] Remove simulation-to-rendering and systems-to-UI dependencies (domain systems now use the core presentation-effect contract).
 - [ ] Break circular dependencies.
-- [ ] Keep `main.js` as composition/orchestration rather than a gameplay system.
+- [x] Keep `app/main.js` as composition/orchestration rather than a gameplay system.
 
 **Exit condition:** Domain/simulation modules can run in tests without a browser DOM or Canvas.
 
