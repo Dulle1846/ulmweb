@@ -1,6 +1,8 @@
 import test,{beforeEach} from "node:test";
 import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
+import {TYPE} from "../../js/core/types.js";
+import {spawnEntity} from "../../js/world/entities.js";
 import {triggerRandomEvent,resolveEventChoice,checkRandomEvents,addLog,EVENT_VARIANT_COUNT} from "../../js/systems/events.js";
 
 beforeEach(()=>{
@@ -39,6 +41,7 @@ test("the emergent issue generator combines over twenty thousand narrative varia
 });
 
 test("a multi-stage chronicle is scheduled, advanced and archived after its final choice",()=>{
+    spawnEntity(10,10,TYPE.HOUSE);
     const originalRandom=Math.random;
     Math.random=()=>0;
     try{
