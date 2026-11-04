@@ -13,6 +13,7 @@ For the current development stage, these documents focus on making the existing 
 - [Codebase Audit](CODEBASE_AUDIT.md) — verified findings from the reviewed baseline commit.
 - [Foundation Backlog](FOUNDATION_BACKLOG.md) — ordered engineering work and acceptance criteria.
 - [F0 Baseline Checklist](F0_BASELINE_CHECKLIST.md) — repeatable manual browser smoke-test procedure.
+- [Baseline Fix Review](BASELINE_FIX_REVIEW.md) — source repairs, known gaps and verification still required.
 
 ## How to maintain these documents
 
