@@ -94,7 +94,11 @@ export function resolveEventChoice(index){
  for(const key of ["tension","prosperity","mystery"])hidden[key]=Math.max(-30,Math.min(100,(hidden[key]||0)+(effects.hidden?.[key]||0)));
  if(effects.villagers&&canSpawnEntity(TYPE.VILLAGER)){
   const keep=state.entities.find(e=>e.type===TYPE.KEEP&&!e.dead),x=keep?.x??WORLD_W/2,y=keep?.y??WORLD_H/2;
-  spawnEntity(x+randInt(-3,4),y+randInt(-3,4),TYPE.VILLAGER);
+  const arrivals=Math.min(10,Math.max(0,Math.floor(effects.villagers)));
+  for(let i=0;i<arrivals&&canSpawnEntity(TYPE.VILLAGER);i++){
+   const villager=spawnEntity(x+randInt(-3,4),y+randInt(-3,4),TYPE.VILLAGER);
+   if(villager){villager.home={x,y};villager.anchor={x,y};villager.jobRefreshTimer=0;}
+  }
  }
  hidden.memories=Array.isArray(hidden.memories)?hidden.memories:[];
  hidden.memories.unshift({family:issue.family,choice:choice.label,tick:state.tick});
