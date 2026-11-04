@@ -14,6 +14,7 @@ game/
 │   │   ├── state.js                    # Gemeinsamer Laufzeitzustand (schrittweise zu entkoppeln)
 │   │   ├── types.js                    # Entitätstypen und Entity-Klasse
 │   │   ├── utils.js                    # Allgemeine Hilfsfunktionen
+│   │   └── presentation-effects.js     # Darstellungsaufträge aus Domain-/Simulationsmodulen
 │   │   └── simulation-clock.js         # Browserunabhängige Berechnung fester Simulationstakte
 │   ├── world/
 │   │   ├── world.js                   # Terrain-Generierung, Biome und Erkundung
@@ -32,6 +33,7 @@ game/
 │   │   └── buildings.js               # Gebäudeproduktion und Effekte
 │   ├── presentation/
 │   │   ├── camera.js                 # Kamera, Zoom und Koordinatenumrechnung
+│   │   ├── effects.js                # Adapter für Darstellungsaufträge aus core/
 │   │   ├── input.js                  # Maus-, Touch-, Tastatur- und UI-Eingaben
 │   │   └── rendering/
 │   │       ├── renderer.js           # Zentrale Render-Pipeline
