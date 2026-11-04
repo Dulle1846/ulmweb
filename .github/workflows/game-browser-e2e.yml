@@ -7,12 +7,6 @@ on:
     paths:
       - "game/**"
       - ".github/workflows/game-browser-e2e.yml"
-  push:
-    branches:
-      - kac-2.1-stability-performance
-    paths:
-      - "game/**"
-      - ".github/workflows/game-browser-e2e.yml"
 
 permissions:
   contents: read
