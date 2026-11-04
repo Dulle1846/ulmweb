@@ -168,7 +168,7 @@ export function resolveEventChoice(index){
   const keep=state.entities.find(e=>e.type===TYPE.KEEP&&!e.dead),x=keep?.x??WORLD_W/2,y=keep?.y??WORLD_H/2;
   for(let i=0;i<arrivals;i++){
    const villager=spawnEntity(x+randInt(-3,4),y+randInt(-3,4),TYPE.VILLAGER);
-   if(villager){villager.home={x,y};villager.anchor={x,y};villager.jobRefreshTimer=0;}
+   if(villager){villager.home={x,y};villager.anchor={x,y};villager.lastAgedYear=state.year;villager.jobRefreshTimer=0;}
   }
  }
  hidden.memories=Array.isArray(hidden.memories)?hidden.memories:[];
