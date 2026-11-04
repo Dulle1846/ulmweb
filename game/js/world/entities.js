@@ -12,14 +12,17 @@ import { randInt } from '../core/utils.js';
 const MAX_WORLD_ENTITIES=900;
 const MAX_MOBILE_ENTITIES=420;
 const MOBILE_TYPES=new Set([TYPE.VILLAGER,TYPE.GUARD,TYPE.ARCHER,TYPE.KNIGHT,TYPE.PRIEST,TYPE.DEER,TYPE.GOBLIN,TYPE.ORC,TYPE.TROLL]);
-export function canSpawnEntity(type) {
+export function canSpawnEntity(type, count = 1) {
+    const requested = Math.max(0, Math.floor(Number(count) || 0));
+    if (requested === 0) return true;
     let total=0,mobile=0;
     for(const entity of state.entities){
         if(entity.dead)continue;
         total++;
         if(MOBILE_TYPES.has(entity.type))mobile++;
     }
-    return total<MAX_WORLD_ENTITIES&&(!MOBILE_TYPES.has(type)||mobile<MAX_MOBILE_ENTITIES);
+    return total + requested <= MAX_WORLD_ENTITIES &&
+        (!MOBILE_TYPES.has(type) || mobile + requested <= MAX_MOBILE_ENTITIES);
 }
 
 export function spawnEntity(tx, ty, type) {
