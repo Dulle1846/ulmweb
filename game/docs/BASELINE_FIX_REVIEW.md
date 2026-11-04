@@ -10,7 +10,7 @@ The full game source under `game/js/` and the game entry page were reviewed stat
 
 ## Repairs made
 
-1. **Card placement used a non-existent world grid.** The placement code read `state.world[x][y]`, but the game stores terrain in height/moisture maps. Placement now uses the existing terrain query (`isWaterAt`), rejects world-boundary violations, and checks occupancy.
+1. **Card placement used a non-existent world grid.** The placement code read `state.world[x][y]`, but the game stores terrain in height/moisture maps. Placement now uses the existing terrain query (`isWaterAt`) across the complete card footprint, rejects world-boundary violations, and checks occupancy.
 2. **Building overlap was checked only at entity centre tiles.** Placement now compares complete rectangular building footprints, using the configured building sizes. The same footprint-aware tile query is used by villager walkability.
 3. **Fallback card placement ignored zoom.** The centre-of-view world coordinate is now calculated using the current zoom factor.
 4. **Simulation speed was applied twice to the tick counter.** The main loop already scales the tick accumulator by game speed; each logical simulation update now advances the tick by exactly one. Calendar progression follows logical ticks, with a consistent 400-day year boundary.
