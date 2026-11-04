@@ -235,12 +235,16 @@ function moveToward(unit, dt) {
         return;
     }
 
+    const targetTileX=Math.floor(unit.targetX),targetTileY=Math.floor(unit.targetY);
+    if(unit.path&&(unit.pathTargetX!==targetTileX||unit.pathTargetY!==targetTileY||unit.pathVersion!==(state.buildingCollisionVersion||0)))unit.path=null;
+    if(unit.path&&followCachedPath(unit,dt))return;
+
     const dx = unit.targetX - unit.x;
     const dy = unit.targetY - unit.y;
     const dist = Math.hypot(dx, dy);
 
     if (dist < 0.2 || !isWalkable(unit.targetX, unit.targetY)) {
-        unit.velocityX = 0; unit.velocityY = 0;
+        unit.path=null;unit.velocityX = 0; unit.velocityY = 0;
         unit.visualState = "idle";
         unit.movePause = rand(0.5, 2.0);
         setTargetNear(unit, unit.anchor.x, unit.anchor.y, WANDER_RADIUS[unit.type] || 12);
@@ -255,6 +259,15 @@ function moveToward(unit, dt) {
     const nx = unit.x + unit.velocityX * dt;
     const ny = unit.y + unit.velocityY * dt;
 
+    if(!isWalkable(nx,ny,unit)){
+        const route=findPath(unit.x,unit.y,unit.targetX,unit.targetY);
+        if(route?.length){
+            unit.path=route;unit.pathIndex=0;unit.pathTargetX=targetTileX;unit.pathTargetY=targetTileY;
+            unit.pathVersion=state.buildingCollisionVersion||0;
+            if(followCachedPath(unit,dt))return;
+        }
+    }
+
     let moved = false;
     if (isWalkable(nx, ny, unit)) {
         unit.x = nx; unit.y = ny; moved = true;
@@ -268,7 +281,7 @@ function moveToward(unit, dt) {
         unit.visualState = "walk";
         if (Math.abs(unit.velocityX) > 0.02) unit.facing = unit.velocityX > 0 ? 1 : -1;
     } else {
-        unit.velocityX = 0; unit.velocityY = 0;
+        unit.path=null;unit.velocityX = 0; unit.velocityY = 0;
         unit.movePause = rand(0.3, 1.0);
         unit.visualState = "idle";
         const anchor = unit.anchor || unit.home || {x:unit.x,y:unit.y};
@@ -300,8 +313,103 @@ export function isWalkable(x, y) {
     const ty = Math.floor(y);
     if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) return false;
     if (isWaterAt(x, y)) return false;
-
     return !blockedBuildingTiles.has(tx+":"+ty);
+}
+
+function heapPush(heap,node){
+    heap.push(node);
+    let index=heap.length-1;
+    while(index>0){
+        const parent=(index-1)>>1;
+        if(heap[parent].f<=node.f)break;
+        heap[index]=heap[parent];index=parent;
+    }
+    heap[index]=node;
+}
+function heapPop(heap){
+    if(!heap.length)return null;
+    const first=heap[0],last=heap.pop();
+    if(heap.length){
+        let index=0;
+        while(true){
+            const left=index*2+1,right=left+1;
+            if(left>=heap.length)break;
+            let child=right<heap.length&&heap[right].f<heap[left].f?right:left;
+            if(heap[child].f>=last.f)break;
+            heap[index]=heap[child];index=child;
+        }
+        heap[index]=last;
+    }
+    return first;
+}
+const pathHeuristic=(x,y,tx,ty)=>{
+    const dx=Math.abs(tx-x),dy=Math.abs(ty-y);
+    return Math.max(dx,dy)+(Math.SQRT2-1)*Math.min(dx,dy);
+};
+
+// A bounded A* search is only invoked when direct steering meets an obstacle.
+// Routes are cached on each unit and invalidated when its destination or the
+// building-collision version changes.
+export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
+    rebuildBlockedBuildingTiles();
+    const sx=Math.floor(startX),sy=Math.floor(startY),tx=Math.floor(targetX),ty=Math.floor(targetY);
+    if(sx<0||sy<0||tx<0||ty<0||sx>=WORLD_W||sy>=WORLD_H||tx>=WORLD_W||ty>=WORLD_H)return null;
+    if(sx===tx&&sy===ty)return [];
+    if(!isWalkable(tx+0.5,ty+0.5))return null;
+    const start=sy*WORLD_W+sx,target=ty*WORLD_W+tx;
+    const open=[],costs=new Map([[start,0]]),parents=new Map(),closed=new Set();
+    heapPush(open,{index:start,x:sx,y:sy,g:0,f:pathHeuristic(sx,sy,tx,ty)});
+    const directions=[[-1,0,1],[1,0,1],[0,-1,1],[0,1,1],[-1,-1,Math.SQRT2],[1,-1,Math.SQRT2],[-1,1,Math.SQRT2],[1,1,Math.SQRT2]];
+    let visited=0;
+    while(open.length&&visited<Math.max(100,Math.min(5000,Math.floor(maxNodes)||1800))){
+        const current=heapPop(open);
+        if(closed.has(current.index))continue;
+        if(current.g!==costs.get(current.index))continue;
+        if(current.index===target){
+            const route=[];let cursor=target;
+            while(cursor!==start){
+                route.push({x:(cursor%WORLD_W)+0.5,y:Math.floor(cursor/WORLD_W)+0.5});
+                cursor=parents.get(cursor);
+                if(cursor===undefined)return null;
+            }
+            route.reverse();return route;
+        }
+        closed.add(current.index);visited++;
+        for(const [dx,dy,stepCost] of directions){
+            const nx=current.x+dx,ny=current.y+dy;
+            if(nx<0||ny<0||nx>=WORLD_W||ny>=WORLD_H)continue;
+            const next=ny*WORLD_W+nx;
+            if(closed.has(next)||!isWalkable(nx+0.5,ny+0.5))continue;
+            if(dx!==0&&dy!==0&&(!isWalkable(current.x+dx+0.5,current.y+0.5)||!isWalkable(current.x+0.5,current.y+dy+0.5)))continue;
+            const nextCost=current.g+stepCost,known=costs.get(next);
+            if(known!==undefined&&nextCost>=known)continue;
+            costs.set(next,nextCost);parents.set(next,current.index);
+            heapPush(open,{index:next,x:nx,y:ny,g:nextCost,f:nextCost+pathHeuristic(nx,ny,tx,ty)});
+        }
+    }
+    return null;
+}
+
+function followCachedPath(unit,dt,speedMultiplier=1){
+    const path=unit.path;
+    if(!Array.isArray(path)||!path.length)return false;
+    while(unit.pathIndex<path.length){
+        const node=path[unit.pathIndex];
+        if(Math.hypot(node.x-unit.x,node.y-unit.y)>=0.34)break;
+        unit.pathIndex++;
+    }
+    if(unit.pathIndex>=path.length){unit.path=null;return false;}
+    const node=path[unit.pathIndex],dx=node.x-unit.x,dy=node.y-unit.y,dist=Math.hypot(dx,dy);
+    if(dist<0.001){unit.pathIndex++;return true;}
+    const speed=(UNIT_SPEED[unit.type]||1)*speedMultiplier,s=Math.min(1,dt*4);
+    unit.velocityX+=(dx/dist*speed-unit.velocityX)*s;
+    unit.velocityY+=(dy/dist*speed-unit.velocityY)*s;
+    let nx=unit.x+unit.velocityX*dt,ny=unit.y+unit.velocityY*dt;
+    if(Math.hypot(node.x-nx,node.y-ny)<0.22){nx=node.x;ny=node.y;unit.velocityX=0;unit.velocityY=0;}
+    if(!isWalkable(nx,ny,unit)){unit.path=null;unit.velocityX=0;unit.velocityY=0;return false;}
+    unit.x=nx;unit.y=ny;unit.state="walk";unit.visualState="walk";
+    if(Math.abs(unit.velocityX)>0.02)unit.facing=unit.velocityX>0?1:-1;
+    return true;
 }
 
 function assignJob(villager,workplaces=null,workerCounts=new Map()) {
