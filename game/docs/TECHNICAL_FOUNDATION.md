@@ -12,7 +12,7 @@ This document records what exists today and the engineering rules toward which t
 - Rendering: HTML Canvas 2D.
 - UI shell: HTML elements styled with Tailwind's browser CDN build.
 - Main animation loop: `requestAnimationFrame`.
-- No build system, package manifest or automated test runner is present in the reviewed repository tree.
+- No bundler/build step is required. A minimal `game/package.json` now exposes Node's built-in test runner; the first automated tests cover the pure simulation-clock helper.
 
 ## 2. Current module layout
 
@@ -126,7 +126,7 @@ Target requirements:
 
 ## 8. Quality and performance
 
-The reviewed repository has no visible automated test suite or test runner.
+The game now has a minimal test command using Node's built-in test runner (`cd game && npm test`). The initial suite covers the fixed-step simulation clock; broader system and browser integration coverage is still missing.
 
 The foundation should add:
 
