@@ -49,6 +49,7 @@ export function normalizeHouseholdAssignments() {
         if (current && counts.get(current) < RESIDENTS_PER_HOUSE) {
             counts.set(current, counts.get(current) + 1);
             villager.householdId = `house:${current.x}:${current.y}`;
+            if (!Number.isFinite(villager.lastAgedYear)) villager.lastAgedYear = state.year;
             continue;
         }
         const candidates = houses
@@ -66,6 +67,7 @@ export function normalizeHouseholdAssignments() {
         villager.home = { x: home.x, y: home.y };
         villager.anchor = { x: home.x, y: home.y };
         villager.householdId = `house:${home.x}:${home.y}`;
+        if (!Number.isFinite(villager.lastAgedYear)) villager.lastAgedYear = state.year;
     }
     return getHouseholdSnapshot();
 }
@@ -116,6 +118,7 @@ export function updatePopulation() {
     villager.home = { x: home.x, y: home.y };
     villager.anchor = { x: home.x, y: home.y };
     villager.householdId = `house:${home.x}:${home.y}`;
+    villager.lastAgedYear = state.year;
     villager.jobRefreshTimer = 0;
     economy.populationGrowth = Math.max(0, Number(economy.populationGrowth) || 0) + 1;
     return villager;
