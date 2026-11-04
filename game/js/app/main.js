@@ -42,7 +42,7 @@ function init() {
 
         addLog("KINGDOM FOUNDED", "#67e8f9");
         addLog("WELCOME TO ELDRIA", "#facc15");
-        addLog("SCROLL TO ZOOM — 3 DETAIL LEVELS", "#a3a3a3");
+        addLog("SCROLL TO ZOOM — 4 DETAIL LEVELS", "#a3a3a3");
 
         setupInput();
 
@@ -69,8 +69,8 @@ function init() {
         setTimeout(() => {
             const hint = document.getElementById("hint-box");
             document.getElementById("hint-text").innerHTML =
-                `Scroll to zoom between 3 detail levels.<br>` +
-                `Click to place buildings. Drag to explore.`;
+                `Scroll to explore four levels of detail.<br>` +
+                `Drag cards onto the map to preview and build. Drag to explore.`;
             hint.classList.remove("hidden");
         }, 2100);
 
