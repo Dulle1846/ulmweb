@@ -7,6 +7,7 @@ import { randInt } from "../core/utils.js";
 import { EVENT_CHAINS } from "./event-chains.js";
 import { getWorkforceSnapshot } from "./economy.js";
 import { canAccommodateVillagers } from "./population.js";
+import { createCardForCategory } from "./card-catalog.js";
 
 export function addLog(text,color="#a3a3a3",kind="realm"){
  const entry={id:++state.eventSequence,text:String(text),color,tick:state.tick,kind};
@@ -48,6 +49,11 @@ const FAMILY_ROWS=[
  ["border",["A Disputed Boundary","The Watchfires Answer","Riders at the Frontier","A Missing Boundary Stone","The Unmarked Road"],"wood",18,14,0,5,2]
 ];
 const FAMILIES=FAMILY_ROWS.map(([id,titles,resource,gain,cost,prosperity,tension,mystery])=>({id,titles,resource,gain,cost,prosperity,tension,mystery}));
+const CARD_REWARDS=Object.freeze({
+ discovery:"gold-mines",caravan:"merchant-stalls",craft:"blacksmiths",faith:"reliquaries",
+ wildlife:"deer",fishing:"river-weirs",invention:"clockmakers",diplomacy:"embassies",
+ ruins:"forgotten-tombs",guild:"guildhalls",monster:"griffins",border:"border-rangers"
+});
 export const EVENT_VARIANT_COUNT=FAMILIES.length*PLACES.length*STAGES.length*DETAILS.length*5;
 const pick=items=>items[randInt(0,items.length)];
 function chooseFamily(){
@@ -85,6 +91,8 @@ export function triggerRandomEvent(){
   {label:pick(["Leave the matter to the local guilds","Choose the cautious course","Demand a public accounting","Let the old custom stand"]),description:"Spend "+cost+" "+secondary.toUpperCase()+" and take a different path.",effects:{resources:{[secondary]:-cost,[family.resource]:Math.max(3,Math.floor(gain*.35))},morale:randInt(-3,3),hidden:{tension:-family.tension*.35,prosperity:1,mystery:family.mystery?1:0}}}
  ];
  if(family.id==="migration"&&canSpawnEntity(TYPE.VILLAGER)&&canAccommodateVillagers(1)){choices[0].effects.villagers=1;choices[0].description+=" A new resident may join the realm.";}
+ const cardReward=CARD_REWARDS[family.id];
+ if(cardReward){choices[0].effects.cardReward=cardReward;choices[0].description+=" The crown may also secure a related card for its next draw.";}
  state.activeEvent={id:"issue-"+(++state.issueSequence),family:family.id,title,description,icon:family.id,createdAtTick:state.tick,threadStart:EVENT_CHAINS[family.id]?family.id:null,choices};
  addLog("ISSUE: "+title,"#e4bd72","issue");return state.activeEvent;
 }
@@ -106,6 +114,10 @@ export function resolveEventChoice(index){
  const choice=issue.choices[index];if(!choice)return false;
  const effects=choice.effects||{},resources=effects.resources||{};
  const arrivals=Math.min(10,Math.max(0,Math.floor(Number(effects.villagers)||0)));
+ let rewardCard=null;
+ if(typeof effects.cardReward==="string"){
+  try{rewardCard=createCardForCategory(effects.cardReward);}catch{return false;}
+ }
  if(arrivals>0&&(!canAccommodateVillagers(arrivals)||!canSpawnEntity(TYPE.VILLAGER,arrivals))){
   addLog("ISSUE UNRESOLVED: NOT ENOUGH HOUSING OR REALM CAPACITY","#e9857b","issue");return false;
  }
@@ -113,6 +125,13 @@ export function resolveEventChoice(index){
   addLog("ISSUE UNRESOLVED: NOT ENOUGH RESOURCES","#e9857b","issue");return false;
  }
  for(const [key,value] of Object.entries(resources))state.resources[key]=(state.resources[key]||0)+value;
+ if(rewardCard){
+  state.cardRewardQueue=Array.isArray(state.cardRewardQueue)?state.cardRewardQueue:[];
+  if(state.cardRewardQueue.length<12){
+   state.cardRewardQueue.push(rewardCard);
+   addLog("A CARD HAS BEEN SECURED: "+rewardCard.categoryName.toUpperCase(),"#e4bd72","card");
+  }else addLog("THE CARD ARCHIVE IS FULL — THE REWARD WAS NOT STORED","#e9857b","card");
+ }
  if(Number.isFinite(effects.morale))state.morale=Math.max(0,Math.min(100,state.morale+effects.morale));
  const hidden=state.hiddenRealm||(state.hiddenRealm={tension:0,prosperity:0,mystery:0,memories:[]});
  for(const key of ["tension","prosperity","mystery"])hidden[key]=Math.max(-30,Math.min(100,(hidden[key]||0)+(effects.hidden?.[key]||0)));
