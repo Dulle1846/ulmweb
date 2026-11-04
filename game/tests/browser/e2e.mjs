@@ -83,21 +83,22 @@ try{
     assert.ok(cardBox&&canvasBox);
     await page.mouse.move(cardBox.x+cardBox.width/2,cardBox.y+cardBox.height/2);
     await page.mouse.down();
-    let placed=false;
-    for(const fy of [0.30,0.38,0.46,0.54,0.62,0.70]){
-        for(const fx of [0.22,0.32,0.42,0.52,0.62,0.72,0.82]){
+    let placed=false,lastTarget="none";
+    for(const fy of [0.24,0.32,0.40,0.48,0.56,0.64,0.72]){
+        for(const fx of [0.18,0.28,0.38,0.48,0.58,0.68,0.78,0.88]){
             const x=canvasBox.x+canvasBox.width*fx,y=canvasBox.y+canvasBox.height*fy;
             await page.mouse.move(x,y,{steps:3});
             await page.waitForTimeout(35);
             if(await page.locator("#placement-status").getAttribute("data-valid")==="true"){
-                await page.mouse.up();placed=true;break;
+                lastTarget=await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.id||document.elementFromPoint(x,y)?.tagName||"none",{x,y});
+                if(lastTarget==="canvas"){await page.mouse.up();placed=true;break;}
             }
         }
         if(placed)break;
     }
     if(!placed){
         await page.mouse.up();
-        throw new Error("no legal map placement was found for an affordable hand card");
+        throw new Error("no legal map canvas target was found; last target: "+lastTarget);
     }
     await page.waitForTimeout(150);
     assert.equal(Number.parseInt(await page.locator("#hand-count").innerText(),10),countBeforeClick-1,"a valid drag must consume exactly the selected card");
