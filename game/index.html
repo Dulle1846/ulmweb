@@ -3,210 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111a1d">
     <title>CASTLEFORGE • Eternal Realm</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-        
-        :root {
-            --font-retro: 'Press Start 2P', system-ui;
-        }
-        
-        canvas {
-            image-rendering: pixelated;
-            touch-action: none;
-        }
-        
-        .scanlines {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(
-                to bottom,
-                transparent 0px,
-                transparent 2px,
-                rgba(0, 0, 0, 0.08) 2px,
-                rgba(0, 0, 0, 0.08) 4px
-            );
-            pointer-events: none;
-            z-index: 50;
-            animation: flicker 4s infinite alternate;
-        }
-        
-        @keyframes flicker {
-            0% { opacity: 0.4; }
-            100% { opacity: 0.65; }
-        }
-    </style>
+    <link rel="stylesheet" href="css/game.css">
 </head>
-<body class="bg-zinc-950 text-white overflow-hidden">
-    <div class="absolute top-0 left-0 w-full h-full flex flex-col">
-        <!-- header -->
-        <div class="bg-black border-b border-amber-400 h-14 flex items-center px-6 justify-between z-30">
-            <div class="flex items-center gap-x-3">
-                <div class="w-8 h-8 bg-amber-400 flex items-center justify-center text-black text-xl leading-none pt-0.5">♜</div>
+<body>
+    <div class="game-shell">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true">♜</div>
                 <div>
-                    <div class="font-mono text-xl tracking-tighter text-amber-300">CASTLEFORGE</div>
-                    <div id="kingdom-name" class="text-[10px] text-amber-500 font-medium tracking-[2px]">THE REALM OF ELDRIA</div>
+                    <div class="brand-title">CASTLEFORGE</div>
+                    <div id="kingdom-name" class="brand-subtitle">THE REALM OF ELDRIA</div>
                 </div>
             </div>
-            
-            <div class="flex items-center gap-x-8 text-xs font-mono">
-                <div id="date-display" class="flex items-center gap-x-5">
-                    <div class="flex items-center gap-x-1.5">
-                        <span id="season" class="text-emerald-400">SPRING</span>
-                        <span class="text-zinc-500">•</span>
-                        <span id="year" class="text-amber-300">YEAR 1</span>
-                    </div>
+
+            <div class="header-middle">
+                <div class="date-block">
+                    <div class="date-label">Realm calendar</div>
+                    <div class="date-value"><span id="season">SPRING</span> <span aria-hidden="true">·</span> <span id="year">YEAR 1</span></div>
                 </div>
-                
-                <div class="flex items-center gap-x-2">
-                    <div class="text-rose-300 text-[10px] font-medium">MORALE</div>
-                    <div class="w-48 h-2 bg-zinc-900 border border-zinc-700 rounded">
-                        <div id="morale-bar" class="h-2 bg-gradient-to-r from-rose-400 to-yellow-300 rounded transition-all" style="width: 78%"></div>
+                <div class="morale-block">
+                    <div class="morale-topline">
+                        <span>REALM MORALE</span>
+                        <span id="morale-value">72</span>
                     </div>
-                    <div id="morale-value" class="tabular-nums w-8 text-right text-yellow-300">78</div>
+                    <div class="morale-track">
+                        <div id="morale-bar"></div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="flex items-center gap-x-6 text-sm font-mono">
-                <div id="pause-btn"
-                     class="flex items-center gap-x-2 bg-zinc-900 hover:bg-zinc-800 px-4 h-8 rounded border border-zinc-700 cursor-pointer">
+
+            <div class="header-actions">
+                <button id="pause-btn" class="control-button" type="button" aria-label="Pause simulation">
                     <span id="pause-text">PAUSE</span>
-                </div>
-                <div class="flex items-center gap-x-px bg-zinc-900 rounded border border-zinc-700">
-                    <div id="speed-1" 
-                         class="speed-btn px-3 py-1 text-xs hover:bg-zinc-800 border-r border-zinc-700 cursor-pointer bg-amber-400 text-black">1×</div>
-                    <div id="speed-2" 
-                         class="speed-btn px-3 py-1 text-xs hover:bg-zinc-800 border-r border-zinc-700 cursor-pointer">2×</div>
-                    <div id="speed-4" 
-                         class="speed-btn px-3 py-1 text-xs hover:bg-zinc-800 cursor-pointer">4×</div>
+                </button>
+                <div class="speed-group" role="group" aria-label="Simulation speed">
+                    <button id="speed-1" class="speed-button is-active" data-speed="1" type="button">1×</button>
+                    <button id="speed-2" class="speed-button" data-speed="2" type="button">2×</button>
+                    <button id="speed-4" class="speed-button" data-speed="4" type="button">4×</button>
                 </div>
             </div>
-        </div>
-        
-        <div class="flex flex-1 overflow-hidden relative" id="main-container">
-            <div class="flex-1 relative" id="canvas-wrapper">
-                <canvas id="canvas" class="absolute inset-0"></canvas>
-                
-                <div id="floating-messages" class="absolute top-20 left-1/2 -translate-x-1/2 flex flex-col gap-2 pointer-events-none z-40"></div>
-                
-                <div class="absolute bottom-8 right-8 bg-black border-2 border-amber-300 p-2 rounded shadow-2xl">
-                    <canvas id="minimap" width="140" height="140" class="bg-emerald-950"></canvas>
-                    <div class="absolute top-3 right-3 text-[8px] font-mono bg-black/70 px-1.5 py-px text-amber-200">MAP</div>
+        </header>
+
+        <main id="main-container" class="game-layout">
+            <section id="canvas-wrapper" class="world-stage" aria-label="World map">
+                <canvas id="canvas" aria-label="Interactive kingdom map"></canvas>
+
+                <div class="stage-topline">
+                    <div class="stage-chip">WORLD VIEW <strong>· ELDRIA</strong></div>
+                    <div class="stage-chip">DRAG TO PAN</div>
                 </div>
-                
-                <div id="hint-box"
-                     class="absolute bottom-36 left-8 bg-zinc-900 border border-amber-400 text-amber-200 text-xs p-4 max-w-[220px] leading-tight cursor-pointer hidden">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="uppercase tracking-widest text-[10px]">Tip</div>
-                        <div class="text-amber-500 text-lg leading-none">✕</div>
+
+                <div class="zoom-panel" aria-label="Zoom controls">
+                    <button id="zoom-out" class="zoom-button" type="button" aria-label="Zoom out">−</button>
+                    <div class="zoom-presets" role="group" aria-label="Zoom detail level">
+                        <button class="zoom-preset" data-zoom-level="1" type="button" aria-label="Landscape view" title="1 · Landscape">1</button>
+                        <button class="zoom-preset" data-zoom-level="2" type="button" aria-label="District view" title="2 · Districts">2</button>
+                        <button class="zoom-preset" data-zoom-level="3" type="button" aria-label="Rooftop view" title="3 · Rooftops">3</button>
+                        <button class="zoom-preset" data-zoom-level="4" type="button" aria-label="Interior view" title="4 · Interiors">4</button>
                     </div>
-                    <div id="hint-text" class="opacity-80"></div>
+                    <button id="zoom-in" class="zoom-button" type="button" aria-label="Zoom in">+</button>
                 </div>
-            </div>
-            
-            <!-- sidebar -->
-            <div class="w-72 bg-zinc-950 border-l border-amber-400 flex flex-col">
-                <div class="p-4 border-b border-amber-400 bg-black">
-                    <div class="grid grid-cols-2 gap-3 text-xs">
-                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-emerald-900">
-                            <div class="w-5 h-5 flex items-center justify-center text-emerald-400">🌲</div>
-                            <div class="flex-1">
-                                <div class="font-medium text-emerald-300 tabular-nums" id="res-wood">248</div>
-                                <div class="text-[10px] text-zinc-500 -mt-0.5">WOOD</div>
-                            </div>
-                            <div id="wood-income" class="text-[10px] text-emerald-400 font-mono">+4</div>
-                        </div>
-                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-slate-700">
-                            <div class="w-5 h-5 flex items-center justify-center text-slate-400">🪨</div>
-                            <div class="flex-1">
-                                <div class="font-medium text-slate-300 tabular-nums" id="res-stone">132</div>
-                                <div class="text-[10px] text-zinc-500 -mt-0.5">STONE</div>
-                            </div>
-                            <div id="stone-income" class="text-[10px] text-slate-400 font-mono">+3</div>
-                        </div>
-                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-yellow-700">
-                            <div class="w-5 h-5 flex items-center justify-center text-yellow-400">💰</div>
-                            <div class="flex-1">
-                                <div class="font-medium text-yellow-300 tabular-nums" id="res-gold">67</div>
-                                <div class="text-[10px] text-zinc-500 -mt-0.5">GOLD</div>
-                            </div>
-                            <div id="gold-income" class="text-[10px] text-yellow-400 font-mono">+2</div>
-                        </div>
-                        <div class="flex items-center gap-x-3 bg-zinc-900 px-3 py-2.5 rounded border border-orange-700">
-                            <div class="w-5 h-5 flex items-center justify-center text-orange-400">🌾</div>
-                            <div class="flex-1">
-                                <div class="font-medium text-orange-300 tabular-nums" id="res-food">91</div>
-                                <div class="text-[10px] text-zinc-500 -mt-0.5">FOOD</div>
-                            </div>
-                            <div id="food-income" class="text-[10px] text-orange-400 font-mono">+7</div>
-                        </div>
-                    </div>
+
+                <div id="placement-status" class="placement-status">DRAG A CARD ONTO THE MAP</div>
+
+                <div class="minimap-frame">
+                    <div class="minimap-heading"><span>WORLD MAP</span><span>ELDRIA</span></div>
+                    <canvas id="minimap" width="140" height="140" aria-label="Minimap"></canvas>
                 </div>
-                
-                <div class="flex-1 flex flex-col p-4">
-                    <div class="uppercase text-amber-400 text-[10px] tracking-[1px] mb-2 flex items-center justify-between">
-                        <div>CURRENT CARD</div>
-                        <div id="skip-card-btn"
-                             class="text-[9px] px-3 py-1 bg-red-950 hover:bg-red-900 border border-red-900 rounded cursor-pointer">SKIP • -3G</div>
+
+                <div id="hint-box" class="hint-box hidden" role="button" tabindex="0" aria-label="Dismiss tip">
+                    <div class="hint-title"><span>FIELD NOTE</span><span>×</span></div>
+                    <div id="hint-text">Scroll to move through the realm's four levels of detail.</div>
+                </div>
+            </section>
+
+            <aside class="side-panel" aria-label="Kingdom management">
+                <section class="resource-section">
+                    <div class="section-heading">
+                        <span>ROYAL STORES</span>
+                        <span class="subtle">TREASURY & SUPPLIES</span>
                     </div>
-                    
-                    <div id="card-container" 
-                         class="group bg-zinc-900 border-2 border-dashed border-amber-300 h-60 rounded-2xl flex flex-col items-center justify-center p-6 cursor-pointer hover:border-amber-200 transition-colors relative overflow-hidden">
-                        
-                        <div id="card-icon" class="text-7xl mb-6 transition-transform group-active:scale-90"></div>
-                        <div id="card-name" class="font-mono text-xl text-center text-amber-200">COTTAGE</div>
-                        <div id="card-desc" class="text-center text-zinc-400 text-xs leading-tight mt-1 max-w-[160px]">Houses 4 villagers. Increases morale slightly.</div>
-                        
-                        <div class="absolute bottom-6 left-0 right-0 flex justify-center gap-6 text-xs font-mono">
-                            <div id="card-cost-wood" class="flex items-center gap-1">
-                                <span class="text-emerald-400">🌲</span><span class="tabular-nums">22</span>
+                    <div class="resource-grid">
+                        <div class="resource-card wood">
+                            <div class="resource-symbol" aria-hidden="true">🌲</div>
+                            <div class="resource-copy">
+                                <div id="res-wood" class="resource-value">180</div>
+                                <div class="resource-name">WOOD</div>
                             </div>
-                            <div id="card-cost-stone" class="flex items-center gap-1">
-                                <span class="text-slate-400">🪨</span><span class="tabular-nums">8</span>
-                            </div>
-                            <div id="card-cost-gold" class="flex items-center gap-1">
-                                <span class="text-yellow-400">💰</span><span class="tabular-nums">0</span>
-                            </div>
+                            <div id="wood-income" class="resource-income"></div>
                         </div>
-                        
-                        <div class="absolute -top-1 -right-1 bg-emerald-300 text-black text-[10px] font-bold px-4 py-1 rotate-12 shadow-inner">PLAY</div>
+                        <div class="resource-card stone">
+                            <div class="resource-symbol" aria-hidden="true">⛰</div>
+                            <div class="resource-copy">
+                                <div id="res-stone" class="resource-value">95</div>
+                                <div class="resource-name">STONE</div>
+                            </div>
+                            <div id="stone-income" class="resource-income"></div>
+                        </div>
+                        <div class="resource-card gold">
+                            <div class="resource-symbol" aria-hidden="true">✦</div>
+                            <div class="resource-copy">
+                                <div id="res-gold" class="resource-value">45</div>
+                                <div class="resource-name">GOLD</div>
+                            </div>
+                            <div id="gold-income" class="resource-income"></div>
+                        </div>
+                        <div class="resource-card food">
+                            <div class="resource-symbol" aria-hidden="true">🌾</div>
+                            <div class="resource-copy">
+                                <div id="res-food" class="resource-value">120</div>
+                                <div class="resource-name">FOOD</div>
+                            </div>
+                            <div id="food-income" class="resource-income"></div>
+                        </div>
                     </div>
-                    
-                    <div class="flex text-[10px] mt-8 border-b border-zinc-700">
-                        <div id="tab-0" class="tab-button flex-1 text-center py-3 border-b-2 border-amber-400 text-amber-400">EVENT LOG</div>
-                        <div id="tab-1" class="tab-button flex-1 text-center py-3 text-zinc-400">STATS</div>
-                        <div id="tab-2" class="tab-button flex-1 text-center py-3 text-zinc-400">TECH</div>
+                </section>
+
+                <section class="card-section">
+                    <div class="card-section-heading">
+                        <div class="card-section-title">BUILDING DECK</div>
+                        <button id="skip-card-btn" class="skip-button" type="button">DISCARD · 3 GOLD</button>
                     </div>
-                    
-                    <div id="tab-content" class="flex-1 bg-zinc-900 rounded-b-3xl p-4 text-xs font-mono overflow-auto"></div>
-                </div>
-                
-                <div class="h-11 bg-black border-t border-amber-400 text-[10px] font-mono flex items-center px-4 text-zinc-500 justify-between">
-                    <div>TICK <span id="tick-count" class="text-amber-400 tabular-nums">12480</span></div>
-                    <div id="help-btn" class="cursor-pointer hover:text-amber-300">?</div>
-                    <div id="population" class="text-emerald-400">POP 24 / 36</div>
-                </div>
-            </div>
+
+                    <div id="card-container" class="card-container" role="button" tabindex="0"
+                         aria-label="Drag the current card onto a valid map tile to build">
+                        <div id="card-icon" class="card-icon">🏠</div>
+                        <div id="card-name" class="card-name">COTTAGE</div>
+                        <div id="card-desc" class="card-desc">Houses 3 villagers. +1 morale</div>
+
+                        <div class="card-costs">
+                            <div id="card-cost-wood" class="card-cost"><span>🌲</span><span>30</span></div>
+                            <div id="card-cost-stone" class="card-cost"><span>⛰</span><span>10</span></div>
+                            <div id="card-cost-gold" class="card-cost"><span>✦</span><span>0</span></div>
+                        </div>
+                        <div class="card-play-tag">BUILD</div>
+                    </div>
+                    <div class="card-instruction">DRAG THIS CARD ONTO THE WORLD MAP</div>
+                </section>
+
+                <nav class="tabs" aria-label="Kingdom information">
+                    <button id="tab-0" class="tab-button is-active" type="button">EVENT LOG</button>
+                    <button id="tab-1" class="tab-button" type="button">STATISTICS</button>
+                    <button id="tab-2" class="tab-button" type="button">RESEARCH</button>
+                </nav>
+
+                <section id="tab-content" class="tab-content" aria-live="polite"></section>
+
+                <footer class="panel-footer">
+                    <span>SIM TICK <strong id="tick-count">0</strong></span>
+                    <button id="help-btn" class="footer-help" type="button" aria-label="How to play">?</button>
+                    <span id="population">POP <strong>8</strong> / 12</span>
+                </footer>
+            </aside>
+        </main>
+    </div>
+
+    <div id="card-drag-ghost" aria-hidden="true">
+        <span id="drag-ghost-icon" class="drag-ghost-icon"></span>
+        <span id="drag-ghost-name" class="drag-ghost-name"></span>
+    </div>
+
+    <div id="big-message" class="big-message hidden" role="dialog" aria-modal="true" aria-labelledby="big-title">
+        <div class="big-message-card">
+            <div id="big-title"></div>
+            <div id="big-subtitle"></div>
+            <button id="big-message-close" class="message-button" type="button">CONTINUE</button>
         </div>
     </div>
-    
-    <div id="big-message" class="hidden absolute inset-0 bg-black/80 flex items-center justify-center z-50">
-        <div class="max-w-md text-center">
-            <div id="big-title" class="text-6xl font-bold text-amber-300 mb-2 tracking-tighter"></div>
-            <div id="big-subtitle" class="text-zinc-400 mb-12"></div>
-            <button id="big-message-close"
-                    class="px-10 py-4 border border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-black transition-colors font-mono text-sm tracking-widest">
-                CONTINUE
-            </button>
-        </div>
-    </div>
-    
-    <div class="scanlines"></div>
-    
+
     <script type="module" src="js/app/main.js"></script>
 </body>
 </html>
