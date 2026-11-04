@@ -72,3 +72,20 @@ test("a multi-stage chronicle is scheduled, advanced and archived after its fina
         Math.random=originalRandom;
     }
 });
+
+test("migration choices cannot add residents when the realm has no vacant housing",()=>{
+    state.resources.food=100;
+    state.activeEvent={
+        id:"housing-test",
+        family:"migration",
+        title:"A family seeks shelter",
+        choices:[{
+            label:"Welcome the family",
+            effects:{resources:{food:-8},villagers:2}
+        }]
+    };
+    assert.equal(resolveEventChoice(0),false);
+    assert.equal(state.resources.food,100);
+    assert.equal(state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length,0);
+    assert.ok(state.activeEvent);
+});
