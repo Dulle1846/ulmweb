@@ -55,5 +55,61 @@ export const EVENT_CHAINS = Object.freeze({
             {label:"Ratify the treaty",description:"Gain 18 gold and secure a prosperous relationship.",effects:{resources:{gold:18},hidden:{prosperity:6,tension:-4},morale:2}},
             {label:"Delay the decision",description:"Buy time, but leave the future uncertain.",effects:{resources:{gold:-4},hidden:{tension:2,prosperity:-1}}}
         ]}
+    ]),
+    plague: Object.freeze([
+        {title:"The First Cases",description:"A strange fever spreads through the crowded quarter. The healers ask for urgent supplies.",choices:[
+            {label:"Open the royal infirmary",description:"Spend food and gold to slow the sickness.",effects:{resources:{food:-12,gold:-5},morale:2,hidden:{tension:-2,mystery:1}}},
+            {label:"Trust the old remedies",description:"Save the treasury, but the fever may spread.",effects:{morale:-3,hidden:{tension:4,mystery:2}}}
+        ]},
+        {title:"The Quarantine Debate",description:"The guilds resist restrictions while the healers warn that delay will cost lives.",choices:[
+            {label:"Establish a guarded quarantine",description:"Spend wood to isolate the worst-affected streets.",effects:{resources:{wood:-14},morale:-1,hidden:{tension:-3,prosperity:-1}}},
+            {label:"Keep the markets open",description:"Preserve trade, but public anxiety deepens.",effects:{morale:-4,hidden:{tension:5,mystery:1}}}
+        ]},
+        {title:"The Last Bell",description:"The fever has weakened. The realm must decide how to remember the crisis.",choices:[
+            {label:"Found a house of healing",description:"Spend stone and gold to protect future generations.",effects:{resources:{stone:-12,gold:-8},morale:5,hidden:{prosperity:5,tension:-4}}},
+            {label:"Return to ordinary life",description:"Recover stability quickly, but leave the old infirmary unchanged.",effects:{morale:1,hidden:{prosperity:1,mystery:2}}}
+        ]}
+    ]),
+    rebellion: Object.freeze([
+        {title:"Whispers in the Ward",description:"Tax collectors report closed doors, missing notices and gatherings after dark.",choices:[
+            {label:"Hear the petitioners",description:"Spend gold to investigate their grievances.",effects:{resources:{gold:-8},morale:2,hidden:{tension:-3,mystery:1}}},
+            {label:"Send the royal guard",description:"Restore immediate order, but resentment grows.",effects:{morale:-3,hidden:{tension:6,prosperity:-1}}}
+        ]},
+        {title:"The Banners Gather",description:"Several districts now speak with one voice. The crown must choose between reform and force.",choices:[
+            {label:"Convene a royal assembly",description:"Spend food and gold to negotiate.",effects:{resources:{food:-8,gold:-6},morale:3,hidden:{tension:-4,prosperity:2}}},
+            {label:"Declare the gatherings unlawful",description:"Gain temporary authority at a lasting cost.",effects:{morale:-5,hidden:{tension:7,mystery:1}}}
+        ]},
+        {title:"The Realm's Oath",description:"The final settlement is ready. Its terms will define the relationship between crown and people.",choices:[
+            {label:"Grant a charter of rights",description:"Spend gold to secure a more stable realm.",effects:{resources:{gold:-18},morale:6,hidden:{prosperity:7,tension:-7}}},
+            {label:"Demand an oath of obedience",description:"The treasury is spared, but the conflict remains beneath the surface.",effects:{resources:{gold:8},morale:-4,hidden:{tension:5,prosperity:-2}}}
+        ]}
+    ]),
+    guild: Object.freeze([
+        {title:"The Masters' Petition",description:"The guilds ask the crown to recognise their privileges and regulate the town's crafts.",choices:[
+            {label:"Grant a royal charter",description:"Spend gold to formalise the guilds' duties and rights.",effects:{resources:{gold:-8},hidden:{prosperity:4,tension:-2}}},
+            {label:"Keep the trades unregulated",description:"Avoid royal expense, but guild rivalries intensify.",effects:{morale:-1,hidden:{tension:3,prosperity:-1}}}
+        ]},
+        {title:"The Price of Privilege",description:"The new charter has brought prosperity to some workshops and resentment to others.",choices:[
+            {label:"Open apprenticeships",description:"Spend food and wood to widen access to skilled work.",effects:{resources:{food:-6,wood:-8},morale:3,hidden:{prosperity:4,tension:-2}}},
+            {label:"Protect the established masters",description:"Gain coin, but younger craftspeople lose hope.",effects:{resources:{gold:12},morale:-2,hidden:{tension:3,prosperity:1}}}
+        ]},
+        {title:"The Guildhall's Seal",description:"The guilds offer a final compact to supply the realm in exchange for a lasting place at court.",choices:[
+            {label:"Seal the compact",description:"Spend stone and gold to establish a permanent guildhall.",effects:{resources:{stone:-10,gold:-10},morale:4,hidden:{prosperity:6,tension:-3}}},
+            {label:"Refuse their influence",description:"Keep the court independent, but lose a source of skilled investment.",effects:{morale:-2,hidden:{prosperity:-3,tension:2}}}
+        ]}
+    ]),
+    succession: Object.freeze([
+        {title:"The Uncertain Heir",description:"A noble household questions the line of succession and asks the crown to clarify its intentions.",choices:[
+            {label:"Summon the royal council",description:"Spend gold to establish a lawful hearing.",effects:{resources:{gold:-6},hidden:{tension:-2,mystery:2}}},
+            {label:"Name the heir at once",description:"End uncertainty, but alienate rival claimants.",effects:{morale:-2,hidden:{tension:4,mystery:-1}}}
+        ]},
+        {title:"The Houses Take Sides",description:"Several noble houses have declared their support. Their rivalries now threaten the peace.",choices:[
+            {label:"Broker a marriage alliance",description:"Spend food and gold to bind the houses together.",effects:{resources:{food:-8,gold:-10},morale:3,hidden:{prosperity:3,tension:-4}}},
+            {label:"Reward the loyal houses",description:"Secure immediate support while deepening the divide.",effects:{resources:{gold:-4},hidden:{tension:5,prosperity:1}}}
+        ]},
+        {title:"The Crown's Testament",description:"The succession is settled. The final proclamation will become part of the royal record.",choices:[
+            {label:"Publish the succession charter",description:"Spend gold to secure legitimacy for the next generation.",effects:{resources:{gold:-14},morale:5,hidden:{prosperity:5,tension:-5,mystery:-1}}},
+            {label:"Keep the settlement secret",description:"Preserve royal discretion, but leave rumours alive.",effects:{morale:-2,hidden:{tension:3,mystery:4}}}
+        ]}
     ])
 });
