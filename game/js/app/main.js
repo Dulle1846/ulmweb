@@ -1,8 +1,8 @@
 // Application composition root: initializes the game and connects its modules.
 
-import { WORLD_W, WORLD_H } from '../config.js';
-import { TYPE } from '../types.js';
-import { state } from '../state.js';
+import { WORLD_W, WORLD_H } from '../core/config.js';
+import { TYPE } from '../core/types.js';
+import { state } from '../core/state.js';
 import { initWorld } from '../world/world.js';
 import { initStartingKingdom, spawnEntity } from '../world/entities.js';
 import { initTechTree } from '../systems/tech.js';
@@ -11,7 +11,7 @@ import { addLog } from '../systems/events.js';
 import { startGameLoop } from './game-loop.js';
 import { centerCamera, resize } from '../presentation/camera.js';
 import { setupInput } from '../presentation/input.js';
-import { randInt } from '../utils.js';
+import { randInt } from '../core/utils.js';
 
 function init() {
     state.canvas = document.getElementById("canvas");

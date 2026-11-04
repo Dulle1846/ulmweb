@@ -1,8 +1,8 @@
 // ── UI Elements (Header, Sidebar) ──────────────────────────────
 
-import { SEASONS } from '../../config.js';
-import { TYPE } from '../../types.js';
-import { state } from '../../state.js';
+import { SEASONS } from '../../core/config.js';
+import { TYPE } from '../../core/types.js';
+import { state } from '../../core/state.js';
 import { getEntitiesOfType } from '../../world/entities.js';
 
 export function showBigMessage(title, subtitle, timeout = 1800) {

@@ -6,9 +6,9 @@ import {
     WORLD_W, WORLD_H, CELL,
     NOISE_SCALE, NOISE_OCTAVES, NOISE_PERSISTENCE, NOISE_LACUNARITY,
     BIOME, BIOME_COLORS,
-} from '../config.js';
-import { state } from '../state.js';
-import { distance } from '../utils.js';
+} from '../core/config.js';
+import { state } from '../core/state.js';
+import { distance } from '../core/utils.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  PERLIN NOISE (klassisch, 2D, permutation-basiert)

@@ -1,12 +1,12 @@
 // ── Building Effects & Income ──────────────────────────────────
 
-import { TYPE } from '../types.js';
-import { TILE_SIZE } from '../config.js';
-import { state } from '../state.js';
+import { TYPE } from '../core/types.js';
+import { TILE_SIZE } from '../core/config.js';
+import { state } from '../core/state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 import { addResource } from '../systems/resources.js';
 import { createParticle, createFloater } from '../presentation/rendering/particles.js';
-import { distance } from '../utils.js';
+import { distance } from '../core/utils.js';
 
 export function updateBuildingIncome() {
     const tick = state.tick;

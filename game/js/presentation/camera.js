@@ -6,8 +6,8 @@ import {
     WORLD_W, WORLD_H, CELL,
     ZOOM_MIN, ZOOM_MAX, ZOOM_SPEED, ZOOM_LERP,
     ZOOM_THRESHOLD_1_2, ZOOM_THRESHOLD_2_3,
-} from '../config.js';
-import { state } from '../state.js';
+} from '../core/config.js';
+import { state } from '../core/state.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  HAUPT-UPDATE (pro Frame)

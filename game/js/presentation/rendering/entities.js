@@ -6,9 +6,9 @@ import {
     CELL, ICON_RADIUS, ROLE_COLORS,
     BUILDING_SIZE, BUILDING_ROOF_COLOR, BUILDING_ICON,
     ZOOM_THRESHOLD_1_2, ZOOM_THRESHOLD_2_3,
-} from '../../config.js';
-import { TYPE, JOB_ICONS } from '../../types.js';
-import { state } from '../../state.js';
+} from '../../core/config.js';
+import { TYPE, JOB_ICONS } from '../../core/types.js';
+import { state } from '../../core/state.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  HAUPT-EINSTIEG

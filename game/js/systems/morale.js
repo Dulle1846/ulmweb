@@ -1,7 +1,7 @@
 // ── Morale System ──────────────────────────────────────────────
 
-import { TYPE } from '../types.js';
-import { state } from '../state.js';
+import { TYPE } from '../core/types.js';
+import { state } from '../core/state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 
 export function updateMorale() {

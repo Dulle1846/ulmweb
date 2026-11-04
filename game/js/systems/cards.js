@@ -1,14 +1,14 @@
 // ── Card Deck & Placement ──────────────────────────────────────
 
-import { TYPE } from '../types.js';
-import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, BUILDING_SIZE } from '../config.js';
-import { state } from '../state.js';
+import { TYPE } from '../core/types.js';
+import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, BUILDING_SIZE } from '../core/config.js';
+import { state } from '../core/state.js';
 import { spawnEntity, buildingOverlaps } from '../world/entities.js';
 import { revealArea, isWaterAt } from '../world/world.js';
 import { canAfford, payForCard } from './resources.js';
 import { createParticle, createFloater } from '../presentation/rendering/particles.js';
 import { renderUI } from '../presentation/rendering/ui.js';
-import { rand, randInt } from '../utils.js';
+import { rand, randInt } from '../core/utils.js';
 
 export const CARD_DECK = [
     { type: TYPE.HOUSE,    name: "COTTAGE",        desc: "Houses 3 villagers. +1 morale",       cost: { wood: 30, stone: 10 },              icon: "🏠" },

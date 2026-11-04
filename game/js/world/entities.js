@@ -2,10 +2,10 @@
 //  ENTITIES — Spawn, Verwaltung, Startaufbau
 // ═══════════════════════════════════════════════════════════════
 
-import { WORLD_WIDTH, WORLD_HEIGHT, BUILDING_SIZE } from '../config.js';
-import { TYPE, Entity } from '../types.js';
-import { state } from '../state.js';
-import { randInt } from '../utils.js';
+import { WORLD_WIDTH, WORLD_HEIGHT, BUILDING_SIZE } from '../core/config.js';
+import { TYPE, Entity } from '../core/types.js';
+import { state } from '../core/state.js';
+import { randInt } from '../core/utils.js';
 
 // ── Entity erstellen ──────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 // ── Tech Tree & Unlocks ────────────────────────────────────────
 
-import { state } from '../state.js';
-import { TYPE } from '../types.js';
+import { state } from '../core/state.js';
+import { TYPE } from '../core/types.js';
 import { addLog } from './events.js';
 import { createFloater } from '../presentation/rendering/particles.js';
 

@@ -2,9 +2,9 @@
 //  MINIMAP — mit Zoom-Level-Anzeige
 // ═══════════════════════════════════════════════════════════════
 
-import { WORLD_W, WORLD_H, CELL, BIOME } from '../../config.js';
-import { TYPE } from '../../types.js';
-import { state } from '../../state.js';
+import { WORLD_W, WORLD_H, CELL, BIOME } from '../../core/config.js';
+import { TYPE } from '../../core/types.js';
+import { state } from '../../core/state.js';
 import { getHeightAt } from '../../world/world.js';
 
 export function updateMinimap() {

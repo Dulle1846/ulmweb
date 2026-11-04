@@ -1,6 +1,6 @@
 // ── Resource Tracking & Income ─────────────────────────────────
 
-import { state } from '../state.js';
+import { state } from '../core/state.js';
 
 export function resetIncome() {
     state.incomeThisTick = { wood: 0, stone: 0, gold: 0, food: 0, research: 0 };

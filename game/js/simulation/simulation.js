@@ -1,6 +1,6 @@
 // ── Main Tick Loop ─────────────────────────────────────────────
 
-import { state } from '../state.js';
+import { state } from '../core/state.js';
 import { resetIncome } from '../systems/resources.js';
 import { updateMorale } from '../systems/morale.js';
 import { checkRandomEvents } from '../systems/events.js';

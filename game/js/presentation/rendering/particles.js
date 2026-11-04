@@ -1,7 +1,7 @@
 // ── Particle & Floater System ──────────────────────────────────
 
-import { state } from '../../state.js';
-import { rand } from '../../utils.js';
+import { state } from '../../core/state.js';
+import { rand } from '../../core/utils.js';
 
 export function createParticle(x, y, color, life, vx = null, vy = null, size = 4) {
     state.particles.push({

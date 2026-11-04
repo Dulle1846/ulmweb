@@ -2,14 +2,14 @@
 //  INPUT — Maus, Tastatur, Zoom-Mausrad
 // ═══════════════════════════════════════════════════════════════
 
-import { WORLD_W, WORLD_H, CELL } from '../config.js';
-import { state } from '../state.js';
+import { WORLD_W, WORLD_H, CELL } from '../core/config.js';
+import { state } from '../core/state.js';
 import { clampCamera, applyZoomDelta, screenToWorld } from './camera.js';
 import { placeCurrentCard, skipCard } from '../systems/cards.js';
 import { researchTech } from '../systems/tech.js';
 import { createParticle } from './rendering/particles.js';
 import { showBigMessage, renderUI } from './rendering/ui.js';
-import { distance } from '../utils.js';
+import { distance } from '../core/utils.js';
 
 export function setupInput() {
     const canvas = state.canvas;

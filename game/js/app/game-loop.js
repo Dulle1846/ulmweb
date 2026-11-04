@@ -1,7 +1,7 @@
 // Presentation/runtime loop. It schedules frames and advances the simulation clock.
 
-import { BASE_TICK_INTERVAL } from '../config.js';
-import { state } from '../state.js';
+import { BASE_TICK_INTERVAL } from '../core/config.js';
+import { state } from '../core/state.js';
 import { consumeSimulationTime } from '../core/simulation-clock.js';
 import { updateSimulation } from '../simulation/simulation.js';
 import { updateFriendlyMovement } from '../simulation/villagers.js';

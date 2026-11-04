@@ -1,7 +1,7 @@
 // ── Weather System ─────────────────────────────────────────────
 
-import { state } from '../state.js';
-import { randInt } from '../utils.js';
+import { state } from '../core/state.js';
+import { randInt } from '../core/utils.js';
 import { addLog } from '../systems/events.js';
 
 export function updateWeather() {

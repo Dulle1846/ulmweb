@@ -1,12 +1,12 @@
 // ── Random Events System & Event Log ───────────────────────────
 
-import { WORLD_WIDTH, WORLD_HEIGHT } from '../config.js';
-import { TYPE } from '../types.js';
-import { state } from '../state.js';
+import { WORLD_WIDTH, WORLD_HEIGHT } from '../core/config.js';
+import { TYPE } from '../core/types.js';
+import { state } from '../core/state.js';
 import { spawnEntity, getEntitiesOfType } from '../world/entities.js';
 import { createFloater } from '../presentation/rendering/particles.js';
 import { showBigMessage } from '../presentation/rendering/ui.js';
-import { randInt } from '../utils.js';
+import { randInt } from '../core/utils.js';
 
 export function addLog(text, color = "#a3a3a3") {
     state.eventLog.unshift({ text, color, tick: state.tick });

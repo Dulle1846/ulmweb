@@ -6,12 +6,12 @@ import {
     WORLD_W, WORLD_H,
     UNIT_SPEED, WANDER_RADIUS, ROUTINE,
     FLEE_DISTANCE, FLEE_SPEED_MULT,
-} from '../config.js';
-import { TYPE } from '../types.js';
-import { state } from '../state.js';
+} from '../core/config.js';
+import { TYPE } from '../core/types.js';
+import { state } from '../core/state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 import { isWaterAt } from '../world/world.js';
-import { distance, rand } from '../utils.js';
+import { distance, rand } from '../core/utils.js';
 
 const MOVING_TYPES = new Set([
     TYPE.VILLAGER, TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT, TYPE.PRIEST,
