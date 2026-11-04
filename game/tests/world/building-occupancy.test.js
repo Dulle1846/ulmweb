@@ -6,7 +6,6 @@ import { spawnEntity, buildingAt, buildingOverlaps } from "../../js/world/entiti
 
 beforeEach(() => {
     state.entities = [];
-    state.unlockedTechs.clear();
 });
 
 test("buildingAt detects the full footprint of a large building", () => {

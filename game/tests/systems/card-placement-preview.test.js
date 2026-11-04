@@ -7,9 +7,8 @@ import { spawnEntity } from "../../js/world/entities.js";
 
 beforeEach(() => {
     state.entities = [];
-    state.unlockedTechs.clear();
     state.currentCard = CARD_DECK.find(card => card.type === TYPE.FARM);
-    state.resources = { wood: 100, stone: 100, gold: 100, food: 100, research: 0 };
+    state.resources = { wood: 100, stone: 100, gold: 100, food: 100 };
     state.terrainResolution = 1;
     state.terrainPixW = 160;
     state.terrainPixH = 160;
