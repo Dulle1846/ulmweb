@@ -83,7 +83,7 @@ Priority meanings:
 
 - [ ] Document allowed import directions.
 - [ ] Move shared domain contracts into lower-level modules where necessary.
-- [ ] Remove simulation-to-rendering and systems-to-UI dependencies.
+- [x] Remove simulation-to-rendering and systems-to-UI dependencies (domain systems now use the core presentation-effect contract).
 - [ ] Break circular dependencies.
 - [ ] Keep `main.js` as composition/orchestration rather than a gameplay system.
 
