@@ -6,8 +6,7 @@ import { state } from '../core/state.js';
 import { spawnEntity, buildingOverlaps } from '../world/entities.js';
 import { revealArea, isWaterAt } from '../world/world.js';
 import { canAfford, payForCard } from './resources.js';
-import { createParticle, createFloater } from '../presentation/rendering/particles.js';
-import { renderUI } from '../presentation/rendering/ui.js';
+import { queueParticle, queueFloater } from '../core/presentation-effects.js';
 import { rand, randInt } from '../core/utils.js';
 
 export const CARD_DECK = [
@@ -40,17 +39,16 @@ export function drawNewCard() {
         state.currentCard = CARD_DECK.find(c => c.unit) || state.currentCard;
     }
 
-    renderUI();
 }
 
 export function skipCard() {
     if (state.resources.gold < 3) {
-        createFloater(280, 180, "NEED 3 GOLD", "#fda4af");
+        queueFloater(280, 180, "NEED 3 GOLD", "#fda4af");
         return;
     }
     state.resources.gold -= 3;
     drawNewCard();
-    createFloater(280, 180, "CARD SKIPPED", "#a5b4fc");
+    queueFloater(280, 180, "CARD SKIPPED", "#a5b4fc");
 }
 
 function hasBuildableTerrain(tx, ty, type) {
@@ -104,24 +102,24 @@ export function placeCurrentCard(targetX, targetY) {
         : findNearestBuildableTile(fallbackX, fallbackY);
 
     if (!requestedTile) {
-        createFloater(fallbackX * TILE_SIZE, fallbackY * TILE_SIZE, "NO SPACE NEARBY", "#f59e0b");
+        queueFloater(fallbackX * TILE_SIZE, fallbackY * TILE_SIZE, "NO SPACE NEARBY", "#f59e0b");
         return;
     }
 
     const { tx, ty } = requestedTile;
 
     if (!hasBuildableTerrain(tx, ty, state.currentCard.type)) {
-        createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "CANNOT BUILD HERE", "#f59e0b");
+        queueFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "CANNOT BUILD HERE", "#f59e0b");
         return;
     }
 
     if (buildingOverlaps(tx, ty, state.currentCard.type)) {
-        createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "SPACE OCCUPIED", "#f59e0b");
+        queueFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "SPACE OCCUPIED", "#f59e0b");
         return;
     }
 
     if (!canAfford(state.currentCard)) {
-        createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "CANNOT AFFORD", "#f43f5e");
+        queueFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "CANNOT AFFORD", "#f43f5e");
         return;
     }
 
@@ -137,15 +135,14 @@ export function placeCurrentCard(targetX, targetY) {
     }
 
     for (let k = 0; k < 18; k++) {
-        createParticle(
+        queueParticle(
             tx * TILE_SIZE + rand(0, TILE_SIZE),
             ty * TILE_SIZE + rand(0, TILE_SIZE),
             "#fde047", 32, rand(-2.5, 2.5), rand(-4, -0.6), 5
         );
     }
 
-    createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE + 10, "BUILT!", "#a3e635");
+    queueFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE + 10, "BUILT!", "#a3e635");
     revealArea(tx, ty, 9);
     drawNewCard();
-    renderUI();
 }
