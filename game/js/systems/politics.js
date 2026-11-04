@@ -15,7 +15,7 @@ export function normalizePoliticalState(input=state.politics){
     state.politics={
         legitimacy:clamp(source.legitimacy??DEFAULT_POLITICS.legitimacy),
         factions:Object.fromEntries(POLITICAL_FACTIONS.map(name=>[name,clamp(factions[name]??DEFAULT_POLITICS.factions[name])])),
-        settlements:Math.max(0,Math.floor(clamp(source.settlements??0)))
+        settlements:Number.isSafeInteger(Number(source.settlements))?Math.max(0,Math.min(1000000000,Number(source.settlements))):0
     };
     return state.politics;
 }
