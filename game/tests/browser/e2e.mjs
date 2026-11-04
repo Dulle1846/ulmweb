@@ -53,6 +53,8 @@ try{
     const countBeforeClick=Number.parseInt(await page.locator("#hand-count").innerText(),10);
     const cardButtons=page.locator("#card-hand .hand-card");
     assert.ok(countBeforeClick>=3);
+    const eventModal=page.locator("#realm-event-modal");
+    if(await eventModal.isVisible())await page.locator("#realm-event-choices button").first().click();
 
     // Clicking a card selects it; it must not accidentally place it merely
     // because the hand dock overlays the canvas element's bounding rectangle.
@@ -101,7 +103,6 @@ try{
     assert.ok((await page.locator("#tab-content").innerText()).includes("PLAYED "),"a valid drag should play the selected card");
 
     // Event decisions can overlay the map during a long accelerated test.
-    const eventModal=page.locator("#realm-event-modal");
     if(await eventModal.isVisible())await page.locator("#realm-event-choices button").first().click();
 
     await page.locator("#settings-btn").click();
@@ -114,7 +115,7 @@ try{
     await page.waitForTimeout(500);
     assert.equal((await page.locator("#tick-count").innerText()).trim(),pausedTick,"paused simulation tick must remain fixed");
     await page.locator("#pause-btn").click();
-    await page.waitForFunction(previous=>document.querySelector("#tick-count")?.textContent.trim()!==previous,pausedTick,null,{timeout:5000});
+    await page.waitForFunction(previous=>document.querySelector("#tick-count")?.textContent.trim()!==previous,pausedTick,{timeout:5000});
 
     await page.locator("#pause-btn").click();
     const savedTick=(await page.locator("#tick-count").innerText()).trim();
