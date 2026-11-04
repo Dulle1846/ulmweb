@@ -61,3 +61,13 @@ test("a tavern with no provisions cannot create gold from nothing",()=>{
     assert.equal(state.morale,70);
     assert.equal(state.economy.productionChains.tavernGoldProduced,0);
 });
+
+test("partial legacy production ledgers are normalized before accumulation",()=>{
+    prepare(18);
+    state.economy={productionChains:{millWoodConsumed:"not-a-number",millBonusFood:-4}};
+    updateBuildingIncome();
+    assert.equal(state.economy.productionChains.millWoodConsumed,0);
+    assert.equal(state.economy.productionChains.millBonusFood,0);
+    assert.equal(state.economy.productionChains.tavernFoodConsumed,0);
+    assert.equal(state.economy.productionChains.tavernGoldProduced,0);
+});
