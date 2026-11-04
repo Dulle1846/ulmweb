@@ -11,4 +11,7 @@ test("batch capacity checks reserve enough room for every requested mobile entit
     assert.equal(canSpawnEntity(TYPE.VILLAGER,3),false);
     assert.ok(spawnEntity(120,120,TYPE.VILLAGER));
     assert.equal(canSpawnEntity(TYPE.VILLAGER,2),false);
+    assert.equal(canSpawnEntity(TYPE.VILLAGER,-1),false);
+    assert.equal(canSpawnEntity(TYPE.VILLAGER,NaN),false);
+    assert.equal(canSpawnEntity(TYPE.VILLAGER,1.5),false);
 });
