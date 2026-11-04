@@ -118,7 +118,10 @@ export function setupInput(){
         updateCardDrag(event);
         const rect=canvas.getBoundingClientRect();
         const inside=event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom;
-        if(inside&&state.cardPreview)placeCurrentCard(state.cardPreview.tx,state.cardPreview.ty);
+        // The hand dock and zoom/minimap controls overlay the canvas rectangle.
+        // Releasing on one of those controls must never place the selected card.
+        const releasedOnMap=event.target===canvas;
+        if(inside&&releasedOnMap&&state.cardPreview?.valid)placeCurrentCard(state.cardPreview.tx,state.cardPreview.ty);
         endCardDrag();
         renderUI();
     });
