@@ -37,7 +37,7 @@ export function renderUI() {
     const moraleEl = document.getElementById("morale-bar");
     moraleEl.style.width = `${state.morale}%`;
     document.getElementById("morale-value").textContent = Math.floor(state.morale);
-    if (state.morale < 30) moraleEl.style.background = "rgb(190 18 60)";
+    moraleEl.style.background = state.morale < 30 ? "rgb(190 18 60)" : "";
 
     // date
     document.getElementById("season").textContent = SEASONS[state.seasonIndex];
