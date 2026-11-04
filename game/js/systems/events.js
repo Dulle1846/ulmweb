@@ -4,8 +4,7 @@ import { WORLD_WIDTH, WORLD_HEIGHT } from '../core/config.js';
 import { TYPE } from '../core/types.js';
 import { state } from '../core/state.js';
 import { spawnEntity, getEntitiesOfType } from '../world/entities.js';
-import { createFloater } from '../presentation/rendering/particles.js';
-import { showBigMessage } from '../presentation/rendering/ui.js';
+import { queueFloater, queueMessage } from '../core/presentation-effects.js';
 import { randInt } from '../core/utils.js';
 
 export function addLog(text, color = "#a3a3a3") {
@@ -23,7 +22,7 @@ export function triggerRandomEvent() {
             desc: "The fields are rich! +40 food",
             fn: () => {
                 state.resources.food += 40;
-                createFloater(400, 200, "+40 FOOD", "#a3e635");
+                queueFloater(400, 200, "+40 FOOD", "#a3e635");
             },
         },
         {
@@ -93,7 +92,7 @@ export function triggerRandomEvent() {
     const chosen = events[randInt(0, events.length)];
     addLog(chosen.title.toUpperCase(), "#facc15");
     chosen.fn();
-    showBigMessage(chosen.title, chosen.desc, 2200);
+    queueMessage(chosen.title, chosen.desc, 2200);
 }
 
 export function checkRandomEvents() {
