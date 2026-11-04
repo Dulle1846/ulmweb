@@ -2,7 +2,6 @@
 import { SEASONS } from "../../core/config.js";
 import { TYPE } from "../../core/types.js";
 import { state } from "../../core/state.js";
-import { getEntitiesOfType } from "../../world/entities.js";
 import { getTradePartners,MARKET_RESOURCES } from "../../systems/market.js";
 import { getWorkforceSnapshot } from "../../systems/economy.js";
 import { EVENT_CHAINS } from "../../systems/event-chains.js";
