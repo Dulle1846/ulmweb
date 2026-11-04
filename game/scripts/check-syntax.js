@@ -36,7 +36,7 @@ for (const file of files) {
     }
 
     const source = await readFile(file, "utf8");
-    const imports = source.matchAll(/(?:from\\s*|import\\s*\\()\\s*['"]([^'"]+)['"]/g);
+    const imports = source.matchAll(/(?:from\s*|import\s*\\()\s*['"]([^'"]+)['"]/g);
 
     for (const match of imports) {
         const specifier = match[1];
@@ -53,7 +53,7 @@ for (const file of files) {
 
 if (failures.length > 0 || missingImports.length > 0) {
     for (const failure of failures) {
-        console.error("Syntax error in " + failure.file + "\\n" + failure.output);
+        console.error("Syntax error in " + failure.file + "\n" + failure.output);
     }
     for (const missing of missingImports) {
         console.error("Missing import in " + missing.file + ": " + missing.specifier);
