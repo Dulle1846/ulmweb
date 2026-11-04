@@ -104,7 +104,7 @@ export function initWorld(seed = state.worldSeed, options=state.worldOptions) {
 
     const W = WORLD_W;
     const H = WORLD_H;
-    const resolution = 3;               // Lower memory footprint with smooth terrain
+    const resolution = 2;               // 2× logical resolution; substantially less generation and texture work
     const pixW = W * resolution;
     const pixH = H * resolution;
 
