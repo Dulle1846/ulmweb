@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateDailyLedger } from "../js/systems/economy.js";
+import { calculateDailyLedger,getWorkforceSnapshot,getBuildingEfficiency } from "../js/systems/economy.js";
+import { state } from "../js/core/state.js";
+import { Entity,TYPE } from "../js/core/types.js";
 
 test("daily ledger balances food, taxes, wages and upkeep", () => {
     const ledger = calculateDailyLedger({
@@ -31,4 +33,24 @@ test("unpaid wages and upkeep never create negative treasury payments", () => {
     assert.ok(ledger.upkeepPaid >= 0);
     assert.ok(Math.abs(ledger.wagesPaid + ledger.upkeepPaid - ledger.taxesCollected) < 1e-9);
     assert.ok(ledger.unpaidWages > 0 || ledger.unpaidUpkeep > 0);
+});
+
+test("workforce counts only living residents and respects workplace capacity", () => {
+    const farm = new Entity(10, 10, TYPE.FARM);
+    const employed = new Entity(10, 11, TYPE.VILLAGER);
+    employed.workplace = farm;
+    const unemployed = new Entity(12, 10, TYPE.VILLAGER);
+    const deceased = new Entity(10, 12, TYPE.VILLAGER);
+    deceased.dead = true;
+    deceased.workplace = farm;
+    state.entities = [farm, employed, unemployed, deceased];
+    try {
+        const workforce = getWorkforceSnapshot();
+        assert.equal(workforce.population, 2);
+        assert.equal(workforce.employed, 1);
+        assert.equal(workforce.unemployed, 1);
+        assert.equal(getBuildingEfficiency(farm, workforce), 0.25);
+    } finally {
+        state.entities = [];
+    }
 });
