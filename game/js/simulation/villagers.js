@@ -9,7 +9,7 @@ import {
 } from '../core/config.js';
 import { TYPE } from '../core/types.js';
 import { state } from '../core/state.js';
-import { getEntitiesOfType } from '../world/entities.js';
+import { getEntitiesOfType, buildingAt } from '../world/entities.js';
 import { isWaterAt } from '../world/world.js';
 import { distance, rand } from '../core/utils.js';
 
@@ -104,7 +104,7 @@ function handleFlee(unit, threat, dt) {
         unit.velocityY += ((dy / dist) * speed - unit.velocityY) * s;
         const nx = unit.x + unit.velocityX * dt;
         const ny = unit.y + unit.velocityY * dt;
-        if (isWalkable(nx, ny, unit)) {
+        if (isWalkable(nx, ny)) {
             unit.x = nx; unit.y = ny;
             unit.state = "walk";
             if (Math.abs(unit.velocityX) > 0.02) unit.facing = unit.velocityX > 0 ? 1 : -1;
@@ -173,7 +173,7 @@ function moveToward(unit, dt) {
     const dy = unit.targetY - unit.y;
     const dist = Math.hypot(dx, dy);
 
-    if (dist < 0.2 || !isWalkable(unit.targetX, unit.targetY, unit)) {
+    if (dist < 0.2 || !isWalkable(unit.targetX, unit.targetY)) {
         unit.velocityX = 0; unit.velocityY = 0;
         unit.visualState = "idle";
         unit.movePause = rand(0.5, 2.0);
@@ -212,7 +212,7 @@ function setTargetNear(unit, cx, cy, radius) {
         const r = Math.sqrt(Math.random()) * radius;
         const tx = cx + Math.cos(a) * r;
         const ty = cy + Math.sin(a) * r;
-        if (isWalkable(tx, ty, unit)) {
+        if (isWalkable(tx, ty)) {
             unit.targetX = tx; unit.targetY = ty;
             return;
         }
@@ -221,16 +221,13 @@ function setTargetNear(unit, cx, cy, radius) {
     unit.movePause = rand(1, 3);
 }
 
-function isWalkable(x, y, self) {
+function isWalkable(x, y) {
     const tx = Math.floor(x);
     const ty = Math.floor(y);
     if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) return false;
     if (isWaterAt(x, y)) return false;
 
-    return !state.entities.some(e =>
-        e !== self && !e.dead && e.isBuilding() &&
-        Math.floor(e.x) === tx && Math.floor(e.y) === ty
-    );
+    return !buildingAt(tx, ty);
 }
 
 function assignJob(villager) {
