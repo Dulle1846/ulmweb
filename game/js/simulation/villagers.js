@@ -12,6 +12,7 @@ import { state } from '../core/state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 import { isWaterAt } from '../world/world.js';
 import { distance, rand } from '../core/utils.js';
+import { BUILDING_WORKFORCE } from '../systems/economy.js';
 
 const MOVING_TYPES = new Set([
     TYPE.VILLAGER, TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT, TYPE.PRIEST,
@@ -73,12 +74,17 @@ export function updateVillagers() {
         if(list)list.push(entity);
     }
 
+    const workerCounts=new Map();
+    for(const villager of villagers){
+        if(villager.workplace&&!villager.workplace.dead)workerCounts.set(villager.workplace,(workerCounts.get(villager.workplace)||0)+1);
+    }
+
     villagers.forEach(v => {
         v.age++;
 
         v.jobRefreshTimer--;
         if (v.jobRefreshTimer <= 0) {
-            assignJob(v,workplaces);
+            assignJob(v,workplaces,workerCounts);
             v.jobRefreshTimer = 80 + Math.floor(Math.random() * 120);
         }
 
@@ -298,15 +304,20 @@ export function isWalkable(x, y) {
     return !blockedBuildingTiles.has(tx+":"+ty);
 }
 
-function assignJob(villager,workplaces=null) {
+function assignJob(villager,workplaces=null,workerCounts=new Map()) {
+    const previousWorkplace=villager.workplace;
+    if(previousWorkplace)workerCounts.set(previousWorkplace,Math.max(0,(workerCounts.get(previousWorkplace)||0)-1));
     let best = null, bestDist = Infinity;
     for (const m of JOB_MAP) {
+        const capacity=BUILDING_WORKFORCE[m.building]||0;
         for (const b of (workplaces?.get(m)||getEntitiesOfType(m.building))) {
+            if((workerCounts.get(b)||0)>=capacity)continue;
             const d = Math.hypot(villager.x - b.x, villager.y - b.y);
             if (d < bestDist) { bestDist = d; best = { workplace: b, job: m.job }; }
         }
     }
     const nextWorkplace = best && bestDist <= 40 ? best.workplace : null;
+    if(nextWorkplace)workerCounts.set(nextWorkplace,(workerCounts.get(nextWorkplace)||0)+1);
     if (villager.workplace !== nextWorkplace) {
         villager.routinePhase = 4; // First advance enters GO_TO_WORK instead of skipping it.
         villager.routineTimer = 1;
