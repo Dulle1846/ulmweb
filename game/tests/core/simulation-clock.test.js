@@ -2,22 +2,35 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { consumeSimulationTime } from "../../js/core/simulation-clock.js";
 
-test("1x processes one logical tick after one tick interval", () => {
-    const result = consumeSimulationTime(0, 333, 1, 333);
-    assert.equal(result.steps, 1);
-    assert.equal(result.remainderMs, 0);
+function processFrames(frameTimes, speed) {
+    let accumulatorMs = 0;
+    let totalSteps = 0;
+
+    for (const elapsedMs of frameTimes) {
+        const result = consumeSimulationTime(accumulatorMs, elapsedMs, speed, 333);
+        accumulatorMs = result.remainderMs;
+        totalSteps += result.steps;
+    }
+
+    return { totalSteps, accumulatorMs };
+}
+
+test("1x accumulates one logical tick across normal frames", () => {
+    const result = processFrames([100, 100, 100, 33], 1);
+    assert.equal(result.totalSteps, 1);
+    assert.equal(result.accumulatorMs, 0);
 });
 
-test("2x processes one logical tick in half the wall-clock time", () => {
-    const result = consumeSimulationTime(0, 166.5, 2, 333);
-    assert.equal(result.steps, 1);
-    assert.equal(result.remainderMs, 0);
+test("2x accumulates one logical tick in half the wall-clock time", () => {
+    const result = processFrames([100, 66.5], 2);
+    assert.equal(result.totalSteps, 1);
+    assert.equal(result.accumulatorMs, 0);
 });
 
-test("4x processes one logical tick in one quarter of the wall-clock time", () => {
-    const result = consumeSimulationTime(0, 83.25, 4, 333);
-    assert.equal(result.steps, 1);
-    assert.equal(result.remainderMs, 0);
+test("4x accumulates one logical tick in one quarter of the wall-clock time", () => {
+    const result = processFrames([83.25], 4);
+    assert.equal(result.totalSteps, 1);
+    assert.equal(result.accumulatorMs, 0);
 });
 
 test("fractional progress is retained for the next frame", () => {
