@@ -12,6 +12,14 @@ import { randInt } from '../utils.js';
 export function spawnEntity(tx, ty, type) {
     const entity = new Entity(tx, ty, type);
 
+    if (
+        state.unlockedTechs.has("steel") &&
+        [TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT].includes(type)
+    ) {
+        entity.hp += 25;
+        entity.maxHp += 25;
+    }
+
     if (entity.isUnit()) {
         entity.home = { x: tx, y: ty };
         entity.anchor = { x: tx, y: ty };
