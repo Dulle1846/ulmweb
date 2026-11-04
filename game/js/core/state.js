@@ -13,7 +13,8 @@ export const state = {
     camera: { x: 0, y: 0 },
     zoom: 1.0,
     zoomTarget: 1.0,
-    zoomLevel: 2,               // 1, 2 oder 3 — wird per Frame berechnet
+    zoomLevel: 3,               // 1=Landscape, 2=Districts, 3=Rooftops, 4=Interiors
+    zoomAnchor: null,            // Keeps the world point under the cursor fixed while zooming
 
     // ── Timing ───────────────────────────────────────────────
     tick: 0,
@@ -44,6 +45,7 @@ export const state = {
     // ── Karten ───────────────────────────────────────────────
     currentCard: null,
     availableCards: [],
+    cardPreview: null,           // Validated building footprint while dragging a card
 
     // ── UI ────────────────────────────────────────────────────
     selectedTab: 0,
