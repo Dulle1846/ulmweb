@@ -148,7 +148,7 @@ export function setupInput() {
             showHelp();
             e.preventDefault();
         }
-        if (e.metaKey && e.key === "k") {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
             togglePause();
             e.preventDefault();
         }
@@ -224,7 +224,7 @@ function clickOnCanvas(e) {
             clickedEnemy.y * CELL + 12,
             "#ec4899", 30
         );
-        if (clickedEnemy.hp < 0) clickedEnemy.dead = true;
+        if (clickedEnemy.hp <= 0) clickedEnemy.dead = true;
         return;
     }
 
