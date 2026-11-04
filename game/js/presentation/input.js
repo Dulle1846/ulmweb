@@ -56,6 +56,7 @@ export function setupInput() {
             pointerMoved = true;
         }
 
+        state.zoomAnchor = null;
         state.camera.x -= dx;
         state.camera.y -= dy;
         clampCamera();
@@ -96,6 +97,7 @@ export function setupInput() {
                 pointerMoved = true;
             }
 
+            state.zoomAnchor = null;
             state.camera.x -= dx;
             state.camera.y -= dy;
             clampCamera();
