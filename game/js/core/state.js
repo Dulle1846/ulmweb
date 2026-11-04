@@ -10,7 +10,7 @@ function createInitialState() {
         resources:{wood:180,stone:95,gold:75,food:120},
         incomeThisTick:{wood:0,stone:0,gold:0,food:0},
         morale:72,seasonIndex:0,year:1,dayOfYear:0,
-        currentCard:null,availableCards:[],hand:[],selectedCardInstanceId:null,cardPreview:null,
+        currentCard:null,availableCards:[],hand:[],cardRewardQueue:[],selectedCardInstanceId:null,cardPreview:null,
         nextCardDrawTick:0,issueSequence:0,nextIssueAtTick:0,
         worldOptions:{landmass:50,ruggedness:55,forests:52,water:48},
         hiddenRealm:{tension:0,prosperity:0,mystery:0,memories:[],activeThreads:[],completedThreads:[]},
