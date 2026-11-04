@@ -12,10 +12,12 @@ Priority meanings:
 
 ### F0 — Establish a safe baseline
 
-- [ ] Confirm the active development branch and reviewed commit.
-- [ ] Run the game in a browser and record current startup/runtime errors.
-- [ ] Capture a reproducible smoke-test checklist.
-- [ ] Avoid broad refactors until current behaviour is recorded.
+- [x] Confirm the default development branch and reviewed baseline commit: `ulmweb-branch` at `dae4edd7fcb1204d794f68dc4475ac149beb5cbc`.
+- [ ] Run the baseline game in a browser and record startup/runtime errors.
+- [x] Create a reproducible smoke-test checklist in [F0_BASELINE_CHECKLIST.md](F0_BASELINE_CHECKLIST.md). Test results remain unrecorded until execution.
+- [x] Keep baseline review separate from implementation changes; documentation work is isolated on `foundation/technical-baseline`.
+
+**Current status:** F0 is in progress. Repository/source inspection and the test procedure are prepared. Browser execution and result capture are still outstanding.
 
 **Exit condition:** The team can reliably start the game and distinguish existing failures from regressions.
 
@@ -33,7 +35,7 @@ Priority meanings:
 ### F2 — Establish test and debugging foundations (P1)
 
 - [ ] Choose a minimal test runner compatible with the current JavaScript module setup.
-- [ ] Add unit tests for pure utility and simulation calculations.
+- [ ] Add unit tests for pure calculations and individual system rules.
 - [ ] Add deterministic integration tests for core update sequences.
 - [ ] Add a browser smoke test for module loading and game initialization.
 - [ ] Make runtime errors easy to capture and reproduce.
@@ -99,3 +101,5 @@ Priority meanings:
 4. Do not redesign unrelated systems while fixing a foundation issue.
 5. Update this backlog and the technical foundation document when implementation changes.
 6. Do not label a task complete until its exit condition has been checked.
+7. Modules communicate through explicit contracts; they do not reach into one another's private state.
+8. Treat this as a modular monolith first. Do not add speculative plugin frameworks, microservices or universal abstractions without a proven need.
