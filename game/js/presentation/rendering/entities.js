@@ -444,6 +444,55 @@ function drawInterior(ctx, e, left, top, w, h, scale, tick) {
             ctx.fillRect(left + w * 0.55, top + h * 0.6, w * 0.4, h * 0.2);
             break;
         }
+        case TYPE.TOWER: {
+            // Compact guard platform, ladder and parapet.
+            ctx.fillStyle = "#817b70";
+            ctx.fillRect(left + w * 0.18, top + h * 0.12, w * 0.64, h * 0.76);
+            ctx.strokeStyle = "#423d34";
+            ctx.lineWidth = 2 * scale;
+            ctx.strokeRect(left + w * 0.18, top + h * 0.12, w * 0.64, h * 0.76);
+            ctx.strokeStyle = "#d6c8a6";
+            ctx.lineWidth = 1.2 * scale;
+            for (let i = 0; i < 4; i++) {
+                const x = left + w * (0.29 + i * 0.14);
+                ctx.beginPath();
+                ctx.moveTo(x, top + h * 0.18);
+                ctx.lineTo(x, top + h * 0.34);
+                ctx.stroke();
+            }
+            ctx.fillStyle = "#b94c3e";
+            ctx.fillRect(left + w * 0.46, top + h * 0.48, w * 0.08, h * 0.25);
+            break;
+        }
+        case TYPE.WALL: {
+            // Stone walkway and evenly spaced crenellations.
+            ctx.fillStyle = "#938b7d";
+            ctx.fillRect(left, top + h * 0.26, w, h * 0.48);
+            ctx.fillStyle = "#c1b8a7";
+            for (let i = 0; i < 5; i++) {
+                ctx.fillRect(left + w * (0.04 + i * 0.2), top + h * 0.12, w * 0.12, h * 0.26);
+            }
+            ctx.fillStyle = "#554e44";
+            ctx.fillRect(left + w * 0.04, top + h * 0.68, w * 0.92, h * 0.07);
+            break;
+        }
+        case TYPE.WONDER: {
+            // Monument chamber and central relic.
+            ctx.fillStyle = "#b9a16b";
+            ctx.fillRect(left + w * 0.24, top + h * 0.2, w * 0.52, h * 0.62);
+            ctx.fillStyle = "#f1d17d";
+            ctx.beginPath();
+            ctx.moveTo(left + w * 0.5, top + h * 0.27);
+            ctx.lineTo(left + w * 0.68, top + h * 0.55);
+            ctx.lineTo(left + w * 0.5, top + h * 0.76);
+            ctx.lineTo(left + w * 0.32, top + h * 0.55);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "#fff0c0";
+            ctx.lineWidth = 2 * scale;
+            ctx.stroke();
+            break;
+        }
         default: {
             // Generischer Innenraum
             ctx.fillStyle = furnColor;
