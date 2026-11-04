@@ -1,4 +1,4 @@
-// Procedural card library: 400 categories, 400,000 on-demand variants.
+// Procedural card library: 500 categories, 500,000 on-demand variants.
 import { TYPE } from "../core/types.js";
 
 const GROUPS = {
