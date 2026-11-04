@@ -8,9 +8,7 @@ import { updateWeather } from '../world/weather.js';
 import { updateBuildingIncome } from './buildings.js';
 import { updateVillagers } from './villagers.js';
 import { updateCombat } from './combat.js';
-import { updateParticles, updateFloaters } from '../presentation/rendering/particles.js';
-import { updateMinimap } from '../presentation/rendering/minimap.js';
-import { showBigMessage } from '../presentation/rendering/ui.js';
+import { queueMessage } from '../core/presentation-effects.js';
 
 export function updateSimulation() {
     if (state.isPaused || state.gameOver) return;
@@ -32,8 +30,6 @@ export function updateSimulation() {
     checkRandomEvents();
     updateWeather();
     updateMorale();
-    updateParticles();
-    updateFloaters();
 
     // clean dead
     state.entities = state.entities.filter(e => !e.dead);
@@ -47,7 +43,7 @@ export function updateSimulation() {
     // win condition
     if (state.year >= 12 && state.morale > 80 && !state.victory) {
         state.victory = true;
-        showBigMessage("YOUR KINGDOM ENDURES", "A LEGEND WAS BORN", 8000);
+        queueMessage("YOUR KINGDOM ENDURES", "A LEGEND WAS BORN", 8000);
     }
 
     // lose condition
@@ -56,5 +52,4 @@ export function updateSimulation() {
         showBigMessage("THE REALM FELL", "MORALE COLLAPSED", 5000);
     }
 
-    updateMinimap();
 }
