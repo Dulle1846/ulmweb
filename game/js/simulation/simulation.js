@@ -1,6 +1,5 @@
 // ── Main Tick Loop ─────────────────────────────────────────────
 
-import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT } from '../config.js';
 import { state } from '../state.js';
 import { resetIncome } from '../systems/resources.js';
 import { updateMorale } from '../systems/morale.js';
