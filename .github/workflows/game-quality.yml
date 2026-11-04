@@ -14,6 +14,11 @@ on:
       - "game/**"
       - ".github/workflows/game-quality.yml"
 
+# Keep only the newest quality run for a branch; stale queued runs are superseded.
+concurrency:
+  group: game-quality-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   game-quality:
     name: Game tests and syntax
