@@ -3,6 +3,7 @@
 import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { addResource } from "./resources.js";
+import { updatePolitics } from "./politics.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -104,5 +105,6 @@ export function updateEconomy() {
     totals.population = workforce.population;
     totals.employed = workforce.employed;
     totals.unemployed = workforce.unemployed;
+    updatePolitics(ledger,workforce);
     return ledger;
 }
