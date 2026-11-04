@@ -1,7 +1,7 @@
 import test,{beforeEach} from "node:test";
 import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
-import {triggerRandomEvent,resolveEventChoice,addLog,EVENT_VARIANT_COUNT} from "../../js/systems/events.js";
+import {triggerRandomEvent,resolveEventChoice,checkRandomEvents,addLog,EVENT_VARIANT_COUNT} from "../../js/systems/events.js";
 
 beforeEach(()=>{
     resetState();
@@ -36,4 +36,36 @@ test("an issue remains unresolved when a choice cannot be paid",()=>{
 
 test("the emergent issue generator combines over twenty thousand narrative variants",()=>{
     assert.ok(EVENT_VARIANT_COUNT>=20000);
+});
+
+test("a multi-stage chronicle is scheduled, advanced and archived after its final choice",()=>{
+    const originalRandom=Math.random;
+    Math.random=()=>0;
+    try{
+        state.activeEvent={
+            id:"test-migration",
+            family:"migration",
+            title:"A test migration",
+            threadStart:"migration",
+            choices:[{label:"Begin the chronicle",effects:{}}]
+        };
+        assert.equal(resolveEventChoice(0),true);
+        assert.equal(state.hiddenRealm.activeThreads.length,1);
+
+        for(let expectedStage=0;expectedStage<3;expectedStage++){
+            const thread=state.hiddenRealm.activeThreads[0];
+            assert.ok(thread);
+            state.tick=thread.nextAtTick;
+            checkRandomEvents();
+            assert.equal(state.activeEvent.thread.id,"migration");
+            assert.equal(state.activeEvent.thread.stage,expectedStage);
+            assert.equal(resolveEventChoice(0),true);
+        }
+
+        assert.equal(state.hiddenRealm.activeThreads.length,0);
+        assert.equal(state.hiddenRealm.completedThreads[0].id,"migration");
+        assert.equal(state.statistics.totalEventsResolved,4);
+    }finally{
+        Math.random=originalRandom;
+    }
 });
