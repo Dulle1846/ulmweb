@@ -33,6 +33,7 @@ The full game source under `game/js/` and the game entry page were reviewed stat
 - `game/js/core/types.js`
 - `game/js/core/utils.js`
 - `game/js/core/simulation-clock.js`
+- `game/js/core/presentation-effects.js`
 - `game/js/presentation/effects.js`
 - `game/js/presentation/camera.js`
 - `game/js/presentation/input.js`
@@ -65,7 +66,7 @@ These are visible feature/architecture gaps, but changing them safely requires g
 - Randomness is not yet centrally seeded, so complete simulation replay is not reproducible.
 - There is no save/load schema or persistence flow.
 - Authoritative state is still globally mutable, and some simulation/domain modules still import rendering/UI modules.
-- The current project has no identified automated test suite or package/build setup for the game.
+- The game now has a minimal Node.js test setup (`game/package.json`) with fixed-step clock and presentation-effect contract tests. Browser smoke tests and broader system integration tests are still outstanding.
 
 ## Remaining verification
 
