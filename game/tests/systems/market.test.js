@@ -37,3 +37,23 @@ test("market quotes move on schedule and remain positive",()=>{
     updateMarket();
     for(const price of Object.values(state.market.prices))assert.ok(price>0);
 });
+
+test("legacy market saves with partial partner stock are normalized safely",()=>{
+    state.market={
+        partners:[{id:"legacy-partner",name:"Legacy Partner",treasury:50}],
+        prices:{wood:2},
+        lastUpdateTick:0
+    };
+    state.tick=90;
+    assert.doesNotThrow(()=>updateMarket());
+    const partner=state.market.partners[0];
+    assert.equal(partner.stock.wood,0);
+    assert.equal(partner.stock.stone,0);
+    assert.equal(partner.stock.food,0);
+    assert.equal(partner.treasury,50);
+    for(const resource of ["wood","stone","food"]){
+        assert.ok(Number.isFinite(state.market.prices[resource]));
+        assert.ok(state.market.prices[resource]>0);
+        assert.ok(Array.isArray(state.market.priceHistory[resource]));
+    }
+});
