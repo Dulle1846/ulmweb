@@ -1,4 +1,4 @@
-import test from "node:test";
+import test,{beforeEach} from "node:test";
 import assert from "node:assert/strict";
 import {resetState,state} from "../js/core/state.js";
 import {TYPE} from "../js/core/types.js";
