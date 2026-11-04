@@ -41,7 +41,17 @@ const GROUPS = {
  warfare:["war-camps","supply-trains","siege-towers","scouting-parties","veteran-companies","crossbow-bands","shield-walls","battle-plans","field-surgeons","war-horses"],
  politics:["council-seats","election-charters","royal-councils","provincial-governors","petitioners","reformers","faction-houses","seneschals","stewardships","public-assemblies"],
  monsters:["griffins","wyverns","trolls","giant-spiders","cave-bears","wargs","basilisks","giant-boars","marsh-wights","stone-guardians"],
- seasons:["spring-thaw","summer-fair","autumn-muster","winter-stores","first-frost","harvest-moon","long-rains","midsummer-bonfire","snowbound-road","early-blossom"]
+ seasons:["spring-thaw","summer-fair","autumn-muster","winter-stores","first-frost","harvest-moon","long-rains","midsummer-bonfire","snowbound-road","early-blossom"],
+ weather:["thunderstorms","soft-rains","heat-waves","hailstorms","fog-banks","frost-fields","wind-gusts","rainbows","drought-winds","snowfall"],
+ underworld:["smugglers","poachers","thieves-guilds","secret-tunnels","black-markets","fence-networks","night-watchers","masked-strangers","hidden-cellars","outlaw-camps"],
+ spirits:["will-o-wisps","ancestral-voices","forest-spirits","household-wights","river-guardians","dream-omens","wandering-shades","hearth-spirits","moonlit-figures","forgotten-names"],
+ relics:["crowns-of-ash","saintly-bones","lost-seals","royal-swords","sealed-scrolls","star-metal","ancient-coins","broken-idols","pilgrim-medals","dragon-glass"],
+ botany:["medicinal-herbs","rare-seeds","poison-gardens","orchid-houses","moss-farms","root-cellars","flower-meadows","saffron-beds","moonlit-lilies","healing-vines"],
+ geology:["basalt-ridges","chalk-pits","granite-veins","obsidian-fields","amber-deposits","limestone-caves","clay-beds","fossil-banks","quartz-outcrops","hot-springs"],
+ administration:["tax-collectors","royal-auditors","village-reeves","land-registers","census-takers","court-scribes","provosts","ordinance-halls","provincial-seals","steward-courts"],
+ frontier:["palisade-camps","border-rangers","settler-wagons","pioneer-fields","watch-fires","scout-trails","frontier-forts","wayfinder-stones","outpost-markets","wilderness-guides"],
+ urbanism:["street-lanterns","drainage-ditches","tenement-courts","market-lanes","stone-pavements","public-wells","city-gardens","fire-brigades","town-gates","guild-streets"],
+ scholarship:["naturalists","chroniclers","cartographers","linguists","mathematicians","law-scholars","historians","royal-astronomers","rune-readers","philosophers"]
 };
 const titleCase=s=>s.split("-").map(p=>p[0].toUpperCase()+p.slice(1)).join(" ");
 export const CARD_CATEGORIES=Object.freeze(Object.entries(GROUPS).flatMap(([group,names])=>names.map((id,index)=>Object.freeze({id,group,name:titleCase(id),sort:index}))));
@@ -116,7 +126,17 @@ const ARCHETYPES={
  warfare:[TYPE.GUARD,"unit","⚔️",{gold:28,food:14},"A seasoned warrior joins the muster."],
  politics:[TYPE.VILLAGER,"person","📜",{food:9,gold:8},"A political figure enters the royal circle."],
  monsters:[TYPE.DEER,"animal","🐉",{food:16,gold:10},"A rare creature appears at the edge of the realm."],
- seasons:[null,"effect","🍂",{food:6},"The changing season brings an unexpected blessing."]
+ seasons:[null,"effect","🍂",{food:6},"The changing season brings an unexpected blessing."],
+ weather:[TYPE.FARM,"building","🌦️",{wood:28,stone:12},"A weatherwise holding makes the most of the changing skies."],
+ underworld:[TYPE.GUARD,"unit","🗝️",{gold:24,food:10},"A shadowed figure offers dangerous services to the crown."],
+ spirits:[null,"effect","👻",{gold:9},"An unseen presence alters the fortunes of the realm."],
+ relics:[null,"effect","🏺",{gold:12},"An ancient relic carries a forgotten power."],
+ botany:[TYPE.FARM,"building","🌿",{wood:22,food:8},"Rare plants bring food, medicine and new discoveries."],
+ geology:[TYPE.QUARRY,"building","🪨",{wood:30,stone:16},"A geological survey reveals valuable stone and minerals."],
+ administration:[TYPE.TOWER,"building","📜",{wood:24,stone:18},"A royal office strengthens local administration."],
+ frontier:[TYPE.GUARD,"unit","🏹",{gold:22,food:13},"A frontier scout joins the royal muster."],
+ urbanism:[TYPE.HOUSE,"building","🏘️",{wood:34,stone:22},"A planned urban quarter makes room for the growing realm."],
+ scholarship:[TYPE.TEMPLE,"building","📚",{wood:26,stone:20},"A learned institution preserves knowledge and trains minds."]
 };
 const SIZE=[0.3,0.5,0.7,1,1.25,1.6,2,3,4,6];
 const COST=[0.7,0.85,1,1.2,1.5,1.9,2.5,3.2,4.2,5.5];
@@ -134,7 +154,7 @@ function categoryPrototype(category){
  if(category.id.includes("festival")||category.group==="music"||category.group==="culture")effect="festival";
  if(category.id.includes("mystery")||category.id.includes("discovery")||category.group==="alchemy")effect="gold-rush";
  if(category.group==="animals"||category.group==="monsters")kind="animal";
- if(kind==="effect"&&!effect)effect=category.group==="seasons"?"harvest":(["magic","mysteries","alchemy"].includes(category.group)?"gold-rush":"festival");
+ if(kind==="effect"&&!effect)effect=["seasons","weather","botany"].includes(category.group)?"harvest":(["magic","mysteries","alchemy","spirits","relics"].includes(category.group)?"gold-rush":"festival");
  return {id:category.id,category:category.id,categoryName:category.name,group:category.group,type,name:category.name.toUpperCase(),desc,icon,cost:{...cost},kind,effect,unit:["unit","person","animal"].includes(kind)};
 }
 export function createCardForCategory(id,options={}){
@@ -145,6 +165,6 @@ export function createCardForCategory(id,options={}){
 export function createCardVariant(prototype,{scale="standard",rarity="common",context="heartland"}={}){
  const si=CARD_VARIANT_DIMENSIONS.scales.indexOf(scale),ri=CARD_VARIANT_DIMENSIONS.rarities.indexOf(rarity);
  if(!prototype||si<0||ri<0||!CARD_VARIANT_DIMENSIONS.contexts.includes(context))throw new RangeError("Unknown card prototype or variant dimension.");
- const base=prototype.name,variant=[RARITY[ri],SCALE[si],base,CONTEXT[context]].filter(Boolean).join(" ");
+ const base=prototype.baseName||prototype.name,variant=[RARITY[ri],SCALE[si],base,CONTEXT[context]].filter(Boolean).join(" ");
  return {...prototype,id:[prototype.id,scale,rarity,context].join(":"),baseName:base,name:variant||base,scale,rarity,context,sizeMultiplier:SIZE[si],cost:Object.fromEntries(Object.entries(prototype.cost||{}).map(([k,v])=>[k,Math.max(1,Math.round(v*SIZE[si]*COST[ri]))]))};
 }
