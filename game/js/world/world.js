@@ -99,6 +99,7 @@ export function initWorld(seed = state.worldSeed, options=state.worldOptions) {
         ? Number(seed)
         : 1 + Math.floor(Math.random() * 2147483000);
     state.worldSeed = worldSeed;
+    state.fogCanvas=null;state.fogDirty=true;state.fogExploredRef=null;
     initPerlin(worldSeed);
 
     const W = WORLD_W;
@@ -272,8 +273,9 @@ export function revealArea(tx, ty, radius) {
     for (let x = tx - radius; x <= tx + radius; x++) {
         for (let y = ty - radius; y <= ty + radius; y++) {
             if (x < 0 || x >= WORLD_W || y < 0 || y >= WORLD_H) continue;
-            if (distance(tx, ty, x, y) < radius) {
+            if (distance(tx, ty, x, y) < radius && !state.explored[x][y]) {
                 state.explored[x][y] = true;
+                state.fogDirty = true;
             }
         }
     }

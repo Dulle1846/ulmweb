@@ -37,39 +37,46 @@ function showRuntimeFault(error){
  if(pauseText)pauseText.textContent="PAUSED";
 }
 function gameLoop(timestamp){
+ if(state.frameFaulted)return;
  try{
-  if(state.frameFaulted)return;
-  if(document.hidden){resetFrameClock();return;}
-  if(state.lastFrameTime===0)state.lastFrameTime=timestamp;
-  const deltaTime=Math.max(0,Math.min(100,timestamp-state.lastFrameTime));
-  state.lastFrameTime=timestamp;
-  const deltaSeconds=Math.min(deltaTime,50)/1000;
-  updateCamera(deltaSeconds);
-  if(!state.isPaused&&!state.gameOver&&!state.victory){
-   const clock=consumeSimulationTime(state.tickAccumulator,deltaTime,state.gameSpeed,BASE_TICK_INTERVAL);
-   state.tickAccumulator=clock.remainderMs;
-   for(let step=0;step<clock.steps;step++){
-    updateSimulation();updateParticles();updateFloaters();
-    if(state.gameOver||state.victory)break;
+  if(document.hidden){
+   resetFrameClock();
+  }else{
+   if(state.lastFrameTime===0)state.lastFrameTime=timestamp;
+   const deltaTime=Math.max(0,Math.min(100,timestamp-state.lastFrameTime));
+   state.lastFrameTime=timestamp;
+   const deltaSeconds=Math.min(deltaTime,50)/1000;
+   updateCamera(deltaSeconds);
+   if(!state.isPaused&&!state.gameOver&&!state.victory){
+    const clock=consumeSimulationTime(state.tickAccumulator,deltaTime,state.gameSpeed,BASE_TICK_INTERVAL);
+    state.tickAccumulator=clock.remainderMs;
+    for(let step=0;step<clock.steps;step++){
+     updateSimulation();updateParticles();updateFloaters();
+     if(state.gameOver||state.victory)break;
+    }
+    state.movementAccumulator+=deltaSeconds;
+    const movementStep=1/30;
+    let movementSteps=0;
+    while(state.movementAccumulator>=movementStep&&movementSteps<3){
+     updateFriendlyMovement(movementStep*state.gameSpeed);
+     state.movementAccumulator-=movementStep;movementSteps++;
+    }
+    if(movementSteps===3)state.movementAccumulator=Math.min(state.movementAccumulator,movementStep);
    }
-   state.movementAccumulator+=deltaSeconds;
-   const movementStep=1/30;
-   let movementSteps=0;
-   while(state.movementAccumulator>=movementStep&&movementSteps<3){
-    updateFriendlyMovement(movementStep*state.gameSpeed);
-    state.movementAccumulator-=movementStep;movementSteps++;
+   flushPresentationEffects();
+   if(timestamp-state.lastMinimapRender>=400){updateMinimap();state.lastMinimapRender=timestamp;}
+   const {ctx,canvas}=state;
+   if(ctx&&canvas){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#0a120a";ctx.fillRect(0,0,canvas.width,canvas.height);
+    drawWorld();
+    if(timestamp-state.lastUiRender>=160){renderUI();state.lastUiRender=timestamp;}
+    drawVignette();
    }
-   if(movementSteps===3)state.movementAccumulator=Math.min(state.movementAccumulator,movementStep);
   }
-  flushPresentationEffects();
-  if(timestamp-state.lastMinimapRender>=400){updateMinimap();state.lastMinimapRender=timestamp;}
-  const {ctx,canvas}=state;
-  if(!ctx||!canvas)return;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle="#0a120a";ctx.fillRect(0,0,canvas.width,canvas.height);
-  drawWorld();
-  if(timestamp-state.lastUiRender>=160){renderUI();state.lastUiRender=timestamp;}
-  drawVignette();
- }catch(error){showRuntimeFault(error);}
- finally{requestAnimationFrame(gameLoop);}
+ }catch(error){
+  showRuntimeFault(error);
+  return;
+ }
+ requestAnimationFrame(gameLoop);
 }

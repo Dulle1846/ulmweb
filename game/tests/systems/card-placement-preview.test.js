@@ -61,3 +61,14 @@ test("no preview is returned when no card is selected", () => {
     state.currentCard = null;
     assert.equal(getCardPlacementPreview(40, 40), null);
 });
+
+test("instant effect cards do not require a free building footprint", () => {
+    spawnEntity(40, 40, TYPE.KEEP);
+    state.currentCard = {
+        kind: "effect", type: undefined, effect: "harvest",
+        name: "HARVEST", cost: {}, sizeMultiplier: 1
+    };
+    const preview = getCardPlacementPreview(40, 40);
+    assert.equal(preview.valid, true);
+});
+

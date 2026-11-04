@@ -4,18 +4,38 @@
 
 import {
     WORLD_W, WORLD_H,
-    UNIT_SPEED, WANDER_RADIUS, ROUTINE,
+    UNIT_SPEED, WANDER_RADIUS, ROUTINE, BUILDING_SIZE,
     FLEE_DISTANCE, FLEE_SPEED_MULT,
 } from '../core/config.js';
 import { TYPE } from '../core/types.js';
 import { state } from '../core/state.js';
-import { getEntitiesOfType, buildingAt } from '../world/entities.js';
+import { getEntitiesOfType } from '../world/entities.js';
 import { isWaterAt } from '../world/world.js';
 import { distance, rand } from '../core/utils.js';
 
 const MOVING_TYPES = new Set([
     TYPE.VILLAGER, TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT, TYPE.PRIEST,
 ]);
+
+const blockedBuildingTiles=new Set();
+
+export function rebuildBlockedBuildingTiles(){
+    blockedBuildingTiles.clear();
+    for(const entity of state.entities){
+        if(entity.dead||!entity.isBuilding())continue;
+        const base=BUILDING_SIZE[entity.type]||{w:1,h:1};
+        const scale=Math.max(0.25,Math.min(6,Number(entity.footprintScale)||1));
+        const left=entity.x+0.5-(base.w*scale)/2;
+        const right=entity.x+0.5+(base.w*scale)/2;
+        const top=entity.y+0.5-(base.h*scale)/2;
+        const bottom=entity.y+0.5+(base.h*scale)/2;
+        for(let x=Math.max(0,Math.floor(left));x<Math.min(WORLD_W,Math.ceil(right));x++){
+            for(let y=Math.max(0,Math.floor(top));y<Math.min(WORLD_H,Math.ceil(bottom));y++){
+                blockedBuildingTiles.add(x+":"+y);
+            }
+        }
+    }
+}
 
 const JOB_MAP = [
     { building: TYPE.FARM,    job: "farmer" },
@@ -35,8 +55,16 @@ const JOB_MAP = [
 export function updateVillagers() {
     if (state.isPaused || state.gameOver) return;
 
-    const villagers = getEntitiesOfType(TYPE.VILLAGER);
-    const workplaces=new Map(JOB_MAP.map(job=>[job,getEntitiesOfType(job.building)]));
+    rebuildBlockedBuildingTiles();
+    const villagers=[];
+    const workplaces=new Map(JOB_MAP.map(job=>[job,[]]));
+    const workplacesByType=new Map(JOB_MAP.map(job=>[job.building,workplaces.get(job)]));
+    for(const entity of state.entities){
+        if(entity.dead)continue;
+        if(entity.type===TYPE.VILLAGER)villagers.push(entity);
+        const list=workplacesByType.get(entity.type);
+        if(list)list.push(entity);
+    }
 
     villagers.forEach(v => {
         v.age++;
@@ -64,9 +92,15 @@ export function updateFriendlyMovement(deltaSeconds) {
     if (state.isPaused || state.gameOver || state.victory) return;
     if (deltaSeconds <= 0 || deltaSeconds > 0.2) return;
 
-    const units = state.entities.filter(e => !e.dead && MOVING_TYPES.has(e.type));
-    const enemies = state.entities.filter(e => !e.dead && e.isEnemy());
-    const keep=state.entities.find(e=>!e.dead&&e.type===TYPE.KEEP)||null;
+    rebuildBlockedBuildingTiles();
+    const units=[],enemies=[];
+    let keep=null;
+    for(const entity of state.entities){
+        if(entity.dead)continue;
+        if(MOVING_TYPES.has(entity.type))units.push(entity);
+        if(entity.isEnemy())enemies.push(entity);
+        if(entity.type===TYPE.KEEP)keep=entity;
+    }
     const buckets = new Map();
     const bucketSize = FLEE_DISTANCE;
     for (const enemy of enemies) {
@@ -248,13 +282,13 @@ function setTargetNear(unit, cx, cy, radius) {
     unit.movePause = rand(1, 3);
 }
 
-function isWalkable(x, y) {
+export function isWalkable(x, y) {
     const tx = Math.floor(x);
     const ty = Math.floor(y);
     if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) return false;
     if (isWaterAt(x, y)) return false;
 
-    return !buildingAt(tx, ty);
+    return !blockedBuildingTiles.has(tx+":"+ty);
 }
 
 function assignJob(villager,workplaces=null) {

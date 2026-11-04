@@ -18,6 +18,7 @@ function createInitialState() {
         selectedTab:0,eventLog:[],activeEvent:null,eventSequence:0,
         entities:[],particles:[],floaters:[],pendingPresentationEffects:[],
         heightMap:null,moistureMap:null,terrainCanvas:null,terrainDirty:true,explored:[],
+        fogCanvas:null,fogDirty:true,fogExploredRef:null,
         terrainResolution:0,terrainPixW:0,terrainPixH:0,
         lastRandomEvent:0,weather:"clear",weatherTimer:0,
         kingHp:240,totalRaidsSurvived:0,raidActive:false,

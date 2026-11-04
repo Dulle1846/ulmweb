@@ -65,26 +65,42 @@ export function drawTerrain(ctx) {
 //  FOG OF WAR
 // ═══════════════════════════════════════════════════════════════
 
-function drawFogOfWar(ctx, zoom, cam, canvas) {
-    const cellPx = CELL * zoom;
-
-    const startX = Math.max(0, Math.floor(cam.x / cellPx) - 1);
-    const startY = Math.max(0, Math.floor(cam.y / cellPx) - 1);
-    const endX = Math.min(WORLD_W, Math.ceil((cam.x + canvas.width) / cellPx) + 1);
-    const endY = Math.min(WORLD_H, Math.ceil((cam.y + canvas.height) / cellPx) + 1);
-
-    ctx.fillStyle = "rgba(8, 10, 8, 0.92)";
-
-    for (let x = startX; x < endX; x++) {
-        for (let y = startY; y < endY; y++) {
-            if (state.explored[x] && state.explored[x][y]) continue;
-
-            const px = x * cellPx - cam.x;
-            const py = y * cellPx - cam.y;
-
-            ctx.fillRect(px, py, cellPx + 1, cellPx + 1);
-        }
+function getFogCanvas() {
+    let fog=state.fogCanvas;
+    if(!fog){
+        fog=document.createElement("canvas");
+        fog.width=WORLD_W;fog.height=WORLD_H;
+        state.fogCanvas=fog;
+        state.fogDirty=true;
     }
+    if(state.fogDirty||state.fogExploredRef!==state.explored){
+        const fctx=fog.getContext("2d");
+        const image=fctx.createImageData(WORLD_W,WORLD_H);
+        const pixels=image.data;
+        for(let y=0;y<WORLD_H;y++){
+            for(let x=0;x<WORLD_W;x++){
+                if(state.explored[x]?.[y])continue;
+                const i=(y*WORLD_W+x)*4;
+                pixels[i]=8;pixels[i+1]=10;pixels[i+2]=8;pixels[i+3]=235;
+            }
+        }
+        fctx.putImageData(image,0,0);
+        state.fogDirty=false;
+        state.fogExploredRef=state.explored;
+    }
+    return fog;
+}
+
+function drawFogOfWar(ctx, zoom, cam, canvas) {
+    const fog=getFogCanvas();
+    const cellPx=CELL*zoom;
+    ctx.save();
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(
+        fog,0,0,WORLD_W,WORLD_H,
+        -cam.x,-cam.y,WORLD_W*cellPx,WORLD_H*cellPx
+    );
+    ctx.restore();
 }
 
 // ═══════════════════════════════════════════════════════════════

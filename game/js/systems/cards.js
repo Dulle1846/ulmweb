@@ -79,7 +79,7 @@ function hasBuildableTerrain(tx,ty,card){
 export function getCardPlacementPreview(tx,ty){
     const card=state.currentCard;if(!card||!Number.isInteger(tx)||!Number.isInteger(ty))return null;
     const size=footprintFor(card),terrainValid=hasBuildableTerrain(tx,ty,card);
-    const occupied=buildingOverlaps(tx,ty,card.type,card.sizeMultiplier||1),affordable=canAfford(card);
+    const occupied=card.kind==="effect"?false:buildingOverlaps(tx,ty,card.type,card.sizeMultiplier||1),affordable=canAfford(card);
     let reason=null;if(!terrainValid)reason="INVALID TERRAIN";else if(occupied)reason="SPACE OCCUPIED";else if(!affordable)reason="CANNOT AFFORD";
     return {tx,ty,type:card.type,width:size.w,height:size.h,valid:reason===null,reason,kind:card.kind};
 }
@@ -88,7 +88,7 @@ function findNearestBuildableTile(cx,cy){
     for(let radius=0;radius<=12;radius++)for(let ox=-radius;ox<=radius;ox++)for(let oy=-radius;oy<=radius;oy++){
         if(Math.abs(ox)!==radius&&Math.abs(oy)!==radius)continue;
         const tx=cx+ox,ty=cy+oy;
-        if(!hasBuildableTerrain(tx,ty,state.currentCard)||buildingOverlaps(tx,ty,state.currentCard.type))continue;
+        if(!hasBuildableTerrain(tx,ty,state.currentCard)||(state.currentCard.kind!=="effect"&&buildingOverlaps(tx,ty,state.currentCard.type)))continue;
         return {tx,ty};
     }
     return null;
