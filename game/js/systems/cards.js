@@ -4,7 +4,7 @@ import { TYPE } from '../types.js';
 import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT } from '../config.js';
 import { state } from '../state.js';
 import { spawnEntity, buildingAt } from '../world/entities.js';
-import { revealArea } from '../world/world.js';
+import { revealArea, isWaterAt } from '../world/world.js';
 import { canAfford, payForCard } from './resources.js';
 import { createParticle, createFloater } from '../rendering/particles.js';
 import { renderUI } from '../rendering/ui.js';
@@ -61,9 +61,8 @@ function findNearestBuildableTile(centerX, centerY) {
 
                 const tx = centerX + offsetX;
                 const ty = centerY + offsetY;
-                const tile = state.world[tx] && state.world[tx][ty];
-
-                if (!tile || tile.terrain === "water" || buildingAt(tx, ty)) continue;
+                if (tx < 0 || ty < 0 || tx >= WORLD_WIDTH || ty >= WORLD_HEIGHT) continue;
+                if (isWaterAt(tx + 0.5, ty + 0.5) || buildingAt(tx, ty)) continue;
                 return { tx, ty };
             }
         }
@@ -90,9 +89,13 @@ export function placeCurrentCard(targetX, targetY) {
     }
 
     const { tx, ty } = requestedTile;
-    const tile = state.world[tx] && state.world[tx][ty];
 
-    if (!tile || tile.terrain === "water") {
+    if (tx < 0 || ty < 0 || tx >= WORLD_WIDTH || ty >= WORLD_HEIGHT) {
+        createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "OUT OF BOUNDS", "#f59e0b");
+        return;
+    }
+
+    if (isWaterAt(tx + 0.5, ty + 0.5)) {
         createFloater(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE, "CANNOT BUILD HERE", "#f59e0b");
         return;
     }
