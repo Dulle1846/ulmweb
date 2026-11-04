@@ -125,10 +125,14 @@ function renderRealmEvent(){
 
 export function renderUI(){
     if(!state.hasStarted)return;
-    for(const key of ["wood","stone","gold","food"]){
-        setText("res-"+key,Math.floor(state.resources[key]||0).toLocaleString("en-US"));
-        setText(key+"-income",income(state.incomeThisTick[key]));
-    }
+    setText("res-wood",Math.floor(state.resources.wood||0).toLocaleString("en-US"));
+    setText("res-stone",Math.floor(state.resources.stone||0).toLocaleString("en-US"));
+    setText("res-gold",Math.floor(state.resources.gold||0).toLocaleString("en-US"));
+    setText("res-food",Math.floor(state.resources.food||0).toLocaleString("en-US"));
+    setText("wood-income",income(state.incomeThisTick.wood));
+    setText("stone-income",income(state.incomeThisTick.stone));
+    setText("gold-income",income(state.incomeThisTick.gold));
+    setText("food-income",income(state.incomeThisTick.food));
     const bar=document.getElementById("morale-bar");
     if(bar){bar.style.width=Math.max(0,Math.min(100,state.morale))+"%";bar.classList.toggle("is-low",state.morale<30);}
     setText("morale-value",Math.floor(state.morale));

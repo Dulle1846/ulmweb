@@ -47,8 +47,6 @@ export function drawWorld() {
     drawPlacementPreview(ctx);
 
     // ── Partikel ─────────────────────────────────────────────
-    const cellPx = CELL * zoom;
-
     state.particles.forEach(p => {
         const alpha = p.life / p.maxLife;
         const px = p.x * zoom - camera.x;
