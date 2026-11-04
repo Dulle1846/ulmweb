@@ -40,7 +40,7 @@ Domain and simulation modules no longer import Canvas, UI or rendering modules. 
 
 ### Visual zoom and building interaction
 
-The presentation now has four detail bands: landscape, districts, rooftops and interiors. The pure zoom rules live in `core/zoom-model.js`; camera anchoring, interpolation and viewport bounds live in `presentation/camera.js`. Card placement uses the same validation for preview and final drop: terrain across the full footprint, world bounds, occupancy and affordability. The map preview is rendered by `presentation/rendering/placement-preview.js`. Full details are in [Zoom and Building Placement](ZOOM_AND_BUILDING_PLACEMENT.md).
+The presentation now has four detail bands: landscape, districts, rooftops and interiors. At the deepest level, people use animated top-down figures rather than the larger rooftop role badges. The pure zoom rules live in `core/zoom-model.js`; camera anchoring, interpolation and viewport bounds live in `presentation/camera.js`. Card placement uses the same validation for preview and final drop: terrain across the full footprint, world bounds, occupancy and affordability. The map preview is rendered by `presentation/rendering/placement-preview.js`. Full details are in [Zoom and Building Placement](ZOOM_AND_BUILDING_PLACEMENT.md).
 
 ## 3. Current world and entity data
 
