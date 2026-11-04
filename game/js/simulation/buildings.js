@@ -26,6 +26,7 @@ export function updateBuildingIncome() {
 
             const nearbyMill = mills.some(m => distance(m.x, m.y, f.x, f.y) < 6);
             if (nearbyMill) amt = Math.floor(amt * 1.6);
+            if (state.unlockedTechs.has('irrigation')) amt = Math.floor(amt * 1.4);
 
             addResource('food', amt);
 
@@ -42,7 +43,7 @@ export function updateBuildingIncome() {
         quarries.forEach(q => {
             addResource('stone', 4);
 
-            if (Math.random() < 0.13) {
+            if (Math.random() < (state.unlockedTechs.has('alchemy') ? 0.26 : 0.13)) {
                 addResource('gold', 1);
                 createFloater(q.x * TILE_SIZE, q.y * TILE_SIZE - 20, "GOLD VEIN!", "#fde047");
             }
@@ -60,5 +61,9 @@ export function updateBuildingIncome() {
             state.morale = Math.min(100, state.morale + 1.2);
             addResource('research', 1);
         });
+
+        if (state.unlockedTechs.has('scholarship')) {
+            addResource('research', 2);
+        }
     }
 }
