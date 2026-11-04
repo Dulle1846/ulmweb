@@ -1,0 +1,44 @@
+name: Game Browser E2E
+
+on:
+  pull_request:
+    branches:
+      - ulmweb-branch
+    paths:
+      - "game/**"
+      - ".github/workflows/game-browser-e2e.yml"
+  push:
+    branches:
+      - kac-2.1-stability-performance
+    paths:
+      - "game/**"
+      - ".github/workflows/game-browser-e2e.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-browser-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-e2e:
+    name: Chromium gameplay smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install temporary browser test dependency
+        working-directory: game
+        run: npm install --no-save --package-lock=false playwright@1.56.1
+      - name: Install Chromium
+        working-directory: game
+        run: npx playwright install --with-deps chromium
+      - name: Run local browser end-to-end test
+        working-directory: game
+        run: node tests/browser/e2e.mjs
