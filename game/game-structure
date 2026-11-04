@@ -5,7 +5,7 @@ game/
 ├── docs/                              # Technische Projektdokumentation
 ├── package.json                       # Minimaler Node.js-Testlauf ohne Zusatzabhängigkeiten
 ├── scripts/
-│   └── check-syntax.js                # Prüft die Syntax aller JavaScript-Quelldateien
+│   └── check-syntax.js                # Prüft Syntax, Imports, DOM-IDs und lokale Assets
 ├── tests/
 │   ├── core/
 │   │   ├── simulation-clock.test.js   # Tests für feste Simulationsschritte
