@@ -128,7 +128,7 @@ export function checkRandomEvents(){
  hidden.activeThreads=Array.isArray(hidden.activeThreads)?hidden.activeThreads:[];
  const readyThread=hidden.activeThreads.filter(thread=>state.tick>=thread.nextAtTick)
   .sort((a,b)=>a.nextAtTick-b.nextAtTick)[0];
- if(readyThread){triggerThreadEvent(readyThread);return;}
+ if(readyThread){if(!triggerThreadEvent(readyThread))hidden.activeThreads=hidden.activeThreads.filter(thread=>thread!==readyThread);return;}
  if(!Number.isFinite(state.nextIssueAtTick)||state.nextIssueAtTick<=0)state.nextIssueAtTick=state.tick+145+randInt(0,95);
  if(state.tick<state.nextIssueAtTick)return;
  state.nextIssueAtTick=state.tick+220+randInt(0,520);
