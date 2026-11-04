@@ -2,8 +2,8 @@
 //  RENDERER — Haupt-Render-Pipeline mit Zoom-Levels
 // ═══════════════════════════════════════════════════════════════
 
-import { CELL } from '../config.js';
-import { state } from '../state.js';
+import { CELL } from '../../config.js';
+import { state } from '../../state.js';
 import { drawTerrain } from './terrain.js';
 import { drawEntity } from './entities.js';
 

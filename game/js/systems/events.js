@@ -4,8 +4,8 @@ import { WORLD_WIDTH, WORLD_HEIGHT } from '../config.js';
 import { TYPE } from '../types.js';
 import { state } from '../state.js';
 import { spawnEntity, getEntitiesOfType } from '../world/entities.js';
-import { createFloater } from '../rendering/particles.js';
-import { showBigMessage } from '../rendering/ui.js';
+import { createFloater } from '../presentation/rendering/particles.js';
+import { showBigMessage } from '../presentation/rendering/ui.js';
 import { randInt } from '../utils.js';
 
 export function addLog(text, color = "#a3a3a3") {

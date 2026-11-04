@@ -2,9 +2,9 @@
 //  TERRAIN RENDERING — Smooth Perlin, LOD, Dekoration
 // ═══════════════════════════════════════════════════════════════
 
-import { WORLD_W, WORLD_H, CELL, BIOME } from '../config.js';
-import { state } from '../state.js';
-import { getHeightAt } from '../world/world.js';
+import { WORLD_W, WORLD_H, CELL, BIOME } from '../../config.js';
+import { state } from '../../state.js';
+import { getHeightAt } from '../../world/world.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  TERRAIN ZEICHNEN

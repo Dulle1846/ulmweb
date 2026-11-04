@@ -9,8 +9,8 @@ import { initTechTree } from '../systems/tech.js';
 import { drawNewCard } from '../systems/cards.js';
 import { addLog } from '../systems/events.js';
 import { startGameLoop } from './game-loop.js';
-import { centerCamera, resize } from '../camera.js';
-import { setupInput } from '../input.js';
+import { centerCamera, resize } from '../presentation/camera.js';
+import { setupInput } from '../presentation/input.js';
 import { randInt } from '../utils.js';
 
 function init() {

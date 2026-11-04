@@ -8,9 +8,9 @@ import { updateWeather } from '../world/weather.js';
 import { updateBuildingIncome } from './buildings.js';
 import { updateVillagers } from './villagers.js';
 import { updateCombat } from './combat.js';
-import { updateParticles, updateFloaters } from '../rendering/particles.js';
-import { updateMinimap } from '../rendering/minimap.js';
-import { showBigMessage } from '../rendering/ui.js';
+import { updateParticles, updateFloaters } from '../presentation/rendering/particles.js';
+import { updateMinimap } from '../presentation/rendering/minimap.js';
+import { showBigMessage } from '../presentation/rendering/ui.js';
 
 export function updateSimulation() {
     if (state.isPaused || state.gameOver) return;

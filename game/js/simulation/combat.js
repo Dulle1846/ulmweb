@@ -3,8 +3,8 @@
 import { TYPE } from '../types.js';
 import { state } from '../state.js';
 import { getEntitiesOfType } from '../world/entities.js';
-import { createParticle, createFloater } from '../rendering/particles.js';
-import { showBigMessage } from '../rendering/ui.js';
+import { createParticle, createFloater } from '../presentation/rendering/particles.js';
+import { showBigMessage } from '../presentation/rendering/ui.js';
 import { rand, distance } from '../utils.js';
 
 export function updateCombat() {

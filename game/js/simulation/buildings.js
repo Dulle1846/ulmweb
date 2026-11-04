@@ -5,7 +5,7 @@ import { TILE_SIZE } from '../config.js';
 import { state } from '../state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 import { addResource } from '../systems/resources.js';
-import { createParticle, createFloater } from '../rendering/particles.js';
+import { createParticle, createFloater } from '../presentation/rendering/particles.js';
 import { distance } from '../utils.js';
 
 export function updateBuildingIncome() {

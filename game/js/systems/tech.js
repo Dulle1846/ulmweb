@@ -3,7 +3,7 @@
 import { state } from '../state.js';
 import { TYPE } from '../types.js';
 import { addLog } from './events.js';
-import { createFloater } from '../rendering/particles.js';
+import { createFloater } from '../presentation/rendering/particles.js';
 
 export function initTechTree() {
     state.techs = [

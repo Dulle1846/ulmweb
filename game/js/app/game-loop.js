@@ -5,9 +5,9 @@ import { state } from '../state.js';
 import { consumeSimulationTime } from '../core/simulation-clock.js';
 import { updateSimulation } from '../simulation/simulation.js';
 import { updateFriendlyMovement } from '../simulation/villagers.js';
-import { drawWorld, drawVignette } from '../rendering/renderer.js';
-import { renderUI } from '../rendering/ui.js';
-import { updateCamera } from '../camera.js';
+import { drawWorld, drawVignette } from '../presentation/rendering/renderer.js';
+import { renderUI } from '../presentation/rendering/ui.js';
+import { updateCamera } from '../presentation/camera.js';
 
 export function startGameLoop() {
     state.lastFrameTime = 0;

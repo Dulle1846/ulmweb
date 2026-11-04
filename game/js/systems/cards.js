@@ -6,8 +6,8 @@ import { state } from '../state.js';
 import { spawnEntity, buildingOverlaps } from '../world/entities.js';
 import { revealArea, isWaterAt } from '../world/world.js';
 import { canAfford, payForCard } from './resources.js';
-import { createParticle, createFloater } from '../rendering/particles.js';
-import { renderUI } from '../rendering/ui.js';
+import { createParticle, createFloater } from '../presentation/rendering/particles.js';
+import { renderUI } from '../presentation/rendering/ui.js';
 import { rand, randInt } from '../utils.js';
 
 export const CARD_DECK = [

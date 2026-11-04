@@ -1,9 +1,9 @@
 // ── UI Elements (Header, Sidebar) ──────────────────────────────
 
-import { SEASONS } from '../config.js';
-import { TYPE } from '../types.js';
-import { state } from '../state.js';
-import { getEntitiesOfType } from '../world/entities.js';
+import { SEASONS } from '../../config.js';
+import { TYPE } from '../../types.js';
+import { state } from '../../state.js';
+import { getEntitiesOfType } from '../../world/entities.js';
 
 export function showBigMessage(title, subtitle, timeout = 1800) {
     const overlay = document.getElementById("big-message");
