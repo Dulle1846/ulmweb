@@ -1,0 +1,40 @@
+name: Kings & Cards 2.1 checks
+
+on:
+  pull_request:
+    branches:
+      - ulmweb-branch
+    paths:
+      - "game/**"
+      - ".github/workflows/kings-cards-2-1-ci.yml"
+  push:
+    branches:
+      - ulmweb-branch
+      - kac-2.1-stability-performance
+    paths:
+      - "game/**"
+      - ".github/workflows/kings-cards-2-1-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kings-cards-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Syntax, imports and game tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run game tests and static checks
+        working-directory: game
+        run: npm test
