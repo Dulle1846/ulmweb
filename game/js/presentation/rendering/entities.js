@@ -494,6 +494,11 @@ function drawPersonDot(ctx, e, sx, sy, cellPx, overrideColor) {
 }
 
 function drawPersonIcon(ctx, e, sx, sy, cellPx, tick) {
+    if (state.zoomLevel >= 4) {
+        drawPersonTopDown(ctx, e, sx, sy, cellPx);
+        return;
+    }
+
     const scale = cellPx / CELL;
     const now = performance.now() / 1000;
     const speed = Math.hypot(e.velocityX || 0, e.velocityY || 0);
@@ -584,6 +589,94 @@ function drawPersonIcon(ctx, e, sx, sy, cellPx, tick) {
     ctx.restore();
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
+}
+
+function drawPersonTopDown(ctx, entity, sx, sy, cellPx) {
+    const scale = cellPx / CELL;
+    const speed = Math.hypot(entity.velocityX || 0, entity.velocityY || 0);
+    const moving = speed > 0.05;
+    const now = performance.now() / 1000;
+    const gait = moving ? Math.sin(now * 13 + entity.anim) : 0;
+    const bodyColor = ROLE_COLORS[entity.type] || "#647b68";
+    const rotation = moving ? Math.atan2(entity.velocityY, entity.velocityX) + Math.PI / 2 : 0;
+    const px = sx + cellPx / 2;
+    const py = sy + cellPx / 2;
+
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(rotation);
+
+    // Ground shadow.
+    ctx.fillStyle = "rgba(0, 0, 0, 0.32)";
+    ctx.beginPath();
+    ctx.ellipse(1 * scale, 2 * scale, 5.8 * scale, 9 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Animated legs and boots, visible from above.
+    ctx.strokeStyle = "#302c27";
+    ctx.lineWidth = Math.max(1.5, 2.1 * scale);
+    ctx.lineCap = "round";
+    const stride = gait * 3.2 * scale;
+    ctx.beginPath();
+    ctx.moveTo(-2.2 * scale, 3 * scale);
+    ctx.lineTo(-2.6 * scale - stride, 8.2 * scale);
+    ctx.moveTo(2.2 * scale, 3 * scale);
+    ctx.lineTo(2.6 * scale + stride, 8.2 * scale);
+    ctx.stroke();
+
+    // Torso.
+    ctx.fillStyle = "#171d1b";
+    ctx.beginPath();
+    ctx.ellipse(0, 0.6 * scale, 5.2 * scale, 7.2 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 4.1 * scale, 6.1 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Arms.
+    ctx.strokeStyle = entity.visualState === "work" ? "#d4aa68" : "#cdbb9d";
+    ctx.lineWidth = Math.max(1.2, 1.8 * scale);
+    ctx.beginPath();
+    ctx.moveTo(-3.4 * scale, -1.4 * scale);
+    ctx.lineTo(-6.1 * scale, 1.2 * scale - stride * 0.24);
+    ctx.moveTo(3.4 * scale, -1.4 * scale);
+    ctx.lineTo(6.1 * scale, 1.2 * scale + stride * 0.24);
+    ctx.stroke();
+
+    // Head and hair.
+    ctx.fillStyle = "#e4c7a1";
+    ctx.beginPath();
+    ctx.arc(0, -5.8 * scale, 3.5 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#513c2c";
+    ctx.beginPath();
+    ctx.arc(0, -7.1 * scale, 3.3 * scale, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    // Small profession marker.
+    ctx.fillStyle = "rgba(13, 20, 20, 0.92)";
+    ctx.beginPath();
+    ctx.arc(7.1 * scale, -7.5 * scale, 4.6 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = `${Math.max(7, 8 * scale)}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(getEmoji(entity), 7.1 * scale, -7.5 * scale);
+
+    if (entity.isKing) {
+        ctx.fillStyle = "#f2c744";
+        ctx.beginPath();
+        ctx.moveTo(-3 * scale, -10.2 * scale);
+        ctx.lineTo(-2.5 * scale, -14 * scale);
+        ctx.lineTo(0, -11.4 * scale);
+        ctx.lineTo(2.5 * scale, -14 * scale);
+        ctx.lineTo(3 * scale, -10.2 * scale);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    ctx.restore();
 }
 
 function drawEnemyIcon(ctx, e, sx, sy, cellPx, tick) {
