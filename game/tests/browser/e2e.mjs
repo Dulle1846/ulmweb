@@ -132,7 +132,7 @@ try{
     await page.waitForTimeout(500);
     assert.equal((await page.locator("#tick-count").innerText()).trim(),pausedTick,"paused simulation tick must remain fixed after the in-flight frame settles");
     await page.locator("#pause-btn").click();
-    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="PAUSE",{timeout:3000});
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="PAUSE",null,{timeout:3000});
     try{
         await page.waitForFunction(previous=>Number(document.querySelector("#tick-count")?.textContent||0)>Number(previous),pausedTick,{timeout:5000});
     }catch(error){
