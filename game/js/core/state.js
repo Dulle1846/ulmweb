@@ -45,7 +45,6 @@ export const state = {
     // ── Karten ───────────────────────────────────────────────
     currentCard: null,
     availableCards: [],
-    cardPreview: null,
     cardPreview: null,           // Validated building footprint while dragging a card
 
     // ── UI ────────────────────────────────────────────────────
