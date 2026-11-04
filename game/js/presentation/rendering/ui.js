@@ -6,6 +6,7 @@ import { getEntitiesOfType } from "../../world/entities.js";
 import { getTradePartners,MARKET_RESOURCES } from "../../systems/market.js";
 import { getWorkforceSnapshot } from "../../systems/economy.js";
 import { EVENT_CHAINS } from "../../systems/event-chains.js";
+import { getHousingSnapshot } from "../../systems/population.js";
 
 let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
@@ -73,10 +74,11 @@ function renderEvents(container){
 function renderStatistics(container){
     const buildings=state.entities.filter(e=>!e.dead&&e.isBuilding()).length;
     const military=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER].includes(e.type)).length;
-    const workforce=getWorkforceSnapshot(),economy=state.economy||{};
+    const workforce=getWorkforceSnapshot(),housing=getHousingSnapshot(),economy=state.economy||{};
     const stats=[
         ["POPULATION",workforce.population],["EMPLOYED",workforce.employed],
-        ["UNEMPLOYED",workforce.unemployed],["BUILDINGS",buildings],
+        ["UNEMPLOYED",workforce.unemployed],["HOUSING",housing.population+" / "+housing.capacity],
+        ["VACANT HOMES",housing.available],["BUILDINGS",buildings],
         ["MILITARY",military],["MORALE",Math.floor(state.morale)],
         ["RAIDS SURVIVED",state.totalRaidsSurvived],["TRADES",state.statistics.totalTrades],
         ["BUILDINGS BUILT",state.statistics.totalBuildingsBuilt],["UNITS RECRUITED",state.statistics.totalUnitsRecruited],
@@ -173,8 +175,8 @@ export function renderUI(){
     setText("season",SEASONS[state.seasonIndex]||SEASONS[0]);setText("year","YEAR "+state.year);
     setText("tick-count",state.tick.toLocaleString("en-US"));setText("kingdom-name","THE REALM OF "+state.kingdomName);
     setText("player-name",state.playerName||"GUEST");
-    const population=getEntitiesOfType(TYPE.VILLAGER).length,houses=getEntitiesOfType(TYPE.HOUSE).length;
-    const pop=document.getElementById("population");if(pop)pop.innerHTML="POP <strong>"+population+"</strong> / "+(houses*4);
+    const housing=getHousingSnapshot();
+    const pop=document.getElementById("population");if(pop)pop.innerHTML="POP <strong>"+housing.population+"</strong> / "+housing.capacity+" · "+housing.available+" FREE";
     const card=state.currentCard,cardPanel=document.getElementById("card-container");
     if(card){
         setText("card-icon",card.icon);setText("card-name",card.name);setText("card-desc",card.desc);
