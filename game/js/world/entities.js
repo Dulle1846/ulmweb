@@ -37,6 +37,7 @@ export function spawnEntity(tx, ty, type) {
     }
 
     state.entities.push(entity);
+    if(entity.isBuilding())state.buildingCollisionVersion=(state.buildingCollisionVersion||0)+1;
     return entity;
 }
 
