@@ -8,7 +8,7 @@ This document records what exists today and the engineering rules toward which t
 ## 1. Current runtime
 
 - Browser-based application using native JavaScript ES modules.
-- Entry point: `game/index.html`, which loads `game/js/main.js`.
+- Entry point: `game/index.html`, which loads `game/js/app/main.js`.
 - Rendering: HTML Canvas 2D.
 - UI shell: HTML elements styled with Tailwind's browser CDN build.
 - Main animation loop: `requestAnimationFrame`.
@@ -18,19 +18,23 @@ This document records what exists today and the engineering rules toward which t
 
 | Area | Current responsibility |
 |---|---|
-| `config.js` | World dimensions, cell size, timing, terrain thresholds, movement and building constants |
-| `types.js` | Numeric entity type constants, entity defaults and the `Entity` class |
-| `state.js` | Shared mutable runtime state |
-| `world/world.js` | Procedural height/moisture maps, biome lookup, exploration and terrain prerendering |
-| `world/entities.js` | Entity creation, queries and starting settlement placement |
-| `world/weather.js` | Weather state updates |
-| `systems/*` | Resources, morale, technology, cards and random events |
-| `simulation/*` | Tick-level building income, villager behaviour and combat |
-| `rendering/*` | Terrain/entities drawing, UI, minimap and particles/floaters |
-| `camera.js` | View transform, zoom, bounds and coordinate conversion |
-| `input.js` | Pointer, touch, keyboard and UI event handlers |
-| `main.js` | Initialization and orchestration of simulation, movement and rendering |
-| `utils.js` | Small shared math/random helpers |
+| `app/main.js` | Composition root: initializes browser surfaces, world, starting settlement, UI/input and timed startup events |
+| `app/game-loop.js` | Frame scheduling, fixed-step clock consumption, movement and render orchestration |
+| `core/simulation-clock.js` | Pure fixed-step accumulator calculation with no browser or game-state dependency |
+| `presentation/camera.js` | View transform, zoom, bounds and coordinate conversion |
+| `presentation/input.js` | Pointer, touch, keyboard and UI event handlers |
+| `presentation/rendering/*` | Terrain/entities drawing, UI, minimap and particles/floaters |
+| `world/*` | Terrain maps, biome queries, exploration, entity creation/queries and weather |
+| `systems/*` | Resource, morale, technology, card and random-event rules |
+| `simulation/*` | Logical ticks, building income, villager behaviour and combat |
+| `config.js`, `types.js`, `state.js`, `utils.js` | Existing shared foundation modules still at the JS root; moving/partitioning them into explicit core/domain contracts is a subsequent step |
+
+
+### Implemented source structure
+
+The current code is a modular monolith with these real folders: `app/`, `core/`, `world/`, `systems/`, `simulation/` and `presentation/`. The HTML entry point is only a bootstrap reference; application wiring lives in the composition root. Presentation owns camera/input/rendering modules. The shared legacy modules (`config.js`, `state.js`, `types.js`, `utils.js`) remain at the JS root temporarily and are not yet a fully formalized core contract.
+
+The separation is intentionally incremental: some domain/system modules still call presentation effects directly. Removing those dependencies is a later boundary-enforcement task, not something this folder move alone claims to have solved.
 
 ## 3. Current world and entity data
 
@@ -48,12 +52,13 @@ The terrain data, visual cache, exploration data and dynamic entities should rem
 
 ## 4. Current execution model
 
-- `main.js` runs a frame loop with `requestAnimationFrame`.
+- `app/main.js` initializes the application and starts `app/game-loop.js`.
+- `app/game-loop.js` runs the frame loop with `requestAnimationFrame`.
 - Simulation updates are driven by an accumulator using `BASE_TICK_INTERVAL = 333` ms.
 - The accumulator adds elapsed frame time multiplied by `state.gameSpeed`.
 - Friendly unit movement is updated separately per rendered frame.
 - Rendering is performed per frame.
-- The current simulation also increments `state.tick` by `state.gameSpeed` inside each simulation update. This conflicts with the accelerated accumulator and is recorded as a defect in the codebase audit.
+- Each logical simulation update advances `state.tick` by exactly one. `core/simulation-clock.js` calculates the number of fixed steps from elapsed frame time and selected game speed. The helper is pure and can be tested independently.
 
 ### Target time-system invariants
 
