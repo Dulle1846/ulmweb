@@ -41,7 +41,7 @@ Priority meanings:
 ### F2 — Establish test and debugging foundations (P1)
 
 - [x] Choose a minimal test runner compatible with the current JavaScript module setup (Node built-in `node:test`, no third-party packages).
-- [ ] Expand unit tests for pure calculations and individual system rules (initial fixed-step clock tests now exist).
+- [ ] Expand unit tests for pure calculations and individual system rules (fixed-step clock, presentation-effect contract, building-footprint and zoom-model tests now exist).
 - [ ] Add deterministic integration tests for core update sequences.
 - [ ] Add a browser smoke test for module loading and game initialization.
 - [ ] Make runtime errors easy to capture and reproduce.
@@ -88,6 +88,19 @@ Priority meanings:
 - [x] Keep `app/main.js` as composition/orchestration rather than a gameplay system.
 
 **Exit condition:** Domain/simulation modules can run in tests without a browser DOM or Canvas.
+
+### F8 — Visual scale, interface and card interaction (P0)
+
+- [x] Replace the old three-level display with four distinct scales: landscape, districts, rooftops and interiors.
+- [x] Make zoom cursor-anchored, smoothly interpolated, bounded by the world and controllable through wheel, buttons and presets.
+- [x] Add a live card drag-and-drop preview using the same terrain, footprint, occupancy and affordability checks as final placement.
+- [x] Replace the Tailwind-CDN-based shell with a dedicated responsive interface stylesheet and clearer management panels.
+- [x] Add automated tests for zoom-band boundaries, presets, interpolation and cursor-anchor math.
+- [ ] Verify visual appearance, input feel, drag cancellation and all zoom levels in the browser at desktop and narrow viewport sizes.
+
+**Current status:** Implementation is in the main development branch. Automated source checks are configured; hands-on browser acceptance remains open.
+
+**Exit condition:** All four detail layers are visually distinct and readable, zoom remains stable under wheel/preset/resize input, and dragged cards can be previewed, cancelled or placed without incorrect resource charges.
 
 ### F7 — Prepare for scale (P2)
 
