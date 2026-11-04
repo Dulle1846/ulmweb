@@ -53,7 +53,7 @@ Die sichtbaren Spieltexte bleiben Englisch. Technische Hinweise und Dokumentatio
 
 ## Verifikation
 
-Automatisierte Abdeckung:
+Automatisierte Abdeckung (derzeit 27 Unit-Tests im Gesamtprojekt):
 - Grenzen und Zuordnung der vier Zoomstufen.
 - Alle Zoom-Presets.
 - Zoombegrenzung und Interpolation.
