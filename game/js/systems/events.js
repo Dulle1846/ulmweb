@@ -5,6 +5,7 @@ import { state } from "../core/state.js";
 import { spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { randInt } from "../core/utils.js";
 import { EVENT_CHAINS } from "./event-chains.js";
+import { getWorkforceSnapshot } from "./economy.js";
 
 export function addLog(text,color="#a3a3a3",kind="realm"){
  const entry={id:++state.eventSequence,text:String(text),color,tick:state.tick,kind};
@@ -43,11 +44,23 @@ const FAMILIES=FAMILY_ROWS.map(([id,titles,resource,gain,cost,prosperity,tension
 export const EVENT_VARIANT_COUNT=FAMILIES.length*PLACES.length*STAGES.length*DETAILS.length*5;
 const pick=items=>items[randInt(0,items.length)];
 function chooseFamily(){
- const hidden=state.hiddenRealm||{};
- const weights=FAMILIES.map(f=>Math.max(.25,1+
-  (f.tension>0?Math.max(0,hidden.tension||0)*f.tension/80:0)+
-  (f.prosperity>0?Math.max(0,hidden.prosperity||0)*f.prosperity/90:0)+
-  (f.mystery>0?Math.max(0,hidden.mystery||0)*f.mystery/100:0)));
+ const hidden=state.hiddenRealm||{},workforce=getWorkforceSnapshot();
+ const food=Math.max(0,state.resources.food||0);
+ const foodShortage=Math.max(0,state.economy?.lastLedger?.foodShortage||0);
+ const unpaidCosts=Math.max(0,(state.economy?.lastLedger?.unpaidWages||0)+(state.economy?.lastLedger?.unpaidUpkeep||0));
+ const weights=FAMILIES.map(f=>{
+  let situational=0;
+  if(f.id==="shortage")situational+=(food<Math.max(20,workforce.population*2)?3:0)+foodShortage*0.4;
+  if(f.id==="harvest")situational+=food<35&&workforce.employed>0?1.2:0;
+  if(f.id==="migration")situational+=Math.min(3,workforce.unemployed*0.35);
+  if(f.id==="rebellion")situational+=Math.min(5,unpaidCosts*1.5+Math.max(0,hidden.tension||0)*0.08);
+  if(f.id==="illness")situational+=workforce.population>25?1.2:0;
+  if(f.id==="caravan")situational+=Math.max(0,hidden.prosperity||0)*0.025;
+  return Math.max(.25,1+
+   (f.tension>0?Math.max(0,hidden.tension||0)*f.tension/80:0)+
+   (f.prosperity>0?Math.max(0,hidden.prosperity||0)*f.prosperity/90:0)+
+   (f.mystery>0?Math.max(0,hidden.mystery||0)*f.mystery/100:0)+situational);
+ });
  let roll=Math.random()*weights.reduce((a,b)=>a+b,0);
  for(let i=0;i<FAMILIES.length;i++){roll-=weights[i];if(roll<=0)return FAMILIES[i];}
  return FAMILIES[FAMILIES.length-1];
