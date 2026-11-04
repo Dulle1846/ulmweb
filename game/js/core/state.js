@@ -27,9 +27,10 @@ function createInitialState() {
 }
 export const state=createInitialState();
 export function resetState() {
+    const nextWorldEpoch=(state.worldEpoch||0)+1;
     const fresh=createInitialState();
     for(const key of Object.keys(state))delete state[key];
     Object.assign(state,fresh);
-    state.worldEpoch=(state.worldEpoch||0)+1;
+    state.worldEpoch=nextWorldEpoch;
     return state;
 }
