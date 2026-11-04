@@ -25,11 +25,12 @@ const server=createServer(async(req,res)=>{
 });
 await new Promise(resolveListen=>server.listen(4173,"127.0.0.1",resolveListen));
 const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage"]});
-const errors=[];
+const errors=[],consoleErrors=[];
 try{
     const context=await browser.newContext({viewport:{width:1600,height:1000},reducedMotion:"reduce"});
     const page=await context.newPage();
     page.on("pageerror",error=>errors.push(error.message));
+    page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text());});
     await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
     assert.equal(await page.title(),"KINGS & CARDS • Eternal Realm");
     assert.equal(await page.locator("#start-screen").isVisible(),true);
@@ -131,7 +132,18 @@ try{
     await page.waitForTimeout(500);
     assert.equal((await page.locator("#tick-count").innerText()).trim(),pausedTick,"paused simulation tick must remain fixed after the in-flight frame settles");
     await page.locator("#pause-btn").click();
-    await page.waitForFunction(previous=>document.querySelector("#tick-count")?.textContent.trim()!==previous,pausedTick,{timeout:5000});
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="PAUSE",{timeout:3000});
+    try{
+        await page.waitForFunction(previous=>Number(document.querySelector("#tick-count")?.textContent||0)>Number(previous),pausedTick,{timeout:5000});
+    }catch(error){
+        const diagnostic=await page.evaluate(()=>({
+            tick:document.querySelector("#tick-count")?.textContent.trim(),
+            pauseText:document.querySelector("#pause-text")?.textContent.trim(),
+            toast:document.querySelector("#action-toast")?.textContent.trim(),
+            eventVisible:!document.querySelector("#realm-event-modal")?.classList.contains("hidden")
+        }));
+        throw new Error("Simulation did not resume: "+JSON.stringify({diagnostic,consoleErrors})+"; "+error.message);
+    }
 
     await page.locator("#pause-btn").click();
     const savedTick=(await page.locator("#tick-count").innerText()).trim();
@@ -145,6 +157,7 @@ try{
     await page.locator("#pause-btn").click();
 
     assert.deepEqual(errors,[],"browser runtime must not emit uncaught page errors");
+    assert.deepEqual(consoleErrors,[],"browser runtime must not emit console errors");
     console.log("Browser E2E passed: world forge, seed, empty/timed hand, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.");
     await context.close();
 }finally{
