@@ -6,6 +6,7 @@ import { spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { randInt } from "../core/utils.js";
 import { EVENT_CHAINS } from "./event-chains.js";
 import { getWorkforceSnapshot } from "./economy.js";
+import { canAccommodateVillagers } from "./population.js";
 
 export function addLog(text,color="#a3a3a3",kind="realm"){
  const entry={id:++state.eventSequence,text:String(text),color,tick:state.tick,kind};
@@ -77,7 +78,7 @@ export function triggerRandomEvent(){
   {label:pick(["Act in the crown's name","Offer royal patronage","Gather the council","Spend from the royal purse"]),description:"Gain "+gain+" "+family.resource.toUpperCase()+"; morale "+(morale>=0?"+":"")+morale+".",effects:{resources:{[family.resource]:gain},morale,hidden:{tension:family.tension,prosperity:family.prosperity,mystery:family.mystery}}},
   {label:pick(["Leave the matter to the local guilds","Choose the cautious course","Demand a public accounting","Let the old custom stand"]),description:"Spend "+cost+" "+secondary.toUpperCase()+" and take a different path.",effects:{resources:{[secondary]:-cost,[family.resource]:Math.max(3,Math.floor(gain*.35))},morale:randInt(-3,3),hidden:{tension:-family.tension*.35,prosperity:1,mystery:family.mystery?1:0}}}
  ];
- if(family.id==="migration"&&canSpawnEntity(TYPE.VILLAGER)){choices[0].effects.villagers=1;choices[0].description+=" A new resident may join the realm.";}
+ if(family.id==="migration"&&canSpawnEntity(TYPE.VILLAGER)&&canAccommodateVillagers(1)){choices[0].effects.villagers=1;choices[0].description+=" A new resident may join the realm.";}
  state.activeEvent={id:"issue-"+(++state.issueSequence),family:family.id,title,description,icon:family.id,createdAtTick:state.tick,threadStart:EVENT_CHAINS[family.id]?family.id:null,choices};
  addLog("ISSUE: "+title,"#e4bd72","issue");return state.activeEvent;
 }
@@ -98,6 +99,10 @@ export function resolveEventChoice(index){
  const issue=state.activeEvent;if(!issue)return false;
  const choice=issue.choices[index];if(!choice)return false;
  const effects=choice.effects||{},resources=effects.resources||{};
+ const arrivals=Math.min(10,Math.max(0,Math.floor(Number(effects.villagers)||0)));
+ if(arrivals>0&&(!canAccommodateVillagers(arrivals)||!canSpawnEntity(TYPE.VILLAGER,arrivals))){
+  addLog("ISSUE UNRESOLVED: NOT ENOUGH HOUSING OR REALM CAPACITY","#e9857b","issue");return false;
+ }
  if(Object.entries(resources).some(([key,value])=>value<0&&(!Number.isFinite(state.resources[key])||state.resources[key]<-value))){
   addLog("ISSUE UNRESOLVED: NOT ENOUGH RESOURCES","#e9857b","issue");return false;
  }
@@ -105,10 +110,9 @@ export function resolveEventChoice(index){
  if(Number.isFinite(effects.morale))state.morale=Math.max(0,Math.min(100,state.morale+effects.morale));
  const hidden=state.hiddenRealm||(state.hiddenRealm={tension:0,prosperity:0,mystery:0,memories:[]});
  for(const key of ["tension","prosperity","mystery"])hidden[key]=Math.max(-30,Math.min(100,(hidden[key]||0)+(effects.hidden?.[key]||0)));
- if(effects.villagers&&canSpawnEntity(TYPE.VILLAGER)){
+ if(arrivals>0){
   const keep=state.entities.find(e=>e.type===TYPE.KEEP&&!e.dead),x=keep?.x??WORLD_W/2,y=keep?.y??WORLD_H/2;
-  const arrivals=Math.min(10,Math.max(0,Math.floor(effects.villagers)));
-  for(let i=0;i<arrivals&&canSpawnEntity(TYPE.VILLAGER);i++){
+  for(let i=0;i<arrivals;i++){
    const villager=spawnEntity(x+randInt(-3,4),y+randInt(-3,4),TYPE.VILLAGER);
    if(villager){villager.home={x,y};villager.anchor={x,y};villager.jobRefreshTimer=0;}
   }
