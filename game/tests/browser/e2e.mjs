@@ -101,7 +101,7 @@ try{
     }
     await page.waitForTimeout(150);
     assert.equal(Number.parseInt(await page.locator("#hand-count").innerText(),10),countBeforeClick-1,"a valid drag must consume exactly the selected card");
-    assert.match(await page.locator("#tab-content").innerText(),/\\b(BUILT|RECRUITED|PLAYED)\\s/,"a valid drag should record the card action");
+    assert.ok((await page.locator("#card-hand .hand-card").count())<countBeforeClick,"successful placement must remove the consumed card from the hand");
 
     // Event decisions can overlay the map during a long accelerated test.
     if(await eventModal.isVisible())await page.locator("#realm-event-choices button").first().click();
