@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {resetState,state} from "../js/core/state.js";
 import {TYPE} from "../js/core/types.js";
 import {spawnEntity} from "../js/world/entities.js";
-import {canAccommodateVillagers,getHousingSnapshot,updatePopulation} from "../js/systems/population.js";
+import {canAccommodateVillagers,getHousingSnapshot,getHouseholdSnapshot,normalizeHouseholdAssignments,updatePopulation} from "../js/systems/population.js";
 
 beforeEach(()=>{
     resetState();
@@ -61,4 +61,41 @@ test("food shortage and low morale prevent household growth",()=>{
     state.resources.food=100;
     assert.equal(updatePopulation(),null);
     assert.equal(state.economy.populationGrowth,0);
+});
+
+test("legacy workplace-based home anchors are migrated into balanced households",()=>{
+    const first=spawnEntity(40,40,TYPE.HOUSE);
+    const second=spawnEntity(50,40,TYPE.HOUSE);
+    for(let index=0;index<7;index++){
+        const villager=spawnEntity(40+index,43,TYPE.VILLAGER);
+        villager.home={x:35,y:35};
+        villager.anchor={x:35,y:35};
+    }
+    const snapshot=normalizeHouseholdAssignments();
+    assert.equal(snapshot.households,2);
+    assert.equal(snapshot.housed,7);
+    assert.equal(snapshot.unhoused,0);
+    assert.deepEqual(snapshot.homes.map(home=>home.residents).sort((a,b)=>b-a),[4,3]);
+    for(const villager of state.entities.filter(entity=>entity.type===TYPE.VILLAGER)){
+        assert.ok([first,second].some(house=>villager.home.x===house.x&&villager.home.y===house.y));
+        assert.equal(villager.householdId,`house:${villager.home.x}:${villager.home.y}`);
+        assert.deepEqual(villager.anchor,villager.home);
+    }
+});
+
+test("new residents join the least occupied household with available capacity",()=>{
+    const first=spawnEntity(40,40,TYPE.HOUSE);
+    const second=spawnEntity(50,40,TYPE.HOUSE);
+    for(let index=0;index<4;index++){
+        const villager=spawnEntity(40+index,43,TYPE.VILLAGER);
+        villager.home={x:first.x,y:first.y};
+    }
+    for(let index=0;index<2;index++){
+        const villager=spawnEntity(50+index,43,TYPE.VILLAGER);
+        villager.home={x:second.x,y:second.y};
+    }
+    const newcomer=updatePopulation();
+    assert.ok(newcomer);
+    assert.deepEqual(newcomer.home,{x:second.x,y:second.y});
+    assert.equal(getHouseholdSnapshot().homes.find(home=>home.x===second.x&&home.y===second.y).residents,3);
 });
