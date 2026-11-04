@@ -33,6 +33,7 @@ The full game source under `game/js/` and the game entry page were reviewed stat
 - `game/js/core/types.js`
 - `game/js/core/utils.js`
 - `game/js/core/simulation-clock.js`
+- `game/js/presentation/effects.js`
 - `game/js/presentation/camera.js`
 - `game/js/presentation/input.js`
 - `game/js/presentation/rendering/entities.js`
