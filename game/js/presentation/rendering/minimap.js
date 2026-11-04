@@ -60,8 +60,6 @@ export function updateMinimap() {
 
     // Kamera-Viewport
     const zoom = state.zoom;
-    const worldPixelW = WORLD_W * CELL * zoom;
-    const worldPixelH = WORLD_H * CELL * zoom;
     const left = Math.max(0, Math.min(WORLD_W, state.camera.x / (CELL * zoom)));
     const top = Math.max(0, Math.min(WORLD_H, state.camera.y / (CELL * zoom)));
     const right = Math.max(left, Math.min(WORLD_W, (state.camera.x + state.canvas.width) / (CELL * zoom)));
