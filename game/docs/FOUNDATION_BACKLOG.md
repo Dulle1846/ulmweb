@@ -19,6 +19,10 @@ Priority meanings:
 
 **Current status:** F0 is in progress. Repository/source inspection and the test procedure are prepared. Browser execution and result capture are still outstanding.
 
+**Browser evidence (2026-11-04):** The user's Chrome session loaded the game but card placement raised a `state.world` TypeError in `systems/cards.js`. This failure was reproduced in the screenshot and the code path has been repaired on `foundation/technical-baseline`. F0 remains open until the full smoke-test list is repeated against the repaired branch.
+
+**Repair review:** See [Baseline Fix Review](BASELINE_FIX_REVIEW.md). Source fixes are committed for review; they are not marked complete until browser verification succeeds.
+
 **Exit condition:** The team can reliably start the game and distinguish existing failures from regressions.
 
 ### F1 — Stabilize critical runtime behaviour (P0)
