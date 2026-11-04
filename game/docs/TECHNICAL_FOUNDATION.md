@@ -132,7 +132,7 @@ Target requirements:
 
 ## 8. Quality and performance
 
-The game now has a minimal test command using Node's built-in test runner (`cd game && npm test`). It runs 21 unit tests covering fixed-step time, the presentation-effect contract, building footprints and four-level zoom math. It then checks JavaScript syntax and relative import targets for all source files under `js/`. Broader game-system integration tests and browser interaction verification are still missing.
+The game now has a minimal test command using Node's built-in test runner (`cd game && npm test`). It runs 21 unit tests covering fixed-step time, the presentation-effect contract, building footprints and four-level zoom math. It then checks JavaScript syntax, relative imports, referenced DOM IDs, duplicate HTML IDs and local CSS/JS asset paths. Broader game-system integration tests and browser interaction verification are still missing.
 
 The foundation should add:
 
