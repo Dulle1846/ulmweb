@@ -397,3 +397,5 @@ body.ui-modal-open{overflow:hidden}
 .sovereign-shortcut small{font:700 7px var(--ui-title-font);letter-spacing:.12em;color:#bba77f}
 .sovereign-shortcut strong{font:700 10px var(--ui-title-font);letter-spacing:.08em;color:#f0e2c2}
 @media(max-width:560px){.sovereign-shortcut{min-height:34px;padding:2px 5px;gap:4px}.sovereign-shortcut svg{width:25px;height:25px;flex-basis:25px}.sovereign-shortcut small{display:none}.sovereign-shortcut strong{font-size:9px}}
+
+@media(min-width:1800px){.header-actions{gap:3px}}
