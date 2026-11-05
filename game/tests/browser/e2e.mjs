@@ -522,9 +522,20 @@ try{
         await page.screenshot({path:resolve(screenshotDir,"realm-"+width+"x"+height+".png"),animations:"disabled"});
         const layout=await page.evaluate(()=>{
             const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
-            return {viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,dockWidth:dock.width,dockLeft:dock.left,dockRight:dock.right};
+            const topbar=document.querySelector(".topbar");
+            const groups=[...topbar.children].filter(el=>el.getClientRects().length).map(el=>({name:el.className,rect:el.getBoundingClientRect().toJSON()}));
+            const overlaps=[];
+            for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){
+                const a=groups[i].rect,b=groups[j].rect;
+                if(Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1)overlaps.push([groups[i].name,groups[j].name]);
+            }
+            const clippedActions=[...topbar.querySelectorAll(".header-actions button")].filter(el=>el.getClientRects().length).map(el=>({label:el.innerText||el.getAttribute("aria-label"),rect:el.getBoundingClientRect().toJSON()})).filter(item=>item.rect.left< -1||item.rect.right>innerWidth+1);
+            return {viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,dockWidth:dock.width,dockLeft:dock.left,dockRight:dock.right,topbarWidth:topbar.scrollWidth,topbarClientWidth:topbar.clientWidth,groups,overlaps,clippedActions};
         });
         assert.ok(layout.documentWidth<=width+1,"horizontal document overflow at "+width+"x"+height+": "+JSON.stringify(layout));
+        assert.ok(layout.topbarWidth<=layout.topbarClientWidth+1,"topbar content must not overflow at "+width+"x"+height+": "+JSON.stringify(layout));
+        assert.deepEqual(layout.overlaps,[],"header groups must not overlap at "+width+"x"+height+": "+JSON.stringify(layout));
+        assert.deepEqual(layout.clippedActions,[],"all header actions must remain visible at "+width+"x"+height+": "+JSON.stringify(layout));
         assert.ok(layout.dockWidth>=width-2&&layout.dockLeft<=1&&layout.dockRight>=width-1,"global action bar must span viewport at "+width+"x"+height+": "+JSON.stringify(layout));
         await page.locator("#command-open-btn").click();
         const dialog=await page.locator("#command-modal .command-panel").boundingBox();
