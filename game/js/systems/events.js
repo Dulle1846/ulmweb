@@ -6,7 +6,7 @@ import { spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { randInt } from "../core/utils.js";
 import { EVENT_CHAINS } from "./event-chains.js";
 import { getWorkforceSnapshot } from "./economy.js";
-import { canAccommodateVillagers } from "./population.js";
+import { canAccommodateVillagers,normalizeHouseholdAssignments } from "./population.js";
 import { createCardForCategory } from "./card-catalog.js";
 import { applyPoliticalEffects,getPoliticalSnapshot } from "./politics.js";
 import { applyHealthEffects } from "./health.js";
@@ -172,7 +172,10 @@ export function resolveEventChoice(index){
   }else addLog("THE CARD ARCHIVE IS FULL — THE REWARD WAS NOT STORED","#e9857b","card");
  }
  if(effects.politics&&typeof effects.politics==="object")applyPoliticalEffects(effects.politics);
- if(effects.health&&typeof effects.health==="object")applyHealthEffects(effects.health);
+ if(effects.health&&typeof effects.health==="object"){
+  const health=applyHealthEffects(effects.health);
+  if(effects.health.outbreak)addLog("HEALTH CRISIS: "+health.disease.toUpperCase()+" · "+health.sick+" RESIDENT(S) ILL","#e9857b","health");
+ }
  if(Number.isFinite(effects.morale))state.morale=Math.max(0,Math.min(100,state.morale+effects.morale));
  const hidden=state.hiddenRealm||(state.hiddenRealm={tension:0,prosperity:0,mystery:0,memories:[]});
  for(const key of ["tension","prosperity","mystery"])hidden[key]=Math.max(-30,Math.min(100,(hidden[key]||0)+(effects.hidden?.[key]||0)));
@@ -182,6 +185,7 @@ export function resolveEventChoice(index){
    const villager=spawnEntity(x+randInt(-3,4),y+randInt(-3,4),TYPE.VILLAGER);
    if(villager){villager.home={x,y};villager.anchor={x,y};villager.lastAgedYear=state.year;villager.jobRefreshTimer=0;}
   }
+  normalizeHouseholdAssignments();
  }
  hidden.memories=Array.isArray(hidden.memories)?hidden.memories:[];
  hidden.memories.unshift({family:issue.family,choice:choice.label,tick:state.tick});
