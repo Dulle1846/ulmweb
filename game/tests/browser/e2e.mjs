@@ -46,6 +46,27 @@ try{
     await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
 
+    // Strategy command deck: constitutional change, public decree, dynasty and living creature.
+    await page.locator('[data-command-tab="government"]').click();
+    assert.equal(await page.locator("#command-modal").isVisible(),true);
+    await page.locator('[data-command="government-form"][data-value="council"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Crowned council"));
+    await page.locator('[data-command-tab="politics"]').click();
+    await page.locator('[data-command="policy"][data-value="bread"]').click();
+    await page.locator('[data-command-tab="decisions"]').click();
+    await page.locator("#royal-consort-select").selectOption({index:1});
+    await page.locator('[data-command="consort"]').click();
+    await page.locator('[data-command="royal-birth"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Living royal children"));
+    await page.locator('[data-command-tab="creatures"]').click();
+    await page.locator('[data-command="summon-dragon"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Emberwing") ||
+        (await page.locator("#command-panel-content").innerText()).includes("dragon"));
+    await page.locator('[data-command-tab="cards"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Card management"));
+    await page.locator("#command-close").click();
+
+
     // Create deterministic guardian/ward records so the dossier UI can be tested
     // independently of random world population.
     const guardianshipFixture = await page.evaluate(async () => {
