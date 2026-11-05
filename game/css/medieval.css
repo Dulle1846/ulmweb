@@ -161,7 +161,7 @@ button,input{font-family:Georgia,"Palatino Linotype",serif}
 .strategy-tabs button{padding:8px 11px;border:2px solid #a47a42;border-radius:8px;background:linear-gradient(#4c6f98,#203c5d);color:#fff1ce;font:800 11px Georgia,serif;cursor:pointer}
 .strategy-tabs button.is-active{background:linear-gradient(#e6c46e,#a96c28);color:#321e12;border-color:#4b2b18}
 .strategy-content{padding:14px 18px 20px;overflow:auto;max-height:calc(88vh - 135px)}
-.strategy-hero{display:flex;align-items:center;gap:14px;margin:0 0 14px;padding:13px;border:2px solid #55351e;border-radius:12px;background:linear-gradient(110deg,#24496f,#162c49 65%,#4a321e);color:#fff1cc;box-shadow:0 3px 0 #68411f}
+.strategy-hero{display:flex;align-items:center;gap:14px;margin:0 0 14px;padding:13px;border:2px solid #55351e;border-radius:12px;background-image:linear-gradient(90deg,#142a45e8 0%,#183654bd 52%,#142a4566 100%),url("../assets/realm-banner.svg");background-position:center;background-size:cover;color:#fff1cc;box-shadow:0 3px 0 #68411f}
 .strategy-hero img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 3px 2px #0008)}
 .strategy-hero small{color:#f5ce6c;font-size:9px;font-weight:900;letter-spacing:.16em}
 .strategy-hero h2{margin:3px 0;font:900 22px Georgia,serif}
