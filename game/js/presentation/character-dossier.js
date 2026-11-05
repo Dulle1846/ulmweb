@@ -126,6 +126,8 @@ function renderDossier(personId) {
         renderLinks("CHILDREN", family.children, entry => entry.kind + " · since year " + entry.sinceYear) +
         renderLinks("SIBLINGS", family.siblings, entry => entry.relation + " sibling") +
         renderLinks("PARTNERSHIPS", partners, entry => entry.label) +
+        renderLinks("GUARDIANS", family.guardians || [], entry => "guardian since year " + entry.sinceYear) +
+        renderLinks("WARDS", family.wards || [], entry => "ward since year " + entry.sinceYear) +
         '</div><div class="dossier-column">' +
         '<section class="dossier-section"><h3>PERSONAL CHRONICLE</h3>' +
         (memories ? '<div class="dossier-memories">' + memories + '</div>' : '<p class="dossier-empty">No notable memories have been recorded yet.</p>') +
