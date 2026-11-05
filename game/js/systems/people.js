@@ -1,5 +1,6 @@
 // Persistent person records for named residents and the independently acting king.
 import { random, randInt } from "../core/random.js";
+import {state} from "../core/state.js";
 
 export const PERSON_SPECIES = Object.freeze({
     human: { label:"Human", lifespan:82, maturation:16 },
@@ -37,7 +38,7 @@ export function createPersonProfile(entity,{role="resident",species=null}={}){
         traits:createTraits(),needs:createNeeds(),
         goals:[pick(["security","prosperity","family","recognition","knowledge","faith","adventure","power"],"people")],
         memories:[],relationships:[],secrets:[],
-        bornAtYear:1,createdAtTick:0
+        bornAtYear:Math.max(1,Number(state.year)||1),createdAtTick:Math.max(0,Number(state.tick)||0)
     };
 }
 export function normalizePersonProfile(saved,entity,{role="resident"}={}){
