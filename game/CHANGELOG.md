@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.7.0`  
+**Current production version:** `3.7.1`  
 **Next development line:** `3.8.0-dev`  
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -24,7 +24,26 @@ The version in `game/package.json` is the machine-readable game version. Update 
 
 ## Production release history
 
-### 3.7.0 — Master UI Phase 2 completion: sovereign dossier and connected lineage
+### 3.7.1 — Phase 5 responsive UI validation and contrast refinement
+**Released:** 2026-11-05  
+**PR:** [#88 — Seven-viewport UI audit and responsive fixes](https://github.com/Dulle1846/ulmweb/pull/88)  
+**Production merge commit:** `11219895d518634ca88ea26959616b2c98b31e17`  
+**Tested feature head:** `cf1207f308e78d76b4904d9209091587cbdb7b64`  
+**CI:** Game Quality, Kings & Cards 2.1 checks and Chromium gameplay E2E passed on the exact feature head. The independent Workers build check failed; it is not the Pages deployment and was not used as release evidence.  
+**Browser review artifact:** 54 screenshots, 20,317,033 bytes; detailed overlays captured at 390×844, 1366×768 and 1920×1080, with realm-shell and management-window views retained across all seven viewport sizes. Geometry and scroll-access assertions ran at all seven sizes.  
+**Cloudflare Pages smoke verification:** The official homepage and the updated `css/comic-strategy.css` and `js/presentation/management-ui.js` assets were fetched successfully from `kings-and-cards.pages.dev` after the merge.
+
+- Expanded Chromium viewport checks to all ten management panels: kingdom, government, politics, decisions, cards, economy, buildings, dynasty, creatures and chronicle.
+- Added character roster/dossier, construction, settings and event-decision overlay coverage.
+- Checked modal bounds, document-level horizontal overflow and vertical scroll access where panel content exceeds its visible body.
+- Refined partner/sibling dynasty connectors to use vertical curves when cards stack on phone layouts and horizontal curves when they share a row. Curve control points are bounded for narrow gaps.
+- Corrected low-contrast management-panel introduction title and body copy to warm ivory/gold colors. Added a WCAG AA contrast contract (minimum 4.5:1) against dark theme surfaces.
+- Kept screenshot output bounded to three representative detailed-overlay sizes to control browser memory, CI duration and artifact size.
+- No simulation rules or save schema changed.
+
+**Scope limit:** This release completes the current responsive/contrast increment, not the full Phase 5 or entire Master UI concept. Full keyboard/screen-reader review, all remaining overlay migrations, complete contrast audit and art/animation production remain open.
+
+### 3.7.0 — Master UI Phase 2: sovereign dossier and connected lineage increments
 **Released:** 2026-11-05  
 **PRs:** [#80 — Sovereign dossier](https://github.com/Dulle1846/ulmweb/pull/80), [#84 — Connected lineage network](https://github.com/Dulle1846/ulmweb/pull/84)  
 **Production merge commit:** `5f980cc656a0308db0b5ba6d664a615d4bca1bef`  
@@ -42,9 +61,8 @@ The version in `game/package.json` is the machine-readable game version. Update 
 - Added responsive styling, reduced-motion behavior, static UI contracts and deterministic Chromium coverage for the sovereign dossier and graph-to-dossier hand-off.
 - No simulation rules or save schema were changed.
 
-**Scope limit:** The lineage graph only displays recorded kinship links; it does not invent unknown relatives. This completes the current Phase 2 sovereign dossier and connected lineage increments, not the entire Master UI concept. Remaining work includes broader family graph interaction, complete character action workflows, screen-by-screen responsive/contrast/screen-reader audits, and the full art/animation pass.
+**Scope limit:** The lineage graph only displays recorded kinship links; it does not invent unknown relatives. This completes the sovereign dossier and connected lineage increments, not the entire Phase 2 or Master UI concept. Remaining work includes broader family graph interaction, complete character action workflows, screen-by-screen responsive/contrast/screen-reader audits, and the full art/animation pass.
 
-## Production release history
 
 ### 3.6.0 — Master UI Phase 3: Economy, buildings, creatures and chronicle
 **Released:** 2026-11-05  
