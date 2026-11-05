@@ -29,7 +29,9 @@ function hasFamilyTie(person, personId) {
     const kinship = person.kinship;
     return kinship.parents.some(link => link.personId === personId) ||
         kinship.children.some(link => link.personId === personId) ||
-        kinship.partners.some(link => link.personId === personId);
+        kinship.partners.some(link => link.personId === personId) ||
+        (kinship.guardians || []).some(link => link.personId === personId) ||
+        (kinship.wards || []).some(link => link.personId === personId);
 }
 
 export function recordNaturalDeath(entity, cause = "old age") {
