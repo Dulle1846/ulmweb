@@ -2,7 +2,7 @@
 
 **Specification:** `MASTER UI & VISUAL DESIGN CONCEPT v1.0` (uploaded project brief)  
 **Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 dynasty and action dock), PR #43 (Phase 3 economy, buildings, creatures and chronicle)  
-**Current UI branch:** `kac-release-3-6-0-ui-phase-3`  
+**Current UI branch:** `kac-release-3-6-0-pages-confirmed`  
 **Baseline:** `6c4c3f0442ea18aa04fee5598e909ddfc6b4d900`  
 **Rule:** This register distinguishes implemented and tested work from the remaining concept. A styled shell is not a completed screen.
 
@@ -54,7 +54,7 @@
 - Added static contract tests for dock actions, kinship graph use, bounded rendering, dossier navigation and honest save-state messaging; the Chromium browser suite now exercises dynasty opening, dossier hand-off, manual save feedback and chronicle navigation.
 - PR #40 merged after all three required workflows passed on the exact feature head. Cloudflare Pages delivery is tracked separately from CI and is not inferred from GitHub merge status.
 
-## Phase 3 implementation increment (merged; 3.6.0 release candidate pending Pages)
+## Phase 3 implementation increment (released in 3.6.0)
 
 - Added an economy view that clearly separates resource stock, current simulation-tick flow, the latest completed 20-day financial settlement and cumulative totals.
 - The ledger panel uses `state.economy.lastLedger` and explicitly states that only the latest settlement is retained. It does not fabricate historical trend lines or forecasts.
