@@ -82,14 +82,15 @@ try{
     assert.ok(globalDock.parent.includes("game-shell"),"the action bar must be a sibling of the game layout");
 
     const dynastyFixture=await page.evaluate(async()=>{
-        const [{state},{createPersonProfile},{linkParentChild}]=await Promise.all([
-            import("./js/core/state.js"),import("./js/systems/people.js"),import("./js/systems/families.js")
+        const [{state},{linkParentChild}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/families.js")
         ]);
         const sovereign=state.entities.find(entity=>entity.isKing&&entity.personId);
         if(!sovereign)throw new Error("A sovereign with a persistent person ID is required for the dynasty graph fixture");
-        const child={id:"e2e-dynasty-child",personId:"e2e-dynasty-child",type:"resident",x:sovereign.x,y:sovereign.y,dead:false};
-        child.person=createPersonProfile(child,{role:"heir",species:"human"});
-        child.person.ageYears=8;child.person.lifeStage="young";
+        const child={id:"e2e-dynasty-child",personId:"e2e-dynasty-child",type:"resident",x:1,y:1,dead:false,person:{
+            id:"e2e-dynasty-child",name:"E2E Heir",firstName:"E2E",familyName:"Heir",species:"human",sex:"female",role:"heir",ageYears:8,
+            traits:{},needs:{},goals:[],memories:[],relationships:[],kinship:{parents:[],children:[],partners:[],guardians:[],wards:[]}
+        }};
         state.entities.push(child);
         const linked=linkParentChild(sovereign.personId,child.personId,{kind:"biological"});
         if(!linked.ok)throw new Error("Could not create dynasty graph fixture: "+linked.reason);
@@ -137,6 +138,13 @@ try{
         assert.equal((await page.locator("#person-dossier .dossier-identity h2").innerText()).trim(), relatedName.trim(), "relationship navigation must open the exact linked person");
     }
     await page.locator("#people-close").click();
+    await page.evaluate(({parentId,childId})=>{
+        const {state}=window.__kacTestState||{};
+        const parent=state?.entities?.find(entity=>String(entity.personId||entity.id)===String(parentId));
+        if(parent?.person?.kinship?.children)parent.person.kinship.children=parent.person.kinship.children.filter(link=>String(link.personId)!==String(childId));
+        const index=state?.entities?.findIndex(entity=>String(entity.personId||entity.id)===String(childId))??-1;
+        if(index>=0)state.entities.splice(index,1);
+    },dynastyFixture);
     await page.waitForFunction(()=>document.activeElement?.id==="main-container",null,{timeout:3000});
     await page.locator('[data-kac-dock-action="save"]').click();
     await page.waitForFunction(()=>document.querySelector("#save-status")?.textContent.startsWith("LAST SAVED"),null,{timeout:5000});
