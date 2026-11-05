@@ -54,3 +54,20 @@ test("decrees cannot spend resources that the realm does not possess",()=>{
     assert.equal(result.reason,"insufficient-gold");
     assert.equal(state.resources.gold,1);
 });
+
+
+test("constitutional form and council influence continuously shape estate support",()=>{
+    resetState();
+    state.government={...state.government,form:"feudal_monarchy",councilInfluence:35,crownAuthority:55};
+    const feudal=(await import("../../js/systems/politics.js")).updatePolitics(
+        {foodShortage:0,unpaidWages:0,unpaidUpkeep:0},{population:10,unemployed:0}
+    );
+    resetState();
+    state.government={...state.government,form:"council_monarchy",councilInfluence:70,crownAuthority:55};
+    const council=(await import("../../js/systems/politics.js")).updatePolitics(
+        {foodShortage:0,unpaidWages:0,unpaidUpkeep:0},{population:10,unemployed:0}
+    );
+    assert.ok(council.factions.commons>feudal.factions.commons);
+    assert.ok(council.factions.guilds>feudal.factions.guilds);
+    assert.ok(council.factions.nobility<feudal.factions.nobility);
+});
