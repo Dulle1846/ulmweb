@@ -155,12 +155,9 @@ test("re-establishing a partnership does not erase its previous birth cooldown",
 
 test("guardian and ward links are reciprocal, bounded and visible in family snapshots", () => {
     const [guardian, ward, secondGuardian] = makePeople(3);
-    ensurePersonProfile(guardian).ageYears = 40;
-    ensurePersonProfile(guardian).lifeStage = "adult";
-    ensurePersonProfile(ward).ageYears = 8;
-    ensurePersonProfile(ward).lifeStage = "young";
-    ensurePersonProfile(secondGuardian).ageYears = 38;
-    ensurePersonProfile(secondGuardian).lifeStage = "adult";
+    Object.assign(ensurePersonProfile(guardian), { species: "human", ageYears: 40, lifeStage: "adult" });
+    Object.assign(ensurePersonProfile(ward), { species: "human", ageYears: 8, lifeStage: "young" });
+    Object.assign(ensurePersonProfile(secondGuardian), { species: "human", ageYears: 38, lifeStage: "adult" });
     assert.deepEqual(linkGuardianWard(guardian.personId, ward.personId, { sinceYear: 10 }), { ok: true, added: true });
     assert.deepEqual(linkGuardianWard(guardian.personId, ward.personId, { sinceYear: 10 }), { ok: true, added: false });
     assert.deepEqual(ward.person.kinship.guardians, [{ personId: guardian.personId, sinceYear: 10 }]);
