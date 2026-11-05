@@ -537,6 +537,15 @@ try{
         assert.deepEqual(layout.overlaps,[],"header groups must not overlap at "+width+"x"+height+": "+JSON.stringify(layout));
         assert.deepEqual(layout.clippedActions,[],"all header actions must remain visible at "+width+"x"+height+": "+JSON.stringify(layout));
         assert.ok(layout.dockWidth>=width-2&&layout.dockLeft<=1&&layout.dockRight>=width-1,"global action bar must span viewport at "+width+"x"+height+": "+JSON.stringify(layout));
+        if(width<=790){
+            const panel=page.locator(".side-panel");
+            const before=await panel.evaluate(el=>({clientHeight:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY}));
+            assert.ok(["auto","scroll"].includes(before.overflowY),"mobile management column must expose vertical scrolling at "+width+"x"+height+": "+JSON.stringify(before));
+            assert.ok(before.scrollHeight>before.clientHeight,"mobile management column must retain content beyond its viewport at "+width+"x"+height+": "+JSON.stringify(before));
+            await panel.evaluate(el=>{el.scrollTop=el.scrollHeight});
+            assert.ok(await panel.evaluate(el=>el.scrollTop>0),"mobile management column must be scrollable at "+width+"x"+height);
+            await panel.evaluate(el=>{el.scrollTop=0});
+        }
         await page.locator("#command-open-btn").click();
         const dialog=await page.locator("#command-modal .command-panel").boundingBox();
         assert.ok(dialog&&dialog.x>=0&&dialog.y>=0&&dialog.x+dialog.width<=width+1&&dialog.y+dialog.height<=height+1,"management dialog must fit viewport "+width+"x"+height+": "+JSON.stringify(dialog));
