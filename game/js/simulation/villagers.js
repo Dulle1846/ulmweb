@@ -93,7 +93,7 @@ export function updateVillagers() {
         v.jobRefreshTimer--;
         if (v.jobRefreshTimer <= 0) {
             assignJob(v,workplaces,workerCounts);
-            v.jobRefreshTimer = 80 + Math.floor(Math.random() * 120);
+            v.jobRefreshTimer = 80 + Math.floor(rand(0, 120));
         }
 
         v.routineTimer--;
@@ -195,28 +195,28 @@ function advancePhase(unit) {
     switch (unit.routinePhase) {
         case ROUTINE.GO_TO_WORK:
             if (unit.workplace && !unit.workplace.dead) setTargetNear(unit, unit.workplace.x, unit.workplace.y, 1.5);
-            unit.routineTimer = 80 + Math.floor(Math.random() * 60);
+            unit.routineTimer = 80 + Math.floor(rand(0, 60));
             break;
         case ROUTINE.WORKING:
             unit.targetX = unit.x; unit.targetY = unit.y;
             unit.velocityX = 0; unit.velocityY = 0;
             unit.visualState = "work";
-            unit.routineTimer = ROUTINE.WORK_DURATION + Math.floor(Math.random() * 80);
+            unit.routineTimer = ROUTINE.WORK_DURATION + Math.floor(rand(0, 80));
             break;
         case ROUTINE.ON_BREAK:
             unit.visualState = "idle";
             setTargetNear(unit, unit.anchor.x, unit.anchor.y, WANDER_RADIUS[unit.type] || 15);
-            unit.routineTimer = ROUTINE.BREAK_DURATION + Math.floor(Math.random() * 40);
+            unit.routineTimer = ROUTINE.BREAK_DURATION + Math.floor(rand(0, 40));
             break;
         case ROUTINE.GO_HOME:
             setTargetNear(unit, unit.home.x, unit.home.y, 2);
-            unit.routineTimer = 60 + Math.floor(Math.random() * 40);
+            unit.routineTimer = 60 + Math.floor(rand(0, 40));
             break;
         case ROUTINE.RESTING:
             unit.targetX = unit.x; unit.targetY = unit.y;
             unit.velocityX = 0; unit.velocityY = 0;
             unit.visualState = "idle";
-            unit.routineTimer = ROUTINE.REST_DURATION + Math.floor(Math.random() * 60);
+            unit.routineTimer = ROUTINE.REST_DURATION + Math.floor(rand(0, 60));
             break;
     }
 }
@@ -304,8 +304,8 @@ function moveToward(unit, dt) {
 
 function setTargetNear(unit, cx, cy, radius) {
     for (let i = 0; i < 20; i++) {
-        const a = Math.random() * Math.PI * 2;
-        const r = Math.sqrt(Math.random()) * radius;
+        const a = rand(0, Math.PI * 2);
+        const r = Math.sqrt(rand(0, 1)) * radius;
         const tx = cx + Math.cos(a) * r;
         const ty = cy + Math.sin(a) * r;
         if (isWalkable(tx, ty)) {
