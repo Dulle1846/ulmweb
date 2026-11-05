@@ -85,3 +85,18 @@ test("health transmission is processed at most once per simulation interval",()=
         assert.equal(getHealthSnapshot().cases,firstCases);
     }finally{Math.random=original;}
 });
+
+test("starting treatment applies the intended containment exactly once",()=>{
+    setup();
+    const result=applyHealthEffects({outbreak:true,severity:2,containment:2});
+    assert.equal(result.containment,2);
+});
+test("an escalation during an active outbreak does not count as a new outbreak",()=>{
+    setup();
+    startOutbreak({severity:1});
+    const first=getHealthSnapshot();
+    const result=startOutbreak({severity:3,containment:1,disease:"red-fever"});
+    assert.equal(result.outbreaks,first.outbreaks);
+    assert.equal(result.cases,first.cases);
+    assert.equal(result.severity,3);
+});
