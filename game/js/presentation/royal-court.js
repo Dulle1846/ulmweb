@@ -57,7 +57,7 @@ export function renderRoyalCourt() {
         ? '<button type="button" class="court-primary" id="royal-create-heir">WELCOME A ROYAL CHILD</button>'
         : '<button type="button" class="court-primary" disabled>WELCOME A ROYAL CHILD</button>';
     root.innerHTML =
-        '<p id="royal-court-feedback" class="court-feedback" role="status" aria-live="polite"></p><section class="court-monarch"><div class="court-monarch-copy"><span class="court-kicker">THE CROWN</span><h3>' + esc(monarch.person.name) +
+        '<section class="court-monarch"><div class="court-monarch-copy"><span class="court-kicker">THE CROWN</span><h3>' + esc(monarch.person.name) +
         '</h3><p>' + esc(house.dynastyName) + ' · ' + esc(monarch.person.species) + ' · age ' + Math.floor(monarch.person.ageYears) +
         '</p><div class="court-stats"><span>YEAR <b>' + state.year + '</b></span><span>CHILDREN <b>' + children + '</b></span><span>ADULT HEIRS <b>' + heirs.length + '</b></span></div></div>' +
         '<img src="assets/royal-court-art.svg" alt="Comic fantasy royal castle and crown" loading="lazy"></section>' +
