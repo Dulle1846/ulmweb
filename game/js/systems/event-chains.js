@@ -111,5 +111,47 @@ export const EVENT_CHAINS = Object.freeze({
             {label:"Publish the succession charter",description:"Spend gold to secure legitimacy for the next generation.",effects:{resources:{gold:-14},morale:5,hidden:{prosperity:5,tension:-5,mystery:-1}}},
             {label:"Keep the settlement secret",description:"Preserve royal discretion, but leave rumours alive.",effects:{morale:-2,hidden:{tension:3,mystery:4}}}
         ]}
+    ]),
+    shortage: Object.freeze([
+        {title:"The Empty Granaries",description:"The royal stores are falling and village reeves warn that several households have little food left.",choices:[
+            {label:"Open the reserve stores",description:"Spend timber to distribute food and calm the commons.",effects:{resources:{wood:-10,food:14},morale:3,hidden:{tension:-3,prosperity:1},politics:{commons:3,legitimacy:2},cardReward:"winter-stores"}},
+            {label:"Leave prices to the market",description:"Protect the treasury, but hardship and resentment grow.",effects:{morale:-4,hidden:{tension:5,prosperity:-2},politics:{commons:-4,legitimacy:-2}}}
+        ]},
+        {title:"The Price of Grain",description:"Merchants offer imported grain, but demand favourable tolls and guarantees.",choices:[
+            {label:"Buy emergency grain",description:"Spend gold to restore the food supply and secure the trade route.",effects:{resources:{gold:-14,food:22},morale:2,hidden:{prosperity:3,tension:-2},politics:{guilds:2,commons:2}}},
+            {label:"Refuse the merchants' terms",description:"Avoid a costly agreement, but the shortage persists.",effects:{morale:-3,hidden:{tension:3,prosperity:-1},politics:{guilds:-2,commons:-2}}}
+        ]},
+        {title:"A Granary for the Future",description:"The crisis has exposed the weakness of the realm's food reserves.",choices:[
+            {label:"Establish winter stores",description:"Spend stone and gold to secure future harvests and receive a reserve-store card.",effects:{resources:{stone:-10,gold:-8},morale:4,hidden:{prosperity:5,tension:-4},politics:{commons:2,legitimacy:2},cardReward:"winter-stores"}},
+            {label:"Rely on private merchants",description:"Preserve royal funds, but leave food security in private hands.",effects:{resources:{gold:8},morale:-1,hidden:{prosperity:1,tension:3},politics:{guilds:3,commons:-2}}}
+        ]}
+    ]),
+    flood: Object.freeze([
+        {title:"The River Breaks Its Banks",description:"The river has flooded the lower ward. Families seek higher ground and the old road is under water.",choices:[
+            {label:"Evacuate the lower ward",description:"Spend food and timber to move residents and protect the vulnerable.",effects:{resources:{food:-8,wood:-8},morale:2,hidden:{tension:-2,prosperity:-1},politics:{commons:2,legitimacy:1},cardReward:"causeways"}},
+            {label:"Protect the royal storehouses first",description:"Save the treasury's supplies, but leave the lower ward exposed.",effects:{resources:{food:8},morale:-4,hidden:{tension:5,prosperity:-2},politics:{commons:-4,legitimacy:-2}}}
+        ]},
+        {title:"Water in the Wells",description:"Floodwater has entered several wells. Healers warn that sickness may follow if the water is not made safe.",choices:[
+            {label:"Clean the wells and aid the healers",description:"Spend gold and supplies to reduce the danger of disease.",effects:{resources:{gold:-8,food:-5},morale:2,health:{outbreak:true,severity:1,containment:2,treatment:1,disease:"water-fever"},politics:{clergy:2,commons:1},hidden:{tension:-2,mystery:1}}},
+            {label:"Reopen the markets immediately",description:"Restore trade sooner, but contaminated water may spread illness.",effects:{morale:-2,health:{outbreak:true,severity:2,containment:0,disease:"water-fever"},politics:{guilds:2,commons:-2,legitimacy:-1},hidden:{tension:4,prosperity:1}}}
+        ]},
+        {title:"The Causeway Question",description:"The river has receded. The crown must decide whether to rebuild the crossing or accept a longer route.",choices:[
+            {label:"Raise a stone causeway",description:"Spend stone and gold to protect the road and secure a causeway card.",effects:{resources:{stone:-16,gold:-8},morale:4,hidden:{prosperity:5,tension:-3},politics:{commons:2,guilds:1,legitimacy:2},cardReward:"causeways"}},
+            {label:"Let the old road be abandoned",description:"Save the treasury, but isolate the lower villages.",effects:{morale:-3,hidden:{prosperity:-3,tension:4},politics:{commons:-3,nobility:1,legitimacy:-1}}}
+        ]}
+    ]),
+    fire: Object.freeze([
+        {title:"The Bell of Alarm",description:"A fire has broken out among the timber houses. Smoke is visible from the royal road.",choices:[
+            {label:"Raise a bucket brigade",description:"Spend timber and gold to contain the fire and secure a fire-brigade card.",effects:{resources:{wood:-8,gold:-5},morale:2,hidden:{tension:-2,prosperity:1},politics:{commons:2,legitimacy:1},cardReward:"fire-brigades"}},
+            {label:"Save the royal warehouses",description:"Protect valuable stores first, but ordinary households bear the loss.",effects:{resources:{food:5},morale:-4,hidden:{tension:5,prosperity:-2},politics:{commons:-4,legitimacy:-2}}}
+        ]},
+        {title:"Ashes in the Ward",description:"The flames are out, but several workshops and homes have been damaged. The displaced ask for help.",choices:[
+            {label:"Fund repairs for the families",description:"Spend wood and food to restore homes and workshops.",effects:{resources:{wood:-12,food:-8},morale:4,hidden:{prosperity:3,tension:-3},politics:{commons:3,guilds:1}}},
+            {label:"Grant the rebuilding rights to the guilds",description:"Let the guilds rebuild quickly, but accept their new influence.",effects:{resources:{gold:-6},morale:1,hidden:{prosperity:4,tension:1},politics:{guilds:3,commons:-1}}}
+        ]},
+        {title:"A Safer Town",description:"The fire has exposed narrow lanes, timber storehouses and the absence of organised emergency crews.",choices:[
+            {label:"Create a permanent fire watch",description:"Spend gold and stone to prepare the town for future emergencies.",effects:{resources:{gold:-10,stone:-8},morale:4,hidden:{prosperity:5,tension:-3},politics:{commons:2,legitimacy:2},cardReward:"fire-brigades"}},
+            {label:"Return to the old customs",description:"Avoid new expense, but leave the town vulnerable.",effects:{morale:-1,hidden:{tension:3,prosperity:-1},politics:{commons:-2,legitimacy:-1}}}
+        ]}
     ])
 });
