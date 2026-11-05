@@ -233,3 +233,24 @@ export function getDynastySnapshot() {
         vacantSinceYear: state.dynasty?.vacantSinceYear ?? null
     };
 }
+
+export function normalizeDynasty(input = state.dynasty) {
+    const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
+    const safeId = value => typeof value === "string" && value.length <= 120 ? value : null;
+    const last = source.lastSuccession && typeof source.lastSuccession === "object"
+        ? source.lastSuccession : null;
+    state.dynasty = {
+        rulerId: safeId(source.rulerId),
+        consortId: safeId(source.consortId),
+        regentId: safeId(source.regentId),
+        lastRoyalBirthYear: Math.max(0, Math.min(1000000, Math.floor(Number(source.lastRoyalBirthYear) || 0))),
+        vacantSinceYear: source.vacantSinceYear == null ? null : Math.max(1, Math.min(1000000, Math.floor(Number(source.vacantSinceYear) || 1))),
+        lastSuccession: last ? {
+            year: Math.max(1, Math.min(1000000, Math.floor(Number(last.year) || 1))),
+            from: safeId(last.from),
+            to: safeId(last.to),
+            reason: String(last.reason || "unknown").slice(0, 48)
+        } : null
+    };
+    return state.dynasty;
+}
