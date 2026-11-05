@@ -389,3 +389,16 @@ Implemented on `kac-2.2-seeded-simulation`:
 - Unit tests cover replay, stream isolation, save/restore of counters, malformed counter input and identity allocation.
 
 This is a foundation, not a full deterministic replay guarantee yet: any remaining direct nondeterministic source or unconverted random call must be migrated before promising bit-for-bit replay of every possible simulation path. The person record still needs names, species, traits, life stages, family, memories and relationships in later slices.
+
+
+## 11. Phase 2.2 person-profile foundation
+
+The initial persistent person record now exists for every spawned villager and for the king. It contains:
+- Stable person ID and generated first/family name.
+- Data-driven species key, including human, elf, dwarf, orc, goblin, halfling, gnome, dragonkin, fae and revenant.
+- Age in years and a derived young/adult/elder life-stage label based on the species profile.
+- Ten bounded personality dimensions (ambition, courage, compassion, greed, sociability, discipline, curiosity, piety, distrust and patience).
+- Five bounded needs (food, rest, safety, belonging and purpose), one initial goal, and bounded memory/relationship/secret collections.
+- Creation year and tick, so later chronicle entries can be placed on the realm timeline.
+
+Profiles are serialized with entities and normalized on load. Memory insertion is exposed through `addPersonMemory`; the next slice must connect important world events and royal decisions to the people who actually experienced them. The current profile is deliberately not yet a full autonomous character: it does not yet contain family trees, active plans, social network simulation, aging transitions, species-specific culture, or UI inspection.
