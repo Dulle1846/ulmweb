@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.6.0`  
-**Next development line:** `3.7.0-dev`  
+**Current production version:** `3.7.0`  
+**Next development line:** `3.8.0-dev`  
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -21,6 +21,28 @@ Kings & Cards uses a practical semantic version format:
 - GitHub Actions, Cloudflare Pages, and browser availability are separate release facts. One does not prove the others.
 
 The version in `game/package.json` is the machine-readable game version. Update this file and this changelog together for every release.
+
+## Production release history
+
+### 3.7.0 — Master UI Phase 2 completion: sovereign dossier and connected lineage
+**Released:** 2026-11-05  
+**PRs:** [#80 — Sovereign dossier](https://github.com/Dulle1846/ulmweb/pull/80), [#84 — Connected lineage network](https://github.com/Dulle1846/ulmweb/pull/84)  
+**Production merge commit:** `5f980cc656a0308db0b5ba6d664a615d4bca1bef`  
+**Sovereign feature head:** `edf49e7fc7feda632410941859fb447941055301`  
+**Lineage feature head:** `cedf972fdc95e55011bf169ec019156d15d4633a`  
+**CI:** Game Quality, Kings & Cards 2.1 checks and Chromium gameplay E2E passed on the exact feature heads. The separate Workers build check failed; it is not the Cloudflare Pages deployment and was not used as Pages release evidence.  
+**Cloudflare Pages smoke verification:** The official `kings-and-cards.pages.dev` homepage loaded, and the newly released `css/sovereign-dossier.css`, `js/presentation/character-dossier.js` and `css/dynasty-network.css` assets were fetched successfully from that Pages domain. The exact Pages deployment ID was not available in the GitHub evidence inspected here.
+
+- Added a dedicated current-sovereign dossier backed by the royal-house model: consort, designated heir, living royal children and bounded royal-house chronicle.
+- Former sovereign memorials are separated from the current ruler's live succession information.
+- Added direct navigation from royal relatives into the canonical character dossier.
+- Replaced disconnected dynasty relative groups with a connected, multi-lane graph for recorded grandparents, parents, sovereign, siblings, consort, aunts/uncles, cousins and children.
+- Added SVG relationship connectors with distinct parent, guardian, partnership and sibling styles.
+- Added hard rendering bounds of 80 lineage nodes and 120 edges, while retaining the existing descendant depth and per-generation limits.
+- Added responsive styling, reduced-motion behavior, static UI contracts and deterministic Chromium coverage for the sovereign dossier and graph-to-dossier hand-off.
+- No simulation rules or save schema were changed.
+
+**Scope limit:** The lineage graph only displays recorded kinship links; it does not invent unknown relatives. This completes the current Phase 2 sovereign dossier and connected lineage increments, not the entire Master UI concept. Remaining work includes broader family graph interaction, complete character action workflows, screen-by-screen responsive/contrast/screen-reader audits, and the full art/animation pass.
 
 ## Production release history
 
