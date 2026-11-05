@@ -206,6 +206,9 @@ function advancePhase(unit) {
         case ROUTINE.ON_BREAK:
             unit.visualState = "idle";
             setTargetNear(unit, unit.anchor.x, unit.anchor.y, WANDER_RADIUS[unit.type] || 15);
+            const safety = Number(unit.person?.needs?.safety ?? 50);
+            const radius = safety < 35 ? 2 : (WANDER_RADIUS[unit.type] || 15);
+            setTargetNear(unit, unit.anchor.x, unit.anchor.y, radius);
             unit.routineTimer = ROUTINE.BREAK_DURATION + Math.floor(rand(0, 40));
             break;
         case ROUTINE.GO_HOME:
@@ -216,7 +219,9 @@ function advancePhase(unit) {
             unit.targetX = unit.x; unit.targetY = unit.y;
             unit.velocityX = 0; unit.velocityY = 0;
             unit.visualState = "idle";
-            unit.routineTimer = ROUTINE.REST_DURATION + Math.floor(rand(0, 60));
+            const restNeed = Number(unit.person?.needs?.rest ?? 50);
+            const recoveryTime = Math.max(0, 50 - restNeed);
+            unit.routineTimer = ROUTINE.REST_DURATION + Math.floor(rand(0, 60)) + Math.floor(recoveryTime * 0.8);
             break;
     }
 }
@@ -424,13 +429,15 @@ function followCachedPath(unit,dt,speedMultiplier=1){
 function assignJob(villager,workplaces=null,workerCounts=new Map()) {
     const previousWorkplace=villager.workplace;
     if(previousWorkplace)workerCounts.set(previousWorkplace,Math.max(0,(workerCounts.get(previousWorkplace)||0)-1));
-    let best = null, bestDist = Infinity;
+    let best = null, bestDist = Infinity, bestScore = Infinity;
+    const preferredBuilding = villager.person?.activeGoal?.id === "secure_food" ? TYPE.FARM : null;
     for (const m of JOB_MAP) {
         const capacity=BUILDING_WORKFORCE[m.building]||0;
         for (const b of (workplaces?.get(m)||getEntitiesOfType(m.building))) {
             if((workerCounts.get(b)||0)>=capacity)continue;
             const d = Math.hypot(villager.x - b.x, villager.y - b.y);
-            if (d < bestDist) { bestDist = d; best = { workplace: b, job: m.job }; }
+            const score = d + (preferredBuilding ? (m.building === preferredBuilding ? -12 : 8) : 0);
+            if (score < bestScore) { bestScore = score; bestDist = d; best = { workplace: b, job: m.job }; }
         }
     }
     const nextWorkplace = best && bestDist <= 40 ? best.workplace : null;
