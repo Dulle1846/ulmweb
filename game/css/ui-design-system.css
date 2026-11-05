@@ -187,3 +187,83 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .dynasty-person-copy em{color:#80633f;font:700 8px var(--ui-body-font);font-style:normal;letter-spacing:.06em}
 @media(max-width:790px){.realm-action-dock{grid-template-columns:repeat(5,minmax(0,1fr));padding:6px}.realm-action-dock button{font-size:7px;min-height:34px}.dynasty-root-grid,.dynasty-generation-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){[data-tooltip]::after,.dynasty-person{transition:none}}
+
+
+/* Phase 3 — data-backed building register and economy ledger. */
+.ledger-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:8px;border:1px solid var(--ui-line);border-radius:3px;background:#17151266}
+.ledger-row{display:flex;justify-content:space-between;align-items:center;gap:12px;min-width:0;padding:7px 8px;border-bottom:1px solid #b99a5926;color:#cdbd9e;font-size:11px}
+.ledger-row strong{color:#f0e3c7;font-variant-numeric:tabular-nums;text-align:right}
+.command-resource strong.is-positive{color:#a8c991}
+.command-resource strong.is-negative{color:#df9991}
+.building-type-summary{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+.building-type-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 8px;border:1px solid var(--ui-line);border-radius:2px;background:#17151266;color:#d9c49a;font:600 9px var(--ui-body-font)}
+.building-type-chip strong{color:#f0e3c7}
+.building-search-label{display:block;margin:12px 0 5px;color:#cdbd9e;font:700 9px var(--ui-title-font);letter-spacing:.1em}
+.building-search{width:100%;min-height:34px;padding:7px 9px;border:1px solid var(--ui-line-strong);border-radius:3px;background:#171512;color:#f0e3c7;font:12px var(--ui-body-font)}
+.building-search:focus-visible{outline:2px solid #d1b476;outline-offset:2px}
+.building-register{display:grid;gap:6px;margin-top:9px}
+.building-record{overflow:hidden;border:1px solid var(--ui-line);border-radius:3px;background:linear-gradient(145deg,#302a22,#211e19)}
+.building-record.is-filtered{display:none}
+.building-record>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 11px;color:#ead9b5;cursor:pointer;list-style:none}
+.building-record>summary::-webkit-details-marker{display:none}
+.building-record>summary::after{content:"+";margin-left:4px;color:#d1b476;font:700 17px var(--ui-title-font)}
+.building-record[open]>summary::after{content:"−"}
+.building-record>summary:hover{background:#b99a5912}
+.building-record-title{display:grid;min-width:0;gap:3px}
+.building-record-title strong{overflow:hidden;color:#f0e3c7;font:700 12px var(--ui-title-font);text-overflow:ellipsis;white-space:nowrap}
+.building-record-title small,.building-record-status small{color:#a89572;font-size:9px}
+.building-record-status{display:grid;gap:2px;text-align:right}
+.building-record-status b{color:#d9c49a;font:700 12px var(--ui-title-font)}
+.building-record-details{padding:10px;border-top:1px solid var(--ui-line);background:#17151255}
+.building-record-details>p:first-child{margin:0 0 9px;color:#d6c7a8;font-size:11px;line-height:1.5}
+.building-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.building-detail-grid>span{display:grid;gap:4px;min-width:0;padding:7px;border:1px solid #b99a5930;border-radius:2px;color:#a89572;font-size:9px}
+.building-detail-grid strong{overflow-wrap:anywhere;color:#ead9b5;font-size:10px;font-weight:600}
+@media(max-width:790px){.ledger-grid,.building-detail-grid{grid-template-columns:1fr}.building-record>summary{padding:8px}.building-type-summary{gap:4px}}
+
+
+/* Phase 3 — creature dossiers and searchable royal chronicle. */
+.creature-record-list,.chronicle-list{display:grid;gap:7px;margin-top:8px}
+.creature-record{overflow:hidden;border:1px solid var(--ui-line);border-radius:3px;background:linear-gradient(145deg,#302a22,#211e19)}
+.creature-record>summary{display:flex;align-items:center;gap:10px;padding:9px;color:#ead9b5;cursor:pointer;list-style:none}
+.creature-record>summary::-webkit-details-marker{display:none}
+.creature-record>summary>img{width:46px;height:46px;object-fit:contain;padding:4px;border:1px solid var(--ui-line);border-radius:3px;background:#171512}
+.creature-record>summary>span{display:grid;flex:1;min-width:0;gap:3px}
+.creature-record>summary>span strong{overflow:hidden;color:#f0e3c7;font:700 13px var(--ui-title-font);text-overflow:ellipsis;white-space:nowrap}
+.creature-record>summary>span small{color:#a89572;font-size:10px}
+.creature-record>summary>b{color:#d9c49a;font:700 10px var(--ui-title-font);text-align:right}
+.creature-record>summary::after{content:"+";color:#d1b476;font:700 17px var(--ui-title-font)}
+.creature-record[open]>summary::after{content:"−"}
+.creature-record.is-memorial{border-color:#80633f;background:linear-gradient(145deg,#28241f,#1b1916)}
+.creature-dossier{padding:10px;border-top:1px solid var(--ui-line);background:#17151255}
+.creature-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.creature-stat-grid>span{display:grid;gap:4px;padding:7px;border:1px solid #b99a5930;color:#a89572;font-size:9px}
+.creature-stat-grid strong{color:#ead9b5;font-size:11px}
+.creature-chip-list{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0}
+.creature-chip{padding:5px 8px;border:1px solid var(--ui-line);border-radius:2px;background:#332b22;color:#d9c49a;font-size:9px}
+.creature-memory-list{display:grid;gap:6px;margin:8px 0;padding-left:22px;color:#d6c7a8}
+.creature-memory-list li{padding-left:3px;font-size:10px}
+.creature-memory-list li strong{display:block;color:#d9c49a;font:700 8px var(--ui-title-font);letter-spacing:.08em}
+.creature-memory-list li span{display:block;margin-top:2px;line-height:1.45}
+.chronicle-filters{display:grid;grid-template-columns:1fr 180px;gap:5px 8px;align-items:center;margin:10px 0}
+.chronicle-filters label{color:#cdbd9e;font:700 9px var(--ui-title-font);letter-spacing:.09em}
+.chronicle-filters input,.chronicle-filters select{min-width:0;min-height:34px;padding:7px 9px;border:1px solid var(--ui-line-strong);border-radius:3px;background:#171512;color:#f0e3c7;font:11px var(--ui-body-font)}
+.chronicle-filters input{grid-column:1/-1}
+.chronicle-filters input:focus-visible,.chronicle-filters select:focus-visible{outline:2px solid #d1b476;outline-offset:2px}
+.chronicle-entry{padding:9px 11px;border:1px solid var(--ui-line);border-left:3px solid #80633f;border-radius:3px;background:#17151266}
+.chronicle-entry.is-filtered{display:none}
+.chronicle-entry-meta{display:flex;justify-content:space-between;gap:10px;color:#a89572;font:700 8px var(--ui-title-font);letter-spacing:.08em}
+.chronicle-entry-meta strong{color:#d9c49a}
+.chronicle-entry p{margin:6px 0 0;color:#e0d3b8;font-size:11px;line-height:1.45}
+.active-issue-card{display:grid;gap:7px;padding:11px;border:1px solid #a98a52;border-left:3px solid #762f35;border-radius:3px;background:linear-gradient(145deg,#3b3025,#241e19)}
+.active-issue-card h4{margin:0;color:#f0e3c7;font:700 15px var(--ui-title-font)}
+.active-issue-card p{margin:0;color:#d6c7a8;font-size:11px;line-height:1.5}
+.active-issue-card small{color:#bba984;font-size:9px}
+.active-issue-card button{justify-self:start;min-height:32px;padding:6px 12px;border:1px solid #b99a59;border-radius:3px;background:linear-gradient(#80633f,#51402e);color:#fff0c9;font:700 9px var(--ui-title-font);letter-spacing:.08em;cursor:pointer}
+.active-issue-card button:hover{background:linear-gradient(#9b7c4b,#69553a)}
+@media(max-width:790px){.creature-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.chronicle-filters{grid-template-columns:1fr}.chronicle-filters input{grid-column:auto}.creature-record>summary{gap:7px;padding:7px}.creature-record>summary>img{width:38px;height:38px}}
+
+.command-creature-art{display:block;width:min(150px,55%);max-height:116px;object-fit:contain;margin:0 auto 10px;filter:drop-shadow(0 5px 8px #0008)}
+
+.event-panel-topline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.event-panel-topline .modal-close{flex:0 0 34px}

@@ -159,6 +159,7 @@ function renderRealmEvent(){
     const modal=document.getElementById("realm-event-modal");if(!modal)return;
     const issue=state.activeEvent;
     if(!issue){modal.classList.add("hidden");lastRenderedIssueId=null;return;}
+    if(issue.dismissed){modal.classList.add("hidden");return;}
     if(lastRenderedIssueId===issue.id){modal.classList.remove("hidden");return;}
     lastRenderedIssueId=issue.id;
     setText("realm-event-kicker","REALM ISSUE · YEAR "+state.year);

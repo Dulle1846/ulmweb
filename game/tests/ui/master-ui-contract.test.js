@@ -34,7 +34,7 @@ test("the approved royal palette is represented by central design tokens",()=>{
 test("every visible royal navigation action has a real handler",()=>{
   const targets=[...html.matchAll(/data-kac-panel="([^"]+)"/g)].map(match=>match[1]);
   assert.ok(targets.length>=10,"expected the administration rail and resource shortcuts");
-  const supported=new Set(["kingdom","government","people","dynasty","politics","economy","cards","creatures","build","settings"]);
+  const supported=new Set(["kingdom","government","people","dynasty","chronicle","politics","economy","buildings","cards","creatures","build","settings"]);
   for(const target of targets)assert.ok(supported.has(target),"unwired navigation target: "+target);
   for(const target of supported)assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing visible navigation target: "+target);
   assert.ok(management.includes('addEventListener("click"'),"navigation must use real click handlers");
@@ -80,4 +80,61 @@ test("save status reflects actual save/load outcomes, not an autosave promise",(
   assert.ok(main.includes('setSaveStatus("SAVE FAILED'));
   assert.ok(main.includes('setSaveStatus("LOADED'));
   assert.ok(!html.toLowerCase().includes("autosave"));
+});
+
+
+test("economy panel distinguishes stock, current-tick flow and the actual latest ledger",()=>{
+  assert.ok(management.includes("state.incomeThisTick"));
+  assert.ok(management.includes("state.economy?.lastLedger"));
+  assert.ok(management.includes("daysElapsed"));
+  assert.ok(management.includes("latest completed ledger"));
+  assert.ok(management.includes("historical time series"));
+  assert.ok(management.includes("No forecasts are inferred"));
+});
+
+test("building register uses live entities, staffing, footprint and site data without inventing output",()=>{
+  assert.ok(html.includes('data-kac-panel="buildings"'));
+  assert.ok(html.includes('data-command-tab="buildings"'));
+  assert.ok(management.includes('state.entities.filter(entity=>!entity.dead&&entity.isBuilding())'));
+  assert.ok(management.includes("getBuildingEfficiency(building,workforce)"));
+  assert.ok(management.includes("BUILDING_SIZE[building.type]"));
+  assert.ok(management.includes("getResourceNodeAt(building.x,building.y)"));
+  assert.ok(management.includes("Per-building production output, storage and upkeep are not currently exposed"));
+  assert.ok(management.includes('id="building-search"'));
+});
+
+
+test("creature dossiers use actual living and memorial records",()=>{
+  assert.ok(management.includes("getCreatureSnapshot()"));
+  assert.ok(management.includes("d.memories"));
+  assert.ok(management.includes("d.abilities"));
+  assert.ok(management.includes("d.goals"));
+  assert.ok(management.includes("c.archive"));
+  assert.ok(management.includes('assets/dragon-companion.svg'));
+  assert.ok(management.includes("CREATURE MEMORIALS"));
+});
+
+test("chronicle inbox uses stored event log data and opens the existing active issue",()=>{
+  assert.ok(html.includes('data-kac-panel="chronicle"'));
+  assert.ok(html.includes('data-command-tab="chronicle"'));
+  assert.ok(management.includes("state.eventLog"));
+  assert.ok(management.includes("entry.tick"));
+  assert.ok(management.includes("entry.kind"));
+  assert.ok(management.includes('id="chronicle-search"'));
+  assert.ok(management.includes('id="chronicle-kind-filter"'));
+  assert.ok(management.includes('data-command="show-active-event"'));
+  assert.ok(management.includes("renderUI()"));
+  assert.ok(management.includes("does not claim unread tracking"));
+  assert.ok(!main.includes("command-chronicles-btn"),"obsolete chronicle-to-people shortcut must be removed");
+});
+
+
+test("active realm issues can be dismissed without resolving and reopened from the chronicle",()=>{
+  assert.ok(html.includes('id="realm-event-dismiss"'));
+  assert.ok(html.includes('aria-labelledby="realm-event-title"'));
+  assert.ok(html.includes('aria-describedby="realm-event-description"'));
+  assert.ok(main.includes('state.activeEvent.dismissed=true'));
+  assert.ok(ui.includes("if(issue.dismissed)"));
+  assert.ok(management.includes("state.activeEvent.dismissed=false"));
+  assert.ok(management.includes('data-command="show-active-event"'));
 });

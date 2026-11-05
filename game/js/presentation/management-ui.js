@@ -4,12 +4,24 @@ import { getGovernmentSnapshot, GOVERNMENT_FORMS, GOVERNMENT_POLICIES, setGovern
 import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { getFamilySnapshot } from "../systems/families.js";
-import { getWorkforceSnapshot } from "../systems/economy.js";
+import { BUILDING_WORKFORCE, getBuildingEfficiency, getWorkforceSnapshot } from "../systems/economy.js";
+import { BUILDING_SIZE } from "../core/config.js";
+import { TYPE } from "../core/types.js";
+import { CARD_DECK } from "../systems/cards.js";
+import { getResourceNodeAt } from "../systems/resource-geography.js";
+import { renderUI } from "./rendering/ui.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
 let activePanel="kingdom";
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
+const amount=value=>Number(value||0).toLocaleString("en-US",{maximumFractionDigits:2});
+const BUILDING_LABELS=Object.freeze({
+ [TYPE.KEEP]:"Royal Keep",[TYPE.HOUSE]:"House",[TYPE.FARM]:"Farm",[TYPE.LUMBER]:"Lumber Yard",
+ [TYPE.QUARRY]:"Quarry",[TYPE.TOWER]:"Watchtower",[TYPE.WALL]:"Defensive Wall",[TYPE.TAVERN]:"Tavern",
+ [TYPE.TEMPLE]:"Temple",[TYPE.BARRACKS]:"Barracks",[TYPE.MILL]:"Mill",[TYPE.STABLE]:"Stables",
+ [TYPE.WONDER]:"Wonder",[TYPE.GOLDMINE]:"Gold Mine",[TYPE.BARREL]:"Storage Barrel"
+});
 function setNavigationActive(target){
  document.querySelectorAll(".realm-nav-button").forEach(button=>{
   const active=button.dataset.kacPanel===target;
@@ -55,8 +67,62 @@ function cards(){
  return intro("ROYAL DECK","Card management","Inspect your hand and select a card before placing it on the map.")+'<div class="command-summary"><div><small>HAND</small><strong>'+(state.hand||[]).length+' / 5</strong></div><div><small>DRAW PILE</small><strong>'+number(state.availableCards?.length)+'</strong></div><div><small>REWARDS QUEUED</small><strong>'+number(state.cardRewardQueue?.length)+'</strong></div></div><div class="command-card-list">'+(rows||'<p class="command-note">Your hand is empty. Advance the simulation to draw cards.</p>')+'</div>';
 }
 function economy(){
- const w=getWorkforceSnapshot(),h=getHousingSnapshot(),homes=getHouseholdSnapshot().homes||[],resources=Object.entries(state.resources||{}).map(([k,v])=>'<div class="command-resource"><span>'+esc(k)+'</span><strong>'+number(v)+'</strong></div>').join("");
- return intro("TREASURY & PRODUCTION","Realm economy","Live overview of resources, workforce, housing and household capacity.")+'<div class="command-summary"><div><small>POPULATION</small><strong>'+h.population+'</strong></div><div><small>HOUSING</small><strong>'+h.capacity+'</strong></div><div><small>FREE BEDS</small><strong>'+h.available+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div></div><div class="command-section-title">ROYAL STORES</div><div class="command-resource-grid">'+resources+'</div><div class="command-section-title">WORKFORCE</div><div class="command-summary"><div><small>WORKERS</small><strong>'+number(w.population)+'</strong></div><div><small>UNEMPLOYED</small><strong>'+number(w.unemployed)+'</strong></div><div><small>WORKPLACES</small><strong>'+number(w.buildings)+'</strong></div></div><div class="command-section-title">HOUSEHOLDS</div><p class="command-note">'+number(homes.length)+' registered homes. Shared housing never creates kinship.</p>';
+ const w=getWorkforceSnapshot(),h=getHousingSnapshot(),homes=getHouseholdSnapshot().homes||[];
+ const resources=Object.entries(state.resources||{}).map(([k,v])=>'<div class="command-resource"><span>'+esc(k)+'</span><strong>'+amount(v)+'</strong></div>').join("");
+ const flow=Object.entries(state.incomeThisTick||{}).map(([k,v])=>'<div class="command-resource"><span>'+esc(k)+' · this tick</span><strong class="'+(Number(v)>0?'is-positive':Number(v)<0?'is-negative':'')+'">'+(Number(v)>0?'+':'')+amount(v)+'</strong></div>').join("");
+ const ledger=state.economy?.lastLedger;
+ const ledgerRows=ledger?[
+  ["Food demand",ledger.foodDemand,"food"],["Food consumed",ledger.foodConsumed,"food"],["Food shortage",ledger.foodShortage,"food"],
+  ["Taxes collected",ledger.taxesCollected,"gold"],["Wages paid",ledger.wagesPaid,"gold"],["Building & road upkeep",ledger.upkeepPaid,"gold"],
+  ["Unpaid wages",ledger.unpaidWages,"gold"],["Unpaid upkeep",ledger.unpaidUpkeep,"gold"],["Net treasury change",ledger.netGold,"gold"]
+ ].map(([label,value,unit])=>'<div class="ledger-row"><span>'+esc(label)+'</span><strong>'+amount(value)+' '+unit+'</strong></div>').join(""):'<p class="command-note">No completed financial ledger yet. The simulation settles a ledger every 20 in-game days.</p>';
+ const totals=state.economy||{};
+ return intro("TREASURY & PRODUCTION","Realm economy","Live resource stocks, current-tick flows and the latest completed 20-day financial ledger. No forecasts are inferred.")+
+ '<div class="command-summary"><div><small>POPULATION</small><strong>'+h.population+'</strong></div><div><small>HOUSING</small><strong>'+h.capacity+'</strong></div><div><small>FREE BEDS</small><strong>'+h.available+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div></div>'+
+ '<div class="command-section-title">CURRENT ROYAL STORES · STOCK</div><div class="command-resource-grid">'+resources+'</div>'+
+ '<div class="command-section-title">RESOURCE FLOW · CURRENT SIMULATION TICK</div><div class="command-resource-grid">'+flow+'</div>'+
+ '<div class="command-section-title">LATEST FINANCIAL SETTLEMENT · 20 IN-GAME DAYS</div><div class="ledger-grid">'+ledgerRows+'</div>'+
+ '<div class="command-section-title">CUMULATIVE LEDGER TOTALS</div><div class="command-summary"><div><small>DAYS SETTLED</small><strong>'+number(totals.daysElapsed)+'</strong></div><div><small>TAXES</small><strong>'+amount(totals.taxesCollected)+' G</strong></div><div><small>WAGES</small><strong>'+amount(totals.wagesPaid)+' G</strong></div><div><small>UPKEEP</small><strong>'+amount(totals.upkeepPaid)+' G</strong></div></div>'+
+ '<div class="command-section-title">WORKFORCE & HOUSEHOLDS</div><div class="command-summary"><div><small>WORKERS</small><strong>'+number(w.population)+'</strong></div><div><small>UNEMPLOYED</small><strong>'+number(w.unemployed)+'</strong></div><div><small>BUILDINGS</small><strong>'+number(w.buildings)+'</strong></div><div><small>HOMES</small><strong>'+number(homes.length)+'</strong></div></div>'+
+ '<p class="command-note">The simulation currently retains only its latest completed ledger, not a historical time series. Long-term trend charts and forecasts are intentionally withheld until real history is stored.</p>';
+}
+function buildings(){
+ const workforce=getWorkforceSnapshot();
+ const records=state.entities.filter(entity=>!entity.dead&&entity.isBuilding()).slice().sort((a,b)=>{
+  const an=CARD_DECK.find(card=>card.type===a.type)?.name||BUILDING_LABELS[a.type]||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||BUILDING_LABELS[b.type]||String(b.type);
+  return an.localeCompare(bn)||String(a.id).localeCompare(String(b.id));
+ });
+ const counts=new Map();
+ for(const building of records)counts.set(building.type,(counts.get(building.type)||0)+1);
+ const typeSummary=[...counts.entries()].map(([type,count])=>{
+  const card=CARD_DECK.find(item=>item.type===type);
+  return '<span class="building-type-chip">'+esc(card?.name||("Building "+type))+' <strong>'+count+'</strong></span>';
+ }).join("");
+ const rows=records.map((building,index)=>{
+  const card=CARD_DECK.find(item=>item.type===building.type);
+  const name=card?.name||BUILDING_LABELS[building.type]||("Building "+building.type);
+  const footprint=BUILDING_SIZE[building.type]||{w:1,h:1};
+  const scale=Math.max(.25,Math.min(6,Number(building.footprintScale)||1));
+  const width=footprint.w*scale,height=footprint.h*scale;
+  const hp=Number(building.hp)||0,maxHp=Math.max(1,Number(building.maxHp)||hp||1),condition=Math.max(0,Math.min(100,Math.round(hp/maxHp*100)));
+  const capacity=BUILDING_WORKFORCE[building.type]||0,staff=workforce.workersByBuilding.get(building)||0;
+  const efficiency=capacity?Math.round(getBuildingEfficiency(building,workforce)*100):null;
+  const costs=Object.entries(card?.cost||{}).filter(([,value])=>Number(value)>0).map(([resource,value])=>amount(value)+" "+resource).join(" · ")||"No catalogued material cost";
+  let siteNote="No dedicated resource-site indicator is defined for this building type.";
+  try{
+   const node=getResourceNodeAt(building.x,building.y);
+   if(building.type===TYPE.LUMBER)siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity);
+   else if(building.type===TYPE.QUARRY)siteNote="Stone stock at site tile: "+number(node.stoneStock)+" / "+number(node.stoneCapacity);
+   else if(building.type===TYPE.FARM)siteNote="Site fertility: "+number(node.fertility)+" / 100 · water access: "+(node.waterAccess?"yes":"no");
+  }catch{}
+  const detail=card?.desc||"No additional building description is recorded in the card catalogue.";
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+condition+'%</b><small>condition</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p><div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Site data<strong>'+esc(siteNote)+'</strong></span></div><p class="command-note">Per-building production output, storage and upkeep are not currently exposed by the simulation, so no values are fabricated here.</p></div></details>';
+ }).join("");
+ return intro("SETTLEMENT ARCHITECTURE","Building register","Inspect every surviving structure using its actual simulation entity, health, footprint, staffing and site data.")+
+ '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+records.length+'</strong></div><div><small>BUILDING TYPES</small><strong>'+counts.size+'</strong></div><div><small>EMPLOYED</small><strong>'+number(workforce.employed)+'</strong></div><div><small>POPULATION</small><strong>'+number(workforce.population)+'</strong></div></div>'+
+ '<div class="building-type-summary">'+typeSummary+'</div><label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">'+
+ '<div class="building-register">'+(rows||'<p class="command-note">No buildings are recorded in this realm yet.</p>')+'</div>'+
+ '<p class="command-note">Site resource values are taken from the structure centre tile only. They are not a production rate. The register is read-only; construction and demolition remain in the existing build interface.</p>';
 }
 function familyRecord(id){
  const key=String(id||"");
@@ -107,13 +173,40 @@ function dynasty(){
  '<p class="command-note">Only saved family relationships are drawn. Missing, unknown or unlinked relatives are intentionally not inferred.</p>';
 }
 function creatures(){
- const c=getCreatureSnapshot(),rows=c.living.map(d=>'<article class="command-policy"><div><strong>🐉 '+esc(d.name)+'</strong><p>'+esc(d.lifeStage)+' · age '+number(d.ageYears)+' · health '+number(d.health)+' · hunger '+number(d.hunger)+' · bond '+number(d.bond)+'</p></div></article>').join("");
- const archive=c.archive.map(d=>'<article class="command-history"><strong>MEMORIAL · YEAR '+number(d.deathYear)+'</strong><p>'+esc(d.name)+' · age '+number(d.ageYears)+' · '+esc(d.lifeStage)+'</p></article>').join("");
- return intro("THE LIVING BESTIARY","Dragon sanctuary","Dragons are persistent world entities. They age, become hungry, bond with the sovereign, remember milestones and can die if neglected.")+'<img class="command-creature-art" src="assets/dragon-companion.svg" alt="Friendly red and gold dragon companion" loading="lazy"><div class="command-summary"><div><small>LIVING DRAGONS</small><strong>'+c.living.length+' / 3</strong></div><div><small>CREATURE MEMORIALS</small><strong>'+c.archive.length+'</strong></div><div><small>SUMMONING COST</small><strong>55 GOLD · 35 FOOD</strong></div></div><div class="command-actions"><button data-command="summon-dragon" '+(c.living.length>=3?'disabled':'')+'>🐉 SUMMON A DRAGON</button></div><div class="command-section-title">LIVING CREATURES</div><div class="command-policy-list">'+(rows||'<p class="command-note">No dragon has joined the realm yet.</p>')+'</div><div class="command-section-title">CREATURE MEMORIALS</div><div class="command-history-list">'+(archive||'<p class="command-note">No creature memorials yet.</p>')+'</div>';
+ const c=getCreatureSnapshot();
+ const rows=c.living.map(d=>{
+  const memories=(d.memories||[]).slice(0,8).map(memory=>'<li><strong>YEAR '+number(memory.year)+'</strong><span>'+esc(memory.text)+'</span></li>').join("");
+  const abilities=(d.abilities||[]).map(value=>'<span class="creature-chip">'+esc(value)+'</span>').join("");
+  const goals=(d.goals||[]).map(value=>'<span class="creature-chip">'+esc(value)+'</span>').join("");
+  return '<details class="creature-record"><summary><img src="assets/dragon-companion.svg" alt="" loading="lazy"><span><strong>'+esc(d.name)+'</strong><small>'+esc(d.lifeStage)+' · '+number(d.ageYears)+' years · '+esc(d.temperament)+'</small></span><b>'+number(d.health)+'% health</b></summary><div class="creature-dossier"><div class="creature-stat-grid"><span>Health<strong>'+number(d.health)+' / 100</strong></span><span>Hunger<strong>'+number(d.hunger)+' / 100</strong></span><span>Bond with sovereign<strong>'+number(d.bond)+' / 100</strong></span><span>Expected lifespan<strong>'+number(d.expectedLifespan)+' years</strong></span><span>Last update<strong>Year '+number(d.lastUpdateYear)+'</strong></span><span>Temperament<strong>'+esc(d.temperament)+'</strong></span></div><div class="command-section-title">ABILITIES</div><div class="creature-chip-list">'+(abilities||'<span class="command-note">No abilities recorded.</span>')+'</div><div class="command-section-title">RECORDED GOALS</div><div class="creature-chip-list">'+(goals||'<span class="command-note">No goals recorded.</span>')+'</div><div class="command-section-title">PERSONAL MEMORIES</div><ol class="creature-memory-list">'+(memories||'<li>No memories have been recorded yet.</li>')+'</ol></div></details>';
+ }).join("");
+ const archive=c.archive.slice().reverse().map(d=>{
+  const memories=(d.memories||[]).map(memory=>'<li><strong>YEAR '+number(memory.year)+'</strong><span>'+esc(memory.text)+'</span></li>').join("");
+  return '<details class="creature-record is-memorial"><summary><img src="assets/dragon-companion.svg" alt="" loading="lazy"><span><strong>'+esc(d.name)+'</strong><small>MEMORIAL · '+esc(d.lifeStage)+' · '+number(d.ageYears)+' years</small></span><b>FELL IN YEAR '+number(d.deathYear)+'</b></summary><div class="creature-dossier"><p>Cause recorded: '+esc(d.cause||"unknown")+'</p><ol class="creature-memory-list">'+(memories||'<li>No surviving memories were archived.</li>')+'</ol></div></details>';
+ }).join("");
+ return intro("THE LIVING BESTIARY","Dragon sanctuary","Individual creature dossiers preserve age, needs, temperament, abilities, goals and personal memories from the live creature records.")+
+ '<img class="command-creature-art" src="assets/dragon-companion.svg" alt="Dragon companion illustration" loading="lazy"><div class="command-summary"><div><small>LIVING DRAGONS</small><strong>'+c.living.length+' / 3</strong></div><div><small>CREATURE MEMORIALS</small><strong>'+c.archive.length+'</strong></div><div><small>SUMMONING COST</small><strong>55 GOLD · 35 FOOD</strong></div></div>'+
+ '<div class="command-actions"><button data-command="summon-dragon" '+(c.living.length>=3?'disabled':'')+'>SUMMON A DRAGON</button></div><div class="command-section-title">LIVING CREATURE DOSSIERS</div><div class="creature-record-list">'+(rows||'<p class="command-note">No dragon has joined the realm yet.</p>')+'</div>'+
+ '<div class="command-section-title">CREATURE MEMORIALS</div><div class="creature-record-list">'+(archive||'<p class="command-note">No creature memorials yet.</p>')+'</div>';
+}
+function chronicle(){
+ const entries=Array.isArray(state.eventLog)?state.eventLog:[];
+ const kinds=[...new Set(entries.map(entry=>String(entry.kind||"realm")))].sort();
+ const options=['<option value="all">All categories</option>',...kinds.map(kind=>'<option value="'+esc(kind)+'">'+esc(kind.toUpperCase())+'</option>')].join("");
+ const rows=entries.map(entry=>{
+  const text=String(entry.text||"Recorded realm event");
+  return '<article class="chronicle-entry" data-kind="'+esc(entry.kind||"realm")+'" data-search="'+esc((text+" "+(entry.kind||"")+" "+entry.id).toLowerCase())+'"><div class="chronicle-entry-meta"><strong>'+esc(String(entry.kind||"realm").toUpperCase())+'</strong><span>RECORD '+number(entry.id)+' · TICK '+number(entry.tick)+'</span></div><p>'+esc(text)+'</p></article>';
+ }).join("");
+ const active=state.activeEvent?'<article class="active-issue-card"><span class="command-ribbon">CURRENTLY AWAITING THE CROWN</span><h4>'+esc(state.activeEvent.title)+'</h4><p>'+esc(state.activeEvent.description)+'</p><small>'+state.activeEvent.choices.length+' recorded choices</small><button type="button" data-command="show-active-event">OPEN ISSUE</button></article>':'<p class="command-note">No unresolved realm issue is currently awaiting a decision.</p>';
+ return intro("THE ROYAL ARCHIVE","Chronicle & event inbox","Search the actual event log by text or category. Records show their stored simulation tick; calendar dates are not inferred from missing history.")+
+ '<div class="command-section-title">ACTIVE REALM ISSUE</div>'+active+
+ '<div class="command-section-title">RECORDED CHRONICLE</div><div class="chronicle-filters"><label for="chronicle-search">SEARCH RECORDS</label><input id="chronicle-search" type="search" maxlength="80" placeholder="Search event text or category"><label for="chronicle-kind-filter">CATEGORY</label><select id="chronicle-kind-filter">'+options+'</select></div>'+
+ '<div class="chronicle-list">'+(rows||'<p class="command-note">No chronicle entries have been recorded yet.</p>')+'</div>'+
+ '<p class="command-note">The event log retains up to 100 recent records. This screen does not claim unread tracking or permanent archival beyond the simulation save.</p>';
 }
 function render(){
  const panel=$("command-panel-content");if(!panel)return;
- panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,dynasty,creatures}[activePanel]||kingdom)();
+ panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,buildings,dynasty,creatures,chronicle}[activePanel]||kingdom)();
  document.querySelectorAll("[data-command-tab]").forEach(b=>{
   const active=b.dataset.commandTab===activePanel;
   b.classList.toggle("is-active",active);
@@ -123,7 +216,7 @@ function render(){
 }
 function act(b){
  const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
- if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="select-card"){const card=[...document.querySelectorAll(".hand-card")].find(x=>x.dataset.cardId===v);if(card){card.click();r={ok:true};}}
+ if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="select-card"){const card=[...document.querySelectorAll(".hand-card")].find(x=>x.dataset.cardId===v);if(card){card.click();r={ok:true};}}else if(a==="show-active-event"&&state.activeEvent){state.activeEvent.dismissed=false;renderUI();r={ok:true};}
  if(r.ok){toast("DECISION RECORDED");render();}else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
 }
 export function setupManagementUI(){
@@ -133,14 +226,26 @@ export function setupManagementUI(){
   if(target==="people"){$("people-btn")?.click();return;}
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
-  if(["kingdom","government","politics","decisions","cards","economy","dynasty","creatures"].includes(target)){
+  if(["kingdom","government","politics","decisions","cards","economy","buildings","dynasty","creatures","chronicle"].includes(target)){
    activePanel=target;$("command-modal")?.classList.remove("hidden");render();
   }
  }));
  $("command-open-btn")?.addEventListener("click",()=>{$("command-modal")?.classList.remove("hidden");render();});
+
  document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{activePanel=b.dataset.commandTab||"government";$("command-modal")?.classList.remove("hidden");render();}));
  $("command-close")?.addEventListener("click",()=>$("command-modal")?.classList.add("hidden"));
  $("command-modal")?.addEventListener("click",e=>{if(e.target===$("command-modal"))$("command-modal").classList.add("hidden");});
+ $("command-panel-content")?.addEventListener("input",e=>{
+  if(e.target.id==="building-search"){
+   const query=e.target.value.trim().toLowerCase();
+   document.querySelectorAll(".building-record").forEach(record=>record.classList.toggle("is-filtered",query&&!record.dataset.buildingName.includes(query)));
+  }
+  if(e.target.id==="chronicle-search"||e.target.id==="chronicle-kind-filter"){
+   const query=$("chronicle-search")?.value.trim().toLowerCase()||"";
+   const kind=$("chronicle-kind-filter")?.value||"all";
+   document.querySelectorAll(".chronicle-entry").forEach(record=>record.classList.toggle("is-filtered",(kind!=="all"&&record.dataset.kind!==kind)||(query&&!record.dataset.search.includes(query))));
+  }
+ });
  $("command-panel-content")?.addEventListener("click",e=>{
   const person=e.target.closest("[data-open-person]");
   if(person){window.dispatchEvent(new CustomEvent("kac:open-person",{detail:{personId:person.dataset.openPerson}}));$("command-modal")?.classList.add("hidden");return;}

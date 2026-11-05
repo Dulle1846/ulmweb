@@ -389,8 +389,10 @@ function init(){
     setupInput();
     setupCharacterDossier();
     setupManagementUI();
+    document.getElementById("realm-event-dismiss")?.addEventListener("click",()=>{
+        if(state.activeEvent){state.activeEvent.dismissed=true;renderUI();}
+    });
 setupBuildUI();
-    document.getElementById("command-chronicles-btn")?.addEventListener("click",()=>document.getElementById("people-btn")?.click());
     bindMenu();
     applySoundtrackSettings(settings);
     window.addEventListener("resize",resize);

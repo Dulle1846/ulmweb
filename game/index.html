@@ -61,11 +61,17 @@
             <button class="realm-nav-button" type="button" data-kac-panel="dynasty" title="Royal dynasty">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 4 8 8 10 4-2 8-5 8-10V6l-8-3Z"/><path d="M8 9h8M8 13h8M12 9v8"/></svg><span>Dynasty</span>
             </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="chronicle" title="Event inbox and royal chronicle">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg><span>Chronicle</span>
+            </button>
             <button class="realm-nav-button" type="button" data-kac-panel="politics" title="Factions and political order">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 6h14M7 6l-4 8h8L7 6Zm10 0-4 8h8l-4-8ZM7 21h10"/></svg><span>Politics</span>
             </button>
             <button class="realm-nav-button" type="button" data-kac-panel="economy" title="Treasury and economy">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M8 15h3"/><circle cx="16" cy="14" r="2"/></svg><span>Economy</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="buildings" title="Building register and structure details">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20V9l5-4 4 3 4-4 5 5v11H3Z"/><path d="M8 20v-6h4v6m4-7h2m-2 3h2"/></svg><span>Buildings</span>
             </button>
             <button class="realm-nav-button" type="button" data-kac-panel="cards" title="Card hand and deck">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="12" height="16" rx="1"/><path d="m9 8 2-2 2 2m-4 7h4M17 7l3 2v11H9"/></svg><span>Cards</span>
@@ -211,9 +217,9 @@
     </div>
 </div>
 
-<div id="realm-event-modal" class="screen-overlay event-overlay hidden">
+<div id="realm-event-modal" class="screen-overlay event-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="realm-event-title" aria-describedby="realm-event-description">
     <div class="modal-panel event-panel">
-        <div id="realm-event-kicker" class="start-kicker">REALM ISSUE</div>
+        <div class="event-panel-topline"><div id="realm-event-kicker" class="start-kicker">REALM ISSUE</div><button id="realm-event-dismiss" class="modal-close" type="button" aria-label="Dismiss issue and return to the realm">×</button></div>
         <h2 id="realm-event-title">A Bountiful Harvest</h2>
         <p id="realm-event-description"></p>
         <div id="realm-event-choices" class="event-choices"></div>
@@ -228,9 +234,10 @@
 <button type="button" data-command-tab="decisions"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>DECISIONS</span></button>
 <button type="button" data-command-tab="cards"><svg aria-hidden="true"><use href="assets/command-emblems.svg#cards"></use></svg><span>CARDS</span></button>
 <button type="button" data-command-tab="economy"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>ECONOMY</span></button>
+<button type="button" data-command-tab="buildings"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>BUILDINGS</span></button>
 <button type="button" data-command-tab="dynasty"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>DYNASTY</span></button>
 <button type="button" data-command-tab="creatures"><svg aria-hidden="true"><use href="assets/command-emblems.svg#dragon"></use></svg><span>CREATURES</span></button>
-<button type="button" id="command-chronicles-btn"><svg aria-hidden="true"><use href="assets/command-emblems.svg#people"></use></svg><span>CHRONICLES</span></button>
+<button type="button" data-command-tab="chronicle"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>CHRONICLE</span></button>
 </nav><div id="command-panel-content" class="command-panel-content"></div></section></div>
 <div id="card-drag-ghost" aria-hidden="true"><span id="drag-ghost-icon" class="drag-ghost-icon"></span><span id="drag-ghost-name" class="drag-ghost-name"></span></div>
 <div id="action-toast" class="action-toast" role="status"></div>
