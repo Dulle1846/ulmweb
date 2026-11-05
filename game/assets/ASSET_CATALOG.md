@@ -24,3 +24,6 @@ All assets in this directory are bundled with the game. No runtime CDN or paid a
 - Portrait archetypes are not unique character portraits. A later pass should add controlled variation from explicit presentation data.
 - Never fabricate identity, heraldry, building upgrades or creature species through arbitrary image mapping.
 - Avoid multi-gigabyte bundles. Browser loading, memory, caching and first-render latency are part of art acceptance.
+
+| `royal-card-atlas.svg` | Card hand category illustrations | SVG sprite atlas | Original category art; aliases preserve existing card catalogue mappings |
+| `royal-card-frame.svg` | Card hand frame | SVG | Original parchment / antique-gold frame |

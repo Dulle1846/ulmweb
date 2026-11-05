@@ -167,3 +167,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added `assets/royal-title-illustration.svg`, a muted dusk castle panorama, and replaced the bright storybook-style main-menu illustration.
 - Both assets are compact, local SVG; no external image request, paid API or large raster download is added.
 - Dedicated creature variants, card-face illustrations, house heraldry, event artwork and portrait variation remain open.
+
+
+## Phase 4 — card illustration and frame increment
+
+- Added `assets/royal-card-atlas.svg` with original category illustrations for the current card groups. Existing group-to-symbol mapping is preserved through aliases, so no card model or save data changes are needed.
+- Replaced the emoji duplicate in each card banner with a single scalable SVG illustration.
+- Added `assets/royal-card-frame.svg`, a restrained parchment-and-antique-gold card frame.
+- Added differentiated rarity border treatments for common, uncommon, fine, rare, epic and higher rarities.
+- Static contracts and Chromium E2E verify that cards use the new local atlas and frame. Unique hand-painted art for individual procedural card variants remains a later art pass.
