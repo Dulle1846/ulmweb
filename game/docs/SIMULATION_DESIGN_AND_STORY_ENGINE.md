@@ -448,3 +448,14 @@ Births are now a persistent simulation event, not an arbitrary population increm
 A birth is gated by household vacancy, food reserves, morale and entity limits. The newborn is a real age-zero villager assigned to a parent household where possible. The child's species and family name are inherited from the parents under the current same-species-only rule. Parent-child links are recorded explicitly in both directions, and both parents plus the child receive bounded personal memories. The realm event log records the birth.
 
 Cross-species hybridization, autonomous partner formation, royal births, natural mortality and dynastic succession are deliberately not guessed at in this phase. They need separate rules and tests.
+
+
+## Implemented follow-up — autonomous social life (Phase 2.8)
+
+Residents now meet through shared household and workplace contexts. These encounters update reciprocal trust, respect and affinity using personality-derived bounded changes and a separate deterministic random stream. Acquaintances can become friends or rivals, with memories recorded for significant relationship transitions.
+
+Repeated positive encounters between adults can autonomously form a partnership. The default rule is one active partner per person; close relatives (parent/child and siblings with a shared explicit parent) are excluded. The yearly scheduler is bounded to 120 unique pairs and four new partnerships per realm year. Sharing a home or workplace creates only an opportunity to interact; it never creates family links by itself.
+
+The species data now includes a reproductive mode. Current living species use a paired model; revenants are non-reproductive. A biological birth requires two same-species adult villagers with opposite reproductive sex categories and an established reciprocal partnership from an earlier year. Legacy profiles receive a stable ID-derived reproductive sex category.
+
+Important design boundary: the current `sex` field is a minimal reproductive category, not a complete gender-identity or species-specific biology system. The next design pass should separate identity, anatomy and species reproduction rules. Relationship decay, non-monogamous rules, hybrid species, adoption workflows, royal offspring and courtship outside shared household/work contexts remain unimplemented.
