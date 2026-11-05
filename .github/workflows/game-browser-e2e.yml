@@ -5,6 +5,7 @@ on:
     branches:
       - ulmweb-branch
       - kac-2.1-stability-performance
+      - kac-2.9-royal-dynasty
       - kac-3.0-government-and-management-ui
     paths:
       - "game/**"
