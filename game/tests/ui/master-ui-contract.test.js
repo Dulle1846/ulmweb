@@ -254,3 +254,12 @@ test("royal administration navigation exposes current-page semantics, not toggle
     assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing navigation target "+target);
   }
 });
+
+
+test("the sovereign identity action opens the actual reigning character dossier",()=>{
+  assert.ok(html.includes('id="sovereign-dossier-button"'));
+  assert.ok(html.includes('aria-label="Open sovereign dossier"'));
+  assert.ok(dossier.includes('get(entity => !entity.dead && entity.isKing && entity.personId && entity.person)'));
+  assert.ok(dossier.includes('selectedPersonId = String(sovereign.personId)'));
+  assert.ok(dossier.includes('document.getElementById("sovereign-dossier-button")'));
+});
