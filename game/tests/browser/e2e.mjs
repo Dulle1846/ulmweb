@@ -117,8 +117,40 @@ try{
     assert.ok(await page.locator("[data-trade]").count()>=1);
     await page.locator('[data-panel-tab="cards"]').click();
     assert.match(await page.locator("#realm-window-content").innerText(),/Card management/);
+    const royalFixture=await page.evaluate(async()=>{
+        const [{state},{TYPE},{spawnEntity},{ensurePersonProfile}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/core/types.js"),
+            import("./js/world/entities.js"),import("./js/systems/people.js")
+        ]);
+        const king=state.entities.find(entity=>!entity.dead&&entity.isKing);
+        if(!king)throw new Error("No living king for dynasty UI E2E");
+        const ruler=ensurePersonProfile(king,{role:"king"});
+        Object.assign(ruler,{species:"human",sex:"male",ageYears:36,lifeStage:"adult"});
+        const spouse=spawnEntity(4,4,TYPE.VILLAGER);
+        const person=ensurePersonProfile(spouse);
+        Object.assign(person,{species:"human",sex:"female",ageYears:31,lifeStage:"adult"});
+        return {kingId:king.personId,spouseId:spouse.personId};
+    });
     await page.locator('[data-panel-tab="dynasty"]').click();
     assert.match(await page.locator("#realm-window-content").innerText(),/Dynasty/);
+    await page.locator("#realm-consort-select").selectOption(royalFixture.spouseId);
+    await page.locator("[data-appoint-consort]").click();
+    assert.match(await page.locator("#realm-window-content").innerText(),/Royal consort/);
+    await page.locator("[data-create-heir]").click();
+    const royalBirth=await page.evaluate(async()=>{
+        const [{state},{getFamilySnapshot}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/families.js")
+        ]);
+        const king=state.entities.find(entity=>!entity.dead&&entity.isKing);
+        const family=getFamilySnapshot(king.personId);
+        const childId=family.children[0]?.personId;
+        const child=state.entities.find(entity=>entity.personId===childId);
+        return {childId,parents:child?getFamilySnapshot(child.personId).parents.length:0,food:state.resources.food,gold:state.resources.gold};
+    });
+    assert.ok(royalBirth.childId,"royal birth must create a persistent person entity");
+    assert.equal(royalBirth.parents,2,"royal heir must have two explicit parent links");
+    assert.equal(royalBirth.food,108);
+    assert.equal(royalBirth.gold,67);
     await page.locator("#realm-management-close").click();
     assert.equal(await page.locator("#realm-management-modal").isVisible(),false);
 
