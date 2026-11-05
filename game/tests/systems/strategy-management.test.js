@@ -9,6 +9,7 @@ import {normalizeGovernment,setGovernmentForm,enactPolicy,getPoliticalSnapshot} 
 import {getRoyalHouse,appointRoyalConsort,createRoyalChild,designateHeir,updateRoyalSuccession} from "../../js/systems/royal-dynasty.js";
 import {summonDragon,updateCreatures,getCreatureSnapshot} from "../../js/systems/creatures.js";
 import {calculateDailyLedger} from "../../js/systems/economy.js";
+import {createCardForCategory} from "../../js/systems/card-catalog.js";
 
 function startRealm(){
  resetState();state.worldSeed=31105;state.year=4;state.resources={wood:180,stone:95,gold:100,food:120};initStartingKingdom();
@@ -92,4 +93,12 @@ test("government tax rate changes actual assessed taxes in the economy ledger",(
  assert.equal(low.taxesCollected,normal.taxesCollected*.5);
  assert.equal(high.taxesCollected,normal.taxesCollected*2);
  assert.ok(high.taxesCollected>normal.taxesCollected);
+});
+
+test("the wyvern category now creates a real persistent dragon egg card",()=>{
+ const card=createCardForCategory("wyverns");
+ assert.equal(card.type,TYPE.DRAGON);
+ assert.equal(card.kind,"animal");
+ assert.equal(card.effect,undefined);
+ assert.ok(card.cost.gold>=55&&card.cost.food>=35);
 });
