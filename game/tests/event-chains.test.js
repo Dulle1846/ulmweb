@@ -27,3 +27,13 @@ test("the long-form chronicle library covers civic, health and succession crises
         assert.equal(EVENT_CHAINS[id].length,3,id+" should have three stages");
     }
 });
+
+test("plague chronicle decisions affect health and political factions at every stage",()=>{
+    for(const stage of EVENT_CHAINS.plague){
+        for(const choice of stage.choices){
+            assert.ok(choice.effects.health&&typeof choice.effects.health==="object");
+            assert.ok(choice.effects.politics&&typeof choice.effects.politics==="object");
+            for(const value of Object.values(choice.effects.politics))assert.ok(Number.isFinite(value));
+        }
+    }
+});
