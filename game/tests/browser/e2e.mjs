@@ -46,6 +46,41 @@ try{
     await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
 
+    // Royal court: create a deterministic eligible consort, make a marriage decision,
+    // welcome a royal child, and verify the custom illustration is served locally.
+    const royalFixture = await page.evaluate(async () => {
+        const [{ state }, { ensurePersonProfile }, { spawnEntity }, { TYPE }, { getMonarch }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/people.js"),
+            import("./js/world/entities.js"),
+            import("./js/core/types.js"),
+            import("./js/systems/royal-dynasty.js")
+        ]);
+        const monarch = getMonarch();
+        if (!monarch) throw new Error("Starting realm has no monarch");
+        const ruler = ensurePersonProfile(monarch, { role: "king" });
+        Object.assign(ruler, { species: "human", sex: "male", ageYears: 40, lifeStage: "adult" });
+        const spouse = spawnEntity(monarch.x + 2, monarch.y + 2, TYPE.VILLAGER);
+        const person = ensurePersonProfile(spouse, { role: "resident", species: "human" });
+        Object.assign(person, { species: "human", sex: "female", ageYears: 28, lifeStage: "adult", name: "E2E Royal Consort", familyName: "Eldria" });
+        return { spouseId: spouse.personId };
+    });
+    await page.locator("#royal-court-btn").click();
+    assert.equal(await page.locator("#royal-court-modal").isVisible(), true);
+    assert.ok(await page.locator("#royal-court-content").innerText().then(text => text.includes("THE CROWN")));
+    await page.locator('[data-royal-marriage="' + royalFixture.spouseId + '"]').click();
+    assert.ok((await page.locator("#royal-court-content").innerText()).includes("E2E Royal Consort"));
+    await page.locator("#royal-create-heir").click();
+    assert.ok((await page.locator("#royal-court-content").innerText()).includes("CHILDREN"));
+    const royalArt = await page.locator(".court-monarch img").evaluate(img => ({ complete: img.complete, width: img.naturalWidth }));
+    assert.ok(royalArt.complete && royalArt.width > 0, "original royal court SVG should load");
+    await page.locator("#royal-court-close").click();
+    const royalHeirCount = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return state.entities.filter(entity => !entity.dead && entity.isRoyalHeir).length;
+    });
+    assert.equal(royalHeirCount, 1, "royal decision should create exactly one persistent heir");
+
     // Create deterministic guardian/ward records so the dossier UI can be tested
     // independently of random world population.
     const guardianshipFixture = await page.evaluate(async () => {
