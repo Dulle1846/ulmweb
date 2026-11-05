@@ -164,7 +164,7 @@ test("character relationship links navigate to real dossiers and dynasty uses ve
 
 test("building register uses existing illustrated building sprites",()=>{
   assert.ok(management.includes("buildingSprite(building.type)"));
-  assert.ok(management.includes("assets/city-builder-sprites.svg#"));
+  assert.ok(management.includes("assets/royal-building-atlas.svg#"));
   assert.ok(css.includes(".building-record-art"));
 });
 
