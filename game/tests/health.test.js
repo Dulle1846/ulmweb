@@ -124,3 +124,14 @@ test("health snapshots normalize in place without replacing authoritative state"
     getHealthSnapshot();
     assert.strictEqual(state.health,original);
 });
+
+test("treatment shortens active illness without ending it immediately",()=>{
+    setup();
+    startOutbreak({severity:3});
+    const patient=state.entities[0];
+    const before=patient.illnessUntilTick;
+    const result=applyHealthEffects({treatment:1});
+    assert.equal(patient.illnessUntilTick,before-20);
+    assert.ok(patient.illnessUntilTick>state.tick);
+    assert.equal(result.severity,2);
+});
