@@ -1,6 +1,6 @@
 // Explicit, persistent kinship graph. Shared housing never creates family ties.
 import { state } from "../core/state.js";
-import { ensurePersonProfile } from "./people.js";
+import { ensurePersonProfile, PERSON_SPECIES } from "./people.js";
 
 const PARENT_KINDS = new Set(["biological", "adoptive", "guardian"]);
 const PARTNER_STATUSES = new Set(["partner", "married", "separated", "divorced"]);
@@ -175,10 +175,10 @@ export function linkGuardianWard(guardianId, wardId, { sinceYear = state.year } 
     const guardianKey = personIdOf(guardian), wardKey = personIdOf(ward);
     if (guardianKey === wardKey) return { ok: false, reason: "self-guardianship" };
     const guardianPerson = ensurePersonProfile(guardian), wardPerson = ensurePersonProfile(ward);
-    const guardianMaturity = Number(guardianPerson.species && guardianPerson.ageYears) >= 0
-        ? Number(guardianPerson.ageYears) >= (Number(guardianPerson.species && guardianPerson.ageYears) || 0) : false;
-    if (guardianPerson.lifeStage === "young") return { ok: false, reason: "guardian-not-adult" };
-    if (wardPerson.lifeStage !== "young") return { ok: false, reason: "ward-not-minor" };
+    const guardianMaturity = PERSON_SPECIES[guardianPerson.species]?.maturation ?? 16;
+    const wardMaturity = PERSON_SPECIES[wardPerson.species]?.maturation ?? 16;
+    if (guardianPerson.ageYears < guardianMaturity) return { ok: false, reason: "guardian-not-adult" };
+    if (wardPerson.ageYears >= wardMaturity) return { ok: false, reason: "ward-not-minor" };
     const guardianKin = ensureKinship(guardian), wardKin = ensureKinship(ward);
     if (!wardKin.guardians.some(item => item.personId === guardianKey) && wardKin.guardians.length >= MAX_GUARDIANS) {
         return { ok: false, reason: "guardian-limit" };
