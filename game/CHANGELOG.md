@@ -1,0 +1,117 @@
+# Kings & Cards — Version and Development History
+
+**Current production version:** `3.4.0`  
+**Next development line:** `3.5.0-dev`  
+**Production branch:** `ulmweb-branch`  
+**Game root:** `game/`  
+**Production URL:** https://kings-and-cards.pages.dev/  
+**Last repository verification:** 2026-11-05 (UTC)
+
+This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## Versioning policy
+
+Kings & Cards uses a practical semantic version format:
+
+- **MAJOR**: incompatible save schema, core simulation redesign, or a major game-generation milestone.
+- **MINOR**: a player-visible feature phase such as roads, resource geography, logistics or dynastic systems.
+- **PATCH**: compatible bug fixes, balance adjustments, UI fixes and save migration corrections.
+- Development branches may use a `-dev` suffix. A branch name or draft PR is not a release.
+- A version becomes **production-released** only after merge into `ulmweb-branch`, successful required CI, and confirmation that Cloudflare Pages serves that commit.
+- GitHub Actions, Cloudflare Pages, and browser availability are separate release facts. One does not prove the others.
+
+The version in `game/package.json` is the machine-readable game version. Update this file and this changelog together for every release.
+
+## Production release history
+
+### 3.4.0 — Resource geography foundation
+**Released:** 2026-11-05  
+**PR:** [#34](https://github.com/Dulle1846/ulmweb/pull/34)  
+**Merge commit:** `bffeb1afb82da9c51c622a0a6a0ed8006560c74b`  
+**Feature head:** `b374d77dd565e2cfeab0a421d55f10940e43b00e`
+
+- Deterministic resource geography generated from the world seed and terrain.
+- Compact typed arrays for forest stock/capacity, stone stock/capacity, fertility and water access.
+- Bounded forest and stone extraction primitives; stock cannot become negative.
+- Capacity-limited forest regrowth.
+- Sparse save deltas for depleted nodes, validation and legacy-save fallback.
+- Unit coverage for determinism, deposits, water, fertility, search, extraction, regrowth and save round-trip.
+- Browser E2E coverage for resource depletion across save/load.
+
+**Explicitly not included in 3.4.0:** resource overlays, building-to-node extraction integration, warehouses, physical hauling and complete production chains. The resource model is a foundation, not yet a fully connected economy.
+
+**Verification recorded:** Game Quality and Kings & Cards 2.1 checks succeeded on merge commit `bffeb1a`. Game Browser E2E succeeded on the exact PR feature head `b374d77`; it was not re-run on the merge commit in the recorded workflow set.
+
+### 3.3.0 — Roads and settlement infrastructure
+**Released:** 2026-11-05  
+**PR:** [#27](https://github.com/Dulle1846/ulmweb/pull/27)  
+**Merge commit:** `fe248e694b50477136f3cdb3a182466788fe1c32`  
+**Tested feature head:** `5dba0ab974826fab3fd515639bc66ffa800928ba`
+
+- Dirt, gravel and paved roads, with costs, upgrades and demolition refunds.
+- Click/drag placement, explicit build-mode exit, rendering and intersections.
+- Road-quality-aware movement and A* route costs.
+- Road upkeep included in the economy ledger.
+- Save/load and browser E2E coverage for road placement and persistence.
+
+**Verification recorded:** Game Quality, Game Browser E2E and Kings & Cards 2.1 checks succeeded on the exact tested feature head.
+
+### 3.3 documentation and release operations
+**Merged:** 2026-11-05  
+- PR #28 added studio operations, AI review guidance and roadmap documentation through 4.0.
+- PR #33 updated the post-release audit and handed off the next phase to resource geography.
+- These were documentation/operations merges, not separate player-facing game versions.
+
+## Historical development lines and PR disposition
+
+The following entries preserve the recorded development history. **They are not all production releases.** Their status is shown explicitly so that a feature branch is never mistaken for shipped content.
+
+| Version line | Recorded work | GitHub record | Status at 2026-11-05 |
+|---|---|---|---|
+| 2.1 | Stability, performance, economy and living-world foundations | [PR #6](https://github.com/Dulle1846/ulmweb/pull/6) | Merged into `ulmweb-branch` |
+| 2.2 | Seeded/deterministic simulation foundation | [PR #7](https://github.com/Dulle1846/ulmweb/pull/7) | Merged into 2.1 development branch; not a direct production merge |
+| 2.3 | Event-linked personal chronicles | [PR #8](https://github.com/Dulle1846/ulmweb/pull/8) | Open |
+| 2.4 | Species-aware life cycles | [PR #9](https://github.com/Dulle1846/ulmweb/pull/9) | Open |
+| 2.5 | Explicit family and kinship graph | [PR #10](https://github.com/Dulle1846/ulmweb/pull/10) | Open, draft |
+| 2.6 | Character dossiers and lifecycle aggregation | [PR #11](https://github.com/Dulle1846/ulmweb/pull/11) | Open, draft |
+| 2.7 | Birth cooldown and family-save normalization | [PR #12](https://github.com/Dulle1846/ulmweb/pull/12) | Closed without merge |
+| 2.8 | Explicit orphan guardianship | [PR #13](https://github.com/Dulle1846/ulmweb/pull/13) | Closed without merge |
+| 2.9 | Royal dynasty / court / strategy UI | [PR #14](https://github.com/Dulle1846/ulmweb/pull/14), [#16](https://github.com/Dulle1846/ulmweb/pull/16), [#19](https://github.com/Dulle1846/ulmweb/pull/19) | Open drafts; overlapping lines |
+| 3.0 | Government, politics, economy and card management UI | [PR #17](https://github.com/Dulle1846/ulmweb/pull/17) | Open draft |
+| 3.1 | Persistent creatures / dragon lifecycle and dynasty strategy UI | [PR #18](https://github.com/Dulle1846/ulmweb/pull/18), [#20](https://github.com/Dulle1846/ulmweb/pull/20) | Open drafts |
+| 3.2 | Deterministic combat retaliation | [PR #22](https://github.com/Dulle1846/ulmweb/pull/22) | Closed without merge |
+| 3.3 | Roads and settlement infrastructure | [PR #27](https://github.com/Dulle1846/ulmweb/pull/27) | Production release |
+| 3.4 | Deterministic resource geography | [PR #34](https://github.com/Dulle1846/ulmweb/pull/34) | Production release |
+
+### Important branch-consolidation warning
+
+Open, closed-unmerged and stacked PRs must not be merged mechanically. Several are based on other feature branches rather than the production branch, and some overlap. Their unique code, assets, tests and save migrations must be compared against the current production tree before selective porting. Keep source branches until a preservation matrix proves that no unique work is lost.
+
+## 3.5.0-dev — Long-run playability and economic integration
+**Development branch:** `kac-3.5-long-run-audit-and-ledger`
+
+Planned scope:
+- Reproducible multi-year campaign tests, including a 25-year simulation run.
+- Long-run invariants for resources, population, entity counts, positions, morale and deterministic outcomes.
+- Connect finite resource geography to actual lumber and quarry production.
+- Add resource overlays and clear site-suitability feedback.
+- Design and test storage reservations and physical hauling before adding more production chains.
+- Review victory/game-over pacing and ensure sandbox play remains meaningful after the first milestone.
+- Audit save/load compatibility and bounded memory/log/archive growth.
+- Add a measured browser soak-test and performance budgets.
+
+This line is not a production release until all release gates pass.
+
+## Release checklist
+
+Every release entry must record:
+1. Version and date.
+2. Production branch and exact merge commit.
+3. PR and exact tested head.
+4. Unit/integration and browser E2E results.
+5. Save migration and backward-compatibility results.
+6. Performance and long-run simulation results.
+7. Cloudflare Pages deployment ID/status and the deployed commit.
+8. Known limitations and explicit non-goals.
+
+Never describe an unverified feature as implemented or a successful CI run as a successful deployment.
