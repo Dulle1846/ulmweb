@@ -72,6 +72,14 @@
                 </div>
             </section>
 
+            <nav class="realm-management-nav" aria-label="Strategic management">
+                <button type="button" data-open-panel="government"><span>♛</span> GOVERNMENT</button>
+                <button type="button" data-open-panel="politics"><span>⚖</span> POLITICS</button>
+                <button type="button" data-open-panel="economy"><span>🪙</span> ECONOMY</button>
+                <button type="button" data-open-panel="cards"><span>🃏</span> CARDS</button>
+                <button type="button" data-open-panel="dynasty"><span>🌳</span> DYNASTY</button>
+            </nav>
+
             <section class="card-section">
                 <div class="card-section-heading"><div class="card-section-title">SELECTED CARD</div><button id="skip-card-btn" class="skip-button" type="button">DISCARD</button></div>
                 <div id="card-container" class="card-container" role="button" tabindex="0" aria-label="Drag the selected card onto the map">
@@ -152,6 +160,20 @@
     <div class="modal-panel people-panel">
         <div class="modal-heading"><div><div class="start-kicker">THE PEOPLE OF YOUR REALM</div><h2 id="people-title">CHARACTER DOSSIERS</h2></div><button id="people-close" class="modal-close" type="button" aria-label="Close character dossiers">×</button></div>
         <div class="people-browser"><aside class="people-roster"><label for="people-search">FIND A PERSON</label><input id="people-search" type="search" maxlength="80" placeholder="Name, species or role"><div id="people-count" class="people-count">0 PEOPLE</div><div id="people-list" class="people-list"></div></aside><section id="person-dossier" class="person-dossier"><div class="empty-state">Select a person to inspect their chronicle.</div></section></div>
+    </div>
+</div>
+
+<div id="realm-management-modal" class="screen-overlay realm-management-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="realm-management-title">
+    <div class="modal-panel realm-management-panel">
+        <div class="modal-heading"><div><div class="start-kicker">THE ROYAL CHANCELLERY</div><h2 id="realm-management-title">REALM MANAGEMENT</h2></div><button id="realm-management-close" class="modal-close" type="button" aria-label="Close realm management">×</button></div>
+        <nav class="realm-window-tabs" aria-label="Management sections">
+            <button type="button" class="realm-window-tab is-active" data-panel-tab="government">👑 Government</button>
+            <button type="button" class="realm-window-tab" data-panel-tab="politics">📜 Politics</button>
+            <button type="button" class="realm-window-tab" data-panel-tab="economy">🪙 Economy</button>
+            <button type="button" class="realm-window-tab" data-panel-tab="cards">🃏 Cards</button>
+            <button type="button" class="realm-window-tab" data-panel-tab="dynasty">🌳 Dynasty</button>
+        </nav>
+        <section id="realm-window-content" class="realm-window-content" aria-live="polite"></section>
     </div>
 </div>
 
