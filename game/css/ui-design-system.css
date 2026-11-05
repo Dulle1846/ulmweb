@@ -386,3 +386,14 @@ body.ui-modal-open{overflow:hidden}
  .side-panel>.resource-section,.side-panel>.card-section,.side-panel>.tabs,.side-panel>.panel-footer{flex:0 0 auto}
  .side-panel>.tab-content{flex:1 0 100px}
 }
+
+
+/* Direct access to the reigning ruler dossier from the royal header. */
+.sovereign-shortcut{display:flex;align-items:center;gap:7px;min-height:40px;padding:3px 9px;border:1px solid var(--ui-line-strong);border-radius:3px;background:linear-gradient(145deg,#403326,#211e19);color:#ead9b5;cursor:pointer;text-align:left;box-shadow:inset 0 1px #fff2,0 2px 4px #0005}
+.sovereign-shortcut:hover{border-color:var(--color-antique-gold);background:linear-gradient(145deg,#59452f,#29231b)}
+.sovereign-shortcut:focus-visible{outline:2px solid #e1c47e;outline-offset:2px}
+.sovereign-shortcut svg{display:block;width:31px;height:31px;flex:0 0 31px;overflow:visible}
+.sovereign-shortcut span{display:flex;flex-direction:column;gap:2px}
+.sovereign-shortcut small{font:700 7px var(--ui-title-font);letter-spacing:.12em;color:#bba77f}
+.sovereign-shortcut strong{font:700 10px var(--ui-title-font);letter-spacing:.08em;color:#f0e2c2}
+@media(max-width:560px){.sovereign-shortcut{min-height:34px;padding:2px 5px;gap:4px}.sovereign-shortcut svg{width:25px;height:25px;flex-basis:25px}.sovereign-shortcut small{display:none}.sovereign-shortcut strong{font-size:9px}}
