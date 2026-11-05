@@ -285,7 +285,7 @@ try{
 
     assert.deepEqual(errors,[],"browser runtime must not emit uncaught page errors");
     assert.deepEqual(consoleErrors,[],"browser runtime must not emit console errors");
-    console.log("Browser E2E passed: world forge, seed, guardian/ward dossier links, memorial archive, empty/timed hand, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.");
+    console.log("Browser E2E passed: world forge, seed, strategy command center, royal decrees and tax ordinance, guardian/ward dossier links, memorial archive, empty/timed hand, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.");
     await context.close();
 }finally{
     await browser.close();
