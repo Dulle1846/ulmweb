@@ -240,3 +240,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Added living/deceased, role and species filters to the character roster.
 - Role/species options are generated from actual persisted character records.
 - Added responsive filter styling and static/browser regression coverage.
+
+
+## Development line 3.7.0-dev — Phase 5 navigation accessibility correction
+
+- Replaced misleading toggle semantics on the active administration navigation item with `aria-current="page"`.
+- Added static contracts for all twelve navigation destinations and a browser test for keyboard activation of the live Economy screen.
+- Full keyboard, screen-reader, contrast and visual viewport audits remain open.
