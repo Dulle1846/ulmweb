@@ -178,3 +178,28 @@ Implemented:
 - Multi-year catch-up is capped at 1,000 years and memory remains bounded.
 
 Not implemented: mortality, births, kinship, inheritance, succession, family-name transmission or autonomous life plans. These require the next explicit family/lineage and succession model. Do not derive parenthood from a shared household.
+
+
+## Phase 2.5 — explicit family and kinship graph
+
+Branch: `kac-2.5-family-kinship`, based on the species-aware life-cycle branch.
+
+Implemented in this slice:
+- Person records persist bounded `kinship` collections for parents, children and partners.
+- Parent/child edges are explicit, typed (biological, adoptive or guardian), reciprocal and idempotent.
+- Self-parentage, unknown people, invalid link types, more than two parents and ancestry cycles are rejected.
+- Partnerships are reciprocal, typed by status (partner, married, separated or divorced), and retain ended relationships as history.
+- Siblings are derived only from shared explicit parent IDs; co-residence does not imply kinship.
+- Legacy person records migrate to empty bounded kinship collections.
+- Save loading repairs reciprocal links after all entities and stable person IDs have been restored.
+
+Not implemented in this slice:
+- Birth/death generation, automatic parent assignment, family-name inheritance, inheritance, succession, family tree UI or autonomous family decisions.
+- The graph is a data foundation; it does not infer parenthood or marriage from household membership, age, appearance or proximity.
+
+Verification required on the exact branch head:
+- Full Node test and syntax suite.
+- CI browser E2E and save/load checks.
+- Review of malformed legacy graph handling and long-running storage bounds.
+
+Do not merge or deploy without user approval. Cloudflare Pages remains production; do not configure or use Vercel.
