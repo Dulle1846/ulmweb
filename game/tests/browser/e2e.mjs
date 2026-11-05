@@ -333,6 +333,9 @@ try{
     },null,{timeout:45000});
     const countBeforeClick=Number.parseInt(await page.locator("#hand-count").innerText(),10);
     const cardButtons=page.locator("#card-hand .hand-card");
+    assert.ok(await page.locator("#card-hand .hand-card-sprite use").count()>=1,"every card must display original category artwork");
+    assert.ok((await page.locator("#card-hand .hand-card-sprite use").first().getAttribute("href")).startsWith("assets/royal-card-atlas.svg#"),"card hand must use the dedicated royal card atlas");
+
     assert.ok(countBeforeClick>=3);
     const eventModal=page.locator("#realm-event-modal");
     if(await eventModal.isVisible())await page.locator("#realm-event-choices button").first().click();

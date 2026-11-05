@@ -24,7 +24,7 @@ button,input{font-family:Georgia,"Palatino Linotype",serif}
 .hand-dock-heading{color:#f0ddb6;letter-spacing:.16em;font-variant:small-caps}.hand-help{color:#c4a16b}
 .card-hand{align-items:flex-end;gap:10px}
 .hand-card{position:relative;isolation:isolate;min-width:94px;max-width:132px;min-height:128px;padding:8px 7px 9px;display:flex;flex-direction:column;align-items:center;gap:5px;overflow:hidden;border:1px solid #8b6739;border-radius:3px 3px 9px 3px;background:radial-gradient(ellipse at 18% 12%,#fff7d5aa,transparent 42%),repeating-linear-gradient(0deg,#6142200b 0 1px,transparent 1px 4px),linear-gradient(145deg,#f1e3c2,#d4bd8d);color:#3e2b1b;box-shadow:0 4px 10px #0008,inset 0 0 0 3px #f2e4c2,inset 0 0 0 4px #9b7742;transform:translateY(0) rotate(var(--tilt,0deg));transition:transform .16s,border-color .16s,box-shadow .16s;cursor:grab}
-.hand-card{background-image:url("../assets/comic-card-frame.svg"),radial-gradient(ellipse at 18% 12%,#fff7d5aa,transparent 42%),repeating-linear-gradient(0deg,#6142200b 0 1px,transparent 1px 4px),linear-gradient(145deg,#f1e3c2,#d4bd8d);background-size:100% 100%,auto,auto,auto;background-repeat:no-repeat}
+.hand-card{background-image:url("../assets/royal-card-frame.svg"),radial-gradient(ellipse at 18% 12%,#fff7d5aa,transparent 42%),repeating-linear-gradient(0deg,#6142200b 0 1px,transparent 1px 4px),linear-gradient(145deg,#f1e3c2,#d4bd8d);background-size:100% 100%,auto,auto,auto;background-repeat:no-repeat}
 .hand-card:nth-child(odd){--tilt:-1.6deg}.hand-card:nth-child(even){--tilt:1.2deg}
 .hand-card:before{content:"";position:absolute;inset:6px;border:1px solid #9a7648;opacity:.58;pointer-events:none}
 .hand-card:hover,.hand-card.is-selected{transform:translateY(-11px) rotate(0);border-color:#e4bf72;box-shadow:0 10px 17px #000a,inset 0 0 0 3px #f5e9c9,inset 0 0 0 4px #a37a3e}
@@ -144,3 +144,13 @@ button,input{font-family:Georgia,"Palatino Linotype",serif}
 .dossier-section h3,.dossier-kicker{color:#855b2a}
 .dossier-memory,.dossier-link-list li{background:#fff3d455;border-color:#a4865b66}
 @media(max-width:720px){.person-dossier{border-left:0;border-top:1px solid #a4865b}}
+
+/* Phase 4 — original card frame and category illustration system. */
+.hand-card{background-image:url("../assets/royal-card-frame.svg"),radial-gradient(ellipse at 18% 12%,#fff7d5aa,transparent 42%),repeating-linear-gradient(0deg,#6142200b 0 1px,transparent 1px 4px),linear-gradient(145deg,#f1e3c2,#d4bd8d);background-size:100% 100%,auto,auto,auto;background-repeat:no-repeat}
+.hand-card-banner{width:54px;height:58px;border-color:#9d7b48;background:linear-gradient(145deg,#eee0bd,#bda477);box-shadow:inset 0 0 0 2px #f2e5c8}
+.hand-card-sprite{width:40px;height:40px;filter:drop-shadow(0 1px 1px #fff8)}
+.rarity-uncommon{border-color:#54734f}
+.rarity-fine{border-color:#536d87}
+.rarity-rare{border-color:#79528b}
+.rarity-epic{border-color:#98703d;box-shadow:0 4px 10px #0008,inset 0 0 0 3px #f2e4c2,inset 0 0 0 4px #9b7742,0 0 8px #b99a5944}
+.rarity-legendary,.rarity-mythic,.rarity-unique{border-color:#b58a45;box-shadow:0 4px 10px #0008,inset 0 0 0 3px #f2e4c2,inset 0 0 0 4px #b58a45,0 0 10px #d2aa5b66}

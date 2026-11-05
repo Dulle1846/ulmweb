@@ -185,3 +185,19 @@ test("main menu uses the original muted royal title illustration",async()=>{
   assert.ok(!html.includes('src="assets/kingdom-illustration.svg"'));
   assert.ok(css.includes(".start-hero-art{display:block"));
 });
+
+test("card hand uses the original royal illustration atlas without emoji duplication",async()=>{
+ const atlas=await readFile(new URL("assets/royal-card-atlas.svg",root),"utf8");
+ for(const id of ["card-settlement","card-agriculture","card-industry","card-defense","card-military","card-nature","card-people","card-court","card-travel","card-magic","card-event","card-law","card-maritime","card-knowledge","card-faith","card-diplomacy","card-culture","card-monster","card-relic","card-weather","card-cuisine","card-communication","card-architecture","card-craft","card-husbandry","card-trade","card-engineering","card-medicine","card-mysteries"]){
+  assert.ok(atlas.includes('id="'+id+'"'),"missing card illustration "+id);
+ }
+ assert.ok(ui.includes("assets/royal-card-atlas.svg#"));
+ assert.ok(!ui.includes("esc(card.icon)"));
+});
+
+test("card frames use the restrained royal frame asset and rarity treatments",async()=>{
+ const frame=await readFile(new URL("assets/royal-card-frame.svg",root),"utf8");
+ assert.ok(frame.includes('viewBox="0 0 132 176"'));
+ assert.ok(css.includes("royal-card-frame.svg"));
+ assert.ok(css.includes(".rarity-legendary"));
+});

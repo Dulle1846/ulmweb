@@ -202,3 +202,11 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Added 15 dedicated original SVG building symbols mapped to the current building type enum.
 - Replaced the bright storybook title image with an original muted royal dusk panorama aligned to the parchment, timber and antique-gold direction.
 - Added asset-contract and browser assertions for the title artwork and building atlas mapping.
+
+
+## Development line 3.7.0-dev — Phase 4 card illustration
+
+- Added original category artwork for the current card-group families and mapped the existing card group sprite identifiers to the new atlas.
+- Replaced emoji duplication with a single scalable category illustration per card.
+- Added an original parchment / antique-gold card frame and rarity treatments.
+- Added static asset contracts and browser assertions; card rules, generation and save schema are unchanged.
