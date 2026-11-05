@@ -83,6 +83,33 @@ try{
     });
     await page.mouse.click(roadFixture.screenX,roadFixture.screenY);
     assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y)?.type,{x:roadFixture.x,y:roadFixture.y}),"dirt","map click must create a persistent road tile");
+    const roadDragTarget=await page.evaluate(async({x,y})=>{
+        const [{state},{isWaterAt},{BUILDING_SIZE},{getRoadAt}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/world/world.js"),import("./js/core/config.js"),import("./js/systems/roads.js")
+        ]);
+        const rect=document.querySelector("#canvas").getBoundingClientRect();
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+            const tx=x+dx,ty=y+dy;
+            if(tx<0||ty<0||tx>=160||ty>=160||!state.explored?.[tx]?.[ty]||isWaterAt(tx+.5,ty+.5)||getRoadAt(tx,ty))continue;
+            const occupied=state.entities.some(entity=>{
+                if(entity.dead||!entity.isBuilding?.())return false;
+                const size=BUILDING_SIZE[entity.type]||{w:1,h:1};
+                const scale=Math.max(.25,Math.min(6,Number(entity.footprintScale)||1));
+                return Math.abs(tx+.5-(entity.x+.5))<size.w*scale/2&&Math.abs(ty+.5-(entity.y+.5))<size.h*scale/2;
+            });
+            if(occupied)continue;
+            const screenX=(tx+.5)*48*state.zoom-state.camera.x+rect.left;
+            const screenY=(ty+.5)*48*state.zoom-state.camera.y+rect.top;
+            if(screenX<rect.left+4||screenX>rect.right-4||screenY<rect.top+4||screenY>rect.bottom-4)continue;
+            return {x:tx,y:ty,screenX,screenY};
+        }
+        throw new Error("No adjacent road drag target is available");
+    },{x:roadFixture.x,y:roadFixture.y});
+    await page.mouse.move(roadFixture.screenX,roadFixture.screenY);
+    await page.mouse.down();
+    await page.mouse.move(roadDragTarget.screenX,roadDragTarget.screenY,{steps:6});
+    await page.mouse.up();
+    assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y)?.type,{x:roadDragTarget.x,y:roadDragTarget.y}),"dirt","dragging across the map must place the next road tile");
     await page.keyboard.press("Escape");
     assert.ok(await page.locator("#road-build-cancel").evaluate(el=>el.classList.contains("hidden")),"Escape must leave road build mode");
 
