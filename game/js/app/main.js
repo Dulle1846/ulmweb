@@ -19,6 +19,8 @@ import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
 import {ensurePersonProfile,normalizePersonProfile,normalizePersonMemorial,MAX_PERSON_ARCHIVE} from "../systems/people.js";
 import {setupCharacterDossier} from "../presentation/character-dossier.js";
 import {normalizeFamilyLinks} from "../systems/families.js";
+import {normalizeGovernment} from "../systems/government.js";
+import {setupStrategyPanels} from "../presentation/strategy-panels.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -129,7 +131,7 @@ function createSaveSnapshot(){
         availableCards:state.availableCards.map(card=>({...card,cost:{...card.cost}})),
         activeEvent:state.activeEvent,
         eventLog:state.eventLog.slice(0,100),eventSequence:state.eventSequence,
-        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),market:JSON.parse(JSON.stringify(state.market)),
+        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),government:JSON.parse(JSON.stringify(state.government||{})),royalDynasty:JSON.parse(JSON.stringify(state.royalDynasty||{lastBirthYear:0,regency:null,history:[]})),market:JSON.parse(JSON.stringify(state.market)),
         totalPopulation:state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length
     };
 }
@@ -220,6 +222,10 @@ function loadSnapshotIntoGame(profile,snapshot){
     const birthCheckYear=Number(state.economy.lastBirthCheckYear);
     state.economy.lastBirthCheckYear=Number.isFinite(birthCheckYear)?Math.max(1,Math.min(state.year,Math.floor(birthCheckYear))):state.year;
     normalizePoliticalState(snapshot.politics);
+    normalizeGovernment(snapshot.government);
+    state.royalDynasty={lastBirthYear:0,regency:null,history:[],...(snapshot.royalDynasty||{})};
+    state.royalDynasty.lastBirthYear=Math.max(0,Math.min(state.year,Math.floor(Number(state.royalDynasty.lastBirthYear)||0)));
+    state.royalDynasty.history=Array.isArray(state.royalDynasty.history)?state.royalDynasty.history.slice(-100):[];
     normalizeHouseholdAssignments();
     state.market=snapshot.market||createMarketState();
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===WORLD_W)state.explored=snapshot.explored;
@@ -312,6 +318,7 @@ function init(){
     bindCanvas();
     setupInput();
     setupCharacterDossier();
+    setupStrategyPanels();
     bindMenu();
     applySoundtrackSettings(settings);
     window.addEventListener("resize",resize);
