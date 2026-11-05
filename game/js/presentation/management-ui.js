@@ -53,6 +53,16 @@ function act(b){
  if(r.ok){toast("DECISION RECORDED");render();}else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
 }
 export function setupManagementUI(){
+ document.querySelectorAll("[data-kac-panel]").forEach(button=>button.addEventListener("click",()=>{
+  const target=button.dataset.kacPanel;
+  document.querySelectorAll(".realm-nav-button").forEach(item=>item.classList.toggle("is-active",item===button));
+  if(target==="people"){$("people-btn")?.click();return;}
+  if(target==="settings"){$("settings-btn")?.click();return;}
+  if(target==="build"){$("build-open-btn")?.click();return;}
+  if(["government","politics","decisions","cards","economy","dynasty","creatures"].includes(target)){
+   activePanel=target;$("command-modal")?.classList.remove("hidden");render();
+  }
+ }));
  $("command-open-btn")?.addEventListener("click",()=>{$("command-modal")?.classList.remove("hidden");render();});
  document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{activePanel=b.dataset.commandTab||"government";$("command-modal")?.classList.remove("hidden");render();}));
  $("command-close")?.addEventListener("click",()=>$("command-modal")?.classList.add("hidden"));
