@@ -254,3 +254,11 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Chromium now captures the realm and management dialog at all seven required responsive viewports.
 - GitHub Actions uploads the screenshot set as a seven-day review artifact, including on failed runs where screenshots exist.
 - This enables visual QA but does not itself certify the layout or complete the remaining accessibility audit.
+
+
+## Development line 3.7.0-dev — Phase 5 mobile command-bar correction
+
+- Screenshot review found that the top command row clipped controls on narrow mobile screens even though the document itself did not overflow.
+- The header controls now wrap within the available width; the speed group remains reachable on the second row when required.
+- Chromium E2E asserts that the complete header action group and every control remain inside all seven tested viewport widths.
+- Other mobile composition, map usability and remaining accessibility checks stay open.
