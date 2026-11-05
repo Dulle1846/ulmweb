@@ -51,9 +51,7 @@ function chooseBirthHome(first, second) {
 }
 
 function hasResourcesForBirth() {
-    const housing = getHousingSnapshot();
-    return housing.available >= 1 &&
-        state.morale >= BIRTH_MIN_MORALE &&
+    return state.morale >= BIRTH_MIN_MORALE &&
         Number(state.resources?.food || 0) >= housing.population * BIRTH_FOOD_RESERVE_PER_RESIDENT;
 }
 
