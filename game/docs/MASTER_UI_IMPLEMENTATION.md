@@ -245,3 +245,9 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added a contained vertical scroll region to the mobile side panel while keeping resource, card, tab and footer sections at their natural minimum sizes.
 - Chromium E2E now verifies that the side panel has overflow content and that scrolling reaches it at both 390×844 and 768×1024.
 - This preserves the fixed game shell and bottom action bar; it does not introduce document-level scrolling or alter simulation behavior.
+
+
+## Phase 5 — selected-card reachability proof
+
+- Strengthened the mobile side-panel test beyond merely checking that a scrollbar exists: Chromium now scrolls the selected card into the visible region and verifies that the entire card fits inside the panel viewport at 390×844 and 768×1024.
+- Captures a separate scrolled-state screenshot for both mobile/tablet sizes as review evidence, then restores the original scroll position before continuing the test.
