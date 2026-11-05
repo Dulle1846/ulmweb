@@ -9,25 +9,26 @@ All playable game systems belong in the normal `game/` tree. Feature branches ar
 ## Current production truth
 
 - Canonical production branch: `ulmweb-branch`.
-- Latest confirmed production release: PR #26 (and the related PR #24) integrated the same 3.2 release head, merge commit `6290bcbd4981a334c4f57443651d90c5be2eebe8`.
+- Latest confirmed production release: PR #27, merge commit `fe248e694b50477136f3cdb3a182466788fe1c32` (3.3 road construction). The prior 3.2 baseline was PR #24/#26, merge commit `6290bcbd4981a334c4f57443651d90c5be2eebe8`.
 - PR #26 integrated the 3.2 strategy/dynasty/creature UI, slower 750 ms day clock, 0.5x/1x/2x/4x speed, deterministic combat/economy/market streams, save backup/recovery/validation, core art and city-builder specification.
 - For PR #26's tested head, Game Quality, Kings & Cards 2.1 checks and Game Browser E2E all completed successfully. These are GitHub Actions results, not proof of a Cloudflare deployment.
-- The public Pages URL `https://kings-and-cards.pages.dev/` was fetched successfully on 2026-11-05 and returned the current game page, including Save, Load, Pause and speed controls. A Cloudflare dashboard deployment record was not available in this audit.
+- The public Pages URL `https://kings-and-cards.pages.dev/` was fetched after PR #27. The live header includes BUILD and EXIT BUILD; the construction modal includes the road categories and the deployed app bootstrap imports the road/build modules. This verifies the new release UI is served. The Cloudflare dashboard's deployment ID/settings still need a signed-in dashboard check.
 - Canonical hosting is Cloudflare Pages. Vercel is not a production target. The legacy `workers.dev` Worker is separate from Pages and must be diagnosed independently.
 
-## Current development candidate
+## Current production release: 3.3 road construction
 
-PR #27 — `kac-3.3-lite-city-builder-roads` — is the current Draft candidate, based directly on `ulmweb-branch`.
+PR #27 — `kac-3.3-lite-city-builder-roads` — was merged into `ulmweb-branch` on 2026-11-05. Merge commit: `fe248e694b50477136f3cdb3a182466788fe1c32`. The exact tested head was `5dba0ab974826fab3fd515639bc66ffa800928ba`.
 
 It adds:
 - Three road tiers with resource costs, upgrades, refunds and placement validation.
-- Mouse/touch click-and-drag placement.
-- Visible road rendering and intersections.
+- Mouse/touch click-and-drag placement and explicit build-mode cancellation.
+- Visible road rendering, junctions and intersections.
 - Road movement-speed and A* route-cost modifiers.
-- Road save/load serialization.
-- Unit tests and browser E2E coverage.
+- Road maintenance charged through the 20-day economy ledger.
+- Road save/load serialization, validation and restoration.
+- Unit tests and browser E2E for placement, drag, demolition, upkeep, routing and persistence.
 
-Latest verified CI on head `283bf1b16e7ad63b7ddaa94620c199bf4a52499d`: Game Quality, Kings & Cards 2.1 checks and Browser E2E all passed. That head includes the road save-validation regex fix. A later head may include additional drag-path and A* corridor tests; check the exact current PR head before release.
+All three required workflows passed on the exact tested head: Game Quality, Kings & Cards 2.1 checks and Game Browser E2E. The public Pages HTML was then fetched with a cache-busting query and its header/build modal were inspected; BUILD and the roads panel were present. The Cloudflare dashboard deployment record is still not verified.
 
 ## Preservation matrix for open source branches
 
@@ -43,7 +44,7 @@ Latest verified CI on head `283bf1b16e7ad63b7ddaa94620c199bf4a52499d`: Game Qual
 | #18 `kac-3.1-living-fantasy-creatures` | Persistent fantasy creatures | Branch `creatures.js` is materially larger than production and contains species profiles, lifecycle, needs, memories, autonomy and memorials. | Port the full species/lifecycle behaviors and tests into the current creature system without breaking the existing summon/dragon API. |
 | #20 `kac-3.1-dynasty-strategy-ui` | Parallel dynasty/strategy implementation | Contains unique `dynasty.js`, alternate `realm-management.js`, unique kingdom art and a second dynasty/government implementation. | Do not merge wholesale. Extract unique, validated behaviors into the canonical modules; preserve the artwork and tests until audited. |
 | #24 / #26 | 3.2 production release | Both closed as merged against the same 3.2 release head; all three required CI workflows passed for the tested release candidate. | Historical release baseline. |
-| #27 | 3.3 road construction | New candidate; CI currently has a browser E2E save/load issue. | Fix, rerun all checks, review diff, then request release approval. |
+| #27 | 3.3 road construction | Merged into production; exact tested head passed all three workflows and the public Pages UI was verified. | Shipped baseline. Keep its regression tests and road-save schema stable. |
 
 ## Important preservation gaps
 
@@ -86,10 +87,10 @@ These are project roles, not claims that separate external AI agents are running
 
 1. Keep all source branches available while their unique code/tests/art are audited.
 2. Use `ulmweb-branch` as the only production target.
-3. Keep PR #27 Draft until all three workflows pass for the exact head.
+3. Treat PR #27 as the shipped 3.3 baseline; do not re-open or duplicate its road implementation without a concrete bug or extension.
 4. Port missing PR #16/#17/#18/#19/#20 behaviors into the one canonical implementation in `game/`, with regression tests.
 5. Do not close the source PRs until the preservation matrix is satisfied and the canonical tests cover their unique behaviors.
-6. Preview deployment must be tested before production; production is complete only after Cloudflare confirms the Pages deployment and the public Pages URL serves the expected commit.
+6. For future releases, preview deployment must be tested before production; production is complete only after Cloudflare confirms the Pages deployment and the public Pages URL serves the expected commit.
 
 ## Release truthfulness gate
 
