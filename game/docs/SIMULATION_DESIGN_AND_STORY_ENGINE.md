@@ -420,3 +420,15 @@ Implemented on `kac-2.3-living-chronicles`:
 This is a deliberately narrow first model. Participants are selected from the realm's existing resident profiles, not from a spatially accurate incident radius: event families do not yet carry reliable map coordinates or named locations. The relationship score is a compact response to the choice's public/political/health effects, not a full psychological model. There is no relationship decay, family/kinship graph, social network propagation or character inspection UI yet.
 
 Acceptance tests cover participant selection, durable and idempotent memories, bounded directed ruler relationships and event-to-person integration. The next slice should add event location/household provenance and a character chronicle UI before expanding relationship simulation.
+
+
+## Implemented follow-up — explicit family graph (Phase 2.5)
+
+The person model now includes bounded, persistent kinship collections:
+- `parents`: up to two explicit parent links, each typed biological, adoptive or guardian.
+- `children`: reciprocal child links with the same relationship kind.
+- `partners`: reciprocal partner/marriage history, including ended relationships.
+
+The family module rejects self-parentage, missing entities, invalid parent kinds, parent-limit violations and ancestry cycles when creating links. Siblings are derived from shared explicit parent IDs. Save loading normalizes legacy records and repairs reciprocal references after entity restoration.
+
+This is not yet a birth or succession simulator. Birth generation, death, name transmission, inheritance, title succession, family UI and autonomous family decisions remain separate work. No relationship is inferred from co-residence.
