@@ -81,33 +81,13 @@ try{
     assert.ok(globalDock.width>=1590,"the contextual action bar must span the complete game width, not just the side panel");
     assert.ok(globalDock.parent.includes("game-shell"),"the action bar must be a sibling of the game layout");
 
-    const dynastyFixture=await page.evaluate(async()=>{
-        const [{state},{linkParentChild}]=await Promise.all([
-            import("./js/core/state.js"),import("./js/systems/families.js")
-        ]);
-        const sovereign=state.entities.find(entity=>entity.isKing&&entity.personId);
-        if(!sovereign)throw new Error("A sovereign with a persistent person ID is required for the dynasty graph fixture");
-        const child=state.entities.find(entity=>!entity.isKing&&entity.personId&&entity.person&&!entity.dead&&!entity.isBuilding?.()&&!(entity.person.kinship?.parents||[]).length);
-        if(!child)throw new Error("A living unlinked resident is required for the dynasty graph fixture");
-        const linked=linkParentChild(sovereign.personId,child.personId,{kind:"biological"});
-        if(!linked.ok)throw new Error("Could not create dynasty graph fixture: "+linked.reason);
-        return {parentId:String(sovereign.personId),childId:String(child.personId)};
-    });
     await page.locator('[data-kac-dock-action="dynasty"]').click();
     assert.ok(await page.locator("#command-modal").isVisible(),"dynasty action must open the management dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Dynasty & lineage");
-    const dynastyGraph=page.locator("#command-panel-content .dynasty-graph");
-    assert.equal(await dynastyGraph.count(),1,"dynasty view must render the relationship graph");
-    assert.equal(await dynastyGraph.locator(".dynasty-graph-root .dynasty-person").count(),1,"the sovereign must anchor the descendant graph");
-    const firstBranch=dynastyGraph.locator(".dynasty-graph-children > .dynasty-branch").first();
-    assert.equal(await firstBranch.count(),1,"the deterministic test child must be rendered beneath the sovereign");
-    assert.equal(await firstBranch.getAttribute("data-parent-id"),dynastyFixture.parentId);
-    assert.equal(await firstBranch.getAttribute("data-person-id"),dynastyFixture.childId);
-    const linked=await page.evaluate(async({parentId,childId})=>{
-        const {getFamilySnapshot}=await import("./js/systems/families.js");
-        return (getFamilySnapshot(parentId)?.children||[]).some(link=>String(link.personId)===String(childId));
-    },dynastyFixture);
-    assert.ok(linked,"the visible connector must represent a real persisted parent-child relationship");
+    const initialDynastyGraph=page.locator("#command-panel-content .dynasty-graph");
+    assert.equal(await initialDynastyGraph.count(),1,"dynasty view must render the relationship graph");
+    assert.equal(await initialDynastyGraph.locator(".dynasty-graph-root .dynasty-person").count(),1,"the sovereign must anchor the descendant graph");
+    assert.equal(await initialDynastyGraph.locator(".dynasty-branch").count(),0,"the graph must not invent descendants when no child links are recorded");
     await page.waitForFunction(()=>document.activeElement?.id==="command-close",null,{timeout:3000});
     await page.keyboard.press("Shift+Tab");
     assert.ok(await page.evaluate(()=>Boolean(document.activeElement?.closest("#command-modal"))),"Shift+Tab must remain inside the open management dialog");
@@ -135,13 +115,6 @@ try{
         assert.equal((await page.locator("#person-dossier .dossier-identity h2").innerText()).trim(), relatedName.trim(), "relationship navigation must open the exact linked person");
     }
     await page.locator("#people-close").click();
-    await page.evaluate(async({parentId,childId})=>{
-        const {state}=await import("./js/core/state.js");
-        const parent=state.entities.find(entity=>String(entity.personId||entity.id)===String(parentId));
-        const child=state.entities.find(entity=>String(entity.personId||entity.id)===String(childId));
-        if(parent?.person?.kinship?.children)parent.person.kinship.children=parent.person.kinship.children.filter(link=>String(link.personId)!==String(childId));
-        if(child?.person?.kinship?.parents)child.person.kinship.parents=child.person.kinship.parents.filter(link=>String(link.personId)!==String(parentId));
-    },dynastyFixture);
     await page.waitForFunction(()=>document.activeElement?.id==="main-container",null,{timeout:3000});
     await page.locator('[data-kac-dock-action="save"]').click();
     await page.waitForFunction(()=>document.querySelector("#save-status")?.textContent.startsWith("LAST SAVED"),null,{timeout:5000});
@@ -468,6 +441,41 @@ try{
 
     // Event decisions can overlay the map during a long accelerated test.
     if(await eventModal.isVisible())await page.locator("#realm-event-choices button").first().click();
+
+    // Seed the relationship only after the map/building interaction tests so the
+    // dynasty fixture cannot perturb their world-state assumptions.
+    const dynastyFixture=await page.evaluate(async()=>{
+        const [{state},{linkParentChild}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/families.js")
+        ]);
+        const sovereign=state.entities.find(entity=>entity.isKing&&entity.personId);
+        if(!sovereign)throw new Error("A sovereign with a persistent person ID is required for the dynasty graph fixture");
+        const child=state.entities.find(entity=>!entity.isKing&&entity.personId&&entity.person&&!entity.dead&&!entity.isBuilding?.()&&!(entity.person.kinship?.parents||[]).length);
+        if(!child)throw new Error("A living unlinked resident is required for the dynasty graph fixture");
+        const linked=linkParentChild(sovereign.personId,child.personId,{kind:"biological"});
+        if(!linked.ok)throw new Error("Could not create dynasty graph fixture: "+linked.reason);
+        return {parentId:String(sovereign.personId),childId:String(child.personId)};
+    });
+    await page.locator('[data-kac-dock-action="dynasty"]').click();
+    const linkedDynastyGraph=page.locator("#command-panel-content .dynasty-graph");
+    assert.equal(await linkedDynastyGraph.count(),1);
+    const firstBranch=linkedDynastyGraph.locator(".dynasty-graph-children > .dynasty-branch").first();
+    assert.equal(await firstBranch.count(),1,"the test heir must appear below the sovereign");
+    assert.equal(await firstBranch.getAttribute("data-parent-id"),dynastyFixture.parentId);
+    assert.equal(await firstBranch.getAttribute("data-person-id"),dynastyFixture.childId);
+    const recordedLink=await page.evaluate(async({parentId,childId})=>{
+        const {getFamilySnapshot}=await import("./js/systems/families.js");
+        return (getFamilySnapshot(parentId)?.children||[]).some(link=>String(link.personId)===String(childId));
+    },dynastyFixture);
+    assert.ok(recordedLink,"the visible connector must represent a real persisted parent-child relationship");
+    await page.locator("#command-close").click();
+    await page.evaluate(async({parentId,childId})=>{
+        const {state}=await import("./js/core/state.js");
+        const parent=state.entities.find(entity=>String(entity.personId||entity.id)===String(parentId));
+        const child=state.entities.find(entity=>String(entity.personId||entity.id)===String(childId));
+        if(parent?.person?.kinship?.children)parent.person.kinship.children=parent.person.kinship.children.filter(link=>String(link.personId)!==String(childId));
+        if(child?.person?.kinship?.parents)child.person.kinship.parents=child.person.kinship.parents.filter(link=>String(link.personId)!==String(parentId));
+    },dynastyFixture);
 
     await page.locator("#settings-btn").click();
     assert.equal(await page.locator("#settings-modal").isVisible(),true);
