@@ -2,7 +2,7 @@
 
 **Specification:** `MASTER UI & VISUAL DESIGN CONCEPT v1.0` (uploaded project brief)  
 **Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard)  
-**Current UI branch:** `kac-ui-01-03-master-design-system`  
+**Current UI branch:** `kac-ui-phase-2-dynasty-action-dock`  
 **Baseline:** `6c4c3f0442ea18aa04fee5598e909ddfc6b4d900`  
 **Rule:** This register distinguishes implemented and tested work from the remaining concept. A styled shell is not a completed screen.
 
@@ -29,14 +29,24 @@
 |---|---|---|
 | UI-01 — inventory and architecture review | **Implemented** | Existing HTML shell, three legacy stylesheets, management modal, character dossier, card hand, canvas and existing management data modules reviewed. |
 | UI-02 — design system | **First implementation** | New `css/ui-design-system.css`; canonical color, spacing, typography, radius, line and shadow tokens; parchment and timber component treatment; existing royal crest and SVG resource sprites replace several placeholder glyphs. Further component extraction remains. |
-| UI-03 — button library | **First implementation** | Shared states for primary/secondary, speed, navigation, management tabs, build options and modal controls; active navigation and tabs expose accessible pressed state. Full standalone reusable component API and tooltip coverage remain. |
-| UI-04 — main interface | **First implementation** | Royal navigation rail, live resource/population strip, existing map and right-side card/management panel retained. A live kingdom overview now reads sovereign, year, population, morale, treasury, housing, workforce, legitimacy, resources and recent records. Lower action bar, clickable ruler portrait, autosave status and event inbox remain. |
+| UI-03 — button library | **First implementation** | Shared states for primary/secondary, speed, navigation, management tabs, build options and modal controls; active navigation and tabs expose accessible pressed state. Phase 2 adds reusable panel/card/section/icon-button primitives and opt-in accessible CSS tooltips. Full component API and tooltip coverage remain. |
+| UI-04 — main interface | **Phase 2 increment** | Adds a contextual action dock for people, dynasty, cards, chronicle and manual save; save status reflects confirmed save/load success or failure. This is not autosave. The existing map and right-side management panel remain. Clickable ruler portrait and a dedicated event inbox remain. |
 | UI-05 — administration screens | **Partial** | Existing government, politics and economy screens are reachable from the rail. Kingdom overview, resource drill-down, production, storage, finance forecasts and building dossier are not yet complete. |
-| UI-06 — character and dynasty | **Partial** | Existing character dossiers and royal dynasty management remain available. Tree visualization, family filters, relationship navigation and full character actions remain. |
+| UI-06 — character and dynasty | **Phase 2 increment** | Adds a bounded, multi-generation descendant tree sourced only from the explicit kinship graph, with living/deceased family records and direct dossier navigation. Broader family filters, ancestor/sibling network layout and expanded character actions remain. |
 | UI-07 — fantasy areas | **Partial** | Existing dragon/creature management and card rarity styles retained. Full creature dossiers, bestiary, magic screen and illustrated legendary card treatment remain. |
 | UI-08 — menu and settings | **Partial** | Existing main menu and settings remain; visual override applied. Version/credits/save-slot management and graphics/accessibility controls remain. |
 | UI-09 — art and animation | **Partial** | Existing SVG illustrations and iconography reused. Asset audit, coherent portrait/building/creature set and construction/event animation pass remain. |
 | UI-10 — QA | **In progress** | Added static UI contract tests. Browser E2E and viewport matrix must pass on the exact PR head before release. |
+
+## Phase 2 implementation increment (PR in review)
+
+- Added a compact contextual action dock to the management sidebar: character dossiers, dynasty, cards, chronicle and manual save.
+- Added a save-status line that changes only after a save or load operation reports success/failure. No automatic-save behavior is implied or claimed.
+- Replaced the dynasty history-only panel with a multi-generation descendant view built from `getFamilySnapshot` and the persisted royal house. The view is depth-limited and caps each generation to keep DOM growth predictable.
+- Family members open their existing character dossier through a dedicated event bridge. This reuses the canonical people browser rather than creating a second source of truth.
+- Added shared CSS primitives for dark panels, parchment cards, section headers, icon buttons, tooltip surfaces, dynasty person cards and focus/hover/pressed states.
+- Added static contract tests for dock actions, kinship graph use, bounded rendering, dossier navigation and honest save-state messaging.
+- These changes are pending CI and browser review on the exact pull-request head. They are not production-released until the release rule below is met.
 
 ## Actual navigation contract
 
