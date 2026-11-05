@@ -95,7 +95,7 @@ export function updateMortality() {
 
     const residents = state.entities
         .filter(entity => !entity.dead && (entity.type === TYPE.VILLAGER || entity.isKing) && entity.personId)
-        .sort((a, b) => String(a.personId).localeCompare(String(b.personId)));
+        .sort((a, b) => Number(Boolean(b.isKing)) - Number(Boolean(a.isKing)) || String(a.personId).localeCompare(String(b.personId)));
     const deaths = [];
     for (const entity of residents) {
         if (deaths.length >= MAX_NATURAL_DEATHS_PER_YEAR) break;
