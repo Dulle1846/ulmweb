@@ -195,3 +195,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Promoted the contextual action dock from the right sidebar to a full-width lower bar beneath the game layout.
 - Preserved the existing live action handlers and save-status semantics.
 - Added responsive wrapping and E2E viewport checks at 390×844, 768×1024, 1280×720, 1366×768, 1600×900, 1920×1080 and 2560×1440.
+
+
+## Development line 3.7.0-dev — Phase 4 building and title art
+
+- Added 15 dedicated original SVG building symbols mapped to the current building type enum.
+- Replaced the bright storybook title image with an original muted royal dusk panorama aligned to the parchment, timber and antique-gold direction.
+- Added asset-contract and browser assertions for the title artwork and building atlas mapping.

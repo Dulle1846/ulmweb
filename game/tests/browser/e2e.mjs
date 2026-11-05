@@ -34,6 +34,8 @@ try{
     await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
     assert.equal(await page.title(),"KINGS & CARDS • Eternal Realm");
     assert.equal(await page.locator("#start-screen").isVisible(),true);
+    assert.equal(await page.locator("#start-screen .start-hero-art").getAttribute("src"),"assets/royal-title-illustration.svg","the founding screen must use the original muted royal title artwork");
+
     assert.equal(await page.locator("#start-screen").getAttribute("role"),"dialog","the founding screen must expose dialog semantics");
     await page.waitForFunction(()=>document.activeElement?.id==="player-name-input",null,{timeout:3000});
 
@@ -206,6 +208,9 @@ try{
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Building register"));
     assert.ok(await page.locator("#command-panel-content .building-record").count()>=1,"starting realm structures must be listed");
     assert.ok(await page.locator("#command-panel-content .building-record-art").count()>=1,"building register must show original sprite artwork");
+    const buildingArtSources=await page.locator("#command-panel-content .building-record-art use").evaluateAll(nodes=>nodes.map(node=>node.getAttribute("href")));
+    assert.ok(buildingArtSources.every(source=>source?.startsWith("assets/royal-building-atlas.svg#")),"every building must use the dedicated royal atlas");
+
     await page.locator("#building-search").fill("farm");
     assert.ok(await page.locator("#command-panel-content .building-record:not(.is-filtered)").count()>=1,"building filter must retain matching structures");
     await page.locator("#building-search").fill("");
