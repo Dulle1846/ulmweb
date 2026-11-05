@@ -271,6 +271,19 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Captures scrolled-state screenshots for review and restores the original scroll position.
 
 
+## Phase 5 — selected-card reachability proof
+
+- Strengthened the mobile side-panel test beyond merely checking that a scrollbar exists: Chromium now scrolls the selected card into the visible region and verifies that the entire card fits inside the panel viewport at 390×844 and 768×1024.
+- Captures a separate scrolled-state screenshot for both mobile/tablet sizes as review evidence, then restores the original scroll position before continuing the test.
+
+
+### Follow-up correction — mobile dock overlap
+
+- The first full-visibility assertion exposed a real 37px overlap between the side-panel's lower edge and the fixed-height action dock at 390×844.
+- Added 44px of mobile-only bottom scroll space and changed the browser check to align the selected card above the actual visible boundary (the earlier of the side-panel bottom and dock top).
+- The check now validates the visible region, not just the side-panel's theoretical bounding box.
+
+
 ## Phase 2 — dedicated sovereign dossier increment (3.7.0-dev)
 
 - Added a royal-house section to the current sovereign's dossier, reading the live consort, designated heir, living children and recorded royal-house history from `getRoyalHouse()`.
