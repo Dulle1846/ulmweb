@@ -52,7 +52,10 @@ export function updateCombat(){
    target.hp-=enemy.type===TYPE.TROLL?32:13;
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
    if(target.hp<=0){
-    target.dead=true;
+    if(target.isKing){
+     const fallen=recordNaturalDeath(target,"combat");
+     if(fallen){addLog("THE MONARCH FELL IN BATTLE: "+fallen.name,"#e9857b","dynasty");resolveRoyalSuccession(target.personId);}
+    }else target.dead=true;
     if(target.type===TYPE.KEEP){state.gameOver=true;queueMessage("THE REALM FELL","THE KEEP WAS DESTROYED",5000);}
    }
   }
