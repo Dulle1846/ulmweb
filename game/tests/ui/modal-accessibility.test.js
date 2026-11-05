@@ -29,7 +29,7 @@ test("modal focus manager traps tab navigation and restores the opener",()=>{
   assert.ok(modal.includes("event.shiftKey"));
   assert.ok(modal.includes("entry.opener.focus"));
   assert.ok(modal.includes("focusInside(next)"));
-  assert.ok(modal.includes("focusFallback"));
+  assert.ok(modal.includes("fallbackFocus"));
   assert.ok(html.includes('id="main-container" class="game-layout" tabindex="-1"'));
 });
 
