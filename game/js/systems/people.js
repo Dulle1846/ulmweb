@@ -37,7 +37,7 @@ export function createPersonProfile(entity,{role="resident",species=null}={}){
         ageYears,lifeStage:lifeStage(ageYears,chosenSpecies),
         traits:createTraits(),needs:createNeeds(),
         goals:[pick(["security","prosperity","family","recognition","knowledge","faith","adventure","power"],"people")],
-        memories:[],relationships:[],secrets:[],
+        memories:[],relationships:[],kinship:{parents:[],children:[],partners:[]},secrets:[],
         bornAtYear:Math.max(1,(Number(state.year)||1)-ageYears),lastAgedYear:Math.max(1,Number(state.year)||1),createdAtTick:Math.max(0,Number(state.tick)||0)
     };
 }
@@ -74,6 +74,11 @@ export function normalizePersonProfile(saved,entity,{role="resident"}={}){
             interactions:Math.max(0,Math.min(100000,Math.floor(Number(item.interactions)||0))),
             lastInteractionTick:Math.max(0,Math.floor(Number(item.lastInteractionTick)||0))
         })).filter(item=>item.targetId),
+        kinship:(()=>{const source=saved.kinship&&typeof saved.kinship==="object"&&!Array.isArray(saved.kinship)?saved.kinship:{};const links=(value,max)=>Array.isArray(value)?value.filter(item=>item&&typeof item==="object").slice(0,max):[];return {
+            parents:links(source.parents,2).map(item=>({personId:String(item.personId||"").slice(0,100),kind:["biological","adoptive","guardian"].includes(item.kind)?item.kind:"biological",sinceYear:Math.max(1,Math.floor(Number(item.sinceYear)||1))})).filter(item=>item.personId),
+            children:links(source.children,64).map(item=>({personId:String(item.personId||"").slice(0,100),kind:["biological","adoptive","guardian"].includes(item.kind)?item.kind:"biological",sinceYear:Math.max(1,Math.floor(Number(item.sinceYear)||1))})).filter(item=>item.personId),
+            partners:links(source.partners,16).map(item=>({personId:String(item.personId||"").slice(0,100),status:["partner","married","separated","divorced"].includes(item.status)?item.status:"partner",sinceYear:Math.max(1,Math.floor(Number(item.sinceYear)||1)),endedYear:item.endedYear==null?null:Math.max(1,Math.floor(Number(item.endedYear)||1))})).filter(item=>item.personId)
+        };})(),
         secrets:Array.isArray(saved.secrets)?saved.secrets.filter(x=>typeof x==="string").slice(0,12):[],
         bornAtYear:Number.isSafeInteger(saved.bornAtYear)?Math.max(1,Math.min(1000000,saved.bornAtYear)):Math.max(1,(Number(state.year)||1)-ageYears),
         lastAgedYear:Number.isSafeInteger(saved.lastAgedYear)?Math.max(1,Math.min(Number(state.year)||1,saved.lastAgedYear)):Math.max(1,Number(state.year)||1),
@@ -104,7 +109,7 @@ export function addPersonMemory(entity,memory){
 export function getPersonSnapshot(entity){
     if(!entity)return null;
     const person=ensurePersonProfile(entity);
-    return {id:person.id,name:person.name,species:person.species,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,bornAtYear:person.bornAtYear,lastAgedYear:person.lastAgedYear,traits:{...person.traits},needs:{...person.needs},goals:[...person.goals],memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item}))};
+    return {id:person.id,name:person.name,species:person.species,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,bornAtYear:person.bornAtYear,lastAgedYear:person.lastAgedYear,traits:{...person.traits},needs:{...person.needs},goals:[...person.goals],memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item})),kinship:{parents:person.kinship.parents.map(item=>({...item})),children:person.kinship.children.map(item=>({...item})),partners:person.kinship.partners.map(item=>({...item}))}};
 }
 
 
