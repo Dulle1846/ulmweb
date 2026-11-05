@@ -264,13 +264,13 @@ function drawDynastyConnectors(){
    if(stacked){
     x1=a.left-bounds.left+a.width/2;y1=a.bottom-bounds.top;
     x2=b.left-bounds.left+b.width/2;y2=b.top-bounds.top;
-    const bend=Math.max(18,Math.abs(y2-y1)*.42);
+    const bend=Math.min(18,Math.max(3,Math.abs(y2-y1)*.42));
     path.setAttribute("d","M "+x1+" "+y1+" C "+x1+" "+(y1+bend)+", "+x2+" "+(y2-bend)+", "+x2+" "+y2);
    }else{
     const forward=b.left>=a.left;
     x1=(forward?a.right:a.left)-bounds.left;y1=a.top-bounds.top+a.height/2;
     x2=(forward?b.left:b.right)-bounds.left;y2=b.top-bounds.top+b.height/2;
-    const bend=Math.max(18,Math.abs(x2-x1)*.32);
+    const bend=Math.min(24,Math.max(4,Math.abs(x2-x1)*.32));
     path.setAttribute("d","M "+x1+" "+y1+" C "+(x1+(forward?bend:-bend))+" "+y1+", "+(x2-(forward?bend:-bend))+" "+y2+", "+x2+" "+y2);
    }
   }else{
