@@ -32,6 +32,7 @@ test("a death creates a persistent memorial and notifies surviving family",()=>{
     assert.equal(state.personArchive[0].personId,parent.personId);
     assert.ok(state.personArchive[0].person.memories.some(memory=>memory.type==="death"));
     assert.ok(child.person.memories.some(memory=>memory.type==="loss"&&memory.text.includes(parent.person.name)));
+    state.entities=state.entities.filter(entity=>entity!==parent);
     assert.equal(getFamilySnapshot(parent.personId).children[0].personId,child.personId);
     assert.equal(getFamilySnapshot(child.personId).parents[0].personId,parent.personId);
     assert.equal(recordNaturalDeath(parent,"old age"),null);
