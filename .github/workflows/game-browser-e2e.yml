@@ -5,6 +5,7 @@ on:
     branches:
       - ulmweb-branch
       - kac-2.1-stability-performance
+      - kac-2.9-royal-dynasty
     paths:
       - "game/**"
       - ".github/workflows/game-browser-e2e.yml"
