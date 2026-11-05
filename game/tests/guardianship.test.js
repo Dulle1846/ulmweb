@@ -154,3 +154,22 @@ test("a trusted non-relative can become guardian only with recorded strong ties"
     assert.equal(result[0].guardianId, trustedFriend.personId);
     assert.equal(child.person.kinship.guardians[0].personId, trustedFriend.personId);
 });
+
+
+test("a child with one living parent is not treated as an orphan", () => {
+    const house = spawnEntity(40, 40, TYPE.HOUSE);
+    const deceasedParent = resident(39, house, { age: 82 });
+    const livingParent = resident(40, house, { age: 35 });
+    const child = resident(41, house, { age: 10 });
+    const trustedFriend = resident(42, house, { age: 40 });
+    linkParentChild(deceasedParent.personId, child.personId);
+    linkParentChild(livingParent.personId, child.personId);
+    trustedFriend.person.relationships.push({
+        targetId: child.personId, targetName: child.person.name, kind: "friend",
+        trust: 95, respect: 90, affinity: 95, interactions: 20, lastInteractionTick: state.tick
+    });
+    recordNaturalDeath(deceasedParent, "old age");
+    state.entities = state.entities.filter(entity => entity !== deceasedParent);
+    assert.deepEqual(updateGuardianships(), []);
+    assert.deepEqual(child.person.kinship.guardians, []);
+});
