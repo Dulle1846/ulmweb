@@ -370,11 +370,11 @@ body.ui-modal-open{overflow:hidden}
  .brand{order:1}
  .header-middle{order:2;flex:1 1 320px;min-width:0;justify-content:flex-end;gap:12px}
  .realm-resource-strip{order:3;flex:0 1 auto;justify-content:flex-end}
- .header-actions{order:4;flex:1 0 100%;justify-content:flex-end;flex-wrap:wrap;gap:5px;padding-top:6px;border-top:1px solid var(--ui-line)}
+ .header-actions{order:4;box-sizing:border-box;flex:1 0 100%;justify-content:flex-end;flex-wrap:wrap;gap:5px;padding-top:6px;border-top:1px solid var(--ui-line)}
  .header-actions .control-button{flex:0 0 auto}
 }
 @media(max-width:790px){
- .header-actions{order:5;flex:1 1 100%;justify-content:center;flex-wrap:wrap;gap:5px;padding-top:6px;border-top:1px solid var(--ui-line)}
+ .header-actions{order:5;box-sizing:border-box;flex:1 1 100%;justify-content:center;flex-wrap:wrap;gap:5px;padding-top:6px;border-top:1px solid var(--ui-line)}
  .header-actions .control-button{flex:0 1 auto;min-width:64px;padding-inline:8px}
  .speed-group{flex:0 0 auto}
 }
