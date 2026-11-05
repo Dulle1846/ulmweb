@@ -307,7 +307,12 @@ try{
     assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y),{x:roadFixture.x,y:roadFixture.y}),null,"road mutation after save should be visible before loading");
     await page.locator("#speed-4").click();
     await page.locator("#load-btn").click();
-    await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Loaded realm"),null,{timeout:5000});
+    await page.waitForFunction(()=>{
+        const message=document.querySelector("#status-message")?.textContent||"";
+        return message.includes("Loaded realm")||message.includes("Load failed")||message.includes("No valid saved realm");
+    },null,{timeout:5000});
+    const loadStatus=(await page.locator("#status-message").innerText()).trim();
+    assert.ok(loadStatus.includes("Loaded realm"),"load must succeed; actual status: "+loadStatus);
     assert.ok(await page.locator("#speed-2").evaluate(el=>el.classList.contains("is-active")),"save/load must restore the saved simulation speed");
     assert.equal(await page.locator("#speed-4").evaluate(el=>el.classList.contains("is-active")),false,"load must clear the previous speed selection");
     assert.equal((await page.locator("#tick-count").innerText()).trim(),savedTick,"save/load must restore the exact simulation tick");
