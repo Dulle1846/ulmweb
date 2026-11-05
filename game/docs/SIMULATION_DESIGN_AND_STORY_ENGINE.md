@@ -479,3 +479,8 @@ Ordinary villagers can now die naturally. The yearly scheduler uses species life
 A death creates a persistent memorial containing the person's normalized profile, identity, family graph, memories, death year/tick and cause. The deceased receives a final memory; living relatives and partners receive bereavement memories. The live entity is then removed by the normal simulation cleanup, while the memorial remains available in the searchable character dossier. Family snapshots can resolve links to archived people.
 
 The archive is capped at 500 compact entries; each memorial keeps family links but only the 12 newest memories, 16 relationships, six secrets and eight goal-history entries. It is included in save/load migration. Older saves start with an empty memorial archive. This is not yet a complete death/succession system: royal succession, inheritance, regency, orphan guardianship, estates and funeral rites remain separate future phases.
+
+
+## Determinism follow-up — villager routines (Phase 2.10)
+
+The villager routine module no longer uses global `Math.random()` for job refresh intervals, routine phase durations or wandering targets. These decisions now consume the seeded `villagers` random stream, and tests verify replay for equal world seeds. This correction is limited to the inspected villager routine module; other game modules still require a repository-wide audit before the project can claim fully deterministic simulation.
