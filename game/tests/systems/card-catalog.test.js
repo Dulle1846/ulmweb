@@ -2,15 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {CARD_CATEGORIES,CARD_PROTOTYPES,CARD_VARIANT_DIMENSIONS,POTENTIAL_CARD_VARIANTS,createCardVariant,createCardForCategory} from "../../js/systems/card-catalog.js";
 
-test("the expandable taxonomy contains five hundred distinct categories",()=>{
-    assert.equal(CARD_CATEGORIES.length,500);
-    assert.equal(new Set(CARD_CATEGORIES.map(item=>item.id)).size,500);
+test("the expandable taxonomy contains five hundred and one distinct categories",()=>{
+    assert.equal(CARD_CATEGORIES.length,501);
+    assert.equal(new Set(CARD_CATEGORIES.map(item=>item.id)).size,501);
 });
 test("potential variants are generated on demand instead of eagerly allocated",()=>{
     assert.equal(CARD_VARIANT_DIMENSIONS.scales.length,10);
     assert.equal(CARD_VARIANT_DIMENSIONS.rarities.length,10);
     assert.equal(CARD_VARIANT_DIMENSIONS.contexts.length,10);
-    assert.equal(POTENTIAL_CARD_VARIANTS,500000);
+    assert.equal(POTENTIAL_CARD_VARIANTS,501000);
     assert.ok(CARD_PROTOTYPES.length>=15);
 });
 test("a card variant scales its costs and retains its prototype identity",()=>{
