@@ -294,3 +294,11 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 
 - Added 44px bottom scroll clearance at narrow phone widths because the bottom action dock covers part of the side-panel's theoretical lower edge.
 - The browser assertion now positions the selected card above the dock's top edge, preventing a false pass where the card was inside the panel but still visually obscured.
+
+
+## Development line 3.7.0-dev — connected royal lineage network
+
+- Added a multi-lane family graph using verified kinship records for grandparents, parents, sovereign, siblings, consort, collateral relatives, cousins and royal children.
+- Added live SVG connector paths with distinct parent, guardian, partnership and sibling styles, plus canonical person dossier navigation.
+- Enforced 80-node and 120-edge limits; retained the existing descendant depth and per-generation caps.
+- Added deterministic Chromium coverage for relationship paths and heir dossier navigation, with reduced-motion and responsive styling.
