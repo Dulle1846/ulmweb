@@ -294,6 +294,19 @@ try{
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Loaded realm"),null,{timeout:5000});
     assert.equal((await page.locator("#tick-count").innerText()).trim(),savedTick,"save/load must restore the exact simulation tick");
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
+    const dynastyAfterLoad=await page.evaluate(async()=>{
+        const [{state},{getFamilySnapshot}]=await Promise.all([import("./js/core/state.js"),import("./js/systems/families.js")]);
+        const king=state.entities.find(entity=>!entity.dead&&entity.isKing);
+        const children=king?getFamilySnapshot(king.personId).children:[];
+        const child=children.length?state.entities.find(entity=>entity.personId===children[0].personId):null;
+        return {rulerId:state.dynasty?.rulerId,consortId:state.dynasty?.consortId,lastRoyalBirthYear:state.dynasty?.lastRoyalBirthYear,childId:child?.personId,isRoyal:child?.isRoyal,parentCount:child?getFamilySnapshot(child.personId).parents.length:0};
+    });
+    assert.equal(dynastyAfterLoad.rulerId,royalFixture.kingId);
+    assert.equal(dynastyAfterLoad.consortId,royalFixture.spouseId);
+    assert.equal(dynastyAfterLoad.lastRoyalBirthYear,1);
+    assert.equal(dynastyAfterLoad.childId,royalBirth.childId);
+    assert.equal(dynastyAfterLoad.isRoyal,true);
+    assert.equal(dynastyAfterLoad.parentCount,2);
     // The memorial archive must survive the same save/load round trip.
     await page.locator("#people-btn").click();
     await page.locator("#people-search").fill(memorialId);
