@@ -439,3 +439,12 @@ This is not yet a birth or succession simulator. Birth generation, death, name t
 A read-only character dossier now exposes the existing persistent person model in-game. The roster is searchable by name, species, role and family name. A selected dossier shows identity and life stage, personality, needs, goals, memories ordered by tick, social relationships and explicit family links (parents, children, siblings and partnerships).
 
 This UI makes current data inspectable; it does not create relationships or simulate births, deaths, inheritance or succession. Historical kinship links whose counterpart is no longer loaded remain visible as a stable-ID reference. The UI escapes saved text before rendering it.
+
+
+## Implemented follow-up — species-aware family births (Phase 2.7)
+
+Births are now a persistent simulation event, not an arbitrary population increment. The annual scheduler considers explicit reciprocal partner/marriage records only; it never infers parentage from shared housing. Eligible parents must be living adult villagers of the same fantasy species. The scheduler uses an isolated deterministic random stream and applies a 12% annual chance per eligible partnership, with a three-year partnership cooldown.
+
+A birth is gated by household vacancy, food reserves, morale and entity limits. The newborn is a real age-zero villager assigned to a parent household where possible. The child's species and family name are inherited from the parents under the current same-species-only rule. Parent-child links are recorded explicitly in both directions, and both parents plus the child receive bounded personal memories. The realm event log records the birth.
+
+Cross-species hybridization, autonomous partner formation, royal births, natural mortality and dynastic succession are deliberately not guessed at in this phase. They need separate rules and tests.
