@@ -159,3 +159,10 @@ button,input{font-family:Georgia,"Palatino Linotype",serif}
 .creature-portrait{display:block;width:78px;height:60px;flex:0 0 78px;object-fit:contain;padding:3px;border:1px solid #9d7b48;border-radius:3px;background:linear-gradient(145deg,#29251f,#171512)}
 .creature-record>summary{align-items:center}
 .creature-record.is-memorial .creature-portrait{filter:grayscale(.75) sepia(.18);opacity:.78}
+
+/* Phase 2 — compact, data-driven character roster filters. */
+.people-filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:10px 0 12px}
+.people-filter{display:grid;gap:4px;min-width:0;color:#a9946d;font:700 8px/1.2 var(--ui-title-font,Georgia,serif);letter-spacing:.1em}
+.people-filter select{width:100%;min-width:0;min-height:31px;padding:5px 7px;border:1px solid #8f744d;border-radius:3px;background:linear-gradient(180deg,#3b3228,#211d18);color:#e8d9b8;font:600 10px var(--ui-body-font,Arial,sans-serif)}
+.people-filter select:focus-visible{outline:2px solid #f0d99f;outline-offset:2px}
+@media(max-width:720px){.people-filter-grid{grid-template-columns:1fr 1fr}}

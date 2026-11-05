@@ -44,26 +44,52 @@ function personName(personId) {
     return memorial?.person?.name || "Formerly recorded · " + String(personId || "unknown");
 }
 
+function syncPeopleFilterOptions(all) {
+    const update = (id, field, label) => {
+        const select = document.getElementById(id);
+        if (!select) return;
+        const current = select.value;
+        const values = [...new Set(all.map(entity => String(entity.person?.[field] || "").trim()).filter(Boolean))]
+            .sort((a, b) => a.localeCompare(b));
+        select.innerHTML = '<option value="">All ' + esc(label) + '</option>' +
+            values.map(value => '<option value="' + esc(value) + '">' + esc(value) + '</option>').join("");
+        if (values.includes(current)) select.value = current;
+    };
+    update("people-role-filter", "role", "roles");
+    update("people-species-filter", "species", "species");
+}
+
 function renderPeopleList(query = "") {
     const list = document.getElementById("people-list");
     const count = document.getElementById("people-count");
     if (!list) return;
     const all = people();
+    syncPeopleFilterOptions(all);
     const needle = String(query).trim().toLowerCase();
+    const statusFilter = document.getElementById("people-status-filter")?.value || "";
+    const roleFilter = document.getElementById("people-role-filter")?.value || "";
+    const speciesFilter = document.getElementById("people-species-filter")?.value || "";
     const filtered = all.filter(entity => {
         const person = entity.person;
+        if (statusFilter === "living" && entity.isArchived) return false;
+        if (statusFilter === "deceased" && !entity.isArchived) return false;
+        if (roleFilter && String(person.role || "") !== roleFilter) return false;
+        if (speciesFilter && String(person.species || "") !== speciesFilter) return false;
         return !needle || [person.name, person.species, person.sex, person.role, person.familyName, entity.deathCause, entity.personId]
             .some(value => String(value || "").toLowerCase().includes(needle));
     }).slice(0, 100);
     if (!filtered.some(entity => entity.personId === selectedPersonId)) {
         selectedPersonId = filtered[0]?.personId || null;
     }
-    if (count) count.textContent = needle ? filtered.length + " MATCHES" : all.length + " PEOPLE";
+    if (count) count.textContent = needle || statusFilter || roleFilter || speciesFilter
+        ? filtered.length + " MATCHES" : all.length + " PEOPLE";
     list.innerHTML = filtered.length ? filtered.map(entity => {
         const person = entity.person;
         return '<button type="button" class="person-list-item' +
             (entity.personId === selectedPersonId ? ' is-selected' : '') +
-            '" data-person-id="' + esc(entity.personId) + '" aria-pressed="' + String(entity.personId === selectedPersonId) + '">' +
+            '" data-person-id="' + esc(entity.personId) + '" data-person-role="' + esc(person.role || '') +
+            '" data-person-species="' + esc(person.species || '') + '" data-person-status="' + (entity.isArchived ? 'deceased' : 'living') +
+            '" aria-pressed="' + String(entity.personId === selectedPersonId) + '">' +
             '<svg class="person-list-portrait" viewBox="0 0 256 320" aria-hidden="true"><use href="assets/royal-portraits.svg#' + portraitSymbol(entity) + '"></use></svg>' +
             '<span class="person-list-copy"><span class="person-list-name">' + esc(person.name) + (entity.isKing ? ' <b>♛</b>' : '') + '</span>' +
             '<span class="person-list-meta">' + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) + ' · ' +
@@ -181,6 +207,9 @@ export function setupCharacterDossier() {
         if (event.target === modal) modal.classList.add("hidden");
     });
     search.addEventListener("input", refreshDossier);
+    ["people-status-filter","people-role-filter","people-species-filter"].forEach(id=>{
+        document.getElementById(id)?.addEventListener("change",refreshDossier);
+    });
     document.getElementById("person-dossier")?.addEventListener("click", event => {
         const related = event.target.closest("[data-person-id]");
         if (!related) return;

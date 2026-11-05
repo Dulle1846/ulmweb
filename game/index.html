@@ -214,7 +214,13 @@
 <div id="people-modal" class="screen-overlay people-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="people-title">
     <div class="ui-panel ui-window ui-window--large modal-panel people-panel">
         <div class="ui-panel__header modal-heading"><div><div class="start-kicker">THE PEOPLE OF YOUR REALM</div><h2 id="people-title">CHARACTER DOSSIERS</h2></div><button id="people-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close character dossiers">×</button></div>
-        <div class="ui-window__body people-browser"><aside class="people-roster"><label for="people-search">FIND A PERSON</label><input id="people-search" type="search" maxlength="80" placeholder="Name, species or role"><div id="people-count" class="people-count">0 PEOPLE</div><div id="people-list" class="people-list"></div></aside><section id="person-dossier" class="person-dossier"><div class="empty-state">Select a person to inspect their chronicle.</div></section></div>
+        <div class="ui-window__body people-browser"><aside class="people-roster"><label for="people-search">FIND A PERSON</label><input id="people-search" type="search" maxlength="80" placeholder="Name, species or role">
+            <div class="people-filter-grid">
+                <label class="people-filter" for="people-status-filter"><span>STATUS</span><select id="people-status-filter"><option value="">All people</option><option value="living">Living</option><option value="deceased">Deceased</option></select></label>
+                <label class="people-filter" for="people-role-filter"><span>ROLE</span><select id="people-role-filter"><option value="">All roles</option></select></label>
+                <label class="people-filter" for="people-species-filter"><span>SPECIES</span><select id="people-species-filter"><option value="">All species</option></select></label>
+            </div>
+            <div id="people-count" class="people-count">0 PEOPLE</div><div id="people-list" class="people-list"></div></aside><section id="person-dossier" class="person-dossier"><div class="empty-state">Select a person to inspect their chronicle.</div></section></div>
     </div>
 </div>
 

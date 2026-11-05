@@ -232,3 +232,15 @@ test("all principal overlays use the shared window sizing and scroll primitives"
  assert.ok(html.includes('class="ui-window__body people-browser"'));
  assert.ok(html.includes('class="ui-window__body command-panel-content"'));
 });
+
+test("character roster filters are data-driven and expose living, role and species selectors",async()=>{
+ const html=await readFile(new URL("index.html",root),"utf8");
+ const dossier=await readFile(new URL("js/presentation/character-dossier.js",root),"utf8");
+ const css=await readFile(new URL("css/medieval.css",root),"utf8");
+ for(const id of ["people-status-filter","people-role-filter","people-species-filter"])assert.ok(html.includes('id="'+id+'"'));
+ assert.ok(dossier.includes("syncPeopleFilterOptions(all)"));
+ assert.ok(dossier.includes('data-person-status='));
+ assert.ok(dossier.includes('data-person-role='));
+ assert.ok(dossier.includes('data-person-species='));
+ assert.ok(css.includes(".people-filter-grid"));
+});
