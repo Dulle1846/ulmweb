@@ -1,0 +1,86 @@
+/* Connected dynasty network: connectors are drawn from saved kinship IDs at render time. */
+.dynasty-lineage-graph{
+ position:relative;
+ display:grid;
+ gap:17px;
+ margin:10px 0 16px;
+ padding:14px 12px 10px;
+ overflow:visible;
+ border:1px solid #8f7449;
+ border-radius:4px;
+ background:
+  radial-gradient(ellipse at 50% 0%,#7d633b22,transparent 58%),
+  linear-gradient(180deg,#26211b,#191713);
+ box-shadow:inset 0 1px 0 #d9bd8230,0 4px 12px #0003;
+ isolation:isolate;
+}
+.dynasty-lineage-edges{
+ position:absolute;
+ inset:0;
+ z-index:2;
+ overflow:visible;
+ pointer-events:none;
+}
+.dynasty-lineage-edge{
+ fill:none;
+ stroke:#c5a66d;
+ stroke-width:1.7;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+ opacity:.78;
+ vector-effect:non-scaling-stroke;
+}
+.dynasty-lineage-edge--partner{stroke:#e0c58a;stroke-width:2.2;opacity:.95}
+.dynasty-lineage-edge--sibling{stroke:#9eabc0;stroke-dasharray:4 4;opacity:.78}
+.dynasty-lineage-edge--guardian{stroke:#a9b98c;stroke-dasharray:2 4}
+.dynasty-lineage-lane{
+ position:relative;
+ z-index:auto;
+ min-width:0;
+ padding:9px;
+ border:1px solid #b99a593b;
+ border-radius:3px;
+ background:#12100d66;
+}
+ .dynasty-lineage-lane h4{
+ position:relative;
+ z-index:3;
+ margin:0 0 8px;
+ color:#cdb47f;
+ font:700 9px var(--ui-title-font,Georgia,serif);
+ letter-spacing:.13em;
+}
+.dynasty-lineage-lane__nodes{
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));
+ gap:8px;
+}
+.dynasty-lineage-lane [data-lineage-node-id]{
+ position:relative;
+ z-index:3;
+ min-width:0;
+}
+.dynasty-lineage-lane[data-lineage-lane="royal-generation"]{
+ border-color:#c4a46b88;
+ background:linear-gradient(135deg,#55432c77,#211d17);
+}
+.dynasty-lineage-lane[data-lineage-lane="royal-generation"] h4{color:#e4c98f}
+.dynasty-lineage-lane[data-lineage-lane="children"]{border-color:#8b9b6b66}
+.dynasty-lineage-note{
+ position:relative;
+ z-index:1;
+ margin:0;
+ padding-top:8px;
+ border-top:1px solid #b99a5940;
+ color:#aa9a7d;
+ font-size:10px;
+ line-height:1.45;
+}
+@media(max-width:720px){
+ .dynasty-lineage-graph{gap:12px;padding:9px 7px}
+ .dynasty-lineage-lane{padding:7px}
+ .dynasty-lineage-lane__nodes{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+ .dynasty-lineage-graph *{transition:none!important;scroll-behavior:auto!important}
+}
