@@ -87,8 +87,27 @@ test("family migration restores reciprocal edges after all save entities are pre
     child.person.kinship.parents = [{ personId: parent.personId, kind: "biological", sinceYear: 2 }];
     child.person.kinship.partners = [{ personId: partner.personId, status: "partner", sinceYear: 7, endedYear: null }];
     const result = normalizeFamilyLinks();
-    assert.ok(result.repaired >= 3);
+    assert.ok(result.normalized >= 3);
     assert.equal(parent.person.kinship.children[0].personId, child.personId);
     assert.equal(partner.person.kinship.partners[0].personId, child.personId);
     assert.equal(getFamilySnapshot(child.personId).parents[0].personId, parent.personId);
+});
+
+
+test("family normalization is idempotent and preserves unresolved historical references", () => {
+    const [parent, child] = makePeople(2);
+    child.person.kinship.parents = [
+        { personId: parent.personId, kind: "biological", sinceYear: 3 },
+        { personId: "deceased-ancestor", kind: "adoptive", sinceYear: 1 },
+        { personId: parent.personId, kind: "biological", sinceYear: 3 },
+        { personId: child.personId, kind: "biological", sinceYear: 1 }
+    ];
+    const first = normalizeFamilyLinks();
+    const second = normalizeFamilyLinks();
+    assert.ok(first.normalized >= 2);
+    assert.ok(second.normalized >= 2);
+    assert.equal(child.person.kinship.parents.length, 2);
+    assert.equal(child.person.kinship.parents.filter(link => link.personId === parent.personId).length, 1);
+    assert.ok(child.person.kinship.parents.some(link => link.personId === "deceased-ancestor"));
+    assert.equal(parent.person.kinship.children.filter(link => link.personId === child.personId).length, 1);
 });
