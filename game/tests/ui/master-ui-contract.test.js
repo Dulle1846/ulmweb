@@ -257,7 +257,7 @@ test("royal administration navigation exposes current-page semantics, not toggle
 
 
 test("accessibility preferences are visible, persistent and applied as document modes",async()=>{
- const persistence=await readFile(new URL("../js/core/persistence.js",root),"utf8");
+ const persistence=await readFile(new URL("js/core/persistence.js",root),"utf8");
  assert.ok(html.includes('id="settings-tooltips-toggle"'));
  assert.ok(html.includes('id="settings-reduced-motion-toggle"'));
  assert.ok(html.includes('id="settings-high-contrast-toggle"'));
