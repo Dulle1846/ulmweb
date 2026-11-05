@@ -111,7 +111,7 @@ test("creature dossiers use actual living and memorial records",()=>{
   assert.ok(management.includes("d.goals"));
   assert.ok(management.includes("c.archive"));
   assert.ok(management.includes('assets/dragon-companion.svg'));
-  assert.ok(management.includes("Creature memorials"));
+  assert.ok(management.includes("CREATURE MEMORIALS"));
 });
 
 test("chronicle inbox uses stored event log data and opens the existing active issue",()=>{
