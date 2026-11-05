@@ -95,7 +95,7 @@ try{
         const { state } = await import("./js/core/state.js");
         state.resources.gold = 50;
     });
-    await page.locator("#politics-btn").click();
+    await page.locator('[data-management-tab="politics"]').click();
     const legitimacyBeforeAudience = await page.evaluate(async () => (await import("./js/core/state.js")).state.politics.legitimacy);
     await page.locator('[data-political-action="audience"]').click();
     const audienceState = await page.evaluate(async () => {
@@ -104,9 +104,9 @@ try{
     });
     assert.equal(audienceState.gold, 38, "royal audience should spend its stated gold cost");
     assert.ok(audienceState.legitimacy > legitimacyBeforeAudience, "royal audience should improve legitimacy");
-    await page.locator("#economy-btn").click();
+    await page.locator('[data-management-tab="economy"]').click();
     assert.ok((await page.locator("#management-content").innerText()).includes("Economy & Workforce"));
-    await page.locator("#cards-btn").click();
+    await page.locator('[data-management-tab="cards"]').click();
     assert.ok((await page.locator("#management-content").innerText()).includes("THE CARD VAULT"));
     await page.locator("#management-close").click();
     assert.equal(await page.locator("#realm-management-modal").isVisible(), false);
