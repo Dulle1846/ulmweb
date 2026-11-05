@@ -79,6 +79,16 @@ function renderCards() {
         (card.instanceId === state.selectedCardInstanceId ? ' disabled' : '') + '>' +
         (card.instanceId === state.selectedCardInstanceId ? 'SELECTED' : 'SELECT') + '</button></div>'
     ).join("") : '<p class="management-muted">Your hand is empty. Cards will be drawn as the realm develops.</p>';
+    const creatures = state.entities.filter(entity => !entity.dead && entity.creature);
+    const creatureMarkup = creatures.length ? creatures.map(entity => {
+        const creature = entity.creature;
+        return '<div class="management-creature-row"><span class="management-creature-icon">' +
+            (creature.species === "dragons" ? "🐉" : "🐾") + '</span><span><strong>' + esc(creature.name) +
+            '</strong><small>' + esc(creature.species) + ' · ' + esc(creature.lifeStage) + ' · age ' +
+            Math.floor(creature.ageYears) + ' / ' + creature.lifespanYears + '</small><small>Health ' +
+            Math.round(creature.health) + '% · hunger ' + Math.round(creature.hunger) + '% · loyalty ' +
+            Math.round(creature.loyalty) + '%</small></span></div>';
+    }).join("") : '<p class="management-muted">No living creatures yet. A Dragon card creates a persistent creature with its own lifecycle.</p>';
     const groups = new Map();
     for (const card of CARD_DECK) groups.set(card.group || "general", (groups.get(card.group || "general") || 0) + 1);
     const catalog = [...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([name,count]) =>
@@ -90,6 +100,8 @@ function renderCards() {
         '<div class="management-card-list">' + handMarkup + '</div>' +
         '<div class="management-card-actions"><button type="button" data-card-discard' +
         (!state.currentCard ? ' disabled' : '') + '>DISCARD SELECTED CARD</button></div>' +
+        '<h4 class="management-subheading">LIVING CREATURES · ' + creatures.length + '</h4><div class="management-creature-list">' + creatureMarkup + '</div>' +
+        '<div class="management-note">Creature memorial archive: ' + (state.creatureArchive?.length || 0) + ' · bounded historical records.</div>' +
         '<h4 class="management-subheading">ARCHETYPES IN THE REALM DECK</h4><div class="management-tags">' + catalog + '</div>';
 }
 
