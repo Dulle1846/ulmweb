@@ -6,6 +6,7 @@ import { ROUTINE } from "../js/core/config.js";
 import { spawnEntity } from "../js/world/entities.js";
 import { ensurePersonProfile } from "../js/systems/people.js";
 import { updatePersonalAgency } from "../js/systems/agency.js";
+import { updateVillagers } from "../js/simulation/villagers.js";
 
 let resident;
 beforeEach(()=>{
@@ -73,4 +74,19 @@ test("personal agency updates named non-villager profiles too",()=>{
     const result=updatePersonalAgency();
     assert.equal(result.updated,2);
     assert.ok(profile.activeGoal);
+});
+
+
+test("an urgent food goal influences the next villager job assignment",()=>{
+    resetState(); state.worldSeed=7654; state.year=2;
+    const villager=spawnEntity(10,10,TYPE.VILLAGER);
+    const farm=spawnEntity(20,10,TYPE.FARM);
+    const quarry=spawnEntity(10,10,TYPE.QUARRY);
+    const person=ensurePersonProfile(villager);
+    person.activeGoal={id:"secure_food",sinceYear:2,priority:90,reason:"food"};
+    villager.jobRefreshTimer=0;
+    villager.routineTimer=100;
+    updateVillagers();
+    assert.equal(villager.workplace,farm);
+    assert.notEqual(villager.workplace,quarry);
 });
