@@ -28,7 +28,7 @@ function collectCandidatePairs(residents) {
         }
     }
     const pairs = new Map();
-    for (const group of groups.values()) {
+    outer: for (const [, group] of [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))) {
         if (group.length < 2) continue;
         group.sort((a, b) => String(a.personId).localeCompare(String(b.personId)));
         for (let i = 0; i < group.length; i++) {
@@ -36,6 +36,7 @@ function collectCandidatePairs(residents) {
                 const first = group[i], second = group[j];
                 const key = String(first.personId) + "|" + String(second.personId);
                 if (!pairs.has(key)) pairs.set(key, [first, second]);
+                if (pairs.size >= MAX_SOCIAL_PAIRS_PER_YEAR) break outer;
             }
         }
     }
