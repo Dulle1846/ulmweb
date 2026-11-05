@@ -43,3 +43,11 @@ jobs:
       - name: Run local browser end-to-end test
         working-directory: game
         run: node tests/browser/e2e.mjs
+      - name: Upload responsive UI review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-ui-viewport-review
+          path: /tmp/kac-ui-viewport-review/*.png
+          if-no-files-found: warn
+          retention-days: 7

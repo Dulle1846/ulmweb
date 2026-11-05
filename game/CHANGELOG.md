@@ -247,3 +247,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Replaced misleading toggle semantics on the active administration navigation item with `aria-current="page"`.
 - Added static contracts for all twelve navigation destinations and a browser test for keyboard activation of the live Economy screen.
 - Full keyboard, screen-reader, contrast and visual viewport audits remain open.
+
+
+## Development line 3.7.0-dev — Phase 5 viewport screenshot evidence
+
+- Chromium now captures the realm and management dialog at all seven required responsive viewports.
+- GitHub Actions uploads the screenshot set as a seven-day review artifact, including on failed runs where screenshots exist.
+- This enables visual QA but does not itself certify the layout or complete the remaining accessibility audit.
