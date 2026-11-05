@@ -172,6 +172,7 @@ export function getFamilySnapshot(personId) {
 export function linkGuardianWard(guardianId, wardId, { sinceYear = state.year } = {}) {
     const guardian = findPerson(guardianId), ward = findPerson(wardId);
     if (!guardian || !ward) return { ok: false, reason: "person-not-found" };
+    if (guardian.dead || ward.dead) return { ok: false, reason: "person-not-living" };
     const guardianKey = personIdOf(guardian), wardKey = personIdOf(ward);
     if (guardianKey === wardKey) return { ok: false, reason: "self-guardianship" };
     const guardianPerson = ensurePersonProfile(guardian), wardPerson = ensurePersonProfile(ward);
