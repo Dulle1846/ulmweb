@@ -20,6 +20,8 @@ function renderBuildOptions(){
             const modal=document.getElementById("build-modal");
             modal?.classList.add("hidden");
             const status=document.getElementById("placement-status");
+            const cancelButton=document.getElementById("road-build-cancel");
+            cancelButton?.classList.remove("hidden");
             if(status){
                 status.dataset.roadMode=type;
                 status.textContent=ROAD_TYPES[type].label.toUpperCase()+" SELECTED · CLICK OR DRAG ON THE MAP · ESC TO CANCEL";
@@ -47,12 +49,21 @@ export function setupBuildUI(){
     modal.addEventListener("click",event=>{if(event.target===modal)modal.classList.add("hidden");});
     cancel?.addEventListener("click",()=>{
         clearRoadBuildMode();
+        cancel?.classList.add("hidden");
         const status=document.getElementById("placement-status");
         if(status){delete status.dataset.roadMode;status.textContent="ROAD PLACEMENT CANCELLED";}
         renderBuildOptions();
     });
     document.addEventListener("keydown",event=>{
-        if(event.key==="Escape"&&!modal.classList.contains("hidden"))modal.classList.add("hidden");
+        if(event.key!=="Escape")return;
+        if(!modal.classList.contains("hidden")){modal.classList.add("hidden");return;}
+        if(getRoadBuildMode()){
+            clearRoadBuildMode();
+            cancel?.classList.add("hidden");
+            const status=document.getElementById("placement-status");
+            if(status){delete status.dataset.roadMode;status.textContent="BUILD MODE CANCELLED";}
+            renderBuildOptions();
+        }
     });
     renderBuildOptions();
 }
