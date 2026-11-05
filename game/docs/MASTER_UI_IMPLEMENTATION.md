@@ -21,7 +21,7 @@
 | UI-01 — inventory and architecture review | **Implemented** | Existing HTML shell, three legacy stylesheets, management modal, character dossier, card hand, canvas and existing management data modules reviewed. |
 | UI-02 — design system | **First implementation** | New `css/ui-design-system.css`; canonical color, spacing, typography, radius, line and shadow tokens; parchment and timber component treatment. Further component extraction remains. |
 | UI-03 — button library | **First implementation** | Shared states for primary/secondary, speed, navigation, management tabs, build options and modal controls. Full standalone reusable component API and tooltip coverage remain. |
-| UI-04 — main interface | **First implementation** | Royal navigation rail, live resource/population strip, existing map and right-side card/management panel retained. Lower action bar, clickable ruler portrait, autosave status and event inbox remain. |
+| UI-04 — main interface | **First implementation** | Royal navigation rail, live resource/population strip, existing map and right-side card/management panel retained. A live kingdom overview now reads sovereign, year, population, morale, treasury, housing, workforce, legitimacy, resources and recent records. Lower action bar, clickable ruler portrait, autosave status and event inbox remain. |
 | UI-05 — administration screens | **Partial** | Existing government, politics and economy screens are reachable from the rail. Kingdom overview, resource drill-down, production, storage, finance forecasts and building dossier are not yet complete. |
 | UI-06 — character and dynasty | **Partial** | Existing character dossiers and royal dynasty management remain available. Tree visualization, family filters, relationship navigation and full character actions remain. |
 | UI-07 — fantasy areas | **Partial** | Existing dragon/creature management and card rarity styles retained. Full creature dossiers, bestiary, magic screen and illustrated legendary card treatment remain. |
@@ -32,7 +32,8 @@
 ## Actual navigation contract
 
 Visible left-rail actions:
-- Crown → existing government screen.
+- Realm → new live kingdom overview.
+- Rule → existing government screen.
 - People → existing character dossier browser.
 - Dynasty → existing royal dynasty screen.
 - Politics → existing faction/political screen.
@@ -41,6 +42,8 @@ Visible left-rail actions:
 - Beasts → existing creature/dragon screen.
 - Build → existing road/build interface.
 - Options → existing settings dialog.
+
+The kingdom overview intentionally omits capital and territory because authoritative data is not currently exposed; it does not fabricate those values.
 
 Top status resource chips mirror the simulation's wood, stone, gold, food and population values. Clicking resource chips opens the real economy screen; clicking population opens real character dossiers. They do not invent a resource-detail view.
 
