@@ -3,16 +3,16 @@ import { random, randInt } from "../core/random.js";
 import {state} from "../core/state.js";
 
 export const PERSON_SPECIES = Object.freeze({
-    human: { label:"Human", lifespan:82, maturation:16 },
-    elf: { label:"Elf", lifespan:420, maturation:35 },
-    dwarf: { label:"Dwarf", lifespan:260, maturation:24 },
-    orc: { label:"Orc", lifespan:95, maturation:14 },
-    goblin: { label:"Goblin", lifespan:65, maturation:10 },
-    halfling: { label:"Halfling", lifespan:110, maturation:20 },
-    gnome: { label:"Gnome", lifespan:180, maturation:24 },
-    dragonkin: { label:"Dragonkin", lifespan:150, maturation:22 },
-    fae: { label:"Fae", lifespan:300, maturation:28 },
-    revenant: { label:"Revenant", lifespan:999, maturation:0 }
+    human: { label:"Human", lifespan:82, maturation:16, reproduction:"paired" },
+    elf: { label:"Elf", lifespan:420, maturation:35, reproduction:"paired" },
+    dwarf: { label:"Dwarf", lifespan:260, maturation:24, reproduction:"paired" },
+    orc: { label:"Orc", lifespan:95, maturation:14, reproduction:"paired" },
+    goblin: { label:"Goblin", lifespan:65, maturation:10, reproduction:"paired" },
+    halfling: { label:"Halfling", lifespan:110, maturation:20, reproduction:"paired" },
+    gnome: { label:"Gnome", lifespan:180, maturation:24, reproduction:"paired" },
+    dragonkin: { label:"Dragonkin", lifespan:150, maturation:22, reproduction:"paired" },
+    fae: { label:"Fae", lifespan:300, maturation:28, reproduction:"paired" },
+    revenant: { label:"Revenant", lifespan:999, maturation:0, reproduction:"none" }
 });
 const FIRST_NAMES=["Aldric","Alwen","Bryn","Cedric","Dain","Eira","Elric","Fen","Galen","Hilda","Ilyra","Jorund","Kael","Liora","Marek","Mira","Neris","Orin","Perrin","Runa","Sylvi","Thane","Una","Varek","Wren","Ysra"];
 const FAMILY_NAMES=["Ashford","Blackbriar","Copperfield","Dawnmere","Elderbrook","Frostmantle","Goldleaf","Hollowmere","Ironwood","Juniper","Kestrel","Longstride","Moonbrook","Northwind","Oakenshield","Pineward","Quickwater","Ravencrest","Stonehelm","Thornfield","Umber","Valewood","Wintermere","Yarrow"];
@@ -23,6 +23,7 @@ const clamp=(value,fallback=50)=>Number.isFinite(Number(value))?Math.max(0,Math.
 const pick=(items,stream)=>items[randInt(0,items.length,stream)];
 function lifeStage(age,species){const maturity=PERSON_SPECIES[species]?.maturation??16;if(age<maturity)return "young";if(age<(PERSON_SPECIES[species]?.lifespan??80)*0.72)return "adult";return "elder";}
 function createTraits(){return Object.fromEntries(TRAITS.map(trait=>[trait,randInt(15,86,"people")]));}
+function legacySex(saved,id){if(saved==="female"||saved==="male")return saved;const value=String(id||"person");let hash=2166136261;for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619);}return (hash>>>0)%2===0?"female":"male";}
 function createNeeds(){return Object.fromEntries(NEEDS.map(need=>[need,randInt(45,91,"people")]));}
 export function createPersonProfile(entity,{role="resident",species=null}={}){
     const chosenSpecies=SPECIES_IDS.includes(species)?species:pick(SPECIES_IDS,"people");
@@ -32,7 +33,7 @@ export function createPersonProfile(entity,{role="resident",species=null}={}){
     return {
         id:String(id||entity.id||"person-unknown"),
         name:firstName+" "+familyName,
-        firstName,familyName,species:chosenSpecies,
+        firstName,familyName,species:chosenSpecies,sex:pick(["female","male"],"people"),
         role:String(role).slice(0,32),
         ageYears,lifeStage:lifeStage(ageYears,chosenSpecies),
         traits:createTraits(),needs:createNeeds(),
@@ -54,7 +55,7 @@ export function normalizePersonProfile(saved,entity,{role="resident"}={}){
     const name=typeof saved.name==="string"&&saved.name.length<=90?saved.name:firstName+" "+familyName;
     return {
         id:String(entity.personId||saved.id||entity.id||"person-unknown"),
-        name,firstName,familyName,species,
+        name,firstName,familyName,species,sex:legacySex(saved.sex,entity.personId||saved.id||entity.id),
         role:typeof saved.role==="string"?saved.role.slice(0,32):role,
         ageYears,lifeStage:lifeStage(ageYears,species),
         traits,needs,
