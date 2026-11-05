@@ -268,12 +268,15 @@ try{
     await page.locator("#pause-btn").click();
     const savedTick=(await page.locator("#tick-count").innerText()).trim();
     const savedHand=(await page.locator("#hand-count").innerText()).trim();
+    const savedGovernment=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return {taxRate:state.government.taxRate,decrees:state.government.decrees.length};});
     await page.locator("#save-btn").click();
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Realm saved"),null,{timeout:5000});
     await page.locator("#load-btn").click();
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Loaded realm"),null,{timeout:5000});
     assert.equal((await page.locator("#tick-count").innerText()).trim(),savedTick,"save/load must restore the exact simulation tick");
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
+    const restoredGovernment=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return {taxRate:state.government.taxRate,decrees:state.government.decrees.length};});
+    assert.deepEqual(restoredGovernment,savedGovernment,"save/load must restore government policy and decree history");
     // The memorial archive must survive the same save/load round trip.
     await page.locator("#people-btn").click();
     await page.locator("#people-search").fill(memorialId);
