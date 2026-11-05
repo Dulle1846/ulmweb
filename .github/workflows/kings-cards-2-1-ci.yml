@@ -5,6 +5,7 @@ on:
     branches:
       - ulmweb-branch
       - kac-2.1-stability-performance
+      - kac-3.1-strategy-final
       - kac-2.2-seeded-simulation
     paths:
       - "game/**"
