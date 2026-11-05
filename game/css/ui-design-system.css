@@ -378,3 +378,13 @@ body.ui-modal-open{overflow:hidden}
  .header-actions .control-button{flex:0 1 auto;min-width:64px;padding-inline:8px}
  .speed-group{flex:0 0 auto}
 }
+
+
+/* Phase 5 — keep the full side-panel content reachable in the bounded game viewport. */
+.side-panel{
+ overflow-y:auto;
+ overflow-x:hidden;
+ overscroll-behavior:contain;
+ scrollbar-width:thin;
+ scrollbar-color:rgba(185,154,89,.55) transparent;
+}
