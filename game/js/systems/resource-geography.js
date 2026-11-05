@@ -121,8 +121,8 @@ export function findNearestResourceNode(type,x,y,radius=8){
 
 function extract(type,x,y,amount){
     const point=readTile(x,y);
-    const requested=Number(amount);
-    if(!point||!Number.isFinite(requested)||requested<=0)return 0;
+    const requested=Math.floor(Number(amount));
+    if(!point||!Number.isFinite(requested)||requested<1)return 0;
     const geo=ensureGeography();
     const stock=type==="forest"?geo.forestStock:geo.stoneStock;
     const taken=Math.min(stock[point.index],requested);
