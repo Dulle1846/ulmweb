@@ -7,7 +7,7 @@ import { state } from '../../core/state.js';
 import { drawTerrain } from './terrain.js';
 import { drawEntity } from './entities.js';
 import { drawPlacementPreview } from './placement-preview.js';
-import { getRoadTiles,ROAD_TYPES } from '../../systems/roads.js';
+import { getRoadTiles,getRoadAt,ROAD_TYPES } from '../../systems/roads.js';
 
 let visibleEntitiesCache=[];
 let visibleEntitiesUntil=0;
@@ -107,16 +107,31 @@ function drawRoadNetwork(ctx,zoom,camera,canvas){
         const x=road.x*tileSize-camera.x;
         const y=road.y*tileSize-camera.y;
         const width=Math.max(2,tileSize*(road.type==="dirt"?0.24:road.type==="gravel"?0.31:0.38));
-        ctx.strokeStyle="rgba(35,25,17,.72)";
-        ctx.lineWidth=width+Math.max(1,tileSize*.07);
-        ctx.beginPath();ctx.moveTo(x+tileSize*.08,y+tileSize*.5);ctx.lineTo(x+tileSize*.92,y+tileSize*.5);ctx.stroke();
-        ctx.strokeStyle=style.color;
-        ctx.lineWidth=width;
-        ctx.beginPath();ctx.moveTo(x+tileSize*.08,y+tileSize*.5);ctx.lineTo(x+tileSize*.92,y+tileSize*.5);ctx.stroke();
+        const centerX=x+tileSize*.5,centerY=y+tileSize*.5;
+        const neighbors=[
+            [0,-1,getRoadAt(road.x,road.y-1)],
+            [1,0,getRoadAt(road.x+1,road.y)],
+            [0,1,getRoadAt(road.x,road.y+1)],
+            [-1,0,getRoadAt(road.x-1,road.y)]
+        ];
+        const drawStroke=(color,lineWidth)=>{
+            ctx.strokeStyle=color;ctx.lineWidth=lineWidth;ctx.beginPath();
+            for(const [dx,dy,neighbor] of neighbors){
+                if(!neighbor)continue;
+                ctx.moveTo(centerX,centerY);
+                ctx.lineTo(centerX+dx*tileSize*.5,centerY+dy*tileSize*.5);
+            }
+            if(neighbors.every(([, ,neighbor])=>!neighbor)){
+                ctx.moveTo(x+tileSize*.08,centerY);ctx.lineTo(x+tileSize*.92,centerY);
+            }
+            ctx.stroke();
+            ctx.fillStyle=color;ctx.beginPath();ctx.arc(centerX,centerY,lineWidth*.5,0,Math.PI*2);ctx.fill();
+        };
+        drawStroke("rgba(35,25,17,.72)",width+Math.max(1,tileSize*.07));
+        drawStroke(style.color,width);
         if(zoom>=0.7&&road.type!=="dirt"){
             ctx.strokeStyle=style.edge;ctx.lineWidth=Math.max(1,tileSize*.025);
-            ctx.beginPath();ctx.moveTo(x+tileSize*.08,y+tileSize*.5-width*.5);ctx.lineTo(x+tileSize*.92,y+tileSize*.5-width*.5);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(x+tileSize*.08,y+tileSize*.5+width*.5);ctx.lineTo(x+tileSize*.92,y+tileSize*.5+width*.5);ctx.stroke();
+            ctx.beginPath();ctx.arc(centerX,centerY,width*.5,0,Math.PI*2);ctx.stroke();
         }
     }
     ctx.restore();
