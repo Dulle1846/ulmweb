@@ -261,3 +261,13 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Cloudflare Pages check run `127533959060`: `success`, summary `Deployed successfully`, deployment ID `35e2a522-431d-4558-8195-06a24bb4dc2d`.
 - Deployment preview: https://35e2a522.kings-and-cards.pages.dev/ . The canonical user-facing address remains https://kings-and-cards.pages.dev/.
 - This is Pages evidence. The separate Workers build check is not used as deployment evidence for the game.
+
+
+## Phase 2 — connected royal lineage graph (3.7.0-dev)
+
+- Added an interactive multi-lane royal family network sourced from the existing explicit kinship graph.
+- The network renders verified grandparents, parents, sovereign, siblings, consort, aunts/uncles, cousins and royal children only where the saved relationships support them.
+- SVG connector paths are positioned from actual rendered card bounds and refresh when the viewport changes; parent, guardian, partnership and sibling links use distinct visual treatments.
+- Every person card opens the existing canonical dossier. Existing descendant depth and node caps remain in place.
+- Added responsive local graph styling, reduced-motion handling, static contract tests and Chromium browser coverage.
+- No simulation or save-schema changes. Unrecorded family relationships are never inferred.
