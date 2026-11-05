@@ -109,8 +109,11 @@ export function setPartnership(firstId, secondId, { status = "partner", sinceYea
     const year = Number.isSafeInteger(Number(sinceYear)) ? Math.max(1, Math.min(1000000, Number(sinceYear))) : Math.max(1, Number(state.year) || 1);
     const rawEnd = Number(endedYear);
     const end = endedYear == null ? null : Math.max(year, Math.min(1000000, Number.isFinite(rawEnd) ? Math.floor(rawEnd) : year));
-    const entryA = { personId: bId, status, sinceYear: year, endedYear: end };
-    const entryB = { personId: aId, status, sinceYear: year, endedYear: end };
+    const previousA = firstKin.partners.find(item => item.personId === bId);
+    const previousB = secondKin.partners.find(item => item.personId === aId);
+    const lastBirthYear = Math.max(Number(previousA?.lastBirthYear) || 0, Number(previousB?.lastBirthYear) || 0);
+    const entryA = { personId: bId, status, sinceYear: year, endedYear: end, lastBirthYear };
+    const entryB = { personId: aId, status, sinceYear: year, endedYear: end, lastBirthYear };
     const added = upsertLink(firstKin.partners, entryA);
     upsertLink(secondKin.partners, entryB);
     return { ok: true, added };
@@ -181,7 +184,13 @@ export function normalizeFamilyLinks() {
             const id = String(item?.personId || "");
             if (!id || id === personIdOf(entity) || !PARTNER_STATUSES.has(item.status)) return null;
             const sinceYear = Math.max(1, Math.floor(Number(item.sinceYear) || 1));
-            return { personId: id, status: item.status, sinceYear, endedYear: item.endedYear == null ? null : Math.max(sinceYear, Math.floor(Number(item.endedYear) || sinceYear)) };
+            return {
+                personId: id,
+                status: item.status,
+                sinceYear,
+                endedYear: item.endedYear == null ? null : Math.max(sinceYear, Math.floor(Number(item.endedYear) || sinceYear)),
+                lastBirthYear: Math.max(0, Math.min(1000000, Math.floor(Number(item.lastBirthYear) || 0)))
+            };
         });
         repaired++;
     }
@@ -203,7 +212,21 @@ export function normalizeFamilyLinks() {
         for (const partnerLink of [...kin.partners]) {
             const partner = findPerson(partnerLink.personId);
             if (!partner) continue;
-            upsertLink(ensureKinship(partner).partners, { personId: personIdOf(entity), status: partnerLink.status, sinceYear: partnerLink.sinceYear, endedYear: partnerLink.endedYear });
+            const partnerLinks = ensureKinship(partner).partners;
+            const reciprocal = partnerLinks.find(item => item.personId === personIdOf(entity));
+            const lastBirthYear = Math.max(
+                Number(partnerLink.lastBirthYear) || 0,
+                Number(reciprocal?.lastBirthYear) || 0
+            );
+            const entry = {
+                personId: personIdOf(entity),
+                status: partnerLink.status,
+                sinceYear: partnerLink.sinceYear,
+                endedYear: partnerLink.endedYear,
+                lastBirthYear
+            };
+            upsertLink(partnerLinks, entry);
+            partnerLink.lastBirthYear = lastBirthYear;
         }
     }
     return { normalized: repaired };
