@@ -19,7 +19,7 @@ function deathRisk(entity, person) {
         (1 - MORTALITY_START_LIFESPAN_RATIO));
     const ageRisk = 0.02 + Math.pow(ageProgress, 2) * 0.48;
     const maxHp = Math.max(1, Number(entity.maxHp) || 1);
-    const hpRatio = Math.max(0, Math.min(1, (Number(entity.hp) || maxHp) / maxHp));
+    const hpRatio = Math.max(0, Math.min(1, (Number.isFinite(Number(entity.hp)) ? Number(entity.hp) : maxHp) / maxHp));
     const healthRisk = (1 - hpRatio) * 0.2;
     const illnessRisk = Number(entity.illnessSeverity) > 0 ? Math.min(0.2, Number(entity.illnessSeverity) / 500) : 0;
     return Math.max(0, Math.min(0.92, ageRisk + healthRisk + illnessRisk));
