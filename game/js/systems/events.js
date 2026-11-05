@@ -146,7 +146,7 @@ function triggerThreadEvent(thread){
   family:"chronicle",title:stage.title,description:stage.description,
   icon:"chronicle",createdAtTick:state.tick,
   thread:{id:thread.id,stage:thread.stage},
-  participants:Array.isArray(thread.participants)?thread.participants.slice(0,4):createEventParticipants(thread.id),
+  participants:(thread.participants=Array.isArray(thread.participants)?thread.participants.slice(0,4):createEventParticipants(thread.id)),
   choices:stage.choices.map(choice=>({...choice,effects:{...(choice.effects||{}),resources:{...(choice.effects?.resources||{})},hidden:{...(choice.effects?.hidden||{})}}}))
  };
  addLog("CHRONICLE: "+stage.title,"#c5a66b","chronicle");
@@ -214,6 +214,7 @@ export function resolveEventChoice(index){
    }
   }
  }
+ if(!Array.isArray(issue.participants)||!issue.participants.length)issue.participants=createEventParticipants(issue.family);
  recordPersonEventOutcome(issue,choice,effects,state.tick);
  addLog(issue.title.toUpperCase()+": "+choice.label,"#a5d6a7","resolution");
  state.statistics.totalEventsResolved++;state.activeEvent=null;return true;
