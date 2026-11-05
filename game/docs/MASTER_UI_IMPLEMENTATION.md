@@ -1,7 +1,8 @@
 # Master UI — Implementation Register
 
 **Specification:** `MASTER UI & VISUAL DESIGN CONCEPT v1.0` (uploaded project brief)  
-**Implementation branch:** `kac-ui-01-03-master-design-system`  
+**Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard)  
+**Current UI branch:** `kac-ui-01-03-master-design-system`  
 **Baseline:** `6c4c3f0442ea18aa04fee5598e909ddfc6b4d900`  
 **Rule:** This register distinguishes implemented and tested work from the remaining concept. A styled shell is not a completed screen.
 
@@ -13,6 +14,14 @@
 - Existing gameplay systems are preserved. Navigation only exposes screens that already have real data and working interactions.
 - Fonts currently use local system serif/sans-serif stacks. No external font download or runtime dependency was introduced. Bundled Cinzel/Cormorant/Spectral and Source Sans 3 can be evaluated after license, weight and asset-size review.
 - Existing legacy stylesheets remain loaded for backward compatibility; the new master stylesheet loads last and centralizes the design tokens and override layer.
+
+## Merged release record
+
+- PR #36 merged as `b040adf7870678132f699a7a7889b3b556aa1307`.
+- PR #37 merged as `e9efbcf60950e3b596b7b8670fccb2f4b47eee8b`.
+- Cloudflare Pages deployment check for `e9efbcf` succeeded; preview: https://68e0b527.kings-and-cards.pages.dev/.
+- Game Quality, Kings & Cards checks and Chromium gameplay E2E passed on the relevant PR heads.
+- The Pages smoke test verified the administration rail, resource strip, kingdom overview, government, economy, people and build screens. The pre-campaign guard was added after that live smoke test and then re-tested through CI.
 
 ## Current implementation status
 
