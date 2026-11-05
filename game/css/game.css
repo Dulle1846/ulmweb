@@ -1071,3 +1071,77 @@ kbd {padding:4px 6px;border:1px solid rgba(221,190,126,.2);border-radius:5px;bac
 .dossier-memory>div span{white-space:nowrap}
 .dossier-memory p{margin:6px 0 0;color:#4c3827;font-size:10px;line-height:1.5}
 @media(max-width:720px){.people-panel{width:calc(100vw - 16px);max-height:92vh;padding:12px}.people-browser{grid-template-columns:120px minmax(0,1fr);gap:8px}.dossier-columns{grid-template-columns:1fr}.person-dossier{padding:4px 5px 10px}.person-list-item{padding:6px}.person-list-meta{font-size:7px}.dossier-identity h2{font-size:17px}}
+
+
+/* Strategy management navigation and illustrated royal windows */
+.realm-management-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:8px 10px;border-bottom:1px solid rgba(221,190,126,.2);background:linear-gradient(135deg,rgba(24,36,44,.98),rgba(10,17,23,.98))}
+.realm-management-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;padding:5px 2px;border:1px solid rgba(221,190,126,.28);border-radius:7px;background:linear-gradient(160deg,#243b52,#101d2b);color:#e7d8b7;font-size:7px;font-weight:900;letter-spacing:.06em;cursor:pointer;box-shadow:inset 0 1px #fff2,0 2px 4px #0007}
+.realm-management-nav button span{font-size:17px;line-height:1}
+.realm-management-nav button:hover{border-color:#f0d18d;background:linear-gradient(160deg,#385d7c,#172d42);color:#fff0c9;transform:translateY(-1px)}
+.realm-management-overlay{z-index:1050}
+.realm-management-panel{width:min(1040px,calc(100vw - 32px));max-width:1040px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;border:3px double #b88b45;background:radial-gradient(ellipse at 50% 0%,#36516b55,transparent 55%),linear-gradient(155deg,#1a2a3a,#0d1722 78%);box-shadow:0 22px 70px #000c,inset 0 0 0 2px #f5d69a18}
+.realm-management-panel .modal-heading{margin-bottom:12px}
+.realm-management-panel .modal-heading h2{color:#f2d99f;text-shadow:0 2px #0008;letter-spacing:.06em}
+.realm-window-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 12px;border-bottom:1px solid #d4b47755}
+.realm-window-tab{min-height:34px;padding:0 13px;border:1px solid #9b7748;border-radius:7px;background:linear-gradient(#253b51,#142435);color:#d9c9a8;font-size:10px;font-weight:800;cursor:pointer}
+.realm-window-tab.is-active,.realm-window-tab:hover{border-color:#f2d28a;background:linear-gradient(#e5c47f,#a87937);color:#1d2730}
+.realm-window-content{min-height:0;overflow:auto;padding:15px 4px 8px}
+.realm-panel-intro{margin-bottom:15px}
+.realm-kicker{color:#d3b477;font-size:8px;font-weight:900;letter-spacing:.18em}
+.realm-panel-intro h3{margin:4px 0;color:#f2dfb9;font:700 25px Georgia,serif}
+.realm-panel-intro p{max-width:760px;margin:5px 0;color:#b8c7d1;font-size:11px;line-height:1.55}
+.realm-window-content h4{margin:17px 0 8px;color:#f0d18f;font:700 13px Georgia,serif}
+.realm-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.realm-form-grid label{display:flex;flex-direction:column;gap:6px;color:#d8c9ad;font-size:9px;font-weight:800;letter-spacing:.08em}
+.realm-form-grid select{min-height:38px;padding:7px;border:1px solid #a17e4b;border-radius:6px;background:#122236;color:#f4e6c7;font:12px Georgia,serif}
+.realm-form-grid>button,.realm-decision-grid button,.realm-trade-row button,.realm-card-grid button{min-height:30px;padding:6px 10px;border:1px solid #bb9558;border-radius:6px;background:linear-gradient(#35536e,#1b3045);color:#f3dfb4;font-size:9px;font-weight:800;cursor:pointer}
+.realm-form-grid>button:hover,.realm-decision-grid button:hover,.realm-trade-row button:hover,.realm-card-grid button:hover{background:linear-gradient(#597d9c,#294967);border-color:#f3d08b}
+.realm-stat-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0;padding:9px;border:1px solid #b58a4c66;border-radius:8px;background:#08152288}
+.realm-stat-strip>div{display:flex;flex-direction:column;gap:4px}
+.realm-stat-strip small{color:#9fb0bd;font-size:8px;text-transform:uppercase;letter-spacing:.1em}
+.realm-stat-strip strong{color:#f2d99f;font:700 16px Georgia,serif}
+.realm-choice-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.realm-choice-list article,.realm-decision-grid article,.realm-trade-list article,.realm-card-grid article{padding:11px;border:1px solid #b58a4c66;border-radius:8px;background:linear-gradient(145deg,#263e53aa,#101f2eaa)}
+.realm-choice-list strong,.realm-decision-grid strong,.realm-trade-list strong,.realm-card-grid strong{color:#f0d9a8;font-size:11px}
+.realm-choice-list p,.realm-decision-grid p,.realm-card-grid p{margin:6px 0;color:#b4c1c9;font-size:9px;line-height:1.5}
+.realm-meter-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.realm-meter>div{display:flex;justify-content:space-between;margin-bottom:5px;color:#d8c7a6;font-size:9px}
+.realm-meter>div b{color:#f2d99f}
+.realm-meter i{display:block;height:9px;overflow:hidden;border:1px solid #8293a2;border-radius:20px;background:#07111c}
+.realm-meter i span{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#3b9b73,#c7d56c)}
+.realm-decision-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.realm-decision-grid small,.realm-trade-list small,.realm-card-grid small{display:block;margin:6px 0;color:#9fb0bd;font-size:8px}
+.realm-decision-grid button{margin-top:8px}
+.realm-resource-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.realm-resource-grid>div{padding:10px;border:1px solid #b58a4c66;border-radius:7px;background:#101f2e}
+.realm-resource-grid small{display:block;color:#9fb0bd;font-size:8px;text-transform:uppercase}
+.realm-resource-grid strong{display:block;margin-top:5px;color:#f2d99f;font:700 17px Georgia,serif}
+.realm-ledger{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:10px;border:1px solid #b58a4c55;border-radius:8px;background:#08152288}
+.realm-ledger h4{grid-column:1/-1;margin:0}
+.realm-ledger p{margin:0;color:#b7c4cc;font-size:9px}
+.realm-ledger b{color:#f2d99f}
+.realm-trade-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.realm-trade-list article>div:first-child{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}
+.realm-trade-row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 0;border-top:1px solid #d4b47722;color:#c0cbd1;font-size:8px}
+.realm-trade-row>span:last-child{display:flex;gap:4px}
+.realm-trade-row button{min-height:24px;padding:3px 6px;font-size:7px}
+.realm-card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.realm-card-grid article{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.realm-card-grid article.is-selected{border-color:#f0d18f;box-shadow:inset 0 0 0 1px #f0d18f66}
+.realm-card-icon{font-size:26px}
+.realm-card-grid button{margin-right:5px}
+.realm-primary-action{min-height:38px;margin-top:12px;padding:0 16px;border:1px solid #f0d18f;border-radius:7px;background:linear-gradient(#e5c47f,#a87937);color:#1b2731;font-weight:900;cursor:pointer}
+.realm-primary-action:disabled{opacity:.45;cursor:not-allowed}
+.realm-empty,.realm-footnote{color:#9fb0bd;font-size:9px;line-height:1.5}
+.realm-ruler-card{display:flex;align-items:center;gap:12px;margin:8px 0;padding:12px;border:1px solid #c49b5a88;border-radius:9px;background:linear-gradient(120deg,#344d65,#122236)}
+.realm-crown{display:grid;place-items:center;width:48px;height:48px;border:2px solid #d5b477;border-radius:50%;background:#102238;color:#f2d99f;font-size:27px}
+.realm-ruler-card>div:last-child{display:flex;flex-direction:column;gap:4px}
+.realm-ruler-card small,.realm-ruler-card span{color:#afbdc6;font-size:9px}
+.realm-ruler-card strong{color:#f2d99f;font:700 17px Georgia,serif}
+.realm-heir-list{display:flex;flex-direction:column;gap:6px}
+.realm-heir{display:flex;justify-content:space-between;gap:8px;padding:9px;border:1px solid #b58a4c55;border-radius:7px;background:#102033}
+.realm-heir strong{color:#f2d99f;font-size:10px}
+.realm-heir span,.realm-regency{color:#b8c7d1;font-size:9px}
+.realm-regency{padding:9px;border-left:3px solid #e0bd77;background:#b98d3a22}
+@media(max-width:790px){.realm-management-nav{grid-template-columns:repeat(5,minmax(0,1fr));padding:5px}.realm-management-nav button{min-height:42px;font-size:6px}.realm-form-grid,.realm-choice-list,.realm-trade-list,.realm-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.realm-ledger{grid-template-columns:repeat(2,minmax(0,1fr))}.realm-management-panel{max-height:94vh;padding:14px}}
+@media(max-width:480px){.realm-management-nav button{font-size:5px}.realm-management-nav button span{font-size:14px}.realm-window-tab{flex:1 1 28%;padding:0 5px;font-size:8px}.realm-form-grid,.realm-choice-list,.realm-decision-grid,.realm-meter-list,.realm-trade-list,.realm-card-grid{grid-template-columns:1fr}.realm-resource-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.realm-stat-strip strong{font-size:12px}.realm-heir{flex-direction:column}}
