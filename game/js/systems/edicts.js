@@ -40,6 +40,42 @@ export const EDICT_DEFINITIONS = Object.freeze({
         years: 2,
         description: "Beacons burn along the roads through the night.",
         modifiers: { morale: 0.12, tax: 0.96 }
+    },
+    "poor-relief": {
+        name: "POOR RELIEF",
+        years: 3,
+        description: "The crown feeds the destitute through the lean months.",
+        modifiers: { tax: 1.05, morale: 0.14 }
+    },
+    "iron-levy": {
+        name: "IRON LEVY",
+        years: 2,
+        description: "Every forge owes the crown a share of its iron.",
+        modifiers: { tax: 1.22, morale: -0.06 }
+    },
+    "forest-law": {
+        name: "FOREST LAW",
+        years: 3,
+        description: "Woodlands are managed for the common larder.",
+        modifiers: { food: 0.9, tax: 0.97 }
+    },
+    "festival-season": {
+        name: "FESTIVAL SEASON",
+        years: 2,
+        description: "A season of fairs, music and open tables.",
+        modifiers: { morale: 0.18, tax: 0.95 }
+    },
+    "tithe-drive": {
+        name: "TITHE DRIVE",
+        years: 2,
+        description: "The clergy collect the tithe with uncommon zeal.",
+        modifiers: { tax: 1.28, morale: -0.07 }
+    },
+    "open-roads": {
+        name: "OPEN ROADS",
+        years: 4,
+        description: "Tolls fall and every cart may pass unharmed.",
+        modifiers: { tax: 1.12, food: 0.97, morale: 0.02 }
     }
 });
 

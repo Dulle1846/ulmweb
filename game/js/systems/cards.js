@@ -20,6 +20,8 @@ export const CARD_DECK=Object.freeze(CARD_CATEGORIES.map(category=>{
 }));
 const HAND_LIMIT=5;
 let nextCardInstance=1;
+function cardPace(){const value=Number(state.cardPace);return Number.isFinite(value)&&value>0?Math.max(0.4,Math.min(2.5,value)):1;}
+function pacedTicks(base){return Math.max(4,Math.round(base*cardPace()));}
 function makeHandCard(card){return {...card,instanceId:"card-"+(nextCardInstance++)};}
 export function drawNewCard(){
     if(state.hand.length>=HAND_LIMIT)return null;
@@ -43,14 +45,14 @@ export function drawNewCard(){
 }
 export function drawStartingHand(){
     state.hand=[];state.availableCards=[...CARD_DECK];state.cardRewardQueue=[];state.currentCard=null;state.selectedCardInstanceId=null;
-    state.nextCardDrawTick=state.tick+28+randInt(0,44);
+    state.nextCardDrawTick=state.tick+pacedTicks(28+randInt(0,44));
 }
 export function updateCardDraw(){
     if(state.hand.length>=HAND_LIMIT){state.nextCardDrawTick=0;return false;}
-    if(!Number.isFinite(state.nextCardDrawTick)||state.nextCardDrawTick<=0)state.nextCardDrawTick=state.tick+22+randInt(0,38);
+    if(!Number.isFinite(state.nextCardDrawTick)||state.nextCardDrawTick<=0)state.nextCardDrawTick=state.tick+pacedTicks(22+randInt(0,38));
     if(state.tick<state.nextCardDrawTick)return false;
     const card=drawNewCard();
-    state.nextCardDrawTick=state.hand.length<HAND_LIMIT?state.tick+22+randInt(0,68):0;
+    state.nextCardDrawTick=state.hand.length<HAND_LIMIT?state.tick+pacedTicks(22+randInt(0,68)):0;
     return Boolean(card);
 }
 export function selectCard(instanceId){
@@ -62,7 +64,7 @@ function consumeCurrentCard(){
     if(index>=0)state.hand.splice(index,1);
     state.currentCard=null;state.selectedCardInstanceId=null;
     if(state.hand.length)selectCard(state.hand[0].instanceId);
-    state.nextCardDrawTick=state.hand.length<HAND_LIMIT?state.tick+18+randInt(0,54):0;
+    state.nextCardDrawTick=state.hand.length<HAND_LIMIT?state.tick+pacedTicks(18+randInt(0,54)):0;
 }
 export function skipCard(){
     if(!state.currentCard)return false;

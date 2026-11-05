@@ -109,6 +109,9 @@ export function loadSettings() {
         musicEnabled: true,
         musicVolume: 0.22,
         showTooltips: true,
+        showDeltas: true,
+        reduceMotion: false,
+        cardPace: 1,
         ...readJson(SETTINGS_KEY, {})
     };
 }
@@ -117,6 +120,9 @@ export function saveSettings(settings) {
     writeJson(SETTINGS_KEY, {
         musicEnabled: Boolean(settings.musicEnabled),
         musicVolume: Math.max(0, Math.min(1, Number(settings.musicVolume) || 0)),
-        showTooltips: settings.showTooltips !== false
+        showTooltips: settings.showTooltips !== false,
+        showDeltas: settings.showDeltas !== false,
+        reduceMotion: settings.reduceMotion === true,
+        cardPace: Math.max(0.5, Math.min(2, Number(settings.cardPace) || 1))
     });
 }

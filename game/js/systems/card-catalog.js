@@ -109,7 +109,19 @@ const PROTOTYPES=[
  {id:"apiary",category:"apiaries",name:"APIARY",desc:"Bees bring honey, wax and a little cheer.",icon:"🐝",cost:{wood:14,food:6},kind:"effect",effect:"apiary"},
  {id:"vineyard",category:"vineyards",name:"VINEYARD",desc:"A good vintage is worth coin and song.",icon:"🍇",cost:{wood:20,food:8},kind:"effect",effect:"vintage"},
  {id:"scriptorium",category:"scriptoria",name:"SCRIPTORIUM",desc:"Copy the old books and keep the chronicle.",icon:"✒️",cost:{wood:18,gold:12},kind:"effect",effect:"archive"},
- {id:"harbor",category:"harbors",type:TYPE.MILL,name:"HARBOR",desc:"A sheltered quay for river and coast trade.",icon:"⚓",cost:{wood:40,stone:18}}
+ {id:"harbor",category:"harbors",type:TYPE.MILL,name:"HARBOR",desc:"A sheltered quay for river and coast trade.",icon:"⚓",cost:{wood:40,stone:18}},
+ {id:"bakehouse",category:"bakehouses",type:TYPE.TAVERN,name:"BAKEHOUSE",desc:"Fresh bread draws workers and coin alike.",icon:"🥖",cost:{wood:20,food:10}},
+ {id:"brewhouse",category:"breweries",type:TYPE.TAVERN,name:"BREWHOUSE",desc:"Ale for the realm, coin for the crown.",icon:"🍺",cost:{wood:24,food:12}},
+ {id:"tannery",category:"tanners",type:TYPE.MILL,name:"TANNERY",desc:"Turns hides into leather and trade goods.",icon:"🧵",cost:{wood:22,stone:8}},
+ {id:"masons-yard",category:"masons",type:TYPE.QUARRY,name:"MASON'S YARD",desc:"Skilled hands shape the realm's stone.",icon:"🧱",cost:{wood:26,stone:14}},
+ {id:"smithy",category:"foundries",type:TYPE.MILL,name:"SMITHY",desc:"Iron tools and blades from a hot forge.",icon:"🔨",cost:{wood:24,stone:16}},
+ {id:"pigeon-loft",category:"pigeon-lofts",type:TYPE.HOUSE,name:"PIGEON LOFT",desc:"Meat, eggs and messages from the sky.",icon:"🕊️",cost:{wood:14,food:4}},
+ {id:"lookout-post",category:"lookouts",type:TYPE.TOWER,name:"LOOKOUT POST",desc:"Eyes on the horizon before trouble arrives.",icon:"👁️",cost:{wood:26,stone:12}},
+ {id:"cavalry-troop",category:"cavalry",type:TYPE.KNIGHT,name:"CAVALRY TROOP",desc:"Mounted riders for the royal road.",icon:"🐎",cost:{gold:38,food:20},kind:"unit"},
+ {id:"scout-band",category:"scouts",type:TYPE.ARCHER,name:"SCOUT BAND",desc:"Fast eyes and sharp arrows at the border.",icon:"🏹",cost:{gold:20,food:10},kind:"unit"},
+ {id:"caravan-arrival",category:"caravans",name:"CARAVAN ARRIVAL",desc:"A trade caravan pays for safe passage.",icon:"🐫",cost:{food:6},kind:"effect",effect:"gold-rush"},
+ {id:"sunken-temple",category:"sunken-temples",name:"SUNKEN TEMPLE",desc:"Old stones yield a reading of the waters.",icon:"🏛️",cost:{gold:8},kind:"effect",effect:"omen"},
+ {id:"winter-stores",category:"first-frost",name:"WINTER STORES",desc:"Salt, grain and smoked meat for the cold.",icon:"❄️",cost:{gold:6},kind:"effect",effect:"granary-cache"}
 ];
 const ARCHETYPES={
  settlement:[TYPE.HOUSE,"building","🏠",{wood:26,stone:7},"A place for the realm's growing population."],

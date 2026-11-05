@@ -560,3 +560,15 @@
 @media(prefers-reduced-motion:reduce){
   .hand-card,.realm-nav-button,.realm-resource-chip{transition:none}
 }
+
+/* Player-controlled interface settings (see the settings modal). */
+body.hide-resource-deltas .resource-delta{display:none}
+body.reduce-interface-motion .hand-card,
+body.reduce-interface-motion .realm-nav-button,
+body.reduce-interface-motion .realm-resource-chip,
+body.reduce-interface-motion .ui-button,
+body.reduce-interface-motion .tab-button{transition:none;animation:none}
+.settings-select{
+  min-height:32px;padding:0 8px;border:1px solid #9d7d50;border-radius:2px;
+  background:#fff6df;color:#39291b;font:700 10px var(--ui-title-font);letter-spacing:.06em;
+}

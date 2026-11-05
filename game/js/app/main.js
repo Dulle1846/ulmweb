@@ -29,6 +29,11 @@ import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
 
 let loopStarted=false;
 let settings=loadSettings();
+function applyInterfaceSettings(){
+    document.body.classList.toggle("hide-resource-deltas",settings.showDeltas===false);
+    document.body.classList.toggle("reduce-interface-motion",settings.reduceMotion===true);
+    state.cardPace=Math.max(0.5,Math.min(2,Number(settings.cardPace)||1));
+}
 
 function bindCanvas(){
     state.canvas=document.getElementById("canvas");
@@ -379,6 +384,13 @@ function bindMenu(){
     const volume=document.getElementById("settings-music-volume");
     if(musicToggle)musicToggle.checked=settings.musicEnabled;
     if(volume)volume.value=String(Math.round(settings.musicVolume*100));
+    const deltasToggle=document.getElementById("settings-deltas-toggle");
+    const motionToggle=document.getElementById("settings-motion-toggle");
+    const paceSelect=document.getElementById("settings-card-pace");
+    if(deltasToggle){deltasToggle.checked=settings.showDeltas!==false;deltasToggle.addEventListener("change",event=>{settings.showDeltas=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    if(motionToggle){motionToggle.checked=settings.reduceMotion===true;motionToggle.addEventListener("change",event=>{settings.reduceMotion=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    if(paceSelect){paceSelect.value=String(Number(settings.cardPace)||1);paceSelect.addEventListener("change",event=>{settings.cardPace=Number(event.target.value)||1;applyInterfaceSettings();saveSettings(settings);});}
+    applyInterfaceSettings();
 
     document.getElementById("big-message-close")?.addEventListener("click",()=>document.getElementById("big-message").classList.add("hidden"));
     window.addEventListener("kac:save-request",saveCurrentGame);
