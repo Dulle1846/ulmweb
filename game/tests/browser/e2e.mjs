@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import {createServer} from "node:http";
-import {readFile} from "node:fs/promises";
+import {mkdir,readFile} from "node:fs/promises";
 import {extname,resolve,sep} from "node:path";
+import {tmpdir} from "node:os";
 import {chromium} from "playwright";
 
 const root=process.cwd();
+const screenshotDir=resolve(tmpdir(),"kac-ui-viewport-review");
+await mkdir(screenshotDir,{recursive:true});
 const mime={
     ".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",
     ".css":"text/css; charset=utf-8",".svg":"image/svg+xml",".json":"application/json",
@@ -516,6 +519,7 @@ try{
     for(const [width,height] of [[390,844],[768,1024],[1280,720],[1366,768],[1600,900],[1920,1080],[2560,1440]]){
         await page.setViewportSize({width,height});
         await page.waitForTimeout(40);
+        await page.screenshot({path:resolve(screenshotDir,"realm-"+width+"x"+height+".png"),animations:"disabled"});
         const layout=await page.evaluate(()=>{
             const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
             return {viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,dockWidth:dock.width,dockLeft:dock.left,dockRight:dock.right};
@@ -525,6 +529,7 @@ try{
         await page.locator("#command-open-btn").click();
         const dialog=await page.locator("#command-modal .command-panel").boundingBox();
         assert.ok(dialog&&dialog.x>=0&&dialog.y>=0&&dialog.x+dialog.width<=width+1&&dialog.y+dialog.height<=height+1,"management dialog must fit viewport "+width+"x"+height+": "+JSON.stringify(dialog));
+        await page.screenshot({path:resolve(screenshotDir,"management-"+width+"x"+height+".png"),animations:"disabled"});
         await page.locator("#command-close").click();
     }
     await page.setViewportSize({width:1600,height:1000});
