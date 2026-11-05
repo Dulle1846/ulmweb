@@ -94,6 +94,9 @@ try{
     // Restore the management default so the existing management regression suite
     // continues to verify the expected kingdom landing screen.
     await page.locator("#command-open-btn").click();
+    assert.ok((await page.locator("#command-modal .command-panel").getAttribute("class")).includes("ui-window--large"),"management must use the large shared window size");
+    assert.ok((await page.locator("#command-panel-content").getAttribute("class")).includes("ui-window__body"),"management content must own its scroll region");
+
     assert.ok(await page.locator("#command-modal [data-command-tab].ui-button--tab").count()>=5,"management tabs must use the shared tab control");
 
     await page.locator('[data-command-tab="kingdom"]').click();

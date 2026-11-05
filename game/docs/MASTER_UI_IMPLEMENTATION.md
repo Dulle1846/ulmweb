@@ -194,3 +194,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Replaced native-only action-dock title tooltips with styled, keyboard-focusable tooltips while retaining accessible visible button labels.
 - Added static contracts and Chromium assertions for the shared primary/tab controls.
 - This is the shared control foundation, not yet a complete windowing API or a full migration of every legacy game button.
+
+
+## Phase 2 — reusable window primitives
+
+- Added a shared window sizing system with small, medium and large presets.
+- Added consistent header, body and footer regions with bounded height, scroll ownership and overscroll containment.
+- Applied the window system to settings, people dossiers, management, construction, event dialogs and the founding screen.
+- Added narrow- and short-viewport rules so windows remain reachable without scrolling the page behind them.
+- Static contracts and Chromium E2E verify shared window sizes and scroll regions. Dragging/resizing, window stacking beyond the existing modal focus manager and a full legacy overlay migration remain open.
