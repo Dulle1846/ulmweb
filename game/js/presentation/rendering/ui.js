@@ -12,7 +12,12 @@ import { getHealthSnapshot } from "../../systems/health.js";
 let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);}
-function income(v){return !Number.isFinite(v)||v===0?"":v>0?"+"+v:String(v);}
+function income(v){
+    const value=Number(v);
+    if(!Number.isFinite(value)||value===0)return "";
+    const rounded=Math.round(value*10)/10;
+    return (rounded>0?"+":"")+rounded.toLocaleString("en-US",{maximumFractionDigits:1});
+}
 function updateCost(id,amount){
     const el=document.getElementById(id);if(!el)return;
     el.style.display=amount>0?"inline-flex":"none";
@@ -39,19 +44,32 @@ const GROUP_SPRITES={
  spirits:"icon-spirit",relics:"icon-relic",botany:"icon-botany",geology:"icon-geology",
  administration:"icon-admin",frontier:"icon-frontier",urbanism:"icon-urban",scholarship:"icon-scholar"
 };
+const HAND_SLOTS=5,SLOT_NUMERALS=["I","II","III","IV","V"];
+function handCardMarkup(card){
+ const sprite=GROUP_SPRITES[card.group]||"icon-scroll";
+ return '<button type="button" class="hand-card rarity-'+esc(card.rarity||"common")+(card.instanceId===state.selectedCardInstanceId?" is-selected":"")+'" data-card-group="'+esc(card.group||"general")+'" data-card-id="'+esc(card.instanceId)+'" title="'+esc(card.desc||card.name)+'" aria-label="Select '+esc(card.name)+': '+esc(card.desc||"")+'">'+
+  '<span class="hand-card-banner"><svg class="hand-card-sprite" aria-hidden="true"><use href="assets/royal-card-atlas.svg#'+sprite+'"></use></svg></span>'+
+  '<span class="hand-card-name">'+esc(card.name)+'</span><span class="hand-card-category">'+esc(card.categoryName||card.group||card.kind||"CARD")+'</span>'+
+  '<span class="hand-card-rarity">'+esc(card.rarity||"common")+'</span></button>';
+}
+function emptySlotMarkup(index){
+ return '<span class="hand-slot" data-hand-slot="'+(index+1)+'" aria-hidden="true"><span class="hand-slot-numeral">'+SLOT_NUMERALS[index]+'</span><span class="hand-slot-label">EMPTY</span></span>';
+}
 function renderHand(){
  const container=document.getElementById("card-hand");if(!container)return;
- const signature=state.hand.map(c=>c.instanceId+":"+c.name+":"+c.rarity).join("|")+":"+state.selectedCardInstanceId;
+ const signature=state.hand.map(c=>c.instanceId+":"+c.name+":"+c.rarity).join("|")+":"+state.selectedCardInstanceId+":"+HAND_SLOTS;
  if(signature===lastHandSignature)return;
  lastHandSignature=signature;
- container.innerHTML=state.hand.map(card=>{
-  const sprite=GROUP_SPRITES[card.group]||"icon-scroll";
-  return '<button type="button" class="hand-card rarity-'+esc(card.rarity||"common")+(card.instanceId===state.selectedCardInstanceId?" is-selected":"")+'" data-card-group="'+esc(card.group||"general")+'" data-card-id="'+esc(card.instanceId)+'" title="'+esc(card.desc||card.name)+'" aria-label="Select '+esc(card.name)+': '+esc(card.desc||"")+'">'+
-   '<span class="hand-card-banner"><svg class="hand-card-sprite" aria-hidden="true"><use href="assets/royal-card-atlas.svg#'+sprite+'"></use></svg></span>'+
-   '<span class="hand-card-name">'+esc(card.name)+'</span><span class="hand-card-category">'+esc(card.categoryName||card.group||card.kind||"CARD")+'</span>'+
-   '<span class="hand-card-rarity">'+esc(card.rarity||"common")+'</span></button>';
- }).join("");
- setText("hand-count",state.hand.length+" / 5");
+ const slots=[];
+ for(let index=0;index<HAND_SLOTS;index++){
+  const card=state.hand[index];
+  slots.push(card?handCardMarkup(card):emptySlotMarkup(index));
+ }
+ container.innerHTML=slots.join("");
+ container.dataset.slotCount=String(HAND_SLOTS);
+ container.dataset.handCount=String(state.hand.length);
+ document.getElementById("hand-dock")?.classList.toggle("is-empty",state.hand.length===0);
+ setText("hand-count",state.hand.length+" / "+HAND_SLOTS);
 }
 
 function tabSignature(){
@@ -183,6 +201,12 @@ export function renderUI(){
     setText("gold-income",income(state.incomeThisTick.gold));
     setText("food-income",income(state.incomeThisTick.food));
     document.querySelectorAll("[data-resource-value]").forEach(node=>{const key=node.dataset.resourceValue;if(key in state.resources)node.textContent=Math.floor(state.resources[key]||0).toLocaleString("en-US");});
+    document.querySelectorAll("[data-resource-income]").forEach(node=>{
+        const value=Number(state.incomeThisTick?.[node.dataset.resourceIncome]||0);
+        node.textContent=income(value);
+        node.classList.toggle("is-positive",value>0);
+        node.classList.toggle("is-negative",value<0);
+    });
     const bar=document.getElementById("morale-bar");
     if(bar){bar.style.width=Math.max(0,Math.min(100,state.morale))+"%";bar.classList.toggle("is-low",state.morale<30);}
     setText("morale-value",Math.floor(state.morale));
@@ -192,15 +216,25 @@ export function renderUI(){
     const housing=getHousingSnapshot();
     document.querySelectorAll("[data-population]").forEach(node=>{node.textContent=String(housing.population);});
     const pop=document.getElementById("population");if(pop)pop.innerHTML="POP <strong>"+housing.population+"</strong> / "+housing.capacity+" · "+housing.available+" FREE";
+    setText("population-capacity",housing.capacity?" / "+housing.capacity:"");
     const card=state.currentCard,cardPanel=document.getElementById("card-container");
     if(card){
-        setText("card-icon",card.icon);setText("card-name",card.name);setText("card-desc",card.desc);
+        cardPanel?.classList.remove("is-empty");
+        const cardArt=document.getElementById("card-icon");
+        if(cardArt){
+            const sprite=GROUP_SPRITES[card.group]||"icon-scroll";
+            cardArt.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-card-atlas.svg#'+sprite+'"></use></svg>';
+        }
+        setText("card-name",card.name);setText("card-desc",card.desc);
         ["wood","stone","gold","food"].forEach(key=>updateCost("card-cost-"+key,card.cost?.[key]||0));
         const affordable=Object.entries(card.cost||{}).every(([key,value])=>(state.resources[key]||0)>=value);
         cardPanel?.classList.toggle("is-unavailable",!affordable);
         cardPanel?.setAttribute("aria-label","Drag "+card.name+" onto a valid map tile");
     }else{
-        setText("card-icon","—");setText("card-name","NO CARD");setText("card-desc","Your hand is empty.");
+        cardPanel?.classList.add("is-empty");
+        cardPanel?.classList.remove("is-unavailable");
+        cardPanel?.setAttribute("aria-label","No card selected yet");
+        setText("card-icon","—");setText("card-name","NO CARD SELECTED");setText("card-desc","The hand fills as the realm advances.");
         ["wood","stone","gold","food"].forEach(key=>updateCost("card-cost-"+key,0));
     }
     const labels=["","LANDSCAPE","DISTRICTS","ROOFTOPS","INTERIORS"];

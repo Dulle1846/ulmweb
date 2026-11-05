@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="css/comic-strategy.css">
     <link rel="stylesheet" href="css/ui-design-system.css">
     <link rel="stylesheet" href="css/ui-components.css">
+    <link rel="stylesheet" href="css/hud-v3.css">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
 <body>
 <div class="game-shell">
@@ -24,11 +26,11 @@
             <div class="player-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c.4-4.1 2.9-6.2 7.5-6.2s7.1 2.1 7.5 6.2"/></svg><span id="player-name">GUEST</span></div>
         </div>
         <div class="realm-resource-strip" aria-label="Royal resources">
-            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 8l2 12h10l2-12-7-5Z"/><path d="M8 9h8M9 13h6"/></svg><small>WOOD</small><strong data-resource-value="wood">—</strong></button>
-            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 19 5-13 4 7 3-5 4 11H4Z"/><path d="M7 16h10"/></svg><small>STONE</small><strong data-resource-value="stone">—</strong></button>
-            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M15 8.5c-.7-.7-1.7-1-3-1-1.7 0-2.8.8-2.8 2s1.1 1.8 2.8 2 2.8.8 2.8 2-1.1 2-2.8 2c-1.2 0-2.3-.4-3-1.1M12 6v12"/></svg><small>GOLD</small><strong data-resource-value="gold">—</strong></button>
-            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c2-5 4-9 8-14 0 6 3 9 8 10-3 4-8 6-16 4Z"/><path d="M7 17c3-2 6-5 8-9"/></svg><small>FOOD</small><strong data-resource-value="food">—</strong></button>
-            <button class="realm-resource-chip" type="button" data-kac-panel="people" title="Open character dossiers"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6M16 5a3 3 0 0 1 0 6m2 3c2 .7 3 2.5 3 5"/></svg><small>PEOPLE</small><strong data-population>—</strong></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 8l2 12h10l2-12-7-5Z"/><path d="M8 9h8M9 13h6"/></svg><small>WOOD</small><strong data-resource-value="wood">—</strong><em class="resource-delta" data-resource-income="wood"></em></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 19 5-13 4 7 3-5 4 11H4Z"/><path d="M7 16h10"/></svg><small>STONE</small><strong data-resource-value="stone">—</strong><em class="resource-delta" data-resource-income="stone"></em></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M15 8.5c-.7-.7-1.7-1-3-1-1.7 0-2.8.8-2.8 2s1.1 1.8 2.8 2 2.8.8 2.8 2-1.1 2-2.8 2c-1.2 0-2.3-.4-3-1.1M12 6v12"/></svg><small>GOLD</small><strong data-resource-value="gold">—</strong><em class="resource-delta" data-resource-income="gold"></em></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c2-5 4-9 8-14 0 6 3 9 8 10-3 4-8 6-16 4Z"/><path d="M7 17c3-2 6-5 8-9"/></svg><small>FOOD</small><strong data-resource-value="food">—</strong><em class="resource-delta" data-resource-income="food"></em></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="people" title="Open character dossiers"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6M16 5a3 3 0 0 1 0 6m2 3c2 .7 3 2.5 3 5"/></svg><small>PEOPLE</small><strong data-population>—</strong><em class="resource-delta" id="population-capacity"></em></button>
         </div>
         <div class="header-actions">
             <button id="save-btn" class="control-button" type="button" title="Save · Ctrl+S">SAVE</button>
@@ -65,6 +67,7 @@
             <button class="realm-nav-button" type="button" data-kac-panel="chronicle" title="Event inbox and royal chronicle">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg><span>Chronicle</span>
             </button>
+            <div class="realm-nav-divider" role="presentation">DOMAIN</div>
             <button class="realm-nav-button" type="button" data-kac-panel="politics" title="Factions and political order">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 6h14M7 6l-4 8h8L7 6Zm10 0-4 8h8l-4-8ZM7 21h10"/></svg><span>Politics</span>
             </button>
@@ -90,6 +93,7 @@
         </nav>
         <section id="canvas-wrapper" class="world-stage" aria-label="World map">
             <canvas id="canvas" aria-label="Interactive kingdom map"></canvas>
+            <div class="stage-grain" aria-hidden="true"></div>
             <div class="stage-topline">
                 <div class="stage-chip">WORLD VIEW <strong>· ELDRIA</strong> <span id="zoom-level-name">ROOFTOPS</span> <span id="zoom-value">×1.00</span></div>
                 <div class="stage-chip">DRAG TO PAN</div>
@@ -106,6 +110,7 @@
             </div>
             <div id="placement-status" class="placement-status">DRAG A CARD ONTO THE MAP</div>
             <div class="minimap-frame"><div class="minimap-heading"><span>WORLD MAP</span><span>ELDRIA</span></div><canvas id="minimap" width="140" height="140" aria-label="Minimap"></canvas></div>
+            <div class="stage-compass" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26"/><circle cx="32" cy="32" r="18"/><path d="M32 4 37 32 32 60 27 32Z"/><path d="M4 32 32 27 60 32 32 37Z" opacity=".45"/></svg><span>N</span></div>
             <div id="hint-box" class="hint-box hidden" role="button" tabindex="0" aria-label="Dismiss tip">
                 <div class="hint-title"><span>FIELD NOTE</span><span>×</span></div><div id="hint-text">Scroll to move through the realm's four levels of detail.</div>
             </div>
@@ -128,7 +133,7 @@
 
             <section class="card-section">
                 <div class="card-section-heading"><div class="card-section-title">SELECTED CARD</div><button id="skip-card-btn" class="skip-button" type="button">DISCARD</button></div>
-                <div id="card-container" class="card-container" role="button" tabindex="0" aria-label="Drag the selected card onto the map">
+                <div id="card-container" class="card-container is-empty" role="button" tabindex="0" aria-label="No card selected yet">
                     <div id="card-icon" class="card-icon">🏠</div><div id="card-name" class="card-name">COTTAGE</div><div id="card-desc" class="card-desc">Houses 3 villagers.</div>
                     <div class="card-costs">
                         <div id="card-cost-wood" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/realm-icons.svg#tree"></use></svg></span><span>30</span></div>
@@ -137,6 +142,7 @@
                         <div id="card-cost-food" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/city-builder-sprites.svg#mill"></use></svg></span><span>0</span></div>
                     </div>
                     <div class="card-play-tag">PLAY</div>
+                    <div class="card-empty-state"><span class="card-empty-glyph">✦</span><strong>No card selected</strong><span>The hand fills as the realm advances. Select a card to inspect its cost before placing it.</span></div>
                 </div>
                 <div class="card-instruction">DRAG FROM YOUR HAND ONTO THE WORLD MAP</div>
             </section>

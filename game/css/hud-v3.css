@@ -1,0 +1,527 @@
+/* Kings & Cards — HUD 3.8 “The Throne Room”
+   Presentation-only layer. Loads last and owns the in-game layout:
+   banner header, administration rail, framed world stage, five-slot hand,
+   docked minimap, card inspector and the founding screen.
+   No simulation contract is changed here; every value shown is still real state. */
+
+/* A single global hiding contract. Previously only a few specific selectors
+   honoured .hidden, so the build-cancel control stayed visible outside build mode. */
+.hidden{display:none !important}
+
+:root{
+  --hud-rail-width:96px;
+  --hud-panel-width:352px;
+  --hud-dock-height:196px;
+  --hud-ink:#17130f;
+  --hud-timber:#2b231b;
+  --hud-timber-2:#1b1611;
+  --hud-brass:#b99a59;
+  --hud-brass-soft:rgba(185,154,89,.34);
+  --hud-parchment:#e8d7b2;
+  --hud-parchment-deep:#cdb387;
+  --hud-muted:#a2916f;
+  --hud-good:#9fc48a;
+  --hud-bad:#dfa096;
+}
+
+/* ── 1. Banner header ─────────────────────────────────────────────── */
+
+.topbar{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:
+    "brand middle resources"
+    "actions actions actions";
+  align-items:center;
+  gap:6px 22px;
+  min-height:0;
+  padding:9px 18px 0;
+  border-bottom:3px double var(--hud-brass);
+  background:
+    repeating-linear-gradient(90deg,#ffffff05 0 2px,transparent 2px 6px),
+    linear-gradient(180deg,#3b3025,#221c16 88%);
+  box-shadow:0 6px 24px #0009,inset 0 -1px #e7c98a33;
+}
+.brand{grid-area:brand;min-width:0}
+.brand-mark{
+  width:46px;height:46px;border:2px double var(--hud-brass);border-radius:50%;
+  background:radial-gradient(circle,#f3e4bf 0 46%,#c1a066 48% 54%,#3a2a1c 56%);
+  box-shadow:0 0 0 3px #1d1712,0 0 0 4px #8f7142,inset 0 0 14px #6b4a1d;
+}
+.brand-mark img{width:32px;height:32px}
+.brand-title{font-size:20px;letter-spacing:.15em;color:#f3e2ba;text-shadow:0 2px 2px #000}
+.brand-subtitle{font-size:8px;letter-spacing:.2em;color:#c0a878}
+.header-middle{grid-area:middle;justify-content:center;gap:0;min-width:0}
+.header-middle>*{
+  min-width:0;padding:0 clamp(10px,1.5vw,22px);
+  border-left:1px solid #b99a5929;
+}
+.header-middle>*:first-child{padding-left:0;border-left:0}
+.date-block{min-width:106px}
+.date-label,.morale-topline{font-size:8px;letter-spacing:.16em;color:#b9a47c}
+.date-value{margin-top:4px;font-size:16px;letter-spacing:.1em;color:#f0dcae;white-space:nowrap}
+.morale-block{width:clamp(118px,13vw,186px)}
+.morale-topline{margin-bottom:6px}
+.morale-track{height:8px;border:1px solid #8d744d;border-radius:1px;background:#150f0b}
+.morale-track>div{background:linear-gradient(90deg,#7d2c31,#b99a59,#5d7a4f)}
+.player-chip{
+  display:flex;align-items:center;gap:7px;padding:6px 10px;
+  border:1px solid #b99a5940;border-radius:2px;background:#1b1611;color:#e8d7b2;
+  font:700 9px var(--ui-title-font);letter-spacing:.1em;
+}
+.player-chip svg{width:16px;height:16px;stroke:#d8c08c}
+
+/* Resource ledger ---------------------------------------------------- */
+.realm-resource-strip{grid-area:resources;display:flex;align-items:stretch;gap:5px;min-width:0}
+.realm-resource-chip{
+  position:relative;display:grid;
+  grid-template-columns:26px auto auto;
+  grid-template-areas:"icon label label" "icon value delta";
+  align-items:center;column-gap:7px;
+  min-height:44px;min-width:86px;padding:4px 9px 4px 6px;
+  border:1px solid #8f7448;border-radius:3px;
+  background:linear-gradient(180deg,#312820,#1c1712);
+  color:#e6d6b4;box-shadow:inset 0 1px #f7e6c21a,0 2px 5px #0006;
+  text-align:left;cursor:pointer;
+}
+.realm-resource-chip:hover{border-color:#d8b979;background:linear-gradient(180deg,#3d3226,#241d16)}
+.realm-resource-chip svg{
+  grid-area:icon;width:22px;height:22px;justify-self:center;
+  stroke:#c9ab73;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
+}
+.realm-resource-chip small{
+  grid-area:label;align-self:end;
+  font:700 7px var(--ui-body-font);letter-spacing:.16em;color:#b8a480;
+  text-transform:uppercase;
+}
+.realm-resource-chip strong{
+  grid-area:value;align-self:start;
+  font:700 15px/1.15 var(--ui-number-font);font-variant-numeric:tabular-nums;color:#f4e8cd;
+}
+.resource-delta{
+  grid-area:delta;align-self:start;justify-self:end;
+  font:700 9px/1.15 var(--ui-number-font);font-style:normal;font-variant-numeric:tabular-nums;
+  color:var(--hud-muted);
+}
+.resource-delta.is-positive{color:var(--hud-good)}
+.resource-delta.is-negative{color:var(--hud-bad)}
+
+/* Command bar -------------------------------------------------------- */
+.header-actions{
+  grid-area:actions;display:flex;align-items:center;justify-content:flex-end;
+  gap:5px;width:100%;padding:5px 0 7px;
+  border-top:1px solid #b99a5926;
+}
+.header-actions .control-button,.header-actions .speed-button{
+  min-height:31px;padding:0 10px;border:1px solid #8b7047;border-radius:2px;
+  background:linear-gradient(#524433,#302820);color:#ead9b5;
+  font:700 9px var(--ui-title-font);letter-spacing:.09em;
+}
+.header-actions .control-button:hover,.header-actions .speed-button:hover{
+  border-color:#d1b476;background:linear-gradient(#6b5638,#3d3125);color:#fff0c9;
+}
+.header-actions .speed-button{min-width:34px;font-family:var(--ui-number-font);letter-spacing:0}
+.header-actions .speed-button.is-active{
+  border-color:#e1c17d;background:linear-gradient(#c0a066,#8a6c40);color:#211b14;
+  box-shadow:inset 0 1px #fff8,0 0 0 1px #392b1c;
+}
+.speed-group{display:flex;gap:2px;padding:2px;border:1px solid #8b7047;border-radius:2px;background:#191410}
+
+/* ── 2. Administration rail ───────────────────────────────────────── */
+
+.game-layout{align-items:stretch}
+.realm-nav{
+  flex:0 0 var(--hud-rail-width);
+  gap:3px;padding:8px 7px;
+  overflow-x:hidden;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:#8f7448 transparent;
+  border-right:2px solid #8f7448;
+  background:linear-gradient(180deg,#332a21,#1e1914);
+}
+.realm-nav-heading{
+  padding:3px 0 7px;font-size:8px;letter-spacing:.16em;color:#c6ad7c;
+  border-bottom:1px solid #b99a5933;
+}
+.realm-nav-button{
+  min-height:50px;gap:4px;padding:6px 3px;border:1px solid transparent;border-radius:3px;
+  color:#c9b993;
+}
+.realm-nav-button svg{width:22px;height:22px;stroke-width:1.5}
+.realm-nav-button span{
+  display:block;font:700 8px/1.1 var(--ui-title-font);
+  letter-spacing:.015em;text-transform:uppercase;white-space:nowrap;
+}
+.realm-nav-button:hover{border-color:#b99a5955;background:#46382a;color:#f4e2ba}
+.realm-nav-button.is-active{
+  border-color:#c3a566;background:linear-gradient(150deg,#7a5e3c,#43342a);color:#fff2d0;
+  box-shadow:inset 0 1px #ffeec866,0 2px 6px #0006;
+}
+.realm-nav-divider{
+  display:flex;align-items:center;gap:6px;margin:6px 0 2px;
+  color:#93805e;font:700 7px var(--ui-title-font);letter-spacing:.14em;
+}
+.realm-nav-divider::before,.realm-nav-divider::after{
+  content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,#b99a5944,transparent);
+}
+
+/* ── 3. World stage frame, plaques and compass ────────────────────── */
+
+.world-stage{
+  border-right:1px solid #b99a5926;
+  background:
+    radial-gradient(ellipse at 50% 42%,rgba(112,132,90,.13),transparent 62%),
+    linear-gradient(160deg,#1a1f18,#0d120f 78%);
+}
+.stage-grain{
+  position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.5;
+  box-shadow:inset 0 0 0 1px #b99a5926,inset 0 0 110px #06080acc;
+  background-image:repeating-linear-gradient(0deg,#00000010 0 1px,transparent 1px 3px);
+}
+.stage-topline{top:14px;left:16px;gap:8px;z-index:4}
+.stage-chip{
+  padding:6px 10px;border:1px solid #a98a52;border-radius:2px;
+  background:linear-gradient(160deg,rgba(44,32,22,.94),rgba(16,12,9,.95));
+  color:#d9c8a6;font:700 8px var(--ui-title-font);letter-spacing:.14em;
+  box-shadow:0 3px 10px #0008,inset 0 1px #f0d9a022;
+  white-space:nowrap;
+}
+.stage-chip strong{color:#f0d9a8;font-weight:700}
+.zoom-panel{
+  top:14px;right:16px;z-index:4;gap:5px;padding:6px;
+  border:2px solid #8f7448;border-radius:3px;
+  background:linear-gradient(160deg,rgba(44,32,22,.95),rgba(16,12,9,.96));
+  box-shadow:0 4px 14px #0009;
+}
+.zoom-button{width:28px;height:28px;border-radius:2px;font-size:16px}
+.zoom-presets{gap:3px;padding-left:4px;border-left:1px solid #b99a5933}
+.zoom-preset{min-width:27px;height:27px;border-radius:2px;padding:0 6px;font-size:8px}
+.zoom-preset.is-active{border-color:#e0c17e;background:linear-gradient(#c0a066,#8a6c40);color:#211b14}
+.placement-status{
+  top:56px;z-index:4;padding:7px 12px;border:1px solid #a98a52;border-radius:2px;
+  background:linear-gradient(160deg,rgba(44,32,22,.92),rgba(16,12,9,.95));
+  color:#cbbb98;font:700 8px var(--ui-title-font);letter-spacing:.16em;
+  box-shadow:0 3px 10px #0008;
+}
+.placement-status[data-valid="true"]{border-color:#8dae6f;color:#dcecc4}
+.placement-status[data-valid="false"]{border-color:#b96a5b;color:#ffd3c8}
+.stage-compass{
+  position:absolute;left:16px;bottom:calc(var(--hud-dock-height) + 18px);z-index:3;
+  display:grid;place-items:center;width:52px;height:52px;pointer-events:none;
+  color:#cbb078;opacity:.62;
+}
+.stage-compass svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.2}
+.stage-compass span{
+  position:absolute;top:-4px;left:50%;transform:translateX(-50%);
+  font:700 7px var(--ui-title-font);letter-spacing:.1em;
+}
+
+/* ── 4. Hand dock and its five slots ──────────────────────────────── */
+
+.hand-dock{
+  left:50%;bottom:12px;transform:translateX(-50%);
+  width:min(820px,calc(100% - 32px));padding:8px 12px 12px;
+  border:2px solid #8f7448;border-bottom:3px double #8f7448;border-radius:4px;
+  background:
+    repeating-linear-gradient(0deg,#ffffff04 0 2px,transparent 2px 5px),
+    linear-gradient(180deg,rgba(45,35,25,.97),rgba(18,14,10,.985));
+  box-shadow:0 -12px 32px #000a,inset 0 1px #f0d9a01f;
+}
+.hand-dock-heading{
+  gap:9px;padding:0 2px 7px;color:#d8c093;
+  font:700 8px var(--ui-title-font);letter-spacing:.17em;
+  border-bottom:1px solid #b99a5926;margin-bottom:8px;
+}
+.hand-dock-heading #hand-count{
+  display:inline-block;padding:2px 8px;border:1px solid #a9854f;border-radius:2px;
+  background:#3d2c1d;color:#f4e2bc;font-family:var(--ui-number-font);letter-spacing:.05em;
+}
+.hand-help{margin-left:auto;color:#a08c67;font-size:7px}
+.card-hand{
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;align-items:stretch;min-height:0;
+}
+.hand-slot{
+  position:relative;display:grid;place-items:center;
+  min-height:132px;border:1px dashed #8f7448;border-radius:3px;
+  background:
+    repeating-linear-gradient(135deg,#ffffff05 0 6px,transparent 6px 12px),
+    linear-gradient(160deg,rgba(28,22,16,.65),rgba(16,12,9,.4));
+  color:#7d6a4c;
+}
+.hand-slot-numeral{
+  font:700 26px var(--ui-title-font);color:#6d5b3f;opacity:.62;
+  text-shadow:0 1px #0008;
+}
+.hand-slot-label{
+  position:absolute;bottom:8px;
+  font:700 7px var(--ui-body-font);letter-spacing:.2em;color:#7a6749;
+}
+.hand-card{
+  width:100%;max-width:none;min-width:0;min-height:132px;
+  padding:7px 6px 8px;border:2px solid #8b6739;border-radius:3px;
+  background-image:
+    url("../assets/royal-card-frame.svg"),
+    radial-gradient(ellipse at 18% 12%,#fff7d5aa,transparent 42%),
+    repeating-linear-gradient(0deg,#6142200b 0 1px,transparent 1px 4px),
+    linear-gradient(145deg,#f1e3c2,#d4bd8d);
+  background-size:100% 100%,auto,auto,auto;background-repeat:no-repeat;
+  box-shadow:0 4px 10px #0008,inset 0 0 0 3px #f2e4c2,inset 0 0 0 4px #9b7742;
+}
+.hand-card:hover,.hand-card:focus-visible{transform:translateY(-8px)}
+.hand-card.is-selected{transform:translateY(-10px)}
+.hand-card-banner{width:44px;height:46px;margin:1px auto 0;background:radial-gradient(circle,#f8edcf,#d3b77f)}
+.hand-card-sprite{width:30px;height:30px}
+.hand-card-name{
+  display:-webkit-box;white-space:normal;overflow:hidden;
+  -webkit-box-orient:vertical;-webkit-line-clamp:2;
+  max-height:2.6em;font-size:10px;line-height:1.25;
+}
+.hand-card-category{font-size:7px;line-height:1.2;max-height:2.4em;overflow:hidden}
+.hand-card-rarity{margin-top:auto;font-size:6.5px;padding:2px 5px;line-height:1.3}
+.hand-dock.is-empty .hand-help{color:#c7ae80}
+
+/* ── 5. Minimap, docked above the hand ────────────────────────────── */
+
+.minimap-frame{
+  right:16px;bottom:calc(var(--hud-dock-height) + 16px);z-index:4;
+  padding:6px;border:2px solid #8f7448;border-radius:3px;
+  background:linear-gradient(160deg,rgba(42,31,22,.95),rgba(15,11,8,.97));
+  box-shadow:0 5px 16px #000a,inset 0 1px #f0d9a01f;
+}
+.minimap-heading{
+  padding:1px 2px 5px;color:#c6b189;
+  font:700 7px var(--ui-title-font);letter-spacing:.16em;
+}
+.minimap-heading span:last-child{color:#e0c184}
+#minimap{width:124px;height:124px;border:1px solid #b99a5933;border-radius:2px}
+
+/* ── 6. Right-hand administration panel and card inspector ────────── */
+
+.side-panel{
+  flex:0 0 var(--hud-panel-width);min-width:330px;
+  border-left:2px solid #8f7448;
+  background:
+    repeating-linear-gradient(0deg,#ffffff04 0 1px,transparent 1px 3px),
+    linear-gradient(165deg,#33291f,#1b1611 74%);
+}
+.section-heading{
+  padding-bottom:7px;border-bottom:1px solid #b99a5940;
+  font-size:9px;letter-spacing:.15em;
+}
+.resource-grid{gap:6px}
+.resource-card{
+  display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:8px;
+  padding:7px 9px;border:1px solid #8f7448;border-radius:3px;
+  background:linear-gradient(150deg,#423324,#241b13);
+  box-shadow:inset 0 1px #fff1,0 2px 5px #0005;
+}
+.resource-symbol svg{width:28px;height:28px}
+.resource-value{font-size:17px;line-height:1.1}
+.resource-name{font-size:7px;letter-spacing:.15em}
+.resource-income{
+  min-width:34px;padding:2px 5px;border-radius:2px;
+  background:#171310;color:#b3a17c;
+  font:700 9px var(--ui-number-font);text-align:right;
+}
+.resource-income:empty{display:none}
+.card-section{border-bottom:1px solid #b99a5940;padding-bottom:10px}
+.card-section-heading{align-items:center}
+.card-container.is-empty{
+  display:grid;place-items:center;min-height:176px;padding:16px;
+  border-style:dashed;border-color:#a98a52;background:linear-gradient(160deg,#efe3c8,#d8c6a0);
+  box-shadow:inset 0 0 0 4px #f2e4c255;
+}
+.card-container.is-empty .card-icon,
+.card-container.is-empty .card-name,
+.card-container.is-empty .card-desc,
+.card-container.is-empty .card-costs,
+.card-container.is-empty .card-play-tag{display:none}
+.card-empty-state{display:none;justify-items:center;gap:6px;text-align:center;color:#7b6446}
+.card-container.is-empty .card-empty-state{display:grid}
+.card-empty-glyph{
+  display:grid;place-items:center;width:44px;height:44px;border:1px dashed #a98a52;border-radius:50%;
+  font:700 18px var(--ui-title-font);color:#96794b;
+}
+.card-icon svg{
+  width:46px;height:46px;display:block;margin:0 auto;color:#7a3a2b;
+  fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;
+}
+.card-empty-state strong{
+  font:700 12px var(--ui-title-font);letter-spacing:.1em;color:#5d4830;text-transform:uppercase;
+}
+.card-empty-state span{max-width:230px;font-size:9px;line-height:1.5;color:#7f6a4d}
+.card-instruction{font-size:7px;letter-spacing:.12em;color:#a08c67}
+.tabs{background:#241c14;border-color:#b99a5940}
+.tab-button{font-size:8px;letter-spacing:.1em}
+.panel-footer{
+  gap:8px;padding:8px 11px;
+  background:linear-gradient(180deg,#241c14,#1b1611);
+  border-top:1px solid #b99a5940;
+  font-size:7px;letter-spacing:.1em;
+}
+.footer-help{width:22px;height:22px}
+.footer-people-button{
+  min-height:24px;padding:0 8px;border:1px solid #8f7448;border-radius:2px;
+  background:#3a2c1e;color:#e5d3ae;font:700 7px var(--ui-title-font);letter-spacing:.1em;cursor:pointer;
+}
+.footer-people-button:hover{border-color:#d1b476;color:#fff0c9}
+
+/* ── 7. Full-width realm action dock ──────────────────────────────── */
+
+.realm-action-dock{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;border-top:2px solid #8f7448;border-bottom:0;
+  background:
+    repeating-linear-gradient(90deg,#ffffff05 0 2px,transparent 2px 7px),
+    linear-gradient(180deg,#3a2e23,#241c15);
+  box-shadow:0 -3px 14px #0007;
+}
+.realm-action-dock>button{
+  flex:0 0 auto;min-width:118px;min-height:34px;
+  font-size:9px;letter-spacing:.1em;
+}
+.realm-action-dock>button:first-child{border-color:#c3a566}
+.save-status{
+  flex:1 1 auto;grid-column:auto;margin-left:auto;text-align:right;
+  font-size:8px;letter-spacing:.11em;color:#b3a17c;
+}
+
+/* ── 8. Founding screen: illuminated two-column plate ─────────────── */
+
+@media(min-width:1000px) and (min-height:740px){
+  .start-panel{
+    display:grid;width:min(1040px,94vw);padding:26px 32px;
+    grid-template-columns:minmax(0,1fr) minmax(356px,404px);
+    grid-template-areas:
+      "emblem form"
+      "kicker form"
+      "art form"
+      "title form"
+      "lead form"
+      "status form"
+      "footer form";
+    align-items:start;column-gap:clamp(22px,3vw,44px);
+    max-height:calc(100vh - 24px);overflow:hidden;text-align:left;
+  }
+  .start-panel .start-emblem{grid-area:emblem;margin:0;justify-self:start;width:58px;height:58px;font-size:32px}
+  .start-panel .start-kicker{grid-area:kicker;margin-top:10px}
+  .start-panel .start-hero-art{grid-area:art;height:196px;margin:12px 0 10px}
+  .start-panel #start-title{grid-area:title;margin:4px 0 4px;text-align:left}
+  .start-panel .start-lead{grid-area:lead;margin:2px 0 0;max-width:36ch}
+  .start-panel .start-form{
+    grid-area:form;max-width:none;margin:0;align-self:stretch;
+    max-height:calc(100vh - 76px);overflow-y:auto;padding:2px 6px 2px 2px;
+    scrollbar-gutter:stable;
+  }
+  .start-panel #status-message{grid-area:status;margin-top:10px}
+  .start-panel .start-footer{grid-area:footer;margin-top:6px;text-align:left}
+  .world-forge{display:grid;grid-template-columns:1fr 1fr;column-gap:16px}
+  .forge-heading,.forge-note{grid-column:1/-1}
+}
+
+/* ── 9. Responsive adjustments ────────────────────────────────────── */
+
+@media(max-width:1180px){
+  :root{--hud-rail-width:84px;--hud-panel-width:318px;--hud-dock-height:168px}
+  .realm-resource-chip{min-width:74px;padding-right:7px}
+  .realm-resource-chip small{letter-spacing:.1em}
+  .header-actions .control-button{padding:0 8px}
+  .realm-nav-button span{font-size:7.5px}
+}
+
+@media(max-width:900px){
+  :root{--hud-rail-width:auto;--hud-panel-width:100%;--hud-dock-height:176px}
+  .topbar{
+    grid-template-columns:auto minmax(0,1fr);
+    grid-template-areas:"brand actions" "middle middle" "resources resources";
+    gap:6px 12px;padding:8px 10px 0;
+  }
+  .header-actions{justify-content:flex-end;flex-wrap:wrap;border-top:0;padding:0}
+  .header-middle{justify-content:flex-start;flex-wrap:wrap;gap:4px 0}
+  .realm-resource-strip{justify-content:space-between;padding-bottom:6px}
+  .realm-resource-chip{flex:1 1 0;min-width:0}
+  .game-layout{flex-direction:column}
+  .realm-nav{
+    flex:0 0 auto;flex-direction:row;gap:2px;padding:5px 6px;
+    overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid #8f7448;
+  }
+  .realm-nav-heading,.realm-nav-divider,.realm-nav-spacer{display:none}
+  .realm-nav-button{flex:0 0 62px;min-height:46px}
+  .realm-nav-button span{font-size:7px}
+  .world-stage{min-height:280px}
+  .side-panel{
+    flex:1 1 auto;width:100%;min-width:0;max-height:44%;
+    border-left:0;border-top:2px solid #8f7448;
+  }
+  .stage-compass{display:none}
+  .minimap-frame{bottom:calc(var(--hud-dock-height) + 10px);right:10px}
+  #minimap{width:98px;height:98px}
+  .hand-dock{width:calc(100% - 20px);bottom:8px;padding:6px 8px 9px}
+  .card-hand{gap:5px}
+  .hand-card,.hand-slot{min-height:112px}
+  .hand-card-banner{width:36px;height:38px}
+  .hand-card-sprite{width:25px;height:25px}
+  .hand-card-name{font-size:8px}
+  .realm-action-dock{padding:6px 8px}
+  .realm-action-dock>button{min-width:0;flex:1 1 0;font-size:8px}
+  .save-status{flex-basis:100%;margin-left:0;text-align:center;order:9}
+}
+
+@media(max-width:560px){
+  :root{--hud-dock-height:192px}
+  .topbar{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"brand" "actions" "middle" "resources";
+    gap:4px;padding:8px 10px 0;
+  }
+  .brand{justify-self:start}
+  .header-actions{
+    flex-wrap:wrap;justify-content:flex-start;
+    padding:2px 0 5px;gap:4px;
+  }
+  .header-actions .control-button,.header-actions .speed-button{flex:0 0 auto;padding:0 7px;font-size:7.5px}
+  .header-middle{justify-content:space-between;gap:0}
+  .header-middle>*{padding:0 8px}
+  .world-stage{min-height:400px}
+  .brand-title{font-size:16px;letter-spacing:.1em}
+  .brand-mark{width:38px;height:38px}
+  .brand-mark img{width:26px;height:26px}
+  .date-block{min-width:88px}
+  .date-value{font-size:13px}
+  .morale-block{width:100px}
+  .realm-resource-chip{grid-template-columns:20px auto;grid-template-areas:"icon label" "icon value";min-height:38px}
+  .realm-resource-chip svg{width:18px;height:18px}
+  .realm-resource-chip strong{font-size:12px}
+  .resource-delta{display:none}
+  .card-hand{
+    display:flex;justify-content:flex-start;gap:6px;
+    overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x mandatory;padding-bottom:3px;scrollbar-width:thin;
+  }
+  .hand-card,.hand-slot{flex:0 0 122px;width:122px;min-height:116px;padding:6px 5px;scroll-snap-align:start}
+  .hand-card-banner{width:34px;height:36px}
+  .hand-card-sprite{width:23px;height:23px}
+  .hand-card-name{font-size:8.5px}
+  .hand-card-category{display:none}
+  .minimap-heading{display:flex;align-items:center;justify-content:space-between;gap:4px}
+  .minimap-heading span:last-child{display:none}
+  /* Keep the panel's own scroll range clear of the fixed bottom action bar. */
+  .side-panel{padding-bottom:54px}
+  .card-hand::-webkit-scrollbar{height:5px}
+  .card-hand::-webkit-scrollbar-track{background:#0000004d;border-radius:3px}
+  .card-hand::-webkit-scrollbar-thumb{background:#8f7448;border-radius:3px}
+  .hand-card-category,.hand-slot-numeral{display:none}
+  .hand-card-rarity{font-size:6px}
+  .hand-help{display:none}
+  .minimap-frame{bottom:calc(var(--hud-dock-height) + 8px);right:auto;left:10px;padding:4px}
+  #minimap{width:76px;height:76px}
+  .minimap-heading{font-size:6px;padding:0 1px 3px}
+  .stage-topline{left:10px;top:10px;gap:5px}
+  .stage-chip{font-size:7px;padding:5px 7px}
+  .zoom-panel{right:10px;top:10px}
+  .placement-status{top:48px;font-size:7px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .hand-card,.realm-nav-button,.realm-resource-chip{transition:none}
+}

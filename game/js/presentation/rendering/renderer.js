@@ -82,9 +82,6 @@ export function drawWorld() {
 
     ctx.globalAlpha = 1;
     ctx.textAlign = "left";
-
-    // ── Zoom-Level-Indikator ─────────────────────────────────
-    drawZoomIndicator(ctx, canvas);
 }
 
 function drawRoadNetwork(ctx,zoom,camera,canvas){
@@ -157,38 +154,3 @@ export function drawVignette() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  ZOOM-INDIKATOR (dezent links unten)
-// ═══════════════════════════════════════════════════════════════
-
-function drawZoomIndicator(ctx, canvas) {
-    const zl = state.zoomLevel;
-    const zoom = state.zoom;
-
-    const labels = ["", "LANDSCAPE", "DISTRICTS", "ROOFTOPS", "INTERIORS"];
-    const label = labels[zl];
-
-    ctx.save();
-    ctx.fillStyle = "rgba(8, 15, 18, 0.82)";
-    ctx.strokeStyle = "rgba(212, 175, 93, 0.38)";
-    ctx.lineWidth = 1;
-    ctx.fillRect(12, canvas.height - 40, 206, 28);
-    ctx.strokeRect(12.5, canvas.height - 39.5, 205, 27);
-
-    ctx.fillStyle = "#ead9b3";
-    ctx.font = "700 10px 'Trebuchet MS', sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(label, 22, canvas.height - 22);
-    ctx.fillStyle = "#b9a98a";
-    ctx.font = "10px monospace";
-    ctx.fillText(`×${zoom.toFixed(2)}`, 130, canvas.height - 22);
-
-    for (let i = 1; i <= 4; i++) {
-        ctx.fillStyle = i === zl ? "#dfba70" : "rgba(226, 216, 193, 0.28)";
-        ctx.beginPath();
-        ctx.arc(174 + i * 10, canvas.height - 26, i === zl ? 3.4 : 2.4, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    ctx.restore();
-}

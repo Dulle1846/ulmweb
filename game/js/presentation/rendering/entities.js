@@ -137,53 +137,317 @@ function drawBuildingLevel2(ctx, e, sx, sy, cellPx, tick) {
     const h = bs.h * cellPx;
     const cx = sx + cellPx / 2;
     const cy = sy + cellPx / 2;
+    const left = cx - w / 2;
+    const top = cy - h / 2;
+    // Details fade out rather than collapsing into noise on tiny footprints.
+    const detail = Math.max(0, Math.min(1, (Math.min(w, h) - 20) / 46));
 
-    // Schatten
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
-    ctx.fillRect(cx - w / 2 + 3 * scale, cy - h / 2 + 3 * scale, w, h);
+    ctx.save();
 
-    // Wände (leicht heller)
-    ctx.fillStyle = lightenColor(roofColor, 0.3);
-    ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+    // Ground shadow in two offsets for a softer edge.
+    ctx.fillStyle = "rgba(0,0,0,0.16)";
+    ctx.fillRect(left + 5 * scale, top + 5 * scale, w, h);
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
+    ctx.fillRect(left + 2.5 * scale, top + 2.5 * scale, w, h);
 
-    // Dach (dunklere Mitte)
+    // Walls / plinth.
+    ctx.fillStyle = lightenColor(roofColor, 0.42);
+    ctx.fillRect(left, top, w, h);
+    ctx.strokeStyle = darkenColor(roofColor, 0.45);
+    ctx.lineWidth = Math.max(1, 1.4 * scale);
+    ctx.strokeRect(left + 0.5, top + 0.5, Math.max(0, w - 1), Math.max(0, h - 1));
+
+    // Roof slab with a north-west highlight and a south-east shade bevel.
+    const inset = Math.max(1.6, 3.2 * scale);
+    const rx = left + inset, ry = top + inset;
+    const rw = Math.max(0, w - inset * 2), rh = Math.max(0, h - inset * 2);
     ctx.fillStyle = roofColor;
-    const inset = 3 * scale;
-    ctx.fillRect(cx - w / 2 + inset, cy - h / 2 + inset, w - inset * 2, h - inset * 2);
+    ctx.fillRect(rx, ry, rw, rh);
+    const bevel = Math.max(1, Math.min(rw, rh) * 0.09);
+    ctx.fillStyle = "rgba(255,246,220,0.16)";
+    ctx.fillRect(rx, ry, rw, bevel);
+    ctx.fillRect(rx, ry, bevel, rh);
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.fillRect(rx, ry + rh - bevel, rw, bevel);
+    ctx.fillRect(rx + rw - bevel, ry, bevel, rh);
 
-    // Dachfirst
-    ctx.strokeStyle = darkenColor(roofColor, 0.3);
-    ctx.lineWidth = 1.5 * scale;
-    ctx.beginPath();
-    ctx.moveTo(cx - w / 2 + inset, cy);
-    ctx.lineTo(cx + w / 2 - inset, cy);
-    ctx.stroke();
-
-    // Keep: Flagge
-    if (e.type === TYPE.KEEP) {
-        const fw = Math.sin(tick * 0.15) * 2 * scale;
-        ctx.fillStyle = "#d92626";
-        ctx.fillRect(cx + w / 4, cy - h / 2 - 8 * scale, 8 * scale, 5 * scale + fw);
-        ctx.fillStyle = "#6e695c";
-        ctx.fillRect(cx + w / 4 - 1, cy - h / 2 - 10 * scale, 2 * scale, 12 * scale);
+    // Tile courses, only where they remain legible.
+    if (detail > 0.2) {
+        ctx.globalAlpha = 0.14 * detail;
+        ctx.strokeStyle = "#1c130d";
+        ctx.lineWidth = Math.max(0.6, 0.8 * scale);
+        const course = Math.max(4, 6.5 * scale);
+        for (let y = ry + course; y < ry + rh - 1; y += course) {
+            ctx.beginPath();
+            ctx.moveTo(rx + 1, y);
+            ctx.lineTo(rx + rw - 1, y);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
     }
 
-    // Mühle: Kreissymbol
-    if (e.type === TYPE.MILL) {
-        const angle = tick * 0.04;
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(angle);
-        ctx.strokeStyle = "#5d4028";
-        ctx.lineWidth = 2 * scale;
-        for (let i = 0; i < 4; i++) {
+    drawRoofDetail(ctx, e, {
+        left, top, cx, cy, w, h, rx, ry, rw, rh, scale, tick, detail, roofColor
+    });
+
+    ctx.restore();
+}
+
+// Roof silhouettes and small props that make each structure type readable
+// from above without loading a raster sprite for every building.
+function drawRoofDetail(ctx, e, m) {
+    const { cx, cy, rx, ry, rw, rh, scale, tick, detail, roofColor, w, h } = m;
+    ctx.lineWidth = Math.max(1, 1.2 * scale);
+
+    switch (e.type) {
+        case TYPE.KEEP: {
+            // A castle plan rather than a single roof slab: curtain wall,
+            // courtyard, four corner towers and the central keep.
+            const tower = Math.min(rw, rh) * 0.22;
+            const wall = tower * 0.62;
+            ctx.fillStyle = lightenColor(roofColor, 0.36);
+            ctx.fillRect(rx, ry, rw, wall);
+            ctx.fillRect(rx, ry + rh - wall, rw, wall);
+            ctx.fillRect(rx, ry, wall, rh);
+            ctx.fillRect(rx + rw - wall, ry, wall, rh);
+            // Courtyard
+            ctx.fillStyle = "rgba(96,83,60,0.62)";
+            ctx.fillRect(rx + wall, ry + wall, rw - wall * 2, rh - wall * 2);
+            ctx.fillStyle = "rgba(255,246,220,0.1)";
+            ctx.fillRect(rx + wall, ry + wall, rw - wall * 2, Math.max(1, rh * 0.06));
+            // Corner towers with conical slate roofs
+            for (const [tx, ty] of [
+                [rx + tower * 0.4, ry + tower * 0.4],
+                [rx + rw - tower * 0.4, ry + tower * 0.4],
+                [rx + tower * 0.4, ry + rh - tower * 0.4],
+                [rx + rw - tower * 0.4, ry + rh - tower * 0.4]
+            ]) {
+                ctx.fillStyle = darkenColor(roofColor, 0.1);
+                ctx.beginPath();
+                ctx.arc(tx, ty, tower * 0.44, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "#8f7448";
+                ctx.beginPath();
+                ctx.arc(tx, ty, tower * 0.19, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // Central keep with a pitched red roof and gold finial.
+            const kw = rw * 0.42, kh = rh * 0.46;
+            ctx.fillStyle = lightenColor(roofColor, 0.2);
+            ctx.fillRect(cx - kw / 2, cy - kh / 2, kw, kh);
+            ctx.fillStyle = "#7f3a2d";
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, -w * 0.35);
+            ctx.moveTo(cx - kw * 0.62, cy - kh * 0.34);
+            ctx.lineTo(cx, cy - kh * 0.08);
+            ctx.lineTo(cx + kw * 0.62, cy - kh * 0.34);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "rgba(255,226,170,0.4)";
+            ctx.beginPath();
+            ctx.moveTo(cx - kw * 0.62, cy - kh * 0.34);
+            ctx.lineTo(cx, cy - kh * 0.08);
+            ctx.lineTo(cx + kw * 0.62, cy - kh * 0.34);
             ctx.stroke();
-            ctx.rotate(Math.PI / 2);
+            ctx.fillStyle = "#e8c46a";
+            ctx.beginPath();
+            ctx.arc(cx, cy - kh * 0.36, Math.max(1.4, 2 * scale), 0, Math.PI * 2);
+            ctx.fill();
+            // Royal banner above the gate
+            const flag = Math.sin(tick * 0.15) * 2 * scale;
+            ctx.fillStyle = "#6e695c";
+            ctx.fillRect(cx - 1, ry - 15 * scale, 2 * scale, 17 * scale);
+            ctx.fillStyle = "#8f2f30";
+            ctx.beginPath();
+            ctx.moveTo(cx + 1, ry - 15 * scale);
+            ctx.lineTo(cx + 11 * scale + flag, ry - 11 * scale);
+            ctx.lineTo(cx + 1, ry - 7 * scale);
+            ctx.closePath();
+            ctx.fill();
+            break;
         }
-        ctx.restore();
+        case TYPE.HOUSE:
+        case TYPE.TAVERN:
+        case TYPE.BARRACKS:
+        case TYPE.STABLE: {
+            // Gable ridge and sunlit eave.
+            ctx.strokeStyle = darkenColor(roofColor, 0.42);
+            ctx.beginPath();
+            ctx.moveTo(rx, cy);
+            ctx.lineTo(rx + rw, cy);
+            ctx.stroke();
+            ctx.strokeStyle = "rgba(255,244,214,0.3)";
+            ctx.beginPath();
+            ctx.moveTo(rx, cy - 1.4 * scale);
+            ctx.lineTo(rx + rw, cy - 1.4 * scale);
+            ctx.stroke();
+            if (e.type === TYPE.HOUSE && detail > 0.35) {
+                const chx = rx + rw * 0.72, chy = ry + rh * 0.1;
+                ctx.fillStyle = "#54402e";
+                ctx.fillRect(chx, chy, 5 * scale, 8 * scale);
+                const puff = (tick * 0.02) % 1;
+                ctx.fillStyle = "rgba(214,205,190,0.2)";
+                ctx.beginPath();
+                ctx.arc(chx + 2.5 * scale, chy - 4 * scale - puff * 10 * scale, (2 + puff * 3) * scale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            if (e.type === TYPE.TAVERN) {
+                ctx.fillStyle = "#7a5a32";
+                ctx.fillRect(rx + rw * 0.14, ry + rh * 0.16, 2 * scale, 7 * scale);
+                ctx.fillStyle = "#a9854f";
+                ctx.fillRect(rx + rw * 0.14 - 3 * scale, ry + rh * 0.16 + 7 * scale, 9 * scale, 6 * scale);
+            }
+            if (e.type === TYPE.BARRACKS) {
+                ctx.fillStyle = "#b8b2a4";
+                ctx.beginPath();
+                ctx.moveTo(cx, ry + rh * 0.3);
+                ctx.lineTo(cx + 6 * scale, ry + rh * 0.42);
+                ctx.lineTo(cx, ry + rh * 0.68);
+                ctx.lineTo(cx - 6 * scale, ry + rh * 0.42);
+                ctx.closePath();
+                ctx.fill();
+            }
+            break;
+        }
+        case TYPE.FARM: {
+            ctx.strokeStyle = "rgba(60,40,22,0.42)";
+            ctx.lineWidth = Math.max(1, 1.3 * scale);
+            for (let i = 0; i < 5; i++) {
+                const y = ry + rh * (0.14 + i * 0.18);
+                ctx.beginPath();
+                ctx.moveTo(rx + 1, y);
+                ctx.lineTo(rx + rw - 1, y);
+                ctx.stroke();
+            }
+            if (detail > 0.3) {
+                ctx.fillStyle = "rgba(240,214,140,0.45)";
+                for (let i = 0; i < 4; i++) {
+                    ctx.beginPath();
+                    ctx.arc(rx + rw * (0.2 + i * 0.2), ry + rh * 0.5, 1.6 * scale, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            break;
+        }
+        case TYPE.LUMBER: {
+            ctx.strokeStyle = "rgba(50,32,18,0.5)";
+            for (let i = 0; i < 4; i++) {
+                const x = rx + rw * (0.16 + i * 0.22);
+                ctx.beginPath();
+                ctx.moveTo(x, ry + 2);
+                ctx.lineTo(x, ry + rh - 2);
+                ctx.stroke();
+            }
+            break;
+        }
+        case TYPE.QUARRY: {
+            ctx.fillStyle = "rgba(30,26,22,0.5)";
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, rw * 0.3, rh * 0.28, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "rgba(220,214,200,0.35)";
+            ctx.beginPath();
+            ctx.arc(cx - rw * 0.26, cy - rh * 0.2, 2.4 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+        }
+        case TYPE.GOLDMINE: {
+            ctx.fillStyle = "rgba(30,24,16,0.46)";
+            ctx.fillRect(rx + rw * 0.2, ry + rh * 0.32, rw * 0.6, rh * 0.42);
+            ctx.fillStyle = "#e8c46a";
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.arc(rx + rw * (0.26 + (i % 3) * 0.2), ry + rh * (0.4 + Math.floor(i / 3) * 0.22), 1.8 * scale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            break;
+        }
+        case TYPE.TEMPLE: {
+            // Stone cross plan with a gold rosette at the crossing.
+            ctx.fillStyle = "rgba(255,250,236,0.78)";
+            ctx.fillRect(rx + rw * 0.43, ry + rh * 0.14, rw * 0.14, rh * 0.72);
+            ctx.fillRect(rx + rw * 0.18, ry + rh * 0.41, rw * 0.64, rh * 0.14);
+            ctx.strokeStyle = "rgba(120,98,64,0.55)";
+            ctx.lineWidth = Math.max(1, 1 * scale);
+            ctx.strokeRect(rx + rw * 0.43, ry + rh * 0.14, rw * 0.14, rh * 0.72);
+            ctx.strokeRect(rx + rw * 0.18, ry + rh * 0.41, rw * 0.64, rh * 0.14);
+            ctx.fillStyle = "rgba(212,170,74,0.9)";
+            ctx.beginPath();
+            ctx.arc(cx, cy, Math.min(rw, rh) * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+        }
+        case TYPE.TOWER: {
+            ctx.fillStyle = lightenColor(roofColor, 0.18);
+            const merlon = Math.max(2.5, rw * 0.16);
+            for (let x = rx; x < rx + rw - merlon * 0.5; x += merlon * 2) {
+                ctx.fillRect(x, ry - merlon * 0.5, merlon, merlon);
+            }
+            ctx.fillStyle = "rgba(20,16,12,0.6)";
+            ctx.fillRect(cx - 1.5 * scale, cy - rh * 0.15, 3 * scale, rh * 0.3);
+            break;
+        }
+        case TYPE.WALL: {
+            ctx.fillStyle = lightenColor(roofColor, 0.22);
+            const merlon = Math.max(2, rw * 0.09);
+            for (let x = rx; x < rx + rw - merlon; x += merlon * 1.9) {
+                ctx.fillRect(x, ry, merlon, rh * 0.42);
+            }
+            break;
+        }
+        case TYPE.MILL: {
+            const angle = tick * 0.04;
+            const arm = Math.min(w, h) * 0.42;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+            ctx.strokeStyle = "#4a3524";
+            ctx.lineWidth = Math.max(1.2, 2 * scale);
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, -arm);
+                ctx.stroke();
+                ctx.fillStyle = "rgba(238,224,193,0.6)";
+                ctx.fillRect(-2.4 * scale, -arm, 4.8 * scale, arm * 0.5);
+                ctx.rotate(Math.PI / 2);
+            }
+            ctx.restore();
+            break;
+        }
+        case TYPE.WONDER: {
+            const radius = Math.min(rw, rh) * 0.26;
+            ctx.fillStyle = "rgba(250,226,150,0.85)";
+            ctx.beginPath();
+            for (let i = 0; i < 10; i++) {
+                const r = i % 2 ? radius * 0.4 : radius;
+                const angle = -Math.PI / 2 + i * Math.PI / 5;
+                const x = cx + Math.cos(angle) * r, y = cy + Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+            break;
+        }
+        case TYPE.BARREL: {
+            ctx.strokeStyle = "rgba(30,22,14,0.55)";
+            ctx.lineWidth = Math.max(1, 1.4 * scale);
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, Math.min(rw, rh) * (0.18 + i * 0.12), 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    // A warm window light reads as a lived-in settlement at close zoom.
+    if (detail > 0.4 && ![TYPE.WALL, TYPE.FARM, TYPE.QUARRY, TYPE.BARREL, TYPE.WONDER].includes(e.type)) {
+        const phase = (Number(e.x) || 0) * 0.7 + (Number(e.y) || 0) * 0.9;
+        const glow = 1 + Math.sin(tick * 0.05 + phase) * 0.15;
+        ctx.fillStyle = "rgba(250,206,120,0.66)";
+        ctx.fillRect(cx - 2 * scale, cy + rh * 0.18, 4 * scale * glow, 3 * scale);
     }
 }
 

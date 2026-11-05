@@ -89,10 +89,17 @@ export function clampCamera() {
     }
 }
 
+// On phones the hand dock covers the lower part of the stage, so the opening
+// view is raised by roughly half the dock height to keep the keep in sight.
+function openingViewBias() {
+    if (typeof window === "undefined") return 0;
+    return window.innerWidth <= 560 ? 88 : 0;
+}
+
 export function centerCamera() {
     if (!state.canvas) return;
     state.camera.x = WORLD_W * CELL * state.zoom / 2 - state.canvas.width / 2;
-    state.camera.y = WORLD_H * CELL * state.zoom / 2 - state.canvas.height / 2;
+    state.camera.y = WORLD_H * CELL * state.zoom / 2 - state.canvas.height / 2 + openingViewBias();
     clampCamera();
 }
 

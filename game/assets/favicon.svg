@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Kings &amp; Cards crest">
+  <defs>
+    <linearGradient id="fav-gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0dcae"/>
+      <stop offset="1" stop-color="#a3824a"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="10" fill="#241d17"/>
+  <path d="M32 6 52 13v20c0 12-9 20-20 25C21 53 12 45 12 33V13Z" fill="#3a2c20" stroke="url(#fav-gold)" stroke-width="2.4"/>
+  <path d="M32 15 45 19v13c0 8-5.8 14-13 18-7.2-4-13-10-13-18V19Z" fill="#762f35"/>
+  <path d="M20 27h6v-5l6 4 6-4v5h6v6H20Z" fill="url(#fav-gold)"/>
+  <path d="M26 33v9h12v-9" fill="none" stroke="#f0dcae" stroke-width="2.2"/>
+  <circle cx="32" cy="38" r="2.2" fill="#f0dcae"/>
+</svg>

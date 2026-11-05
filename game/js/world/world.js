@@ -214,6 +214,16 @@ export function prerenderTerrain() {
     state.terrainDirty = false;
 }
 
+function terrainHeight(px, py, fallback) {
+    const width = state.terrainPixW, height = state.terrainPixH;
+    if (px < 0 || py < 0 || px >= width || py >= height) return fallback;
+    return state.heightMap[py * width + px];
+}
+
+function clampByte(value) {
+    return Math.max(0, Math.min(255, Math.round(value)));
+}
+
 function getTerrainColor(h, m, px, py) {
     // Forest density is controlled by the world forge.
     const forestShift=((state.worldOptions?.forests??52)-50)*0.0016;
@@ -233,16 +243,39 @@ function getTerrainColor(h, m, px, py) {
     const seed = ((px * 73856093) ^ (py * 19349663)) >>> 0;
     const variation = ((seed % 21) - 10) * 0.6;
 
+    // Hillshade from the height gradient: light comes from the north-west,
+    // so south-east facing slopes fall into shade. This is computed once
+    // during prerender, not per frame.
+    const west = terrainHeight(px - 1, py, h);
+    const north = terrainHeight(px, py - 1, h);
+    const northWest = terrainHeight(px - 1, py - 1, h);
+    const slope = h - (west + north + northWest) / 3;
+    const hillshade = Math.max(-30, Math.min(32, slope * 2400));
+
     // Feuchtigkeit beeinflusst Farbsättigung
     const moistureShift = (m - 0.5) * 15;
 
     // Höhen-Schatten
     const shadowShift = (h - 0.5) * -20;
 
+    // Broad, deterministic mottling stops large fields from reading as
+    // one flat poster colour without introducing per-frame noise.
+    const mottle = Math.sin(px * 0.085 + py * 0.021) * 3.4 + Math.cos(py * 0.11 - px * 0.017) * 2.6;
+
+    // Water depth bands and a faint ripple make the shoreline readable.
+    let waterTone = 0;
+    if (h < BIOME.SHALLOW_WATER) {
+        const depth = Math.max(0, Math.min(1, (BIOME.SHALLOW_WATER - h) / BIOME.SHALLOW_WATER));
+        waterTone = -depth * 16 + Math.sin(px * 0.55 + py * 0.85) * 3.2;
+    }
+
+    // A lighter strip where land meets water.
+    const coast = h >= BIOME.SHALLOW_WATER && h < BIOME.SHALLOW_WATER + 0.012 ? 12 : 0;
+
     return [
-        Math.max(0, Math.min(255, base[0] + variation + moistureShift + shadowShift)),
-        Math.max(0, Math.min(255, base[1] + variation * 0.8 + moistureShift * 0.5)),
-        Math.max(0, Math.min(255, base[2] + variation * 0.6 - moistureShift * 0.3 + shadowShift * 0.5)),
+        clampByte(base[0] + variation + moistureShift + shadowShift + hillshade + mottle + waterTone + coast),
+        clampByte(base[1] + variation * 0.8 + moistureShift * 0.5 + hillshade * 0.92 + mottle * 0.9 + waterTone + coast * 0.8),
+        clampByte(base[2] + variation * 0.6 - moistureShift * 0.3 + shadowShift * 0.5 + hillshade * 0.75 + mottle * 0.6 + waterTone + coast * 0.6),
     ];
 }
 

@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.7.0`  
-**Next development line:** `3.8.0-dev`  
+**Current production version:** `3.8.0`  
+**Next development line:** `3.9.0-dev`  
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -23,6 +23,26 @@ Kings & Cards uses a practical semantic version format:
 The version in `game/package.json` is the machine-readable game version. Update this file and this changelog together for every release.
 
 ## Production release history
+
+### 3.8.0 — HUD 3.8: The Throne Room
+**Released:** 2026-11-05  
+**Scope:** Presentation only. No simulation rules, save schema, card values or economy balance were changed.
+
+- Replaced the mixed prototype header with a two-row royal banner: identity plate, realm calendar, morale, player seal, a five-resource ledger with live per-tick deltas and a full-width command bar.
+- Widened the administration rail to 96 px so every label is fully readable, added a DOMAIN divider and allowed the rail to scroll on short screens.
+- Framed the world stage with a grain/vignette layer and a compass ornament, removed the duplicated canvas zoom chip and kept the real HTML zoom controls.
+- Rebuilt the hand as five explicit slots with numbered empty states. The 820 px dock no longer collides with the minimap, which is now anchored above it.
+- The card inspector has an honest empty state instead of a PLAY ribbon over an empty frame, and the selected card uses the royal card atlas rather than an emoji.
+- Resource chips and store cards show rounded live income deltas; raw floating-point values no longer leak into the HUD.
+- `.hidden` is now a global contract, so the EXIT BUILD control no longer remains visible outside construction mode.
+- The founding screen becomes a two-column illuminated plate at desktop sizes, so the World Forge and every action fit without inner scrolling.
+- Terrain prerendering gains north-west hillshade, coastal lightening, water depth tone and broad mottling. Grass tufts and flowers are jittered and translucent instead of repeated glyphs.
+- Every building type has a distinguishable rooftop silhouette, with a dedicated castle plan for the keep, a stone cross plan for the temple and animated mill sails.
+- Added `tests/ui/hud-v3.test.js` with twelve static contracts and repaired the resource-flow formatter that produced raw floating-point strings.
+
+**Verification:** `cd game && npm test` — 279 tests pass; the syntax/import check passes for 56 source files and 99 referenced UI ids. Browser geometry checked at 390×844, 900×1000, 1440×900 and 1920×1080: no horizontal overflow, no topbar group overlap, no clipped hand cards, no minimap/hand collision, five hand slots in every state, and no console errors during a live simulation run.
+
+**Scope limit:** This is a presentation layer. It does not add management screens, cloud accounts, autosave or new simulation systems. The legacy stylesheets remain loaded beneath the HUD layer for backward compatibility.
 
 ### 3.7.0 — Master UI Phase 2 completion: sovereign dossier and connected lineage
 **Released:** 2026-11-05  

@@ -148,8 +148,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             }
 
             // Grashalme (nur Level 3)
-            if (state.zoomLevel >= 3 && h >= BIOME.SAND && h < BIOME.FOREST && s1 > 0.75) {
-                drawGrassTufts(ctx, px, py, cellPx, s2);
+            if (state.zoomLevel >= 3 && h >= BIOME.SAND && h < BIOME.FOREST && s1 > 0.84) {
+                drawGrassTufts(ctx, px, py, cellPx, s1, s2);
             }
         }
     }
@@ -207,25 +207,38 @@ function drawRock(ctx, px, py, cellPx, zoom) {
 }
 
 function drawFlower(ctx, px, py, cellPx, s1) {
-    const r = cellPx * 0.06;
-    ctx.fillStyle = s1 > 0.5 ? "#e8638c" : "#f5f1d0";
+    const r = cellPx * 0.05;
+    const jx = (s1 - 0.5) * cellPx * 0.5;
+    const x = px + jx, y = py - cellPx * 0.08;
+    ctx.fillStyle = s1 > 0.5 ? "rgba(214,96,132,0.72)" : "rgba(244,239,208,0.72)";
+    for (let i = 0; i < 4; i++) {
+        const angle = i * Math.PI / 2;
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(angle) * r * 0.7, y + Math.sin(angle) * r * 0.7, r * 0.62, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = "rgba(226,182,60,0.85)";
     ctx.beginPath();
-    ctx.arc(px, py, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#f2c744";
-    ctx.beginPath();
-    ctx.arc(px, py, r * 0.5, 0, Math.PI * 2);
+    ctx.arc(x, y, r * 0.5, 0, Math.PI * 2);
     ctx.fill();
 }
 
-function drawGrassTufts(ctx, px, py, cellPx, s2) {
+function drawGrassTufts(ctx, px, py, cellPx, s1, s2) {
     const s = cellPx / 48;
-    ctx.strokeStyle = "#2c5a2c";
-    ctx.lineWidth = 1.5 * s;
+    // Jitter the clump inside its tile so blades do not form a visible grid,
+    // and keep the stroke translucent so it reads as ground texture.
+    const jx = (s1 - 0.5) * cellPx * 0.42;
+    const jy = (s2 - 0.5) * cellPx * 0.3;
+    const lean = (s2 - 0.5) * 4 * s;
+    const x = px + jx, y = py + jy;
+    ctx.strokeStyle = "rgba(34,74,34,0.42)";
+    ctx.lineWidth = Math.max(1, 1.05 * s);
+    ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(px, py + 4 * s);
-    ctx.lineTo(px - 2 * s, py - 5 * s);
-    ctx.moveTo(px + 3 * s, py + 4 * s);
-    ctx.lineTo(px + 5 * s, py - 4 * s);
+    ctx.moveTo(x, y + 3.4 * s);
+    ctx.quadraticCurveTo(x - 1.4 * s + lean, y - 0.8 * s, x - 2 * s + lean, y - 4.6 * s);
+    ctx.moveTo(x + 1.8 * s, y + 3.4 * s);
+    ctx.quadraticCurveTo(x + 3 * s + lean, y - 0.6 * s, x + 2.4 * s + lean, y - 3.8 * s);
     ctx.stroke();
+    ctx.lineCap = "butt";
 }

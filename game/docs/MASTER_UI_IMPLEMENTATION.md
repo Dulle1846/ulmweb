@@ -245,6 +245,18 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - These screenshots create review evidence; they do not replace a human visual inspection. Other overlays, map layers, contrast and screen-reader review remain outstanding.
 
 
+## HUD 3.8 — The Throne Room (presentation increment, release 3.8.0)
+
+- Replaces the mixed prototype shell with a two-row banner header, a 96 px administration rail, a framed world stage and a full-width command bar.
+- The hand is now five explicit numbered slots with dashed empty states. The dock and the minimap have disjoint geometry at 390×844, 900×1000, 1440×900 and 1920×1080.
+- The card inspector has a real empty state instead of a PLAY ribbon over an empty frame, and the selected card uses the original card atlas rather than an emoji.
+- Resource income deltas are rounded and colour-coded; raw floating-point values can no longer reach the HUD.
+- `.hidden` is now a global display contract, which fixes the build-cancel control that previously stayed visible outside construction mode.
+- Terrain gains north-west hillshade, coastal lightening, water-depth tone and jittered translucent ground detail; every building type has a dedicated rooftop silhouette and the keep has a full castle plan.
+- The founding screen becomes a two-column plate on desktop, removing the inner scroll from the World Forge and action stack.
+- Static contracts live in `tests/ui/hud-v3.test.js`; browser geometry was audited at four viewport sizes with no horizontal overflow, no overlapping header groups, no clipped cards and no minimap/dock collision.
+- Remaining: complete screen-reader audit, animated transition pass, building interior detail at zoom 4, and per-screen responsive polish for the management windows.
+
 ## Phase 5 — global header responsive correction
 
 - Visual inspection of the seven-viewport screenshot artifact found that the top status/actions row was clipped or crowded at 390×844, 1280×720 and 1600×900 even though the document itself did not horizontally overflow.
