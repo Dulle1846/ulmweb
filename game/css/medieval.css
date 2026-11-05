@@ -227,3 +227,10 @@ button,input{font-family:Georgia,"Palatino Linotype",serif}
 .management-tag{padding:6px 9px;border:1px solid #98764a;border-radius:99px;background:#fff2d1;color:#6b4a2b;font-size:9px;font-weight:800;text-transform:capitalize}
 .management-muted{color:#76583b;font-size:11px}
 @media(max-width:720px){.management-tools{padding:6px 8px;gap:4px}.management-tools button{font-size:7px;padding:7px 2px}.management-policy-grid{grid-template-columns:1fr}.management-policy{min-height:0}.management-resource-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.management-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.management-factions{grid-template-columns:1fr}.management-decision{align-items:stretch;flex-direction:column}.management-tabs button{font-size:8px;padding:8px 2px}}
+
+.management-creature-list{display:flex;flex-direction:column;gap:7px}
+.management-creature-row{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:9px;padding:9px;border:2px solid #765133;border-radius:10px;background:linear-gradient(120deg,#fff5dc,#ead2a2)}
+.management-creature-icon{display:grid;place-items:center;width:40px;height:42px;border:2px solid #7a4932;border-radius:10px;background:radial-gradient(circle at 30% 20%,#f9e39d,#c9784f);font-size:25px}
+.management-creature-row>span:nth-child(2){display:grid;gap:4px;color:#513522}
+.management-creature-row strong{font-size:12px;color:#8b3a30}
+.management-creature-row small{font-size:9px;color:#76583b}
