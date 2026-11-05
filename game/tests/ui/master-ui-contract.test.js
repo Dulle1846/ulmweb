@@ -3,11 +3,13 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const root=new URL("../../",import.meta.url);
-const [html,css,ui,management]=await Promise.all([
+const [html,css,ui,management,dossier,main]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/ui-design-system.css",root),"utf8"),
   readFile(new URL("js/presentation/rendering/ui.js",root),"utf8"),
-  readFile(new URL("js/presentation/management-ui.js",root),"utf8")
+  readFile(new URL("js/presentation/management-ui.js",root),"utf8"),
+  readFile(new URL("js/presentation/character-dossier.js",root),"utf8"),
+  readFile(new URL("js/app/main.js",root),"utf8")
 ]);
 
 test("master UI stylesheet is loaded after the legacy visual layers",()=>{
@@ -49,4 +51,33 @@ test("pre-campaign UI does not present placeholder stores as live values",()=>{
   for(const key of ["wood","stone","gold","food"])assert.ok(html.includes('data-resource-value="'+key+'">—'));
   assert.ok(html.includes("data-population>—"));
   assert.ok(management.includes("if(!state.hasStarted)"),"kingdom overview must distinguish an unfounded realm from a running campaign");
+});
+
+
+test("contextual action dock exposes only wired, existing game actions",()=>{
+  for(const action of ["people","dynasty","cards","events","save"]){
+    assert.ok(html.includes('data-kac-dock-action="'+action+'"'),"missing dock action "+action);
+  }
+  assert.ok(management.includes('action==="people"'));
+  assert.ok(management.includes('action==="dynasty"'));
+  assert.ok(management.includes('action==="cards"'));
+  assert.ok(management.includes('action==="events"'));
+  assert.ok(management.includes('action==="save"'));
+});
+
+test("dynasty view follows explicit kinship links and limits rendered depth",()=>{
+  assert.ok(management.includes('import { getFamilySnapshot } from "../systems/families.js"'));
+  assert.ok(management.includes("getFamilySnapshot(id)"),"tree must read the authoritative kinship graph");
+  assert.ok(management.includes("depth<4"),"tree must cap depth to avoid unbounded DOM growth");
+  assert.ok(management.includes('data-open-person="'+esc(id)+'"'));
+  assert.ok(management.includes('window.dispatchEvent(new CustomEvent("kac:open-person"'));
+  assert.ok(dossier.includes('window.addEventListener("kac:open-person"'));
+});
+
+test("save status reflects actual save/load outcomes, not an autosave promise",()=>{
+  assert.ok(html.includes('id="save-status"'));
+  assert.ok(main.includes('setSaveStatus("LAST SAVED'));
+  assert.ok(main.includes('setSaveStatus("SAVE FAILED'));
+  assert.ok(main.includes('setSaveStatus("LOADED'));
+  assert.ok(!html.toLowerCase().includes("autosave"));
 });
