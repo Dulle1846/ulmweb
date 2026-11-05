@@ -369,7 +369,7 @@ Health is an early cross-system slice and can be expanded alongside Phases 2–4
 
 ## 9. Current implementation boundary
 
-The existing game already has foundations for a card hand, generated issue families, eight authored story chains, households, workforce, housing, a resource economy, market partners, political factions, local saves and bounded presentation effects. These foundations should be extended rather than replaced.
+The existing game already has foundations for a card hand, generated issue families, eleven authored story chains, households, workforce, housing, a resource economy, market partners, political factions, local saves and bounded presentation effects. These foundations should be extended rather than replaced.
 
 The first public-health slice now adds household-level transmission, illness timers, recovery, temporary workforce loss, treatment/containment choices and persistent health statistics. It does not yet simulate mortality, water sanitation, named physicians, immunity or a full medicine production chain.
 
