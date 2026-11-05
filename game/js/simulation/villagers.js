@@ -205,7 +205,6 @@ function advancePhase(unit) {
             break;
         case ROUTINE.ON_BREAK:
             unit.visualState = "idle";
-            setTargetNear(unit, unit.anchor.x, unit.anchor.y, WANDER_RADIUS[unit.type] || 15);
             const safety = Number(unit.person?.needs?.safety ?? 50);
             const radius = safety < 35 ? 2 : (WANDER_RADIUS[unit.type] || 15);
             setTargetNear(unit, unit.anchor.x, unit.anchor.y, radius);
