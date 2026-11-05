@@ -292,3 +292,13 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Royal-house history rendering is bounded to the latest eight records; the simulation's own history remains capped at 48.
 - Added responsive local styling and static contracts for current/former sovereign separation, source-backed fields and navigation.
 - No simulation or save-schema changes. The sovereign-to-heir browser hand-off remains an explicit E2E acceptance item.
+
+
+## Phase 2 — connected royal lineage network (rebased)
+
+- Added a multi-lane graph built exclusively from explicit saved parent, child, sibling, partnership and guardian links.
+- Shows verified grandparents, parents, sovereign and siblings, consort, aunts/uncles, cousins and royal children where records exist.
+- SVG connectors are calculated from live card bounds; partnership, sibling, guardian and parent edges use distinct treatments. Existing dossier navigation is reused.
+- Enforced 80-node and 120-edge hard limits, alongside existing descendant depth/per-generation caps.
+- Added deterministic Chromium coverage for relationship paths and heir dossier navigation, reduced-motion and narrow-screen styling.
+- No simulation or save-schema changes; missing kinship links are never inferred.
