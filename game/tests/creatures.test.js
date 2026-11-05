@@ -55,8 +55,8 @@ test("creatures age once per realm year, feed from the treasury and retain needs
     const first = updateCreatures();
     assert.equal(first.aged, 1);
     assert.equal(first.fed, 1);
-    assert.equal(creature.ageYears, 1);
-    assert.ok(creature.hunger < 30);
+    assert.equal(entity.creature.ageYears, 1);
+    assert.ok(entity.creature.hunger < 30);
     assert.equal(state.resources.food, 35);
     assert.equal(updateCreatures().aged, 0);
     assert.equal(creature.ageYears, 1);
@@ -69,12 +69,12 @@ test("creature maturity and elder stages are species-specific", () => {
     creature.lastAgedYear = 1;
     state.year = 2;
     updateCreatures();
-    assert.equal(creature.lifeStage, "adult");
+    assert.equal(entity.creature.lifeStage, "adult");
     creature.ageYears = 158;
     creature.lastAgedYear = 2;
     state.year = 3;
     updateCreatures();
-    assert.equal(creature.lifeStage, "elder");
+    assert.equal(entity.creature.lifeStage, "elder");
 });
 
 test("starvation creates a bounded creature memorial instead of a silent disappearance", () => {
