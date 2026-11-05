@@ -316,3 +316,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added hard limits of 80 nodes and 120 connector edges, alongside the existing four-generation/24-person descendant limits, to prevent runaway DOM growth.
 - Added deterministic Chromium coverage for royal consort/child links, connector paths and heir dossier navigation; reduced-motion and narrow-screen styling included.
 - No simulation or save-schema changes. Missing kinship links are never inferred.
+
+
+## Phase 5 — player-controlled accessibility preferences (pending)
+
+- Added persistent settings for contextual tooltips, reduced motion and high-contrast presentation.
+- Preferences are loaded from the existing local settings store and applied as document-level presentation modes; they do not alter simulation state or saved realms.
+- Reduced motion suppresses non-essential CSS animation and transitions. High contrast strengthens key borders, text and keyboard focus. Tooltip preference controls the shared tooltip layer.
+- The settings window now owns vertical scrolling so all options remain reachable on short screens.
+- Static UI contracts and Chromium E2E cover toggling and applying all three preferences. This is a targeted accessibility increment, not a complete WCAG or screen-reader audit.
