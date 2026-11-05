@@ -38,7 +38,7 @@ export function createPersonProfile(entity,{role="resident",species=null}={}){
         traits:createTraits(),needs:createNeeds(),
         goals:[pick(["security","prosperity","family","recognition","knowledge","faith","adventure","power"],"people")],
         memories:[],relationships:[],secrets:[],
-        bornAtYear:Math.max(1,Number(state.year)||1),createdAtTick:Math.max(0,Number(state.tick)||0)
+        bornAtYear:Math.max(1,(Number(state.year)||1)-ageYears),lastAgedYear:Math.max(1,Number(state.year)||1),createdAtTick:Math.max(0,Number(state.tick)||0)
     };
 }
 export function normalizePersonProfile(saved,entity,{role="resident"}={}){
@@ -75,7 +75,8 @@ export function normalizePersonProfile(saved,entity,{role="resident"}={}){
             lastInteractionTick:Math.max(0,Math.floor(Number(item.lastInteractionTick)||0))
         })).filter(item=>item.targetId),
         secrets:Array.isArray(saved.secrets)?saved.secrets.filter(x=>typeof x==="string").slice(0,12):[],
-        bornAtYear:Number.isSafeInteger(saved.bornAtYear)?Math.max(1,Math.min(1000000,saved.bornAtYear)):1,
+        bornAtYear:Number.isSafeInteger(saved.bornAtYear)?Math.max(1,Math.min(1000000,saved.bornAtYear)):Math.max(1,(Number(state.year)||1)-ageYears),
+        lastAgedYear:Number.isSafeInteger(saved.lastAgedYear)?Math.max(1,Math.min(Number(state.year)||1,saved.lastAgedYear)):Math.max(1,Number(state.year)||1),
         createdAtTick:Number.isSafeInteger(saved.createdAtTick)?Math.max(0,saved.createdAtTick):0
     };
 }
@@ -103,7 +104,7 @@ export function addPersonMemory(entity,memory){
 export function getPersonSnapshot(entity){
     if(!entity)return null;
     const person=ensurePersonProfile(entity);
-    return {id:person.id,name:person.name,species:person.species,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,traits:{...person.traits},needs:{...person.needs},goals:[...person.goals],memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item}))};
+    return {id:person.id,name:person.name,species:person.species,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,bornAtYear:person.bornAtYear,lastAgedYear:person.lastAgedYear,traits:{...person.traits},needs:{...person.needs},goals:[...person.goals],memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item}))};
 }
 
 
@@ -194,4 +195,37 @@ export function recordPersonEventOutcome(issue,choice,effects={},tick=state.tick
         }
     }
     return {memories,relationships};
+}
+
+
+// Aging is advanced once per simulated realm year, never per animation frame.
+// Missing lastAgedYear values in legacy saves are normalized to the current year
+// so old profiles are not unexpectedly aged by the entire save's elapsed time.
+export function updatePeople(){
+    const currentYear=Math.max(1,Math.floor(Number(state.year)||1));
+    let aged=0,transitions=0;
+    for(const entity of state.entities){
+        if(entity.dead||(!entity.personId&&!entity.isKing))continue;
+        const person=ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});
+        const lastYear=Number.isSafeInteger(person.lastAgedYear)?person.lastAgedYear:currentYear;
+        const elapsed=Math.max(0,Math.min(1000,currentYear-lastYear));
+        if(!elapsed)continue;
+        const previousStage=person.lifeStage;
+        person.ageYears=Math.max(0,Math.min(1000,person.ageYears+elapsed));
+        person.lifeStage=lifeStage(person.ageYears,person.species);
+        person.lastAgedYear=currentYear;
+        aged++;
+        if(person.lifeStage!==previousStage){
+            const stageLabel=person.lifeStage==="adult"?"adulthood":person.lifeStage==="elder"?"old age":"youth";
+            addPersonMemory(entity,{
+                id:"life-stage:"+person.id+":"+person.lifeStage+":"+currentYear,
+                type:"life-stage",
+                text:"I entered "+stageLabel+" at age "+person.ageYears+".",
+                tick:state.tick,
+                importance:58
+            });
+            transitions++;
+        }
+    }
+    return {aged,transitions};
 }
