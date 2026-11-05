@@ -46,10 +46,9 @@ function personName(personId) {
 }
 
 function ensureDossierStyles() {
-    if (dossierStylesRequested || document.getElementById("kac-sovereign-dossier-styles")) return;
+    if (dossierStylesRequested) return;
     dossierStylesRequested = true;
     const link = document.createElement("link");
-    link.id = "kac-sovereign-dossier-styles";
     link.rel = "stylesheet";
     link.href = "css/sovereign-dossier.css";
     document.head.append(link);
