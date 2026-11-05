@@ -10,6 +10,7 @@ import { showBigMessage,renderUI } from "./rendering/ui.js";
 import { distance } from "../core/utils.js";
 import { toggleSoundtrack } from "../core/soundtrack.js";
 import { loadSettings,saveSettings } from "../core/persistence.js";
+import { getRoadBuildMode,placeRoad } from "../systems/roads.js";
 
 export function setupInput(){
     const canvas=state.canvas;
@@ -18,7 +19,7 @@ export function setupInput(){
     const dragGhost=document.getElementById("card-drag-ghost");
     const placementStatus=document.getElementById("placement-status");
     let isPanning=false,pointerMoved=false,lastX=0,lastY=0,startX=0,startY=0;
-    let cardPointerId=null,lastPinchDistance=0,cardPreviewFrame=0,pendingCardPointer=null;
+    let cardPointerId=null,lastPinchDistance=0,cardPreviewFrame=0,pendingCardPointer=null,lastRoadTileKey=null;
 
     canvas.addEventListener("wheel",event=>{
         event.preventDefault();
@@ -28,17 +29,23 @@ export function setupInput(){
 
     canvas.addEventListener("mousedown",event=>{
         if(event.button!==0)return;
-        isPanning=true;pointerMoved=false;
+        isPanning=true;pointerMoved=false;lastRoadTileKey=null;
         lastX=startX=event.clientX;lastY=startY=event.clientY;
+        if(getRoadBuildMode())paintRoadAtScreen(event);
     });
     window.addEventListener("mouseup",event=>{
         if(isPanning&&!pointerMoved&&event.button===0)clickOnCanvas(event);
-        isPanning=false;
+        isPanning=false;lastRoadTileKey=null;
     });
     canvas.addEventListener("mousemove",event=>{
         if(!isPanning)return;
         const dx=event.clientX-lastX,dy=event.clientY-lastY;
         if(Math.hypot(event.clientX-startX,event.clientY-startY)>5)pointerMoved=true;
+        if(getRoadBuildMode()){
+            if(pointerMoved)paintRoadAtScreen(event);
+            lastX=event.clientX;lastY=event.clientY;
+            return;
+        }
         state.zoomAnchor=null;state.camera.x-=dx;state.camera.y-=dy;clampCamera();
         lastX=event.clientX;lastY=event.clientY;
     });
@@ -47,8 +54,9 @@ export function setupInput(){
     canvas.addEventListener("touchstart",event=>{
         event.preventDefault();
         if(event.touches.length===1){
-            const touch=event.touches[0];isPanning=true;pointerMoved=false;
+            const touch=event.touches[0];isPanning=true;pointerMoved=false;lastRoadTileKey=null;
             lastX=startX=touch.clientX;lastY=startY=touch.clientY;lastPinchDistance=0;
+            if(getRoadBuildMode())paintRoadAtScreen(touch);
         }else if(event.touches.length===2){
             const [a,b]=event.touches;
             lastPinchDistance=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);isPanning=false;
@@ -59,6 +67,11 @@ export function setupInput(){
         if(event.touches.length===1&&isPanning){
             const touch=event.touches[0],dx=touch.clientX-lastX,dy=touch.clientY-lastY;
             if(Math.hypot(touch.clientX-startX,touch.clientY-startY)>5)pointerMoved=true;
+            if(getRoadBuildMode()){
+                if(pointerMoved)paintRoadAtScreen(touch);
+                lastX=touch.clientX;lastY=touch.clientY;
+                return;
+            }
             state.zoomAnchor=null;state.camera.x-=dx;state.camera.y-=dy;clampCamera();
             lastX=touch.clientX;lastY=touch.clientY;
         }else if(event.touches.length===2){
@@ -74,7 +87,7 @@ export function setupInput(){
     canvas.addEventListener("touchend",event=>{
         if(event.touches.length===0){
             if(isPanning&&!pointerMoved)clickOnCanvas({clientX:lastX,clientY:lastY});
-            isPanning=false;lastPinchDistance=0;
+            isPanning=false;lastPinchDistance=0;lastRoadTileKey=null;
         }else if(event.touches.length===1){
             const touch=event.touches[0];lastX=startX=touch.clientX;lastY=startY=touch.clientY;isPanning=true;
         }
@@ -219,12 +232,35 @@ export function setupInput(){
         renderUI();
     });
 
+    function roadTileFromScreen(event){
+        const rect=canvas.getBoundingClientRect();
+        const world=screenToWorld(event.clientX-rect.left,event.clientY-rect.top);
+        return {x:Math.floor(world.x),y:Math.floor(world.y)};
+    }
+    function paintRoadAtScreen(event){
+        const type=getRoadBuildMode();
+        if(!type||state.gameOver||state.isPaused||!state.hasStarted)return;
+        const {x,y}=roadTileFromScreen(event),key=x+":"+y;
+        if(key===lastRoadTileKey)return;
+        lastRoadTileKey=key;
+        const result=placeRoad(x,y,type);
+        if(result.ok){
+            const count=document.getElementById("road-count");
+            if(count)count.textContent=String(Number(count.textContent||0)+1);
+            if(placementStatus)placementStatus.textContent=type.toUpperCase()+" ROAD PLACED · "+x+", "+y;
+            renderUI();
+        }else if(result.reason!=="Road already exists here"){
+            if(placementStatus)placementStatus.textContent=result.reason.toUpperCase();
+        }
+    }
     function clickOnCanvas(event){
         if(state.gameOver||state.isPaused||!state.hasStarted)return;
         const rect=canvas.getBoundingClientRect();
         const world=screenToWorld(event.clientX-rect.left,event.clientY-rect.top);
         const tx=Math.floor(world.x),ty=Math.floor(world.y);
         if(tx<0||ty<0||tx>=WORLD_W||ty>=WORLD_H)return;
+        const roadType=getRoadBuildMode();
+        if(roadType){paintRoadAtScreen(event);return;}
         const enemy=state.entities.find(entity=>!entity.dead&&entity.isEnemy()&&distance(entity.x,entity.y,world.x,world.y)<0.8);
         if(enemy){
             enemy.hp-=60;
