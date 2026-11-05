@@ -252,3 +252,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - PR #69 merged as `e4d343041ec6960502c471aa5efd2ca0994f85f5`: the global action controls now wrap at intermediate desktop and narrow mobile widths. Its exact feature head passed Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E; the 14-image viewport artifact was visually reviewed.
 - PR #70 merged as `09c2d747f08216199154af480735eeae064d0e9b`: the mobile side panel now owns a contained vertical scroll region so the card, resource, tabs and footer content remain reachable. Its exact feature head passed all three required workflows, including actual scroll-range checks at 390×844 and 768×1024.
 - The separate Workers build check is not a Cloudflare Pages result and is not treated as proof of Pages production delivery. The production Pages URL remains `https://kings-and-cards.pages.dev/`; its currently served commit must be verified independently before changing the production-version declaration.
+
+
+## 3.6.0 Pages release verification
+
+- Machine-readable game version in `game/package.json`: `3.6.0`.
+- Production branch: `ulmweb-branch`; latest verified production-branch commit at this check: `09c2d747f08216199154af480735eeae064d0e9b`.
+- Cloudflare Pages check run `127533959060`: `success`, summary `Deployed successfully`, deployment ID `35e2a522-431d-4558-8195-06a24bb4dc2d`.
+- Deployment preview: https://35e2a522.kings-and-cards.pages.dev/ . The canonical user-facing address remains https://kings-and-cards.pages.dev/.
+- This is Pages evidence. The separate Workers build check is not used as deployment evidence for the game.
