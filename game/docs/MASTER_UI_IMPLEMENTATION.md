@@ -229,3 +229,11 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Screenshots are written to the runner's temporary directory, not committed to the game repository.
 - The browser workflow uploads the screenshot set as the kings-and-cards-ui-viewport-review artifact for seven days, including on failed test runs when files were produced.
 - These screenshots create review evidence; they do not replace a human visual inspection. Other overlays, map layers, contrast and screen-reader review remain outstanding.
+
+
+## Phase 5 — global header responsive correction
+
+- Visual inspection of the seven-viewport screenshot artifact found that the top status/actions row was clipped or crowded at 390×844, 1280×720 and 1600×900 even though the document itself did not horizontally overflow.
+- Added responsive header wrapping: at intermediate desktop widths the action controls move to a dedicated second row; at narrow widths they wrap below the resource strip rather than being clipped off-screen.
+- Extended Chromium E2E to assert topbar intrinsic width, pairwise non-overlap of header groups and visibility of every rendered header action at all seven viewport sizes.
+- This corrects the header only. The screenshot review still shows placeholder-like map/building shapes and a relatively sparse world stage; those belong to the separate world-art production backlog, not this layout fix.

@@ -254,3 +254,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Chromium now captures the realm and management dialog at all seven required responsive viewports.
 - GitHub Actions uploads the screenshot set as a seven-day review artifact, including on failed runs where screenshots exist.
 - This enables visual QA but does not itself certify the layout or complete the remaining accessibility audit.
+
+
+## Development line 3.7.0-dev — Phase 5 responsive header correction
+
+- Wrapped the global action controls onto a dedicated row at intermediate desktop widths and below the resource strip on narrow screens.
+- Added Chromium checks for header overflow, overlap between header groups and clipped action buttons at all seven responsive viewports.
+- Visual review also logged remaining art-direction work: world map/building presentation still contains simple placeholder-like shapes; this fix does not claim to complete world art.
