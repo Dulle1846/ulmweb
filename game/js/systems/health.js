@@ -34,7 +34,7 @@ export function getHealthSnapshot(){
 }
 export function startOutbreak({severity=1,containment=0,disease="common-fever"}={}){
     const health=ensureHealth(),people=residents();
-    const alreadyActive=health.outbreakActive;
+    const alreadyActive=health.outbreakActive&&people.some(person=>(person.illnessUntilTick||0)>state.tick);
     health.outbreakActive=true;
     health.disease=String(disease).slice(0,48)||"common-fever";
     health.severity=Math.max(health.severity,clamp(severity,1,3));
