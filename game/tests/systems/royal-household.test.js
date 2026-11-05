@@ -58,3 +58,21 @@ test("a deceased monarch is succeeded by the royal consort as regent until the h
     assert.equal(consort.isKing,false);
     assert.equal(state.royalDynasty.regency,null);
 });
+
+
+test("a regent's death transfers the crown to the minor heir under council protection",()=>{
+    const {king,consort}=setupRoyalHouse();
+    arrangeRoyalMarriage(consort.personId);
+    const birth=createRoyalHeir(consort.personId);
+    const heir=birth.child;
+    recordNaturalDeath(king,"old age");
+    assert.equal(consort.isKing,true);
+    recordNaturalDeath(consort,"illness");
+    assert.equal(heir.isKing,true);
+    assert.equal(state.royalDynasty.regency.heirId,heir.personId);
+    assert.equal(state.royalDynasty.regency.regentId,null);
+    heir.person.ageYears=20;heir.person.lifeStage="adult";
+    updateRoyalSuccession();
+    assert.equal(state.royalDynasty.regency,null);
+    assert.equal(heir.isKing,true);
+});
