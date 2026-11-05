@@ -62,6 +62,10 @@ try{
     await page.waitForFunction(()=>document.querySelector("#save-status")?.textContent.startsWith("LAST SAVED"),null,{timeout:5000});
     await page.locator('[data-kac-dock-action="events"]').click();
     assert.ok(await page.locator("#tab-0").evaluate(el=>el.classList.contains("is-active")),"chronicle action must open the event log tab");
+    // Restore the management default so the existing management regression suite
+    // continues to verify the expected kingdom landing screen.
+    await page.locator("#command-open-btn").click();
+    await page.locator('[data-command-tab="kingdom"]').click();
 
     // The construction menu must place visible road tiles through normal map input.
     await page.locator("#build-open-btn").click();
