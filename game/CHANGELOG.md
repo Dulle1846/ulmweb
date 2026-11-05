@@ -303,3 +303,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Former sovereign memorials are explicitly separated from the current monarch's live succession state.
 - Added local responsive parchment/timber styling and static contracts for data provenance, navigation and bounded rendering.
 - No simulation rules, entity records or save schema changed. Browser E2E for sovereign-to-heir navigation remains a merge gate.
+
+
+## Development line 3.7.0-dev — connected royal lineage network
+
+- Added a multi-lane family graph from verified kinship records for grandparents, parents, sovereign, siblings, consort, collateral relatives, cousins and royal children.
+- Added live SVG connector paths with distinct parent, guardian, partnership and sibling styles, plus canonical dossier navigation.
+- Enforced 80-node and 120-edge caps and added Chromium coverage for connector paths and heir dossier navigation.
