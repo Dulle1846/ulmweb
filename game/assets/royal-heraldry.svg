@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 144">
+  <title>Original royal heraldry atlas</title>
+  <symbol id="crest-01" viewBox="0 0 128 144">
+    <path d="M14 7H114V68C114 104 89 128 64 139C39 128 14 104 14 68Z" fill="#762f35" stroke="#d7b66f" stroke-width="5"/>
+    <path d="M22 15H106V68C106 98 84 119 64 130C44 119 22 98 22 68Z" fill="none" stroke="#f3dfad" stroke-width="1.6"/>
+    <circle cx="64" cy="63" r="27" fill="#c59a4a" opacity=".35"/>
+    <path d="M43 75C34 63 39 46 53 42C63 31 82 39 84 51C97 57 94 73 84 80L77 91H50Z" fill="#f0d28a" stroke="#5b3324" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M52 47L44 36L60 41L67 32L73 43L88 39L80 52" fill="#f0d28a" stroke="#5b3324" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M47 75L36 88L42 96L54 83M76 80L86 93L80 100L68 86M55 86L49 108L57 111L65 90M75 86L80 108L72 112L65 91" fill="#f0d28a" stroke="#5b3324" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M82 68C103 67 100 91 85 94" fill="none" stroke="#f0d28a" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="73" cy="53" r="2.5" fill="#2d211a"/>
+  </symbol>
+  <symbol id="crest-02" viewBox="0 0 128 144">
+    <path d="M14 7H114V68C114 104 89 128 64 139C39 128 14 104 14 68Z" fill="#263c59" stroke="#d7b66f" stroke-width="5"/>
+    <path d="M22 15H106V68C106 98 84 119 64 130C44 119 22 98 22 68Z" fill="none" stroke="#dbe4e7" stroke-width="1.6"/>
+    <path d="M63 77C45 85 38 66 46 54C52 45 67 45 76 53C85 60 82 73 72 79L57 92C51 98 57 108 68 105C77 103 81 95 83 88" fill="none" stroke="#e4e8e6" stroke-width="8" stroke-linecap="round"/>
+    <path d="M58 59L34 38L39 68L54 78M70 59L94 38L89 68L74 78" fill="#a9c5d1" stroke="#e4e8e6" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M77 52L91 49L84 61L74 62Z" fill="#e4e8e6"/>
+    <circle cx="86" cy="54" r="2" fill="#6d2935"/>
+    <path d="M48 93L36 105M51 99L43 113M80 86L94 99" stroke="#d7b66f" stroke-width="3" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="crest-03" viewBox="0 0 128 144">
+    <path d="M14 7H114V68C114 104 89 128 64 139C39 128 14 104 14 68Z" fill="#31533f" stroke="#d7b66f" stroke-width="5"/>
+    <path d="M22 15H106V68C106 98 84 119 64 130C44 119 22 98 22 68Z" fill="none" stroke="#e5d4a4" stroke-width="1.6"/>
+    <path d="M38 100V55L47 55V43H57V55H71V43H81V55H90V100Z" fill="#d9c9a5" stroke="#4a4031" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M33 56L64 31L95 56Z" fill="#b18b4c" stroke="#4a4031" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M55 100V78C55 68 73 68 73 78V100Z" fill="#4a4031"/>
+    <path d="M45 66H54V75H45ZM74 66H83V75H74Z" fill="#536e72" stroke="#4a4031" stroke-width="2"/>
+    <path d="M64 31V20M59 24H69" stroke="#f0dfb3" stroke-width="3" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="crest-04" viewBox="0 0 128 144">
+    <path d="M14 7H114V68C114 104 89 128 64 139C39 128 14 104 14 68Z" fill="#3f5938" stroke="#d7b66f" stroke-width="5"/>
+    <path d="M22 15H106V68C106 98 84 119 64 130C44 119 22 98 22 68Z" fill="none" stroke="#e5d4a4" stroke-width="1.6"/>
+    <path d="M63 61C52 54 49 43 53 37C58 39 62 44 64 49C66 42 73 35 80 34C82 46 76 56 67 62L74 80L69 96L64 103L59 96L54 80Z" fill="#d6b36a" stroke="#473b29" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M55 43L39 24L42 48L27 38L44 60M75 43L91 24L88 48L103 38L86 60" fill="none" stroke="#ead7a0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M59 69L49 76M69 69L79 76" stroke="#473b29" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="59" cy="62" r="2.2" fill="#473b29"/><circle cx="69" cy="62" r="2.2" fill="#473b29"/>
+  </symbol>
+  <symbol id="crest-05" viewBox="0 0 128 144">
+    <path d="M14 7H114V68C114 104 89 128 64 139C39 128 14 104 14 68Z" fill="#49375d" stroke="#d7b66f" stroke-width="5"/>
+    <path d="M22 15H106V68C106 98 84 119 64 130C44 119 22 98 22 68Z" fill="none" stroke="#e7d6ef" stroke-width="1.6"/>
+    <path d="M76 36C54 30 39 50 44 71C49 92 73 101 89 85C73 90 58 79 57 63C56 49 64 39 76 36Z" fill="#e5e2dc" stroke="#8e80a2" stroke-width="2"/>
+    <path d="M82 43L87 55L100 56L90 65L93 78L82 71L71 78L74 65L64 56L77 55Z" fill="#d7b66f" stroke="#4a3559" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="44" cy="94" r="3" fill="#d7b66f"/><circle cx="54" cy="103" r="2" fill="#d7b66f"/><circle cx="39" cy="80" r="2" fill="#d7b66f"/>
+  </symbol>
+  <symbol id="crest-06" viewBox="0 0 128 144">
+    <path d="M14 7H114V68C114 104 89 128 64 139C39 128 14 104 14 68Z" fill="#713b32" stroke="#d7b66f" stroke-width="5"/>
+    <path d="M22 15H106V68C106 98 84 119 64 130C44 119 22 98 22 68Z" fill="none" stroke="#ead4a5" stroke-width="1.6"/>
+    <g stroke="#e7dfcb" stroke-width="5" stroke-linecap="round">
+      <path d="M43 39L84 96M85 39L43 96"/>
+    </g>
+    <g fill="#d7b66f" stroke="#4d3027" stroke-width="2">
+      <path d="M36 32L45 24L51 32L47 40L40 40Z"/>
+      <path d="M77 32L83 24L92 32L88 40L81 40Z"/>
+      <path d="M37 98L48 98L51 108L32 108Z"/>
+      <path d="M77 98L88 98L96 108L77 108Z"/>
+    </g>
+    <path d="M51 52L77 83M77 52L51 83" stroke="#a9b7ba" stroke-width="2"/>
+  </symbol>
+  <symbol id="crest-07" viewBox="0 0 128 144">
+    <path d="M14 7H114V68C114 104 89 128 64 139C39 128 14 104 14 68Z" fill="#282b30" stroke="#d7b66f" stroke-width="5"/>
+    <path d="M22 15H106V68C106 98 84 119 64 130C44 119 22 98 22 68Z" fill="none" stroke="#e5d4a4" stroke-width="1.6"/>
+    <path d="M37 70L42 40L57 56L64 29L72 56L88 40L91 70Z" fill="#d7b66f" stroke="#5b4424" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M38 72H90V83H38Z" fill="#f0d28a" stroke="#5b4424" stroke-width="3"/>
+    <path d="M45 84V94M64 84V94M83 84V94" stroke="#f0d28a" stroke-width="4"/>
+    <circle cx="42" cy="39" r="4" fill="#a94b43"/><circle cx="64" cy="27" r="4" fill="#a94b43"/><circle cx="88" cy="39" r="4" fill="#a94b43"/>
+  </symbol>
+  <symbol id="crest-08" viewBox="0 0 128 144">
+    <path d="M14 7H114V68C114 104 89 128 64 139C39 128 14 104 14 68Z" fill="#24515a" stroke="#d7b66f" stroke-width="5"/>
+    <path d="M22 15H106V68C106 98 84 119 64 130C44 119 22 98 22 68Z" fill="none" stroke="#e5d4a4" stroke-width="1.6"/>
+    <path d="M64 91C50 76 35 56 34 37C48 42 57 52 64 65C71 52 80 42 94 37C93 56 78 76 64 91Z" fill="#d27a4f" stroke="#553a2c" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M64 52C52 42 49 31 56 23L64 34L72 23C79 31 76 42 64 52Z" fill="#efcf81" stroke="#553a2c" stroke-width="2"/>
+    <path d="M64 70L55 93L64 108L73 93Z" fill="#e9d6a7" stroke="#553a2c" stroke-width="2"/>
+    <path d="M43 60L29 70M85 60L99 70" stroke="#efcf81" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+</svg>
