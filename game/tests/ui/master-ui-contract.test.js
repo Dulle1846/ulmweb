@@ -127,3 +127,12 @@ test("chronicle inbox uses stored event log data and opens the existing active i
   assert.ok(management.includes("does not claim unread tracking"));
   assert.ok(!main.includes("command-chronicles-btn"),"obsolete chronicle-to-people shortcut must be removed");
 });
+
+
+test("active realm issues can be dismissed without resolving and reopened from the chronicle",()=>{
+  assert.ok(html.includes('id="realm-event-dismiss"'));
+  assert.ok(main.includes('state.activeEvent.dismissed=true'));
+  assert.ok(ui.includes("if(issue.dismissed)"));
+  assert.ok(management.includes("state.activeEvent.dismissed=false"));
+  assert.ok(management.includes('data-command="show-active-event"'));
+});
