@@ -60,6 +60,10 @@ try{
         throw error;
     }
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
+    await page.locator("#sovereign-dossier-button").click();
+    assert.equal(await page.locator("#people-modal").isVisible(),true,"the sovereign identity control must open the character dossier");
+    assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONALITY"),"the sovereign control must select the reigning ruler's real dossier");
+    await page.locator("#people-close").click();
     await page.locator("#speed-0-5").click();
     assert.ok(await page.locator("#speed-0-5").evaluate(el=>el.classList.contains("is-active")),"half-speed control must become active");
     await page.locator("#speed-1").click();
