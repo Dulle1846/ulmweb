@@ -65,7 +65,7 @@ function renderDynasty(){
     section("Dynastic heirs",'<ul class="strategy-list">'+(heirs||'<li>No direct descendants are recorded.</li>')+'</ul><p class="strategy-note">'+esc(family.succession.description)+'</p>');
 }
 const RENDERERS={government:renderGovernment,politics:renderPolitics,economy:renderEconomy,cards:renderCards,decisions:renderDecisions,dynasty:renderDynasty};
-function refresh(){const content=$("strategy-content");if(content)content.innerHTML=RENDERERS[activePanel]();document.querySelectorAll("[data-strategy-tab]").forEach(button=>button.classList.toggle("is-active",button.dataset.strategyTab===activePanel));}
+function refresh(){const content=$("strategy-content");if(content)content.innerHTML=RENDERERS[activePanel]();if(activePanel==="government"&&$("gov-form"))$("gov-form").value=getGovernmentSnapshot().form;document.querySelectorAll("[data-strategy-tab]").forEach(button=>button.classList.toggle("is-active",button.dataset.strategyTab===activePanel));}
 function open(panel){activePanel=RENDERERS[panel]?panel:"government";refresh();$("strategy-modal")?.classList.remove("hidden");}
 function close(){$("strategy-modal")?.classList.add("hidden");}
 function toast(message){const el=$("action-toast");if(el){el.textContent=message;el.classList.add("is-visible");setTimeout(()=>el.classList.remove("is-visible"),2200);}}
