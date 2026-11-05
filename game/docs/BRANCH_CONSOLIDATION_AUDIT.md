@@ -9,7 +9,7 @@ All playable game systems belong in the normal `game/` tree. Feature branches ar
 ## Current production truth
 
 - Canonical production branch: `ulmweb-branch`.
-- Latest confirmed production merge: PR #26, merge commit `6290bcbd4981a334c4f57443651d90c5be2eebe8`.
+- Latest confirmed production release: PR #26 (and the related PR #24) integrated the same 3.2 release head, merge commit `6290bcbd4981a334c4f57443651d90c5be2eebe8`.
 - PR #26 integrated the 3.2 strategy/dynasty/creature UI, slower 750 ms day clock, 0.5x/1x/2x/4x speed, deterministic combat/economy/market streams, save backup/recovery/validation, core art and city-builder specification.
 - For PR #26's tested head, Game Quality, Kings & Cards 2.1 checks and Game Browser E2E all completed successfully. These are GitHub Actions results, not proof of a Cloudflare deployment.
 - The public Pages URL `https://kings-and-cards.pages.dev/` was fetched successfully on 2026-11-05 and returned the current game page, including Save, Load, Pause and speed controls. A Cloudflare dashboard deployment record was not available in this audit.
@@ -27,7 +27,7 @@ It adds:
 - Road save/load serialization.
 - Unit tests and browser E2E coverage.
 
-Latest known CI on head `9a8ef0f4b6b00703fedac2f1df3c80d95dc094a9`: Game Quality and Kings & Cards 2.1 checks passed; Browser E2E is being debugged because the save/load round-trip after a road mutation does not yet reach the expected success state. Do not merge or deploy until this is resolved and all three workflows pass on the exact final head.
+Latest verified CI on head `283bf1b16e7ad63b7ddaa94620c199bf4a52499d`: Game Quality, Kings & Cards 2.1 checks and Browser E2E all passed. That head includes the road save-validation regex fix. A later head may include additional drag-path and A* corridor tests; check the exact current PR head before release.
 
 ## Preservation matrix for open source branches
 
@@ -37,12 +37,12 @@ Latest known CI on head `9a8ef0f4b6b00703fedac2f1df3c80d95dc094a9`: Game Quality
 | #9 `kac-2.4-life-cycles` | Species-aware life cycles | Branch changes simulation, people/events and tests; branch is behind production history. | Compare current production behavior and tests; verify no unique migration/aging rule is lost. |
 | #10 `kac-2.5-family-kinship` | Family graph | Production and branch `families.js` differ materially. | Compare invariants, caps, migrations and tests before closing. |
 | #11 `kac-2.6-character-dossiers` | Society/lifecycles | Agency and social modules match production; births, mortality and families differ. PR head also has a small browser-test delta. | Compare exact behavioral differences; keep any missing edge-case tests. |
-| #14 / #19 `kac-2.9-royal-court-strategy-ui` | Parallel royal-court strategy UI | Both PRs point to the same branch and same head. Includes `strategy-panels.js`, `royal-household.js`, richer politics and unique art. | Treat #19 as a duplicate PR of #14, not a second feature line. Preserve the branch and unique model/tests until their behavior is reconciled with the production management UI. |
+| #14 / #19 `kac-2.9-royal-court-strategy-ui` | Royal-court strategy UI | Both PRs point to the same source branch/head, but #14 is stacked on `kac-2.8-orphan-guardianship` while #19 targets production directly. Includes `strategy-panels.js`, `royal-household.js`, richer politics and unique art. | Do not call them exact duplicates: compare the #14 base's guardianship delta separately. Keep #19 Draft as the production-target safety copy; preserve the source branch and model/tests until reconciled with the canonical management UI. |
 | #16 `kac-2.9-royal-dynasty` | Royal dynasty | Branch `royal-dynasty.js` is materially larger than production and adds `royal-court.js`; succession laws include absolute primogeniture, male preference and council election. | Port missing succession-law behavior, household UI and regression tests into the single production dynasty model. |
 | #17 `kac-3.0-government-and-management-ui` | Government/management | Adds alternate `realm-management.js`; its government module differs from production. | Compare all actions, tax/policy controls, workforce/economy details and tests; port missing controls into the one current management UI. |
 | #18 `kac-3.1-living-fantasy-creatures` | Persistent fantasy creatures | Branch `creatures.js` is materially larger than production and contains species profiles, lifecycle, needs, memories, autonomy and memorials. | Port the full species/lifecycle behaviors and tests into the current creature system without breaking the existing summon/dragon API. |
 | #20 `kac-3.1-dynasty-strategy-ui` | Parallel dynasty/strategy implementation | Contains unique `dynasty.js`, alternate `realm-management.js`, unique kingdom art and a second dynasty/government implementation. | Do not merge wholesale. Extract unique, validated behaviors into the canonical modules; preserve the artwork and tests until audited. |
-| #26 | 3.2 production release | Merged to production; all three required CI workflows passed for its tested head. | Historical release baseline. |
+| #24 / #26 | 3.2 production release | Both closed as merged against the same 3.2 release head; all three required CI workflows passed for the tested release candidate. | Historical release baseline. |
 | #27 | 3.3 road construction | New candidate; CI currently has a browser E2E save/load issue. | Fix, rerun all checks, review diff, then request release approval. |
 
 ## Important preservation gaps
