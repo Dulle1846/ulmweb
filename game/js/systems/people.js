@@ -39,6 +39,7 @@ export function createPersonProfile(entity,{role="resident",species=null}={}){
         traits:createTraits(),needs:createNeeds(),
         goals:[pick(["security","prosperity","family","recognition","knowledge","faith","adventure","power"],"people")],
         memories:[],relationships:[],kinship:{parents:[],children:[],partners:[]},secrets:[],
+        activeGoal:null,goalHistory:[],lastNeedsYear:Math.max(1,Number(state.year)||1),
         bornAtYear:Math.max(1,(Number(state.year)||1)-ageYears),lastAgedYear:Math.max(1,Number(state.year)||1),createdAtTick:Math.max(0,Number(state.tick)||0)
     };
 }
@@ -81,6 +82,20 @@ export function normalizePersonProfile(saved,entity,{role="resident"}={}){
             partners:links(source.partners,16).map(item=>({personId:String(item.personId||"").slice(0,100),status:["partner","married","separated","divorced"].includes(item.status)?item.status:"partner",sinceYear:Math.max(1,Math.floor(Number(item.sinceYear)||1)),endedYear:item.endedYear==null?null:Math.max(1,Math.floor(Number(item.endedYear)||1)),lastBirthYear:Number.isSafeInteger(item.lastBirthYear)?Math.max(0,Math.min(1000000,item.lastBirthYear)):0})).filter(item=>item.personId)
         };})(),
         secrets:Array.isArray(saved.secrets)?saved.secrets.filter(x=>typeof x==="string").slice(0,12):[],
+        activeGoal:saved.activeGoal&&typeof saved.activeGoal==="object"&&typeof saved.activeGoal.id==="string"?{
+            id:saved.activeGoal.id.slice(0,48),
+            sinceYear:Math.max(1,Math.min(Number(state.year)||1,Math.floor(Number(saved.activeGoal.sinceYear)||1))),
+            priority:clamp(saved.activeGoal.priority,50),
+            reason:String(saved.activeGoal.reason||"long-term ambition").slice(0,48)
+        }:null,
+        goalHistory:list(saved.goalHistory,12).map(item=>({
+            id:String(item.id||"unknown").slice(0,48),
+            startedYear:Math.max(1,Math.floor(Number(item.startedYear)||1)),
+            endedYear:Math.max(1,Math.floor(Number(item.endedYear)||1)),
+            completed:Boolean(item.completed),
+            priority:clamp(item.priority,50)
+        })),
+        lastNeedsYear:Number.isSafeInteger(saved.lastNeedsYear)?Math.max(1,Math.min(Number(state.year)||1,saved.lastNeedsYear)):Math.max(1,Number(state.year)||1),
         bornAtYear:Number.isSafeInteger(saved.bornAtYear)?Math.max(1,Math.min(1000000,saved.bornAtYear)):Math.max(1,(Number(state.year)||1)-ageYears),
         lastAgedYear:Number.isSafeInteger(saved.lastAgedYear)?Math.max(1,Math.min(Number(state.year)||1,saved.lastAgedYear)):Math.max(1,Number(state.year)||1),
         createdAtTick:Number.isSafeInteger(saved.createdAtTick)?Math.max(0,saved.createdAtTick):0
@@ -110,7 +125,7 @@ export function addPersonMemory(entity,memory){
 export function getPersonSnapshot(entity){
     if(!entity)return null;
     const person=ensurePersonProfile(entity);
-    return {id:person.id,name:person.name,species:person.species,sex:person.sex,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,bornAtYear:person.bornAtYear,lastAgedYear:person.lastAgedYear,traits:{...person.traits},needs:{...person.needs},goals:[...person.goals],memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item})),kinship:{parents:person.kinship.parents.map(item=>({...item})),children:person.kinship.children.map(item=>({...item})),partners:person.kinship.partners.map(item=>({...item}))}};
+    return {id:person.id,name:person.name,species:person.species,sex:person.sex,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,bornAtYear:person.bornAtYear,lastAgedYear:person.lastAgedYear,traits:{...person.traits},needs:{...person.needs},goals:[...person.goals],activeGoal:person.activeGoal?{...person.activeGoal}:null,goalHistory:person.goalHistory.map(item=>({...item})),lastNeedsYear:person.lastNeedsYear,memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item})),kinship:{parents:person.kinship.parents.map(item=>({...item})),children:person.kinship.children.map(item=>({...item})),partners:person.kinship.partners.map(item=>({...item}))}};
 }
 
 
