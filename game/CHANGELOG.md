@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.5.0`  
-**Next development line:** `3.6.0-dev`  
+**Next development line:** `3.6.0-rc`  
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -21,6 +21,25 @@ Kings & Cards uses a practical semantic version format:
 - GitHub Actions, Cloudflare Pages, and browser availability are separate release facts. One does not prove the others.
 
 The version in `game/package.json` is the machine-readable game version. Update this file and this changelog together for every release.
+
+## Release candidate (not production yet)
+
+### 3.6.0 — Master UI Phase 3: Economy, buildings, creatures and chronicle
+**Released:** 2026-11-05  
+**PR:** [#43](https://github.com/Dulle1846/ulmweb/pull/43)  
+**Merge commit:** `ad4d3c9978779aa7cc4921ec43a934d1b8338b38`  
+**Tested feature head:** `63ec3957697f4513ddeefd9ad5c5889689a0ceb7`  
+**CI:** Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E all passed on the exact feature head.
+
+- Added a data-backed economy view separating resource stock, current-tick flows, the latest 20-day settlement and cumulative totals.
+- Added a searchable building register with actual entity health, footprint, staff, workforce efficiency, catalogue cost and centre-tile resource data.
+- Added individual living-dragon dossiers and memorial records with needs, bond, life stage, abilities, goals and memories.
+- Added a searchable event inbox and chronicle with category filters, stored tick references and a dismiss/reopen flow for unresolved issues.
+- Added browser coverage for the new panels, creature dossier, chronicle search and active-issue dismissal/reopening.
+
+**Scope limit:** The simulation currently retains only the latest completed financial ledger, not a historical time series. Per-building production, storage and upkeep are not exposed. No trend charts or forecasts are fabricated. Chronicle history remains limited to the stored event log (up to 100 recent records); unread tracking and permanent external archives are not claimed. The full responsive viewport matrix and original art atlas remain outstanding. No simulation rules or save schema were changed.
+
+**Release gate:** This candidate is not production-released until its metadata PR is merged, required CI passes on the exact head, and Cloudflare Pages confirms the production deployment.
 
 ## Production release history
 
