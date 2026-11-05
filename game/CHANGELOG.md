@@ -233,3 +233,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Added shared header/body/footer regions with controlled scrolling and short/narrow viewport bounds.
 - Applied the primitives to settings, people dossiers, management, construction, event dialogs and the founding screen.
 - Added static and Chromium E2E contracts. Drag/resize and final overlay stacking remain outstanding.
+
+
+## Development line 3.7.0-dev — Phase 2 character roster filters
+
+- Added living/deceased, role and species filters to the character roster.
+- Role/species options are generated from actual persisted character records.
+- Added responsive filter styling and static/browser regression coverage.

@@ -79,6 +79,18 @@ try{
     assert.ok(await page.locator("#people-modal").isVisible(),"selecting a dynasty member must open the real character dossier");
     assert.ok(await page.locator("#person-dossier .dossier-portrait").isVisible(),"character dossier must show an original heraldic portrait");
     assert.ok(await page.locator("#people-list .person-list-portrait").count()>=1,"people roster must show individual portrait art");
+    const roleFilter=page.locator("#people-role-filter");
+    assert.ok(await roleFilter.locator("option").count()>1,"role filters must be populated from real character records");
+    const selectedRole=await roleFilter.locator("option").nth(1).getAttribute("value");
+    await roleFilter.selectOption(selectedRole);
+    const filteredRoles=await page.locator("#people-list .person-list-item").evaluateAll(nodes=>nodes.map(node=>node.dataset.personRole));
+    assert.ok(filteredRoles.length>0&&filteredRoles.every(role=>role===selectedRole),"role filter must return only matching recorded characters");
+    await roleFilter.selectOption("");
+    await page.locator("#people-status-filter").selectOption("living");
+    const livingStatuses=await page.locator("#people-list .person-list-item").evaluateAll(nodes=>nodes.map(node=>node.dataset.personStatus));
+    assert.ok(livingStatuses.every(status=>status==="living"),"living filter must exclude archived people");
+    await page.locator("#people-status-filter").selectOption("");
+
     const relatedLink=page.locator("#person-dossier .dossier-related-person").first();
     if(await relatedLink.count()){
         const relatedName=await relatedLink.locator("strong").innerText();

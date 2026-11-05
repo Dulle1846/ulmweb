@@ -203,3 +203,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Applied the window system to settings, people dossiers, management, construction, event dialogs and the founding screen.
 - Added narrow- and short-viewport rules so windows remain reachable without scrolling the page behind them.
 - Static contracts and Chromium E2E verify shared window sizes and scroll regions. Dragging/resizing, window stacking beyond the existing modal focus manager and a full legacy overlay migration remain open.
+
+
+## Phase 2 — data-driven character filters
+
+- Added roster filters for living/deceased status, recorded role and recorded species.
+- Role and species options are derived from the actual living/archive records; no fictional categories or placeholder counts are introduced.
+- Each roster item exposes its actual role, species and archive status as data attributes for accessible filtering and testability.
+- Added compact responsive filter styling, static contracts and Chromium E2E checks for role and living-person filtering.
+- Portrait variation beyond the existing seven archetypes and the full sovereign dossier remain open.
