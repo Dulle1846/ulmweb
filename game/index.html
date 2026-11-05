@@ -14,13 +14,13 @@
 <div class="game-shell">
     <header class="topbar">
         <div class="brand">
-            <div class="brand-mark" aria-hidden="true">♜</div>
+            <div class="brand-mark"><img src="assets/royal-crest.svg" alt="" aria-hidden="true"></div>
             <div><div class="brand-title">KINGS &amp; CARDS</div><div id="kingdom-name" class="brand-subtitle">THE REALM OF ELDRIA</div></div>
         </div>
         <div class="header-middle">
             <div class="date-block"><div class="date-label">Realm calendar</div><div class="date-value"><span id="season">SPRING</span> · <span id="year">YEAR 1</span></div></div>
             <div class="morale-block"><div class="morale-topline"><span>REALM MORALE</span><span id="morale-value">72</span></div><div class="morale-track"><div id="morale-bar"></div></div></div>
-            <div class="player-chip">👤 <span id="player-name">GUEST</span></div>
+            <div class="player-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c.4-4.1 2.9-6.2 7.5-6.2s7.1 2.1 7.5 6.2"/></svg><span id="player-name">GUEST</span></div>
         </div>
         <div class="realm-resource-strip" aria-label="Royal resources">
             <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 8l2 12h10l2-12-7-5Z"/><path d="M8 9h8M9 13h6"/></svg><small>WOOD</small><strong data-resource-value="wood">180</strong></button>
@@ -112,10 +112,10 @@
             <section class="resource-section">
                 <div class="section-heading"><span>ROYAL STORES</span><span class="subtle">TREASURY &amp; SUPPLIES</span></div>
                 <div class="resource-grid">
-                    <div class="resource-card wood"><div class="resource-symbol">🌲</div><div class="resource-copy"><div id="res-wood" class="resource-value">180</div><div class="resource-name">WOOD</div></div><div id="wood-income" class="resource-income"></div></div>
-                    <div class="resource-card stone"><div class="resource-symbol">⛰</div><div class="resource-copy"><div id="res-stone" class="resource-value">95</div><div class="resource-name">STONE</div></div><div id="stone-income" class="resource-income"></div></div>
-                    <div class="resource-card gold"><div class="resource-symbol">✦</div><div class="resource-copy"><div id="res-gold" class="resource-value">75</div><div class="resource-name">GOLD</div></div><div id="gold-income" class="resource-income"></div></div>
-                    <div class="resource-card food"><div class="resource-symbol">🌾</div><div class="resource-copy"><div id="res-food" class="resource-value">120</div><div class="resource-name">FOOD</div></div><div id="food-income" class="resource-income"></div></div>
+                    <div class="resource-card wood"><div class="resource-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/realm-icons.svg#tree"></use></svg></div><div class="resource-copy"><div id="res-wood" class="resource-value">180</div><div class="resource-name">WOOD</div></div><div id="wood-income" class="resource-income"></div></div>
+                    <div class="resource-card stone"><div class="resource-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#quarry"></use></svg></div><div class="resource-copy"><div id="res-stone" class="resource-value">95</div><div class="resource-name">STONE</div></div><div id="stone-income" class="resource-income"></div></div>
+                    <div class="resource-card gold"><div class="resource-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/realm-icons.svg#coin"></use></svg></div><div class="resource-copy"><div id="res-gold" class="resource-value">75</div><div class="resource-name">GOLD</div></div><div id="gold-income" class="resource-income"></div></div>
+                    <div class="resource-card food"><div class="resource-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#mill"></use></svg></div><div class="resource-copy"><div id="res-food" class="resource-value">120</div><div class="resource-name">FOOD</div></div><div id="food-income" class="resource-income"></div></div>
                 </div>
             </section>
 
@@ -124,10 +124,10 @@
                 <div id="card-container" class="card-container" role="button" tabindex="0" aria-label="Drag the selected card onto the map">
                     <div id="card-icon" class="card-icon">🏠</div><div id="card-name" class="card-name">COTTAGE</div><div id="card-desc" class="card-desc">Houses 3 villagers.</div>
                     <div class="card-costs">
-                        <div id="card-cost-wood" class="card-cost"><span>🌲</span><span>30</span></div>
-                        <div id="card-cost-stone" class="card-cost"><span>⛰</span><span>10</span></div>
-                        <div id="card-cost-gold" class="card-cost"><span>✦</span><span>0</span></div>
-                        <div id="card-cost-food" class="card-cost"><span>🌾</span><span>0</span></div>
+                        <div id="card-cost-wood" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/realm-icons.svg#tree"></use></svg></span><span>30</span></div>
+                        <div id="card-cost-stone" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/city-builder-sprites.svg#quarry"></use></svg></span><span>10</span></div>
+                        <div id="card-cost-gold" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/realm-icons.svg#coin"></use></svg></span><span>0</span></div>
+                        <div id="card-cost-food" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/city-builder-sprites.svg#mill"></use></svg></span><span>0</span></div>
                     </div>
                     <div class="card-play-tag">PLAY</div>
                 </div>
