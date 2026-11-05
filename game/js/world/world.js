@@ -9,6 +9,7 @@ import {
 } from '../core/config.js';
 import { state } from '../core/state.js';
 import { distance } from '../core/utils.js';
+import { generateResourceGeography } from '../systems/resource-geography.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  PERLIN NOISE (klassisch, 2D, permutation-basiert)
@@ -156,6 +157,9 @@ export function initWorld(seed = state.worldSeed, options=state.worldOptions) {
     state.terrainResolution = resolution;
     state.terrainPixW = pixW;
     state.terrainPixH = pixH;
+
+    // Resource nodes are generated from the same seed and terrain maps.
+    generateResourceGeography(worldSeed);
 
     // Exploration
     state.explored = [];
