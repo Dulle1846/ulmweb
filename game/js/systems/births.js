@@ -3,7 +3,7 @@ import { random, randInt } from "../core/random.js";
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { spawnEntity, canSpawnEntity } from "../world/entities.js";
-import { getHouseholdSnapshot } from "./population.js";
+import { getHousingSnapshot, getHouseholdSnapshot } from "./population.js";
 import { linkParentChild } from "./families.js";
 import { ensurePersonProfile, addPersonMemory, PERSON_SPECIES } from "./people.js";
 
@@ -51,6 +51,7 @@ function chooseBirthHome(first, second) {
 }
 
 function hasResourcesForBirth() {
+    const housing = getHousingSnapshot();
     return state.morale >= BIRTH_MIN_MORALE &&
         Number(state.resources?.food || 0) >= housing.population * BIRTH_FOOD_RESERVE_PER_RESIDENT;
 }
