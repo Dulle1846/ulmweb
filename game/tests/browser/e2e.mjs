@@ -189,21 +189,23 @@ try{
     assert.ok(await page.locator("#command-panel-content .building-record:not(.is-filtered)").count()>=1,"building filter must retain matching structures");
     await page.locator("#building-search").fill("");
     await page.evaluate(async()=>{
-        const [{state},{addLog,triggerRandomEvent}]=await Promise.all([
+        const [{state},{addLog}]=await Promise.all([
             import("./js/core/state.js"),import("./js/systems/events.js")
         ]);
         state.activeEvent=null;
         const {renderUI}=await import("./js/presentation/rendering/ui.js");
         renderUI();
         addLog("E2E CHRONICLE ENTRY","#c5a66b","e2e");
-        triggerRandomEvent();
     });
     await page.locator('[data-command-tab="chronicle"]').click();
     assert.ok(await page.locator("#command-panel-content .chronicle-entry").count()>=1,"chronicle must render persisted event records");
     await page.locator("#chronicle-search").fill("E2E CHRONICLE ENTRY");
     assert.equal(await page.locator("#command-panel-content .chronicle-entry:not(.is-filtered)").count(),1,"chronicle search must filter actual event text");
     await page.locator("#chronicle-search").fill("");
-    await page.evaluate(()=>{
+    await page.evaluate(async()=>{
+        const {triggerRandomEvent}=await import("./js/systems/events.js");
+        triggerRandomEvent();
+        document.querySelector('[data-command-tab="chronicle"]')?.click();
         document.getElementById("realm-event-modal")?.classList.add("hidden");
         document.querySelector('[data-command="show-active-event"]')?.click();
     });
