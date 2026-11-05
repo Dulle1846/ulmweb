@@ -245,3 +245,13 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added a contained vertical scroll region to the mobile side panel while keeping resource, card, tab and footer sections at their natural minimum sizes.
 - Chromium E2E now verifies that the side panel has overflow content and that scrolling reaches it at both 390×844 and 768×1024.
 - This preserves the fixed game shell and bottom action bar; it does not introduce document-level scrolling or alter simulation behavior.
+
+
+## Phase 2 — dedicated sovereign dossier increment (3.7.0-dev)
+
+- Added a royal-house section to the current sovereign's existing dossier, reading the live consort, designated heir, living children and recorded royal-house history from `getRoyalHouse()`.
+- Royal-family entries use the existing person dossier navigation bridge and canonical person IDs.
+- Former sovereign memorials are labeled separately and do not display the living monarch's succession state.
+- Royal-house history rendering is bounded to the latest eight records; the simulation's own history remains capped at 48.
+- Added responsive local styling and static contracts for current/former sovereign separation, source-backed fields and navigation.
+- No simulation or save-schema changes. The sovereign-to-heir browser hand-off remains an explicit E2E acceptance item.
