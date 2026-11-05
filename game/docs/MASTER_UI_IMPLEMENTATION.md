@@ -59,7 +59,7 @@
 - Added a searchable building register and a new Buildings navigation/tab entry. Construction and demolition remain in the existing build interface.
 - Per-building output, storage and upkeep are not currently represented by the simulation contract; the screen says so rather than displaying invented figures.
 - Added individual creature dossiers for living dragons and memorial records, including actual life stage, needs, bond, temperament, abilities, goals and memories.
-- Added a searchable chronicle/event inbox based on the saved event log, with category filtering and a shortcut to the existing active issue dialog. It does not invent unread tracking or dates.
+- Added a searchable chronicle/event inbox based on the saved event log, with category filtering and a dismiss/reopen flow for the existing active issue dialog. Dismissing leaves the issue pending; it does not invent unread tracking or dates.
 - Added static UI contract tests and Chromium browser coverage for economy, building, creature and chronicle views. CI and browser review are pending on the exact PR head.
 
 ## Actual navigation contract
