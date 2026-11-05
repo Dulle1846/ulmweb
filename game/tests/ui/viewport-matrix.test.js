@@ -11,7 +11,7 @@ test("seven-viewport matrix covers all ten strategic management panels",()=>{
   }
   for(const panel of ["kingdom","government","politics","decisions","cards","economy","buildings","dynasty","creatures","chronicle"]){
     assert.ok(source.includes('"'+panel+'"'),"missing management panel "+panel);
-    assert.ok(source.includes("management-"+panel),"missing screenshot audit for "+panel);
+    assert.ok(source.includes('"management-"+tab'),"missing per-tab screenshot naming for "+panel);
   }
 });
 
