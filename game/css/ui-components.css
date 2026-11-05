@@ -50,3 +50,5 @@
  .ui-window{width:calc(100vw - 32px);max-width:calc(100vw - 32px);max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px)}
 }
 @media(max-height:700px){.ui-window{max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px)}}
+
+.ui-window--founding{--ui-window-width:620px}
