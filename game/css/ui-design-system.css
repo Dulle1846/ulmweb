@@ -416,3 +416,5 @@ html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
 .settings-accessibility .setting-row small{color:#725c40}
 
 .settings-panel{overflow-y:auto;overscroll-behavior:contain}
+
+.ui-window.settings-panel{overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}
