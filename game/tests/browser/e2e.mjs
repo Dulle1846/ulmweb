@@ -61,7 +61,7 @@ try{
     assert.equal(await page.locator("#people-modal").isVisible(),false);
 
     // A deceased resident remains inspectable as a memorial, not as a live entity.
-    const memorialName=await page.evaluate(async()=>{
+    const memorialId=await page.evaluate(async()=>{
         const [{state},{recordNaturalDeath}]=await Promise.all([
             import("./js/core/state.js"),
             import("./js/systems/mortality.js")
@@ -72,11 +72,11 @@ try{
         resident.person.ageYears=82;
         resident.person.lifeStage="elder";
         const death=recordNaturalDeath(resident,"old age");
-        return death?.name||null;
+        return death?.personId||null;
     });
-    assert.ok(memorialName,"test fixture should create a deceased person's memorial");
+    assert.ok(memorialId,"test fixture should create a deceased person's memorial");
     await page.locator("#people-btn").click();
-    await page.locator("#people-search").fill(memorialName);
+    await page.locator("#people-search").fill(memorialId);
     assert.equal(await page.locator("#people-list .person-list-item").count(),1);
     await page.locator("#people-list .person-list-item").first().click();
     const memorialDossier=await page.locator("#person-dossier").innerText();
