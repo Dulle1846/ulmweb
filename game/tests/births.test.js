@@ -52,9 +52,11 @@ test("birth is rejected for separated partners and never inferred from co-reside
     assert.equal(result.ok,false); assert.equal(result.reason,"parents-not-eligible");
 });
 
-test("birth requires matching species and adult life stages",()=>{
+test("birth requires matching species, compatible sex and adult life stages",()=>{
     const second=ensurePersonProfile(parents[1]);
-    second.species="elf";
+    second.sex="female";
+    assert.equal(createChildFromParents(parents[0].personId,parents[1].personId).reason,"parents-not-eligible");
+    second.sex="male"; second.species="elf";
     assert.equal(createChildFromParents(parents[0].personId,parents[1].personId).reason,"parents-not-eligible");
     second.species="human"; second.ageYears=15; second.lifeStage="young";
     assert.equal(createChildFromParents(parents[0].personId,parents[1].personId).reason,"parents-not-eligible");
