@@ -1,6 +1,6 @@
 // Spatially indexed combat: local target selection avoids all-pairs scans.
 import { TYPE } from "../core/types.js";
-import { state } from "../core/state.js";
+import { state } from "../core/state.js";\nimport { recordNaturalDeath } from "../systems/mortality.js";\nimport { resolveRoyalSuccession } from "../systems/dynasty.js";\nimport { addLog } from "../systems/events.js";
 import { queueParticle,queueFloater,queueMessage } from "../core/presentation-effects.js";
 import { rand as seededRand } from "../core/random.js";
 const rand=(min,max)=>seededRand(min,max,"combat");
