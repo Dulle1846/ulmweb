@@ -13,10 +13,13 @@ import { updateBuildingIncome } from "./buildings.js";
 import { updateVillagers } from "./villagers.js";
 import { updateCombat } from "./combat.js";
 import { queueMessage } from "../core/presentation-effects.js";
+import { updatePeople } from "../systems/people.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
+    const previousYear=state.year;
     state.tick++;state.dayOfYear++;
     if(state.dayOfYear>=400){state.dayOfYear=0;state.year++;}
+    if(state.year>previousYear)updatePeople();
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
     resetIncome();
     const newcomer=updatePopulation();
