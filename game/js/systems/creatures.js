@@ -25,7 +25,7 @@ export function summonDragon(){
  const dragon=spawnEntity(king.x+2+living.length,king.y+1,TYPE.DRAGON);if(!dragon)return {ok:false,reason:"entity-capacity"};
  awakenDragon(dragon);
  state.resources.gold-=55;state.resources.food-=35;
- addLog("A DRAGON HAS JOINED THE REALM: "+name,"#e8b65f","creature");
+ addLog("A DRAGON HAS JOINED THE REALM: "+dragon.creature.name,"#e8b65f","creature");
  return {ok:true,dragon};
 }
 export function updateCreatures(){
