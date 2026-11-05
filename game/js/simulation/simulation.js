@@ -20,6 +20,7 @@ import { updatePersonalAgency } from "../systems/agency.js";
 import { updateMortality } from "../systems/mortality.js";
 import { updateGuardianships } from "../systems/guardianship.js";
 import { updateRoyalSuccession } from "../systems/royal-household.js";
+import { updateCreatures } from "../systems/creatures.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
@@ -54,7 +55,7 @@ export function updateSimulation(){
     }
     if(newborn)addLog("A CHILD WAS BORN: "+newborn.person.name,"#e8c77b","family");
     else if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
-    updateBuildingIncome();updateVillagers();updateCombat();checkRandomEvents();updateCardDraw();
+    updateBuildingIncome();updateVillagers();updateCreatures();updateCombat();checkRandomEvents();updateCardDraw();
     updateWeather();updateMorale();updateMarket();updateEconomy();updateHealth();
     state.entities=state.entities.filter(entity=>!entity.dead);
     if(state.raidActive&&!state.entities.some(entity=>entity.isEnemy())){
