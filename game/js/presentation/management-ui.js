@@ -153,8 +153,127 @@ function familyNode(entity,heirId){
  if(!id||!person)return "";
  const flags=[entity.isKing?"SOVEREIGN":"",id===String(heirId||"")?"DESIGNATED HEIR":"",entity.isArchived?"DECEASED":""].filter(Boolean).join(" · ");
  const age=Number.isFinite(Number(person.ageYears))?Math.floor(Number(person.ageYears))+" years":"age unknown";
- return '<button type="button" class="dynasty-person'+(entity.isArchived?' is-deceased':'')+'" data-open-person="'+esc(id)+'" aria-label="Open character dossier for '+esc(person.name||"Unnamed person")+'"><svg class="dynasty-person-portrait" viewBox="0 0 256 320" aria-hidden="true"><use href="assets/royal-portraits.svg#'+portraitSymbol(entity)+'"></use></svg><span class="dynasty-person-copy"><strong>'+esc(person.name||"Unnamed person")+'</strong><small>'+esc(person.role||person.species||"Resident")+' · '+esc(age)+'</small><em>'+esc(flags||"RECORDED FAMILY MEMBER")+'</em></span></button>';
+ return '<button type="button" class="dynasty-person'+(entity.isArchived?' is-deceased':'')+'" data-open-person="'+esc(id)+'" data-lineage-node-id="'+esc(id)+'" aria-label="Open character dossier for '+esc(person.name||"Unnamed person")+'"><svg class="dynasty-person-portrait" viewBox="0 0 256 320" aria-hidden="true"><use href="assets/royal-portraits.svg#'+portraitSymbol(entity)+'"></use></svg><span class="dynasty-person-copy"><strong>'+esc(person.name||"Unnamed person")+'</strong><small>'+esc(person.role||person.species||"Resident")+' · '+esc(age)+'</small><em>'+esc(flags||"RECORDED FAMILY MEMBER")+'</em></span></button>';
 }
+
+function ensureDynastyNetworkStyles(){
+ if(document.getElementById("kac-dynasty-network-styles"))return;
+ const link=document.createElement("link");
+ link.id="kac-dynasty-network-styles";
+ link.rel="stylesheet";
+ link.href="css/dynasty-network.css";
+ document.head.append(link);
+}
+function lineageGraph(king,heirId){
+ const rootId=String(king?.personId||king?.person?.id||king?.id||"");
+ const rootFamily=getFamilySnapshot(rootId)||{};
+ const lanes=[
+  {id:"grandparents",label:"GRANDPARENTS",ids:[]},
+  {id:"parents",label:"PARENTS",ids:[]},
+  {id:"royal-generation",label:"THE SOVEREIGN & SIBLINGS",ids:[]},
+  {id:"collateral",label:"AUNTS & UNCLES",ids:[]},
+  {id:"cousins",label:"COUSINS",ids:[]},
+  {id:"children",label:"ROYAL CHILDREN",ids:[]}
+ ];
+ const laneById=new Map(lanes.map(lane=>[lane.id,lane]));
+ const nodes=new Map(),edges=[],edgeKeys=new Set();
+ const idOf=entity=>String(entity?.personId||entity?.person?.id||entity?.id||"");
+ const add=(entity,laneId)=>{
+  const id=idOf(entity),lane=laneById.get(laneId);
+  if(!id||!entity?.person||!lane)return "";
+  if(nodes.has(id))return id;
+  nodes.set(id,entity);lane.ids.push(id);return id;
+ };
+ const connect=(from,to,kind="parent")=>{
+  if(!from||!to||from===to||!nodes.has(from)||!nodes.has(to))return;
+  const key=from+"|"+to+"|"+kind;
+  if(edgeKeys.has(key))return;
+  edgeKeys.add(key);edges.push({from,to,kind});
+ };
+ const parentRecords=(rootFamily.parents||[]).map(link=>familyRecord(link.personId)).filter(Boolean).slice(0,2);
+ const grandparentIds=new Set();
+ for(const parent of parentRecords){
+  const parentId=add(parent,"parents");
+  const parentFamily=getFamilySnapshot(parentId)||{};
+  for(const link of (parentFamily.parents||[]).slice(0,2)){
+   const grandparent=familyRecord(link.personId),grandparentId=add(grandparent,"grandparents");
+   if(grandparentId){grandparentIds.add(grandparentId);connect(grandparentId,parentId,link.kind==="guardian"?"guardian":"parent");}
+  }
+ }
+ const sovereignId=add(king,"royal-generation");
+ const house=getRoyalHouse();
+ const consortId=add(house.consort,"royal-generation");
+ if(consortId)connect(sovereignId,consortId,"partner");
+ for(const parent of parentRecords)connect(idOf(parent),sovereignId,(rootFamily.parents||[]).find(link=>String(link.personId)===idOf(parent))?.kind==="guardian"?"guardian":"parent");
+ for(const link of (rootFamily.siblings||[]).slice(0,16)){
+  const sibling=familyRecord(link.personId),siblingId=add(sibling,"royal-generation");
+  if(siblingId)connect(sovereignId,siblingId,"sibling");
+ }
+ const auntIds=new Set();
+ for(const parent of parentRecords){
+  const parentId=idOf(parent),parentFamily=getFamilySnapshot(parentId)||{};
+  for(const siblingLink of (parentFamily.siblings||[]).slice(0,12)){
+   const aunt=familyRecord(siblingLink.personId),auntId=add(aunt,"collateral");
+   if(!auntId)continue;
+   auntIds.add(auntId);
+   connect(parentId,auntId,"sibling");
+   const auntFamily=getFamilySnapshot(auntId)||{};
+   for(const cousinLink of (auntFamily.children||[]).slice(0,12)){
+    const cousin=familyRecord(cousinLink.personId),cousinId=add(cousin,"cousins");
+    if(cousinId)connect(auntId,cousinId,cousinLink.kind==="guardian"?"guardian":"parent");
+   }
+  }
+ }
+ const childIds=new Set();
+ for(const childLink of (rootFamily.children||[]).slice(0,24)){
+  const child=familyRecord(childLink.personId),childId=add(child,"children");
+  if(!childId)continue;
+  childIds.add(childId);
+  const childFamily=getFamilySnapshot(childId)||{};
+  const explicitParents=(childFamily.parents||[]).map(link=>String(link.personId));
+  if(explicitParents.includes(rootId))connect(rootId,childId,childLink.kind==="guardian"?"guardian":"parent");
+  if(consortId&&explicitParents.includes(consortId))connect(consortId,childId,"parent");
+  if(!explicitParents.length)connect(rootId,childId,"parent");
+ }
+ const laneMarkup=lanes.filter(lane=>lane.ids.length).map(lane=>
+  '<section class="dynasty-lineage-lane" data-lineage-lane="'+lane.id+'"><h4>'+lane.label+'</h4><div class="dynasty-lineage-lane__nodes">'+
+  lane.ids.map(id=>familyNode(nodes.get(id),heirId)).join("")+'</div></section>'
+ ).join("");
+ const edgeMarkup=edges.map(edge=>
+  '<path class="dynasty-lineage-edge dynasty-lineage-edge--'+edge.kind+'" data-lineage-from="'+esc(edge.from)+'" data-lineage-to="'+esc(edge.to)+'"></path>'
+ ).join("");
+ return '<section class="dynasty-lineage-graph" aria-label="Verified royal family relationship graph"><svg class="dynasty-lineage-edges" aria-hidden="true">'+edgeMarkup+'</svg>'+
+ laneMarkup+'<p class="dynasty-lineage-note">Connectors represent recorded parent, guardian, partnership and sibling relationships. Only linked relatives are shown; unknown branches are not inferred.</p></section>';
+}
+function drawDynastyConnectors(){
+ const graph=document.querySelector(".dynasty-lineage-graph");
+ if(!graph)return;
+ const svg=graph.querySelector(".dynasty-lineage-edges");
+ if(!svg)return;
+ const bounds=graph.getBoundingClientRect();
+ const width=Math.max(1,graph.scrollWidth,graph.clientWidth),height=Math.max(1,graph.scrollHeight,graph.clientHeight);
+ svg.setAttribute("viewBox","0 0 "+width+" "+height);
+ svg.setAttribute("width",String(width));svg.setAttribute("height",String(height));
+ const nodes=new Map([...graph.querySelectorAll("[data-lineage-node-id]")].map(node=>[node.dataset.lineageNodeId,node]));
+ for(const path of svg.querySelectorAll("[data-lineage-from][data-lineage-to]")){
+  const from=nodes.get(path.dataset.lineageFrom),to=nodes.get(path.dataset.lineageTo);
+  if(!from||!to){path.setAttribute("d","");continue;}
+  const a=from.getBoundingClientRect(),b=to.getBoundingClientRect();
+  let x1=a.left-bounds.left+a.width/2,y1=a.bottom-bounds.top;
+  let x2=b.left-bounds.left+b.width/2,y2=b.top-bounds.top;
+  if(["partner","sibling"].some(kind=>path.classList.contains("dynasty-lineage-edge--"+kind))){
+   const forward=b.left>=a.left;
+   x1=(forward?a.right:a.left)-bounds.left;y1=a.top-bounds.top+a.height/2;
+   x2=(forward?b.left:b.right)-bounds.left;y2=b.top-bounds.top+b.height/2;
+   const bend=Math.max(18,Math.abs(x2-x1)*.32);
+   path.setAttribute("d","M "+x1+" "+y1+" C "+(x1+(forward?bend:-bend))+" "+y1+", "+(x2-(forward?bend:-bend))+" "+y2+", "+x2+" "+y2);
+  }else{
+   const bend=Math.max(18,Math.abs(y2-y1)*.42);
+   path.setAttribute("d","M "+x1+" "+y1+" C "+x1+" "+(y1+bend)+", "+x2+" "+(y2-bend)+", "+x2+" "+y2);
+  }
+ }
+}
+
 function dynasty(){
  const h=getRoyalHouse(),king=h.king;
  if(!king)return intro("HOUSE OF THE CROWN","Dynasty & lineage","The family tree is assembled from explicit parent, child and partnership records.")+'<div class="command-note">No living sovereign is currently recorded. Start a campaign or inspect the character dossiers for archived family records.</div>';
@@ -210,9 +329,7 @@ function dynasty(){
  const consort=h.consort?familyNode(h.consort,heirId):'<p class="command-note">No royal consort is recorded.</p>';
  const history=h.history.slice().reverse().slice(0,12).map(x=>'<article class="command-history"><strong>YEAR '+number(x.year)+' · '+esc(x.kind)+'</strong><p>'+esc(x.detail)+'</p></article>').join("");
  return intro("HOUSE OF THE CROWN","Dynasty & lineage","A multi-generation view of the actual kinship graph. Select any recorded person to open their full dossier.")+
- '<div class="command-section-title">THE SOVEREIGN HOUSE</div><div class="dynasty-root-grid">'+familyNode(king,heirId)+consort+'</div>'+
- '<div class="command-section-title">ANCESTORS & SIBLINGS</div><div class="dynasty-root-grid">'+(parents.map(person=>familyNode(person,heirId)).join("")||'<p class="command-note">No parent links are recorded for the sovereign.</p>')+(siblings.map(person=>familyNode(person,heirId)).join("")||'<p class="command-note">No sibling links are recorded for the sovereign.</p>')+'</div>'+
- '<div class="command-section-title">RECORDED COUSINS</div><div class="dynasty-root-grid">'+(cousins.map(person=>familyNode(person,heirId)).join("")||'<p class="command-note">No cousin links can be verified from the recorded kinship graph.</p>')+'</div>'+
+ '<div class="command-section-title">INTERACTIVE LINEAGE</div>'+lineageGraph(king,heirId)+
  '<div class="command-section-title">DESCENDANTS & SUCCESSION</div><div class="dynasty-tree">'+(generations.join("")||'<p class="command-note">No descendant links are recorded for the current sovereign.</p>')+'</div>'+
  '<div class="command-section-title">ROYAL SUCCESSION RECORD</div><div class="command-history-list">'+(history||'<p class="command-note">No royal event has been recorded yet.</p>')+'</div>'+
  '<p class="command-note">Only saved family relationships are drawn. Missing, unknown or unlinked relatives are intentionally not inferred.</p>';
@@ -253,6 +370,7 @@ function chronicle(){
 function render(){
  const panel=$("command-panel-content");if(!panel)return;
  panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,buildings,dynasty,creatures,chronicle}[activePanel]||kingdom)();
+ if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
  document.querySelectorAll("[data-command-tab]").forEach(b=>{
   const active=b.dataset.commandTab===activePanel;
   b.classList.toggle("is-active",active);
@@ -266,6 +384,8 @@ function act(b){
  if(r.ok){toast("DECISION RECORDED");render();}else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
 }
 export function setupManagementUI(){
+ ensureDynastyNetworkStyles();
+ window.addEventListener("resize",()=>{if(activePanel==="dynasty")drawDynastyConnectors();});
  document.querySelectorAll("[data-kac-panel]").forEach(button=>button.addEventListener("click",()=>{
   const target=button.dataset.kacPanel;
   setNavigationActive(target);
