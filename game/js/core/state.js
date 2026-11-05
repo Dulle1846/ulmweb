@@ -11,6 +11,8 @@ function createInitialState() {
         resources:{wood:180,stone:95,gold:75,food:120},
         incomeThisTick:{wood:0,stone:0,gold:0,food:0},
         morale:72,seasonIndex:0,year:1,dayOfYear:0,
+        government:{form:"feudal",taxRate:10,councilSeats:3,succession:"primogeniture",decrees:0,lastDecisionYear:0,history:[]},
+        royal:{dynastyName:"Eldria",consortId:null,heirId:null,lastBirthYear:0,history:[]},
         currentCard:null,availableCards:[],hand:[],cardRewardQueue:[],selectedCardInstanceId:null,cardPreview:null,
         nextCardDrawTick:0,issueSequence:0,nextIssueAtTick:0,
         worldOptions:{landmass:50,ruggedness:55,forests:52,water:48},
