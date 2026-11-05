@@ -81,3 +81,24 @@ test("save status reflects actual save/load outcomes, not an autosave promise",(
   assert.ok(main.includes('setSaveStatus("LOADED'));
   assert.ok(!html.toLowerCase().includes("autosave"));
 });
+
+
+test("economy panel distinguishes stock, current-tick flow and the actual latest ledger",()=>{
+  assert.ok(management.includes("state.incomeThisTick"));
+  assert.ok(management.includes("state.economy?.lastLedger"));
+  assert.ok(management.includes("daysElapsed"));
+  assert.ok(management.includes("latest completed ledger"));
+  assert.ok(management.includes("historical time series"));
+  assert.ok(management.includes("No forecasts are inferred"));
+});
+
+test("building register uses live entities, staffing, footprint and site data without inventing output",()=>{
+  assert.ok(html.includes('data-kac-panel="buildings"'));
+  assert.ok(html.includes('data-command-tab="buildings"'));
+  assert.ok(management.includes('state.entities.filter(entity=>!entity.dead&&entity.isBuilding())'));
+  assert.ok(management.includes("getBuildingEfficiency(building,workforce)"));
+  assert.ok(management.includes("BUILDING_SIZE[building.type]"));
+  assert.ok(management.includes("getResourceNodeAt(building.x,building.y)"));
+  assert.ok(management.includes("Per-building production output, storage and upkeep are not currently exposed"));
+  assert.ok(management.includes('id="building-search"'));
+});
