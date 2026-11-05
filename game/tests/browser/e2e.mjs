@@ -113,6 +113,14 @@ try{
     await page.keyboard.press("Escape");
     assert.ok(await page.locator("#road-build-cancel").evaluate(el=>el.classList.contains("hidden")),"Escape must leave road build mode");
 
+    // Demolition is an explicit build mode and returns part of the materials.
+    await page.locator("#build-open-btn").click();
+    await page.locator("[data-road-remove]").click();
+    assert.ok(await page.locator("#road-build-cancel").isVisible(),"bulldoze mode must expose the exit control");
+    await page.mouse.click(roadDragTarget.screenX,roadDragTarget.screenY);
+    assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y),{x:roadDragTarget.x,y:roadDragTarget.y}),null,"bulldozing must remove the selected road tile");
+    await page.keyboard.press("Escape");
+
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
