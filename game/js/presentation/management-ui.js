@@ -162,6 +162,7 @@ function ensureDynastyNetworkStyles(){
  dynastyStylesRequested=true;
  link.rel="stylesheet";
  link.href="css/dynasty-network.css";
+ link.addEventListener("load",()=>{if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);},{once:true});
  document.head.append(link);
 }
 function lineageGraph(king,heirId){
