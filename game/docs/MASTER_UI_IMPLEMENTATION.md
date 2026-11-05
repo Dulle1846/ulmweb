@@ -142,11 +142,11 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - This is an initial coherent portrait suite, not the complete art atlas. Dedicated original building scenes, additional creature artwork, card illustrations, house heraldry and animated construction/event assets remain open.
 
 
-## Phase 5 accessibility and responsive increment (in review)
+## Phase 5 accessibility and responsive increment (merged in PR #50)
 
 - Added a central dialog focus manager for the founding screen, settings, character dossiers, realm events, management, construction and message dialogs.
 - Modal focus is moved into the topmost visible dialog, Tab/Shift+Tab remain inside it, and closing restores focus to the invoking control where it remains visible.
 - If the invoking control belongs to a dialog that was closed underneath a nested dialog, focus falls back to the main game region rather than a hidden element.
 - Added accessible dialog names to the founding and settings screens; all dialog overlays now have explicit modal semantics and labels.
 - Added scroll containment and short-viewport handling so tall dialogs remain reachable on narrow phones and short displays.
-- Static tests and Chromium E2E cover initial focus, tab containment and focus fallback. Full 390×844, 768×1024 and desktop viewport screenshot review remains a separate acceptance gate.
+- Static tests and Chromium E2E cover initial focus, tab containment and focus fallback. Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E passed on the exact PR #50 feature head `2a8f0df5ef5a32c010bf3f24a0c71fd0980df72f` before merge. Full 390×844, 768×1024 and desktop viewport screenshot review remains a separate acceptance gate.
