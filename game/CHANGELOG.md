@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.6.0`  
-**Next development line:** `3.7.0-dev`  
+**Current production version:** `3.5.0`  
+**Next development line:** `3.6.0-rc`  
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -22,7 +22,7 @@ Kings & Cards uses a practical semantic version format:
 
 The version in `game/package.json` is the machine-readable game version. Update this file and this changelog together for every release.
 
-## Production release history
+## Release candidate (not production yet)
 
 ### 3.6.0 — Master UI Phase 3: Economy, buildings, creatures and chronicle
 **Released:** 2026-11-05  
@@ -38,6 +38,10 @@ The version in `game/package.json` is the machine-readable game version. Update 
 - Added browser coverage for the new panels, creature dossier, chronicle search and active-issue dismissal/reopening.
 
 **Scope limit:** The simulation currently retains only the latest completed financial ledger, not a historical time series. Per-building production, storage and upkeep are not exposed. No trend charts or forecasts are fabricated. Chronicle history remains limited to the stored event log (up to 100 recent records); unread tracking and permanent external archives are not claimed. The full responsive viewport matrix and original art atlas remain outstanding. No simulation rules or save schema were changed.
+
+**Release gate:** This candidate is not production-released until its metadata PR is merged, required CI passes on the exact head, and Cloudflare Pages confirms the production deployment.
+
+## Production release history
 
 ### 3.5.0 — Master UI Phase 2: Dynasty and contextual actions
 **Released:** 2026-11-05  
