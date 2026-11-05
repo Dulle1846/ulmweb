@@ -2,7 +2,7 @@
 
 **Specification:** `MASTER UI & VISUAL DESIGN CONCEPT v1.0` (uploaded project brief)  
 **Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 dynasty and action dock), PR #43 (Phase 3 economy, buildings, creatures and chronicle), PR #44 (Phase 4 portrait and illustrated-register increment)  
-**Current UI branch:** `kac-release-3-6-0-ui-phase-3`  
+**Current UI branch:** `ulmweb-branch` (latest merged UI work: PRs #69 and #70)  
 **Baseline:** `6c4c3f0442ea18aa04fee5598e909ddfc6b4d900`  
 **Rule:** This register distinguishes implemented and tested work from the remaining concept. A styled shell is not a completed screen.
 
@@ -245,3 +245,10 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added a contained vertical scroll region to the mobile side panel while keeping resource, card, tab and footer sections at their natural minimum sizes.
 - Chromium E2E now verifies that the side panel has overflow content and that scrolling reaches it at both 390×844 and 768×1024.
 - This preserves the fixed game shell and bottom action bar; it does not introduce document-level scrolling or alter simulation behavior.
+
+
+## Phase 5 merged responsive corrections
+
+- PR #69 merged as `e4d343041ec6960502c471aa5efd2ca0994f85f5`: the global action controls now wrap at intermediate desktop and narrow mobile widths. Its exact feature head passed Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E; the 14-image viewport artifact was visually reviewed.
+- PR #70 merged as `09c2d747f08216199154af480735eeae064d0e9b`: the mobile side panel now owns a contained vertical scroll region so the card, resource, tabs and footer content remain reachable. Its exact feature head passed all three required workflows, including actual scroll-range checks at 390×844 and 768×1024.
+- The separate Workers build check is not a Cloudflare Pages result and is not treated as proof of Pages production delivery. The production Pages URL remains `https://kings-and-cards.pages.dev/`; its currently served commit must be verified independently before changing the production-version declaration.
