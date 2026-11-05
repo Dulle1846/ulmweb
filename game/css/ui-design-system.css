@@ -386,3 +386,9 @@ body.ui-modal-open{overflow:hidden}
  .side-panel>.resource-section,.side-panel>.card-section,.side-panel>.tabs,.side-panel>.panel-footer{flex:0 0 auto}
  .side-panel>.tab-content{flex:1 0 100px}
 }
+
+
+/* Reserve scroll space for the mobile action dock, which overlaps the lower edge of the game viewport. */
+@media(max-width:480px){
+ .side-panel{padding-bottom:44px;scroll-padding-bottom:44px}
+}
