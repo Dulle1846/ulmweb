@@ -73,3 +73,62 @@ button,input{font-family:Georgia,"Palatino Linotype",serif}
 .action-toast{background:#392519;border:1px solid #b68d4c;color:#f4e1bb;border-radius:2px}
 @media(max-width:900px){.brand{min-width:auto}.brand-title{font-size:16px}.header-middle{gap:8px}.morale-block{width:120px}.header-actions{gap:4px}.control-button{padding:0 7px;font-size:9px}.side-panel{width:min(340px,42vw)}.hand-card{min-width:76px;max-width:100px;min-height:112px}}
 @media(max-width:620px){.topbar{min-height:62px;flex-wrap:wrap}.header-middle{order:3;flex-basis:100%;justify-content:space-between}.side-panel{width:100%;max-height:42vh;border-left:0;border-top:3px double #a77c3d}.game-layout{flex-direction:column}.world-stage{min-height:55vh}.hand-dock{max-width:100%;overflow-x:auto}.hand-card{min-width:72px}.stage-topline{top:8px;left:8px}.zoom-panel{top:8px;right:8px}.start-panel{width:min(94vw,560px);padding:24px 18px}}
+
+
+/* Second illumination pass: carved borders, vellum grain and distinct card schools. */
+.start-panel,.modal-panel,.card-container,.hand-card{
+    background-image:
+        radial-gradient(ellipse at 12% 8%,#fff9d7a8,transparent 35%),
+        radial-gradient(ellipse at 88% 92%,#8b67301b,transparent 38%),
+        repeating-linear-gradient(0deg,#7251260b 0 1px,transparent 1px 4px),
+        linear-gradient(145deg,#f4e8c9,#d7bf91);
+}
+.start-panel,.modal-panel{position:relative}
+.start-panel:before,.start-panel:after,.modal-panel:before,.modal-panel:after{
+    content:"✥";position:absolute;z-index:1;color:#9a713b;font:18px Georgia,serif;opacity:.72;pointer-events:none
+}
+.start-panel:before,.modal-panel:before{top:12px;left:14px}
+.start-panel:after,.modal-panel:after{right:14px;bottom:12px;transform:rotate(180deg)}
+.hand-card{border-width:2px}
+.hand-card[data-card-group="magic"],.hand-card[data-card-group="spirits"],.hand-card[data-card-group="relics"]{
+    border-color:#80649b;box-shadow:0 4px 10px #0008,inset 0 0 0 3px #f2e4c2,inset 0 0 0 4px #80649b
+}
+.hand-card[data-card-group="military"],.hand-card[data-card-group="warfare"],.hand-card[data-card-group="defense"]{
+    border-color:#8c4b3d;box-shadow:0 4px 10px #0008,inset 0 0 0 3px #f2e4c2,inset 0 0 0 4px #8c4b3d
+}
+.hand-card[data-card-group="nature"],.hand-card[data-card-group="botany"],.hand-card[data-card-group="agriculture"]{
+    border-color:#71834a;box-shadow:0 4px 10px #0008,inset 0 0 0 3px #f2e4c2,inset 0 0 0 4px #71834a
+}
+.hand-card[data-card-group="court"],.hand-card[data-card-group="politics"],.hand-card[data-card-group="administration"]{
+    border-color:#b08a45;box-shadow:0 4px 10px #0008,inset 0 0 0 3px #f2e4c2,inset 0 0 0 4px #b08a45
+}
+.hand-card[data-card-group="underworld"],.hand-card[data-card-group="monsters"]{
+    border-color:#57463e;box-shadow:0 4px 10px #0008,inset 0 0 0 3px #f2e4c2,inset 0 0 0 4px #57463e
+}
+.hand-card[data-card-group="scholarship"],.hand-card[data-card-group="education"]{
+    border-color:#587c86;box-shadow:0 4px 10px #0008,inset 0 0 0 3px #f2e4c2,inset 0 0 0 4px #587c86
+}
+.hand-card:focus-visible{outline:3px solid #f0d28b;outline-offset:3px}
+.hand-card:active{cursor:grabbing}
+.hand-card-banner{filter:drop-shadow(0 2px 1px #4b301d44)}
+.hand-card-rarity{font-weight:700}
+.rarity-epic .hand-card-rarity,.rarity-mythic .hand-card-rarity,.rarity-royal .hand-card-rarity,
+.rarity-ancient .hand-card-rarity,.rarity-legendary .hand-card-rarity,.rarity-unique .hand-card-rarity{
+    box-shadow:inset 0 1px #fff6,0 1px 2px #0002
+}
+.hand-dock-heading #hand-count{display:inline-block;padding:2px 8px;border:1px solid #a9854f;background:#4b301f;color:#f4e2bc}
+.event-panel{background-image:radial-gradient(ellipse at 50% 0%,#fff8d9,transparent 54%),repeating-linear-gradient(0deg,#7251260b 0 1px,transparent 1px 4px),linear-gradient(145deg,#f4e8c9,#d7bf91)}
+.event-choice{position:relative;padding-left:18px}
+.event-choice:before{content:"✦";position:absolute;left:7px;top:50%;transform:translateY(-50%);color:#986f3b}
+.stage-chip{box-shadow:0 3px 10px #0009,inset 0 1px #e5c78a33}
+.placement-status[data-valid="true"]{border-color:#9cba75;color:#e1efc6}
+.placement-status[data-valid="false"]{border-color:#bb6657;color:#ffd0c4}
+#card-container.is-unavailable{filter:saturate(.55)}
+#card-container.is-dragging{opacity:.5}
+@media(prefers-reduced-motion:reduce){
+    *,*:before,*:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
+
+.faction-meter{height:5px;margin-top:5px;overflow:hidden;border:1px solid #8b6c42;background:#3e2b1c44}
+.faction-meter i{display:block;height:100%;background:linear-gradient(90deg,#8d4c3b,#c9a65f,#70804b);box-shadow:0 0 5px #e3c17a66}
+.political-stat .stat-value{display:flex;align-items:center;justify-content:space-between;gap:8px}

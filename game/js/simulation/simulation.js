@@ -4,6 +4,9 @@ import { resetIncome } from "../systems/resources.js";
 import { updateMorale } from "../systems/morale.js";
 import { checkRandomEvents,addLog } from "../systems/events.js";
 import { updateMarket } from "../systems/market.js";
+import { updateEconomy } from "../systems/economy.js";
+import { updateHealth } from "../systems/health.js";
+import { updatePopulation } from "../systems/population.js";
 import { updateCardDraw } from "../systems/cards.js";
 import { updateWeather } from "../world/weather.js";
 import { updateBuildingIncome } from "./buildings.js";
@@ -15,8 +18,11 @@ export function updateSimulation(){
     state.tick++;state.dayOfYear++;
     if(state.dayOfYear>=400){state.dayOfYear=0;state.year++;}
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
-    resetIncome();updateBuildingIncome();updateVillagers();updateCombat();checkRandomEvents();updateCardDraw();
-    updateWeather();updateMorale();updateMarket();
+    resetIncome();
+    const newcomer=updatePopulation();
+    if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
+    updateBuildingIncome();updateVillagers();updateCombat();checkRandomEvents();updateCardDraw();
+    updateWeather();updateMorale();updateMarket();updateEconomy();updateHealth();
     state.entities=state.entities.filter(entity=>!entity.dead);
     if(state.raidActive&&!state.entities.some(entity=>entity.isEnemy())){
         state.totalRaidsSurvived++;state.raidActive=false;addLog("RAID DEFEATED — THE REALM HOLDS","#a5d6a7","military");

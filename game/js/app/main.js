@@ -6,6 +6,8 @@ import { initWorld } from "../world/world.js";
 import { initStartingKingdom,spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
+import { normalizePoliticalState } from "../systems/politics.js";
+import { normalizeHouseholdAssignments } from "../systems/population.js";
 import { addLog } from "../systems/events.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera } from "../presentation/camera.js";
@@ -13,6 +15,8 @@ import { setupInput } from "../presentation/input.js";
 import { renderUI,showBigMessage } from "../presentation/rendering/ui.js";
 import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,loadSettings,saveSettings } from "../core/persistence.js";
 import { startSoundtrack,setMusicEnabled,setMusicVolume,applySoundtrackSettings } from "../core/soundtrack.js";
+import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
+import {ensurePersonProfile,normalizePersonProfile} from "../systems/people.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -74,6 +78,7 @@ function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     state.worldOptions={...worldOptions};
     initWorld(seed,state.worldOptions);
     initStartingKingdom();
+    normalizeHouseholdAssignments();
     drawStartingHand();
     state.camera.x=0;state.camera.y=0;
     centerCamera();
@@ -89,12 +94,14 @@ function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
 
 function serializeEntity(entity,indexByEntity){
     return {
+        id:entity.id||null,personId:entity.personId||null,person:entity.person?JSON.parse(JSON.stringify(entity.person)):null,
         x:entity.x,y:entity.y,type:entity.type,hp:entity.hp,maxHp:entity.maxHp,dead:entity.dead,age:entity.age,
         anim:entity.anim,facing:entity.facing,visualState:entity.visualState,anchor:entity.anchor,home:entity.home,
+        illnessUntilTick:entity.illnessUntilTick,illnessStartedTick:entity.illnessStartedTick,illnessSeverity:entity.illnessSeverity,
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
         routinePhase:entity.routinePhase,routineTimer:entity.routineTimer,movePause:entity.movePause,
         job:entity.job,jobRefreshTimer:entity.jobRefreshTimer,workplaceIndex:entity.workplace?indexByEntity.get(entity.workplace)??null:null,
-        isKing:entity.isKing,moraleMod:entity.moraleMod,tint:entity.tint
+        isKing:entity.isKing,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
     };
 }
 
@@ -102,9 +109,9 @@ function createSaveSnapshot(){
     const indexes=new Map(state.entities.map((entity,index)=>[entity,index]));
     return {
         playerName:state.playerName,kingdomName:state.kingdomName,worldSeed:state.worldSeed,
-        worldOptions:{...state.worldOptions},nextCardDrawTick:state.nextCardDrawTick,
+        worldOptions:{...state.worldOptions},randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:2,nextCardDrawTick:state.nextCardDrawTick,
         nextIssueAtTick:state.nextIssueAtTick,issueSequence:state.issueSequence,
-        hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),
+        hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),health:JSON.parse(JSON.stringify(state.health||{})),
         camera:{...state.camera},zoom:state.zoom,
         explored:state.explored.map(column=>column.map(Boolean)),
         tick:state.tick,year:state.year,dayOfYear:state.dayOfYear,seasonIndex:state.seasonIndex,
@@ -114,11 +121,12 @@ function createSaveSnapshot(){
         weather:state.weather,weatherTimer:state.weatherTimer,
         entities:state.entities.map((entity,index)=>serializeEntity(entity,indexes)),
         hand:state.hand.map(card=>({...card,cost:{...card.cost}})),
+        cardRewardQueue:(state.cardRewardQueue||[]).map(card=>({...card,cost:{...card.cost}})),
         selectedCardInstanceId:state.selectedCardInstanceId,
         availableCards:state.availableCards.map(card=>({...card,cost:{...card.cost}})),
         activeEvent:state.activeEvent,
         eventLog:state.eventLog.slice(0,100),eventSequence:state.eventSequence,
-        statistics:{...state.statistics},market:JSON.parse(JSON.stringify(state.market)),
+        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),market:JSON.parse(JSON.stringify(state.market)),
         totalPopulation:state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length
     };
 }
@@ -149,11 +157,13 @@ function loadSnapshotIntoGame(profile,snapshot){
         const entity=spawnEntity(dto.x,dto.y,dto.type);
         if(!entity){restored.push(null);continue;}
         Object.assign(entity,{
+            id:typeof dto.id==="string"?dto.id:null,personId:typeof dto.personId==="string"?dto.personId:null,person:dto.person&&typeof dto.person==="object"?dto.person:null,
             hp:dto.hp,maxHp:dto.maxHp,dead:dto.dead,age:dto.age,anim:dto.anim,facing:dto.facing,
             visualState:dto.visualState,anchor:dto.anchor||{x:dto.x,y:dto.y},home:dto.home||{x:dto.x,y:dto.y},
+            illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
             routinePhase:dto.routinePhase??4,routineTimer:dto.routineTimer??30,movePause:dto.movePause||0,
-            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),moraleMod:dto.moraleMod||0,tint:dto.tint||0
+            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
         });
         restored.push(entity);
     }
@@ -161,6 +171,10 @@ function loadSnapshotIntoGame(profile,snapshot){
         if(Number.isInteger(dto.workplaceIndex)&&restored[dto.workplaceIndex]&&restored[index])restored[index].workplace=restored[dto.workplaceIndex];
     });
     state.tick=snapshot.tick||0;state.year=snapshot.year||1;state.dayOfYear=snapshot.dayOfYear||0;
+    restoreRandomStreams(snapshot.randomStreams);
+    state.nextEntityId=Math.max(1,Number.isSafeInteger(snapshot.nextEntityId)?snapshot.nextEntityId:restored.length+1);
+    for(let index=0;index<restored.length;index++){const entity=restored[index];if(!entity)continue;if(typeof entity.id!=="string")entity.id="e"+(Number(state.worldSeed)||1).toString(36)+"-"+(index+1).toString(36);if(entity.type===TYPE.VILLAGER&&!entity.personId)entity.personId=entity.id;if(entity.type===TYPE.VILLAGER||entity.isKing)ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});}
+    state.nextEntityId=Math.max(state.nextEntityId,restored.length+1);
     state.seasonIndex=snapshot.seasonIndex||0;state.morale=snapshot.morale??72;
     state.resources={wood:0,stone:0,gold:0,food:0,...snapshot.resources};
     state.incomeThisTick={wood:0,stone:0,gold:0,food:0,...snapshot.incomeThisTick};
@@ -172,17 +186,28 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.activeEvent=snapshot.activeEvent||null;
     state.issueSequence=snapshot.issueSequence||0;
     state.nextIssueAtTick=snapshot.nextIssueAtTick||0;
-    state.hiddenRealm=snapshot.hiddenRealm||{tension:0,prosperity:0,mystery:0,memories:[]};
+    state.hiddenRealm={tension:0,prosperity:0,mystery:0,memories:[],activeThreads:[],completedThreads:[],...(snapshot.hiddenRealm||{})};
+    state.health={outbreakActive:false,disease:"none",severity:0,containment:0,cases:0,recovered:0,outbreaks:0,lastUpdateTick:0,startedAtTick:0,...(snapshot.health||{})};
+    state.hiddenRealm.memories=Array.isArray(state.hiddenRealm.memories)?state.hiddenRealm.memories:[];
+    state.hiddenRealm.activeThreads=Array.isArray(state.hiddenRealm.activeThreads)?state.hiddenRealm.activeThreads:[];
+    state.hiddenRealm.completedThreads=Array.isArray(state.hiddenRealm.completedThreads)?state.hiddenRealm.completedThreads:[];
     state.availableCards=Array.isArray(snapshot.availableCards)
         ? snapshot.availableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [];
     state.statistics={totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,...snapshot.statistics};
+    state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,lastLedger:null,...snapshot.economy};
+    const growthYear=state.economy.lastGrowthYear;
+    state.economy.lastGrowthYear=Number.isFinite(growthYear)?Math.max(1,Math.min(state.year,Math.floor(growthYear))):state.year;
+    const populationGrowth=Number(state.economy.populationGrowth);
+    state.economy.populationGrowth=Number.isFinite(populationGrowth)?Math.max(0,populationGrowth):0;
+    normalizePoliticalState(snapshot.politics);
+    normalizeHouseholdAssignments();
     state.market=snapshot.market||createMarketState();
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===WORLD_W)state.explored=snapshot.explored;
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
     if(hasSavedCamera)state.camera={x:snapshot.camera.x,y:snapshot.camera.y};
     if(Number.isFinite(snapshot.zoom)){state.zoom=snapshot.zoom;state.zoomTarget=snapshot.zoom;state.zoomLevel=3;}
-    restoreHand(snapshot.hand,snapshot.selectedCardInstanceId,snapshot.availableCards,snapshot.nextCardDrawTick);
+    restoreHand(snapshot.hand,snapshot.selectedCardInstanceId,snapshot.availableCards,snapshot.nextCardDrawTick,snapshot.cardRewardQueue);
     if(hasSavedCamera)clampCamera();else centerCamera();
     document.getElementById("start-screen").classList.add("hidden");
     if(!loopStarted){loopStarted=true;startGameLoop();}

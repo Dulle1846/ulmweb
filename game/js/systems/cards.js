@@ -7,8 +7,11 @@ import { revealArea,isWaterAt } from "../world/world.js";
 import { canAfford,payForCard,addResource } from "./resources.js";
 import { CARD_PROTOTYPES,CARD_CATEGORIES,CARD_VARIANT_DIMENSIONS,createCardForCategory,createCardVariant } from "./card-catalog.js";
 import { addLog } from "./events.js";
+import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE,normalizeHouseholdAssignments } from "./population.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
-import { rand,randInt } from "../core/utils.js";
+import { rand as seededRand,randInt as seededRandInt } from "../core/random.js";
+const rand=(min,max)=>seededRand(min,max,"cards");
+const randInt=(min,max)=>seededRandInt(min,max,"cards");
 export const CARD_DECK=Object.freeze(CARD_CATEGORIES.map(category=>{
     const card=createCardForCategory(category.id);
     return {...card,id:category.id,name:card.baseName||card.name};
@@ -18,8 +21,13 @@ let nextCardInstance=1;
 function makeHandCard(card){return {...card,instanceId:"card-"+(nextCardInstance++)};}
 export function drawNewCard(){
     if(state.hand.length>=HAND_LIMIT)return null;
-    if(!state.availableCards.length)state.availableCards=[...CARD_DECK];
-    const index=randInt(0,state.availableCards.length),[prototype]=state.availableCards.splice(index,1);
+    state.cardRewardQueue=Array.isArray(state.cardRewardQueue)?state.cardRewardQueue:[];
+    let prototype=state.cardRewardQueue.length?state.cardRewardQueue.shift():null;
+    if(!prototype){
+        if(!state.availableCards.length)state.availableCards=[...CARD_DECK];
+        const index=randInt(0,state.availableCards.length);
+        [prototype]=state.availableCards.splice(index,1);
+    }
     const scales=["standard","standard","small","large","grand"];
     const rarityPool=(state.hiddenRealm?.prosperity||0)>18
         ?["common","common","uncommon","fine","rare","epic"]
@@ -32,7 +40,7 @@ export function drawNewCard(){
     return handCard;
 }
 export function drawStartingHand(){
-    state.hand=[];state.availableCards=[...CARD_DECK];state.currentCard=null;state.selectedCardInstanceId=null;
+    state.hand=[];state.availableCards=[...CARD_DECK];state.cardRewardQueue=[];state.currentCard=null;state.selectedCardInstanceId=null;
     state.nextCardDrawTick=state.tick+28+randInt(0,44);
 }
 export function updateCardDraw(){
@@ -117,6 +125,18 @@ export function placeCurrentCard(targetX,targetY){
         queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"REALM CAPACITY REACHED","#f59e0b");
         return false;
     }
+    if(card.kind==="person"&&card.type===TYPE.VILLAGER&&!canAccommodateVillagers(1)){
+        queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"NO HOUSING AVAILABLE","#f59e0b");
+        return false;
+    }
+    if(card.kind!=="effect"&&card.type===TYPE.HOUSE){
+        const housing=getHousingSnapshot();
+        if(housing.capacity-housing.population+RESIDENTS_PER_HOUSE<3||
+            !canSpawnEntity(TYPE.HOUSE,4)||!canSpawnEntity(TYPE.VILLAGER,3)){
+            queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"HOUSING OR REALM CAPACITY REACHED","#f59e0b");
+            return false;
+        }
+    }
     if(!payForCard(card))return false;
     if(card.kind==="effect"){
         const result=resolveEffectCard(card);
@@ -137,13 +157,14 @@ export function placeCurrentCard(targetX,targetY){
             }
             revealArea(tx,ty,9);
         }
+        if(card.kind==="person"&&card.type===TYPE.VILLAGER)normalizeHouseholdAssignments();
         for(let i=0;i<10;i++)queueParticle(tx*TILE_SIZE+rand(0,TILE_SIZE),ty*TILE_SIZE+rand(0,TILE_SIZE),"#fde047",24,rand(-2,2),rand(-3,-0.5),4);
         queueFloater(tx*TILE_SIZE+TILE_SIZE/2,ty*TILE_SIZE+10,card.kind==="animal"?"RELEASED!":card.unit?"RECRUITED!":"BUILT!","#a3e635");
         addLog((card.unit||card.kind==="animal"?"RECRUITED ":"BUILT ")+card.name,"#a3d6a7","card");
     }
     consumeCurrentCard();return true;
 }
-export function restoreHand(savedHand,selectedId,savedAvailableCards,nextDrawTick){
+export function restoreHand(savedHand,selectedId,savedAvailableCards,nextDrawTick,savedRewards=[]){
     state.hand=Array.isArray(savedHand)?savedHand.map(card=>({...card,instanceId:card.instanceId||"card-"+(nextCardInstance++)})): [];
     const numericIds=state.hand.map(card=>Number(String(card.instanceId).replace("card-",""))||0);
     if(numericIds.length)nextCardInstance=Math.max(nextCardInstance,Math.max(...numericIds)+1);
@@ -153,5 +174,6 @@ export function restoreHand(savedHand,selectedId,savedAvailableCards,nextDrawTic
     state.availableCards=Array.isArray(savedAvailableCards)
         ? savedAvailableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [...CARD_DECK];
+    state.cardRewardQueue=Array.isArray(savedRewards)?savedRewards.slice(0,12).map(card=>({...card,cost:{...(card.cost||{})}})):[];
     state.nextCardDrawTick=Number.isFinite(nextDrawTick)?nextDrawTick:(state.hand.length<HAND_LIMIT?state.tick+24+randInt(0,48):0);
 }

@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
 import {WORLD_W,WORLD_H} from "../../js/core/config.js";
 import {createCardForCategory} from "../../js/systems/card-catalog.js";
-import {drawStartingHand,updateCardDraw,skipCard,placeCurrentCard,CARD_DECK} from "../../js/systems/cards.js";
+import {drawStartingHand,drawNewCard,updateCardDraw,skipCard,placeCurrentCard,restoreHand,CARD_DECK} from "../../js/systems/cards.js";
 
-test("the playable deck covers all four hundred catalogue categories",()=>{
-    assert.equal(CARD_DECK.length,400);
-    assert.equal(new Set(CARD_DECK.map(card=>card.category)).size,400);
+test("the playable deck covers all five hundred catalogue categories",()=>{
+    assert.equal(CARD_DECK.length,500);
+    assert.equal(new Set(CARD_DECK.map(card=>card.category)).size,500);
 });
 test("a new realm begins with an empty hand and deals cards on a hidden timer",()=>{
     resetState();
@@ -69,4 +69,24 @@ test("playing a building card removes it and schedules its randomized replacemen
     state.tick=nextDue;
     assert.equal(updateCardDraw(),true);
     assert.equal(state.hand.length,1);
+});
+
+test("an issue-earned card takes priority over the random catalogue draw",()=>{
+    resetState();
+    drawStartingHand();
+    state.cardRewardQueue=[createCardForCategory("gold-mines")];
+    const card=drawNewCard();
+    assert.equal(card.category,"gold-mines");
+    assert.equal(state.cardRewardQueue.length,0);
+    assert.equal(state.hand.length,1);
+});
+test("queued card rewards survive save restoration",()=>{
+    resetState();
+    const reward=createCardForCategory("embassies");
+    restoreHand([],null,[...CARD_DECK],40,[reward]);
+    assert.equal(state.cardRewardQueue.length,1);
+    state.tick=40;
+    const card=drawNewCard();
+    assert.equal(card.category,"embassies");
+    assert.equal(state.cardRewardQueue.length,0);
 });

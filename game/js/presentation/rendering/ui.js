@@ -2,8 +2,12 @@
 import { SEASONS } from "../../core/config.js";
 import { TYPE } from "../../core/types.js";
 import { state } from "../../core/state.js";
-import { getEntitiesOfType } from "../../world/entities.js";
 import { getTradePartners,MARKET_RESOURCES } from "../../systems/market.js";
+import { getWorkforceSnapshot } from "../../systems/economy.js";
+import { EVENT_CHAINS } from "../../systems/event-chains.js";
+import { getHousingSnapshot,getHouseholdSnapshot } from "../../systems/population.js";
+import { getPoliticalSnapshot } from "../../systems/politics.js";
+import { getHealthSnapshot } from "../../systems/health.js";
 
 let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
@@ -31,7 +35,9 @@ const GROUP_SPRITES={
  infrastructure:"icon-bridge",medicine:"icon-herb",diplomacy:"icon-dove",culture:"icon-lyre",engineering:"icon-gear",
  fishing:"icon-fish",alchemy:"icon-flask",cuisine:"icon-bowl",textiles:"icon-spool",architecture:"icon-arch",
  finance:"icon-coins",communication:"icon-raven",music:"icon-lyre",warfare:"icon-sword",politics:"icon-scroll",
- monsters:"icon-dragon",seasons:"icon-sun"
+ monsters:"icon-dragon",seasons:"icon-sun",weather:"icon-weather",underworld:"icon-underworld",
+ spirits:"icon-spirit",relics:"icon-relic",botany:"icon-botany",geology:"icon-geology",
+ administration:"icon-admin",frontier:"icon-frontier",urbanism:"icon-urban",scholarship:"icon-scholar"
 };
 function renderHand(){
  const container=document.getElementById("card-hand");if(!container)return;
@@ -40,7 +46,7 @@ function renderHand(){
  lastHandSignature=signature;
  container.innerHTML=state.hand.map(card=>{
   const sprite=GROUP_SPRITES[card.group]||"icon-scroll";
-  return '<button type="button" class="hand-card rarity-'+esc(card.rarity||"common")+(card.instanceId===state.selectedCardInstanceId?" is-selected":"")+'" data-card-id="'+esc(card.instanceId)+'" aria-label="Select '+esc(card.name)+'">'+
+  return '<button type="button" class="hand-card rarity-'+esc(card.rarity||"common")+(card.instanceId===state.selectedCardInstanceId?" is-selected":"")+'" data-card-group="'+esc(card.group||"general")+'" data-card-id="'+esc(card.instanceId)+'" title="'+esc(card.desc||card.name)+'" aria-label="Select '+esc(card.name)+': '+esc(card.desc||"")+'">'+
    '<span class="hand-card-banner"><svg class="hand-card-sprite" aria-hidden="true"><use href="assets/realm-sprites.svg#'+sprite+'"></use></svg><span>'+esc(card.icon)+'</span></span>'+
    '<span class="hand-card-name">'+esc(card.name)+'</span><span class="hand-card-category">'+esc(card.categoryName||card.group||card.kind||"CARD")+'</span>'+
    '<span class="hand-card-rarity">'+esc(card.rarity||"common")+'</span></button>';
@@ -52,6 +58,9 @@ function tabSignature(){
     if(state.selectedTab===0)return "events:"+state.eventLog.slice(0,40).map(e=>e.id).join(",");
     if(state.selectedTab===1)return ["stats",state.tick,state.entities.length,state.totalRaidsSurvived,state.statistics.totalTrades,
         state.statistics.totalBuildingsBuilt,state.statistics.totalUnitsRecruited,Math.floor(state.morale),
+        state.economy?.daysElapsed,state.economy?.foodConsumed,state.economy?.taxesCollected,state.economy?.wagesPaid,state.economy?.upkeepPaid,
+        state.health?.cases,state.health?.recovered,state.health?.outbreakActive,
+        JSON.stringify(state.hiddenRealm?.activeThreads||[]),state.hiddenRealm?.completedThreads?.length,
         ...Object.values(state.resources)].join("|");
     return "trade:"+state.tick+":"+JSON.stringify(state.market?.prices||{})+":"+
         (state.market?.partners||[]).map(p=>p.id+":"+JSON.stringify(p.stock)+":"+p.treasury).join("|");
@@ -69,9 +78,14 @@ function renderEvents(container){
 function renderStatistics(container){
     const buildings=state.entities.filter(e=>!e.dead&&e.isBuilding()).length;
     const military=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER].includes(e.type)).length;
+    const workforce=getWorkforceSnapshot(),housing=getHousingSnapshot(),households=getHouseholdSnapshot(),economy=state.economy||{},politics=getPoliticalSnapshot(),health=getHealthSnapshot();
     const stats=[
-        ["POPULATION",getEntitiesOfType(TYPE.VILLAGER).length],["BUILDINGS",buildings],
-        ["MILITARY",military],["MORALE",Math.floor(state.morale)],
+        ["POPULATION",workforce.population],["EMPLOYED",workforce.employed],
+        ["UNEMPLOYED",workforce.unemployed],["HOUSING",housing.population+" / "+housing.capacity],
+        ["NATURAL GROWTH",Math.max(0,Number(economy.populationGrowth)||0)],
+        ["HOUSEHOLDS",households.households],["UNHOUSED",households.unhoused],
+        ["VACANT HOMES",housing.available],["BUILDINGS",buildings],
+        ["MILITARY",military],["SICK RESIDENTS",health.sick],["HEALTH STATUS",health.active?"OUTBREAK · "+health.severity:"STABLE"],["RECOVERED",health.recovered],["MORALE",Math.floor(state.morale)],
         ["RAIDS SURVIVED",state.totalRaidsSurvived],["TRADES",state.statistics.totalTrades],
         ["BUILDINGS BUILT",state.statistics.totalBuildingsBuilt],["UNITS RECRUITED",state.statistics.totalUnitsRecruited],
         ["ISSUES RESOLVED",state.statistics.totalEventsResolved]
@@ -80,8 +94,30 @@ function renderStatistics(container){
     const resources=["wood","stone","gold","food"].map(key=>
         '<div class="stat-cell"><div class="stat-label">'+key.toUpperCase()+'</div><div class="stat-value">'+Math.floor(state.resources[key]||0).toLocaleString("en-US")+'</div></div>'
     ).join("");
+    const ledger=economy.lastLedger||{},production=economy.productionChains||{};
+    const economyCells=[
+        ["DAYS SIMULATED",economy.daysElapsed||0],
+        ["FOOD CONSUMED",Number(ledger.foodConsumed||0).toFixed(1)],
+        ["TAXES COLLECTED",Number(ledger.taxesCollected||0).toFixed(2)+" gold"],
+        ["WAGES PAID",Number(ledger.wagesPaid||0).toFixed(2)+" gold"],
+        ["BUILDING UPKEEP",Number(ledger.upkeepPaid||0).toFixed(2)+" gold"],
+        ["UNPAID COSTS",(Number(ledger.unpaidWages||0)+Number(ledger.unpaidUpkeep||0)).toFixed(2)+" gold"],
+        ["MILL TIMBER USED",Number(production.millWoodConsumed||0).toFixed(1)+" wood"],
+        ["MILL BONUS FOOD",Number(production.millBonusFood||0).toFixed(1)+" food"],
+        ["TAVERN PROVISIONS",Number(production.tavernFoodConsumed||0).toFixed(1)+" food"],
+        ["TAVERN GOLD EARNED",Number(production.tavernGoldProduced||0).toFixed(1)+" gold"]
+    ].map(([label,value])=>'<div class="stat-cell"><div class="stat-label">'+label+'</div><div class="stat-value">'+esc(value)+'</div></div>').join("");
+    const politicalRows=[["ROYAL LEGITIMACY",politics.legitimacy],["COMMONERS",politics.factions.commons],["NOBILITY",politics.factions.nobility],["GUILDS",politics.factions.guilds],["CLERGY",politics.factions.clergy]];
+    const politicalMarkup='<div class="stat-heading" style="margin-top:14px">THE ROYAL COUNCIL</div><div class="stat-grid">'+politicalRows.map(([label,value])=>'<div class="stat-cell political-stat"><div class="stat-label">'+label+'</div><div class="stat-value">'+Number(value).toFixed(0)+'%</div><div class="faction-meter"><i style="width:'+Math.max(0,Math.min(100,Number(value)))+'%"></i></div></div>').join("")+'</div>';
+    const activeThreads=state.hiddenRealm?.activeThreads||[];
+    const chronicles=activeThreads.length?activeThreads.map(thread=>{
+        const stages=EVENT_CHAINS[thread.id]||[],stage=stages[thread.stage];
+        return '<div class="stat-cell"><div class="stat-label">'+esc(thread.id.toUpperCase())+' · '+(thread.stage+1)+' / '+stages.length+'</div><div class="stat-value">'+esc(stage?.title||"Unrecorded chronicle")+'</div></div>';
+    }).join(""):'<div class="empty-state">No long-running stories are unfolding. The realm is quiet — for now.</div>';
     container.innerHTML='<div class="stat-heading">KINGDOM OVERVIEW</div><div class="stat-grid">'+cells+'</div>'+
-        '<div class="stat-heading" style="margin-top:14px">ROYAL STORES</div><div class="stat-grid">'+resources+'</div>';
+        '<div class="stat-heading" style="margin-top:14px">ROYAL STORES</div><div class="stat-grid">'+resources+'</div>'+
+        '<div class="stat-heading" style="margin-top:14px">THE ROYAL LEDGER</div><div class="stat-grid">'+economyCells+'</div>'+
+        politicalMarkup+'<div class="stat-heading" style="margin-top:14px">THE CHRONICLES</div><div class="stat-grid">'+chronicles+'</div>';
 }
 
 function renderTrade(container){
@@ -151,8 +187,8 @@ export function renderUI(){
     setText("season",SEASONS[state.seasonIndex]||SEASONS[0]);setText("year","YEAR "+state.year);
     setText("tick-count",state.tick.toLocaleString("en-US"));setText("kingdom-name","THE REALM OF "+state.kingdomName);
     setText("player-name",state.playerName||"GUEST");
-    const population=getEntitiesOfType(TYPE.VILLAGER).length,houses=getEntitiesOfType(TYPE.HOUSE).length;
-    const pop=document.getElementById("population");if(pop)pop.innerHTML="POP <strong>"+population+"</strong> / "+(houses*4);
+    const housing=getHousingSnapshot();
+    const pop=document.getElementById("population");if(pop)pop.innerHTML="POP <strong>"+housing.population+"</strong> / "+housing.capacity+" · "+housing.available+" FREE";
     const card=state.currentCard,cardPanel=document.getElementById("card-container");
     if(card){
         setText("card-icon",card.icon);setText("card-name",card.name);setText("card-desc",card.desc);

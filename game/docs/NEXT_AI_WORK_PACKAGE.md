@@ -1,68 +1,134 @@
 # Next AI work package — Kings & Cards
 
-This is a handoff brief for a separate AI session or contributor. It is intentionally written so work can be resumed without assuming that the next model has the full chat history.
+This is a handoff brief for another contributor or AI session. It is written to be usable without the full conversation history. It describes the current development work, not permission to merge or deploy.
 
-## Repository rules
+## Repository and safety rules
 
 - Repository: `Dulle1846/ulmweb`
-- Working branch: `ulmweb-branch`
-- Current reviewed base: `496e7a0ed484d3527b6aaec6954a19fa7fad9cda` (verify the live branch head before editing).
+- Current development branch: `kac-2.1-stability-performance`
+- Production branch: `ulmweb-branch`
+- Current work is tracked in Draft PR #6: https://github.com/Dulle1846/ulmweb/pull/6
 - Game root: `game/`
-- UI language and all player-facing game text: English.
-- Conversation and explanations to the user: German.
-- Keep saves browser-local. The user explicitly accepted that; do not add a fake cloud-save/account layer.
-- Do not replace the existing card hand with map-generation cards. World generation remains procedural and is controlled by seed + four world-forge sliders.
-- Do not claim that 400,000 cards or 25,920 events are individually hand-authored. Those are generated combination spaces.
-- Preserve existing systems and save compatibility. Work in small commits, run `cd game && npm test`, inspect GitHub Actions, and browser-test UI/save/event changes.
+- Player-facing game text: English. Conversation and explanations to the user: German.
+- Do not merge PR #6 or deploy to production without explicit user approval.
+- Cloudflare Pages is the intended production host. Do not use Vercel builds, previews or deployments.
+- The Vercel GitHub App access was not removed because GitHub required a fresh sudo-mode confirmation. Do not attempt to bypass this. The user can re-authenticate and remove only the repository's Vercel app access.
+- Keep saves browser-local. Do not invent a cloud account or cloud-save layer.
+- World generation remains procedural and controlled by the seed and world-forge settings. Do not replace the player's existing card hand with world-generation cards.
+- Make small, coherent commits. Run `cd game && npm test`, inspect GitHub Actions and browser-test affected interactions.
+- Distinguish hand-authored content from generated combinations. Variant counts are not counts of individually authored cards or quests.
 
-## Current implemented baseline
+## Current implemented foundations on the development branch
 
-- Parchment / illuminated-manuscript UI with oxblood, vellum, timber and brass palette.
-- 36 reusable SVG symbols in `game/assets/realm-sprites.svg`.
-- Four world-forge sliders (landmass, ruggedness, forests, water).
-- Seeded procedural terrain, exploration and zoom bands.
-- Hand starts empty; delayed randomized draws up to five; play/discard schedules replacement.
-- 400 card categories, on-demand scale/rarity/context variants (400,000 theoretical combinations). There are 23 curated initial prototypes and generic archetypes for most categories.
-- 24 event families, 25,920 generated narrative combinations, two choices each, resource/morale consequences and hidden tension/prosperity/mystery pressures.
-- Four-resource economy and four regional market partners.
-- Local profiles/saves; hand, deck, draw timer, forge settings, hidden issue state and world seed are serialized.
-- Performance safeguards: render cache, terrain LOD, fog-image cache, building occupancy index, combat spatial buckets, workplace grouping, entity/particle caps and frame fail-stop.
-- Latest verification at base commit: 53 tests pass; syntax/import/DOM/asset validator passes; live browser integration confirmed hand timing, save/load, discard/replacement and issue resolution.
+- Parchment / illuminated-manuscript UI, four zoom bands, procedural terrain, exploration and world-forge controls.
+- Hand-based cards: empty starting hand, delayed randomized draw, hand limit five, placement preview and validated placement.
+- Card catalogue: 50 thematic groups × 10 categories = 500 categories; 10 scales × 10 rarities × 10 contexts = 500,000 possible on-demand variants. These are not 500,000 hand-authored cards.
+- Event generator: 30 families × 10 places × 10 scene openings × 10 details × 5 text variants = 150,000 generated combinations. These are not individually authored quests.
+- Eleven hand-authored three-stage chronicle arcs: migration, crime, ruins, diplomacy, plague, rebellion, guild, succession, shortage, flood and fire.
+- Event choices can change resources, morale, long-term realm pressures, politics and future card rewards. Chronicles persist in local saves.
+- Four-resource economy, workforce capacities, household food demand, taxes, wages, upkeep, unpaid obligations and production-chain accounting.
+- Regional trade partners, inventory scarcity and price pressure.
+- Housing capacity, households of up to four residents, annual population growth and annual ageing.
+- Political state with legitimacy and commoners, nobility, guilds and clergy.
+- Public-health slice: household-level illness transmission, recovery timers, temporary workforce loss, treatment/containment choices, morale effects and saved health state. Mortality, sanitation infrastructure, immunity and a full medicine economy are not implemented yet.
+- A* fallback pathfinding with route caching, rendering and presentation-effect caps, entity caps and performance safeguards.
+- Browser-local profiles and saves with migration/default handling.
 
-## Best next substantive project: deep society simulation
+## Current development slice: public health
 
-Implement this as a modular simulation system, not one huge rewrite. Recommended first phase:
+The first public-health implementation lives in `game/js/systems/health.js`.
 
-1. **Persistent character identity:** stable IDs, name, age/life stage, occupation, household membership and a small set of bounded traits (e.g. diligence, sociability, courage, piety, ambition). Do not store only array positions as identity.
-2. **Relationships:** family, friendship, rivalry and mentorship links with bounded values and update cadence. Avoid O(n²) all-pairs updates; use household/neighbourhood candidates and infrequent social ticks.
-3. **Needs and motives:** food, shelter, safety, belonging and ambition. Let needs influence routine choice and movement targets.
-4. **Households and succession:** connect people to homes, partners and children; model births, ageing, migration and death with conservative probabilities and save/load support.
-5. **Factions and local power:** guild, faith, noble household, military and commoners as possible affiliations. Track influence and grievances in compact faction state, not an unbounded per-frame simulation.
-6. **Emergent narrative hooks:** event family weights and event text should draw from actual character IDs, households, factions, prior choices and locations. A character can recur in later issues; resolved events should leave persistent consequences.
-7. **Deterministic debugging:** introduce explicit seeded RNG streams (world, simulation, events, cards) and serialize their state. Do not try to make unrelated changes reshuffle all existing random outcomes.
+It is connected to:
+- `simulation/simulation.js` for periodic updates.
+- `systems/events.js` for illness/plague issue decisions.
+- `systems/economy.js` so sick residents do not count as available workers.
+- `app/main.js` for save/restore of illness and public-health state.
+- `presentation/rendering/ui.js` for population health statistics.
+- `systems/population.js` and `systems/cards.js` for household assignment consistency.
 
-## Separate content task: authored cards and issues
+Tests are in `game/tests/health.test.js`. Check the latest GitHub Actions runs for the exact current branch head before assuming the work is verified.
 
-- Expand the 23 curated card prototypes into a larger hand-authored set with category-specific effects, balanced costs, clear descriptions and appropriate SVG symbols.
-- Give categories real gameplay roles; avoid mapping every industry group to the same farm or every monster to a deer.
-- Add unique issue families, chains and callbacks. Keep generated text grammatically coherent and avoid pretending a combinatorial sentence generator is a bespoke quest library.
-- Test each new effect and every choice branch, including unaffordable paths and entity-cap cases.
+Important limitations:
+- Disease spread is household-scoped and interval-based, not a medical epidemiology model.
+- Recovery is timer-based; there is no mortality yet.
+- Care buildings currently use the existing temple building type as a coarse protective proxy.
+- The illness model does not yet include sanitation, clean water, immunity, named physicians or medicine production.
+- Health and event systems still use the existing global state conventions; avoid adding circular imports.
 
-## Separate presentation task: richer art
+## Core next project: deepen the simulation
 
-- Add distinct, readable vector card illustrations and ornamental frames by category group, keeping consistent line weight and medieval manuscript style.
-- Keep the actual card name, category, rarity and cost readable at common desktop and mobile widths.
-- Test external SVG symbol references in the live browser and retain fallbacks.
+Read `game/docs/SIMULATION_DESIGN_AND_STORY_ENGINE.md` first. It defines the intended breadth, causal links, story lifecycle, card roles, performance cadence and implementation phases.
 
-## Performance acceptance criteria
+Recommended next slices:
+1. Stable person IDs and versioned save migration.
+2. Seeded random streams for world, simulation, cards and events.
+3. Household needs and quality-of-life indicators.
+4. Family links, life stages and a limited set of persistent named characters.
+5. Relationship/faction interactions with bounded update cadence.
+6. Soil, harvest variability, food storage and spoilage.
+7. A small complete production chain (grain → flour → bread).
+8. Condition-based issue hooks and a bounded story queue.
+9. Roads, transport capacity and trade-route disruptions.
+10. Sanitation, infirmaries, treatment and health-policy cards.
 
-- Profile real browser frame time at 50, 200 and near-cap mobile/entity populations.
-- Include a global-zoom test, since fog and terrain draw costs are easy to overlook there.
-- Keep movement/combat complexity bounded; do not add per-frame scans of every character for every other character.
-- Preserve caps and cache invalidation on entity placement/removal, world regeneration and save/load.
-- Verify no repeated animation-frame loop remains after a runtime fault.
-- Report measured results and test hardware; do not promise universal FPS.
+Do not attempt to implement all of these in one commit. Each vertical slice needs tests, save compatibility, UI feedback, performance checks and explicit acceptance criteria.
+
+## Architecture and performance rules
+
+- Keep the game a modular monolith; do not introduce services or a third-party plugin runtime prematurely.
+- Domain/simulation modules must not import presentation modules or manipulate DOM/Canvas.
+- Avoid circular imports. The composition root is the place to wire modules.
+- Use stable IDs, validated DTOs and bounded state. Do not use array positions as long-lived identities.
+- Do not perform all-pairs relationship checks every tick. Group by household, workplace, neighbourhood or region.
+- Use explicit simulation intervals; avoid expensive scans every animation frame.
+- Keep event logs, memories, active chronicles, pending effects and queues bounded.
+- Profile before introducing Web Workers, spatial indexes or additional caching.
+- Treat CI benchmark values as runner-specific measurements, not device FPS guarantees.
+
+## Agent handoff protocol
+
+If another AI or human contributor is used:
+1. Give them this file and `SIMULATION_DESIGN_AND_STORY_ENGINE.md`.
+2. Ask them to work only on a named feature slice and a separate branch or patch.
+3. Require a file list, design assumptions, tests, known limitations and exact commit/patch.
+4. Do not let an external agent merge, deploy or modify the production branch.
+5. Review and run all changes on the current development branch before integration.
 
 ## Deliverable standard
 
-Before proposing a feature, inspect the current branch and files. Then implement the smallest cohesive slice, write tests, run all checks, inspect the CI logs, and browser-test the relevant interaction. Commit on `ulmweb-branch` only after verification. Keep a short changelog of what was actually completed, what is simulated/approximated, and what still needs art, content or manual interaction testing.
+Before editing, inspect the live branch and relevant files. Implement the smallest coherent slice, add unit and integration tests, run the full test suite, inspect the CI logs, and browser-test relevant interactions. Report exactly what is implemented, what is approximated, what remains open, and the exact tested commit. Never claim work or tests that have not happened.
+
+
+## Phase 2.2 — deterministic identity foundation
+
+Current incremental branch: `kac-2.2-seeded-simulation`; draft PR #7 targets the 2.1 development branch, not production.
+
+Implemented in this slice:
+- Named deterministic RNG streams and saved stream counters.
+- Stable seed-scoped entity IDs and resident/king person IDs.
+- Legacy save migration for missing IDs and random-stream counters.
+- Tests for RNG replay, stream isolation, save restoration and entity identity.
+
+The current CI must be checked on the exact latest PR head before treating the slice as verified. Do not merge or deploy. Cloudflare Pages remains production; do not use Vercel.
+
+
+## Current implementation status (2026-11-05)
+
+Branch: `kac-2.2-seeded-simulation`; draft PR #7 against `kac-2.1-stability-performance`.
+
+Implemented and CI-verified on the previous code head:
+- Named deterministic RNG streams with local save/restore.
+- Stable entity IDs and person IDs.
+- Persistent person profiles for villagers and the king: name, fantasy species, life stage, traits, needs, goal, memories and relationship collection.
+- Legacy-save normalization for missing person data and RNG counters.
+- Tests for RNG replay/isolation, ID allocation, person profile normalization and bounded memories.
+
+Next tasks for an independent agent:
+1. Connect `addPersonMemory` to consequential events with participant/observer relevance, avoiding a memory for every trivial tick.
+2. Implement relationships with stable target person IDs, relationship type, strength, trust, history and bounded updates.
+3. Implement households/families, kinship, birth/death and succession as data-driven systems; never infer family solely from same-household membership.
+4. Add a character inspection panel with biography, needs, traits, memories and relationships; preserve the comic-medieval UI direction.
+5. Add deterministic tests for save/load, multi-year aging, memory relevance, relationship decay and bounded storage.
+6. Profile population scaling before increasing resident counts; maintain the hybrid detail model and explicit entity/memory caps.
+
+Do not claim autonomous character behavior until goals are evaluated against world state and actors can select/execute actions. Do not merge or deploy this draft. Cloudflare Pages is the production host; do not use Vercel.

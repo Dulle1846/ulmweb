@@ -12,8 +12,9 @@ import { updateMinimap } from "../presentation/rendering/minimap.js";
 import { flushPresentationEffects } from "../presentation/effects.js";
 
 let loopStarted=false;
+let lastRenderTimestamp=0;
 function resetFrameClock(){
- state.lastFrameTime=0;state.tickAccumulator=0;state.movementAccumulator=0;
+ state.lastFrameTime=0;lastRenderTimestamp=0;state.tickAccumulator=0;state.movementAccumulator=0;
  state.lastMinimapRender=0;state.lastUiRender=0;
 }
 export function startGameLoop(){
@@ -65,13 +66,18 @@ function gameLoop(timestamp){
    }
    flushPresentationEffects();
    if(timestamp-state.lastMinimapRender>=400){updateMinimap();state.lastMinimapRender=timestamp;}
-   const {ctx,canvas}=state;
-   if(ctx&&canvas){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle="#0a120a";ctx.fillRect(0,0,canvas.width,canvas.height);
-    drawWorld();
-    if(timestamp-state.lastUiRender>=160){renderUI();state.lastUiRender=timestamp;}
-    drawVignette();
+   // High-refresh displays can otherwise redraw the entire world 120–240 times per second.
+   // Simulation and camera updates remain frame-driven; expensive canvas work is capped at 60 FPS.
+   if(timestamp-lastRenderTimestamp>=1000/60){
+    const {ctx,canvas}=state;
+    if(ctx&&canvas){
+     ctx.clearRect(0,0,canvas.width,canvas.height);
+     ctx.fillStyle="#0a120a";ctx.fillRect(0,0,canvas.width,canvas.height);
+     drawWorld();
+     if(timestamp-state.lastUiRender>=160){renderUI();state.lastUiRender=timestamp;}
+     drawVignette();
+    }
+    lastRenderTimestamp=timestamp;
    }
   }
  }catch(error){

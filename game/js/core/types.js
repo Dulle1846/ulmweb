@@ -1,3 +1,5 @@
+import {random} from "./random.js";
+
 // ═══════════════════════════════════════════════════════════════
 //  TYPES — Enums, Hilfsfunktionen, Entity-Klasse
 // ═══════════════════════════════════════════════════════════════
@@ -101,8 +103,8 @@ export class Entity {
         this.age = 0;
 
         // ── Animation ────────────────────────────────────────
-        this.anim = Math.random() * 100;
-        this.facing = Math.random() > 0.5 ? 1 : -1;
+        this.anim = random("entity") * 100;
+        this.facing = random("entity") > 0.5 ? 1 : -1;
         this.visualState = "idle";   // idle | walk | work | flee
 
         // ── Position & Bewegung ──────────────────────────────
@@ -115,7 +117,7 @@ export class Entity {
 
         // ── Routinen-System ──────────────────────────────────
         this.routinePhase = 0;
-        this.routineTimer = Math.floor(Math.random() * 60) + 20;
+        this.routineTimer = Math.floor(random("entity") * 60) + 20;
         this.movePause = 0;
 
         // ── Job ──────────────────────────────────────────────
@@ -126,7 +128,7 @@ export class Entity {
         // ── Sonstiges ────────────────────────────────────────
         this.isKing = false;
         this.moraleMod = 0;
-        this.tint = Math.floor(Math.random() * 4);
+        this.tint = Math.floor(random("entity") * 4);
     }
 
     isBuilding() {
