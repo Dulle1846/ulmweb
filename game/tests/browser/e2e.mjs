@@ -69,8 +69,7 @@ try{
     if(await relatedLink.count()){
         const relatedName=await relatedLink.locator("strong").innerText();
         await relatedLink.click();
-        assert.notEqual((await page.locator("#person-dossier .dossier-identity h2").innerText()).trim(), "", "relationship navigation must open a recorded person");
-        assert.ok((await page.locator("#person-dossier .dossier-identity h2").innerText()).trim().length>0);
+        assert.equal((await page.locator("#person-dossier .dossier-identity h2").innerText()).trim(), relatedName.trim(), "relationship navigation must open the exact linked person");
     }
     await page.locator("#people-close").click();
     await page.locator('[data-kac-dock-action="save"]').click();
