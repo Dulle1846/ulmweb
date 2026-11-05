@@ -263,9 +263,17 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - This is Pages evidence. The separate Workers build check is not used as deployment evidence for the game.
 
 
+## Phase 5 — selected-card visibility above the mobile action dock
+
+- Visual/browser geometry exposed a 37px overlap between the side-panel lower edge and the bottom action dock at 390×844.
+- Added 44px of mobile-only bottom scroll clearance so the selected card can be brought fully above the dock.
+- Chromium now checks the actual visible boundary (minimum of side-panel bottom and action-dock top) at 390×844 and 768×1024. It requires scrolling only when the card is initially obscured; if the tablet layout already shows it, no artificial scroll is demanded.
+- Captures scrolled-state screenshots for review and restores the original scroll position.
+
+
 ## Phase 2 — dedicated sovereign dossier increment (3.7.0-dev)
 
-- Added a royal-house section to the current sovereign's existing dossier, reading the live consort, designated heir, living children and recorded royal-house history from `getRoyalHouse()`.
+- Added a royal-house section to the current sovereign's dossier, reading the live consort, designated heir, living children and recorded royal-house history from `getRoyalHouse()`.
 - Royal-family entries use the existing person dossier navigation bridge and canonical person IDs.
 - Former sovereign memorials are labeled separately and do not display the living monarch's succession state.
 - Royal-house history rendering is bounded to the latest eight records; the simulation's own history remains capped at 48.
