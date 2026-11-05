@@ -188,6 +188,7 @@ export function setupInput(){
     });
 
     document.getElementById("pause-btn")?.addEventListener("click",togglePause);
+    document.getElementById("speed-0-5")?.addEventListener("click",()=>setSpeed(0.5));
     document.getElementById("speed-1")?.addEventListener("click",()=>setSpeed(1));
     document.getElementById("speed-2")?.addEventListener("click",()=>setSpeed(2));
     document.getElementById("speed-4")?.addEventListener("click",()=>setSpeed(4));
