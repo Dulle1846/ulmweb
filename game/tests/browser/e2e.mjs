@@ -194,7 +194,7 @@ try{
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
     // The memorial archive must survive the same save/load round trip.
     await page.locator("#people-btn").click();
-    await page.locator("#people-search").fill(memorialName);
+    await page.locator("#people-search").fill(memorialId);
     assert.equal(await page.locator("#people-list .person-list-item").count(),1);
     await page.locator("#people-list .person-list-item").first().click();
     assert.ok((await page.locator("#person-dossier").innerText()).includes("DECEASED"));
