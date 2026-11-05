@@ -43,7 +43,7 @@ Visible left-rail actions:
 - Build → existing road/build interface.
 - Options → existing settings dialog.
 
-The kingdom overview intentionally omits capital and territory because authoritative data is not currently exposed; it does not fabricate those values.
+The kingdom overview intentionally omits capital and territory because authoritative data is not currently exposed; it does not fabricate those values. Before a campaign starts, the overview displays an awaiting-founding state and the resource strip uses neutral placeholders instead of implying that starting values are live.
 
 Top status resource chips mirror the simulation's wood, stone, gold, food and population values. Clicking resource chips opens the real economy screen; clicking population opens real character dossiers. They do not invent a resource-detail view.
 
