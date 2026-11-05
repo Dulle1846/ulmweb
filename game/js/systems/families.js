@@ -99,7 +99,8 @@ export function setPartnership(firstId, secondId, { status = "partner", sinceYea
 
     const firstKin = ensureKinship(first), secondKin = ensureKinship(second);
     const year = Number.isSafeInteger(Number(sinceYear)) ? Math.max(1, Math.min(1000000, Number(sinceYear))) : Math.max(1, Number(state.year) || 1);
-    const end = endedYear == null ? null : Math.max(year, Math.min(1000000, Math.floor(Number(endedYear) || year)));
+    const rawEnd = Number(endedYear);
+    const end = endedYear == null ? null : Math.max(year, Math.min(1000000, Number.isFinite(rawEnd) ? Math.floor(rawEnd) : year));
     const entryA = { personId: bId, status, sinceYear: year, endedYear: end };
     const entryB = { personId: aId, status, sinceYear: year, endedYear: end };
     const added = upsertLink(firstKin.partners, entryA);
@@ -206,5 +207,5 @@ export function normalizeFamilyLinks() {
             upsertLink(ensureKinship(partner).partners, { personId: personIdOf(entity), status: partnerLink.status, sinceYear: partnerLink.sinceYear, endedYear: partnerLink.endedYear });
         }
     }
-    return { repaired };
+    return { normalized: repaired };
 }
