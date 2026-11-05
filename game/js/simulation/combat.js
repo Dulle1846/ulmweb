@@ -3,6 +3,7 @@ import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { queueParticle,queueFloater,queueMessage } from "../core/presentation-effects.js";
 import { rand as seededRand } from "../core/random.js";
+import { recordCreatureDeath,recordCreatureMemory } from "../systems/creatures.js";
 const rand=(min,max)=>seededRand(min,max,"combat");
 
 const CELL=8;
@@ -34,7 +35,7 @@ function nearestFromBuckets(x,y,buckets,radius,accept=()=>true){
 export function updateCombat(){
  const enemies=state.entities.filter(e=>!e.dead&&e.isEnemy());
  if(!enemies.length)return;
- const defenders=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER,TYPE.TOWER].includes(e.type));
+ const defenders=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER,TYPE.TOWER,TYPE.DRAGON].includes(e.type));
  const enemyBuckets=indexEntities(enemies),defenderBuckets=indexEntities(defenders);
  const keep=state.entities.find(e=>!e.dead&&e.type===TYPE.KEEP)||null;
  const tick=state.tick;
@@ -50,6 +51,7 @@ export function updateCombat(){
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
    if(target.hp<=0){
     target.dead=true;
+    if(target.type===TYPE.DRAGON)recordCreatureDeath(target,"enemy attack");
     if(target.type===TYPE.KEEP){state.gameOver=true;queueMessage("THE REALM FELL","THE KEEP WAS DESTROYED",5000);}
    }
   }
@@ -60,8 +62,8 @@ export function updateCombat(){
   const enemy=nearestFromBuckets(defender.x,defender.y,enemyBuckets,7);
   if(!enemy)continue;
   if(tick%(defender.type===TYPE.ARCHER?22:14)!==0)continue;
-  enemy.hp-=defender.type===TYPE.KNIGHT?34:18;
+  enemy.hp-=defender.type===TYPE.DRAGON?58:defender.type===TYPE.KNIGHT?34:18;
   queueParticle(enemy.x*TILE_SIZE+12,enemy.y*TILE_SIZE-18,"#fde047",22,rand(-1,4),-3);
-  if(enemy.hp<=0){enemy.dead=true;queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE,"SLAIN","#eab308");}
+  if(enemy.hp<=0){enemy.dead=true;queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE,"SLAIN","#eab308");if(defender.type===TYPE.DRAGON)recordCreatureMemory(defender,"defense","I defended the settlement and defeated an attacking creature.");}
  }
 }
