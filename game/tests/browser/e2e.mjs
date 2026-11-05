@@ -557,13 +557,15 @@ try{
                 const visibleBottom=Math.min(panelRect.bottom,dock.top);
                 const visibleHeight=Math.max(0,visibleBottom-panelRect.top);
                 const maxScroll=Math.max(0,el.scrollHeight-el.clientHeight);
-                const targetScroll=Math.max(0,cardTopInScroll+cardRect.height-visibleHeight);
+                const initiallyReachable=cardRect.top>=panelRect.top-1&&cardRect.bottom<=visibleBottom+1;
+                const targetScroll=initiallyReachable?el.scrollTop:Math.max(0,cardTopInScroll+cardRect.height-visibleHeight);
                 el.scrollTop=Math.min(maxScroll,targetScroll);
                 const finalPanel=el.getBoundingClientRect();
                 const finalCard=card.getBoundingClientRect();
                 const result={
                     scrollTop:el.scrollTop,
                     scrollRange:maxScroll,
+                    initiallyReachable,
                     cardTop:finalCard.top,
                     cardBottom:finalCard.bottom,
                     panelTop:finalPanel.top,
@@ -574,7 +576,7 @@ try{
                 el.scrollTop=original;
                 return result;
             });
-            if(before.scrollRange>2)assert.ok(reachability.scrollTop>0,"mobile management column must use its available scroll range at "+width+"x"+height+": "+JSON.stringify(reachability));
+            if(!reachability.initiallyReachable&&before.scrollRange>2)assert.ok(reachability.scrollTop>0,"mobile management column must use its available scroll range when the selected card is initially obscured at "+width+"x"+height+": "+JSON.stringify(reachability));
             assert.ok(reachability.cardReachable,"selected card must be fully reachable without being covered by the action dock at "+width+"x"+height+": "+JSON.stringify(reachability));
             await panel.evaluate(el=>{
                 const card=el.querySelector("#card-container");
