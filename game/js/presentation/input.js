@@ -252,7 +252,7 @@ function showToast(message){
     window.clearTimeout(showToast.timer);showToast.timer=window.setTimeout(()=>el.classList.remove("is-visible"),1800);
 }
 function closeTopModal(){
-    for(const id of ["settings-modal","big-message"]){
+    for(const id of ["settings-modal","people-modal","big-message"]){
         const el=document.getElementById(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");return;}
     }
 }
