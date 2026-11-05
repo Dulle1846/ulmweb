@@ -40,7 +40,7 @@ function renderPolitics() {
         '<div class="management-faction"><div><strong>' + esc(name) + '</strong><b>' + Math.round(value) + '%</b></div><i><b style="width:' +
         Math.max(0, Math.min(100, value)) + '%"></b></i></div>'
     ).join("");
-    return '<section class="management-hero"><span>THE REALM&amp;#39;S BALANCE OF POWER</span><h3>Politics &amp; Factions</h3><p>Legitimacy ' +
+    return '<section class="management-hero"><span>THE REALM&#39;S BALANCE OF POWER</span><h3>Politics &amp; Factions</h3><p>Legitimacy ' +
         Math.round(politics.legitimacy) + '% · average faction support ' + Math.round(politics.averageSupport) +
         '% · recorded decisions ' + politics.settlements + '</p></section><div class="management-factions">' + rows +
         '</div><section class="management-decision"><div><strong>Hold a royal audience</strong><p>Spend ' +
