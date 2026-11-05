@@ -217,3 +217,11 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Added five original dragon SVG illustrations for the simulation's persisted hatchling, juvenile, adult, elder and ancient life stages.
 - Integrated stage-matched portraits into living dragon dossiers and memorial records.
 - Added static asset contracts and browser assertions. No creature simulation or save data changed.
+
+
+## Development line 3.7.0-dev — Phase 2 reusable control primitives
+
+- Added shared primary, secondary, tab and icon button variants with consistent focus, hover, pressed, selected, disabled and reduced-motion states.
+- Added reusable panel/header primitives and keyboard-accessible tooltip styling.
+- Applied the primitives to founding actions, modal close controls, management tabs, panels and the full-width action bar.
+- Added static and Chromium E2E contracts. Full legacy-control migration and a complete windowing API remain open.
