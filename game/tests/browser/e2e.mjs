@@ -540,10 +540,34 @@ try{
         if(width<=790){
             const panel=page.locator(".side-panel");
             const before=await panel.evaluate(el=>({clientHeight:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY}));
-            assert.ok(["auto","scroll"].includes(before.overflowY),"mobile management column must expose vertical scrolling at "+width+"x"+height+": "+JSON.stringify(before));
-            assert.ok(before.scrollHeight>before.clientHeight,"mobile management column must retain content beyond its viewport at "+width+"x"+height+": "+JSON.stringify(before));
-            await panel.evaluate(el=>{el.scrollTop=el.scrollHeight});
-            assert.ok(await panel.evaluate(el=>el.scrollTop>0),"mobile management column must be scrollable at "+width+"x"+height);
+            assert.ok(["auto","scroll"].includes(before.overflowY),"mobile management column must expose vertical scrolling when needed at "+width+"x"+height+": "+JSON.stringify(before));
+            const reachability=await panel.evaluate(el=>{
+                const card=el.querySelector("#card-container");
+                const originalTop=el.scrollTop;
+                const panelRect=el.getBoundingClientRect();
+                const cardRect=card.getBoundingClientRect();
+                const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+                const visibleBottom=Math.min(panelRect.bottom,dock.top);
+                const visibleHeight=Math.max(0,visibleBottom-panelRect.top);
+                const initiallyReachable=cardRect.top>=panelRect.top-1&&cardRect.bottom<=visibleBottom+1;
+                const cardTopInScroll=cardRect.top-panelRect.top+originalTop;
+                const scrollRange=Math.max(0,el.scrollHeight-el.clientHeight);
+                const target=initiallyReachable?originalTop:Math.max(0,cardTopInScroll+cardRect.height-visibleHeight);
+                el.scrollTop=Math.min(scrollRange,target);
+                const finalPanel=el.getBoundingClientRect();
+                const finalCard=card.getBoundingClientRect();
+                const finalDock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+                const finalVisibleBottom=Math.min(finalPanel.bottom,finalDock.top);
+                return {
+                    originalTop,scrollTop:el.scrollTop,scrollRange,initiallyReachable,
+                    cardTop:finalCard.top,cardBottom:finalCard.bottom,
+                    panelTop:finalPanel.top,visibleBottom:finalVisibleBottom,
+                    cardReachable:finalCard.top>=finalPanel.top-1&&finalCard.bottom<=finalVisibleBottom+1
+                };
+            });
+            if(!reachability.initiallyReachable)assert.ok(reachability.scrollRange>2&&reachability.scrollTop>0,"an obscured selected card must use the available side-panel scroll range at "+width+"x"+height+": "+JSON.stringify(reachability));
+            assert.ok(reachability.cardReachable,"selected card must be fully visible above the bottom action dock at "+width+"x"+height+": "+JSON.stringify(reachability));
+            await page.screenshot({path:resolve(screenshotDir,"sidepanel-card-reachable-"+width+"x"+height+".png"),animations:"disabled"});
             await panel.evaluate(el=>{el.scrollTop=0});
         }
         await page.locator("#command-open-btn").click();
