@@ -1,5 +1,6 @@
 {
   "name": "kings-and-cards",
+  "version": "3.4.0",
   "private": true,
   "type": "module",
   "scripts": {
