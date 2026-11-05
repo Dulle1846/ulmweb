@@ -267,3 +267,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 
 - Added contained vertical scrolling to the mobile management column so the card panel and lower tabs remain reachable on short screens.
 - Added Chromium regression checks for actual scroll range and scroll movement at 390×844 and 768×1024.
+
+
+## Development line 3.7.0-dev — Phase 2 dynasty relationship connectors
+
+- Replaced the flattened descendant generation grid with nested parent-child branches based only on recorded family links.
+- Added visible connectors and hard caps of four generations, 16 children per parent and 80 total nodes.
+- Added a deterministic heir fixture, static contracts and a Chromium assertion that the rendered branch matches the actual family snapshot.
