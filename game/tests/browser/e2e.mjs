@@ -52,6 +52,7 @@ try{
     assert.ok(await page.locator("#people-list .person-list-item").count() >= 1);
     await page.locator("#people-list .person-list-item").first().click();
     assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONALITY"));
+    assert.match(await page.locator("#person-dossier").innerText(), /\\b(female|male)\\b/);
     assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONAL CHRONICLE"));
     await page.locator("#people-search").fill("no-such-person-should-match");
     assert.equal(await page.locator("#people-list .person-list-item").count(),0);
