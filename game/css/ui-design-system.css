@@ -392,3 +392,9 @@ body.ui-modal-open{overflow:hidden}
 @media(max-width:480px){
  .side-panel{padding-bottom:44px;scroll-padding-bottom:44px}
 }
+
+
+/* Reserve scroll space for the mobile action dock, which overlaps the lower edge of the game viewport. */
+@media(max-width:480px){
+ .side-panel{padding-bottom:44px;scroll-padding-bottom:44px}
+}
