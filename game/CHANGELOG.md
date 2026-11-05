@@ -178,3 +178,13 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Added static UI contracts and Chromium E2E assertions for portrait assets, relationship navigation and building artwork.
 
 **Scope limit:** This is the first portrait/art integration slice. It does not complete the requested building, creature, card, heraldry or animation atlas. No simulation logic or save schema is changed.
+
+
+## Development line 3.7.0-dev — Master UI Phase 5 accessibility increment
+
+- Centralized dialog focus handling with topmost-modal tracking, Tab/Shift+Tab containment and focus restoration/fallback.
+- Added accessible dialog semantics and labels to the founding and settings screens.
+- Added modal scroll containment and narrow/short viewport overflow rules.
+- Added static modal-contract tests and Chromium E2E assertions for focus behavior.
+
+**Scope limit:** This is not a full accessibility certification. Screen-reader testing, keyboard audit of every control, color-contrast audit and the complete viewport matrix remain open.

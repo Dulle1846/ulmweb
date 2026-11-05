@@ -46,7 +46,7 @@
         </div>
     </header>
 
-    <main id="main-container" class="game-layout">
+    <main id="main-container" class="game-layout" tabindex="-1">
         <nav class="realm-nav" aria-label="Royal administration">
             <div class="realm-nav-heading">THE CROWN</div>
             <button class="realm-nav-button" type="button" data-kac-panel="kingdom" title="Kingdom overview">
@@ -163,13 +163,13 @@
     </main>
 </div>
 
-<div id="start-screen" class="screen-overlay">
+<div id="start-screen" class="screen-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title" aria-describedby="start-description">
     <div class="start-panel">
         <div class="start-emblem">♜</div>
         <div class="start-kicker">A LIVING REALM SIMULATOR</div>
         <img class="start-hero-art" src="assets/kingdom-illustration.svg" alt="Illustrated fantasy kingdom with castle, village, river, forest and windmill" loading="eager">
-        <h1>KINGS <span>&amp;</span> CARDS</h1>
-        <p class="start-lead">Build a settlement. Shape its fortunes. Discover what the cards bring.</p>
+        <h1 id="start-title">KINGS <span>&amp;</span> CARDS</h1>
+        <p id="start-description" class="start-lead">Build a settlement. Shape its fortunes. Discover what the cards bring.</p>
         <div class="start-form">
             <label for="player-name-input">PLAYER PROFILE</label>
             <input id="player-name-input" type="text" maxlength="32" placeholder="Enter your player name" autocomplete="nickname">
@@ -194,9 +194,9 @@
     </div>
 </div>
 
-<div id="settings-modal" class="screen-overlay hidden">
+<div id="settings-modal" class="screen-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
     <div class="modal-panel settings-panel">
-        <div class="modal-heading"><div><div class="start-kicker">REALM OPTIONS</div><h2>SETTINGS</h2></div><button id="settings-close" class="modal-close" type="button" aria-label="Close settings">×</button></div>
+        <div class="modal-heading"><div><div class="start-kicker">REALM OPTIONS</div><h2 id="settings-title">SETTINGS</h2></div><button id="settings-close" class="modal-close" type="button" aria-label="Close settings">×</button></div>
         <div class="setting-row"><div><strong>Original soundtrack</strong><small>One original instrumental theme, composed for a continuous loop.</small></div><label class="toggle"><input id="settings-music-toggle" type="checkbox" checked><span></span></label></div>
         <div class="setting-row volume-setting"><div><strong>Music volume</strong><small>Adjust the soundtrack level.</small></div><input id="settings-music-volume" type="range" min="0" max="100" value="22"></div>
         <div class="shortcut-list">
