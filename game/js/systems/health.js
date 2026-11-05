@@ -34,19 +34,22 @@ export function getHealthSnapshot(){
 }
 export function startOutbreak({severity=1,containment=0,disease="common-fever"}={}){
     const health=ensureHealth(),people=residents();
+    const alreadyActive=health.outbreakActive;
     health.outbreakActive=true;
     health.disease=String(disease).slice(0,48)||"common-fever";
     health.severity=Math.max(health.severity,clamp(severity,1,3));
     health.containment=Math.max(health.containment,clamp(containment,0,3));
-    if(!health.startedAtTick||!health.outbreaks)health.startedAtTick=state.tick;
-    health.outbreaks++;
-    if(people.length){
-        const patient=people.find(person=>(person.illnessUntilTick||0)<=state.tick)||people[0];
-        if((patient.illnessUntilTick||0)<=state.tick){
-            patient.illnessStartedTick=state.tick;
-            patient.illnessUntilTick=state.tick+80+health.severity*20;
-            patient.illnessSeverity=health.severity;
-            health.cases++;
+    if(!alreadyActive){
+        health.startedAtTick=state.tick;
+        health.outbreaks++;
+        if(people.length){
+            const patient=people.find(person=>(person.illnessUntilTick||0)<=state.tick)||people[0];
+            if((patient.illnessUntilTick||0)<=state.tick){
+                patient.illnessStartedTick=state.tick;
+                patient.illnessUntilTick=state.tick+80+health.severity*20;
+                patient.illnessSeverity=health.severity;
+                health.cases++;
+            }
         }
     }
     return getHealthSnapshot();
@@ -59,7 +62,7 @@ export function applyHealthEffects(effects={}){
         disease:effects.disease||"common-fever"
     });
     if(Number.isFinite(effects.treatment))health.severity=clamp(health.severity-effects.treatment,0,3);
-    if(Number.isFinite(effects.containment))health.containment=clamp(health.containment+effects.containment,0,3);
+    if(Number.isFinite(effects.containment)&&!effects.outbreak)health.containment=clamp(health.containment+effects.containment,0,3);
     return getHealthSnapshot();
 }
 export function updateHealth(){
