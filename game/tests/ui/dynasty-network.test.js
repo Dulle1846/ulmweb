@@ -60,3 +60,8 @@ test("partner and sibling connectors switch to vertical geometry when cards stac
   assert.ok(management.includes("x1=a.left-bounds.left+a.width/2;y1=a.bottom-bounds.top"));
   assert.ok(management.includes("x2=b.left-bounds.left+b.width/2;y2=b.top-bounds.top"));
 });
+
+test("connector curve handles short mobile gaps without control points overshooting the gap",()=>{
+  assert.ok(management.includes("Math.min(18,Math.max(3,Math.abs(y2-y1)*.42))"));
+  assert.ok(management.includes("Math.min(24,Math.max(4,Math.abs(x2-x1)*.32))"));
+});
