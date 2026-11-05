@@ -99,10 +99,10 @@ function buildings(){
   return '<span class="building-type-chip">'+esc(card?.name||("Building "+type))+' <strong>'+count+'</strong></span>';
  }).join("");
  const buildingSprite=(type)=>({
-  [TYPE.KEEP]:"watchtower",[TYPE.HOUSE]:"cottage",[TYPE.FARM]:"mill",[TYPE.LUMBER]:"woodcutter",
-  [TYPE.QUARRY]:"quarry",[TYPE.TOWER]:"watchtower",[TYPE.WALL]:"paved-road",[TYPE.TAVERN]:"market",
-  [TYPE.TEMPLE]:"well",[TYPE.BARRACKS]:"watchtower",[TYPE.MILL]:"mill",[TYPE.STABLE]:"cottage",
-  [TYPE.WONDER]:"watchtower",[TYPE.GOLDMINE]:"quarry",[TYPE.BARREL]:"warehouse"
+  [TYPE.KEEP]:"keep",[TYPE.HOUSE]:"cottage",[TYPE.FARM]:"farm",[TYPE.LUMBER]:"lumber-yard",
+  [TYPE.QUARRY]:"quarry",[TYPE.TOWER]:"watchtower",[TYPE.WALL]:"wall",[TYPE.TAVERN]:"tavern",
+  [TYPE.TEMPLE]:"temple",[TYPE.BARRACKS]:"barracks",[TYPE.MILL]:"windmill",[TYPE.STABLE]:"stable",
+  [TYPE.WONDER]:"wonder",[TYPE.GOLDMINE]:"goldmine",[TYPE.BARREL]:"storehouse"
  }[type]||"cottage");
  const rows=records.map((building,index)=>{
   const card=CARD_DECK.find(item=>item.type===building.type);
@@ -122,7 +122,7 @@ function buildings(){
    else if(building.type===TYPE.FARM)siteNote="Site fertility: "+number(node.fertility)+" / 100 · water access: "+(node.waterAccess?"yes":"no");
   }catch{}
   const detail=card?.desc||"No additional building description is recorded in the card catalogue.";
-  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+condition+'%</b><small>condition</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p><div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Site data<strong>'+esc(siteNote)+'</strong></span></div><p class="command-note">Per-building production output, storage and upkeep are not currently exposed by the simulation, so no values are fabricated here.</p></div></details>';
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+condition+'%</b><small>condition</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p><div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Site data<strong>'+esc(siteNote)+'</strong></span></div><p class="command-note">Per-building production output, storage and upkeep are not currently exposed by the simulation, so no values are fabricated here.</p></div></details>';
  }).join("");
  return intro("SETTLEMENT ARCHITECTURE","Building register","Inspect every surviving structure using its actual simulation entity, health, footprint, staffing and site data.")+
  '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+records.length+'</strong></div><div><small>BUILDING TYPES</small><strong>'+counts.size+'</strong></div><div><small>EMPLOYED</small><strong>'+number(workforce.employed)+'</strong></div><div><small>POPULATION</small><strong>'+number(workforce.population)+'</strong></div></div>'+
