@@ -246,7 +246,7 @@ export function setupInput(){
         const result=placeRoad(x,y,type);
         if(result.ok){
             const count=document.getElementById("road-count");
-            if(count)count.textContent=String(Number(count.textContent||0)+1);
+            if(count&&!result.upgraded)count.textContent=String(Number(count.textContent||0)+1);
             if(placementStatus)placementStatus.textContent=type.toUpperCase()+" ROAD PLACED · "+x+", "+y;
             renderUI();
         }else if(result.reason!=="Road already exists here"){
