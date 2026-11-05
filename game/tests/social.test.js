@@ -79,3 +79,18 @@ test("social work is capped even when one workplace contains many residents",()=
     assert.equal(result.interactions,MAX_SOCIAL_PAIRS_PER_YEAR);
     assert.ok(result.interactions<=120);
 });
+
+
+test("the yearly interaction cap prioritizes residents with the lowest belonging satisfaction",()=>{
+    resetState(); state.worldSeed=993; state.year=2;
+    const workplace={id:"priority-workshop",dead:false};
+    const residents=[];
+    for(let index=0;index<20;index++){
+        const resident=spawnEntity(60+index,60,TYPE.VILLAGER);
+        resident.workplace=workplace;
+        ensurePersonProfile(resident).needs.belonging=index===0?0:100;
+        residents.push(resident);
+    }
+    updateSocialLife();
+    assert.ok(residents[0].person.relationships.length>0);
+});
