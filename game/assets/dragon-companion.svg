@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+<title id="title">Young dragon companion</title>
+<desc id="desc">A friendly red and gold fantasy dragon in bold outlined comic game art.</desc>
+<defs>
+ <linearGradient id="body" x2="1" y2="1"><stop stop-color="#f58b52"/><stop offset=".55" stop-color="#c84b3d"/><stop offset="1" stop-color="#7e3040"/></linearGradient>
+ <linearGradient id="wing" x2="1" y2="1"><stop stop-color="#f6ca65"/><stop offset="1" stop-color="#d86b45"/></linearGradient>
+</defs>
+<ellipse cx="126" cy="224" rx="78" ry="13" fill="#302b28" opacity=".25"/>
+<g stroke="#402a26" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">
+ <path d="M92 103Q35 38 28 67Q50 88 48 128Q60 164 104 166Z" fill="url(#wing)"/>
+ <path d="M99 118Q57 79 40 78M93 137Q60 121 48 128M82 155L59 160" fill="none" stroke="#8d4737" stroke-width="5"/>
+ <path d="M161 102Q211 28 232 58Q210 82 213 126Q197 161 155 167Z" fill="url(#wing)"/>
+ <path d="M164 119Q203 77 220 70M169 140Q201 119 213 126M181 157L202 163" fill="none" stroke="#8d4737" stroke-width="5"/>
+ <path d="M75 155Q56 180 70 203L94 208L111 188L139 190L158 212L185 205Q198 180 174 151Q144 120 107 133Z" fill="url(#body)"/>
+ <path d="M93 188L85 226L111 227L126 194M157 188L170 225L194 222L181 184" fill="#a83d3d"/>
+ <path d="M102 207L96 229M180 207L186 229" fill="none" stroke="#f5d27a" stroke-width="8"/>
+ <path d="M130 139Q112 111 124 83Q138 56 171 72Q202 90 184 120Q173 145 148 151Z" fill="url(#body)"/>
+ <path d="M129 89L112 58L146 72M169 75L188 46L193 86" fill="#f5c45d"/>
+ <path d="M166 118Q195 111 212 126L204 145Q181 157 158 143Z" fill="#f1bd75"/>
+ <path d="M201 128L228 133L207 143" fill="#f1bd75"/>
+ <path d="M151 108Q160 100 170 108" fill="none" stroke="#402a26" stroke-width="6"/>
+ <ellipse cx="160" cy="108" rx="5" ry="7" fill="#f8e7b3" stroke="none"/>
+ <ellipse cx="162" cy="108" rx="2" ry="5" fill="#292522" stroke="none"/>
+ <path d="M187 139Q194 143 202 139" fill="none" stroke="#402a26" stroke-width="4"/>
+ <path d="M119 154Q136 166 153 156" fill="none" stroke="#f7d18a" stroke-width="6"/>
+ <path d="M74 167Q40 173 32 199Q52 192 72 202" fill="none" stroke="#c84b3d" stroke-width="12"/>
+</g>
+<g fill="#f8d36f" stroke="#402a26" stroke-width="4">
+ <path d="M111 84l-8-13 18 8z"/><path d="M181 88l13-14-3 21z"/>
+ <circle cx="128" cy="178" r="4"/><circle cx="145" cy="181" r="4"/><circle cx="162" cy="178" r="4"/>
+</g>
+<path d="M34 47Q43 27 62 38M207 28Q224 17 238 32" fill="none" stroke="#fff4ce" stroke-width="6" stroke-linecap="round"/>
+</svg>
