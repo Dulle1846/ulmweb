@@ -43,7 +43,13 @@ try{
     await page.locator("#world-seed-input").fill("20261104");
     await page.locator("#player-name-input").fill("CI-Browser-Check");
     await page.locator("#start-new-game-btn").click();
-    await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
+    try{
+        await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
+    }catch(error){
+        console.error("Startup page errors:",JSON.stringify(errors));
+        console.error("Startup console errors:",JSON.stringify(consoleErrors));
+        throw error;
+    }
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
     await page.locator("#speed-0-5").click();
     assert.ok(await page.locator("#speed-0-5").evaluate(el=>el.classList.contains("is-active")),"half-speed control must become active");
