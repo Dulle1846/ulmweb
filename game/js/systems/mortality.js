@@ -6,6 +6,7 @@ import {
     ensurePersonProfile, addPersonMemory, createPersonMemorial,
     PERSON_SPECIES, MAX_PERSON_ARCHIVE
 } from "./people.js";
+import { updateRoyalSuccession } from "./royal-household.js";
 
 export const MAX_NATURAL_DEATHS_PER_YEAR = 8;
 export const MORTALITY_START_LIFESPAN_RATIO = 0.72;
@@ -74,6 +75,7 @@ export function recordNaturalDeath(entity, cause = "old age") {
     entity.deathYear = deathYear;
     entity.deathCause = normalizedCause;
     entity.dead = true;
+    if(entity.isKing)updateRoyalSuccession();
     const economy = state.economy || (state.economy = {});
     economy.deaths = Math.max(0, Number(economy.deaths) || 0) + 1;
     return {
