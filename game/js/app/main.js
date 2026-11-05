@@ -19,6 +19,8 @@ import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
 import {ensurePersonProfile,normalizePersonProfile,normalizePersonMemorial,MAX_PERSON_ARCHIVE} from "../systems/people.js";
 import {setupCharacterDossier} from "../presentation/character-dossier.js";
 import {normalizeFamilyLinks} from "../systems/families.js";
+import {normalizeGovernment} from "../systems/government.js";
+import {normalizeRoyalState} from "../systems/royal-dynasty.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -103,7 +105,7 @@ function serializeEntity(entity,indexByEntity){
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
         routinePhase:entity.routinePhase,routineTimer:entity.routineTimer,movePause:entity.movePause,
         job:entity.job,jobRefreshTimer:entity.jobRefreshTimer,workplaceIndex:entity.workplace?indexByEntity.get(entity.workplace)??null:null,
-        isKing:entity.isKing,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
+        isKing:entity.isKing,isRoyalFamily:Boolean(entity.isRoyalFamily),moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
     };
 }
 
@@ -129,7 +131,7 @@ function createSaveSnapshot(){
         availableCards:state.availableCards.map(card=>({...card,cost:{...card.cost}})),
         activeEvent:state.activeEvent,
         eventLog:state.eventLog.slice(0,100),eventSequence:state.eventSequence,
-        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),market:JSON.parse(JSON.stringify(state.market)),
+        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),government:JSON.parse(JSON.stringify(state.government||{})),royal:JSON.parse(JSON.stringify(state.royal||{})),market:JSON.parse(JSON.stringify(state.market)),
         totalPopulation:state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length
     };
 }
@@ -166,7 +168,7 @@ function loadSnapshotIntoGame(profile,snapshot){
             illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
             routinePhase:dto.routinePhase??4,routineTimer:dto.routineTimer??30,movePause:dto.movePause||0,
-            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
+            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),isRoyalFamily:Boolean(dto.isRoyalFamily),moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
         });
         restored.push(entity);
     }
@@ -220,6 +222,8 @@ function loadSnapshotIntoGame(profile,snapshot){
     const birthCheckYear=Number(state.economy.lastBirthCheckYear);
     state.economy.lastBirthCheckYear=Number.isFinite(birthCheckYear)?Math.max(1,Math.min(state.year,Math.floor(birthCheckYear))):state.year;
     normalizePoliticalState(snapshot.politics);
+    normalizeGovernment(snapshot.government);
+    normalizeRoyalState(snapshot.royal);
     normalizeHouseholdAssignments();
     state.market=snapshot.market||createMarketState();
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===WORLD_W)state.explored=snapshot.explored;
