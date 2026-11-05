@@ -27,7 +27,8 @@ export function calculateDailyLedger({ population, employed, buildings, foodAvai
     const foodDemand = people * 0.015 * DAYS_PER_LEDGER;
     const foodConsumed = Math.min(clampNonNegative(foodAvailable), foodDemand);
     const foodShortage = Math.max(0, foodDemand - foodConsumed);
-    const taxRate = Math.max(0.5, Math.min(1.5, Number.isFinite(Number(taxMultiplier)) ? Number(taxMultiplier) : 1));\n    const taxesAssessed = workers * 0.025 * DAYS_PER_LEDGER * taxRate;
+    const taxRate = Math.max(0.5, Math.min(1.5, Number.isFinite(Number(taxMultiplier)) ? Number(taxMultiplier) : 1));
+    const taxesAssessed = workers * 0.025 * DAYS_PER_LEDGER * taxRate;
     const wagesAssessed = workers * 0.015 * DAYS_PER_LEDGER;
     const upkeepAssessed = buildingCount * 0.003 * DAYS_PER_LEDGER;
     const treasuryAfterTaxes = clampNonNegative(goldAvailable) + taxesAssessed;
