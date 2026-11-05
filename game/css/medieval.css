@@ -177,3 +177,53 @@ button,input{font-family:Georgia,"Palatino Linotype",serif}
 .court-heirs ol{margin:0;padding-left:22px}.court-heirs li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;color:#493321;font-size:12px}.court-heirs li span{color:#866648}
 .court-feedback{min-height:0;margin:0;color:#a23d32;font-size:12px;font-weight:900}.court-feedback:empty{display:none}
 @media(max-width:720px){.court-monarch{grid-template-columns:1fr}.court-monarch img{border-left:0;border-top:4px solid #4a3024;max-height:150px}.court-stats span{flex:1}.court-top-button{font-size:8px!important;padding:7px!important}}
+
+/* Comic strategy management: compact command ribbon and colorful illustrated decision cards. */
+.management-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:9px 14px 2px}
+.management-tools button,.management-tabs button{min-width:0;padding:8px 4px;border:2px solid #65432d;border-radius:8px;background:linear-gradient(#fff1c8,#d8b77d);color:#543522;font-size:8px;font-weight:1000;letter-spacing:.05em;cursor:pointer;box-shadow:0 2px 0 #8b5e35}
+.management-tools button:hover,.management-tabs button:hover,.management-tabs button.is-active{background:linear-gradient(#f7d978,#e28b4c);color:#4c2c1c;border-color:#8d3d2f}
+.management-panel{width:min(900px,calc(100vw - 24px));max-height:88vh;overflow:auto;border:5px solid #4a3024!important;border-radius:18px!important;background:linear-gradient(145deg,#fff0c8,#dfbd7d)!important;color:#39271c!important;box-shadow:0 16px 0 #3b2922,0 28px 70px #000b!important}
+.management-panel .modal-heading{position:sticky;top:0;z-index:3;margin:-2px -2px 12px;padding:12px 14px;background:linear-gradient(#fff1cb,#e7c98d);border-bottom:3px solid #80502e}
+.management-panel .modal-heading h2{margin:3px 0;color:#73352b;font-family:Georgia,serif;font-weight:1000}
+.management-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:0 0 10px;border-bottom:2px dashed #a17a4c}
+.management-tabs button{font-size:10px}
+.management-feedback{min-height:0;margin:0;padding:0 2px;color:#8b3a30;font-size:11px;font-weight:900}
+.management-feedback:empty{display:none}
+.management-content{display:flex;flex-direction:column;gap:13px;padding:12px 2px 4px}
+.management-hero{padding:15px;border:3px solid #63432e;border-radius:14px;background:linear-gradient(120deg,#fff4d5,#e9c98e);box-shadow:0 3px 0 #a17a4c}
+.management-hero>span{color:#9b4b38;font-size:9px;font-weight:1000;letter-spacing:.16em}
+.management-hero h3{margin:5px 0;color:#71372b;font-size:22px;font-weight:1000}
+.management-hero p{margin:0;color:#73583d;font-size:11px;line-height:1.5}
+.management-policy-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.management-policy{display:flex;min-height:132px;flex-direction:column;gap:7px;padding:12px;text-align:left;border:3px solid #63432e;border-radius:12px;background:linear-gradient(#fff7df,#e8d0a0);color:#4a3221;cursor:pointer;box-shadow:0 3px 0 #9c7144}
+.management-policy.is-active{border-color:#a03e32;background:linear-gradient(#ffe59a,#f0b05f);box-shadow:inset 0 0 0 2px #fff5c6,0 3px 0 #773a2b}
+.management-policy strong{font-size:14px;color:#8b3a30}
+.management-policy span{font-size:12px;font-weight:1000}
+.management-policy small{color:#76583b;font-size:10px;line-height:1.4}
+.management-note{padding:10px;border-left:4px solid #b48b46;background:#fff5d5;color:#694b30;font-size:11px}
+.management-factions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.management-faction{padding:12px;border:2px solid #765133;border-radius:10px;background:#fff4d7}
+.management-faction>div{display:flex;justify-content:space-between;color:#553923;font-size:12px;text-transform:capitalize}
+.management-faction>div b{color:#8b3a30}
+.management-faction>i{display:block;height:10px;margin-top:8px;overflow:hidden;border:1px solid #795633;border-radius:8px;background:#c9b18a}
+.management-faction>i>b{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,#7e9b55,#e3b84f,#c85a45)}
+.management-decision{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:3px solid #63432e;border-radius:12px;background:#fff4d8}
+.management-decision strong{color:#8b3a30;font-size:13px}.management-decision p{margin:5px 0 0;color:#76583b;font-size:10px;line-height:1.4}
+.management-decision button,.management-card-actions button{padding:10px 12px;border:3px solid #563427;border-radius:10px;background:linear-gradient(#e96b50,#a93e35);color:#fff6d7;font-size:9px;font-weight:1000;cursor:pointer;box-shadow:0 3px 0 #6b332a}
+.management-decision button:disabled,.management-card-actions button:disabled{opacity:.45;cursor:not-allowed}
+.management-resource-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.management-stat{display:flex;flex-direction:column;gap:5px;padding:10px;border:2px solid #8e6a3e;border-radius:9px;background:#fff5db}
+.management-stat span{color:#8b6945;font-size:9px;font-weight:900}.management-stat strong{color:#513522;font-size:18px;font-family:Georgia,serif}
+.management-metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.management-metric-grid .management-stat strong{font-size:14px}
+.management-card-list{display:flex;flex-direction:column;gap:7px}
+.management-card-row{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px;border:2px solid #765133;border-radius:10px;background:linear-gradient(#fff5dc,#ead2a2)}
+.management-card-icon{display:grid;place-items:center;width:34px;height:38px;border:2px solid #9b7440;border-radius:7px;background:#f2d68c;font-size:22px}
+.management-card-row>span:nth-child(2){display:grid;gap:3px;min-width:0;color:#513522}.management-card-row small{color:#856542;font-size:9px;text-transform:capitalize}
+.management-card-row button{padding:7px 9px;border:2px solid #765133;border-radius:7px;background:#f1d18d;color:#5a3823;font-size:8px;font-weight:1000}
+.management-card-actions{display:flex;justify-content:flex-end}
+.management-subheading{margin:5px 0 0;color:#8b3a30;font-size:10px;letter-spacing:.12em}
+.management-tags{display:flex;flex-wrap:wrap;gap:6px}
+.management-tag{padding:6px 9px;border:1px solid #98764a;border-radius:99px;background:#fff2d1;color:#6b4a2b;font-size:9px;font-weight:800;text-transform:capitalize}
+.management-muted{color:#76583b;font-size:11px}
+@media(max-width:720px){.management-tools{padding:6px 8px;gap:4px}.management-tools button{font-size:7px;padding:7px 2px}.management-policy-grid{grid-template-columns:1fr}.management-policy{min-height:0}.management-resource-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.management-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.management-factions{grid-template-columns:1fr}.management-decision{align-items:stretch;flex-direction:column}.management-tabs button{font-size:8px;padding:8px 2px}}
