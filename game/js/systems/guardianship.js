@@ -52,12 +52,13 @@ function relationshipEvidence(candidate, orphan) {
     const candidateId = String(candidate.personId);
     const orphanId = String(orphan.personId);
     const orphanRelation = (orphan.person.relationships || []).find(item => item.targetId === candidateId);
+    const candidateRelation = (candidate.person.relationships || []).find(item => item.targetId === orphanId);
     const parentRelations = (orphan.person.kinship.parents || []).flatMap(parentLink => {
         const memorial = (state.personArchive || []).find(entry => entry.personId === parentLink.personId);
         return memorial?.person?.relationships || [];
     });
     const parentRelation = parentRelations.find(item => item.targetId === candidateId);
-    const relation = orphanRelation || parentRelation;
+    const relation = orphanRelation || candidateRelation || parentRelation;
     if (!relation) return null;
     const trust = Math.max(0, Math.min(100, Number(relation.trust) || 0));
     const affinity = Math.max(0, Math.min(100, Number(relation.affinity) || 0));
