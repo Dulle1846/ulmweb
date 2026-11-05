@@ -1,9 +1,10 @@
 import {state} from "../core/state.js";
 import {TYPE} from "../core/types.js";
 import {spawnEntity,canSpawnEntity} from "../world/entities.js";
-import {randInt} from "../core/random.js";
+import {randInt,random} from "../core/random.js";
 import {addLog} from "./events.js";
 const NAMES=["Emberwing","Ashscale","Cinder","Stormmaw","Goldvein","Nightflame","Thornfire","Dawnscale"];
+const TEMPERAMENTS=["curious","proud","gentle","fierce","mischievous","watchful"];
 const MAX_MEMORIES=16,MAX_ARCHIVE=100;
 function remember(dragon,text,year=state.year){const c=dragon.creature;if(!c)return false;if(!Array.isArray(c.memories))c.memories=[];const id=String(year)+":"+text.slice(0,48);if(c.memories.some(m=>m.id===id))return false;c.memories.unshift({id,year:Math.max(1,Number(year)||1),text:String(text).slice(0,180)});c.memories=c.memories.slice(0,MAX_MEMORIES);return true;}
 function stage(age){return age<5?"hatchling":age<20?"juvenile":age<90?"adult":age<240?"elder":"ancient";}
@@ -12,7 +13,7 @@ export function awakenDragon(dragon){
  dragon.isDragon=true;dragon.isRoyalCreature=true;dragon.creatureId="dragon-"+String(state.worldSeed||1)+"-"+String(dragon.id);
  dragon.home={...(dragon.home||{x:dragon.x,y:dragon.y})};dragon.anchor={...dragon.home};
  const name=NAMES[randInt(0,NAMES.length,"creatures")];
- dragon.creature={id:dragon.creatureId,name,species:"dragon",ageYears:0,lifeStage:"hatchling",health:100,hunger:20,bond:18,temperament:"curious",lastUpdateYear:Math.max(1,Number(state.year)||1),memories:[]};
+ dragon.creature={id:dragon.creatureId,name,species:"dragon",ageYears:0,expectedLifespan:320,lifeStage:"hatchling",health:100,hunger:20,bond:18,temperament:TEMPERAMENTS[randInt(0,TEMPERAMENTS.length,"creatures")],abilities:["flight","fire-breath"],goals:["grow","bond-with-sovereign"],lastUpdateYear:Math.max(1,Number(state.year)||1),memories:[]};
  remember(dragon,"I hatched into the realm under the care of its sovereign.",state.year);
  return dragon;
 }
@@ -32,6 +33,7 @@ export function updateCreatures(){
  for(const dragon of state.entities){
   if(dragon.dead||!dragon.isDragon||!dragon.creature)continue;
   const c=dragon.creature,last=Math.max(1,Math.floor(Number(c.lastUpdateYear)||year));
+  const previousAge=Math.max(0,Number(c.ageYears)||0);
   if(year<=last)continue;
   const elapsed=Math.min(1000,year-last);c.ageYears=Math.min(1000,Math.max(0,Number(c.ageYears)||0)+elapsed);c.lifeStage=stage(c.ageYears);
   c.hunger=Math.min(100,Math.max(0,Number(c.hunger)||0)+elapsed*16);
@@ -42,9 +44,12 @@ export function updateCreatures(){
   if(nearKing)c.bond=Math.min(100,(Number(c.bond)||0)+Math.min(8,elapsed*2));
   else c.bond=Math.max(0,(Number(c.bond)||0)-Math.min(4,elapsed));
   c.lastUpdateYear=year;updated++;
-  if(c.ageYears===5)remember(dragon,"I outgrew my hatchling years and became a juvenile.",year);
-  else if(c.ageYears===20)remember(dragon,"I reached adulthood and my wings grew strong.",year);
-  else if(c.ageYears===90)remember(dragon,"The realm now calls me an elder dragon.",year);
+  if(previousAge<5&&c.ageYears>=5)remember(dragon,"I outgrew my hatchling years and became a juvenile.",year);
+  if(previousAge<20&&c.ageYears>=20)remember(dragon,"I reached adulthood and my wings grew strong.",year);
+  if(previousAge<90&&c.ageYears>=90)remember(dragon,"The realm now calls me an elder dragon.",year);
+  const lifespan=Math.max(100,Number(c.expectedLifespan)||320);
+  const ageRisk=c.ageYears<lifespan?0:Math.min(.75,.08+(c.ageYears-lifespan)*.006);
+  if(c.health>0&&ageRisk>0&&random("creatures")<ageRisk)c.health=0;
   if(c.health<=0){
    dragon.dead=true;deaths++;
    const archive=state.creatureArchive||(state.creatureArchive=[]);
