@@ -410,3 +410,41 @@ Safety/limits:
 - No automatic adoption, estate inheritance, royal regency or succession.
 - No guardian is invented when parent death is unresolved, no trusted/related adult is available, or no receiving household has room.
 - Guardianship is a social-care link, not a change of legal parentage.
+
+
+## Phase 3.1 — strategy management, royal dynasty and living dragons
+
+Branch: `kac-3.1-royal-government-visual-overhaul`. Draft PR is the integration target for the complete 2.7–3.1 stack.
+
+Implemented:
+- Strategy command deck and responsive comic-style management modal: Government, Politics, Decisions, Cards, Economy, Dynasty, Creatures and Chronicles.
+- Original SVG emblems for crown, scales, royal seal, cards, treasury, book, people and dragon; thick-outline parchment/blue/gold visual theme.
+- Government models (feudal monarchy, royal centralism, crowned council, elective crown) with treasury costs and faction/legitimacy consequences.
+- Five player decrees with resource costs, one-policy-per-year guard, morale and faction consequences.
+- Government tax rate integrated into the actual economic ledger (10% baseline preserves previous calculation; 0–35% bounded range).
+- Royal consort selection with adult, single-partner and close-kin exclusions.
+- Royal child creation as a persistent royal unit with two explicit biological parent links, personal memories, treasury costs and four-year cooldown.
+- Designated heir and succession transfer to a living adult child; late sovereign family graph provides the fallback.
+- Natural mortality includes royal family members. The sovereign is only exposed to natural mortality when an adult royal child exists; minor-heir regency remains deliberately unimplemented.
+- New friendly Dragon entity type; Dragon Egg card in the wyvern category; sanctuary summoning; age, life stages, health, hunger, bond, temperament, abilities, goals, milestone memories, starvation and age mortality.
+- Creature memorial archive capped at 100 entries; per-dragon memory capped at 16; royal history capped at 48.
+- Save/load includes royal state, royal entity flags, dragon profiles and creature memorials.
+
+Regression coverage added in `game/tests/systems/strategy-management.test.js`:
+- government normalization and treasury costs
+- faction effects and annual decree guard
+- royal marriage, explicit parent links and heir designation
+- succession requiring a living adult heir
+- close-kin and active-partner rejection
+- dragon needs, growth, death memorial and entity cap
+- tax-rate impact on actual assessed tax
+- Dragon Egg card prototype.
+
+Browser E2E now exercises the command deck, constitution change, public decree, consort selection, royal child creation, dragon sanctuary and card-management panel.
+
+Limits:
+- This is the first playable strategy layer, not a full grand-strategy government simulator. Ministries, offices, judiciary, parliament, election cycles, provincial autonomy, law enforcement and regency still need dedicated systems.
+- Dragons are the first persistent magical creature species; other monsters and spirits still need their own species-specific behavior.
+- Royal inheritance is not yet an estate/property distribution system.
+- New art is lightweight SVG/vector art. Do not add gigabytes of raw assets; grow visual content through compressed sprite atlases, vector emblems, procedural variations and data-driven story packs.
+- No merge or production deployment has been performed. Cloudflare Pages remains the intended production host; Vercel is not part of this work.
