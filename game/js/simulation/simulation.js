@@ -14,16 +14,22 @@ import { updateVillagers } from "./villagers.js";
 import { updateCombat } from "./combat.js";
 import { queueMessage } from "../core/presentation-effects.js";
 import { updatePeople } from "../systems/people.js";
+import { updateBirths } from "../systems/births.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
     state.tick++;state.dayOfYear++;
     if(state.dayOfYear>=400){state.dayOfYear=0;state.year++;}
-    if(state.year>previousYear)updatePeople();
+    let newborn=null;
+    if(state.year>previousYear){
+        updatePeople();
+        newborn=updateBirths();
+    }
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
     resetIncome();
-    const newcomer=updatePopulation();
-    if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
+    const newcomer=newborn?null:updatePopulation();
+    if(newborn)addLog("A CHILD WAS BORN: "+newborn.person.name,"#e8c77b","family");
+    else if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
     updateBuildingIncome();updateVillagers();updateCombat();checkRandomEvents();updateCardDraw();
     updateWeather();updateMorale();updateMarket();updateEconomy();updateHealth();
     state.entities=state.entities.filter(entity=>!entity.dead);
