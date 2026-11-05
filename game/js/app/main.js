@@ -198,13 +198,15 @@ function loadSnapshotIntoGame(profile,snapshot){
         ? snapshot.availableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [];
     state.statistics={totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,...snapshot.statistics};
-    state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,births:0,lastBirthCheckYear:state.year,lastSocialYear:state.year,lastLedger:null,...snapshot.economy};
+    state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,births:0,lastBirthCheckYear:state.year,lastSocialYear:state.year,lastAgencyYear:state.year,lastLedger:null,...snapshot.economy};
     const growthYear=state.economy.lastGrowthYear;
     state.economy.lastGrowthYear=Number.isFinite(growthYear)?Math.max(1,Math.min(state.year,Math.floor(growthYear))):state.year;
     const populationGrowth=Number(state.economy.populationGrowth);
     state.economy.populationGrowth=Number.isFinite(populationGrowth)?Math.max(0,populationGrowth):0;
     const births=Number(state.economy.births);
     state.economy.births=Number.isFinite(births)?Math.max(0,Math.floor(births)):0;
+    const agencyYear=Number(state.economy.lastAgencyYear);
+    state.economy.lastAgencyYear=Number.isFinite(agencyYear)?Math.max(1,Math.min(state.year,Math.floor(agencyYear))):state.year;
     const socialYear=Number(state.economy.lastSocialYear);
     state.economy.lastSocialYear=Number.isFinite(socialYear)?Math.max(1,Math.min(state.year,Math.floor(socialYear))):state.year;
     const birthCheckYear=Number(state.economy.lastBirthCheckYear);
