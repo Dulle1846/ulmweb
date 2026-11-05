@@ -402,3 +402,21 @@ The initial persistent person record now exists for every spawned villager and f
 - Creation year and tick, so later chronicle entries can be placed on the realm timeline.
 
 Profiles are serialized with entities and normalized on load. Memory insertion is exposed through `addPersonMemory`; the next slice must connect important world events and royal decisions to the people who actually experienced them. The current profile is deliberately not yet a full autonomous character: it does not yet contain family trees, active plans, social network simulation, aging transitions, species-specific culture, or UI inspection.
+
+
+## 12. Phase 2.3 — event-linked personal memory and relationships
+
+The first person/story integration slice connects consequential realm issues to a small, explicit cast of people. This is intentionally not an all-resident social simulation.
+
+Implemented on `kac-2.3-living-chronicles`:
+- Every generated issue stores up to three stable person references: one affected resident, an optional witness for civic/political issues, and the king as decision-maker when present.
+- Participants are selected from existing living person records using the dedicated `people` random stream. The same person IDs are retained through multi-stage chronicle threads and archived with completed threads.
+- Resolving a valid choice writes a compact first-person memory to each participant. Affected residents, witnesses and the king receive different memory framing.
+- Memory IDs are event/person scoped, so retrying the same event outcome does not duplicate the memory or relationship update.
+- Affected residents gain a directed relationship record toward the king; the king also receives a weaker reciprocal record toward the resident. Trust/respect/affinity are bounded and updated only when the selected outcome has a measurable public impact.
+- Relationship collections are capped at 32 per person; event memories remain capped at 24. No all-pairs scan or per-frame relationship update is introduced.
+- Legacy active events without participant snapshots receive a bounded participant selection at resolution. Older chronicle threads without participants get a participant snapshot when their next stage is presented.
+
+This is a deliberately narrow first model. Participants are selected from the realm's existing resident profiles, not from a spatially accurate incident radius: event families do not yet carry reliable map coordinates or named locations. The relationship score is a compact response to the choice's public/political/health effects, not a full psychological model. There is no relationship decay, family/kinship graph, social network propagation or character inspection UI yet.
+
+Acceptance tests cover participant selection, durable and idempotent memories, bounded directed ruler relationships and event-to-person integration. The next slice should add event location/household provenance and a character chronicle UI before expanding relationship simulation.
