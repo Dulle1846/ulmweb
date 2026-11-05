@@ -143,3 +143,54 @@ button,input{font-family:Georgia,"Palatino Linotype",serif}
 .dossier-section h3,.dossier-kicker{color:#855b2a}
 .dossier-memory,.dossier-link-list li{background:#fff3d455;border-color:#a4865b66}
 @media(max-width:720px){.person-dossier{border-left:0;border-top:1px solid #a4865b}}
+
+
+/* Comic-book strategy layer: bold ink outlines, saturated heraldic colors and readable parchment. */
+.strategy-command-dock{margin:10px 12px 8px;padding:9px;border:2px solid #3a2417;border-radius:12px;background:linear-gradient(145deg,#f3dca9,#c99b59);box-shadow:0 3px 0 #5a351e, inset 0 1px #fff8}
+.strategy-dock-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;color:#3b2418;font:900 10px Georgia,serif;letter-spacing:.12em;text-shadow:0 1px #fff7}
+.strategy-dock-heading small{font-size:8px;opacity:.72}
+.strategy-command-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.strategy-command-grid button{min-height:47px;padding:5px 3px;border:2px solid #261a16;border-radius:8px;background:linear-gradient(#3975b7,#15385f);box-shadow:0 2px 0 #0c1e34,inset 0 1px #fff8;color:#fff3d2;font:800 9px Georgia,serif;text-shadow:0 1px #111;cursor:pointer}
+.strategy-command-grid button span{display:block;font-size:18px;line-height:1.15;color:#ffd96c}
+.strategy-command-grid button:hover,.strategy-decree-grid button:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.strategy-overlay{z-index:120}
+.strategy-panel{width:min(920px,calc(100vw - 28px));max-height:min(88vh,900px);overflow:hidden;border:5px solid #3a2417;border-radius:16px;background:linear-gradient(145deg,#f5e6c5,#d8bd8b);color:#342316;box-shadow:0 18px 60px #000b,inset 0 0 0 2px #f9e4a8}
+.strategy-panel .modal-heading{padding:16px 18px 10px;border-bottom:2px solid #9c7138}
+.strategy-panel .modal-heading h2{margin:3px 0 0;color:#3a2417;font:900 25px Georgia,serif;text-shadow:1px 1px #fff8}
+.strategy-tabs{display:flex;flex-wrap:wrap;gap:5px;padding:9px 14px;background:#3b281e;border-bottom:3px solid #a87937}
+.strategy-tabs button{padding:8px 11px;border:2px solid #a47a42;border-radius:8px;background:linear-gradient(#4c6f98,#203c5d);color:#fff1ce;font:800 11px Georgia,serif;cursor:pointer}
+.strategy-tabs button.is-active{background:linear-gradient(#e6c46e,#a96c28);color:#321e12;border-color:#4b2b18}
+.strategy-content{padding:14px 18px 20px;overflow:auto;max-height:calc(88vh - 135px)}
+.strategy-hero{display:flex;align-items:center;gap:14px;margin:0 0 14px;padding:13px;border:2px solid #55351e;border-radius:12px;background:linear-gradient(110deg,#24496f,#162c49 65%,#4a321e);color:#fff1cc;box-shadow:0 3px 0 #68411f}
+.strategy-hero img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 3px 2px #0008)}
+.strategy-hero small{color:#f5ce6c;font-size:9px;font-weight:900;letter-spacing:.16em}
+.strategy-hero h2{margin:3px 0;font:900 22px Georgia,serif}
+.strategy-hero p{margin:0;color:#f5e5c8;font-size:12px;line-height:1.45}
+.strategy-section{margin:12px 0;padding:13px;border:2px solid #8e6637;border-radius:11px;background:linear-gradient(145deg,#fff6df,#e6d1a7);box-shadow:0 2px 0 #a37a45}
+.strategy-section h3{margin:0 0 11px;color:#673b1e;font:900 14px Georgia,serif;letter-spacing:.04em}
+.strategy-field{display:flex;flex-direction:column;gap:6px;margin:9px 0;color:#4b321f;font-size:12px;font-weight:800}
+.strategy-field output{font-weight:900;color:#8a4c1f}
+.strategy-field select{padding:9px;border:2px solid #90663a;border-radius:7px;background:#fff8e6;color:#3a291c}
+.strategy-field input[type=range]{width:100%;accent-color:#b87528}
+.strategy-two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.strategy-action{padding:10px 15px;border:2px solid #2a1a11;border-radius:8px;background:linear-gradient(#e8c66d,#ae6b28);box-shadow:0 3px 0 #59331a;color:#2f1d12;font-weight:900;cursor:pointer}
+.strategy-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.strategy-stat-grid>div{display:flex;flex-direction:column;gap:3px;padding:10px;border:1px solid #a98755;border-radius:8px;background:#fff8e3}
+.strategy-stat-grid small{color:#8b6b42;font-size:10px;font-weight:800}
+.strategy-stat-grid strong{color:#3d291b;font:900 18px Georgia,serif;overflow-wrap:anywhere}
+.strategy-note{color:#735a3c;font-size:11px;line-height:1.5}
+.strategy-meter{margin:8px 0}
+.strategy-meter>div{display:flex;justify-content:space-between;color:#49311e;font-size:11px;font-weight:800}
+.strategy-meter>i{display:block;height:10px;margin-top:4px;border:1px solid #75522d;border-radius:7px;background:#b9a27c;overflow:hidden}
+.strategy-meter>i b{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#b96a2d,#f3cb62)}
+.strategy-meter>i b.green{background:linear-gradient(90deg,#397a4c,#9bd36d)}
+.strategy-decree-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.strategy-decree-grid button{padding:12px 10px;border:2px solid #4a2c1b;border-radius:9px;background:linear-gradient(#386c9b,#18395c);color:#fff1d2;font-weight:900;text-align:left;cursor:pointer;box-shadow:0 3px 0 #302014}
+.strategy-decree-grid small{display:block;margin-top:5px;color:#f4d993;font-size:10px;font-weight:600}
+.strategy-list{display:flex;flex-direction:column;gap:7px;margin:0;padding:0;list-style:none}
+.strategy-list li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:7px;padding:9px;border:1px solid #b18b58;border-radius:7px;background:#fff8e7;color:#412d1d;font-size:12px}
+.strategy-list li span{color:#816343;font-size:10px}
+.strategy-list li button{padding:6px 9px;border:1px solid #432718;border-radius:6px;background:#b67b35;color:#fff5db;font-weight:800;cursor:pointer}
+.strategy-ledger p{display:flex;justify-content:space-between;gap:12px;margin:7px 0;padding-bottom:6px;border-bottom:1px dashed #c3a779;color:#61482d;font-size:12px}
+.strategy-ledger b{color:#3c2a1b}
+@media(max-width:720px){.strategy-panel{width:calc(100vw - 12px);max-height:94vh}.strategy-content{padding:9px;max-height:calc(94vh - 145px)}.strategy-hero{gap:8px;padding:9px}.strategy-hero img{width:52px;height:52px}.strategy-hero h2{font-size:18px}.strategy-two-col{grid-template-columns:1fr}.strategy-tabs{gap:4px;padding:7px}.strategy-tabs button{padding:7px;font-size:9px}.strategy-decree-grid{grid-template-columns:1fr 1fr}.strategy-command-dock{margin:8px}.strategy-command-grid button{font-size:8px}}
