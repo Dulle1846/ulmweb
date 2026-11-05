@@ -377,7 +377,7 @@ try{
     assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),1);
     assert.ok((await sovereignDossier.innerText()).includes("SOVEREIGN DOSSIER"));
     assert.ok((await sovereignDossier.innerText()).includes("DESIGNATED SUCCESSOR"));
-    await sovereignDossier.locator('[data-royal-dossier="current"] [data-person-id="'+royalFixture.heirId+'"]').click();
+    await sovereignDossier.locator('[data-royal-dossier="current"] [data-person-id="'+royalFixture.heirId+'"]').first().click();
     assert.ok((await sovereignDossier.innerText()).includes(royalFixture.heirName));
     assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),0,"the heir dossier must not be mislabeled as the reigning sovereign");
     await page.locator("#people-close").click();
