@@ -46,7 +46,9 @@ export function createRoyalChild(){
  if(links.some(x=>!x.ok)){for(const parent of [king,consort])parent.person.kinship.children=parent.person.kinship.children.filter(x=>x.personId!==personId(child));p.kinship.parents=[];state.entities=state.entities.filter(e=>e!==child);return {ok:false,reason:"kinship-link-failed"};}
  state.resources.food-=20;state.resources.gold-=15;s.lastBirthYear=Math.max(1,Number(state.year)||1);
  for(const [entity,id,text] of [[king,"king","A royal child, "+p.name+", was born in year "+state.year+"."],[consort,"consort","I welcomed "+p.name+" into the royal house in year "+state.year+"."],[child,"origin","I was born into the royal "+s.dynastyName+" dynasty in year "+state.year+"."]])addPersonMemory(entity,{id:"royal-birth:"+child.id+":"+id,type:"dynasty",text,tick:state.tick,importance:100});
- record("birth","Royal child born: "+p.name);if(!s.heirId)designateHeir(personId(child));return {ok:true,child};
+ record("birth","Royal child born: "+p.name);
+ if(!s.heirId){s.heirId=personId(child);p.role="heir";record("heir-designated",p.name);}
+ return {ok:true,child};
 }
 export function designateHeir(id){const s=royalState(),h=getRoyalHouse(),candidate=h.children.find(x=>personId(x)===String(id));if(!candidate)return {ok:false,reason:"not-a-living-royal-child"};s.heirId=personId(candidate);ensurePersonProfile(candidate).role="heir";record("heir-designated",ensurePersonProfile(candidate).name);return {ok:true,heir:candidate};}
 export function updateRoyalSuccession(){
