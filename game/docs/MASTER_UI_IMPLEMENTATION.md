@@ -185,3 +185,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Memorial portraits receive a restrained desaturated treatment.
 - Static contracts and Chromium E2E verify the five stage assets and exact stage-to-symbol mapping.
 - Dragons are currently the only modeled royal creature species. No griffin, wyvern or other unsupported species have been invented.
+
+
+## Phase 2 — reusable control primitives
+
+- Added `css/ui-components.css` as a shared control layer for primary, secondary, tab and icon buttons; shared panel and panel-header primitives; tooltip styling; focus, hover, pressed, selected and disabled states; and reduced-motion behavior.
+- Applied the shared classes to founding/settings actions, modal close controls, management tabs, panels and the full-width action bar.
+- Replaced native-only action-dock title tooltips with styled, keyboard-focusable tooltips while retaining accessible visible button labels.
+- Added static contracts and Chromium assertions for the shared primary/tab controls.
+- This is the shared control foundation, not yet a complete windowing API or a full migration of every legacy game button.

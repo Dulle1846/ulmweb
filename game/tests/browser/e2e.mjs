@@ -47,6 +47,7 @@ try{
     }
     await page.locator("#world-seed-input").fill("20261104");
     await page.locator("#player-name-input").fill("CI-Browser-Check");
+    assert.ok((await page.locator("#start-new-game-btn").getAttribute("class")).includes("ui-button--primary"),"founding action must use the shared primary button");
     await page.locator("#start-new-game-btn").click();
     try{
         await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
@@ -93,6 +94,8 @@ try{
     // Restore the management default so the existing management regression suite
     // continues to verify the expected kingdom landing screen.
     await page.locator("#command-open-btn").click();
+    assert.ok(await page.locator("#command-modal [data-command-tab].ui-button--tab").count()>=5,"management tabs must use the shared tab control");
+
     await page.locator('[data-command-tab="kingdom"]').click();
     await page.locator("#command-close").click();
 

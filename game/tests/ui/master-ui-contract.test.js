@@ -210,3 +210,14 @@ test("dragon dossiers use original art for every persisted life stage",async()=>
  assert.ok(management.includes('dragonPortraitSymbol(d.lifeStage)'));
  assert.ok(management.includes("data-life-stage="));
 });
+
+test("reusable royal control primitives define variants, states, panels and tooltips",async()=>{
+ const components=await readFile(new URL("css/ui-components.css",root),"utf8");
+ for(const token of [".ui-button{",".ui-button--primary",".ui-button--secondary",".ui-button--tab",".ui-button--icon",":disabled",".ui-button:focus-visible",".ui-button[aria-pressed=",".ui-panel{",".ui-panel__header","[data-ui-tooltip]::after","prefers-reduced-motion"]){
+  assert.ok(components.includes(token),"missing reusable UI primitive "+token);
+ }
+ assert.ok(html.includes('href="css/ui-components.css"'));
+ assert.ok(html.includes('class="ui-button ui-button--primary primary-button"'));
+ assert.ok(html.includes('class="ui-panel command-panel"'));
+ assert.ok(html.includes('data-ui-tooltip="Open character dossiers"'));
+});

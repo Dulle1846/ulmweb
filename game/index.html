@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="css/medieval.css">
     <link rel="stylesheet" href="css/comic-strategy.css">
     <link rel="stylesheet" href="css/ui-design-system.css">
+    <link rel="stylesheet" href="css/ui-components.css">
 </head>
 <body>
 <div class="game-shell">
@@ -154,17 +155,17 @@
         </aside>
     </main>
             <nav id="realm-action-dock" class="realm-action-dock realm-action-dock-global" aria-label="Quick realm actions">
-                <button type="button" data-kac-dock-action="people" title="Open the living and deceased character dossiers">PEOPLE</button>
-                <button type="button" data-kac-dock-action="dynasty" title="Inspect the recorded royal family tree">DYNASTY</button>
-                <button type="button" data-kac-dock-action="cards" title="Open your current card hand">CARDS</button>
-                <button type="button" data-kac-dock-action="events" title="Open the realm event log">CHRONICLE</button>
-                <button type="button" data-kac-dock-action="save" title="Save this realm in the current browser profile">SAVE</button>
+                <button type="button" class="ui-button ui-button--secondary" data-kac-dock-action="people" data-ui-tooltip="Open character dossiers">PEOPLE</button>
+                <button type="button" class="ui-button ui-button--secondary" data-kac-dock-action="dynasty" data-ui-tooltip="Inspect the royal family tree">DYNASTY</button>
+                <button type="button" class="ui-button ui-button--secondary" data-kac-dock-action="cards" data-ui-tooltip="Open your current card hand">CARDS</button>
+                <button type="button" class="ui-button ui-button--secondary" data-kac-dock-action="events" data-ui-tooltip="Open the realm chronicle">CHRONICLE</button>
+                <button type="button" class="ui-button ui-button--secondary" data-kac-dock-action="save" data-ui-tooltip="Save this realm locally">SAVE</button>
                 <span id="save-status" class="save-status" role="status" aria-live="polite">LOCAL SAVE · NOT SAVED</span>
             </nav>
 </div>
 
 <div id="start-screen" class="screen-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title" aria-describedby="start-description">
-    <div class="start-panel">
+    <div class="ui-panel start-panel">
         <div class="start-emblem">♜</div>
         <div class="start-kicker">A LIVING REALM SIMULATOR</div>
         <img class="start-hero-art" src="assets/royal-title-illustration.svg" alt="Atmospheric dusk view of the royal castle above a river valley and walled settlement" loading="eager">
@@ -175,7 +176,7 @@
             <input id="player-name-input" type="text" maxlength="32" placeholder="Enter your player name" autocomplete="nickname">
             <div class="profile-note">Local profile for this browser. Online accounts and secure admin roles will be connected to a server backend in a later infrastructure step.</div>
             <label for="world-seed-input">WORLD SEED</label>
-            <div class="seed-row"><input id="world-seed-input" type="number" min="1" step="1"><button id="random-seed-btn" class="secondary-button" type="button">RANDOMIZE</button></div>
+            <div class="seed-row"><input id="world-seed-input" type="number" min="1" step="1"><button id="random-seed-btn" class="ui-button ui-button--secondary secondary-button" type="button">RANDOMIZE</button></div>
             <section class="world-forge" aria-label="World generation options">
                 <div class="forge-heading"><span>THE WORLD FORGE</span><span>SHAPE THE UNKNOWN</span></div>
                 <label class="forge-slider"><span>LANDMASS <output id="world-landmass-value">50</output></span><input id="world-landmass" type="range" min="0" max="100" value="50"></label>
@@ -184,8 +185,8 @@
                 <label class="forge-slider"><span>WATER LEVEL <output id="world-water-value">48</output></span><input id="world-water" type="range" min="0" max="100" value="48"></label>
                 <div class="forge-note">The same seed and settings always forge the same landscape.</div>
             </section>
-            <button id="start-new-game-btn" class="primary-button" type="button">FOUND A NEW REALM</button>
-            <button id="continue-game-btn" class="secondary-button" type="button" disabled>NO SAVED REALM</button>
+            <button id="start-new-game-btn" class="ui-button ui-button--primary primary-button" type="button">FOUND A NEW REALM</button>
+            <button id="continue-game-btn" class="ui-button ui-button--secondary secondary-button" type="button" disabled>NO SAVED REALM</button>
             <button id="load-game-btn" class="text-button" type="button">LOAD LOCAL SAVE</button>
             <button id="start-settings-btn" class="text-button" type="button">SETTINGS</button>
         </div>
@@ -196,7 +197,7 @@
 
 <div id="settings-modal" class="screen-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
     <div class="modal-panel settings-panel">
-        <div class="modal-heading"><div><div class="start-kicker">REALM OPTIONS</div><h2 id="settings-title">SETTINGS</h2></div><button id="settings-close" class="modal-close" type="button" aria-label="Close settings">×</button></div>
+        <div class="ui-panel__header modal-heading"><div><div class="start-kicker">REALM OPTIONS</div><h2 id="settings-title">SETTINGS</h2></div><button id="settings-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close settings">×</button></div>
         <div class="setting-row"><div><strong>Original soundtrack</strong><small>One original instrumental theme, composed for a continuous loop.</small></div><label class="toggle"><input id="settings-music-toggle" type="checkbox" checked><span></span></label></div>
         <div class="setting-row volume-setting"><div><strong>Music volume</strong><small>Adjust the soundtrack level.</small></div><input id="settings-music-volume" type="range" min="0" max="100" value="22"></div>
         <div class="shortcut-list">
@@ -212,14 +213,14 @@
 
 <div id="people-modal" class="screen-overlay people-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="people-title">
     <div class="modal-panel people-panel">
-        <div class="modal-heading"><div><div class="start-kicker">THE PEOPLE OF YOUR REALM</div><h2 id="people-title">CHARACTER DOSSIERS</h2></div><button id="people-close" class="modal-close" type="button" aria-label="Close character dossiers">×</button></div>
+        <div class="ui-panel__header modal-heading"><div><div class="start-kicker">THE PEOPLE OF YOUR REALM</div><h2 id="people-title">CHARACTER DOSSIERS</h2></div><button id="people-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close character dossiers">×</button></div>
         <div class="people-browser"><aside class="people-roster"><label for="people-search">FIND A PERSON</label><input id="people-search" type="search" maxlength="80" placeholder="Name, species or role"><div id="people-count" class="people-count">0 PEOPLE</div><div id="people-list" class="people-list"></div></aside><section id="person-dossier" class="person-dossier"><div class="empty-state">Select a person to inspect their chronicle.</div></section></div>
     </div>
 </div>
 
 <div id="realm-event-modal" class="screen-overlay event-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="realm-event-title" aria-describedby="realm-event-description">
     <div class="modal-panel event-panel">
-        <div class="event-panel-topline"><div id="realm-event-kicker" class="start-kicker">REALM ISSUE</div><button id="realm-event-dismiss" class="modal-close" type="button" aria-label="Dismiss issue and return to the realm">×</button></div>
+        <div class="event-panel-topline"><div id="realm-event-kicker" class="start-kicker">REALM ISSUE</div><button id="realm-event-dismiss" class="ui-button ui-button--icon modal-close" type="button" aria-label="Dismiss issue and return to the realm">×</button></div>
         <h2 id="realm-event-title">A Bountiful Harvest</h2>
         <p id="realm-event-description"></p>
         <div id="realm-event-choices" class="event-choices"></div>
@@ -227,17 +228,17 @@
 </div>
 
 
-<div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="modal-panel command-panel"><header class="command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="modal-close" type="button" aria-label="Close management">×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management">
-<button type="button" data-command-tab="kingdom"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>REALM</span></button>
-<button type="button" data-command-tab="government"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>GOVERNMENT</span></button>
-<button type="button" data-command-tab="politics"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>POLITICS</span></button>
-<button type="button" data-command-tab="decisions"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>DECISIONS</span></button>
-<button type="button" data-command-tab="cards"><svg aria-hidden="true"><use href="assets/command-emblems.svg#cards"></use></svg><span>CARDS</span></button>
-<button type="button" data-command-tab="economy"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>ECONOMY</span></button>
-<button type="button" data-command-tab="buildings"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>BUILDINGS</span></button>
-<button type="button" data-command-tab="dynasty"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>DYNASTY</span></button>
-<button type="button" data-command-tab="creatures"><svg aria-hidden="true"><use href="assets/command-emblems.svg#dragon"></use></svg><span>CREATURES</span></button>
-<button type="button" data-command-tab="chronicle"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>CHRONICLE</span></button>
+<div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="modal-panel command-panel"><header class="command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close management">×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management">
+<button type="button" class="ui-button ui-button--tab" data-command-tab="kingdom"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>REALM</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="government"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>GOVERNMENT</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="politics"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>POLITICS</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="decisions"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>DECISIONS</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="cards"><svg aria-hidden="true"><use href="assets/command-emblems.svg#cards"></use></svg><span>CARDS</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="economy"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>ECONOMY</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="buildings"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>BUILDINGS</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="dynasty"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>DYNASTY</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="creatures"><svg aria-hidden="true"><use href="assets/command-emblems.svg#dragon"></use></svg><span>CREATURES</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="chronicle"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>CHRONICLE</span></button>
 </nav><div id="command-panel-content" class="command-panel-content"></div></section></div>
 <div id="card-drag-ghost" aria-hidden="true"><span id="drag-ghost-icon" class="drag-ghost-icon"></span><span id="drag-ghost-name" class="drag-ghost-name"></span></div>
 <div id="action-toast" class="action-toast" role="status"></div>
@@ -253,7 +254,7 @@
                 <svg class="build-header-icon" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#dirt-road"></use></svg>
                 <div><span class="command-ribbon">SETTLEMENT WORKS</span><h2 id="build-title">BUILD &amp; INFRASTRUCTURE</h2></div>
             </div>
-            <button id="build-close-btn" class="modal-close" type="button" aria-label="Close construction panel">×</button>
+            <button id="build-close-btn" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close construction panel">×</button>
         </header>
         <p class="build-intro">Lay connected routes across explored land. Better roads speed up residents and make longer journeys more efficient.</p>
         <nav class="build-category-tabs" aria-label="Construction categories">

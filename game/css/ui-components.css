@@ -1,0 +1,38 @@
+/* Reusable Kings & Cards controls — shared by menus, tabs, dialogs and action bars. */
+:root{
+ --ui-control-height:34px;
+ --ui-control-radius:3px;
+ --ui-control-gold:#b99a59;
+ --ui-control-ink:#30271e;
+ --ui-control-focus:#f0d99f;
+}
+.ui-button{
+ box-sizing:border-box;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ min-height:var(--ui-control-height);padding:7px 12px;border:1px solid #8e7047;border-radius:var(--ui-control-radius);
+ background:linear-gradient(180deg,#e7d8b8,#c9b184);color:#382c20;
+ font:700 9px/1.25 var(--ui-title-font,Georgia,serif);letter-spacing:.075em;text-decoration:none;text-align:center;
+ cursor:pointer;user-select:none;transition:background-color .14s ease,border-color .14s ease,box-shadow .14s ease,transform .08s ease,filter .14s ease;
+}
+.ui-button--primary{border-color:#b99a59;background:linear-gradient(180deg,#8b5540,#5a302c);color:#f5e8c9;box-shadow:inset 0 1px #e0b88c55,0 2px 4px #21170e55}
+.ui-button--secondary{border-color:#9a7b4b;background:linear-gradient(180deg,#594631,#33291f);color:#eee0c1}
+.ui-button--tab{min-height:38px;padding:6px 9px;border-color:#8c714a;background:linear-gradient(180deg,#3f3529,#26221d);color:#cdbb94}
+.ui-button--icon{width:34px;min-width:34px;height:34px;min-height:34px;padding:0;border-color:#9b7c4b;background:linear-gradient(180deg,#594631,#33291f);color:#f1dfbd;font:700 19px/1 Georgia,serif}
+.ui-button:hover:not(:disabled){border-color:#e0c17e;background:linear-gradient(180deg,#80623e,#4a3828);color:#fff1d0;filter:brightness(1.05)}
+.ui-button--primary:hover:not(:disabled){background:linear-gradient(180deg,#a5674a,#6d3934)}
+.ui-button--tab:hover:not(:disabled){background:linear-gradient(180deg,#66543c,#3d3024)}
+.ui-button:active:not(:disabled){transform:translateY(1px);box-shadow:inset 0 2px 4px #1b140f66}
+.ui-button:focus-visible{outline:2px solid var(--ui-control-focus);outline-offset:2px;box-shadow:0 0 0 3px #34281d99}
+.ui-button:disabled,.ui-button[aria-disabled="true"]{opacity:.46;filter:grayscale(.45);cursor:not-allowed;transform:none;box-shadow:none}
+.ui-button[aria-pressed="true"],.ui-button.is-active,.ui-button.is-selected{border-color:#d4b36e;background:linear-gradient(180deg,#80623e,#493725);color:#fff0cc;box-shadow:inset 0 0 0 1px #d9bd7b55}
+.ui-panel{border:1px solid var(--ui-line,#8d7046);box-shadow:0 12px 32px #0007,inset 0 1px #f6e8c155}
+.ui-panel__header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+[data-ui-tooltip]{position:relative}
+[data-ui-tooltip]::after{
+ content:attr(data-ui-tooltip);position:absolute;z-index:100;left:50%;bottom:calc(100% + 7px);transform:translate(-50%,4px);
+ max-width:220px;padding:6px 9px;border:1px solid #a88a58;border-radius:3px;background:#211c17;color:#f1e3c5;
+ box-shadow:0 4px 12px #0008;font:600 9px/1.35 var(--ui-body-font,Arial,sans-serif);letter-spacing:.02em;text-align:center;
+ white-space:normal;opacity:0;pointer-events:none;transition:opacity .12s ease,transform .12s ease;
+}
+[data-ui-tooltip]:hover::after,[data-ui-tooltip]:focus-visible::after{opacity:1;transform:translate(-50%,0)}
+@media(hover:none){[data-ui-tooltip]::after{display:none}}
+@media(prefers-reduced-motion:reduce){.ui-button,[data-ui-tooltip]::after{transition:none}}
