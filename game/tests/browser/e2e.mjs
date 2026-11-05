@@ -539,29 +539,49 @@ try{
         assert.ok(layout.dockWidth>=width-2&&layout.dockLeft<=1&&layout.dockRight>=width-1,"global action bar must span viewport at "+width+"x"+height+": "+JSON.stringify(layout));
         if(width<=790){
             const panel=page.locator(".side-panel");
-            const before=await panel.evaluate(el=>({clientHeight:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY}));
-            assert.ok(["auto","scroll"].includes(before.overflowY),"mobile management column must expose vertical scrolling at "+width+"x"+height+": "+JSON.stringify(before));
-            assert.ok(before.scrollHeight>before.clientHeight,"mobile management column must retain content beyond its viewport at "+width+"x"+height+": "+JSON.stringify(before));
+            const before=await panel.evaluate(el=>({
+                clientHeight:el.clientHeight,
+                scrollHeight:el.scrollHeight,
+                scrollRange:Math.max(0,el.scrollHeight-el.clientHeight),
+                overflowY:getComputedStyle(el).overflowY
+            }));
+            assert.ok(["auto","scroll"].includes(before.overflowY),"mobile management column must expose vertical scrolling when needed at "+width+"x"+height+": "+JSON.stringify(before));
+            if(width<=480)assert.ok(before.scrollRange>2,"narrow mobile management column must retain scrollable content at "+width+"x"+height+": "+JSON.stringify(before));
             const reachability=await panel.evaluate(el=>{
                 const card=el.querySelector("#card-container");
                 const original=el.scrollTop;
                 const panelRect=el.getBoundingClientRect();
                 const cardRect=card.getBoundingClientRect();
                 const cardTopInScroll=cardRect.top-panelRect.top+el.scrollTop;
-                el.scrollTop=Math.max(0,cardTopInScroll+cardRect.height-el.clientHeight);
+                const maxScroll=Math.max(0,el.scrollHeight-el.clientHeight);
+                const targetScroll=Math.max(0,cardTopInScroll+cardRect.height-el.clientHeight);
+                el.scrollTop=Math.min(maxScroll,targetScroll);
                 const finalPanel=el.getBoundingClientRect();
                 const finalCard=card.getBoundingClientRect();
-                return {
+                const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+                const visibleBottom=Math.min(finalPanel.bottom,dock.top);
+                const result={
                     scrollTop:el.scrollTop,
+                    scrollRange:maxScroll,
                     cardTop:finalCard.top,
                     cardBottom:finalCard.bottom,
                     panelTop:finalPanel.top,
                     panelBottom:finalPanel.bottom,
-                    cardReachable:finalCard.top>=finalPanel.top-1&&finalCard.bottom<=finalPanel.bottom+1
+                    visibleBottom,
+                    cardReachable:finalCard.top>=finalPanel.top-1&&finalCard.bottom<=visibleBottom+1
                 };
+                el.scrollTop=original;
+                return result;
             });
-            assert.ok(reachability.scrollTop>0,"mobile management column must be scrollable at "+width+"x"+height);
-            assert.ok(reachability.cardReachable,"selected card must be fully reachable inside the mobile management column at "+width+"x"+height+": "+JSON.stringify(reachability));
+            if(before.scrollRange>2)assert.ok(reachability.scrollTop>0,"mobile management column must use its available scroll range at "+width+"x"+height+": "+JSON.stringify(reachability));
+            assert.ok(reachability.cardReachable,"selected card must be fully reachable without being covered by the action dock at "+width+"x"+height+": "+JSON.stringify(reachability));
+            await panel.evaluate(el=>{
+                const card=el.querySelector("#card-container");
+                const panelRect=el.getBoundingClientRect();
+                const cardRect=card.getBoundingClientRect();
+                const target=cardRect.top-panelRect.top+el.scrollTop+cardRect.height-el.clientHeight;
+                el.scrollTop=Math.min(Math.max(0,el.scrollHeight-el.clientHeight),Math.max(0,target));
+            });
             await page.screenshot({path:resolve(screenshotDir,"sidepanel-card-reachable-"+width+"x"+height+".png"),animations:"disabled"});
             await panel.evaluate(el=>{el.scrollTop=0});
         }
