@@ -16,7 +16,7 @@ import { renderUI,showBigMessage } from "../presentation/rendering/ui.js";
 import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,loadSettings,saveSettings } from "../core/persistence.js";
 import { startSoundtrack,setMusicEnabled,setMusicVolume,applySoundtrackSettings } from "../core/soundtrack.js";
 import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
-import {ensurePersonProfile,normalizePersonProfile} from "../systems/people.js";
+import {ensurePersonProfile,normalizePersonProfile,normalizePersonMemorial,MAX_PERSON_ARCHIVE} from "../systems/people.js";
 import {setupCharacterDossier} from "../presentation/character-dossier.js";
 import {normalizeFamilyLinks} from "../systems/families.js";
 
@@ -122,6 +122,7 @@ function createSaveSnapshot(){
         gameOver:state.gameOver,victory:state.victory,lastRandomEvent:state.lastRandomEvent,
         weather:state.weather,weatherTimer:state.weatherTimer,
         entities:state.entities.map((entity,index)=>serializeEntity(entity,indexes)),
+        personArchive:(state.personArchive||[]).map(entry=>JSON.parse(JSON.stringify(entry))).slice(-MAX_PERSON_ARCHIVE),
         hand:state.hand.map(card=>({...card,cost:{...card.cost}})),
         cardRewardQueue:(state.cardRewardQueue||[]).map(card=>({...card,cost:{...card.cost}})),
         selectedCardInstanceId:state.selectedCardInstanceId,
@@ -173,6 +174,9 @@ function loadSnapshotIntoGame(profile,snapshot){
         if(Number.isInteger(dto.workplaceIndex)&&restored[dto.workplaceIndex]&&restored[index])restored[index].workplace=restored[dto.workplaceIndex];
     });
     state.tick=snapshot.tick||0;state.year=snapshot.year||1;state.dayOfYear=snapshot.dayOfYear||0;
+    state.personArchive=Array.isArray(snapshot.personArchive)
+        ? snapshot.personArchive.map(normalizePersonMemorial).filter(Boolean).slice(-MAX_PERSON_ARCHIVE)
+        : [];
     restoreRandomStreams(snapshot.randomStreams);
     state.nextEntityId=Math.max(1,Number.isSafeInteger(snapshot.nextEntityId)?snapshot.nextEntityId:restored.length+1);
     for(let index=0;index<restored.length;index++){const entity=restored[index];if(!entity)continue;if(typeof entity.id!=="string")entity.id="e"+(Number(state.worldSeed)||1).toString(36)+"-"+(index+1).toString(36);if(entity.type===TYPE.VILLAGER&&!entity.personId)entity.personId=entity.id;if(entity.type===TYPE.VILLAGER||entity.isKing)ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});}
