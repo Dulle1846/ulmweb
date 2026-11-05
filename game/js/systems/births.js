@@ -69,7 +69,8 @@ export function createChildFromParents(firstId, secondId) {
 
     const firstPerson = ensurePersonProfile(first), secondPerson = ensurePersonProfile(second);
     const partnership = activePartnership(first, second);
-    if (state.year - Math.max(Number(partnership.first.lastBirthYear) || 0, Number(partnership.second.lastBirthYear) || 0) < BIRTH_COOLDOWN_YEARS) {
+    const lastBirthYear = Math.max(Number(partnership.first.lastBirthYear) || 0, Number(partnership.second.lastBirthYear) || 0);
+    if (lastBirthYear > 0 && state.year - lastBirthYear < BIRTH_COOLDOWN_YEARS) {
         return { ok: false, reason: "birth-cooldown" };
     }
     if (!hasResourcesForBirth()) return { ok: false, reason: "settlement-conditions" };
@@ -171,8 +172,8 @@ export function updateBirths() {
             if (!second || !eligibleParents(first, second)) continue;
             const partnership = activePartnership(first, second);
             if (!partnership) continue;
-            const lastBirth = Math.max(Number(partnership.first.lastBirthYear) || 0, Number(partnership.second.lastBirthYear) || 0);
-            if (year - lastBirth < BIRTH_COOLDOWN_YEARS) continue;
+            const lastBirthYear = Math.max(Number(partnership.first.lastBirthYear) || 0, Number(partnership.second.lastBirthYear) || 0);
+            if (lastBirthYear > 0 && year - lastBirthYear < BIRTH_COOLDOWN_YEARS) continue;
             if (!hasResourcesForBirth()) return null;
             if (random("births") >= BIRTH_CHANCE_PER_PARTNERSHIP_YEAR) continue;
             const result = createChildFromParents(first.personId, second.personId);
