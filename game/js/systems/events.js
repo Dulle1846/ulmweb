@@ -53,6 +53,7 @@ const FAMILY_ROWS=[
 const FAMILIES=FAMILY_ROWS.map(([id,titles,resource,gain,cost,prosperity,tension,mystery])=>({id,titles,resource,gain,cost,prosperity,tension,mystery}));
 const CARD_REWARDS=Object.freeze({
  discovery:"gold-mines",caravan:"merchant-stalls",craft:"blacksmiths",faith:"reliquaries",
+ shortage:"winter-stores",flood:"causeways",fire:"fire-brigades",
  wildlife:"deer",fishing:"river-weirs",invention:"clockmakers",diplomacy:"embassies",
  ruins:"forgotten-tombs",guild:"guildhalls",monster:"griffins",border:"border-rangers"
 });
