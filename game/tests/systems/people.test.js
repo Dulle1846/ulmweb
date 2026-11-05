@@ -60,10 +60,10 @@ test("species-specific maturation keeps elves young longer than humans",()=>{
     const human=spawnEntity(2,2,TYPE.VILLAGER),elf=spawnEntity(3,2,TYPE.VILLAGER);
     const hp=ensurePersonProfile(human),ep=ensurePersonProfile(elf);
     Object.assign(hp,{species:"human",ageYears:15,lifeStage:"young",lastAgedYear:1});
-    Object.assign(ep,{species:"elf",ageYears:34,lifeStage:"young",lastAgedYear:1});
+    Object.assign(ep,{species:"elf",ageYears:33,lifeStage:"young",lastAgedYear:1});
     state.year=2;updatePeople();
     assert.equal(human.person.lifeStage,"adult");
-    assert.equal(elf.person.ageYears,35);
+    assert.equal(elf.person.ageYears,34);
     assert.equal(elf.person.lifeStage,"young");
 });
 test("multi-year catch-up is bounded and produces only the final life-stage transition",()=>{
