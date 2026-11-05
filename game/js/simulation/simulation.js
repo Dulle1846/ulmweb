@@ -34,7 +34,8 @@ export function updateSimulation(){
         updatePeople();
         deaths=updateMortality();
         guardianships=updateGuardianships();
-        updateRoyalSuccession();
+        const succession=updateRoyalSuccession();
+        if(succession.changed)addLog("THE CROWN PASSES TO "+(succession.king.person?.name||"THE HEIR"),"#e8c77b","dynasty");
         updateCreatures();
         socialResult=updateSocialLife();
         updatePersonalAgency();
