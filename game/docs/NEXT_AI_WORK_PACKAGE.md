@@ -393,7 +393,7 @@ No merge, production branch update or deployment was performed. The PR remains a
 
 ## Phase 2.8 — explicit orphan guardianship
 
-Branch: kac-2.8-orphan-guardianship, Draft PR #13 (CI pending).
+Branch: kac-2.8-orphan-guardianship, Draft PR #13. Verified at code head bfa06c39b09e1a84c7497a3910d1a2149fec9cd8: 190/190 Node tests passed; syntax/import/UI/asset checks, Kings & Cards 2.1 checks and Chromium Browser E2E all passed.
 
 Implemented:
 - Separate reciprocal guardian/ward links; guardianship is not misrepresented as biological or adoptive parentage.
@@ -404,7 +404,7 @@ Implemented:
 - A receiving household must have capacity unless the ward already lives in that household.
 - Successful assignment moves the ward's household/home anchor, records reciprocal links, and writes bounded memories for guardian and ward. A guardian's death is recorded in the ward's loss memories; a replacement can be appointed in a later year while historical guardian links remain inspectable.
 - Four assignments maximum per realm year; 500-entry memorial cap and existing per-person memory limits remain in force.
-- Character dossiers expose guardians and wards separately from parents, children and partners.
+- Character dossiers expose guardians and wards separately from parents, children and partners. Browser E2E verifies both directions and the memorial archive/save-load flow.
 
 Safety/limits:
 - No automatic adoption, estate inheritance, royal regency or succession.
