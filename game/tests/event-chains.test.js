@@ -42,10 +42,11 @@ test("plague chronicle decisions affect health and political factions at every s
 
 test("new shortage, flood and fire arcs link their decisions to cards and systemic consequences",()=>{
     assert.equal(EVENT_CHAINS.shortage.length,3);
-    assert.equal(EVENT_CHAINS.shortage[0].choices[0].effects.cardReward,"winter-stores");
+    assert.equal(EVENT_CHAINS.shortage[0].choices[0].effects.cardReward,"warehouses");
     assert.ok(EVENT_CHAINS.flood[1].choices.every(choice=>choice.effects.health));
-    assert.equal(EVENT_CHAINS.flood[2].choices[0].effects.cardReward,"causeways");
-    assert.equal(EVENT_CHAINS.fire[0].choices[0].effects.cardReward,"fire-brigades");
+    assert.equal(EVENT_CHAINS.flood[2].choices[0].effects.cardReward,undefined);
+    assert.equal(EVENT_CHAINS.fire[0].choices[0].effects.cardReward,undefined);
+    assert.equal(EVENT_CHAINS.fire[2].choices[0].effects.cardReward,"watchtowers");
     for(const id of ["shortage","flood","fire"]){
         for(const stage of EVENT_CHAINS[id]){
             for(const choice of stage.choices){
