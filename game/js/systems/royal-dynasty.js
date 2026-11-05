@@ -49,15 +49,27 @@ function findLivingPerson(personId) {
     return livePeople().find(entity => String(entity.personId) === id) || null;
 }
 
+function ancestorsOf(personId) {
+    const result = new Set();
+    const pending = [{ id: String(personId), depth: 0 }];
+    while (pending.length && result.size < 256) {
+        const current = pending.pop();
+        if (current.depth >= 16) continue;
+        const family = getFamilySnapshot(current.id);
+        for (const parent of family?.parents || []) {
+            if (result.has(parent.personId)) continue;
+            result.add(parent.personId);
+            pending.push({ id: parent.personId, depth: current.depth + 1 });
+        }
+    }
+    return result;
+}
+
 function isCloseRelative(first, second) {
-    const a = getFamilySnapshot(first.personId), b = getFamilySnapshot(second.personId);
-    if (!a || !b) return false;
-    const aParents = new Set(a.parents.map(link => link.personId));
-    const bParents = new Set(b.parents.map(link => link.personId));
-    return aParents.has(second.personId) || bParents.has(first.personId) ||
-        a.children.some(link => link.personId === second.personId) ||
-        b.children.some(link => link.personId === first.personId) ||
-        [...aParents].some(id => bParents.has(id));
+    const firstAncestors = ancestorsOf(first.personId);
+    const secondAncestors = ancestorsOf(second.personId);
+    return firstAncestors.has(second.personId) || secondAncestors.has(first.personId) ||
+        [...firstAncestors].some(id => secondAncestors.has(id));
 }
 
 function activeRoyalConsort(monarch) {
@@ -189,8 +201,8 @@ function heirRank(a, b, law) {
     const pa = ensurePersonProfile(a), pb = ensurePersonProfile(b);
     if (law === "malePreference" && pa.sex !== pb.sex) return pa.sex === "male" ? -1 : 1;
     if (law === "elective") {
-        const scoreA = (Number(pa.traits?.leadership) || 0) + (Number(pa.traits?.ambition) || 0) + (Number(pa.traits?.discipline) || 0);
-        const scoreB = (Number(pb.traits?.leadership) || 0) + (Number(pb.traits?.ambition) || 0) + (Number(pb.traits?.discipline) || 0);
+        const scoreA = (Number(pa.traits?.ambition) || 0) + (Number(pa.traits?.courage) || 0) + (Number(pa.traits?.discipline) || 0);
+        const scoreB = (Number(pb.traits?.ambition) || 0) + (Number(pb.traits?.courage) || 0) + (Number(pb.traits?.discipline) || 0);
         if (scoreA !== scoreB) return scoreB - scoreA;
     }
     return Number(pa.bornAtYear || 0) - Number(pb.bornAtYear || 0) ||
