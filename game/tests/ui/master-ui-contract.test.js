@@ -131,6 +131,8 @@ test("chronicle inbox uses stored event log data and opens the existing active i
 
 test("active realm issues can be dismissed without resolving and reopened from the chronicle",()=>{
   assert.ok(html.includes('id="realm-event-dismiss"'));
+  assert.ok(html.includes('aria-labelledby="realm-event-title"'));
+  assert.ok(html.includes('aria-describedby="realm-event-description"'));
   assert.ok(main.includes('state.activeEvent.dismissed=true'));
   assert.ok(ui.includes("if(issue.dismissed)"));
   assert.ok(management.includes("state.activeEvent.dismissed=false"));
