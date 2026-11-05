@@ -69,7 +69,7 @@ test("contextual action dock exposes only wired, existing game actions",()=>{
 test("dynasty view follows explicit kinship links and limits rendered depth",()=>{
   assert.ok(management.includes('import { getFamilySnapshot } from "../systems/families.js"'));
   assert.ok(management.includes("getFamilySnapshot(id)"),"tree must read the authoritative kinship graph");
-  assert.ok(management.includes("depth<4"),"tree must cap depth to avoid unbounded DOM growth");
+  assert.ok(management.includes("depth>4")&&management.includes("descendantCount>=80"),"tree must cap depth and total nodes to avoid unbounded DOM growth");
   assert.ok(management.includes('data-open-person="'),"family cards must expose a person id for dossier navigation");
   assert.ok(management.includes('window.dispatchEvent(new CustomEvent("kac:open-person"'));
   assert.ok(dossier.includes('window.addEventListener("kac:open-person"'));
