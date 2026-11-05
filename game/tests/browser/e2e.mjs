@@ -377,9 +377,11 @@ try{
         }
         const heir=house.heir||house.children[0];const designation=designateHeir(heir.personId);
         if(!designation.ok)throw new Error("Could not designate royal dossier heir: "+designation.reason);
-        return {kingId:king.personId,heirId:heir.personId,heirName:heir.person.name};
+        return {kingId:king.personId,kingSex:king.person?.sex||"",heirId:heir.personId,heirName:heir.person.name};
     });
+    const expectedPortrait=/^(f|.*female.*|.*woman.*)$/i.test(royalFixture.kingSex)?"portrait-queen":"portrait-king";
     await page.locator("#sovereign-dossier-open").click();
+    assert.ok((await page.locator("#sovereign-dossier-open use").getAttribute("href")).endsWith("#"+expectedPortrait),"the header must use the reigning sovereign’s matching portrait");
     assert.equal(await page.locator("#people-modal").isVisible(),true,"the royal header portrait must open the character dossier");
     const sovereignDossier=page.locator("#person-dossier");
     assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),1,"the shortcut must select the currently reigning sovereign");
