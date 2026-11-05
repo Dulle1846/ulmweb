@@ -294,3 +294,12 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 
 - Added 44px bottom scroll clearance at narrow phone widths because the bottom action dock covers part of the side-panel's theoretical lower edge.
 - The browser assertion now positions the selected card above the dock's top edge, preventing a false pass where the card was inside the panel but still visually obscured.
+
+
+## Development line 3.7.0-dev — sovereign dossier increment
+
+- Added a dedicated royal-house section to the living sovereign's existing character dossier, backed by the authoritative royal-house model.
+- Displays the currently recorded consort, designated heir, living royal children and bounded royal-house chronicle; related people reuse the existing dossier navigation.
+- Former sovereign memorials are explicitly separated from the current monarch's live succession state.
+- Added local responsive parchment/timber styling and static contracts for data provenance, navigation and bounded rendering.
+- No simulation rules, entity records or save schema changed. Browser E2E for sovereign-to-heir navigation remains a merge gate.

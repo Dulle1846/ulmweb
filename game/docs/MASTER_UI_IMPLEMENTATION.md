@@ -282,3 +282,13 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - The first full-visibility assertion exposed a real 37px overlap between the side-panel's lower edge and the fixed-height action dock at 390×844.
 - Added 44px of mobile-only bottom scroll space and changed the browser check to align the selected card above the actual visible boundary (the earlier of the side-panel bottom and dock top).
 - The check now validates the visible region, not just the side-panel's theoretical bounding box.
+
+
+## Phase 2 — dedicated sovereign dossier increment (3.7.0-dev)
+
+- Added a royal-house section to the current sovereign's dossier, reading the live consort, designated heir, living children and recorded royal-house history from `getRoyalHouse()`.
+- Royal-family entries use the existing person dossier navigation bridge and canonical person IDs.
+- Former sovereign memorials are labeled separately and do not display the living monarch's succession state.
+- Royal-house history rendering is bounded to the latest eight records; the simulation's own history remains capped at 48.
+- Added responsive local styling and static contracts for current/former sovereign separation, source-backed fields and navigation.
+- No simulation or save-schema changes. The sovereign-to-heir browser hand-off remains an explicit E2E acceptance item.

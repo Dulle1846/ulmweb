@@ -1,8 +1,10 @@
 // Read-only character dossiers for persistent named people.
 import { state } from "../core/state.js";
 import { getFamilySnapshot } from "../systems/families.js";
+import { getRoyalHouse } from "../systems/royal-dynasty.js";
 
 let selectedPersonId = null;
+let dossierStylesRequested = false;
 
 function esc(value) {
     return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -21,7 +23,6 @@ function people() {
         String(a.person.name).localeCompare(String(b.person.name)) ||
         String(a.personId).localeCompare(String(b.personId)));
 }
-
 
 function portraitSymbol(entity) {
     const person = entity?.person || {};
@@ -42,6 +43,15 @@ function personName(personId) {
     if (entity?.person?.name) return entity.person.name;
     const memorial = (state.personArchive || []).find(item => item.personId === String(personId));
     return memorial?.person?.name || "Formerly recorded · " + String(personId || "unknown");
+}
+
+function ensureDossierStyles() {
+    if (dossierStylesRequested) return;
+    dossierStylesRequested = true;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "css/sovereign-dossier.css";
+    document.head.append(link);
 }
 
 function syncPeopleFilterOptions(all) {
@@ -107,6 +117,46 @@ function renderLinks(title, entries, labelFor) {
         '</section>';
 }
 
+function renderSovereignDossier(entity, family) {
+    if (!entity?.isKing) return "";
+    const currentHouse = !entity.isArchived ? getRoyalHouse() : null;
+    const isReigningSovereign = Boolean(currentHouse?.king &&
+        String(currentHouse.king.personId || currentHouse.king.id || "") === String(entity.personId));
+    const dynastyName = String(state.royal?.dynastyName || state.kingdomName || "Royal house");
+    if (!isReigningSovereign) {
+        return '<section class="royal-dossier" data-royal-dossier="former">' +
+            '<div class="royal-dossier__masthead"><img src="assets/royal-crest.svg" alt="" aria-hidden="true">' +
+            '<div><span class="royal-dossier__eyebrow">ROYAL ARCHIVE</span><h3>Former sovereign</h3>' +
+            '<p>This person is recorded as a monarch. Current succession details are shown only on the living sovereign\'s dossier.</p></div></div>' +
+            '<div class="royal-dossier__facts"><div><span>ROYAL HOUSE</span><strong>' + esc(dynastyName) + '</strong></div>' +
+            '<div><span>RECORDED CHILDREN</span><strong>' + family.children.length + '</strong></div>' +
+            '<div><span>RECORDED PARENTS</span><strong>' + family.parents.length + '</strong></div></div></section>';
+    }
+    const consort = currentHouse.consort ? [{ personId: currentHouse.consort.personId, label: "Royal consort" }] : [];
+    const heir = currentHouse.heir ? [{ personId: currentHouse.heir.personId, label: "Designated living heir" }] : [];
+    const children = currentHouse.children || [];
+    const history = (currentHouse.history || []).slice(-8).reverse().map(entry =>
+        '<article class="royal-dossier__chronicle"><span>YEAR ' + Math.max(1, Math.floor(Number(entry.year) || 1)) +
+        '</span><strong>' + esc(String(entry.kind || "royal event").replaceAll("-", " ")) + '</strong><p>' +
+        esc(entry.detail || "A royal event was recorded.") + '</p></article>'
+    ).join("");
+    return '<section class="royal-dossier" data-royal-dossier="current" aria-labelledby="royal-dossier-title">' +
+        '<div class="royal-dossier__masthead"><img src="assets/royal-crest.svg" alt="" aria-hidden="true">' +
+        '<div><span class="royal-dossier__eyebrow">THE CROWN &amp; THE ROYAL HOUSE</span><h3 id="royal-dossier-title">SOVEREIGN DOSSIER</h3>' +
+        '<p>' + esc(state.kingdomName || "The realm") + ' · House ' + esc(dynastyName) + ' · Reigning sovereign</p></div></div>' +
+        '<div class="royal-dossier__facts"><div><span>ROYAL CHILDREN</span><strong>' + children.length + '</strong></div>' +
+        '<div><span>DESIGNATED HEIR</span><strong>' + (currentHouse.heir ? esc(currentHouse.heir.person?.name || personName(currentHouse.heir.personId)) : 'Not designated') + '</strong></div>' +
+        '<div><span>CONSORT</span><strong>' + (currentHouse.consort ? esc(currentHouse.consort.person?.name || personName(currentHouse.consort.personId)) : 'Not recorded') + '</strong></div></div>' +
+        '<div class="royal-dossier__links">' +
+        renderLinks("ROYAL CONSORT", consort, entry => entry.label) +
+        renderLinks("DESIGNATED SUCCESSOR", heir, entry => entry.label) +
+        renderLinks("ROYAL CHILDREN", children, entry => "Royal child · born year " + Math.max(1, Number(entry.person?.bornAtYear) || 1)) +
+        '</div><section class="royal-dossier__history"><h4>ROYAL HOUSE CHRONICLE</h4>' +
+        (history || '<p class="dossier-empty">No royal-house events have been recorded yet.</p>') +
+        '</section><p class="royal-dossier__succession-note">Succession follows the designated living heir. If no eligible designated heir is available, the succession system checks the late sovereign\'s recorded living children. It does not silently promote an unrelated resident.</p>' +
+        '</section>';
+}
+
 function renderDossier(personId) {
     const detail = document.getElementById("person-dossier");
     if (!detail) return;
@@ -118,7 +168,7 @@ function renderDossier(personId) {
         return;
     }
     const person = entity.person;
-    const family = getFamilySnapshot(personId) || { parents: [], children: [], siblings: [], partners: [] };
+    const family = getFamilySnapshot(personId) || { parents: [], children: [], siblings: [], partners: [], guardians: [], wards: [] };
     const traits = Object.entries(person.traits || {}).map(([key, value]) =>
         '<div class="dossier-meter"><span>' + esc(key) + '</span><i><b style="width:' +
         Math.max(0, Math.min(100, Number(value) || 0)) + '%"></b></i><strong>' +
@@ -157,6 +207,7 @@ function renderDossier(personId) {
         ' · ' + esc(person.lifeStage) + ' · Born in year ' + Math.max(1, Number(person.bornAtYear) || 1) +
         (entity.isArchived ? ' · Died in year ' + Math.max(1, Number(entity.deathYear) || 1) + ' · ' + esc(entity.deathCause || 'unknown') : '') +
         '</p></div></header>' +
+        renderSovereignDossier(entity, family) +
         '<div class="dossier-columns">' +
         '<div class="dossier-column">' +
         '<section class="dossier-section"><h3>PERSONALITY</h3>' + (traits || '<p class="dossier-empty">No traits recorded.</p>') + '</section>' +
@@ -189,6 +240,7 @@ function refreshDossier() {
 }
 
 export function setupCharacterDossier() {
+    ensureDossierStyles();
     const modal = document.getElementById("people-modal");
     const open = document.getElementById("people-btn");
     const close = document.getElementById("people-close");

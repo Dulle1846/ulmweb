@@ -1,0 +1,158 @@
+/* Sovereign dossier: restrained parchment, dark timber and antique-gold hierarchy. */
+.royal-dossier{
+  position:relative;
+  margin:14px 0 18px;
+  padding:14px;
+  overflow:hidden;
+  border:1px solid #9c7b49;
+  border-radius:4px;
+  color:#e9ddc2;
+  background:
+    linear-gradient(135deg,#30271f 0%,#493827 52%,#29231d 100%);
+  box-shadow:inset 0 1px 0 #f3dfb344,0 5px 16px #24180e2b;
+}
+.royal-dossier::before{
+  content:"";
+  position:absolute;
+  inset:5px;
+  border:1px solid #c0a36a55;
+  pointer-events:none;
+}
+.royal-dossier__masthead{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding:3px 4px 13px;
+  border-bottom:1px solid #b99a5966;
+}
+.royal-dossier__masthead img{
+  width:54px;
+  height:54px;
+  flex:0 0 54px;
+  object-fit:contain;
+  filter:drop-shadow(0 2px 3px #0008);
+}
+.royal-dossier__eyebrow{
+  display:block;
+  margin-bottom:4px;
+  color:#d7b879;
+  font:700 9px var(--ui-title-font,Georgia,serif);
+  letter-spacing:.16em;
+}
+.royal-dossier__masthead h3{
+  margin:0;
+  color:#f1e3c6;
+  font:700 19px var(--ui-title-font,Georgia,serif);
+  letter-spacing:.035em;
+}
+.royal-dossier__masthead p{
+  margin:4px 0 0;
+  color:#c9b99a;
+  font-size:11px;
+  line-height:1.45;
+}
+.royal-dossier__facts{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  padding:12px 0 8px;
+}
+.royal-dossier__facts>div{
+  min-width:0;
+  padding:8px;
+  border:1px solid #c4a46b44;
+  background:#17151155;
+}
+.royal-dossier__facts span{
+  display:block;
+  margin-bottom:5px;
+  color:#c5a86e;
+  font:700 8px var(--ui-title-font,Georgia,serif);
+  letter-spacing:.09em;
+}
+.royal-dossier__facts strong{
+  display:block;
+  overflow-wrap:anywhere;
+  color:#f3e7ce;
+  font:600 12px var(--ui-title-font,Georgia,serif);
+}
+.royal-dossier__links{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0 12px;
+}
+.royal-dossier__links .dossier-section{
+  min-width:0;
+  border-color:#b99a5944;
+}
+.royal-dossier__links .dossier-section h3,
+.royal-dossier__history h4{
+  color:#d9bd82;
+}
+.royal-dossier .dossier-related-person{
+  color:#f0e4cd;
+  border-color:#b99a5944;
+  background:#17151166;
+}
+.royal-dossier .dossier-related-person:hover,
+.royal-dossier .dossier-related-person:focus-visible{
+  border-color:#e2c17e;
+  background:#5a432c;
+}
+.royal-dossier__history{
+  position:relative;
+  margin-top:8px;
+  padding-top:10px;
+  border-top:1px solid #b99a5966;
+}
+.royal-dossier__history h4{
+  margin:0 0 8px;
+  font:700 10px var(--ui-title-font,Georgia,serif);
+  letter-spacing:.12em;
+}
+.royal-dossier__chronicle{
+  display:grid;
+  grid-template-columns:66px minmax(0,1fr);
+  gap:3px 9px;
+  padding:7px 0;
+  border-bottom:1px solid #c4a46b2e;
+}
+.royal-dossier__chronicle>span{
+  grid-row:span 2;
+  color:#c5a86e;
+  font-size:9px;
+  font-weight:700;
+}
+.royal-dossier__chronicle strong{
+  color:#f1e3c6;
+  font:700 10px var(--ui-title-font,Georgia,serif);
+  text-transform:uppercase;
+}
+.royal-dossier__chronicle p{
+  margin:0;
+  color:#c9b99a;
+  font-size:10px;
+  line-height:1.45;
+}
+.royal-dossier__succession-note{
+  position:relative;
+  margin:10px 0 0;
+  padding:9px 10px;
+  border-left:2px solid #b99a59;
+  color:#d7c8aa;
+  background:#17151155;
+  font-size:10px;
+  line-height:1.5;
+}
+@media(max-width:720px){
+  .royal-dossier{padding:11px}
+  .royal-dossier__facts{grid-template-columns:1fr}
+  .royal-dossier__links{grid-template-columns:1fr}
+  .royal-dossier__masthead img{width:44px;height:44px;flex-basis:44px}
+}
+@media(prefers-reduced-motion:reduce){
+  .royal-dossier *{scroll-behavior:auto!important;transition:none!important}
+}
