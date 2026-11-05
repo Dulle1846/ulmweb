@@ -28,8 +28,3 @@ From game/:
     npm test
 
 GitHub Actions runs the Node/static checks and browser E2E independently.
-## Project documentation
-
-- game/docs/LITE_CITY_BUILDER_SPEC.md — city-builder systems and staged acceptance criteria.
-- game/docs/BRANCH_CONSOLIDATION_AUDIT.md — preservation audit for parallel feature branches.
-- game/docs/CLOUDFLARE_PAGES_RELEASE.md — canonical deployment configuration and diagnosis.
