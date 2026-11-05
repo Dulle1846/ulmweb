@@ -40,7 +40,7 @@ const GROUPS = {
  music:["minstrels","lute-makers","choir-schools","drum-circles","court-composers","street-performers","bell-founders","dance-masters","harpists","festival-bards"],
  warfare:["war-camps","supply-trains","siege-towers","scouting-parties","veteran-companies","crossbow-bands","shield-walls","battle-plans","field-surgeons","war-horses"],
  politics:["council-seats","election-charters","royal-councils","provincial-governors","petitioners","reformers","faction-houses","seneschals","stewardships","public-assemblies"],
- monsters:["griffins","wyverns","trolls","giant-spiders","cave-bears","wargs","basilisks","giant-boars","marsh-wights","stone-guardians"],
+ monsters:["dragons","wyverns","trolls","giant-spiders","cave-bears","wargs","basilisks","giant-boars","marsh-wights","stone-guardians"],
  seasons:["spring-thaw","summer-fair","autumn-muster","winter-stores","first-frost","harvest-moon","long-rains","midsummer-bonfire","snowbound-road","early-blossom"],
  weather:["thunderstorms","soft-rains","heat-waves","hailstorms","fog-banks","frost-fields","wind-gusts","rainbows","drought-winds","snowfall"],
  underworld:["smugglers","poachers","thieves-guilds","secret-tunnels","black-markets","fence-networks","night-watchers","masked-strangers","hidden-cellars","outlaw-camps"],
@@ -84,7 +84,8 @@ const PROTOTYPES=[
  {id:"wild-deer",category:"deer",type:TYPE.DEER,name:"WILD DEER",desc:"A small herd animal.",icon:"🦌",cost:{food:3},kind:"animal"},
  {id:"bountiful-harvest",category:"harvests",name:"BOUNTIFUL HARVEST",desc:"A sudden yield of food.",icon:"🌽",cost:{gold:5},kind:"effect",effect:"harvest"},
  {id:"gold-rush",category:"discoveries",name:"GOLD RUSH",desc:"A fortunate discovery.",icon:"💰",cost:{food:8},kind:"effect",effect:"gold-rush"},
- {id:"festival-blessing",category:"festivals",name:"FESTIVAL BLESSING",desc:"Lift the people's spirits.",icon:"🎐",cost:{food:12},kind:"effect",effect:"festival"}
+ {id:"festival-blessing",category:"festivals",name:"FESTIVAL BLESSING",desc:"Lift the people's spirits.",icon:"🎐",cost:{food:12},kind:"effect",effect:"festival"},
+ {id:"young-dragon",category:"dragons",type:TYPE.DRAGON,name:"YOUNG DRAGON",desc:"A living dragon joins the realm: it grows, hungers, bonds with the crown and defends its allies.",icon:"🐉",cost:{food:30,gold:45},kind:"creature",unit:true}
 ];
 const ARCHETYPES={
  settlement:[TYPE.HOUSE,"building","🏠",{wood:26,stone:7},"A place for the realm's growing population."],
