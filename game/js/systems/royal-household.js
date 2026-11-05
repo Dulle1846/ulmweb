@@ -119,7 +119,7 @@ export function updateRoyalSuccession(){
         return null;
     }
     if(current)return null;
-    const deceasedKing=(state.personArchive||[]).find(item=>item.isKing);
+    const deceasedKing=[...(state.personArchive||[])].reverse().find(item=>item.isKing);
     if(!deceasedKing)return null;
     const descendants=livingDescendants({personId:deceasedKing.personId,person:deceasedKing.person});
     const heir=descendants[0];
