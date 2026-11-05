@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.4.1`  
-**Next development line:** `3.5.0-dev`  
+**Current production version:** `3.5.0`  
+**Next development line:** `3.6.0-dev`  
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -23,6 +23,21 @@ Kings & Cards uses a practical semantic version format:
 The version in `game/package.json` is the machine-readable game version. Update this file and this changelog together for every release.
 
 ## Production release history
+
+### 3.5.0 — Master UI Phase 2: Dynasty and contextual actions
+**Released:** 2026-11-05  
+**PR:** [#40](https://github.com/Dulle1846/ulmweb/pull/40)  
+**Merge commit:** `f47da8ecfd564ecf3edcd5913607407348e4aad6`  
+**Tested feature head:** `e7f59bb3df9ae5961a2be65872f43e04978dd10a`  
+**CI:** Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E all passed on the exact feature head.
+
+- Added the contextual management action dock for people, dynasty, cards, chronicle and manual save.
+- Added a bounded multi-generation descendant tree sourced from saved kinship relationships, with direct links into the existing character dossier.
+- Added save/load status feedback that only reports confirmed operation outcomes; no autosave is claimed.
+- Added reusable parchment cards, dark panels, section headings, icon-button styles, tooltip surfaces and dynasty person cards.
+- Added static contract tests and browser coverage for dynasty navigation, dossier hand-off, manual save and chronicle navigation.
+
+**Scope limit:** The dynasty tree currently presents the sovereign's descendants with a depth and node cap; it is not yet a complete ancestor/sibling graph. The action dock is a contextual sidebar dock, not the final full-width lower action bar. The dedicated event inbox, autosave, full responsive viewport matrix and remaining UI concept screens are still outstanding. No simulation rules or save schema were changed.
 
 ### 3.4.1 — Master UI foundation
 **Released:** 2026-11-05  
