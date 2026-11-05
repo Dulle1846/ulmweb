@@ -17,6 +17,7 @@ import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,loadSe
 import { startSoundtrack,setMusicEnabled,setMusicVolume,applySoundtrackSettings } from "../core/soundtrack.js";
 import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
 import {ensurePersonProfile,normalizePersonProfile} from "../systems/people.js";
+import {setupCharacterDossier} from "../presentation/character-dossier.js";
 import {normalizeFamilyLinks} from "../systems/families.js";
 
 let loopStarted=false;
@@ -294,6 +295,7 @@ function bindMenu(){
 function init(){
     bindCanvas();
     setupInput();
+    setupCharacterDossier();
     bindMenu();
     applySoundtrackSettings(settings);
     window.addEventListener("resize",resize);
