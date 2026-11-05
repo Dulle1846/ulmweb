@@ -143,6 +143,9 @@ export function createChildFromParents(firstId, secondId) {
 
     const economy = state.economy || (state.economy = {});
     economy.births = Math.max(0, Number(economy.births) || 0) + 1;
+    // A family birth consumes this year's single population-growth opportunity;
+    // otherwise the migration scheduler would add another resident next tick.
+    economy.lastGrowthYear = Math.max(1, Math.floor(Number(state.year) || 1));
     return { ok: true, child };
 }
 
