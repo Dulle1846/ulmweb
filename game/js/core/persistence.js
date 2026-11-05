@@ -105,11 +105,14 @@ export function getLocalSaveInfo(profileId) {
 }
 
 export function loadSettings() {
+    const saved = readJson(SETTINGS_KEY, {});
     return {
         musicEnabled: true,
         musicVolume: 0.22,
         showTooltips: true,
-        ...readJson(SETTINGS_KEY, {})
+        reducedMotion: false,
+        highContrast: false,
+        ...saved
     };
 }
 
@@ -117,6 +120,8 @@ export function saveSettings(settings) {
     writeJson(SETTINGS_KEY, {
         musicEnabled: Boolean(settings.musicEnabled),
         musicVolume: Math.max(0, Math.min(1, Number(settings.musicVolume) || 0)),
-        showTooltips: settings.showTooltips !== false
+        showTooltips: settings.showTooltips !== false,
+        reducedMotion: Boolean(settings.reducedMotion),
+        highContrast: Boolean(settings.highContrast)
     });
 }
