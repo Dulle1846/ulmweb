@@ -230,7 +230,7 @@ try{
     assert.ok(await page.locator("#command-panel-content [data-lineage-node-id]").count()>=3,"lineage graph must render the sovereign, consort and recorded child");
     await page.waitForFunction(()=>[...document.querySelectorAll(".dynasty-lineage-edge")].some(path=>path.getAttribute("d")?.length>0),null,{timeout:5000});
     assert.ok(await page.locator("#command-panel-content .dynasty-lineage-edge").count()>=2,"recorded partnership and parent-child links must have connector paths");
-    await page.locator('#command-panel-content [data-lineage-node-id="'+dynastyGraphFixture.heirId+'"]').click();
+    await page.locator('#command-panel-content .dynasty-lineage-graph [data-lineage-node-id="'+dynastyGraphFixture.heirId+'"]').click();
     assert.equal(await page.locator("#people-modal").isVisible(),true,"selecting a graph node must open the canonical person dossier");
     assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONALITY"));
     await page.locator("#people-close").click();
