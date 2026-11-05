@@ -75,13 +75,13 @@ export function addPersonMemory(entity,memory){
     const person=ensurePersonProfile(entity);
     if(!person||!memory||typeof memory!=="object")return false;
     const entry={
-        id:String(memory.id||("memory-"+(person.memories.length+1))),
+        id:String(memory.id||("memory-"+person.id+"-"+Math.max(0,Math.floor(Number(memory.tick)||0)))).slice(0,120),
         type:String(memory.type||"event").slice(0,32),
         text:String(memory.text||"").slice(0,240),
         tick:Math.max(0,Math.floor(Number(memory.tick)||0)),
         importance:clamp(memory.importance,50)
     };
-    if(!entry.text)return false;
+    if(!entry.text||person.memories.some(item=>item.id===entry.id))return false;
     person.memories.unshift(entry);
     if(person.memories.length>24)person.memories.length=24;
     return entry;
@@ -90,4 +90,94 @@ export function getPersonSnapshot(entity){
     if(!entity)return null;
     const person=ensurePersonProfile(entity);
     return {id:person.id,name:person.name,species:person.species,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,traits:{...person.traits},needs:{...person.needs},goals:[...person.goals],memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item}))};
+}
+
+
+const EVENT_IMPORTANCE=Object.freeze({
+    plague:92,illness:82,rebellion:90,succession:88,fire:84,flood:82,monster:78,
+    feud:76,crime:70,shortage:72,taxation:68,diplomacy:64,guild:62,migration:58,
+    harvest:42,festival:38,wildlife:40,fishing:36,winter:48,faith:52,pilgrimage:44,
+    discovery:54,ruins:60,omens:48,craft:42,invention:50,caravan:40,bandits:66,border:62,storm:54
+});
+const clampDelta=value=>Math.max(-8,Math.min(8,Math.round(Number(value)||0)));
+
+export function createEventParticipants(family="realm"){
+    const actors=state.entities.filter(entity=>!entity.dead&&(entity.isKing||(entity.personId&&entity.person)));
+    const king=actors.find(entity=>entity.isKing)||null;
+    const residents=actors.filter(entity=>!entity.isKing&&entity.personId&&entity.person)
+        .sort((a,b)=>String(a.personId).localeCompare(String(b.personId)));
+    if(!king&&!residents.length)return [];
+    const participants=[];
+    const civicFamilies=new Set(["succession","diplomacy","taxation","rebellion","feud","guild","faith","crime"]);
+    const desired=Math.min(residents.length,civicFamilies.has(family)?2:1);
+    if(desired>0){
+        const start=randInt(0,residents.length,"people");
+        for(let offset=0;offset<desired;offset++){
+            const resident=residents[(start+offset)%residents.length];
+            participants.push({personId:String(resident.personId),role:offset===0?"affected":"witness"});
+        }
+    }
+    if(king)participants.push({personId:String(king.personId||king.id),role:"decision-maker"});
+    return participants.slice(0,4);
+}
+
+function upsertRelationship(source,target,kind,delta,tick){
+    if(!source?.person||!target?.person||source.personId===target.personId)return false;
+    const person=ensurePersonProfile(source),targetPerson=ensurePersonProfile(target);
+    const targetId=String(target.personId||target.id);
+    let relation=person.relationships.find(item=>item.targetId===targetId);
+    if(!relation){
+        if(person.relationships.length>=32){
+            let weakest=0;
+            for(let i=1;i<person.relationships.length;i++){
+                const a=person.relationships[i],b=person.relationships[weakest];
+                if((a.lastInteractionTick||0)<(b.lastInteractionTick||0))weakest=i;
+            }
+            person.relationships.splice(weakest,1);
+        }
+        relation={targetId,targetName:targetPerson.name,kind:String(kind).slice(0,24),trust:50,respect:50,affinity:50,interactions:0,lastInteractionTick:0};
+        person.relationships.push(relation);
+    }
+    relation.targetName=targetPerson.name;
+    relation.kind=String(kind).slice(0,24);
+    relation.trust=clamp((Number(relation.trust)??50)+delta,50);
+    relation.respect=clamp((Number(relation.respect)??50)+Math.round(delta*.6),50);
+    relation.affinity=clamp((Number(relation.affinity)??50)+Math.round(delta*.25),50);
+    relation.interactions=Math.min(100000,(Number(relation.interactions)||0)+1);
+    relation.lastInteractionTick=Math.max(0,Math.floor(Number(tick)||0));
+    return relation;
+}
+
+export function recordPersonEventOutcome(issue,choice,effects={},tick=state.tick){
+    if(!issue||!choice)return {memories:0,relationships:0};
+    const participants=Array.isArray(issue.participants)?issue.participants.slice(0,4):[];
+    if(!participants.length)return {memories:0,relationships:0};
+    const byId=new Map(state.entities.filter(entity=>!entity.dead&&entity.personId).map(entity=>[String(entity.personId),entity]));
+    const king=state.entities.find(entity=>!entity.dead&&entity.isKing)||null;
+    const importance=EVENT_IMPORTANCE[issue.family]??50;
+    const commons=Number(effects.politics?.commons)||0;
+    const morale=Number(effects.morale)||0;
+    const health=effects.health||{};
+    const publicImpact=clampDelta(commons*1.15+morale*.8+(Number(health.containment)||0)*.7-(Number(health.severity)||0)*.5);
+    let memories=0,relationships=0;
+    for(const participant of participants){
+        const entity=byId.get(String(participant.personId));
+        if(!entity)continue;
+        const role=participant.role==="decision-maker"?"decision-maker":participant.role==="witness"?"witness":"affected";
+        const sentence=role==="decision-maker"
+            ? "I chose “"+String(choice.label).slice(0,100)+"” in response to "+String(issue.title).slice(0,110)+"."
+            : role==="witness"
+                ? "I witnessed "+String(issue.title).slice(0,120)+". The crown chose: "+String(choice.label).slice(0,90)+"."
+                : "I was affected by "+String(issue.title).slice(0,120)+". The crown chose: "+String(choice.label).slice(0,90)+".";
+        const added=addPersonMemory(entity,{
+            id:"event:"+String(issue.id)+":"+String(entity.personId),
+            type:"realm-event",text:sentence,tick,importance:role==="affected"?importance:Math.max(20,importance-12)
+        });
+        if(added)memories++;
+        if(role==="affected"&&king&&entity!==king&&publicImpact!==0){
+            if(upsertRelationship(entity,king,"ruler",publicImpact,tick))relationships++;
+            upsertRelationship(king,entity,"subject",Math.round(publicImpact*.35),tick);
+        }
+    }
+    return {memories,relationships};
 }
