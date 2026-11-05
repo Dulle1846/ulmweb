@@ -46,6 +46,35 @@ try{
     await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
 
+    // Strategy command center: every management button opens a working panel.
+    await page.locator('[data-strategy-open="government"]').click();
+    assert.equal(await page.locator("#strategy-modal").isVisible(),true);
+    assert.ok((await page.locator("#strategy-content").innerText()).includes("THE ROYAL CHANCERY"));
+    await page.locator('[data-strategy-tab="politics"]').click();
+    assert.ok((await page.locator("#strategy-content").innerText()).includes("Politics & factions"));
+    await page.locator('[data-strategy-tab="economy"]').click();
+    assert.ok((await page.locator("#strategy-content").innerText()).includes("Last financial ledger"));
+    await page.locator('[data-strategy-tab="cards"]').click();
+    assert.ok((await page.locator("#strategy-content").innerText()).includes("Card catalogue"));
+    await page.locator('[data-strategy-tab="decisions"]').click();
+    assert.ok((await page.locator("#strategy-content").innerText()).includes("Available decisions"));
+    await page.locator('[data-strategy-tab="dynasty"]').click();
+    assert.ok((await page.locator("#strategy-content").innerText()).includes("Royal dynasty"));
+    await page.locator('[data-strategy-tab="government"]').click();
+    await page.locator('[data-decree="royal_feast"]').first().click();
+    const decreeState=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {count:state.government.decrees.length,gold:state.resources.gold,food:state.resources.food,morale:state.morale};
+    });
+    assert.equal(decreeState.count,1,"a royal decree must be recorded in persistent government state");
+    assert.ok(decreeState.gold<=67&&decreeState.food<=108,"royal feast must spend its displayed resources");
+    await page.locator("#tax-range").evaluate(el=>{el.value="4";el.dispatchEvent(new Event("input",{bubbles:true}));});
+    await page.locator('[data-action="apply-tax"]').click();
+    const taxRate=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.government.taxRate;});
+    assert.equal(taxRate,0.04,"the tax ordinance must update the actual government state");
+    await page.locator("#strategy-close").click();
+    assert.equal(await page.locator("#strategy-modal").isVisible(),false);
+
     // Create deterministic guardian/ward records so the dossier UI can be tested
     // independently of random world population.
     const guardianshipFixture = await page.evaluate(async () => {
