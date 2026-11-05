@@ -99,8 +99,8 @@ export function updateMortality() {
         const risk = deathRisk(entity, person);
         if (risk <= 0 || random("mortality") >= risk) continue;
         const maxHp = Math.max(1, Number(entity.maxHp) || 1);
-        const hpRatio = Math.max(0, Math.min(1, (Number(entity.hp) || maxHp) / maxHp));
-        const cause = Number(entity.illnessUntilTick) > state.tick || Number(entity.illnessSeverity) > 0
+        const hpRatio = Math.max(0, Math.min(1, (Number.isFinite(Number(entity.hp)) ? Number(entity.hp) : maxHp) / maxHp));
+        const cause = Number(entity.illnessUntilTick) > state.tick
             ? "illness"
             : hpRatio < 0.3 ? "injury" : "old age";
         const death = recordNaturalDeath(entity, cause);
