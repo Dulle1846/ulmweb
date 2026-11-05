@@ -34,6 +34,7 @@ try{
     await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
     assert.equal(await page.title(),"KINGS & CARDS • Eternal Realm");
     assert.equal(await page.locator("#start-screen").isVisible(),true);
+    await page.waitForFunction(()=>{const image=document.querySelector(".start-art-preview");return Boolean(image?.complete&&image.naturalWidth>=200);});
 
     for(const [id,value] of [["world-landmass","72"],["world-ruggedness","64"],["world-forests","81"],["world-water","43"]]){
         await page.locator("#"+id).evaluate((el,next)=>{
