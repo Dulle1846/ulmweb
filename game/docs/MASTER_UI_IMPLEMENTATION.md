@@ -302,3 +302,11 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added hard limits of 80 nodes and 120 connector edges, alongside the existing four-generation/24-person descendant limits, to prevent runaway DOM growth.
 - Added deterministic Chromium coverage for royal consort/child links, connector paths and heir dossier navigation; reduced-motion and narrow-screen styling included.
 - No simulation or save-schema changes. Missing kinship links are never inferred.
+
+
+## Phase 4 — original royal heraldry atlas
+
+- Added eight original, locally bundled SVG shield emblems with distinct field colours and heraldic motifs (lion, dragon, tower, stag, moon, crossed blades, crown and phoenix).
+- The living sovereign dossier selects a stable emblem from the royal-house name using a deterministic hash; the same house keeps the same crest across reloads.
+- Former sovereign memorials reuse the same house emblem without implying current succession data.
+- SVG symbols are vector-based and shared from one atlas; no large raster payloads or external image requests are introduced.
