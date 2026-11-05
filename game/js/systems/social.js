@@ -31,7 +31,7 @@ function collectCandidatePairs(residents) {
     outer: for (const [, group] of [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))) {
         if (group.length < 2) continue;
         group.sort((a, b) =>
-            (Number(a.person?.needs?.belonging) || 50) - (Number(b.person?.needs?.belonging) || 50) ||
+            (Number(a.person?.needs?.belonging ?? 50)) - (Number(b.person?.needs?.belonging ?? 50)) ||
             String(a.personId).localeCompare(String(b.personId))
         );
         for (let i = 0; i < group.length; i++) {
