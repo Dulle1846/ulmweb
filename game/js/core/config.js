@@ -86,7 +86,7 @@ export const ICON_RADIUS = {
 
 export const ROLE_COLORS = {
     20: "#2d5a30", 21: "#3b5a8c", 22: "#3f6b3f",
-    23: "#7a6830", 24: "#8a7a50",
+    23: "#7a6830", 24: "#8a7a50", 25: "#8f3d36",
     30: "#6b2c2c", 31: "#4a5c2a", 32: "#3a4a3a",
 };
 
