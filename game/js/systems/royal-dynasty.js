@@ -21,6 +21,7 @@ export function getRoyalHouse(){
 }
 export function appointRoyalConsort(id){
  const king=getSovereign(),consort=getRoyalPerson(id);if(!king||!consort||consort===king||consort.type!==TYPE.VILLAGER)return {ok:false,reason:"eligible-consort-not-found"};
+ if(royalState().consortId&&royalState().consortId!==personId(consort))return {ok:false,reason:"sovereign-already-married"};
  const kp=ensurePersonProfile(king,{role:"king"}),cp=ensurePersonProfile(consort);
  if(cp.ageYears<adultAge(consort))return {ok:false,reason:"consort-not-adult"};
  if(closeKinIds(king).has(personId(consort)))return {ok:false,reason:"close-kinship"};
