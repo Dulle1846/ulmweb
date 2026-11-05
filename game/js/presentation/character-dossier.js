@@ -143,7 +143,7 @@ function renderSovereignDossier(entity, family) {
     ).join("");
     return '<section class="royal-dossier" data-royal-dossier="current" aria-labelledby="royal-dossier-title">' +
         '<div class="royal-dossier__masthead"><img src="assets/royal-crest.svg" alt="" aria-hidden="true">' +
-        '<div><span class="royal-dossier__eyebrow">THE CROWN &amp; THE ROYAL HOUSE</span><h3 id="royal-dossier-title">Sovereign dossier</h3>' +
+        '<div><span class="royal-dossier__eyebrow">THE CROWN &amp; THE ROYAL HOUSE</span><h3 id="royal-dossier-title">SOVEREIGN DOSSIER</h3>' +
         '<p>' + esc(state.kingdomName || "The realm") + ' · House ' + esc(dynastyName) + ' · Reigning sovereign</p></div></div>' +
         '<div class="royal-dossier__facts"><div><span>ROYAL CHILDREN</span><strong>' + children.length + '</strong></div>' +
         '<div><span>DESIGNATED HEIR</span><strong>' + (currentHouse.heir ? esc(currentHouse.heir.person?.name || personName(currentHouse.heir.personId)) : 'Not designated') + '</strong></div>' +
