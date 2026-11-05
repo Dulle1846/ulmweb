@@ -2,7 +2,8 @@
 import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { queueParticle,queueFloater,queueMessage } from "../core/presentation-effects.js";
-import { rand } from "../core/utils.js";
+import { rand as seededRand } from "../core/random.js";
+const rand=(min,max)=>seededRand(min,max,"combat");
 
 const CELL=8;
 const TILE_SIZE=48;
