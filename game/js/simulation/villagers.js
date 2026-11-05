@@ -249,7 +249,7 @@ function moveToward(unit, dt) {
 
     const targetTileX=Math.floor(unit.targetX),targetTileY=Math.floor(unit.targetY);
     if(unit.path&&(unit.pathTargetX!==targetTileX||unit.pathTargetY!==targetTileY||unit.pathVersion!==(state.buildingCollisionVersion||0)))unit.path=null;
-    if(unit.path&&followCachedPath(unit,dt))return;
+    if(unit.path&&followCachedPath(unit,dt,getRoadSpeedMultiplier(unit.x,unit.y)))return;
 
     const dx = unit.targetX - unit.x;
     const dy = unit.targetY - unit.y;
@@ -263,7 +263,7 @@ function moveToward(unit, dt) {
         return;
     }
 
-    const speed = UNIT_SPEED[unit.type] || 1.0;
+    const speed = (UNIT_SPEED[unit.type] || 1.0)*getRoadSpeedMultiplier(unit.x,unit.y);
     const s = Math.min(1, dt * 4);
     unit.velocityX += ((dx / dist) * speed - unit.velocityX) * s;
     unit.velocityY += ((dy / dist) * speed - unit.velocityY) * s;
@@ -286,7 +286,7 @@ function moveToward(unit, dt) {
         if(route?.length){
             unit.path=route;unit.pathIndex=0;unit.pathTargetX=targetTileX;unit.pathTargetY=targetTileY;
             unit.pathVersion=state.buildingCollisionVersion||0;
-            if(followCachedPath(unit,dt))return;
+            if(followCachedPath(unit,dt,getRoadSpeedMultiplier(unit.x,unit.y)))return;
         }
     }
     if (moved) {
