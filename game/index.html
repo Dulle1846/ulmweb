@@ -140,6 +140,14 @@
                 <button id="tab-2" class="tab-button" type="button">TRADE</button>
             </nav>
             <section id="tab-content" class="tab-content" aria-live="polite"></section>
+            <nav id="realm-action-dock" class="realm-action-dock" aria-label="Quick realm actions">
+                <button type="button" data-kac-dock-action="people" title="Open the living and deceased character dossiers">PEOPLE</button>
+                <button type="button" data-kac-dock-action="dynasty" title="Inspect the recorded royal family tree">DYNASTY</button>
+                <button type="button" data-kac-dock-action="cards" title="Open your current card hand">CARDS</button>
+                <button type="button" data-kac-dock-action="events" title="Open the realm event log">CHRONICLE</button>
+                <button type="button" data-kac-dock-action="save" title="Save this realm in the current browser profile">SAVE</button>
+                <span id="save-status" class="save-status" role="status" aria-live="polite">LOCAL SAVE · NOT SAVED</span>
+            </nav>
             <footer class="panel-footer">
                 <span>SIM TICK <strong id="tick-count">0</strong></span>
                 <button id="help-btn" class="footer-help" type="button" aria-label="How to play">?</button><button id="people-btn" class="footer-people-button" type="button" aria-label="Open character dossiers">PEOPLE</button>
