@@ -17,6 +17,7 @@ import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,loadSe
 import { startSoundtrack,setMusicEnabled,setMusicVolume,applySoundtrackSettings } from "../core/soundtrack.js";
 import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
 import {ensurePersonProfile,normalizePersonProfile} from "../systems/people.js";
+import {normalizeFamilyLinks} from "../systems/families.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -174,6 +175,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     restoreRandomStreams(snapshot.randomStreams);
     state.nextEntityId=Math.max(1,Number.isSafeInteger(snapshot.nextEntityId)?snapshot.nextEntityId:restored.length+1);
     for(let index=0;index<restored.length;index++){const entity=restored[index];if(!entity)continue;if(typeof entity.id!=="string")entity.id="e"+(Number(state.worldSeed)||1).toString(36)+"-"+(index+1).toString(36);if(entity.type===TYPE.VILLAGER&&!entity.personId)entity.personId=entity.id;if(entity.type===TYPE.VILLAGER||entity.isKing)ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});}
+    normalizeFamilyLinks();
     state.nextEntityId=Math.max(state.nextEntityId,restored.length+1);
     state.seasonIndex=snapshot.seasonIndex||0;state.morale=snapshot.morale??72;
     state.resources={wood:0,stone:0,gold:0,food:0,...snapshot.resources};
