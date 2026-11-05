@@ -197,7 +197,6 @@ try{
     await page.locator('[data-command="show-active-event"]').click();
     assert.ok(await page.locator("#realm-event-modal").isVisible(),"active issue shortcut must open the existing issue dialog");
     await page.locator("#realm-event-choices .event-choice").first().click();
-    await page.locator("#command-close").click();
     await page.locator('[data-command-tab="cards"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Card management"));
     await page.locator("#command-close").click();
