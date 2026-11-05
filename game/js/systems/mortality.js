@@ -103,7 +103,7 @@ export function updateMortality() {
     // can lawfully take the crown. Minor-heir regency is a separate future system.
     const residents = state.entities
         .filter(entity => !entity.dead && entity.personId &&
-            (entity.type === TYPE.VILLAGER || (entity.isKing && hasAdultRoyalSuccessor)))
+            (entity.type === TYPE.VILLAGER || (entity.isRoyalFamily && !entity.isKing) || (entity.isKing && hasAdultRoyalSuccessor)))
         .sort((a, b) => String(a.personId).localeCompare(String(b.personId)));
     const deaths = [];
     for (const entity of residents) {
