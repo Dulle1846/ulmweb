@@ -59,7 +59,21 @@ export function normalizePersonProfile(saved,entity,{role="resident"}={}){
         ageYears,lifeStage:lifeStage(ageYears,species),
         traits,needs,
         goals:Array.isArray(saved.goals)?saved.goals.filter(x=>typeof x==="string").slice(0,8):[],
-        memories:list(saved.memories,24),relationships:list(saved.relationships,32),
+        memories:list(saved.memories,24).map((item,index)=>({
+            id:String(item.id||("legacy-memory-"+index)).slice(0,120),
+            type:String(item.type||"event").slice(0,32),
+            text:String(item.text||"").slice(0,240),
+            tick:Math.max(0,Math.floor(Number(item.tick)||0)),
+            importance:clamp(item.importance,50)
+        })).filter(item=>item.text),
+        relationships:list(saved.relationships,32).map(item=>({
+            targetId:String(item.targetId||"").slice(0,100),
+            targetName:String(item.targetName||"Unknown").slice(0,90),
+            kind:String(item.kind||"known").slice(0,24),
+            trust:clamp(item.trust),respect:clamp(item.respect),affinity:clamp(item.affinity),
+            interactions:Math.max(0,Math.min(100000,Math.floor(Number(item.interactions)||0))),
+            lastInteractionTick:Math.max(0,Math.floor(Number(item.lastInteractionTick)||0))
+        })).filter(item=>item.targetId),
         secrets:Array.isArray(saved.secrets)?saved.secrets.filter(x=>typeof x==="string").slice(0,12):[],
         bornAtYear:Number.isSafeInteger(saved.bornAtYear)?Math.max(1,Math.min(1000000,saved.bornAtYear)):1,
         createdAtTick:Number.isSafeInteger(saved.createdAtTick)?Math.max(0,saved.createdAtTick):0
@@ -75,7 +89,7 @@ export function addPersonMemory(entity,memory){
     const person=ensurePersonProfile(entity);
     if(!person||!memory||typeof memory!=="object")return false;
     const entry={
-        id:String(memory.id||("memory-"+person.id+"-"+Math.max(0,Math.floor(Number(memory.tick)||0)))).slice(0,120),
+        id:String(memory.id||("memory-"+person.id+"-"+Math.max(0,Math.floor(Number(memory.tick)||0))+"-"+Math.floor(random("people")*1000000000))).slice(0,120),
         type:String(memory.type||"event").slice(0,32),
         text:String(memory.text||"").slice(0,240),
         tick:Math.max(0,Math.floor(Number(memory.tick)||0)),
@@ -174,7 +188,7 @@ export function recordPersonEventOutcome(issue,choice,effects={},tick=state.tick
             type:"realm-event",text:sentence,tick,importance:role==="affected"?importance:Math.max(20,importance-12)
         });
         if(added)memories++;
-        if(role==="affected"&&king&&entity!==king&&publicImpact!==0){
+        if(added&&role==="affected"&&king&&entity!==king&&publicImpact!==0){
             if(upsertRelationship(entity,king,"ruler",publicImpact,tick))relationships++;
             upsertRelationship(king,entity,"subject",Math.round(publicImpact*.35),tick);
         }
