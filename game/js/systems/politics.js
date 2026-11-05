@@ -64,6 +64,35 @@ export function updatePolitics(ledger,workforce){
         pressure.commons+=0.1;
         pressure.guilds+=0.1;
     }
+
+    // Constitutional design continuously shapes the balance of the estates.
+    const government=state.government||{};
+    const councilInfluence=Math.max(10,Math.min(80,Number(government.councilInfluence)||35));
+    const crownAuthority=Math.max(20,Math.min(90,Number(government.crownAuthority)||55));
+    if(government.form==="council_monarchy"){
+        pressure.commons+=0.08;
+        pressure.guilds+=0.06;
+        pressure.nobility-=0.05;
+        pressure.legitimacy+=0.02;
+    }else if(government.form==="elective_monarchy"){
+        pressure.nobility+=0.08;
+        pressure.commons+=0.02;
+        pressure.legitimacy-=0.01;
+    }else{
+        pressure.nobility+=0.05;
+        pressure.clergy+=0.02;
+        pressure.commons-=0.02;
+    }
+    if(councilInfluence>50){
+        pressure.commons+=0.03;
+        pressure.guilds+=0.02;
+        pressure.nobility-=0.02;
+    }
+    if(crownAuthority>65){
+        pressure.nobility+=0.03;
+        pressure.clergy+=0.02;
+        pressure.commons-=0.03;
+    }
     applyPoliticalEffects(pressure);
     return getPoliticalSnapshot();
 }
