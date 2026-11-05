@@ -194,6 +194,7 @@ export function resolveEventChoice(index){
  hidden.memories=Array.isArray(hidden.memories)?hidden.memories:[];
  hidden.memories.unshift({family:issue.family,choice:choice.label,tick:state.tick});
  if(hidden.memories.length>24)hidden.memories.length=24;
+ if(!Array.isArray(issue.participants)||!issue.participants.length)issue.participants=createEventParticipants(issue.family);
  hidden.activeThreads=Array.isArray(hidden.activeThreads)?hidden.activeThreads:[];
  hidden.completedThreads=Array.isArray(hidden.completedThreads)?hidden.completedThreads:[];
  if(issue.threadStart&&random("events")<0.5&&!hidden.activeThreads.some(thread=>thread.id===issue.threadStart)){
@@ -208,13 +209,12 @@ export function resolveEventChoice(index){
     addLog("THE CHRONICLE CONTINUES: "+thread.id.toUpperCase(),"#c5a66b","chronicle");
    }else{
     hidden.activeThreads=hidden.activeThreads.filter(item=>item!==thread);
-    hidden.completedThreads.unshift({id:thread.id,completedAtTick:state.tick,finalChoice:choice.label});
+    hidden.completedThreads.unshift({id:thread.id,completedAtTick:state.tick,finalChoice:choice.label,participants:Array.isArray(thread.participants)?thread.participants.slice(0,4):[]});
     if(hidden.completedThreads.length>20)hidden.completedThreads.length=20;
     addLog("CHRONICLE CONCLUDED: "+thread.id.toUpperCase(),"#c5a66b","chronicle");
    }
   }
  }
- if(!Array.isArray(issue.participants)||!issue.participants.length)issue.participants=createEventParticipants(issue.family);
  recordPersonEventOutcome(issue,choice,effects,state.tick);
  addLog(issue.title.toUpperCase()+": "+choice.label,"#a5d6a7","resolution");
  state.statistics.totalEventsResolved++;state.activeEvent=null;return true;
