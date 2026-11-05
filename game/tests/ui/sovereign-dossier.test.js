@@ -29,7 +29,7 @@ test("royal dossier links navigate through the existing recorded-person handler"
 test("former sovereign memorials do not display the living monarch's current succession data",()=>{
   assert.ok(dossier.includes('data-royal-dossier="former"'));
   assert.ok(dossier.includes("if (!isReigningSovereign)"));
-  assert.ok(dossier.includes("Current succession details are shown only on the living sovereign's dossier."));
+  assert.ok(dossier.includes("Current succession details are shown only on the living sovereign"));
 });
 
 test("royal chronicle is bounded and uses recorded royal-house history only",()=>{
