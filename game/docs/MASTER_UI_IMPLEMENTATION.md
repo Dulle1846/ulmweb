@@ -1,9 +1,9 @@
 # Master UI — Implementation Register
 
 **Specification:** `MASTER UI & VISUAL DESIGN CONCEPT v1.0` (uploaded project brief)  
-**Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 action dock and descendant tree), PR #43 (Phase 3 economy/buildings/creatures/chronicle), PR #44 (Phase 4 portrait/art increment), PR #80 (sovereign dossier), PR #84 (connected lineage network)  
-**Current UI branch:** `ulmweb-branch` (latest merged UI work: PRs #80 and #84)  
-**Baseline:** `5f980cc656a0308db0b5ba6d664a615d4bca1bef`  
+**Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 action dock and descendant tree), PR #43 (Phase 3 economy/buildings/creatures/chronicle), PR #44 (Phase 4 portrait/art increment), PR #80 (sovereign dossier), PR #84 (connected lineage network), PR #88 (seven-viewport UI audit and contrast refinement)  
+**Current UI branch:** `ulmweb-branch` (latest merged UI work: PRs #80, #84 and #88)  
+**Baseline:** `11219895d518634ca88ea26959616b2c98b31e17`  
 **Rule:** This register distinguishes implemented and tested work from the remaining concept. A styled shell is not a completed screen.
 
 ## Design decisions
@@ -42,6 +42,19 @@
 - Game Quality, Kings & Cards 2.1 checks and Chromium gameplay E2E passed on the exact PR feature heads. The independent Workers build check is not a Pages release check.
 - A live Pages smoke check confirmed the official homepage and the new sovereign-dossier and lineage stylesheet/JavaScript assets are served from `kings-and-cards.pages.dev`. The exact Pages deployment ID was not available in the inspected evidence.
 - No simulation rules or save schema changed. The remaining Master UI concept is not complete: broader responsive and accessibility audits, remaining character actions, and full art/animation production remain open.
+
+
+## Phase 5 responsive audit and contrast refinement (PR #88; release 3.7.1)
+
+- Added seven-viewport geometry and scroll-access checks for all ten strategic management tabs, the character roster/dossier, construction, settings and event-decision overlay.
+- The seven viewport sizes are 390×844, 768×1024, 1280×720, 1366×768, 1600×900, 1920×1080 and 2560×1440.
+- Detailed overlay screenshots are retained at 390×844, 1366×768 and 1920×1080 to limit artifact size; realm shell and management-window screenshots remain available at all seven sizes.
+- Screenshot review found dark blue/brown management introduction copy on the dark content canvas. It now uses warm ivory/gold; an automated WCAG AA test enforces at least 4.5:1 contrast against the dark theme surfaces.
+- Dynasty partner/sibling links use vertical curves for stacked phone layouts and horizontal curves for row layouts. Curve control points are bounded to short gaps. The mobile browser test checks vertical orientation at 390px.
+- Exact feature head `cf1207f308e78d76b4904d9209091587cbdb7b64` passed Game Quality, Kings & Cards 2.1 checks and Chromium gameplay E2E. The separate Workers build check is not a Pages deployment check.
+- PR #88 merged as `11219895d518634ca88ea26959616b2c98b31e17`; the official Pages homepage and updated CSS/JavaScript assets were fetched after merge.
+- No simulation rules or save schema changed.
+- Remaining: full keyboard/screen-reader review, complete contrast audit, all remaining legacy overlay migrations, art/animation production and the final release-wide acceptance matrix.
 
 ## Current implementation status
 
