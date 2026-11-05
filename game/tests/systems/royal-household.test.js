@@ -76,3 +76,16 @@ test("a regent's death transfers the crown to the minor heir under council prote
     assert.equal(state.royalDynasty.regency,null);
     assert.equal(heir.isKing,true);
 });
+
+
+test("a monarch's sibling is excluded from eligible royal consorts",()=>{
+    const {king}=setupRoyalHouse();
+    const {linkParentChild}=await import("../../js/systems/families.js");
+    const parent=new Entity(10,10,TYPE.VILLAGER);parent.id="royal-parent";parent.personId=parent.id;ensurePersonProfile(parent);
+    const sibling=new Entity(10,10,TYPE.VILLAGER);sibling.id="royal-sibling";sibling.personId=sibling.id;ensurePersonProfile(sibling);
+    Object.assign(sibling.person,{species:"human",sex:"male",ageYears:30,lifeStage:"adult",name:"Sibling Vale"});
+    state.entities.push(parent,sibling);
+    linkParentChild(parent.personId,king.personId);
+    linkParentChild(parent.personId,sibling.personId);
+    assert.equal(getRoyalHouseholdSnapshot().candidates.some(item=>item.personId===sibling.personId),false);
+});
