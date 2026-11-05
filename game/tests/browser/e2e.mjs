@@ -106,8 +106,25 @@ try{
     assert.ok(audienceState.legitimacy > legitimacyBeforeAudience, "royal audience should improve legitimacy");
     await page.locator("#economy-btn").click();
     assert.ok((await page.locator("#management-content").innerText()).includes("Economy & Workforce"));
+    const creatureFixture = await page.evaluate(async () => {
+        const [{ state }, { spawnEntity }, { TYPE }, { initializeCreature }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/world/entities.js"),
+            import("./js/core/types.js"),
+            import("./js/systems/creatures.js")
+        ]);
+        state.resources.food = 40;
+        const dragon = spawnEntity(48, 48, TYPE.DRAGON);
+        const creature = initializeCreature(dragon, { category: "dragons", group: "monsters", name: "E2E Young Dragon" });
+        return { name: creature.name };
+    });
     await page.locator("#cards-btn").click();
     assert.ok((await page.locator("#management-content").innerText()).includes("THE CARD VAULT"));
+    assert.ok((await page.locator("#management-content").innerText()).includes(creatureFixture.name));
+    await page.waitForFunction(() => {
+        const image = document.querySelector(".management-creature-icon img");
+        return Boolean(image?.complete && image.naturalWidth > 0);
+    }, null, { timeout: 8000 });
     await page.locator("#management-close").click();
     assert.equal(await page.locator("#realm-management-modal").isVisible(), false);
 
