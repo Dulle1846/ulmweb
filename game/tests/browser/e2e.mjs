@@ -692,7 +692,7 @@ try{
                     const path=document.querySelector(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling");
                     if(!path)return null;
                     const d=path.getAttribute("d")||"";
-                    const numbers=(d.match(/-?\\d+(?:\\.\\d+)?/g)||[]).map(Number);
+                    const numbers=(d.match(/-?\d+(?:\.\d+)?/g)||[]).map(Number);
                     return {d,startY:numbers[1],endY:numbers[7],stroke:getComputedStyle(path).stroke,opacity:getComputedStyle(path).opacity};
                 });
                 assert.ok(mobileConnector?.d?.includes("C"),"mobile dynasty must draw a curved partner/sibling connector");
