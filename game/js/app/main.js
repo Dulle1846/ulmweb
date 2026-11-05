@@ -390,7 +390,6 @@ function init(){
     setupCharacterDossier();
     setupManagementUI();
 setupBuildUI();
-    document.getElementById("command-chronicles-btn")?.addEventListener("click",()=>document.getElementById("people-btn")?.click());
     bindMenu();
     applySoundtrackSettings(settings);
     window.addEventListener("resize",resize);
