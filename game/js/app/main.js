@@ -277,15 +277,29 @@ function loadCurrentGame(){
     const profile=getActiveProfile();
     if(!profile){showStatus("Create or select a local player profile first.");return false;}
     const save=readLocalSave(profile.id);
-    if(!save){showStatus("No saved realm exists for "+profile.displayName+".");return false;}
+    if(!save){showStatus("No valid saved realm or recovery backup exists for "+profile.displayName+".");return false;}
+    const rollbackProfile=state.hasStarted&&state.activeProfileId
+        ?{id:state.activeProfileId,displayName:state.playerName}
+        :null;
+    const rollbackSnapshot=rollbackProfile?createSaveSnapshot():null;
     try{
         loadSnapshotIntoGame(profile,save.snapshot);
         syncWorldForge(state.worldOptions);
-        showStatus("Loaded realm · "+new Date(save.savedAt).toLocaleString());
+        showStatus("Loaded realm"+(save.restoredFromBackup?" · previous backup restored":"")+" · "+new Date(save.savedAt).toLocaleString());
         addLog("SAVE LOADED","#a3d6a7","system");
         return true;
     }catch(error){
-        showStatus("Load failed: "+error.message);return false;
+        let recovery="";
+        if(rollbackProfile&&rollbackSnapshot){
+            try{
+                loadSnapshotIntoGame(rollbackProfile,rollbackSnapshot);
+                recovery=" · previous realm restored";
+            }catch(restoreError){
+                recovery=" · recovery also failed: "+restoreError.message;
+            }
+        }
+        showStatus("Load failed: "+error.message+recovery);
+        return false;
     }
 }
 
