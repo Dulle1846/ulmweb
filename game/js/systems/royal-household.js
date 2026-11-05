@@ -23,7 +23,10 @@ function eligibleConsort(king,candidate){
     if(!species||person.species!==monarch.species||species.reproduction!=="paired")return false;
     if(monarch.lifeStage!=="adult"||person.lifeStage!=="adult"||monarch.sex===person.sex)return false;
     if(monarch.ageYears>species.lifespan*.65||person.ageYears>species.lifespan*.65)return false;
-    if(familyIds(monarch).has(getId(candidate))||familyIds(person).has(getId(king)))return false;
+    const kingFamily=getFamilySnapshot(getId(king));
+    const candidateFamily=getFamilySnapshot(getId(candidate));
+    const relatedIds=family=>new Set([...(family?.parents||[]),...(family?.children||[]),...(family?.siblings||[]),...(family?.partners||[])].map(link=>link.personId));
+    if(relatedIds(kingFamily).has(getId(candidate))||relatedIds(candidateFamily).has(getId(king)))return false;
     const links=kinshipOf(candidate).partners;
     if(links.some(link=>["partner","married"].includes(link.status)))return false;
     return true;
