@@ -148,6 +148,7 @@ export function initStartingKingdom() {
     king.hp = 300;
     king.maxHp = 300;
     king.isKing = true;
+    king.isRoyalFamily = true;
     king.personId = king.id;
     ensurePersonProfile(king,{role:"king"});
     king.home = { x: cx, y: cy };
