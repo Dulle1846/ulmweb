@@ -186,3 +186,37 @@ test("guardian migration restores reciprocal links without discarding unresolved
     assert.equal(guardian.person.kinship.wards[0].personId, ward.personId);
     assert.ok(ward.person.kinship.guardians.some(link => link.personId === "archived-guardian"));
 });
+
+
+test("guardianship limits are enforced without partial reciprocal links", () => {
+    const people = makePeople(20);
+    const [guardianA, guardianB, guardianC, ward, ...wards] = people;
+    for (const guardian of [guardianA, guardianB, guardianC]) {
+        Object.assign(ensurePersonProfile(guardian), { species: "human", ageYears: 40, lifeStage: "adult" });
+    }
+    Object.assign(ensurePersonProfile(ward), { species: "human", ageYears: 8, lifeStage: "young" });
+    assert.equal(linkGuardianWard(guardianA.personId, ward.personId).ok, true);
+    assert.equal(linkGuardianWard(guardianB.personId, ward.personId).ok, true);
+    assert.equal(linkGuardianWard(guardianC.personId, ward.personId).reason, "guardian-limit");
+    assert.equal(guardianC.person.kinship.wards.length, 0);
+
+    const [wardParent, ...wardChildren] = makePeople(18);
+    Object.assign(ensurePersonProfile(wardParent), { species: "human", ageYears: 40, lifeStage: "adult" });
+    for (const child of wardChildren) {
+        Object.assign(ensurePersonProfile(child), { species: "human", ageYears: 8, lifeStage: "young" });
+    }
+    for (const child of wardChildren.slice(0, 16)) assert.equal(linkGuardianWard(wardParent.personId, child.personId).ok, true);
+    assert.equal(linkGuardianWard(wardParent.personId, wardChildren[16].personId).reason, "ward-limit");
+    assert.equal(wardChildren[16].person.kinship.guardians.length, 0);
+});
+
+test("guardianship eligibility follows species-specific maturity", () => {
+    const [dwarfGuardian, dwarfWard] = makePeople(2);
+    Object.assign(ensurePersonProfile(dwarfGuardian), { species: "dwarf", ageYears: 23, lifeStage: "young" });
+    Object.assign(ensurePersonProfile(dwarfWard), { species: "dwarf", ageYears: 10, lifeStage: "young" });
+    assert.equal(linkGuardianWard(dwarfGuardian.personId, dwarfWard.personId).reason, "guardian-not-adult");
+    ensurePersonProfile(dwarfGuardian).ageYears = 24;
+    assert.equal(linkGuardianWard(dwarfGuardian.personId, dwarfWard.personId).ok, true);
+    ensurePersonProfile(dwarfWard).ageYears = 24;
+    assert.equal(linkGuardianWard(dwarfGuardian.personId, dwarfWard.personId).reason, "ward-not-minor");
+});
