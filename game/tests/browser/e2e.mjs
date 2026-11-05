@@ -143,7 +143,7 @@ try{
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
-    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),8,"all eight management tabs must live inside the dialog");
+    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),9,"all nine management tabs must live inside the dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Kingdom overview","management must open on the live kingdom overview");
     await page.locator('[data-command-tab="kingdom"]').click();
     assert.equal(await page.locator("body > .command-deck").count(),0,"there must be no obscured duplicate navigation outside the dialog");
@@ -162,6 +162,15 @@ try{
     await page.locator('[data-command="summon-dragon"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Emberwing") ||
         (await page.locator("#command-panel-content").innerText()).includes("dragon"));
+    await page.locator('[data-command-tab="economy"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("LATEST FINANCIAL SETTLEMENT"));
+    assert.ok(await page.locator("#command-panel-content .ledger-grid").isVisible(),"economy must render the real ledger section");
+    await page.locator('[data-command-tab="buildings"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Building register"));
+    assert.ok(await page.locator("#command-panel-content .building-record").count()>=1,"starting realm structures must be listed");
+    await page.locator("#building-search").fill("farm");
+    assert.ok(await page.locator("#command-panel-content .building-record:not(.is-filtered)").count()>=1,"building filter must retain matching structures");
+    await page.locator("#building-search").fill("");
     await page.locator('[data-command-tab="cards"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Card management"));
     await page.locator("#command-close").click();
