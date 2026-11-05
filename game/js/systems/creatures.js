@@ -51,9 +51,11 @@ export function updateCreatures(){
   const ageRisk=c.ageYears<lifespan?0:Math.min(.75,.08+(c.ageYears-lifespan)*.006);
   if(c.health>0&&ageRisk>0&&random("creatures")<ageRisk)c.health=0;
   if(c.health<=0){
+   const cause=ageRisk>0?"old age":"starvation";
+   remember(dragon,"My life ended in year "+year+" from "+cause+".",year);
    dragon.dead=true;deaths++;
    const archive=state.creatureArchive||(state.creatureArchive=[]);
-   archive.push({creatureId:dragon.creatureId,name:c.name,species:"dragon",ageYears:c.ageYears,lifeStage:c.lifeStage,deathYear:year,memories:(c.memories||[]).slice(-8)});
+   archive.push({creatureId:dragon.creatureId,name:c.name,species:"dragon",ageYears:c.ageYears,lifeStage:c.lifeStage,deathYear:year,cause,memories:(c.memories||[]).slice(-8)});
    state.creatureArchive=archive.slice(-MAX_ARCHIVE);
    addLog("THE DRAGON HAS FALLEN: "+c.name,"#b84a43","creature");
   }
