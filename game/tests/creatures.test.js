@@ -70,8 +70,8 @@ test("creature maturity and elder stages are species-specific", () => {
     state.year = 2;
     updateCreatures();
     assert.equal(entity.creature.lifeStage, "adult");
-    creature.ageYears = 158;
-    creature.lastAgedYear = 2;
+    entity.creature.ageYears = 158;
+    entity.creature.lastAgedYear = 2;
     state.year = 3;
     updateCreatures();
     assert.equal(entity.creature.lifeStage, "elder");
