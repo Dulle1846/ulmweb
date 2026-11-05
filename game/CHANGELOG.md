@@ -311,3 +311,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Added live SVG connector paths with distinct parent, guardian, partnership and sibling styles, plus canonical person dossier navigation.
 - Enforced 80-node and 120-edge limits; retained the existing descendant depth and per-generation caps.
 - Added deterministic Chromium coverage for relationship paths and heir dossier navigation, with reduced-motion and responsive styling.
+
+
+## Development line 3.7.0-dev — original royal heraldry atlas
+
+- Added eight original local SVG house emblems with deterministic selection from the dynasty name.
+- Integrated the emblem into the current and former sovereign dossier mastheads, with responsive sizing and no external asset requests.
+- Added static and browser assertions for symbol availability and stable local sprite references.
