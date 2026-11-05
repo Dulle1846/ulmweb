@@ -29,6 +29,8 @@ test("the long-form chronicle library covers civic, health and succession crises
 });
 
 test("plague chronicle decisions affect health and political factions at every stage",()=>{
+    assert.equal(EVENT_CHAINS.plague[0].choices[0].effects.cardReward,"infirmaries");
+    assert.equal(EVENT_CHAINS.plague[2].choices[0].effects.cardReward,"infirmaries");
     for(const stage of EVENT_CHAINS.plague){
         for(const choice of stage.choices){
             assert.ok(choice.effects.health&&typeof choice.effects.health==="object");
