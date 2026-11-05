@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
 import {getGovernmentSnapshot,setTaxRate,setGovernmentStructure,enactDecree} from "../../js/systems/government.js";
 import {calculateDailyLedger} from "../../js/systems/economy.js";
+import {updatePolitics} from "../../js/systems/politics.js";
 
 test("government defaults are normalized and bounded",()=>{
     resetState();
@@ -59,7 +60,7 @@ test("decrees cannot spend resources that the realm does not possess",()=>{
 test("constitutional form and council influence continuously shape estate support",async()=>{
     resetState();
     state.government={...state.government,form:"feudal_monarchy",councilInfluence:35,crownAuthority:55};
-    const feudal=(await import("../../js/systems/politics.js")).updatePolitics(
+    const feudal=updatePolitics(
         {foodShortage:0,unpaidWages:0,unpaidUpkeep:0},{population:10,unemployed:0}
     );
     resetState();
