@@ -2,7 +2,7 @@ import test,{beforeEach} from "node:test";
 import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
 import {TYPE} from "../../js/core/types.js";
-import {spawnEntity} from "../../js/world/entities.js";
+import {spawnEntity,initStartingKingdom} from "../../js/world/entities.js";
 import {triggerRandomEvent,resolveEventChoice,checkRandomEvents,addLog,EVENT_VARIANT_COUNT} from "../../js/systems/events.js";
 
 beforeEach(()=>{
