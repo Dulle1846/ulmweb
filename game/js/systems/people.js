@@ -110,7 +110,7 @@ export function addPersonMemory(entity,memory){
 export function getPersonSnapshot(entity){
     if(!entity)return null;
     const person=ensurePersonProfile(entity);
-    return {id:person.id,name:person.name,species:person.species,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,bornAtYear:person.bornAtYear,lastAgedYear:person.lastAgedYear,traits:{...person.traits},needs:{...person.needs},goals:[...person.goals],memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item})),kinship:{parents:person.kinship.parents.map(item=>({...item})),children:person.kinship.children.map(item=>({...item})),partners:person.kinship.partners.map(item=>({...item}))}};
+    return {id:person.id,name:person.name,species:person.species,sex:person.sex,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,bornAtYear:person.bornAtYear,lastAgedYear:person.lastAgedYear,traits:{...person.traits},needs:{...person.needs},goals:[...person.goals],memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item})),kinship:{parents:person.kinship.parents.map(item=>({...item})),children:person.kinship.children.map(item=>({...item})),partners:person.kinship.partners.map(item=>({...item}))}};
 }
 
 
