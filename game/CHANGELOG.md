@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.4.0`  
+**Current production version:** `3.4.1`  
 **Next development line:** `3.5.0-dev`  
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -23,6 +23,23 @@ Kings & Cards uses a practical semantic version format:
 The version in `game/package.json` is the machine-readable game version. Update this file and this changelog together for every release.
 
 ## Production release history
+
+### 3.4.1 — Master UI foundation
+**Released:** 2026-11-05  
+**PRs:** [#36](https://github.com/Dulle1846/ulmweb/pull/36), [#37](https://github.com/Dulle1846/ulmweb/pull/37)  
+**Merge commits:** `b040adf7870678132f699a7a7889b3b556aa1307`, `e9efbcf60950e3b596b7b8670fccb2f4b47eee8b`  
+**Pages deployment check:** successful on `e9efbcf`; [deployment preview](https://68e0b527.kings-and-cards.pages.dev/)
+
+- Added the royal parchment/dark timber design-token system and shared component styling.
+- Added the left royal administration rail and functional links to kingdom, government, people, dynasty, politics, economy, cards, creatures, building and settings screens.
+- Added live top status indicators for resources and population.
+- Added a data-backed kingdom overview for sovereign, year, population, morale, treasury, housing, workforce, legitimacy, resource stores and recent records.
+- Reused the existing heraldic crest and SVG resource artwork in place of several placeholder glyphs.
+- Added accessible selected navigation states and UI contract/browser tests.
+- Follow-up guard now shows neutral values before a campaign starts and an explicit awaiting-founding state rather than misleading placeholder metrics.
+
+**Scope limit:** This is the first UI foundation, not completion of the full Master UI concept. The remaining screens, asset suite, lower action dock, dynasty tree, building/resource dossiers, chronicle, event inbox and viewport matrix remain in development.
+
 
 ### 3.4.0 — Resource geography foundation
 **Released:** 2026-11-05  
