@@ -85,7 +85,8 @@ export function updateEconomy() {
         employed: workforce.employed,
         buildings: workforce.buildings,
         foodAvailable: state.resources.food,
-        goldAvailable: state.resources.gold
+        goldAvailable: state.resources.gold,
+        taxMultiplier: state.government?.taxRate ?? 1
     });
 
     addResource("food", -ledger.foodConsumed);
