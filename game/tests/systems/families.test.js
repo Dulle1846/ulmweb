@@ -1,0 +1,94 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { resetState, state } from "../../js/core/state.js";
+import { TYPE } from "../../js/core/types.js";
+import { spawnEntity } from "../../js/world/entities.js";
+import { ensurePersonProfile, normalizePersonProfile } from "../../js/systems/people.js";
+import { linkParentChild, setPartnership, endPartnership, getSiblings, getFamilySnapshot, normalizeFamilyLinks } from "../../js/systems/families.js";
+
+function makePeople(count = 5) {
+    resetState();
+    state.worldSeed = 2525;
+    state.year = 12;
+    return Array.from({ length: count }, (_, index) => {
+        const entity = spawnEntity(index, 0, TYPE.VILLAGER);
+        ensurePersonProfile(entity);
+        return entity;
+    });
+}
+
+test("explicit parent-child links are reciprocal, typed and idempotent", () => {
+    const [parent, child] = makePeople(2);
+    const first = linkParentChild(parent.personId, child.personId, { kind: "adoptive", sinceYear: 8 });
+    const second = linkParentChild(parent.personId, child.personId, { kind: "adoptive", sinceYear: 8 });
+    assert.deepEqual(first, { ok: true, added: true });
+    assert.deepEqual(second, { ok: true, added: false });
+    assert.deepEqual(child.person.kinship.parents, [{ personId: parent.personId, kind: "adoptive", sinceYear: 8 }]);
+    assert.deepEqual(parent.person.kinship.children, [{ personId: child.personId, kind: "adoptive", sinceYear: 8 }]);
+});
+
+test("kinship rejects self-parentage, unknown people, invalid kinds and cycles", () => {
+    const [a, b, c] = makePeople(3);
+    assert.equal(linkParentChild(a.personId, a.personId).reason, "self-parentage");
+    assert.equal(linkParentChild("missing", b.personId).reason, "person-not-found");
+    assert.equal(linkParentChild(a.personId, b.personId, { kind: "roommate" }).reason, "invalid-parent-kind");
+    assert.equal(linkParentChild(a.personId, b.personId).ok, true);
+    assert.equal(linkParentChild(b.personId, c.personId).ok, true);
+    assert.equal(linkParentChild(c.personId, a.personId).reason, "kinship-cycle");
+    assert.equal(linkParentChild(c.personId, c.personId).ok, false);
+});
+
+test("a person has at most two explicit parents", () => {
+    const [a, b, c, child] = makePeople(4);
+    assert.equal(linkParentChild(a.personId, child.personId).ok, true);
+    assert.equal(linkParentChild(b.personId, child.personId).ok, true);
+    assert.equal(linkParentChild(c.personId, child.personId).reason, "parent-limit");
+    assert.equal(child.person.kinship.parents.length, 2);
+});
+
+test("siblings are derived from shared explicit parents, not shared households", () => {
+    const [mother, father, otherParent, first, fullSibling, halfSibling, roommate] = makePeople(7);
+    linkParentChild(mother.personId, first.personId);
+    linkParentChild(father.personId, first.personId);
+    linkParentChild(mother.personId, fullSibling.personId);
+    linkParentChild(father.personId, fullSibling.personId);
+    linkParentChild(mother.personId, halfSibling.personId);
+    linkParentChild(otherParent.personId, halfSibling.personId);
+    first.householdId = fullSibling.householdId = halfSibling.householdId = roommate.householdId = "same-house";
+    assert.deepEqual(getSiblings(first.personId), [
+        { personId: halfSibling.personId, relation: "half" },
+        { personId: fullSibling.personId, relation: "full" }
+    ].sort((a, b) => a.personId.localeCompare(b.personId)));
+    assert.deepEqual(getSiblings(roommate.personId), []);
+});
+
+test("partnerships are reciprocal and can end without deleting history", () => {
+    const [a, b] = makePeople(2);
+    assert.deepEqual(setPartnership(a.personId, b.personId, { status: "married", sinceYear: 4 }), { ok: true, added: true });
+    assert.equal(a.person.kinship.partners[0].status, "married");
+    assert.equal(b.person.kinship.partners[0].personId, a.personId);
+    assert.deepEqual(endPartnership(a.personId, b.personId, { status: "divorced", endedYear: 10 }), { ok: true });
+    assert.equal(a.person.kinship.partners[0].status, "divorced");
+    assert.equal(b.person.kinship.partners[0].endedYear, 10);
+});
+
+test("legacy person records migrate to bounded empty kinship collections", () => {
+    resetState();
+    state.year = 5;
+    const entity = { id: "legacy-person", personId: "legacy-person" };
+    const person = normalizePersonProfile({ ageYears: 22, kinship: { parents: Array(10).fill({ personId: "p", kind: "biological" }), children: "bad", partners: [] } }, entity);
+    assert.equal(person.kinship.parents.length, 2);
+    assert.deepEqual(person.kinship.children, []);
+    assert.deepEqual(person.kinship.partners, []);
+});
+
+test("family migration restores reciprocal edges after all save entities are present", () => {
+    const [parent, child, partner] = makePeople(3);
+    child.person.kinship.parents = [{ personId: parent.personId, kind: "biological", sinceYear: 2 }];
+    child.person.kinship.partners = [{ personId: partner.personId, status: "partner", sinceYear: 7, endedYear: null }];
+    const result = normalizeFamilyLinks();
+    assert.ok(result.repaired >= 3);
+    assert.equal(parent.person.kinship.children[0].personId, child.personId);
+    assert.equal(partner.person.kinship.partners[0].personId, child.personId);
+    assert.equal(getFamilySnapshot(child.personId).parents[0].personId, parent.personId);
+});
