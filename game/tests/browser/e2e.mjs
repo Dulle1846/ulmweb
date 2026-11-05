@@ -183,9 +183,11 @@ try{
     await page.locator("#building-search").fill("");
     await page.evaluate(async()=>{
         const [{state},{addLog,triggerRandomEvent}]=await Promise.all([
-            import("./js/core/state.js"),import("./js/systems/events.js")
+            import("./js/core/state.js"),import("./js/systems/events.js"),import("./js/presentation/rendering/ui.js")
         ]);
         state.activeEvent=null;
+        const {renderUI}=await import("./js/presentation/rendering/ui.js");
+        renderUI();
         addLog("E2E CHRONICLE ENTRY","#c5a66b","e2e");
         triggerRandomEvent();
     });
