@@ -54,7 +54,7 @@
 - Added static contract tests for dock actions, kinship graph use, bounded rendering, dossier navigation and honest save-state messaging; the Chromium browser suite now exercises dynasty opening, dossier hand-off, manual save feedback and chronicle navigation.
 - PR #40 merged after all three required workflows passed on the exact feature head. Cloudflare Pages delivery is tracked separately from CI and is not inferred from GitHub merge status.
 
-## Phase 3 implementation increment (released in 3.6.0)
+## Phase 3 implementation increment (merged; 3.6.0 release candidate pending Pages)
 
 - Added an economy view that clearly separates resource stock, current simulation-tick flow, the latest completed 20-day financial settlement and cumulative totals.
 - The ledger panel uses `state.economy.lastLedger` and explicitly states that only the latest settlement is retained. It does not fabricate historical trend lines or forecasts.
