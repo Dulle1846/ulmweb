@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" role="img" aria-labelledby="title desc">
+<title id="title">Kings and Cards royal court illustration</title>
+<desc id="desc">Original colorful comic fantasy illustration of a castle, royal banner, crowned ruler and shield.</desc>
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#72c8e9"/><stop offset="1" stop-color="#d9f1c1"/></linearGradient>
+ <linearGradient id="stone" x2="0" y2="1"><stop stop-color="#f8e2a4"/><stop offset="1" stop-color="#c98a55"/></linearGradient>
+ <linearGradient id="red" x2="1" y2="1"><stop stop-color="#ef6557"/><stop offset="1" stop-color="#9e2f45"/></linearGradient>
+</defs>
+<rect width="720" height="320" rx="22" fill="url(#sky)"/>
+<circle cx="610" cy="66" r="34" fill="#ffe17c" stroke="#4a342b" stroke-width="6"/>
+<path d="M0 250 Q110 195 225 244 T470 226 T720 236 V320 H0Z" fill="#78ae59" stroke="#3d5739" stroke-width="7"/>
+<g stroke="#49352b" stroke-width="8" stroke-linejoin="round">
+ <path d="M145 254V132L210 86L275 132V254Z" fill="url(#stone)"/>
+ <path d="M122 143V98H166V143M255 143V98H299V143" fill="#f4c66e"/>
+ <path d="M190 254V185Q210 154 230 185V254" fill="#594238"/>
+ <path d="M170 112L210 42L250 112Z" fill="#d9584e"/>
+ <path d="M285 254V155L346 111L407 155V254Z" fill="url(#stone)"/>
+ <path d="M270 160V119H310V160M382 160V119H422V160" fill="#f4c66e"/>
+ <path d="M325 254V190Q346 160 367 190V254" fill="#594238"/>
+ <path d="M326 128L346 60L366 128Z" fill="#5c9bba"/>
+ <path d="M475 256V165L530 126L585 165V256Z" fill="url(#stone)"/>
+ <path d="M462 169V132H496V169M568 169V132H602V169" fill="#f4c66e"/>
+ <path d="M510 256V202Q530 177 550 202V256" fill="#594238"/>
+</g>
+<g stroke="#49352b" stroke-width="7" stroke-linejoin="round">
+ <path d="M88 253V115" fill="none"/>
+ <path d="M92 120Q157 111 150 175Q121 187 92 162Z" fill="url(#red)"/>
+ <path d="M92 121L150 175M150 120L92 162" fill="none" stroke="#f6d36e" stroke-width="5"/>
+ <path d="M632 250V105" fill="none"/>
+ <path d="M636 111Q694 101 687 166Q659 178 636 153Z" fill="#f1bd4e"/>
+ <path d="M636 112L687 166M687 111L636 153" fill="none" stroke="#fff0bb" stroke-width="5"/>
+</g>
+<g transform="translate(28 18)" stroke="#49352b" stroke-width="7" stroke-linejoin="round">
+ <path d="M42 246L54 173L84 143L114 173L126 246Z" fill="#376c93"/>
+ <path d="M53 171L45 133L70 148L84 111L99 148L123 132L114 174Z" fill="#f2c64f"/>
+ <path d="M69 182Q84 169 99 182L103 202H65Z" fill="#f5d5a4"/>
+ <path d="M67 202Q84 194 101 202L108 235H60Z" fill="#e5b28c"/>
+ <path d="M71 217Q84 224 97 217" fill="none" stroke="#49352b" stroke-width="4"/>
+ <path d="M57 246L45 287H123L111 246" fill="#b94d4b"/>
+ <path d="M53 178L27 214L42 224L67 198M112 178L137 213L123 225L99 198" fill="#376c93"/>
+</g>
+<g transform="translate(560 184)" stroke="#49352b" stroke-width="7" stroke-linejoin="round">
+ <path d="M0 0H108L100 88L54 117L8 88Z" fill="#477fa0"/>
+ <path d="M10 11L98 11L92 81L54 104L16 81Z" fill="#f0c65b"/>
+ <path d="M54 25L66 50L91 53L72 70L77 95L54 82L31 95L36 70L17 53L42 50Z" fill="#c64d46"/>
+</g>
+</svg>
