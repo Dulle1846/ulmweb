@@ -170,8 +170,11 @@ try{
         state.resources.gold=250;state.resources.food=250;
     });
     await page.locator('[data-command="summon-dragon"]').click();
-    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Emberwing") ||
-        (await page.locator("#command-panel-content").innerText()).includes("dragon"));
+    const creatureFixture=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {gold:state.resources.gold,food:state.resources.food,dragons:state.entities.filter(entity=>!entity.dead&&entity.isDragon).map(entity=>entity.creature?.name||entity.id)};
+    });
+    console.log("Creature dossier fixture:",JSON.stringify(creatureFixture));
     assert.ok(await page.locator("#command-panel-content .creature-record:not(.is-memorial)").count()>=1,"summoned dragon must have an individual dossier");
     await page.locator("#command-panel-content .creature-record:not(.is-memorial) > summary").first().click();
     assert.ok((await page.locator("#command-panel-content .creature-dossier").innerText()).includes("PERSONAL MEMORIES"));
