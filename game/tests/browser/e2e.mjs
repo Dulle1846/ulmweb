@@ -136,6 +136,7 @@ try{
     await page.locator("#realm-consort-select").selectOption(royalFixture.spouseId);
     await page.locator("[data-appoint-consort]").click();
     assert.match(await page.locator("#realm-window-content").innerText(),/Royal consort/);
+    const royalResourcesBefore=await page.evaluate(()=>({food:state.resources.food,gold:state.resources.gold}));
     await page.locator("[data-create-heir]").click();
     const royalBirth=await page.evaluate(async()=>{
         const [{state},{getFamilySnapshot}]=await Promise.all([
@@ -149,8 +150,8 @@ try{
     });
     assert.ok(royalBirth.childId,"royal birth must create a persistent person entity");
     assert.equal(royalBirth.parents,2,"royal heir must have two explicit parent links");
-    assert.equal(royalBirth.food,108);
-    assert.equal(royalBirth.gold,67);
+    assert.equal(royalBirth.food,royalResourcesBefore.food-12);
+    assert.equal(royalBirth.gold,royalResourcesBefore.gold-8);
     await page.locator("#realm-management-close").click();
     assert.equal(await page.locator("#realm-management-modal").isVisible(),false);
 
