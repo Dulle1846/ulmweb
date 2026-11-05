@@ -181,6 +181,7 @@ export function renderUI(){
     setText("stone-income",income(state.incomeThisTick.stone));
     setText("gold-income",income(state.incomeThisTick.gold));
     setText("food-income",income(state.incomeThisTick.food));
+    document.querySelectorAll("[data-resource-value]").forEach(node=>{const key=node.dataset.resourceValue;if(key in state.resources)node.textContent=Math.floor(state.resources[key]||0).toLocaleString("en-US");});
     const bar=document.getElementById("morale-bar");
     if(bar){bar.style.width=Math.max(0,Math.min(100,state.morale))+"%";bar.classList.toggle("is-low",state.morale<30);}
     setText("morale-value",Math.floor(state.morale));
@@ -188,6 +189,7 @@ export function renderUI(){
     setText("tick-count",state.tick.toLocaleString("en-US"));setText("kingdom-name","THE REALM OF "+state.kingdomName);
     setText("player-name",state.playerName||"GUEST");
     const housing=getHousingSnapshot();
+    document.querySelectorAll("[data-population]").forEach(node=>{node.textContent=String(housing.population);});
     const pop=document.getElementById("population");if(pop)pop.innerHTML="POP <strong>"+housing.population+"</strong> / "+housing.capacity+" · "+housing.available+" FREE";
     const card=state.currentCard,cardPanel=document.getElementById("card-container");
     if(card){
