@@ -82,6 +82,7 @@ const PROTOTYPES=[
  {id:"longbow-archer",category:"archers",type:TYPE.ARCHER,name:"LONGBOW ARCHER",desc:"A ranged defender.",icon:"🏹",cost:{gold:24,food:12},kind:"unit"},
  {id:"settler",category:"farmers",type:TYPE.VILLAGER,name:"SETTLER",desc:"A new resident seeking a home.",icon:"🧑‍🌾",cost:{food:12},kind:"person"},
  {id:"wild-deer",category:"deer",type:TYPE.DEER,name:"WILD DEER",desc:"A small herd animal.",icon:"🦌",cost:{food:3},kind:"animal"},
+ {id:"dragon-egg",category:"wyverns",type:TYPE.DRAGON,name:"DRAGON EGG",desc:"A living dragon hatches and joins the realm. It needs food, grows older and remembers its life.",icon:"🐉",cost:{gold:55,food:35},kind:"animal"},
  {id:"bountiful-harvest",category:"harvests",name:"BOUNTIFUL HARVEST",desc:"A sudden yield of food.",icon:"🌽",cost:{gold:5},kind:"effect",effect:"harvest"},
  {id:"gold-rush",category:"discoveries",name:"GOLD RUSH",desc:"A fortunate discovery.",icon:"💰",cost:{food:8},kind:"effect",effect:"gold-rush"},
  {id:"festival-blessing",category:"festivals",name:"FESTIVAL BLESSING",desc:"Lift the people's spirits.",icon:"🎐",cost:{food:12},kind:"effect",effect:"festival"}
