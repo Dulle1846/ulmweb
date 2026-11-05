@@ -6,7 +6,7 @@ import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } f
 import { getWorkforceSnapshot } from "../systems/economy.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
-let activePanel="government";
+let activePanel="kingdom";
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
 function toast(message){const el=$("action-toast");if(!el)return;el.textContent=message;el.classList.add("is-visible");setTimeout(()=>el.classList.remove("is-visible"),1800);}
