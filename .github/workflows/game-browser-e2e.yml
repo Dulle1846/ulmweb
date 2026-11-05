@@ -5,6 +5,7 @@ on:
     branches:
       - ulmweb-branch
       - kac-2.1-stability-performance
+      - kac-3.0-government-and-management-ui
     paths:
       - "game/**"
       - ".github/workflows/game-browser-e2e.yml"
