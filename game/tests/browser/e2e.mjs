@@ -165,6 +165,10 @@ try{
     await page.locator('[data-command="royal-birth"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("LIVING ROYAL CHILDREN"));
     await page.locator('[data-command-tab="creatures"]').click();
+    await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        state.resources.gold=250;state.resources.food=250;
+    });
     await page.locator('[data-command="summon-dragon"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Emberwing") ||
         (await page.locator("#command-panel-content").innerText()).includes("dragon"));
