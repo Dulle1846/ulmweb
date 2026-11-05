@@ -209,13 +209,11 @@ function lineageGraph(king,heirId){
   const sibling=familyRecord(link.personId),siblingId=add(sibling,"royal-generation");
   if(siblingId)connect(sovereignId,siblingId,"sibling");
  }
- const auntIds=new Set();
  for(const parent of parentRecords){
   const parentId=idOf(parent),parentFamily=getFamilySnapshot(parentId)||{};
   for(const siblingLink of (parentFamily.siblings||[]).slice(0,12)){
    const aunt=familyRecord(siblingLink.personId),auntId=add(aunt,"collateral");
    if(!auntId)continue;
-   auntIds.add(auntId);
    connect(parentId,auntId,"sibling");
    const auntChildren=getFamilySnapshot(auntId)?.children||[];
    for(const cousinLink of auntChildren.slice(0,12)){
@@ -224,11 +222,9 @@ function lineageGraph(king,heirId){
    }
   }
  }
- const childIds=new Set();
  for(const childLink of (rootFamily.children||[]).slice(0,24)){
   const child=familyRecord(childLink.personId),childId=add(child,"children");
   if(!childId)continue;
-  childIds.add(childId);
   const childFamily=getFamilySnapshot(childId)||{};
   const explicitParents=(childFamily.parents||[]).map(link=>String(link.personId));
   if(explicitParents.includes(rootId))connect(rootId,childId,childLink.kind==="guardian"?"guardian":"parent");
@@ -279,33 +275,6 @@ function dynasty(){
  const h=getRoyalHouse(),king=h.king;
  if(!king)return intro("HOUSE OF THE CROWN","Dynasty & lineage","The family tree is assembled from explicit parent, child and partnership records.")+'<div class="command-note">No living sovereign is currently recorded. Start a campaign or inspect the character dossiers for archived family records.</div>';
  const heirId=h.heir?.personId||"";
- const sovereignId=String(king.personId||king.person?.id||king.id||"");
- const rootFamily=getFamilySnapshot(sovereignId)||{};
- const linkedRecords=(links,exclude=[])=>{
-  const blocked=new Set([sovereignId,...exclude.map(value=>String(value))]);
-  return (links||[]).map(link=>familyRecord(link.personId)).filter(record=>{
-   const id=String(record?.personId||record?.person?.id||record?.id||"");
-   if(!id||blocked.has(id))return false;
-   blocked.add(id);return true;
-  }).slice(0,24);
- };
- const parents=linkedRecords(rootFamily.parents||[]);
- const siblings=linkedRecords(rootFamily.siblings||[],parents.map(person=>person.personId));
- const cousinMap=new Map();
- for(const parent of parents){
-  const parentId=String(parent.personId||parent.person?.id||parent.id||"");
-  for(const auntLink of getFamilySnapshot(parentId)?.siblings||[]){
-   const aunt=familyRecord(auntLink.personId);
-   if(!aunt)continue;
-   const auntId=String(aunt.personId||aunt.person?.id||aunt.id||"");
-   for(const cousinLink of getFamilySnapshot(auntId)?.children||[]){
-    const cousin=familyRecord(cousinLink.personId);
-    const cousinId=String(cousin?.personId||cousin?.person?.id||cousin?.id||"");
-    if(cousin&&cousinId!==sovereignId&&!parents.some(person=>String(person.personId)===cousinId)&&!siblings.some(person=>String(person.personId)===cousinId))cousinMap.set(cousinId,cousin);
-   }
-  }
- }
- const cousins=[...cousinMap.values()].slice(0,24);
  const visited=new Set(),generations=[];
  let current=[king];
  for(let depth=0;depth<4&&current.length;depth++){
@@ -327,7 +296,6 @@ function dynasty(){
   }
   current=next;
  }
- const consort=h.consort?familyNode(h.consort,heirId):'<p class="command-note">No royal consort is recorded.</p>';
  const history=h.history.slice().reverse().slice(0,12).map(x=>'<article class="command-history"><strong>YEAR '+number(x.year)+' · '+esc(x.kind)+'</strong><p>'+esc(x.detail)+'</p></article>').join("");
  return intro("HOUSE OF THE CROWN","Dynasty & lineage","A multi-generation view of the actual kinship graph. Select any recorded person to open their full dossier.")+
  '<div class="command-section-title">INTERACTIVE LINEAGE</div>'+lineageGraph(king,heirId)+
