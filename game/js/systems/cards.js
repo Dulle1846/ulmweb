@@ -7,7 +7,7 @@ import { revealArea,isWaterAt } from "../world/world.js";
 import { canAfford,payForCard,addResource } from "./resources.js";
 import { CARD_PROTOTYPES,CARD_CATEGORIES,CARD_VARIANT_DIMENSIONS,createCardForCategory,createCardVariant } from "./card-catalog.js";
 import { addLog } from "./events.js";
-import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE } from "./population.js";
+import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE,normalizeHouseholdAssignments } from "./population.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
 import { rand,randInt } from "../core/utils.js";
 export const CARD_DECK=Object.freeze(CARD_CATEGORIES.map(category=>{
@@ -155,6 +155,7 @@ export function placeCurrentCard(targetX,targetY){
             }
             revealArea(tx,ty,9);
         }
+        if(card.kind==="person"&&card.type===TYPE.VILLAGER)normalizeHouseholdAssignments();
         for(let i=0;i<10;i++)queueParticle(tx*TILE_SIZE+rand(0,TILE_SIZE),ty*TILE_SIZE+rand(0,TILE_SIZE),"#fde047",24,rand(-2,2),rand(-3,-0.5),4);
         queueFloater(tx*TILE_SIZE+TILE_SIZE/2,ty*TILE_SIZE+10,card.kind==="animal"?"RELEASED!":card.unit?"RECRUITED!":"BUILT!","#a3e635");
         addLog((card.unit||card.kind==="animal"?"RECRUITED ":"BUILT ")+card.name,"#a3d6a7","card");
