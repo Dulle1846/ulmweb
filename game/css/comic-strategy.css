@@ -4,7 +4,7 @@
 .command-deck button:hover{transform:translateY(-2px);filter:brightness(1.08)}
 .command-deck svg{width:24px;height:24px;fill:#b84d32;stroke:#26394b;stroke-width:1.6}
 .command-overlay{z-index:1050}.command-panel{width:min(940px,95vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;padding:22px;border:3px solid #172536;border-radius:17px;background:linear-gradient(145deg,#fff1cb,#e4c78e);color:#26384b;box-shadow:0 6px 0 #102338,0 24px 70px #0009}
-.command-panel-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:13px;border-bottom:2px solid #b38b4e}
+.command-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:104px;padding:12px 16px;background:linear-gradient(90deg,#fff1cbf2 0%,#fff1cbc9 48%,#fff1cb22 100%),url("../assets/comic-realm-banner.svg") right center/auto 100% no-repeat;border:2px solid #a77b42;border-radius:11px;border-bottom:4px solid #b38b4e}
 .command-panel-header h2{margin:4px 0;color:#243d57;font: bold 25px Georgia,serif}
 .command-ribbon,.command-panel-intro>span{color:#9b4a2a;font-size:8px;font-weight:1000;letter-spacing:.2em}
 .command-panel-content{min-height:0;overflow:auto;padding:16px 4px 8px}
