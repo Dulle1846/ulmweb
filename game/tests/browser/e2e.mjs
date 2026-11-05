@@ -689,14 +689,15 @@ try{
             if(tab==="dynasty"&&width<=790){
                 await page.waitForFunction(()=>[...document.querySelectorAll(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling")].some(path=>path.getAttribute("d")?.length>0),null,{timeout:5000});
                 const mobileConnector=await page.evaluate(()=>{
-                    const path=document.querySelector(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling");
+                    const graph=document.querySelector("#command-panel-content .dynasty-lineage-graph");
+                    const path=graph?.querySelector(".dynasty-lineage-edge--partner")||graph?.querySelector(".dynasty-lineage-edge--sibling");
                     if(!path)return null;
                     const d=path.getAttribute("d")||"";
                     const numbers=(d.match(/-?\d+(?:\.\d+)?/g)||[]).map(Number);
-                    return {d,startY:numbers[1],endY:numbers[7],stroke:getComputedStyle(path).stroke,opacity:getComputedStyle(path).opacity};
+                    return {d,startY:numbers[1],endY:numbers.at(-1),stroke:getComputedStyle(path).stroke,opacity:getComputedStyle(path).opacity};
                 });
                 assert.ok(mobileConnector?.d?.includes("C"),"mobile dynasty must draw a curved partner/sibling connector");
-                assert.ok(mobileConnector.endY>mobileConnector.startY,"stacked mobile relationship connector must run vertically between cards");
+                assert.ok(Math.abs(mobileConnector.endY-mobileConnector.startY)>12,"stacked mobile relationship connector must span the vertical gap between cards: "+JSON.stringify(mobileConnector));
                 assert.notEqual(mobileConnector.stroke,"none","mobile dynasty connector must remain visible");
                 assert.ok(Number(mobileConnector.opacity)>0,"mobile dynasty connector must not be transparent");
             }
