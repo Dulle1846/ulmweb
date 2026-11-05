@@ -59,7 +59,7 @@ function gameLoop(timestamp){
     const movementStep=1/30;
     let movementSteps=0;
     while(state.movementAccumulator>=movementStep&&movementSteps<3){
-     updateFriendlyMovement(movementStep*state.gameSpeed);
+     updateFriendlyMovement(movementStep*state.gameSpeed*(BASE_TICK_INTERVAL/MOVEMENT_TICK_REFERENCE_MS));
      state.movementAccumulator-=movementStep;movementSteps++;
     }
     if(movementSteps===3)state.movementAccumulator=Math.min(state.movementAccumulator,movementStep);
