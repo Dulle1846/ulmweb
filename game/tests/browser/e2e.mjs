@@ -89,9 +89,9 @@ try{
     const guardianDossier = await page.locator("#person-dossier").innerText();
     assert.ok(guardianDossier.includes("WARDS"));
     assert.ok(guardianDossier.includes("E2E Ward"));
-    await page.evaluate(({ guardianId, wardId }) => {
-        const state = window.__kacState;
-        if (state) state.entities = state.entities.filter(entity =>
+    await page.evaluate(async ({ guardianId, wardId }) => {
+        const { state } = await import("./js/core/state.js");
+        state.entities = state.entities.filter(entity =>
             entity.personId !== guardianId && entity.personId !== wardId
         );
     }, guardianshipFixture);
