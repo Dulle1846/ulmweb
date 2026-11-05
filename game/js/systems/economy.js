@@ -54,6 +54,7 @@ export function getWorkforceSnapshot() {
     const workersByBuilding = new Map();
     let employed = 0;
     for (const villager of villagers) {
+        if ((villager.illnessUntilTick || 0) > state.tick) continue;
         const workplace = villager.workplace;
         if (!workplace || workplace.dead || !BUILDING_WORKFORCE[workplace.type]) continue;
         workersByBuilding.set(workplace, (workersByBuilding.get(workplace) || 0) + 1);
