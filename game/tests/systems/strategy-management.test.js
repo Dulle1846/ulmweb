@@ -4,7 +4,7 @@ import {resetState,state} from "../../js/core/state.js";
 import {TYPE} from "../../js/core/types.js";
 import {initStartingKingdom,spawnEntity} from "../../js/world/entities.js";
 import {ensurePersonProfile} from "../../js/systems/people.js";
-import {getFamilySnapshot} from "../../js/systems/families.js";
+import {getFamilySnapshot,linkParentChild,setPartnership} from "../../js/systems/families.js";
 import {normalizeGovernment,setGovernmentForm,enactPolicy,getPoliticalSnapshot} from "../../js/systems/government.js";
 import {getRoyalHouse,appointRoyalConsort,createRoyalChild,designateHeir,updateRoyalSuccession} from "../../js/systems/royal-dynasty.js";
 import {summonDragon,updateCreatures,getCreatureSnapshot} from "../../js/systems/creatures.js";
@@ -101,4 +101,14 @@ test("the wyvern category now creates a real persistent dragon egg card",()=>{
  assert.equal(card.kind,"animal");
  assert.equal(card.effect,undefined);
  assert.ok(card.cost.gold>=55&&card.cost.food>=35);
+});
+
+test("royal consort selection rejects close relatives and people in an active partnership",()=>{
+ const {king,consort}=startRealm();
+ linkParentChild(king.personId,consort.personId);
+ assert.equal(appointRoyalConsort(consort.personId).reason,"close-kinship");
+ const second=state.entities.find(e=>e.type===TYPE.VILLAGER&&e.personId&&e!==consort);
+ ensurePersonProfile(second).species="human";ensurePersonProfile(second).ageYears=30;
+ assert.equal(setPartnership(consort.personId,second.personId,{status:"married"}).ok,true);
+ assert.equal(appointRoyalConsort(second.personId).reason,"consort-already-partnered");
 });
