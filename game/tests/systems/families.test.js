@@ -174,7 +174,7 @@ test("guardian and ward links are reciprocal, bounded and visible in family snap
 
 test("legacy kinship migration adds bounded guardian and ward collections", () => {
     const entity = { id: "legacy-guardian", personId: "legacy-guardian" };
-    const person = normalizePersonProfile({ ageYears: 22, kinship: { guardians: Array(10).fill({ personId: "g" }), wards: "invalid" } }, entity);
+    const person = normalizePersonProfile({ ageYears: 22, kinship: { guardians: Array.from({ length: 10 }, (_, index) => ({ personId: "g" + index })), wards: "invalid" } }, entity);
     assert.equal(person.kinship.guardians.length, 2);
     assert.deepEqual(person.kinship.wards, []);
 });
