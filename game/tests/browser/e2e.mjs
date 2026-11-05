@@ -46,6 +46,31 @@ try{
     await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
 
+    // Create deterministic guardian/ward records so the dossier UI can be tested
+    // independently of random world population.
+    const guardianshipFixture = await page.evaluate(async () => {
+        const [{ state }, { Entity, TYPE }, { ensurePersonProfile }, { linkGuardianWard }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/core/types.js"),
+            import("./js/systems/people.js"),
+            import("./js/systems/families.js")
+        ]);
+        const guardian = new Entity(2, 2, TYPE.VILLAGER);
+        guardian.id = "e2e-guardian";
+        guardian.personId = guardian.id;
+        ensurePersonProfile(guardian);
+        Object.assign(guardian.person, { name: "E2E Guardian", species: "human", ageYears: 36, lifeStage: "adult" });
+        const ward = new Entity(3, 2, TYPE.VILLAGER);
+        ward.id = "e2e-ward";
+        ward.personId = ward.id;
+        ensurePersonProfile(ward);
+        Object.assign(ward.person, { name: "E2E Ward", species: "human", ageYears: 9, lifeStage: "young" });
+        state.entities.push(guardian, ward);
+        const result = linkGuardianWard(guardian.personId, ward.personId, { sinceYear: state.year });
+        if (!result.ok) throw new Error("Could not create guardian dossier fixture: " + result.reason);
+        return { guardianId: guardian.personId, wardId: ward.personId };
+    });
+
     // Character dossiers are read-only, searchable and expose stable person records.
     await page.locator("#people-btn").click();
     assert.equal(await page.locator("#people-modal").isVisible(),true);
@@ -54,6 +79,22 @@ try{
     assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONALITY"));
     assert.match(await page.locator("#person-dossier").innerText(), /\b(female|male)\b/i);
     assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONAL CHRONICLE"));
+    await page.locator("#people-search").fill(guardianshipFixture.wardId);
+    await page.locator("#people-list .person-list-item").first().click();
+    const wardDossier = await page.locator("#person-dossier").innerText();
+    assert.ok(wardDossier.includes("GUARDIANS"));
+    assert.ok(wardDossier.includes("E2E Guardian"));
+    await page.locator("#people-search").fill(guardianshipFixture.guardianId);
+    await page.locator("#people-list .person-list-item").first().click();
+    const guardianDossier = await page.locator("#person-dossier").innerText();
+    assert.ok(guardianDossier.includes("WARDS"));
+    assert.ok(guardianDossier.includes("E2E Ward"));
+    await page.evaluate(({ guardianId, wardId }) => {
+        const state = window.__kacState;
+        if (state) state.entities = state.entities.filter(entity =>
+            entity.personId !== guardianId && entity.personId !== wardId
+        );
+    }, guardianshipFixture);
     await page.locator("#people-search").fill("no-such-person-should-match");
     assert.equal(await page.locator("#people-list .person-list-item").count(),0);
     await page.locator("#people-search").fill("");
