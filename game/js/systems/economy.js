@@ -4,6 +4,7 @@ import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { addResource } from "./resources.js";
 import { updatePolitics } from "./politics.js";
+import { getRoadUpkeepTotal } from "./roads.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -20,7 +21,7 @@ export const BUILDING_WORKFORCE = Object.freeze({
 
 const clampNonNegative = value => Math.max(0, Number.isFinite(value) ? value : 0);
 
-export function calculateDailyLedger({ population, employed, buildings, foodAvailable, goldAvailable, taxRate = 10 }) {
+export function calculateDailyLedger({ population, employed, buildings, foodAvailable, goldAvailable, taxRate = 10, roadUpkeep = 0 }) {
     const people = Math.floor(clampNonNegative(population));
     const workers = Math.min(people, Math.floor(clampNonNegative(employed)));
     const buildingCount = Math.floor(clampNonNegative(buildings));
@@ -30,7 +31,8 @@ export function calculateDailyLedger({ population, employed, buildings, foodAvai
     const effectiveTaxRate = Math.max(0, Math.min(35, Number.isFinite(Number(taxRate)) ? Number(taxRate) : 10));
     const taxesAssessed = workers * 0.025 * DAYS_PER_LEDGER * (effectiveTaxRate / 10);
     const wagesAssessed = workers * 0.015 * DAYS_PER_LEDGER;
-    const upkeepAssessed = buildingCount * 0.003 * DAYS_PER_LEDGER;
+    const roadUpkeepAssessed = clampNonNegative(roadUpkeep);
+    const upkeepAssessed = buildingCount * 0.003 * DAYS_PER_LEDGER + roadUpkeepAssessed;
     const treasuryAfterTaxes = clampNonNegative(goldAvailable) + taxesAssessed;
     const wagesPaid = Math.min(treasuryAfterTaxes, wagesAssessed);
     const upkeepPaid = Math.min(Math.max(0, treasuryAfterTaxes - wagesPaid), upkeepAssessed);
@@ -44,6 +46,7 @@ export function calculateDailyLedger({ population, employed, buildings, foodAvai
         taxesCollected: taxesAssessed,
         wagesPaid,
         upkeepPaid,
+        roadUpkeepAssessed,
         unpaidWages: wagesAssessed - wagesPaid,
         unpaidUpkeep: upkeepAssessed - upkeepPaid,
         netGold: taxesAssessed - wagesPaid - upkeepPaid
@@ -86,7 +89,8 @@ export function updateEconomy() {
         employed: workforce.employed,
         buildings: workforce.buildings,
         foodAvailable: state.resources.food,
-        goldAvailable: state.resources.gold
+        goldAvailable: state.resources.gold,
+        roadUpkeep: getRoadUpkeepTotal() * DAYS_PER_LEDGER
     });
 
     addResource("food", -ledger.foodConsumed);
@@ -100,7 +104,7 @@ export function updateEconomy() {
 
     const totals = state.economy || (state.economy = {});
     totals.daysElapsed = (totals.daysElapsed || 0) + DAYS_PER_LEDGER;
-    for (const key of ["foodConsumed", "taxesCollected", "wagesPaid", "upkeepPaid", "unpaidWages", "unpaidUpkeep"]) {
+    for (const key of ["foodConsumed", "taxesCollected", "wagesPaid", "upkeepPaid", "roadUpkeepAssessed", "unpaidWages", "unpaidUpkeep"]) {
         totals[key] = (totals[key] || 0) + ledger[key];
     }
     totals.lastLedger = ledger;
