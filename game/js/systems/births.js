@@ -33,6 +33,7 @@ function eligibleParents(first, second) {
     const a = ensurePersonProfile(first), b = ensurePersonProfile(second);
     if (a.species !== b.species || !PERSON_SPECIES[a.species]) return false;
     const species = PERSON_SPECIES[a.species];
+    if (species.reproduction !== "paired" || !["female","male"].includes(a.sex) || !["female","male"].includes(b.sex) || a.sex === b.sex) return false;
     if (a.lifeStage !== "adult" || b.lifeStage !== "adult") return false;
     if (a.ageYears < species.maturation || b.ageYears < species.maturation) return false;
     if (a.ageYears > species.lifespan * 0.65 || b.ageYears > species.lifespan * 0.65) return false;
