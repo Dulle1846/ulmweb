@@ -217,6 +217,27 @@ try{
     await page.locator("#royal-consort-select").selectOption({index:1});
     await page.locator('[data-command="consort"]').click();
     await page.locator('[data-command="royal-birth"]').click();
+
+    // The dynasty panel draws a connected network from persisted kinship edges.
+    await page.locator('[data-command-tab="dynasty"]').click();
+    const dynastyGraphFixture=await page.evaluate(async()=>{
+        const {getRoyalHouse}=await import("./js/systems/royal-dynasty.js");
+        const house=getRoyalHouse();
+        return {heirId:String(house.heir?.personId||""),childCount:(house.children||[]).length};
+    });
+    assert.ok(dynastyGraphFixture.heirId,"royal birth should leave a designated heir for the graph test");
+    assert.equal(await page.locator("#command-panel-content .dynasty-lineage-graph").count(),1);
+    assert.ok(await page.locator("#command-panel-content .dynasty-lineage-graph [data-lineage-node-id]").count()>=3,"lineage graph must render the sovereign, consort and recorded child");
+    await page.waitForFunction(()=>[...document.querySelectorAll(".dynasty-lineage-graph .dynasty-lineage-edge")].some(path=>path.getAttribute("d")?.length>0),null,{timeout:5000});
+    const lineageNodeCount=await page.locator("#command-panel-content .dynasty-lineage-graph [data-lineage-node-id]").count();
+    const lineageEdgeCount=await page.locator("#command-panel-content .dynasty-lineage-graph .dynasty-lineage-edge").count();
+    assert.ok(lineageEdgeCount>=2,"recorded partnership and parent-child links must have connector paths");
+    assert.ok(lineageNodeCount<=80&&lineageEdgeCount<=120,"lineage rendering must respect hard node and edge caps");
+    await page.locator('#command-panel-content .dynasty-lineage-graph [data-lineage-node-id="'+dynastyGraphFixture.heirId+'"]').click();
+    assert.equal(await page.locator("#people-modal").isVisible(),true,"selecting a graph node must open the canonical person dossier");
+    assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONALITY"));
+    await page.locator("#people-close").click();
+
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("LIVING ROYAL CHILDREN"));
     await page.locator('[data-command-tab="creatures"]').click();
     await page.evaluate(async()=>{
