@@ -155,7 +155,7 @@ test("original royal portrait sprite is wired into roster, dossiers and dynasty 
 
 test("character relationship links navigate to real dossiers and dynasty uses verified collateral kin",()=>{
   assert.ok(dossier.includes("dossier-related-person"));
-  assert.ok(dossier.includes('detail.addEventListener("click"'));
+  assert.ok(dossier.includes('getElementById("person-dossier")?.addEventListener("click"'));
   assert.ok(management.includes("rootFamily.parents"));
   assert.ok(management.includes("rootFamily.siblings"));
   assert.ok(management.includes("getFamilySnapshot(auntId)?.children"));
