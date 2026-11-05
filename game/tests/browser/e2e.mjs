@@ -66,6 +66,7 @@ try{
     // continues to verify the expected kingdom landing screen.
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="kingdom"]').click();
+    await page.locator("#command-close").click();
 
     // The construction menu must place visible road tiles through normal map input.
     await page.locator("#build-open-btn").click();
