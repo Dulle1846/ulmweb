@@ -5,9 +5,9 @@ import {WORLD_W,WORLD_H} from "../../js/core/config.js";
 import {createCardForCategory} from "../../js/systems/card-catalog.js";
 import {drawStartingHand,drawNewCard,updateCardDraw,skipCard,placeCurrentCard,restoreHand,CARD_DECK} from "../../js/systems/cards.js";
 
-test("the playable deck covers all five hundred catalogue categories",()=>{
-    assert.equal(CARD_DECK.length,500);
-    assert.equal(new Set(CARD_DECK.map(card=>card.category)).size,500);
+test("the playable deck covers all five hundred and one catalogue categories",()=>{
+    assert.equal(CARD_DECK.length,501);
+    assert.equal(new Set(CARD_DECK.map(card=>card.category)).size,501);
 });
 test("a new realm begins with an empty hand and deals cards on a hidden timer",()=>{
     resetState();
