@@ -46,6 +46,7 @@ export function calculateDailyLedger({ population, employed, buildings, foodAvai
         taxesCollected: taxesAssessed,
         wagesPaid,
         upkeepPaid,
+        upkeepAssessed,
         roadUpkeepAssessed,
         unpaidWages: wagesAssessed - wagesPaid,
         unpaidUpkeep: upkeepAssessed - upkeepPaid,
