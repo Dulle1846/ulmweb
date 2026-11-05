@@ -19,6 +19,7 @@ import { updateSocialLife } from "../systems/social.js";
 import { updatePersonalAgency } from "../systems/agency.js";
 import { updateMortality } from "../systems/mortality.js";
 import { updateGuardianships } from "../systems/guardianship.js";
+import { resolveRoyalSuccession } from "../systems/royal-dynasty.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
@@ -32,6 +33,8 @@ export function updateSimulation(){
         updatePeople();
         deaths=updateMortality();
         guardianships=updateGuardianships();
+        const succession=resolveRoyalSuccession();
+        if(succession?.ok)addLog("THE CROWN PASSES TO "+succession.successor.person.name,"#e8c77b","succession");
         socialResult=updateSocialLife();
         updatePersonalAgency();
         newborn=updateBirths();
