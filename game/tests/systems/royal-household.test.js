@@ -5,6 +5,7 @@ import {Entity,TYPE} from "../../js/core/types.js";
 import {ensurePersonProfile} from "../../js/systems/people.js";
 import {arrangeRoyalMarriage,createRoyalHeir,getRoyalHouseholdSnapshot,updateRoyalSuccession} from "../../js/systems/royal-household.js";
 import {recordNaturalDeath} from "../../js/systems/mortality.js";
+import {linkParentChild} from "../../js/systems/families.js";
 
 function setupRoyalHouse(){
     resetState();
@@ -78,9 +79,8 @@ test("a regent's death transfers the crown to the minor heir under council prote
 });
 
 
-test("a monarch's sibling is excluded from eligible royal consorts",async()=>{
+test("a monarch's sibling is excluded from eligible royal consorts",()=>{
     const {king}=setupRoyalHouse();
-    const {linkParentChild}=await import("../../js/systems/families.js");
     const parent=new Entity(10,10,TYPE.VILLAGER);parent.id="royal-parent";parent.personId=parent.id;ensurePersonProfile(parent);
     const sibling=new Entity(10,10,TYPE.VILLAGER);sibling.id="royal-sibling";sibling.personId=sibling.id;ensurePersonProfile(sibling);
     Object.assign(sibling.person,{species:"human",sex:"male",ageYears:30,lifeStage:"adult",name:"Sibling Vale"});
