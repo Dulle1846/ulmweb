@@ -470,3 +470,12 @@ When a need falls below the urgent threshold, it becomes the active personal goa
 The scheduler runs once per year for named living people, including non-villager person profiles. Goal history is capped at 12 entries, personal memories at 24, social relationship lists at 32 and yearly social pair processing at 120. Realm and per-person scheduler cursors are persisted and migrated.
 
 This is a first needs-and-goals controller, not a complete autonomous planner. Long-term political projects, careers, education, travel plans and multi-step personal schemes remain future work.
+
+
+## Implemented follow-up — natural mortality and memorial archive (Phase 3.0)
+
+Ordinary villagers can now die naturally. The yearly scheduler uses species lifespan, age, health and active illness, with a dedicated deterministic random stream and a hard limit of eight deaths per year. Mortality begins after 72% of the configured lifespan and rises with age and health risks. The king and non-villager entities are deliberately excluded until succession rules exist.
+
+A death creates a persistent memorial containing the person's normalized profile, identity, family graph, memories, death year/tick and cause. The deceased receives a final memory; living relatives and partners receive bereavement memories. The live entity is then removed by the normal simulation cleanup, while the memorial remains available in the searchable character dossier. Family snapshots can resolve links to archived people.
+
+The archive is capped at 1,000 entries and is included in save/load migration. Older saves start with an empty memorial archive. This is not yet a complete death/succession system: royal succession, inheritance, regency, orphan guardianship, estates and funeral rites remain separate future phases.
