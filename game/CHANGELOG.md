@@ -267,3 +267,9 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 
 - Added contained vertical scrolling to the mobile management column so the card panel and lower tabs remain reachable on short screens.
 - Added Chromium regression checks for actual scroll range and scroll movement at 390×844 and 768×1024.
+
+
+## Development line 3.7.0-dev — Phase 5 selected-card reachability evidence
+
+- Added an end-to-end proof that the selected card can be brought fully into view within the mobile management panel at 390×844 and 768×1024.
+- Browser CI also uploads dedicated scrolled-state screenshots for visual review; no game state or save data is changed.
