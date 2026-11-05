@@ -340,3 +340,24 @@ This is a first needs-and-goals controller, not yet a full planner. It does not 
 
 ### Verification target
 Node tests cover need changes, goal selection, once-per-year behavior, bounded goal history/memories, king/non-villager profiles and goal-driven farm assignment. Static checks and Browser E2E must pass on the exact final PR head.
+
+
+## Phase 3.0 — natural mortality and persistent memorial archive
+
+Implemented on `kac-2.6-character-dossiers`, stacked into Draft PR #11.
+
+- Yearly species-aware mortality for ordinary villagers, beginning after 72% of configured species lifespan.
+- Risk increases with age, low health and active illness; decisions use an isolated deterministic `mortality` random stream.
+- Maximum eight natural deaths are processed per realm year to prevent sudden population collapse.
+- The king and non-villager entities are explicitly excluded until royal succession and office-transfer rules exist.
+- A compact, persistent memorial archive stores the deceased person's normalized profile, identity, species, age, life history, family links, death year/tick and cause.
+- Surviving relatives and partners receive personal bereavement memories; the deceased receives a final death memory.
+- The archive is capped at 1,000 memorials. Oldest memorials are pruned when the cap is exceeded.
+- Character dossiers include deceased people and preserve readable family links after their entities leave the live world.
+- Save snapshots persist the archive; old saves migrate to an empty archive.
+- Browser E2E creates a memorial, inspects the deceased dossier, saves/loads and verifies the memorial remains available.
+
+### Limits
+- No royal death, succession, regency, inheritance, estate distribution, orphan guardianship or funeral/religious rites yet.
+- Mortality is currently a species/age/health probability model, not a full disease, injury and care system.
+- The 1,000-entry archive is a deliberate memory bound; a later chronicle compaction/indexing design should preserve long-run realm history beyond this limit.
