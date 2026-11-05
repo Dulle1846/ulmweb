@@ -148,11 +148,13 @@ function saveCurrentGame(){
     try{
         const savedAt=writeLocalSave(state.activeProfileId,createSaveSnapshot());
         showStatus("Realm saved · "+new Date(savedAt).toLocaleTimeString());
+        setSaveStatus("LAST SAVED · "+new Date(savedAt).toLocaleTimeString(),"saved");
         addLog("GAME SAVED","#a3d6a7","system");
         renderUI();
         return true;
     }catch(error){
         showStatus("Save failed: "+error.message);
+        setSaveStatus("SAVE FAILED · "+error.message,"error");
         return false;
     }
 }
@@ -298,6 +300,7 @@ function loadCurrentGame(){
         loadSnapshotIntoGame(profile,save.snapshot);
         syncWorldForge(state.worldOptions);
         showStatus("Loaded realm"+(save.restoredFromBackup?" · previous backup restored":"")+" · "+new Date(save.savedAt).toLocaleString());
+        setSaveStatus("LOADED · "+new Date(save.savedAt).toLocaleTimeString(),"saved");
         addLog("SAVE LOADED","#a3d6a7","system");
         return true;
     }catch(error){
@@ -318,6 +321,14 @@ function loadCurrentGame(){
 function showStatus(message){
     const status=document.getElementById("status-message");
     if(status){status.textContent=message;status.classList.add("is-visible");}
+}
+
+function setSaveStatus(message,kind=""){
+    const status=document.getElementById("save-status");
+    if(!status)return;
+    status.textContent=message;
+    status.classList.toggle("is-saved",kind==="saved");
+    status.classList.toggle("is-error",kind==="error");
 }
 
 function bindMenu(){

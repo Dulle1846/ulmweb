@@ -174,4 +174,13 @@ export function setupCharacterDossier() {
     window.addEventListener("kac:people-refresh", () => {
         if (!modal.classList.contains("hidden")) refreshDossier();
     });
+    window.addEventListener("kac:open-person", event => {
+        const personId = String(event.detail?.personId || "");
+        if (!personId || !people().some(entity => String(entity.personId) === personId)) return;
+        selectedPersonId = personId;
+        if (search) search.value = "";
+        refreshDossier();
+        modal.classList.remove("hidden");
+        search.focus();
+    });
 }

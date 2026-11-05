@@ -151,3 +151,39 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
 }
+
+
+/* Phase 2 — reusable royal UI primitives and contextual action dock. */
+.ui-panel{border:1px solid var(--ui-line-strong);border-radius:var(--ui-radius-md);background:linear-gradient(145deg,#302a22,#211e19);box-shadow:inset 0 1px #fff1,0 5px 14px #0005}
+.ui-parchment-card{border:1px solid #a98a52;border-radius:var(--ui-radius-sm);background:linear-gradient(145deg,#f4e8d0,#ddc9a2);color:var(--ui-ink);box-shadow:inset 0 1px #fff9,0 3px 8px #0003}
+.ui-section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid var(--ui-line);font:700 10px var(--ui-title-font);letter-spacing:.12em;color:#e2cea5}
+.ui-icon-button{display:inline-grid;place-items:center;min-width:34px;min-height:34px;border:1px solid var(--ui-line-strong);border-radius:3px;background:linear-gradient(#514333,#332a20);color:#ead9b5;cursor:pointer}
+.ui-icon-button:hover{border-color:var(--color-antique-gold);background:#69553a}
+.ui-icon-button:active{transform:translateY(1px)}
+.ui-icon-button[aria-pressed=true],.ui-icon-button.is-selected{border-color:#e1c17d;background:linear-gradient(#b99a59,#80633f);color:#211b14}
+[data-tooltip]{position:relative}
+[data-tooltip]::after{content:attr(data-tooltip);position:absolute;z-index:30;left:50%;bottom:calc(100% + 8px);width:max-content;max-width:min(260px,70vw);padding:7px 9px;border:1px solid var(--ui-line-strong);border-radius:3px;background:#171512;color:#f0e3c7;font:500 11px/1.4 var(--ui-body-font);letter-spacing:0;white-space:normal;box-shadow:var(--ui-shadow);opacity:0;pointer-events:none;transform:translate(-50%,4px);transition:opacity .12s ease,transform .12s ease}
+[data-tooltip]:hover::after,[data-tooltip]:focus-visible::after{opacity:1;transform:translate(-50%,0)}
+.realm-action-dock{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:7px 8px;border-top:1px solid var(--ui-line-strong);border-bottom:1px solid var(--ui-line);background:linear-gradient(180deg,#332b22,#211e19)}
+.realm-action-dock button{min-width:0;min-height:31px;padding:4px 3px;border:1px solid #80633f;border-radius:3px;background:linear-gradient(#514333,#332a20);color:#e6d7b8;font:700 8px var(--ui-title-font);letter-spacing:.06em;cursor:pointer}
+.realm-action-dock button:hover{border-color:#d1b476;background:linear-gradient(#69553a,#403326);color:#fff0c9}
+.realm-action-dock button:active{transform:translateY(1px)}
+.save-status{grid-column:1/-1;overflow:hidden;text-align:center;color:#bba984;font:600 8px var(--ui-body-font);letter-spacing:.09em;text-overflow:ellipsis;white-space:nowrap}
+.save-status.is-saved{color:#a9c69a}
+.save-status.is-error{color:#e0a09a}
+.dynasty-root-grid,.dynasty-generation-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.dynasty-tree{display:grid;gap:10px}
+.dynasty-generation{position:relative;padding:9px;border:1px solid var(--ui-line);border-radius:3px;background:#17151255}
+.dynasty-generation:not(:first-child)::before{content:"";position:absolute;left:50%;bottom:100%;height:11px;border-left:1px solid var(--ui-line-strong)}
+.dynasty-generation-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px;color:#d9c49a;font:700 9px var(--ui-title-font);letter-spacing:.12em}
+.dynasty-generation-heading small{color:#a89572;font:600 8px var(--ui-body-font);letter-spacing:.06em}
+.dynasty-person{display:flex;align-items:center;gap:9px;min-width:0;padding:9px;border:1px solid #a98a52;border-radius:3px;background:linear-gradient(145deg,#f4e8d0,#ddc9a2);color:#3d2d20;text-align:left;cursor:pointer;box-shadow:inset 0 1px #fff9,0 2px 5px #0003}
+.dynasty-person:hover,.dynasty-person:focus-visible{border-color:#762f35;background:linear-gradient(145deg,#fff0d2,#e8d4aa);transform:translateY(-1px)}
+.dynasty-person.is-deceased{filter:saturate(.65)}
+.dynasty-person-seal{display:grid;place-items:center;flex:0 0 32px;width:32px;height:38px;border:1px double #9d7d4b;border-radius:45% 45% 4px 4px;background:linear-gradient(145deg,#d8c6a0,#b99a59);color:#403326;font:700 17px var(--ui-title-font)}
+.dynasty-person-copy{display:grid;min-width:0;gap:2px}
+.dynasty-person-copy strong{overflow:hidden;color:#3d2d20;font:700 12px var(--ui-title-font);text-overflow:ellipsis;white-space:nowrap}
+.dynasty-person-copy small{color:#725c3e;font-size:10px}
+.dynasty-person-copy em{color:#80633f;font:700 8px var(--ui-body-font);font-style:normal;letter-spacing:.06em}
+@media(max-width:790px){.realm-action-dock{grid-template-columns:repeat(5,minmax(0,1fr));padding:6px}.realm-action-dock button{font-size:7px;min-height:34px}.dynasty-root-grid,.dynasty-generation-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){[data-tooltip]::after,.dynasty-person{transition:none}}
