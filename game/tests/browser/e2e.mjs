@@ -520,6 +520,20 @@ try{
         await page.setViewportSize({width,height});
         await page.waitForTimeout(40);
         await page.screenshot({path:resolve(screenshotDir,"realm-"+width+"x"+height+".png"),animations:"disabled"});
+        const header=await page.evaluate(()=>{
+            const actions=document.querySelector(".header-actions");
+            const rect=actions.getBoundingClientRect();
+            return {
+                left:rect.left,right:rect.right,clientWidth:actions.clientWidth,scrollWidth:actions.scrollWidth,
+                controls:[...actions.children].map(element=>{
+                    const bounds=element.getBoundingClientRect();
+                    return {name:element.id||element.className,left:bounds.left,right:bounds.right};
+                })
+            };
+        });
+        assert.ok(header.left>=-1&&header.right<=width+1,"header action row must remain inside viewport at "+width+"x"+height+": "+JSON.stringify(header));
+        assert.ok(header.scrollWidth<=header.clientWidth+1,"header action row must not clip controls at "+width+"x"+height+": "+JSON.stringify(header));
+        assert.ok(header.controls.every(control=>control.left>=-1&&control.right<=width+1),"every primary game control must remain reachable at "+width+"x"+height+": "+JSON.stringify(header));
         const layout=await page.evaluate(()=>{
             const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
             return {viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,dockWidth:dock.width,dockLeft:dock.left,dockRight:dock.right};
