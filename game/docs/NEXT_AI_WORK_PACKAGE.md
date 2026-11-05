@@ -5,13 +5,13 @@ This is a handoff brief for another contributor or AI session. It is written to 
 ## Repository and safety rules
 
 - Repository: `Dulle1846/ulmweb`
-- Current development branch: `kac-3.3-lite-city-builder-roads`
-- Current work is tracked in Draft PR #27: https://github.com/Dulle1846/ulmweb/pull/27
-- Production branch: `ulmweb-branch` (PR #6 stability and PRs #24/#26 3.2 release are already merged)
-- The current PR is based directly on the latest production baseline. Do not merge until the exact PR head passes Game Quality, Kings & Cards 2.1 checks and Browser E2E.
+- Production branch: `ulmweb-branch`
+- Current production release: 3.3 road construction, PR #27 merged at `fe248e694b50477136f3cdb3a182466788fe1c32`.
+- Next implementation target: Phase 3.4 deterministic resource geography. Create a new feature branch from current `ulmweb-branch` and a PR; do not edit production directly.
+- PR #27's exact tested head `5dba0ab974826fab3fd515639bc66ffa800928ba` passed Game Quality, Game Browser E2E and Kings & Cards 2.1 checks.
 - Game root: `game/`
 - Player-facing game text: English. Conversation and explanations to the user: German.
-- Do not merge PR #6 or deploy to production without explicit user approval.
+- Production merges and deployment are authorized by the project owner only after the documented release gates; do not bypass those gates.
 - Cloudflare Pages is the intended production host. Do not use Vercel builds, previews or deployments.
 - Vercel is not the production host. The current GitHub App installation/removal state has not been re-verified; do not attempt to bypass GitHub's sudo-mode confirmation. Cloudflare Pages and the legacy workers.dev Worker are separate targets.
 - Keep saves browser-local. Do not invent a cloud account or cloud-save layer.
@@ -448,11 +448,11 @@ Limits:
 - Dragons are the first persistent magical creature species; other monsters and spirits still need their own species-specific behavior.
 - Royal inheritance is not yet an estate/property distribution system.
 - New art is lightweight SVG/vector art. Do not add gigabytes of raw assets; grow visual content through compressed sprite atlases, vector emblems, procedural variations and data-driven story packs.
-- No merge or production deployment has been performed. Cloudflare Pages remains the intended production host; Vercel is not part of this work.
+- Historical note: Phase 3.2 and Phase 3.3 have been merged into production. For future work, Cloudflare Pages remains the production host; Vercel is not part of this project.
 
-## Current Phase 3.3 — playable road network (Draft PR #27)
+## Shipped Phase 3.3 — playable road network (PR #27)
 
-Branch: `kac-3.3-lite-city-builder-roads`.
+Branch: `kac-3.3-lite-city-builder-roads`; merged into production at `fe248e694b50477136f3cdb3a182466788fe1c32`.
 
 Implemented in the current candidate:
 - Dirt, gravel and paved road tiers with incremental resource costs, upgrades and partial refunds.
@@ -464,15 +464,19 @@ Implemented in the current candidate:
 - Unit tests for costs, upgrades, removal, bounds, water, building collision, serialization and A* preference.
 - Browser E2E for road-menu selection, map click, drag painting, Escape cancellation and save/load round-trip.
 
-The first Browser E2E run exposed a double-escaped numeric-coordinate regex in save validation. It was corrected; the following exact head `283bf1b16e7ad63b7ddaa94620c199bf4a52499d` passed all three workflows:
+The first Browser E2E run exposed a double-escaped numeric-coordinate regex in save validation. It was corrected, and the exact final tested head `5dba0ab974826fab3fd515639bc66ffa800928ba` passed all three workflows:
 - Game Quality
 - Kings & Cards 2.1 checks
 - Game Browser E2E
 
-The branch has since received further drag and A* corridor regression coverage plus audit-document corrections. Always inspect the newest PR #27 head and its workflow runs; the previous green SHA does not certify later commits.
+The public Pages page was then fetched with a cache-busting query. The live header contained BUILD and EXIT BUILD; the build modal and deployed app bootstrap included the road/build modules. This confirms the public site serves the new road UI. The Cloudflare dashboard deployment ID and build settings still need a signed-in dashboard check.
 
 Scope deliberately not yet implemented: warehouses, physical hauling jobs, production chains, crop seasons, housing tiers, household needs, service radii and immigration gates. Follow the delivery gates in `LITE_CITY_BUILDER_SPEC.md`.
 
-## External AI review protocol for this phase
+## Next Phase 3.4 — deterministic resource geography
+
+Start a new branch from the latest `ulmweb-branch`. First inspect `game/js/world/world.js`, `game/js/core/state.js`, the existing terrain renderer, building placement and save/load. Design compact deterministic forest, stone, water and fertile-soil node state before editing. Avoid one JS object per tile. Preserve starting-settlement viability across seeds. Add save migration, depletion/regrowth, placement previews, unit tests, integration tests, browser E2E and a 160×160 performance test. Do not start warehouses or production-chain transport until resource geography is stable.
+
+## External AI review protocol for the next phase
 
 Use one external coding agent at a time. Give it the current branch and this handoff document. Ask for a read-only review first; do not allow it to merge, deploy, rewrite the save schema or replace core modules wholesale. Any proposed change must arrive as a separate PR or patch with exact tests and a list of files changed.
