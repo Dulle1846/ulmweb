@@ -46,6 +46,19 @@ try{
     await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
 
+    // Character dossiers are read-only, searchable and expose stable person records.
+    await page.locator("#people-btn").click();
+    assert.equal(await page.locator("#people-modal").isVisible(),true);
+    assert.ok(await page.locator("#people-list .person-list-item").count() >= 1);
+    await page.locator("#people-list .person-list-item").first().click();
+    assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONALITY"));
+    assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONAL CHRONICLE"));
+    await page.locator("#people-search").fill("no-such-person-should-match");
+    assert.equal(await page.locator("#people-list .person-list-item").count(),0);
+    await page.locator("#people-search").fill("");
+    await page.locator("#people-close").click();
+    assert.equal(await page.locator("#people-modal").isVisible(),false);
+
     await page.locator("#speed-4").click();
     await page.waitForFunction(()=>{
         const value=document.querySelector("#hand-count")?.textContent||"0 / 5";
