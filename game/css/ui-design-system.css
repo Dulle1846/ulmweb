@@ -309,7 +309,7 @@ body.ui-modal-open{overflow:hidden}
 [role="dialog"][aria-modal="true"]:focus{outline:none}
 @media(max-width:720px){
  .start-panel,.modal-panel{max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px);padding:12px}
- .command-panel{width:calc(100vw - 16px)}
+ .command-panel{width:calc(100vw - 48px);max-width:calc(100vw - 48px)}
  .command-deck{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
  .command-deck button{min-width:0;min-height:38px;padding:5px 4px;font-size:8px}
  .command-panel-content{min-height:0}
