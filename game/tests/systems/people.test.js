@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
 import {TYPE} from "../../js/core/types.js";
 import {spawnEntity,initStartingKingdom} from "../../js/world/entities.js";
-import {ensurePersonProfile,normalizePersonProfile,addPersonMemory,PERSON_SPECIES,createEventParticipants,recordPersonEventOutcome} from "../../js/systems/people.js";
+import {ensurePersonProfile,normalizePersonProfile,addPersonMemory,PERSON_SPECIES,createEventParticipants,recordPersonEventOutcome,updatePeople} from "../../js/systems/people.js";
 test("new residents receive persistent names, fantasy species, traits and needs",()=>{resetState();state.worldSeed=4401;const resident=spawnEntity(3,4,TYPE.VILLAGER);const person=ensurePersonProfile(resident);assert.ok(person.name.includes(" "));assert.ok(PERSON_SPECIES[person.species]);assert.equal(person.id,resident.id);assert.equal(Object.keys(person.traits).length,10);assert.equal(Object.keys(person.needs).length,5);assert.ok(Object.values(person.traits).every(v=>v>=0&&v<=100));});
 test("king receives an individual person record when the starting realm is founded",()=>{resetState();state.worldSeed=12;initStartingKingdom();const king=state.entities.find(entity=>entity.isKing);assert.ok(king.person);assert.equal(king.person.role,"king");assert.equal(king.personId,king.id);});
 test("person memory is bounded and rejects empty entries",()=>{resetState();state.worldSeed=2;const resident=spawnEntity(1,1,TYPE.VILLAGER);for(let i=0;i<30;i++)addPersonMemory(resident,{text:"Memory "+i,tick:i,importance:i});assert.equal(resident.person.memories.length,24);assert.equal(addPersonMemory(resident,{text:""}),false);assert.equal(resident.person.memories[0].text,"Memory 29");});
@@ -38,4 +38,48 @@ test("event participants are selected from stable person ids and bounded to thre
     assert.ok(participants.some(item=>item.role==="decision-maker"));
     assert.equal(new Set(participants.map(item=>item.personId)).size,participants.length);
     assert.ok(participants.every(item=>state.entities.some(entity=>entity.personId===item.personId)));
+});
+
+test("people age once per realm year and adulthood is recorded as a personal memory",()=>{
+    resetState();state.worldSeed=1201;state.year=1;
+    const resident=spawnEntity(2,2,TYPE.VILLAGER);
+    const person=ensurePersonProfile(resident);
+    person.species="human";person.ageYears=15;person.lifeStage="young";person.lastAgedYear=1;
+    state.year=2;state.tick=400;
+    const result=updatePeople();
+    assert.deepEqual(result,{aged:1,transitions:1});
+    assert.equal(person.ageYears,16);
+    assert.equal(person.lifeStage,"adult");
+    assert.equal(person.lastAgedYear,2);
+    assert.equal(person.memories.filter(item=>item.type==="life-stage").length,1);
+    assert.deepEqual(updatePeople(),{aged:0,transitions:0});
+    assert.equal(person.ageYears,16);
+});
+test("species-specific maturation keeps elves young longer than humans",()=>{
+    resetState();state.worldSeed=1202;state.year=1;
+    const human=spawnEntity(2,2,TYPE.VILLAGER),elf=spawnEntity(3,2,TYPE.VILLAGER);
+    const hp=ensurePersonProfile(human),ep=ensurePersonProfile(elf);
+    Object.assign(hp,{species:"human",ageYears:15,lifeStage:"young",lastAgedYear:1});
+    Object.assign(ep,{species:"elf",ageYears:34,lifeStage:"young",lastAgedYear:1});
+    state.year=2;updatePeople();
+    assert.equal(hp.lifeStage,"adult");
+    assert.equal(ep.ageYears,35);
+    assert.equal(ep.lifeStage,"young");
+});
+test("multi-year catch-up is bounded and produces only the final life-stage transition",()=>{
+    resetState();state.worldSeed=1203;state.year=1;
+    const resident=spawnEntity(2,2,TYPE.VILLAGER),person=ensurePersonProfile(resident);
+    Object.assign(person,{species:"human",ageYears:14,lifeStage:"young",lastAgedYear:1});
+    state.year=20;state.tick=7600;
+    const result=updatePeople();
+    assert.equal(person.ageYears,33);
+    assert.equal(person.lifeStage,"adult");
+    assert.equal(result.aged,1);
+    assert.equal(result.transitions,1);
+});
+test("legacy profiles without an aging cursor begin aging from their restored year",()=>{
+    resetState();state.year=9;
+    const entity={id:"legacy-aging",personId:"legacy-aging"};
+    const person=normalizePersonProfile({species:"human",ageYears:30},entity);
+    assert.equal(person.lastAgedYear,9);
 });
