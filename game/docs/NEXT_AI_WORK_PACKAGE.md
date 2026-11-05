@@ -319,3 +319,24 @@ Implemented on `kac-2.6-character-dossiers`, stacked into Draft PR #11.
 ### Verification target
 - Tests cover once-per-year scheduling, reciprocal social values, relationship memories, autonomous partnership formation, close-kin exclusion, bounded pair work, deterministic legacy sex migration and reproduction eligibility.
 - Run all three GitHub Actions workflows on the exact final head before marking the milestone verified.
+
+
+## Phase 2.9 — yearly personal needs, goals and goal-driven behavior
+
+Implemented on `kac-2.6-character-dossiers`, stacked into Draft PR #11.
+
+- Every named living person (including non-villager person entities such as the king) receives a once-per-year needs update.
+- Need values are satisfaction scores from 0 to 100, not raw need accumulation.
+- Food satisfaction reacts to food reserves per resident; rest reacts to work/rest phases; safety reacts to nearby enemies and realm morale; belonging reacts to recent relationships and explicit kinship; purpose reacts to employment/office.
+- A low satisfaction value selects an urgent active goal: secure food, seek rest, seek safety, build bonds or find purpose.
+- When no urgent need is below the threshold, the person's existing long-term aspiration becomes the active goal.
+- Goal transitions are stored in a bounded 12-entry history and create bounded personal memories.
+- The active goal influences actual behavior: food-seeking residents prefer farm work where it is reasonably reachable; low-rest residents rest longer; low-safety residents keep closer to home during breaks; residents with low belonging are prioritized for social encounters.
+- Per-person and realm-wide year cursors are saved and migrated for older saves.
+- Social candidate generation and interaction processing remain capped at 120 pairs per year.
+
+### Limits
+This is a first needs-and-goals controller, not yet a full planner. It does not yet create personal travel plans, political schemes, education, careers or multi-step projects. Purpose, food, rest, safety and belonging now affect measurable values and a few concrete behaviors; the remaining action vocabulary will grow as economy, government and world systems are connected.
+
+### Verification target
+Node tests cover need changes, goal selection, once-per-year behavior, bounded goal history/memories, king/non-villager profiles and goal-driven farm assignment. Static checks and Browser E2E must pass on the exact final PR head.
