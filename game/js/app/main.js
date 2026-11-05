@@ -7,6 +7,8 @@ import { initStartingKingdom,spawnEntity,canSpawnEntity } from "../world/entitie
 import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
 import { normalizePoliticalState } from "../systems/politics.js";
+import { normalizeGovernment } from "../systems/government.js";
+import { normalizeDynasty } from "../systems/dynasty.js";
 import { normalizeHouseholdAssignments } from "../systems/population.js";
 import { addLog } from "../systems/events.js";
 import { startGameLoop } from "./game-loop.js";
@@ -18,6 +20,7 @@ import { startSoundtrack,setMusicEnabled,setMusicVolume,applySoundtrackSettings 
 import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
 import {ensurePersonProfile,normalizePersonProfile,normalizePersonMemorial,MAX_PERSON_ARCHIVE} from "../systems/people.js";
 import {setupCharacterDossier} from "../presentation/character-dossier.js";
+import {setupRealmManagement} from "../presentation/realm-management.js";
 import {normalizeFamilyLinks} from "../systems/families.js";
 
 let loopStarted=false;
@@ -103,7 +106,7 @@ function serializeEntity(entity,indexByEntity){
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
         routinePhase:entity.routinePhase,routineTimer:entity.routineTimer,movePause:entity.movePause,
         job:entity.job,jobRefreshTimer:entity.jobRefreshTimer,workplaceIndex:entity.workplace?indexByEntity.get(entity.workplace)??null:null,
-        isKing:entity.isKing,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
+        isKing:entity.isKing,isRoyal:Boolean(entity.isRoyal),isRoyalConsort:Boolean(entity.isRoyalConsort),moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
     };
 }
 
@@ -129,7 +132,7 @@ function createSaveSnapshot(){
         availableCards:state.availableCards.map(card=>({...card,cost:{...card.cost}})),
         activeEvent:state.activeEvent,
         eventLog:state.eventLog.slice(0,100),eventSequence:state.eventSequence,
-        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),market:JSON.parse(JSON.stringify(state.market)),
+        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),government:JSON.parse(JSON.stringify(state.government||{})),dynasty:JSON.parse(JSON.stringify(state.dynasty||{})),market:JSON.parse(JSON.stringify(state.market)),
         totalPopulation:state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length
     };
 }
@@ -166,7 +169,7 @@ function loadSnapshotIntoGame(profile,snapshot){
             illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
             routinePhase:dto.routinePhase??4,routineTimer:dto.routineTimer??30,movePause:dto.movePause||0,
-            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
+            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),isRoyal:Boolean(dto.isRoyal),isRoyalConsort:Boolean(dto.isRoyalConsort),moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
         });
         restored.push(entity);
     }
@@ -181,6 +184,8 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.nextEntityId=Math.max(1,Number.isSafeInteger(snapshot.nextEntityId)?snapshot.nextEntityId:restored.length+1);
     for(let index=0;index<restored.length;index++){const entity=restored[index];if(!entity)continue;if(typeof entity.id!=="string")entity.id="e"+(Number(state.worldSeed)||1).toString(36)+"-"+(index+1).toString(36);if(entity.type===TYPE.VILLAGER&&!entity.personId)entity.personId=entity.id;if(entity.type===TYPE.VILLAGER||entity.isKing)ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});}
     normalizeFamilyLinks();
+    normalizeGovernment(snapshot.government);
+    normalizeDynasty(snapshot.dynasty);
     state.nextEntityId=Math.max(state.nextEntityId,restored.length+1);
     state.seasonIndex=snapshot.seasonIndex||0;state.morale=snapshot.morale??72;
     state.resources={wood:0,stone:0,gold:0,food:0,...snapshot.resources};
@@ -312,6 +317,7 @@ function init(){
     bindCanvas();
     setupInput();
     setupCharacterDossier();
+    setupRealmManagement();
     bindMenu();
     applySoundtrackSettings(settings);
     window.addEventListener("resize",resize);
