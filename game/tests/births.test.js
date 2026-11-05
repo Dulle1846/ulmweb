@@ -20,6 +20,13 @@ beforeEach(() => {
         const person=ensurePersonProfile(parent);
         Object.assign(person,{species:"human",ageYears:28,lifeStage:"adult",familyName:"Oakenshield",name:person.firstName+" Oakenshield"});
     }
+    ensurePersonProfile(parents[0]).sex="female";
+    ensurePersonProfile(parents[1]).sex="male";
+    for(const parent of parents){
+        const person=ensurePersonProfile(parent);
+        person.familyName="Oakenshield";
+        person.name=person.firstName+" Oakenshield";
+    }
     assert.equal(setPartnership(parents[0].personId,parents[1].personId,{status:"married",sinceYear:8}).ok,true);
 });
 
