@@ -9,7 +9,7 @@ import { CARD_PROTOTYPES,CARD_CATEGORIES,CARD_VARIANT_DIMENSIONS,createCardForCa
 import { addLog } from "./events.js";
 import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE,normalizeHouseholdAssignments } from "./population.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
-import { rand,randInt } from "../core/utils.js";
+import { rand as seededRand,randInt as seededRandInt } from "../core/random.js";\nconst rand=(min,max)=>seededRand(min,max,"cards");\nconst randInt=(min,max)=>seededRandInt(min,max,"cards");
 export const CARD_DECK=Object.freeze(CARD_CATEGORIES.map(category=>{
     const card=createCardForCategory(category.id);
     return {...card,id:category.id,name:card.baseName||card.name};
