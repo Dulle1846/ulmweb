@@ -275,3 +275,13 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - PR #69 merged as `e4d343041ec6960502c471aa5efd2ca0994f85f5`; all three required workflows passed and the seven-viewport screenshot artifact was reviewed.
 - PR #70 merged as `09c2d747f08216199154af480735eeae064d0e9b`; all three required workflows passed, including real mobile side-panel scroll checks at 390×844 and 768×1024.
 - These are code merges to the production branch, not an assertion that Cloudflare Pages has already finished publishing them. Pages delivery remains a separate release gate.
+
+
+## Development line 3.7.0-dev — connected royal lineage graph
+
+- Replaced the dynasty screen's disconnected relative groups with a connected, multi-lane family graph built only from persisted parent, child, partnership and sibling links.
+- Added verified grandparent, parent, sovereign, sibling, consort, aunt/uncle, cousin and royal-child lanes where records exist.
+- Added SVG connector paths positioned from live card bounds; parent/guardian, partnership and sibling relationships receive distinct line treatments.
+- Added direct graph-node navigation to the canonical character dossier, responsive graph layout and reduced-motion handling.
+- Added static contracts and Chromium E2E for connector rendering and sovereign-to-heir dossier hand-off.
+- Graph depth and node counts remain bounded. No simulation rules or save schema changed.
