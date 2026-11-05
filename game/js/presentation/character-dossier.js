@@ -11,16 +11,22 @@ function esc(value) {
 }
 
 function people() {
-    return state.entities
-        .filter(entity => !entity.dead && entity.personId && entity.person)
-        .sort((a, b) => Number(Boolean(b.isKing)) - Number(Boolean(a.isKing)) ||
-            String(a.person.name).localeCompare(String(b.person.name)) ||
-            String(a.personId).localeCompare(String(b.personId)));
+    const living = state.entities.filter(entity => !entity.dead && entity.personId && entity.person);
+    const deceased = (state.personArchive || []).map(entry => ({
+        personId: entry.personId, person: entry.person, dead: true, isArchived: true,
+        deathYear: entry.deathYear, deathCause: entry.cause, isKing: entry.isKing
+    }));
+    return [...living, ...deceased].sort((a, b) => Number(Boolean(b.isKing)) - Number(Boolean(a.isKing)) ||
+        Number(Boolean(a.isArchived)) - Number(Boolean(b.isArchived)) ||
+        String(a.person.name).localeCompare(String(b.person.name)) ||
+        String(a.personId).localeCompare(String(b.personId)));
 }
 
 function personName(personId) {
     const entity = state.entities.find(item => String(item.personId || "") === String(personId));
-    return entity?.person?.name || "Formerly recorded · " + String(personId || "unknown");
+    if (entity?.person?.name) return entity.person.name;
+    const memorial = (state.personArchive || []).find(item => item.personId === String(personId));
+    return memorial?.person?.name || "Formerly recorded · " + String(personId || "unknown");
 }
 
 function renderPeopleList(query = "") {
@@ -31,7 +37,7 @@ function renderPeopleList(query = "") {
     const needle = String(query).trim().toLowerCase();
     const filtered = all.filter(entity => {
         const person = entity.person;
-        return !needle || [person.name, person.species, person.sex, person.role, person.familyName]
+        return !needle || [person.name, person.species, person.sex, person.role, person.familyName, entity.deathCause]
             .some(value => String(value || "").toLowerCase().includes(needle));
     }).slice(0, 100);
     if (!filtered.some(entity => entity.personId === selectedPersonId)) {
@@ -45,7 +51,7 @@ function renderPeopleList(query = "") {
             '" data-person-id="' + esc(entity.personId) + '">' +
             '<span class="person-list-name">' + esc(person.name) + (entity.isKing ? ' <b>♛</b>' : '') + '</span>' +
             '<span class="person-list-meta">' + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) + ' · ' +
-            Math.floor(Number(person.ageYears) || 0) + '</span></button>';
+            Math.floor(Number(person.ageYears) || 0) + (entity.isArchived ? ' · DECEASED' : '') + '</span></button>';
     }).join("") : '<div class="empty-state">No matching people were found.</div>';
 }
 
@@ -62,13 +68,14 @@ function renderLinks(title, entries, labelFor) {
 function renderDossier(personId) {
     const detail = document.getElementById("person-dossier");
     if (!detail) return;
-    const entity = state.entities.find(item => !item.dead && String(item.personId || "") === String(personId));
+    const entity = state.entities.find(item => !item.dead && String(item.personId || "") === String(personId)) ||
+        (state.personArchive || []).find(item => item.personId === String(personId));
     if (!entity?.person) {
         detail.innerHTML = '<div class="empty-state">Select a person to inspect their chronicle.</div>';
         return;
     }
     const person = entity.person;
-    const family = getFamilySnapshot(personId);
+    const family = getFamilySnapshot(personId) || { parents: [], children: [], siblings: [], partners: [] };
     const traits = Object.entries(person.traits || {}).map(([key, value]) =>
         '<div class="dossier-meter"><span>' + esc(key) + '</span><i><b style="width:' +
         Math.max(0, Math.min(100, Number(value) || 0)) + '%"></b></i><strong>' +
@@ -124,7 +131,8 @@ function renderDossier(personId) {
         (relationships ? '<ul class="dossier-link-list">' + relationships + '</ul>' : '<p class="dossier-empty">No personal relationships have been recorded yet.</p>') +
         '</section><section class="dossier-section"><h3>RECORD</h3><p>Stable person ID: <code>' +
         esc(person.id) + '</code></p><p>Household: ' + esc(entity.householdId || "Not assigned") +
-        '</p><p>Created at tick ' + Math.max(0, Number(person.createdAtTick) || 0) + '</p></section>' +
+        '</p><p>Created at tick ' + Math.max(0, Number(person.createdAtTick) || 0) + '</p>' +
+        (entity.isArchived ? '<p>Death cause: ' + esc(entity.cause || entity.deathCause || 'unknown') + '</p>' : '') + '</section>' +
         '</div></div>';
 }
 
