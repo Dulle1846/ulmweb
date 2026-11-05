@@ -145,6 +145,7 @@ const SCALE=["TINY","SMALL","COMPACT","","LARGE","GRAND","NOBLE","DISTRICT","MON
 const CONTEXT={spring:"OF THE THAW",summer:"OF HIGH SUMMER",autumn:"OF THE HARVEST",winter:"OF WINTERFELL",frontier:"OF THE FRONTIER",heartland:"OF THE HEARTLAND",coastal:"OF THE COAST",highland:"OF THE HIGHLANDS","trade-route":"OF THE GREAT ROAD","war-time":"OF THE WAR YEARS"};
 export const CARD_PROTOTYPES=Object.freeze(PROTOTYPES.map(p=>Object.freeze({...p,kind:p.kind||(p.unit?"unit":"building"),unit:Boolean(p.unit||["unit","person","animal"].includes(p.kind)),group:CARD_CATEGORIES.find(c=>c.id===p.category)?.group||"settlement",categoryName:CARD_CATEGORIES.find(c=>c.id===p.category)?.name||"General"})));
 function categoryPrototype(category){
+ if(category.id==="wyverns")return {id:"dragon",category:category.id,categoryName:category.name,group:category.group,type:TYPE.DRAGON,name:"DRAGON EGG",desc:"Hatches a persistent dragon companion. It grows, hungers, bonds with the realm and defends the settlement.",icon:"🐉",cost:{gold:60,food:40},kind:"creature",unit:true};
  const curated=PROTOTYPES.find(p=>p.category===category.id);
  if(curated)return {...curated,kind:curated.kind||(curated.unit?"unit":"building"),unit:Boolean(curated.unit||["unit","person","animal"].includes(curated.kind)),group:category.group,categoryName:category.name};
  const a=ARCHETYPES[category.group]||ARCHETYPES.civic;
