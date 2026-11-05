@@ -134,3 +134,23 @@ test("a deceased guardian remains in the ward's history and can be replaced next
     assert.equal(replacement[0].guardianId, sharedGrandparent.personId);
     assert.equal(child.person.kinship.guardians.length, 2);
 });
+
+
+test("a trusted non-relative can become guardian only with recorded strong ties", () => {
+    const orphanHouse = spawnEntity(40, 40, TYPE.HOUSE);
+    const friendHouse = spawnEntity(60, 40, TYPE.HOUSE);
+    const parent = resident(40, orphanHouse, { age: 82 });
+    const child = resident(41, orphanHouse, { age: 10 });
+    const trustedFriend = resident(60, friendHouse, { age: 42 });
+    trustedFriend.person.relationships.push({
+        targetId: child.personId, targetName: child.person.name, kind: "friend",
+        trust: 80, respect: 75, affinity: 78, interactions: 12, lastInteractionTick: state.tick
+    });
+    linkParentChild(parent.personId, child.personId);
+    recordNaturalDeath(parent, "old age");
+    state.entities = state.entities.filter(entity => entity !== parent);
+    const result = updateGuardianships();
+    assert.equal(result.length, 1);
+    assert.equal(result[0].guardianId, trustedFriend.personId);
+    assert.equal(child.person.kinship.guardians[0].personId, trustedFriend.personId);
+});
