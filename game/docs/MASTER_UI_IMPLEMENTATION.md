@@ -176,3 +176,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added `assets/royal-card-frame.svg`, a restrained parchment-and-antique-gold card frame.
 - Added differentiated rarity border treatments for common, uncommon, fine, rare, epic and higher rarities.
 - Static contracts and Chromium E2E verify that cards use the new local atlas and frame. Unique hand-painted art for individual procedural card variants remains a later art pass.
+
+
+## Phase 4 — dragon life-stage artwork
+
+- Added `assets/royal-dragon-atlas.svg` with five original dragon illustrations mapped to the simulation's actual life stages: hatchling, juvenile, adult, elder and ancient.
+- Living dragon dossiers and memorials now choose the matching artwork from the persisted `lifeStage` value. The art does not infer or change creature species, age, temperament or abilities.
+- Memorial portraits receive a restrained desaturated treatment.
+- Static contracts and Chromium E2E verify the five stage assets and exact stage-to-symbol mapping.
+- Dragons are currently the only modeled royal creature species. No griffin, wyvern or other unsupported species have been invented.

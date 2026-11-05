@@ -210,3 +210,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Replaced emoji duplication with a single scalable category illustration per card.
 - Added an original parchment / antique-gold card frame and rarity treatments.
 - Added static asset contracts and browser assertions; card rules, generation and save schema are unchanged.
+
+
+## Development line 3.7.0-dev — Phase 4 dragon life-stage art
+
+- Added five original dragon SVG illustrations for the simulation's persisted hatchling, juvenile, adult, elder and ancient life stages.
+- Integrated stage-matched portraits into living dragon dossiers and memorial records.
+- Added static asset contracts and browser assertions. No creature simulation or save data changed.
