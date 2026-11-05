@@ -154,7 +154,7 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 
 
 /* Phase 2 — reusable royal UI primitives and contextual action dock. */
-.ui-panel{border:1px solid var(--ui-line-strong);border-radius:var(--ui-radius-md);background:linear-gradient(145deg,#302a22,#211e19);box-shadow:inset 0 1px #fff1,0 5px 14px #0005}
+.ui-panel:not(.start-panel):not(.modal-panel){border:1px solid var(--ui-line-strong);border-radius:var(--ui-radius-md);background:linear-gradient(145deg,#302a22,#211e19);box-shadow:inset 0 1px #fff1,0 5px 14px #0005}
 .ui-parchment-card{border:1px solid #a98a52;border-radius:var(--ui-radius-sm);background:linear-gradient(145deg,#f4e8d0,#ddc9a2);color:var(--ui-ink);box-shadow:inset 0 1px #fff9,0 3px 8px #0003}
 .ui-section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid var(--ui-line);font:700 10px var(--ui-title-font);letter-spacing:.12em;color:#e2cea5}
 .ui-icon-button{display:inline-grid;place-items:center;min-width:34px;min-height:34px;border:1px solid var(--ui-line-strong);border-radius:3px;background:linear-gradient(#514333,#332a20);color:#ead9b5;cursor:pointer}
