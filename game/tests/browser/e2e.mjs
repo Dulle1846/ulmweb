@@ -62,7 +62,7 @@ try{
 
     // A deceased resident remains inspectable as a memorial, not as a live entity.
     const memorialId=await page.evaluate(async()=>{
-        const [{state},{recordNaturalDeath},{ensurePersonProfile},{Entity},{TYPE}]=await Promise.all([
+        const [{state},{recordNaturalDeath},{ensurePersonProfile},{Entity,TYPE}]=await Promise.all([
             import("./js/core/state.js"),
             import("./js/systems/mortality.js"),
             import("./js/systems/people.js"),
