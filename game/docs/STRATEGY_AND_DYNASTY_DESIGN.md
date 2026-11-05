@@ -36,12 +36,12 @@ The current monarch remains the existing king entity and person profile. A conso
 - both people are adults of the same paired-reproduction species;
 - their sexes are compatible with the current species reproduction model;
 - neither is past the configured 65%-of-lifespan fertility bound;
-- no explicit close parent/child/partner family tie is present;
+- no explicit parent/child/sibling/partner family tie is present;
 - the candidate has no active partner or marriage.
 
 Marriage is written through the existing reciprocal family graph. A royal heir is a real villager entity with a detailed person profile, an explicit royal-heir role, two reciprocal biological parent links, and personal birth memories. The action uses the existing food, morale, housing-capacity and entity-capacity gates. A three-year royal birth cooldown is stored in the dynasty state and mirrored into the partnership links.
 
-On monarch death, the eldest living direct descendant by recorded birth year becomes the successor. If the heir is a minor and a surviving royal spouse exists, that spouse becomes regent. Without a surviving spouse, the minor heir is recorded as the crown-holder under council regency. Once the heir reaches their species' adult life stage, the regent yields the crown. Regency and succession history are bounded.
+The monarch participates in the same species-aware annual natural-mortality check as other detailed people, with the monarch evaluated first so the annual death cap cannot starve the crown of a check. On monarch death, the eldest living direct descendant by recorded birth year becomes the successor. If the heir is a minor and a surviving royal spouse exists, that spouse becomes regent. Without a surviving spouse, the minor heir is recorded as the crown-holder under council regency. If the regent dies first, the heir is immediately protected by council regency; an already-adult heir takes the crown immediately. Once the heir reaches their species' adult life stage, the regent yields the crown. Regency and succession history are bounded.
 
 ## UI
 
@@ -69,7 +69,7 @@ Government and royal-dynasty records are included in the existing save snapshot 
 4. A persistent dragon/creature lifecycle is not included in 2.9. It should use a shared actor lifecycle rather than special-case card effects: identity, species, age, needs, temperament, bonds, memories, action scheduler, death/memorial and event provenance.
 5. The comic art pass is a first UI layer, not a complete map/character asset replacement. The next art pass should build a small optimized atlas of reusable portraits, building illustrations, terrain props, creature sprites and state icons. Avoid multi-gigabyte bundles; load only assets needed by the current view and use WebP/AVIF plus SVG for scalable UI art.
 
-## Verification requirements
+## Verification results at the current implementation head\n\n- 200/200 Node tests passed, 0 failures.\n- Syntax/import/UI/asset checks and Kings & Cards 2.1 checks passed.\n- Chromium Browser E2E passed with strategy command tabs, decree resource spending, tax ordinance, guardian/ward dossiers, memorial save/load and existing drag-drop/pause/resume flows.\n- No uncaught browser page errors or console errors.\n\n## Verification requirements
 
 - Unit tests for default/malformed state normalization.
 - Tests proving tax rates alter actual ledger output.
