@@ -263,6 +263,27 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - This is Pages evidence. The separate Workers build check is not used as deployment evidence for the game.
 
 
+## Phase 5 — selected-card visibility above the mobile action dock
+
+- Visual/browser geometry exposed a 37px overlap between the side-panel lower edge and the bottom action dock at 390×844.
+- Added 44px of mobile-only bottom scroll clearance so the selected card can be brought fully above the dock.
+- Chromium now checks the actual visible boundary (minimum of side-panel bottom and action-dock top) at 390×844 and 768×1024. It requires scrolling only when the card is initially obscured; if the tablet layout already shows it, no artificial scroll is demanded.
+- Captures scrolled-state screenshots for review and restores the original scroll position.
+
+
+## Phase 5 — selected-card reachability proof
+
+- Strengthened the mobile side-panel test beyond merely checking that a scrollbar exists: Chromium now scrolls the selected card into the visible region and verifies that the entire card fits inside the panel viewport at 390×844 and 768×1024.
+- Captures a separate scrolled-state screenshot for both mobile/tablet sizes as review evidence, then restores the original scroll position before continuing the test.
+
+
+### Follow-up correction — mobile dock overlap
+
+- The first full-visibility assertion exposed a real 37px overlap between the side-panel's lower edge and the fixed-height action dock at 390×844.
+- Added 44px of mobile-only bottom scroll space and changed the browser check to align the selected card above the actual visible boundary (the earlier of the side-panel bottom and dock top).
+- The check now validates the visible region, not just the side-panel's theoretical bounding box.
+
+
 ## Phase 2 — connected royal lineage graph (3.7.0-dev)
 
 - Added an interactive multi-lane royal family network sourced from the existing explicit kinship graph.
