@@ -68,8 +68,9 @@ function renderLinks(title, entries, labelFor) {
 function renderDossier(personId) {
     const detail = document.getElementById("person-dossier");
     if (!detail) return;
-    const entity = state.entities.find(item => !item.dead && String(item.personId || "") === String(personId)) ||
-        (state.personArchive || []).find(item => item.personId === String(personId));
+    const liveEntity = state.entities.find(item => !item.dead && String(item.personId || "") === String(personId));
+    const memorial = (state.personArchive || []).find(item => item.personId === String(personId));
+    const entity = liveEntity || (memorial ? { ...memorial, isArchived: true, deathCause: memorial.cause } : null);
     if (!entity?.person) {
         detail.innerHTML = '<div class="empty-state">Select a person to inspect their chronicle.</div>';
         return;
@@ -112,6 +113,7 @@ function renderDossier(personId) {
         '</div><div><div class="dossier-kicker">' + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) +
         '</div><h2>' + esc(person.name) + '</h2><p>Age ' + Math.floor(Number(person.ageYears) || 0) +
         ' · ' + esc(person.lifeStage) + ' · Born in year ' + Math.max(1, Number(person.bornAtYear) || 1) +
+        (entity.isArchived ? ' · Died in year ' + Math.max(1, Number(entity.deathYear) || 1) + ' · ' + esc(entity.deathCause || 'unknown') : '') +
         '</p></div></header>' +
         '<div class="dossier-columns">' +
         '<div class="dossier-column">' +
