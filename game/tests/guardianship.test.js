@@ -173,3 +173,26 @@ test("a child with one living parent is not treated as an orphan", () => {
     assert.deepEqual(updateGuardianships(), []);
     assert.deepEqual(child.person.kinship.guardians, []);
 });
+
+
+test("strong evidence from a deceased parent's history is not masked by a weak current tie", () => {
+    const orphanHouse = spawnEntity(40, 40, TYPE.HOUSE);
+    const friendHouse = spawnEntity(60, 40, TYPE.HOUSE);
+    const parent = resident(40, orphanHouse, { age: 82 });
+    const child = resident(41, orphanHouse, { age: 10 });
+    const trustedFriend = resident(60, friendHouse, { age: 42 });
+    trustedFriend.person.relationships.push({
+        targetId: child.personId, targetName: child.person.name, kind: "acquaintance",
+        trust: 20, respect: 20, affinity: 20, interactions: 1, lastInteractionTick: state.tick
+    });
+    parent.person.relationships.push({
+        targetId: trustedFriend.personId, targetName: trustedFriend.person.name, kind: "friend",
+        trust: 90, respect: 90, affinity: 90, interactions: 24, lastInteractionTick: state.tick
+    });
+    linkParentChild(parent.personId, child.personId);
+    recordNaturalDeath(parent, "old age");
+    state.entities = state.entities.filter(entity => entity !== parent);
+    const result = updateGuardianships();
+    assert.equal(result.length, 1);
+    assert.equal(result[0].guardianId, trustedFriend.personId);
+});
