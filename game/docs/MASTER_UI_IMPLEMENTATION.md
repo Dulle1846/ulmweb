@@ -1,8 +1,8 @@
 # Master UI — Implementation Register
 
 **Specification:** `MASTER UI & VISUAL DESIGN CONCEPT v1.0` (uploaded project brief)  
-**Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 dynasty and action dock)  
-**Current UI branch:** `kac-ui-phase-3-economy-buildings`  
+**Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 dynasty and action dock), PR #43 (Phase 3 economy, buildings, creatures and chronicle)  
+**Current UI branch:** `kac-release-3-6-0-ui-phase-3`  
 **Baseline:** `6c4c3f0442ea18aa04fee5598e909ddfc6b4d900`  
 **Rule:** This register distinguishes implemented and tested work from the remaining concept. A styled shell is not a completed screen.
 
@@ -16,6 +16,9 @@
 - Existing legacy stylesheets remain loaded for backward compatibility; the new master stylesheet loads last and centralizes the design tokens and override layer.
 
 ## Merged release record
+
+- PR #43 merged as `ad4d3c9978779aa7cc4921ec43a934d1b8338b38`; tested feature head `63ec3957697f4513ddeefd9ad5c5889689a0ceb7`.
+- Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E all passed on the exact PR #43 feature head.
 
 - PR #40 merged as `f47da8ecfd564ecf3edcd5913607407348e4aad6`; tested feature head `e7f59bb3df9ae5961a2be65872f43e04978dd10a`.
 - Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E all passed on the exact PR #40 feature head.
@@ -34,7 +37,7 @@
 | UI-02 — design system | **First implementation** | New `css/ui-design-system.css`; canonical color, spacing, typography, radius, line and shadow tokens; parchment and timber component treatment; existing royal crest and SVG resource sprites replace several placeholder glyphs. Further component extraction remains. |
 | UI-03 — button library | **Phase 2 increment** | Shared states for primary/secondary, speed, navigation, management tabs, build options and modal controls; Phase 2 adds reusable panel/card/section/icon-button primitives, tooltip surfaces and hover/focus/pressed states. Full component API and tooltip coverage remain. |
 | UI-04 — main interface | **Phase 2 increment** | Adds a contextual sidebar action dock for people, dynasty, cards, chronicle and manual save; save status reflects confirmed save/load success or failure. This is not autosave. The final full-width lower action bar, clickable ruler portrait and dedicated event inbox remain. |
-| UI-05 — administration screens | **Phase 3 increment in review** | Economy now separates current stock, per-tick flow, latest 20-day settlement and cumulative totals. A read-only building register exposes live structures, health, footprint, workforce, efficiency and site-tile resource data. Historical charts, per-building output, storage and forecasts remain unavailable until the simulation retains those contracts. |
+| UI-05 — administration screens | **Phase 3 increment** | Economy separates current stock, per-tick flow, latest 20-day settlement and cumulative totals. A searchable read-only building register exposes live structures, health, footprint, workforce, efficiency, catalogue costs and site-tile resource data. Historical charts, per-building output, storage and forecasts remain unavailable until the simulation retains those contracts. |
 | UI-06 — character and dynasty | **Phase 2 increment** | Adds a bounded, multi-generation descendant tree sourced only from the explicit kinship graph, with living/deceased family records and direct dossier navigation. Ancestor/sibling network layout, filters and expanded character actions remain. |
 | UI-07 — fantasy areas | **Partial** | Existing dragon/creature management and card rarity styles retained. Full creature dossiers, bestiary, magic screen and illustrated legendary card treatment remain. |
 | UI-08 — menu and settings | **Partial** | Existing main menu and settings remain; visual override applied. Version/credits/save-slot management and graphics/accessibility controls remain. |
@@ -51,7 +54,7 @@
 - Added static contract tests for dock actions, kinship graph use, bounded rendering, dossier navigation and honest save-state messaging; the Chromium browser suite now exercises dynasty opening, dossier hand-off, manual save feedback and chronicle navigation.
 - PR #40 merged after all three required workflows passed on the exact feature head. Cloudflare Pages delivery is tracked separately from CI and is not inferred from GitHub merge status.
 
-## Phase 3 implementation increment (in review)
+## Phase 3 implementation increment (released in 3.6.0)
 
 - Added an economy view that clearly separates resource stock, current simulation-tick flow, the latest completed 20-day financial settlement and cumulative totals.
 - The ledger panel uses `state.economy.lastLedger` and explicitly states that only the latest settlement is retained. It does not fabricate historical trend lines or forecasts.
@@ -60,7 +63,7 @@
 - Per-building output, storage and upkeep are not currently represented by the simulation contract; the screen says so rather than displaying invented figures.
 - Added individual creature dossiers for living dragons and memorial records, including actual life stage, needs, bond, temperament, abilities, goals and memories.
 - Added a searchable chronicle/event inbox based on the saved event log, with category filtering and a dismiss/reopen flow for the existing active issue dialog. Dismissing leaves the issue pending; it does not invent unread tracking or dates.
-- Added static UI contract tests and Chromium browser coverage for economy, building, creature and chronicle views. CI and browser review are pending on the exact PR head.
+- Added static UI contract tests and Chromium browser coverage for economy, building, creature and chronicle views. PR #43 merged after Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E passed on the exact feature head.
 
 ## Actual navigation contract
 
