@@ -217,8 +217,8 @@ function lineageGraph(king,heirId){
    if(!auntId)continue;
    auntIds.add(auntId);
    connect(parentId,auntId,"sibling");
-   const auntFamily=getFamilySnapshot(auntId)||{};
-   for(const cousinLink of (auntFamily.children||[]).slice(0,12)){
+   const auntChildren=getFamilySnapshot(auntId)?.children||[];
+   for(const cousinLink of auntChildren.slice(0,12)){
     const cousin=familyRecord(cousinLink.personId),cousinId=add(cousin,"cousins");
     if(cousinId)connect(auntId,cousinId,cousinLink.kind==="guardian"?"guardian":"parent");
    }
@@ -242,8 +242,9 @@ function lineageGraph(king,heirId){
  const edgeMarkup=edges.map(edge=>
   '<path class="dynasty-lineage-edge dynasty-lineage-edge--'+edge.kind+'" data-lineage-from="'+esc(edge.from)+'" data-lineage-to="'+esc(edge.to)+'"></path>'
  ).join("");
+ const cousinNote=laneById.get("cousins").ids.length?"":'<p class="command-note">No cousin links can be verified from the recorded kinship graph.</p>';
  return '<section class="dynasty-lineage-graph" aria-label="Verified royal family relationship graph"><svg class="dynasty-lineage-edges" aria-hidden="true">'+edgeMarkup+'</svg>'+
- laneMarkup+'<p class="dynasty-lineage-note">Connectors represent recorded parent, guardian, partnership and sibling relationships. Only linked relatives are shown; unknown branches are not inferred.</p></section>';
+ laneMarkup+cousinNote+'<p class="dynasty-lineage-note">Connectors represent recorded parent, guardian, partnership and sibling relationships. Only linked relatives are shown; unknown branches are not inferred.</p></section>';
 }
 function drawDynastyConnectors(){
  const graph=document.querySelector(".dynasty-lineage-graph");
