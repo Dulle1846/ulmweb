@@ -352,7 +352,7 @@ Implemented on `kac-2.6-character-dossiers`, stacked into Draft PR #11.
 - The king and non-villager entities are explicitly excluded until royal succession and office-transfer rules exist.
 - A compact, persistent memorial archive stores the deceased person's normalized profile, identity, species, age, life history, family links, death year/tick and cause.
 - Surviving relatives and partners receive personal bereavement memories; the deceased receives a final death memory.
-- The archive is capped at 1,000 memorials. Oldest memorials are pruned when the cap is exceeded.
+- The archive is capped at 500 compact memorials. Each record retains family links but stores at most 12 memories, 16 relationships, six secrets and eight goal-history entries. Oldest memorials are pruned when the cap is exceeded.
 - Character dossiers include deceased people and preserve readable family links after their entities leave the live world.
 - Save snapshots persist the archive; old saves migrate to an empty archive.
 - Browser E2E creates a memorial, inspects the deceased dossier, saves/loads and verifies the memorial remains available.
