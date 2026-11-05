@@ -22,6 +22,21 @@ function people() {
         String(a.personId).localeCompare(String(b.personId)));
 }
 
+
+function portraitSymbol(entity) {
+    const person = entity?.person || {};
+    const role = String(person.role || "").toLowerCase();
+    const sex = String(person.sex || "").toLowerCase();
+    const female = sex === "f" || sex.includes("female") || sex.includes("woman");
+    if (entity?.isKing || /sovereign|monarch|ruler|king|queen/.test(role)) {
+        return female ? "portrait-queen" : "portrait-king";
+    }
+    if (/scholar|scribe|healer|cleric|priest|mage|teacher/.test(role)) return "portrait-scholar";
+    if (/knight|guard|soldier|marshal|captain|archer/.test(role)) return "portrait-knight";
+    if (/noble|lord|lady|court|consort/.test(role)) return female ? "portrait-noblewoman" : "portrait-nobleman";
+    return female ? "portrait-noblewoman" : "portrait-villager";
+}
+
 function personName(personId) {
     const entity = state.entities.find(item => String(item.personId || "") === String(personId));
     if (entity?.person?.name) return entity.person.name;
@@ -48,17 +63,18 @@ function renderPeopleList(query = "") {
         const person = entity.person;
         return '<button type="button" class="person-list-item' +
             (entity.personId === selectedPersonId ? ' is-selected' : '') +
-            '" data-person-id="' + esc(entity.personId) + '">' +
-            '<span class="person-list-name">' + esc(person.name) + (entity.isKing ? ' <b>♛</b>' : '') + '</span>' +
+            '" data-person-id="' + esc(entity.personId) + '" aria-pressed="' + String(entity.personId === selectedPersonId) + '">' +
+            '<svg class="person-list-portrait" viewBox="0 0 256 320" aria-hidden="true"><use href="assets/royal-portraits.svg#' + portraitSymbol(entity) + '"></use></svg>' +
+            '<span class="person-list-copy"><span class="person-list-name">' + esc(person.name) + (entity.isKing ? ' <b>♛</b>' : '') + '</span>' +
             '<span class="person-list-meta">' + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) + ' · ' +
-            Math.floor(Number(person.ageYears) || 0) + (entity.isArchived ? ' · DECEASED' : '') + '</span></button>';
+            Math.floor(Number(person.ageYears) || 0) + (entity.isArchived ? ' · DECEASED' : '') + '</span></span></button>';
     }).join("") : '<div class="empty-state">No matching people were found.</div>';
 }
 
 function renderLinks(title, entries, labelFor) {
     const rows = entries.map(entry => {
         const id = typeof entry === "string" ? entry : entry.personId;
-        return '<li><strong>' + esc(personName(id)) + '</strong><span>' + esc(labelFor(entry)) + '</span></li>';
+        return '<li><button type="button" class="dossier-related-person" data-person-id="' + esc(id) + '"><strong>' + esc(personName(id)) + '</strong><span>' + esc(labelFor(entry)) + '</span></button></li>';
     }).join("");
     return '<section class="dossier-section"><h3>' + esc(title) + '</h3>' +
         (rows ? '<ul class="dossier-link-list">' + rows + '</ul>' : '<p class="dossier-empty">No recorded ties.</p>') +
@@ -109,8 +125,8 @@ function renderDossier(personId) {
             (link.endedYear == null ? "" : " · ended year " + link.endedYear)
     }));
     detail.innerHTML =
-        '<header class="dossier-identity"><div class="dossier-seal">' + (entity.isArchived ? '†' : entity.isKing ? '♛' : '✦') +
-        '</div><div><div class="dossier-kicker">' + (entity.isArchived ? "DECEASED · " : "") + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) +
+        '<header class="dossier-identity"><svg class="dossier-portrait" viewBox="0 0 256 320" role="img" aria-label="Portrait of ' + esc(person.name) + '"><use href="assets/royal-portraits.svg#' + portraitSymbol(entity) + '"></use></svg>' +
+        '<div class="dossier-identity-copy"><div class="dossier-kicker">' + (entity.isArchived ? "DECEASED · " : "") + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) +
         '</div><h2>' + esc(person.name) + '</h2><p>Age ' + Math.floor(Number(person.ageYears) || 0) +
         ' · ' + esc(person.lifeStage) + ' · Born in year ' + Math.max(1, Number(person.bornAtYear) || 1) +
         (entity.isArchived ? ' · Died in year ' + Math.max(1, Number(entity.deathYear) || 1) + ' · ' + esc(entity.deathCause || 'unknown') : '') +
@@ -165,6 +181,16 @@ export function setupCharacterDossier() {
         if (event.target === modal) modal.classList.add("hidden");
     });
     search.addEventListener("input", refreshDossier);
+    document.getElementById("person-dossier")?.addEventListener("click", event => {
+        const related = event.target.closest("[data-person-id]");
+        if (!related) return;
+        const personId = String(related.dataset.personId || "");
+        if (!people().some(entity => String(entity.personId) === personId)) return;
+        selectedPersonId = personId;
+        if (search) search.value = "";
+        refreshDossier();
+        list.querySelector('[data-person-id="' + CSS.escape(personId) + '"]')?.scrollIntoView({ block: "nearest" });
+    });
     list.addEventListener("click", event => {
         const button = event.target.closest("[data-person-id]");
         if (!button) return;

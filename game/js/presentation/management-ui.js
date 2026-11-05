@@ -98,6 +98,12 @@ function buildings(){
   const card=CARD_DECK.find(item=>item.type===type);
   return '<span class="building-type-chip">'+esc(card?.name||("Building "+type))+' <strong>'+count+'</strong></span>';
  }).join("");
+ const buildingSprite=(type)=>({
+  [TYPE.KEEP]:"watchtower",[TYPE.HOUSE]:"cottage",[TYPE.FARM]:"mill",[TYPE.LUMBER]:"woodcutter",
+  [TYPE.QUARRY]:"quarry",[TYPE.TOWER]:"watchtower",[TYPE.WALL]:"paved-road",[TYPE.TAVERN]:"market",
+  [TYPE.TEMPLE]:"well",[TYPE.BARRACKS]:"watchtower",[TYPE.MILL]:"mill",[TYPE.STABLE]:"cottage",
+  [TYPE.WONDER]:"watchtower",[TYPE.GOLDMINE]:"quarry",[TYPE.BARREL]:"warehouse"
+ }[type]||"cottage");
  const rows=records.map((building,index)=>{
   const card=CARD_DECK.find(item=>item.type===building.type);
   const name=card?.name||BUILDING_LABELS[building.type]||("Building "+building.type);
@@ -116,7 +122,7 @@ function buildings(){
    else if(building.type===TYPE.FARM)siteNote="Site fertility: "+number(node.fertility)+" / 100 · water access: "+(node.waterAccess?"yes":"no");
   }catch{}
   const detail=card?.desc||"No additional building description is recorded in the card catalogue.";
-  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+condition+'%</b><small>condition</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p><div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Site data<strong>'+esc(siteNote)+'</strong></span></div><p class="command-note">Per-building production output, storage and upkeep are not currently exposed by the simulation, so no values are fabricated here.</p></div></details>';
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+condition+'%</b><small>condition</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p><div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Site data<strong>'+esc(siteNote)+'</strong></span></div><p class="command-note">Per-building production output, storage and upkeep are not currently exposed by the simulation, so no values are fabricated here.</p></div></details>';
  }).join("");
  return intro("SETTLEMENT ARCHITECTURE","Building register","Inspect every surviving structure using its actual simulation entity, health, footprint, staffing and site data.")+
  '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+records.length+'</strong></div><div><small>BUILDING TYPES</small><strong>'+counts.size+'</strong></div><div><small>EMPLOYED</small><strong>'+number(workforce.employed)+'</strong></div><div><small>POPULATION</small><strong>'+number(workforce.population)+'</strong></div></div>'+
@@ -131,18 +137,54 @@ function familyRecord(id){
  const memorial=(state.personArchive||[]).find(entry=>String(entry.personId||"")===key);
  return memorial?{...memorial,isArchived:true}:null;
 }
+function portraitSymbol(entity){
+ const person=entity?.person||{},role=String(person.role||"").toLowerCase(),sex=String(person.sex||"").toLowerCase();
+ const female=sex==="f"||sex.includes("female")||sex.includes("woman");
+ if(entity?.isKing||/sovereign|monarch|ruler|king|queen/.test(role))return female?"portrait-queen":"portrait-king";
+ if(/scholar|scribe|healer|cleric|priest|mage|teacher/.test(role))return "portrait-scholar";
+ if(/knight|guard|soldier|marshal|captain|archer/.test(role))return "portrait-knight";
+ if(/noble|lord|lady|court|consort/.test(role))return female?"portrait-noblewoman":"portrait-nobleman";
+ return female?"portrait-noblewoman":"portrait-villager";
+}
 function familyNode(entity,heirId){
  const id=String(entity?.personId||entity?.person?.id||entity?.id||"");
  const person=entity?.person;
  if(!id||!person)return "";
  const flags=[entity.isKing?"SOVEREIGN":"",id===String(heirId||"")?"DESIGNATED HEIR":"",entity.isArchived?"DECEASED":""].filter(Boolean).join(" · ");
  const age=Number.isFinite(Number(person.ageYears))?Math.floor(Number(person.ageYears))+" years":"age unknown";
- return '<button type="button" class="dynasty-person'+(entity.isArchived?' is-deceased':'')+'" data-open-person="'+esc(id)+'" aria-label="Open character dossier for '+esc(person.name||"Unnamed person")+'"><span class="dynasty-person-seal" aria-hidden="true">'+(entity.isKing?'♛':entity.isArchived?'†':'✦')+'</span><span class="dynasty-person-copy"><strong>'+esc(person.name||"Unnamed person")+'</strong><small>'+esc(person.role||person.species||"Resident")+' · '+esc(age)+'</small><em>'+esc(flags||"RECORDED FAMILY MEMBER")+'</em></span></button>';
+ return '<button type="button" class="dynasty-person'+(entity.isArchived?' is-deceased':'')+'" data-open-person="'+esc(id)+'" aria-label="Open character dossier for '+esc(person.name||"Unnamed person")+'"><svg class="dynasty-person-portrait" viewBox="0 0 256 320" aria-hidden="true"><use href="assets/royal-portraits.svg#'+portraitSymbol(entity)+'"></use></svg><span class="dynasty-person-copy"><strong>'+esc(person.name||"Unnamed person")+'</strong><small>'+esc(person.role||person.species||"Resident")+' · '+esc(age)+'</small><em>'+esc(flags||"RECORDED FAMILY MEMBER")+'</em></span></button>';
 }
 function dynasty(){
  const h=getRoyalHouse(),king=h.king;
  if(!king)return intro("HOUSE OF THE CROWN","Dynasty & lineage","The family tree is assembled from explicit parent, child and partnership records.")+'<div class="command-note">No living sovereign is currently recorded. Start a campaign or inspect the character dossiers for archived family records.</div>';
  const heirId=h.heir?.personId||"";
+ const sovereignId=String(king.personId||king.person?.id||king.id||"");
+ const rootFamily=getFamilySnapshot(sovereignId)||{};
+ const linkedRecords=(links,exclude=[])=>{
+  const blocked=new Set([sovereignId,...exclude.map(value=>String(value))]);
+  return (links||[]).map(link=>familyRecord(link.personId)).filter(record=>{
+   const id=String(record?.personId||record?.person?.id||record?.id||"");
+   if(!id||blocked.has(id))return false;
+   blocked.add(id);return true;
+  }).slice(0,24);
+ };
+ const parents=linkedRecords(rootFamily.parents||[]);
+ const siblings=linkedRecords(rootFamily.siblings||[],parents.map(person=>person.personId));
+ const cousinMap=new Map();
+ for(const parent of parents){
+  const parentId=String(parent.personId||parent.person?.id||parent.id||"");
+  for(const auntLink of getFamilySnapshot(parentId)?.siblings||[]){
+   const aunt=familyRecord(auntLink.personId);
+   if(!aunt)continue;
+   const auntId=String(aunt.personId||aunt.person?.id||aunt.id||"");
+   for(const cousinLink of getFamilySnapshot(auntId)?.children||[]){
+    const cousin=familyRecord(cousinLink.personId);
+    const cousinId=String(cousin?.personId||cousin?.person?.id||cousin?.id||"");
+    if(cousin&&cousinId!==sovereignId&&!parents.some(person=>String(person.personId)===cousinId)&&!siblings.some(person=>String(person.personId)===cousinId))cousinMap.set(cousinId,cousin);
+   }
+  }
+ }
+ const cousins=[...cousinMap.values()].slice(0,24);
  const visited=new Set(),generations=[];
  let current=[king];
  for(let depth=0;depth<4&&current.length;depth++){
@@ -168,6 +210,8 @@ function dynasty(){
  const history=h.history.slice().reverse().slice(0,12).map(x=>'<article class="command-history"><strong>YEAR '+number(x.year)+' · '+esc(x.kind)+'</strong><p>'+esc(x.detail)+'</p></article>').join("");
  return intro("HOUSE OF THE CROWN","Dynasty & lineage","A multi-generation view of the actual kinship graph. Select any recorded person to open their full dossier.")+
  '<div class="command-section-title">THE SOVEREIGN HOUSE</div><div class="dynasty-root-grid">'+familyNode(king,heirId)+consort+'</div>'+
+ '<div class="command-section-title">ANCESTORS & SIBLINGS</div><div class="dynasty-root-grid">'+(parents.map(person=>familyNode(person,heirId)).join("")||'<p class="command-note">No parent links are recorded for the sovereign.</p>')+(siblings.map(person=>familyNode(person,heirId)).join("")||'<p class="command-note">No sibling links are recorded for the sovereign.</p>')+'</div>'+
+ '<div class="command-section-title">RECORDED COUSINS</div><div class="dynasty-root-grid">'+(cousins.map(person=>familyNode(person,heirId)).join("")||'<p class="command-note">No cousin links can be verified from the recorded kinship graph.</p>')+'</div>'+
  '<div class="command-section-title">DESCENDANTS & SUCCESSION</div><div class="dynasty-tree">'+(generations.join("")||'<p class="command-note">No descendant links are recorded for the current sovereign.</p>')+'</div>'+
  '<div class="command-section-title">ROYAL SUCCESSION RECORD</div><div class="command-history-list">'+(history||'<p class="command-note">No royal event has been recorded yet.</p>')+'</div>'+
  '<p class="command-note">Only saved family relationships are drawn. Missing, unknown or unlinked relatives are intentionally not inferred.</p>';

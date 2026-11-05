@@ -63,6 +63,14 @@ try{
     assert.ok(await page.locator("#command-panel-content .dynasty-generation").count()>=1,"a new campaign must show its sovereign generation");
     await page.locator("#command-panel-content .dynasty-person").first().click();
     assert.ok(await page.locator("#people-modal").isVisible(),"selecting a dynasty member must open the real character dossier");
+    assert.ok(await page.locator("#person-dossier .dossier-portrait").isVisible(),"character dossier must show an original heraldic portrait");
+    assert.ok(await page.locator("#people-list .person-list-portrait").count()>=1,"people roster must show individual portrait art");
+    const relatedLink=page.locator("#person-dossier .dossier-related-person").first();
+    if(await relatedLink.count()){
+        const relatedName=await relatedLink.locator("strong").innerText();
+        await relatedLink.click();
+        assert.equal((await page.locator("#person-dossier .dossier-identity h2").innerText()).trim(), relatedName.trim(), "relationship navigation must open the exact linked person");
+    }
     await page.locator("#people-close").click();
     await page.locator('[data-kac-dock-action="save"]').click();
     await page.waitForFunction(()=>document.querySelector("#save-status")?.textContent.startsWith("LAST SAVED"),null,{timeout:5000});
@@ -185,6 +193,7 @@ try{
     await page.locator('[data-command-tab="buildings"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Building register"));
     assert.ok(await page.locator("#command-panel-content .building-record").count()>=1,"starting realm structures must be listed");
+    assert.ok(await page.locator("#command-panel-content .building-record-art").count()>=1,"building register must show original sprite artwork");
     await page.locator("#building-search").fill("farm");
     assert.ok(await page.locator("#command-panel-content .building-record:not(.is-filtered)").count()>=1,"building filter must retain matching structures");
     await page.locator("#building-search").fill("");
