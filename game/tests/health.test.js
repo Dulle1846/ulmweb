@@ -107,3 +107,13 @@ test("treatment can reduce severity while opening an outbreak",()=>{
     assert.equal(result.severity,1);
     assert.equal(result.containment,1);
 });
+
+test("a new outbreak can begin after the prior outbreak has no active cases",()=>{
+    setup();
+    startOutbreak({severity:1});
+    delete state.entities[0].illnessUntilTick;
+    const result=startOutbreak({severity:2,disease:"red-fever"});
+    assert.equal(result.outbreaks,2);
+    assert.equal(result.cases,2);
+    assert.equal(result.disease,"red-fever");
+});
