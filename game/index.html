@@ -49,8 +49,11 @@
     <main id="main-container" class="game-layout">
         <nav class="realm-nav" aria-label="Royal administration">
             <div class="realm-nav-heading">THE CROWN</div>
-            <button class="realm-nav-button" type="button" data-kac-panel="government" title="Government and kingdom authority">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 2-5 4 3 3-5 3 5 4-3 2 5H3Z"/><path d="M5 11h14l-1 9H6l-1-9ZM9 14v3m6-3v3"/></svg><span>Crown</span>
+            <button class="realm-nav-button" type="button" data-kac-panel="kingdom" title="Kingdom overview">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 2-5 4 3 3-5 3 5 4-3 2 5H3Z"/><path d="M5 11h14l-1 9H6l-1-9ZM9 14v3m6-3v3"/></svg><span>Realm</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="government" title="Government and institutions">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5M8 16h3"/><path d="m15 16 2 2 3-4"/></svg><span>Rule</span>
             </button>
             <button class="realm-nav-button" type="button" data-kac-panel="people" title="Character dossiers">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6M16 5a3 3 0 0 1 0 6m2 3c2 .7 3 2.5 3 5"/></svg><span>People</span>
@@ -211,6 +214,7 @@
 
 
 <div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="modal-panel command-panel"><header class="command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="modal-close" type="button" aria-label="Close management">×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management">
+<button type="button" data-command-tab="kingdom"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>REALM</span></button>
 <button type="button" data-command-tab="government"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>GOVERNMENT</span></button>
 <button type="button" data-command-tab="politics"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>POLITICS</span></button>
 <button type="button" data-command-tab="decisions"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>DECISIONS</span></button>
