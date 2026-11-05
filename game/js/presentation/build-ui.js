@@ -12,7 +12,11 @@ function renderBuildOptions(){
             '<span class="build-option-art"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#'+symbols[road.id]+'"></use></svg></span>'+
             '<span class="build-option-copy"><strong>'+road.label+'</strong><small>'+road.speed.toFixed(2)+'× travel speed</small><small>Cost: '+formatCost(road.cost)+'</small><small>Daily upkeep: '+road.upkeep.toFixed(4)+' gold</small></span>'+
         '</button>'
-    )).join("");
+    )).join("")+
+        '<button class="build-option bulldoze-option" type="button" data-road-remove="true">'+
+            '<span class="build-option-art" aria-hidden="true">🛠️</span>'+
+            '<span class="build-option-copy"><strong>Bulldoze road</strong><small>Remove a road tile and recover 25% of its materials</small><small>No demolition cost</small></span>'+
+        '</button>';
     container.querySelectorAll("[data-road-type]").forEach(button=>{
         button.addEventListener("click",()=>{
             const type=button.dataset.roadType;
@@ -28,10 +32,18 @@ function renderBuildOptions(){
             }
         });
     });
+    container.querySelector("[data-road-remove]")?.addEventListener("click",()=>{
+        if(!setRoadBuildMode("remove"))return;
+        modal?.classList.add("hidden");
+        const status=document.getElementById("placement-status");
+        document.getElementById("road-build-cancel")?.classList.remove("hidden");
+        if(status){status.dataset.roadMode="remove";status.textContent="BULLDOZE SELECTED · CLICK OR DRAG OVER ROADS · ESC TO CANCEL";}
+    });
     const count=document.getElementById("road-count");
     if(count)count.textContent=String(getRoadCount());
     const selected=getRoadBuildMode();
     document.querySelectorAll("[data-road-type]").forEach(button=>button.classList.toggle("is-selected",button.dataset.roadType===selected));
+    container.querySelector("[data-road-remove]")?.classList.toggle("is-selected",selected==="remove");
 }
 
 export function setupBuildUI(){
