@@ -26,6 +26,7 @@ export const TYPE = {
     ARCHER: 22,
     KNIGHT: 23,
     PRIEST: 24,
+    DRAGON: 25,
 
     GOBLIN: 30,
     ORC: 31,
