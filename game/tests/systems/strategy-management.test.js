@@ -8,6 +8,7 @@ import {getFamilySnapshot} from "../../js/systems/families.js";
 import {normalizeGovernment,setGovernmentForm,enactPolicy,getPoliticalSnapshot} from "../../js/systems/government.js";
 import {getRoyalHouse,appointRoyalConsort,createRoyalChild,designateHeir,updateRoyalSuccession} from "../../js/systems/royal-dynasty.js";
 import {summonDragon,updateCreatures,getCreatureSnapshot} from "../../js/systems/creatures.js";
+import {calculateDailyLedger} from "../../js/systems/economy.js";
 
 function startRealm(){
  resetState();state.worldSeed=31105;state.year=4;state.resources={wood:180,stone:95,gold:100,food:120};initStartingKingdom();
@@ -81,4 +82,14 @@ test("dragon summoning rejects unaffordable or over-capacity requests without ch
  for(let i=0;i<3;i++)assert.equal(summonDragon().ok,true);
  const after={...state.resources};assert.equal(summonDragon().reason,"dragon-limit");assert.deepEqual(state.resources,after);
  assert.ok(king);
+});
+
+test("government tax rate changes actual assessed taxes in the economy ledger",()=>{
+ const base={population:10,employed:8,buildings:2,foodAvailable:100,goldAvailable:0};
+ const low=calculateDailyLedger({...base,taxRate:5});
+ const normal=calculateDailyLedger({...base,taxRate:10});
+ const high=calculateDailyLedger({...base,taxRate:20});
+ assert.equal(low.taxesCollected,normal.taxesCollected*.5);
+ assert.equal(high.taxesCollected,normal.taxesCollected*2);
+ assert.ok(high.taxesCollected>normal.taxesCollected);
 });
