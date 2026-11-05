@@ -15,7 +15,6 @@ function kingEntity(){return state.entities.find(entity=>living(entity)&&entity.
 function findLiving(id){return state.entities.find(entity=>living(entity)&&getId(entity)===String(id))||null;}
 function kinshipOf(entity){const person=ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});if(!person.kinship||typeof person.kinship!=="object")person.kinship={parents:[],children:[],partners:[]};for(const key of ["parents","children","partners"])if(!Array.isArray(person.kinship[key]))person.kinship[key]=[];return person.kinship;}
 function activeMarriage(first,second){const a=kinshipOf(first).partners.find(link=>link.personId===getId(second));const b=kinshipOf(second).partners.find(link=>link.personId===getId(first));return a&&b&&a.status==="married"&&b.status==="married"?{a,b}:null;}
-function familyIds(person){const kin=person?.kinship||{};return new Set([...(kin.parents||[]),...(kin.children||[]),...(kin.partners||[])].map(item=>item.personId));}
 function eligibleConsort(king,candidate){
     if(!living(candidate)||candidate===king||candidate.type!==TYPE.VILLAGER||!candidate.personId)return false;
     const monarch=ensurePersonProfile(king,{role:"king"}),person=ensurePersonProfile(candidate);
