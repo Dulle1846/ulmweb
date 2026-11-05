@@ -234,7 +234,7 @@ try{
     const lineageEdgeCount=await page.locator("#command-panel-content .dynasty-lineage-graph .dynasty-lineage-edge").count();
     assert.ok(lineageEdgeCount>=2,"recorded partnership and parent-child links must have connector paths");
     assert.ok(lineageNodeCount<=80&&lineageEdgeCount<=120,"lineage rendering must respect hard node and edge caps");
-    await page.locator('#command-panel-content [data-lineage-node-id="'+dynastyGraphFixture.heirId+'"]').click();
+    await page.locator('#command-panel-content .dynasty-lineage-graph [data-lineage-node-id="'+dynastyGraphFixture.heirId+'"]').click();
     assert.equal(await page.locator("#people-modal").isVisible(),true,"selecting a graph node must open the canonical person dossier");
     assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONALITY"));
     await page.locator("#people-close").click();
