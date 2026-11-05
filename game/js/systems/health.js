@@ -28,7 +28,7 @@ function householdKey(villager){
 export function getHealthSnapshot(){
     const people=residents(),sick=people.filter(person=>(person.illnessUntilTick||0)>state.tick).length;
     const health=ensureHealth();
-    return {population:people.length,sick,recovered:health.recovered,cases:health.cases,
+    return {population:people.length,sick,recovered:health.recovered,cases:health.cases,disease:health.disease,
         outbreaks:health.outbreaks,active:health.outbreakActive,severity:health.severity,
         containment:health.containment};
 }
