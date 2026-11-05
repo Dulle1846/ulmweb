@@ -336,10 +336,23 @@ try{
     const savedTick=(await page.locator("#tick-count").innerText()).trim();
     const savedHand=(await page.locator("#hand-count").innerText()).trim();
     const savedRoadCount=await page.evaluate(()=>(import("./js/systems/roads.js")).then(module=>module.getRoadCount()));
+    const resourceFixture=await page.evaluate(async()=>{
+        const {getResourceNodeAt,harvestForest,extractStone}=await import("./js/systems/resource-geography.js");
+        for(let y=0;y<160;y++)for(let x=0;x<160;x++){
+            const node=getResourceNodeAt(x,y);
+            if(node.forestStock>3){harvestForest(x,y,1);return {type:"forest",x,y,savedStock:node.forestStock-1};}
+            if(node.stoneStock>3){extractStone(x,y,1);return {type:"stone",x,y,savedStock:node.stoneStock-1};}
+        }
+        throw new Error("No resource deposit was generated for the save/load test");
+    });
     await page.locator("#save-btn").click();
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Realm saved"),null,{timeout:5000});
     await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).removeRoad(x,y),{x:roadFixture.x,y:roadFixture.y});
     assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y),{x:roadFixture.x,y:roadFixture.y}),null,"road mutation after save should be visible before loading");
+    await page.evaluate(async({type,x,y})=>{
+        const module=await import("./js/systems/resource-geography.js");
+        if(type==="forest")module.harvestForest(x,y,1);else module.extractStone(x,y,1);
+    },resourceFixture);
     await page.locator("#speed-4").click();
     await page.locator("#load-btn").click();
     await page.waitForFunction(()=>{
@@ -354,6 +367,10 @@ try{
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
     assert.equal(await page.evaluate(async()=>(await import("./js/systems/roads.js")).getRoadCount()),savedRoadCount,"save/load must restore the road network");
     assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y)?.type,{x:roadFixture.x,y:roadFixture.y}),"dirt","save/load must restore the placed road tile");
+    assert.equal(await page.evaluate(async({type,x,y})=>{
+        const node=(await import("./js/systems/resource-geography.js")).getResourceNodeAt(x,y);
+        return type==="forest"?node.forestStock:node.stoneStock;
+    },resourceFixture),resourceFixture.savedStock,"save/load must restore depleted resource node stock");
     // The memorial archive must survive the same save/load round trip.
     await page.locator("#people-btn").click();
     await page.locator("#people-search").fill(memorialId);
