@@ -505,3 +505,41 @@ Successful assignments update household anchors, write personal memories for bot
 
 
 Verification at code head bfa06c39b09e1a84c7497a3910d1a2149fec9cd8: 190/190 Node tests passed; static syntax/import/UI/asset checks, Kings & Cards 2.1 checks and Chromium Browser E2E passed.
+
+## Phase 3.1 — royal dynasty, government decisions and persistent dragon entities
+
+This phase adds a first playable management layer while preserving the distinction between implemented mechanics and future strategy systems.
+
+### Royal house and succession
+- The starting sovereign already has a persistent person profile; this phase adds an explicit royal consort action, royal-child creation and heir designation.
+- A royal marriage is stored through the existing reciprocal partnership graph. A royal child is a persistent knight-class entity with a person profile and two explicit biological parent links; it is not silently inserted into the ordinary villager population.
+- Royal births cost 20 food and 15 gold and have a four-year cooldown. Parent-child links are preflighted against the existing bounded kinship graph.
+- The heir is persisted in the royal state. Succession transfers the crown to the designated living adult child, or the first living adult child in the late sovereign's archived family record.
+- Natural mortality may include the sovereign only when an adult royal child exists. Minor-heir regency is deliberately not simulated yet; this avoids silently placing a child on the throne without a regency system.
+- Royal state, person records, entity flags and dynasty history are included in local save/load.
+
+### Government and politics
+- Four constitutional models are playable: feudal monarchy, royal centralism, crowned council and elective crown.
+- Changing the constitutional model costs 20 gold and changes the faction-support and legitimacy state.
+- Government tax rate now feeds the actual economy ledger. The default 10% baseline preserves the prior tax formula; lower/higher rates scale assessed taxes within a bounded 0–35 range.
+- Five decrees create explicit trade-offs among the commons, nobility, guilds, clergy, legitimacy, morale and treasury resources. Only one decree can be enacted per realm year.
+- These are foundational playable rules, not yet a complete legislature, ministry, judiciary, regional administration or law system.
+
+### Persistent dragons
+- A new friendly Dragon entity type can be summoned from the creature sanctuary or hatched from a Dragon Egg card in the wyvern category.
+- Each dragon has a stable creature ID, name, species, age, expected lifespan, life stage, health, hunger, bond, temperament, abilities, goals, yearly update cursor and a bounded personal memory list.
+- Annual updates age dragons, advance hunger, consume food when available, affect health and morale when neglected, build or lose bonds with the sovereign, record life-stage milestones and apply age-related mortality.
+- Creature memorials preserve name, age, life stage, death year, cause and a small memory sample. The archive is capped at 100 entries.
+- Dragon entities and their creature profiles are included in save/load. The command panel exposes living dragons and memorials.
+
+### Strategy UI and original vector art
+- A new strategy command deck exposes Government, Politics, Decisions, Cards, Economy, Dynasty, Creatures and Chronicles.
+- The management panels read live simulation state and their actions call the actual government, dynasty, card and creature systems.
+- An original SVG heraldic icon set was added for the command deck, including crown, scales, royal seal, cards, treasury, chronicle, people and dragon emblems.
+- A separate comic-strategy stylesheet adds thick outlines, high-contrast heraldic colours, raised buttons, parchment panels and responsive layouts. It does not replace the world renderer or the underlying map art.
+
+### Deliberate limits and next requirements
+- No regency, estate inheritance, automatic royal marriage, political offices, legislature, judiciary or regional autonomy yet.
+- The government council-seat count and succession preference are persisted configuration foundations; the full appointment/voting procedures remain future work.
+- Dragons are currently a single creature species with a bounded yearly needs/lifecycle model, not a universal creature AI for every monster, spirit and magical species.
+- The new SVG emblems are lightweight vector assets. Adding gigabytes of binary art would increase download, memory and mobile-device costs without improving simulation depth. Content should grow through reusable vector/atlas art, procedural variants, compressed illustrations and data-driven story packs.
