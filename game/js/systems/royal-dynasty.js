@@ -4,7 +4,19 @@ import {spawnEntity,canSpawnEntity} from "../world/entities.js";
 import {ensurePersonProfile,addPersonMemory} from "./people.js";
 import {linkParentChild,setPartnership,getFamilySnapshot} from "./families.js";
 const MAX_HISTORY=48,personId=e=>String(e?.personId||e?.person?.id||e?.id||""),alive=e=>Boolean(e&&!e.dead);
-function royalState(){const s=state.royal&&typeof state.royal==="object"?state.royal:{};state.royal={dynastyName:String(s.dynastyName||state.kingdomName||"Eldria").slice(0,48),consortId:typeof s.consortId==="string"?s.consortId:null,heirId:typeof s.heirId==="string"?s.heirId:null,lastBirthYear:Math.max(0,Math.floor(Number(s.lastBirthYear)||0)),history:Array.isArray(s.history)?s.history.filter(x=>x&&typeof x==="object").slice(-MAX_HISTORY):[]};return state.royal;}
+function royalState(){
+ const s=state.royal&&typeof state.royal==="object"&&!Array.isArray(state.royal)?state.royal:{};
+ // Preserve the state object's identity: callers may hold this reference while
+ // recording a birth, marriage or succession event. Replacing it would write
+ // later mutations to a detached object and silently lose the designated heir.
+ s.dynastyName=String(s.dynastyName||state.kingdomName||"Eldria").slice(0,48);
+ s.consortId=typeof s.consortId==="string"?s.consortId:null;
+ s.heirId=typeof s.heirId==="string"?s.heirId:null;
+ s.lastBirthYear=Math.max(0,Math.floor(Number(s.lastBirthYear)||0));
+ s.history=Array.isArray(s.history)?s.history.filter(x=>x&&typeof x==="object").slice(-MAX_HISTORY):[];
+ state.royal=s;
+ return s;
+}
 function adultAge(e){const p=ensurePersonProfile(e);return ({human:16,elf:35,dwarf:24,orc:14,goblin:10,halfling:20,gnome:24,dragonkin:22,fae:28,revenant:0})[p.species]??16;}
 function closeKinIds(king){const family=getFamilySnapshot(personId(king));return new Set([...(family?.parents||[]),...(family?.children||[]),...(family?.siblings||[])].map(x=>String(x.personId)));}
 function hasActivePartner(entity){return ensurePersonProfile(entity).kinship.partners.some(x=>["partner","married"].includes(x.status));}
