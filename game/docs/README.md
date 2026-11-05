@@ -17,7 +17,8 @@ For the current development stage, these documents focus on making the existing 
 - [Source Structure](../game-structure) — current directory tree and module responsibilities.
 - [Zoom and Building Placement](ZOOM_AND_BUILDING_PLACEMENT.md) — four detail levels, camera behaviour and drag-and-drop validation.
 - [Kings & Cards Foundation](V2_FOUNDATION.md) — current playable systems, exact limits and verified checks.
-- [Next AI Work Package](NEXT_AI_WORK_PACKAGE.md) — ready-to-use handoff brief for deeper simulation, authored content and art work.
+- [Next AI Work Package](NEXT_AI_WORK_PACKAGE.md) — ready-to-use handoff brief for contributors and AI sessions.
+- [Simulation Design and Story Engine](SIMULATION_DESIGN_AND_STORY_ENGINE.md) — systemic gameplay vision, interdependencies, cards, issue chains, cadence and phased implementation plan.
 
 ## How to maintain these documents
 
