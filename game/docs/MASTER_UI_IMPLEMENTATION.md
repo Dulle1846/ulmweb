@@ -316,3 +316,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added hard limits of 80 nodes and 120 connector edges, alongside the existing four-generation/24-person descendant limits, to prevent runaway DOM growth.
 - Added deterministic Chromium coverage for royal consort/child links, connector paths and heir dossier navigation; reduced-motion and narrow-screen styling included.
 - No simulation or save-schema changes. Missing kinship links are never inferred.
+
+
+## Phase 2 — direct sovereign access from the royal header (pending)
+
+- Added a compact royal-portrait shortcut to the global status bar so the reigning ruler's dossier is one action away from every game screen.
+- The shortcut resolves the current sovereign through the authoritative `getRoyalHouse()` record, with a fallback only to a living entity explicitly marked as monarch. It does not select a former ruler or infer identity from a display name.
+- Opening the shortcut clears roster filters, opens the canonical character dossier and moves keyboard focus to its close control.
+- Added responsive styling, a static UI contract and a Chromium E2E assertion against a real royal-house fixture.
+- Presentation-only: no simulation, balance, or save-schema changes. This increment remains pending until the exact PR head passes the full CI suite and the resulting Pages deployment is verified.
