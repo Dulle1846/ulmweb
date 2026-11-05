@@ -221,3 +221,11 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added a static contract covering all twelve navigation destinations and rejecting the previous toggle semantics.
 - Added a Chromium E2E check that focuses the Economy navigation item, activates it with Enter, verifies the real Economy screen opens, and checks the accessible current-page state.
 - This is a targeted accessibility correction, not a complete keyboard or screen-reader audit. The broader Phase 5 checklist remains open.
+
+
+## Phase 5 — repeatable visual viewport evidence
+
+- Extended the Chromium viewport matrix to capture both the live realm layout and the open management window at all seven required viewport sizes: 390×844, 768×1024, 1280×720, 1366×768, 1600×900, 1920×1080 and 2560×1440.
+- Screenshots are written to the runner's temporary directory, not committed to the game repository.
+- The browser workflow uploads the screenshot set as the kings-and-cards-ui-viewport-review artifact for seven days, including on failed test runs when files were produced.
+- These screenshots create review evidence; they do not replace a human visual inspection. Other overlays, map layers, contrast and screen-reader review remain outstanding.
