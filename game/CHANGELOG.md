@@ -267,3 +267,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 
 - Added contained vertical scrolling to the mobile management column so the card panel and lower tabs remain reachable on short screens.
 - Added Chromium regression checks for actual scroll range and scroll movement at 390×844 and 768×1024.
+
+
+## Development line 3.7.0-dev — Phase 5 merged responsive corrections
+
+- PR #69 merged as `e4d343041ec6960502c471aa5efd2ca0994f85f5`; all three required workflows passed and the seven-viewport screenshot artifact was reviewed.
+- PR #70 merged as `09c2d747f08216199154af480735eeae064d0e9b`; all three required workflows passed, including real mobile side-panel scroll checks at 390×844 and 768×1024.
+- These are code merges to the production branch, not an assertion that Cloudflare Pages has already finished publishing them. Pages delivery remains a separate release gate.
