@@ -5,7 +5,8 @@
 import { WORLD_WIDTH, WORLD_HEIGHT, BUILDING_SIZE } from '../core/config.js';
 import { TYPE, Entity } from '../core/types.js';
 import { state } from '../core/state.js';
-import { randInt } from '../core/utils.js';
+import { randInt as seededRandInt } from '../core/random.js';
+const randInt=(min,max)=>seededRandInt(min,max,"entity");
 
 // ── Entity erstellen ──────────────────────────────────────────
 
@@ -146,6 +147,7 @@ export function initStartingKingdom() {
     king.hp = 300;
     king.maxHp = 300;
     king.isKing = true;
+    king.personId = king.id;
     king.home = { x: cx, y: cy };
     king.anchor = { x: cx, y: cy };
 
