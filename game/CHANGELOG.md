@@ -80,9 +80,7 @@ The version in `game/package.json` is the machine-readable game version. Update 
 
 **Scope limit:** The simulation currently retains only the latest completed financial ledger, not a historical time series. Per-building production, storage and upkeep are not exposed. No trend charts or forecasts are fabricated. Chronicle history remains limited to the stored event log (up to 100 recent records); unread tracking and permanent external archives are not claimed. The initial seven-viewport screenshot matrix for the realm shell and management dialog was completed in Phase 5 (PR #66); full overlay-by-overlay responsive QA and the remaining original art atlas work remain outstanding. No simulation rules or save schema were changed.
 
-**Release status:** Production branch `ulmweb-branch` contains version `3.6.0`; the Cloudflare Pages deployment check for the latest production-branch commit `09c2d74` completed successfully on 2026-11-05. The check exposes the deployment preview URL above. The canonical user-facing address remains https://kings-and-cards.pages.dev/.
-
-## Production release history
+**Release status at that release:** Production branch `ulmweb-branch` contained version `3.6.0`; this release was superseded by 3.7.0 and 3.7.1. The canonical user-facing address remains https://kings-and-cards.pages.dev/.
 
 ### 3.5.0 — Master UI Phase 2: Dynasty and contextual actions
 **Released:** 2026-11-05  
