@@ -87,7 +87,7 @@ Top status resource chips mirror the simulation's wood, stone, gold, food and po
 
 ### Layout and information hierarchy
 - Full ruler identity/portrait, kingdom crest, population, treasury trend and warning inbox in the top status layer.
-- A genuine lower quick-action bar with contextual actions and keyboard support.
+- A full-width lower contextual action bar with live save status and responsive wrapping (Phase 2 increment; PR #52).
 - Resource chips open a dedicated resource detail panel with production, consumption, trends, storage and relevant buildings once those data contracts exist.
 - Map layer selector and legend only when each overlay has real simulation data.
 
@@ -150,3 +150,11 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added accessible dialog names to the founding and settings screens; all dialog overlays now have explicit modal semantics and labels.
 - Added scroll containment and short-viewport handling so tall dialogs remain reachable on narrow phones and short displays.
 - Static tests and Chromium E2E cover initial focus, tab containment and focus fallback. Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E passed on the exact PR #50 feature head `2a8f0df5ef5a32c010bf3f24a0c71fd0980df72f` before merge. Full 390×844, 768×1024 and desktop viewport screenshot review remains a separate acceptance gate.
+
+
+## Phase 2 full-width action bar increment
+
+- Moved the contextual action dock out of the right-hand management column and made it a full-width sibling of the game layout.
+- The same wired actions remain: people, dynasty, cards, chronicle and manual save. The save status remains tied to actual save outcomes.
+- Added compact flex wrapping for phone widths; the dock remains full-width and its controls keep visible keyboard focus.
+- Added Chromium E2E checks for all seven specified viewport sizes, horizontal overflow, full-width dock geometry and management-dialog containment.

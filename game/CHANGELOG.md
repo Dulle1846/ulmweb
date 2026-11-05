@@ -188,3 +188,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Added static modal-contract tests and Chromium E2E assertions for focus behavior.
 
 **Scope limit:** This is not a full accessibility certification. Screen-reader testing, keyboard audit of every control, color-contrast audit and the complete viewport matrix remain open.
+
+
+## Development line 3.7.0-dev — Phase 2 full-width action bar
+
+- Promoted the contextual action dock from the right sidebar to a full-width lower bar beneath the game layout.
+- Preserved the existing live action handlers and save-status semantics.
+- Added responsive wrapping and E2E viewport checks at 390×844, 768×1024, 1280×720, 1366×768, 1600×900, 1920×1080 and 2560×1440.
