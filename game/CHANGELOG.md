@@ -273,3 +273,9 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 
 - Added an end-to-end proof that the selected card can be brought fully into view within the mobile management panel at 390×844 and 768×1024. The test requires a scroll only when there is a meaningful scroll range, and also checks that the card is not covered by the bottom action dock.
 - Browser CI also uploads dedicated scrolled-state screenshots for visual review; no game state or save data is changed.
+
+
+### Mobile viewport follow-up
+
+- Added 44px bottom scroll clearance at narrow phone widths because the bottom action dock covers part of the side-panel's theoretical lower edge.
+- The browser assertion now positions the selected card above the dock's top edge, preventing a false pass where the card was inside the panel but still visually obscured.
