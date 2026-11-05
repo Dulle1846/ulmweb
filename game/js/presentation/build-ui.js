@@ -34,7 +34,7 @@ function renderBuildOptions(){
     });
     container.querySelector("[data-road-remove]")?.addEventListener("click",()=>{
         if(!setRoadBuildMode("remove"))return;
-        modal?.classList.add("hidden");
+        document.getElementById("build-modal")?.classList.add("hidden");
         const status=document.getElementById("placement-status");
         document.getElementById("road-build-cancel")?.classList.remove("hidden");
         if(status){status.dataset.roadMode="remove";status.textContent="BULLDOZE SELECTED · CLICK OR DRAG OVER ROADS · ESC TO CANCEL";}
