@@ -218,6 +218,24 @@ try{
     await page.locator('[data-command="consort"]').click();
     await page.locator('[data-command="royal-birth"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("LIVING ROYAL CHILDREN"));
+
+    // The dynasty panel draws a connected network from persisted kinship edges.
+    await page.locator('[data-command-tab="dynasty"]').click();
+    const dynastyGraphFixture=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {heirId:String(state.royal?.heirId||""),childCount:state.entities.filter(entity=>!entity.dead&&entity.isRoyalFamily&&entity.person?.role==="heir").length};
+    });
+    assert.ok(dynastyGraphFixture.heirId,"royal birth should leave a designated heir for the graph test");
+    assert.equal(await page.locator("#command-panel-content .dynasty-lineage-graph").count(),1);
+    assert.ok(await page.locator("#command-panel-content [data-lineage-node-id]").count()>=3,"lineage graph must render the sovereign, consort and recorded child");
+    await page.waitForFunction(()=>[...document.querySelectorAll(".dynasty-lineage-edge")].some(path=>path.getAttribute("d")?.length>0),null,{timeout:5000});
+    assert.ok(await page.locator("#command-panel-content .dynasty-lineage-edge").count()>=2,"recorded partnership and parent-child links must have connector paths");
+    await page.locator('#command-panel-content [data-lineage-node-id="'+dynastyGraphFixture.heirId+'"]').click();
+    assert.equal(await page.locator("#people-modal").isVisible(),true,"selecting a graph node must open the canonical person dossier");
+    assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONALITY"));
+    await page.locator("#people-close").click();
+    await page.locator("#command-open-btn").click();
+    await page.locator('[data-command-tab="dynasty"]').click();
     await page.locator('[data-command-tab="creatures"]').click();
     await page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");
