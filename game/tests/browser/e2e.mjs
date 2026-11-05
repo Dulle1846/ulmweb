@@ -217,6 +217,7 @@ try{
     await page.locator("#royal-consort-select").selectOption({index:1});
     await page.locator('[data-command="consort"]').click();
     await page.locator('[data-command="royal-birth"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("LIVING ROYAL CHILDREN"),"royal decisions must show the living-children section after a birth");
 
     // The dynasty panel draws a connected network from persisted kinship edges.
     await page.locator('[data-command-tab="dynasty"]').click();
@@ -238,7 +239,6 @@ try{
     assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONALITY"));
     await page.locator("#people-close").click();
 
-    assert.ok((await page.locator("#command-panel-content").innerText()).includes("LIVING ROYAL CHILDREN"));
     await page.locator('[data-command-tab="creatures"]').click();
     await page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");
