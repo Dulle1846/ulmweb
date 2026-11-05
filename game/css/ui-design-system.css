@@ -42,6 +42,7 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .game-shell{background:radial-gradient(ellipse at 45% -20%,rgba(126,99,63,.17),transparent 55%),linear-gradient(145deg,#24221f,#171512 76%)}
 .topbar{min-height:72px;padding:8px 16px;border-bottom:1px solid var(--ui-line-strong);background:linear-gradient(180deg,#373027,#211e19);box-shadow:0 4px 18px #0008}
 .brand-mark{border:2px double var(--color-antique-gold);border-radius:4px;background:linear-gradient(145deg,#d8c6a0,#80633f);color:#34281d;box-shadow:inset 0 0 0 3px #eee0bd66,0 3px 9px #0007}
+.brand-mark img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 1px 1px #3b291d88)}
 .brand-title{font-family:var(--ui-title-font);font-variant:small-caps;letter-spacing:.08em;color:#e5d0a0}
 .brand-subtitle{color:#b9a47c;letter-spacing:.17em}
 .header-middle{gap:clamp(10px,1.7vw,24px)}
@@ -49,7 +50,8 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .date-value{font-family:var(--ui-title-font);color:#f0e3c7}
 .morale-track{border:1px solid #8d744d;border-radius:2px;background:#171512}
 .morale-track>div{background:linear-gradient(90deg,#762f35,#b99a59,#405b43)}
-.player-chip{border:1px solid var(--ui-line);border-radius:3px;background:#1c1a17;color:#e6d7b8}
+.player-chip{display:flex;align-items:center;gap:7px;border:1px solid var(--ui-line);border-radius:3px;background:#1c1a17;color:#e6d7b8}
+.player-chip svg{width:15px;height:15px;fill:none;stroke:#d6bd8a;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .header-actions{gap:5px}
 .control-button,.speed-button{min-height:34px;padding:0 10px;border:1px solid #8b7047;border-radius:3px;background:linear-gradient(#514333,#332a20);color:#ead9b5;font-family:var(--ui-title-font);font-size:10px;font-weight:700;letter-spacing:.07em;box-shadow:inset 0 1px #fff2,0 2px 4px #0006}
 .control-button:hover,.speed-button:hover{border-color:#d1b476;background:linear-gradient(#69553a,#403326);color:#fff0c9}
@@ -76,6 +78,8 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .section-heading,.card-section-heading,.card-section-title{font-family:var(--ui-title-font);letter-spacing:.12em;color:#e2cea5}
 .resource-section{background:rgba(0,0,0,.12);border-bottom:1px solid var(--ui-line)}
 .resource-card{border:1px solid #80633f;border-radius:3px;background:linear-gradient(145deg,#403326,#29221b);box-shadow:inset 0 1px #fff1,0 2px 5px #0005}
+.resource-symbol svg{width:30px;height:30px;display:block;filter:drop-shadow(0 2px 1px #0005)}
+.card-cost svg{display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6}
 .resource-value{color:#f0e2c2;font:700 18px var(--ui-number-font);font-variant-numeric:tabular-nums}
 .resource-name{color:#bba77f;font-family:var(--ui-title-font);letter-spacing:.13em}
 .card-section{border-color:var(--ui-line)}
