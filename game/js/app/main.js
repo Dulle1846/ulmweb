@@ -21,6 +21,7 @@ import {setupCharacterDossier} from "../presentation/character-dossier.js";
 import {normalizeFamilyLinks} from "../systems/families.js";
 import {normalizeGovernment} from "../systems/government.js";
 import {normalizeRoyalState} from "../systems/royal-dynasty.js";
+import {setupManagementUI} from "../presentation/management-ui.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -316,6 +317,8 @@ function init(){
     bindCanvas();
     setupInput();
     setupCharacterDossier();
+    setupManagementUI();
+    document.getElementById("command-chronicles-btn")?.addEventListener("click",()=>document.getElementById("people-btn")?.click());
     bindMenu();
     applySoundtrackSettings(settings);
     window.addEventListener("resize",resize);
