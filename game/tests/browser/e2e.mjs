@@ -138,11 +138,11 @@ try{
         assert.equal((await page.locator("#person-dossier .dossier-identity h2").innerText()).trim(), relatedName.trim(), "relationship navigation must open the exact linked person");
     }
     await page.locator("#people-close").click();
-    await page.evaluate(({parentId,childId})=>{
-        const {state}=window.__kacTestState||{};
-        const parent=state?.entities?.find(entity=>String(entity.personId||entity.id)===String(parentId));
+    await page.evaluate(async({parentId,childId})=>{
+        const {state}=await import("./js/core/state.js");
+        const parent=state.entities.find(entity=>String(entity.personId||entity.id)===String(parentId));
         if(parent?.person?.kinship?.children)parent.person.kinship.children=parent.person.kinship.children.filter(link=>String(link.personId)!==String(childId));
-        const index=state?.entities?.findIndex(entity=>String(entity.personId||entity.id)===String(childId))??-1;
+        const index=state.entities.findIndex(entity=>String(entity.personId||entity.id)===String(childId));
         if(index>=0)state.entities.splice(index,1);
     },dynastyFixture);
     await page.waitForFunction(()=>document.activeElement?.id==="main-container",null,{timeout:3000});
