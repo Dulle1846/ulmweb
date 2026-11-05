@@ -275,3 +275,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - PR #69 merged as `e4d343041ec6960502c471aa5efd2ca0994f85f5`; all three required workflows passed and the seven-viewport screenshot artifact was reviewed.
 - PR #70 merged as `09c2d747f08216199154af480735eeae064d0e9b`; all three required workflows passed, including real mobile side-panel scroll checks at 390×844 and 768×1024.
 - These are code merges to the production branch, not an assertion that Cloudflare Pages has already finished publishing them. Pages delivery remains a separate release gate.
+
+
+## Development line 3.7.0-dev — Phase 5 mobile dock clearance
+
+- Reserved 44px of bottom scroll space on narrow phone layouts to compensate for the action dock overlapping the side-panel's lower edge.
+- Added a viewport-aware E2E assertion that the selected card is fully visible above the dock, with a real scroll only when the card starts obscured.
+- Added scrolled-state screenshot evidence at 390×844 and 768×1024; no simulation or save data changed.

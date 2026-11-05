@@ -261,3 +261,11 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Cloudflare Pages check run `127533959060`: `success`, summary `Deployed successfully`, deployment ID `35e2a522-431d-4558-8195-06a24bb4dc2d`.
 - Deployment preview: https://35e2a522.kings-and-cards.pages.dev/ . The canonical user-facing address remains https://kings-and-cards.pages.dev/.
 - This is Pages evidence. The separate Workers build check is not used as deployment evidence for the game.
+
+
+## Phase 5 — selected-card visibility above the mobile action dock
+
+- Visual/browser geometry exposed a 37px overlap between the side-panel lower edge and the bottom action dock at 390×844.
+- Added 44px of mobile-only bottom scroll clearance so the selected card can be brought fully above the dock.
+- Chromium now checks the actual visible boundary (minimum of side-panel bottom and action-dock top) at 390×844 and 768×1024. It requires scrolling only when the card is initially obscured; if the tablet layout already shows it, no artificial scroll is demanded.
+- Captures scrolled-state screenshots for review and restores the original scroll position.
