@@ -102,3 +102,52 @@ export function getGovernmentSnapshot() {
         political: getPoliticalSnapshot()
     };
 }
+
+export const ROYAL_DECISIONS = Object.freeze({
+    grain_relief: {
+        label: "Fund grain relief",
+        description: "Spend food reserves to calm the commons and restore confidence.",
+        cost: { food: 12 },
+        effects: { legitimacy: 3, commons: 8, nobility: -1, guilds: 0, clergy: 1 },
+        morale: 3
+    },
+    guild_charter: {
+        label: "Grant a guild charter",
+        description: "Spend royal gold to recognize guild privileges and stimulate trade.",
+        cost: { gold: 10 },
+        effects: { legitimacy: 2, commons: 1, nobility: -3, guilds: 9, clergy: 0 },
+        morale: 1
+    },
+    noble_privilege: {
+        label: "Confirm noble privileges",
+        description: "Strengthen noble loyalty at the cost of popular confidence.",
+        cost: {},
+        effects: { legitimacy: -1, commons: -5, nobility: 9, guilds: -1, clergy: 1 },
+        morale: -1
+    },
+    temple_festival: {
+        label: "Sponsor a temple festival",
+        description: "Spend food on a public celebration that wins clergy and popular support.",
+        cost: { food: 8 },
+        effects: { legitimacy: 1, commons: 3, nobility: 0, guilds: 0, clergy: 8 },
+        morale: 3
+    }
+});
+
+export function resolveRoyalDecision(decisionId) {
+    const decision = ROYAL_DECISIONS[decisionId];
+    if (!decision) return { ok: false, reason: "unknown-decision" };
+    for (const [resource, amount] of Object.entries(decision.cost)) {
+        if (!Number.isFinite(Number(state.resources?.[resource])) || state.resources[resource] < amount) {
+            return { ok: false, reason: "insufficient-" + resource };
+        }
+    }
+    for (const [resource, amount] of Object.entries(decision.cost)) state.resources[resource] -= amount;
+    const politics = applyPoliticalEffects(decision.effects);
+    state.morale = Math.max(0, Math.min(100, Number(state.morale || 0) + decision.morale));
+    const government = normalizeGovernment();
+    government.decisionsMade++;
+    government.lastDecisionYear = Math.max(1, Math.floor(Number(state.year) || 1));
+    addLog("ROYAL DECISION: " + decision.label, "#e4bd72", "politics");
+    return { ok: true, politics, morale: state.morale };
+}
