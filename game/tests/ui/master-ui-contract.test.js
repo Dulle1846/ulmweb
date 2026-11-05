@@ -224,7 +224,7 @@ test("reusable royal control primitives define variants, states, panels and tool
 
 test("all principal overlays use the shared window sizing and scroll primitives",async()=>{
  const windowCss=await readFile(new URL("css/ui-components.css",root),"utf8");
- for(const size of ["ui-window--small","ui-window--medium","ui-window--large"])assert.ok(windowCss.includes("."+size));
+ for(const size of ["ui-window--small","ui-window--medium","ui-window--large","ui-window--founding"])assert.ok(windowCss.includes("."+size));
  for(const part of [".ui-window{",".ui-window__header{",".ui-window__body{",".ui-window__footer{","@media(max-height:700px)"])assert.ok(windowCss.includes(part));
  for(const id of ["settings-panel","people-panel","command-panel","build-panel","event-panel"]){
   assert.ok(html.includes("ui-window "+(id==="settings-panel"?"ui-window--small":id==="build-panel"||id==="event-panel"?"ui-window--medium":"ui-window--large"))||html.includes("ui-window ui-window--"+(id==="settings-panel"?"small":id==="build-panel"||id==="event-panel"?"medium":"large")));
