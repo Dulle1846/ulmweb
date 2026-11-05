@@ -19,6 +19,8 @@ import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
 import {ensurePersonProfile,normalizePersonProfile,normalizePersonMemorial,MAX_PERSON_ARCHIVE} from "../systems/people.js";
 import {setupCharacterDossier} from "../presentation/character-dossier.js";
 import {normalizeFamilyLinks} from "../systems/families.js";
+import {normalizeRoyalHouse} from "../systems/royal-dynasty.js";
+import {setupRoyalCourt} from "../presentation/royal-court.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -81,6 +83,7 @@ function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     initWorld(seed,state.worldOptions);
     initStartingKingdom();
     normalizeHouseholdAssignments();
+    normalizeRoyalHouse();
     drawStartingHand();
     state.camera.x=0;state.camera.y=0;
     centerCamera();
@@ -103,7 +106,7 @@ function serializeEntity(entity,indexByEntity){
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
         routinePhase:entity.routinePhase,routineTimer:entity.routineTimer,movePause:entity.movePause,
         job:entity.job,jobRefreshTimer:entity.jobRefreshTimer,workplaceIndex:entity.workplace?indexByEntity.get(entity.workplace)??null:null,
-        isKing:entity.isKing,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
+        isKing:entity.isKing,isRoyal:entity.isRoyal,isRoyalConsort:entity.isRoyalConsort,isRoyalHeir:entity.isRoyalHeir,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
     };
 }
 
@@ -123,6 +126,7 @@ function createSaveSnapshot(){
         weather:state.weather,weatherTimer:state.weatherTimer,
         entities:state.entities.map((entity,index)=>serializeEntity(entity,indexes)),
         personArchive:(state.personArchive||[]).map(entry=>JSON.parse(JSON.stringify(entry))).slice(-MAX_PERSON_ARCHIVE),
+        royalHouse:JSON.parse(JSON.stringify(state.royalHouse||{})),
         hand:state.hand.map(card=>({...card,cost:{...card.cost}})),
         cardRewardQueue:(state.cardRewardQueue||[]).map(card=>({...card,cost:{...card.cost}})),
         selectedCardInstanceId:state.selectedCardInstanceId,
@@ -166,7 +170,7 @@ function loadSnapshotIntoGame(profile,snapshot){
             illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
             routinePhase:dto.routinePhase??4,routineTimer:dto.routineTimer??30,movePause:dto.movePause||0,
-            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
+            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),isRoyal:Boolean(dto.isRoyal),isRoyalConsort:Boolean(dto.isRoyalConsort),isRoyalHeir:Boolean(dto.isRoyalHeir),moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
         });
         restored.push(entity);
     }
@@ -181,6 +185,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.nextEntityId=Math.max(1,Number.isSafeInteger(snapshot.nextEntityId)?snapshot.nextEntityId:restored.length+1);
     for(let index=0;index<restored.length;index++){const entity=restored[index];if(!entity)continue;if(typeof entity.id!=="string")entity.id="e"+(Number(state.worldSeed)||1).toString(36)+"-"+(index+1).toString(36);if(entity.type===TYPE.VILLAGER&&!entity.personId)entity.personId=entity.id;if(entity.type===TYPE.VILLAGER||entity.isKing)ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});}
     normalizeFamilyLinks();
+    normalizeRoyalHouse(snapshot.royalHouse);
     state.nextEntityId=Math.max(state.nextEntityId,restored.length+1);
     state.seasonIndex=snapshot.seasonIndex||0;state.morale=snapshot.morale??72;
     state.resources={wood:0,stone:0,gold:0,food:0,...snapshot.resources};
@@ -312,6 +317,7 @@ function init(){
     bindCanvas();
     setupInput();
     setupCharacterDossier();
+    setupRoyalCourt();
     bindMenu();
     applySoundtrackSettings(settings);
     window.addEventListener("resize",resize);
