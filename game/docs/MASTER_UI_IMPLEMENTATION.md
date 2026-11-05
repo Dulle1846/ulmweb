@@ -234,6 +234,6 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 ## Phase 5 — mobile command-bar overflow correction
 
 - Screenshot review of the seven-viewport artifact exposed clipped right-hand controls in the 390px layout; the previous checks covered document width and modal geometry but not each header action.
-- The header action group now wraps on narrow viewports so Save, Load, Build, Management, Settings, Pause and speed controls remain within the viewport.
+- The header action group now occupies a dedicated flexible row at widths up to 1680px and wraps on narrow viewports, keeping Save, Load, Build, Management, Settings, Pause and speed controls within the viewport.
 - Chromium E2E now checks the action-row bounds, its scroll/client width and every direct control at all seven viewport sizes.
 - This closes the observed header-clipping defect only; it does not certify the rest of the mobile layout or complete the broader accessibility/visual audit.
