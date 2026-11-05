@@ -261,3 +261,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Wrapped the global action controls onto a dedicated row at intermediate desktop widths and below the resource strip on narrow screens.
 - Added Chromium checks for header overflow, overlap between header groups and clipped action buttons at all seven responsive viewports.
 - Visual review also logged remaining art-direction work: world map/building presentation still contains simple placeholder-like shapes; this fix does not claim to complete world art.
+
+
+## Development line 3.7.0-dev — Phase 5 side-panel scroll containment
+
+- Made the side panel vertically scrollable within the bounded game layout, with contained scroll chaining and a thin themed scrollbar.
+- Added a seven-viewport Chromium assertion that the selected card remains reachable at the end of the side-panel scroll region.
+- No simulation, save schema, card rules or resource state changed.
