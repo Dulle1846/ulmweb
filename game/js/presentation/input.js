@@ -10,7 +10,7 @@ import { showBigMessage,renderUI } from "./rendering/ui.js";
 import { distance } from "../core/utils.js";
 import { toggleSoundtrack } from "../core/soundtrack.js";
 import { loadSettings,saveSettings } from "../core/persistence.js";
-import { getRoadBuildMode,placeRoad } from "../systems/roads.js";
+import { getRoadBuildMode,placeRoad,removeRoad } from "../systems/roads.js";
 
 export function setupInput(){
     const canvas=state.canvas;
@@ -243,11 +243,11 @@ export function setupInput(){
         const {x,y}=roadTileFromScreen(event),key=x+":"+y;
         if(key===lastRoadTileKey)return;
         lastRoadTileKey=key;
-        const result=placeRoad(x,y,type);
+        const result=type==="remove"?removeRoad(x,y):placeRoad(x,y,type);
         if(result.ok){
             const count=document.getElementById("road-count");
-            if(count&&!result.upgraded)count.textContent=String(Number(count.textContent||0)+1);
-            if(placementStatus)placementStatus.textContent=type.toUpperCase()+" ROAD PLACED · "+x+", "+y;
+            if(count&&!result.upgraded)count.textContent=String(Math.max(0,Number(count.textContent||0)+(type==="remove"?-1:1)));
+            if(placementStatus)placementStatus.textContent=type==="remove"?"ROAD REMOVED · "+x+", "+y:type.toUpperCase()+" ROAD PLACED · "+x+", "+y;
             renderUI();
         }else if(result.reason!=="Road already exists here"){
             if(placementStatus)placementStatus.textContent=result.reason.toUpperCase();
