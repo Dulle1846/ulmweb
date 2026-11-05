@@ -37,7 +37,7 @@ function renderPeopleList(query = "") {
     const needle = String(query).trim().toLowerCase();
     const filtered = all.filter(entity => {
         const person = entity.person;
-        return !needle || [person.name, person.species, person.sex, person.role, person.familyName, entity.deathCause]
+        return !needle || [person.name, person.species, person.sex, person.role, person.familyName, entity.deathCause, entity.personId]
             .some(value => String(value || "").toLowerCase().includes(needle));
     }).slice(0, 100);
     if (!filtered.some(entity => entity.personId === selectedPersonId)) {
