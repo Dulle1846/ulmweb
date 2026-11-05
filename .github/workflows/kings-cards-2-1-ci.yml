@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - ulmweb-branch
+      - kac-2.1-stability-performance
+      - kac-2.2-seeded-simulation
     paths:
       - "game/**"
       - ".github/workflows/kings-cards-2-1-ci.yml"
