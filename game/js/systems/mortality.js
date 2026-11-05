@@ -107,7 +107,10 @@ export function updateMortality() {
             ? "illness"
             : hpRatio < 0.3 ? "injury" : "old age";
         const death = recordNaturalDeath(entity, cause);
-        if (death) {\n            deaths.push(death);\n            if (entity.isKing) resolveRoyalSuccession(entity.personId);\n        }
+        if (death) {
+            deaths.push(death);
+            if (entity.isKing) resolveRoyalSuccession(entity.personId);
+        }
     }
     return deaths;
 }
