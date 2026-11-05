@@ -7,6 +7,7 @@ import { state } from '../../core/state.js';
 import { drawTerrain } from './terrain.js';
 import { drawEntity } from './entities.js';
 import { drawPlacementPreview } from './placement-preview.js';
+import { getRoadTiles,ROAD_TYPES } from '../../systems/roads.js';
 
 let visibleEntitiesCache=[];
 let visibleEntitiesUntil=0;
@@ -21,6 +22,7 @@ export function drawWorld() {
 
     // ── Terrain ──────────────────────────────────────────────
     drawTerrain(ctx);
+    drawRoadNetwork(ctx,zoom,camera,canvas);
 
     // ── Entities (sortiert nach Y für Pseudo-Tiefe) ──────────
     const cellPx = CELL * zoom;
@@ -83,6 +85,41 @@ export function drawWorld() {
 
     // ── Zoom-Level-Indikator ─────────────────────────────────
     drawZoomIndicator(ctx, canvas);
+}
+
+function drawRoadNetwork(ctx,zoom,camera,canvas){
+    const tileSize=CELL*zoom;
+    if(tileSize<1.5)return;
+    const minX=Math.max(0,Math.floor(camera.x/tileSize)-1);
+    const minY=Math.max(0,Math.floor(camera.y/tileSize)-1);
+    const maxX=Math.min(159,Math.ceil((camera.x+canvas.width)/tileSize)+1);
+    const maxY=Math.min(159,Math.ceil((camera.y+canvas.height)/tileSize)+1);
+    const roads=getRoadTiles();
+    if(!roads.length)return;
+    ctx.save();
+    ctx.lineCap="round";
+    ctx.lineJoin="round";
+    for(const road of roads){
+        if(road.x<minX||road.x>maxX||road.y<minY||road.y>maxY)continue;
+        if(!state.explored?.[road.x]?.[road.y])continue;
+        const style=ROAD_TYPES[road.type];
+        if(!style)continue;
+        const x=road.x*tileSize-camera.x;
+        const y=road.y*tileSize-camera.y;
+        const width=Math.max(2,tileSize*(road.type==="dirt"?0.24:road.type==="gravel"?0.31:0.38));
+        ctx.strokeStyle="rgba(35,25,17,.72)";
+        ctx.lineWidth=width+Math.max(1,tileSize*.07);
+        ctx.beginPath();ctx.moveTo(x+tileSize*.08,y+tileSize*.5);ctx.lineTo(x+tileSize*.92,y+tileSize*.5);ctx.stroke();
+        ctx.strokeStyle=style.color;
+        ctx.lineWidth=width;
+        ctx.beginPath();ctx.moveTo(x+tileSize*.08,y+tileSize*.5);ctx.lineTo(x+tileSize*.92,y+tileSize*.5);ctx.stroke();
+        if(zoom>=0.7&&road.type!=="dirt"){
+            ctx.strokeStyle=style.edge;ctx.lineWidth=Math.max(1,tileSize*.025);
+            ctx.beginPath();ctx.moveTo(x+tileSize*.08,y+tileSize*.5-width*.5);ctx.lineTo(x+tileSize*.92,y+tileSize*.5-width*.5);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(x+tileSize*.08,y+tileSize*.5+width*.5);ctx.lineTo(x+tileSize*.92,y+tileSize*.5+width*.5);ctx.stroke();
+        }
+    }
+    ctx.restore();
 }
 
 // ═══════════════════════════════════════════════════════════════
