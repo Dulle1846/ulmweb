@@ -158,3 +158,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - The same wired actions remain: people, dynasty, cards, chronicle and manual save. The save status remains tied to actual save outcomes.
 - Added compact flex wrapping for phone widths; the dock remains full-width and its controls keep visible keyboard focus.
 - Added Chromium E2E checks for all seven specified viewport sizes, horizontal overflow, full-width dock geometry and management-dialog containment.
+
+
+## Phase 4 — dedicated building art and royal title illustration
+
+- Added `assets/royal-building-atlas.svg` with 15 original symbols covering every building type in the current entity model: keep, cottage, farm, lumber yard, quarry, watchtower, wall, tavern, temple, barracks, windmill, stable, wonder, gold mine and storehouse.
+- The building register selects a dedicated illustration by the actual building type rather than reusing approximate icons for unrelated structures.
+- Added `assets/royal-title-illustration.svg`, a muted dusk castle panorama, and replaced the bright storybook-style main-menu illustration.
+- Both assets are compact, local SVG; no external image request, paid API or large raster download is added.
+- Dedicated creature variants, card-face illustrations, house heraldry, event artwork and portrait variation remain open.
