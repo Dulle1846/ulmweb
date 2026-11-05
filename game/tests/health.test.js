@@ -100,3 +100,10 @@ test("an escalation during an active outbreak does not count as a new outbreak",
     assert.equal(result.cases,first.cases);
     assert.equal(result.severity,3);
 });
+
+test("treatment can reduce severity while opening an outbreak",()=>{
+    setup();
+    const result=applyHealthEffects({outbreak:true,severity:3,containment:1,treatment:2});
+    assert.equal(result.severity,1);
+    assert.equal(result.containment,1);
+});
