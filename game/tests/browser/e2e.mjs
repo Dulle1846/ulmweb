@@ -694,10 +694,10 @@ try{
                     if(!path)return null;
                     const d=path.getAttribute("d")||"";
                     const numbers=(d.match(/-?\d+(?:\.\d+)?/g)||[]).map(Number);
-                    return {d,startY:numbers[1],endY:numbers.at(-1),stroke:getComputedStyle(path).stroke,opacity:getComputedStyle(path).opacity};
+                    return {d,startX:numbers[0],startY:numbers[1],endX:numbers.at(-2),endY:numbers.at(-1),stroke:getComputedStyle(path).stroke,opacity:getComputedStyle(path).opacity};
                 });
                 assert.ok(mobileConnector?.d?.includes("C"),"mobile dynasty must draw a curved partner/sibling connector");
-                assert.ok(Math.abs(mobileConnector.endY-mobileConnector.startY)>12,"stacked mobile relationship connector must span the vertical gap between cards: "+JSON.stringify(mobileConnector));
+                assert.ok(Math.abs(mobileConnector.startX-mobileConnector.endX)<2&&Math.abs(mobileConnector.endY-mobileConnector.startY)>1,"stacked mobile relationship connector must run vertically through the card gap: "+JSON.stringify(mobileConnector));
                 assert.notEqual(mobileConnector.stroke,"none","mobile dynasty connector must remain visible");
                 assert.ok(Number(mobileConnector.opacity)>0,"mobile dynasty connector must not be transparent");
             }
