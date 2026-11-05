@@ -28,7 +28,7 @@ export function canSpawnEntity(type, count = 1) {
 
 export function spawnEntity(tx, ty, type) {
     if(!canSpawnEntity(type))return null;
-    const entity = new Entity(tx, ty, type);
+    const entity = new Entity(tx, ty, type);\n    const serial = Number.isSafeInteger(state.nextEntityId) && state.nextEntityId > 0 ? state.nextEntityId : 1;\n    state.nextEntityId = serial + 1;\n    entity.id = "e" + (Number(state.worldSeed) || 1).toString(36) + "-" + serial.toString(36);\n    if (type === TYPE.VILLAGER) entity.personId = entity.id;
 
     if (entity.isUnit()) {
         entity.home = { x: tx, y: ty };
