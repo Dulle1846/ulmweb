@@ -6,8 +6,8 @@ export const HEALTH_INTERVAL = 20;
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,Number.isFinite(Number(value))?Number(value):min));
 const residents=()=>state.entities.filter(entity=>!entity.dead&&entity.type===TYPE.VILLAGER);
 function ensureHealth(){
-    const current=state.health&&typeof state.health==="object"?state.health:{};
-    state.health={
+    const current=state.health&&typeof state.health==="object"&&!Array.isArray(state.health)?state.health:{};
+    const normalized={
         outbreakActive:Boolean(current.outbreakActive),
         disease:typeof current.disease==="string"?current.disease:"none",
         severity:clamp(current.severity??1,0,3),
@@ -18,6 +18,8 @@ function ensureHealth(){
         lastUpdateTick:Math.max(0,Math.floor(Number(current.lastUpdateTick)||0)),
         startedAtTick:Math.max(0,Math.floor(Number(current.startedAtTick)||0))
     };
+    if(current===state.health)Object.assign(current,normalized);
+    else state.health=normalized;
     return state.health;
 }
 function householdKey(villager){
