@@ -95,7 +95,7 @@
             <section id="tab-content" class="tab-content" aria-live="polite"></section>
             <footer class="panel-footer">
                 <span>SIM TICK <strong id="tick-count">0</strong></span>
-                <button id="help-btn" class="footer-help" type="button" aria-label="How to play">?</button>
+                <button id="help-btn" class="footer-help" type="button" aria-label="How to play">?</button><button id="people-btn" class="footer-people-button" type="button" aria-label="Open character dossiers">PEOPLE</button>
                 <span id="population">POP <strong>8</strong> / 12</span>
             </footer>
         </aside>
@@ -145,6 +145,13 @@
             <div><span>Help / close</span><kbd>? / ESC</kbd></div>
         </div>
         <div class="profile-note">Saves are currently stored per local browser profile. Do not use this as secure multi-user authentication or cloud backup.</div>
+    </div>
+</div>
+
+<div id="people-modal" class="screen-overlay people-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="people-title">
+    <div class="modal-panel people-panel">
+        <div class="modal-heading"><div><div class="start-kicker">THE PEOPLE OF YOUR REALM</div><h2 id="people-title">CHARACTER DOSSIERS</h2></div><button id="people-close" class="modal-close" type="button" aria-label="Close character dossiers">×</button></div>
+        <div class="people-browser"><aside class="people-roster"><label for="people-search">FIND A PERSON</label><input id="people-search" type="search" maxlength="80" placeholder="Name, species or role"><div id="people-count" class="people-count">0 PEOPLE</div><div id="people-list" class="people-list"></div></aside><section id="person-dossier" class="person-dossier"><div class="empty-state">Select a person to inspect their chronicle.</div></section></div>
     </div>
 </div>
 
