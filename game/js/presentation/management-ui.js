@@ -216,7 +216,7 @@ function render(){
 }
 function act(b){
  const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
- if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="select-card"){const card=[...document.querySelectorAll(".hand-card")].find(x=>x.dataset.cardId===v);if(card){card.click();r={ok:true};}}else if(a==="show-active-event"&&state.activeEvent){renderUI();r={ok:true};}
+ if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="select-card"){const card=[...document.querySelectorAll(".hand-card")].find(x=>x.dataset.cardId===v);if(card){card.click();r={ok:true};}}else if(a==="show-active-event"&&state.activeEvent){state.activeEvent.dismissed=false;renderUI();r={ok:true};}
  if(r.ok){toast("DECISION RECORDED");render();}else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
 }
 export function setupManagementUI(){
