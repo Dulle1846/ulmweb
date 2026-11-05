@@ -231,3 +231,16 @@ All three GitHub Actions workflows completed successfully for this exact head:
 - [Game Browser E2E — run 41998323446](https://github.com/Dulle1846/ulmweb/actions/runs/41998323446): successful; Chromium smoke test confirmed world forge, seed, hand, real card drag placement, settings, pause/resume and save/load without page errors.
 
 The E2E test covers the existing game flow, not a family-tree UI. The family graph itself is covered by the Node test suite. No merge or deployment was performed.
+
+
+## Final family-graph hardening verification — 2026-11-05
+
+Final implementation head before this note: `26afd6708d3f35b5f371f3842382355328c5c625`.
+
+- [Game Quality — run 41998590793](https://github.com/Dulle1846/ulmweb/actions/runs/41998590793): **142/142 tests passed**, 0 failed; syntax and relative imports for 42 source files, 77 UI references and local HTML assets passed.
+- [Kings & Cards 2.1 checks — run 41998590486](https://github.com/Dulle1846/ulmweb/actions/runs/41998590486): successful.
+- [Game Browser E2E — run 41998590522](https://github.com/Dulle1846/ulmweb/actions/runs/41998590522): successful Chromium gameplay smoke test; real card drag placement, settings, pause/resume and save/load passed without page errors.
+
+The final hardening adds explicit rejection when a parent would exceed 64 child links or a person would exceed 16 partner links. Rejected additions do not create one-sided reciprocal records. The new regression test is included in the 142 passing tests.
+
+No production branch changes, merge or deployment.
