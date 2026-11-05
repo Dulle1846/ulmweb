@@ -136,7 +136,7 @@ try{
     await page.locator("#realm-consort-select").selectOption(royalFixture.spouseId);
     await page.locator("[data-appoint-consort]").click();
     assert.match(await page.locator("#realm-window-content").innerText(),/Royal consort/);
-    const royalResourcesBefore=await page.evaluate(()=>({food:state.resources.food,gold:state.resources.gold}));
+    const royalResourcesBefore=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return {food:state.resources.food,gold:state.resources.gold};});
     await page.locator("[data-create-heir]").click();
     const royalBirth=await page.evaluate(async()=>{
         const [{state},{getFamilySnapshot}]=await Promise.all([
