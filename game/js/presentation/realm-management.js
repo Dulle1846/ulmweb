@@ -82,8 +82,11 @@ function renderCards() {
     const creatures = state.entities.filter(entity => !entity.dead && entity.creature);
     const creatureMarkup = creatures.length ? creatures.map(entity => {
         const creature = entity.creature;
+        const icon = creature.species === "dragons"
+            ? '<img src="assets/dragon-companion.svg" alt="Young dragon" loading="lazy">'
+            : "🐾";
         return '<div class="management-creature-row"><span class="management-creature-icon">' +
-            (creature.species === "dragons" ? "🐉" : "🐾") + '</span><span><strong>' + esc(creature.name) +
+            icon + '</span><span><strong>' + esc(creature.name) +
             '</strong><small>' + esc(creature.species) + ' · ' + esc(creature.lifeStage) + ' · age ' +
             Math.floor(creature.ageYears) + ' / ' + creature.lifespanYears + '</small><small>Health ' +
             Math.round(creature.health) + '% · hunger ' + Math.round(creature.hunger) + '% · loyalty ' +
