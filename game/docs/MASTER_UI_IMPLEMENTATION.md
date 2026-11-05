@@ -212,3 +212,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Each roster item exposes its actual role, species and archive status as data attributes for accessible filtering and testability.
 - Added compact responsive filter styling, static contracts and Chromium E2E checks for role and living-person filtering.
 - Portrait variation beyond the existing seven archetypes and the full sovereign dossier remain open.
+
+
+## Phase 2 — explicit descendant relationship connectors
+
+- Replaced the flattened generation grid with a nested descendant graph.
+- Each branch is built only from explicit `getFamilySnapshot(parentId).children` links and carries its actual parent ID.
+- Added visible vertical and horizontal connector lines, bounded to four descendant generations and 80 nodes to protect layout and memory.
+- Added static contracts and Chromium E2E that checks a rendered child branch against the real family relationship snapshot.
+- Ancestor, sibling and cousin groups remain separately labeled and verified; a fully unified multi-parent graph with cross-links is still outstanding.

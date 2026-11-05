@@ -70,7 +70,19 @@ try{
     await page.locator('[data-kac-dock-action="dynasty"]').click();
     assert.ok(await page.locator("#command-modal").isVisible(),"dynasty action must open the management dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Dynasty & lineage");
-    assert.ok(await page.locator("#command-panel-content .dynasty-generation").count()>=1,"a new campaign must show its sovereign generation");
+    const dynastyGraph=page.locator("#command-panel-content .dynasty-graph");
+    assert.equal(await dynastyGraph.count(),1,"dynasty view must render the relationship graph");
+    assert.ok(await dynastyGraph.locator(".dynasty-graph-root .dynasty-person").count()===1,"the sovereign must anchor the descendant graph");
+    const firstBranch=dynastyGraph.locator(".dynasty-graph-children > .dynasty-branch").first();
+    if(await firstBranch.count()){
+        const parentId=await firstBranch.getAttribute("data-parent-id");
+        const childId=await firstBranch.locator(".dynasty-branch-person .dynasty-person").getAttribute("data-person-id");
+        const linked=await page.evaluate(async ({parentId,childId})=>{
+            const {getFamilySnapshot}=await import("./js/systems/families.js");
+            return (getFamilySnapshot(parentId)?.children||[]).some(link=>String(link.personId)===String(childId));
+        },{parentId,childId});
+        assert.ok(linked,"each rendered dynasty connector must correspond to a recorded parent-child link");
+    }
     await page.waitForFunction(()=>document.activeElement?.id==="command-close",null,{timeout:3000});
     await page.keyboard.press("Shift+Tab");
     assert.ok(await page.evaluate(()=>Boolean(document.activeElement?.closest("#command-modal"))),"Shift+Tab must remain inside the open management dialog");

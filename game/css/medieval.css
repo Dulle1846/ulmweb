@@ -166,3 +166,17 @@ button,input{font-family:Georgia,"Palatino Linotype",serif}
 .people-filter select{width:100%;min-width:0;min-height:31px;padding:5px 7px;border:1px solid #8f744d;border-radius:3px;background:linear-gradient(180deg,#3b3228,#211d18);color:#e8d9b8;font:600 10px var(--ui-body-font,Arial,sans-serif)}
 .people-filter select:focus-visible{outline:2px solid #f0d99f;outline-offset:2px}
 @media(max-width:720px){.people-filter-grid{grid-template-columns:1fr 1fr}}
+
+/* Phase 2 — explicit parent/child connectors in the recorded dynasty graph. */
+.dynasty-graph{min-width:0;overflow-x:auto;padding:12px 8px 22px;overscroll-behavior-x:contain}
+.dynasty-graph-root{display:flex;justify-content:center;position:relative;padding-bottom:20px}
+.dynasty-graph-root::after{content:"";position:absolute;bottom:0;left:50%;height:20px;border-left:1px solid #b99a59}
+.dynasty-graph-children{padding-top:18px}
+.dynasty-branch-children{display:flex;justify-content:center;align-items:flex-start;gap:12px;position:relative;padding-top:18px}
+.dynasty-branch-children::before{content:"";position:absolute;top:0;left:8%;right:8%;border-top:1px solid #9b7d4d}
+.dynasty-branch{display:flex;flex-direction:column;align-items:center;position:relative;min-width:168px;max-width:220px}
+.dynasty-branch::before{content:"";position:absolute;top:0;left:50%;height:18px;border-left:1px solid #9b7d4d}
+.dynasty-branch-children:has(>.dynasty-branch:only-child)::before{left:50%;right:50%}
+.dynasty-branch-person{position:relative;z-index:1;width:100%}
+.dynasty-branch-person>.dynasty-person{width:100%;min-height:74px}
+@media(max-width:720px){.dynasty-graph{padding-inline:2px}.dynasty-branch-children{gap:8px}.dynasty-branch{min-width:150px;max-width:180px}}

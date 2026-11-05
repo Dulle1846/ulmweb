@@ -244,3 +244,11 @@ test("character roster filters are data-driven and expose living, role and speci
  assert.ok(dossier.includes('data-person-species='));
  assert.ok(css.includes(".people-filter-grid"));
 });
+
+test("dynasty descendants use explicit parent-child branches and connectors",()=>{
+ assert.ok(management.includes('class="dynasty-graph"'));
+ assert.ok(management.includes('class="dynasty-branch" data-parent-id='));
+ assert.ok(management.includes('class="dynasty-branch-children"'));
+ assert.ok(css.includes(".dynasty-graph-root::after"));
+ assert.ok(css.includes(".dynasty-branch-children::before"));
+});
