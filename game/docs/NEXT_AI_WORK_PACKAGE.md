@@ -400,9 +400,9 @@ Implemented:
 - Bounded records: at most two guardians per ward and 16 wards per guardian.
 - Species-specific maturity checks for guardian and ward eligibility.
 - Annual orphan review runs after mortality. An orphan is recognized only when it has at least one explicit parent link and every recorded parent is confirmed in the memorial archive. An unresolved parent ID is not treated as proof of death.
-- Candidate selection prioritizes aunts/uncles over grandparents, then uses recorded trust/affinity as supporting evidence. An unrelated person with no strong recorded relationship is never selected.
+- Candidate selection prioritizes aunts/uncles over grandparents; a non-relative is eligible only with recorded trust and affinity of at least 60. Relationship evidence may be recorded by either side. An unrelated person with no strong recorded relationship is never selected.
 - A receiving household must have capacity unless the ward already lives in that household.
-- Successful assignment moves the ward's household/home anchor, records reciprocal links, and writes bounded memories for guardian and ward.
+- Successful assignment moves the ward's household/home anchor, records reciprocal links, and writes bounded memories for guardian and ward. A guardian's death is recorded in the ward's loss memories; a replacement can be appointed in a later year while historical guardian links remain inspectable.
 - Four assignments maximum per realm year; 500-entry memorial cap and existing per-person memory limits remain in force.
 - Character dossiers expose guardians and wards separately from parents, children and partners.
 
