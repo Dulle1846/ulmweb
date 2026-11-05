@@ -196,7 +196,7 @@
 </div>
 
 <div id="settings-modal" class="screen-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-    <div class="modal-panel settings-panel">
+    <div class="ui-panel modal-panel settings-panel">
         <div class="ui-panel__header modal-heading"><div><div class="start-kicker">REALM OPTIONS</div><h2 id="settings-title">SETTINGS</h2></div><button id="settings-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close settings">×</button></div>
         <div class="setting-row"><div><strong>Original soundtrack</strong><small>One original instrumental theme, composed for a continuous loop.</small></div><label class="toggle"><input id="settings-music-toggle" type="checkbox" checked><span></span></label></div>
         <div class="setting-row volume-setting"><div><strong>Music volume</strong><small>Adjust the soundtrack level.</small></div><input id="settings-music-volume" type="range" min="0" max="100" value="22"></div>
@@ -212,7 +212,7 @@
 </div>
 
 <div id="people-modal" class="screen-overlay people-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="people-title">
-    <div class="modal-panel people-panel">
+    <div class="ui-panel modal-panel people-panel">
         <div class="ui-panel__header modal-heading"><div><div class="start-kicker">THE PEOPLE OF YOUR REALM</div><h2 id="people-title">CHARACTER DOSSIERS</h2></div><button id="people-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close character dossiers">×</button></div>
         <div class="people-browser"><aside class="people-roster"><label for="people-search">FIND A PERSON</label><input id="people-search" type="search" maxlength="80" placeholder="Name, species or role"><div id="people-count" class="people-count">0 PEOPLE</div><div id="people-list" class="people-list"></div></aside><section id="person-dossier" class="person-dossier"><div class="empty-state">Select a person to inspect their chronicle.</div></section></div>
     </div>
@@ -228,7 +228,7 @@
 </div>
 
 
-<div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="modal-panel command-panel"><header class="command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close management">×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management">
+<div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="ui-panel modal-panel command-panel"><header class="ui-panel__header command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close management">×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management">
 <button type="button" class="ui-button ui-button--tab" data-command-tab="kingdom"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>REALM</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="government"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>GOVERNMENT</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="politics"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>POLITICS</span></button>
@@ -248,7 +248,7 @@
 <script type="module" src="js/app/main.js"></script>
 
 <div id="build-modal" class="screen-overlay build-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="build-title">
-    <section class="modal-panel build-panel">
+    <section class="ui-panel modal-panel build-panel">
         <header class="build-header">
             <div class="build-header-title">
                 <svg class="build-header-icon" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#dirt-road"></use></svg>
