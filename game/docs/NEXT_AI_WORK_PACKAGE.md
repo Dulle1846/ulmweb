@@ -410,3 +410,27 @@ Safety/limits:
 - No automatic adoption, estate inheritance, royal regency or succession.
 - No guardian is invented when parent death is unresolved, no trusted/related adult is available, or no receiving household has room.
 - Guardianship is a social-care link, not a change of legal parentage.
+
+
+
+## Phase 2.9 — royal dynasty
+
+Branch: `kac-2.9-royal-dynasty`, Draft PR #16. The royal household is persisted separately from the general population. Eligible marriages use species, adulthood and ancestry checks; royal children are explicit person entities with two biological parent links. The royal court lets the player arrange a marriage, welcome an heir and choose absolute primogeniture, male-preference primogeniture or a deterministic council-election rule. A succession transfer requires a verified royal memorial and a living adult heir. Royal births are capped at twelve children and a three-year cooldown. Regency, minority rule, adoption and collateral-branch succession remain open work.
+
+## Phase 3.0 — government and strategy management
+
+Branch: `kac-3.0-government-and-management-ui`, Draft PR #17. Light, standard and heavy tax policies affect the actual economy ledger and political faction support. Royal audience costs 12 gold, raises legitimacy and the weakest faction, and has a two-year cooldown. Government, Politics, Economy and Cards windows show live game state and invoke actual policy, audience, card selection and discard operations. Full lawmaking, ministers, parliament, courts, elections and trade law remain future work.
+
+## Phase 3.1 — persistent fantasy creatures
+
+Branch: `kac-3.1-living-fantasy-creatures`, Draft PR #18. The card library contains 501 categories, including a dedicated Dragon card while retaining Griffins. A summoned dragon receives a stable creature identity, name, species, rarity, age, life stage, lifespan, hunger, health, temperament, loyalty, power, monarch bond and bounded memories. It wanders autonomously, ages yearly, consumes food, can starve or die of old age, and defends the realm in combat. Creature deaths remain in a 200-entry memorial archive. Save/load persists creature profiles and archive. Original local SVG illustrations are included for the royal court and dragon.
+
+Open follow-up work:
+- Creature breeding, eggs, packs and territory.
+- More creature-specific behaviors, environmental interactions and quests.
+- Royal regency and minority rule; collateral dynastic claims.
+- Full government designer with ministries, laws, courts, assemblies and elections.
+- A strategy decision log and event provenance for every decree, tax change and royal choice.
+- Long-run simulations across 1000+ realm years, including creature and dynasty population caps.
+
+The creature-phase CI is being checked against the exact PR #18 head before any result is recorded.
