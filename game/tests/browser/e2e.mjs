@@ -49,6 +49,20 @@ try{
     assert.ok(await page.locator("#speed-0-5").evaluate(el=>el.classList.contains("is-active")),"half-speed control must become active");
     await page.locator("#speed-1").click();
 
+    // Phase 2 quick actions must open real game screens, not decorative controls.
+    assert.ok(await page.locator("#realm-action-dock").isVisible(),"contextual action dock must be visible during a campaign");
+    await page.locator('[data-kac-dock-action="dynasty"]').click();
+    assert.ok(await page.locator("#command-modal").isVisible(),"dynasty action must open the management dialog");
+    assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Dynasty & lineage");
+    assert.ok(await page.locator("#command-panel-content .dynasty-generation").count()>=1,"a new campaign must show its sovereign generation");
+    await page.locator("#command-panel-content .dynasty-person").first().click();
+    assert.ok(await page.locator("#people-modal").isVisible(),"selecting a dynasty member must open the real character dossier");
+    await page.locator("#people-close").click();
+    await page.locator('[data-kac-dock-action="save"]').click();
+    await page.waitForFunction(()=>document.querySelector("#save-status")?.textContent.startsWith("LAST SAVED"),null,{timeout:5000});
+    await page.locator('[data-kac-dock-action="events"]').click();
+    assert.ok(await page.locator("#tab-0").evaluate(el=>el.classList.contains("is-active")),"chronicle action must open the event log tab");
+
     // The construction menu must place visible road tiles through normal map input.
     await page.locator("#build-open-btn").click();
     assert.ok(await page.locator("#build-modal").isVisible(),"construction dialog must open");
