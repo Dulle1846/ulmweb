@@ -17,6 +17,7 @@ import { updatePeople } from "../systems/people.js";
 import { updateBirths } from "../systems/births.js";
 import { updateSocialLife } from "../systems/social.js";
 import { updatePersonalAgency } from "../systems/agency.js";
+import { updateMortality } from "../systems/mortality.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
@@ -24,8 +25,10 @@ export function updateSimulation(){
     if(state.dayOfYear>=400){state.dayOfYear=0;state.year++;}
     let newborn=null;
     let socialResult=null;
+    let deaths=[];
     if(state.year>previousYear){
         updatePeople();
+        deaths=updateMortality();
         socialResult=updateSocialLife();
         updatePersonalAgency();
         newborn=updateBirths();
@@ -33,6 +36,9 @@ export function updateSimulation(){
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
     resetIncome();
     const newcomer=newborn?null:updatePopulation();
+    for(const death of deaths){
+        addLog("A RESIDENT DIED: "+death.name+" · "+death.cause,"#b99a9a","death");
+    }
     if(socialResult?.partnerships?.length){
         for(const partnership of socialResult.partnerships){
             addLog("A PARTNERSHIP FORMED: "+partnership.first+" & "+partnership.second,"#e8c77b","family");
