@@ -90,7 +90,9 @@ export function createRoyalHeir(consortId){
     addPersonMemory(king,{id:"royal-birth:"+child.personId+":king",type:"dynasty",text:"My heir "+childPerson.name+" was born in year "+state.year+".",tick,importance:100});
     addPersonMemory(consort,{id:"royal-birth:"+child.personId+":consort",type:"dynasty",text:"Our royal child "+childPerson.name+" was born in year "+state.year+".",tick,importance:100});
     addPersonMemory(child,{id:"royal-birth:"+child.personId+":origin",type:"birth",text:"I was born into the royal house in year "+state.year+".",tick,importance:100});
-    marriage.a.lastBirthYear=state.year;marriage.b.lastBirthYear=state.year;dynasty.lastBirthYear=state.year;
+    const persistedMarriage=activeMarriage(king,consort);
+    if(persistedMarriage){persistedMarriage.a.lastBirthYear=state.year;persistedMarriage.b.lastBirthYear=state.year;}
+    dynasty.lastBirthYear=state.year;
     dynasty.history=Array.isArray(dynasty.history)?dynasty.history:[];
     dynasty.history.push({type:"birth",personId:child.personId,year:state.year,tick});
     if(dynasty.history.length>100)dynasty.history.splice(0,dynasty.history.length-100);
