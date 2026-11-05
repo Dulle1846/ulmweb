@@ -237,3 +237,11 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added responsive header wrapping: at intermediate desktop widths the action controls move to a dedicated second row; at narrow widths they wrap below the resource strip rather than being clipped off-screen.
 - Extended Chromium E2E to assert topbar intrinsic width, pairwise non-overlap of header groups and visibility of every rendered header action at all seven viewport sizes.
 - This corrects the header only. The screenshot review still shows placeholder-like map/building shapes and a relatively sparse world stage; those belong to the separate world-art production backlog, not this layout fix.
+
+
+## Phase 5 — bounded side-panel scrolling
+
+- Responsive screenshot review showed that the selected-card details can extend beyond the bounded side panel on short/narrow viewports.
+- The side panel now owns its vertical scroll region instead of allowing content to be clipped by the game shell.
+- Chromium E2E scrolls the side panel to its end at all seven required viewport sizes and verifies that the selected card remains reachable.
+- This does not alter card data or game state; it is a presentation-only overflow correction.
