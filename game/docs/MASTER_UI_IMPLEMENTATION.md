@@ -198,7 +198,7 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 
 ## Phase 2 — reusable window primitives
 
-- Added a shared window sizing system with small, medium and large presets.
+- Added a shared window sizing system with compact founding, small, medium and large presets.
 - Added consistent header, body and footer regions with bounded height, scroll ownership and overscroll containment.
 - Applied the window system to settings, people dossiers, management, construction, event dialogs and the founding screen.
 - Added narrow- and short-viewport rules so windows remain reachable without scrolling the page behind them.
