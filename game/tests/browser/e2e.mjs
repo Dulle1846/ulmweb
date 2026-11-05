@@ -60,6 +60,30 @@ try{
     await page.locator("#people-close").click();
     assert.equal(await page.locator("#people-modal").isVisible(),false);
 
+    // A deceased resident remains inspectable as a memorial, not as a live entity.
+    const memorialName=await page.evaluate(async()=>{
+        const [{state},{recordNaturalDeath}]=await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/mortality.js")
+        ]);
+        const resident=state.entities.find(entity=>entity.type==="villager"&&!entity.dead);
+        if(!resident)throw new Error("No living resident available for memorial E2E");
+        resident.person.species="human";
+        resident.person.ageYears=82;
+        resident.person.lifeStage="elder";
+        const death=recordNaturalDeath(resident,"old age");
+        return death?.name||null;
+    });
+    assert.ok(memorialName,"test fixture should create a deceased person's memorial");
+    await page.locator("#people-btn").click();
+    await page.locator("#people-search").fill(memorialName);
+    assert.equal(await page.locator("#people-list .person-list-item").count(),1);
+    await page.locator("#people-list .person-list-item").first().click();
+    const memorialDossier=await page.locator("#person-dossier").innerText();
+    assert.ok(memorialDossier.includes("DECEASED"));
+    assert.ok(memorialDossier.includes("Died in year"));
+    await page.locator("#people-close").click();
+
     await page.locator("#speed-4").click();
     await page.waitForFunction(()=>{
         const value=document.querySelector("#hand-count")?.textContent||"0 / 5";
@@ -168,6 +192,13 @@ try{
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Loaded realm"),null,{timeout:5000});
     assert.equal((await page.locator("#tick-count").innerText()).trim(),savedTick,"save/load must restore the exact simulation tick");
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
+    // The memorial archive must survive the same save/load round trip.
+    await page.locator("#people-btn").click();
+    await page.locator("#people-search").fill(memorialName);
+    assert.equal(await page.locator("#people-list .person-list-item").count(),1);
+    await page.locator("#people-list .person-list-item").first().click();
+    assert.ok((await page.locator("#person-dossier").innerText()).includes("DECEASED"));
+    await page.locator("#people-close").click();
     await page.locator("#pause-btn").click();
 
     assert.deepEqual(errors,[],"browser runtime must not emit uncaught page errors");
