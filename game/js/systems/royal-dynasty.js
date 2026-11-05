@@ -45,7 +45,10 @@ export function designateHeir(id){const s=royalState(),h=getRoyalHouse(),candida
 export function updateRoyalSuccession(){
  if(getSovereign())return {changed:false,king:getSovereign()};
  const s=royalState(),memorial=(state.personArchive||[]).find(x=>x.isKing),children=memorial?.person?.kinship?.children||[];
- let successor=getRoyalPerson(s.heirId);if(!successor)successor=children.map(x=>getRoyalPerson(x.personId)).find(Boolean)||null;
+ let successor=getRoyalPerson(s.heirId);
+ const isAdult=entity=>{if(!entity)return false;const p=ensurePersonProfile(entity);return p.ageYears>=adultAge(entity);};
+ if(!isAdult(successor))successor=null;
+ if(!successor)successor=children.map(x=>getRoyalPerson(x.personId)).find(isAdult)||null;
  if(!successor)return {changed:false,king:null,reason:"no-living-heir"};
  for(const e of state.entities)if(e.isKing)e.isKing=false;
  successor.isKing=true;successor.isRoyalFamily=true;const p=ensurePersonProfile(successor,{role:"king"});p.role="king";s.heirId=null;
