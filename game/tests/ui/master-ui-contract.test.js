@@ -218,6 +218,6 @@ test("reusable royal control primitives define variants, states, panels and tool
  }
  assert.ok(html.includes('href="css/ui-components.css"'));
  assert.ok(html.includes('class="ui-button ui-button--primary primary-button"'));
- assert.ok(html.includes('class="ui-panel command-panel"'));
+ assert.ok(html.includes('class="ui-panel modal-panel command-panel"'));
  assert.ok(html.includes('data-ui-tooltip="Open character dossiers"'));
 });
