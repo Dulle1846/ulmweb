@@ -6,6 +6,7 @@ import { WORLD_WIDTH, WORLD_HEIGHT, BUILDING_SIZE } from '../core/config.js';
 import { TYPE, Entity } from '../core/types.js';
 import { state } from '../core/state.js';
 import { randInt as seededRandInt } from '../core/random.js';
+import {ensurePersonProfile} from '../systems/people.js';
 const randInt=(min,max)=>seededRandInt(min,max,"entity");
 
 // ── Entity erstellen ──────────────────────────────────────────
