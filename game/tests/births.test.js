@@ -115,3 +115,17 @@ test("birth refuses to exceed the global entity cap",()=>{
     assert.equal(result.reason,"entity-capacity");
     assert.equal(state.entities.length,900);
 });
+
+
+test("a new eligible partnership can have its first child in realm year two",()=>{
+    state.year=2;
+    for(const parent of parents){
+        const link=parent.person.kinship.partners[0];
+        link.sinceYear=1;
+    }
+    const result=createChildFromParents(parents[0].personId,parents[1].personId);
+    assert.equal(result.ok,true);
+    assert.equal(result.child.person.ageYears,0);
+    assert.equal(parents[0].person.kinship.partners[0].lastBirthYear,2);
+    assert.equal(parents[1].person.kinship.partners[0].lastBirthYear,2);
+});
