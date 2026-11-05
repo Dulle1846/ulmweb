@@ -264,3 +264,6 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 @media(max-width:790px){.creature-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.chronicle-filters{grid-template-columns:1fr}.chronicle-filters input{grid-column:auto}.creature-record>summary{gap:7px;padding:7px}.creature-record>summary>img{width:38px;height:38px}}
 
 .command-creature-art{display:block;width:min(150px,55%);max-height:116px;object-fit:contain;margin:0 auto 10px;filter:drop-shadow(0 5px 8px #0008)}
+
+.event-panel-topline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.event-panel-topline .modal-close{flex:0 0 34px}
