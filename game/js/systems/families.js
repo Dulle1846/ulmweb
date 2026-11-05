@@ -18,6 +18,13 @@ function findPerson(personId) {
     return state.entities.find(entity => personIdOf(entity) === id) || null;
 }
 
+function kinshipForRecord(personId) {
+    const live = findPerson(personId);
+    if (live) return ensureKinship(live);
+    const memorial = (state.personArchive || []).find(entry => entry.personId === String(personId));
+    return memorial?.person?.kinship || null;
+}
+
 function ensureKinship(entity) {
     const person = ensurePersonProfile(entity);
     if (!person.kinship || typeof person.kinship !== "object" || Array.isArray(person.kinship)) {
@@ -50,9 +57,8 @@ function hasDescendant(startId, targetId) {
         if (currentId === String(targetId)) return true;
         if (visited.has(currentId)) continue;
         visited.add(currentId);
-        const current = findPerson(currentId);
-        if (!current) continue;
-        const kinship = ensureKinship(current);
+        const kinship = kinshipForRecord(currentId);
+        if (!kinship) continue;
         for (const child of kinship.children) pending.push(child.personId);
     }
     return false;
@@ -126,17 +132,16 @@ export function endPartnership(firstId, secondId, { status = "separated", endedY
 }
 
 export function getSiblings(personId) {
-    const entity = findPerson(personId);
-    if (!entity) return [];
-    const kinship = ensureKinship(entity);
+    const kinship = kinshipForRecord(personId);
+    if (!kinship) return [];
     const parentIds = new Set(kinship.parents.map(item => item.personId));
     if (!parentIds.size) return [];
     const siblings = new Map();
     for (const parentId of parentIds) {
-        const parent = findPerson(parentId);
-        if (!parent) continue;
-        for (const child of ensureKinship(parent).children) {
-            if (child.personId === personId) continue;
+        const parentKinship = kinshipForRecord(parentId);
+        if (!parentKinship) continue;
+        for (const child of parentKinship.children) {
+            if (child.personId === String(personId)) continue;
             siblings.set(child.personId, (siblings.get(child.personId) || 0) + 1);
         }
     }
@@ -146,11 +151,10 @@ export function getSiblings(personId) {
 }
 
 export function getFamilySnapshot(personId) {
-    const entity = findPerson(personId);
-    if (!entity) return null;
-    const kinship = ensureKinship(entity);
+    const kinship = kinshipForRecord(personId);
+    if (!kinship) return null;
     return {
-        personId: personIdOf(entity),
+        personId: String(personId),
         parents: kinship.parents.map(item => ({ ...item })),
         children: kinship.children.map(item => ({ ...item })),
         partners: kinship.partners.map(item => ({ ...item })),
