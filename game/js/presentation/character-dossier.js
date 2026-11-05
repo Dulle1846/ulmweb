@@ -254,6 +254,14 @@ export function setupCharacterDossier() {
         modal.classList.remove("hidden");
         search.focus();
     };
+    const updateSovereignPortrait = () => {
+        const ruler = getRoyalHouse()?.king;
+        const portrait = document.querySelector("#sovereign-dossier-open use");
+        if (ruler && portrait) portrait.setAttribute("href","assets/royal-portraits.svg#" + portraitSymbol(ruler));
+    };
+    updateSovereignPortrait();
+    window.addEventListener("kac:people-refresh",updateSovereignPortrait);
+    sovereignOpen?.addEventListener("focus",updateSovereignPortrait);
     open.addEventListener("click", show);
     sovereignOpen?.addEventListener("click", () => {
         const houseKing = getRoyalHouse()?.king;
