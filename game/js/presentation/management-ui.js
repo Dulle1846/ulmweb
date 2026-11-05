@@ -187,7 +187,7 @@ function dynasty(){
  const cousins=[...cousinMap.values()].slice(0,24);
  const descendantVisited=new Set([sovereignId]);
  let descendantCount=1;
- const descendantBranch=(entity,depth=1)=>{
+ const descendantBranch=(entity,depth=1,parentId=sovereignId)=>{
   if(!entity?.person||depth>4||descendantCount>=80)return "";
   const id=String(entity.personId||entity.person?.id||entity.id||"");
   if(!id||descendantVisited.has(id))return "";
@@ -199,8 +199,8 @@ function dynasty(){
    if(child&&childId&&!descendantVisited.has(childId))children.push(child);
    if(children.length>=16)break;
   }
-  const childMarkup=children.map(child=>descendantBranch(child,depth+1)).filter(Boolean).join("");
-  return '<div class="dynasty-branch" data-parent-id="'+esc(id)+'"><div class="dynasty-branch-person">'+familyNode(entity,heirId)+'</div>'+
+  const childMarkup=children.map(child=>descendantBranch(child,depth+1,id)).filter(Boolean).join("");
+  return '<div class="dynasty-branch" data-parent-id="'+esc(parentId)+'" data-person-id="'+esc(id)+'"><div class="dynasty-branch-person">'+familyNode(entity,heirId)+'</div>'+
    (childMarkup?'<div class="dynasty-branch-children">'+childMarkup+'</div>':'')+'</div>';
  };
  const directChildren=(rootFamily.children||[]).map(link=>familyRecord(link.personId)).filter(Boolean).slice(0,16);
