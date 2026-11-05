@@ -322,6 +322,17 @@ try{
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Loaded realm"),null,{timeout:5000});
     assert.equal((await page.locator("#tick-count").innerText()).trim(),savedTick,"save/load must restore the exact simulation tick");
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
+    const persistentRealmSystems = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return {
+            royalMonarchId: state.royalHouse?.monarchId,
+            taxPolicy: state.government?.taxPolicy,
+            creatureNames: state.entities.filter(entity => entity.creature).map(entity => entity.creature.name)
+        };
+    });
+    assert.ok(persistentRealmSystems.royalMonarchId, "save/load should retain the royal dynasty");
+    assert.equal(persistentRealmSystems.taxPolicy, "heavy", "save/load should retain government policy");
+    assert.ok(persistentRealmSystems.creatureNames.includes(creatureFixture.name), "save/load should retain the living dragon identity");
     // The memorial archive must survive the same save/load round trip.
     await page.locator("#people-btn").click();
     await page.locator("#people-search").fill(memorialId);
@@ -333,7 +344,7 @@ try{
 
     assert.deepEqual(errors,[],"browser runtime must not emit uncaught page errors");
     assert.deepEqual(consoleErrors,[],"browser runtime must not emit console errors");
-    console.log("Browser E2E passed: world forge, seed, guardian/ward dossier links, memorial archive, empty/timed hand, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.");
+    console.log("Browser E2E passed: world forge, royal court and succession, strategy management, living dragon roster, guardian/ward dossier links, memorial archive, card placement, settings, pause/resume and persistent save/load; no page errors.");
     await context.close();
 }finally{
     await browser.close();
