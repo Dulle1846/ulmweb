@@ -203,3 +203,19 @@ Verification required on the exact branch head:
 - Review of malformed legacy graph handling and long-running storage bounds.
 
 Do not merge or deploy without user approval. Cloudflare Pages remains production; do not configure or use Vercel.
+
+
+## Verification update — family graph, 2026-11-05
+
+The current 2.5 family-kinship slice is implemented on `kac-2.5-family-kinship` and tracked by Draft PR #10.
+
+Exact code/test head before this documentation refresh: `4961800814defb6160a73e09b8e088e7cd82056b`.
+
+Verified GitHub Actions for that exact head:
+- Game Quality: [run 41998125897](https://github.com/Dulle1846/ulmweb/actions/runs/41998125897) — **141/141 Node tests passed**, 0 failed; syntax and relative imports for 42 source files, 77 referenced UI IDs and local HTML assets passed.
+- Kings & Cards 2.1 checks: [run 41998125860](https://github.com/Dulle1846/ulmweb/actions/runs/41998125860) — successful.
+- Game Browser E2E: [run 41998125548](https://github.com/Dulle1846/ulmweb/actions/runs/41998125548) — successful; Chromium smoke coverage includes world forge, seed, card hand, real drag placement, settings, pause/resume and save/load, with no page errors.
+
+These checks verify the inherited game flows and the family graph unit tests. The browser E2E does not yet exercise a dedicated family-tree UI because that UI is not part of this slice. The documentation-only commit that follows must receive its own final CI confirmation before this head is treated as the final PR verification.
+
+Do not merge or deploy without explicit user approval.
