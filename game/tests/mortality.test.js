@@ -82,3 +82,14 @@ test("legacy memorial records are normalized and retain stable identities",()=>{
     assert.equal(memorial.deathYear,48);
     assert.ok(["female","male"].includes(memorial.person.sex));
 });
+
+
+test("the memorial archive remains bounded across long-running realms",()=>{
+    for(let index=0;index<1010;index++){
+        const resident=createPerson(10+(index%30),82,"human");
+        recordNaturalDeath(resident,"old age");
+        state.entities=state.entities.filter(entity=>entity!==resident);
+    }
+    assert.equal(state.personArchive.length,1000);
+    assert.ok(state.personArchive.every(entry=>entry.personId&&entry.person&&entry.deathYear));
+});
