@@ -95,7 +95,7 @@ try{
         const { state } = await import("./js/core/state.js");
         state.resources.gold = 50;
     });
-    await page.locator("#politics-btn").click();
+    await page.locator('[data-management-tab="politics"]').click();
     const legitimacyBeforeAudience = await page.evaluate(async () => (await import("./js/core/state.js")).state.politics.legitimacy);
     await page.locator('[data-political-action="audience"]').click();
     const audienceState = await page.evaluate(async () => {
@@ -104,7 +104,7 @@ try{
     });
     assert.equal(audienceState.gold, 38, "royal audience should spend its stated gold cost");
     assert.ok(audienceState.legitimacy > legitimacyBeforeAudience, "royal audience should improve legitimacy");
-    await page.locator("#economy-btn").click();
+    await page.locator('[data-management-tab="economy"]').click();
     assert.ok((await page.locator("#management-content").innerText()).includes("Economy & Workforce"));
     const creatureFixture = await page.evaluate(async () => {
         const [{ state }, { spawnEntity }, { TYPE }, { initializeCreature }] = await Promise.all([
@@ -118,7 +118,7 @@ try{
         const creature = initializeCreature(dragon, { category: "dragons", group: "monsters", name: "E2E Young Dragon" });
         return { name: creature.name };
     });
-    await page.locator("#cards-btn").click();
+    await page.locator('[data-management-tab="cards"]').click();
     assert.ok((await page.locator("#management-content").innerText()).includes("THE CARD VAULT"));
     assert.ok((await page.locator("#management-content").innerText()).includes(creatureFixture.name));
     await page.waitForFunction(() => {
