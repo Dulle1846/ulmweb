@@ -350,6 +350,43 @@ try{
     await page.locator("#people-close").click();
     assert.equal(await page.locator("#people-modal").isVisible(),false);
 
+    // The living sovereign receives a dedicated royal dossier whose heir link
+    // navigates to the canonical dossier for that same persisted person.
+    const royalFixture=await page.evaluate(async()=>{
+        const [{state},{Entity,TYPE},{ensurePersonProfile},{getRoyalHouse,appointRoyalConsort,createRoyalChild,designateHeir}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/core/types.js"),import("./js/systems/people.js"),import("./js/systems/royal-dynasty.js")
+        ]);
+        const king=state.entities.find(entity=>!entity.dead&&entity.isKing&&entity.personId);
+        if(!king)throw new Error("A living sovereign is required for the royal dossier E2E");
+        let house=getRoyalHouse();
+        if(!house.consort){
+            const consort=new Entity(0,0,TYPE.VILLAGER);consort.id="e2e-royal-consort";consort.personId=consort.id;
+            const profile=ensurePersonProfile(consort,{role:"resident",species:"human"});profile.ageYears=30;profile.lifeStage="adult";
+            state.entities.push(consort);state.resources.food=Math.max(100,Number(state.resources.food)||0);state.resources.gold=Math.max(100,Number(state.resources.gold)||0);
+            const marriage=appointRoyalConsort(consort.personId);if(!marriage.ok)throw new Error("Could not create royal dossier consort fixture: "+marriage.reason);
+            house=getRoyalHouse();
+        }
+        if(!house.children.length){
+            state.resources.food=Math.max(100,Number(state.resources.food)||0);state.resources.gold=Math.max(100,Number(state.resources.gold)||0);
+            const birth=createRoyalChild();if(!birth.ok)throw new Error("Could not create royal dossier heir fixture: "+birth.reason);
+            house=getRoyalHouse();
+        }
+        const heir=house.heir||house.children[0];const designation=designateHeir(heir.personId);
+        if(!designation.ok)throw new Error("Could not designate royal dossier heir: "+designation.reason);
+        return {kingId:king.personId,heirId:heir.personId,heirName:heir.person.name};
+    });
+    await page.locator("#people-btn").click();
+    await page.locator("#people-search").fill(royalFixture.kingId);
+    await page.locator("#people-list .person-list-item").first().click();
+    const sovereignDossier=page.locator("#person-dossier");
+    assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),1);
+    assert.ok((await sovereignDossier.innerText()).includes("SOVEREIGN DOSSIER"));
+    assert.ok((await sovereignDossier.innerText()).includes("DESIGNATED SUCCESSOR"));
+    await sovereignDossier.locator('[data-royal-dossier="current"] [data-person-id="'+royalFixture.heirId+'"]').first().click();
+    assert.ok((await sovereignDossier.innerText()).includes(royalFixture.heirName));
+    assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),0,"the heir dossier must not be mislabeled as the reigning sovereign");
+    await page.locator("#people-close").click();
+
     // A deceased resident remains inspectable as a memorial, not as a live entity.
     const memorialId=await page.evaluate(async()=>{
         const [{state},{recordNaturalDeath},{ensurePersonProfile},{Entity,TYPE}]=await Promise.all([
