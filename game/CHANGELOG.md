@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.5.0`  
+**Current production version:** `3.6.0`  
 **Next development line:** `3.7.0-dev`  
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -22,14 +22,15 @@ Kings & Cards uses a practical semantic version format:
 
 The version in `game/package.json` is the machine-readable game version. Update this file and this changelog together for every release.
 
-## Release candidate (not production yet)
+## Production release history
 
 ### 3.6.0 — Master UI Phase 3: Economy, buildings, creatures and chronicle
 **Released:** 2026-11-05  
 **PR:** [#43](https://github.com/Dulle1846/ulmweb/pull/43)  
 **Merge commit:** `ad4d3c9978779aa7cc4921ec43a934d1b8338b38`  
 **Tested feature head:** `63ec3957697f4513ddeefd9ad5c5889689a0ceb7`  
-**CI:** Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E all passed on the exact feature head.
+**CI:** Game Quality, Kings & Cards 2.1 checks and Chromium Browser E2E all passed on the exact feature head.  
+**Cloudflare Pages:** Successful deployment check for production-branch commit `09c2d747f08216199154af480735eeae064d0e9b`; deployment ID `35e2a522-431d-4558-8195-06a24bb4dc2d`; [deployment preview](https://35e2a522.kings-and-cards.pages.dev/).
 
 - Added a data-backed economy view separating resource stock, current-tick flows, the latest 20-day settlement and cumulative totals.
 - Added a searchable building register with actual entity health, footprint, staff, workforce efficiency, catalogue cost and centre-tile resource data.
@@ -37,9 +38,9 @@ The version in `game/package.json` is the machine-readable game version. Update 
 - Added a searchable event inbox and chronicle with category filters, stored tick references and a dismiss/reopen flow for unresolved issues.
 - Added browser coverage for the new panels, creature dossier, chronicle search and active-issue dismissal/reopening.
 
-**Scope limit:** The simulation currently retains only the latest completed financial ledger, not a historical time series. Per-building production, storage and upkeep are not exposed. No trend charts or forecasts are fabricated. Chronicle history remains limited to the stored event log (up to 100 recent records); unread tracking and permanent external archives are not claimed. The full responsive viewport matrix and original art atlas remain outstanding. No simulation rules or save schema were changed.
+**Scope limit:** The simulation currently retains only the latest completed financial ledger, not a historical time series. Per-building production, storage and upkeep are not exposed. No trend charts or forecasts are fabricated. Chronicle history remains limited to the stored event log (up to 100 recent records); unread tracking and permanent external archives are not claimed. The initial seven-viewport screenshot matrix for the realm shell and management dialog was completed in Phase 5 (PR #66); full overlay-by-overlay responsive QA and the remaining original art atlas work remain outstanding. No simulation rules or save schema were changed.
 
-**Release gate:** This candidate is not production-released until its metadata PR is merged, required CI passes on the exact head, and Cloudflare Pages confirms the production deployment.
+**Release status:** Production branch `ulmweb-branch` contains version `3.6.0`; the Cloudflare Pages deployment check for the latest production-branch commit `09c2d74` completed successfully on 2026-11-05. The check exposes the deployment preview URL above. The canonical user-facing address remains https://kings-and-cards.pages.dev/.
 
 ## Production release history
 
@@ -267,3 +268,10 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 
 - Added contained vertical scrolling to the mobile management column so the card panel and lower tabs remain reachable on short screens.
 - Added Chromium regression checks for actual scroll range and scroll movement at 390×844 and 768×1024.
+
+
+## Development line 3.7.0-dev — Phase 5 merged responsive corrections
+
+- PR #69 merged as `e4d343041ec6960502c471aa5efd2ca0994f85f5`; all three required workflows passed and the seven-viewport screenshot artifact was reviewed.
+- PR #70 merged as `09c2d747f08216199154af480735eeae064d0e9b`; all three required workflows passed, including real mobile side-panel scroll checks at 390×844 and 768×1024.
+- These are code merges to the production branch, not an assertion that Cloudflare Pages has already finished publishing them. Pages delivery remains a separate release gate.
