@@ -88,6 +88,14 @@ function renderDossier(personId) {
         Math.round(Number(relation.trust) || 0) + ' · RESPECT ' +
         Math.round(Number(relation.respect) || 0) + ' · AFFINITY ' +
         Math.round(Number(relation.affinity) || 0) + '</span></li>').join("");
+    const activeGoal = person.activeGoal
+        ? '<p><strong>' + esc(person.activeGoal.id.replaceAll("_", " ")) + '</strong> · priority ' + Math.round(Number(person.activeGoal.priority) || 0) + ' · since year ' + Math.max(1, Number(person.activeGoal.sinceYear) || 1) + '</p><p>' + esc(person.activeGoal.reason || "") + '</p>'
+        : '<p class="dossier-empty">No active personal goal recorded yet.</p>';
+    const goalHistory = (person.goalHistory || []).map(goal =>
+        '<li><strong>' + esc(goal.id.replaceAll("_", " ")) + '</strong><span>' +
+        'YEAR ' + Math.max(1, Number(goal.startedYear) || 1) + '–' + Math.max(1, Number(goal.endedYear) || 1) +
+        ' · ' + (goal.completed ? "completed" : "superseded") + '</span></li>'
+    ).join("");
     const partners = family.partners.map(link => ({
         personId: link.personId, label: link.status + " · since year " + link.sinceYear +
             (link.endedYear == null ? "" : " · ended year " + link.endedYear)
@@ -102,7 +110,9 @@ function renderDossier(personId) {
         '<div class="dossier-column">' +
         '<section class="dossier-section"><h3>PERSONALITY</h3>' + (traits || '<p class="dossier-empty">No traits recorded.</p>') + '</section>' +
         '<section class="dossier-section"><h3>NEEDS</h3>' + (needs || '<p class="dossier-empty">No needs recorded.</p>') + '</section>' +
-        '<section class="dossier-section"><h3>GOALS</h3><p>' + esc((person.goals || []).join(" · ") || "No current goals recorded.") + '</p></section>' +
+        '<section class="dossier-section"><h3>ACTIVE PERSONAL GOAL</h3>' + activeGoal + '</section>' +
+        '<section class="dossier-section"><h3>LONG-TERM ASPIRATIONS</h3><p>' + esc((person.goals || []).join(" · ") || "No long-term goals recorded.") + '</p></section>' +
+        '<section class="dossier-section"><h3>GOAL HISTORY</h3>' + (goalHistory ? '<ul class="dossier-link-list">' + goalHistory + '</ul>' : '<p class="dossier-empty">No previous goal changes recorded.</p>') + '</section>' +
         renderLinks("PARENTS", family.parents, entry => entry.kind + " · since year " + entry.sinceYear) +
         renderLinks("CHILDREN", family.children, entry => entry.kind + " · since year " + entry.sinceYear) +
         renderLinks("SIBLINGS", family.siblings, entry => entry.relation + " sibling") +
