@@ -48,12 +48,12 @@ test("people age once per realm year and adulthood is recorded as a personal mem
     state.year=2;state.tick=400;
     const result=updatePeople();
     assert.deepEqual(result,{aged:1,transitions:1});
-    assert.equal(person.ageYears,16);
-    assert.equal(person.lifeStage,"adult");
-    assert.equal(person.lastAgedYear,2);
-    assert.equal(person.memories.filter(item=>item.type==="life-stage").length,1);
+    assert.equal(resident.person.ageYears,16);
+    assert.equal(resident.person.lifeStage,"adult");
+    assert.equal(resident.person.lastAgedYear,2);
+    assert.equal(resident.person.memories.filter(item=>item.type==="life-stage").length,1);
     assert.deepEqual(updatePeople(),{aged:0,transitions:0});
-    assert.equal(person.ageYears,16);
+    assert.equal(resident.person.ageYears,16);
 });
 test("species-specific maturation keeps elves young longer than humans",()=>{
     resetState();state.worldSeed=1202;state.year=1;
@@ -62,9 +62,9 @@ test("species-specific maturation keeps elves young longer than humans",()=>{
     Object.assign(hp,{species:"human",ageYears:15,lifeStage:"young",lastAgedYear:1});
     Object.assign(ep,{species:"elf",ageYears:34,lifeStage:"young",lastAgedYear:1});
     state.year=2;updatePeople();
-    assert.equal(hp.lifeStage,"adult");
-    assert.equal(ep.ageYears,35);
-    assert.equal(ep.lifeStage,"young");
+    assert.equal(human.person.lifeStage,"adult");
+    assert.equal(elf.person.ageYears,35);
+    assert.equal(elf.person.lifeStage,"young");
 });
 test("multi-year catch-up is bounded and produces only the final life-stage transition",()=>{
     resetState();state.worldSeed=1203;state.year=1;
@@ -72,8 +72,8 @@ test("multi-year catch-up is bounded and produces only the final life-stage tran
     Object.assign(person,{species:"human",ageYears:14,lifeStage:"young",lastAgedYear:1});
     state.year=20;state.tick=7600;
     const result=updatePeople();
-    assert.equal(person.ageYears,33);
-    assert.equal(person.lifeStage,"adult");
+    assert.equal(resident.person.ageYears,33);
+    assert.equal(resident.person.lifeStage,"adult");
     assert.equal(result.aged,1);
     assert.equal(result.transitions,1);
 });
