@@ -1,7 +1,8 @@
 // ── Weather System ─────────────────────────────────────────────
 
 import { state } from '../core/state.js';
-import { randInt } from '../core/utils.js';
+import { randInt as seededRandInt } from '../core/random.js';
+const randInt=(min,max)=>seededRandInt(min,max,"weather");
 import { addLog } from '../systems/events.js';
 
 export function updateWeather() {

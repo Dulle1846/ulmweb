@@ -2,7 +2,8 @@
 import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { spawnEntity,canSpawnEntity } from "../world/entities.js";
-import { randInt } from "../core/utils.js";
+import { randInt as seededRandInt } from "../core/random.js";
+const randInt=(min,max)=>seededRandInt(min,max,"population");
 
 export const RESIDENTS_PER_HOUSE = 4;
 export const POPULATION_GROWTH_FOOD_RESERVE = 0.75;

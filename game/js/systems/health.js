@@ -1,6 +1,7 @@
 // Public health simulation: household transmission, treatment and recovery.
 import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
+import {random} from "../core/random.js";
 
 export const HEALTH_INTERVAL = 20;
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,Number.isFinite(Number(value))?Number(value):min));
@@ -115,8 +116,8 @@ export function updateHealth(){
         if(!infectious)continue;
         const susceptible=household.filter(person=>(person.illnessUntilTick||0)<=state.tick);
         if(!susceptible.length)continue;
-        if(Math.random()<transmissionRisk){
-            const patient=susceptible[Math.floor(Math.random()*susceptible.length)];
+        if(random("health")<transmissionRisk){
+            const patient=susceptible[Math.floor(random("health")*susceptible.length)];
             patient.illnessStartedTick=state.tick;
             patient.illnessSeverity=health.severity;
             patient.illnessUntilTick=state.tick+80+health.severity*20;

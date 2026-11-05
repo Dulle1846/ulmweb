@@ -3,7 +3,8 @@ import { WORLD_W,WORLD_H } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { spawnEntity,canSpawnEntity } from "../world/entities.js";
-import { randInt } from "../core/utils.js";
+import {random,randInt as seededRandInt} from "../core/random.js";
+const randInt=(min,max)=>seededRandInt(min,max,"events");
 import { EVENT_CHAINS } from "./event-chains.js";
 import { getWorkforceSnapshot } from "./economy.js";
 import { canAccommodateVillagers,normalizeHouseholdAssignments } from "./population.js";
@@ -99,7 +100,7 @@ function chooseFamily(){
   // while their long-term tension/prosperity/mystery still influence future stories.
   return Math.max(.15,baseWeight/(1+recentCount*.65));
  });
- let roll=Math.random()*weights.reduce((a,b)=>a+b,0);
+ let roll=random("events")*weights.reduce((a,b)=>a+b,0);
  for(let i=0;i<FAMILIES.length;i++){roll-=weights[i];if(roll<=0)return FAMILIES[i];}
  return FAMILIES[FAMILIES.length-1];
 }
@@ -193,7 +194,7 @@ export function resolveEventChoice(index){
  if(hidden.memories.length>24)hidden.memories.length=24;
  hidden.activeThreads=Array.isArray(hidden.activeThreads)?hidden.activeThreads:[];
  hidden.completedThreads=Array.isArray(hidden.completedThreads)?hidden.completedThreads:[];
- if(issue.threadStart&&Math.random()<0.5&&!hidden.activeThreads.some(thread=>thread.id===issue.threadStart)){
+ if(issue.threadStart&&random("events")<0.5&&!hidden.activeThreads.some(thread=>thread.id===issue.threadStart)){
   hidden.activeThreads.push({id:issue.threadStart,stage:0,startedAtTick:state.tick,nextAtTick:state.tick+130+randInt(0,90)});
   addLog("A LONGER STORY BEGINS: "+issue.threadStart.toUpperCase(),"#c5a66b","chronicle");
  }
@@ -224,5 +225,5 @@ export function checkRandomEvents(){
  if(!Number.isFinite(state.nextIssueAtTick)||state.nextIssueAtTick<=0)state.nextIssueAtTick=state.tick+145+randInt(0,95);
  if(state.tick<state.nextIssueAtTick)return;
  state.nextIssueAtTick=state.tick+220+randInt(0,520);
- if(Math.random()<.82)triggerRandomEvent();
+ if(random("events")<.82)triggerRandomEvent();
 }

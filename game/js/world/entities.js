@@ -5,7 +5,9 @@
 import { WORLD_WIDTH, WORLD_HEIGHT, BUILDING_SIZE } from '../core/config.js';
 import { TYPE, Entity } from '../core/types.js';
 import { state } from '../core/state.js';
-import { randInt } from '../core/utils.js';
+import { randInt as seededRandInt } from '../core/random.js';
+import {ensurePersonProfile} from '../systems/people.js';
+const randInt=(min,max)=>seededRandInt(min,max,"entity");
 
 // ── Entity erstellen ──────────────────────────────────────────
 
@@ -29,6 +31,10 @@ export function canSpawnEntity(type, count = 1) {
 export function spawnEntity(tx, ty, type) {
     if(!canSpawnEntity(type))return null;
     const entity = new Entity(tx, ty, type);
+    const serial = Number.isSafeInteger(state.nextEntityId) && state.nextEntityId > 0 ? state.nextEntityId : 1;
+    state.nextEntityId = serial + 1;
+    entity.id = "e" + (Number(state.worldSeed) || 1).toString(36) + "-" + serial.toString(36);
+    if (type === TYPE.VILLAGER) { entity.personId = entity.id; ensurePersonProfile(entity); }
 
     if (entity.isUnit()) {
         entity.home = { x: tx, y: ty };
@@ -142,6 +148,8 @@ export function initStartingKingdom() {
     king.hp = 300;
     king.maxHp = 300;
     king.isKing = true;
+    king.personId = king.id;
+    ensurePersonProfile(king,{role:"king"});
     king.home = { x: cx, y: cy };
     king.anchor = { x: cx, y: cy };
 
