@@ -46,7 +46,8 @@ try{
     await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
 
-    // Strategy command deck: constitutional change, public decree, dynasty and living creature.
+    // Strategy command deck: open the modal, then navigate its internal tab bar.
+    await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="government"]').click();
     assert.equal(await page.locator("#command-modal").isVisible(),true);
     await page.locator('[data-command="government-form"][data-value="council"]').click();
