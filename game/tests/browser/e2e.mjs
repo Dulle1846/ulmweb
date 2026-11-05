@@ -553,13 +553,14 @@ try{
                 const panelRect=el.getBoundingClientRect();
                 const cardRect=card.getBoundingClientRect();
                 const cardTopInScroll=cardRect.top-panelRect.top+el.scrollTop;
+                const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+                const visibleBottom=Math.min(panelRect.bottom,dock.top);
+                const visibleHeight=Math.max(0,visibleBottom-panelRect.top);
                 const maxScroll=Math.max(0,el.scrollHeight-el.clientHeight);
-                const targetScroll=Math.max(0,cardTopInScroll+cardRect.height-el.clientHeight);
+                const targetScroll=Math.max(0,cardTopInScroll+cardRect.height-visibleHeight);
                 el.scrollTop=Math.min(maxScroll,targetScroll);
                 const finalPanel=el.getBoundingClientRect();
                 const finalCard=card.getBoundingClientRect();
-                const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
-                const visibleBottom=Math.min(finalPanel.bottom,dock.top);
                 const result={
                     scrollTop:el.scrollTop,
                     scrollRange:maxScroll,
