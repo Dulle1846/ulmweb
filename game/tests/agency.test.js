@@ -69,11 +69,10 @@ test("goal history and memories remain bounded during repeated goal changes",()=
 test("personal agency updates named non-villager profiles too",()=>{
     const king=spawnEntity(42,40,TYPE.KNIGHT);
     king.isKing=true;
-    const profile=ensurePersonProfile(king);
-    profile.lastNeedsYear=1;
+    ensurePersonProfile(king).lastNeedsYear=1;
     const result=updatePersonalAgency();
     assert.equal(result.updated,2);
-    assert.ok(profile.activeGoal);
+    assert.ok(king.person.activeGoal);
 });
 
 
