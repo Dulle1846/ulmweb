@@ -674,7 +674,10 @@ try{
                 assert.ok(["auto","scroll","overlay"].includes(audit.overflowY),
                     label+" must expose a scroll path when its body is taller than the viewport at "+width+"x"+height+": "+JSON.stringify(audit));
             }
-            await page.screenshot({path:resolve(screenshotDir,screenshotName+"-"+width+"x"+height+".png"),animations:"disabled"});
+            // Detailed overlays get three representative screenshots; geometry and scroll checks still run at all seven sizes.
+            if([390,1366,1920].includes(width)){
+                await page.screenshot({path:resolve(screenshotDir,screenshotName+"-"+width+"x"+height+".png"),animations:"disabled"});
+            }
         };
 
         // Inspect all ten management screens, not only the shell of the shared dialog.
