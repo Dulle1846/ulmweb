@@ -16,6 +16,7 @@ import { queueMessage } from "../core/presentation-effects.js";
 import { updatePeople } from "../systems/people.js";
 import { updateBirths } from "../systems/births.js";
 import { updateSocialLife } from "../systems/social.js";
+import { updatePersonalAgency } from "../systems/agency.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
@@ -26,6 +27,7 @@ export function updateSimulation(){
     if(state.year>previousYear){
         updatePeople();
         socialResult=updateSocialLife();
+        updatePersonalAgency();
         newborn=updateBirths();
     }
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
