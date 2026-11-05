@@ -76,6 +76,10 @@ test("road list is stable and build mode accepts only known tiers",()=>{
     assert.equal(getRoadBuildMode(),"gravel");
     clearRoadBuildMode();
     assert.equal(getRoadBuildMode(),null);
+    assert.equal(setRoadBuildMode("remove"),true);
+    assert.equal(getRoadBuildMode(),"remove");
+    clearRoadBuildMode();
+    assert.equal(getRoadBuildMode(),null);
 });
 
 test("A* prefers a long paved corridor when it is cheaper than a shorter dirt route",()=>{
