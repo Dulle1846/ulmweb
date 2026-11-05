@@ -493,3 +493,12 @@ The first-birth cooldown now distinguishes the zero sentinel (no prior birth) fr
 The memorial Browser E2E test now creates a deterministic villager fixture instead of relying on random world generation to produce a resident. The character dossier sex assertion is case-insensitive to match the uppercase UI output.
 
 At code head `2d40cbf982e232a8039d0d2e4bfb8659c89d94aa`, the full test suite passed **175/175**, source syntax/import and UI/asset checks passed, Kings & Cards 2.1 checks passed, and Chromium Browser E2E passed. This is a focused correctness phase; it does not add royal succession or inheritance.
+
+
+## Phase 2.8 — orphan guardianship
+
+The yearly simulation now reviews living minors after natural mortality. A minor is considered a confirmed orphan only when at least one explicit parent link exists and every recorded parent is confirmed in the memorial archive. Missing/unresolved parent IDs do not count as proof of death.
+
+Guardianship is a separate reciprocal relationship (guardians / wards), not a biological/adoptive parent edge. Each minor can have at most two guardians and each guardian at most 16 wards. Eligibility uses species-specific maturation. Candidate selection prefers aunts/uncles, then grandparents, and can use high recorded trust/affinity as supporting evidence. An unrelated stranger without such evidence is not selected. The receiving household must have capacity unless the child already lives there. The system makes at most four assignments per realm year.
+
+Successful assignments update household anchors, write personal memories for both people and appear in character dossiers. This is not adoption or legal parentage; inheritance, royal regency and succession remain separate.
