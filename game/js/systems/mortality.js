@@ -91,8 +91,19 @@ export function updateMortality() {
     if (year <= (Number(economy.lastMortalityYear) || 1)) return [];
     economy.lastMortalityYear = year;
 
+    const king = state.entities.find(entity => !entity.dead && entity.isKing && entity.personId);
+    const livingRoyalChildren = king?.person?.kinship?.children || [];
+    const hasAdultRoyalSuccessor = livingRoyalChildren.some(link => {
+        const heir = state.entities.find(entity => !entity.dead && String(entity.personId || "") === String(link.personId));
+        if (!heir) return false;
+        const person = ensurePersonProfile(heir);
+        return person.ageYears >= (PERSON_SPECIES[person.species]?.maturation ?? 16);
+    });
+    // A sovereign is exposed to natural mortality only when an adult royal child
+    // can lawfully take the crown. Minor-heir regency is a separate future system.
     const residents = state.entities
-        .filter(entity => !entity.dead && entity.type === TYPE.VILLAGER && entity.personId && !entity.isKing)
+        .filter(entity => !entity.dead && entity.personId &&
+            (entity.type === TYPE.VILLAGER || (entity.isKing && hasAdultRoyalSuccessor)))
         .sort((a, b) => String(a.personId).localeCompare(String(b.personId)));
     const deaths = [];
     for (const entity of residents) {
