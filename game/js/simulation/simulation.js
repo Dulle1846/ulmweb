@@ -18,6 +18,7 @@ import { updateBirths } from "../systems/births.js";
 import { updateSocialLife } from "../systems/social.js";
 import { updatePersonalAgency } from "../systems/agency.js";
 import { updateMortality } from "../systems/mortality.js";
+import { updateGuardianships } from "../systems/guardianship.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
@@ -26,9 +27,11 @@ export function updateSimulation(){
     let newborn=null;
     let socialResult=null;
     let deaths=[];
+    let guardianships=[];
     if(state.year>previousYear){
         updatePeople();
         deaths=updateMortality();
+        guardianships=updateGuardianships();
         socialResult=updateSocialLife();
         updatePersonalAgency();
         newborn=updateBirths();
@@ -38,6 +41,9 @@ export function updateSimulation(){
     const newcomer=newborn?null:updatePopulation();
     for(const death of deaths){
         addLog("A RESIDENT DIED: "+death.name+" · "+death.cause,"#b99a9a","death");
+    }
+    for(const assignment of guardianships){
+        addLog("A GUARDIAN TOOK RESPONSIBILITY FOR "+assignment.wardName+": "+assignment.guardianName,"#d8c18a","family");
     }
     if(socialResult?.partnerships?.length){
         for(const partnership of socialResult.partnerships){
