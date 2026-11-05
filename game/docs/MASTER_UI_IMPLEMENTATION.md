@@ -1,9 +1,9 @@
 # Master UI — Implementation Register
 
 **Specification:** `MASTER UI & VISUAL DESIGN CONCEPT v1.0` (uploaded project brief)  
-**Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 dynasty and action dock), PR #43 (Phase 3 economy, buildings, creatures and chronicle), PR #44 (Phase 4 portrait and illustrated-register increment)  
-**Current UI branch:** `ulmweb-branch` (latest merged UI work: PRs #69 and #70)  
-**Baseline:** `6c4c3f0442ea18aa04fee5598e909ddfc6b4d900`  
+**Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 action dock and descendant tree), PR #43 (Phase 3 economy/buildings/creatures/chronicle), PR #44 (Phase 4 portrait/art increment), PR #80 (sovereign dossier), PR #84 (connected lineage network)  
+**Current UI branch:** `ulmweb-branch` (latest merged UI work: PRs #80 and #84)  
+**Baseline:** `5f980cc656a0308db0b5ba6d664a615d4bca1bef`  
 **Rule:** This register distinguishes implemented and tested work from the remaining concept. A styled shell is not a completed screen.
 
 ## Design decisions
@@ -29,6 +29,20 @@
 - Game Quality, Kings & Cards checks and Chromium gameplay E2E passed on the relevant PR heads.
 - The Pages smoke test verified the administration rail, resource strip, kingdom overview, government, economy, people and build screens. The pre-campaign guard was added after that live smoke test and then re-tested through CI.
 
+
+## Phase 2 production completion increment (PR #80 and PR #84; release 3.7.0)
+
+- The current sovereign's existing character dossier now includes the live royal-house consort, designated heir, living royal children and the latest eight recorded royal-house events.
+- Former sovereign memorials are explicitly separated from the living monarch's current succession state.
+- Royal-family entries reuse the existing canonical dossier navigation and stable person IDs.
+- The dynasty view now presents a connected, multi-lane graph for recorded grandparents, parents, sovereign, siblings, consort, aunts/uncles, cousins and royal children. SVG connectors are positioned from live card bounds and distinguish parent, guardian, partnership and sibling links.
+- The graph is bounded to 80 nodes and 120 edges; the existing descendant view retains its depth/per-generation caps. Unknown relationships are never inferred.
+- Added responsive local styling, reduced-motion handling, static contracts and Chromium E2E for sovereign dossier and graph-to-dossier navigation.
+- PR #80 merged as `6bab68d01dc4489a9cb018d91727ae9eb318b338`; PR #84 merged as `5f980cc656a0308db0b5ba6d664a615d4bca1bef`.
+- Game Quality, Kings & Cards 2.1 checks and Chromium gameplay E2E passed on the exact PR feature heads. The independent Workers build check is not a Pages release check.
+- A live Pages smoke check confirmed the official homepage and the new sovereign-dossier and lineage stylesheet/JavaScript assets are served from `kings-and-cards.pages.dev`. The exact Pages deployment ID was not available in the inspected evidence.
+- No simulation rules or save schema changed. The remaining Master UI concept is not complete: broader responsive and accessibility audits, remaining character actions, and full art/animation production remain open.
+
 ## Current implementation status
 
 | Concept work package | Status | Evidence / remaining work |
@@ -38,7 +52,7 @@
 | UI-03 — button library | **Phase 2 increment** | Shared states for primary/secondary, speed, navigation, management tabs, build options and modal controls; Phase 2 adds reusable panel/card/section/icon-button primitives, tooltip surfaces and hover/focus/pressed states. Full component API and tooltip coverage remain. |
 | UI-04 — main interface | **Phase 2 increment** | Adds a contextual sidebar action dock for people, dynasty, cards, chronicle and manual save; save status reflects confirmed save/load success or failure. This is not autosave. The final full-width lower action bar, clickable ruler portrait and dedicated event inbox remain. |
 | UI-05 — administration screens | **Phase 3 increment** | Economy separates current stock, per-tick flow, latest 20-day settlement and cumulative totals. A searchable read-only building register exposes live structures, health, footprint, workforce, efficiency, catalogue costs and site-tile resource data. Historical charts, per-building output, storage and forecasts remain unavailable until the simulation retains those contracts. |
-| UI-06 — character and dynasty | **Phase 4 increment** | Adds a seven-archetype original heraldic portrait sprite system to the roster, dossiers and dynasty cards; recorded relationship links navigate directly between dossiers; the sovereign view adds verified parent, sibling and cousin groups. Deeper network visualization, advanced filters and expanded character actions remain. |
+| UI-06 — character and dynasty | **Phase 2 sovereign/lineage increments shipped** | Current sovereign dossier now shows recorded consort, heir, children and bounded royal-house chronicle; former monarchs are separated from live succession state. Dynasty screen now draws a bounded connected multi-lane network with verified grandparents, parents, siblings, consort, collateral relatives, cousins and children. Graph nodes open canonical dossiers. The seven-archetype portrait suite remains; deeper network exploration and expanded character actions remain. |
 | UI-07 — fantasy areas | **Partial** | Existing dragon/creature management and card rarity styles retained. Full creature dossiers, bestiary, magic screen and illustrated legendary card treatment remain. |
 | UI-08 — menu and settings | **Partial** | Existing main menu and settings remain; visual override applied. Version/credits/save-slot management and graphics/accessibility controls remain. |
 | UI-09 — art and animation | **Phase 4 increment** | Adds seven original, locally bundled heraldic portrait archetypes and reuses existing illustrated building sprites in the register. The complete building/creature/card illustration atlas, house-specific heraldry, asset audit and animation pass remain. |
