@@ -132,3 +132,34 @@ Next tasks for an independent agent:
 6. Profile population scaling before increasing resident counts; maintain the hybrid detail model and explicit entity/memory caps.
 
 Do not claim autonomous character behavior until goals are evaluated against world state and actors can select/execute actions. Do not merge or deploy this draft. Cloudflare Pages is the production host; do not use Vercel.
+
+## Phase 2.3 — event-linked personal chronicle slice
+
+Branch: `kac-2.3-living-chronicles`, based on merged development head `ff80b644e4c9c3bb207de41866bbf977ecccb347`. Production branch `ulmweb-branch` is not the target.
+
+Implemented:
+- Generated events select a bounded cast of affected resident(s), witness(es) and the king decision-maker using stable person IDs.
+- Resolved event choices add distinct, event-scoped personal memories to participants.
+- Residents' directed relationship toward the king changes modestly according to the public impact of the chosen response; a weaker reciprocal record is stored on the king.
+- Multi-stage story threads carry the same participant IDs forward and completed threads retain their cast.
+- Memory/relationship lists remain bounded and normalized on load; duplicate outcome replay is idempotent for memories and relationship changes.
+
+New/expanded tests:
+- People receive durable event memories and directed relationships.
+- Participant selection uses existing stable person IDs and remains bounded.
+- Resolving a generated issue writes memories to the named cast.
+
+Limitations:
+- No full autonomous decision-making, family graph, relationship decay, local incident-radius simulation, long-term memory summarization or character UI.
+- This slice uses up to three actors per issue and bounded personal memory (24) / relationship (32) lists. It is not a simulation of every citizen's complete biography.
+- UI browser coverage is still required if/when a character-inspection panel is introduced.
+
+Agent follow-up:
+1. Build a read-only character dossier panel from `getPersonSnapshot`, including biography, memories and relationships.
+2. Add household/family identity as explicit stable data; do not infer kinship from shared housing.
+3. Add life-year aging and species-specific maturation/lifespan with deterministic tests.
+4. Add named-location provenance to events, then choose affected residents by household/workplace/region rather than a global resident pool.
+5. Implement a bounded goal evaluator and autonomous action selection as a separate slice; the king remains autonomous by default but player-overridable.
+6. Preserve the comic-medieval/tower-defence visual direction; do not re-theme the current UI in this backend slice.
+
+Do not merge or deploy without review of exact-head CI and user authorization. Cloudflare Pages remains the production target; never configure Vercel.
