@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+<title id="title">Kings and Cards — illustrated fantasy realm</title>
+<desc id="desc">A colorful storybook kingdom with a crowned castle, village, river, forest, windmill and distant mountains.</desc>
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#48b6ee"/><stop offset=".62" stop-color="#c9efff"/><stop offset="1" stop-color="#f7e6b2"/></linearGradient>
+ <linearGradient id="mountain" x2=".2" y2="1"><stop stop-color="#f5fbff"/><stop offset=".25" stop-color="#7ca9c5"/><stop offset="1" stop-color="#426b86"/></linearGradient>
+ <linearGradient id="hill" x2="0" y2="1"><stop stop-color="#83c85c"/><stop offset="1" stop-color="#286b46"/></linearGradient>
+ <linearGradient id="stone" x2="0" y2="1"><stop stop-color="#f6e6c2"/><stop offset="1" stop-color="#a98a67"/></linearGradient>
+ <linearGradient id="roof" x2="0" y2="1"><stop stop-color="#4d8fbd"/><stop offset="1" stop-color="#203e70"/></linearGradient>
+ <linearGradient id="river" x2="0" y2="1"><stop stop-color="#75d9f4"/><stop offset="1" stop-color="#1877b4"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur stdDeviation="7"/></filter>
+ <pattern id="stoneLines" width="44" height="20" patternUnits="userSpaceOnUse"><path d="M0 19H44M22 0V19" stroke="#8e755d" stroke-opacity=".35" fill="none"/></pattern>
+</defs>
+<rect width="1200" height="560" fill="url(#sky)"/>
+<circle cx="1030" cy="95" r="43" fill="#ffe79a" opacity=".95"/>
+<g fill="#fff" opacity=".78"><path d="M120 115c20-31 65-32 86-5 31-10 54 10 50 31H95c-5-15 7-26 25-26z"/><path d="M800 90c17-25 54-26 72-4 25-9 44 8 41 25H779c-4-12 6-21 21-21z"/></g>
+<path d="M0 320 155 128l77 90 118-157 129 190 121-149 137 180 118-165 140 179 104-106 101 140v160H0z" fill="url(#mountain)"/>
+<path d="m70 239 85-111 48 58 29-6-77-91-119 149zm265-94 15-184 104 191-41-51-48 1zm290 28 92-111 90 121-58-41-32 8zm250-3 69-96 87 112-53-41-30 5z" fill="#f5fbff" opacity=".95"/>
+<path d="M0 350q190-80 360-15t360-8 480 6v227H0z" fill="#5eaa52"/>
+<path d="M0 400q210-83 390-20t380-12 430 8v184H0z" fill="url(#hill)"/>
+<path d="M-20 474q130-62 252-10t214 12 190-5 190 35 180-1 230-40v115H-20z" fill="#2e7d4d"/>
+<path d="M0 515q160-45 300-6t270-10 250 10 200-4 200 6v49H0z" fill="url(#river)"/>
+<path d="M0 521q160-45 300-6t270-10 250 10 200-4 200 6" fill="none" stroke="#b6efff" stroke-width="8" opacity=".7"/>
+<g opacity=".45" fill="#fff"><path d="M80 534q40-14 80 0t80 0M520 540q50-16 100 0t100 0M920 536q44-12 88 0t88 0" fill="none" stroke="#fff" stroke-width="4"/></g>
+<ellipse cx="590" cy="474" rx="325" ry="36" fill="#173b36" opacity=".28" filter="url(#shadow)"/>
+<!-- village -->
+<g stroke="#4b3425" stroke-width="5" stroke-linejoin="round">
+ <g transform="translate(105 338)"><path d="M0 45 50 0l54 45v74H0z" fill="#f1d5a6"/><path d="m-8 48 58-63 61 63z" fill="#b74c39"/><path d="M40 80h25v39H40z" fill="#6c4b34"/><rect x="12" y="59" width="20" height="19" fill="#83c7df"/><rect x="74" y="58" width="18" height="20" fill="#83c7df"/></g>
+ <g transform="translate(250 367)"><path d="M0 34 46 0l48 34v67H0z" fill="#f4e3bf"/><path d="m-8 36 54-49 56 49z" fill="#4777a7"/><rect x="36" y="63" width="20" height="38" fill="#6c4b34"/><rect x="10" y="48" width="17" height="17" fill="#9bd6e8"/><rect x="69" y="48" width="17" height="17" fill="#9bd6e8"/></g>
+ <g transform="translate(860 360)"><path d="M0 40 53 0l58 40v77H0z" fill="#f0d6aa"/><path d="m-10 43 63-57 68 57z" fill="#b34c39"/><rect x="42" y="75" width="24" height="42" fill="#6c4b34"/><rect x="13" y="56" width="19" height="18" fill="#8ed1e6"/><rect x="82" y="56" width="19" height="18" fill="#8ed1e6"/></g>
+</g>
+<!-- castle shadow and walls -->
+<path d="M335 402h540v80H335z" fill="#1b433d" opacity=".25" filter="url(#shadow)"/>
+<g stroke="#49382c" stroke-width="7" stroke-linejoin="round">
+ <path d="M320 355h560v95H320z" fill="url(#stone)"/>
+ <path d="M320 355h560v95H320z" fill="url(#stoneLines)"/>
+ <path d="M345 355v-40h55v40m64 0v-40h55v40m64 0v-40h55v40m64 0v-40h55v40m64 0v-40h55v40m64 0v-40h55v40" fill="#d9c5a3"/>
+ <path d="M320 355h560" stroke="#f8e8c8" stroke-width="9"/>
+ <path d="M535 450v-67q65-83 130 0v67z" fill="#593e31"/>
+ <path d="M555 450v-60q45-61 90 0v60z" fill="#273c56"/>
+ <path d="M595 450v-42" stroke="#c9a56c" stroke-width="5"/>
+ <!-- central keep -->
+ <path d="M445 330V205h320v125z" fill="url(#stone)"/>
+ <path d="M470 205v-75h75v75m120 0v-75h75v75" fill="#e6d2ae"/>
+ <path d="M435 208 482 110l42 98zm115 0 45-105 48 105zm100 0 42-98 48 98z" fill="url(#roof)"/>
+ <path d="M575 330V177h70v153z" fill="#c9b18d"/>
+ <path d="M565 180 610 85l45 95z" fill="#28517d"/>
+ <path d="M600 86V48" stroke="#49382c" stroke-width="5"/>
+ <path d="M602 50h55l-17 20h-38z" fill="#d94c3e" stroke="none"/>
+ <path d="M480 240h36v53h-36zm195 0h36v53h-36z" fill="#75c9e5"/>
+ <path d="M480 240h36m-18 0v53m177-53h36m-18 0v53" stroke="#49382c" stroke-width="5"/>
+ <path d="M570 330v-65q40-54 80 0v65z" fill="#51372b"/>
+ <path d="M587 330v-57q23-31 46 0v57z" fill="#29415a"/>
+ <path d="M445 330V205h320v125" fill="none" stroke="#7f674d" stroke-width="5"/>
+</g>
+<!-- flags -->
+<g stroke="#503728" stroke-width="4"><path d="M492 112V74m0 2h42l-12 14h-30" fill="#e04c3c"/><path d="M723 113V77m0 2h42l-12 14h-30" fill="#e04c3c"/></g>
+<!-- windmill -->
+<g transform="translate(1015 315)" stroke="#543c2b" stroke-width="6" stroke-linejoin="round"><path d="M-25 20h50l-9 110h-32z" fill="#e8d3ac"/><path d="M0 20V-55M0 20l67 36M0 20l-66 36M0 20l-2-78" stroke="#6c4d32" stroke-width="8"/><circle r="10" fill="#e3c48b"/><path d="M-8-55h16l12 49H-20zM66 28l8 14-52 27-8-14zM-68 28l-8 14 52 27 8-14z" fill="#fff0ce"/></g>
+<!-- trees -->
+<g stroke="#563c2a" stroke-width="5"><g transform="translate(180 420)"><path d="M0 5v70" stroke-width="12"/><circle cy="-12" r="39" fill="#2d7949"/><circle cx="-25" cy="8" r="27" fill="#4b9c52"/><circle cx="24" cy="9" r="26" fill="#77b957"/></g><g transform="translate(930 430)"><path d="M0 5v65" stroke-width="12"/><circle cy="-12" r="39" fill="#2d7949"/><circle cx="-25" cy="8" r="27" fill="#4b9c52"/><circle cx="24" cy="9" r="26" fill="#77b957"/></g><g transform="translate(1080 465)"><path d="M0 5v60" stroke-width="11"/><circle cy="-12" r="36" fill="#2d7949"/><circle cx="-22" cy="8" r="24" fill="#4b9c52"/><circle cx="22" cy="8" r="24" fill="#77b957"/></g></g>
+<!-- dragon in the distance -->
+<g transform="translate(940 170)" fill="#6c4b91" stroke="#3e2c61" stroke-width="5" stroke-linejoin="round"><path d="M0 30q-34-40-78-24 23 9 27 37-26-17-54-8 29 27 70 23l38-8 38 11q35 1 54-26-30 8-50-8 5-23 29-35-49-10-74 29z"/><path d="M-4 30q-12 28-4 52l18-9 9 12 13-34" fill="#8463a8"/><path d="M-28 21l-26-12 8 21" fill="#d9a26a"/><circle cx="18" cy="24" r="4" fill="#ffe68b" stroke="none"/></g>
+<!-- path and market -->
+<path d="M610 450q-40 34-135 43t-185 0" fill="none" stroke="#e6c88d" stroke-width="19" stroke-linecap="round"/>
+<path d="M610 450q-40 34-135 43t-185 0" fill="none" stroke="#9c815a" stroke-width="3" stroke-dasharray="7 10"/>
+<g stroke="#593e2c" stroke-width="4"><path d="M455 435h65v37h-65z" fill="#d6ad6c"/><path d="m447 437 41-32 40 32z" fill="#d44f3f"/><path d="M555 438h66v34h-66z" fill="#e6d0a4"/><path d="m548 440 40-30 41 30z" fill="#477cb1"/></g>
+<g fill="#fff0cb" stroke="#5a402d" stroke-width="3"><circle cx="400" cy="468" r="7"/><circle cx="425" cy="474" r="6"/><circle cx="650" cy="472" r="7"/><circle cx="680" cy="465" r="6"/></g>
+<path d="M0 0h1200v560H0z" fill="none" stroke="#1b2f44" stroke-width="14"/>
+<path d="M12 12h1176v536H12z" fill="none" stroke="#e4bd72" stroke-width="3"/>
+</svg>
