@@ -152,7 +152,33 @@ function saveCurrentGame(){
     }
 }
 
+const SAVE_MOBILE_TYPES=new Set([TYPE.VILLAGER,TYPE.GUARD,TYPE.ARCHER,TYPE.KNIGHT,TYPE.PRIEST,TYPE.DRAGON,TYPE.DEER,TYPE.GOBLIN,TYPE.ORC,TYPE.TROLL]);
+function validateSaveSnapshot(snapshot){
+    if(!snapshot||typeof snapshot!=="object"||Array.isArray(snapshot))throw new Error("Save data is not a valid realm object.");
+    if(!Number.isSafeInteger(Number(snapshot.worldSeed))||Number(snapshot.worldSeed)<=0)throw new Error("Save data has an invalid world seed.");
+    if(!Array.isArray(snapshot.entities)||snapshot.entities.length>900)throw new Error("Save data has an invalid or oversized entity list.");
+    let mobile=0;
+    const validTypes=new Set(Object.values(TYPE));
+    for(const [index,dto] of snapshot.entities.entries()){
+        if(!dto||typeof dto!=="object"||!validTypes.has(dto.type)||!Number.isFinite(dto.x)||!Number.isFinite(dto.y)){
+            throw new Error("Save data contains an invalid entity at position "+index+".");
+        }
+        if(!dto.dead&&SAVE_MOBILE_TYPES.has(dto.type))mobile++;
+    }
+    if(mobile>420)throw new Error("Save data exceeds the supported mobile population limit.");
+    for(const key of ["wood","stone","gold","food"]){
+        if(snapshot.resources&&snapshot.resources[key]!==undefined&&!Number.isFinite(Number(snapshot.resources[key]))){
+            throw new Error("Save data contains an invalid "+key+" resource balance.");
+        }
+    }
+    if(snapshot.hand!==undefined&&(!Array.isArray(snapshot.hand)||snapshot.hand.length>5)){
+        throw new Error("Save data contains an invalid card hand.");
+    }
+    return true;
+}
+
 function loadSnapshotIntoGame(profile,snapshot){
+    validateSaveSnapshot(snapshot);
     resetForRun(profile);
     state.worldSeed=snapshot.worldSeed||randomSeed();
     state.worldOptions=snapshot.worldOptions||{landmass:50,ruggedness:55,forests:52,water:48};
@@ -160,9 +186,12 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.entities=[];
     const restored=[];
     for(const dto of snapshot.entities||[]){
-        if(!canSpawnEntity(dto.type)){restored.push(null);continue;}
+        // Dead entities have already been archived where relevant and should
+        // not consume live world capacity during restoration.
+        if(dto.dead){restored.push(null);continue;}
+        if(!canSpawnEntity(dto.type))throw new Error("Save exceeds the supported world entity capacity.");
         const entity=spawnEntity(dto.x,dto.y,dto.type);
-        if(!entity){restored.push(null);continue;}
+        if(!entity)throw new Error("An entity could not be restored; the current realm will be recovered.");
         Object.assign(entity,{
             id:typeof dto.id==="string"?dto.id:null,personId:typeof dto.personId==="string"?dto.personId:null,person:dto.person&&typeof dto.person==="object"?dto.person:null,
             hp:dto.hp,maxHp:dto.maxHp,dead:dto.dead,age:dto.age,anim:dto.anim,facing:dto.facing,
