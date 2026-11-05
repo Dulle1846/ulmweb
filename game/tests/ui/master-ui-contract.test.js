@@ -44,3 +44,9 @@ test("resource and population mirrors are synchronized from live simulation stat
   assert.ok(ui.includes('querySelectorAll("[data-resource-value]")'));
   assert.ok(ui.includes('querySelectorAll("[data-population]")'));
 });
+
+test("pre-campaign UI does not present placeholder stores as live values",()=>{
+  for(const key of ["wood","stone","gold","food"])assert.ok(html.includes('data-resource-value="'+key+'">—'));
+  assert.ok(html.includes("data-population>—"));
+  assert.ok(management.includes("if(!state.hasStarted)"),"kingdom overview must distinguish an unfounded realm from a running campaign");
+});
