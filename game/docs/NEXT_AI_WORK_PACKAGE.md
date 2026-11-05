@@ -361,3 +361,11 @@ Implemented on `kac-2.6-character-dossiers`, stacked into Draft PR #11.
 - No royal death, succession, regency, inheritance, estate distribution, orphan guardianship or funeral/religious rites yet.
 - Mortality is currently a species/age/health probability model, not a full disease, injury and care system.
 - The 1,000-entry archive is a deliberate memory bound; a later chronicle compaction/indexing design should preserve long-run realm history beyond this limit.
+
+
+## Phase 2.10 — deterministic villager routines
+
+- Removed global `Math.random()` from the villager job-refresh, routine-duration and wandering-target decisions.
+- These choices now consume the dedicated seeded `villagers` random stream.
+- Regression tests verify identical routine choices for identical world seeds and divergent results for different seeds.
+- This closes the nondeterminism found in the inspected villager routine module; it is not a claim that every `Math.random()` in the entire game repository has been eliminated.
