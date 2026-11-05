@@ -786,6 +786,7 @@ function drawPersonIconGeneric(ctx, e, sx, sy, cellPx, tick, emoji, color) {
 
 function getEmoji(entity) {
     if (entity.isKing) return JOB_ICONS.king;
+    if (entity.isDragon) return "🐉";
     if (entity.type === TYPE.GUARD)  return JOB_ICONS.guard;
     if (entity.type === TYPE.ARCHER) return JOB_ICONS.archer;
     if (entity.type === TYPE.KNIGHT) return JOB_ICONS.knight;

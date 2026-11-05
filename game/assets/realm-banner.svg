@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" role="img" aria-labelledby="title desc">
+<title id="title">Eldria fantasy kingdom banner</title><desc id="desc">A colorful hand-inked fantasy castle above a walled village, rolling green hills and a small dragon in the sky.</desc>
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#69b9ed"/><stop offset="1" stop-color="#f6d88a"/></linearGradient>
+ <linearGradient id="stone" x2="0" y2="1"><stop stop-color="#fff0c7"/><stop offset="1" stop-color="#b88a58"/></linearGradient>
+ <linearGradient id="roof" x2="0" y2="1"><stop stop-color="#5c9ed2"/><stop offset="1" stop-color="#193d70"/></linearGradient>
+ <linearGradient id="grass" x2="0" y2="1"><stop stop-color="#a4cb65"/><stop offset="1" stop-color="#4c7a3b"/></linearGradient>
+</defs>
+<rect width="1200" height="340" fill="url(#sky)"/>
+<g fill="#fff5dd" opacity=".85"><path d="M65 68q20-35 53-8 28-34 61 3 25 4 29 25H52q-2-15 13-20M930 48q20-28 48-5 25-30 52 2 30 2 35 24H912q0-14 18-21"/></g>
+<path d="M0 220 130 120l95 75 120-120 105 140 120-135 90 125 115-140 120 145 115-115 100 105 90-75v220H0Z" fill="#7fa5a4" stroke="#263d50" stroke-width="8" stroke-linejoin="round"/>
+<path d="m78 173 52-53 45 54 45-30 42 54 83-103 48 61 57-9 66 86 66-89 58 70 66-81 53 85 63-84 54 80 80-87 67 82 66-58 60 64v115H0V230Z" fill="#d5e2d2" stroke="#263d50" stroke-width="5" stroke-linejoin="round"/>
+<path d="M0 238q140-70 280-10t280-4 280 8 360-10v118H0Z" fill="url(#grass)" stroke="#263d50" stroke-width="8"/>
+<path d="M0 280q160-55 300-5t270 2 310-7 320 6v64H0Z" fill="#6e9b49" stroke="#263d50" stroke-width="6"/>
+<!-- river -->
+<path d="M1080 340q-30-75-110-88t-170 18q-88 30-190-8" fill="none" stroke="#254d70" stroke-width="36" stroke-linecap="round"/>
+<path d="M1080 340q-30-75-110-88t-170 18q-88 30-190-8" fill="none" stroke="#7bd0e6" stroke-width="20" stroke-linecap="round"/>
+<!-- town wall -->
+<path d="M180 300 260 210h650l105 90v40H180Z" fill="#c7a16c" stroke="#35251d" stroke-width="10" stroke-linejoin="round"/>
+<path d="M205 291h780v24H205Z" fill="#ead5a8" stroke="#35251d" stroke-width="7"/>
+<g fill="#ead5a8" stroke="#35251d" stroke-width="7"><path d="M220 212h70v92h-70zM880 212h70v92h-70zM540 202h90v102h-90z"/></g>
+<g fill="#3c2b22"><path d="M240 247h30v57h-30zM900 247h30v57h-30zM570 240h30v64h-30z"/></g>
+<!-- castle keep -->
+<g stroke="#30221b" stroke-width="9" stroke-linejoin="round">
+ <path d="M400 205V108h400v97Z" fill="url(#stone)"/>
+ <path d="M370 120h110v85H370zM720 120h110v85H720z" fill="url(#stone)"/>
+ <path d="M465 82h270v123H465z" fill="#f8e5bf"/>
+ <path d="M435 110 425 48l-48 0 48-52 48 52-10 62Z" fill="url(#roof)"/>
+ <path d="M765 110 775 48l48 0-48-52-48 52 10 62Z" fill="url(#roof)"/>
+ <path d="M480 84 600 15 720 84Z" fill="url(#roof)"/>
+ <path d="M580 205v-66q20-45 40 0v66Z" fill="#493020"/>
+ <path d="M525 123h35v42h-35zM640 123h35v42h-35z" fill="#79bce0"/>
+ <path d="M525 123h35M640 123h35" stroke="#fff0c8" stroke-width="7"/>
+ <path d="M590 14V-6m0 0 36 15-36 15" fill="#d83e35" stroke="#30221b" stroke-width="5"/>
+</g>
+<!-- village roofs -->
+<g stroke="#30221b" stroke-width="7" stroke-linejoin="round">
+ <path d="M245 268h130v60H245Z" fill="#f2d8aa"/><path d="m230 271 80-58 80 58Z" fill="#b64c35"/>
+ <path d="M770 272h115v58H770Z" fill="#f2d8aa"/><path d="m755 275 73-58 73 58Z" fill="#b64c35"/>
+ <path d="M420 276h95v48h-95Z" fill="#f0d5a5"/><path d="m405 280 63-48 63 48Z" fill="#d28b36"/>
+</g>
+<g fill="#4b2d1d" stroke="#2c211a" stroke-width="5"><path d="M290 294h30v34h-30zM810 294h28v34h-28zM455 296h24v28h-24z"/></g>
+<!-- trees -->
+<g stroke="#2d3c29" stroke-width="6"><path d="M90 303v-52m-25 20 25-53 25 53Zm890 32v-62m-30 24 30-58 30 58Z" fill="#3c783d"/><path d="M1030 315v-45m-22 16 22-42 22 42Z" fill="#4f8b42"/></g>
+<!-- dragon silhouette -->
+<g transform="translate(1000 76)" fill="#a83c32" stroke="#35221d" stroke-width="7" stroke-linejoin="round"><path d="M0 45q28-40 67-12l34-25-8 38 38 18-44 3q-38 33-78 4L-4 85l12-28Z"/><path d="M43 30 23-22l60 40 10 20Z" fill="#d15a45"/><path d="M50 51q-15 37-43 39l17-29" fill="#d15a45"/><circle cx="75" cy="43" r="4" fill="#fff0b0" stroke="none"/></g>
+<!-- foreground pennants and comic sparkles -->
+<g stroke="#34241b" stroke-width="5"><path d="M350 96v-42m0 0 30 12-30 12" fill="#e44b3b"/><path d="M845 100V55m0 0 32 12-32 13" fill="#e5bd54"/></g>
+<g fill="#fff0b4" stroke="#654522" stroke-width="3"><path d="m110 95 7 17 18 2-14 11 4 18-15-10-15 10 4-18-14-11 18-2Z"/><path d="m1090 150 6 14 15 2-12 9 4 15-13-8-13 8 4-15-12-9 15-2Z"/></g>
+</svg>

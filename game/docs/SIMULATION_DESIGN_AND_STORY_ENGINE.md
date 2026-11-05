@@ -402,3 +402,144 @@ The initial persistent person record now exists for every spawned villager and f
 - Creation year and tick, so later chronicle entries can be placed on the realm timeline.
 
 Profiles are serialized with entities and normalized on load. Memory insertion is exposed through `addPersonMemory`; the next slice must connect important world events and royal decisions to the people who actually experienced them. The current profile is deliberately not yet a full autonomous character: it does not yet contain family trees, active plans, social network simulation, aging transitions, species-specific culture, or UI inspection.
+
+
+## 12. Phase 2.3 — event-linked personal memory and relationships
+
+The first person/story integration slice connects consequential realm issues to a small, explicit cast of people. This is intentionally not an all-resident social simulation.
+
+Implemented on `kac-2.3-living-chronicles`:
+- Every generated issue stores up to three stable person references: one affected resident, an optional witness for civic/political issues, and the king as decision-maker when present.
+- Participants are selected from existing living person records using the dedicated `people` random stream. The same person IDs are retained through multi-stage chronicle threads and archived with completed threads.
+- Resolving a valid choice writes a compact first-person memory to each participant. Affected residents, witnesses and the king receive different memory framing.
+- Memory IDs are event/person scoped, so retrying the same event outcome does not duplicate the memory or relationship update.
+- Affected residents gain a directed relationship record toward the king; the king also receives a weaker reciprocal record toward the resident. Trust/respect/affinity are bounded and updated only when the selected outcome has a measurable public impact.
+- Relationship collections are capped at 32 per person; event memories remain capped at 24. No all-pairs scan or per-frame relationship update is introduced.
+- Legacy active events without participant snapshots receive a bounded participant selection at resolution. Older chronicle threads without participants get a participant snapshot when their next stage is presented.
+
+This is a deliberately narrow first model. Participants are selected from the realm's existing resident profiles, not from a spatially accurate incident radius: event families do not yet carry reliable map coordinates or named locations. The relationship score is a compact response to the choice's public/political/health effects, not a full psychological model. There is no relationship decay, family/kinship graph, social network propagation or character inspection UI yet.
+
+Acceptance tests cover participant selection, durable and idempotent memories, bounded directed ruler relationships and event-to-person integration. The next slice should add event location/household provenance and a character chronicle UI before expanding relationship simulation.
+
+
+## Implemented follow-up — explicit family graph (Phase 2.5)
+
+The person model now includes bounded, persistent kinship collections:
+- `parents`: up to two explicit parent links, each typed biological, adoptive or guardian.
+- `children`: reciprocal child links with the same relationship kind.
+- `partners`: reciprocal partner/marriage history, including ended relationships.
+
+The family module rejects self-parentage, missing entities, invalid parent kinds, parent-limit violations and ancestry cycles when creating links. Siblings are derived from shared explicit parent IDs. Save loading normalizes legacy records and repairs reciprocal references after entity restoration.
+
+This is not yet a birth or succession simulator. Birth generation, death, name transmission, inheritance, title succession, family UI and autonomous family decisions remain separate work. No relationship is inferred from co-residence.
+
+
+## Implemented follow-up — character inspection UI (Phase 2.6)
+
+A read-only character dossier now exposes the existing persistent person model in-game. The roster is searchable by name, species, role and family name. A selected dossier shows identity and life stage, personality, needs, goals, memories ordered by tick, social relationships and explicit family links (parents, children, siblings and partnerships).
+
+This UI makes current data inspectable; it does not create relationships or simulate births, deaths, inheritance or succession. Historical kinship links whose counterpart is no longer loaded remain visible as a stable-ID reference. The UI escapes saved text before rendering it.
+
+
+## Implemented follow-up — species-aware family births (Phase 2.7)
+
+Births are now a persistent simulation event, not an arbitrary population increment. The annual scheduler considers explicit reciprocal partner/marriage records only; it never infers parentage from shared housing. Eligible parents must be living adult villagers of the same fantasy species. The scheduler uses an isolated deterministic random stream and applies a 12% annual chance per eligible partnership, with a three-year partnership cooldown.
+
+A birth is gated by household vacancy, food reserves, morale and entity limits. The newborn is a real age-zero villager assigned to a parent household where possible. The child's species and family name are inherited from the parents under the current same-species-only rule. Parent-child links are recorded explicitly in both directions, and both parents plus the child receive bounded personal memories. The realm event log records the birth.
+
+Cross-species hybridization, autonomous partner formation, royal births, natural mortality and dynastic succession are deliberately not guessed at in this phase. They need separate rules and tests.
+
+
+## Implemented follow-up — autonomous social life (Phase 2.8)
+
+Residents now meet through shared household and workplace contexts. These encounters update reciprocal trust, respect and affinity using personality-derived bounded changes and a separate deterministic random stream. Acquaintances can become friends or rivals, with memories recorded for significant relationship transitions.
+
+Repeated positive encounters between adults can autonomously form a partnership. The default rule is one active partner per person; close relatives (parent/child and siblings with a shared explicit parent) are excluded. The yearly scheduler is bounded to 120 unique pairs and four new partnerships per realm year. Sharing a home or workplace creates only an opportunity to interact; it never creates family links by itself.
+
+The species data now includes a reproductive mode. Current living species use a paired model; revenants are non-reproductive. A biological birth requires two same-species adult villagers with opposite reproductive sex categories and an established reciprocal partnership from an earlier year. Legacy profiles receive a stable ID-derived reproductive sex category.
+
+Important design boundary: the current `sex` field is a minimal reproductive category, not a complete gender-identity or species-specific biology system. The next design pass should separate identity, anatomy and species reproduction rules. Relationship decay, non-monogamous rules, hybrid species, adoption workflows, royal offspring and courtship outside shared household/work contexts remain unimplemented.
+
+
+## Implemented follow-up — personal needs and active goals (Phase 2.9)
+
+Named people now receive a yearly needs update. Need values represent satisfaction from 0 to 100. Food satisfaction responds to food reserves per resident; rest to the current work/rest phase; safety to nearby threats and realm morale; belonging to recent social ties and explicit family links; purpose to employment or office.
+
+When a need falls below the urgent threshold, it becomes the active personal goal. Otherwise the person's long-term aspiration is active. Goal transitions are stored in a bounded history and recorded as personal memories. The goal system has concrete behavioral effects: people with food insecurity prefer farm work when reasonably accessible, people with low rest satisfaction rest longer, people with low safety satisfaction stay closer to home during breaks, and people with low belonging satisfaction receive priority in the bounded social-interaction scheduler.
+
+The scheduler runs once per year for named living people, including non-villager person profiles. Goal history is capped at 12 entries, personal memories at 24, social relationship lists at 32 and yearly social pair processing at 120. Realm and per-person scheduler cursors are persisted and migrated.
+
+This is a first needs-and-goals controller, not a complete autonomous planner. Long-term political projects, careers, education, travel plans and multi-step personal schemes remain future work.
+
+
+## Implemented follow-up — natural mortality and memorial archive (Phase 3.0)
+
+Ordinary villagers can now die naturally. The yearly scheduler uses species lifespan, age, health and active illness, with a dedicated deterministic random stream and a hard limit of eight deaths per year. Mortality begins after 72% of the configured lifespan and rises with age and health risks. The king and non-villager entities are deliberately excluded until succession rules exist.
+
+A death creates a persistent memorial containing the person's normalized profile, identity, family graph, memories, death year/tick and cause. The deceased receives a final memory; living relatives and partners receive bereavement memories. The live entity is then removed by the normal simulation cleanup, while the memorial remains available in the searchable character dossier. Family snapshots can resolve links to archived people.
+
+The archive is capped at 500 compact entries; each memorial keeps family links but only the 12 newest memories, 16 relationships, six secrets and eight goal-history entries. It is included in save/load migration. Older saves start with an empty memorial archive. This is not yet a complete death/succession system: royal succession, inheritance, regency, orphan guardianship, estates and funeral rites remain separate future phases.
+
+
+## Determinism follow-up — villager routines (Phase 2.10)
+
+The villager routine module no longer uses global `Math.random()` for job refresh intervals, routine phase durations or wandering targets. These decisions now consume the seeded `villagers` random stream, and tests verify replay for equal world seeds. This correction is limited to the inspected villager routine module; other game modules still require a repository-wide audit before the project can claim fully deterministic simulation.
+
+
+## Phase 2.7 — demographic correctness hardening
+
+The first-birth cooldown now distinguishes the zero sentinel (no prior birth) from a real birth year, so a new eligible partnership can have its first child in an early realm. Family normalization retains the last-birth year and reconciles it across reciprocal partnership links, preventing a save/load normalization pass from silently resetting the cooldown. Re-establishing a partnership preserves that historical year.
+
+The memorial Browser E2E test now creates a deterministic villager fixture instead of relying on random world generation to produce a resident. The character dossier sex assertion is case-insensitive to match the uppercase UI output.
+
+At code head `2d40cbf982e232a8039d0d2e4bfb8659c89d94aa`, the full test suite passed **175/175**, source syntax/import and UI/asset checks passed, Kings & Cards 2.1 checks passed, and Chromium Browser E2E passed. This is a focused correctness phase; it does not add royal succession or inheritance.
+
+
+## Phase 2.8 — orphan guardianship
+
+The yearly simulation now reviews living minors after natural mortality. A minor is considered a confirmed orphan only when at least one explicit parent link exists and every recorded parent is confirmed in the memorial archive. Missing/unresolved parent IDs do not count as proof of death.
+
+Guardianship is a separate reciprocal relationship (guardians / wards), not a biological/adoptive parent edge. Each minor can have at most two guardians and each guardian at most 16 wards. Eligibility uses species-specific maturation. Candidate selection prefers aunts/uncles, then grandparents; a non-relative requires recorded trust and affinity of at least 60, recorded by either side; the strongest qualifying historical tie is used rather than allowing a weak newer tie to mask it. An unrelated stranger without such evidence is not selected. The receiving household must have capacity unless the child already lives there. The system makes at most four assignments per realm year.
+
+Successful assignments update household anchors, write personal memories for both people and appear in character dossiers. Browser E2E verifies the guardian/ward dossier sections as well as the existing memorial save/load flow. A guardian's death creates a bereavement memory for the ward; a replacement may be appointed in a later year while the deceased guardian remains in the historical record. This is not adoption or legal parentage; inheritance, royal regency and succession remain separate.
+
+
+Verification at code head bfa06c39b09e1a84c7497a3910d1a2149fec9cd8: 190/190 Node tests passed; static syntax/import/UI/asset checks, Kings & Cards 2.1 checks and Chromium Browser E2E passed.
+
+## Phase 3.1 — royal dynasty, government decisions and persistent dragon entities
+
+This phase adds a first playable management layer while preserving the distinction between implemented mechanics and future strategy systems.
+
+### Royal house and succession
+- The starting sovereign already has a persistent person profile; this phase adds an explicit royal consort action, royal-child creation and heir designation.
+- A royal marriage is stored through the existing reciprocal partnership graph. A royal child is a persistent knight-class entity with a person profile and two explicit biological parent links; it is not silently inserted into the ordinary villager population.
+- Royal births cost 20 food and 15 gold and have a four-year cooldown. Parent-child links are preflighted against the existing bounded kinship graph.
+- The heir is persisted in the royal state. Succession transfers the crown to the designated living adult child, or the first living adult child in the late sovereign's archived family record.
+- Natural mortality may include the sovereign only when an adult royal child exists. Minor-heir regency is deliberately not simulated yet; this avoids silently placing a child on the throne without a regency system.
+- Royal state, person records, entity flags and dynasty history are included in local save/load.
+
+### Government and politics
+- Four constitutional models are playable: feudal monarchy, royal centralism, crowned council and elective crown.
+- Changing the constitutional model costs 20 gold and changes the faction-support and legitimacy state.
+- Government tax rate now feeds the actual economy ledger. The default 10% baseline preserves the prior tax formula; lower/higher rates scale assessed taxes within a bounded 0–35 range.
+- Five decrees create explicit trade-offs among the commons, nobility, guilds, clergy, legitimacy, morale and treasury resources. Only one decree can be enacted per realm year.
+- These are foundational playable rules, not yet a complete legislature, ministry, judiciary, regional administration or law system.
+
+### Persistent dragons
+- A new friendly Dragon entity type can be summoned from the creature sanctuary or hatched from a Dragon Egg card in the wyvern category.
+- Each dragon has a stable creature ID, name, species, age, expected lifespan, life stage, health, hunger, bond, temperament, abilities, goals, yearly update cursor and a bounded personal memory list.
+- Annual updates age dragons, advance hunger, consume food when available, affect health and morale when neglected, build or lose bonds with the sovereign, record life-stage milestones and apply age-related mortality.
+- Creature memorials preserve name, age, life stage, death year, cause and a small memory sample. The archive is capped at 100 entries.
+- Dragon entities and their creature profiles are included in save/load. The command panel exposes living dragons and memorials.
+
+### Strategy UI and original vector art
+- A new strategy command deck exposes Government, Politics, Decisions, Cards, Economy, Dynasty, Creatures and Chronicles.
+- The management panels read live simulation state and their actions call the actual government, dynasty, card and creature systems.
+- An original SVG heraldic icon set was added for the command deck, including crown, scales, royal seal, cards, treasury, chronicle, people and dragon emblems.
+- A separate comic-strategy stylesheet adds thick outlines, high-contrast heraldic colours, raised buttons, parchment panels and responsive layouts. It does not replace the world renderer or the underlying map art.
+
+### Deliberate limits and next requirements
+- No regency, estate inheritance, automatic royal marriage, political offices, legislature, judiciary or regional autonomy yet.
+- The government council-seat count and succession preference are persisted configuration foundations; the full appointment/voting procedures remain future work.
+- Dragons are currently a single creature species with a bounded yearly needs/lifecycle model, not a universal creature AI for every monster, spirit and magical species.
+- The new SVG emblems are lightweight vector assets. Adding gigabytes of binary art would increase download, memory and mobile-device costs without improving simulation depth. Content should grow through reusable vector/atlas art, procedural variants, compressed illustrations and data-driven story packs.

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 240" role="img" aria-label="Comic fantasy castle and dragon banner">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#73c5e7"/><stop offset="1" stop-color="#d8eff2"/></linearGradient><linearGradient id="hill" x2="0" y2="1"><stop stop-color="#91c56c"/><stop offset="1" stop-color="#3d8056"/></linearGradient><linearGradient id="stone" x2="0" y2="1"><stop stop-color="#f9e5b7"/><stop offset="1" stop-color="#b98b57"/></linearGradient></defs>
+<rect width="1200" height="240" rx="18" fill="url(#sky)"/>
+<circle cx="1035" cy="54" r="32" fill="#ffd56d" stroke="#243d55" stroke-width="7"/>
+<path d="M0 160 130 76l95 76 125-93 110 90 125-72 118 80 105-96 100 89 110-77 182 95v72H0z" fill="#6c9eab" stroke="#243d55" stroke-width="7" stroke-linejoin="round"/>
+<path d="M0 178q160-65 310-8t280-5 300 4 310-6v77H0z" fill="url(#hill)" stroke="#243d55" stroke-width="7"/>
+<g stroke="#243d55" stroke-width="8" stroke-linejoin="round">
+<path d="M450 182V95h64V60h42v35h64v87z" fill="url(#stone)"/>
+<path d="M472 96V42h38v54M603 96V42h38v54" fill="#c28c4d"/>
+<path d="M492 42 491 17l20 25M623 42l-1-25 20 25" fill="#c34d3a"/>
+<path d="M514 182v-55q22-38 44 0v55M572 182v-55q22-38 44 0v55" fill="#4d83a3"/>
+<path d="M420 181v-46h30v46M660 181v-46h30v46" fill="#e8c994"/>
+<path d="M405 135 435 108l30 27M645 135l30-27 30 27" fill="#c34d3a"/>
+<path d="M530 61h53v-30h-53z" fill="#e7c58b"/>
+<path d="M544 31V7h26v24" fill="#e7c58b"/>
+<path d="M556 7V-4" stroke="#243d55"/>
+</g>
+<g fill="#b94d39" stroke="#243d55" stroke-width="7" stroke-linejoin="round">
+<path d="M770 78q55-62 105-16l43-28-11 47q49 22 30 58l-41-9-31 44-23-45-54 14 18-40-44-25z"/>
+<path d="M811 81q-42-54-84-32l-20-27 1 43q-32 29-11 50l41-9 24 33 13-34z"/>
+</g>
+<path d="M836 78q25 15 46 0" fill="none" stroke="#fff0b4" stroke-width="7" stroke-linecap="round"/>
+<circle cx="859" cy="66" r="6" fill="#fff1a5" stroke="#243d55" stroke-width="4"/>
+<path d="M0 218q170-26 320-4t340-2 300 3 240-4" fill="none" stroke="#243d55" stroke-width="8" stroke-linecap="round"/>
+<g fill="#fff4d1" stroke="#243d55" stroke-width="6"><path d="M110 119q12-27 38-10 22-28 46 2 28-8 34 22H104z"/><path d="M920 132q11-24 34-9 19-24 40 2 22-7 28 18H914z"/></g>
+</svg>

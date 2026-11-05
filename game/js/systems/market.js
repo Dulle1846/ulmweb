@@ -1,6 +1,7 @@
 // Regional barter and commodity market. Gold is the settlement currency.
 import { state } from "../core/state.js";
 import { addLog } from "./events.js";
+import { random } from "../core/random.js";
 
 export const MARKET_RESOURCES = Object.freeze(["wood","stone","food"]);
 export const BASE_PRICES = Object.freeze({ wood:2, stone:3, food:2 });
@@ -86,7 +87,7 @@ export function updateMarket() {
     state.market.lastUpdateTick = state.tick;
     const seasonFactor = [0.92,1.08,1.22,1.38][state.seasonIndex] || 1;
     for (const resource of MARKET_RESOURCES) {
-        const drift = (Math.random() - 0.5) * 0.12;
+        const drift = (random("market") - 0.5) * 0.12;
         const regionalStock = state.market.partners.reduce((total,partner)=>total+(partner.stock[resource]||0),0);
         const targetStock = 90 * state.market.partners.length;
         const scarcityPressure = Math.max(-0.22,Math.min(0.38,(targetStock-regionalStock)/targetStock*0.32));

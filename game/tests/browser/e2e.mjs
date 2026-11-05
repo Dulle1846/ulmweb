@@ -45,6 +45,120 @@ try{
     await page.locator("#start-new-game-btn").click();
     await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
+    await page.locator("#speed-0-5").click();
+    assert.ok(await page.locator("#speed-0-5").evaluate(el=>el.classList.contains("is-active")),"half-speed control must become active");
+    await page.locator("#speed-1").click();
+
+    // Strategy command deck: open the modal, then navigate its internal tab bar.
+    await page.locator("#command-open-btn").click();
+    assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
+    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),7,"all seven management tabs must live inside the dialog");
+    assert.equal(await page.locator("body > .command-deck").count(),0,"there must be no obscured duplicate navigation outside the dialog");
+    await page.locator('[data-command-tab="government"]').click();
+    assert.equal(await page.locator("#command-modal").isVisible(),true);
+    await page.locator('[data-command="government-form"][data-value="council"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Crowned council"));
+    await page.locator('[data-command-tab="politics"]').click();
+    await page.locator('[data-command="policy"][data-value="bread"]').click();
+    await page.locator('[data-command-tab="decisions"]').click();
+    await page.locator("#royal-consort-select").selectOption({index:1});
+    await page.locator('[data-command="consort"]').click();
+    await page.locator('[data-command="royal-birth"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("LIVING ROYAL CHILDREN"));
+    await page.locator('[data-command-tab="creatures"]').click();
+    await page.locator('[data-command="summon-dragon"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Emberwing") ||
+        (await page.locator("#command-panel-content").innerText()).includes("dragon"));
+    await page.locator('[data-command-tab="cards"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Card management"));
+    await page.locator("#command-close").click();
+
+
+    // Create deterministic guardian/ward records so the dossier UI can be tested
+    // independently of random world population.
+    const guardianshipFixture = await page.evaluate(async () => {
+        const [{ state }, { Entity, TYPE }, { ensurePersonProfile }, { linkGuardianWard }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/core/types.js"),
+            import("./js/systems/people.js"),
+            import("./js/systems/families.js")
+        ]);
+        const guardian = new Entity(2, 2, TYPE.VILLAGER);
+        guardian.id = "e2e-guardian";
+        guardian.personId = guardian.id;
+        ensurePersonProfile(guardian);
+        Object.assign(guardian.person, { name: "E2E Guardian", species: "human", ageYears: 36, lifeStage: "adult" });
+        const ward = new Entity(3, 2, TYPE.VILLAGER);
+        ward.id = "e2e-ward";
+        ward.personId = ward.id;
+        ensurePersonProfile(ward);
+        Object.assign(ward.person, { name: "E2E Ward", species: "human", ageYears: 9, lifeStage: "young" });
+        state.entities.push(guardian, ward);
+        const result = linkGuardianWard(guardian.personId, ward.personId, { sinceYear: state.year });
+        if (!result.ok) throw new Error("Could not create guardian dossier fixture: " + result.reason);
+        return { guardianId: guardian.personId, wardId: ward.personId };
+    });
+
+    // Character dossiers are read-only, searchable and expose stable person records.
+    await page.locator("#people-btn").click();
+    assert.equal(await page.locator("#people-modal").isVisible(),true);
+    assert.ok(await page.locator("#people-list .person-list-item").count() >= 1);
+    await page.locator("#people-list .person-list-item").first().click();
+    assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONALITY"));
+    assert.match(await page.locator("#person-dossier").innerText(), /\b(female|male)\b/i);
+    assert.ok((await page.locator("#person-dossier").innerText()).includes("PERSONAL CHRONICLE"));
+    await page.locator("#people-search").fill(guardianshipFixture.wardId);
+    await page.locator("#people-list .person-list-item").first().click();
+    const wardDossier = await page.locator("#person-dossier").innerText();
+    assert.ok(wardDossier.includes("GUARDIANS"));
+    assert.ok(wardDossier.includes("E2E Guardian"));
+    await page.locator("#people-search").fill(guardianshipFixture.guardianId);
+    await page.locator("#people-list .person-list-item").first().click();
+    const guardianDossier = await page.locator("#person-dossier").innerText();
+    assert.ok(guardianDossier.includes("WARDS"));
+    assert.ok(guardianDossier.includes("E2E Ward"));
+    await page.evaluate(async ({ guardianId, wardId }) => {
+        const { state } = await import("./js/core/state.js");
+        state.entities = state.entities.filter(entity =>
+            entity.personId !== guardianId && entity.personId !== wardId
+        );
+    }, guardianshipFixture);
+    await page.locator("#people-search").fill("no-such-person-should-match");
+    assert.equal(await page.locator("#people-list .person-list-item").count(),0);
+    await page.locator("#people-search").fill("");
+    await page.locator("#people-close").click();
+    assert.equal(await page.locator("#people-modal").isVisible(),false);
+
+    // A deceased resident remains inspectable as a memorial, not as a live entity.
+    const memorialId=await page.evaluate(async()=>{
+        const [{state},{recordNaturalDeath},{ensurePersonProfile},{Entity,TYPE}]=await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/mortality.js"),
+            import("./js/systems/people.js"),
+            import("./js/core/types.js").then(module=>({Entity:module.Entity,TYPE:module.TYPE}))
+        ]);
+        // The memorial test must not depend on a random house/population spawn.
+        // Create one deterministic, isolated villager fixture for this scenario.
+        const resident=new Entity(0,0,TYPE.VILLAGER);
+        resident.id="e2e-memorial-resident";
+        resident.personId=resident.id;
+        ensurePersonProfile(resident,{role:"resident",species:"human"});
+        state.entities.push(resident);
+        resident.person.species="human";
+        resident.person.ageYears=82;
+        resident.person.lifeStage="elder";
+        const death=recordNaturalDeath(resident,"old age");
+        return death?.personId||null;
+    });
+    assert.ok(memorialId,"test fixture should create a deceased person's memorial");
+    await page.locator("#people-btn").click();
+    await page.locator("#people-search").fill(memorialId);
+    assert.equal(await page.locator("#people-list .person-list-item").count(),1);
+    await page.locator("#people-list .person-list-item").first().click();
+    const memorialDossier=await page.locator("#person-dossier").innerText();
+    assert.ok(memorialDossier.includes("DECEASED"));
+    assert.ok(memorialDossier.includes("Died in year"));
+    await page.locator("#people-close").click();
 
     await page.locator("#speed-4").click();
     await page.waitForFunction(()=>{
@@ -146,19 +260,30 @@ try{
     }
 
     await page.locator("#pause-btn").click();
+    await page.locator("#speed-2").click();
     const savedTick=(await page.locator("#tick-count").innerText()).trim();
     const savedHand=(await page.locator("#hand-count").innerText()).trim();
     await page.locator("#save-btn").click();
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Realm saved"),null,{timeout:5000});
+    await page.locator("#speed-4").click();
     await page.locator("#load-btn").click();
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Loaded realm"),null,{timeout:5000});
+    assert.ok(await page.locator("#speed-2").evaluate(el=>el.classList.contains("is-active")),"save/load must restore the saved simulation speed");
+    assert.equal(await page.locator("#speed-4").evaluate(el=>el.classList.contains("is-active")),false,"load must clear the previous speed selection");
     assert.equal((await page.locator("#tick-count").innerText()).trim(),savedTick,"save/load must restore the exact simulation tick");
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
+    // The memorial archive must survive the same save/load round trip.
+    await page.locator("#people-btn").click();
+    await page.locator("#people-search").fill(memorialId);
+    assert.equal(await page.locator("#people-list .person-list-item").count(),1);
+    await page.locator("#people-list .person-list-item").first().click();
+    assert.ok((await page.locator("#person-dossier").innerText()).includes("DECEASED"));
+    await page.locator("#people-close").click();
     await page.locator("#pause-btn").click();
 
     assert.deepEqual(errors,[],"browser runtime must not emit uncaught page errors");
     assert.deepEqual(consoleErrors,[],"browser runtime must not emit console errors");
-    console.log("Browser E2E passed: world forge, seed, empty/timed hand, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.");
+    console.log("Browser E2E passed: world forge, seed, guardian/ward dossier links, memorial archive, empty/timed hand, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.");
     await context.close();
 }finally{
     await browser.close();

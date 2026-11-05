@@ -2,7 +2,7 @@ import test,{beforeEach} from "node:test";
 import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
 import {TYPE} from "../../js/core/types.js";
-import {spawnEntity} from "../../js/world/entities.js";
+import {spawnEntity,initStartingKingdom} from "../../js/world/entities.js";
 import {triggerRandomEvent,resolveEventChoice,checkRandomEvents,addLog,EVENT_VARIANT_COUNT} from "../../js/systems/events.js";
 
 beforeEach(()=>{
@@ -115,4 +115,15 @@ test("realm issue decisions alter legitimacy and the affected social faction",()
     assert.equal(resolveEventChoice(0),true);
     assert.equal(state.politics.factions.commons,before.commons+1);
     assert.equal(state.politics.legitimacy,legitimacy+1);
+});
+
+test("resolving a realm issue writes memories for its named participants",()=>{
+    state.worldSeed=902;initStartingKingdom();
+    const issue=triggerRandomEvent();
+    assert.ok(issue);
+    assert.ok(issue.participants.length>=2);
+    const participantIds=issue.participants.map(item=>item.personId);
+    const participantEntities=state.entities.filter(entity=>participantIds.includes(entity.personId));
+    assert.equal(resolveEventChoice(0),true);
+    assert.ok(participantEntities.every(entity=>entity.person.memories.some(memory=>memory.id.startsWith("event:"+issue.id+":"))));
 });

@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <symbol id="woodcutter" viewBox="0 0 64 64">
+    <g stroke="#3b2921" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 52h48" stroke="#6a4930"/><path d="M17 49 29 31l13 18" fill="#8aaf55"/>
+      <path d="M13 39 21 18l10 21Z" fill="#4e8c48"/><path d="M26 45 37 22l13 23Z" fill="#3e7540"/>
+      <path d="M29 12 45 28" stroke="#a56c36" stroke-width="7"/><path d="M39 9q12-4 17 7l-8 9-12-7Z" fill="#c6d0d0"/>
+      <path d="M11 54h23" stroke="#9c6335" stroke-width="8"/><path d="M17 49h17" stroke="#e2b36b" stroke-width="3"/>
+    </g>
+  </symbol>
+  <symbol id="sawmill" viewBox="0 0 64 64">
+    <g stroke="#3b2921" stroke-width="4" stroke-linejoin="round">
+      <path d="M7 53V27l25-16 25 16v26Z" fill="#c68c4b"/><path d="M5 28 32 8l27 20" fill="#a84b39"/>
+      <path d="M17 53V34h30v19" fill="#e7c98b"/><path d="M20 37h24M20 43h24" stroke="#7c4a2d"/>
+      <circle cx="32" cy="35" r="10" fill="#c6d3d2"/><circle cx="32" cy="35" r="3" fill="#8c5836"/>
+      <path d="M32 20v5m0 20v5m-15-15h5m20 0h5m-25-10 4 4m12 12 4 4m0-20-4 4m-12 12-4 4" stroke="#fff0bd" stroke-width="2"/>
+    </g>
+  </symbol>
+  <symbol id="quarry" viewBox="0 0 64 64">
+    <g stroke="#3b2921" stroke-width="4" stroke-linejoin="round">
+      <path d="m5 52 17-30 9 12 10-23 18 41Z" fill="#8b9996"/><path d="m22 22 9 12-9 6-8-4Z" fill="#c6d0c7"/>
+      <path d="m39 11 8 18-9 7-7-5Z" fill="#d8dfd3"/>
+      <path d="M13 13 43 44" stroke="#a66a34" stroke-width="6"/><path d="m37 7 16 5-7 12-16-5Z" fill="#c5d0cf"/>
+      <path d="M9 54h47" stroke="#7c5735" stroke-width="5"/>
+    </g>
+  </symbol>
+  <symbol id="well" viewBox="0 0 64 64">
+    <g stroke="#3b2921" stroke-width="4" stroke-linejoin="round">
+      <path d="M8 34h48l-5 22H13Z" fill="#9ba8a3"/><path d="M12 34h40" stroke="#f3dfb4"/>
+      <path d="M15 30 18 8h6v23m16 0V8h6l3 22" fill="#b77a3d"/>
+      <path d="M13 8h37" stroke="#6c452b" stroke-width="6"/><path d="M31 10v23" stroke="#9a5d32" stroke-width="3"/>
+      <path d="M23 43q9-7 18 0v8H23Z" fill="#6cc2df"/><path d="M27 47h10" stroke="#e4f6ee" stroke-width="2"/>
+    </g>
+  </symbol>
+  <symbol id="mill" viewBox="0 0 64 64">
+    <g stroke="#3b2921" stroke-width="4" stroke-linejoin="round">
+      <path d="M16 56V25l16-13 16 13v31Z" fill="#d6ae70"/><path d="M12 26 32 8l20 18" fill="#a64c39"/>
+      <path d="M24 56V39q8-12 16 0v17" fill="#70452c"/>
+      <circle cx="32" cy="26" r="5" fill="#e8c66d"/>
+      <path d="M32 26 32 3 37 3 35 23M32 26 54 39 51 44 34 30M32 26 10 39 13 44 30 30" fill="#f0e3c4"/>
+      <path d="M32 26 32 3M32 26 54 39M32 26 10 39" stroke="#8b5a34" stroke-width="3"/>
+    </g>
+  </symbol>
+  <symbol id="bakery" viewBox="0 0 64 64">
+    <g stroke="#3b2921" stroke-width="4" stroke-linejoin="round">
+      <path d="M7 54V27l25-15 25 15v27Z" fill="#d8a45f"/><path d="M5 28 32 9l27 19" fill="#a84937"/>
+      <path d="M17 54V36h30v18" fill="#f0d9a7"/><path d="M22 51V39q10-12 20 0v12Z" fill="#623d2c"/>
+      <path d="M26 43q6-11 12 0q-1 8-6 8t-6-8Z" fill="#e6a342"/>
+      <path d="M27 41 30 45m5-5 3 4" stroke="#fff0bb" stroke-width="2"/>
+    </g>
+  </symbol>
+  <symbol id="warehouse" viewBox="0 0 64 64">
+    <g stroke="#3b2921" stroke-width="4" stroke-linejoin="round">
+      <path d="M6 54V25l26-14 26 14v29Z" fill="#b57b45"/><path d="M4 26 32 8l28 18" fill="#784332"/>
+      <path d="M14 54V34h36v20" fill="#e6c78f"/><path d="M19 39h10v11H19Zm16 0h10v11H35Z" fill="#b27a42"/>
+      <path d="M19 42h10m-10 4h10m6-4h10m-10 4h10" stroke="#6b4329" stroke-width="2"/>
+      <path d="M27 23h10v7H27Z" fill="#f5d77c"/>
+    </g>
+  </symbol>
+  <symbol id="cottage" viewBox="0 0 64 64">
+    <g stroke="#3b2921" stroke-width="4" stroke-linejoin="round">
+      <path d="M9 54V29l23-17 23 17v25Z" fill="#e6c58d"/><path d="M5 30 32 8l27 22" fill="#a84a39"/>
+      <path d="M25 54V38q7-10 14 0v16" fill="#6a422b"/><path d="M13 34h11v10H13Z" fill="#80c5dc"/><path d="M40 34h11v10H40Z" fill="#80c5dc"/>
+      <path d="M18 38h4m23 0h4" stroke="#f8edc9" stroke-width="2"/>
+    </g>
+  </symbol>
+  <symbol id="market" viewBox="0 0 64 64">
+    <g stroke="#3b2921" stroke-width="4" stroke-linejoin="round">
+      <path d="M10 27h44v29H10Z" fill="#d9b47b"/><path d="M7 27 14 10h36l7 17Z" fill="#e5c46c"/>
+      <path d="M7 27q6 10 13 0 6 10 12 0 7 10 13 0 6 10 12 0" fill="#c34d40"/>
+      <path d="M17 56V37h30v19" fill="#9a5d35"/><path d="M21 42h22" stroke="#f4dfb1" stroke-width="3"/>
+      <path d="M22 32v5m20-5v5" stroke="#fff0c1" stroke-width="3"/>
+    </g>
+  </symbol>
+  <symbol id="watchtower" viewBox="0 0 64 64">
+    <g stroke="#3b2921" stroke-width="4" stroke-linejoin="round">
+      <path d="M15 56 20 20h24l5 36Z" fill="#b8a28a"/><path d="M13 22h38l-4-13H17Z" fill="#d9c18e"/>
+      <path d="M20 20 16 10h32l-4 10" fill="#a64a39"/><path d="M28 56V39q4-8 8 0v17" fill="#61402b"/>
+      <path d="M32 10V2m0 2 18 4-18 5" fill="#d94e3f"/>
+      <path d="M20 28h24" stroke="#efe1bf" stroke-width="2"/>
+    </g>
+  </symbol>
+  <symbol id="dirt-road" viewBox="0 0 64 64">
+    <path d="M5 42Q20 34 26 12L42 10Q39 32 58 48L53 57Q28 43 18 58Z" fill="#a77948" stroke="#3b2921" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M15 43q10-8 15-22m8 15q5 9 14 15" fill="none" stroke="#e7c18a" stroke-width="4" stroke-linecap="round" stroke-dasharray="5 7"/>
+  </symbol>
+  <symbol id="paved-road" viewBox="0 0 64 64">
+    <path d="M5 42Q20 34 26 12L42 10Q39 32 58 48L53 57Q28 43 18 58Z" fill="#89908b" stroke="#3b2921" stroke-width="4" stroke-linejoin="round"/>
+    <path d="m18 42 8-8 9 5-7 9Zm12-20 8-6 7 7-9 6Zm12 18 8 3-2 8-8-5Z" fill="#d3d2c4" stroke="#4a4b45" stroke-width="2"/>
+  </symbol>
+</svg>

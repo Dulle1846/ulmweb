@@ -7,7 +7,8 @@ export const WORLD_W = 160;
 export const WORLD_H = 160;
 export const CELL = 48;                       // Pixel pro logischer Einheit bei Zoom 1.0
 
-export const BASE_TICK_INTERVAL = 333;        // ms pro Simulationstick bei ×1
+export const BASE_TICK_INTERVAL = 750;        // ms per in-game day at 1x; seasons become readable, strategic intervals.
+export const MOVEMENT_TICK_REFERENCE_MS = 333; // legacy movement scale used before the slower day clock.
 export const SEASONS = ["SPRING", "SUMMER", "AUTUMN", "WINTER"];
 
 // ═══════════════════════════════════════════════════════════════

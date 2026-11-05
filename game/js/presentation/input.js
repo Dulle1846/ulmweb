@@ -188,6 +188,7 @@ export function setupInput(){
     });
 
     document.getElementById("pause-btn")?.addEventListener("click",togglePause);
+    document.getElementById("speed-0-5")?.addEventListener("click",()=>setSpeed(0.5));
     document.getElementById("speed-1")?.addEventListener("click",()=>setSpeed(1));
     document.getElementById("speed-2")?.addEventListener("click",()=>setSpeed(2));
     document.getElementById("speed-4")?.addEventListener("click",()=>setSpeed(4));
@@ -252,7 +253,7 @@ function showToast(message){
     window.clearTimeout(showToast.timer);showToast.timer=window.setTimeout(()=>el.classList.remove("is-visible"),1800);
 }
 function closeTopModal(){
-    for(const id of ["settings-modal","big-message"]){
+    for(const id of ["settings-modal","people-modal","big-message"]){
         const el=document.getElementById(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");return;}
     }
 }

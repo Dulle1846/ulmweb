@@ -7,6 +7,7 @@
     <title>KINGS &amp; CARDS • Eternal Realm</title>
     <link rel="stylesheet" href="css/game.css">
     <link rel="stylesheet" href="css/medieval.css">
+    <link rel="stylesheet" href="css/comic-strategy.css">
 </head>
 <body>
 <div class="game-shell">
@@ -23,9 +24,11 @@
         <div class="header-actions">
             <button id="save-btn" class="control-button" type="button" title="Save · Ctrl+S">SAVE</button>
             <button id="load-btn" class="control-button" type="button" title="Load · Ctrl+O">LOAD</button>
+            <button id="command-open-btn" class="control-button" type="button" aria-haspopup="dialog" aria-controls="command-modal">MANAGEMENT</button>
             <button id="settings-btn" class="control-button" type="button" title="Settings">⚙</button>
             <button id="pause-btn" class="control-button" type="button" aria-label="Pause simulation"><span id="pause-text">PAUSE</span></button>
             <div class="speed-group" role="group" aria-label="Simulation speed">
+                <button id="speed-0-5" class="speed-button" data-speed="0.5" type="button">0.5×</button>
                 <button id="speed-1" class="speed-button is-active" data-speed="1" type="button">1×</button>
                 <button id="speed-2" class="speed-button" data-speed="2" type="button">2×</button>
                 <button id="speed-4" class="speed-button" data-speed="4" type="button">4×</button>
@@ -95,7 +98,7 @@
             <section id="tab-content" class="tab-content" aria-live="polite"></section>
             <footer class="panel-footer">
                 <span>SIM TICK <strong id="tick-count">0</strong></span>
-                <button id="help-btn" class="footer-help" type="button" aria-label="How to play">?</button>
+                <button id="help-btn" class="footer-help" type="button" aria-label="How to play">?</button><button id="people-btn" class="footer-people-button" type="button" aria-label="Open character dossiers">PEOPLE</button>
                 <span id="population">POP <strong>8</strong> / 12</span>
             </footer>
         </aside>
@@ -106,6 +109,7 @@
     <div class="start-panel">
         <div class="start-emblem">♜</div>
         <div class="start-kicker">A LIVING REALM SIMULATOR</div>
+        <img class="start-hero-art" src="assets/kingdom-illustration.svg" alt="Illustrated fantasy kingdom with castle, village, river, forest and windmill" loading="eager">
         <h1>KINGS <span>&amp;</span> CARDS</h1>
         <p class="start-lead">Build a settlement. Shape its fortunes. Discover what the cards bring.</p>
         <div class="start-form">
@@ -148,6 +152,13 @@
     </div>
 </div>
 
+<div id="people-modal" class="screen-overlay people-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="people-title">
+    <div class="modal-panel people-panel">
+        <div class="modal-heading"><div><div class="start-kicker">THE PEOPLE OF YOUR REALM</div><h2 id="people-title">CHARACTER DOSSIERS</h2></div><button id="people-close" class="modal-close" type="button" aria-label="Close character dossiers">×</button></div>
+        <div class="people-browser"><aside class="people-roster"><label for="people-search">FIND A PERSON</label><input id="people-search" type="search" maxlength="80" placeholder="Name, species or role"><div id="people-count" class="people-count">0 PEOPLE</div><div id="people-list" class="people-list"></div></aside><section id="person-dossier" class="person-dossier"><div class="empty-state">Select a person to inspect their chronicle.</div></section></div>
+    </div>
+</div>
+
 <div id="realm-event-modal" class="screen-overlay event-overlay hidden">
     <div class="modal-panel event-panel">
         <div id="realm-event-kicker" class="start-kicker">REALM ISSUE</div>
@@ -157,6 +168,17 @@
     </div>
 </div>
 
+
+<div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="modal-panel command-panel"><header class="command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="modal-close" type="button" aria-label="Close management">×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management">
+<button type="button" data-command-tab="government"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>GOVERNMENT</span></button>
+<button type="button" data-command-tab="politics"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>POLITICS</span></button>
+<button type="button" data-command-tab="decisions"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>DECISIONS</span></button>
+<button type="button" data-command-tab="cards"><svg aria-hidden="true"><use href="assets/command-emblems.svg#cards"></use></svg><span>CARDS</span></button>
+<button type="button" data-command-tab="economy"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>ECONOMY</span></button>
+<button type="button" data-command-tab="dynasty"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>DYNASTY</span></button>
+<button type="button" data-command-tab="creatures"><svg aria-hidden="true"><use href="assets/command-emblems.svg#dragon"></use></svg><span>CREATURES</span></button>
+<button type="button" id="command-chronicles-btn"><svg aria-hidden="true"><use href="assets/command-emblems.svg#people"></use></svg><span>CHRONICLES</span></button>
+</nav><div id="command-panel-content" class="command-panel-content"></div></section></div>
 <div id="card-drag-ghost" aria-hidden="true"><span id="drag-ghost-icon" class="drag-ghost-icon"></span><span id="drag-ghost-name" class="drag-ghost-name"></span></div>
 <div id="action-toast" class="action-toast" role="status"></div>
 <div id="big-message" class="big-message hidden" role="dialog" aria-modal="true" aria-labelledby="big-title">

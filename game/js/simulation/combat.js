@@ -53,7 +53,7 @@ export function updateCombat(){
     if(target.type===TYPE.KEEP){state.gameOver=true;queueMessage("THE REALM FELL","THE KEEP WAS DESTROYED",5000);}
    }
   }
-  if(Math.random()<0.02){enemy.hp-=22;if(enemy.hp<=0)enemy.dead=true;}
+  if(rand(0,1)<0.02){enemy.hp-=22;if(enemy.hp<=0)enemy.dead=true;}
  }
  for(const defender of defenders){
   if(defender.dead)continue;

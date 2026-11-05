@@ -42,3 +42,28 @@ test("settings are clamped and persisted with safe defaults",()=>{
     assert.equal(settings.musicVolume,1);
     assert.equal(settings.showTooltips,false);
 });
+
+test("a second save preserves the previous valid realm as a recovery backup",()=>{
+    const values=installStorage();
+    writeLocalSave("profile-a",{worldSeed:11,tick:120,entities:[]});
+    writeLocalSave("profile-a",{worldSeed:11,tick:240,entities:[]});
+    const current=readLocalSave("profile-a");
+    assert.equal(current.snapshot.tick,240);
+    assert.equal(current.restoredFromBackup,undefined);
+    assert.ok(values.has("kings-and-cards:save-backup:v1:profile-a"));
+});
+test("a corrupted primary save falls back to the last valid backup",()=>{
+    const values=installStorage();
+    writeLocalSave("profile-a",{worldSeed:11,tick:120,entities:[]});
+    writeLocalSave("profile-a",{worldSeed:11,tick:240,entities:[]});
+    values.set("kings-and-cards:save:v1:profile-a","{truncated-json");
+    const recovered=readLocalSave("profile-a");
+    assert.equal(recovered.snapshot.tick,120);
+    assert.equal(recovered.restoredFromBackup,true);
+});
+test("invalid snapshot payloads are rejected before replacing a save",()=>{
+    installStorage();
+    writeLocalSave("profile-a",{worldSeed:11,tick:120,entities:[]});
+    assert.throws(()=>writeLocalSave("profile-a",null),TypeError);
+    assert.equal(readLocalSave("profile-a").snapshot.tick,120);
+});

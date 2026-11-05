@@ -10,6 +10,7 @@ import { addLog } from "./events.js";
 import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE,normalizeHouseholdAssignments } from "./population.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
 import { rand as seededRand,randInt as seededRandInt } from "../core/random.js";
+import { awakenDragon } from "./creatures.js";
 const rand=(min,max)=>seededRand(min,max,"cards");
 const randInt=(min,max)=>seededRandInt(min,max,"cards");
 export const CARD_DECK=Object.freeze(CARD_CATEGORIES.map(category=>{
@@ -145,6 +146,7 @@ export function placeCurrentCard(targetX,targetY){
     }else{
         const entity=spawnEntity(tx,ty,card.type);
         entity.footprintScale=Number.isFinite(card.sizeMultiplier)?Math.max(0.25,Math.min(6,card.sizeMultiplier)):1;
+        if(card.type===TYPE.DRAGON)awakenDragon(entity);
         if(card.kind==="unit"||card.kind==="person"||card.kind==="animal"){
             entity.anchor={x:tx,y:ty};entity.home={x:tx,y:ty};entity.jobRefreshTimer=0;
             if(card.kind!=="animal")state.statistics.totalUnitsRecruited++;

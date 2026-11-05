@@ -928,6 +928,11 @@ button:focus-visible, [role="button"]:focus-visible {
     box-shadow:0 28px 100px rgba(0,0,0,.6);color:#e9e1d0;
 }
 .start-panel {text-align:center}
+.start-hero-art{display:block;width:100%;height:170px;margin:10px auto 15px;object-fit:cover;object-position:center;border:3px solid #172536;border-radius:12px;box-shadow:0 5px 0 #172536,0 14px 26px #0007}
+.command-header-brand{display:flex;align-items:center;gap:12px;min-width:0}
+.command-crest{width:58px;height:58px;flex:0 0 58px;object-fit:contain;filter:drop-shadow(0 3px 2px #0004)}
+.command-hero-art{display:block;width:100%;max-height:190px;object-fit:cover;object-position:center;border:2px solid #a77b42;border-radius:10px;margin:8px 0 14px;box-shadow:0 3px 0 #5b3e25}
+.command-creature-art{display:block;width:min(100%,180px);height:150px;object-fit:contain;margin:4px auto 12px;filter:drop-shadow(0 5px 3px #533c25)}
 .start-emblem {display:grid;place-items:center;width:58px;height:58px;margin:0 auto 13px;border:1px solid rgba(241,215,159,.6);border-radius:15px;background:linear-gradient(145deg,#e1c28a,#957344);color:#1c2828;font-family:Georgia,serif;font-size:36px}
 .start-kicker {color:#c9ad75;font-size:9px;font-weight:900;letter-spacing:.23em}
 .start-panel h1 {margin:12px 0 6px;color:#f1d79f;font-family:Georgia,serif;font-size:clamp(32px,6vw,49px);letter-spacing:.13em}
@@ -1031,3 +1036,43 @@ kbd {padding:4px 6px;border:1px solid rgba(221,190,126,.2);border-radius:5px;bac
 .price-bars {display:flex;align-items:end;gap:3px;height:50px;padding:3px 0 0;border-bottom:1px solid rgba(221,190,126,.15)}
 .price-bar {flex:1;min-width:3px;border-radius:2px 2px 0 0;background:linear-gradient(180deg,#e2c182,#8b7246);opacity:.78}
 .price-bar:last-child {background:linear-gradient(180deg,#f1d79f,#b68d4e);opacity:1}
+
+
+/* Character dossiers */
+.footer-people-button{min-height:26px;padding:0 8px;border:1px solid rgba(221,190,126,.28);border-radius:5px;background:rgba(217,184,120,.08);color:#dcc794;font-size:8px;font-weight:800;letter-spacing:.08em;cursor:pointer}
+.footer-people-button:hover{background:rgba(217,184,120,.18);border-color:#d5b87e}
+.people-panel{width:min(1080px,calc(100vw - 32px));max-width:1080px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+.people-browser{display:grid;grid-template-columns:minmax(190px,260px) minmax(0,1fr);gap:14px;min-height:0;overflow:hidden}
+.people-roster{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.people-roster>label{font-size:9px;font-weight:800;letter-spacing:.12em}
+.people-roster input{width:100%;margin:7px 0;padding:9px;border:1px solid #9d7d50;background:#fff6df;color:#39291b}
+.people-count{padding:5px 0;color:#9b7541;font-size:8px;font-weight:800;letter-spacing:.1em}
+.people-list{display:flex;flex-direction:column;gap:5px;min-height:0;overflow-y:auto;padding-right:4px}
+.person-list-item{display:flex;flex-direction:column;gap:3px;padding:8px;text-align:left;border:1px solid #9d7d50;background:#fff5dc;color:#3a291c;cursor:pointer}
+.person-list-item.is-selected{border-color:#7d3229;background:#ead3a5;box-shadow:inset 3px 0 #7d3229}
+.person-list-name{font-size:10px;font-weight:800}.person-list-meta{font-size:8px;color:#795c3c;text-transform:capitalize}
+.person-dossier{min-width:0;min-height:0;overflow-y:auto;padding:4px 10px 12px;border-left:1px solid #a4865b}
+.dossier-identity{display:flex;align-items:center;gap:12px;padding:8px 0 13px;border-bottom:2px double #a4865b}
+.dossier-seal{display:grid;place-items:center;width:48px;height:48px;flex:0 0 48px;border:2px double #9b703a;border-radius:50%;background:#e8d5aa;color:#79352a;font-size:26px}
+.dossier-kicker{font-size:8px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:#855b2a}
+.dossier-identity h2{margin:3px 0;font-size:22px;color:#4b2e1c}
+.dossier-identity p{margin:0;color:#795c3c;font-size:10px}
+.dossier-columns{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:14px}
+.dossier-section{padding:10px 0;border-bottom:1px solid #a4865b66}
+.dossier-section h3{margin:0 0 8px;color:#855b2a;font-size:9px;letter-spacing:.14em}
+.dossier-section p{margin:5px 0;color:#503a27;font-size:10px;line-height:1.5}
+.dossier-meter{display:grid;grid-template-columns:78px minmax(30px,1fr) 24px;align-items:center;gap:6px;margin:5px 0;color:#65472b;font-size:9px;text-transform:capitalize}
+.dossier-meter i{height:5px;overflow:hidden;background:#8e765333;border:1px solid #a4865b}
+.dossier-meter i b{display:block;height:100%;background:linear-gradient(90deg,#8d4c3b,#c9a65f)}
+.need-meter i b{background:linear-gradient(90deg,#a34c3f,#8c9b61)}
+.dossier-meter strong{text-align:right;font-size:9px}
+.dossier-link-list{display:flex;flex-direction:column;gap:5px;margin:0;padding:0;list-style:none}
+.dossier-link-list li{display:flex;flex-direction:column;gap:2px;padding:6px;border:1px solid #a4865b66;background:#fff3d455}
+.dossier-link-list strong{color:#4b2e1c;font-size:10px}
+.dossier-link-list span,.dossier-empty{color:#795c3c;font-size:9px}
+.dossier-memories{display:flex;flex-direction:column;gap:7px}
+.dossier-memory{padding:8px;border:1px solid #a4865b66;background:#fff3d455}
+.dossier-memory>div{display:flex;justify-content:space-between;gap:8px;color:#855b2a;font-size:8px;text-transform:uppercase}
+.dossier-memory>div span{white-space:nowrap}
+.dossier-memory p{margin:6px 0 0;color:#4c3827;font-size:10px;line-height:1.5}
+@media(max-width:720px){.people-panel{width:calc(100vw - 16px);max-height:92vh;padding:12px}.people-browser{grid-template-columns:120px minmax(0,1fr);gap:8px}.dossier-columns{grid-template-columns:1fr}.person-dossier{padding:4px 5px 10px}.person-list-item{padding:6px}.person-list-meta{font-size:7px}.dossier-identity h2{font-size:17px}}

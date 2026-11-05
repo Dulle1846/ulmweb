@@ -13,7 +13,7 @@ const randInt=(min,max)=>seededRandInt(min,max,"entity");
 
 const MAX_WORLD_ENTITIES=900;
 const MAX_MOBILE_ENTITIES=420;
-const MOBILE_TYPES=new Set([TYPE.VILLAGER,TYPE.GUARD,TYPE.ARCHER,TYPE.KNIGHT,TYPE.PRIEST,TYPE.DEER,TYPE.GOBLIN,TYPE.ORC,TYPE.TROLL]);
+const MOBILE_TYPES=new Set([TYPE.VILLAGER,TYPE.GUARD,TYPE.ARCHER,TYPE.KNIGHT,TYPE.PRIEST,TYPE.DRAGON,TYPE.DEER,TYPE.GOBLIN,TYPE.ORC,TYPE.TROLL]);
 export function canSpawnEntity(type, count = 1) {
     const requested = Number(count);
     if (!Number.isSafeInteger(requested) || requested < 0) return false;
@@ -148,6 +148,7 @@ export function initStartingKingdom() {
     king.hp = 300;
     king.maxHp = 300;
     king.isKing = true;
+    king.isRoyalFamily = true;
     king.personId = king.id;
     ensurePersonProfile(king,{role:"king"});
     king.home = { x: cx, y: cy };

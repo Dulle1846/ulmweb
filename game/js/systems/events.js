@@ -11,6 +11,7 @@ import { canAccommodateVillagers,normalizeHouseholdAssignments } from "./populat
 import { createCardForCategory } from "./card-catalog.js";
 import { applyPoliticalEffects,getPoliticalSnapshot } from "./politics.js";
 import { applyHealthEffects } from "./health.js";
+import { createEventParticipants,recordPersonEventOutcome } from "./people.js";
 
 export function addLog(text,color="#a3a3a3",kind="realm"){
  const entry={id:++state.eventSequence,text:String(text),color,tick:state.tick,kind};
@@ -134,7 +135,7 @@ export function triggerRandomEvent(){
   choices[0].effects.politics={...politicalImpact};
   choices[1].effects.politics=Object.fromEntries(Object.entries(politicalImpact).map(([key,value])=>[key,-value*0.45]));
  }
- state.activeEvent={id:"issue-"+(++state.issueSequence),family:family.id,title,description,icon:family.id,createdAtTick:state.tick,threadStart:EVENT_CHAINS[family.id]?family.id:null,choices};
+ state.activeEvent={id:"issue-"+(++state.issueSequence),family:family.id,title,description,icon:family.id,createdAtTick:state.tick,threadStart:EVENT_CHAINS[family.id]?family.id:null,participants:createEventParticipants(family.id),choices};
  addLog("ISSUE: "+title,"#e4bd72","issue");return state.activeEvent;
 }
 function triggerThreadEvent(thread){
@@ -145,6 +146,7 @@ function triggerThreadEvent(thread){
   family:"chronicle",title:stage.title,description:stage.description,
   icon:"chronicle",createdAtTick:state.tick,
   thread:{id:thread.id,stage:thread.stage},
+  participants:(thread.participants=Array.isArray(thread.participants)?thread.participants.slice(0,4):createEventParticipants(thread.id)),
   choices:stage.choices.map(choice=>({...choice,effects:{...(choice.effects||{}),resources:{...(choice.effects?.resources||{})},hidden:{...(choice.effects?.hidden||{})}}}))
  };
  addLog("CHRONICLE: "+stage.title,"#c5a66b","chronicle");
@@ -192,10 +194,11 @@ export function resolveEventChoice(index){
  hidden.memories=Array.isArray(hidden.memories)?hidden.memories:[];
  hidden.memories.unshift({family:issue.family,choice:choice.label,tick:state.tick});
  if(hidden.memories.length>24)hidden.memories.length=24;
+ if(!Array.isArray(issue.participants)||!issue.participants.length)issue.participants=createEventParticipants(issue.family);
  hidden.activeThreads=Array.isArray(hidden.activeThreads)?hidden.activeThreads:[];
  hidden.completedThreads=Array.isArray(hidden.completedThreads)?hidden.completedThreads:[];
  if(issue.threadStart&&random("events")<0.5&&!hidden.activeThreads.some(thread=>thread.id===issue.threadStart)){
-  hidden.activeThreads.push({id:issue.threadStart,stage:0,startedAtTick:state.tick,nextAtTick:state.tick+130+randInt(0,90)});
+  hidden.activeThreads.push({id:issue.threadStart,stage:0,startedAtTick:state.tick,nextAtTick:state.tick+130+randInt(0,90),participants:Array.isArray(issue.participants)?issue.participants.slice(0,4):[]});
   addLog("A LONGER STORY BEGINS: "+issue.threadStart.toUpperCase(),"#c5a66b","chronicle");
  }
  if(issue.thread){
@@ -206,12 +209,13 @@ export function resolveEventChoice(index){
     addLog("THE CHRONICLE CONTINUES: "+thread.id.toUpperCase(),"#c5a66b","chronicle");
    }else{
     hidden.activeThreads=hidden.activeThreads.filter(item=>item!==thread);
-    hidden.completedThreads.unshift({id:thread.id,completedAtTick:state.tick,finalChoice:choice.label});
+    hidden.completedThreads.unshift({id:thread.id,completedAtTick:state.tick,finalChoice:choice.label,participants:Array.isArray(thread.participants)?thread.participants.slice(0,4):[]});
     if(hidden.completedThreads.length>20)hidden.completedThreads.length=20;
     addLog("CHRONICLE CONCLUDED: "+thread.id.toUpperCase(),"#c5a66b","chronicle");
    }
   }
  }
+ recordPersonEventOutcome(issue,choice,effects,state.tick);
  addLog(issue.title.toUpperCase()+": "+choice.label,"#a5d6a7","resolution");
  state.statistics.totalEventsResolved++;state.activeEvent=null;return true;
 }

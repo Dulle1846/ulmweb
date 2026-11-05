@@ -16,7 +16,12 @@ import { renderUI,showBigMessage } from "../presentation/rendering/ui.js";
 import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,loadSettings,saveSettings } from "../core/persistence.js";
 import { startSoundtrack,setMusicEnabled,setMusicVolume,applySoundtrackSettings } from "../core/soundtrack.js";
 import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
-import {ensurePersonProfile,normalizePersonProfile} from "../systems/people.js";
+import {ensurePersonProfile,normalizePersonProfile,normalizePersonMemorial,MAX_PERSON_ARCHIVE} from "../systems/people.js";
+import {setupCharacterDossier} from "../presentation/character-dossier.js";
+import {normalizeFamilyLinks} from "../systems/families.js";
+import {normalizeGovernment} from "../systems/government.js";
+import {normalizeRoyalState} from "../systems/royal-dynasty.js";
+import {setupManagementUI} from "../presentation/management-ui.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -101,7 +106,7 @@ function serializeEntity(entity,indexByEntity){
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
         routinePhase:entity.routinePhase,routineTimer:entity.routineTimer,movePause:entity.movePause,
         job:entity.job,jobRefreshTimer:entity.jobRefreshTimer,workplaceIndex:entity.workplace?indexByEntity.get(entity.workplace)??null:null,
-        isKing:entity.isKing,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
+        isKing:entity.isKing,isRoyalFamily:Boolean(entity.isRoyalFamily),isDragon:Boolean(entity.isDragon),creature:entity.creature?JSON.parse(JSON.stringify(entity.creature)):null,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
     };
 }
 
@@ -109,24 +114,26 @@ function createSaveSnapshot(){
     const indexes=new Map(state.entities.map((entity,index)=>[entity,index]));
     return {
         playerName:state.playerName,kingdomName:state.kingdomName,worldSeed:state.worldSeed,
-        worldOptions:{...state.worldOptions},randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:2,nextCardDrawTick:state.nextCardDrawTick,
+        worldOptions:{...state.worldOptions},randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:3,nextCardDrawTick:state.nextCardDrawTick,
         nextIssueAtTick:state.nextIssueAtTick,issueSequence:state.issueSequence,
         hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),health:JSON.parse(JSON.stringify(state.health||{})),
         camera:{...state.camera},zoom:state.zoom,
         explored:state.explored.map(column=>column.map(Boolean)),
-        tick:state.tick,year:state.year,dayOfYear:state.dayOfYear,seasonIndex:state.seasonIndex,
+        tick:state.tick,year:state.year,dayOfYear:state.dayOfYear,seasonIndex:state.seasonIndex,gameSpeed:state.gameSpeed,
         morale:state.morale,resources:{...state.resources},incomeThisTick:{...state.incomeThisTick},
         kingHp:state.kingHp,totalRaidsSurvived:state.totalRaidsSurvived,raidActive:state.raidActive,
         gameOver:state.gameOver,victory:state.victory,lastRandomEvent:state.lastRandomEvent,
         weather:state.weather,weatherTimer:state.weatherTimer,
         entities:state.entities.map((entity,index)=>serializeEntity(entity,indexes)),
+        personArchive:(state.personArchive||[]).map(entry=>JSON.parse(JSON.stringify(entry))).slice(-MAX_PERSON_ARCHIVE),
+        creatureArchive:(state.creatureArchive||[]).map(entry=>JSON.parse(JSON.stringify(entry))).slice(-100),
         hand:state.hand.map(card=>({...card,cost:{...card.cost}})),
         cardRewardQueue:(state.cardRewardQueue||[]).map(card=>({...card,cost:{...card.cost}})),
         selectedCardInstanceId:state.selectedCardInstanceId,
         availableCards:state.availableCards.map(card=>({...card,cost:{...card.cost}})),
         activeEvent:state.activeEvent,
         eventLog:state.eventLog.slice(0,100),eventSequence:state.eventSequence,
-        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),market:JSON.parse(JSON.stringify(state.market)),
+        statistics:{...state.statistics},economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),government:JSON.parse(JSON.stringify(state.government||{})),royal:JSON.parse(JSON.stringify(state.royal||{})),market:JSON.parse(JSON.stringify(state.market)),
         totalPopulation:state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length
     };
 }
@@ -145,7 +152,33 @@ function saveCurrentGame(){
     }
 }
 
+const SAVE_MOBILE_TYPES=new Set([TYPE.VILLAGER,TYPE.GUARD,TYPE.ARCHER,TYPE.KNIGHT,TYPE.PRIEST,TYPE.DRAGON,TYPE.DEER,TYPE.GOBLIN,TYPE.ORC,TYPE.TROLL]);
+function validateSaveSnapshot(snapshot){
+    if(!snapshot||typeof snapshot!=="object"||Array.isArray(snapshot))throw new Error("Save data is not a valid realm object.");
+    if(!Number.isSafeInteger(Number(snapshot.worldSeed))||Number(snapshot.worldSeed)<=0)throw new Error("Save data has an invalid world seed.");
+    if(!Array.isArray(snapshot.entities)||snapshot.entities.length>900)throw new Error("Save data has an invalid or oversized entity list.");
+    let mobile=0;
+    const validTypes=new Set(Object.values(TYPE));
+    for(const [index,dto] of snapshot.entities.entries()){
+        if(!dto||typeof dto!=="object"||!validTypes.has(dto.type)||!Number.isFinite(dto.x)||!Number.isFinite(dto.y)){
+            throw new Error("Save data contains an invalid entity at position "+index+".");
+        }
+        if(!dto.dead&&SAVE_MOBILE_TYPES.has(dto.type))mobile++;
+    }
+    if(mobile>420)throw new Error("Save data exceeds the supported mobile population limit.");
+    for(const key of ["wood","stone","gold","food"]){
+        if(snapshot.resources&&snapshot.resources[key]!==undefined&&!Number.isFinite(Number(snapshot.resources[key]))){
+            throw new Error("Save data contains an invalid "+key+" resource balance.");
+        }
+    }
+    if(snapshot.hand!==undefined&&(!Array.isArray(snapshot.hand)||snapshot.hand.length>5)){
+        throw new Error("Save data contains an invalid card hand.");
+    }
+    return true;
+}
+
 function loadSnapshotIntoGame(profile,snapshot){
+    validateSaveSnapshot(snapshot);
     resetForRun(profile);
     state.worldSeed=snapshot.worldSeed||randomSeed();
     state.worldOptions=snapshot.worldOptions||{landmass:50,ruggedness:55,forests:52,water:48};
@@ -153,9 +186,12 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.entities=[];
     const restored=[];
     for(const dto of snapshot.entities||[]){
-        if(!canSpawnEntity(dto.type)){restored.push(null);continue;}
+        // Dead entities have already been archived where relevant and should
+        // not consume live world capacity during restoration.
+        if(dto.dead){restored.push(null);continue;}
+        if(!canSpawnEntity(dto.type))throw new Error("Save exceeds the supported world entity capacity.");
         const entity=spawnEntity(dto.x,dto.y,dto.type);
-        if(!entity){restored.push(null);continue;}
+        if(!entity)throw new Error("An entity could not be restored; the current realm will be recovered.");
         Object.assign(entity,{
             id:typeof dto.id==="string"?dto.id:null,personId:typeof dto.personId==="string"?dto.personId:null,person:dto.person&&typeof dto.person==="object"?dto.person:null,
             hp:dto.hp,maxHp:dto.maxHp,dead:dto.dead,age:dto.age,anim:dto.anim,facing:dto.facing,
@@ -163,7 +199,7 @@ function loadSnapshotIntoGame(profile,snapshot){
             illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
             routinePhase:dto.routinePhase??4,routineTimer:dto.routineTimer??30,movePause:dto.movePause||0,
-            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
+            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),isRoyalFamily:Boolean(dto.isRoyalFamily),isDragon:Boolean(dto.isDragon),creature:dto.creature&&typeof dto.creature==="object"?dto.creature:null,moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
         });
         restored.push(entity);
     }
@@ -171,9 +207,17 @@ function loadSnapshotIntoGame(profile,snapshot){
         if(Number.isInteger(dto.workplaceIndex)&&restored[dto.workplaceIndex]&&restored[index])restored[index].workplace=restored[dto.workplaceIndex];
     });
     state.tick=snapshot.tick||0;state.year=snapshot.year||1;state.dayOfYear=snapshot.dayOfYear||0;
+    const savedSpeed=Number(snapshot.gameSpeed);
+    state.gameSpeed=[0.5,1,2,4].includes(savedSpeed)?savedSpeed:1;
+    document.querySelectorAll(".speed-button").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.speed)===state.gameSpeed));
+    state.creatureArchive=Array.isArray(snapshot.creatureArchive)?snapshot.creatureArchive.filter(entry=>entry&&typeof entry==="object").slice(-100):[];
+    state.personArchive=Array.isArray(snapshot.personArchive)
+        ? snapshot.personArchive.map(normalizePersonMemorial).filter(Boolean).slice(-MAX_PERSON_ARCHIVE)
+        : [];
     restoreRandomStreams(snapshot.randomStreams);
     state.nextEntityId=Math.max(1,Number.isSafeInteger(snapshot.nextEntityId)?snapshot.nextEntityId:restored.length+1);
     for(let index=0;index<restored.length;index++){const entity=restored[index];if(!entity)continue;if(typeof entity.id!=="string")entity.id="e"+(Number(state.worldSeed)||1).toString(36)+"-"+(index+1).toString(36);if(entity.type===TYPE.VILLAGER&&!entity.personId)entity.personId=entity.id;if(entity.type===TYPE.VILLAGER||entity.isKing)ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});}
+    normalizeFamilyLinks();
     state.nextEntityId=Math.max(state.nextEntityId,restored.length+1);
     state.seasonIndex=snapshot.seasonIndex||0;state.morale=snapshot.morale??72;
     state.resources={wood:0,stone:0,gold:0,food:0,...snapshot.resources};
@@ -195,12 +239,26 @@ function loadSnapshotIntoGame(profile,snapshot){
         ? snapshot.availableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [];
     state.statistics={totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,...snapshot.statistics};
-    state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,lastLedger:null,...snapshot.economy};
+    state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,births:0,lastBirthCheckYear:state.year,lastSocialYear:state.year,lastAgencyYear:state.year,deaths:0,lastMortalityYear:state.year,lastLedger:null,...snapshot.economy};
     const growthYear=state.economy.lastGrowthYear;
     state.economy.lastGrowthYear=Number.isFinite(growthYear)?Math.max(1,Math.min(state.year,Math.floor(growthYear))):state.year;
     const populationGrowth=Number(state.economy.populationGrowth);
     state.economy.populationGrowth=Number.isFinite(populationGrowth)?Math.max(0,populationGrowth):0;
+    const births=Number(state.economy.births);
+    state.economy.births=Number.isFinite(births)?Math.max(0,Math.floor(births)):0;
+    const mortalityYear=Number(state.economy.lastMortalityYear);
+    state.economy.lastMortalityYear=Number.isFinite(mortalityYear)?Math.max(1,Math.min(state.year,Math.floor(mortalityYear))):state.year;
+    const deaths=Number(state.economy.deaths);
+    state.economy.deaths=Number.isFinite(deaths)?Math.max(0,Math.floor(deaths)):0;
+    const agencyYear=Number(state.economy.lastAgencyYear);
+    state.economy.lastAgencyYear=Number.isFinite(agencyYear)?Math.max(1,Math.min(state.year,Math.floor(agencyYear))):state.year;
+    const socialYear=Number(state.economy.lastSocialYear);
+    state.economy.lastSocialYear=Number.isFinite(socialYear)?Math.max(1,Math.min(state.year,Math.floor(socialYear))):state.year;
+    const birthCheckYear=Number(state.economy.lastBirthCheckYear);
+    state.economy.lastBirthCheckYear=Number.isFinite(birthCheckYear)?Math.max(1,Math.min(state.year,Math.floor(birthCheckYear))):state.year;
     normalizePoliticalState(snapshot.politics);
+    normalizeGovernment(snapshot.government);
+    normalizeRoyalState(snapshot.royal);
     normalizeHouseholdAssignments();
     state.market=snapshot.market||createMarketState();
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===WORLD_W)state.explored=snapshot.explored;
@@ -219,15 +277,29 @@ function loadCurrentGame(){
     const profile=getActiveProfile();
     if(!profile){showStatus("Create or select a local player profile first.");return false;}
     const save=readLocalSave(profile.id);
-    if(!save){showStatus("No saved realm exists for "+profile.displayName+".");return false;}
+    if(!save){showStatus("No valid saved realm or recovery backup exists for "+profile.displayName+".");return false;}
+    const rollbackProfile=state.hasStarted&&state.activeProfileId
+        ?{id:state.activeProfileId,displayName:state.playerName}
+        :null;
+    const rollbackSnapshot=rollbackProfile?createSaveSnapshot():null;
     try{
         loadSnapshotIntoGame(profile,save.snapshot);
         syncWorldForge(state.worldOptions);
-        showStatus("Loaded realm · "+new Date(save.savedAt).toLocaleString());
+        showStatus("Loaded realm"+(save.restoredFromBackup?" · previous backup restored":"")+" · "+new Date(save.savedAt).toLocaleString());
         addLog("SAVE LOADED","#a3d6a7","system");
         return true;
     }catch(error){
-        showStatus("Load failed: "+error.message);return false;
+        let recovery="";
+        if(rollbackProfile&&rollbackSnapshot){
+            try{
+                loadSnapshotIntoGame(rollbackProfile,rollbackSnapshot);
+                recovery=" · previous realm restored";
+            }catch(restoreError){
+                recovery=" · recovery also failed: "+restoreError.message;
+            }
+        }
+        showStatus("Load failed: "+error.message+recovery);
+        return false;
     }
 }
 
@@ -292,6 +364,9 @@ function bindMenu(){
 function init(){
     bindCanvas();
     setupInput();
+    setupCharacterDossier();
+    setupManagementUI();
+    document.getElementById("command-chronicles-btn")?.addEventListener("click",()=>document.getElementById("people-btn")?.click());
     bindMenu();
     applySoundtrackSettings(settings);
     window.addEventListener("resize",resize);

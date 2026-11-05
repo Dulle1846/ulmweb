@@ -93,7 +93,7 @@ export function updateVillagers() {
         v.jobRefreshTimer--;
         if (v.jobRefreshTimer <= 0) {
             assignJob(v,workplaces,workerCounts);
-            v.jobRefreshTimer = 80 + Math.floor(Math.random() * 120);
+            v.jobRefreshTimer = 80 + Math.floor(rand(0, 120));
         }
 
         v.routineTimer--;
@@ -195,28 +195,32 @@ function advancePhase(unit) {
     switch (unit.routinePhase) {
         case ROUTINE.GO_TO_WORK:
             if (unit.workplace && !unit.workplace.dead) setTargetNear(unit, unit.workplace.x, unit.workplace.y, 1.5);
-            unit.routineTimer = 80 + Math.floor(Math.random() * 60);
+            unit.routineTimer = 80 + Math.floor(rand(0, 60));
             break;
         case ROUTINE.WORKING:
             unit.targetX = unit.x; unit.targetY = unit.y;
             unit.velocityX = 0; unit.velocityY = 0;
             unit.visualState = "work";
-            unit.routineTimer = ROUTINE.WORK_DURATION + Math.floor(Math.random() * 80);
+            unit.routineTimer = ROUTINE.WORK_DURATION + Math.floor(rand(0, 80));
             break;
         case ROUTINE.ON_BREAK:
             unit.visualState = "idle";
-            setTargetNear(unit, unit.anchor.x, unit.anchor.y, WANDER_RADIUS[unit.type] || 15);
-            unit.routineTimer = ROUTINE.BREAK_DURATION + Math.floor(Math.random() * 40);
+            const safety = Number(unit.person?.needs?.safety ?? 50);
+            const radius = safety < 35 ? 2 : (WANDER_RADIUS[unit.type] || 15);
+            setTargetNear(unit, unit.anchor.x, unit.anchor.y, radius);
+            unit.routineTimer = ROUTINE.BREAK_DURATION + Math.floor(rand(0, 40));
             break;
         case ROUTINE.GO_HOME:
             setTargetNear(unit, unit.home.x, unit.home.y, 2);
-            unit.routineTimer = 60 + Math.floor(Math.random() * 40);
+            unit.routineTimer = 60 + Math.floor(rand(0, 40));
             break;
         case ROUTINE.RESTING:
             unit.targetX = unit.x; unit.targetY = unit.y;
             unit.velocityX = 0; unit.velocityY = 0;
             unit.visualState = "idle";
-            unit.routineTimer = ROUTINE.REST_DURATION + Math.floor(Math.random() * 60);
+            const restNeed = Number(unit.person?.needs?.rest ?? 50);
+            const recoveryTime = Math.max(0, 50 - restNeed);
+            unit.routineTimer = ROUTINE.REST_DURATION + Math.floor(rand(0, 60)) + Math.floor(recoveryTime * 0.8);
             break;
     }
 }
@@ -304,8 +308,8 @@ function moveToward(unit, dt) {
 
 function setTargetNear(unit, cx, cy, radius) {
     for (let i = 0; i < 20; i++) {
-        const a = Math.random() * Math.PI * 2;
-        const r = Math.sqrt(Math.random()) * radius;
+        const a = rand(0, Math.PI * 2);
+        const r = Math.sqrt(rand(0, 1)) * radius;
         const tx = cx + Math.cos(a) * r;
         const ty = cy + Math.sin(a) * r;
         if (isWalkable(tx, ty)) {
@@ -424,13 +428,15 @@ function followCachedPath(unit,dt,speedMultiplier=1){
 function assignJob(villager,workplaces=null,workerCounts=new Map()) {
     const previousWorkplace=villager.workplace;
     if(previousWorkplace)workerCounts.set(previousWorkplace,Math.max(0,(workerCounts.get(previousWorkplace)||0)-1));
-    let best = null, bestDist = Infinity;
+    let best = null, bestDist = Infinity, bestScore = Infinity;
+    const preferredBuilding = villager.person?.activeGoal?.id === "secure_food" ? TYPE.FARM : null;
     for (const m of JOB_MAP) {
         const capacity=BUILDING_WORKFORCE[m.building]||0;
         for (const b of (workplaces?.get(m)||getEntitiesOfType(m.building))) {
             if((workerCounts.get(b)||0)>=capacity)continue;
             const d = Math.hypot(villager.x - b.x, villager.y - b.y);
-            if (d < bestDist) { bestDist = d; best = { workplace: b, job: m.job }; }
+            const score = d + (preferredBuilding ? (m.building === preferredBuilding ? -12 : 8) : 0);
+            if (score < bestScore) { bestScore = score; bestDist = d; best = { workplace: b, job: m.job }; }
         }
     }
     const nextWorkplace = best && bestDist <= 40 ? best.workplace : null;

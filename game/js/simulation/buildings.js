@@ -7,6 +7,7 @@ import { addResource } from "../systems/resources.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
 import { distance } from "../core/utils.js";
 import { getWorkforceSnapshot,getBuildingEfficiency } from "../systems/economy.js";
+import { random } from "../core/random.js";
 function getProductionLedger(){
     const economy=state.economy||(state.economy={});
     const ledger=economy.productionChains||(economy.productionChains={});
@@ -48,13 +49,13 @@ export function updateBuildingIncome(){
             const output=base*efficiency*(1+0.6*millRatio);
             addResource("food",output);
             production.millBonusFood+=base*efficiency*0.6*millRatio;
-            if(Math.random()<0.12)queueParticle(f.x*TILE_SIZE+20,f.y*TILE_SIZE+12,"#bef575",26,0,-1.5);
+            if(random("presentation")<0.12)queueParticle(f.x*TILE_SIZE+20,f.y*TILE_SIZE+12,"#bef575",26,0,-1.5);
         });
-        lumbers.forEach(building=>addResource("wood",(3+(Math.random()>0.6?2:0))*getBuildingEfficiency(building,workforce)));
+        lumbers.forEach(building=>addResource("wood",(3+(random("production")>0.6?2:0))*getBuildingEfficiency(building,workforce)));
         quarries.forEach(building=>addResource("stone",4*getBuildingEfficiency(building,workforce)));
         goldMines.forEach(mine=>{
             addResource("gold",(state.seasonIndex===3?1:2)*getBuildingEfficiency(mine,workforce));
-            if(Math.random()<0.07)queueFloater(mine.x*TILE_SIZE,mine.y*TILE_SIZE-18,"GOLD VEIN","#fde047");
+            if(random("presentation")<0.07)queueFloater(mine.x*TILE_SIZE,mine.y*TILE_SIZE-18,"GOLD VEIN","#fde047");
         });
     }
     if(civicTick){
