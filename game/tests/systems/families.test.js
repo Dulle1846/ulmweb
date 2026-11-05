@@ -4,7 +4,7 @@ import { resetState, state } from "../../js/core/state.js";
 import { TYPE } from "../../js/core/types.js";
 import { spawnEntity } from "../../js/world/entities.js";
 import { ensurePersonProfile, normalizePersonProfile } from "../../js/systems/people.js";
-import { linkParentChild, setPartnership, endPartnership, getSiblings, getFamilySnapshot, normalizeFamilyLinks } from "../../js/systems/families.js";
+import { linkParentChild, setPartnership, endPartnership, getSiblings, getFamilySnapshot, normalizeFamilyLinks, linkGuardianWard } from "../../js/systems/families.js";
 
 function makePeople(count = 5) {
     resetState();
@@ -150,4 +150,42 @@ test("re-establishing a partnership does not erase its previous birth cooldown",
     setPartnership(first.personId, second.personId, { status: "partner", sinceYear: 12 });
     assert.equal(first.person.kinship.partners[0].lastBirthYear, 8);
     assert.equal(second.person.kinship.partners[0].lastBirthYear, 8);
+});
+
+
+test("guardian and ward links are reciprocal, bounded and visible in family snapshots", () => {
+    const [guardian, ward, secondGuardian] = makePeople(3);
+    ensurePersonProfile(guardian).ageYears = 40;
+    ensurePersonProfile(guardian).lifeStage = "adult";
+    ensurePersonProfile(ward).ageYears = 8;
+    ensurePersonProfile(ward).lifeStage = "young";
+    ensurePersonProfile(secondGuardian).ageYears = 38;
+    ensurePersonProfile(secondGuardian).lifeStage = "adult";
+    assert.deepEqual(linkGuardianWard(guardian.personId, ward.personId, { sinceYear: 10 }), { ok: true, added: true });
+    assert.deepEqual(linkGuardianWard(guardian.personId, ward.personId, { sinceYear: 10 }), { ok: true, added: false });
+    assert.deepEqual(ward.person.kinship.guardians, [{ personId: guardian.personId, sinceYear: 10 }]);
+    assert.deepEqual(guardian.person.kinship.wards, [{ personId: ward.personId, sinceYear: 10 }]);
+    assert.equal(getFamilySnapshot(ward.personId).guardians[0].personId, guardian.personId);
+    assert.equal(getFamilySnapshot(guardian.personId).wards[0].personId, ward.personId);
+    assert.equal(linkGuardianWard(ward.personId, guardian.personId).reason, "guardian-not-adult");
+    assert.equal(linkGuardianWard(secondGuardian.personId, ward.personId).ok, true);
+    assert.equal(linkGuardianWard(guardian.personId, secondGuardian.personId).reason, "ward-not-minor");
+});
+
+test("legacy kinship migration adds bounded guardian and ward collections", () => {
+    const entity = { id: "legacy-guardian", personId: "legacy-guardian" };
+    const person = normalizePersonProfile({ ageYears: 22, kinship: { guardians: Array(10).fill({ personId: "g" }), wards: "invalid" } }, entity);
+    assert.equal(person.kinship.guardians.length, 2);
+    assert.deepEqual(person.kinship.wards, []);
+});
+
+test("guardian migration restores reciprocal links without discarding unresolved references", () => {
+    const [guardian, ward] = makePeople(2);
+    ward.person.kinship.guardians = [
+        { personId: guardian.personId, sinceYear: 8 },
+        { personId: "archived-guardian", sinceYear: 2 }
+    ];
+    normalizeFamilyLinks();
+    assert.equal(guardian.person.kinship.wards[0].personId, ward.personId);
+    assert.ok(ward.person.kinship.guardians.some(link => link.personId === "archived-guardian"));
 });
