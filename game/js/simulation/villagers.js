@@ -15,7 +15,7 @@ import { distance } from '../core/utils.js';
 import { rand as seededRand } from '../core/random.js';
 const rand=(min,max)=>seededRand(min,max,"villagers");
 import { BUILDING_WORKFORCE } from '../systems/economy.js';
-import { getRoadSpeedMultiplier } from '../systems/roads.js';
+import { getRoadSpeedMultiplier,getRoadTravelCost } from '../systems/roads.js';
 
 const MOVING_TYPES = new Set([
     TYPE.VILLAGER, TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT, TYPE.PRIEST,
@@ -249,7 +249,7 @@ function moveToward(unit, dt) {
     }
 
     const targetTileX=Math.floor(unit.targetX),targetTileY=Math.floor(unit.targetY);
-    if(unit.path&&(unit.pathTargetX!==targetTileX||unit.pathTargetY!==targetTileY||unit.pathVersion!==(state.buildingCollisionVersion||0)))unit.path=null;
+    if(unit.path&&(unit.pathTargetX!==targetTileX||unit.pathTargetY!==targetTileY||unit.pathVersion!==((state.buildingCollisionVersion||0)+':'+(state.roads?.revision||0))))unit.path=null;
     if(unit.path&&followCachedPath(unit,dt,getRoadSpeedMultiplier(unit.x,unit.y)))return;
 
     const dx = unit.targetX - unit.x;
@@ -286,7 +286,7 @@ function moveToward(unit, dt) {
         const route=findPath(unit.x,unit.y,unit.targetX,unit.targetY);
         if(route?.length){
             unit.path=route;unit.pathIndex=0;unit.pathTargetX=targetTileX;unit.pathTargetY=targetTileY;
-            unit.pathVersion=state.buildingCollisionVersion||0;
+            unit.pathVersion=(state.buildingCollisionVersion||0)+':'+(state.roads?.revision||0);
             if(followCachedPath(unit,dt,getRoadSpeedMultiplier(unit.x,unit.y)))return;
         }
     }
@@ -372,7 +372,7 @@ export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
     if(!isWalkable(tx+0.5,ty+0.5))return null;
     const start=sy*WORLD_W+sx,target=ty*WORLD_W+tx;
     const open=[],costs=new Map([[start,0]]),parents=new Map(),closed=new Set();
-    heapPush(open,{index:start,x:sx,y:sy,g:0,f:pathHeuristic(sx,sy,tx,ty)});
+    heapPush(open,{index:start,x:sx,y:sy,g:0,f:pathHeuristic(sx,sy,tx,ty)*0.78});
     const directions=[[-1,0,1],[1,0,1],[0,-1,1],[0,1,1],[-1,-1,Math.SQRT2],[1,-1,Math.SQRT2],[-1,1,Math.SQRT2],[1,1,Math.SQRT2]];
     let visited=0;
     while(open.length&&visited<Math.max(100,Math.min(5000,Math.floor(maxNodes)||1800))){
@@ -395,10 +395,10 @@ export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
             const next=ny*WORLD_W+nx;
             if(closed.has(next)||!isWalkable(nx+0.5,ny+0.5))continue;
             if(dx!==0&&dy!==0&&(!isWalkable(current.x+dx+0.5,current.y+0.5)||!isWalkable(current.x+0.5,current.y+dy+0.5)))continue;
-            const nextCost=current.g+stepCost,known=costs.get(next);
+            const nextCost=current.g+stepCost*getRoadTravelCost(nx+0.5,ny+0.5),known=costs.get(next);
             if(known!==undefined&&nextCost>=known)continue;
             costs.set(next,nextCost);parents.set(next,current.index);
-            heapPush(open,{index:next,x:nx,y:ny,g:nextCost,f:nextCost+pathHeuristic(nx,ny,tx,ty)});
+            heapPush(open,{index:next,x:nx,y:ny,g:nextCost,f:nextCost+pathHeuristic(nx,ny,tx,ty)*0.78});
         }
     }
     return null;
