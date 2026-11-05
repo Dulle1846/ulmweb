@@ -31,7 +31,7 @@ function renderPeopleList(query = "") {
     const needle = String(query).trim().toLowerCase();
     const filtered = all.filter(entity => {
         const person = entity.person;
-        return !needle || [person.name, person.species, person.role, person.familyName]
+        return !needle || [person.name, person.species, person.sex, person.role, person.familyName]
             .some(value => String(value || "").toLowerCase().includes(needle));
     }).slice(0, 100);
     if (!filtered.some(entity => entity.personId === selectedPersonId)) {
@@ -94,7 +94,7 @@ function renderDossier(personId) {
     }));
     detail.innerHTML =
         '<header class="dossier-identity"><div class="dossier-seal">' + (entity.isKing ? '♛' : '✦') +
-        '</div><div><div class="dossier-kicker">' + esc(person.species) + ' · ' + esc(person.role) +
+        '</div><div><div class="dossier-kicker">' + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) +
         '</div><h2>' + esc(person.name) + '</h2><p>Age ' + Math.floor(Number(person.ageYears) || 0) +
         ' · ' + esc(person.lifeStage) + ' · Born in year ' + Math.max(1, Number(person.bornAtYear) || 1) +
         '</p></div></header>' +
