@@ -379,10 +379,10 @@ try{
         if(!designation.ok)throw new Error("Could not designate royal dossier heir: "+designation.reason);
         return {kingId:king.personId,heirId:heir.personId,heirName:heir.person.name};
     });
-    await page.locator("#people-btn").click();
-    await page.locator("#people-search").fill(royalFixture.kingId);
-    await page.locator("#people-list .person-list-item").first().click();
+    await page.locator("#sovereign-dossier-open").click();
+    assert.equal(await page.locator("#people-modal").isVisible(),true,"the royal header portrait must open the character dossier");
     const sovereignDossier=page.locator("#person-dossier");
+    assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),1,"the shortcut must select the currently reigning sovereign");
     assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),1);
     assert.ok((await sovereignDossier.innerText()).includes("SOVEREIGN DOSSIER"));
     assert.ok((await sovereignDossier.innerText()).includes("DESIGNATED SUCCESSOR"));
