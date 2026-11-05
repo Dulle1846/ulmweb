@@ -37,7 +37,10 @@ function eligibleParents(first, second) {
     if (a.lifeStage !== "adult" || b.lifeStage !== "adult") return false;
     if (a.ageYears < species.maturation || b.ageYears < species.maturation) return false;
     if (a.ageYears > species.lifespan * 0.65 || b.ageYears > species.lifespan * 0.65) return false;
-    return Boolean(activePartnership(first, second));
+    const partnership = activePartnership(first, second);
+    if (!partnership) return false;
+    const sinceYear = Math.max(Number(partnership.first.sinceYear) || 1, Number(partnership.second.sinceYear) || 1);
+    return sinceYear < Math.max(1, Math.floor(Number(state.year) || 1));
 }
 
 function chooseBirthHome(first, second) {
