@@ -250,3 +250,35 @@ export function updatePeople(){
     }
     return {aged,transitions};
 }
+
+
+export const MAX_PERSON_ARCHIVE = 1000;
+
+export function createPersonMemorial(entity, { cause = "unknown", deathYear = state.year, deathTick = state.tick } = {}) {
+    const person = ensurePersonProfile(entity);
+    if (!person) return null;
+    return {
+        personId: String(entity.personId || person.id),
+        person: JSON.parse(JSON.stringify(person)),
+        deathYear: Math.max(1, Math.floor(Number(deathYear) || 1)),
+        deathTick: Math.max(0, Math.floor(Number(deathTick) || 0)),
+        cause: String(cause || "unknown").slice(0, 48),
+        isKing: Boolean(entity.isKing)
+    };
+}
+
+export function normalizePersonMemorial(saved) {
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) return null;
+    const personId = String(saved.personId || saved.person?.id || "").slice(0, 100);
+    if (!personId || !saved.person || typeof saved.person !== "object") return null;
+    const entity = { id: personId, personId };
+    const person = normalizePersonProfile(saved.person, entity, { role: saved.person.role || "resident" });
+    return {
+        personId,
+        person,
+        deathYear: Math.max(1, Math.min(1000000, Math.floor(Number(saved.deathYear) || 1))),
+        deathTick: Math.max(0, Math.floor(Number(saved.deathTick) || 0)),
+        cause: String(saved.cause || "unknown").slice(0, 48),
+        isKing: Boolean(saved.isKing)
+    };
+}
