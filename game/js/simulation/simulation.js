@@ -19,6 +19,7 @@ import { updateSocialLife } from "../systems/social.js";
 import { updatePersonalAgency } from "../systems/agency.js";
 import { updateMortality } from "../systems/mortality.js";
 import { updateGuardianships } from "../systems/guardianship.js";
+import { updateRoyalSuccession } from "../systems/royal-dynasty.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
@@ -32,6 +33,7 @@ export function updateSimulation(){
         updatePeople();
         deaths=updateMortality();
         guardianships=updateGuardianships();
+        updateRoyalSuccession();
         socialResult=updateSocialLife();
         updatePersonalAgency();
         newborn=updateBirths();
