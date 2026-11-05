@@ -294,3 +294,28 @@ Implemented on `kac-2.6-character-dossiers` (stacked into Draft PR #11).
 
 ### Verification target
 New Node tests cover explicit parentage, surname inheritance, reciprocal kinship, memory records, partnership status, species/adulthood eligibility, resource/housing gates, cooldown and once-per-year scheduling. The PR's CI run on the final head is the authoritative pass/fail signal; no result is claimed before it completes.
+
+
+## Phase 2.8 — autonomous social ties and partnership formation
+
+Implemented on `kac-2.6-character-dossiers`, stacked into Draft PR #11.
+
+- Residents encounter people who share a household or workplace. This is an interaction context only; co-residence/work never creates kinship.
+- Encounters update reciprocal trust, respect, affinity and interaction counts using bounded personality-derived deltas and a dedicated deterministic `social` random stream.
+- Relationships can develop into acquaintances, friends or rivals. Major transitions create bounded personal memories.
+- Adult residents can autonomously form a partnership after repeated mutual positive encounters. Both sides must meet the affinity/trust/interaction thresholds; the default model allows one active partner per person.
+- Close kin (parent/child and siblings with a shared explicit parent) are excluded from autonomous partnership formation.
+- The scheduler runs once per realm year, processes at most 120 unique pairs and forms at most four partnerships per year.
+- The social-year cursor is saved in the existing economy DTO and safely defaults to the restored year for legacy saves.
+- Character dossiers expose the person's current reproductive sex category; legacy profiles receive a stable ID-derived category rather than a new random value on every load.
+
+### Reproductive rules and boundaries
+- Fantasy species now declare a data-driven reproduction mode: paired reproduction for the current living species; revenants are currently non-reproductive.
+- Biological birth requires two same-species adult villagers with opposite reproductive sex categories and an existing reciprocal partnership that began before the current year.
+- Same-sex and cross-species partnerships can exist socially, but do not produce biological children under the current rules.
+- The current `sex` field is a minimal reproductive category, not a full gender-identity or species-specific reproductive biology model. Future work must separate identity, anatomy and species reproduction rules rather than assuming these are universally equivalent.
+- Relationship decay, non-monogamous government/cultural rules, hybrid species, adoption-driven child creation, royal partnerships and autonomous courtship outside shared home/work groups remain future work.
+
+### Verification target
+- Tests cover once-per-year scheduling, reciprocal social values, relationship memories, autonomous partnership formation, close-kin exclusion, bounded pair work, deterministic legacy sex migration and reproduction eligibility.
+- Run all three GitHub Actions workflows on the exact final head before marking the milestone verified.
