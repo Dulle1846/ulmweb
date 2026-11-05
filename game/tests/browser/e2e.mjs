@@ -72,6 +72,10 @@ try{
     assert.ok((await page.locator("#royal-court-content").innerText()).includes("E2E Royal Consort"));
     await page.locator("#royal-create-heir").click();
     assert.ok((await page.locator("#royal-court-content").innerText()).includes("CHILDREN"));
+    await page.waitForFunction(() => {
+        const image = document.querySelector(".court-monarch img");
+        return Boolean(image?.complete && image.naturalWidth > 0);
+    }, null, { timeout: 8000 });
     const royalArt = await page.locator(".court-monarch img").evaluate(img => ({ complete: img.complete, width: img.naturalWidth }));
     assert.ok(royalArt.complete && royalArt.width > 0, "original royal court SVG should load");
     await page.locator("#royal-court-close").click();
