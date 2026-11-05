@@ -5,6 +5,7 @@ import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { getWorkforceSnapshot } from "../systems/economy.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
+import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
 let activePanel="government";
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
@@ -36,14 +37,19 @@ function dynasty(){
  const h=getRoyalHouse(),rows=h.history.slice().reverse().slice(0,12).map(x=>'<article class="command-history"><strong>YEAR '+number(x.year)+' · '+esc(x.kind)+'</strong><p>'+esc(x.detail)+'</p></article>').join("");
  return intro("HOUSE OF THE CROWN","Dynasty chronicle","Royal marriages, births and succession are recorded as persistent historical events.")+'<div class="command-summary"><div><small>DYNASTY</small><strong>'+esc(state.royal?.dynastyName||state.kingdomName)+'</strong></div><div><small>ROYAL CHILDREN</small><strong>'+h.children.length+'</strong></div><div><small>SUCCESSOR</small><strong>'+esc(h.heir?.person?.name||"None")+'</strong></div></div><div class="command-history-list">'+(rows||'<p class="command-note">No royal event has been recorded yet.</p>')+'</div>';
 }
+function creatures(){
+ const c=getCreatureSnapshot(),rows=c.living.map(d=>'<article class="command-policy"><div><strong>🐉 '+esc(d.name)+'</strong><p>'+esc(d.lifeStage)+' · age '+number(d.ageYears)+' · health '+number(d.health)+' · hunger '+number(d.hunger)+' · bond '+number(d.bond)+'</p></div></article>').join("");
+ const archive=c.archive.map(d=>'<article class="command-history"><strong>MEMORIAL · YEAR '+number(d.deathYear)+'</strong><p>'+esc(d.name)+' · age '+number(d.ageYears)+' · '+esc(d.lifeStage)+'</p></article>').join("");
+ return intro("THE LIVING BESTIARY","Dragon sanctuary","Dragons are persistent world entities. They age, become hungry, bond with the sovereign, remember milestones and can die if neglected.")+'<div class="command-summary"><div><small>LIVING DRAGONS</small><strong>'+c.living.length+' / 3</strong></div><div><small>CREATURE MEMORIALS</small><strong>'+c.archive.length+'</strong></div><div><small>SUMMONING COST</small><strong>55 GOLD · 35 FOOD</strong></div></div><div class="command-actions"><button data-command="summon-dragon" '+(c.living.length>=3?'disabled':'')+'>🐉 SUMMON A DRAGON</button></div><div class="command-section-title">LIVING CREATURES</div><div class="command-policy-list">'+(rows||'<p class="command-note">No dragon has joined the realm yet.</p>')+'</div><div class="command-section-title">CREATURE MEMORIALS</div><div class="command-history-list">'+(archive||'<p class="command-note">No creature memorials yet.</p>')+'</div>';
+}
 function render(){
  const panel=$("command-panel-content");if(!panel)return;
- panel.innerHTML=({government,politics,decisions,cards,economy,dynasty}[activePanel]||government)();
+ panel.innerHTML=({government,politics,decisions,cards,economy,dynasty,creatures}[activePanel]||government)();
  document.querySelectorAll("[data-command-tab]").forEach(b=>b.classList.toggle("is-active",b.dataset.commandTab===activePanel));
 }
 function act(b){
  const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
- if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="heir")r=designateHeir(v);else if(a==="select-card"){const card=[...document.querySelectorAll(".hand-card")].find(x=>x.dataset.cardId===v);if(card){card.click();r={ok:true};}}
+ if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="select-card"){const card=[...document.querySelectorAll(".hand-card")].find(x=>x.dataset.cardId===v);if(card){card.click();r={ok:true};}}
  if(r.ok){toast("DECISION RECORDED");render();}else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
 }
 export function setupManagementUI(){
