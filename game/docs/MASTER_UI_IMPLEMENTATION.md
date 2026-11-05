@@ -45,7 +45,7 @@
 - Replaced the dynasty history-only panel with a multi-generation descendant view built from `getFamilySnapshot` and the persisted royal house. The view is depth-limited and caps each generation to keep DOM growth predictable.
 - Family members open their existing character dossier through a dedicated event bridge. This reuses the canonical people browser rather than creating a second source of truth.
 - Added shared CSS primitives for dark panels, parchment cards, section headers, icon buttons, tooltip surfaces, dynasty person cards and focus/hover/pressed states.
-- Added static contract tests for dock actions, kinship graph use, bounded rendering, dossier navigation and honest save-state messaging.
+- Added static contract tests for dock actions, kinship graph use, bounded rendering, dossier navigation and honest save-state messaging; the Chromium browser suite now exercises dynasty opening, dossier hand-off, manual save feedback and chronicle navigation.
 - These changes are pending CI and browser review on the exact pull-request head. They are not production-released until the release rule below is met.
 
 ## Actual navigation contract
