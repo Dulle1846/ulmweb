@@ -163,3 +163,18 @@ Agent follow-up:
 6. Preserve the comic-medieval/tower-defence visual direction; do not re-theme the current UI in this backend slice.
 
 Do not merge or deploy without review of exact-head CI and user authorization. Cloudflare Pages remains the production target; never configure Vercel.
+
+
+## Phase 2.4 — species-aware annual aging
+
+Branch: `kac-2.4-life-cycles`; stacked on the event-linked chronicle slice. The pull request is targeted at `kac-2.1-stability-performance` so the normal PR CI filters apply; it currently includes the 2.3 dependency until PR #8 is merged.
+
+Implemented:
+- Person profiles now store `lastAgedYear`, an explicit cursor preventing duplicate aging.
+- The simulation advances age only when the 400-day realm calendar rolls into a new year.
+- Species-specific maturation thresholds update young/adult/elder life stages.
+- Crossing a life-stage boundary adds one bounded personal memory with a stable ID.
+- Legacy profiles without an aging cursor begin aging at their restored current year; they do not receive an accidental catch-up of unknown elapsed years.
+- Multi-year catch-up is capped at 1,000 years and memory remains bounded.
+
+Not implemented: mortality, births, kinship, inheritance, succession, family-name transmission or autonomous life plans. These require the next explicit family/lineage and succession model. Do not derive parenthood from a shared household.
