@@ -24,7 +24,7 @@ beforeEach(() => {
 });
 
 test("the monster catalogue contains a curated dragon card without growing unbounded", () => {
-    assert.equal(CARD_CATEGORIES.length, 500);
+    assert.equal(CARD_CATEGORIES.length, 501);
     const card = createCardForCategory("dragons");
     assert.equal(card.type, TYPE.DRAGON);
     assert.equal(card.kind, "creature");
