@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - ulmweb-branch
+      - kac-2.1-stability-performance
     paths:
       - "game/**"
       - ".github/workflows/game-browser-e2e.yml"
