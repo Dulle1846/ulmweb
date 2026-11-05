@@ -686,7 +686,7 @@ try{
         for(const tab of ["kingdom","government","politics","decisions","cards","economy","buildings","dynasty","creatures","chronicle"]){
             await page.locator('[data-command-tab="'+tab+'"]').click();
             await page.waitForTimeout(25);
-            if(tab==="dynasty"&&width<=790){
+            if(tab==="dynasty"&&width<=420){
                 await page.waitForFunction(()=>[...document.querySelectorAll(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling")].some(path=>path.getAttribute("d")?.length>0),null,{timeout:5000});
                 const mobileConnector=await page.evaluate(()=>{
                     const graph=document.querySelector("#command-panel-content .dynasty-lineage-graph");
