@@ -389,3 +389,24 @@ Verification at code head `2d40cbf982e232a8039d0d2e4bfb8659c89d94aa`:
 - Chromium gameplay Browser E2E passed, including the memorial fixture.
 
 No merge, production branch update or deployment was performed. The PR remains a draft.
+
+
+## Phase 2.8 — explicit orphan guardianship
+
+Branch: kac-2.8-orphan-guardianship, Draft PR #13 (CI pending).
+
+Implemented:
+- Separate reciprocal guardian/ward links; guardianship is not misrepresented as biological or adoptive parentage.
+- Bounded records: at most two guardians per ward and 16 wards per guardian.
+- Species-specific maturity checks for guardian and ward eligibility.
+- Annual orphan review runs after mortality. An orphan is recognized only when it has at least one explicit parent link and every recorded parent is confirmed in the memorial archive. An unresolved parent ID is not treated as proof of death.
+- Candidate selection prioritizes aunts/uncles over grandparents, then uses recorded trust/affinity as supporting evidence. An unrelated person with no strong recorded relationship is never selected.
+- A receiving household must have capacity unless the ward already lives in that household.
+- Successful assignment moves the ward's household/home anchor, records reciprocal links, and writes bounded memories for guardian and ward.
+- Four assignments maximum per realm year; 500-entry memorial cap and existing per-person memory limits remain in force.
+- Character dossiers expose guardians and wards separately from parents, children and partners.
+
+Safety/limits:
+- No automatic adoption, estate inheritance, royal regency or succession.
+- No guardian is invented when parent death is unresolved, no trusted/related adult is available, or no receiving household has room.
+- Guardianship is a social-care link, not a change of legal parentage.
