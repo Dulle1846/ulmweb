@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { state,resetState } from "../js/core/state.js";
 import { Entity,TYPE } from "../js/core/types.js";
 import { startOutbreak,updateHealth,getHealthSnapshot,applyHealthEffects } from "../js/systems/health.js";
+import { getWorkforceSnapshot } from "../js/systems/economy.js";
 
 function resident(x,householdId="house:1:1"){
     const person=new Entity(x,1,TYPE.VILLAGER);
@@ -35,6 +36,7 @@ test("infection spreads within a household and reduces effective workforce",()=>
         updateHealth();
         assert.equal(getHealthSnapshot().sick,2);
         assert.equal(getHealthSnapshot().cases,2);
+        assert.equal(getWorkforceSnapshot().employed,0);
     }finally{Math.random=original;}
 });
 test("recovered residents clear their illness and an empty outbreak closes",()=>{
