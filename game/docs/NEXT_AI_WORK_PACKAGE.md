@@ -244,3 +244,29 @@ Final implementation head before this note: `26afd6708d3f35b5f371f3842382355328c
 The final hardening adds explicit rejection when a parent would exceed 64 child links or a person would exceed 16 partner links. Rejected additions do not create one-sided reciprocal records. The new regression test is included in the 142 passing tests.
 
 No production branch changes, merge or deployment.
+
+
+## Phase 2.6 — searchable character dossiers
+
+Branch: `kac-2.6-character-dossiers`, Draft PR #11.
+
+Implemented:
+- Read-only roster of named residents and the king, sorted by ruler-first/name order.
+- Search by name, species, role and family name; the UI caps visible results at 100.
+- Dossiers show identity, age/life stage, personality, needs, goals, personal memories, relationships and explicit kinship.
+- Personal memories are shown in reverse chronological order with year and tick.
+- Historical references to people no longer present remain readable by stable person ID.
+- Saved person names, roles, relationship labels and memory text are escaped before HTML insertion.
+- Browser E2E covers opening the dossier, selecting a person, checking personality/chronicle sections, searching, clearing the search and closing the dialog.
+
+Verified at code head `1ec969d5e9b875ae0a25963cf883ff98ecb9556e`:
+- Game Quality: **142/142 tests passed**, 0 failed; syntax/import/UI/asset checks passed.
+- Kings & Cards 2.1 checks: successful.
+- Chromium Browser E2E: successful, including the new dossier interaction and the existing gameplay/save-load smoke coverage.
+
+Limitations:
+- Dossiers are read-only; they do not create/edit kinship.
+- No birth, death, inheritance, succession, secret discovery or autonomous family decision system yet.
+- The E2E smoke test verifies dossier UI behavior but does not simulate a populated multi-generation dynasty; family graph invariants remain covered by Node tests.
+
+No production merge or deployment.
