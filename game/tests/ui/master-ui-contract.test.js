@@ -254,3 +254,13 @@ test("royal administration navigation exposes current-page semantics, not toggle
     assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing navigation target "+target);
   }
 });
+
+
+test("royal header portrait shortcut opens the current sovereign dossier",()=>{
+  assert.ok(html.includes('id="sovereign-dossier-open"'));
+  assert.ok(html.includes('assets/royal-portraits.svg#portrait-king'));
+  assert.ok(dossier.includes('getElementById("sovereign-dossier-open")') || dossier.includes('getElementById("sovereign-dossier-open"'));
+  assert.ok(dossier.includes("getRoyalHouse()?.king"));
+  assert.ok(dossier.includes('modal.classList.remove("hidden")'));
+  assert.ok(css.includes(".sovereign-shortcut{"));
+});
