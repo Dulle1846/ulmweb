@@ -45,6 +45,9 @@ try{
     await page.locator("#start-new-game-btn").click();
     await page.locator("#start-screen").waitFor({state:"hidden",timeout:15000});
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
+    await page.locator("#speed-0-5").click();
+    assert.ok(await page.locator("#speed-0-5").evaluate(el=>el.classList.contains("is-active")),"half-speed control must become active");
+    await page.locator("#speed-1").click();
 
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
@@ -254,12 +257,16 @@ try{
     }
 
     await page.locator("#pause-btn").click();
+    await page.locator("#speed-2").click();
     const savedTick=(await page.locator("#tick-count").innerText()).trim();
     const savedHand=(await page.locator("#hand-count").innerText()).trim();
     await page.locator("#save-btn").click();
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Realm saved"),null,{timeout:5000});
+    await page.locator("#speed-4").click();
     await page.locator("#load-btn").click();
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Loaded realm"),null,{timeout:5000});
+    assert.ok(await page.locator("#speed-2").evaluate(el=>el.classList.contains("is-active")),"save/load must restore the saved simulation speed");
+    assert.equal(await page.locator("#speed-4").evaluate(el=>el.classList.contains("is-active")),false,"load must clear the previous speed selection");
     assert.equal((await page.locator("#tick-count").innerText()).trim(),savedTick,"save/load must restore the exact simulation tick");
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
     // The memorial archive must survive the same save/load round trip.
