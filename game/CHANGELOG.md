@@ -284,6 +284,18 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Added scrolled-state screenshot evidence at 390×844 and 768×1024; no simulation or save data changed.
 
 
+## Development line 3.7.0-dev — Phase 5 selected-card reachability evidence
+
+- Added an end-to-end proof that the selected card can be brought fully into view within the mobile management panel at 390×844 and 768×1024. The test requires a scroll only when the card is initially obscured and a meaningful scroll range exists; if the card already fits, no artificial scroll is demanded. It also checks that the card is not covered by the bottom action dock.
+- Browser CI also uploads dedicated scrolled-state screenshots for visual review; no game state or save data is changed.
+
+
+### Mobile viewport follow-up
+
+- Added 44px bottom scroll clearance at narrow phone widths because the bottom action dock covers part of the side-panel's theoretical lower edge.
+- The browser assertion now positions the selected card above the dock's top edge, preventing a false pass where the card was inside the panel but still visually obscured.
+
+
 ## Development line 3.7.0-dev — sovereign dossier increment
 
 - Added a dedicated royal-house section to the living sovereign's existing character dossier, backed by the authoritative royal-house model.
