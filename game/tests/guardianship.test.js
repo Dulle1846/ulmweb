@@ -117,3 +117,20 @@ test("guardianship scheduler runs at most once per realm year", () => {
     assert.equal(state.economy.lastGuardianshipYear, state.year);
     assert.equal(child.person.kinship.guardians.length, 1);
 });
+
+
+test("a deceased guardian remains in the ward's history and can be replaced next year", () => {
+    const { aunt, sharedGrandparent, child } = createOrphanFamily();
+    assert.equal(updateGuardianships()[0].guardianId, aunt.personId);
+    recordNaturalDeath(aunt, "illness");
+    state.entities = state.entities.filter(entity => entity !== aunt);
+    assert.ok(child.person.memories.some(memory => memory.type === "loss" && memory.text.includes(aunt.person.name)));
+    assert.ok(getFamilySnapshot(aunt.personId).wards.some(link => link.personId === child.personId));
+    assert.ok(getFamilySnapshot(child.personId).guardians.some(link => link.personId === aunt.personId));
+    state.year = 31;
+    state.economy.lastGuardianshipYear = 30;
+    const replacement = updateGuardianships();
+    assert.equal(replacement.length, 1);
+    assert.equal(replacement[0].guardianId, sharedGrandparent.personId);
+    assert.equal(child.person.kinship.guardians.length, 2);
+});
