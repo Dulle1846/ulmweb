@@ -3,7 +3,7 @@ function createInitialState() {
     return {
         canvas:null,ctx:null,minimapCanvas:null,minimapCtx:null,
         camera:{x:0,y:0},zoom:1,zoomTarget:1,zoomLevel:3,zoomAnchor:null,
-        tick:0,gameSpeed:1,isPaused:false,tickAccumulator:0,lastFrameTime:0,\n        randomStreams:{},nextEntityId:1,
+        tick:0,gameSpeed:1,isPaused:false,tickAccumulator:0,lastFrameTime:0,
         movementAccumulator:0,lastUiRender:0,lastMinimapRender:0,
         gameOver:false,victory:false,hasStarted:false,worldSeed:0,
         kingdomName:"ELDRIA",playerName:"Guest",activeProfileId:null,
