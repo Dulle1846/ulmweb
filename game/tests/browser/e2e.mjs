@@ -582,7 +582,9 @@ try{
                 const card=el.querySelector("#card-container");
                 const panelRect=el.getBoundingClientRect();
                 const cardRect=card.getBoundingClientRect();
-                const target=cardRect.top-panelRect.top+el.scrollTop+cardRect.height-el.clientHeight;
+                const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+                const visibleHeight=Math.max(0,Math.min(panelRect.bottom,dock.top)-panelRect.top);
+                const target=cardRect.top-panelRect.top+el.scrollTop+cardRect.height-visibleHeight;
                 el.scrollTop=Math.min(Math.max(0,el.scrollHeight-el.clientHeight),Math.max(0,target));
             });
             await page.screenshot({path:resolve(screenshotDir,"sidepanel-card-reachable-"+width+"x"+height+".png"),animations:"disabled"});
