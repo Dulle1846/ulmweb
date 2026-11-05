@@ -88,6 +88,12 @@
                 <div class="card-instruction">DRAG FROM YOUR HAND ONTO THE WORLD MAP</div>
             </section>
 
+            <nav class="management-tools" aria-label="Strategy management">
+                <button id="government-btn" type="button">🏛 GOVERNMENT</button>
+                <button id="politics-btn" type="button">⚖ POLITICS</button>
+                <button id="economy-btn" type="button">📊 ECONOMY</button>
+                <button id="cards-btn" type="button">🃏 CARDS</button>
+            </nav>
             <nav class="tabs" aria-label="Kingdom information">
                 <button id="tab-0" class="tab-button is-active" type="button">EVENT LOG</button>
                 <button id="tab-1" class="tab-button" type="button">STATISTICS</button>
@@ -130,6 +136,20 @@
         </div>
         <div id="status-message" class="status-message"></div>
         <div class="start-footer">A NEW WORLD IS GENERATED FROM ITS SEED · ONE ORIGINAL LOOPING SOUNDTRACK</div>
+    </div>
+</div>
+
+<div id="realm-management-modal" class="screen-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="management-title">
+    <div class="modal-panel management-panel">
+        <div class="modal-heading"><div><div class="start-kicker">STRATEGY &amp; STATECRAFT</div><h2 id="management-title">REALM MANAGEMENT</h2></div><button id="management-close" class="modal-close" type="button" aria-label="Close management">×</button></div>
+        <nav class="management-tabs" aria-label="Management sections">
+            <button type="button" data-management-tab="government">GOVERNMENT</button>
+            <button type="button" data-management-tab="politics">POLITICS</button>
+            <button type="button" data-management-tab="economy">ECONOMY</button>
+            <button type="button" data-management-tab="cards">CARDS</button>
+        </nav>
+        <p id="management-feedback" class="management-feedback" role="status" aria-live="polite"></p>
+        <div id="management-content" class="management-content"></div>
     </div>
 </div>
 
