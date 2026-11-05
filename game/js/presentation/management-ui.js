@@ -16,6 +16,12 @@ let activePanel="kingdom";
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
 const amount=value=>Number(value||0).toLocaleString("en-US",{maximumFractionDigits:2});
+const BUILDING_LABELS=Object.freeze({
+ [TYPE.KEEP]:"Royal Keep",[TYPE.HOUSE]:"House",[TYPE.FARM]:"Farm",[TYPE.LUMBER]:"Lumber Yard",
+ [TYPE.QUARRY]:"Quarry",[TYPE.TOWER]:"Watchtower",[TYPE.WALL]:"Defensive Wall",[TYPE.TAVERN]:"Tavern",
+ [TYPE.TEMPLE]:"Temple",[TYPE.BARRACKS]:"Barracks",[TYPE.MILL]:"Mill",[TYPE.STABLE]:"Stables",
+ [TYPE.WONDER]:"Wonder",[TYPE.GOLDMINE]:"Gold Mine",[TYPE.BARREL]:"Storage Barrel"
+});
 function setNavigationActive(target){
  document.querySelectorAll(".realm-nav-button").forEach(button=>{
   const active=button.dataset.kacPanel===target;
@@ -83,7 +89,7 @@ function economy(){
 function buildings(){
  const workforce=getWorkforceSnapshot();
  const records=state.entities.filter(entity=>!entity.dead&&entity.isBuilding()).slice().sort((a,b)=>{
-  const an=CARD_DECK.find(card=>card.type===a.type)?.name||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||String(b.type);
+  const an=CARD_DECK.find(card=>card.type===a.type)?.name||BUILDING_LABELS[a.type]||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||BUILDING_LABELS[b.type]||String(b.type);
   return an.localeCompare(bn)||String(a.id).localeCompare(String(b.id));
  });
  const counts=new Map();
@@ -94,7 +100,7 @@ function buildings(){
  }).join("");
  const rows=records.map((building,index)=>{
   const card=CARD_DECK.find(item=>item.type===building.type);
-  const name=card?.name||("Building "+building.type);
+  const name=card?.name||BUILDING_LABELS[building.type]||("Building "+building.type);
   const footprint=BUILDING_SIZE[building.type]||{w:1,h:1};
   const scale=Math.max(.25,Math.min(6,Number(building.footprintScale)||1));
   const width=footprint.w*scale,height=footprint.h*scale;
@@ -194,7 +200,7 @@ function chronicle(){
  const active=state.activeEvent?'<article class="active-issue-card"><span class="command-ribbon">CURRENTLY AWAITING THE CROWN</span><h4>'+esc(state.activeEvent.title)+'</h4><p>'+esc(state.activeEvent.description)+'</p><small>'+state.activeEvent.choices.length+' recorded choices</small><button type="button" data-command="show-active-event">OPEN ISSUE</button></article>':'<p class="command-note">No unresolved realm issue is currently awaiting a decision.</p>';
  return intro("THE ROYAL ARCHIVE","Chronicle & event inbox","Search the actual event log by text or category. Records show their stored simulation tick; calendar dates are not inferred from missing history.")+
  '<div class="command-section-title">ACTIVE REALM ISSUE</div>'+active+
- '<div class="command-section-title">RECORDED CHRONICLE</div><div class="chronicle-filters"><label for="chronicle-search">SEARCH RECORDS</label><input id="chronicle-search" type="search" maxlength="80" placeholder="Search events, people or subjects"><label for="chronicle-kind-filter">CATEGORY</label><select id="chronicle-kind-filter">'+options+'</select></div>'+
+ '<div class="command-section-title">RECORDED CHRONICLE</div><div class="chronicle-filters"><label for="chronicle-search">SEARCH RECORDS</label><input id="chronicle-search" type="search" maxlength="80" placeholder="Search event text or category"><label for="chronicle-kind-filter">CATEGORY</label><select id="chronicle-kind-filter">'+options+'</select></div>'+
  '<div class="chronicle-list">'+(rows||'<p class="command-note">No chronicle entries have been recorded yet.</p>')+'</div>'+
  '<p class="command-note">The event log retains up to 100 recent records. This screen does not claim unread tracking or permanent archival beyond the simulation save.</p>';
 }
