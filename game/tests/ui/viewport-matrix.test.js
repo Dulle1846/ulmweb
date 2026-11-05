@@ -36,3 +36,8 @@ test("responsive overlay audit checks bounds and scroll access rather than scree
   assert.ok(source.includes('["auto","scroll","overlay"].includes(audit.overflowY)'));
   assert.ok(source.includes("await page.screenshot({path:resolve(screenshotDir,screenshotName+"));
 });
+
+test("detailed overlay screenshots use a bounded representative set while all seven sizes remain asserted",()=>{
+  assert.ok(source.includes("if([390,1366,1920].includes(width))"));
+  assert.ok(source.includes("geometry and scroll checks still run at all seven sizes"));
+});
