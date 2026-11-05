@@ -34,7 +34,7 @@ test("the approved royal palette is represented by central design tokens",()=>{
 test("every visible royal navigation action has a real handler",()=>{
   const targets=[...html.matchAll(/data-kac-panel="([^"]+)"/g)].map(match=>match[1]);
   assert.ok(targets.length>=10,"expected the administration rail and resource shortcuts");
-  const supported=new Set(["kingdom","government","people","dynasty","politics","economy","buildings","cards","creatures","build","settings"]);
+  const supported=new Set(["kingdom","government","people","dynasty","chronicle","politics","economy","buildings","cards","creatures","build","settings"]);
   for(const target of targets)assert.ok(supported.has(target),"unwired navigation target: "+target);
   for(const target of supported)assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing visible navigation target: "+target);
   assert.ok(management.includes('addEventListener("click"'),"navigation must use real click handlers");
@@ -101,4 +101,28 @@ test("building register uses live entities, staffing, footprint and site data wi
   assert.ok(management.includes("getResourceNodeAt(building.x,building.y)"));
   assert.ok(management.includes("Per-building production output, storage and upkeep are not currently exposed"));
   assert.ok(management.includes('id="building-search"'));
+});
+
+
+test("creature dossiers use actual living and memorial records",()=>{
+  assert.ok(management.includes("getCreatureSnapshot()"));
+  assert.ok(management.includes("d.memories"));
+  assert.ok(management.includes("d.abilities"));
+  assert.ok(management.includes("d.goals"));
+  assert.ok(management.includes("c.archive"));
+  assert.ok(management.includes('assets/dragon-companion.svg'));
+  assert.ok(management.includes("Creature memorials"));
+});
+
+test("chronicle inbox uses stored event log data and opens the existing active issue",()=>{
+  assert.ok(html.includes('data-kac-panel="chronicle"'));
+  assert.ok(html.includes('data-command-tab="chronicle"'));
+  assert.ok(management.includes("state.eventLog"));
+  assert.ok(management.includes("entry.tick"));
+  assert.ok(management.includes("entry.kind"));
+  assert.ok(management.includes('id="chronicle-search"'));
+  assert.ok(management.includes('id="chronicle-kind-filter"'));
+  assert.ok(management.includes('data-command="show-active-event"'));
+  assert.ok(management.includes("renderUI()"));
+  assert.ok(management.includes("does not claim unread tracking"));
 });
