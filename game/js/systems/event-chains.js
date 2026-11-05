@@ -58,16 +58,16 @@ export const EVENT_CHAINS = Object.freeze({
     ]),
     plague: Object.freeze([
         {title:"The First Cases",description:"A strange fever spreads through the crowded quarter. The healers ask for urgent supplies.",choices:[
-            {label:"Open the royal infirmary",description:"Spend food and gold to slow the sickness.",effects:{resources:{food:-12,gold:-5},morale:2,hidden:{tension:-2,mystery:1}}},
-            {label:"Trust the old remedies",description:"Save the treasury, but the fever may spread.",effects:{morale:-3,hidden:{tension:4,mystery:2}}}
+            {label:"Open the royal infirmary",description:"Spend food and gold to slow the sickness.",effects:{resources:{food:-12,gold:-5},morale:2,hidden:{tension:-2,mystery:1},health:{outbreak:true,severity:2,containment:1,treatment:1,disease:"red-fever"},politics:{commons:1,clergy:2,legitimacy:1}}},
+            {label:"Trust the old remedies",description:"Save the treasury, but the fever may spread.",effects:{morale:-3,hidden:{tension:4,mystery:2},health:{outbreak:true,severity:3,containment:0,disease:"red-fever"},politics:{commons:-3,clergy:-1,legitimacy:-2}}}
         ]},
         {title:"The Quarantine Debate",description:"The guilds resist restrictions while the healers warn that delay will cost lives.",choices:[
-            {label:"Establish a guarded quarantine",description:"Spend wood to isolate the worst-affected streets.",effects:{resources:{wood:-14},morale:-1,hidden:{tension:-3,prosperity:-1}}},
-            {label:"Keep the markets open",description:"Preserve trade, but public anxiety deepens.",effects:{morale:-4,hidden:{tension:5,mystery:1}}}
+            {label:"Establish a guarded quarantine",description:"Spend wood to isolate the worst-affected streets.",effects:{resources:{wood:-14},morale:-1,hidden:{tension:-3,prosperity:-1},health:{containment:2,treatment:1},politics:{commons:1,guilds:-2,clergy:2,legitimacy:1}}},
+            {label:"Keep the markets open",description:"Preserve trade, but public anxiety deepens.",effects:{morale:-4,hidden:{tension:5,mystery:1},health:{containment:-1},politics:{commons:-2,guilds:2,clergy:-2,legitimacy:-1}}}
         ]},
         {title:"The Last Bell",description:"The fever has weakened. The realm must decide how to remember the crisis.",choices:[
-            {label:"Found a house of healing",description:"Spend stone and gold to protect future generations.",effects:{resources:{stone:-12,gold:-8},morale:5,hidden:{prosperity:5,tension:-4}}},
-            {label:"Return to ordinary life",description:"Recover stability quickly, but leave the old infirmary unchanged.",effects:{morale:1,hidden:{prosperity:1,mystery:2}}}
+            {label:"Found a house of healing",description:"Spend stone and gold to protect future generations.",effects:{resources:{stone:-12,gold:-8},morale:5,hidden:{prosperity:5,tension:-4},health:{treatment:2,containment:1},politics:{commons:1,clergy:2,legitimacy:1}}},
+            {label:"Return to ordinary life",description:"Recover stability quickly, but leave the old infirmary unchanged.",effects:{morale:1,hidden:{prosperity:1,mystery:2},health:{containment:-1},politics:{clergy:-1,legitimacy:-1}}}
         ]}
     ]),
     rebellion: Object.freeze([
