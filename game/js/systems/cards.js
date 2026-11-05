@@ -7,6 +7,7 @@ import { revealArea,isWaterAt } from "../world/world.js";
 import { canAfford,payForCard,addResource } from "./resources.js";
 import { CARD_PROTOTYPES,CARD_CATEGORIES,CARD_VARIANT_DIMENSIONS,createCardForCategory,createCardVariant } from "./card-catalog.js";
 import { addLog } from "./events.js";
+import { createCreatureProfile } from "./creatures.js";
 import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE,normalizeHouseholdAssignments } from "./population.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
 import { rand as seededRand,randInt as seededRandInt } from "../core/random.js";
@@ -145,9 +146,10 @@ export function placeCurrentCard(targetX,targetY){
     }else{
         const entity=spawnEntity(tx,ty,card.type);
         entity.footprintScale=Number.isFinite(card.sizeMultiplier)?Math.max(0.25,Math.min(6,card.sizeMultiplier)):1;
-        if(card.kind==="unit"||card.kind==="person"||card.kind==="animal"){
+        if(card.kind==="unit"||card.kind==="person"||card.kind==="animal"||card.kind==="creature"){
             entity.anchor={x:tx,y:ty};entity.home={x:tx,y:ty};entity.jobRefreshTimer=0;
             if(card.kind!=="animal")state.statistics.totalUnitsRecruited++;
+            if(card.kind==="creature")createCreatureProfile(entity);
         }else{
             state.statistics.totalBuildingsBuilt++;
             if(card.type===TYPE.HOUSE)for(let i=0;i<3;i++){
