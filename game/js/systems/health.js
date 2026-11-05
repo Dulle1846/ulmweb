@@ -66,7 +66,17 @@ export function applyHealthEffects(effects={}){
         });
         health=ensureHealth();
     }
-    if(Number.isFinite(effects.treatment))health.severity=clamp(health.severity-effects.treatment,0,3);
+    if(Number.isFinite(effects.treatment)){
+        const treatment=clamp(effects.treatment,0,3);
+        health.severity=clamp(health.severity-treatment,0,3);
+        if(treatment>0){
+            for(const person of residents()){
+                if((person.illnessUntilTick||0)>state.tick){
+                    person.illnessUntilTick=Math.max(state.tick+HEALTH_INTERVAL,person.illnessUntilTick-treatment*20);
+                }
+            }
+        }
+    }
     if(Number.isFinite(effects.containment)&&!effects.outbreak)health.containment=clamp(health.containment+effects.containment,0,3);
     return getHealthSnapshot();
 }
