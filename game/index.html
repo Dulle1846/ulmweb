@@ -8,18 +8,26 @@
     <link rel="stylesheet" href="css/game.css">
     <link rel="stylesheet" href="css/medieval.css">
     <link rel="stylesheet" href="css/comic-strategy.css">
+    <link rel="stylesheet" href="css/ui-design-system.css">
 </head>
 <body>
 <div class="game-shell">
     <header class="topbar">
         <div class="brand">
-            <div class="brand-mark" aria-hidden="true">♜</div>
+            <div class="brand-mark"><img src="assets/royal-crest.svg" alt="" aria-hidden="true"></div>
             <div><div class="brand-title">KINGS &amp; CARDS</div><div id="kingdom-name" class="brand-subtitle">THE REALM OF ELDRIA</div></div>
         </div>
         <div class="header-middle">
             <div class="date-block"><div class="date-label">Realm calendar</div><div class="date-value"><span id="season">SPRING</span> · <span id="year">YEAR 1</span></div></div>
             <div class="morale-block"><div class="morale-topline"><span>REALM MORALE</span><span id="morale-value">72</span></div><div class="morale-track"><div id="morale-bar"></div></div></div>
-            <div class="player-chip">👤 <span id="player-name">GUEST</span></div>
+            <div class="player-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c.4-4.1 2.9-6.2 7.5-6.2s7.1 2.1 7.5 6.2"/></svg><span id="player-name">GUEST</span></div>
+        </div>
+        <div class="realm-resource-strip" aria-label="Royal resources">
+            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 8l2 12h10l2-12-7-5Z"/><path d="M8 9h8M9 13h6"/></svg><small>WOOD</small><strong data-resource-value="wood">180</strong></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 19 5-13 4 7 3-5 4 11H4Z"/><path d="M7 16h10"/></svg><small>STONE</small><strong data-resource-value="stone">95</strong></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M15 8.5c-.7-.7-1.7-1-3-1-1.7 0-2.8.8-2.8 2s1.1 1.8 2.8 2 2.8.8 2.8 2-1.1 2-2.8 2c-1.2 0-2.3-.4-3-1.1M12 6v12"/></svg><small>GOLD</small><strong data-resource-value="gold">75</strong></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c2-5 4-9 8-14 0 6 3 9 8 10-3 4-8 6-16 4Z"/><path d="M7 17c3-2 6-5 8-9"/></svg><small>FOOD</small><strong data-resource-value="food">120</strong></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="people" title="Open character dossiers"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6M16 5a3 3 0 0 1 0 6m2 3c2 .7 3 2.5 3 5"/></svg><small>PEOPLE</small><strong data-population>8</strong></button>
         </div>
         <div class="header-actions">
             <button id="save-btn" class="control-button" type="button" title="Save · Ctrl+S">SAVE</button>
@@ -39,6 +47,40 @@
     </header>
 
     <main id="main-container" class="game-layout">
+        <nav class="realm-nav" aria-label="Royal administration">
+            <div class="realm-nav-heading">THE CROWN</div>
+            <button class="realm-nav-button" type="button" data-kac-panel="kingdom" title="Kingdom overview">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 2-5 4 3 3-5 3 5 4-3 2 5H3Z"/><path d="M5 11h14l-1 9H6l-1-9ZM9 14v3m6-3v3"/></svg><span>Realm</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="government" title="Government and institutions">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5M8 16h3"/><path d="m15 16 2 2 3-4"/></svg><span>Rule</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="people" title="Character dossiers">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6M16 5a3 3 0 0 1 0 6m2 3c2 .7 3 2.5 3 5"/></svg><span>People</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="dynasty" title="Royal dynasty">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 4 8 8 10 4-2 8-5 8-10V6l-8-3Z"/><path d="M8 9h8M8 13h8M12 9v8"/></svg><span>Dynasty</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="politics" title="Factions and political order">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 6h14M7 6l-4 8h8L7 6Zm10 0-4 8h8l-4-8ZM7 21h10"/></svg><span>Politics</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="economy" title="Treasury and economy">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M8 15h3"/><circle cx="16" cy="14" r="2"/></svg><span>Economy</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="cards" title="Card hand and deck">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="12" height="16" rx="1"/><path d="m9 8 2-2 2 2m-4 7h4M17 7l3 2v11H9"/></svg><span>Cards</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="creatures" title="Living creatures">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16c2-4 5-6 9-6 2 0 4 1 6 3l2 1-3 2-2 4h-3l1-4H9l-2 3H4l2-5Z"/><path d="m8 10-2-4 5 2m5 1 2-4 1 5"/></svg><span>Beasts</span>
+            </button>
+            <div class="realm-nav-spacer"></div>
+            <button class="realm-nav-button" type="button" data-kac-panel="build" title="Construction and roads">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6M3 9h18"/></svg><span>Build</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="settings" title="Game settings">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19 13 2 1-2 4-2-1-2 1v2H9v-2l-2-1-2 1-2-4 2-1v-2l-2-1 2-4 2 1 2-1V4h6v2l2 1 2-1 2 4-2 1v2Z"/></svg><span>Options</span>
+            </button>
+        </nav>
         <section id="canvas-wrapper" class="world-stage" aria-label="World map">
             <canvas id="canvas" aria-label="Interactive kingdom map"></canvas>
             <div class="stage-topline">
@@ -70,10 +112,10 @@
             <section class="resource-section">
                 <div class="section-heading"><span>ROYAL STORES</span><span class="subtle">TREASURY &amp; SUPPLIES</span></div>
                 <div class="resource-grid">
-                    <div class="resource-card wood"><div class="resource-symbol">🌲</div><div class="resource-copy"><div id="res-wood" class="resource-value">180</div><div class="resource-name">WOOD</div></div><div id="wood-income" class="resource-income"></div></div>
-                    <div class="resource-card stone"><div class="resource-symbol">⛰</div><div class="resource-copy"><div id="res-stone" class="resource-value">95</div><div class="resource-name">STONE</div></div><div id="stone-income" class="resource-income"></div></div>
-                    <div class="resource-card gold"><div class="resource-symbol">✦</div><div class="resource-copy"><div id="res-gold" class="resource-value">75</div><div class="resource-name">GOLD</div></div><div id="gold-income" class="resource-income"></div></div>
-                    <div class="resource-card food"><div class="resource-symbol">🌾</div><div class="resource-copy"><div id="res-food" class="resource-value">120</div><div class="resource-name">FOOD</div></div><div id="food-income" class="resource-income"></div></div>
+                    <div class="resource-card wood"><div class="resource-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/realm-icons.svg#tree"></use></svg></div><div class="resource-copy"><div id="res-wood" class="resource-value">180</div><div class="resource-name">WOOD</div></div><div id="wood-income" class="resource-income"></div></div>
+                    <div class="resource-card stone"><div class="resource-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#quarry"></use></svg></div><div class="resource-copy"><div id="res-stone" class="resource-value">95</div><div class="resource-name">STONE</div></div><div id="stone-income" class="resource-income"></div></div>
+                    <div class="resource-card gold"><div class="resource-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/realm-icons.svg#coin"></use></svg></div><div class="resource-copy"><div id="res-gold" class="resource-value">75</div><div class="resource-name">GOLD</div></div><div id="gold-income" class="resource-income"></div></div>
+                    <div class="resource-card food"><div class="resource-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#mill"></use></svg></div><div class="resource-copy"><div id="res-food" class="resource-value">120</div><div class="resource-name">FOOD</div></div><div id="food-income" class="resource-income"></div></div>
                 </div>
             </section>
 
@@ -82,10 +124,10 @@
                 <div id="card-container" class="card-container" role="button" tabindex="0" aria-label="Drag the selected card onto the map">
                     <div id="card-icon" class="card-icon">🏠</div><div id="card-name" class="card-name">COTTAGE</div><div id="card-desc" class="card-desc">Houses 3 villagers.</div>
                     <div class="card-costs">
-                        <div id="card-cost-wood" class="card-cost"><span>🌲</span><span>30</span></div>
-                        <div id="card-cost-stone" class="card-cost"><span>⛰</span><span>10</span></div>
-                        <div id="card-cost-gold" class="card-cost"><span>✦</span><span>0</span></div>
-                        <div id="card-cost-food" class="card-cost"><span>🌾</span><span>0</span></div>
+                        <div id="card-cost-wood" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/realm-icons.svg#tree"></use></svg></span><span>30</span></div>
+                        <div id="card-cost-stone" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/city-builder-sprites.svg#quarry"></use></svg></span><span>10</span></div>
+                        <div id="card-cost-gold" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/realm-icons.svg#coin"></use></svg></span><span>0</span></div>
+                        <div id="card-cost-food" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/city-builder-sprites.svg#mill"></use></svg></span><span>0</span></div>
                     </div>
                     <div class="card-play-tag">PLAY</div>
                 </div>
@@ -172,6 +214,7 @@
 
 
 <div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="modal-panel command-panel"><header class="command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="modal-close" type="button" aria-label="Close management">×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management">
+<button type="button" data-command-tab="kingdom"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>REALM</span></button>
 <button type="button" data-command-tab="government"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>GOVERNMENT</span></button>
 <button type="button" data-command-tab="politics"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>POLITICS</span></button>
 <button type="button" data-command-tab="decisions"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>DECISIONS</span></button>
