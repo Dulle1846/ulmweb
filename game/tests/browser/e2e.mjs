@@ -537,6 +537,25 @@ try{
         assert.deepEqual(layout.overlaps,[],"header groups must not overlap at "+width+"x"+height+": "+JSON.stringify(layout));
         assert.deepEqual(layout.clippedActions,[],"all header actions must remain visible at "+width+"x"+height+": "+JSON.stringify(layout));
         assert.ok(layout.dockWidth>=width-2&&layout.dockLeft<=1&&layout.dockRight>=width-1,"global action bar must span viewport at "+width+"x"+height+": "+JSON.stringify(layout));
+        const sidePanel=await page.evaluate(()=>{
+            const panel=document.querySelector(".side-panel");
+            const card=document.querySelector("#card-container");
+            const originalTop=panel.scrollTop;
+            panel.scrollTop=panel.scrollHeight;
+            const panelBounds=panel.getBoundingClientRect();
+            const cardBounds=card.getBoundingClientRect();
+            const result={
+                clientHeight:panel.clientHeight,
+                scrollHeight:panel.scrollHeight,
+                scrollTop:panel.scrollTop,
+                cardBottom:cardBounds.bottom,
+                panelBottom:panelBounds.bottom,
+                cardReachable:cardBounds.bottom<=panelBounds.bottom+1
+            };
+            panel.scrollTop=originalTop;
+            return result;
+        });
+        assert.ok(sidePanel.cardReachable,"selected card details must remain reachable inside the side panel at "+width+"x"+height+": "+JSON.stringify(sidePanel));
         await page.locator("#command-open-btn").click();
         const dialog=await page.locator("#command-modal .command-panel").boundingBox();
         assert.ok(dialog&&dialog.x>=0&&dialog.y>=0&&dialog.x+dialog.width<=width+1&&dialog.y+dialog.height<=height+1,"management dialog must fit viewport "+width+"x"+height+": "+JSON.stringify(dialog));
