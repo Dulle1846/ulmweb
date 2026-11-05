@@ -3,7 +3,7 @@ function createInitialState() {
     return {
         canvas:null,ctx:null,minimapCanvas:null,minimapCtx:null,
         camera:{x:0,y:0},zoom:1,zoomTarget:1,zoomLevel:3,zoomAnchor:null,
-        roads:{version:1,revision:0,tiles:{}},roadBuildMode:null,
+        roads:{version:1,revision:0,tiles:{}},roadBuildMode:null,resourceGeography:null,
         tick:0,gameSpeed:1,isPaused:false,tickAccumulator:0,lastFrameTime:0,
         randomStreams:{},nextEntityId:1,
         movementAccumulator:0,lastUiRender:0,lastMinimapRender:0,

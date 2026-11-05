@@ -23,6 +23,7 @@ import {normalizeGovernment} from "../systems/government.js";
 import {normalizeRoyalState} from "../systems/royal-dynasty.js";
 import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
+import {serializeResourceGeography,restoreResourceGeography,validateResourceGeographySnapshot} from "../systems/resource-geography.js";
 import {setupBuildUI} from "../presentation/build-ui.js";
 
 let loopStarted=false;
@@ -122,6 +123,7 @@ function createSaveSnapshot(){
         camera:{...state.camera},zoom:state.zoom,
         explored:state.explored.map(column=>column.map(Boolean)),
         roads:serializeRoads(),
+        resourceGeography:serializeResourceGeography(),
         tick:state.tick,year:state.year,dayOfYear:state.dayOfYear,seasonIndex:state.seasonIndex,gameSpeed:state.gameSpeed,
         morale:state.morale,resources:{...state.resources},incomeThisTick:{...state.incomeThisTick},
         kingHp:state.kingHp,totalRaidsSurvived:state.totalRaidsSurvived,raidActive:state.raidActive,
@@ -178,6 +180,7 @@ function validateSaveSnapshot(snapshot){
         if(!snapshot.roads||typeof snapshot.roads!=="object"||snapshot.roads.version!==1||!snapshot.roads.tiles||typeof snapshot.roads.tiles!=="object"||Object.keys(snapshot.roads.tiles).length>5000)throw new Error("Save data contains an invalid road network.");
         for(const [key,tile] of Object.entries(snapshot.roads.tiles)){if(!/^\d+:\d+$/.test(key)||!tile||!["dirt","gravel","paved"].includes(tile.type))throw new Error("Save data contains an invalid road tile.");}
     }
+    if(snapshot.resourceGeography!==undefined)validateResourceGeographySnapshot(snapshot.resourceGeography);
     if(snapshot.hand!==undefined&&(!Array.isArray(snapshot.hand)||snapshot.hand.length>5)){
         throw new Error("Save data contains an invalid card hand.");
     }
@@ -191,6 +194,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.worldOptions=snapshot.worldOptions||{landmass:50,ruggedness:55,forests:52,water:48};
     initWorld(state.worldSeed,state.worldOptions);
     restoreRoads(snapshot.roads);
+    restoreResourceGeography(snapshot.resourceGeography);
     state.entities=[];
     const restored=[];
     for(const dto of snapshot.entities||[]){
