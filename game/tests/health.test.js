@@ -135,3 +135,11 @@ test("treatment shortens active illness without ending it immediately",()=>{
     assert.ok(patient.illnessUntilTick>state.tick);
     assert.equal(result.severity,2);
 });
+
+test("health updates skip idle ticks without allocating or normalizing state",()=>{
+    setup();
+    const original=state.health;
+    state.tick=1;
+    assert.equal(updateHealth(),null);
+    assert.strictEqual(state.health,original);
+});
