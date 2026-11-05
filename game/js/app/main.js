@@ -176,7 +176,7 @@ function validateSaveSnapshot(snapshot){
     }
     if(snapshot.roads!==undefined){
         if(!snapshot.roads||typeof snapshot.roads!=="object"||snapshot.roads.version!==1||!snapshot.roads.tiles||typeof snapshot.roads.tiles!=="object"||Object.keys(snapshot.roads.tiles).length>5000)throw new Error("Save data contains an invalid road network.");
-        for(const [key,tile] of Object.entries(snapshot.roads.tiles)){if(!/^\\d+:\\d+$/.test(key)||!tile||!["dirt","gravel","paved"].includes(tile.type))throw new Error("Save data contains an invalid road tile.");}
+        for(const [key,tile] of Object.entries(snapshot.roads.tiles)){if(!/^\d+:\d+$/.test(key)||!tile||!["dirt","gravel","paved"].includes(tile.type))throw new Error("Save data contains an invalid road tile.");}
     }
     if(snapshot.hand!==undefined&&(!Array.isArray(snapshot.hand)||snapshot.hand.length>5)){
         throw new Error("Save data contains an invalid card hand.");
