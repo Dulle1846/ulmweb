@@ -4,12 +4,17 @@ import { getGovernmentSnapshot, GOVERNMENT_FORMS, GOVERNMENT_POLICIES, setGovern
 import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { getFamilySnapshot } from "../systems/families.js";
-import { getWorkforceSnapshot } from "../systems/economy.js";
+import { BUILDING_WORKFORCE, getBuildingEfficiency, getWorkforceSnapshot } from "../systems/economy.js";
+import { BUILDING_SIZE } from "../core/config.js";
+import { TYPE } from "../core/types.js";
+import { CARD_DECK } from "../systems/cards.js";
+import { getResourceNodeAt } from "../systems/resource-geography.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
 let activePanel="kingdom";
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
+const amount=value=>Number(value||0).toLocaleString("en-US",{maximumFractionDigits:2});
 function setNavigationActive(target){
  document.querySelectorAll(".realm-nav-button").forEach(button=>{
   const active=button.dataset.kacPanel===target;
@@ -55,8 +60,62 @@ function cards(){
  return intro("ROYAL DECK","Card management","Inspect your hand and select a card before placing it on the map.")+'<div class="command-summary"><div><small>HAND</small><strong>'+(state.hand||[]).length+' / 5</strong></div><div><small>DRAW PILE</small><strong>'+number(state.availableCards?.length)+'</strong></div><div><small>REWARDS QUEUED</small><strong>'+number(state.cardRewardQueue?.length)+'</strong></div></div><div class="command-card-list">'+(rows||'<p class="command-note">Your hand is empty. Advance the simulation to draw cards.</p>')+'</div>';
 }
 function economy(){
- const w=getWorkforceSnapshot(),h=getHousingSnapshot(),homes=getHouseholdSnapshot().homes||[],resources=Object.entries(state.resources||{}).map(([k,v])=>'<div class="command-resource"><span>'+esc(k)+'</span><strong>'+number(v)+'</strong></div>').join("");
- return intro("TREASURY & PRODUCTION","Realm economy","Live overview of resources, workforce, housing and household capacity.")+'<div class="command-summary"><div><small>POPULATION</small><strong>'+h.population+'</strong></div><div><small>HOUSING</small><strong>'+h.capacity+'</strong></div><div><small>FREE BEDS</small><strong>'+h.available+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div></div><div class="command-section-title">ROYAL STORES</div><div class="command-resource-grid">'+resources+'</div><div class="command-section-title">WORKFORCE</div><div class="command-summary"><div><small>WORKERS</small><strong>'+number(w.population)+'</strong></div><div><small>UNEMPLOYED</small><strong>'+number(w.unemployed)+'</strong></div><div><small>WORKPLACES</small><strong>'+number(w.buildings)+'</strong></div></div><div class="command-section-title">HOUSEHOLDS</div><p class="command-note">'+number(homes.length)+' registered homes. Shared housing never creates kinship.</p>';
+ const w=getWorkforceSnapshot(),h=getHousingSnapshot(),homes=getHouseholdSnapshot().homes||[];
+ const resources=Object.entries(state.resources||{}).map(([k,v])=>'<div class="command-resource"><span>'+esc(k)+'</span><strong>'+amount(v)+'</strong></div>').join("");
+ const flow=Object.entries(state.incomeThisTick||{}).map(([k,v])=>'<div class="command-resource"><span>'+esc(k)+' · this tick</span><strong class="'+(Number(v)>0?'is-positive':Number(v)<0?'is-negative':'')+'">'+(Number(v)>0?'+':'')+amount(v)+'</strong></div>').join("");
+ const ledger=state.economy?.lastLedger;
+ const ledgerRows=ledger?[
+  ["Food demand",ledger.foodDemand,"food"],["Food consumed",ledger.foodConsumed,"food"],["Food shortage",ledger.foodShortage,"food"],
+  ["Taxes collected",ledger.taxesCollected,"gold"],["Wages paid",ledger.wagesPaid,"gold"],["Building & road upkeep",ledger.upkeepPaid,"gold"],
+  ["Unpaid wages",ledger.unpaidWages,"gold"],["Unpaid upkeep",ledger.unpaidUpkeep,"gold"],["Net treasury change",ledger.netGold,"gold"]
+ ].map(([label,value,unit])=>'<div class="ledger-row"><span>'+esc(label)+'</span><strong>'+amount(value)+' '+unit+'</strong></div>').join(""):'<p class="command-note">No completed financial ledger yet. The simulation settles a ledger every 20 in-game days.</p>';
+ const totals=state.economy||{};
+ return intro("TREASURY & PRODUCTION","Realm economy","Live resource stocks, current-tick flows and the latest completed 20-day financial ledger. No forecasts are inferred.")+
+ '<div class="command-summary"><div><small>POPULATION</small><strong>'+h.population+'</strong></div><div><small>HOUSING</small><strong>'+h.capacity+'</strong></div><div><small>FREE BEDS</small><strong>'+h.available+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div></div>'+
+ '<div class="command-section-title">CURRENT ROYAL STORES · STOCK</div><div class="command-resource-grid">'+resources+'</div>'+
+ '<div class="command-section-title">RESOURCE FLOW · CURRENT SIMULATION TICK</div><div class="command-resource-grid">'+flow+'</div>'+
+ '<div class="command-section-title">LATEST FINANCIAL SETTLEMENT · 20 IN-GAME DAYS</div><div class="ledger-grid">'+ledgerRows+'</div>'+
+ '<div class="command-section-title">CUMULATIVE LEDGER TOTALS</div><div class="command-summary"><div><small>DAYS SETTLED</small><strong>'+number(totals.daysElapsed)+'</strong></div><div><small>TAXES</small><strong>'+amount(totals.taxesCollected)+' G</strong></div><div><small>WAGES</small><strong>'+amount(totals.wagesPaid)+' G</strong></div><div><small>UPKEEP</small><strong>'+amount(totals.upkeepPaid)+' G</strong></div></div>'+
+ '<div class="command-section-title">WORKFORCE & HOUSEHOLDS</div><div class="command-summary"><div><small>WORKERS</small><strong>'+number(w.population)+'</strong></div><div><small>UNEMPLOYED</small><strong>'+number(w.unemployed)+'</strong></div><div><small>BUILDINGS</small><strong>'+number(w.buildings)+'</strong></div><div><small>HOMES</small><strong>'+number(homes.length)+'</strong></div></div>'+
+ '<p class="command-note">The simulation currently retains only its latest completed ledger, not a historical time series. Long-term trend charts and forecasts are intentionally withheld until real history is stored.</p>';
+}
+function buildings(){
+ const workforce=getWorkforceSnapshot();
+ const records=state.entities.filter(entity=>!entity.dead&&entity.isBuilding()).slice().sort((a,b)=>{
+  const an=CARD_DECK.find(card=>card.type===a.type)?.name||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||String(b.type);
+  return an.localeCompare(bn)||String(a.id).localeCompare(String(b.id));
+ });
+ const counts=new Map();
+ for(const building of records)counts.set(building.type,(counts.get(building.type)||0)+1);
+ const typeSummary=[...counts.entries()].map(([type,count])=>{
+  const card=CARD_DECK.find(item=>item.type===type);
+  return '<span class="building-type-chip">'+esc(card?.name||("Building "+type))+' <strong>'+count+'</strong></span>';
+ }).join("");
+ const rows=records.map((building,index)=>{
+  const card=CARD_DECK.find(item=>item.type===building.type);
+  const name=card?.name||("Building "+building.type);
+  const footprint=BUILDING_SIZE[building.type]||{w:1,h:1};
+  const scale=Math.max(.25,Math.min(6,Number(building.footprintScale)||1));
+  const width=footprint.w*scale,height=footprint.h*scale;
+  const hp=Number(building.hp)||0,maxHp=Math.max(1,Number(building.maxHp)||hp||1),condition=Math.max(0,Math.min(100,Math.round(hp/maxHp*100)));
+  const capacity=BUILDING_WORKFORCE[building.type]||0,staff=workforce.workersByBuilding.get(building)||0;
+  const efficiency=capacity?Math.round(getBuildingEfficiency(building,workforce)*100):null;
+  const costs=Object.entries(card?.cost||{}).filter(([,value])=>Number(value)>0).map(([resource,value])=>amount(value)+" "+resource).join(" · ")||"No catalogued material cost";
+  let siteNote="No dedicated resource-site indicator is defined for this building type.";
+  try{
+   const node=getResourceNodeAt(building.x,building.y);
+   if(building.type===TYPE.LUMBER)siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity);
+   else if(building.type===TYPE.QUARRY)siteNote="Stone stock at site tile: "+number(node.stoneStock)+" / "+number(node.stoneCapacity);
+   else if(building.type===TYPE.FARM)siteNote="Site fertility: "+number(node.fertility)+" / 100 · water access: "+(node.waterAccess?"yes":"no");
+  }catch{}
+  const detail=card?.desc||"No additional building description is recorded in the card catalogue.";
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+condition+'%</b><small>condition</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p><div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Site data<strong>'+esc(siteNote)+'</strong></span></div><p class="command-note">Per-building production output, storage and upkeep are not currently exposed by the simulation, so no values are fabricated here.</p></div></details>';
+ }).join("");
+ return intro("SETTLEMENT ARCHITECTURE","Building register","Inspect every surviving structure using its actual simulation entity, health, footprint, staffing and site data.")+
+ '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+records.length+'</strong></div><div><small>BUILDING TYPES</small><strong>'+counts.size+'</strong></div><div><small>EMPLOYED</small><strong>'+number(workforce.employed)+'</strong></div><div><small>POPULATION</small><strong>'+number(workforce.population)+'</strong></div></div>'+
+ '<div class="building-type-summary">'+typeSummary+'</div><label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">'+
+ '<div class="building-register">'+(rows||'<p class="command-note">No buildings are recorded in this realm yet.</p>')+'</div>'+
+ '<p class="command-note">Site resource values describe the building's centre tile only. They are not a production rate. The register is read-only; construction and demolition remain in the existing build interface.</p>';
 }
 function familyRecord(id){
  const key=String(id||"");
@@ -113,7 +172,7 @@ function creatures(){
 }
 function render(){
  const panel=$("command-panel-content");if(!panel)return;
- panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,dynasty,creatures}[activePanel]||kingdom)();
+ panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,buildings,dynasty,creatures}[activePanel]||kingdom)();
  document.querySelectorAll("[data-command-tab]").forEach(b=>{
   const active=b.dataset.commandTab===activePanel;
   b.classList.toggle("is-active",active);
@@ -133,7 +192,7 @@ export function setupManagementUI(){
   if(target==="people"){$("people-btn")?.click();return;}
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
-  if(["kingdom","government","politics","decisions","cards","economy","dynasty","creatures"].includes(target)){
+  if(["kingdom","government","politics","decisions","cards","economy","buildings","dynasty","creatures"].includes(target)){
    activePanel=target;$("command-modal")?.classList.remove("hidden");render();
   }
  }));
@@ -141,6 +200,12 @@ export function setupManagementUI(){
  document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{activePanel=b.dataset.commandTab||"government";$("command-modal")?.classList.remove("hidden");render();}));
  $("command-close")?.addEventListener("click",()=>$("command-modal")?.classList.add("hidden"));
  $("command-modal")?.addEventListener("click",e=>{if(e.target===$("command-modal"))$("command-modal").classList.add("hidden");});
+ $("command-panel-content")?.addEventListener("input",e=>{
+  if(e.target.id==="building-search"){
+   const query=e.target.value.trim().toLowerCase();
+   document.querySelectorAll(".building-record").forEach(record=>record.classList.toggle("is-filtered",query&&!record.dataset.buildingName.includes(query)));
+  }
+ });
  $("command-panel-content")?.addEventListener("click",e=>{
   const person=e.target.closest("[data-open-person]");
   if(person){window.dispatchEvent(new CustomEvent("kac:open-person",{detail:{personId:person.dataset.openPerson}}));$("command-modal")?.classList.add("hidden");return;}
