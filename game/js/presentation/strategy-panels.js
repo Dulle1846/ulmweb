@@ -4,6 +4,7 @@ import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getWorkforceSnapshot } from "../systems/economy.js";
 import { getGovernmentSnapshot,setTaxRate,setGovernmentStructure,enactDecree } from "../systems/government.js";
 import { getRoyalHouseholdSnapshot,arrangeRoyalMarriage,createRoyalHeir } from "../systems/royal-household.js";
+import { getCreatureSnapshot } from "../systems/creatures.js";
 
 const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 const $=id=>document.getElementById(id);
@@ -53,6 +54,14 @@ function renderDecisions(){
     section("Available decisions",'<div class="strategy-decree-grid"><button data-decree="royal_feast">🍗 Hold a royal feast <small>Improve morale and commoner support</small></button><button data-decree="public_works">🛠 Fund public works <small>Spend wood and gold; support guilds</small></button><button data-decree="royal_pardon">📜 Grant a royal pardon <small>Restore legitimacy and public support</small></button><button data-decree="festival_of_faith">✨ Sponsor a holy festival <small>Strengthen clergy and morale</small></button></div>')+
     section("Recent decrees",'<ul class="strategy-list">'+(decrees.map(item=>'<li><b>'+esc(item.label)+'</b><span>Year '+item.year+' · Tick '+item.tick+'</span></li>').join("")||'<li>No royal decrees have been issued yet.</li>')+'</ul>');
 }
+function renderCreatures(){
+    const creatures=getCreatureSnapshot();
+    const active=creatures.active.map(item=>'<li><b>🐉 '+esc(item.name)+'</b><span>'+esc(item.lifeStage)+' · Age '+Math.floor(item.ageYears)+' · '+esc(item.temperament)+'</span><span>Bond '+Math.round(item.bond)+'% · Hunger '+Math.round(item.hunger)+'%</span></li>').join("");
+    const archived=creatures.archive.map(item=>'<li><b>'+esc(item.name)+'</b><span>Died in year '+item.deathYear+' · Age '+Math.floor(item.ageYears)+' · '+esc(item.cause)+'</span></li>').join("");
+    return '<div class="strategy-hero"><img src="assets/royal-crest.svg" alt=""><div><small>THE BESTIARY</small><h2>Living creatures</h2><p>Persistent magical creatures have needs, temperaments, bonds, age stages and personal memories.</p></div></div>'+
+    section("Active dragons",'<div class="strategy-stat-grid"><div><small>Living dragons</small><strong>'+creatures.active.length+'</strong></div><div><small>Memorials</small><strong>'+creatures.archive.length+'</strong></div></div><ul class="strategy-list">'+(active||'<li>No dragon has joined the realm yet. Draw and play a Wyvern card to hatch one.</li>')+'</ul>')+
+    section("Creature memorials",'<ul class="strategy-list">'+(archived||'<li>No creature memorials have been recorded.</li>')+'</ul><p class="strategy-note">Dragons consume food, grow through life stages, bond with the settlement and fight to defend it. Their memories and memorials are saved with the realm.</p>');
+}
 function renderDynasty(){
     const family=getRoyalHouseholdSnapshot();
     const king=family.king;
@@ -64,7 +73,7 @@ function renderDynasty(){
     section("Royal consort",'<ul class="strategy-list">'+(consorts||'<li>No royal marriage recorded.</li>')+'</ul>'+(family.candidates.length?'<label class="strategy-field">Eligible consort<select id="royal-consort">'+candidates+'</select></label><button class="strategy-action" data-action="royal-marriage">Arrange royal marriage</button>':'<p class="strategy-note">No eligible adult consort is currently available. A candidate must be an adult, compatible species and not already a close relative.</p>'))+
     section("Dynastic heirs",'<ul class="strategy-list">'+(heirs||'<li>No direct descendants are recorded.</li>')+'</ul><p class="strategy-note">'+esc(family.succession.description)+'</p>');
 }
-const RENDERERS={government:renderGovernment,politics:renderPolitics,economy:renderEconomy,cards:renderCards,decisions:renderDecisions,dynasty:renderDynasty};
+const RENDERERS={government:renderGovernment,politics:renderPolitics,economy:renderEconomy,cards:renderCards,decisions:renderDecisions,dynasty:renderDynasty,creatures:renderCreatures};
 function refresh(){const content=$("strategy-content");if(content)content.innerHTML=RENDERERS[activePanel]();if(activePanel==="government"&&$("gov-form"))$("gov-form").value=getGovernmentSnapshot().form;document.querySelectorAll("[data-strategy-tab]").forEach(button=>button.classList.toggle("is-active",button.dataset.strategyTab===activePanel));}
 function open(panel){activePanel=RENDERERS[panel]?panel:"government";refresh();$("strategy-modal")?.classList.remove("hidden");}
 function close(){$("strategy-modal")?.classList.add("hidden");}
