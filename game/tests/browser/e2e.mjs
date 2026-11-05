@@ -57,7 +57,7 @@ try{
     await page.locator("#royal-consort-select").selectOption({index:1});
     await page.locator('[data-command="consort"]').click();
     await page.locator('[data-command="royal-birth"]').click();
-    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Living royal children"));
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("LIVING ROYAL CHILDREN"));
     await page.locator('[data-command-tab="creatures"]').click();
     await page.locator('[data-command="summon-dragon"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Emberwing") ||
