@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState,state } from "../../js/core/state.js";
-import { placeRoad,removeRoad,getRoadAt,getRoadCount,getRoadSpeedMultiplier,getRoadTravelCost,getRoadTiles,restoreRoads,serializeRoads,setRoadBuildMode,getRoadBuildMode,clearRoadBuildMode } from "../../js/systems/roads.js";
+import { placeRoad,removeRoad,getRoadAt,getRoadCount,getRoadSpeedMultiplier,getRoadTravelCost,getRoadTiles,getRoadUpkeepTotal,restoreRoads,serializeRoads,setRoadBuildMode,getRoadBuildMode,clearRoadBuildMode } from "../../js/systems/roads.js";
 import { findPath } from "../../js/simulation/villagers.js";
+import { calculateDailyLedger } from "../../js/systems/economy.js";
 
 function setup(){
     resetState();
@@ -89,4 +90,13 @@ test("A* prefers a long paved corridor when it is cheaper than a shorter dirt ro
     assert.ok(Array.isArray(route)&&route.length>0);
     const pavedNodes=route.filter(node=>getRoadAt(Math.floor(node.x),Math.floor(node.y))?.type==="paved");
     assert.ok(pavedNodes.length>=18,"the route should use most of the paved corridor instead of taking the shorter off-road line");
+});
+
+test("road maintenance is included in the settlement treasury ledger",()=>{
+    setup();
+    placeRoad(40,40,"dirt");
+    const roadCost=getRoadUpkeepTotal();
+    const ledger=calculateDailyLedger({population:10,employed:5,buildings:2,foodAvailable:100,goldAvailable:100,roadUpkeep:roadCost*20});
+    assert.equal(ledger.roadUpkeepAssessed,roadCost*20);
+    assert.equal(ledger.upkeepAssessed,2*0.003*20+roadCost*20);
 });
