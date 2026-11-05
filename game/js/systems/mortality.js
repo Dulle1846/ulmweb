@@ -1,6 +1,7 @@
 // Species-aware natural mortality with compact, inspectable memorial records.
 import { random } from "../core/random.js";
 import { state } from "../core/state.js";
+import { resolveRoyalSuccession } from "./dynasty.js";
 import { TYPE } from "../core/types.js";
 import {
     ensurePersonProfile, addPersonMemory, createPersonMemorial,
