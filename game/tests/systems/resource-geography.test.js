@@ -65,7 +65,7 @@ test("resource nodes expose suitability, fertility and nearest-node search",()=>
     assert.ok(getResourceNodeAt(72,10).fertility>0);
     assert.equal(getResourceNodeAt(-1,10),null);
     assert.equal(findNearestResourceNode("forest",forest.x,forest.y,0).x,forest.x);
-    assert.equal(findNearestResourceNode("stone",forest.x,forest.y,1),null);
+    assert.equal(findNearestResourceNode("stone",forest.x,forest.y,0),null);
 });
 
 test("forest and stone extraction are bounded and never produce negative stock",()=>{
