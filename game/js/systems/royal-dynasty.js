@@ -6,6 +6,8 @@ import {linkParentChild,setPartnership,getFamilySnapshot} from "./families.js";
 const MAX_HISTORY=48,personId=e=>String(e?.personId||e?.person?.id||e?.id||""),alive=e=>Boolean(e&&!e.dead);
 function royalState(){const s=state.royal&&typeof state.royal==="object"?state.royal:{};state.royal={dynastyName:String(s.dynastyName||state.kingdomName||"Eldria").slice(0,48),consortId:typeof s.consortId==="string"?s.consortId:null,heirId:typeof s.heirId==="string"?s.heirId:null,lastBirthYear:Math.max(0,Math.floor(Number(s.lastBirthYear)||0)),history:Array.isArray(s.history)?s.history.filter(x=>x&&typeof x==="object").slice(-MAX_HISTORY):[]};return state.royal;}
 function adultAge(e){const p=ensurePersonProfile(e);return ({human:16,elf:35,dwarf:24,orc:14,goblin:10,halfling:20,gnome:24,dragonkin:22,fae:28,revenant:0})[p.species]??16;}
+function closeKinIds(king){const family=getFamilySnapshot(personId(king));return new Set([...(family?.parents||[]),...(family?.children||[]),...(family?.siblings||[])].map(x=>String(x.personId)));}
+function hasActivePartner(entity){return ensurePersonProfile(entity).kinship.partners.some(x=>["partner","married"].includes(x.status));}
 function record(kind,detail){const s=royalState();s.history.push({year:Math.max(1,Number(state.year)||1),kind,detail:String(detail).slice(0,160)});s.history=s.history.slice(-MAX_HISTORY);}
 export function getSovereign(){return state.entities.find(e=>alive(e)&&e.isKing)||null;}
 export function getRoyalPerson(id){return state.entities.find(e=>alive(e)&&personId(e)===String(id))||null;}
@@ -13,12 +15,16 @@ export function getRoyalHouse(){
  const king=getSovereign(),s=royalState(),consort=getRoyalPerson(s.consortId);
  if(!king)return {king:null,consort,heir:getRoyalPerson(s.heirId),children:[],candidates:[],history:[...s.history]};
  const family=getFamilySnapshot(personId(king)),children=(family?.children||[]).map(x=>getRoyalPerson(x.personId)).filter(Boolean);
- const candidates=state.entities.filter(e=>alive(e)&&e!==king&&e.type===TYPE.VILLAGER&&e.personId&&adultAge(e)>0&&ensurePersonProfile(e).ageYears>=adultAge(e)&&personId(e)!==s.consortId).sort((a,b)=>ensurePersonProfile(a).name.localeCompare(ensurePersonProfile(b).name)).slice(0,40);
+ const closeKin=closeKinIds(king);
+ const candidates=state.entities.filter(e=>alive(e)&&e!==king&&e.type===TYPE.VILLAGER&&e.personId&&adultAge(e)>0&&ensurePersonProfile(e).ageYears>=adultAge(e)&&personId(e)!==s.consortId&&!closeKin.has(personId(e))&&!hasActivePartner(e)).sort((a,b)=>ensurePersonProfile(a).name.localeCompare(ensurePersonProfile(b).name)).slice(0,40);
  return {king,consort,heir:getRoyalPerson(s.heirId),children,candidates,history:[...s.history]};
 }
 export function appointRoyalConsort(id){
  const king=getSovereign(),consort=getRoyalPerson(id);if(!king||!consort||consort===king||consort.type!==TYPE.VILLAGER)return {ok:false,reason:"eligible-consort-not-found"};
- const kp=ensurePersonProfile(king,{role:"king"}),cp=ensurePersonProfile(consort);if(cp.ageYears<adultAge(consort))return {ok:false,reason:"consort-not-adult"};
+ const kp=ensurePersonProfile(king,{role:"king"}),cp=ensurePersonProfile(consort);
+ if(cp.ageYears<adultAge(consort))return {ok:false,reason:"consort-not-adult"};
+ if(closeKinIds(king).has(personId(consort)))return {ok:false,reason:"close-kinship"};
+ if(hasActivePartner(consort))return {ok:false,reason:"consort-already-partnered"};
  const result=setPartnership(personId(king),personId(consort),{status:"married",sinceYear:state.year||1});if(!result.ok)return result;
  royalState().consortId=personId(consort);cp.role="royal-consort";
  addPersonMemory(king,{id:"royal-marriage:"+personId(consort),type:"dynasty",text:"I entered a royal marriage with "+cp.name+" in year "+state.year+".",tick:state.tick,importance:92});
