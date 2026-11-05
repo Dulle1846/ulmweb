@@ -15,6 +15,7 @@ import { distance } from '../core/utils.js';
 import { rand as seededRand } from '../core/random.js';
 const rand=(min,max)=>seededRand(min,max,"villagers");
 import { BUILDING_WORKFORCE } from '../systems/economy.js';
+import { getRoadSpeedMultiplier } from '../systems/roads.js';
 
 const MOVING_TYPES = new Set([
     TYPE.VILLAGER, TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT, TYPE.PRIEST,
