@@ -120,6 +120,9 @@ export function initializeCreature(entity, card = {}) {
 export function recordCreatureDeath(entity, cause = "unknown") {
     if (!entity?.creature) return null;
     const creature = normalizeCreatureProfile(entity.creature, entity);
+    if (Number.isFinite(entity.maxHp) && entity.maxHp > 0 && Number.isFinite(entity.hp)) {
+        creature.health = Math.min(creature.health, clamp(entity.hp / entity.maxHp * 100, 0, 100));
+    }
     state.creatureArchive = Array.isArray(state.creatureArchive) ? state.creatureArchive : [];
     if (!state.creatureArchive.some(entry => entry.id === creature.id)) {
         state.creatureArchive.push({
