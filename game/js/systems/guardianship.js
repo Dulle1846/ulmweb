@@ -32,15 +32,20 @@ function activeGuardians(entity) {
     return (entity.person?.kinship?.guardians || []).filter(link => findLivingPerson(link.personId));
 }
 
-function isCloseRelative(candidateId, orphan) {
+function relativeScore(candidateId, orphan) {
     const parents = orphan.person.kinship.parents || [];
+    let score = 0;
     for (const parentLink of parents) {
         const parentMemorial = (state.personArchive || []).find(entry => entry.personId === parentLink.personId);
         if (!parentMemorial) continue;
-        if ((parentMemorial.person.kinship?.parents || []).some(link => link.personId === candidateId)) return true;
-        if (getSiblings(parentLink.personId).some(sibling => sibling.personId === candidateId)) return true;
+        if (getSiblings(parentLink.personId).some(sibling => sibling.personId === candidateId)) {
+            score = Math.max(score, 1200); // aunt or uncle
+        }
+        if ((parentMemorial.person.kinship?.parents || []).some(link => link.personId === candidateId)) {
+            score = Math.max(score, 1100); // grandparent
+        }
     }
-    return false;
+    return score;
 }
 
 function relationshipEvidence(candidate, orphan) {
@@ -67,13 +72,14 @@ function candidateScore(candidate, orphan, household) {
     if ((person.kinship.wards || []).length >= MAX_WARDS_PER_GUARDIAN) return null;
     if (candidate.type !== TYPE.VILLAGER || !candidate.home) return null;
     const home = household.homes.find(item => item.x === candidate.home.x && item.y === candidate.home.y);
-    if (!home || home.residents >= home.capacity) return null;
-    const relative = isCloseRelative(String(candidate.personId), orphan);
+    const alreadyInHousehold = orphan.home?.x === candidate.home.x && orphan.home?.y === candidate.home.y;
+    if (!home || (!alreadyInHousehold && home.residents >= home.capacity)) return null;
+    const familyScore = relativeScore(String(candidate.personId), orphan);
     const evidence = relationshipEvidence(candidate, orphan);
-    if (!relative && !evidence) return null;
+    if (!familyScore && !evidence) return null;
     const trustScore = evidence ? evidence.trust + evidence.affinity : 0;
     return {
-        score: (relative ? 1000 : 0) + trustScore,
+        score: familyScore + trustScore,
         occupancy: home.residents,
         home
     };
