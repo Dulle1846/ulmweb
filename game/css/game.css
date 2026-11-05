@@ -1149,3 +1149,6 @@ kbd {padding:4px 6px;border:1px solid rgba(221,190,126,.2);border-radius:5px;bac
 .start-art-preview{display:block;width:min(100%,560px);aspect-ratio:1200/560;object-fit:cover;margin:12px auto 17px;border:4px double #c69a53;border-radius:10px;background:#274c67;box-shadow:0 9px 25px #0009,inset 0 0 0 2px #f5dda8}
 .start-panel{width:min(620px,94vw)}
 @media(max-width:520px){.start-art-preview{margin:8px auto 12px;border-width:3px}.start-panel{padding:18px}}
+
+.realm-nav-icon{display:block;width:22px;height:22px;flex:0 0 22px;color:#f0d18f;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 1px #0009)}
+.realm-window-tab .realm-nav-icon{display:inline-block;vertical-align:middle;width:17px;height:17px;margin-right:4px}
