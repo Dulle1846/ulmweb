@@ -34,6 +34,8 @@ test("royal heir creation links both parents and enforces the birth cooldown",()
     assert.equal(result.ok,true);
     assert.equal(result.person.role,"royal-heir");
     assert.deepEqual(result.child.person.kinship.parents.map(item=>item.personId).sort(),[king.personId,consort.personId].sort());
+    assert.equal(king.person.kinship.partners[0].lastBirthYear,state.year);
+    assert.equal(consort.person.kinship.partners[0].lastBirthYear,state.year);
     assert.equal(createRoyalHeir(consort.personId).reason,"royal-birth-cooldown");
     const snapshot=getRoyalHouseholdSnapshot();
     assert.equal(snapshot.children.length,1);
