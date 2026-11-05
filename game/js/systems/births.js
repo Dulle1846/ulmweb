@@ -3,7 +3,7 @@ import { random, randInt } from "../core/random.js";
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { spawnEntity, canSpawnEntity } from "../world/entities.js";
-import { getHousingSnapshot, getHouseholdSnapshot } from "./population.js";
+import { getHouseholdSnapshot } from "./population.js";
 import { linkParentChild } from "./families.js";
 import { ensurePersonProfile, addPersonMemory, PERSON_SPECIES } from "./people.js";
 
