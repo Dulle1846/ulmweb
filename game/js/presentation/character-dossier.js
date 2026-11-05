@@ -109,8 +109,8 @@ function renderDossier(personId) {
             (link.endedYear == null ? "" : " · ended year " + link.endedYear)
     }));
     detail.innerHTML =
-        '<header class="dossier-identity"><div class="dossier-seal">' + (entity.isKing ? '♛' : '✦') +
-        '</div><div><div class="dossier-kicker">' + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) +
+        '<header class="dossier-identity"><div class="dossier-seal">' + (entity.isArchived ? '†' : entity.isKing ? '♛' : '✦') +
+        '</div><div><div class="dossier-kicker">' + (entity.isArchived ? "DECEASED · " : "") + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) +
         '</div><h2>' + esc(person.name) + '</h2><p>Age ' + Math.floor(Number(person.ageYears) || 0) +
         ' · ' + esc(person.lifeStage) + ' · Born in year ' + Math.max(1, Number(person.bornAtYear) || 1) +
         (entity.isArchived ? ' · Died in year ' + Math.max(1, Number(entity.deathYear) || 1) + ' · ' + esc(entity.deathCause || 'unknown') : '') +
