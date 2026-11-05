@@ -116,10 +116,15 @@ test("the hidden contract actually hides conditional controls",()=>{
   assert.ok(html.includes('id="build-modal" class="screen-overlay build-overlay hidden"'));
 });
 
-test("the founding plate becomes a two-column illuminated screen on desktop",()=>{
-  assert.ok(hud.includes("@media(min-width:1000px) and (min-height:740px)"));
-  assert.ok(hud.includes('grid-template-areas:\n      "emblem form"'));
+test("the founding plate never traps the form on short or narrow screens",()=>{
+  assert.ok(hud.includes("#start-screen{"),"the overlay must own the founding scroll");
+  assert.ok(hud.includes("overflow-y:auto;overflow-x:hidden"),"the overlay scrolls the plate");
+  assert.ok(hud.includes("#start-screen>.ui-window.start-panel{"),"the plate must be allowed to grow past the viewport");
+  assert.ok(hud.includes("max-height:none"),"a capped plate clips the founding button");
+  assert.ok(!hud.includes("min-height:740px"),"height must not gate the two-column layout");
+  assert.ok(hud.includes("@media(min-width:960px)"),"the plate splits into two columns from 960px");
+  assert.ok(hud.includes("@media(max-height:760px)"),"short windows get a compact plate");
+  assert.ok(hud.includes('grid-template-areas:\n      "emblem form"'),"the two-column map must survive");
   assert.ok(hud.includes(".start-panel .start-form{"));
-  assert.ok(hud.includes("max-height:calc(100vh - 76px)"));
   assert.ok(hud.includes(".world-forge{display:grid;grid-template-columns:1fr 1fr;"));
 });
