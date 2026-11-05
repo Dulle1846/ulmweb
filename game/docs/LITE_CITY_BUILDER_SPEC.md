@@ -193,39 +193,48 @@ Each event should have a warning/choice window where appropriate, a clear probab
 
 ## Delivery phases and acceptance gates
 
-### 3.2 — Pacing and deterministic foundation (current implementation slice)
-- 750 ms day clock and 0.5x speed.
+### 3.2 — Pacing and deterministic foundation (shipped)
+- 750 ms day clock and 0.5x / 1x / 2x / 4x speed.
 - Movement pace follows calendar pace.
-- Seed combat retaliation, production yields and market price drift.
+- Seeded combat retaliation, production yields and market price drift.
 - Regression tests prove identical seeded outcomes.
 - Save/load preserves selected speed.
 
-### 3.3 — Road network and build-mode foundation
-- Compact road grid, dirt paths and paved upgrade data.
-- Road placement, map overlay, save/load and deterministic path-cost tests.
-- Existing card placement remains unchanged.
+### 3.3 — Road network and build-mode foundation (shipped in PR #27)
+- Dirt, gravel and paved road tiers with material costs, upgrades and partial demolition refunds.
+- Map click/drag placement, explicit cancel, road rendering and intersections.
+- Road-aware movement and A* routing.
+- Recurring road upkeep in the economy ledger.
+- Versioned road save/load, unit tests and browser E2E.
 
-### 3.4 — Storage and physical hauling
+### 3.4 — Resource geography (current implementation phase)
+- Deterministic forest stands, stone deposits, water access and soil fertility derived from seed and terrain.
+- Compact typed arrays for the 160 × 160 world; sparse save deltas for depleted nodes.
+- Harvesting, extraction, forest regrowth and nearest-node lookup.
+- Save/load migration keeps older saves valid and reproduces untouched nodes from their seed.
+- Next increment: visible resource overlays, site suitability and connect lumber camps/quarries to finite node stock.
+
+### 3.5 — Storage and physical hauling
 - Warehouse inventories, carrier jobs, reservations and delivery routes.
 - One complete logs → planks chain with visible carriers.
 - Idle reasons and route failure handling.
 
-### 3.5 — Food production and seasonal farming
+### 3.6 — Food production and seasonal farming
 - Grain → flour → bread chain.
 - Crop stages, harvest windows and storage capacity.
 - Winter food/warmth buffer and shortage warnings.
 
-### 3.6 — Housing, immigration and household needs
+### 3.7 — Housing, immigration and household needs
 - Tent/cottage/stone-house tiers.
 - Food/water/warmth/safety/social needs.
 - Immigration gate and staged shortage consequences.
 
-### 3.7 — Services, construction and forest stewardship
+### 3.8 — Services, construction and forest stewardship
 - Market/well/watchtower coverage.
 - Visible construction stages and staffing/material delivery.
 - Forest harvest/regrowth and forester planting.
 
-### 3.8 — Balance, events and visual polish
+### 3.9 — Balance, events and visual polish
 - Event probabilities and consequence tuning.
 - Route/service overlays, building inspection and seasonal art.
 - Long simulation, browser, save migration and memory/performance checks.
