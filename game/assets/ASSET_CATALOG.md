@@ -29,3 +29,6 @@ All assets in this directory are bundled with the game. No runtime CDN or paid a
 | `royal-card-frame.svg` | Card hand frame | SVG | Original parchment / antique-gold frame |
 
 | `royal-dragon-atlas.svg` | Living dragon dossiers and memorials | SVG sprite atlas | Five stage-specific portraits mapped to persisted dragon life stage |
+
+
+| `royal-heraldry.svg` | 8 original shield emblems selected deterministically from the royal-house name; all local SVG symbols, no external image dependencies. |
