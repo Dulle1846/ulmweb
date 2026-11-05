@@ -34,6 +34,9 @@ try{
     await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
     assert.equal(await page.title(),"KINGS & CARDS • Eternal Realm");
     assert.equal(await page.locator("#start-screen").isVisible(),true);
+    assert.equal(await page.locator("#start-screen").getAttribute("role"),"dialog","the founding screen must expose dialog semantics");
+    await page.waitForFunction(()=>document.activeElement?.id==="player-name-input",null,{timeout:3000});
+
 
     for(const [id,value] of [["world-landmass","72"],["world-ruggedness","64"],["world-forests","81"],["world-water","43"]]){
         await page.locator("#"+id).evaluate((el,next)=>{
@@ -61,6 +64,10 @@ try{
     assert.ok(await page.locator("#command-modal").isVisible(),"dynasty action must open the management dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Dynasty & lineage");
     assert.ok(await page.locator("#command-panel-content .dynasty-generation").count()>=1,"a new campaign must show its sovereign generation");
+    await page.waitForFunction(()=>document.activeElement?.id==="command-close",null,{timeout:3000});
+    await page.keyboard.press("Shift+Tab");
+    assert.ok(await page.evaluate(()=>Boolean(document.activeElement?.closest("#command-modal"))),"Shift+Tab must remain inside the open management dialog");
+
     await page.locator("#command-panel-content .dynasty-person").first().click();
     assert.ok(await page.locator("#people-modal").isVisible(),"selecting a dynasty member must open the real character dossier");
     assert.ok(await page.locator("#person-dossier .dossier-portrait").isVisible(),"character dossier must show an original heraldic portrait");
@@ -72,6 +79,7 @@ try{
         assert.equal((await page.locator("#person-dossier .dossier-identity h2").innerText()).trim(), relatedName.trim(), "relationship navigation must open the exact linked person");
     }
     await page.locator("#people-close").click();
+    await page.waitForFunction(()=>document.activeElement?.id==="main-container",null,{timeout:3000});
     await page.locator('[data-kac-dock-action="save"]').click();
     await page.waitForFunction(()=>document.querySelector("#save-status")?.textContent.startsWith("LAST SAVED"),null,{timeout:5000});
     await page.locator('[data-kac-dock-action="events"]').click();
