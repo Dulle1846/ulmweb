@@ -270,3 +270,27 @@ Limitations:
 - The E2E smoke test verifies dossier UI behavior but does not simulate a populated multi-generation dynasty; family graph invariants remain covered by Node tests.
 
 No production merge or deployment.
+
+
+## Phase 2.7 — species-aware births from explicit partnerships
+
+Implemented on `kac-2.6-character-dossiers` (stacked into Draft PR #11).
+
+- A yearly birth scheduler considers only explicit, reciprocal partnerships whose status is `partner` or `married`; co-residence alone never creates parentage or eligibility.
+- Both parents must be living villagers of the same species, have reached that species' adult maturation age, and be no older than 65% of its configured lifespan.
+- The autonomous scheduler uses a deterministic, isolated `births` random stream and a 12% annual chance per eligible partnership. At most one child is born per realm year.
+- A three-year cooldown is stored on both reciprocal partnership records.
+- Birth requires a real household vacancy, sufficient food reserve and morale, plus available entity capacity. A newborn is assigned to an available parent household where possible.
+- The child is a real persistent villager with age zero, species, inherited family name, born-year/tick metadata, two explicit biological parent links and a bounded birth memory.
+- Both parents receive an individual family memory; the child receives an origin memory. A birth event is added to the realm log.
+- Save migration initializes birth counters and the annual scheduler cursor safely for older saves.
+
+### Scope and limitations
+- Cross-species reproduction is intentionally disabled until explicit hybrid inheritance rules are designed; no species is silently converted into another.
+- This phase does not yet create partnerships autonomously. The scheduler activates only when a valid partnership already exists in the kinship graph.
+- The king and non-villager entities are excluded from this first birth pass; royal succession and royal offspring require a separate dynastic model.
+- Births are not guaranteed every year: the scheduler is chance-based and constrained by household capacity, food, morale and entity limits.
+- Natural mortality, orphan care, inheritance, succession, and autonomous family formation remain future phases.
+
+### Verification target
+New Node tests cover explicit parentage, surname inheritance, reciprocal kinship, memory records, partnership status, species/adulthood eligibility, resource/housing gates, cooldown and once-per-year scheduling. The PR's CI run on the final head is the authoritative pass/fail signal; no result is claimed before it completes.
