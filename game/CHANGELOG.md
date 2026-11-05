@@ -261,3 +261,9 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Wrapped the global action controls onto a dedicated row at intermediate desktop widths and below the resource strip on narrow screens.
 - Added Chromium checks for header overflow, overlap between header groups and clipped action buttons at all seven responsive viewports.
 - Visual review also logged remaining art-direction work: world map/building presentation still contains simple placeholder-like shapes; this fix does not claim to complete world art.
+
+
+## Development line 3.7.0-dev — Phase 5 mobile panel scroll
+
+- Added contained vertical scrolling to the mobile management column so the card panel and lower tabs remain reachable on short screens.
+- Added Chromium regression checks for actual scroll range and scroll movement at 390×844 and 768×1024.

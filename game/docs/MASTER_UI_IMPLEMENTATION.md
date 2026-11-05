@@ -237,3 +237,11 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added responsive header wrapping: at intermediate desktop widths the action controls move to a dedicated second row; at narrow widths they wrap below the resource strip rather than being clipped off-screen.
 - Extended Chromium E2E to assert topbar intrinsic width, pairwise non-overlap of header groups and visibility of every rendered header action at all seven viewport sizes.
 - This corrects the header only. The screenshot review still shows placeholder-like map/building shapes and a relatively sparse world stage; those belong to the separate world-art production backlog, not this layout fix.
+
+
+## Phase 5 — mobile management-column scroll containment
+
+- The post-header-fix screenshot review showed that the narrow-screen layout could cut off the selected card and lower management content because the side panel had a fixed responsive height without its own vertical scroll owner.
+- Added a contained vertical scroll region to the mobile side panel while keeping resource, card, tab and footer sections at their natural minimum sizes.
+- Chromium E2E now verifies that the side panel has overflow content and that scrolling reaches it at both 390×844 and 768×1024.
+- This preserves the fixed game shell and bottom action bar; it does not introduce document-level scrolling or alter simulation behavior.

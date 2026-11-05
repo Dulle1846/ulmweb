@@ -378,3 +378,11 @@ body.ui-modal-open{overflow:hidden}
  .header-actions .control-button{flex:0 1 auto;min-width:64px;padding-inline:8px}
  .speed-group{flex:0 0 auto}
 }
+
+
+/* Phase 5 — keep the full management stack reachable on short mobile screens. */
+@media(max-width:790px){
+ .side-panel{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+ .side-panel>.resource-section,.side-panel>.card-section,.side-panel>.tabs,.side-panel>.panel-footer{flex:0 0 auto}
+ .side-panel>.tab-content{flex:1 0 100px}
+}
