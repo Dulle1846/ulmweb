@@ -220,3 +220,15 @@ test("guardianship eligibility follows species-specific maturity", () => {
     ensurePersonProfile(dwarfWard).ageYears = 24;
     assert.equal(linkGuardianWard(dwarfGuardian.personId, dwarfWard.personId).reason, "ward-not-minor");
 });
+
+
+test("guardianship cannot be attached to a dead person", () => {
+    const [guardian, ward] = makePeople(2);
+    Object.assign(ensurePersonProfile(guardian), { species: "human", ageYears: 40 });
+    Object.assign(ensurePersonProfile(ward), { species: "human", ageYears: 8 });
+    guardian.dead = true;
+    assert.equal(linkGuardianWard(guardian.personId, ward.personId).reason, "person-not-living");
+    guardian.dead = false;
+    ward.dead = true;
+    assert.equal(linkGuardianWard(guardian.personId, ward.personId).reason, "person-not-living");
+});
