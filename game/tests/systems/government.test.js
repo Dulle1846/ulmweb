@@ -56,7 +56,7 @@ test("decrees cannot spend resources that the realm does not possess",()=>{
 });
 
 
-test("constitutional form and council influence continuously shape estate support",()=>{
+test("constitutional form and council influence continuously shape estate support",async()=>{
     resetState();
     state.government={...state.government,form:"feudal_monarchy",councilInfluence:35,crownAuthority:55};
     const feudal=(await import("../../js/systems/politics.js")).updatePolitics(
