@@ -17,7 +17,7 @@
 .dynasty-lineage-edges{
  position:absolute;
  inset:0;
- z-index:0;
+ z-index:2;
  overflow:visible;
  pointer-events:none;
 }
@@ -35,14 +35,16 @@
 .dynasty-lineage-edge--guardian{stroke:#a9b98c;stroke-dasharray:2 4}
 .dynasty-lineage-lane{
  position:relative;
- z-index:1;
+ z-index:auto;
  min-width:0;
  padding:9px;
  border:1px solid #b99a593b;
  border-radius:3px;
  background:#12100d66;
 }
-.dynasty-lineage-lane h4{
+ .dynasty-lineage-lane h4{
+ position:relative;
+ z-index:3;
  margin:0 0 8px;
  color:#cdb47f;
  font:700 9px var(--ui-title-font,Georgia,serif);
@@ -55,7 +57,7 @@
 }
 .dynasty-lineage-lane [data-lineage-node-id]{
  position:relative;
- z-index:2;
+ z-index:3;
  min-width:0;
 }
 .dynasty-lineage-lane[data-lineage-lane="royal-generation"]{
