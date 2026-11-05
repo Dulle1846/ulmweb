@@ -5,6 +5,7 @@ import { state } from "../core/state.js";
 import { addResource } from "./resources.js";
 import { updatePolitics } from "./politics.js";
 import { getRoadUpkeepTotal } from "./roads.js";
+import { getEdictModifiers } from "./edicts.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -94,8 +95,21 @@ export function updateEconomy() {
         roadUpkeep: getRoadUpkeepTotal() * DAYS_PER_LEDGER
     });
 
+    // Royal edicts bend the ledger before it settles: a harvest law lowers
+    // household demand, a mint raises what the tax collectors bring in, and a
+    // standing edict nudges morale every settlement period.
+    const edicts = getEdictModifiers();
+    ledger.foodDemand *= edicts.food;
+    ledger.foodConsumed = Math.min(state.resources.food, ledger.foodDemand);
+    ledger.foodShortage = Math.max(0, ledger.foodDemand - ledger.foodConsumed);
+    ledger.taxesCollected *= edicts.tax;
+    ledger.netGold = ledger.taxesCollected - ledger.wagesPaid - ledger.upkeepPaid;
+
     addResource("food", -ledger.foodConsumed);
     addResource("gold", ledger.netGold);
+    if (edicts.morale !== 0) {
+        state.morale = Math.max(0, Math.min(100, state.morale + edicts.morale * DAYS_PER_LEDGER));
+    }
     if (ledger.foodShortage > 0) {
         state.morale = Math.max(0, state.morale - Math.min(2.5, 0.35 + ledger.foodShortage * 0.12));
     }

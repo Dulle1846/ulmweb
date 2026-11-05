@@ -11,6 +11,7 @@ import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE,normaliz
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
 import { rand as seededRand,randInt as seededRandInt } from "../core/random.js";
 import { awakenDragon } from "./creatures.js";
+import { activateEdict } from "./edicts.js";
 const rand=(min,max)=>seededRand(min,max,"cards");
 const randInt=(min,max)=>seededRandInt(min,max,"cards");
 export const CARD_DECK=Object.freeze(CARD_CATEGORIES.map(category=>{
@@ -102,11 +103,31 @@ function findNearestBuildableTile(cx,cy){
     }
     return null;
 }
+function realmPopulation(){
+    const tracked=Number(state.economy?.population);
+    if(Number.isFinite(tracked)&&tracked>0)return Math.floor(tracked);
+    return state.entities.filter(entity=>entity&&!entity.dead&&entity.type===TYPE.VILLAGER).length;
+}
+function healthState(){return state.health||(state.health={containment:0,cases:0});}
 function resolveEffectCard(card){
     if(card.effect==="harvest"){addResource("food",35);return " +35 FOOD";}
     if(card.effect==="gold-rush"){addResource("gold",24);return " +24 GOLD";}
     if(card.effect==="festival"){state.morale=Math.min(100,state.morale+14);return " +14 MORALE";}
     if(card.effect==="supply-cache"){addResource("wood",8);addResource("food",6);return " SUPPLIES FOUND";}
+    if(card.effect==="granary-cache"){addResource("food",45);return " +45 FOOD";}
+    if(card.effect==="apiary"){addResource("food",18);state.morale=Math.min(100,state.morale+3);return " +18 FOOD · +3 MORALE";}
+    if(card.effect==="vintage"){addResource("gold",14);state.morale=Math.min(100,state.morale+8);return " +14 GOLD · +8 MORALE";}
+    if(card.effect==="clean-water"){state.morale=Math.min(100,state.morale+7);healthState().containment=Math.min(100,(healthState().containment||0)+10);return " +7 MORALE · CLEAN WATER";}
+    if(card.effect==="healers"){healthState().containment=Math.min(100,(healthState().containment||0)+15);state.morale=Math.min(100,state.morale+4);return " HEALERS TEND THE SICK";}
+    if(card.effect==="quarantine"){const health=healthState();health.containment=Math.min(100,(health.containment||0)+25);if((health.cases||0)>0)health.cases=Math.max(0,Math.round(health.cases*0.7));return " QUARANTINE ENFORCED";}
+    if(card.effect==="grand-festival"){state.morale=Math.min(100,state.morale+20);return " +20 MORALE";}
+    if(card.effect==="tax-levy"){const gold=10+Math.round(realmPopulation()*1.5);addResource("gold",gold);return " +"+gold+" GOLD";}
+    if(card.effect==="pilgrimage"){addResource("gold",18);state.morale=Math.min(100,state.morale+6);return " PILGRIMS ARRIVE";}
+    if(card.effect==="road-works"){addResource("gold",12);addResource("stone",6);return " ROADS IMPROVED";}
+    if(card.effect==="dragon-tribute"){addResource("gold",40);state.morale=Math.max(0,state.morale-4);return " +40 GOLD · -4 MORALE";}
+    if(card.effect==="omen"){addResource("gold",16);state.hiddenRealm.mystery=(state.hiddenRealm.mystery||0)+2;return " AN OMEN IS READ";}
+    if(card.effect==="archive"){addResource("gold",10);state.hiddenRealm.mystery=(state.hiddenRealm.mystery||0)+1;return " THE ARCHIVE GROWS";}
+    if(card.effect==="edict"&&card.edict){const result=activateEdict(card.edict);return result.ok?" EDICT: "+result.name:" EDICT FAILED";}
     return "";
 }
 export function placeCurrentCard(targetX,targetY){

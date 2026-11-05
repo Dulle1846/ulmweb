@@ -5,6 +5,7 @@ import { updateMorale } from "../systems/morale.js";
 import { checkRandomEvents,addLog } from "../systems/events.js";
 import { updateMarket } from "../systems/market.js";
 import { updateEconomy } from "../systems/economy.js";
+import { updateEdicts } from "../systems/edicts.js";
 import { updateHealth } from "../systems/health.js";
 import { updatePopulation } from "../systems/population.js";
 import { updateCardDraw } from "../systems/cards.js";
@@ -31,6 +32,7 @@ export function updateSimulation(){
     let deaths=[];
     let guardianships=[];
     if(state.year>previousYear){
+        updateEdicts();
         updatePeople();
         deaths=updateMortality();
         guardianships=updateGuardianships();

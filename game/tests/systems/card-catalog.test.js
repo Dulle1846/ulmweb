@@ -29,7 +29,7 @@ test("every category creates a playable archetype and all effects resolve",()=>{
         const card=createCardForCategory(category.id);
         assert.equal(card.category,category.id);
         assert.ok(card.kind);
-        if(card.kind==="effect")assert.ok(["harvest","gold-rush","festival","supply-cache"].includes(card.effect));
+        if(card.kind==="effect")        assert.ok(["harvest","gold-rush","festival","supply-cache","granary-cache","apiary","vintage","clean-water","healers","quarantine","grand-festival","tax-levy","pilgrimage","road-works","dragon-tribute","omen","archive","edict"].includes(card.effect));
     }
 });
 
