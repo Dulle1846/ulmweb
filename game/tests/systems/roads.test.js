@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState,state } from "../../js/core/state.js";
 import { placeRoad,removeRoad,getRoadAt,getRoadCount,getRoadSpeedMultiplier,getRoadTravelCost,getRoadTiles,restoreRoads,serializeRoads,setRoadBuildMode,getRoadBuildMode,clearRoadBuildMode } from "../../js/systems/roads.js";
+import { findPath } from "../../js/simulation/villagers.js";
 
 function setup(){
     resetState();
@@ -75,4 +76,13 @@ test("road list is stable and build mode accepts only known tiers",()=>{
     assert.equal(getRoadBuildMode(),"gravel");
     clearRoadBuildMode();
     assert.equal(getRoadBuildMode(),null);
+});
+
+test("A* prefers a long paved corridor when it is cheaper than a shorter dirt route",()=>{
+    setup();
+    for(let x=10;x<=30;x++)assert.equal(placeRoad(x,6,"paved").ok,true);
+    const route=findPath(10.5,5.5,30.5,5.5,5000);
+    assert.ok(Array.isArray(route)&&route.length>0);
+    const pavedNodes=route.filter(node=>getRoadAt(Math.floor(node.x),Math.floor(node.y))?.type==="paved");
+    assert.ok(pavedNodes.length>=18,"the route should use most of the paved corridor instead of taking the shorter off-road line");
 });
