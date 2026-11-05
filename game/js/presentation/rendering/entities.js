@@ -39,7 +39,8 @@ export function drawEntity(ctx, e, tick, zoom, cam) {
         else if (zl === 3) drawBuildingLevel2(ctx, e, sx, sy, cellPx, tick);
         else               drawBuildingLevel3(ctx, e, sx, sy, cellPx, tick);
     } else if (e.isFriendly()) {
-        if (zl === 2) drawPersonRoleIcon(ctx, e, sx, sy, cellPx);
+        if(e.type===TYPE.DRAGON)drawPersonIconGeneric(ctx,e,sx,sy,cellPx,tick,"🐉","#7d3ca0");
+        else if (zl === 2) drawPersonRoleIcon(ctx, e, sx, sy, cellPx);
         else drawPersonIcon(ctx, e, sx, sy, cellPx, tick);
     } else if (e.isEnemy()) {
         drawEnemyIcon(ctx, e, sx, sy, cellPx, tick);
