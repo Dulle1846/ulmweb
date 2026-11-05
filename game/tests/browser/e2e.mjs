@@ -686,6 +686,16 @@ try{
         for(const tab of ["kingdom","government","politics","decisions","cards","economy","buildings","dynasty","creatures","chronicle"]){
             await page.locator('[data-command-tab="'+tab+'"]').click();
             await page.waitForTimeout(25);
+            if(tab==="dynasty"&&width<=790){
+                await page.waitForFunction(()=>[...document.querySelectorAll(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling")].some(path=>path.getAttribute("d")?.length>0),null,{timeout:5000});
+                const mobileConnector=await page.evaluate(()=>{
+                    const path=document.querySelector(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling");
+                    return path?{d:path.getAttribute("d"),stroke:getComputedStyle(path).stroke,opacity:getComputedStyle(path).opacity}:null;
+                });
+                assert.ok(mobileConnector?.d?.includes("C"),"mobile dynasty must draw a curved partner/sibling connector");
+                assert.notEqual(mobileConnector.stroke,"none","mobile dynasty connector must remain visible");
+                assert.ok(Number(mobileConnector.opacity)>0,"mobile dynasty connector must not be transparent");
+            }
             await assertOverlayFits("#command-modal","management "+tab,"management-"+tab);
         }
         await page.locator("#command-close").click();
