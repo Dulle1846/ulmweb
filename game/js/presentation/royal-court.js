@@ -12,6 +12,8 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 })[char]);
 
+function setFeedback(value) { const target = document.getElementById("royal-court-feedback"); if (target) target.textContent = value; }
+
 function message(reason) {
     return ({
         "no-living-monarch":"There is no living monarch to lead the court.",
@@ -55,7 +57,7 @@ export function renderRoyalCourt() {
         ? '<button type="button" class="court-primary" id="royal-create-heir">WELCOME A ROYAL CHILD</button>'
         : '<button type="button" class="court-primary" disabled>WELCOME A ROYAL CHILD</button>';
     root.innerHTML =
-        '<section class="court-monarch"><div class="court-monarch-copy"><span class="court-kicker">THE CROWN</span><h3>' + esc(monarch.person.name) +
+        '<p id="royal-court-feedback" class="court-feedback" role="status" aria-live="polite"></p><section class="court-monarch"><div class="court-monarch-copy"><span class="court-kicker">THE CROWN</span><h3>' + esc(monarch.person.name) +
         '</h3><p>' + esc(house.dynastyName) + ' · ' + esc(monarch.person.species) + ' · age ' + Math.floor(monarch.person.ageYears) +
         '</p><div class="court-stats"><span>YEAR <b>' + state.year + '</b></span><span>CHILDREN <b>' + children + '</b></span><span>ADULT HEIRS <b>' + heirs.length + '</b></span></div></div>' +
         '<img src="assets/royal-court-art.svg" alt="Comic fantasy royal castle and crown" loading="lazy"></section>' +
@@ -81,7 +83,7 @@ export function setupRoyalCourt() {
         if (marriage) {
             const result = arrangeRoyalMarriage(marriage.dataset.royalMarriage);
             if (!result.ok) {
-                window.dispatchEvent(new CustomEvent("kac:toast", { detail: message(result.reason) }));
+                setFeedback(message(result.reason));
                 return;
             }
             addLog("A ROYAL MARRIAGE: " + result.monarch.person.name + " & " + result.consort.person.name, "#e8c77b", "dynasty");
