@@ -114,8 +114,11 @@ export function updateRoyalSuccession(){
             const heirPerson=ensurePersonProfile(protectedHeir);
             protectedHeir.isKing=true;
             heirPerson.role="king";
-            dynasty.regency={heirId:getId(protectedHeir),regentId:null,sinceYear:dynasty.regency.sinceYear||state.year};
-            addLog("THE REGENCY ENDS AFTER THE REGENT'S DEATH; THE COUNCIL PROTECTS "+heirPerson.name,"#e4bd72","succession");
+            if(heirPerson.lifeStage==="adult")dynasty.regency=null;
+            else dynasty.regency={heirId:getId(protectedHeir),regentId:null,sinceYear:dynasty.regency.sinceYear||state.year};
+            addLog(heirPerson.lifeStage==="adult"
+                ?"THE CROWN PASSES DIRECTLY TO "+heirPerson.name+" AFTER THE REGENT'S DEATH"
+                :"THE REGENCY ENDS AFTER THE REGENT'S DEATH; THE COUNCIL PROTECTS "+heirPerson.name,"#e4bd72","succession");
             dynasty.history=Array.isArray(dynasty.history)?dynasty.history:[];
             dynasty.history.push({type:"regent-death",personId:getId(protectedHeir),year:state.year,tick:state.tick});
             if(dynasty.history.length>100)dynasty.history.splice(0,dynasty.history.length-100);
