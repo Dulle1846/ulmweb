@@ -177,6 +177,8 @@ export function resolveRoyalSuccession(deceasedKingId) {
     const heir = candidates[0];
     if (!heir) {
         dynasty.vacantSinceYear = Math.max(1, Number(state.year) || 1);
+        dynasty.consortId = null;
+        dynasty.regentId = null;
         dynasty.lastSuccession = { year: state.year, from: String(deceasedKingId || ""), to: null, reason: "no-living-direct-heir" };
         addLog("THE THRONE IS VACANT — NO LIVING DIRECT HEIR", "#e9857b", "dynasty");
         return { ok: false, reason: "no-living-direct-heir" };
@@ -197,8 +199,9 @@ export function resolveRoyalSuccession(deceasedKingId) {
     dynasty.vacantSinceYear = null;
     const species = PERSON_SPECIES[heir.person.species];
     const isMinor = species && heir.person.ageYears < species.maturation;
+    const formerConsort = livingPerson(dynasty.consortId);
+    dynasty.consortId = null;
     if (isMinor) {
-        const formerConsort = livingPerson(dynasty.consortId);
         dynasty.regentId = formerConsort ? personIdOf(formerConsort) : null;
         addLog("A MINOR HEIR ASCENDS: " + heir.person.name + (dynasty.regentId ? " · REGENT APPOINTED" : " · REGENCY REQUIRED"), "#e8c77b", "dynasty");
     } else {
@@ -220,7 +223,7 @@ export function getDynastySnapshot() {
     const person = ensurePersonProfile(king, { role: "king" });
     const family = getFamilySnapshot(personIdOf(king)) || { children: [], partners: [] };
     const consort = activePartner(king);
-    state.dynasty = { ...(state.dynasty || {}), rulerId: personIdOf(king), consortId: consort ? personIdOf(consort) : state.dynasty?.consortId || null };
+    state.dynasty = { ...(state.dynasty || {}), rulerId: personIdOf(king), consortId: consort ? personIdOf(consort) : null };
     const heirs = family.children.map(link => livingPerson(link.personId)).filter(Boolean)
         .map(entity => ({ entity, person: ensurePersonProfile(entity) }))
         .sort((a, b) => b.person.ageYears - a.person.ageYears);
