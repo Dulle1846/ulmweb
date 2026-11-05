@@ -94,7 +94,7 @@ export function updateMortality() {
     economy.lastMortalityYear = year;
 
     const residents = state.entities
-        .filter(entity => !entity.dead && entity.type === TYPE.VILLAGER && entity.personId && !entity.isKing)
+        .filter(entity => !entity.dead && (entity.type === TYPE.VILLAGER || entity.isKing) && entity.personId)
         .sort((a, b) => String(a.personId).localeCompare(String(b.personId)));
     const deaths = [];
     for (const entity of residents) {
