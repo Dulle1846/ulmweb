@@ -45,7 +45,8 @@ export function normalizePersonProfile(saved,entity,{role="resident"}={}){
     const species=SPECIES_IDS.includes(saved.species)?saved.species:"human";
     const firstName=typeof saved.firstName==="string"&&saved.firstName.length<=40?saved.firstName:"A nameless";
     const familyName=typeof saved.familyName==="string"&&saved.familyName.length<=48?saved.familyName:"Resident";
-    const ageValue=Number(saved.ageYears);\n    const ageYears=Number.isFinite(ageValue)?Math.max(0,Math.min(1000,Math.floor(ageValue))):20;
+    const ageValue=Number(saved.ageYears);
+    const ageYears=Number.isFinite(ageValue)?Math.max(0,Math.min(1000,Math.floor(ageValue))):20;
     const traits=Object.fromEntries(TRAITS.map(key=>[key,clamp(saved.traits?.[key])]));
     const needs=Object.fromEntries(NEEDS.map(key=>[key,clamp(saved.needs?.[key])]));
     const list=(value,max)=>Array.isArray(value)?value.filter(item=>item&&typeof item==="object").slice(0,max):[];
