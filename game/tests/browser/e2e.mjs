@@ -649,11 +649,72 @@ try{
             await page.screenshot({path:resolve(screenshotDir,"sidepanel-card-reachable-"+width+"x"+height+".png"),animations:"disabled"});
             await panel.evaluate(el=>{el.scrollTop=0});
         }
+        const assertOverlayFits=async(selector,label,screenshotName)=>{
+            const audit=await page.evaluate(selector=>{
+                const overlay=document.querySelector(selector);
+                const panel=overlay?.querySelector(".modal-panel,.command-panel,.ui-window");
+                if(!overlay||!panel)return null;
+                const rect=panel.getBoundingClientRect();
+                const body=panel.querySelector(".ui-window__body")||panel;
+                const style=getComputedStyle(body);
+                return {
+                    x:rect.x,y:rect.y,width:rect.width,height:rect.height,
+                    right:rect.right,bottom:rect.bottom,
+                    documentWidth:document.documentElement.scrollWidth,
+                    bodyClientWidth:body.clientWidth,bodyScrollWidth:body.scrollWidth,
+                    bodyClientHeight:body.clientHeight,bodyScrollHeight:body.scrollHeight,
+                    overflowX:style.overflowX,overflowY:style.overflowY
+                };
+            },selector);
+            assert.ok(audit,"overlay "+label+" must exist at "+width+"x"+height);
+            assert.ok(audit.x>=-1&&audit.y>=-1&&audit.right<=width+1&&audit.bottom<=height+1,
+                label+" panel must remain inside viewport "+width+"x"+height+": "+JSON.stringify(audit));
+            assert.ok(audit.documentWidth<=width+1,label+" must not create document-level horizontal overflow at "+width+"x"+height+": "+JSON.stringify(audit));
+            if(audit.bodyScrollHeight>audit.bodyClientHeight+2){
+                assert.ok(["auto","scroll","overlay"].includes(audit.overflowY),
+                    label+" must expose a scroll path when its body is taller than the viewport at "+width+"x"+height+": "+JSON.stringify(audit));
+            }
+            await page.screenshot({path:resolve(screenshotDir,screenshotName+"-"+width+"x"+height+".png"),animations:"disabled"});
+        };
+
+        // Inspect all ten management screens, not only the shell of the shared dialog.
         await page.locator("#command-open-btn").click();
-        const dialog=await page.locator("#command-modal .command-panel").boundingBox();
-        assert.ok(dialog&&dialog.x>=0&&dialog.y>=0&&dialog.x+dialog.width<=width+1&&dialog.y+dialog.height<=height+1,"management dialog must fit viewport "+width+"x"+height+": "+JSON.stringify(dialog));
-        await page.screenshot({path:resolve(screenshotDir,"management-"+width+"x"+height+".png"),animations:"disabled"});
+        await assertOverlayFits("#command-modal","management shell","management-shell");
+        for(const tab of ["kingdom","government","politics","decisions","cards","economy","buildings","dynasty","creatures","chronicle"]){
+            await page.locator('[data-command-tab="'+tab+'"]').click();
+            await page.waitForTimeout(25);
+            await assertOverlayFits("#command-modal","management "+tab,"management-"+tab);
+        }
         await page.locator("#command-close").click();
+
+        // Character roster and dossier at every viewport.
+        await page.locator("#people-btn").click();
+        assert.ok(await page.locator("#people-list .person-list-item").count()>0,"people roster must have inspectable records");
+        await page.locator("#people-list .person-list-item").first().click();
+        await assertOverlayFits("#people-modal","character roster and dossier","people-dossier");
+        await page.locator("#people-close").click();
+
+        // Construction, settings and the event decision window share the same viewport contract.
+        await page.locator("#build-open-btn").click();
+        await assertOverlayFits("#build-modal","construction panel","construction");
+        await page.locator("#build-close-btn").click();
+
+        await page.locator("#settings-btn").click();
+        await assertOverlayFits("#settings-modal","settings panel","settings");
+        await page.locator("#settings-close").click();
+
+        await page.evaluate(async()=>{
+            const [{state},{triggerRandomEvent},{renderUI}]=await Promise.all([
+                import("./js/core/state.js"),import("./js/systems/events.js"),import("./js/presentation/rendering/ui.js")
+            ]);
+            state.activeEvent=null;
+            triggerRandomEvent();
+            renderUI();
+        });
+        await page.locator("#realm-event-modal").waitFor({state:"visible",timeout:5000});
+        await assertOverlayFits("#realm-event-modal","event decision panel","event");
+        await page.locator("#realm-event-dismiss").click();
+        await page.locator("#realm-event-modal").waitFor({state:"hidden",timeout:3000});
     }
     await page.setViewportSize({width:1600,height:1000});
     assert.deepEqual(errors,[],"browser runtime must not emit uncaught page errors");
