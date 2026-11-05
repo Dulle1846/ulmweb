@@ -9,6 +9,7 @@ import { CARD_PROTOTYPES,CARD_CATEGORIES,CARD_VARIANT_DIMENSIONS,createCardForCa
 import { addLog } from "./events.js";
 import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE,normalizeHouseholdAssignments } from "./population.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
+import { initializeCreature } from "./creatures.js";
 import { rand as seededRand,randInt as seededRandInt } from "../core/random.js";
 const rand=(min,max)=>seededRand(min,max,"cards");
 const randInt=(min,max)=>seededRandInt(min,max,"cards");
@@ -145,9 +146,10 @@ export function placeCurrentCard(targetX,targetY){
     }else{
         const entity=spawnEntity(tx,ty,card.type);
         entity.footprintScale=Number.isFinite(card.sizeMultiplier)?Math.max(0.25,Math.min(6,card.sizeMultiplier)):1;
-        if(card.kind==="unit"||card.kind==="person"||card.kind==="animal"){
+        if(card.kind==="unit"||card.kind==="person"||card.kind==="animal"||card.kind==="creature"){
             entity.anchor={x:tx,y:ty};entity.home={x:tx,y:ty};entity.jobRefreshTimer=0;
             if(card.kind!=="animal")state.statistics.totalUnitsRecruited++;
+            if(card.kind==="creature"||card.kind==="animal")initializeCreature(entity,card);
         }else{
             state.statistics.totalBuildingsBuilt++;
             if(card.type===TYPE.HOUSE)for(let i=0;i<3;i++){
@@ -159,8 +161,8 @@ export function placeCurrentCard(targetX,targetY){
         }
         if(card.kind==="person"&&card.type===TYPE.VILLAGER)normalizeHouseholdAssignments();
         for(let i=0;i<10;i++)queueParticle(tx*TILE_SIZE+rand(0,TILE_SIZE),ty*TILE_SIZE+rand(0,TILE_SIZE),"#fde047",24,rand(-2,2),rand(-3,-0.5),4);
-        queueFloater(tx*TILE_SIZE+TILE_SIZE/2,ty*TILE_SIZE+10,card.kind==="animal"?"RELEASED!":card.unit?"RECRUITED!":"BUILT!","#a3e635");
-        addLog((card.unit||card.kind==="animal"?"RECRUITED ":"BUILT ")+card.name,"#a3d6a7","card");
+        queueFloater(tx*TILE_SIZE+TILE_SIZE/2,ty*TILE_SIZE+10,card.kind==="animal"?"RELEASED!":card.kind==="creature"?"CREATURE SUMMONED!":card.unit?"RECRUITED!":"BUILT!","#a3e635");
+        addLog((card.kind==="creature"?"CREATURE SUMMONED ":card.unit||card.kind==="animal"?"RECRUITED ":"BUILT ")+card.name,"#a3d6a7","card");
     }
     consumeCurrentCard();return true;
 }
