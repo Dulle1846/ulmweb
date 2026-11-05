@@ -225,3 +225,11 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Added reusable panel/header primitives and keyboard-accessible tooltip styling.
 - Applied the primitives to founding actions, modal close controls, management tabs, panels and the full-width action bar.
 - Added static and Chromium E2E contracts. Full legacy-control migration and a complete windowing API remain open.
+
+
+## Development line 3.7.0-dev — Phase 2 reusable window primitives
+
+- Added compact founding, small, medium and large reusable window presets.
+- Added shared header/body/footer regions with controlled scrolling and short/narrow viewport bounds.
+- Applied the primitives to settings, people dossiers, management, construction, event dialogs and the founding screen.
+- Added static and Chromium E2E contracts. Drag/resize and final overlay stacking remain outstanding.
