@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { resetState,state } from "../../js/core/state.js";
 import { placeRoad,removeRoad,getRoadAt,getRoadCount,getRoadSpeedMultiplier,getRoadTravelCost,getRoadTiles,getRoadUpkeepTotal,restoreRoads,serializeRoads,setRoadBuildMode,getRoadBuildMode,clearRoadBuildMode } from "../../js/systems/roads.js";
 import { findPath } from "../../js/simulation/villagers.js";
-import { calculateDailyLedger } from "../../js/systems/economy.js";
+import { calculateDailyLedger,updateEconomy } from "../../js/systems/economy.js";
 
 function setup(){
     resetState();
@@ -99,4 +99,8 @@ test("road maintenance is included in the settlement treasury ledger",()=>{
     const ledger=calculateDailyLedger({population:10,employed:5,buildings:2,foodAvailable:100,goldAvailable:100,roadUpkeep:roadCost*20});
     assert.equal(ledger.roadUpkeepAssessed,roadCost*20);
     assert.equal(ledger.upkeepAssessed,2*0.003*20+roadCost*20);
+    state.tick=20;
+    state.resources.gold=100;
+    const settled=updateEconomy();
+    assert.equal(settled.roadUpkeepAssessed,roadCost*20,"the live ledger must charge the actual road network");
 });
