@@ -12,7 +12,7 @@ import { getResourceNodeAt } from "../systems/resource-geography.js";
 import { renderUI } from "./rendering/ui.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
-let activePanel="kingdom";
+let activePanel="kingdom",dynastyStylesRequested=false;
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
 const amount=value=>Number(value||0).toLocaleString("en-US",{maximumFractionDigits:2});
@@ -157,9 +157,9 @@ function familyNode(entity,heirId){
 }
 
 function ensureDynastyNetworkStyles(){
- if(document.getElementById("kac-dynasty-network-styles"))return;
+ if(dynastyStylesRequested)return;
  const link=document.createElement("link");
- link.id="kac-dynasty-network-styles";
+ dynastyStylesRequested=true;
  link.rel="stylesheet";
  link.href="css/dynasty-network.css";
  document.head.append(link);
