@@ -7,6 +7,7 @@ import { getWorkforceSnapshot } from "../../systems/economy.js";
 import { EVENT_CHAINS } from "../../systems/event-chains.js";
 import { getHousingSnapshot,getHouseholdSnapshot } from "../../systems/population.js";
 import { getPoliticalSnapshot } from "../../systems/politics.js";
+import { getHealthSnapshot } from "../../systems/health.js";
 
 let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
@@ -58,6 +59,7 @@ function tabSignature(){
     if(state.selectedTab===1)return ["stats",state.tick,state.entities.length,state.totalRaidsSurvived,state.statistics.totalTrades,
         state.statistics.totalBuildingsBuilt,state.statistics.totalUnitsRecruited,Math.floor(state.morale),
         state.economy?.daysElapsed,state.economy?.foodConsumed,state.economy?.taxesCollected,state.economy?.wagesPaid,state.economy?.upkeepPaid,
+        state.health?.cases,state.health?.recovered,state.health?.outbreakActive,
         JSON.stringify(state.hiddenRealm?.activeThreads||[]),state.hiddenRealm?.completedThreads?.length,
         ...Object.values(state.resources)].join("|");
     return "trade:"+state.tick+":"+JSON.stringify(state.market?.prices||{})+":"+
@@ -76,14 +78,14 @@ function renderEvents(container){
 function renderStatistics(container){
     const buildings=state.entities.filter(e=>!e.dead&&e.isBuilding()).length;
     const military=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER].includes(e.type)).length;
-    const workforce=getWorkforceSnapshot(),housing=getHousingSnapshot(),households=getHouseholdSnapshot(),economy=state.economy||{},politics=getPoliticalSnapshot();
+    const workforce=getWorkforceSnapshot(),housing=getHousingSnapshot(),households=getHouseholdSnapshot(),economy=state.economy||{},politics=getPoliticalSnapshot(),health=getHealthSnapshot();
     const stats=[
         ["POPULATION",workforce.population],["EMPLOYED",workforce.employed],
         ["UNEMPLOYED",workforce.unemployed],["HOUSING",housing.population+" / "+housing.capacity],
         ["NATURAL GROWTH",Math.max(0,Number(economy.populationGrowth)||0)],
         ["HOUSEHOLDS",households.households],["UNHOUSED",households.unhoused],
         ["VACANT HOMES",housing.available],["BUILDINGS",buildings],
-        ["MILITARY",military],["MORALE",Math.floor(state.morale)],
+        ["MILITARY",military],["SICK RESIDENTS",health.sick],["HEALTH STATUS",health.active?"OUTBREAK · "+health.severity:"STABLE"],["RECOVERED",health.recovered],["MORALE",Math.floor(state.morale)],
         ["RAIDS SURVIVED",state.totalRaidsSurvived],["TRADES",state.statistics.totalTrades],
         ["BUILDINGS BUILT",state.statistics.totalBuildingsBuilt],["UNITS RECRUITED",state.statistics.totalUnitsRecruited],
         ["ISSUES RESOLVED",state.statistics.totalEventsResolved]
