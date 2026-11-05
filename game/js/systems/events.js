@@ -9,6 +9,7 @@ import { getWorkforceSnapshot } from "./economy.js";
 import { canAccommodateVillagers } from "./population.js";
 import { createCardForCategory } from "./card-catalog.js";
 import { applyPoliticalEffects,getPoliticalSnapshot } from "./politics.js";
+import { applyHealthEffects } from "./health.js";
 
 export function addLog(text,color="#a3a3a3",kind="realm"){
  const entry={id:++state.eventSequence,text:String(text),color,tick:state.tick,kind};
@@ -113,6 +114,16 @@ export function triggerRandomEvent(){
   {label:pick(["Act in the crown's name","Offer royal patronage","Gather the council","Spend from the royal purse"]),description:"Gain "+gain+" "+family.resource.toUpperCase()+"; morale "+(morale>=0?"+":"")+morale+".",effects:{resources:{[family.resource]:gain},morale,hidden:{tension:family.tension,prosperity:family.prosperity,mystery:family.mystery}}},
   {label:pick(["Leave the matter to the local guilds","Choose the cautious course","Demand a public accounting","Let the old custom stand"]),description:"Spend "+cost+" "+secondary.toUpperCase()+" and take a different path.",effects:{resources:{[secondary]:-cost,[family.resource]:Math.max(3,Math.floor(gain*.35))},morale:randInt(-3,3),hidden:{tension:-family.tension*.35,prosperity:1,mystery:family.mystery?1:0}}}
  ];
+ if(family.id==="illness"||family.id==="plague"){
+  const severe=family.id==="plague";
+  choices[0].label=severe?"Fund the healers and establish quarantine":"Isolate the sick and fund the healers";
+  choices[0].description="Spend "+(severe?14:8)+" gold on treatment and containment.";
+  choices[0].effects.resources={gold:-(severe?14:8)};
+  choices[0].effects.health={outbreak:true,severity:severe?2:1,containment:2,disease:severe?"red-fever":"common-fever"};
+  choices[1].label=severe?"Keep the gates open":"Delay costly intervention";
+  choices[1].description="Preserve the treasury for now, but allow the illness to spread.";
+  choices[1].effects.health={outbreak:true,severity:severe?3:2,containment:0,disease:severe?"red-fever":"common-fever"};
+ }
  if(family.id==="migration"&&canSpawnEntity(TYPE.VILLAGER)&&canAccommodateVillagers(1)){choices[0].effects.villagers=1;choices[0].description+=" A new resident may join the realm.";}
  const cardReward=CARD_REWARDS[family.id];
  if(cardReward){choices[0].effects.cardReward=cardReward;choices[0].description+=" The crown may also secure a related card for its next draw.";}
@@ -161,6 +172,7 @@ export function resolveEventChoice(index){
   }else addLog("THE CARD ARCHIVE IS FULL — THE REWARD WAS NOT STORED","#e9857b","card");
  }
  if(effects.politics&&typeof effects.politics==="object")applyPoliticalEffects(effects.politics);
+ if(effects.health&&typeof effects.health==="object")applyHealthEffects(effects.health);
  if(Number.isFinite(effects.morale))state.morale=Math.max(0,Math.min(100,state.morale+effects.morale));
  const hidden=state.hiddenRealm||(state.hiddenRealm={tension:0,prosperity:0,mystery:0,memories:[]});
  for(const key of ["tension","prosperity","mystery"])hidden[key]=Math.max(-30,Math.min(100,(hidden[key]||0)+(effects.hidden?.[key]||0)));
