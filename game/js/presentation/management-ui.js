@@ -115,7 +115,7 @@ function buildings(){
  '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+records.length+'</strong></div><div><small>BUILDING TYPES</small><strong>'+counts.size+'</strong></div><div><small>EMPLOYED</small><strong>'+number(workforce.employed)+'</strong></div><div><small>POPULATION</small><strong>'+number(workforce.population)+'</strong></div></div>'+
  '<div class="building-type-summary">'+typeSummary+'</div><label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">'+
  '<div class="building-register">'+(rows||'<p class="command-note">No buildings are recorded in this realm yet.</p>')+'</div>'+
- '<p class="command-note">Site resource values describe the building's centre tile only. They are not a production rate. The register is read-only; construction and demolition remain in the existing build interface.</p>';
+ '<p class="command-note">Site resource values describe the structure's centre tile only. They are not a production rate. The register is read-only; construction and demolition remain in the existing build interface.</p>';
 }
 function familyRecord(id){
  const key=String(id||"");
