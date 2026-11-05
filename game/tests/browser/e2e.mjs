@@ -101,6 +101,26 @@ try{
     await page.locator("#people-close").click();
     assert.equal(await page.locator("#people-modal").isVisible(),false);
 
+    // The five strategy-management windows are reachable and their actions are live.
+    await page.locator('[data-open-panel="government"]').click();
+    assert.equal(await page.locator("#realm-management-modal").isVisible(),true);
+    assert.match(await page.locator("#realm-window-content").innerText(),/Government/);
+    await page.locator("#realm-tax-policy").selectOption("heavy");
+    assert.equal(await page.evaluate(async()=> (await import("./js/core/state.js")).state.government.taxRate),1.3);
+    await page.locator("#realm-tax-policy").selectOption("standard");
+    await page.locator('[data-panel-tab="politics"]').click();
+    assert.match(await page.locator("#realm-window-content").innerText(),/Royal Decisions/);
+    assert.equal(await page.locator("[data-decision]").count(),4);
+    await page.locator('[data-panel-tab="economy"]').click();
+    assert.match(await page.locator("#realm-window-content").innerText(),/Trade partners/);
+    assert.ok(await page.locator("[data-trade]").count()>=1);
+    await page.locator('[data-panel-tab="cards"]').click();
+    assert.match(await page.locator("#realm-window-content").innerText(),/Card management/);
+    await page.locator('[data-panel-tab="dynasty"]').click();
+    assert.match(await page.locator("#realm-window-content").innerText(),/Dynasty/);
+    await page.locator("#realm-management-close").click();
+    assert.equal(await page.locator("#realm-management-modal").isVisible(),false);
+
     // A deceased resident remains inspectable as a memorial, not as a live entity.
     const memorialId=await page.evaluate(async()=>{
         const [{state},{recordNaturalDeath},{ensurePersonProfile},{Entity,TYPE}]=await Promise.all([
