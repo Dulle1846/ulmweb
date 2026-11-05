@@ -484,3 +484,12 @@ The archive is capped at 500 compact entries; each memorial keeps family links b
 ## Determinism follow-up — villager routines (Phase 2.10)
 
 The villager routine module no longer uses global `Math.random()` for job refresh intervals, routine phase durations or wandering targets. These decisions now consume the seeded `villagers` random stream, and tests verify replay for equal world seeds. This correction is limited to the inspected villager routine module; other game modules still require a repository-wide audit before the project can claim fully deterministic simulation.
+
+
+## Phase 2.7 — demographic correctness hardening
+
+The first-birth cooldown now distinguishes the zero sentinel (no prior birth) from a real birth year, so a new eligible partnership can have its first child in an early realm. Family normalization retains the last-birth year and reconciles it across reciprocal partnership links, preventing a save/load normalization pass from silently resetting the cooldown. Re-establishing a partnership preserves that historical year.
+
+The memorial Browser E2E test now creates a deterministic villager fixture instead of relying on random world generation to produce a resident. The character dossier sex assertion is case-insensitive to match the uppercase UI output.
+
+At code head `2d40cbf982e232a8039d0d2e4bfb8659c89d94aa`, the full test suite passed **175/175**, source syntax/import and UI/asset checks passed, Kings & Cards 2.1 checks passed, and Chromium Browser E2E passed. This is a focused correctness phase; it does not add royal succession or inheritance.
