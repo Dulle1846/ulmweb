@@ -1,4 +1,3 @@
-import { state } from "../core/state.js";
 import { ROAD_TYPES,getRoadCount,setRoadBuildMode,clearRoadBuildMode,getRoadBuildMode } from "../systems/roads.js";
 
 function formatCost(cost){
@@ -7,7 +6,7 @@ function formatCost(cost){
 function renderBuildOptions(){
     const container=document.getElementById("build-options");
     if(!container)return;
-    const symbols={dirt:"dirt-road",gravel:"paved-road",paved:"paved-road"};
+    const symbols={dirt:"dirt-road",gravel:"gravel-road",paved:"paved-road"};
     container.innerHTML=Object.values(ROAD_TYPES).map(road=>(
         '<button class="build-option" type="button" data-road-type="'+road.id+'">'+
             '<span class="build-option-art"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#'+symbols[road.id]+'"></use></svg></span>'+
