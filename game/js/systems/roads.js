@@ -132,12 +132,12 @@ export function removeRoad(x,y){
 }
 
 export function setRoadBuildMode(type){
-    if(!ROAD_TYPES[type])return false;
+    if(type!=="remove"&&!ROAD_TYPES[type])return false;
     state.roadBuildMode=type;
     return true;
 }
 export function clearRoadBuildMode(){state.roadBuildMode=null;}
-export function getRoadBuildMode(){return ROAD_TYPES[state.roadBuildMode]?state.roadBuildMode:null;}
+export function getRoadBuildMode(){return state.roadBuildMode==="remove"||ROAD_TYPES[state.roadBuildMode]?state.roadBuildMode:null;}
 
 export function serializeRoads(){
     const roads=ensureRoadState();
