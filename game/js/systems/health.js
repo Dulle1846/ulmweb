@@ -81,8 +81,10 @@ export function applyHealthEffects(effects={}){
     return getHealthSnapshot();
 }
 export function updateHealth(){
+    const current=state.health;
+    if(!current||typeof current!=="object"||!current.outbreakActive||state.tick<=0||
+        state.tick%HEALTH_INTERVAL!==0||current.lastUpdateTick===state.tick)return null;
     const health=ensureHealth();
-    if(!health.outbreakActive||state.tick<=0||state.tick%HEALTH_INTERVAL!==0||health.lastUpdateTick===state.tick)return null;
     health.lastUpdateTick=state.tick;
     const people=residents();
     let recoveredNow=0;
