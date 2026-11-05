@@ -79,6 +79,10 @@ export function getRoadCount(){
     return Object.keys(ensureRoadState().tiles).length;
 }
 
+export function getRoadUpkeepTotal(){
+    return getRoadTiles().reduce((total,tile)=>total+(ROAD_TYPES[tile.type]?.upkeep||0),0);
+}
+
 export function getRoadTiles(){
     const roads=ensureRoadState();
     if(cachedRevision!==roads.revision){
