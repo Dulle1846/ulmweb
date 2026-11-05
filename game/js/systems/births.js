@@ -63,8 +63,8 @@ export function createChildFromParents(firstId, secondId) {
     if (!first || !second) return { ok: false, reason: "parent-not-found" };
     if (!eligibleParents(first, second)) return { ok: false, reason: "parents-not-eligible" };
 
-    const partnership = activePartnership(first, second);
     const firstPerson = ensurePersonProfile(first), secondPerson = ensurePersonProfile(second);
+    const partnership = activePartnership(first, second);
     if (state.year - Math.max(Number(partnership.first.lastBirthYear) || 0, Number(partnership.second.lastBirthYear) || 0) < BIRTH_COOLDOWN_YEARS) {
         return { ok: false, reason: "birth-cooldown" };
     }
@@ -113,8 +113,6 @@ export function createChildFromParents(firstId, secondId) {
         return { ok: false, reason: "kinship-link-failed" };
     }
 
-    partnership.first.lastBirthYear = state.year;
-    partnership.second.lastBirthYear = state.year;
     const tick = Math.max(0, Math.floor(Number(state.tick) || 0));
     addPersonMemory(first, {
         id: "birth:" + child.personId + ":" + first.personId,
@@ -134,6 +132,14 @@ export function createChildFromParents(firstId, secondId) {
         text: "I was born into the " + familyName + " family in year " + state.year + ".",
         tick, importance: 100
     });
+
+    // Profile normalization replaces nested arrays/objects; reacquire the reciprocal
+    // links after all memory and kinship writes before persisting the cooldown.
+    const persistedPartnership = activePartnership(first, second);
+    if (persistedPartnership) {
+        persistedPartnership.first.lastBirthYear = state.year;
+        persistedPartnership.second.lastBirthYear = state.year;
+    }
 
     const economy = state.economy || (state.economy = {});
     economy.births = Math.max(0, Number(economy.births) || 0) + 1;
