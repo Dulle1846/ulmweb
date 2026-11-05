@@ -1,0 +1,149 @@
+/* Kings & Cards — Master UI design system
+   Implements the approved royal parchment / dark timber visual language.
+   All tokens live here so future screens can share one visual contract. */
+:root{
+  color-scheme:dark;
+  --color-royal-dark:#24221f;
+  --color-dark-wood:#403326;
+  --color-parchment:#d8c6a0;
+  --color-light-parchment:#efe3c8;
+  --color-antique-gold:#b99a59;
+  --color-bronze:#80633f;
+  --color-royal-red:#762f35;
+  --color-deep-blue:#344b65;
+  --color-forest:#405b43;
+  --color-stone:#77736b;
+  --ui-ink:#30271e;
+  --ui-paper-text:#4b3927;
+  --ui-paper-muted:#806d52;
+  --ui-dark-1:#1c1a17;
+  --ui-dark-2:#29251f;
+  --ui-dark-3:#383027;
+  --ui-line:rgba(185,154,89,.28);
+  --ui-line-strong:rgba(185,154,89,.58);
+  --ui-shadow:0 14px 38px rgba(0,0,0,.38);
+  --ui-radius-sm:3px;
+  --ui-radius-md:6px;
+  --ui-radius-lg:9px;
+  --ui-space-1:4px;
+  --ui-space-2:8px;
+  --ui-space-3:12px;
+  --ui-space-4:16px;
+  --ui-space-5:24px;
+  --ui-title-font:Georgia,"Palatino Linotype","Book Antiqua",serif;
+  --ui-body-font:"Segoe UI",Tahoma,Arial,sans-serif;
+  --ui-number-font:"Segoe UI",Tahoma,Arial,sans-serif;
+}
+body{font-family:var(--ui-body-font);background:#171512;color:#eee4d0}
+button,input,select,textarea{font-family:var(--ui-body-font)}
+button{border-radius:var(--ui-radius-sm);transition:background-color .14s ease,border-color .14s ease,box-shadow .14s ease,transform .14s ease}
+button:disabled{cursor:not-allowed;filter:grayscale(.45);opacity:.55}
+button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #e1c47e;outline-offset:2px}
+.game-shell{background:radial-gradient(ellipse at 45% -20%,rgba(126,99,63,.17),transparent 55%),linear-gradient(145deg,#24221f,#171512 76%)}
+.topbar{min-height:72px;padding:8px 16px;border-bottom:1px solid var(--ui-line-strong);background:linear-gradient(180deg,#373027,#211e19);box-shadow:0 4px 18px #0008}
+.brand-mark{border:2px double var(--color-antique-gold);border-radius:4px;background:linear-gradient(145deg,#d8c6a0,#80633f);color:#34281d;box-shadow:inset 0 0 0 3px #eee0bd66,0 3px 9px #0007}
+.brand-title{font-family:var(--ui-title-font);font-variant:small-caps;letter-spacing:.08em;color:#e5d0a0}
+.brand-subtitle{color:#b9a47c;letter-spacing:.17em}
+.header-middle{gap:clamp(10px,1.7vw,24px)}
+.date-label,.morale-topline{color:#b9a47c}
+.date-value{font-family:var(--ui-title-font);color:#f0e3c7}
+.morale-track{border:1px solid #8d744d;border-radius:2px;background:#171512}
+.morale-track>div{background:linear-gradient(90deg,#762f35,#b99a59,#405b43)}
+.player-chip{border:1px solid var(--ui-line);border-radius:3px;background:#1c1a17;color:#e6d7b8}
+.header-actions{gap:5px}
+.control-button,.speed-button{min-height:34px;padding:0 10px;border:1px solid #8b7047;border-radius:3px;background:linear-gradient(#514333,#332a20);color:#ead9b5;font-family:var(--ui-title-font);font-size:10px;font-weight:700;letter-spacing:.07em;box-shadow:inset 0 1px #fff2,0 2px 4px #0006}
+.control-button:hover,.speed-button:hover{border-color:#d1b476;background:linear-gradient(#69553a,#403326);color:#fff0c9}
+.control-button:active,.speed-button:active{transform:translateY(1px);box-shadow:inset 0 2px 4px #0006}
+.speed-button{min-width:36px;padding:0 7px;font-family:var(--ui-number-font)}
+.speed-button.is-active{border-color:#e1c17d;background:linear-gradient(#b99a59,#80633f);color:#211b14;box-shadow:inset 0 1px #fff8,0 0 0 1px #3a2b1c}
+.realm-resource-strip{display:flex;align-items:center;gap:5px;min-width:0}
+.realm-resource-chip{display:flex;align-items:center;gap:6px;min-height:34px;padding:0 8px;border:1px solid var(--ui-line);border-radius:3px;background:#211e19;color:#dfd0b2;cursor:pointer}
+.realm-resource-chip:hover{border-color:var(--color-antique-gold);background:#383027}
+.realm-resource-chip svg{width:15px;height:15px;flex:0 0 15px;fill:none;stroke:var(--color-antique-gold);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.realm-resource-chip strong{font:700 12px var(--ui-number-font);font-variant-numeric:tabular-nums;color:#f1e5ce}
+.realm-resource-chip small{font-size:8px;letter-spacing:.1em;color:#bba984}
+.game-layout{align-items:stretch}
+.realm-nav{display:flex;flex:0 0 66px;flex-direction:column;align-items:stretch;gap:4px;padding:10px 6px;border-right:1px solid var(--ui-line-strong);background:linear-gradient(180deg,#332b22,#211e19);box-shadow:4px 0 14px #0005;z-index:5}
+.realm-nav-heading{padding:2px 0 8px;text-align:center;color:#bda779;font:700 8px var(--ui-title-font);letter-spacing:.13em;border-bottom:1px solid var(--ui-line);margin-bottom:3px}
+.realm-nav-button{display:flex;min-height:49px;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 2px;border:1px solid transparent;border-radius:3px;background:transparent;color:#c7b894;cursor:pointer}
+.realm-nav-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+.realm-nav-button span{font:700 7px var(--ui-title-font);letter-spacing:.05em;text-transform:uppercase}
+.realm-nav-button:hover{border-color:var(--ui-line);background:#4a3b2a;color:#f2dfb6}
+.realm-nav-button.is-active{border-color:#b99a59;background:linear-gradient(145deg,#715638,#403326);color:#fff0c9;box-shadow:inset 0 1px #fff3,0 2px 5px #0005}
+.realm-nav-spacer{flex:1}
+.world-stage{background:#22251f}
+.side-panel{flex-basis:330px;min-width:300px;border-left:1px solid var(--ui-line-strong);background:linear-gradient(180deg,#29251f,#1d1a16);box-shadow:-5px 0 20px #0007}
+.section-heading,.card-section-heading,.card-section-title{font-family:var(--ui-title-font);letter-spacing:.12em;color:#e2cea5}
+.resource-section{background:rgba(0,0,0,.12);border-bottom:1px solid var(--ui-line)}
+.resource-card{border:1px solid #80633f;border-radius:3px;background:linear-gradient(145deg,#403326,#29221b);box-shadow:inset 0 1px #fff1,0 2px 5px #0005}
+.resource-value{color:#f0e2c2;font:700 18px var(--ui-number-font);font-variant-numeric:tabular-nums}
+.resource-name{color:#bba77f;font-family:var(--ui-title-font);letter-spacing:.13em}
+.card-section{border-color:var(--ui-line)}
+.card-container{border:3px double #a98a52;border-radius:3px;box-shadow:inset 0 0 0 4px #f1e2bf,0 5px 12px #0008}
+.card-container:hover{border-color:#d5b76e;transform:translateY(-1px)}
+.tabs{background:#211d18;border-color:var(--ui-line-strong)}
+.tab-button{color:#c5b28d;font-family:var(--ui-title-font);letter-spacing:.08em}
+.tab-button.is-active{background:linear-gradient(#79603d,#493725);color:#fff0cb;box-shadow:inset 0 1px #fff3}
+.tab-content{color:#e7d9bb}
+.panel-footer{border-color:var(--ui-line);color:#bba984}
+.screen-overlay{background:rgba(13,11,9,.78);backdrop-filter:blur(3px)}
+.start-panel,.modal-panel,.people-panel,.event-panel{border:4px double #9d7d4b;border-radius:4px;background:radial-gradient(ellipse at 50% 0%,#fff7df55,transparent 55%),repeating-linear-gradient(0deg,#72512608 0 1px,transparent 1px 5px),linear-gradient(145deg,#efe3c8,#d8c6a0);color:var(--ui-paper-text);box-shadow:var(--ui-shadow),inset 0 0 0 4px #fff4d866}
+.start-panel h1,.modal-heading h2,.event-panel h2,.command-panel-header h2,.build-header h2{font-family:var(--ui-title-font);font-variant:small-caps;letter-spacing:.06em;color:#3d2d20}
+.start-kicker,.command-ribbon{color:#80633f}
+.primary-button,.command-policy button,.command-card button,.command-inline button,.command-actions button{border:1px solid #5e2927;border-radius:3px;background:linear-gradient(#8e4540,#762f35);color:#f5e7c9;box-shadow:inset 0 1px #fff4,0 2px 4px #0003}
+.primary-button:hover,.command-policy button:hover,.command-card button:hover,.command-inline button:hover,.command-actions button:hover{background:linear-gradient(#a3574c,#84343a);border-color:#b99a59}
+.secondary-button,.text-button{border:1px solid #92774e;border-radius:3px;background:linear-gradient(#f0e3c8,#d8c6a0);color:#473523}
+.modal-close{border:1px solid #9d7d4b;border-radius:3px;background:#e5d4b1;color:#4b3927}
+.command-panel{border:4px double #9d7d4b;border-radius:4px;background:linear-gradient(145deg,#efe3c8,#d8c6a0);color:#3d2d20;box-shadow:var(--ui-shadow)}
+.command-panel-header{border:1px solid #a98a52;border-bottom:3px double #9d7d4b;border-radius:2px}
+.command-deck{justify-content:flex-start;gap:5px;padding:8px;background:linear-gradient(#4a3a2a,#30271f);border:1px solid #80633f;border-radius:3px}
+.command-deck button{min-width:92px;min-height:40px;padding:5px 9px;border:1px solid #92774e;border-radius:3px;background:linear-gradient(#efe3c8,#d8c6a0);color:#463421;box-shadow:inset 0 1px #fff8,0 2px 3px #0003;font:700 9px var(--ui-title-font);letter-spacing:.05em}
+.command-deck button:hover,.command-deck button.is-active{transform:translateY(-1px);border-color:#fff0bf;background:linear-gradient(#f6edda,#e1cca0);color:#3b2c1e}
+.command-deck svg{width:20px;height:20px;fill:none;stroke:#80633f;stroke-width:1.6}
+.command-summary>div,.command-choice,.command-policy,.command-card,.command-resource,.stat-cell,.trade-partner{border:1px solid #b69a68;border-radius:3px;background:linear-gradient(145deg,#f6ecd7,#e3d1ad);color:#4b3927;box-shadow:inset 0 1px #fff7}
+.command-summary small,.command-section-title,.command-choice small,.command-policy p,.command-card p,.command-note{color:#806d52}
+.command-summary strong,.command-choice strong,.command-policy strong,.command-card strong,.command-resource strong{color:#3d2d20}
+.command-section-title{font-family:var(--ui-title-font);letter-spacing:.12em}
+.command-meter i{border-radius:2px;background:#c4b18a}
+.command-meter i b{border-radius:1px}
+.build-panel{border:4px double #9d7d4b;border-radius:4px;background:linear-gradient(145deg,#efe3c8,#d8c6a0);color:#3d2d20;box-shadow:var(--ui-shadow)}
+.build-category-tabs{border:1px solid #80633f;border-radius:3px;background:#403326}
+.build-category-tabs button{border:1px solid #80633f;border-radius:2px;background:#efe3c8;color:#473523}
+.build-category-tabs button.is-active{background:#b99a59;color:#292119}
+.build-option{border:2px solid #a18453;border-radius:3px;background:linear-gradient(145deg,#f5ead4,#dfcba5);color:#3d2d20;box-shadow:0 3px 0 #80633f}
+.build-option:hover{border-color:#762f35}
+.action-toast{border:1px solid #b99a59;border-radius:3px;background:#29251f;color:#efe3c8;box-shadow:var(--ui-shadow)}
+@media(max-width:1180px){
+ .realm-resource-chip{padding:0 5px}.realm-resource-chip small{display:none}
+ .header-actions .control-button{padding:0 7px;font-size:9px}
+ .side-panel{flex-basis:310px;min-width:280px}
+}
+@media(max-width:900px){
+ .realm-nav{flex-basis:58px;padding:8px 4px}
+ .realm-nav-button{min-height:44px}
+ .realm-nav-button span{font-size:6px}
+ .realm-resource-strip{gap:3px}
+ .realm-resource-chip{min-height:30px}
+ .realm-resource-chip strong{font-size:10px}
+ .side-panel{flex-basis:285px;min-width:260px}
+}
+@media(max-width:790px){
+ .topbar{gap:7px}
+ .realm-resource-strip{order:4;flex-basis:100%;justify-content:center}
+ .realm-nav{flex:0 0 auto;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:4px 6px;border-right:0;border-bottom:1px solid var(--ui-line-strong);box-shadow:0 3px 9px #0006}
+ .realm-nav-heading,.realm-nav-spacer{display:none}
+ .realm-nav-button{flex:0 0 54px;min-height:44px}
+ .game-layout{flex-direction:column}
+ .world-stage{min-height:250px}
+ .side-panel{flex:0 0 42%;width:100%;min-width:0;max-height:42%;border-left:0;border-top:1px solid var(--ui-line-strong)}
+}
+@media(max-width:560px){
+ .realm-resource-strip{justify-content:space-between}
+ .realm-resource-chip{flex:1;justify-content:center}
+ .realm-nav-button{flex-basis:48px}
+ .side-panel{flex-basis:46%;max-height:46%}
+ .command-panel{padding:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
