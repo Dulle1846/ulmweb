@@ -2,7 +2,7 @@
 
 **Specification:** `MASTER UI & VISUAL DESIGN CONCEPT v1.0` (uploaded project brief)  
 **Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 dynasty and action dock)  
-**Current UI branch:** `kac-ui-phase-3-buildings-economy`  
+**Current UI branch:** `kac-ui-phase-3-economy-buildings`  
 **Baseline:** `6c4c3f0442ea18aa04fee5598e909ddfc6b4d900`  
 **Rule:** This register distinguishes implemented and tested work from the remaining concept. A styled shell is not a completed screen.
 
@@ -58,7 +58,9 @@
 - Added a read-only building register from surviving simulation entities. Each record shows the catalogue description/cost, actual health, footprint, assigned staff, workforce efficiency and centre-tile resource geography where applicable.
 - Added a searchable building register and a new Buildings navigation/tab entry. Construction and demolition remain in the existing build interface.
 - Per-building output, storage and upkeep are not currently represented by the simulation contract; the screen says so rather than displaying invented figures.
-- Added static UI contract tests and Chromium browser coverage for economy and building views. CI and browser review are pending on the exact PR head.
+- Added individual creature dossiers for living dragons and memorial records, including actual life stage, needs, bond, temperament, abilities, goals and memories.
+- Added a searchable chronicle/event inbox based on the saved event log, with category filtering and a shortcut to the existing active issue dialog. It does not invent unread tracking or dates.
+- Added static UI contract tests and Chromium browser coverage for economy, building, creature and chronicle views. CI and browser review are pending on the exact PR head.
 
 ## Actual navigation contract
 
