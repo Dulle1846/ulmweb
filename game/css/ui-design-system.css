@@ -262,3 +262,5 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .active-issue-card button{justify-self:start;min-height:32px;padding:6px 12px;border:1px solid #b99a59;border-radius:3px;background:linear-gradient(#80633f,#51402e);color:#fff0c9;font:700 9px var(--ui-title-font);letter-spacing:.08em;cursor:pointer}
 .active-issue-card button:hover{background:linear-gradient(#9b7c4b,#69553a)}
 @media(max-width:790px){.creature-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.chronicle-filters{grid-template-columns:1fr}.chronicle-filters input{grid-column:auto}.creature-record>summary{gap:7px;padding:7px}.creature-record>summary>img{width:38px;height:38px}}
+
+.command-creature-art{display:block;width:min(150px,55%);max-height:116px;object-fit:contain;margin:0 auto 10px;filter:drop-shadow(0 5px 8px #0008)}
