@@ -135,6 +135,15 @@ export function recordCreatureDeath(entity, cause = "unknown") {
     return creature;
 }
 
+export function normalizeCreatureArchive(input = state.creatureArchive) {
+    return (Array.isArray(input) ? input : []).filter(entry => entry && typeof entry === "object")
+        .slice(-CREATURE_ARCHIVE_LIMIT).map(entry => ({
+            ...normalizeCreatureProfile(entry, null),
+            cause: String(entry.cause || "unknown").slice(0, 60),
+            diedAtYear: clamp(Math.floor(Number(entry.diedAtYear) || 1), 1, 1000000)
+        }));
+}
+
 function updateCreatureMovement(entity) {
     if (state.tick % 50 === 0) {
         const origin = entity.home || entity.anchor || { x: entity.x, y: entity.y };
@@ -197,15 +206,16 @@ function ageCreature(entity, creature, elapsedYears) {
     }
     if (creature.health <= 0) {
         recordCreatureDeath(entity, creature.ageYears >= creature.lifespanYears ? "old age" : "starvation");
-        return { aged: elapsedYears, fed, died: true };
+        return { aged: elapsedYears, fed, died: true, name: creature.name, species: creature.species };
     }
     entity.hp = Math.max(1, Math.round(entity.maxHp * creature.health / 100));
-    return { aged: elapsedYears, fed, died: false };
+    return { aged: elapsedYears, fed, died: false, name: creature.name, species: creature.species };
 }
 
 export function updateCreatures() {
     const living = state.entities.filter(entity => !entity.dead && entity.creature);
     let aged = 0, fed = 0, deaths = 0;
+    const deceased = [];
     for (const entity of living) {
         const creature = normalizeCreatureProfile(entity.creature, entity);
         entity.creature = creature;
@@ -216,7 +226,7 @@ export function updateCreatures() {
         const result = ageCreature(entity, creature, elapsed);
         aged++;
         if (result.fed) fed++;
-        if (result.died) deaths++;
+        if (result.died) { deaths++; deceased.push({ name: result.name, species: result.species }); }
     }
-    return { aged, fed, deaths };
+    return { aged, fed, deaths, deceased };
 }
