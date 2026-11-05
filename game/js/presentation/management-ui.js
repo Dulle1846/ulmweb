@@ -3,6 +3,7 @@ import { state } from "../core/state.js";
 import { getGovernmentSnapshot, GOVERNMENT_FORMS, GOVERNMENT_POLICIES, setGovernmentForm, enactPolicy } from "../systems/government.js";
 import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
+import { getFamilySnapshot } from "../systems/families.js";
 import { getWorkforceSnapshot } from "../systems/economy.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
@@ -57,9 +58,53 @@ function economy(){
  const w=getWorkforceSnapshot(),h=getHousingSnapshot(),homes=getHouseholdSnapshot().homes||[],resources=Object.entries(state.resources||{}).map(([k,v])=>'<div class="command-resource"><span>'+esc(k)+'</span><strong>'+number(v)+'</strong></div>').join("");
  return intro("TREASURY & PRODUCTION","Realm economy","Live overview of resources, workforce, housing and household capacity.")+'<div class="command-summary"><div><small>POPULATION</small><strong>'+h.population+'</strong></div><div><small>HOUSING</small><strong>'+h.capacity+'</strong></div><div><small>FREE BEDS</small><strong>'+h.available+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div></div><div class="command-section-title">ROYAL STORES</div><div class="command-resource-grid">'+resources+'</div><div class="command-section-title">WORKFORCE</div><div class="command-summary"><div><small>WORKERS</small><strong>'+number(w.population)+'</strong></div><div><small>UNEMPLOYED</small><strong>'+number(w.unemployed)+'</strong></div><div><small>WORKPLACES</small><strong>'+number(w.buildings)+'</strong></div></div><div class="command-section-title">HOUSEHOLDS</div><p class="command-note">'+number(homes.length)+' registered homes. Shared housing never creates kinship.</p>';
 }
+function familyRecord(id){
+ const key=String(id||"");
+ const live=state.entities.find(entity=>!entity.dead&&String(entity.personId||entity.person?.id||entity.id||"")===key);
+ if(live)return live;
+ const memorial=(state.personArchive||[]).find(entry=>String(entry.personId||"")===key);
+ return memorial?{...memorial,isArchived:true}:null;
+}
+function familyNode(entity,heirId){
+ const id=String(entity?.personId||entity?.person?.id||entity?.id||"");
+ const person=entity?.person;
+ if(!id||!person)return "";
+ const flags=[entity.isKing?"SOVEREIGN":"",id===String(heirId||"")?"DESIGNATED HEIR":"",entity.isArchived?"DECEASED":""].filter(Boolean).join(" · ");
+ const age=Number.isFinite(Number(person.ageYears))?Math.floor(Number(person.ageYears))+" years":"age unknown";
+ return '<button type="button" class="dynasty-person'+(entity.isArchived?' is-deceased':'')+'" data-open-person="'+esc(id)+'" aria-label="Open character dossier for '+esc(person.name||"Unnamed person")+'"><span class="dynasty-person-seal" aria-hidden="true">'+(entity.isKing?'♛':entity.isArchived?'†':'✦')+'</span><span class="dynasty-person-copy"><strong>'+esc(person.name||"Unnamed person")+'</strong><small>'+esc(person.role||person.species||"Resident")+' · '+esc(age)+'</small><em>'+esc(flags||"RECORDED FAMILY MEMBER")+'</em></span></button>';
+}
 function dynasty(){
- const h=getRoyalHouse(),rows=h.history.slice().reverse().slice(0,12).map(x=>'<article class="command-history"><strong>YEAR '+number(x.year)+' · '+esc(x.kind)+'</strong><p>'+esc(x.detail)+'</p></article>').join("");
- return intro("HOUSE OF THE CROWN","Dynasty chronicle","Royal marriages, births and succession are recorded as persistent historical events.")+'<div class="command-summary"><div><small>DYNASTY</small><strong>'+esc(state.royal?.dynastyName||state.kingdomName)+'</strong></div><div><small>ROYAL CHILDREN</small><strong>'+h.children.length+'</strong></div><div><small>SUCCESSOR</small><strong>'+esc(h.heir?.person?.name||"None")+'</strong></div></div><div class="command-history-list">'+(rows||'<p class="command-note">No royal event has been recorded yet.</p>')+'</div>';
+ const h=getRoyalHouse(),king=h.king;
+ if(!king)return intro("HOUSE OF THE CROWN","Dynasty & lineage","The family tree is assembled from explicit parent, child and partnership records.")+'<div class="command-note">No living sovereign is currently recorded. Start a campaign or inspect the character dossiers for archived family records.</div>';
+ const heirId=h.heir?.personId||"";
+ const visited=new Set(),generations=[];
+ let current=[king];
+ for(let depth=0;depth<4&&current.length;depth++){
+  const unique=current.filter(entity=>{
+   const id=String(entity?.personId||entity?.person?.id||entity?.id||"");
+   if(!id||visited.has(id)||!entity?.person)return false;
+   visited.add(id);return true;
+  }).slice(0,24);
+  if(!unique.length)break;
+  generations.push('<section class="dynasty-generation"><div class="dynasty-generation-heading"><span>GENERATION '+(depth+1)+'</span><small>'+unique.length+' RECORDED '+(unique.length===1?'PERSON':'PEOPLE')+'</small></div><div class="dynasty-generation-grid">'+unique.map(entity=>familyNode(entity,heirId)).join("")+'</div></section>');
+  const next=[];
+  for(const entity of unique){
+   const id=String(entity.personId||entity.person?.id||entity.id||"");
+   const family=getFamilySnapshot(id);
+   for(const link of family?.children||[]){
+    const child=familyRecord(link.personId);
+    if(child&&!visited.has(String(link.personId)))next.push(child);
+   }
+  }
+  current=next;
+ }
+ const consort=h.consort?familyNode(h.consort,heirId):'<p class="command-note">No royal consort is recorded.</p>';
+ const history=h.history.slice().reverse().slice(0,12).map(x=>'<article class="command-history"><strong>YEAR '+number(x.year)+' · '+esc(x.kind)+'</strong><p>'+esc(x.detail)+'</p></article>').join("");
+ return intro("HOUSE OF THE CROWN","Dynasty & lineage","A multi-generation view of the actual kinship graph. Select any recorded person to open their full dossier.")+
+ '<div class="command-section-title">THE SOVEREIGN HOUSE</div><div class="dynasty-root-grid">'+familyNode(king,heirId)+consort+'</div>'+
+ '<div class="command-section-title">DESCENDANTS & SUCCESSION</div><div class="dynasty-tree">'+(generations.join("")||'<p class="command-note">No descendant links are recorded for the current sovereign.</p>')+'</div>'+
+ '<div class="command-section-title">ROYAL SUCCESSION RECORD</div><div class="command-history-list">'+(history||'<p class="command-note">No royal event has been recorded yet.</p>')+'</div>'+
+ '<p class="command-note">Only saved family relationships are drawn. Missing, unknown or unlinked relatives are intentionally not inferred.</p>';
 }
 function creatures(){
  const c=getCreatureSnapshot(),rows=c.living.map(d=>'<article class="command-policy"><div><strong>🐉 '+esc(d.name)+'</strong><p>'+esc(d.lifeStage)+' · age '+number(d.ageYears)+' · health '+number(d.health)+' · hunger '+number(d.hunger)+' · bond '+number(d.bond)+'</p></div></article>').join("");
@@ -96,6 +141,18 @@ export function setupManagementUI(){
  document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{activePanel=b.dataset.commandTab||"government";$("command-modal")?.classList.remove("hidden");render();}));
  $("command-close")?.addEventListener("click",()=>$("command-modal")?.classList.add("hidden"));
  $("command-modal")?.addEventListener("click",e=>{if(e.target===$("command-modal"))$("command-modal").classList.add("hidden");});
- $("command-panel-content")?.addEventListener("click",e=>{const b=e.target.closest("[data-command]");if(b&&!b.disabled)act(b);});
+ $("command-panel-content")?.addEventListener("click",e=>{
+  const person=e.target.closest("[data-open-person]");
+  if(person){window.dispatchEvent(new CustomEvent("kac:open-person",{detail:{personId:person.dataset.openPerson}}));$("command-modal")?.classList.add("hidden");return;}
+  const b=e.target.closest("[data-command]");if(b&&!b.disabled)act(b);
+ });
+ document.querySelectorAll("[data-kac-dock-action]").forEach(button=>button.addEventListener("click",()=>{
+  const action=button.dataset.kacDockAction;
+  if(action==="people")$("people-btn")?.click();
+  else if(action==="dynasty"){activePanel="dynasty";$("command-modal")?.classList.remove("hidden");render();}
+  else if(action==="cards"){activePanel="cards";$("command-modal")?.classList.remove("hidden");render();}
+  else if(action==="events")$("tab-0")?.click();
+  else if(action==="save")$("save-btn")?.click();
+ }));
  document.addEventListener("keydown",e=>{if(e.key==="Escape")$("command-modal")?.classList.add("hidden");});
 }
