@@ -398,3 +398,17 @@ body.ui-modal-open{overflow:hidden}
 @media(max-width:480px){
  .side-panel{padding-bottom:44px;scroll-padding-bottom:44px}
 }
+
+
+/* Clickable sovereign identity: visually distinct from the player's profile chip. */
+.sovereign-identity-button{
+ appearance:none;
+ padding:5px 9px;
+ min-height:32px;
+ cursor:pointer;
+ font:inherit;
+ letter-spacing:.06em;
+}
+.sovereign-identity-button svg{width:16px;height:16px}
+.sovereign-identity-button:hover{border-color:var(--ui-gold,#b99a59);background:#51412d;color:#fff0c9}
+.sovereign-identity-button:focus-visible{outline:2px solid #e3c98f;outline-offset:2px}
