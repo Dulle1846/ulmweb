@@ -500,6 +500,21 @@ try{
 
     await page.locator("#settings-btn").click();
     assert.equal(await page.locator("#settings-modal").isVisible(),true);
+    const htmlRoot=page.locator("html");
+    const tooltips=page.locator("#settings-tooltips-toggle");
+    await tooltips.uncheck();
+    assert.ok(await htmlRoot.evaluate(node=>node.classList.contains("ui-hide-tooltips")));
+    await tooltips.check();
+    assert.ok(!(await htmlRoot.evaluate(node=>node.classList.contains("ui-hide-tooltips"))));
+    const reducedMotion=page.locator("#settings-reduced-motion-toggle");
+    await reducedMotion.check();
+    assert.ok(await htmlRoot.evaluate(node=>node.classList.contains("ui-reduced-motion")));
+    await reducedMotion.uncheck();
+    const highContrast=page.locator("#settings-high-contrast-toggle");
+    await highContrast.check();
+    assert.ok(await htmlRoot.evaluate(node=>node.classList.contains("ui-high-contrast")));
+    await highContrast.uncheck();
+    assert.ok(!(await htmlRoot.evaluate(node=>node.classList.contains("ui-high-contrast"))));
     await page.locator("#settings-close").click();
     assert.equal(await page.locator("#settings-modal").isVisible(),false);
 
