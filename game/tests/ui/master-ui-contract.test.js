@@ -125,4 +125,5 @@ test("chronicle inbox uses stored event log data and opens the existing active i
   assert.ok(management.includes('data-command="show-active-event"'));
   assert.ok(management.includes("renderUI()"));
   assert.ok(management.includes("does not claim unread tracking"));
+  assert.ok(!main.includes("command-chronicles-btn"),"obsolete chronicle-to-people shortcut must be removed");
 });
