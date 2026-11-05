@@ -55,6 +55,7 @@ try{
     assert.equal(await page.locator("[data-road-type]").count(),3,"all three road tiers must be available");
     await page.locator('[data-road-type="dirt"]').click();
     assert.ok(await page.locator("#build-modal").evaluate(el=>el.classList.contains("hidden")),"choosing a road must return to the map");
+    assert.ok(await page.locator("#road-build-cancel").isVisible(),"road mode must expose a clear exit control");
     const roadFixture=await page.evaluate(async()=>{
         const [{state},{isWaterAt},{BUILDING_SIZE}]=await Promise.all([
             import("./js/core/state.js"),import("./js/world/world.js"),import("./js/core/config.js")
@@ -82,6 +83,8 @@ try{
     });
     await page.mouse.click(roadFixture.screenX,roadFixture.screenY);
     assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y)?.type,{x:roadFixture.x,y:roadFixture.y}),"dirt","map click must create a persistent road tile");
+    await page.keyboard.press("Escape");
+    assert.ok(await page.locator("#road-build-cancel").evaluate(el=>el.classList.contains("hidden")),"Escape must leave road build mode");
 
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
