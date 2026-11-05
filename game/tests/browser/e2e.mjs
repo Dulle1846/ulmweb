@@ -60,6 +60,10 @@ try{
 
     // Phase 2 quick actions must open real game screens, not decorative controls.
     assert.ok(await page.locator("#realm-action-dock").isVisible(),"contextual action dock must be visible during a campaign");
+    const globalDock=await page.locator("#realm-action-dock").evaluate(el=>({width:el.getBoundingClientRect().width,parent:el.parentElement.className,position:el.getBoundingClientRect().top}));
+    assert.ok(globalDock.width>=1590,"the contextual action bar must span the complete game width, not just the side panel");
+    assert.ok(globalDock.parent.includes("game-shell"),"the action bar must be a sibling of the game layout");
+
     await page.locator('[data-kac-dock-action="dynasty"]').click();
     assert.ok(await page.locator("#command-modal").isVisible(),"dynasty action must open the management dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Dynasty & lineage");
@@ -465,6 +469,23 @@ try{
     await page.locator("#people-close").click();
     await page.locator("#pause-btn").click();
 
+
+    // Verify the global action bar and primary dialog fit the full requested viewport matrix.
+    for(const [width,height] of [[390,844],[768,1024],[1280,720],[1366,768],[1600,900],[1920,1080],[2560,1440]]){
+        await page.setViewportSize({width,height});
+        await page.waitForTimeout(40);
+        const layout=await page.evaluate(()=>{
+            const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+            return {viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,dockWidth:dock.width,dockLeft:dock.left,dockRight:dock.right};
+        });
+        assert.ok(layout.documentWidth<=width+1,"horizontal document overflow at "+width+"x"+height+": "+JSON.stringify(layout));
+        assert.ok(layout.dockWidth>=width-2&&layout.dockLeft<=1&&layout.dockRight>=width-1,"global action bar must span viewport at "+width+"x"+height+": "+JSON.stringify(layout));
+        await page.locator("#command-open-btn").click();
+        const dialog=await page.locator("#command-modal .command-panel").boundingBox();
+        assert.ok(dialog&&dialog.x>=0&&dialog.y>=0&&dialog.x+dialog.width<=width+1&&dialog.y+dialog.height<=height+1,"management dialog must fit viewport "+width+"x"+height+": "+JSON.stringify(dialog));
+        await page.locator("#command-close").click();
+    }
+    await page.setViewportSize({width:1600,height:1000});
     assert.deepEqual(errors,[],"browser runtime must not emit uncaught page errors");
     assert.deepEqual(consoleErrors,[],"browser runtime must not emit console errors");
     console.log("Browser E2E passed: world forge, seed, guardian/ward dossier links, memorial archive, empty/timed hand, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.");
