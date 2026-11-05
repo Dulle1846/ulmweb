@@ -198,6 +198,11 @@ try{
     });
     console.log("Creature dossier fixture:",JSON.stringify(creatureFixture));
     assert.ok(await page.locator("#command-panel-content .creature-record:not(.is-memorial)").count()>=1,"summoned dragon must have an individual dossier");
+    const dragonPortrait=page.locator("#command-panel-content .creature-record:not(.is-memorial) .creature-portrait").first();
+    const dragonStage=await dragonPortrait.getAttribute("data-life-stage");
+    assert.ok(["hatchling","juvenile","adult","elder","ancient"].includes(dragonStage),"dragon portrait must reflect its actual life stage");
+    assert.equal(await dragonPortrait.locator("use").getAttribute("href"),"assets/royal-dragon-atlas.svg#dragon-"+dragonStage);
+
     await page.locator("#command-panel-content .creature-record:not(.is-memorial) > summary").first().click();
     assert.ok((await page.locator("#command-panel-content .creature-dossier").innerText()).includes("PERSONAL MEMORIES"));
 

@@ -202,3 +202,11 @@ test("card frames use the restrained royal frame asset and rarity treatments",as
  assert.ok(cardCss.includes("royal-card-frame.svg"));
  assert.ok(cardCss.includes(".rarity-legendary"));
 });
+
+test("dragon dossiers use original art for every persisted life stage",async()=>{
+ const atlas=await readFile(new URL("assets/royal-dragon-atlas.svg",root),"utf8");
+ for(const stage of ["hatchling","juvenile","adult","elder","ancient"])assert.ok(atlas.includes('id="dragon-'+stage+'"'));
+ assert.ok(management.includes("assets/royal-dragon-atlas.svg#"));
+ assert.ok(management.includes('dragonPortraitSymbol(d.lifeStage)'));
+ assert.ok(management.includes("data-life-stage="));
+});

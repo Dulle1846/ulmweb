@@ -27,3 +27,5 @@ All assets in this directory are bundled with the game. No runtime CDN or paid a
 
 | `royal-card-atlas.svg` | Card hand category illustrations | SVG sprite atlas | Original category art; aliases preserve existing card catalogue mappings |
 | `royal-card-frame.svg` | Card hand frame | SVG | Original parchment / antique-gold frame |
+
+| `royal-dragon-atlas.svg` | Living dragon dossiers and memorials | SVG sprite atlas | Five stage-specific portraits mapped to persisted dragon life stage |
