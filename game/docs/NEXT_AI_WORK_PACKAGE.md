@@ -110,3 +110,25 @@ Implemented in this slice:
 - Tests for RNG replay, stream isolation, save restoration and entity identity.
 
 The current CI must be checked on the exact latest PR head before treating the slice as verified. Do not merge or deploy. Cloudflare Pages remains production; do not use Vercel.
+
+
+## Current implementation status (2026-11-05)
+
+Branch: `kac-2.2-seeded-simulation`; draft PR #7 against `kac-2.1-stability-performance`.
+
+Implemented and CI-verified on the previous code head:
+- Named deterministic RNG streams with local save/restore.
+- Stable entity IDs and person IDs.
+- Persistent person profiles for villagers and the king: name, fantasy species, life stage, traits, needs, goal, memories and relationship collection.
+- Legacy-save normalization for missing person data and RNG counters.
+- Tests for RNG replay/isolation, ID allocation, person profile normalization and bounded memories.
+
+Next tasks for an independent agent:
+1. Connect `addPersonMemory` to consequential events with participant/observer relevance, avoiding a memory for every trivial tick.
+2. Implement relationships with stable target person IDs, relationship type, strength, trust, history and bounded updates.
+3. Implement households/families, kinship, birth/death and succession as data-driven systems; never infer family solely from same-household membership.
+4. Add a character inspection panel with biography, needs, traits, memories and relationships; preserve the comic-medieval UI direction.
+5. Add deterministic tests for save/load, multi-year aging, memory relevance, relationship decay and bounded storage.
+6. Profile population scaling before increasing resident counts; maintain the hybrid detail model and explicit entity/memory caps.
+
+Do not claim autonomous character behavior until goals are evaluated against world state and actors can select/execute actions. Do not merge or deploy this draft. Cloudflare Pages is the production host; do not use Vercel.
