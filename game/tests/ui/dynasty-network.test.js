@@ -53,3 +53,15 @@ test("lineage network enforces hard node and edge limits",()=>{
   assert.ok(management.includes("nodes.size>=MAX_NODES"));
   assert.ok(management.includes("edges.length>=MAX_EDGES"));
 });
+
+test("partner and sibling connectors switch to vertical geometry when cards stack on mobile",()=>{
+  assert.ok(management.includes("const stacked=Math.abs(a.top-b.top)>Math.min(a.height,b.height)*.6"));
+  assert.ok(management.includes("if(stacked){"));
+  assert.ok(management.includes("x1=a.left-bounds.left+a.width/2;y1=a.bottom-bounds.top"));
+  assert.ok(management.includes("x2=b.left-bounds.left+b.width/2;y2=b.top-bounds.top"));
+});
+
+test("connector curve handles short mobile gaps without control points overshooting the gap",()=>{
+  assert.ok(management.includes("Math.min(18,Math.max(3,Math.abs(y2-y1)*.42))"));
+  assert.ok(management.includes("Math.min(24,Math.max(4,Math.abs(x2-x1)*.32))"));
+});

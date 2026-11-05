@@ -66,3 +66,7 @@
 .build-footer{margin-top:16px;padding-top:12px;border-top:2px solid #b18a52;color:#6b4c2f;font-size:11px;line-height:1.4}
 #road-build-cancel:not(.hidden){background:#a44739;border-color:#5a2a22;color:#fff2d2}
 @media(max-width:680px){.build-panel{padding:14px}.build-option{min-height:90px}.build-option-art{width:62px;height:62px;flex-basis:62px}.build-option-art svg{width:54px;height:54px}.build-category-tabs button{flex:1 1 42%}}
+
+/* Readable strategic-panel introductions on the dark content canvas. */
+.command-panel-intro h3{color:#f1d79f}
+.command-panel-intro p{color:#d8cbb0}
