@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.5.0`  
-**Next development line:** `3.6.0-rc`  
+**Next development line:** `3.7.0-dev`  
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -166,3 +166,15 @@ Every release entry must record:
 8. Known limitations and explicit non-goals.
 
 Never describe an unverified feature as implemented or a successful CI run as a successful deployment.
+
+
+## Development line 3.7.0-dev — Master UI Phase 4 art production
+
+### Portrait and illustrated-register increment
+- Added a seven-archetype original heraldic portrait sprite library in `game/assets/royal-portraits.svg`.
+- Integrated portraits into the people roster, character dossiers and dynasty cards.
+- Added direct navigation through recorded family/relationship links, plus verified sovereign parents, siblings and cousins in the dynasty view.
+- Added existing local building illustrations to each building-register entry.
+- Added static UI contracts and Chromium E2E assertions for portrait assets, relationship navigation and building artwork.
+
+**Scope limit:** This is the first portrait/art integration slice. It does not complete the requested building, creature, card, heraldry or animation atlas. No simulation logic or save schema is changed.

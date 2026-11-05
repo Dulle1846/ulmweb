@@ -1,7 +1,7 @@
 # Master UI — Implementation Register
 
 **Specification:** `MASTER UI & VISUAL DESIGN CONCEPT v1.0` (uploaded project brief)  
-**Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 dynasty and action dock), PR #43 (Phase 3 economy, buildings, creatures and chronicle)  
+**Production releases:** PR #36 (UI foundation), PR #37 (pre-campaign state guard), PR #40 (Phase 2 dynasty and action dock), PR #43 (Phase 3 economy, buildings, creatures and chronicle), PR #44 (Phase 4 portrait and illustrated-register increment)  
 **Current UI branch:** `kac-release-3-6-0-ui-phase-3`  
 **Baseline:** `6c4c3f0442ea18aa04fee5598e909ddfc6b4d900`  
 **Rule:** This register distinguishes implemented and tested work from the remaining concept. A styled shell is not a completed screen.
@@ -38,10 +38,10 @@
 | UI-03 — button library | **Phase 2 increment** | Shared states for primary/secondary, speed, navigation, management tabs, build options and modal controls; Phase 2 adds reusable panel/card/section/icon-button primitives, tooltip surfaces and hover/focus/pressed states. Full component API and tooltip coverage remain. |
 | UI-04 — main interface | **Phase 2 increment** | Adds a contextual sidebar action dock for people, dynasty, cards, chronicle and manual save; save status reflects confirmed save/load success or failure. This is not autosave. The final full-width lower action bar, clickable ruler portrait and dedicated event inbox remain. |
 | UI-05 — administration screens | **Phase 3 increment** | Economy separates current stock, per-tick flow, latest 20-day settlement and cumulative totals. A searchable read-only building register exposes live structures, health, footprint, workforce, efficiency, catalogue costs and site-tile resource data. Historical charts, per-building output, storage and forecasts remain unavailable until the simulation retains those contracts. |
-| UI-06 — character and dynasty | **Phase 2 increment** | Adds a bounded, multi-generation descendant tree sourced only from the explicit kinship graph, with living/deceased family records and direct dossier navigation. Ancestor/sibling network layout, filters and expanded character actions remain. |
+| UI-06 — character and dynasty | **Phase 4 increment** | Adds a seven-archetype original heraldic portrait sprite system to the roster, dossiers and dynasty cards; recorded relationship links navigate directly between dossiers; the sovereign view adds verified parent, sibling and cousin groups. Deeper network visualization, advanced filters and expanded character actions remain. |
 | UI-07 — fantasy areas | **Partial** | Existing dragon/creature management and card rarity styles retained. Full creature dossiers, bestiary, magic screen and illustrated legendary card treatment remain. |
 | UI-08 — menu and settings | **Partial** | Existing main menu and settings remain; visual override applied. Version/credits/save-slot management and graphics/accessibility controls remain. |
-| UI-09 — art and animation | **Partial** | Existing SVG illustrations and iconography reused. Asset audit, coherent portrait/building/creature set and construction/event animation pass remain. |
+| UI-09 — art and animation | **Phase 4 increment** | Adds seven original, locally bundled heraldic portrait archetypes and reuses existing illustrated building sprites in the register. The complete building/creature/card illustration atlas, house-specific heraldry, asset audit and animation pass remain. |
 | UI-10 — QA | **In progress** | Added static UI contract tests. Browser E2E and viewport matrix must pass on the exact PR head before release. |
 
 ## Phase 2 implementation increment (released in 3.5.0)
@@ -128,3 +128,15 @@ This branch is not production-ready merely because the design tokens exist. Merg
 6. map, cards, save/load, simulation speed and existing management actions regress cleanly.
 
 Do not mark the remaining work complete by replacing it with a static mockup.
+
+
+## Phase 4 art-production increment (portrait and building-register slice)
+
+- Added `assets/royal-portraits.svg`, a locally bundled sprite library with seven original portrait archetypes: sovereign, consort, nobleman, noblewoman, scholar, knight and villager.
+- Character portrait selection is deterministic from the actual sovereign flag, recorded role and recorded sex; it does not infer hidden identity or alter simulation records.
+- The people roster, full character dossier and dynasty cards now use the same portrait sprite library.
+- Character dossier relationship lists are now real navigation controls that open another recorded dossier; missing or archived IDs are not fabricated.
+- The dynasty view now includes verified sovereign parents and siblings, plus cousins only when the persisted parent-sibling-child links establish them. Every relationship is bounded and deduplicated.
+- The building register now shows the existing local SVG building sprite that best matches each actual building type.
+- All art is bundled locally as SVG; no runtime font, image CDN, paid API or external request is introduced.
+- This is an initial coherent portrait suite, not the complete art atlas. Dedicated original building scenes, additional creature artwork, card illustrations, house heraldry and animated construction/event assets remain open.

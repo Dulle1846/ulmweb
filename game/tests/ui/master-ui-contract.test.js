@@ -138,3 +138,32 @@ test("active realm issues can be dismissed without resolving and reopened from t
   assert.ok(management.includes("state.activeEvent.dismissed=false"));
   assert.ok(management.includes('data-command="show-active-event"'));
 });
+
+
+test("original royal portrait sprite is wired into roster, dossiers and dynasty cards",async()=>{
+  const portraits=await readFile(new URL("assets/royal-portraits.svg",root),"utf8");
+  for(const id of ["portrait-king","portrait-queen","portrait-nobleman","portrait-noblewoman","portrait-scholar","portrait-knight","portrait-villager"]){
+    assert.ok(portraits.includes('id="'+id+'"'),"missing original portrait symbol "+id);
+  }
+  assert.ok(dossier.includes("portraitSymbol(entity)"));
+  assert.ok(dossier.includes("assets/royal-portraits.svg#"));
+  assert.ok(dossier.includes("person-list-portrait"));
+  assert.ok(dossier.includes("dossier-portrait"));
+  assert.ok(management.includes("assets/royal-portraits.svg#"));
+  assert.ok(management.includes("dynasty-person-portrait"));
+});
+
+test("character relationship links navigate to real dossiers and dynasty uses verified collateral kin",()=>{
+  assert.ok(dossier.includes("dossier-related-person"));
+  assert.ok(dossier.includes('detail.addEventListener("click"'));
+  assert.ok(management.includes("rootFamily.parents"));
+  assert.ok(management.includes("rootFamily.siblings"));
+  assert.ok(management.includes("getFamilySnapshot(auntId)?.children"));
+  assert.ok(management.includes("No cousin links can be verified"));
+});
+
+test("building register uses existing illustrated building sprites",()=>{
+  assert.ok(management.includes("buildingSprite(building.type)"));
+  assert.ok(management.includes("assets/city-builder-sprites.svg#"));
+  assert.ok(css.includes(".building-record-art"));
+});
