@@ -87,11 +87,8 @@ try{
         ]);
         const sovereign=state.entities.find(entity=>entity.isKing&&entity.personId);
         if(!sovereign)throw new Error("A sovereign with a persistent person ID is required for the dynasty graph fixture");
-        const child={id:"e2e-dynasty-child",personId:"e2e-dynasty-child",type:"resident",x:1,y:1,dead:false,person:{
-            id:"e2e-dynasty-child",name:"E2E Heir",firstName:"E2E",familyName:"Heir",species:"human",sex:"female",role:"heir",ageYears:8,
-            traits:{},needs:{},goals:[],memories:[],relationships:[],kinship:{parents:[],children:[],partners:[],guardians:[],wards:[]}
-        }};
-        state.entities.push(child);
+        const child=state.entities.find(entity=>!entity.isKing&&entity.personId&&entity.person&&!entity.dead&&!entity.isBuilding?.()&&!(entity.person.kinship?.parents||[]).length);
+        if(!child)throw new Error("A living unlinked resident is required for the dynasty graph fixture");
         const linked=linkParentChild(sovereign.personId,child.personId,{kind:"biological"});
         if(!linked.ok)throw new Error("Could not create dynasty graph fixture: "+linked.reason);
         return {parentId:String(sovereign.personId),childId:String(child.personId)};
@@ -141,9 +138,9 @@ try{
     await page.evaluate(async({parentId,childId})=>{
         const {state}=await import("./js/core/state.js");
         const parent=state.entities.find(entity=>String(entity.personId||entity.id)===String(parentId));
+        const child=state.entities.find(entity=>String(entity.personId||entity.id)===String(childId));
         if(parent?.person?.kinship?.children)parent.person.kinship.children=parent.person.kinship.children.filter(link=>String(link.personId)!==String(childId));
-        const index=state.entities.findIndex(entity=>String(entity.personId||entity.id)===String(childId));
-        if(index>=0)state.entities.splice(index,1);
+        if(child?.person?.kinship?.parents)child.person.kinship.parents=child.person.kinship.parents.filter(link=>String(link.personId)!==String(parentId));
     },dynastyFixture);
     await page.waitForFunction(()=>document.activeElement?.id==="main-container",null,{timeout:3000});
     await page.locator('[data-kac-dock-action="save"]').click();
