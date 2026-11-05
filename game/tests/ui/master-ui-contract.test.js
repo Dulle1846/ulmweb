@@ -167,3 +167,21 @@ test("building register uses existing illustrated building sprites",()=>{
   assert.ok(management.includes("assets/city-builder-sprites.svg#"));
   assert.ok(css.includes(".building-record-art"));
 });
+
+test("original royal building atlas covers every building type with dedicated art",async()=>{
+  const atlas=await readFile(new URL("assets/royal-building-atlas.svg",root),"utf8");
+  for(const id of ["keep","cottage","farm","lumber-yard","quarry","watchtower","wall","tavern","temple","barracks","windmill","stable","wonder","goldmine","storehouse"]){
+    assert.ok(atlas.includes('id="'+id+'"'),"missing dedicated building illustration "+id);
+  }
+  assert.ok(management.includes("assets/royal-building-atlas.svg#"));
+  assert.ok(management.includes('[TYPE.KEEP]:"keep"'));
+  assert.ok(management.includes('[TYPE.WONDER]:"wonder"'));
+});
+
+test("main menu uses the original muted royal title illustration",async()=>{
+  const art=await readFile(new URL("assets/royal-title-illustration.svg",root),"utf8");
+  assert.ok(art.includes("The Crownlands at dusk"));
+  assert.ok(html.includes('src="assets/royal-title-illustration.svg"'));
+  assert.ok(!html.includes('src="assets/kingdom-illustration.svg"'));
+  assert.ok(css.includes(".start-hero-art{display:block"));
+});
