@@ -80,13 +80,13 @@ export function linkParentChild(parentId, childId, { kind = "biological", sinceY
     const parentKin = ensureKinship(parent), childKin = ensureKinship(child);
     const existing = childKin.parents.find(item => item.personId === pId);
     if (!existing && childKin.parents.length >= MAX_PARENTS) return { ok: false, reason: "parent-limit" };
+    if (!parentKin.children.some(item => item.personId === cId) && parentKin.children.length >= MAX_CHILDREN) return { ok: false, reason: "child-limit" };
 
     const year = Number.isSafeInteger(Number(sinceYear)) ? Math.max(1, Math.min(1000000, Number(sinceYear))) : Math.max(1, Number(state.year) || 1);
     const parentEntry = { personId: pId, kind, sinceYear: year };
     const childEntry = { personId: cId, kind, sinceYear: year };
     const added = upsertLink(childKin.parents, parentEntry);
     upsertLink(parentKin.children, childEntry);
-    if (parentKin.children.length > MAX_CHILDREN) parentKin.children.shift();
     return { ok: true, added };
 }
 
@@ -98,6 +98,8 @@ export function setPartnership(firstId, secondId, { status = "partner", sinceYea
     if (!PARTNER_STATUSES.has(status)) return { ok: false, reason: "invalid-partnership-status" };
 
     const firstKin = ensureKinship(first), secondKin = ensureKinship(second);
+    if (!firstKin.partners.some(item => item.personId === bId) && firstKin.partners.length >= MAX_PARTNERS) return { ok: false, reason: "partner-limit" };
+    if (!secondKin.partners.some(item => item.personId === aId) && secondKin.partners.length >= MAX_PARTNERS) return { ok: false, reason: "partner-limit" };
     const year = Number.isSafeInteger(Number(sinceYear)) ? Math.max(1, Math.min(1000000, Number(sinceYear))) : Math.max(1, Number(state.year) || 1);
     const rawEnd = Number(endedYear);
     const end = endedYear == null ? null : Math.max(year, Math.min(1000000, Number.isFinite(rawEnd) ? Math.floor(rawEnd) : year));
@@ -105,13 +107,6 @@ export function setPartnership(firstId, secondId, { status = "partner", sinceYea
     const entryB = { personId: aId, status, sinceYear: year, endedYear: end };
     const added = upsertLink(firstKin.partners, entryA);
     upsertLink(secondKin.partners, entryB);
-    for (const kin of [firstKin, secondKin]) {
-        if (kin.partners.length > MAX_PARTNERS) {
-            const removable = kin.partners.findIndex(item => item.endedYear != null || item.status === "divorced");
-            if (removable >= 0) kin.partners.splice(removable, 1);
-            else kin.partners.shift();
-        }
-    }
     return { ok: true, added };
 }
 
