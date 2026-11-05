@@ -186,34 +186,36 @@ function dynasty(){
   }
  }
  const cousins=[...cousinMap.values()].slice(0,24);
- const visited=new Set(),generations=[];
- let current=[king];
- for(let depth=0;depth<4&&current.length;depth++){
-  const unique=current.filter(entity=>{
-   const id=String(entity?.personId||entity?.person?.id||entity?.id||"");
-   if(!id||visited.has(id)||!entity?.person)return false;
-   visited.add(id);return true;
-  }).slice(0,24);
-  if(!unique.length)break;
-  generations.push('<section class="dynasty-generation"><div class="dynasty-generation-heading"><span>GENERATION '+(depth+1)+'</span><small>'+unique.length+' RECORDED '+(unique.length===1?'PERSON':'PEOPLE')+'</small></div><div class="dynasty-generation-grid">'+unique.map(entity=>familyNode(entity,heirId)).join("")+'</div></section>');
-  const next=[];
-  for(const entity of unique){
-   const id=String(entity.personId||entity.person?.id||entity.id||"");
-   const family=getFamilySnapshot(id);
-   for(const link of family?.children||[]){
-    const child=familyRecord(link.personId);
-    if(child&&!visited.has(String(link.personId)))next.push(child);
-   }
+ const descendantVisited=new Set([sovereignId]);
+ let descendantCount=1;
+ const descendantBranch=(entity,depth=1,parentId=sovereignId)=>{
+  if(!entity?.person||depth>4||descendantCount>=80)return "";
+  const id=String(entity.personId||entity.person?.id||entity.id||"");
+  if(!id||descendantVisited.has(id))return "";
+  descendantVisited.add(id);descendantCount++;
+  const children=[];
+  for(const link of getFamilySnapshot(id)?.children||[]){
+   const child=familyRecord(link.personId);
+   const childId=String(child?.personId||child?.person?.id||child?.id||"");
+   if(child&&childId&&!descendantVisited.has(childId))children.push(child);
+   if(children.length>=16)break;
   }
-  current=next;
- }
+  const childMarkup=children.map(child=>descendantBranch(child,depth+1,id)).filter(Boolean).join("");
+  return '<div class="dynasty-branch" data-parent-id="'+esc(parentId)+'" data-person-id="'+esc(id)+'"><div class="dynasty-branch-person">'+familyNode(entity,heirId)+'</div>'+
+   (childMarkup?'<div class="dynasty-branch-children">'+childMarkup+'</div>':'')+'</div>';
+ };
+ const directChildren=(rootFamily.children||[]).map(link=>familyRecord(link.personId)).filter(Boolean).slice(0,16);
+ const directBranches=directChildren.map(child=>descendantBranch(child,1)).filter(Boolean).join("");
+ const descendantMarkup='<div class="dynasty-graph" role="group" aria-label="Recorded royal descendants">'+
+  '<div class="dynasty-graph-root">'+familyNode(king,heirId)+'</div>'+
+  (directBranches?'<div class="dynasty-branch-children dynasty-graph-children">'+directBranches+'</div>':'')+'</div>';
  const consort=h.consort?familyNode(h.consort,heirId):'<p class="command-note">No royal consort is recorded.</p>';
  const history=h.history.slice().reverse().slice(0,12).map(x=>'<article class="command-history"><strong>YEAR '+number(x.year)+' · '+esc(x.kind)+'</strong><p>'+esc(x.detail)+'</p></article>').join("");
  return intro("HOUSE OF THE CROWN","Dynasty & lineage","A multi-generation view of the actual kinship graph. Select any recorded person to open their full dossier.")+
  '<div class="command-section-title">THE SOVEREIGN HOUSE</div><div class="dynasty-root-grid">'+familyNode(king,heirId)+consort+'</div>'+
  '<div class="command-section-title">ANCESTORS & SIBLINGS</div><div class="dynasty-root-grid">'+(parents.map(person=>familyNode(person,heirId)).join("")||'<p class="command-note">No parent links are recorded for the sovereign.</p>')+(siblings.map(person=>familyNode(person,heirId)).join("")||'<p class="command-note">No sibling links are recorded for the sovereign.</p>')+'</div>'+
  '<div class="command-section-title">RECORDED COUSINS</div><div class="dynasty-root-grid">'+(cousins.map(person=>familyNode(person,heirId)).join("")||'<p class="command-note">No cousin links can be verified from the recorded kinship graph.</p>')+'</div>'+
- '<div class="command-section-title">DESCENDANTS & SUCCESSION</div><div class="dynasty-tree">'+(generations.join("")||'<p class="command-note">No descendant links are recorded for the current sovereign.</p>')+'</div>'+
+ '<div class="command-section-title">DESCENDANTS & SUCCESSION</div><div class="dynasty-tree">'+(descendantMarkup)+'</div>'+
  '<div class="command-section-title">ROYAL SUCCESSION RECORD</div><div class="command-history-list">'+(history||'<p class="command-note">No royal event has been recorded yet.</p>')+'</div>'+
  '<p class="command-note">Only saved family relationships are drawn. Missing, unknown or unlinked relatives are intentionally not inferred.</p>';
 }
