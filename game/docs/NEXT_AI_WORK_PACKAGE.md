@@ -360,7 +360,7 @@ Implemented on `kac-2.6-character-dossiers`, stacked into Draft PR #11.
 ### Limits
 - No royal death, succession, regency, inheritance, estate distribution, orphan guardianship or funeral/religious rites yet.
 - Mortality is currently a species/age/health probability model, not a full disease, injury and care system.
-- The 1,000-entry archive is a deliberate memory bound; a later chronicle compaction/indexing design should preserve long-run realm history beyond this limit.
+- The 500-entry archive is a deliberate memory bound; a later chronicle compaction/indexing design should preserve long-run realm history beyond this limit.
 
 
 ## Phase 2.10 — deterministic villager routines
@@ -369,3 +369,23 @@ Implemented on `kac-2.6-character-dossiers`, stacked into Draft PR #11.
 - These choices now consume the dedicated seeded `villagers` random stream.
 - Regression tests verify identical routine choices for identical world seeds and divergent results for different seeds.
 - This closes the nondeterminism found in the inspected villager routine module; it is not a claim that every `Math.random()` in the entire game repository has been eliminated.
+
+
+## Phase 2.7 — demographic correctness hardening
+
+Branch: `kac-2.7-demography-hardening`, Draft PR #12.
+
+Code review found two correctness defects in the existing birth/kinship flow:
+- A partnership with no previous birth stored `lastBirthYear = 0`; the cooldown logic treated that sentinel as a real birth and blocked a valid first child in young realms. The cooldown now applies only when a positive birth year exists.
+- Family normalization rebuilt partnership records without preserving `lastBirthYear`, and reciprocal repair did not reconcile it. Save/load could therefore erase the cooldown. Normalization now preserves the maximum recorded year on both reciprocal partner links; re-establishing a partnership preserves the previous value.
+
+The browser memorial test also incorrectly assumed that a randomly generated fresh realm always contained a living villager. The test now constructs an isolated deterministic villager fixture before testing memorial creation. The dossier sex assertion is case-insensitive, matching the UI's uppercase presentation without changing product behavior.
+
+Verification at code head `2d40cbf982e232a8039d0d2e4bfb8659c89d94aa`:
+- **175/175 Node tests passed**, 0 failures.
+- Syntax and relative-import checks passed for 47 source files.
+- 84 referenced UI IDs and local HTML assets passed.
+- Kings & Cards 2.1 checks passed.
+- Chromium gameplay Browser E2E passed, including the memorial fixture.
+
+No merge, production branch update or deployment was performed. The PR remains a draft.
