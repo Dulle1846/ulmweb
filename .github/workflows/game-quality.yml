@@ -11,6 +11,8 @@ on:
     branches:
       - ulmweb-branch
       - kac-2.1-stability-performance
+      - kac-3.0-government-and-management-ui
+      - kac-2.9-royal-dynasty
     paths:
       - "game/**"
       - ".github/workflows/game-quality.yml"
