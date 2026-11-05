@@ -432,3 +432,10 @@ The person model now includes bounded, persistent kinship collections:
 The family module rejects self-parentage, missing entities, invalid parent kinds, parent-limit violations and ancestry cycles when creating links. Siblings are derived from shared explicit parent IDs. Save loading normalizes legacy records and repairs reciprocal references after entity restoration.
 
 This is not yet a birth or succession simulator. Birth generation, death, name transmission, inheritance, title succession, family UI and autonomous family decisions remain separate work. No relationship is inferred from co-residence.
+
+
+## Implemented follow-up — character inspection UI (Phase 2.6)
+
+A read-only character dossier now exposes the existing persistent person model in-game. The roster is searchable by name, species, role and family name. A selected dossier shows identity and life stage, personality, needs, goals, memories ordered by tick, social relationships and explicit family links (parents, children, siblings and partnerships).
+
+This UI makes current data inspectable; it does not create relationships or simulate births, deaths, inheritance or succession. Historical kinship links whose counterpart is no longer loaded remain visible as a stable-ID reference. The UI escapes saved text before rendering it.
