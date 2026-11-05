@@ -40,7 +40,7 @@ Buttons call the same validated systems used by the simulation. Failed actions s
 
 ## Visual direction
 
-The new art direction is colorful illustrated fantasy strategy art with inked silhouettes, warm highlights, navy-and-gold panels, expressive character portraits and readable iconography. The first generated full-screen concept is a visual reference; it is not yet wired into the live game renderer. The current branch's management panels use the new navy-and-gold visual language. A production-ready background/character/sprite asset pack is a separate integration milestone.
+The new art direction is colorful illustrated fantasy strategy art with inked silhouettes, warm highlights, navy-and-gold panels, expressive character portraits and readable iconography. An original scalable comic-style kingdom illustration is now included at `game/assets/kingdom-illustration.svg` and shown on the realm creation screen. The management windows use the new navy-and-gold visual language, with responsive layouts and illustrated framing. This is the first art asset, not yet a complete character portrait, building, terrain or card sprite pack; those remain separate content milestones.
 
 ## Verification checklist
 
