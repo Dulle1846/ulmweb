@@ -282,3 +282,13 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - The first full-visibility assertion exposed a real 37px overlap between the side-panel's lower edge and the fixed-height action dock at 390×844.
 - Added 44px of mobile-only bottom scroll space and changed the browser check to align the selected card above the actual visible boundary (the earlier of the side-panel bottom and dock top).
 - The check now validates the visible region, not just the side-panel's theoretical bounding box.
+
+
+## Phase 2 — connected royal lineage network
+
+- Added a multi-lane graph built exclusively from explicit saved parent, child, sibling, partnership and guardian links.
+- Shows verified grandparents, parents, sovereign and siblings, consort, aunts/uncles, cousins and royal children where records exist.
+- SVG connectors are calculated from live card bounds; partnership, sibling, guardian and parent edges use distinct treatments. The existing dossier navigation is reused.
+- Added hard limits of 80 nodes and 120 connector edges, alongside the existing four-generation/24-person descendant limits, to prevent runaway DOM growth.
+- Added deterministic Chromium coverage for royal consort/child links, connector paths and heir dossier navigation; reduced-motion and narrow-screen styling included.
+- No simulation or save-schema changes. Missing kinship links are never inferred.
