@@ -33,7 +33,7 @@ export function spawnEntity(tx, ty, type) {
     const serial = Number.isSafeInteger(state.nextEntityId) && state.nextEntityId > 0 ? state.nextEntityId : 1;
     state.nextEntityId = serial + 1;
     entity.id = "e" + (Number(state.worldSeed) || 1).toString(36) + "-" + serial.toString(36);
-    if (type === TYPE.VILLAGER) entity.personId = entity.id;
+    if (type === TYPE.VILLAGER) { entity.personId = entity.id; ensurePersonProfile(entity); }
 
     if (entity.isUnit()) {
         entity.home = { x: tx, y: ty };
@@ -148,6 +148,7 @@ export function initStartingKingdom() {
     king.maxHp = 300;
     king.isKing = true;
     king.personId = king.id;
+    ensurePersonProfile(king,{role:"king"});
     king.home = { x: cx, y: cy };
     king.anchor = { x: cx, y: cy };
 
