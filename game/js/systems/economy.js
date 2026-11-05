@@ -20,14 +20,14 @@ export const BUILDING_WORKFORCE = Object.freeze({
 
 const clampNonNegative = value => Math.max(0, Number.isFinite(value) ? value : 0);
 
-export function calculateDailyLedger({ population, employed, buildings, foodAvailable, goldAvailable }) {
+export function calculateDailyLedger({ population, employed, buildings, foodAvailable, goldAvailable, taxMultiplier = 1 }) {
     const people = Math.floor(clampNonNegative(population));
     const workers = Math.min(people, Math.floor(clampNonNegative(employed)));
     const buildingCount = Math.floor(clampNonNegative(buildings));
     const foodDemand = people * 0.015 * DAYS_PER_LEDGER;
     const foodConsumed = Math.min(clampNonNegative(foodAvailable), foodDemand);
     const foodShortage = Math.max(0, foodDemand - foodConsumed);
-    const taxesAssessed = workers * 0.025 * DAYS_PER_LEDGER;
+    const taxRate = Math.max(0.5, Math.min(1.5, Number.isFinite(Number(taxMultiplier)) ? Number(taxMultiplier) : 1));\n    const taxesAssessed = workers * 0.025 * DAYS_PER_LEDGER * taxRate;
     const wagesAssessed = workers * 0.015 * DAYS_PER_LEDGER;
     const upkeepAssessed = buildingCount * 0.003 * DAYS_PER_LEDGER;
     const treasuryAfterTaxes = clampNonNegative(goldAvailable) + taxesAssessed;
