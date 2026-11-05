@@ -202,6 +202,12 @@ export function setupCharacterDossier() {
         search.focus();
     };
     open.addEventListener("click", show);
+    document.getElementById("sovereign-dossier-button")?.addEventListener("click", () => {
+        const sovereign = state.entities.find(entity => !entity.dead && entity.isKing && entity.personId && entity.person);
+        if (!sovereign) return;
+        selectedPersonId = String(sovereign.personId);
+        show();
+    });
     close.addEventListener("click", () => modal.classList.add("hidden"));
     modal.addEventListener("click", event => {
         if (event.target === modal) modal.classList.add("hidden");
