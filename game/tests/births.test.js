@@ -95,6 +95,7 @@ test("autonomous scheduler eventually creates a deterministic birth for an eligi
     assert.equal(child.person.ageYears,0);
     assert.equal(child.person.kinship.parents.length,2);
     assert.equal(state.economy.births,1);
+    assert.equal(state.economy.lastGrowthYear,12);
 });
 
 test("birth refuses to exceed the global entity cap",()=>{
