@@ -45,6 +45,7 @@ test("royal decisions charge resources and change faction support and morale", (
     assert.equal(state.resources.food, 8);
     assert.ok(state.politics.factions.commons > before);
     assert.equal(state.morale, morale + 3);
+    state.resources.gold = 0;
     const failed = resolveRoyalDecision("guild_charter");
     assert.deepEqual(failed, { ok: false, reason: "insufficient-gold" });
     assert.equal(state.resources.food, 8);
