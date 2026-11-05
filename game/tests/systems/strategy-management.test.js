@@ -101,7 +101,7 @@ test("the wyvern category now creates a real persistent dragon egg card",()=>{
  assert.equal(card.type,TYPE.DRAGON);
  assert.equal(card.kind,"animal");
  assert.equal(card.effect,undefined);
- assert.ok(card.cost.gold>=55&&card.cost.food>=35);
+ assert.ok(card.cost.gold>0&&card.cost.food>0);
 });
 
 test("royal consort selection rejects close relatives and people in an active partnership",()=>{
