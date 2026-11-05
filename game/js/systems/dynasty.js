@@ -43,17 +43,18 @@ export function getEligibleRoyalConsorts() {
     const kingPerson = ensurePersonProfile(king, { role: "king" });
     const species = PERSON_SPECIES[kingPerson.species];
     if (!species || species.reproduction !== "paired") return [];
-    return state.entities.filter(entity => {
-        if (entity === king || entity.dead || !entity.personId || !entity.person) return false;
-        const person = ensurePersonProfile(entity);
-        if (person.species !== kingPerson.species || person.sex === kingPerson.sex) return false;
-        if (person.lifeStage !== "adult" || person.ageYears < species.maturation || person.ageYears > species.lifespan * 0.65) return false;
-        if (isCloseRelative(king.personId, entity.personId)) return false;
-        const existing = person.kinship.partners.some(link => ["partner", "married"].includes(link.status));
-        return !existing;
-    }).map(({ entity }) => entity).sort((a, b) => a.person.name.localeCompare(b.person.name));
+    return state.entities
+        .filter(entity => !entity.dead && entity.type === TYPE.VILLAGER && entity !== king)
+        .map(entity => ({ entity, person: ensurePersonProfile(entity) }))
+        .filter(({ entity, person }) => {
+            if (!entity.personId || !person || person.species !== kingPerson.species || person.sex === kingPerson.sex) return false;
+            if (person.lifeStage !== "adult" || person.ageYears < species.maturation || person.ageYears > species.lifespan * 0.65) return false;
+            if (isCloseRelative(king.personId, entity.personId)) return false;
+            return !person.kinship.partners.some(link => ["partner", "married"].includes(link.status));
+        })
+        .map(({ entity }) => entity)
+        .sort((a, b) => a.person.name.localeCompare(b.person.name));
 }
-
 export function appointRoyalConsort(personId) {
     const king = livingKing();
     if (!king) return { ok: false, reason: "no-living-monarch" };
