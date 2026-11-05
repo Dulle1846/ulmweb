@@ -97,3 +97,16 @@ If another AI or human contributor is used:
 ## Deliverable standard
 
 Before editing, inspect the live branch and relevant files. Implement the smallest coherent slice, add unit and integration tests, run the full test suite, inspect the CI logs, and browser-test relevant interactions. Report exactly what is implemented, what is approximated, what remains open, and the exact tested commit. Never claim work or tests that have not happened.
+
+
+## Phase 2.2 — deterministic identity foundation
+
+Current incremental branch: `kac-2.2-seeded-simulation`; draft PR #7 targets the 2.1 development branch, not production.
+
+Implemented in this slice:
+- Named deterministic RNG streams and saved stream counters.
+- Stable seed-scoped entity IDs and resident/king person IDs.
+- Legacy save migration for missing IDs and random-stream counters.
+- Tests for RNG replay, stream isolation, save restoration and entity identity.
+
+The current CI must be checked on the exact latest PR head before treating the slice as verified. Do not merge or deploy. Cloudflare Pages remains production; do not use Vercel.
