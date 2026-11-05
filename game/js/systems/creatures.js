@@ -220,7 +220,12 @@ export function updateCreatures() {
     let aged = 0, fed = 0, deaths = 0;
     const deceased = [];
     for (const entity of living) {
-        const creature = normalizeCreatureProfile(entity.creature, entity);
+        // Profiles are normalized on creation and save-load; avoid allocating a
+        // replacement object on every simulation tick.
+        const creature = SPECIES[entity.creature?.species]
+            ? entity.creature
+            : normalizeCreatureProfile(entity.creature, entity);
+        if (!creature) continue;
         entity.creature = creature;
         updateCreatureMovement(entity);
         if (yearNow() <= creature.lastAgedYear) continue;
