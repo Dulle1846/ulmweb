@@ -386,6 +386,9 @@ try{
     assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),1);
     assert.ok((await sovereignDossier.innerText()).includes("SOVEREIGN DOSSIER"));
     assert.ok((await sovereignDossier.innerText()).includes("DESIGNATED SUCCESSOR"));
+    const crestUse=sovereignDossier.locator('[data-royal-dossier="current"] .royal-dossier__crest use');
+    assert.match(await crestUse.getAttribute("href"),/^assets\/royal-heraldry\.svg#crest-0[1-8]$/);
+    assert.ok((await sovereignDossier.locator('[data-royal-dossier="current"] .royal-dossier__crest').getAttribute("aria-label")).includes("Heraldic emblem"));
     await sovereignDossier.locator('[data-royal-dossier="current"] [data-person-id="'+royalFixture.heirId+'"]').first().click();
     assert.ok((await sovereignDossier.innerText()).includes(royalFixture.heirName));
     assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),0,"the heir dossier must not be mislabeled as the reigning sovereign");
