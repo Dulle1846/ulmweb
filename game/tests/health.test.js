@@ -58,3 +58,30 @@ test("treatment reduces disease severity and containment is bounded",()=>{
     assert.equal(result.severity,1);
     assert.equal(result.containment,3);
 });
+
+test("infection does not jump between separate households",()=>{
+    setup();
+    state.entities[1].householdId="house:2:2";
+    startOutbreak({severity:3});
+    const original=Math.random;
+    Math.random=()=>0;
+    try{
+        state.tick=20;
+        updateHealth();
+        assert.equal(getHealthSnapshot().sick,1);
+    }finally{Math.random=original;}
+});
+test("health transmission is processed at most once per simulation interval",()=>{
+    setup();
+    state.entities.push(resident(3));
+    startOutbreak({severity:3});
+    const original=Math.random;
+    Math.random=()=>0;
+    try{
+        state.tick=20;
+        updateHealth();
+        const firstCases=getHealthSnapshot().cases;
+        updateHealth();
+        assert.equal(getHealthSnapshot().cases,firstCases);
+    }finally{Math.random=original;}
+});
