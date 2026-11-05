@@ -299,3 +299,22 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
  .building-record-art{width:36px;height:36px;flex-basis:36px}
 }
 @media(prefers-reduced-motion:reduce){.person-list-item,.dossier-related-person,.dynasty-person-portrait{transition:none}}
+
+
+/* Phase 5 — modal semantics, focus containment and compact viewport resilience. */
+body.ui-modal-open{overflow:hidden}
+.screen-overlay[role="dialog"]{overflow-y:auto;overscroll-behavior:contain}
+.start-panel,.modal-panel{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
+.screen-overlay[role="dialog"]>.modal-panel{scrollbar-gutter:stable}
+[role="dialog"][aria-modal="true"]:focus{outline:none}
+@media(max-width:720px){
+ .start-panel,.modal-panel{max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px);padding:12px}
+ .command-panel{width:calc(100vw - 16px)}
+ .command-deck{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+ .command-deck button{min-width:0;min-height:38px;padding:5px 4px;font-size:8px}
+ .command-panel-content{min-height:0}
+}
+@media(max-height:700px){
+ .start-panel{max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px);overflow-y:auto}
+ .people-panel,.command-panel,.build-panel,.settings-panel{max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px)}
+}

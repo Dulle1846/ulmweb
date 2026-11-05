@@ -42,7 +42,7 @@
 | UI-07 — fantasy areas | **Partial** | Existing dragon/creature management and card rarity styles retained. Full creature dossiers, bestiary, magic screen and illustrated legendary card treatment remain. |
 | UI-08 — menu and settings | **Partial** | Existing main menu and settings remain; visual override applied. Version/credits/save-slot management and graphics/accessibility controls remain. |
 | UI-09 — art and animation | **Phase 4 increment** | Adds seven original, locally bundled heraldic portrait archetypes and reuses existing illustrated building sprites in the register. The complete building/creature/card illustration atlas, house-specific heraldry, asset audit and animation pass remain. |
-| UI-10 — QA | **In progress** | Added static UI contract tests. Browser E2E and viewport matrix must pass on the exact PR head before release. |
+| UI-10 — QA | **Phase 5 increment** | Adds centralized dialog naming, focus containment/restoration and compact-height overflow handling. Full viewport matrix, screen-reader review and visual screenshot audit remain. |
 
 ## Phase 2 implementation increment (released in 3.5.0)
 
@@ -140,3 +140,13 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - The building register now shows the existing local SVG building sprite that best matches each actual building type.
 - All art is bundled locally as SVG; no runtime font, image CDN, paid API or external request is introduced.
 - This is an initial coherent portrait suite, not the complete art atlas. Dedicated original building scenes, additional creature artwork, card illustrations, house heraldry and animated construction/event assets remain open.
+
+
+## Phase 5 accessibility and responsive increment (in review)
+
+- Added a central dialog focus manager for the founding screen, settings, character dossiers, realm events, management, construction and message dialogs.
+- Modal focus is moved into the topmost visible dialog, Tab/Shift+Tab remain inside it, and closing restores focus to the invoking control where it remains visible.
+- If the invoking control belongs to a dialog that was closed underneath a nested dialog, focus falls back to the main game region rather than a hidden element.
+- Added accessible dialog names to the founding and settings screens; all dialog overlays now have explicit modal semantics and labels.
+- Added scroll containment and short-viewport handling so tall dialogs remain reachable on narrow phones and short displays.
+- Static tests and Chromium E2E cover initial focus, tab containment and focus fallback. Full 390×844, 768×1024 and desktop viewport screenshot review remains a separate acceptance gate.

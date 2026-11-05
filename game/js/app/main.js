@@ -25,6 +25,7 @@ import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
 import {serializeResourceGeography,restoreResourceGeography,validateResourceGeographySnapshot} from "../systems/resource-geography.js";
 import {setupBuildUI} from "../presentation/build-ui.js";
+import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -389,6 +390,7 @@ function init(){
     setupInput();
     setupCharacterDossier();
     setupManagementUI();
+    setupModalAccessibility();
     document.getElementById("realm-event-dismiss")?.addEventListener("click",()=>{
         if(state.activeEvent){state.activeEvent.dismissed=true;renderUI();}
     });
