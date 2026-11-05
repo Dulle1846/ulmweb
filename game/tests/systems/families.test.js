@@ -111,3 +111,19 @@ test("family normalization is idempotent and preserves unresolved historical ref
     assert.ok(child.person.kinship.parents.some(link => link.personId === "deceased-ancestor"));
     assert.equal(parent.person.kinship.children.filter(link => link.personId === child.personId).length, 1);
 });
+
+
+test("family collection limits reject new edges without breaking reciprocal history", () => {
+    const people = makePeople(67);
+    const [parent, ...children] = people;
+    for (const child of children.slice(0, 64)) assert.equal(linkParentChild(parent.personId, child.personId).ok, true);
+    assert.equal(linkParentChild(parent.personId, children[64].personId).reason, "child-limit");
+    assert.equal(parent.person.kinship.children.length, 64);
+    assert.equal(children[64].person.kinship.parents.length, 0);
+
+    const [first, ...partners] = makePeople(18);
+    for (const partner of partners.slice(0, 16)) assert.equal(setPartnership(first.personId, partner.personId).ok, true);
+    assert.equal(setPartnership(first.personId, partners[16].personId).reason, "partner-limit");
+    assert.equal(first.person.kinship.partners.length, 16);
+    assert.equal(partners[16].person.kinship.partners.length, 0);
+});
