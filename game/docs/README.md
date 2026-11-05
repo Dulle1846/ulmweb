@@ -8,6 +8,8 @@ For the current development stage, these documents focus on making the existing 
 
 ## Documents
 
+- [Master UI implementation register](MASTER_UI_IMPLEMENTATION.md) — status against the approved visual design concept, implemented navigation contract and remaining acceptance work.
+
 - [Technical Foundation](TECHNICAL_FOUNDATION.md) — current architecture, runtime and engineering principles.
 - [Extensibility and Module Design](EXTENSIBILITY_AND_MODULE_DESIGN.md) — modularity, replaceable implementations, explicit contracts and extension rules.
 - [Codebase Audit](CODEBASE_AUDIT.md) — verified findings from the reviewed baseline commit.
