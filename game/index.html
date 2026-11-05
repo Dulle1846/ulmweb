@@ -87,6 +87,18 @@
                 <div class="card-instruction">DRAG FROM YOUR HAND ONTO THE WORLD MAP</div>
             </section>
 
+            <section class="strategy-command-dock" aria-label="Strategy command center">
+                <div class="strategy-dock-heading"><span>ROYAL COMMAND</span><small>REALM MANAGEMENT</small></div>
+                <div class="strategy-command-grid">
+                    <button type="button" data-strategy-open="government"><span>♛</span>Government</button>
+                    <button type="button" data-strategy-open="politics"><span>⚖</span>Politics</button>
+                    <button type="button" data-strategy-open="economy"><span>◈</span>Economy</button>
+                    <button type="button" data-strategy-open="cards"><span>▤</span>Cards</button>
+                    <button type="button" data-strategy-open="decisions"><span>✦</span>Decisions</button>
+                    <button type="button" data-strategy-open="dynasty"><span>♔</span>Dynasty</button>
+                </div>
+            </section>
+
             <nav class="tabs" aria-label="Kingdom information">
                 <button id="tab-0" class="tab-button is-active" type="button">EVENT LOG</button>
                 <button id="tab-1" class="tab-button" type="button">STATISTICS</button>
@@ -145,6 +157,21 @@
             <div><span>Help / close</span><kbd>? / ESC</kbd></div>
         </div>
         <div class="profile-note">Saves are currently stored per local browser profile. Do not use this as secure multi-user authentication or cloud backup.</div>
+    </div>
+</div>
+
+<div id="strategy-modal" class="screen-overlay strategy-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="strategy-title">
+    <div class="modal-panel strategy-panel">
+        <div class="modal-heading"><div><div class="start-kicker">THE LIVING KINGDOM</div><h2 id="strategy-title">ROYAL COMMAND</h2></div><button id="strategy-close" class="modal-close" type="button" aria-label="Close strategy panel">×</button></div>
+        <nav class="strategy-tabs" aria-label="Strategy sections">
+            <button type="button" data-strategy-tab="government">Government</button>
+            <button type="button" data-strategy-tab="politics">Politics</button>
+            <button type="button" data-strategy-tab="economy">Economy</button>
+            <button type="button" data-strategy-tab="cards">Cards</button>
+            <button type="button" data-strategy-tab="decisions">Decisions</button>
+            <button type="button" data-strategy-tab="dynasty">Dynasty</button>
+        </nav>
+        <div id="strategy-content" class="strategy-content"></div>
     </div>
 </div>
 
