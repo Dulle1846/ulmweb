@@ -7,6 +7,8 @@ const PARTNER_STATUSES = new Set(["partner", "married", "separated", "divorced"]
 const MAX_PARENTS = 2;
 const MAX_CHILDREN = 64;
 const MAX_PARTNERS = 16;
+const MAX_GUARDIANS = 2;
+const MAX_WARDS = 16;
 
 function personIdOf(entity) {
     return String(entity?.personId || entity?.person?.id || entity?.id || "");
@@ -30,7 +32,7 @@ function ensureKinship(entity) {
     if (!person.kinship || typeof person.kinship !== "object" || Array.isArray(person.kinship)) {
         person.kinship = { parents: [], children: [], partners: [] };
     }
-    for (const key of ["parents", "children", "partners"]) {
+    for (const key of ["parents", "children", "partners", "guardians", "wards"]) {
         if (!Array.isArray(person.kinship[key])) person.kinship[key] = [];
     }
     return person.kinship;
@@ -161,8 +163,37 @@ export function getFamilySnapshot(personId) {
         parents: kinship.parents.map(item => ({ ...item })),
         children: kinship.children.map(item => ({ ...item })),
         partners: kinship.partners.map(item => ({ ...item })),
-        siblings: getSiblings(personId)
+        siblings: getSiblings(personId),
+        guardians: (kinship.guardians || []).map(item => ({ ...item })),
+        wards: (kinship.wards || []).map(item => ({ ...item }))
     };
+}
+
+export function linkGuardianWard(guardianId, wardId, { sinceYear = state.year } = {}) {
+    const guardian = findPerson(guardianId), ward = findPerson(wardId);
+    if (!guardian || !ward) return { ok: false, reason: "person-not-found" };
+    const guardianKey = personIdOf(guardian), wardKey = personIdOf(ward);
+    if (guardianKey === wardKey) return { ok: false, reason: "self-guardianship" };
+    const guardianPerson = ensurePersonProfile(guardian), wardPerson = ensurePersonProfile(ward);
+    const guardianMaturity = Number(guardianPerson.species && guardianPerson.ageYears) >= 0
+        ? Number(guardianPerson.ageYears) >= (Number(guardianPerson.species && guardianPerson.ageYears) || 0) : false;
+    if (guardianPerson.lifeStage === "young") return { ok: false, reason: "guardian-not-adult" };
+    if (wardPerson.lifeStage !== "young") return { ok: false, reason: "ward-not-minor" };
+    const guardianKin = ensureKinship(guardian), wardKin = ensureKinship(ward);
+    if (!wardKin.guardians.some(item => item.personId === guardianKey) && wardKin.guardians.length >= MAX_GUARDIANS) {
+        return { ok: false, reason: "guardian-limit" };
+    }
+    if (!guardianKin.wards.some(item => item.personId === wardKey) && guardianKin.wards.length >= MAX_WARDS) {
+        return { ok: false, reason: "ward-limit" };
+    }
+    const year = Number.isSafeInteger(Number(sinceYear))
+        ? Math.max(1, Math.min(1000000, Number(sinceYear)))
+        : Math.max(1, Number(state.year) || 1);
+    const wardEntry = { personId: guardianKey, sinceYear: year };
+    const guardianEntry = { personId: wardKey, sinceYear: year };
+    const added = upsertLink(wardKin.guardians, wardEntry);
+    upsertLink(guardianKin.wards, guardianEntry);
+    return { ok: true, added };
 }
 
 export function normalizeFamilyLinks() {
@@ -179,6 +210,16 @@ export function normalizeFamilyLinks() {
             const id = String(item?.personId || "");
             if (!id || id === personIdOf(entity) || !PARENT_KINDS.has(item.kind)) return null;
             return { personId: id, kind: item.kind, sinceYear: Math.max(1, Math.floor(Number(item.sinceYear) || 1)) };
+        });
+        kinship.guardians = uniqueById(kinship.guardians || [], MAX_GUARDIANS, item => {
+            const id = String(item?.personId || "");
+            if (!id || id === personIdOf(entity)) return null;
+            return { personId: id, sinceYear: Math.max(1, Math.floor(Number(item.sinceYear) || 1)) };
+        });
+        kinship.wards = uniqueById(kinship.wards || [], MAX_WARDS, item => {
+            const id = String(item?.personId || "");
+            if (!id || id === personIdOf(entity)) return null;
+            return { personId: id, sinceYear: Math.max(1, Math.floor(Number(item.sinceYear) || 1)) };
         });
         kinship.partners = uniqueById(kinship.partners, MAX_PARTNERS, item => {
             const id = String(item?.personId || "");
@@ -208,6 +249,16 @@ export function normalizeFamilyLinks() {
             const child = findPerson(childLink.personId);
             if (!child) continue;
             upsertLink(ensureKinship(child).parents, { personId: personIdOf(entity), kind: childLink.kind, sinceYear: childLink.sinceYear });
+        }
+        for (const guardianLink of [...kin.guardians]) {
+            const guardian = findPerson(guardianLink.personId);
+            if (!guardian) continue;
+            upsertLink(ensureKinship(guardian).wards, { personId: personIdOf(entity), sinceYear: guardianLink.sinceYear });
+        }
+        for (const wardLink of [...kin.wards]) {
+            const ward = findPerson(wardLink.personId);
+            if (!ward) continue;
+            upsertLink(ensureKinship(ward).guardians, { personId: personIdOf(entity), sinceYear: wardLink.sinceYear });
         }
         for (const partnerLink of [...kin.partners]) {
             const partner = findPerson(partnerLink.personId);
