@@ -93,3 +93,19 @@ test("the memorial archive remains bounded across long-running realms",()=>{
     assert.equal(state.personArchive.length,500);
     assert.ok(state.personArchive.every(entry=>entry.personId&&entry.person&&entry.deathYear));
 });
+
+
+test("each memorial compacts memories, relationships, secrets and goal history",()=>{
+    const resident=createPerson(40,82,"human");
+    const person=ensurePersonProfile(resident);
+    person.memories=Array.from({length:24},(_,index)=>({id:"m"+index,type:"event",text:"memory "+index,tick:index,importance:50}));
+    person.relationships=Array.from({length:32},(_,index)=>({targetId:"p"+index,targetName:"Person "+index,kind:"known",trust:50,respect:50,affinity:50,interactions:1,lastInteractionTick:index}));
+    person.secrets=Array.from({length:12},(_,index)=>"secret "+index);
+    person.goalHistory=Array.from({length:12},(_,index)=>({id:"goal"+index,startedYear:1,endedYear:2,completed:true,priority:50}));
+    const death=recordNaturalDeath(resident,"old age");
+    const memorial=state.personArchive.find(entry=>entry.personId===death.personId);
+    assert.equal(memorial.person.memories.length,12);
+    assert.equal(memorial.person.relationships.length,16);
+    assert.equal(memorial.person.secrets.length,6);
+    assert.equal(memorial.person.goalHistory.length,8);
+});
