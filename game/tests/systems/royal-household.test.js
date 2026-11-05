@@ -78,7 +78,7 @@ test("a regent's death transfers the crown to the minor heir under council prote
 });
 
 
-test("a monarch's sibling is excluded from eligible royal consorts",()=>{
+test("a monarch's sibling is excluded from eligible royal consorts",async()=>{
     const {king}=setupRoyalHouse();
     const {linkParentChild}=await import("../../js/systems/families.js");
     const parent=new Entity(10,10,TYPE.VILLAGER);parent.id="royal-parent";parent.personId=parent.id;ensurePersonProfile(parent);
