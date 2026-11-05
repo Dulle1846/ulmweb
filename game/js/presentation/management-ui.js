@@ -9,6 +9,7 @@ import { BUILDING_SIZE } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { CARD_DECK } from "../systems/cards.js";
 import { getResourceNodeAt } from "../systems/resource-geography.js";
+import { renderUI } from "./rendering/ui.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
 let activePanel="kingdom";
@@ -166,13 +167,40 @@ function dynasty(){
  '<p class="command-note">Only saved family relationships are drawn. Missing, unknown or unlinked relatives are intentionally not inferred.</p>';
 }
 function creatures(){
- const c=getCreatureSnapshot(),rows=c.living.map(d=>'<article class="command-policy"><div><strong>🐉 '+esc(d.name)+'</strong><p>'+esc(d.lifeStage)+' · age '+number(d.ageYears)+' · health '+number(d.health)+' · hunger '+number(d.hunger)+' · bond '+number(d.bond)+'</p></div></article>').join("");
- const archive=c.archive.map(d=>'<article class="command-history"><strong>MEMORIAL · YEAR '+number(d.deathYear)+'</strong><p>'+esc(d.name)+' · age '+number(d.ageYears)+' · '+esc(d.lifeStage)+'</p></article>').join("");
- return intro("THE LIVING BESTIARY","Dragon sanctuary","Dragons are persistent world entities. They age, become hungry, bond with the sovereign, remember milestones and can die if neglected.")+'<img class="command-creature-art" src="assets/dragon-companion.svg" alt="Friendly red and gold dragon companion" loading="lazy"><div class="command-summary"><div><small>LIVING DRAGONS</small><strong>'+c.living.length+' / 3</strong></div><div><small>CREATURE MEMORIALS</small><strong>'+c.archive.length+'</strong></div><div><small>SUMMONING COST</small><strong>55 GOLD · 35 FOOD</strong></div></div><div class="command-actions"><button data-command="summon-dragon" '+(c.living.length>=3?'disabled':'')+'>🐉 SUMMON A DRAGON</button></div><div class="command-section-title">LIVING CREATURES</div><div class="command-policy-list">'+(rows||'<p class="command-note">No dragon has joined the realm yet.</p>')+'</div><div class="command-section-title">CREATURE MEMORIALS</div><div class="command-history-list">'+(archive||'<p class="command-note">No creature memorials yet.</p>')+'</div>';
+ const c=getCreatureSnapshot();
+ const rows=c.living.map(d=>{
+  const memories=(d.memories||[]).slice(0,8).map(memory=>'<li><strong>YEAR '+number(memory.year)+'</strong><span>'+esc(memory.text)+'</span></li>').join("");
+  const abilities=(d.abilities||[]).map(value=>'<span class="creature-chip">'+esc(value)+'</span>').join("");
+  const goals=(d.goals||[]).map(value=>'<span class="creature-chip">'+esc(value)+'</span>').join("");
+  return '<details class="creature-record"><summary><img src="assets/dragon-companion.svg" alt="" loading="lazy"><span><strong>'+esc(d.name)+'</strong><small>'+esc(d.lifeStage)+' · '+number(d.ageYears)+' years · '+esc(d.temperament)+'</small></span><b>'+number(d.health)+'% health</b></summary><div class="creature-dossier"><div class="creature-stat-grid"><span>Health<strong>'+number(d.health)+' / 100</strong></span><span>Hunger<strong>'+number(d.hunger)+' / 100</strong></span><span>Bond with sovereign<strong>'+number(d.bond)+' / 100</strong></span><span>Expected lifespan<strong>'+number(d.expectedLifespan)+' years</strong></span><span>Last update<strong>Year '+number(d.lastUpdateYear)+'</strong></span><span>Temperament<strong>'+esc(d.temperament)+'</strong></span></div><div class="command-section-title">ABILITIES</div><div class="creature-chip-list">'+(abilities||'<span class="command-note">No abilities recorded.</span>')+'</div><div class="command-section-title">RECORDED GOALS</div><div class="creature-chip-list">'+(goals||'<span class="command-note">No goals recorded.</span>')+'</div><div class="command-section-title">PERSONAL MEMORIES</div><ol class="creature-memory-list">'+(memories||'<li>No memories have been recorded yet.</li>')+'</ol></div></details>';
+ }).join("");
+ const archive=c.archive.slice().reverse().map(d=>{
+  const memories=(d.memories||[]).map(memory=>'<li><strong>YEAR '+number(memory.year)+'</strong><span>'+esc(memory.text)+'</span></li>').join("");
+  return '<details class="creature-record is-memorial"><summary><img src="assets/dragon-companion.svg" alt="" loading="lazy"><span><strong>'+esc(d.name)+'</strong><small>MEMORIAL · '+esc(d.lifeStage)+' · '+number(d.ageYears)+' years</small></span><b>FELL IN YEAR '+number(d.deathYear)+'</b></summary><div class="creature-dossier"><p>Cause recorded: '+esc(d.cause||"unknown")+'</p><ol class="creature-memory-list">'+(memories||'<li>No surviving memories were archived.</li>')+'</ol></div></details>';
+ }).join("");
+ return intro("THE LIVING BESTIARY","Dragon sanctuary","Individual creature dossiers preserve age, needs, temperament, abilities, goals and personal memories from the live creature records.")+
+ '<img class="command-creature-art" src="assets/dragon-companion.svg" alt="Dragon companion illustration" loading="lazy"><div class="command-summary"><div><small>LIVING DRAGONS</small><strong>'+c.living.length+' / 3</strong></div><div><small>CREATURE MEMORIALS</small><strong>'+c.archive.length+'</strong></div><div><small>SUMMONING COST</small><strong>55 GOLD · 35 FOOD</strong></div></div>'+
+ '<div class="command-actions"><button data-command="summon-dragon" '+(c.living.length>=3?'disabled':'')+'>SUMMON A DRAGON</button></div><div class="command-section-title">LIVING CREATURE DOSSIERS</div><div class="creature-record-list">'+(rows||'<p class="command-note">No dragon has joined the realm yet.</p>')+'</div>'+
+ '<div class="command-section-title">CREATURE MEMORIALS</div><div class="creature-record-list">'+(archive||'<p class="command-note">No creature memorials yet.</p>')+'</div>';
+}
+function chronicle(){
+ const entries=Array.isArray(state.eventLog)?state.eventLog:[];
+ const kinds=[...new Set(entries.map(entry=>String(entry.kind||"realm")))].sort();
+ const options=['<option value="all">All categories</option>',...kinds.map(kind=>'<option value="'+esc(kind)+'">'+esc(kind.toUpperCase())+'</option>')].join("");
+ const rows=entries.map(entry=>{
+  const text=String(entry.text||"Recorded realm event");
+  return '<article class="chronicle-entry" data-kind="'+esc(entry.kind||"realm")+'" data-search="'+esc((text+" "+(entry.kind||"")+" "+entry.id).toLowerCase())+'"><div class="chronicle-entry-meta"><strong>'+esc(String(entry.kind||"realm").toUpperCase())+'</strong><span>RECORD '+number(entry.id)+' · TICK '+number(entry.tick)+'</span></div><p>'+esc(text)+'</p></article>';
+ }).join("");
+ const active=state.activeEvent?'<article class="active-issue-card"><span class="command-ribbon">CURRENTLY AWAITING THE CROWN</span><h4>'+esc(state.activeEvent.title)+'</h4><p>'+esc(state.activeEvent.description)+'</p><small>'+state.activeEvent.choices.length+' recorded choices</small><button type="button" data-command="show-active-event">OPEN ISSUE</button></article>':'<p class="command-note">No unresolved realm issue is currently awaiting a decision.</p>';
+ return intro("THE ROYAL ARCHIVE","Chronicle & event inbox","Search the actual event log by text or category. Records show their stored simulation tick; calendar dates are not inferred from missing history.")+
+ '<div class="command-section-title">ACTIVE REALM ISSUE</div>'+active+
+ '<div class="command-section-title">RECORDED CHRONICLE</div><div class="chronicle-filters"><label for="chronicle-search">SEARCH RECORDS</label><input id="chronicle-search" type="search" maxlength="80" placeholder="Search events, people or subjects"><label for="chronicle-kind-filter">CATEGORY</label><select id="chronicle-kind-filter">'+options+'</select></div>'+
+ '<div class="chronicle-list">'+(rows||'<p class="command-note">No chronicle entries have been recorded yet.</p>')+'</div>'+
+ '<p class="command-note">The event log retains up to 100 recent records. This screen does not claim unread tracking or permanent archival beyond the simulation save.</p>';
 }
 function render(){
  const panel=$("command-panel-content");if(!panel)return;
- panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,buildings,dynasty,creatures}[activePanel]||kingdom)();
+ panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,buildings,dynasty,creatures,chronicle}[activePanel]||kingdom)();
  document.querySelectorAll("[data-command-tab]").forEach(b=>{
   const active=b.dataset.commandTab===activePanel;
   b.classList.toggle("is-active",active);
@@ -182,7 +210,7 @@ function render(){
 }
 function act(b){
  const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
- if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="select-card"){const card=[...document.querySelectorAll(".hand-card")].find(x=>x.dataset.cardId===v);if(card){card.click();r={ok:true};}}
+ if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="select-card"){const card=[...document.querySelectorAll(".hand-card")].find(x=>x.dataset.cardId===v);if(card){card.click();r={ok:true};}}else if(a==="show-active-event"&&state.activeEvent){renderUI();r={ok:true};}
  if(r.ok){toast("DECISION RECORDED");render();}else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
 }
 export function setupManagementUI(){
@@ -192,11 +220,12 @@ export function setupManagementUI(){
   if(target==="people"){$("people-btn")?.click();return;}
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
-  if(["kingdom","government","politics","decisions","cards","economy","buildings","dynasty","creatures"].includes(target)){
+  if(["kingdom","government","politics","decisions","cards","economy","buildings","dynasty","creatures","chronicle"].includes(target)){
    activePanel=target;$("command-modal")?.classList.remove("hidden");render();
   }
  }));
  $("command-open-btn")?.addEventListener("click",()=>{$("command-modal")?.classList.remove("hidden");render();});
+ $("command-chronicles-btn")?.addEventListener("click",()=>{activePanel="chronicle";$("command-modal")?.classList.remove("hidden");render();});
  document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{activePanel=b.dataset.commandTab||"government";$("command-modal")?.classList.remove("hidden");render();}));
  $("command-close")?.addEventListener("click",()=>$("command-modal")?.classList.add("hidden"));
  $("command-modal")?.addEventListener("click",e=>{if(e.target===$("command-modal"))$("command-modal").classList.add("hidden");});
@@ -204,6 +233,11 @@ export function setupManagementUI(){
   if(e.target.id==="building-search"){
    const query=e.target.value.trim().toLowerCase();
    document.querySelectorAll(".building-record").forEach(record=>record.classList.toggle("is-filtered",query&&!record.dataset.buildingName.includes(query)));
+  }
+  if(e.target.id==="chronicle-search"||e.target.id==="chronicle-kind-filter"){
+   const query=$("chronicle-search")?.value.trim().toLowerCase()||"";
+   const kind=$("chronicle-kind-filter")?.value||"all";
+   document.querySelectorAll(".chronicle-entry").forEach(record=>record.classList.toggle("is-filtered",(kind!=="all"&&record.dataset.kind!==kind)||(query&&!record.dataset.search.includes(query))));
   }
  });
  $("command-panel-content")?.addEventListener("click",e=>{
