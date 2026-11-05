@@ -83,3 +83,13 @@ test("legacy profiles without an aging cursor begin aging from their restored ye
     const person=normalizePersonProfile({species:"human",ageYears:30},entity);
     assert.equal(person.lastAgedYear,9);
 });
+
+
+test("legacy profiles receive a stable reproductive sex without rerolling on load",()=>{
+    resetState();
+    const first=normalizePersonProfile({species:"human",ageYears:30},{id:"legacy-sex-person",personId:"legacy-sex-person"});
+    const second=normalizePersonProfile({species:"human",ageYears:30},{id:"legacy-sex-person",personId:"legacy-sex-person"});
+    assert.ok(["female","male"].includes(first.sex));
+    assert.equal(first.sex,second.sex);
+    assert.equal(PERSON_SPECIES.revenant.reproduction,"none");
+});
