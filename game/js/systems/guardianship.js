@@ -84,7 +84,6 @@ function selectGuardian(orphan) {
     const candidates = [];
     for (const candidate of state.entities) {
         if (candidate.dead || candidate === orphan || !candidate.personId || !candidate.person) continue;
-        if (activeGuardians(candidate).length >= MAX_WARDS_PER_GUARDIAN) continue;
         const score = candidateScore(candidate, orphan, household);
         if (!score) continue;
         candidates.push({ candidate, ...score });
@@ -100,7 +99,7 @@ function selectGuardian(orphan) {
 function moveWardIntoGuardianHousehold(ward, guardian, home) {
     ward.home = { x: home.x, y: home.y };
     ward.anchor = { x: home.x, y: home.y };
-    ward.householdId = guardian.householdId || "house:" + home.x + ":" + home.y;
+    ward.householdId = "house:" + home.x + ":" + home.y;
 }
 
 export function updateGuardianships() {
