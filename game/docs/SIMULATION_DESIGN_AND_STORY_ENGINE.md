@@ -505,3 +505,34 @@ Successful assignments update household anchors, write personal memories for bot
 
 
 Verification at code head bfa06c39b09e1a84c7497a3910d1a2149fec9cd8: 190/190 Node tests passed; static syntax/import/UI/asset checks, Kings & Cards 2.1 checks and Chromium Browser E2E passed.
+
+
+## Phase 2.9 — royal dynasty and succession
+
+The royal household is a separate persisted subsystem layered over the existing kinship graph. The monarch may arrange a marriage with an eligible adult villager of the same species under the current paired-reproduction model; close kin are excluded through a bounded ancestry walk. The consort receives a distinct royal-consort role and reciprocal partnership links.
+
+A player decision can create a royal child as a persistent person entity with two explicit biological parent links, birth memory, dynasty family name, age cursor and heir flag. Royal births are capped at twelve children and three realm years between births. The realm stores its dynasty name, monarch ID, succession law, last royal birth year and a bounded succession chronicle.
+
+Succession laws currently include absolute primogeniture, male-preference primogeniture and a deterministic council-election score. A transfer only occurs after the former monarch has a verified memorial and a living adult royal child is eligible. A monarch defeated in combat is recorded through the same memorial pipeline. The new monarch is the existing heir entity; no duplicate person is fabricated.
+
+The royal court UI exposes marriage candidates, the consort, child count, eligible adult heirs and succession law. The custom royal illustration is a local SVG asset. Current limitations: no regency, minority rule, adoption, collateral-branch claims, dynastic cadet houses or autonomous royal birth probability.
+
+
+## Phase 3.0 — government and strategy management
+
+Government state is persisted separately from political faction support. Light, standard and heavy taxation use bounded multipliers in the real economy ledger; the policy also changes faction support and legitimacy. A royal audience costs 12 gold, increases legitimacy and the currently weakest faction, and has a two-year cooldown.
+
+The management interface provides Government, Politics, Economy and Cards sections. The economy panel reads live workforce, housing, households, resource balances and ledger outcomes. The card panel reads the real hand, draw pile, reward queue and archetype catalog; selecting a card changes the active card and discarding uses the existing card-consumption path.
+
+This is an initial strategy layer, not yet a full constitutional simulator. Lawmaking, offices, ministers, parliament, courts, parties, elections, trade law and military doctrine remain future work.
+
+
+## Phase 3.1 — persistent fantasy creatures
+
+A dragon card creates a friendly dragon unit with a persistent creature identity. Creature profiles track species, name, origin card, rarity, age, maturation, lifespan, life stage, hunger, health, temperament, loyalty, power, bond to the monarch and bounded memories. A dedicated deterministic random stream isolates creature naming, temperament and wandering from other simulation systems.
+
+Creatures wander around their home anchor, age once per realm year, consume food when hungry, lose health when starving and die from old age or depletion. Dragons join friendly combat and defend the realm. Battle deaths and lifecycle deaths are retained in a bounded 200-entry creature memorial archive. Creature profiles and the archive are included in save/load migration. The card library now contains 501 distinct categories while preserving the existing griffin card alongside the new dragon card.
+
+The first dragon has original local SVG artwork and a species-aware canvas silhouette. The management card panel displays living creature identity, life stage, age, health, hunger and loyalty.
+
+Current limitations: no creature breeding, eggs, packs, territorial systems, complex pathfinding, creature-specific quests or complete creature editor. More monster categories can adopt this lifecycle incrementally.
