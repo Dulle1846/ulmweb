@@ -26,6 +26,7 @@ export const TYPE = {
     ARCHER: 22,
     KNIGHT: 23,
     PRIEST: 24,
+    DRAGON: 25,
 
     GOBLIN: 30,
     ORC: 31,
@@ -58,6 +59,7 @@ const MAX_HP = {
     [TYPE.ARCHER]:   95,
     [TYPE.KNIGHT]:   240,
     [TYPE.PRIEST]:   70,
+    [TYPE.DRAGON]:   520,
     [TYPE.GOBLIN]:   45,
     [TYPE.ORC]:      110,
     [TYPE.TROLL]:    240,
@@ -84,6 +86,7 @@ export const JOB_ICONS = {
     knight:      "⚔️",
     king:        "👑",
     priest:      "🙏",
+    dragon:      "🐉",
     wanderer:    "🧳",
     fleeing:     "💨",
     idle:        "◆",
