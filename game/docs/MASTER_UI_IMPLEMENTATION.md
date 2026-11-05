@@ -221,3 +221,11 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added a static contract covering all twelve navigation destinations and rejecting the previous toggle semantics.
 - Added a Chromium E2E check that focuses the Economy navigation item, activates it with Enter, verifies the real Economy screen opens, and checks the accessible current-page state.
 - This is a targeted accessibility correction, not a complete keyboard or screen-reader audit. The broader Phase 5 checklist remains open.
+
+
+## Phase 5 — global header responsive correction
+
+- Visual inspection of the seven-viewport screenshot artifact found that the top status/actions row was clipped or crowded at 390×844, 1280×720 and 1600×900 even though the document itself did not horizontally overflow.
+- Added responsive header wrapping: at intermediate desktop widths the action controls move to a dedicated second row; at narrow widths they wrap below the resource strip rather than being clipped off-screen.
+- Extended Chromium E2E to assert topbar intrinsic width, pairwise non-overlap of header groups and visibility of every rendered header action at all seven viewport sizes.
+- This corrects the header only. The screenshot review still shows placeholder-like map/building shapes and a relatively sparse world stage; those belong to the separate world-art production backlog, not this layout fix.
