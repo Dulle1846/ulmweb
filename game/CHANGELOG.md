@@ -333,3 +333,11 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 - Added live SVG connector paths with distinct parent, guardian, partnership and sibling styles, plus canonical person dossier navigation.
 - Enforced 80-node and 120-edge limits; retained the existing descendant depth and per-generation caps.
 - Added deterministic Chromium coverage for relationship paths and heir dossier navigation, with reduced-motion and responsive styling.
+
+
+## Unreleased — 3.8.0-dev
+
+### Accessibility and settings
+- Added persistent contextual-tooltip, reduced-motion and high-contrast preferences.
+- Added responsive settings controls and browser-level checks. No simulation or save-game schema changes.
+- Pending CI and production verification; not part of production 3.7.0.
