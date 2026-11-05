@@ -81,3 +81,27 @@ test("autonomous birth checks run at most once per realm year",()=>{
     assert.equal(updateBirths(),null); assert.equal(state.economy.lastBirthCheckYear,12);
     state.year=13; assert.equal(updateBirths(),null); assert.equal(state.economy.lastBirthCheckYear,13);
 });
+
+
+test("autonomous scheduler eventually creates a deterministic birth for an eligible partnership",()=>{
+    let child=null;
+    for(let seed=1;seed<=500&&!child;seed++){
+        state.worldSeed=seed;
+        state.randomStreams={};
+        state.economy.lastBirthCheckYear=1;
+        child=updateBirths();
+    }
+    assert.ok(child);
+    assert.equal(child.person.ageYears,0);
+    assert.equal(child.person.kinship.parents.length,2);
+    assert.equal(state.economy.births,1);
+});
+
+test("birth refuses to exceed the global entity cap",()=>{
+    for(let index=0;index<897;index++)spawnEntity(100+index,100,TYPE.HOUSE);
+    assert.equal(state.entities.length,900);
+    const result=createChildFromParents(parents[0].personId,parents[1].personId);
+    assert.equal(result.ok,false);
+    assert.equal(result.reason,"entity-capacity");
+    assert.equal(state.entities.length,900);
+});
