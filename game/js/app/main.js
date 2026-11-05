@@ -21,6 +21,8 @@ import {setupCharacterDossier} from "../presentation/character-dossier.js";
 import {normalizeFamilyLinks} from "../systems/families.js";
 import {normalizeRoyalHouse} from "../systems/royal-dynasty.js";
 import {setupRoyalCourt} from "../presentation/royal-court.js";
+import {normalizeGovernment} from "../systems/government.js";
+import {setupRealmManagement} from "../presentation/realm-management.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -127,6 +129,7 @@ function createSaveSnapshot(){
         entities:state.entities.map((entity,index)=>serializeEntity(entity,indexes)),
         personArchive:(state.personArchive||[]).map(entry=>JSON.parse(JSON.stringify(entry))).slice(-MAX_PERSON_ARCHIVE),
         royalHouse:JSON.parse(JSON.stringify(state.royalHouse||{})),
+        government:JSON.parse(JSON.stringify(state.government||{})),
         hand:state.hand.map(card=>({...card,cost:{...card.cost}})),
         cardRewardQueue:(state.cardRewardQueue||[]).map(card=>({...card,cost:{...card.cost}})),
         selectedCardInstanceId:state.selectedCardInstanceId,
@@ -186,6 +189,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     for(let index=0;index<restored.length;index++){const entity=restored[index];if(!entity)continue;if(typeof entity.id!=="string")entity.id="e"+(Number(state.worldSeed)||1).toString(36)+"-"+(index+1).toString(36);if(entity.type===TYPE.VILLAGER&&!entity.personId)entity.personId=entity.id;if(entity.type===TYPE.VILLAGER||entity.isKing)ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});}
     normalizeFamilyLinks();
     normalizeRoyalHouse(snapshot.royalHouse);
+    normalizeGovernment(snapshot.government);
     state.nextEntityId=Math.max(state.nextEntityId,restored.length+1);
     state.seasonIndex=snapshot.seasonIndex||0;state.morale=snapshot.morale??72;
     state.resources={wood:0,stone:0,gold:0,food:0,...snapshot.resources};
@@ -318,6 +322,7 @@ function init(){
     setupInput();
     setupCharacterDossier();
     setupRoyalCourt();
+    setupRealmManagement();
     bindMenu();
     applySoundtrackSettings(settings);
     window.addEventListener("resize",resize);
