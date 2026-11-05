@@ -181,7 +181,7 @@ function validateSaveSnapshot(snapshot){
         for(const [key,tile] of Object.entries(snapshot.roads.tiles)){if(!/^\d+:\d+$/.test(key)||!tile||!["dirt","gravel","paved"].includes(tile.type))throw new Error("Save data contains an invalid road tile.");}
     }
     if(snapshot.resourceGeography!==undefined)validateResourceGeographySnapshot(snapshot.resourceGeography);
-        if(snapshot.hand!==undefined&&(!Array.isArray(snapshot.hand)||snapshot.hand.length>5)){
+    if(snapshot.hand!==undefined&&(!Array.isArray(snapshot.hand)||snapshot.hand.length>5)){
         throw new Error("Save data contains an invalid card hand.");
     }
     return true;
