@@ -16,24 +16,23 @@ function processFrames(frameTimes, speed) {
 
 test("the default realm day is deliberately slower: 750 ms at 1x", () => {
     assert.equal(BASE_TICK_INTERVAL, 750);
-    const result = processFrames([250, 250, 250], 1);
-    assert.deepEqual(result, { totalSteps: 1, accumulatorMs: 0 });
+    assert.deepEqual(processFrames([100,100,100,100,100,100,100,50], 1), { totalSteps: 1, accumulatorMs: 0 });
 });
 
 test("2x advances one realm day in half the wall-clock time", () => {
-    assert.deepEqual(processFrames([200, 175], 2), { totalSteps: 1, accumulatorMs: 0 });
+    assert.deepEqual(processFrames([100,100,100,75], 2), { totalSteps: 1, accumulatorMs: 0 });
 });
 
 test("4x advances one realm day in one quarter of the wall-clock time", () => {
-    assert.deepEqual(processFrames([187.5], 4), { totalSteps: 1, accumulatorMs: 0 });
+    assert.deepEqual(processFrames([100,87.5], 4), { totalSteps: 1, accumulatorMs: 0 });
 });
 
 test("0.5x advances one realm day in twice the default wall-clock time", () => {
-    assert.deepEqual(processFrames([750, 750], 0.5), { totalSteps: 1, accumulatorMs: 0 });
+    assert.deepEqual(processFrames(Array(15).fill(100), 0.5), { totalSteps: 1, accumulatorMs: 0 });
 });
 
 test("fractional progress is retained for the next frame", () => {
-    const result = consumeSimulationTime(300, 200, 2, BASE_TICK_INTERVAL);
+    const result = consumeSimulationTime(300, 100, 4, BASE_TICK_INTERVAL);
     assert.equal(result.steps, 0);
     assert.equal(result.remainderMs, 700);
 });
