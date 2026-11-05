@@ -459,3 +459,14 @@ Repeated positive encounters between adults can autonomously form a partnership.
 The species data now includes a reproductive mode. Current living species use a paired model; revenants are non-reproductive. A biological birth requires two same-species adult villagers with opposite reproductive sex categories and an established reciprocal partnership from an earlier year. Legacy profiles receive a stable ID-derived reproductive sex category.
 
 Important design boundary: the current `sex` field is a minimal reproductive category, not a complete gender-identity or species-specific biology system. The next design pass should separate identity, anatomy and species reproduction rules. Relationship decay, non-monogamous rules, hybrid species, adoption workflows, royal offspring and courtship outside shared household/work contexts remain unimplemented.
+
+
+## Implemented follow-up — personal needs and active goals (Phase 2.9)
+
+Named people now receive a yearly needs update. Need values represent satisfaction from 0 to 100. Food satisfaction responds to food reserves per resident; rest to the current work/rest phase; safety to nearby threats and realm morale; belonging to recent social ties and explicit family links; purpose to employment or office.
+
+When a need falls below the urgent threshold, it becomes the active personal goal. Otherwise the person's long-term aspiration is active. Goal transitions are stored in a bounded history and recorded as personal memories. The goal system has concrete behavioral effects: people with food insecurity prefer farm work when reasonably accessible, people with low rest satisfaction rest longer, people with low safety satisfaction stay closer to home during breaks, and people with low belonging satisfaction receive priority in the bounded social-interaction scheduler.
+
+The scheduler runs once per year for named living people, including non-villager person profiles. Goal history is capped at 12 entries, personal memories at 24, social relationship lists at 32 and yearly social pair processing at 120. Realm and per-person scheduler cursors are persisted and migrated.
+
+This is a first needs-and-goals controller, not a complete autonomous planner. Long-term political projects, careers, education, travel plans and multi-step personal schemes remain future work.
