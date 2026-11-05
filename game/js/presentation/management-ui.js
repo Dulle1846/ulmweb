@@ -9,6 +9,13 @@ import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
 let activePanel="kingdom";
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
+function setNavigationActive(target){
+ document.querySelectorAll(".realm-nav-button").forEach(button=>{
+  const active=button.dataset.kacPanel===target;
+  button.classList.toggle("is-active",active);
+  button.setAttribute("aria-pressed",String(active));
+ });
+}
 function toast(message){const el=$("action-toast");if(!el)return;el.textContent=message;el.classList.add("is-visible");setTimeout(()=>el.classList.remove("is-visible"),1800);}
 function meter(label,value){const v=Math.max(0,Math.min(100,Number(value)||0));return '<div class="command-meter"><span>'+esc(label)+'</span><i><b style="width:'+v+'%"></b></i><strong>'+Math.round(v)+'</strong></div>';}
 function intro(k,t,p){return '<div class="command-panel-intro"><span>'+esc(k)+'</span><h3>'+esc(t)+'</h3><p>'+esc(p)+'</p></div>';}
@@ -61,7 +68,12 @@ function creatures(){
 function render(){
  const panel=$("command-panel-content");if(!panel)return;
  panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,dynasty,creatures}[activePanel]||kingdom)();
- document.querySelectorAll("[data-command-tab]").forEach(b=>b.classList.toggle("is-active",b.dataset.commandTab===activePanel));
+ document.querySelectorAll("[data-command-tab]").forEach(b=>{
+  const active=b.dataset.commandTab===activePanel;
+  b.classList.toggle("is-active",active);
+  b.setAttribute("aria-pressed",String(active));
+ });
+ setNavigationActive(activePanel);
 }
 function act(b){
  const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
@@ -71,7 +83,7 @@ function act(b){
 export function setupManagementUI(){
  document.querySelectorAll("[data-kac-panel]").forEach(button=>button.addEventListener("click",()=>{
   const target=button.dataset.kacPanel;
-  document.querySelectorAll(".realm-nav-button").forEach(item=>item.classList.toggle("is-active",item===button));
+  setNavigationActive(target);
   if(target==="people"){$("people-btn")?.click();return;}
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
