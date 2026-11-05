@@ -30,6 +30,13 @@ import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
 let loopStarted=false;
 let settings=loadSettings();
 
+function applyAccessibilitySettings(){
+    const root=document.documentElement;
+    root.classList.toggle("ui-hide-tooltips",settings.showTooltips===false);
+    root.classList.toggle("ui-reduced-motion",Boolean(settings.reducedMotion));
+    root.classList.toggle("ui-high-contrast",Boolean(settings.highContrast));
+}
+
 function bindCanvas(){
     state.canvas=document.getElementById("canvas");
     state.ctx=state.canvas.getContext("2d",{alpha:true});
@@ -375,6 +382,22 @@ function bindMenu(){
     document.getElementById("settings-music-volume")?.addEventListener("input",event=>{
         settings.musicVolume=Number(event.target.value)/100;setMusicVolume(settings.musicVolume);saveSettings(settings);
     });
+    const accessibilityPreferences=[
+        ["settings-tooltips-toggle","showTooltips"],
+        ["settings-reduced-motion-toggle","reducedMotion"],
+        ["settings-high-contrast-toggle","highContrast"]
+    ];
+    accessibilityPreferences.forEach(([id,key])=>{
+        const control=document.getElementById(id);
+        if(!control)return;
+        control.checked=settings[key]!==false;
+        control.addEventListener("change",()=>{
+            settings[key]=control.checked;
+            applyAccessibilitySettings();
+            saveSettings(settings);
+        });
+    });
+    applyAccessibilitySettings();
     const musicToggle=document.getElementById("settings-music-toggle");
     const volume=document.getElementById("settings-music-volume");
     if(musicToggle)musicToggle.checked=settings.musicEnabled;
