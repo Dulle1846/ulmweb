@@ -86,23 +86,26 @@ test("an unrelated adult without kinship or strong recorded trust is not selecte
     assert.equal(unrelated.person.kinship.wards.length, 0);
 });
 
-test("guardian selection respects household capacity", () => {
-    const house = spawnEntity(40, 40, TYPE.HOUSE);
-    const parent = resident(39, house, { age: 82 });
-    const child = resident(40, house, { age: 10 });
-    const aunt = resident(41, house, { age: 40 });
-    const extra = resident(42, house, { age: 32 });
+test("guardian selection respects the receiving household capacity", () => {
+    const childHouse = spawnEntity(40, 40, TYPE.HOUSE);
+    const guardianHouse = spawnEntity(60, 40, TYPE.HOUSE);
+    const parent = resident(39, childHouse, { age: 82 });
+    const child = resident(40, childHouse, { age: 10 });
+    const sharedGrandparent = resident(60, guardianHouse, { age: 70 });
+    const aunt = resident(61, guardianHouse, { age: 40 });
+    const extraA = resident(62, guardianHouse, { age: 32 });
+    const extraB = resident(63, guardianHouse, { age: 28 });
+    linkParentChild(sharedGrandparent.personId, parent.personId);
+    linkParentChild(sharedGrandparent.personId, aunt.personId);
     linkParentChild(parent.personId, child.personId);
     recordNaturalDeath(parent, "old age");
     state.entities = state.entities.filter(entity => entity !== parent);
-    assert.equal(getHouseholdSnapshot().homes[0].residents, 3);
-    // Fill the last available place after the family has been established.
-    const fifth = resident(43, house, { age: 28 });
-    assert.equal(getHouseholdSnapshot().homes[0].residents, 4);
+    assert.equal(getHouseholdSnapshot().homes.find(home => home.x === guardianHouse.x).residents, 4);
     assert.deepEqual(updateGuardianships(), []);
     assert.equal(aunt.person.kinship.wards.length, 0);
-    assert.equal(extra.person.kinship.wards.length, 0);
-    assert.equal(fifth.person.kinship.wards.length, 0);
+    assert.equal(sharedGrandparent.person.kinship.wards.length, 0);
+    assert.equal(extraA.person.kinship.wards.length, 0);
+    assert.equal(extraB.person.kinship.wards.length, 0);
 });
 
 test("guardianship scheduler runs at most once per realm year", () => {
