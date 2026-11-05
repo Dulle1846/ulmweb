@@ -44,7 +44,7 @@ function renderPeopleList(query = "") {
             (entity.personId === selectedPersonId ? ' is-selected' : '') +
             '" data-person-id="' + esc(entity.personId) + '">' +
             '<span class="person-list-name">' + esc(person.name) + (entity.isKing ? ' <b>♛</b>' : '') + '</span>' +
-            '<span class="person-list-meta">' + esc(person.species) + ' · ' + esc(person.role) + ' · ' +
+            '<span class="person-list-meta">' + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) + ' · ' +
             Math.floor(Number(person.ageYears) || 0) + '</span></button>';
     }).join("") : '<div class="empty-state">No matching people were found.</div>';
 }
