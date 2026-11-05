@@ -2,35 +2,32 @@
 
 Kings & Cards is a browser-based medieval realm and strategy simulation.
 
-## Production site
+## Production
 
-- **Canonical production target:** https://kings-and-cards.pages.dev/
-- **Hosting:** Cloudflare Pages
-- **Production Git branch:** ulmweb-branch
-- **Game source and static site root:** game/
+- Canonical site: https://kings-and-cards.pages.dev/
+- Hosting: Cloudflare Pages
+- Production branch: ulmweb-branch
+- Static game root: game/
 
-The legacy workers.dev endpoint is not the canonical release target. Vercel is not used for production.
+Vercel is not used. The workers.dev hostname is a separate/legacy Worker endpoint, not the canonical Pages release.
 
-## Cloudflare Pages build settings
+## Cloudflare Pages settings
 
-This repository contains a static browser game. There is no frontend bundler or build output step.
-
-- Root directory: game
-- Build command: leave blank (or use exit 0 if the dashboard requires a command)
-- Build output directory: .
 - Framework preset: None
-- Required build environment variables: None
+- Root directory: game
+- Build command: blank (or exit 0 if the dashboard requires a command)
+- Build output directory: .
+- Required environment variables: none
 
-See game/docs/CLOUDFLARE_PAGES_RELEASE.md before changing deployment settings.
+This repository is a static browser game; game/package.json contains test scripts but no frontend build command. See game/docs/CLOUDFLARE_PAGES_RELEASE.md in the development branch for the full deployment checklist.
 
-## Development checks
+## Development
 
-From the game directory:
+From game/:
 
     npm test
 
-This runs the Node test suite and the JavaScript syntax check. Browser E2E is run separately by GitHub Actions.
-
+GitHub Actions runs the Node/static checks and browser E2E independently.
 ## Project documentation
 
 - game/docs/LITE_CITY_BUILDER_SPEC.md — city-builder systems and staged acceptance criteria.
