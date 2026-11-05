@@ -62,12 +62,18 @@ try{
 
     // A deceased resident remains inspectable as a memorial, not as a live entity.
     const memorialId=await page.evaluate(async()=>{
-        const [{state},{recordNaturalDeath}]=await Promise.all([
+        const [{state},{recordNaturalDeath},{ensurePersonProfile},{Entity,TYPE}]=await Promise.all([
             import("./js/core/state.js"),
-            import("./js/systems/mortality.js")
+            import("./js/systems/mortality.js"),
+            import("./js/systems/people.js"),
+            import("./js/core/types.js").then(module=>({Entity:module.Entity,TYPE:module.TYPE}))
         ]);
-        const resident=state.entities.find(entity=>entity.type==="villager"&&!entity.dead);
-        if(!resident)throw new Error("No living resident available for memorial E2E");
+        // The memorial test must not depend on random population generation.
+        const resident=new Entity(0,0,TYPE.VILLAGER);
+        resident.id="e2e-memorial-resident";
+        resident.personId=resident.id;
+        ensurePersonProfile(resident,{role:"resident",species:"human"});
+        state.entities.push(resident);
         resident.person.species="human";
         resident.person.ageYears=82;
         resident.person.lifeStage="elder";
