@@ -11,7 +11,9 @@ import { TYPE } from '../core/types.js';
 import { state } from '../core/state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 import { isWaterAt } from '../world/world.js';
-import { distance, rand } from '../core/utils.js';
+import { distance } from '../core/utils.js';
+import { rand as seededRand } from '../core/random.js';
+const rand=(min,max)=>seededRand(min,max,"villagers");
 import { BUILDING_WORKFORCE } from '../systems/economy.js';
 
 const MOVING_TYPES = new Set([
