@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 260" role="img" aria-label="Comic fantasy card frame">
+<g stroke="#3c2922" stroke-width="7" stroke-linejoin="round">
+ <path d="M16 5H164Q175 5 175 17V243Q175 255 163 255H17Q5 255 5 243V17Q5 5 16 5Z" fill="none"/>
+ <path d="M20 20H160V240H20Z" fill="none" stroke="#f4d27a" stroke-width="4"/>
+ <path d="M20 20L47 20L20 47ZM160 20L133 20L160 47ZM20 240L47 240L20 213ZM160 240L133 240L160 213Z" fill="#e8a94e"/>
+ <path d="M20 72Q38 57 48 72L20 98ZM160 72Q142 57 132 72L160 98ZM20 188Q38 203 48 188L20 162ZM160 188Q142 203 132 188L160 162Z" fill="#d75b49" stroke="#3c2922" stroke-width="5"/>
+</g>
+<g fill="#f6d477" stroke="#3c2922" stroke-width="3">
+ <circle cx="17" cy="17" r="6"/><circle cx="163" cy="17" r="6"/><circle cx="17" cy="243" r="6"/><circle cx="163" cy="243" r="6"/>
+ <path d="M90 8L96 19L108 21L99 30L101 42L90 36L79 42L81 30L72 21L84 19Z"/>
+ <path d="M90 218L96 229L108 231L99 240L101 252L90 246L79 252L81 240L72 231L84 229Z"/>
+</g>
+<path d="M9 55L15 62M171 55L165 62M9 205L15 198M171 205L165 198" stroke="#fff1b7" stroke-width="4" stroke-linecap="round"/>
+</svg>
