@@ -22,6 +22,8 @@ import {normalizeFamilyLinks} from "../systems/families.js";
 import {normalizeGovernment} from "../systems/government.js";
 import {normalizeRoyalState} from "../systems/royal-dynasty.js";
 import {setupManagementUI} from "../presentation/management-ui.js";
+import {serializeRoads,restoreRoads} from "../systems/roads.js";
+import {setupBuildUI} from "../presentation/build-ui.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -119,6 +121,7 @@ function createSaveSnapshot(){
         hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),health:JSON.parse(JSON.stringify(state.health||{})),
         camera:{...state.camera},zoom:state.zoom,
         explored:state.explored.map(column=>column.map(Boolean)),
+        roads:serializeRoads(),
         tick:state.tick,year:state.year,dayOfYear:state.dayOfYear,seasonIndex:state.seasonIndex,gameSpeed:state.gameSpeed,
         morale:state.morale,resources:{...state.resources},incomeThisTick:{...state.incomeThisTick},
         kingHp:state.kingHp,totalRaidsSurvived:state.totalRaidsSurvived,raidActive:state.raidActive,
@@ -171,6 +174,10 @@ function validateSaveSnapshot(snapshot){
             throw new Error("Save data contains an invalid "+key+" resource balance.");
         }
     }
+    if(snapshot.roads!==undefined){
+        if(!snapshot.roads||typeof snapshot.roads!=="object"||snapshot.roads.version!==1||!snapshot.roads.tiles||typeof snapshot.roads.tiles!=="object"||Object.keys(snapshot.roads.tiles).length>5000)throw new Error("Save data contains an invalid road network.");
+        for(const [key,tile] of Object.entries(snapshot.roads.tiles)){if(!/^\d+:\d+$/.test(key)||!tile||!["dirt","gravel","paved"].includes(tile.type))throw new Error("Save data contains an invalid road tile.");}
+    }
     if(snapshot.hand!==undefined&&(!Array.isArray(snapshot.hand)||snapshot.hand.length>5)){
         throw new Error("Save data contains an invalid card hand.");
     }
@@ -183,6 +190,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.worldSeed=snapshot.worldSeed||randomSeed();
     state.worldOptions=snapshot.worldOptions||{landmass:50,ruggedness:55,forests:52,water:48};
     initWorld(state.worldSeed,state.worldOptions);
+    restoreRoads(snapshot.roads);
     state.entities=[];
     const restored=[];
     for(const dto of snapshot.entities||[]){
@@ -238,7 +246,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.availableCards=Array.isArray(snapshot.availableCards)
         ? snapshot.availableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [];
-    state.statistics={totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,...snapshot.statistics};
+    state.statistics={totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,totalRoadTilesBuilt:0,...snapshot.statistics};
     state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,births:0,lastBirthCheckYear:state.year,lastSocialYear:state.year,lastAgencyYear:state.year,deaths:0,lastMortalityYear:state.year,lastLedger:null,...snapshot.economy};
     const growthYear=state.economy.lastGrowthYear;
     state.economy.lastGrowthYear=Number.isFinite(growthYear)?Math.max(1,Math.min(state.year,Math.floor(growthYear))):state.year;
@@ -366,6 +374,7 @@ function init(){
     setupInput();
     setupCharacterDossier();
     setupManagementUI();
+setupBuildUI();
     document.getElementById("command-chronicles-btn")?.addEventListener("click",()=>document.getElementById("people-btn")?.click());
     bindMenu();
     applySoundtrackSettings(settings);

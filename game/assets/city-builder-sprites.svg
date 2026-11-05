@@ -87,4 +87,9 @@
     <path d="M5 42Q20 34 26 12L42 10Q39 32 58 48L53 57Q28 43 18 58Z" fill="#89908b" stroke="#3b2921" stroke-width="4" stroke-linejoin="round"/>
     <path d="m18 42 8-8 9 5-7 9Zm12-20 8-6 7 7-9 6Zm12 18 8 3-2 8-8-5Z" fill="#d3d2c4" stroke="#4a4b45" stroke-width="2"/>
   </symbol>
+  <symbol id="gravel-road" viewBox="0 0 64 64">
+    <path d="M5 42Q20 34 26 12L42 10Q39 32 58 48L53 57Q28 43 18 58Z" fill="#a9a79a" stroke="#3b2921" stroke-width="4" stroke-linejoin="round"/>
+    <path d="m13 43 8-5 6 5-8 6Zm14-18 8-7 7 6-8 7Zm9 21 8-5 7 7-8 6Z" fill="#e0ded0" stroke="#5b5a52" stroke-width="2"/>
+    <path d="m25 33 4-3m10 9 4-3" stroke="#f8e9c5" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
 </svg>

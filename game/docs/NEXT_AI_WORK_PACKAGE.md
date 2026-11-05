@@ -5,14 +5,15 @@ This is a handoff brief for another contributor or AI session. It is written to 
 ## Repository and safety rules
 
 - Repository: `Dulle1846/ulmweb`
-- Current development branch: `kac-2.1-stability-performance`
-- Production branch: `ulmweb-branch`
-- Current work is tracked in Draft PR #6: https://github.com/Dulle1846/ulmweb/pull/6
+- Current development branch: `kac-3.3-lite-city-builder-roads`
+- Current work is tracked in Draft PR #27: https://github.com/Dulle1846/ulmweb/pull/27
+- Production branch: `ulmweb-branch` (PR #6 stability and PRs #24/#26 3.2 release are already merged)
+- The current PR is based directly on the latest production baseline. Do not merge until the exact PR head passes Game Quality, Kings & Cards 2.1 checks and Browser E2E.
 - Game root: `game/`
 - Player-facing game text: English. Conversation and explanations to the user: German.
 - Do not merge PR #6 or deploy to production without explicit user approval.
 - Cloudflare Pages is the intended production host. Do not use Vercel builds, previews or deployments.
-- The Vercel GitHub App access was not removed because GitHub required a fresh sudo-mode confirmation. Do not attempt to bypass this. The user can re-authenticate and remove only the repository's Vercel app access.
+- Vercel is not the production host. The current GitHub App installation/removal state has not been re-verified; do not attempt to bypass GitHub's sudo-mode confirmation. Cloudflare Pages and the legacy workers.dev Worker are separate targets.
 - Keep saves browser-local. Do not invent a cloud account or cloud-save layer.
 - World generation remains procedural and controlled by the seed and world-forge settings. Do not replace the player's existing card hand with world-generation cards.
 - Make small, coherent commits. Run `cd game && npm test`, inspect GitHub Actions and browser-test affected interactions.
@@ -34,7 +35,7 @@ This is a handoff brief for another contributor or AI session. It is written to 
 - A* fallback pathfinding with route caching, rendering and presentation-effect caps, entity caps and performance safeguards.
 - Browser-local profiles and saves with migration/default handling.
 
-## Current development slice: public health
+## Earlier implementation slice: public health (historical baseline)
 
 The first public-health implementation lives in `game/js/systems/health.js`.
 
@@ -412,9 +413,9 @@ Safety/limits:
 - Guardianship is a social-care link, not a change of legal parentage.
 
 
-## Phase 3.1 — strategy management, royal dynasty and living dragons
+## Phase 3.1/3.2 — strategy management, royal dynasty and living dragons
 
-Branch: `kac-3.1-royal-government-visual-overhaul`. Draft PR is the integration target for the complete 2.7–3.1 stack.
+The strategy/dynasty/creature management foundation is now part of the merged 3.2 production baseline (PRs #24/#26). Its known preservation gaps remain tracked in `BRANCH_CONSOLIDATION_AUDIT.md`.
 
 Implemented:
 - Strategy command deck and responsive comic-style management modal: Government, Politics, Decisions, Cards, Economy, Dynasty, Creatures and Chronicles.
@@ -448,3 +449,30 @@ Limits:
 - Royal inheritance is not yet an estate/property distribution system.
 - New art is lightweight SVG/vector art. Do not add gigabytes of raw assets; grow visual content through compressed sprite atlases, vector emblems, procedural variations and data-driven story packs.
 - No merge or production deployment has been performed. Cloudflare Pages remains the intended production host; Vercel is not part of this work.
+
+## Current Phase 3.3 — playable road network (Draft PR #27)
+
+Branch: `kac-3.3-lite-city-builder-roads`.
+
+Implemented in the current candidate:
+- Dirt, gravel and paved road tiers with incremental resource costs, upgrades and partial refunds.
+- Placement validation for bounds, unexplored tiles, deep water and building footprints.
+- Mouse/touch click-and-drag road painting and a visible cancel control (Escape).
+- World rendering for road corridors, junctions and intersections.
+- Road-quality movement modifiers and A* route costs; route caches invalidate when the road revision changes.
+- Versioned road save data, validation and restoration with rollback protection.
+- Unit tests for costs, upgrades, removal, bounds, water, building collision, serialization and A* preference.
+- Browser E2E for road-menu selection, map click, drag painting, Escape cancellation and save/load round-trip.
+
+The first Browser E2E run exposed a double-escaped numeric-coordinate regex in save validation. It was corrected; the following exact head `283bf1b16e7ad63b7ddaa94620c199bf4a52499d` passed all three workflows:
+- Game Quality
+- Kings & Cards 2.1 checks
+- Game Browser E2E
+
+The branch has since received further drag and A* corridor regression coverage plus audit-document corrections. Always inspect the newest PR #27 head and its workflow runs; the previous green SHA does not certify later commits.
+
+Scope deliberately not yet implemented: warehouses, physical hauling jobs, production chains, crop seasons, housing tiers, household needs, service radii and immigration gates. Follow the delivery gates in `LITE_CITY_BUILDER_SPEC.md`.
+
+## External AI review protocol for this phase
+
+Use one external coding agent at a time. Give it the current branch and this handoff document. Ask for a read-only review first; do not allow it to merge, deploy, rewrite the save schema or replace core modules wholesale. Any proposed change must arrive as a separate PR or patch with exact tests and a list of files changed.

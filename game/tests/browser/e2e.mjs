@@ -49,6 +49,78 @@ try{
     assert.ok(await page.locator("#speed-0-5").evaluate(el=>el.classList.contains("is-active")),"half-speed control must become active");
     await page.locator("#speed-1").click();
 
+    // The construction menu must place visible road tiles through normal map input.
+    await page.locator("#build-open-btn").click();
+    assert.ok(await page.locator("#build-modal").isVisible(),"construction dialog must open");
+    assert.equal(await page.locator("[data-road-type]").count(),3,"all three road tiers must be available");
+    await page.locator('[data-road-type="dirt"]').click();
+    assert.ok(await page.locator("#build-modal").evaluate(el=>el.classList.contains("hidden")),"choosing a road must return to the map");
+    assert.ok(await page.locator("#road-build-cancel").isVisible(),"road mode must expose a clear exit control");
+    const roadFixture=await page.evaluate(async()=>{
+        const [{state},{isWaterAt},{BUILDING_SIZE}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/world/world.js"),import("./js/core/config.js")
+        ]);
+        const rect=document.querySelector("#canvas").getBoundingClientRect();
+        for(let radius=3;radius<18;radius++){
+            for(let x=80-radius;x<=80+radius;x++){
+                for(let y=80-radius;y<=80+radius;y++){
+                    if(x<0||y<0||x>=160||y>=160||!state.explored?.[x]?.[y]||isWaterAt(x+.5,y+.5))continue;
+                    const occupied=state.entities.some(entity=>{
+                        if(entity.dead||!entity.isBuilding?.())return false;
+                        const size=BUILDING_SIZE[entity.type]||{w:1,h:1};
+                        const scale=Math.max(.25,Math.min(6,Number(entity.footprintScale)||1));
+                        return Math.abs(x+.5-(entity.x+.5))<size.w*scale/2&&Math.abs(y+.5-(entity.y+.5))<size.h*scale/2;
+                    });
+                    if(occupied)continue;
+                    const screenX=(x+.5)*48*state.zoom-state.camera.x+rect.left;
+                    const screenY=(y+.5)*48*state.zoom-state.camera.y+rect.top;
+                    if(screenX<rect.left+4||screenX>rect.right-4||screenY<rect.top+4||screenY>rect.bottom-4)continue;
+                    return {x,y,screenX,screenY};
+                }
+            }
+        }
+        throw new Error("No explored, dry and unoccupied road test tile is visible");
+    });
+    await page.mouse.click(roadFixture.screenX,roadFixture.screenY);
+    assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y)?.type,{x:roadFixture.x,y:roadFixture.y}),"dirt","map click must create a persistent road tile");
+    const roadDragTarget=await page.evaluate(async({x,y})=>{
+        const [{state},{isWaterAt},{BUILDING_SIZE},{getRoadAt}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/world/world.js"),import("./js/core/config.js"),import("./js/systems/roads.js")
+        ]);
+        const rect=document.querySelector("#canvas").getBoundingClientRect();
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+            const tx=x+dx,ty=y+dy;
+            if(tx<0||ty<0||tx>=160||ty>=160||!state.explored?.[tx]?.[ty]||isWaterAt(tx+.5,ty+.5)||getRoadAt(tx,ty))continue;
+            const occupied=state.entities.some(entity=>{
+                if(entity.dead||!entity.isBuilding?.())return false;
+                const size=BUILDING_SIZE[entity.type]||{w:1,h:1};
+                const scale=Math.max(.25,Math.min(6,Number(entity.footprintScale)||1));
+                return Math.abs(tx+.5-(entity.x+.5))<size.w*scale/2&&Math.abs(ty+.5-(entity.y+.5))<size.h*scale/2;
+            });
+            if(occupied)continue;
+            const screenX=(tx+.5)*48*state.zoom-state.camera.x+rect.left;
+            const screenY=(ty+.5)*48*state.zoom-state.camera.y+rect.top;
+            if(screenX<rect.left+4||screenX>rect.right-4||screenY<rect.top+4||screenY>rect.bottom-4)continue;
+            return {x:tx,y:ty,screenX,screenY};
+        }
+        throw new Error("No adjacent road drag target is available");
+    },{x:roadFixture.x,y:roadFixture.y});
+    await page.mouse.move(roadFixture.screenX,roadFixture.screenY);
+    await page.mouse.down();
+    await page.mouse.move(roadDragTarget.screenX,roadDragTarget.screenY,{steps:6});
+    await page.mouse.up();
+    assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y)?.type,{x:roadDragTarget.x,y:roadDragTarget.y}),"dirt","dragging across the map must place the next road tile");
+    await page.keyboard.press("Escape");
+    assert.ok(await page.locator("#road-build-cancel").evaluate(el=>el.classList.contains("hidden")),"Escape must leave road build mode");
+
+    // Demolition is an explicit build mode and returns part of the materials.
+    await page.locator("#build-open-btn").click();
+    await page.locator("[data-road-remove]").click();
+    assert.ok(await page.locator("#road-build-cancel").isVisible(),"bulldoze mode must expose the exit control");
+    await page.mouse.click(roadDragTarget.screenX,roadDragTarget.screenY);
+    assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y),{x:roadDragTarget.x,y:roadDragTarget.y}),null,"bulldozing must remove the selected road tile");
+    await page.keyboard.press("Escape");
+
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
@@ -263,15 +335,25 @@ try{
     await page.locator("#speed-2").click();
     const savedTick=(await page.locator("#tick-count").innerText()).trim();
     const savedHand=(await page.locator("#hand-count").innerText()).trim();
+    const savedRoadCount=await page.evaluate(()=>(import("./js/systems/roads.js")).then(module=>module.getRoadCount()));
     await page.locator("#save-btn").click();
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Realm saved"),null,{timeout:5000});
+    await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).removeRoad(x,y),{x:roadFixture.x,y:roadFixture.y});
+    assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y),{x:roadFixture.x,y:roadFixture.y}),null,"road mutation after save should be visible before loading");
     await page.locator("#speed-4").click();
     await page.locator("#load-btn").click();
-    await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Loaded realm"),null,{timeout:5000});
+    await page.waitForFunction(()=>{
+        const message=document.querySelector("#status-message")?.textContent||"";
+        return message.includes("Loaded realm")||message.includes("Load failed")||message.includes("No valid saved realm");
+    },null,{timeout:5000});
+    const loadStatus=(await page.locator("#status-message").innerText()).trim();
+    assert.ok(loadStatus.includes("Loaded realm"),"load must succeed; actual status: "+loadStatus);
     assert.ok(await page.locator("#speed-2").evaluate(el=>el.classList.contains("is-active")),"save/load must restore the saved simulation speed");
     assert.equal(await page.locator("#speed-4").evaluate(el=>el.classList.contains("is-active")),false,"load must clear the previous speed selection");
     assert.equal((await page.locator("#tick-count").innerText()).trim(),savedTick,"save/load must restore the exact simulation tick");
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
+    assert.equal(await page.evaluate(async()=>(await import("./js/systems/roads.js")).getRoadCount()),savedRoadCount,"save/load must restore the road network");
+    assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y)?.type,{x:roadFixture.x,y:roadFixture.y}),"dirt","save/load must restore the placed road tile");
     // The memorial archive must survive the same save/load round trip.
     await page.locator("#people-btn").click();
     await page.locator("#people-search").fill(memorialId);
