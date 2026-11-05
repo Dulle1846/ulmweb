@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const root=new URL("../../",import.meta.url);
-const [dossier,styles]=await Promise.all([
+const [dossier,styles,heraldry]=await Promise.all([
   readFile(new URL("js/presentation/character-dossier.js",root),"utf8"),
-  readFile(new URL("css/sovereign-dossier.css",root),"utf8")
+  readFile(new URL("css/sovereign-dossier.css",root),"utf8"),
+  readFile(new URL("assets/royal-heraldry.svg",root),"utf8")
 ]);
 
 test("living sovereign receives a dedicated dossier backed by the royal-house model",()=>{
@@ -44,4 +45,13 @@ test("sovereign styling is local, responsive and respects reduced motion",()=>{
   assert.ok(styles.includes("@media(max-width:720px)"));
   assert.ok(styles.includes("@media(prefers-reduced-motion:reduce)"));
   assert.ok(!styles.includes("http://")&&!styles.includes("https://"));
+});
+
+
+test("royal heraldry uses eight original local symbols and a stable dynasty mapping",()=>{
+  for(let i=1;i<=8;i++)assert.ok(heraldry.includes('id="crest-'+String(i).padStart(2,"0")+'"'));
+  assert.ok(dossier.includes("function royalCrestId(name)"));
+  assert.ok(dossier.includes("assets/royal-heraldry.svg#"));
+  assert.ok(styles.includes(".royal-dossier__crest"));
+  assert.ok(!heraldry.includes("http://")&&!heraldry.includes("https://"));
 });
