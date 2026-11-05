@@ -1,4 +1,4 @@
-// Procedural card library: 500 categories, 500,000 on-demand variants.
+// Procedural card library: 501 categories, 501,000 on-demand variants.
 import { TYPE } from "../core/types.js";
 
 const GROUPS = {
@@ -40,7 +40,7 @@ const GROUPS = {
  music:["minstrels","lute-makers","choir-schools","drum-circles","court-composers","street-performers","bell-founders","dance-masters","harpists","festival-bards"],
  warfare:["war-camps","supply-trains","siege-towers","scouting-parties","veteran-companies","crossbow-bands","shield-walls","battle-plans","field-surgeons","war-horses"],
  politics:["council-seats","election-charters","royal-councils","provincial-governors","petitioners","reformers","faction-houses","seneschals","stewardships","public-assemblies"],
- monsters:["dragons","wyverns","trolls","giant-spiders","cave-bears","wargs","basilisks","giant-boars","marsh-wights","stone-guardians"],
+ monsters:["dragons","griffins","wyverns","trolls","giant-spiders","cave-bears","wargs","basilisks","giant-boars","marsh-wights","stone-guardians"],
  seasons:["spring-thaw","summer-fair","autumn-muster","winter-stores","first-frost","harvest-moon","long-rains","midsummer-bonfire","snowbound-road","early-blossom"],
  weather:["thunderstorms","soft-rains","heat-waves","hailstorms","fog-banks","frost-fields","wind-gusts","rainbows","drought-winds","snowfall"],
  underworld:["smugglers","poachers","thieves-guilds","secret-tunnels","black-markets","fence-networks","night-watchers","masked-strangers","hidden-cellars","outlaw-camps"],
