@@ -117,3 +117,10 @@ test("a new outbreak can begin after the prior outbreak has no active cases",()=
     assert.equal(result.cases,2);
     assert.equal(result.disease,"red-fever");
 });
+
+test("health snapshots normalize in place without replacing authoritative state",()=>{
+    setup();
+    const original=state.health;
+    getHealthSnapshot();
+    assert.strictEqual(state.health,original);
+});
