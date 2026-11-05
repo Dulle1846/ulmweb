@@ -216,6 +216,18 @@ Verified GitHub Actions for that exact head:
 - Kings & Cards 2.1 checks: [run 41998125860](https://github.com/Dulle1846/ulmweb/actions/runs/41998125860) — successful.
 - Game Browser E2E: [run 41998125548](https://github.com/Dulle1846/ulmweb/actions/runs/41998125548) — successful; Chromium smoke coverage includes world forge, seed, card hand, real drag placement, settings, pause/resume and save/load, with no page errors.
 
-These checks verify the inherited game flows and the family graph unit tests. The browser E2E does not yet exercise a dedicated family-tree UI because that UI is not part of this slice. The documentation-only commit that follows must receive its own final CI confirmation before this head is treated as the final PR verification.
+These checks verify the inherited game flows and the family graph unit tests. The browser E2E does not yet exercise a dedicated family-tree UI because that UI is not part of this slice. The documentation refresh was also checked on the final PR head below.
 
 Do not merge or deploy without explicit user approval.
+
+
+## Final PR verification — 2026-11-05
+
+Final documented head: `e0e2295ae71f990183103b43b1f9e048ebd4a020`.
+
+All three GitHub Actions workflows completed successfully for this exact head:
+- [Game Quality — run 41998323162](https://github.com/Dulle1846/ulmweb/actions/runs/41998323162): **141/141 tests passed**, 0 failed; syntax/import checks passed for 42 source files, 77 UI references and local HTML assets.
+- [Kings & Cards 2.1 checks — run 41998323175](https://github.com/Dulle1846/ulmweb/actions/runs/41998323175): successful.
+- [Game Browser E2E — run 41998323446](https://github.com/Dulle1846/ulmweb/actions/runs/41998323446): successful; Chromium smoke test confirmed world forge, seed, hand, real card drag placement, settings, pause/resume and save/load without page errors.
+
+The E2E test covers the existing game flow, not a family-tree UI. The family graph itself is covered by the Node test suite. No merge or deployment was performed.
