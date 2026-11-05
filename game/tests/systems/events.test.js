@@ -116,3 +116,14 @@ test("realm issue decisions alter legitimacy and the affected social faction",()
     assert.equal(state.politics.factions.commons,before.commons+1);
     assert.equal(state.politics.legitimacy,legitimacy+1);
 });
+
+test("resolving a realm issue writes memories for its named participants",()=>{
+    state.worldSeed=902;initStartingKingdom();
+    const issue=triggerRandomEvent();
+    assert.ok(issue);
+    assert.ok(issue.participants.length>=2);
+    const participantIds=issue.participants.map(item=>item.personId);
+    const participantEntities=state.entities.filter(entity=>participantIds.includes(entity.personId));
+    assert.equal(resolveEventChoice(0),true);
+    assert.ok(participantEntities.every(entity=>entity.person.memories.some(memory=>memory.id.startsWith("event:"+issue.id+":"))));
+});
