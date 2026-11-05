@@ -20,7 +20,7 @@ function prepareCampaign(){
     state.terrainPixH=WORLD_H;
     state.heightMap=new Float32Array(WORLD_W*WORLD_H).fill(0.5);
     state.moistureMap=new Float32Array(WORLD_W*WORLD_H).fill(0.5);
-    state.explored=Array.from({length:WORLD_W},()=>Array(H).fill(false));
+    state.explored=Array.from({length:WORLD_W},()=>Array(WORLD_H).fill(false));
     const homes=[];
     for(let i=0;i<8;i++)homes.push(spawnEntity(20+i*4,20,TYPE.HOUSE));
     const farms=[];
