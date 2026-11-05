@@ -60,8 +60,8 @@ export function normalizePersonProfile(saved,entity,{role="resident"}={}){
         goals:Array.isArray(saved.goals)?saved.goals.filter(x=>typeof x==="string").slice(0,8):[],
         memories:list(saved.memories,24),relationships:list(saved.relationships,32),
         secrets:Array.isArray(saved.secrets)?saved.secrets.filter(x=>typeof x==="string").slice(0,12):[],
-        bornAtYear:Math.max(1,Math.floor(clamp(saved.bornAtYear,1))),
-        createdAtTick:Math.max(0,Math.floor(clamp(saved.createdAtTick,0)))
+        bornAtYear:Number.isSafeInteger(saved.bornAtYear)?Math.max(1,Math.min(1000000,saved.bornAtYear)):1,
+        createdAtTick:Number.isSafeInteger(saved.createdAtTick)?Math.max(0,saved.createdAtTick):0
     };
 }
 export function ensurePersonProfile(entity,options={}){
