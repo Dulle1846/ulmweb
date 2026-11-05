@@ -212,3 +212,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Each roster item exposes its actual role, species and archive status as data attributes for accessible filtering and testability.
 - Added compact responsive filter styling, static contracts and Chromium E2E checks for role and living-person filtering.
 - Portrait variation beyond the existing seven archetypes and the full sovereign dossier remain open.
+
+
+## Phase 5 — administration navigation semantics (quality increment)
+
+- Changed the active royal administration item from toggle-button semantics (`aria-pressed`) to current-page semantics (`aria-current="page"`). The control remains a native button so it is still keyboard-operable.
+- Inactive navigation items remove the current-page attribute; only the currently selected section is announced as current.
+- Added a static contract covering all twelve navigation destinations and rejecting the previous toggle semantics.
+- Added a Chromium E2E check that focuses the Economy navigation item, activates it with Enter, verifies the real Economy screen opens, and checks the accessible current-page state.
+- This is a targeted accessibility correction, not a complete keyboard or screen-reader audit. The broader Phase 5 checklist remains open.

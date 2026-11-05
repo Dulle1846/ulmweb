@@ -244,3 +244,13 @@ test("character roster filters are data-driven and expose living, role and speci
  assert.ok(dossier.includes('data-person-species='));
  assert.ok(css.includes(".people-filter-grid"));
 });
+
+
+test("royal administration navigation exposes current-page semantics, not toggle semantics",()=>{
+  assert.ok(management.includes('button.setAttribute("aria-current","page")'));
+  assert.ok(management.includes('button.removeAttribute("aria-current")'));
+  assert.ok(!management.includes('button.setAttribute("aria-pressed"'),"navigation links must not be announced as toggle buttons");
+  for(const target of ["kingdom","government","people","dynasty","chronicle","politics","economy","buildings","cards","creatures","build","settings"]){
+    assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing navigation target "+target);
+  }
+});

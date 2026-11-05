@@ -26,7 +26,8 @@ function setNavigationActive(target){
  document.querySelectorAll(".realm-nav-button").forEach(button=>{
   const active=button.dataset.kacPanel===target;
   button.classList.toggle("is-active",active);
-  button.setAttribute("aria-pressed",String(active));
+  if(active)button.setAttribute("aria-current","page");
+  else button.removeAttribute("aria-current");
  });
 }
 function toast(message){const el=$("action-toast");if(!el)return;el.textContent=message;el.classList.add("is-visible");setTimeout(()=>el.classList.remove("is-visible"),1800);}

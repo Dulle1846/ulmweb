@@ -61,6 +61,17 @@ try{
     assert.ok(await page.locator("#speed-0-5").evaluate(el=>el.classList.contains("is-active")),"half-speed control must become active");
     await page.locator("#speed-1").click();
 
+    // Primary navigation must be operable by keyboard and expose the current page semantically.
+    const economyNav=page.locator('.realm-nav-button[data-kac-panel="economy"]');
+    await economyNav.focus();
+    assert.equal(await economyNav.evaluate(el=>document.activeElement===el),true,"administration navigation must be keyboard focusable");
+    await page.keyboard.press("Enter");
+    assert.equal(await economyNav.getAttribute("aria-current"),"page","the selected navigation item must expose aria-current=page");
+    assert.equal(await economyNav.getAttribute("aria-pressed"),null,"navigation must not be announced as a toggle button");
+    assert.ok(await page.locator("#command-modal").isVisible(),"keyboard activation must open the selected management screen");
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Realm economy"),"keyboard activation must open the requested screen, not only change decoration");
+    await page.locator("#command-close").click();
+
     // Phase 2 quick actions must open real game screens, not decorative controls.
     assert.ok(await page.locator("#realm-action-dock").isVisible(),"contextual action dock must be visible during a campaign");
     const globalDock=await page.locator("#realm-action-dock").evaluate(el=>({width:el.getBoundingClientRect().width,parent:el.parentElement.className,position:el.getBoundingClientRect().top}));
