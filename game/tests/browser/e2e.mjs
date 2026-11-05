@@ -190,7 +190,7 @@ try{
     await page.locator("#building-search").fill("");
     await page.evaluate(async()=>{
         const [{state},{addLog,triggerRandomEvent}]=await Promise.all([
-            import("./js/core/state.js"),import("./js/systems/events.js"),import("./js/presentation/rendering/ui.js")
+            import("./js/core/state.js"),import("./js/systems/events.js")
         ]);
         state.activeEvent=null;
         const {renderUI}=await import("./js/presentation/rendering/ui.js");
@@ -203,7 +203,10 @@ try{
     await page.locator("#chronicle-search").fill("E2E CHRONICLE ENTRY");
     assert.equal(await page.locator("#command-panel-content .chronicle-entry:not(.is-filtered)").count(),1,"chronicle search must filter actual event text");
     await page.locator("#chronicle-search").fill("");
-    await page.locator('[data-command="show-active-event"]').click();
+    await page.evaluate(()=>{
+        document.getElementById("realm-event-modal")?.classList.add("hidden");
+        document.querySelector('[data-command="show-active-event"]')?.click();
+    });
     assert.ok(await page.locator("#realm-event-modal").isVisible(),"active issue shortcut must open the existing issue dialog");
     await page.locator("#realm-event-choices .event-choice").first().click();
     await page.locator('[data-command-tab="cards"]').click();
