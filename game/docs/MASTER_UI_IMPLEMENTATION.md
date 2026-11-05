@@ -245,3 +245,12 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added a contained vertical scroll region to the mobile side panel while keeping resource, card, tab and footer sections at their natural minimum sizes.
 - Chromium E2E now verifies that the side panel has overflow content and that scrolling reaches it at both 390×844 and 768×1024.
 - This preserves the fixed game shell and bottom action bar; it does not introduce document-level scrolling or alter simulation behavior.
+
+
+## Phase 2 — explicit descendant relationship connectors
+
+- Replaced the flattened generation grid with a nested descendant graph.
+- Each branch is built only from explicit getFamilySnapshot(parentId).children links and carries its actual parent ID.
+- Added visible vertical and horizontal connector lines, bounded to four descendant generations, 16 children per parent and 80 total nodes to protect layout and memory.
+- Added a deterministic browser fixture with an actual linked heir; Chromium verifies the rendered branch IDs against the authoritative family snapshot.
+- Ancestor, sibling and cousin groups remain separately labeled and verified; a fully unified multi-parent graph with cross-links is still outstanding.
