@@ -51,7 +51,7 @@ export function getEligibleRoyalConsorts() {
         if (isCloseRelative(king.personId, entity.personId)) return false;
         const existing = person.kinship.partners.some(link => ["partner", "married"].includes(link.status));
         return !existing;
-    }).sort((a, b) => a.person.name.localeCompare(b.person.name));
+    }).map(({ entity }) => entity).sort((a, b) => a.person.name.localeCompare(b.person.name));
 }
 
 export function appointRoyalConsort(personId) {
