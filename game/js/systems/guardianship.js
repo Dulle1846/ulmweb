@@ -58,12 +58,15 @@ function relationshipEvidence(candidate, orphan) {
         return memorial?.person?.relationships || [];
     });
     const parentRelation = parentRelations.find(item => item.targetId === candidateId);
-    const relation = orphanRelation || candidateRelation || parentRelation;
-    if (!relation) return null;
-    const trust = Math.max(0, Math.min(100, Number(relation.trust) || 0));
-    const affinity = Math.max(0, Math.min(100, Number(relation.affinity) || 0));
-    if (trust < MIN_GUARDIAN_TRUST || affinity < MIN_GUARDIAN_AFFINITY) return null;
-    return { trust, affinity };
+    const qualifying = [orphanRelation, candidateRelation, ...parentRelations]
+        .filter(Boolean)
+        .map(relation => ({
+            trust: Math.max(0, Math.min(100, Number(relation.trust) || 0)),
+            affinity: Math.max(0, Math.min(100, Number(relation.affinity) || 0))
+        }))
+        .filter(relation => relation.trust >= MIN_GUARDIAN_TRUST && relation.affinity >= MIN_GUARDIAN_AFFINITY)
+        .sort((a, b) => (b.trust + b.affinity) - (a.trust + a.affinity));
+    return qualifying[0] || null;
 }
 
 function candidateScore(candidate, orphan, household) {
