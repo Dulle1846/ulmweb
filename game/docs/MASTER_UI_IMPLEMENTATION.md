@@ -229,3 +229,11 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Screenshots are written to the runner's temporary directory, not committed to the game repository.
 - The browser workflow uploads the screenshot set as the kings-and-cards-ui-viewport-review artifact for seven days, including on failed test runs when files were produced.
 - These screenshots create review evidence; they do not replace a human visual inspection. Other overlays, map layers, contrast and screen-reader review remain outstanding.
+
+
+## Phase 5 — mobile command-bar overflow correction
+
+- Screenshot review of the seven-viewport artifact exposed clipped right-hand controls in the 390px layout; the previous checks covered document width and modal geometry but not each header action.
+- The header action group now wraps on narrow viewports so Save, Load, Build, Management, Settings, Pause and speed controls remain within the viewport.
+- Chromium E2E now checks the action-row bounds, its scroll/client width and every direct control at all seven viewport sizes.
+- This closes the observed header-clipping defect only; it does not certify the rest of the mobile layout or complete the broader accessibility/visual audit.
