@@ -690,9 +690,13 @@ try{
                 await page.waitForFunction(()=>[...document.querySelectorAll(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling")].some(path=>path.getAttribute("d")?.length>0),null,{timeout:5000});
                 const mobileConnector=await page.evaluate(()=>{
                     const path=document.querySelector(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling");
-                    return path?{d:path.getAttribute("d"),stroke:getComputedStyle(path).stroke,opacity:getComputedStyle(path).opacity}:null;
+                    if(!path)return null;
+                    const d=path.getAttribute("d")||"";
+                    const numbers=(d.match(/-?\\d+(?:\\.\\d+)?/g)||[]).map(Number);
+                    return {d,startY:numbers[1],endY:numbers[7],stroke:getComputedStyle(path).stroke,opacity:getComputedStyle(path).opacity};
                 });
                 assert.ok(mobileConnector?.d?.includes("C"),"mobile dynasty must draw a curved partner/sibling connector");
+                assert.ok(mobileConnector.endY>mobileConnector.startY,"stacked mobile relationship connector must run vertically between cards");
                 assert.notEqual(mobileConnector.stroke,"none","mobile dynasty connector must remain visible");
                 assert.ok(Number(mobileConnector.opacity)>0,"mobile dynasty connector must not be transparent");
             }
