@@ -23,6 +23,7 @@ import {normalizeRoyalHouse} from "../systems/royal-dynasty.js";
 import {setupRoyalCourt} from "../presentation/royal-court.js";
 import {normalizeGovernment} from "../systems/government.js";
 import {setupRealmManagement} from "../presentation/realm-management.js";
+import {normalizeCreatureProfile,normalizeCreatureArchive} from "../systems/creatures.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -108,7 +109,7 @@ function serializeEntity(entity,indexByEntity){
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
         routinePhase:entity.routinePhase,routineTimer:entity.routineTimer,movePause:entity.movePause,
         job:entity.job,jobRefreshTimer:entity.jobRefreshTimer,workplaceIndex:entity.workplace?indexByEntity.get(entity.workplace)??null:null,
-        isKing:entity.isKing,isRoyal:entity.isRoyal,isRoyalConsort:entity.isRoyalConsort,isRoyalHeir:entity.isRoyalHeir,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
+        isKing:entity.isKing,isRoyal:entity.isRoyal,isRoyalConsort:entity.isRoyalConsort,isRoyalHeir:entity.isRoyalHeir,creature:entity.creature?JSON.parse(JSON.stringify(entity.creature)):null,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
     };
 }
 
@@ -130,6 +131,7 @@ function createSaveSnapshot(){
         personArchive:(state.personArchive||[]).map(entry=>JSON.parse(JSON.stringify(entry))).slice(-MAX_PERSON_ARCHIVE),
         royalHouse:JSON.parse(JSON.stringify(state.royalHouse||{})),
         government:JSON.parse(JSON.stringify(state.government||{})),
+        creatureArchive:JSON.parse(JSON.stringify(state.creatureArchive||[])),
         hand:state.hand.map(card=>({...card,cost:{...card.cost}})),
         cardRewardQueue:(state.cardRewardQueue||[]).map(card=>({...card,cost:{...card.cost}})),
         selectedCardInstanceId:state.selectedCardInstanceId,
@@ -173,7 +175,7 @@ function loadSnapshotIntoGame(profile,snapshot){
             illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
             routinePhase:dto.routinePhase??4,routineTimer:dto.routineTimer??30,movePause:dto.movePause||0,
-            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),isRoyal:Boolean(dto.isRoyal),isRoyalConsort:Boolean(dto.isRoyalConsort),isRoyalHeir:Boolean(dto.isRoyalHeir),moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
+            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),isRoyal:Boolean(dto.isRoyal),isRoyalConsort:Boolean(dto.isRoyalConsort),isRoyalHeir:Boolean(dto.isRoyalHeir),creature:dto.creature&&typeof dto.creature==="object"?dto.creature:null,moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
         });
         restored.push(entity);
     }
@@ -181,12 +183,13 @@ function loadSnapshotIntoGame(profile,snapshot){
         if(Number.isInteger(dto.workplaceIndex)&&restored[dto.workplaceIndex]&&restored[index])restored[index].workplace=restored[dto.workplaceIndex];
     });
     state.tick=snapshot.tick||0;state.year=snapshot.year||1;state.dayOfYear=snapshot.dayOfYear||0;
+    state.creatureArchive=normalizeCreatureArchive(snapshot.creatureArchive);
     state.personArchive=Array.isArray(snapshot.personArchive)
         ? snapshot.personArchive.map(normalizePersonMemorial).filter(Boolean).slice(-MAX_PERSON_ARCHIVE)
         : [];
     restoreRandomStreams(snapshot.randomStreams);
     state.nextEntityId=Math.max(1,Number.isSafeInteger(snapshot.nextEntityId)?snapshot.nextEntityId:restored.length+1);
-    for(let index=0;index<restored.length;index++){const entity=restored[index];if(!entity)continue;if(typeof entity.id!=="string")entity.id="e"+(Number(state.worldSeed)||1).toString(36)+"-"+(index+1).toString(36);if(entity.type===TYPE.VILLAGER&&!entity.personId)entity.personId=entity.id;if(entity.type===TYPE.VILLAGER||entity.isKing)ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});}
+    for(let index=0;index<restored.length;index++){const entity=restored[index];if(!entity)continue;if(typeof entity.id!=="string")entity.id="e"+(Number(state.worldSeed)||1).toString(36)+"-"+(index+1).toString(36);if(entity.type===TYPE.VILLAGER&&!entity.personId)entity.personId=entity.id;if(entity.type===TYPE.VILLAGER||entity.isKing)ensurePersonProfile(entity,{role:entity.isKing?"king":"resident"});if(entity.creature)entity.creature=normalizeCreatureProfile(entity.creature,entity);}
     normalizeFamilyLinks();
     normalizeRoyalHouse(snapshot.royalHouse);
     normalizeGovernment(snapshot.government);
