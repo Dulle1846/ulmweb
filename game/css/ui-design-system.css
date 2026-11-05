@@ -318,3 +318,44 @@ body.ui-modal-open{overflow:hidden}
  .start-panel{max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px);overflow-y:auto}
  .people-panel,.command-panel,.build-panel,.settings-panel{max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px)}
 }
+
+
+/* Phase 2 completion slice — full-width contextual action bar. */
+.realm-action-dock-global{
+ display:flex;
+ flex:0 0 auto;
+ align-items:center;
+ justify-content:center;
+ flex-wrap:wrap;
+ gap:7px;
+ min-height:50px;
+ padding:7px 16px;
+ border-top:2px solid var(--ui-line-strong);
+ border-bottom:0;
+ background:linear-gradient(180deg,#403326,#211e19);
+ box-shadow:0 -4px 14px #0006;
+}
+.realm-action-dock-global button{
+ flex:0 1 132px;
+ min-width:78px;
+ min-height:34px;
+ padding:6px 12px;
+ border:1px solid #a98a52;
+ border-radius:3px;
+ background:linear-gradient(#5b4934,#332a20);
+ color:#f0e3c7;
+ font:700 9px var(--ui-title-font);
+ letter-spacing:.09em;
+}
+.realm-action-dock-global button:hover{border-color:#f0d99f;background:linear-gradient(#80633f,#493725);color:#fff3d3}
+.realm-action-dock-global button:focus-visible{outline:2px solid #f0d99f;outline-offset:2px}
+.realm-action-dock-global .save-status{
+ flex:1 1 180px;
+ min-width:120px;
+ text-align:right;
+}
+@media(max-width:560px){
+ .realm-action-dock-global{justify-content:stretch;gap:5px;padding:6px 7px}
+ .realm-action-dock-global button{flex:1 1 calc(33.333% - 5px);min-width:0;min-height:32px;font-size:8px}
+ .realm-action-dock-global .save-status{flex:1 1 100%;text-align:center}
+}
