@@ -127,3 +127,27 @@ test("family collection limits reject new edges without breaking reciprocal hist
     assert.equal(first.person.kinship.partners.length, 16);
     assert.equal(partners[16].person.kinship.partners.length, 0);
 });
+
+
+test("family normalization preserves the birth cooldown and repairs it reciprocally", () => {
+    const [first, second] = makePeople(2);
+    setPartnership(first.personId, second.personId, { status: "married", sinceYear: 4 });
+    first.person.kinship.partners[0].lastBirthYear = 9;
+    second.person.kinship.partners[0].lastBirthYear = 7;
+    normalizeFamilyLinks();
+    assert.equal(first.person.kinship.partners[0].lastBirthYear, 9);
+    assert.equal(second.person.kinship.partners[0].lastBirthYear, 9);
+    normalizeFamilyLinks();
+    assert.equal(first.person.kinship.partners[0].lastBirthYear, 9);
+    assert.equal(second.person.kinship.partners[0].lastBirthYear, 9);
+});
+
+test("re-establishing a partnership does not erase its previous birth cooldown", () => {
+    const [first, second] = makePeople(2);
+    setPartnership(first.personId, second.personId, { status: "married", sinceYear: 4 });
+    first.person.kinship.partners[0].lastBirthYear = 8;
+    second.person.kinship.partners[0].lastBirthYear = 8;
+    setPartnership(first.personId, second.personId, { status: "partner", sinceYear: 12 });
+    assert.equal(first.person.kinship.partners[0].lastBirthYear, 8);
+    assert.equal(second.person.kinship.partners[0].lastBirthYear, 8);
+});
