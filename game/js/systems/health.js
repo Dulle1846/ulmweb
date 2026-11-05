@@ -55,12 +55,15 @@ export function startOutbreak({severity=1,containment=0,disease="common-fever"}=
     return getHealthSnapshot();
 }
 export function applyHealthEffects(effects={}){
-    const health=ensureHealth();
-    if(effects.outbreak)startOutbreak({
-        severity:effects.severity??1,
-        containment:effects.containment??0,
-        disease:effects.disease||"common-fever"
-    });
+    let health=ensureHealth();
+    if(effects.outbreak){
+        startOutbreak({
+            severity:effects.severity??1,
+            containment:effects.containment??0,
+            disease:effects.disease||"common-fever"
+        });
+        health=ensureHealth();
+    }
     if(Number.isFinite(effects.treatment))health.severity=clamp(health.severity-effects.treatment,0,3);
     if(Number.isFinite(effects.containment)&&!effects.outbreak)health.containment=clamp(health.containment+effects.containment,0,3);
     return getHealthSnapshot();
