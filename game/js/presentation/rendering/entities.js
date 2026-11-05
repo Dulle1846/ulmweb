@@ -26,6 +26,12 @@ export function drawEntity(ctx, e, tick, zoom, cam) {
     if (sx < -cellPx * 4 || sx > state.canvas.width + cellPx * 4) return;
     if (sy < -cellPx * 4 || sy > state.canvas.height + cellPx * 4) return;
 
+    // Persistent creatures use species-specific silhouettes at every zoom level.
+    if (e.creature) {
+        const creatureColor = getCreatureColor(e.creature.species);
+        if (zl === 1) drawPersonMiniature(ctx, e, sx, sy, cellPx, creatureColor);
+        else drawPersonIconGeneric(ctx, e, sx, sy, cellPx, tick, getCreatureEmoji(e.creature.species), creatureColor);
+    } else {
     // Landscape: inhabitants are tiny readable silhouettes; districts use profession badges.
     if (zl === 1) {
         if (e.isFriendly()) drawPersonMiniature(ctx, e, sx, sy, cellPx);
@@ -45,6 +51,7 @@ export function drawEntity(ctx, e, tick, zoom, cam) {
         drawEnemyIcon(ctx, e, sx, sy, cellPx, tick);
     } else if (e.type === TYPE.DEER) {
         drawPersonDot(ctx, e, sx, sy, cellPx, "#a8865a");
+    }
     }
 
     // Health bars are only useful once individual entities are readable.
@@ -784,8 +791,25 @@ function drawPersonIconGeneric(ctx, e, sx, sy, cellPx, tick, emoji, color) {
 //  EMOJI & FARB-HILFSFUNKTIONEN
 // ═══════════════════════════════════════════════════════════════
 
+function getCreatureEmoji(species) {
+    return ({
+        dragons:"🐉",wyverns:"🐲",trolls:"🧌","giant-spiders":"🕷️","cave-bears":"🐻",
+        wargs:"🐺",basilisks:"🐍","giant-boars":"🐗","marsh-wights":"👻",
+        "stone-guardians":"🗿",deer:"🦌","wild-deer":"🦌"
+    })[species] || "🐾";
+}
+function getCreatureColor(species) {
+    return ({
+        dragons:"#a74736",wyverns:"#8b5c9e",trolls:"#65784a","giant-spiders":"#57405f",
+        "cave-bears":"#8a6044",wargs:"#6e737b",basilisks:"#71945b",
+        "giant-boars":"#a06b4b","marsh-wights":"#6f8f88","stone-guardians":"#8d8c80",
+        deer:"#a8865a","wild-deer":"#a8865a"
+    })[species] || "#8b7552";
+}
+
 function getEmoji(entity) {
     if (entity.isKing) return JOB_ICONS.king;
+    if (entity.type === TYPE.DRAGON) return JOB_ICONS.dragon;
     if (entity.type === TYPE.GUARD)  return JOB_ICONS.guard;
     if (entity.type === TYPE.ARCHER) return JOB_ICONS.archer;
     if (entity.type === TYPE.KNIGHT) return JOB_ICONS.knight;
