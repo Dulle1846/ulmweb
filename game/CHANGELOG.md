@@ -259,6 +259,6 @@ Never describe an unverified feature as implemented or a successful CI run as a 
 ## Development line 3.7.0-dev — Phase 5 mobile command-bar correction
 
 - Screenshot review found that the top command row clipped controls on narrow mobile screens even though the document itself did not overflow.
-- The header controls now wrap within the available width; the speed group remains reachable on the second row when required.
+- The header controls now occupy a dedicated row below 1680px and wrap within the available width; the speed group remains reachable when a second line is required.
 - Chromium E2E asserts that the complete header action group and every control remain inside all seven tested viewport widths.
 - Other mobile composition, map usability and remaining accessibility checks stay open.
