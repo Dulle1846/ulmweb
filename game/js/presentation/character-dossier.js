@@ -243,6 +243,7 @@ export function setupCharacterDossier() {
     ensureDossierStyles();
     const modal = document.getElementById("people-modal");
     const open = document.getElementById("people-btn");
+    const sovereignOpen = document.getElementById("sovereign-dossier-open");
     const close = document.getElementById("people-close");
     const list = document.getElementById("people-list");
     const search = document.getElementById("people-search");
@@ -254,6 +255,26 @@ export function setupCharacterDossier() {
         search.focus();
     };
     open.addEventListener("click", show);
+    sovereignOpen?.addEventListener("click", () => {
+        const houseKing = getRoyalHouse()?.king;
+        const sovereignId = String(houseKing?.personId || houseKing?.id || "");
+        const sovereign = people().find(entity => !entity.isArchived &&
+            String(entity.personId || "") === sovereignId) ||
+            people().find(entity => !entity.isArchived && entity.isKing);
+        if (!sovereign) {
+            show();
+            return;
+        }
+        selectedPersonId = String(sovereign.personId);
+        if (search) search.value = "";
+        ["people-status-filter","people-role-filter","people-species-filter"].forEach(id => {
+            const filter = document.getElementById(id);
+            if (filter) filter.value = "";
+        });
+        refreshDossier();
+        modal.classList.remove("hidden");
+        close.focus();
+    });
     close.addEventListener("click", () => modal.classList.add("hidden"));
     modal.addEventListener("click", event => {
         if (event.target === modal) modal.classList.add("hidden");
