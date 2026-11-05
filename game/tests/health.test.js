@@ -15,7 +15,9 @@ function setup(){
     resetState();
     state.hasStarted=true;
     state.morale=80;
-    state.entities=[resident(1),resident(2)];
+    const farm=new Entity(4,4,TYPE.FARM);
+    state.entities=[resident(1),resident(2),farm];
+    state.entities[0].workplace=farm;
 }
 test("an outbreak seeds a resident and exposes a measurable public-health state",()=>{
     setup();
