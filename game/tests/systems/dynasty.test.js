@@ -87,6 +87,7 @@ test("a deceased monarch passes the crown to the oldest living direct heir", () 
     assert.equal(result.heir.isKing, true);
     assert.equal(result.heir.type, TYPE.KNIGHT);
     assert.equal(state.dynasty.rulerId, first.personId);
+    assert.equal(state.dynasty.consortId, null);
     assert.equal(king.isKing, false);
 });
 
@@ -100,6 +101,7 @@ test("a minor heir ascends with a recorded regent candidate", () => {
     assert.equal(result.heir.personId, heir.personId);
     assert.equal(result.regentId, consort.personId);
     assert.equal(state.dynasty.regentId, consort.personId);
+    assert.equal(state.dynasty.consortId, null);
 });
 
 test("succession leaves the throne vacant rather than inventing an heir", () => {
