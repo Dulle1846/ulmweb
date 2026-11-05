@@ -220,6 +220,7 @@ export function getDynastySnapshot() {
     const person = ensurePersonProfile(king, { role: "king" });
     const family = getFamilySnapshot(personIdOf(king)) || { children: [], partners: [] };
     const consort = activePartner(king);
+    state.dynasty = { ...(state.dynasty || {}), rulerId: personIdOf(king), consortId: consort ? personIdOf(consort) : state.dynasty?.consortId || null };
     const heirs = family.children.map(link => livingPerson(link.personId)).filter(Boolean)
         .map(entity => ({ entity, person: ensurePersonProfile(entity) }))
         .sort((a, b) => b.person.ageYears - a.person.ageYears);
