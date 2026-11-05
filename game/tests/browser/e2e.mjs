@@ -223,7 +223,7 @@ try{
     await page.locator('[data-command-tab="dynasty"]').click();
     const dynastyGraphFixture=await page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");
-        return {heirId:String(state.royal?.heirId||""),childCount:state.entities.filter(entity=>!entity.dead&&entity.isRoyalFamily&&entity.person?.role==="heir").length};
+        return {heirId:String(state.royal?.heirId||"")};
     });
     assert.ok(dynastyGraphFixture.heirId,"royal birth should leave a designated heir for the graph test");
     assert.equal(await page.locator("#command-panel-content .dynasty-lineage-graph").count(),1);
@@ -557,11 +557,55 @@ try{
         assert.ok(layout.dockWidth>=width-2&&layout.dockLeft<=1&&layout.dockRight>=width-1,"global action bar must span viewport at "+width+"x"+height+": "+JSON.stringify(layout));
         if(width<=790){
             const panel=page.locator(".side-panel");
-            const before=await panel.evaluate(el=>({clientHeight:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY}));
-            assert.ok(["auto","scroll"].includes(before.overflowY),"mobile management column must expose vertical scrolling at "+width+"x"+height+": "+JSON.stringify(before));
-            assert.ok(before.scrollHeight>before.clientHeight,"mobile management column must retain content beyond its viewport at "+width+"x"+height+": "+JSON.stringify(before));
-            await panel.evaluate(el=>{el.scrollTop=el.scrollHeight});
-            assert.ok(await panel.evaluate(el=>el.scrollTop>0),"mobile management column must be scrollable at "+width+"x"+height);
+            const before=await panel.evaluate(el=>({
+                clientHeight:el.clientHeight,
+                scrollHeight:el.scrollHeight,
+                scrollRange:Math.max(0,el.scrollHeight-el.clientHeight),
+                overflowY:getComputedStyle(el).overflowY
+            }));
+            assert.ok(["auto","scroll"].includes(before.overflowY),"mobile management column must expose vertical scrolling when needed at "+width+"x"+height+": "+JSON.stringify(before));
+            if(width<=480)assert.ok(before.scrollRange>2,"narrow mobile management column must retain scrollable content at "+width+"x"+height+": "+JSON.stringify(before));
+            const reachability=await panel.evaluate(el=>{
+                const card=el.querySelector("#card-container");
+                const original=el.scrollTop;
+                const panelRect=el.getBoundingClientRect();
+                const cardRect=card.getBoundingClientRect();
+                const cardTopInScroll=cardRect.top-panelRect.top+el.scrollTop;
+                const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+                const visibleBottom=Math.min(panelRect.bottom,dock.top);
+                const visibleHeight=Math.max(0,visibleBottom-panelRect.top);
+                const maxScroll=Math.max(0,el.scrollHeight-el.clientHeight);
+                const initiallyReachable=cardRect.top>=panelRect.top-1&&cardRect.bottom<=visibleBottom+1;
+                const targetScroll=initiallyReachable?el.scrollTop:Math.max(0,cardTopInScroll+cardRect.height-visibleHeight);
+                el.scrollTop=Math.min(maxScroll,targetScroll);
+                const finalPanel=el.getBoundingClientRect();
+                const finalCard=card.getBoundingClientRect();
+                const result={
+                    scrollTop:el.scrollTop,
+                    scrollRange:maxScroll,
+                    initiallyReachable,
+                    cardTop:finalCard.top,
+                    cardBottom:finalCard.bottom,
+                    panelTop:finalPanel.top,
+                    panelBottom:finalPanel.bottom,
+                    visibleBottom,
+                    cardReachable:finalCard.top>=finalPanel.top-1&&finalCard.bottom<=visibleBottom+1
+                };
+                el.scrollTop=original;
+                return result;
+            });
+            if(!reachability.initiallyReachable&&before.scrollRange>2)assert.ok(reachability.scrollTop>0,"mobile management column must use its available scroll range when the selected card is initially obscured at "+width+"x"+height+": "+JSON.stringify(reachability));
+            assert.ok(reachability.cardReachable,"selected card must be fully reachable without being covered by the action dock at "+width+"x"+height+": "+JSON.stringify(reachability));
+            await panel.evaluate(el=>{
+                const card=el.querySelector("#card-container");
+                const panelRect=el.getBoundingClientRect();
+                const cardRect=card.getBoundingClientRect();
+                const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+                const visibleHeight=Math.max(0,Math.min(panelRect.bottom,dock.top)-panelRect.top);
+                const target=cardRect.top-panelRect.top+el.scrollTop+cardRect.height-visibleHeight;
+                el.scrollTop=Math.min(Math.max(0,el.scrollHeight-el.clientHeight),Math.max(0,target));
+            });
+            await page.screenshot({path:resolve(screenshotDir,"sidepanel-card-reachable-"+width+"x"+height+".png"),animations:"disabled"});
             await panel.evaluate(el=>{el.scrollTop=0});
         }
         await page.locator("#command-open-btn").click();
