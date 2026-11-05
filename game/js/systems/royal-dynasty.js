@@ -108,8 +108,12 @@ export function arrangeRoyalMarriage(candidateId) {
     if (!result.ok) return result;
     candidate.isRoyal = true;
     candidate.isRoyalConsort = true;
-    consort.role = "royal-consort";
-    ruler.role = "king";
+    // Family graph helpers normalize and replace nested person records; reacquire
+    // the profiles after linking instead of mutating stale pre-link references.
+    const updatedConsort = ensurePersonProfile(candidate, { role: "royal-consort" });
+    const updatedRuler = ensurePersonProfile(monarch, { role: "king" });
+    updatedConsort.role = "royal-consort";
+    updatedRuler.role = "king";
     addPersonMemory(monarch, {
         id: "royal-marriage:" + candidate.personId + ":" + yearNow(),
         type: "dynasty",
@@ -119,7 +123,7 @@ export function arrangeRoyalMarriage(candidateId) {
     addPersonMemory(candidate, {
         id: "royal-marriage:" + monarch.personId + ":" + yearNow(),
         type: "dynasty",
-        text: "I married " + ruler.name + " and joined the royal household in year " + yearNow() + ".",
+        text: "I married " + updatedRuler.name + " and joined the royal household in year " + yearNow() + ".",
         tick: tickNow(), importance: 92
     });
     normalizeRoyalHouse();
