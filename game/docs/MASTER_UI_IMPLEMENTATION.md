@@ -284,6 +284,16 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - The check now validates the visible region, not just the side-panel's theoretical bounding box.
 
 
+## Phase 2 — dedicated sovereign dossier increment (3.7.0-dev)
+
+- Added a royal-house section to the current sovereign's dossier, reading the live consort, designated heir, living children and recorded royal-house history from `getRoyalHouse()`.
+- Royal-family entries use the existing person dossier navigation bridge and canonical person IDs.
+- Former sovereign memorials are labeled separately and do not display the living monarch's succession state.
+- Royal-house history rendering is bounded to the latest eight records; the simulation's own history remains capped at 48.
+- Added responsive local styling and static contracts for current/former sovereign separation, source-backed fields and navigation.
+- No simulation or save-schema changes. The sovereign-to-heir browser hand-off remains an explicit E2E acceptance item.
+
+
 ## Phase 2 — connected royal lineage graph (3.7.0-dev)
 
 - Added an interactive multi-lane royal family network sourced from the existing explicit kinship graph.
