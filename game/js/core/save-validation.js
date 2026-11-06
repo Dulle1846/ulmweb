@@ -1,0 +1,178 @@
+// Pure, DOM-free validation for imported and persisted realm snapshots.
+// The validator runs before the active game state is reset or replaced.
+import { TYPE } from "./types.js";
+import { ROAD_TYPES } from "../systems/roads.js";
+import { validateCitySnapshot } from "../systems/logistics.js";
+import { validateResourceGeographySnapshot } from "../systems/resource-geography.js";
+
+export const SAVE_SCHEMA_VERSION = 4;
+
+const RESOURCE_KEYS = Object.freeze(["wood", "stone", "gold", "food"]);
+const RESOURCE_KEY_SET = new Set(RESOURCE_KEYS);
+const NUMERIC_STRING = /^-?(?:\d+)(?:\.\d+)?$/;
+const MAX_SAFE_BALANCE = Number.MAX_SAFE_INTEGER;
+const SAVE_MOBILE_TYPES = new Set([
+    TYPE.VILLAGER, TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT, TYPE.PRIEST,
+    TYPE.DRAGON, TYPE.DEER, TYPE.GOBLIN, TYPE.ORC, TYPE.TROLL
+]);
+
+export class SaveValidationError extends Error {
+    constructor(message, { code = "SAVE_VALIDATION_FAILED", field = null, valueType = null, phase = "snapshot", saveVersion = null } = {}) {
+        super(message);
+        this.name = "SaveValidationError";
+        this.code = code;
+        this.field = field;
+        this.valueType = valueType;
+        this.phase = phase;
+        this.saveVersion = saveVersion;
+    }
+}
+
+function typeOf(value) {
+    if (value === null) return "null";
+    if (Array.isArray(value)) return "array";
+    return typeof value;
+}
+
+function fail(message, details = {}) {
+    throw new SaveValidationError(message, details);
+}
+
+function invalidResource(message, field, value, code = "INVALID_RESOURCE_VALUE") {
+    fail(message + " Your current realm was not changed.", {
+        code, field, valueType: typeOf(value), phase: "resources"
+    });
+}
+
+function normalizeResourceValue(value, field) {
+    if (typeof value === "number") {
+        if (!Number.isFinite(value)) invalidResource("Save data contains an invalid " + field + " resource balance.", field, value);
+        if (value < 0) invalidResource("Save data contains a negative " + field + " resource balance.", field, value);
+        if (Math.abs(value) > MAX_SAFE_BALANCE) invalidResource("Save data contains an out-of-range " + field + " resource balance.", field, value, "RESOURCE_OUT_OF_RANGE");
+        return value;
+    }
+    if (typeof value === "string") {
+        if (!NUMERIC_STRING.test(value)) invalidResource("Save data contains an invalid " + field + " resource balance.", field, value);
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) invalidResource("Save data contains an invalid " + field + " resource balance.", field, value);
+        if (numeric < 0) invalidResource("Save data contains a negative " + field + " resource balance.", field, value);
+        if (Math.abs(numeric) > MAX_SAFE_BALANCE) invalidResource("Save data contains an out-of-range " + field + " resource balance.", field, value, "RESOURCE_OUT_OF_RANGE");
+        return numeric;
+    }
+    invalidResource("Save data contains an invalid " + field + " resource balance.", field, value);
+}
+
+function validateResourceMap(resources, label, { allowNegative = false, normalize = false } = {}) {
+    if (resources === undefined) return;
+    if (!resources || typeof resources !== "object" || Array.isArray(resources)) {
+        fail("Save data contains an invalid " + label + " map.", { code: "INVALID_RESOURCE_MAP", field: label, valueType: typeOf(resources), phase: "resources" });
+    }
+    for (const key of Object.keys(resources)) {
+        if (!RESOURCE_KEY_SET.has(key)) {
+            fail("Save data contains an unknown " + label + " key: " + key + ".", { code: "UNKNOWN_RESOURCE_KEY", field: label + "." + key, valueType: "key", phase: "resources" });
+        }
+    }
+    for (const key of RESOURCE_KEYS) {
+        if (!Object.prototype.hasOwnProperty.call(resources, key)) continue;
+        const value = resources[key];
+        if (allowNegative) {
+            if (typeof value !== "number" && typeof value !== "string") invalidResource("Save data contains an invalid " + label + "." + key + " value.", label + "." + key, value);
+            const numeric = typeof value === "string" && NUMERIC_STRING.test(value) ? Number(value) : value;
+            if (typeof numeric !== "number" || !Number.isFinite(numeric) || Math.abs(numeric) > MAX_SAFE_BALANCE) {
+                invalidResource("Save data contains an invalid " + label + "." + key + " value.", label + "." + key, value);
+            }
+            if (normalize && typeof value === "string") resources[key] = numeric;
+            continue;
+        }
+        const normalized = normalizeResourceValue(value, key);
+        if (normalize && normalized !== value) resources[key] = normalized;
+    }
+}
+
+function validateDomainSnapshot(snapshot, phase, validator) {
+    try {
+        validator(snapshot);
+    } catch (error) {
+        if (error instanceof SaveValidationError) throw error;
+        fail(error?.message || "Save data contains an invalid " + phase + " state.", {
+            code: "SAVE_VALIDATION_FAILED", phase, valueType: typeof snapshot
+        });
+    }
+}
+
+export function validateSaveSnapshot(snapshot) {
+    if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
+        fail("Save data is not a valid realm object.", { code: "INVALID_SNAPSHOT", phase: "structure", valueType: typeOf(snapshot) });
+    }
+    if (snapshot.saveSchemaVersion !== undefined) {
+        const version = Number(snapshot.saveSchemaVersion);
+        if (!Number.isSafeInteger(version) || version < 0) {
+            fail("Save data has an invalid save schema version.", { code: "INVALID_SAVE_VERSION", field: "saveSchemaVersion", valueType: typeOf(snapshot.saveSchemaVersion), phase: "structure" });
+        }
+        if (version > SAVE_SCHEMA_VERSION) {
+            fail("Save data was written by a newer game build (schema " + version + ").", { code: "NEWER_SAVE_VERSION", field: "saveSchemaVersion", valueType: typeOf(snapshot.saveSchemaVersion), phase: "structure", saveVersion: version });
+        }
+    }
+    if (!Number.isSafeInteger(Number(snapshot.worldSeed)) || Number(snapshot.worldSeed) <= 0) {
+        fail("Save data has an invalid world seed.", { code: "INVALID_WORLD_SEED", field: "worldSeed", valueType: typeOf(snapshot.worldSeed), phase: "structure" });
+    }
+    if (!Array.isArray(snapshot.entities) || snapshot.entities.length > 900) {
+        fail("Save data has an invalid or oversized entity list.", { code: "INVALID_ENTITY_LIST", field: "entities", valueType: typeOf(snapshot.entities), phase: "entities" });
+    }
+    let mobile = 0;
+    const validTypes = new Set(Object.values(TYPE));
+    for (const [index, dto] of snapshot.entities.entries()) {
+        if (!dto || typeof dto !== "object" || !validTypes.has(dto.type) || !Number.isFinite(dto.x) || !Number.isFinite(dto.y)) {
+            fail("Save data contains an invalid entity at position " + index + ".", { code: "INVALID_ENTITY", field: "entities[" + index + "]", valueType: typeOf(dto), phase: "entities" });
+        }
+        if (!dto.dead && SAVE_MOBILE_TYPES.has(dto.type)) mobile++;
+        if (dto.layout !== undefined && dto.layout !== null && (typeof dto.layout !== "object" || !Array.isArray(dto.layout.cells) || dto.layout.cells.length > 225)) {
+            fail("Save data contains an invalid floor plan at position " + index + ".", { code: "INVALID_LAYOUT", field: "entities[" + index + "].layout", valueType: typeOf(dto.layout), phase: "entities" });
+        }
+        if (dto.roomFurniture !== undefined && dto.roomFurniture !== null && (typeof dto.roomFurniture !== "object" || Array.isArray(dto.roomFurniture) || Object.keys(dto.roomFurniture).length > 64)) {
+            fail("Save data contains invalid room furniture at position " + index + ".", { code: "INVALID_FURNITURE", field: "entities[" + index + "].roomFurniture", valueType: typeOf(dto.roomFurniture), phase: "entities" });
+        }
+    }
+    if (mobile > 420) {
+        fail("Save data exceeds the supported mobile population limit.", { code: "MOBILE_LIMIT", field: "entities", phase: "entities" });
+    }
+
+    validateResourceMap(snapshot.resources, "resources", { normalize: true });
+    // incomeThisTick is a net value: expenses legitimately make it negative.
+    validateResourceMap(snapshot.incomeThisTick, "incomeThisTick", { allowNegative: true, normalize: true });
+
+    if (snapshot.roads !== undefined) {
+        if (!snapshot.roads || typeof snapshot.roads !== "object" || snapshot.roads.version !== 1 || !snapshot.roads.tiles || typeof snapshot.roads.tiles !== "object" || Object.keys(snapshot.roads.tiles).length > 5000) {
+            fail("Save data contains an invalid road network.", { code: "INVALID_ROADS", field: "roads", valueType: typeOf(snapshot.roads), phase: "roads" });
+        }
+        for (const [key, tile] of Object.entries(snapshot.roads.tiles)) {
+            if (!/^\d+:\d+$/.test(key) || !tile || !ROAD_TYPES[tile.type]) {
+                fail("Save data contains an invalid road tile.", { code: "INVALID_ROAD_TILE", field: "roads.tiles." + key, valueType: typeOf(tile), phase: "roads" });
+            }
+        }
+    }
+    if (snapshot.resourceGeography !== undefined) validateDomainSnapshot(snapshot.resourceGeography, "resourceGeography", validateResourceGeographySnapshot);
+    if (snapshot.city !== undefined) validateDomainSnapshot(snapshot.city, "city", validateCitySnapshot);
+
+    for (const [index, dto] of snapshot.entities.entries()) {
+        if (dto.construction !== undefined && dto.construction !== null) {
+            const construction = dto.construction;
+            if (typeof construction !== "object" || !Number.isInteger(construction.stage) || construction.stage < 0 || construction.stage > 3 || !Number.isFinite(Number(construction.progress))) {
+                fail("Save data contains an invalid construction site at position " + index + ".", { code: "INVALID_CONSTRUCTION", field: "entities[" + index + "].construction", valueType: typeOf(construction), phase: "entities" });
+            }
+        }
+        if (dto.inventory !== undefined && dto.inventory !== null && (typeof dto.inventory !== "object" || Array.isArray(dto.inventory))) {
+            fail("Save data contains invalid building inventory at position " + index + ".", { code: "INVALID_INVENTORY", field: "entities[" + index + "].inventory", valueType: typeOf(dto.inventory), phase: "entities" });
+        }
+        if (dto.warehouse !== undefined && dto.warehouse !== null && (typeof dto.warehouse !== "object" || Array.isArray(dto.warehouse))) {
+            fail("Save data contains an invalid warehouse at position " + index + ".", { code: "INVALID_WAREHOUSE", field: "entities[" + index + "].warehouse", valueType: typeOf(dto.warehouse), phase: "entities" });
+        }
+        if (dto.field !== undefined && dto.field !== null && (typeof dto.field !== "object" || Array.isArray(dto.field))) {
+            fail("Save data contains an invalid field at position " + index + ".", { code: "INVALID_FIELD", field: "entities[" + index + "].field", valueType: typeOf(dto.field), phase: "entities" });
+        }
+    }
+    if (snapshot.hand !== undefined && (!Array.isArray(snapshot.hand) || snapshot.hand.length > 5)) {
+        fail("Save data contains an invalid card hand.", { code: "INVALID_HAND", field: "hand", valueType: typeOf(snapshot.hand), phase: "cards" });
+    }
+    return true;
+}

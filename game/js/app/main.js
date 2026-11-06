@@ -27,13 +27,13 @@ import {normalizeGovernment} from "../systems/government.js";
 import {normalizeRoyalState} from "../systems/royal-dynasty.js";
 import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
-import {serializeResourceGeography,restoreResourceGeography,validateResourceGeographySnapshot} from "../systems/resource-geography.js";import { setupBuildUI } from "../presentation/build-ui.js";import { normalizeLayout,serializeLayout } from "../presentation/building-layout.js";
-import {serializeCity,restoreCity,validateCitySnapshot,initializeCityForRealm,openGoodsBookForNewRealm} from "../systems/logistics.js";
+import {serializeResourceGeography,restoreResourceGeography} from "../systems/resource-geography.js";import { setupBuildUI } from "../presentation/build-ui.js";import { normalizeLayout,serializeLayout } from "../presentation/building-layout.js";
+import {serializeCity,restoreCity,initializeCityForRealm,openGoodsBookForNewRealm} from "../systems/logistics.js";
+import {SAVE_SCHEMA_VERSION,validateSaveSnapshot} from "../core/save-validation.js";
 import {initializeSettlementForRealm} from "../systems/settlement.js";
 import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
 
-const SAVE_SCHEMA_VERSION=4;
 // Snapshot field migrations run in order. Each step is defensive because
 // imported or hand-edited saves may be missing any field.
 const SAVE_SCHEMA_MIGRATIONS=Object.freeze({
@@ -252,49 +252,6 @@ function saveCurrentGame(){
         setSaveStatus("SAVE FAILED · "+error.message,"error");
         return false;
     }
-}
-
-const SAVE_MOBILE_TYPES=new Set([TYPE.VILLAGER,TYPE.GUARD,TYPE.ARCHER,TYPE.KNIGHT,TYPE.PRIEST,TYPE.DRAGON,TYPE.DEER,TYPE.GOBLIN,TYPE.ORC,TYPE.TROLL]);
-function validateSaveSnapshot(snapshot){
-    if(!snapshot||typeof snapshot!=="object"||Array.isArray(snapshot))throw new Error("Save data is not a valid realm object.");
-    if(Number.isFinite(Number(snapshot.saveSchemaVersion))&&Number(snapshot.saveSchemaVersion)>SAVE_SCHEMA_VERSION)throw new Error("Save data was written by a newer game build.");
-    if(!Number.isSafeInteger(Number(snapshot.worldSeed))||Number(snapshot.worldSeed)<=0)throw new Error("Save data has an invalid world seed.");
-    if(!Array.isArray(snapshot.entities)||snapshot.entities.length>900)throw new Error("Save data has an invalid or oversized entity list.");
-    let mobile=0;
-    const validTypes=new Set(Object.values(TYPE));
-    for(const [index,dto] of snapshot.entities.entries()){
-        if(!dto||typeof dto!=="object"||!validTypes.has(dto.type)||!Number.isFinite(dto.x)||!Number.isFinite(dto.y)){
-            throw new Error("Save data contains an invalid entity at position "+index+".");
-        }
-        if(!dto.dead&&SAVE_MOBILE_TYPES.has(dto.type))mobile++;
-        if(dto.layout!==undefined&&dto.layout!==null&&(typeof dto.layout!=="object"||!Array.isArray(dto.layout.cells)||dto.layout.cells.length>225))throw new Error("Save data contains an invalid floor plan at position "+index+".");
-        if(dto.roomFurniture!==undefined&&dto.roomFurniture!==null&&(typeof dto.roomFurniture!=="object"||Array.isArray(dto.roomFurniture)||Object.keys(dto.roomFurniture).length>64))throw new Error("Save data contains invalid room furniture at position "+index+".");
-    }
-    if(mobile>420)throw new Error("Save data exceeds the supported mobile population limit.");
-    for(const key of ["wood","stone","gold","food"]){
-        if(snapshot.resources&&snapshot.resources[key]!==undefined&&!Number.isFinite(Number(snapshot.resources[key]))){
-            throw new Error("Save data contains an invalid "+key+" resource balance.");
-        }
-    }
-    if(snapshot.roads!==undefined){
-        if(!snapshot.roads||typeof snapshot.roads!=="object"||snapshot.roads.version!==1||!snapshot.roads.tiles||typeof snapshot.roads.tiles!=="object"||Object.keys(snapshot.roads.tiles).length>5000)throw new Error("Save data contains an invalid road network.");
-        for(const [key,tile] of Object.entries(snapshot.roads.tiles)){if(!/^\d+:\d+$/.test(key)||!tile||!["dirt","gravel","paved"].includes(tile.type))throw new Error("Save data contains an invalid road tile.");}
-    }
-    if(snapshot.resourceGeography!==undefined)validateResourceGeographySnapshot(snapshot.resourceGeography);
-    if(snapshot.city!==undefined)validateCitySnapshot(snapshot.city);
-    for(const [index,dto] of snapshot.entities.entries()){
-        if(dto.construction!==undefined&&dto.construction!==null){
-            const c=dto.construction;
-            if(typeof c!=="object"||!Number.isInteger(c.stage)||c.stage<0||c.stage>3||!Number.isFinite(Number(c.progress)))throw new Error("Save data contains an invalid construction site at position "+index+".");
-        }
-        if(dto.inventory!==undefined&&dto.inventory!==null&&(typeof dto.inventory!=="object"||Array.isArray(dto.inventory)))throw new Error("Save data contains invalid building inventory at position "+index+".");
-        if(dto.warehouse!==undefined&&dto.warehouse!==null&&(typeof dto.warehouse!=="object"||Array.isArray(dto.warehouse)))throw new Error("Save data contains an invalid warehouse at position "+index+".");
-        if(dto.field!==undefined&&dto.field!==null&&(typeof dto.field!=="object"||Array.isArray(dto.field)))throw new Error("Save data contains an invalid field at position "+index+".");
-    }
-    if(snapshot.hand!==undefined&&(!Array.isArray(snapshot.hand)||snapshot.hand.length>5)){
-        throw new Error("Save data contains an invalid card hand.");
-    }
-    return true;
 }
 
 function loadSnapshotIntoGame(profile,snapshot){
