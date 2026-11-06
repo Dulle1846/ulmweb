@@ -194,8 +194,9 @@
             <section class="world-forge" aria-label="World generation options">
                 <div class="forge-heading"><span>THE WORLD FORGE</span><span>SHAPE THE UNKNOWN</span></div>
                 <div class="forge-preview-wrap">
-                    <canvas id="world-preview" width="360" height="180" aria-label="Live terrain preview of the chosen world"></canvas>
+                    <canvas id="world-preview" width="360" height="360" aria-label="Exact terrain preview of the chosen world"></canvas>
                     <div class="forge-preview-meta"><span id="world-preview-size">176 × 176 TILES</span><span id="world-preview-summary">TEMPERATE · CONTINENT</span></div>
+                    <div class="forge-preview-status" id="world-preview-status">EXACT PREVIEW · SAME SEED &amp; RULES</div>
                 </div>
                 <div class="forge-selects">
                     <label class="forge-select"><span>MAP SIZE</span><select id="world-size">
@@ -203,6 +204,9 @@
                         <option value="standard" selected>Standard · 176 × 176</option>
                         <option value="grand">Grand · 224 × 224</option>
                         <option value="vast">Vast · 288 × 288</option>
+                        <option value="huge">Huge · 352 × 352</option>
+                        <option value="gigantic">Gigantic · 448 × 448</option>
+                        <option value="colossal">Colossal · 576 × 576</option>
                     </select></label>
                     <label class="forge-select"><span>WORLD SHAPE</span><select id="world-shape">
                         <option value="continent" selected>Continent</option>
@@ -219,15 +223,26 @@
                         <option value="enchanted">Enchanted</option>
                     </select></label>
                 </div>
+                <div class="forge-group-label">GEOGRAPHY</div>
                 <div class="forge-sliders">
                     <label class="forge-slider"><span>LANDMASS <output id="world-landmass-value">50</output></span><input id="world-landmass" type="range" min="0" max="100" value="50"></label>
                     <label class="forge-slider"><span>RUGGEDNESS <output id="world-ruggedness-value">55</output></span><input id="world-ruggedness" type="range" min="0" max="100" value="55"></label>
-                    <label class="forge-slider"><span>FORESTS <output id="world-forests-value">52</output></span><input id="world-forests" type="range" min="0" max="100" value="52"></label>
                     <label class="forge-slider"><span>WATER LEVEL <output id="world-water-value">48</output></span><input id="world-water" type="range" min="0" max="100" value="48"></label>
+                    <label class="forge-slider"><span>MOUNTAINS <output id="world-mountains-value">55</output></span><input id="world-mountains" type="range" min="0" max="100" value="55"></label>
+                    <label class="forge-slider"><span>RIVERS <output id="world-rivers-value">50</output></span><input id="world-rivers" type="range" min="0" max="100" value="50"></label>
+                    <label class="forge-slider"><span>LAKES <output id="world-lakes-value">50</output></span><input id="world-lakes" type="range" min="0" max="100" value="50"></label>
+                    <label class="forge-slider"><span>COASTLINE <output id="world-coastline-value">50</output></span><input id="world-coastline" type="range" min="0" max="100" value="50"></label>
+                </div>
+                <div class="forge-group-label">BIOME &amp; CLIMATE</div>
+                <div class="forge-sliders">
+                    <label class="forge-slider"><span>FORESTS <output id="world-forests-value">52</output></span><input id="world-forests" type="range" min="0" max="100" value="52"></label>
                     <label class="forge-slider"><span>FERTILITY <output id="world-fertility-value">55</output></span><input id="world-fertility" type="range" min="0" max="100" value="55"></label>
+                    <label class="forge-slider"><span>WETLANDS <output id="world-wetlands-value">50</output></span><input id="world-wetlands" type="range" min="0" max="100" value="50"></label>
+                    <label class="forge-slider"><span>ARIDITY <output id="world-aridity-value">50</output></span><input id="world-aridity" type="range" min="0" max="100" value="50"></label>
+                    <label class="forge-slider"><span>SNOW <output id="world-snow-value">50</output></span><input id="world-snow" type="range" min="0" max="100" value="50"></label>
                     <label class="forge-slider"><span>RESOURCES <output id="world-resources-value">50</output></span><input id="world-resources" type="range" min="0" max="100" value="50"></label>
                 </div>
-                <div class="forge-note">The preview is forged from the same seed and rules as the realm itself. Larger worlds take a moment to raise.</div>
+                <div class="forge-note">The preview draws the exact terrain, river and biome grid the realm will start with. Larger worlds take longer to forge.</div>
             </section>
             <button id="start-new-game-btn" class="ui-button ui-button--primary primary-button" type="button">FOUND A NEW REALM</button>
             <button id="continue-game-btn" class="ui-button ui-button--secondary secondary-button" type="button" disabled>NO SAVED REALM</button>

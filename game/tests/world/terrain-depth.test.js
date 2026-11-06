@@ -3,18 +3,28 @@ import assert from "node:assert/strict";
 import {
     WORLD_SIZES, WORLD_SHAPES, CLIMATES, DEFAULT_WORLD_OPTIONS,
     normalizeWorldOptions, resolveWorldDimensions, seaLevelFor,
-    initNoise, sampleHeight, classifyTerrain, gameplayBiome, carveWaterFeatures,
+    initNoise, sampleHeight, sampleMoisture, sampleTemperature,
+    classifyTerrain, gameplayBiome, carveWaterFeatures,
+    terrainResolutionFor, generateWorldData, getWorldData, clearWorldDataCache, worldDataKey,
 } from "../../js/world/terrain-model.js";
 import {
     defaultInterior, normalizeInterior, INTERIOR_ITEM_IDS, REBUILD_COST,
 } from "../../js/presentation/rendering/building-art.js";
 import { BUILDING_SIZE } from "../../js/core/config.js";
 
-test("world sizes grow from compact to vast", () => {
-    assert.ok(WORLD_SIZES.compact.w < WORLD_SIZES.standard.w);
-    assert.ok(WORLD_SIZES.standard.w < WORLD_SIZES.grand.w);
-    assert.ok(WORLD_SIZES.grand.w < WORLD_SIZES.vast.w);
-    assert.ok(WORLD_SIZES.vast.w >= 288);
+test("world sizes grow from compact to colossal", () => {
+    const order = ["compact", "standard", "grand", "vast", "huge", "gigantic", "colossal"];
+    for (let i = 1; i < order.length; i++) {
+        assert.ok(WORLD_SIZES[order[i - 1]].w < WORLD_SIZES[order[i]].w, order[i]);
+    }
+    assert.ok(WORLD_SIZES.colossal.w >= 576);
+    assert.equal(terrainResolutionFor(128, 128), 5);
+    assert.equal(terrainResolutionFor(176, 176), 4);
+    assert.equal(terrainResolutionFor(288, 288), 3);
+    assert.equal(terrainResolutionFor(352, 352), 3);
+    assert.equal(terrainResolutionFor(448, 448), 2);
+    assert.equal(terrainResolutionFor(576, 576), 2);
+    assert.ok(WORLD_SIZES.colossal.w * terrainResolutionFor(576, 576) <= 1152, "terrain memory must stay bounded");
 });
 
 test("every shape and climate is selectable and documented", () => {
@@ -27,7 +37,7 @@ test("every shape and climate is selectable and documented", () => {
 
 test("world options clamp sliders and fall back on unknown presets", () => {
     const normalized = normalizeWorldOptions({
-        size: "gigantic", shape: "donut", climate: "lava",
+        size: "impossible", shape: "donut", climate: "lava",
         landmass: 500, ruggedness: -20, forests: "wet", water: 61,
     });
     assert.equal(normalized.size, DEFAULT_WORLD_OPTIONS.size);
@@ -62,6 +72,73 @@ test("height sampling is deterministic for the same seed and options", () => {
     initNoise(99);
     const otherSeed = sampleHeight(40, 40, 128, 128, options);
     assert.notEqual(first, otherSeed);
+});
+
+test("mountains and coastline sliders reshape the landmass", () => {
+    initNoise(31337);
+    const base = normalizeWorldOptions({ size: "standard" });
+    const sample = overrides => {
+        let sum = 0, max = 0;
+        for (let y = 8; y < 176; y += 8) {
+            for (let x = 8; x < 176; x += 8) {
+                const height = sampleHeight(x, y, 176, 176, { ...base, ...overrides });
+                sum += height;
+                max = Math.max(max, height);
+            }
+        }
+        return { sum, max };
+    };
+    const low = sample({ mountains: 0 });
+    const high = sample({ mountains: 100 });
+    assert.ok(high.sum > low.sum, "more mountains must lift the terrain");
+    assert.ok(high.max > low.max, "more mountains must raise the peaks");
+
+    const smooth = normalizeWorldOptions({ size: "standard", coastline: 0 });
+    const ragged = normalizeWorldOptions({ size: "standard", coastline: 100 });
+    let differences = 0;
+    for (let y = 8; y < 176; y += 8) {
+        for (let x = 2; x < 40; x += 2) {
+            if (sampleHeight(x, y, 176, 176, smooth) !== sampleHeight(x, y, 176, 176, ragged)) differences++;
+        }
+    }
+    assert.ok(differences > 0, "coastline must alter the edge of the landmass");
+});
+
+test("snow, wetlands and aridity sliders shift climate and moisture", () => {
+    const base = normalizeWorldOptions({ size: "standard" });
+    const cold = sampleTemperature(90, 60, 176, 176, 0.6, 0.33, { ...base, snow: 100 });
+    const warm = sampleTemperature(90, 60, 176, 176, 0.6, 0.33, { ...base, snow: 0 });
+    assert.ok(cold < warm - 0.05, "more snow must lower the temperature");
+
+    const dry = sampleMoisture(90, 60, { ...base, aridity: 100, wetlands: 0 });
+    const wet = sampleMoisture(90, 60, { ...base, aridity: 0, wetlands: 100 });
+    assert.ok(wet > dry + 0.1, "wetlands must make the land wetter than aridity");
+
+    const arid = sampleTemperature(90, 60, 176, 176, 0.6, 0.33, { ...base, aridity: 100 });
+    const mild = sampleTemperature(90, 60, 176, 176, 0.6, 0.33, { ...base, aridity: 0 });
+    assert.ok(arid > mild + 0.03, "aridity must raise the temperature");
+});
+
+test("river and lake sliders control how much water is carved", () => {
+    const width = 320, height = 240, sea = 0.33;
+    const makeGrid = () => {
+        const heights = new Float32Array(width * height);
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) heights[y * width + x] = 0.92 - x * 0.0022;
+        }
+        return heights;
+    };
+    const dry = makeGrid();
+    const wet = makeGrid();
+    const dryRivers = carveWaterFeatures(dry, width, height, 2024, sea, { rivers: 0, lakes: 0 });
+    const wetRivers = carveWaterFeatures(wet, width, height, 2024, sea, { rivers: 100, lakes: 100 });
+    assert.ok(wetRivers.length >= dryRivers.length, "more rivers must not carve fewer channels");
+    const underwater = grid => {
+        let count = 0;
+        for (const value of grid) if (value < sea) count++;
+        return count;
+    };
+    assert.ok(underwater(wet) > underwater(dry), "rivers and lakes must add up to more water");
 });
 
 test("world shapes produce different terrain at the same point", () => {
@@ -102,6 +179,36 @@ test("river carving cuts a channel and ends in water or a lake", () => {
     let underwater = 0;
     for (const value of heights) if (value < sea) underwater++;
     assert.ok(underwater > rivers[0].length, "the river must widen into water");
+});
+
+test("preview and realm share one cached world data set", () => {
+    clearWorldDataCache();
+    const options = {
+        size: "compact", shape: "archipelago", climate: "northern",
+        rivers: 65, lakes: 35, coastline: 70, snow: 60,
+    };
+    const key = worldDataKey(2026, options);
+    const first = getWorldData(2026, options);
+    const second = getWorldData(2026, { ...options });
+    assert.equal(second, first, "identical seed and options must reuse the exact arrays");
+    assert.equal(worldDataKey(2026, options), key);
+    assert.notEqual(worldDataKey(2027, options), key, "a new seed must invalidate the cache");
+    assert.equal(first.pixW, first.dims.w * terrainResolutionFor(first.dims.w, first.dims.h));
+    assert.equal(first.heights.length, first.pixW * first.pixH);
+    assert.equal(first.moistures.length, first.heights.length);
+    assert.equal(first.temperatures.length, first.heights.length);
+    assert.ok(first.rivers.every(path => path.every(point => (
+        point.x >= 0 && point.x < first.pixW && point.y >= 0 && point.y < first.pixH
+    ))), "every carved river point must lie inside the shared grid");
+
+    const generated = generateWorldData(2026, options);
+    assert.notEqual(generated, first, "explicit generation must return independent data");
+    assert.notEqual(generated.heights, first.heights);
+    for (const index of [0, 123, 5000, first.heights.length - 1]) {
+        assert.equal(generated.heights[index], first.heights[index], "same seed and options must recreate the same terrain");
+    }
+    assert.deepEqual(generated.rivers, first.rivers);
+    clearWorldDataCache();
 });
 
 test("interior defaults differ between a cottage and a tavern", () => {

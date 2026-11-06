@@ -83,6 +83,20 @@ test("road list is stable and build mode accepts only known tiers",()=>{
     assert.equal(getRoadBuildMode(),null);
 });
 
+test("roads can be built anywhere on worlds larger than the legacy 160 grid",()=>{
+    setup();
+    const W=448,H=448;
+    state.worldW=W;state.worldH=H;
+    state.explored=Array.from({length:W},()=>Array(H).fill(true));
+    state.terrainResolution=1;state.terrainPixW=W;state.terrainPixH=H;
+    state.heightMap=new Float32Array(W*H).fill(0.5);
+    const placed=placeRoad(400,400,"dirt");
+    assert.equal(placed.ok,true,"road placement must accept larger-map coordinates");
+    assert.equal(getRoadAt(400,400).type,"dirt");
+    assert.equal(removeRoad(400,400).ok,true);
+    assert.equal(getRoadAt(400,400),null);
+});
+
 test("A* prefers a long paved corridor when it is cheaper than a shorter dirt route",()=>{
     setup();
     for(let x=10;x<=30;x++)assert.equal(placeRoad(x,6,"paved").ok,true);

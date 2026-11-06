@@ -4,12 +4,10 @@
 //  the gameplay checks and the start-screen preview.
 // ═══════════════════════════════════════════════════════════════
 
+import { WORLD_W, WORLD_H, NOISE_SCALE } from '../core/config.js';
 import {
-    WORLD_W, WORLD_H, NOISE_SCALE,
-} from '../core/config.js';
-import {
-    initNoise, sampleHeight, sampleMoisture, sampleTemperature,
-    classifyTerrain, gameplayBiome, terrainColor, carveWaterFeatures,
+    getWorldData,
+    classifyTerrain, gameplayBiome, terrainColor,
     normalizeWorldOptions, resolveWorldDimensions, seaLevelFor,
 } from './terrain-model.js';
 import { state } from '../core/state.js';
@@ -26,13 +24,6 @@ export function worldWidth() {
 
 export function worldHeight() {
     return Number(state.worldH) || WORLD_H;
-}
-
-function terrainResolutionFor(w, h) {
-    const max = Math.max(w, h);
-    if (max <= 128) return 5;
-    if (max <= 192) return 4;
-    return 3;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -55,59 +46,19 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions) 
     state.fogDirty = true;
     state.fogExploredRef = null;
 
-    initNoise(worldSeed);
+    // One shared, cached world data set backs both the forge preview and the
+    // live realm. Starting the displayed world reuses its exact terrain arrays.
+    const worldData = getWorldData(worldSeed, state.worldOptions);
+    state.heightMap = worldData.heights;
+    state.moistureMap = worldData.moistures;
+    state.temperatureMap = worldData.temperatures;
+    state.terrainResolution = worldData.resolution;
+    state.terrainPixW = worldData.pixW;
+    state.terrainPixH = worldData.pixH;
+    state.rivers = worldData.rivers;
 
     const W = dims.w;
     const H = dims.h;
-    const resolution = terrainResolutionFor(W, H);
-    const pixW = W * resolution;
-    const pixH = H * resolution;
-
-    state.heightMap = new Float32Array(pixW * pixH);
-    state.moistureMap = new Float32Array(pixW * pixH);
-    state.temperatureMap = new Float32Array(pixW * pixH);
-    state.terrainResolution = resolution;
-    state.terrainPixW = pixW;
-    state.terrainPixH = pixH;
-
-    const worldOptions = state.worldOptions;
-    const sea = state.seaLevel;
-
-    for (let py = 0; py < pixH; py++) {
-        for (let px = 0; px < pixW; px++) {
-            const wx = (px + 0.5) / resolution;
-            const wy = (py + 0.5) / resolution;
-            const index = py * pixW + px;
-
-            const h = sampleHeight(wx, wy, W, H, worldOptions);
-            const m = sampleMoisture(wx, wy, worldOptions);
-            state.heightMap[index] = h;
-            state.moistureMap[index] = m;
-            state.temperatureMap[index] = sampleTemperature(wx, wy, W, H, h, sea, worldOptions);
-        }
-    }
-
-    // Rivers and their terminal lakes are carved with the shared model,
-    // so the preview coastline and the real one agree.
-    state.rivers = carveWaterFeatures(state.heightMap, pixW, pixH, worldSeed, sea, worldOptions)
-        .map(path => path.map(index => ({ x: index % pixW, y: Math.floor(index / pixW) })));
-
-    // A little moisture bleeds into the banks so river valleys turn green.
-    for (const path of state.rivers) {
-        for (const point of path) {
-            for (let oy = -4; oy <= 4; oy++) {
-                for (let ox = -4; ox <= 4; ox++) {
-                    const nx = point.x + ox, ny = point.y + oy;
-                    if (nx < 0 || ny < 0 || nx >= pixW || ny >= pixH) continue;
-                    const d = Math.hypot(ox, oy);
-                    if (d > 4.5) continue;
-                    const index = ny * pixW + nx;
-                    const boost = (1 - d / 4.5) * 0.22;
-                    state.moistureMap[index] = Math.min(1, state.moistureMap[index] + boost);
-                }
-            }
-        }
-    }
 
     generateResourceGeography(worldSeed);
 

@@ -92,6 +92,9 @@ export const WORLD_SIZES = {
     standard: { id: 'standard', label: 'Standard', w: 176, h: 176, note: 'A full realm with room to grow' },
     grand:    { id: 'grand',    label: 'Grand',    w: 224, h: 224, note: 'Several regions and long rivers' },
     vast:     { id: 'vast',     label: 'Vast',     w: 288, h: 288, note: 'A sprawling continent' },
+    huge:     { id: 'huge',     label: 'Huge',     w: 352, h: 352, note: 'A continent with distant frontiers' },
+    gigantic: { id: 'gigantic', label: 'Gigantic', w: 448, h: 448, note: 'A world of many regions' },
+    colossal: { id: 'colossal', label: 'Colossal', w: 576, h: 576, note: 'The largest forgeable world' },
 };
 
 export const WORLD_SHAPES = [
@@ -113,7 +116,13 @@ export const CLIMATES = [
 export const DEFAULT_WORLD_OPTIONS = {
     size: 'standard', shape: 'continent', climate: 'temperate',
     landmass: 50, ruggedness: 55, forests: 52, water: 48, fertility: 55, resources: 50,
+    mountains: 55, rivers: 50, lakes: 50, coastline: 50, snow: 50, wetlands: 50, aridity: 50,
 };
+
+const NUMERIC_KEYS = [
+    'landmass', 'ruggedness', 'forests', 'water', 'fertility', 'resources',
+    'mountains', 'rivers', 'lakes', 'coastline', 'snow', 'wetlands', 'aridity',
+];
 
 const IDS = {
     size: new Set(Object.keys(WORLD_SIZES)),
@@ -123,7 +132,7 @@ const IDS = {
 
 export function normalizeWorldOptions(options = {}) {
     const normalized = {};
-    for (const key of ['landmass', 'ruggedness', 'forests', 'water', 'fertility', 'resources']) {
+    for (const key of NUMERIC_KEYS) {
         const value = Number(options?.[key]);
         normalized[key] = Number.isFinite(value) ? Math.round(clamp(value, 0, 100)) : DEFAULT_WORLD_OPTIONS[key];
     }
@@ -138,6 +147,21 @@ export function resolveWorldDimensions(options = {}) {
     return { w: size.w, h: size.h, id: size.id };
 }
 
+// Terrain is sampled on a grid above tile resolution so slopes stay detailed.
+// The cap keeps even a colossal realm near 1.3 million terrain pixels.
+export function terrainResolutionFor(w, h) {
+    const max = Math.max(w, h);
+    if (max <= 128) return 5;
+    if (max <= 192) return 4;
+    if (max <= 352) return 3;
+    return 2;
+}
+
+export function normalizeWorldSeed(seed) {
+    const value = Number(seed);
+    return Number.isSafeInteger(value) && value > 0 ? value : 1;
+}
+
 export function seaLevelFor(options = {}) {
     const o = normalizeWorldOptions(options);
     const level = BIOME.SHALLOW_WATER
@@ -148,23 +172,23 @@ export function seaLevelFor(options = {}) {
 
 // ── geographic shaping ────────────────────────────────────────
 
-function shapeField(nx, ny, shape, edgeNoise) {
+function shapeField(nx, ny, shape, edgeNoise, coastScale = 1) {
     const dx = nx * 2 - 1;
     const dy = ny * 2 - 1;
     const dist = Math.hypot(dx, dy);
 
     if (shape === 'archipelago') {
         const isles = fbm(nx * 4.6 + 7.3, ny * 4.6 + 2.1, 4, 0.55, 2.25);
-        const cluster = smoothstep(0.46, 0.66, isles - dist * 0.16);
+        const cluster = smoothstep(0.46, 0.66, isles - dist * 0.16 * coastScale);
         return clamp(cluster * smoothstep(1.15, 0.3, dist), 0, 1);
     }
     if (shape === 'coastal') {
-        const wobble = (edgeNoise - 0.5) * 0.30;
+        const wobble = (edgeNoise - 0.5) * 0.30 * coastScale;
         return smoothstep(0.98, 0.12, nx + wobble + (ny - 0.5) * 0.22);
     }
     if (shape === 'inland' || shape === 'valley') return 1;
     // Continent: broad centre, ragged coastline.
-    return smoothstep(1.16, 0.52, dist + (edgeNoise - 0.5) * 0.20);
+    return smoothstep(1.16, 0.52, dist + (edgeNoise - 0.5) * 0.20 * coastScale);
 }
 
 export function sampleHeight(wx, wy, W, H, rawOptions = {}) {
@@ -179,9 +203,13 @@ export function sampleHeight(wx, wy, W, H, rawOptions = {}) {
     const ridge = ridged((wx + 31) * NOISE_SCALE * 1.55, (wy + 17) * NOISE_SCALE * 1.55, 5);
     const edgeNoise = fbm(nx * 3.4 + 5.2, ny * 3.4 + 8.7, 3, 0.55, 2.0);
     const rugged = 0.30 + (options.ruggedness / 100) * 1.55;
+    // Defaults preserve the original landscape: 55 mountains is a 1.0 multiplier.
+    const mountainScale = 0.45 + options.mountains / 100;
+    const coastScale = 0.55 + options.coastline / 100 * 0.9;
 
-    let h = base * 0.84 + Math.pow(clamp((base - 0.42) / 0.58, 0, 1), 1.5) * ridge * 0.38 * rugged;
+    let h = base * 0.84 + Math.pow(clamp((base - 0.42) / 0.58, 0, 1), 1.5) * ridge * 0.38 * rugged * mountainScale;
     h += (edgeNoise - 0.5) * 0.05;
+    h += (options.mountains - 50) * 0.0009 * smoothstep(0.30, 0.80, h);
 
     if (options.shape === 'inland') {
         const dist = Math.hypot(nx * 2 - 1, ny * 2 - 1);
@@ -190,7 +218,7 @@ export function sampleHeight(wx, wy, W, H, rawOptions = {}) {
         const dist = Math.hypot(nx * 2 - 1, ny * 2 - 1);
         h = 0.465 + h * 0.24 + Math.pow(dist, 2.05) * 0.30 + (edgeNoise - 0.5) * 0.04;
     } else {
-        const mask = shapeField(nx, ny, options.shape, edgeNoise);
+        const mask = shapeField(nx, ny, options.shape, edgeNoise, coastScale);
         h = h * (0.44 + 0.56 * mask) + 0.36 * (mask - 0.55) + (base - 0.5) * 0.10;
     }
 
@@ -201,7 +229,11 @@ export function sampleHeight(wx, wy, W, H, rawOptions = {}) {
 export function sampleMoisture(wx, wy, rawOptions = {}) {
     const options = rawOptions.__normalized ? rawOptions : normalizeWorldOptions(rawOptions);
     const noise = fbm((wx + 512) * NOISE_SCALE * 1.28, (wy + 512) * NOISE_SCALE * 1.28, 4, 0.55, 2.0);
-    return clamp(noise + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016, 0, 1);
+    return clamp(
+        noise + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
+        + (options.wetlands - 50) * 0.0016 - (options.aridity - 50) * 0.0012,
+        0, 1
+    );
 }
 
 export function sampleTemperature(wx, wy, W, H, height, sea, rawOptions = {}) {
@@ -210,6 +242,7 @@ export function sampleTemperature(wx, wy, W, H, height, sea, rawOptions = {}) {
     const latitude = 1 - Math.abs(wy / H - 0.5) * 2;   // 1 at the equator, 0 at the poles
     let t = base + (latitude - 0.62) * 0.26 - Math.max(0, height - sea) * 0.30;
     t += (fbm(wx * 0.0085 + 91.3, wy * 0.0085 + 17.9, 3, 0.5, 2.1) - 0.5) * 0.07;
+    t += (options.aridity - 50) * 0.0009 - (options.snow - 50) * 0.0012;
     return clamp(t, 0, 1);
 }
 
@@ -226,9 +259,18 @@ function hashSeed(seed) {
 // Traces rivers downhill from high ground and fills the basin at their end
 // as a lake. Operates on any height grid, so the preview and the full realm
 // use exactly the same geographic rules.
+function sliderValue(options, key) {
+    const value = Number(options?.[key]);
+    return Number.isFinite(value) ? clamp(value, 0, 100) : DEFAULT_WORLD_OPTIONS[key];
+}
+
 export function carveWaterFeatures(heights, width, height, seed, sea, options = {}) {
     const rand = hashSeed(seed ^ 0x9e3779b9);
-    const riverBudget = Math.max(3, Math.round((width * height) / 5200));
+    const riverSetting = sliderValue(options, 'rivers');
+    const lakeSetting = sliderValue(options, 'lakes');
+    const area = width * height;
+    const riverBudget = Math.min(220, Math.max(1, Math.round(area / 5200 * (0.35 + riverSetting / 100 * 1.3))));
+    const lakeScale = 0.6 + lakeSetting / 100 * 0.8;
     const rivers = [];
     const width2 = width - 2;
 
@@ -260,7 +302,7 @@ export function carveWaterFeatures(heights, width, height, seed, sea, options = 
             const here = heights[cy * width + cx];
             if (best >= here - 0.0004) {
                 // Local basin: the river ends in a lake.
-                const radius = 2 + Math.floor(rand() * 3);
+                const radius = Math.max(1, Math.round((2 + Math.floor(rand() * 3)) * lakeScale));
                 for (let oy = -radius; oy <= radius; oy++) {
                     for (let ox = -radius; ox <= radius; ox++) {
                         if (ox * ox + oy * oy > radius * radius) continue;
@@ -291,6 +333,35 @@ export function carveWaterFeatures(heights, width, height, seed, sea, options = 
             }
         }
         rivers.push(path);
+    }
+
+    // The lakes slider also scatters standalone basins in low ground above its
+    // neutral 50 setting. At 50 generation is byte-for-byte the legacy model,
+    // so old saves keep the exact terrain they were created with.
+    const lakeBudget = Math.max(0, Math.min(24, Math.round(area / 60000 * (lakeSetting - 50) / 50)));
+    for (let lake = 0; lake < lakeBudget; lake++) {
+        let cx = 6 + Math.floor(rand() * (width - 12));
+        let cy = 6 + Math.floor(rand() * (height - 12));
+        let lowest = Infinity;
+        for (let oy = -5; oy <= 5; oy++) {
+            for (let ox = -5; ox <= 5; ox++) {
+                const nx = cx + ox, ny = cy + oy;
+                if (nx < 2 || ny < 2 || nx >= width - 2 || ny >= height - 2) continue;
+                const value = heights[ny * width + nx];
+                if (value < lowest) { lowest = value; cx = nx; cy = ny; }
+            }
+        }
+        if (!(lowest > sea + 0.012)) continue;
+        const radius = Math.max(1, Math.round((2 + Math.floor(rand() * 3)) * lakeScale));
+        for (let oy = -radius; oy <= radius; oy++) {
+            for (let ox = -radius; ox <= radius; ox++) {
+                if (ox * ox + oy * oy > radius * radius) continue;
+                const nx = cx + ox, ny = cy + oy;
+                if (nx < 1 || ny < 1 || nx >= width - 1 || ny >= height - 1) continue;
+                const index = ny * width + nx;
+                heights[index] = Math.min(heights[index], sea - 0.012);
+            }
+        }
     }
     return rivers;
 }
@@ -427,46 +498,107 @@ export function terrainColor(height, moisture, temperature, px, py, climate, sea
     return shift(color, pasture * 5.4 + mottle + grain + jitter * 5.2 + shade);
 }
 
-// ── preview ───────────────────────────────────────────────────
+// ── shared world generation ───────────────────────────────────
 
-// Renders the exact same height/moisture/temperature model at preview
-// resolution. Water features are carved with the shared algorithm, so the
-// coastline and rivers the player approves are the ones they get.
-export function renderWorldPreview(ctx, width, height, rawOptions = {}, seed = 1) {
-    const options = { ...normalizeWorldOptions(rawOptions), __normalized: true };
+// The preview and the live realm both read this one cached world. Starting a
+// realm with the options currently shown in the forge therefore reuses the
+// exact height, moisture, temperature and river arrays the player saw.
+export function generateWorldData(seed, rawOptions = {}) {
+    const options = normalizeWorldOptions(rawOptions);
+    const sampling = { ...options, __normalized: true };
+    const worldSeed = normalizeWorldSeed(seed);
     const dims = resolveWorldDimensions(options);
     const sea = seaLevelFor(options);
-    initNoise(seed);
+    const resolution = terrainResolutionFor(dims.w, dims.h);
+    const pixW = dims.w * resolution;
+    const pixH = dims.h * resolution;
+    const heights = new Float32Array(pixW * pixH);
+    const moistures = new Float32Array(pixW * pixH);
+    const temperatures = new Float32Array(pixW * pixH);
 
-    const previewW = Math.max(48, Math.floor(width));
-    const previewH = Math.max(32, Math.floor(height));
-    const heights = new Float32Array(previewW * previewH);
-    const moistures = new Float32Array(previewW * previewH);
-    const temperatures = new Float32Array(previewW * previewH);
+    initNoise(worldSeed);
 
-    for (let y = 0; y < previewH; y++) {
-        for (let x = 0; x < previewW; x++) {
-            const wx = (x + 0.5) / previewW * dims.w;
-            const wy = (y + 0.5) / previewH * dims.h;
-            const h = sampleHeight(wx, wy, dims.w, dims.h, options);
-            const index = y * previewW + x;
+    for (let py = 0; py < pixH; py++) {
+        for (let px = 0; px < pixW; px++) {
+            const wx = (px + 0.5) / resolution;
+            const wy = (py + 0.5) / resolution;
+            const index = py * pixW + px;
+            const h = sampleHeight(wx, wy, dims.w, dims.h, sampling);
             heights[index] = h;
-            moistures[index] = sampleMoisture(wx, wy, options);
-            temperatures[index] = sampleTemperature(wx, wy, dims.w, dims.h, h, sea, options);
+            moistures[index] = sampleMoisture(wx, wy, sampling);
+            temperatures[index] = sampleTemperature(wx, wy, dims.w, dims.h, h, sea, sampling);
         }
     }
 
-    carveWaterFeatures(heights, previewW, previewH, seed, sea, options);
+    // Rivers and their terminal lakes are carved into the very same grid the
+    // realm uses. The preview never runs a separate, smaller simulation.
+    const rivers = carveWaterFeatures(heights, pixW, pixH, worldSeed, sea, sampling)
+        .map(path => path.map(index => ({ x: index % pixW, y: Math.floor(index / pixW) })));
 
-    const image = ctx.createImageData(previewW, previewH);
+    // A little moisture bleeds into the banks so river valleys turn green.
+    for (const path of rivers) {
+        for (const point of path) {
+            for (let oy = -4; oy <= 4; oy++) {
+                for (let ox = -4; ox <= 4; ox++) {
+                    const nx = point.x + ox, ny = point.y + oy;
+                    if (nx < 0 || ny < 0 || nx >= pixW || ny >= pixH) continue;
+                    const d = Math.hypot(ox, oy);
+                    if (d > 4.5) continue;
+                    const index = ny * pixW + nx;
+                    const boost = (1 - d / 4.5) * 0.22;
+                    moistures[index] = Math.min(1, moistures[index] + boost);
+                }
+            }
+        }
+    }
+
+    return {
+        seed: worldSeed, options, dims, sea, resolution, pixW, pixH,
+        heights, moistures, temperatures, rivers,
+    };
+}
+
+let cachedWorldKey = '';
+let cachedWorldData = null;
+
+export function worldDataKey(seed, rawOptions = {}) {
+    return normalizeWorldSeed(seed) + '|' + JSON.stringify(normalizeWorldOptions(rawOptions));
+}
+
+export function getWorldData(seed, rawOptions = {}) {
+    const key = worldDataKey(seed, rawOptions);
+    if (key !== cachedWorldKey || !cachedWorldData) {
+        cachedWorldData = generateWorldData(seed, rawOptions);
+        cachedWorldKey = key;
+    }
+    return cachedWorldData;
+}
+
+export function clearWorldDataCache() {
+    cachedWorldKey = '';
+    cachedWorldData = null;
+}
+
+// ── preview ───────────────────────────────────────────────────
+
+// Draws the cached world data itself, pixel for pixel, fitted into the preview
+// canvas. There is no second sampling pass and no preview-only river carving,
+// so the shape the player approves is the shape the realm receives.
+export function renderWorldPreview(ctx, width, height, rawOptions = {}, seed = 1) {
+    const world = getWorldData(seed, rawOptions);
+    const { pixW, pixH, heights, moistures, temperatures, sea, options, dims } = world;
+
+    const image = ctx.createImageData(pixW, pixH);
     const data = image.data;
-    for (let y = 0; y < previewH; y++) {
-        for (let x = 0; x < previewW; x++) {
-            const index = y * previewW + x;
-            const left = heights[y * previewW + Math.max(0, x - 1)];
-            const up = heights[Math.max(0, y - 1) * previewW + x];
-            const shade = clamp((heights[index] - (left + up) * 0.5) * 900, -26, 26);
-            const color = terrainColor(heights[index], moistures[index], temperatures[index], x, y, options.climate, sea, shade);
+    for (let py = 0; py < pixH; py++) {
+        for (let px = 0; px < pixW; px++) {
+            const index = py * pixW + px;
+            const h = heights[index];
+            const west = heights[py * pixW + Math.max(0, px - 1)];
+            const north = heights[Math.max(0, py - 1) * pixW + px];
+            const northWest = heights[Math.max(0, py - 1) * pixW + Math.max(0, px - 1)];
+            const shade = clamp((h - (west + north + northWest) / 3) * 2400, -30, 32);
+            const color = terrainColor(h, moistures[index], temperatures[index], px, py, options.climate, sea, shade);
             const offset = index * 4;
             data[offset] = clamp(Math.round(color[0]), 0, 255);
             data[offset + 1] = clamp(Math.round(color[1]), 0, 255);
@@ -474,7 +606,40 @@ export function renderWorldPreview(ctx, width, height, rawOptions = {}, seed = 1
             data[offset + 3] = 255;
         }
     }
-    ctx.putImageData(image, 0, 0);
+
+    const hasCanvas = typeof OffscreenCanvas !== 'undefined' || typeof document !== 'undefined';
+    if (!hasCanvas) {
+        // Headless fallback keeps the pure data path testable without a DOM.
+        ctx.putImageData(image, 0, 0);
+        return world;
+    }
+
+    const source = typeof OffscreenCanvas !== 'undefined'
+        ? new OffscreenCanvas(pixW, pixH)
+        : document.createElement('canvas');
+    source.width = pixW;
+    source.height = pixH;
+    const sourceCtx = source.getContext('2d');
+    if (!sourceCtx) return world;
+    sourceCtx.putImageData(image, 0, 0);
+
+    const canvasW = Math.max(1, Math.floor(width));
+    const canvasH = Math.max(1, Math.floor(height));
+    const fit = Math.min(canvasW, canvasH);
+    const scale = fit / dims.w;
+    const drawW = Math.max(1, Math.round(dims.w * scale));
+    const drawH = Math.max(1, Math.round(dims.h * scale));
+    const offsetX = (canvasW - drawW) / 2;
+    const offsetY = (canvasH - drawH) / 2;
+
+    ctx.save();
+    ctx.fillStyle = '#101a14';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, offsetX, offsetY, drawW, drawH);
+    ctx.restore();
+    return world;
 }
 
 export { BIOME };

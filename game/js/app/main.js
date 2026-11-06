@@ -79,7 +79,10 @@ function readWorldOptions(){
     return normalizeWorldOptions({
         size:choice("world-size"),shape:choice("world-shape"),climate:choice("world-climate"),
         landmass:value("world-landmass"),ruggedness:value("world-ruggedness"),forests:value("world-forests"),
-        water:value("world-water"),fertility:value("world-fertility"),resources:value("world-resources")
+        water:value("world-water"),fertility:value("world-fertility"),resources:value("world-resources"),
+        mountains:value("world-mountains"),rivers:value("world-rivers"),lakes:value("world-lakes"),
+        coastline:value("world-coastline"),snow:value("world-snow"),wetlands:value("world-wetlands"),
+        aridity:value("world-aridity")
     });
 }
 function syncWorldForge(options){
@@ -94,7 +97,14 @@ function syncWorldForge(options){
         ["forests",document.getElementById("world-forests"),document.getElementById("world-forests-value")],
         ["water",document.getElementById("world-water"),document.getElementById("world-water-value")],
         ["fertility",document.getElementById("world-fertility"),document.getElementById("world-fertility-value")],
-        ["resources",document.getElementById("world-resources"),document.getElementById("world-resources-value")]
+        ["resources",document.getElementById("world-resources"),document.getElementById("world-resources-value")],
+        ["mountains",document.getElementById("world-mountains"),document.getElementById("world-mountains-value")],
+        ["rivers",document.getElementById("world-rivers"),document.getElementById("world-rivers-value")],
+        ["lakes",document.getElementById("world-lakes"),document.getElementById("world-lakes-value")],
+        ["coastline",document.getElementById("world-coastline"),document.getElementById("world-coastline-value")],
+        ["snow",document.getElementById("world-snow"),document.getElementById("world-snow-value")],
+        ["wetlands",document.getElementById("world-wetlands"),document.getElementById("world-wetlands-value")],
+        ["aridity",document.getElementById("world-aridity"),document.getElementById("world-aridity-value")]
     ];
     for(const [key,input,output] of controls){
         if(input&&Number.isFinite(Number(normalized[key])))input.value=String(normalized[key]);
@@ -111,14 +121,27 @@ function drawForgePreview(){
     if(!ctx)return;
     const options=readWorldOptions();
     const seed=Number(document.getElementById("world-seed-input")?.value)||1;
-    try{renderWorldPreview(ctx,canvas.width,canvas.height,options,seed);}catch(error){/* a preview failure must never block founding */}
+    const started=performance.now();
+    let rendered=null;
+    try{rendered=renderWorldPreview(ctx,canvas.width,canvas.height,options,seed);}
+    catch(error){/* a preview failure must never block founding */}
     const dims=resolveWorldDimensions(options);
     const size=document.getElementById("world-preview-size");
     if(size)size.textContent=dims.w+" × "+dims.h+" TILES";
     const summary=document.getElementById("world-preview-summary");
     if(summary)summary.textContent=options.climate.toUpperCase()+" · "+options.shape.toUpperCase();
+    const status=document.getElementById("world-preview-status");
+    if(status){
+        const ms=Math.max(1,Math.round(performance.now()-started));
+        status.textContent=rendered
+            ?"EXACT PREVIEW · SEED "+seed+" · "+ms+" MS"
+            :"PREVIEW UNAVAILABLE";
+    }
 }
 function scheduleForgePreview(){
+    // The forge is invisible during a campaign; rendering a colossal preview
+    // after load would stall the game for over a second for no benefit.
+    if(document.getElementById("start-screen")?.classList.contains("hidden"))return;
     window.clearTimeout(forgePreviewTimer);
     forgePreviewTimer=window.setTimeout(drawForgePreview,180);
 }
@@ -392,7 +415,7 @@ function bindMenu(){
     if(seedInput)seedInput.value=String(randomSeed());
     const forgeDefaults=normalizeWorldOptions({});
     syncWorldForge(forgeDefaults);
-    const forgeControls=["world-size","world-shape","world-climate","world-landmass","world-ruggedness","world-forests","world-water","world-fertility","world-resources"];
+    const forgeControls=["world-size","world-shape","world-climate","world-landmass","world-ruggedness","world-forests","world-water","world-fertility","world-resources","world-mountains","world-rivers","world-lakes","world-coastline","world-snow","world-wetlands","world-aridity"];
     forgeControls.forEach(id=>document.getElementById(id)?.addEventListener("input",()=>syncWorldForge(readWorldOptions())));
     seedInput?.addEventListener("input",scheduleForgePreview);
     document.getElementById("random-seed-btn")?.addEventListener("click",()=>{if(seedInput)seedInput.value=String(randomSeed());scheduleForgePreview();});

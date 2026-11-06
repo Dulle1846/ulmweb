@@ -1,7 +1,7 @@
 // Road network: compact tile data, deterministic route costs and versioned saves.
 import { state } from "../core/state.js";
-import { WORLD_W, WORLD_H, BUILDING_SIZE } from "../core/config.js";
-import { isWaterAt } from "../world/world.js";
+import { BUILDING_SIZE } from "../core/config.js";
+import { isWaterAt, worldWidth, worldHeight } from "../world/world.js";
 
 export const ROAD_TYPES = Object.freeze({
     dirt: Object.freeze({ id:"dirt", label:"Dirt path", speed:1.08, travelCost:1.0, upkeep:0.0004, cost:Object.freeze({wood:0.15,stone:0,gold:0}), color:"#a97849", edge:"#4e3526" }),
@@ -23,7 +23,7 @@ function tileFromKey(key){
     const match=/^(\d+):(\d+)$/.exec(key);
     if(!match)return null;
     const x=Number(match[1]),y=Number(match[2]);
-    return Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<WORLD_W&&y<WORLD_H?{x,y}:null;
+    return Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<worldWidth()&&y<worldHeight()?{x,y}:null;
 }
 function isBuildingFootprint(x,y){
     const cx=x+0.5,cy=y+0.5;
@@ -60,7 +60,7 @@ function bumpRevision(){
 
 export function getRoadAt(x,y){
     const tx=Math.floor(Number(x)),ty=Math.floor(Number(y));
-    if(!Number.isInteger(tx)||!Number.isInteger(ty)||tx<0||ty<0||tx>=WORLD_W||ty>=WORLD_H)return null;
+    if(!Number.isInteger(tx)||!Number.isInteger(ty)||tx<0||ty<0||tx>=worldWidth()||ty>=worldHeight())return null;
     const tile=ensureRoadState().tiles[keyFor(tx,ty)];
     return tile&&ROAD_TYPES[tile.type]?tile:null;
 }
@@ -105,7 +105,7 @@ export function getRoadBuildCost(type,x=null,y=null){
 export function placeRoad(x,y,type="dirt"){
     const tx=Math.floor(Number(x)),ty=Math.floor(Number(y)),target=ROAD_TYPES[type];
     if(!target)return {ok:false,reason:"Unknown road type"};
-    if(!Number.isInteger(tx)||!Number.isInteger(ty)||tx<0||ty<0||tx>=WORLD_W||ty>=WORLD_H)return {ok:false,reason:"Outside the realm"};
+    if(!Number.isInteger(tx)||!Number.isInteger(ty)||tx<0||ty<0||tx>=worldWidth()||ty>=worldHeight())return {ok:false,reason:"Outside the realm"};
     if(!state.explored?.[tx]?.[ty])return {ok:false,reason:"Explore this land first"};
     if(isWaterAt(tx+0.5,ty+0.5))return {ok:false,reason:"Roads cannot cross deep water"};
     if(isBuildingFootprint(tx,ty))return {ok:false,reason:"A building occupies this tile"};
@@ -123,7 +123,7 @@ export function placeRoad(x,y,type="dirt"){
 
 export function removeRoad(x,y){
     const tx=Math.floor(Number(x)),ty=Math.floor(Number(y));
-    if(tx<0||ty<0||tx>=WORLD_W||ty>=WORLD_H)return {ok:false,reason:"Outside the realm"};
+    if(tx<0||ty<0||tx>=worldWidth()||ty>=worldHeight())return {ok:false,reason:"Outside the realm"};
     const roads=ensureRoadState(),key=keyFor(tx,ty),existing=roads.tiles[key];
     if(!existing)return {ok:false,reason:"No road on this tile"};
     const cost=ROAD_TYPES[existing.type].cost;

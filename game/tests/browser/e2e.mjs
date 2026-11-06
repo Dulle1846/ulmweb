@@ -49,6 +49,9 @@ try{
         },value);
     }
     await page.locator("#world-seed-input").fill("20261104");
+    await page.waitForTimeout(350);
+    assert.equal(await page.locator("#world-size option").count(),7,"the forge must offer seven map sizes");
+    assert.match(await page.locator("#world-preview-status").innerText(),/EXACT PREVIEW/,"the forge must report an exact preview");
     await page.locator("#player-name-input").fill("CI-Browser-Check");
     assert.ok((await page.locator("#start-new-game-btn").getAttribute("class")).includes("ui-button--primary"),"founding action must use the shared primary button");
     await page.locator("#start-new-game-btn").click();
@@ -60,6 +63,23 @@ try{
         throw error;
     }
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
+    const exactPreview=await page.evaluate(async()=>{
+        const [{state},{getWorldData}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/world/terrain-model.js")
+        ]);
+        const data=getWorldData(state.worldSeed,state.worldOptions);
+        return {
+            heightIdentity:state.heightMap===data.heights,
+            riverIdentity:state.rivers===data.rivers,
+            width:state.worldW,height:state.worldH,
+            resolution:state.terrainResolution,
+            pixW:state.terrainPixW,pixH:state.terrainPixH,
+        };
+    });
+    assert.equal(exactPreview.heightIdentity,true,"the started realm must reuse the exact preview terrain arrays");
+    assert.equal(exactPreview.riverIdentity,true,"the started realm must reuse the exact preview rivers");
+    assert.equal(exactPreview.pixW,exactPreview.width*exactPreview.resolution);
+    assert.equal(exactPreview.pixH,exactPreview.height*exactPreview.resolution);
     await page.locator("#speed-0-5").click();
     assert.ok(await page.locator("#speed-0-5").evaluate(el=>el.classList.contains("is-active")),"half-speed control must become active");
     await page.locator("#speed-1").click();

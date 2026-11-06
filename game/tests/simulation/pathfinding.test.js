@@ -29,6 +29,20 @@ test("A-star does not invent a route through a full-width water barrier",()=>{
     assert.equal(findPath(35.5,40.5,45.5,40.5),null);
 });
 
+test("pathfinding and walkability use the full larger world bounds",()=>{
+    resetState();
+    const W=448,H=448;
+    state.worldW=W;state.worldH=H;
+    state.terrainResolution=1;state.terrainPixW=W;state.terrainPixH=H;
+    state.heightMap=new Float32Array(W*H).fill(0.5);
+    assert.equal(isWalkable(400.5,400.5),true,"walkability must not stop at the legacy 160-tile edge");
+    assert.equal(isWalkable(447.5,447.5),true);
+    assert.equal(isWalkable(448.5,448.5),false);
+    const route=findPath(395.5,400.5,405.5,400.5,400);
+    assert.ok(Array.isArray(route)&&route.length>0,"A* must find a route on a larger map");
+    assert.ok(route.every(node=>node.x>390&&node.x<410),"the route must stay near the requested larger-map coordinates");
+});
+
 test("units follow cached routes instead of repeatedly pushing into a building",()=>{
     prepare();
     spawnEntity(40,40,TYPE.KEEP);

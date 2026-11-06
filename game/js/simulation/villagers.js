@@ -3,14 +3,13 @@
 // ═══════════════════════════════════════════════════════════════
 
 import {
-    WORLD_W, WORLD_H,
     UNIT_SPEED, WANDER_RADIUS, ROUTINE, BUILDING_SIZE,
     FLEE_DISTANCE, FLEE_SPEED_MULT,
 } from '../core/config.js';
 import { TYPE } from '../core/types.js';
 import { state } from '../core/state.js';
 import { getEntitiesOfType } from '../world/entities.js';
-import { isWaterAt } from '../world/world.js';
+import { isWaterAt, worldWidth, worldHeight } from '../world/world.js';
 import { distance } from '../core/utils.js';
 import { rand as seededRand } from '../core/random.js';
 const rand=(min,max)=>seededRand(min,max,"villagers");
@@ -36,8 +35,9 @@ export function rebuildBlockedBuildingTiles(){
         const right=entity.x+0.5+(base.w*scale)/2;
         const top=entity.y+0.5-(base.h*scale)/2;
         const bottom=entity.y+0.5+(base.h*scale)/2;
-        for(let x=Math.max(0,Math.floor(left));x<Math.min(WORLD_W,Math.ceil(right));x++){
-            for(let y=Math.max(0,Math.floor(top));y<Math.min(WORLD_H,Math.ceil(bottom));y++){
+        const W=worldWidth(),H=worldHeight();
+        for(let x=Math.max(0,Math.floor(left));x<Math.min(W,Math.ceil(right));x++){
+            for(let y=Math.max(0,Math.floor(top));y<Math.min(H,Math.ceil(bottom));y++){
                 blockedBuildingTiles.add(x+":"+y);
             }
         }
@@ -325,7 +325,7 @@ function setTargetNear(unit, cx, cy, radius) {
 export function isWalkable(x, y) {
     const tx = Math.floor(x);
     const ty = Math.floor(y);
-    if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) return false;
+    if (tx < 0 || ty < 0 || tx >= worldWidth() || ty >= worldHeight()) return false;
     if (isWaterAt(x, y)) return false;
     return !blockedBuildingTiles.has(tx+":"+ty);
 }
@@ -366,11 +366,12 @@ const pathHeuristic=(x,y,tx,ty)=>{
 // building-collision version changes.
 export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
     rebuildBlockedBuildingTiles();
+    const W=worldWidth(),H=worldHeight();
     const sx=Math.floor(startX),sy=Math.floor(startY),tx=Math.floor(targetX),ty=Math.floor(targetY);
-    if(sx<0||sy<0||tx<0||ty<0||sx>=WORLD_W||sy>=WORLD_H||tx>=WORLD_W||ty>=WORLD_H)return null;
+    if(sx<0||sy<0||tx<0||ty<0||sx>=W||sy>=H||tx>=W||ty>=H)return null;
     if(sx===tx&&sy===ty)return [];
     if(!isWalkable(tx+0.5,ty+0.5))return null;
-    const start=sy*WORLD_W+sx,target=ty*WORLD_W+tx;
+    const start=sy*W+sx,target=ty*W+tx;
     const open=[],costs=new Map([[start,0]]),parents=new Map(),closed=new Set();
     heapPush(open,{index:start,x:sx,y:sy,g:0,f:pathHeuristic(sx,sy,tx,ty)*0.78});
     const directions=[[-1,0,1],[1,0,1],[0,-1,1],[0,1,1],[-1,-1,Math.SQRT2],[1,-1,Math.SQRT2],[-1,1,Math.SQRT2],[1,1,Math.SQRT2]];
@@ -382,7 +383,7 @@ export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
         if(current.index===target){
             const route=[];let cursor=target;
             while(cursor!==start){
-                route.push({x:(cursor%WORLD_W)+0.5,y:Math.floor(cursor/WORLD_W)+0.5});
+                route.push({x:(cursor%W)+0.5,y:Math.floor(cursor/W)+0.5});
                 cursor=parents.get(cursor);
                 if(cursor===undefined)return null;
             }
@@ -391,8 +392,8 @@ export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
         closed.add(current.index);visited++;
         for(const [dx,dy,stepCost] of directions){
             const nx=current.x+dx,ny=current.y+dy;
-            if(nx<0||ny<0||nx>=WORLD_W||ny>=WORLD_H)continue;
-            const next=ny*WORLD_W+nx;
+            if(nx<0||ny<0||nx>=W||ny>=H)continue;
+            const next=ny*W+nx;
             if(closed.has(next)||!isWalkable(nx+0.5,ny+0.5))continue;
             if(dx!==0&&dy!==0&&(!isWalkable(current.x+dx+0.5,current.y+0.5)||!isWalkable(current.x+0.5,current.y+dy+0.5)))continue;
             const nextCost=current.g+stepCost*getRoadTravelCost(nx+0.5,ny+0.5),known=costs.get(next);
