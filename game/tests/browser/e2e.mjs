@@ -997,7 +997,12 @@ try{
     // Legacy saves and very large logistics workloads must survive the real
     // localStorage save/load path without inventing or losing stock.
     const dismissRealmEvent=async()=>{
-        if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-dismiss").click();
+        const modal=page.locator("#realm-event-modal");
+        if(!(await modal.isVisible()))return;
+        await page.locator("#realm-event-dismiss").click({timeout:2000}).catch(async()=>{
+            if(await modal.isVisible())throw new Error("Could not dismiss the realm event modal");
+        });
+        await modal.waitFor({state:"hidden",timeout:3000}).catch(()=>{});
     };
     const loadRealm=async()=>{
         await page.evaluate(()=>{const status=document.querySelector("#status-message");if(status)status.textContent="";});
@@ -1010,11 +1015,27 @@ try{
         return (await page.locator("#status-message").textContent()||"").trim();
     };
     const ensurePaused=async()=>{
-        await dismissRealmEvent();
-        if((await page.locator("#pause-text").textContent()||"").trim()!=="RESUME"){
-            await page.locator("#pause-btn").click();
-            await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
+        let lastError=null;
+        for(let attempt=0;attempt<8;attempt++){
+            // Loading a save resumes the simulation. A random event can open
+            // between this dismissal and the pause click, so retry the bounded
+            // sequence instead of letting the overlay intercept the click.
+            await dismissRealmEvent();
+            if((await page.locator("#pause-text").textContent()||"").trim()==="RESUME")return;
+            try{
+                await page.locator("#pause-btn").click({timeout:1500});
+                await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:2000});
+                return;
+            }catch(error){
+                lastError=error;
+                if(await page.locator("#realm-event-modal").isVisible()){
+                    await dismissRealmEvent();
+                    continue;
+                }
+                if(attempt<7)await page.waitForTimeout(50);
+            }
         }
+        throw new Error("Could not pause after dismissing repeated realm events"+(lastError?": "+lastError.message:""));
     };
 
     const warehouseId=await page.evaluate(async()=>{
