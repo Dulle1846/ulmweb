@@ -670,7 +670,12 @@
   .header-actions .control-button,.header-actions .speed-button{flex:0 0 auto;padding:0 7px;font-size:7.5px}
   .header-middle{justify-content:space-between;gap:0}
   .header-middle>*{padding:0 8px}
-  .world-stage{min-height:400px}
+  /* The map and the management panel share one fixed shell on phones. A
+     hard 400px map starved the panel: only 59px remained above the bottom
+     action dock, less than a single card, so the card could not be made
+     fully visible. The map now flexes and the panel keeps a real viewport. */
+  .world-stage{min-height:0;flex:1 1 auto}
+  .side-panel{flex:1 1 auto;max-height:46%}
   .brand-title{font-size:16px;letter-spacing:.1em}
   .brand-mark{width:38px;height:38px}
   .brand-mark img{width:26px;height:26px}

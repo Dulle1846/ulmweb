@@ -6,7 +6,7 @@ import { TYPE } from "../core/types.js";
 import { addResource } from "./resources.js";
 import { getBuildingEfficiency } from "./economy.js";
 import { isOperational } from "./construction.js";
-import { getAvailableWarehouseStock, getWarehouseStock, withdrawGood } from "./logistics.js";
+import { getLocalWarehouseStock, findLocalWarehouse, consumeFromWarehouse, getWarehouseStock, HOUSEHOLD_SUPPLY_RADIUS } from "./logistics.js";
 import { HOUSING_TIERS, SERVICE_DEFINITIONS, isHousingType } from "./city-config.js";
 
 export const SETTLEMENT_INTERVAL = 10;
@@ -32,7 +32,13 @@ function serviceIsStaffed(building) {
 }
 function serviceIsSupplied(building) {
     if (building.type === TYPE.TAVERN) return (Number(state.resources.food) || 0) > 0;
-    if (building.type === TYPE.WELL) return getAvailableWarehouseStock("water") > 0 || (building.inventory?.output?.water || 0) > 0;
+    if (building.type === TYPE.WELL) {
+        // A well is supplied by its own output or by a store inside the water
+        // service radius. A remote warehouse no longer counts on paper.
+        if ((Number(building.inventory?.output?.water) || 0) > 0) return true;
+        const radius = SERVICE_DEFINITIONS.water?.radius || 8;
+        return getLocalWarehouseStock("water", building.x, building.y, radius) > 0;
+    }
     return true;
 }
 function activeService(building) {
@@ -101,13 +107,18 @@ function foodSatisfaction(population) {
     const demand = Math.max(1, population * 0.12);
     return clamp01((Number(state.resources.food) || 0) / demand);
 }
-function warmthSatisfaction(households, season) {
+// Heating draws firewood from a store in the household's own supply radius and
+// books it as consumption. Distant stock cannot warm a house.
+function warmthSatisfaction(house, season) {
     if (season !== 3) return 1;
-    if (!households) return 1;
-    const needed = households * 2;
-    const available = getWarehouseStock("firewood");
-    const consumed = withdrawGood("firewood", needed, 0, 0);
-    return clamp01(consumed / Math.max(1, needed));
+    const needed = 2;
+    const warehouse = findLocalWarehouse("firewood", house.x, house.y, HOUSEHOLD_SUPPLY_RADIUS);
+    if (!warehouse) return 0;
+    const consumed = consumeFromWarehouse(warehouse, "firewood", needed, {
+        cause: "household-heating", houseId: house.id,
+        key: "heat:" + house.id + ":" + state.year + ":" + state.seasonIndex + ":" + state.tick
+    });
+    return clamp01(consumed / needed);
 }
 function housingComfort(house) {
     return HOUSING_TIERS[house.type]?.comfort || 0.5;
@@ -122,7 +133,11 @@ export function updateSettlementNeeds() {
     const occupiedHomes = houseRows.filter(houseIsOccupied);
     const services = city.services.summary || updateServices();
     const season = Math.max(0, Math.min(3, Math.floor(number(state.seasonIndex))));
-    const firewood = warmthSatisfaction(occupiedHomes.length, season);
+    const houseWarmth = new Map();
+    for (const house of occupiedHomes) houseWarmth.set(house.id, warmthSatisfaction(house, season));
+    const firewood = occupiedHomes.length
+        ? occupiedHomes.reduce((sum, house) => sum + houseWarmth.get(house.id), 0) / occupiedHomes.length
+        : 1;
     let total = 0, count = 0;
     const householdRows = {};
     for (const house of occupiedHomes) {
@@ -132,7 +147,7 @@ export function updateSettlementNeeds() {
             id: house.id,
             food: foodSatisfaction(population),
             water: coverage.water ? 1 : 0,
-            warmth: Math.min(1, (coverage.water ? 0.75 : 0.55) + comfort * 0.25) * firewood,
+            warmth: Math.min(1, (coverage.water ? 0.75 : 0.55) + comfort * 0.25) * houseWarmth.get(house.id),
             safety: coverage.safety ? 1 : 0.45,
             social: coverage.social ? 1 : 0.4,
             health: coverage.health ? 1 : 0.5,

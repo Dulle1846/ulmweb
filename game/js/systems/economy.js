@@ -3,6 +3,7 @@
 import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { addResource } from "./resources.js";
+import { recordResourceMovement } from "./goods-book.js";
 import { updatePolitics } from "./politics.js";
 import { getRoadUpkeepTotal } from "./roads.js";
 import { getEdictModifiers } from "./edicts.js";
@@ -126,6 +127,10 @@ export function updateEconomy() {
     ledger.taxesCollected *= edicts.tax;
     ledger.netGold = ledger.taxesCollected - ledger.wagesPaid - ledger.upkeepPaid - ledger.furnitureUpkeepPaid;
 
+    recordResourceMovement("food", -ledger.foodConsumed, "population-food", {
+        from: { kind: "realm", id: "royal-stores" }, to: { kind: "population", id: "households" },
+        key: "food:population:" + state.tick
+    });
     addResource("food", -ledger.foodConsumed);
     addResource("gold", ledger.netGold);
     if (edicts.morale !== 0) {

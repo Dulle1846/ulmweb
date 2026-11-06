@@ -10,6 +10,7 @@ import { TYPE } from '../core/types.js';
 import { state } from '../core/state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 import { isWaterAt, worldWidth, worldHeight } from '../world/world.js';
+import { recordResourceMovement } from '../systems/goods-book.js';
 import { distance } from '../core/utils.js';
 import { rand as seededRand } from '../core/random.js';
 const rand=(min,max)=>seededRand(min,max,"villagers");
@@ -110,6 +111,10 @@ export function updateVillagers() {
     });
 
     if (state.tick % 220 === 0 && state.resources.food > 4) {
+        recordResourceMovement("food", -1, "residents-provisions", {
+            from: { kind: "realm", id: "royal-stores" }, to: { kind: "population", id: "residents" },
+            key: "food:residents:" + state.tick
+        });
         state.resources.food -= 1;
     }
 }

@@ -295,6 +295,14 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - The check now validates the visible region, not just the side-panel's theoretical bounding box.
 
 
+## Phase 6 — real mobile height chain
+
+- The 44px scroll clearance treated a symptom. At 390×844 the map still forced a 400px minimum, so the panel began at 721px and only 59px remained above the action dock — less than one 118px card. No scroll amount could ever make the card fully visible.
+- The phone map now flexes (`min-height:0`) and the panel keeps a real share of the fixed shell. The card fits above the dock without a special clearance offset, and the unchanged reachability assertion passes at 390×844 and 768×1024.
+- The settings dialog owns its vertical scroll (`overflow-y:auto`). It previously clipped 972px of options into an 830px `overflow:hidden` window at 390×844 with no scroll path.
+- The viewport matrix now completes all seven sizes, all eleven management tabs, the dossier, construction, settings and event overlays.
+
+
 ## Phase 2 — dedicated sovereign dossier increment (3.7.0-dev)
 
 - Added a royal-house section to the current sovereign's dossier, reading the live consort, designated heir, living children and recorded royal-house history from `getRoyalHouse()`.

@@ -7,12 +7,14 @@ import {
     initializeCityForRealm, ensureInventory, requestHaul, requestSupply, cancelJobsForEntity,
     updateLogistics, updateLogisticsMovement, serializeCity, restoreCity, validateCitySnapshot,
     evacuateBuildingInventory, setWarehouseProfile, getWarehouseProfile, depositGood, withdrawGood,
-    MAX_LOGISTICS_JOBS, MAX_CARRIERS, JOB_PRIORITIES
+    addLocalOutput, consumeFromWarehouse, getLocalWarehouseStock, getGoodsAudit, getPhysicalStock,
+    normalizeLegacyWarehouseCapacity, recordResourceMovement, MAX_LOGISTICS_JOBS, MAX_CARRIERS, JOB_PRIORITIES
 } from "../../js/systems/logistics.js";
+import { setAuditOpening } from "../../js/systems/goods-book.js";
 import { GOOD_KEYS } from "../../js/systems/city-config.js";
 import { updateFields } from "../../js/systems/fields.js";
 import { updateBuildingIncome } from "../../js/simulation/buildings.js";
-import { updateSettlementNeeds } from "../../js/systems/settlement.js";
+import { updateSettlementNeeds, updateServices } from "../../js/systems/settlement.js";
 
 const WIDTH = 160;
 const HEIGHT = 160;
@@ -41,6 +43,9 @@ function setup() {
     state.statistics = { ...(state.statistics || {}), totalHarvests: 0 };
     state.morale = 80;
     initializeCityForRealm({ seedWarehouse: false });
+    // The fixture grants royal food outside the simulation. Booking it as the
+    // opening balance keeps the resource audit honest for these tests.
+    setAuditOpening({ food: state.resources.food });
 }
 
 function place(type, x, y) {
@@ -198,19 +203,22 @@ test("06 removing the destination releases the source reservation without destro
     assertPhysicalBooks();
 });
 
-test("07 an unreachable destination blocks, then resumes after the route is restored", () => {
+test("07 an unreachable store is not bound to a job and accepts the order after the route is restored", () => {
     setup();
     const source = place(TYPE.LUMBER, 20, 20);
     const warehouse = place(TYPE.WAREHOUSE, 60, 20);
     source.inventory.output.logs = 5;
     state.heightMap.fill(0.2);
-    const job = requestHaul(source, "logs", 5);
-    assert.ok(job);
-    advance(8);
-    assert.equal(job.status, "pending");
-    assert.match(job.reason || "", /route/i);
+    state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
+    const refused = requestHaul(source, "logs", 5);
+    assert.equal(refused, null);
+    assert.match(state.city.logistics.lastRejection?.reason || "", /reachable/i);
+    assert.equal(source.inventory.reservedOut.logs, 0);
+    assert.equal(state.city.logistics.carriers.length, 0);
     state.heightMap.fill(0.62);
     state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
+    const job = requestHaul(source, "logs", 5);
+    assert.ok(job, "a reachable store must accept the order once the route exists");
     advance(200);
     assert.equal(job.status, "done");
     assert.equal(warehouseStock(warehouse, "logs"), 5);
@@ -444,7 +452,7 @@ test("20 a multi-year production and logistics loop keeps every stock finite and
 
 test("22 empty houses do not consume heating while an occupied house does", () => {
     setup();
-    const warehouse = place(TYPE.WAREHOUSE, 30, 30);
+    const warehouse = place(TYPE.WAREHOUSE, 42, 50);
     warehouse.warehouse.stored.firewood = 10;
     const house = place(TYPE.HOUSE, 50, 50);
     state.seasonIndex = 3;
@@ -456,6 +464,28 @@ test("22 empty houses do not consume heating while an occupied house does", () =
     resident.householdId = "house:" + house.id;
     updateSettlementNeeds();
     assert.equal(warehouseStock(warehouse, "firewood"), 8);
+    const booked = state.city.logistics.ledger.filter(entry => entry.type === "consumed" && entry.good === "firewood" && entry.houseId === house.id);
+    assert.equal(booked.reduce((sum, entry) => sum + entry.quantity, 0), 2);
+    assert.equal(booked[0].cause, "household-heating");
+    // A repeated settlement pass in the same tick is idempotent.
+    updateSettlementNeeds();
+    assert.equal(warehouseStock(warehouse, "firewood"), 8);
+    assertPhysicalBooks();
+});
+
+test("22b a distant store cannot heat a house", () => {
+    setup();
+    const warehouse = place(TYPE.WAREHOUSE, 120, 120);
+    warehouse.warehouse.stored.firewood = 40;
+    const house = place(TYPE.HOUSE, 20, 20);
+    state.seasonIndex = 3;
+    const resident = spawnEntity(house.x + 1, house.y, TYPE.VILLAGER);
+    assert.ok(resident);
+    resident.householdId = "house:" + house.id;
+    updateSettlementNeeds();
+    assert.equal(warehouseStock(warehouse, "firewood"), 40);
+    assert.equal(state.city.needs.summary.warmth, 0);
+    assert.equal(state.city.logistics.ledger.filter(entry => entry.good === "firewood").length, 0);
     assertPhysicalBooks();
 });
 
@@ -521,7 +551,7 @@ test("21 legacy logistics snapshots are normalized and their reservations rebuil
     assert.equal(restored.picked, 0);
     assert.equal(source.inventory.reservedOut.logs, 5);
     assert.equal(warehouse.warehouse.reservedIn.logs, 5);
-    assert.equal(serializeCity().logistics.version, 2);
+    assert.equal(serializeCity().logistics.version, 3);
     assertPhysicalBooks();
 });
 
@@ -695,5 +725,157 @@ test("34 manual store withdrawals are recorded in the central ledger", () => {
     assert.equal(entry.good, "firewood");
     assert.equal(entry.quantity, 2);
     assert.equal(warehouse.warehouse.stored.firewood, 4);
+    assertPhysicalBooks();
+});
+
+test("36 the goods audit reconciles production, transport and consumption", () => {
+    setup();
+    const source = place(TYPE.LUMBER, 20, 20);
+    const warehouse = place(TYPE.WAREHOUSE, 30, 20);
+    assert.equal(addLocalOutput(source, "logs", 6), 6);
+    assert.equal(getPhysicalStock("logs"), 6);
+    const job = requestHaul(source, "logs", 6);
+    assert.ok(job);
+    advance(60);
+    assert.equal(warehouseStock(warehouse, "logs"), 6);
+    assert.equal(getPhysicalStock("logs"), 6);
+    assert.equal(consumeFromWarehouse(warehouse, "logs", 2, { cause: "test-consumption", key: "test:consume:1" }), 2);
+    assert.equal(getPhysicalStock("logs"), 4);
+    const row = getGoodsAudit().rows.find(entry => entry.good === "logs");
+    assert.equal(row.opening, 0);
+    assert.equal(row.produced, 6);
+    assert.equal(row.consumed, 2);
+    assert.equal(row.physical, 4);
+    assert.equal(row.balanced, true);
+    assertPhysicalBooks();
+});
+
+test("37 a keyed consumption is booked once and never moves stock twice", () => {
+    setup();
+    const warehouse = place(TYPE.WAREHOUSE, 30, 30);
+    warehouse.warehouse.stored.firewood = 6;
+    assert.equal(consumeFromWarehouse(warehouse, "firewood", 2, { cause: "test", key: "heat:test:1" }), 2);
+    assert.equal(consumeFromWarehouse(warehouse, "firewood", 2, { cause: "test", key: "heat:test:1" }), 2);
+    assert.equal(warehouseStock(warehouse, "firewood"), 4);
+    assert.equal(state.city.logistics.ledger.filter(entry => entry.key === "heat:test:1").length, 1);
+    assertPhysicalBooks();
+});
+
+test("38 royal food uses the resource scope of the same book", () => {
+    setup();
+    state.resources.food -= 12.5;
+    recordResourceMovement("food", -12.5, "test-household-food");
+    const row = getGoodsAudit().rows.find(entry => entry.good === "food");
+    assert.equal(row.scope, "resource");
+    assert.equal(row.consumed, 12.5);
+    assert.equal(row.physical, state.resources.food);
+    assert.equal(row.balanced, true);
+    const entry = state.city.logistics.ledger.find(item => item.good === "food");
+    assert.equal(entry.scope, "resource");
+    assert.equal(entry.cause, "test-household-food");
+});
+
+test("39 a legacy save without an audit receives an opening balance", () => {
+    setup();
+    const warehouse = place(TYPE.WAREHOUSE, 30, 30);
+    warehouse.warehouse.stored.planks = 12;
+    const snapshot = serializeCity();
+    delete snapshot.logistics.audit;
+    snapshot.logistics.ledger = [];
+    restoreCity(snapshot);
+    const row = getGoodsAudit().rows.find(entry => entry.good === "planks");
+    assert.equal(row.opening, 12);
+    assert.equal(row.physical, 12);
+    assert.equal(row.balanced, true);
+});
+
+test("40 an overfull legacy store keeps every good and raises its capacity", () => {
+    setup();
+    const warehouse = place(TYPE.WAREHOUSE, 30, 30);
+    warehouse.warehouse.capacity = 10;
+    warehouse.warehouse.stored.logs = 25;
+    const snapshot = serializeCity();
+    assert.equal(normalizeLegacyWarehouseCapacity(), 1);
+    assert.equal(warehouse.warehouse.capacity, 25);
+    assert.equal(warehouse.warehouse.stored.logs, 25);
+    restoreCity(snapshot);
+    assert.ok(warehouse.warehouse.capacity >= 25);
+    assert.equal(warehouse.warehouse.stored.logs, 25);
+});
+
+test("41 a reachable alternative store is chosen when the nearest is cut off", () => {
+    setup();
+    const source = place(TYPE.LUMBER, 20, 20);
+    const cutOff = place(TYPE.WAREHOUSE, 30, 20);
+    const reachable = place(TYPE.WAREHOUSE, 20, 42);
+    for (let y = 0; y < HEIGHT; y++) for (const x of [26, 27]) state.heightMap[x + y * WIDTH] = 0.1;
+    state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
+    source.inventory.output.logs = 2;
+    const job = requestHaul(source, "logs", 2);
+    assert.ok(job, "the order must use the reachable store");
+    assert.equal(job.to.id, reachable.id);
+    advance(120);
+    assert.equal(job.status, "done");
+    assert.equal(warehouseStock(reachable, "logs"), 2);
+    assert.equal(warehouseStock(cutOff, "logs"), 0);
+    assertPhysicalBooks();
+});
+
+test("42 a well is only supplied by water inside its service radius", () => {
+    setup();
+    const well = place(TYPE.WELL, 30, 30);
+    employ(well, 1);
+    const house = place(TYPE.HOUSE, 32, 30);
+    const remote = place(TYPE.WAREHOUSE, 110, 110);
+    remote.warehouse.stored.water = 20;
+    updateServices();
+    assert.equal(state.city.services.byHouse[house.id].water, false);
+    const near = place(TYPE.WAREHOUSE, 34, 30);
+    near.warehouse.stored.water = 5;
+    updateServices();
+    assert.equal(state.city.services.byHouse[house.id].water, true);
+    assert.equal(getLocalWarehouseStock("water", house.x, house.y, 8), 5);
+});
+
+test("43 a full delivery queue reports its rejection instead of failing silently", () => {
+    setup();
+    for (let index = 0; index < 4; index++) place(TYPE.WAREHOUSE, 20 + index * 12, 20);
+    const sources = [];
+    for (let index = 0; index < MAX_LOGISTICS_JOBS; index++) {
+        const source = place(TYPE.LUMBER, 12 + (index % 10) * 10, 96 + Math.floor(index / 10) * 8);
+        source.inventory.output.logs = 2;
+        sources.push(source);
+    }
+    let accepted = 0;
+    for (const source of sources) if (requestHaul(source, "logs", 2)) accepted++;
+    assert.equal(accepted, MAX_LOGISTICS_JOBS);
+    const overflow = place(TYPE.LUMBER, 20, 70);
+    overflow.inventory.output.logs = 2;
+    assert.equal(requestHaul(overflow, "logs", 2), null);
+    assert.match(state.city.logistics.lastRejection.reason, /queue is full/i);
+    assert.ok(state.city.logistics.stats.queueRejected >= 1);
+});
+
+test("44 maximum load stays bounded and auditable", () => {
+    setup();
+    for (let index = 0; index < 12; index++) place(TYPE.WAREHOUSE, 20 + index * 10, 60);
+    const sources = [];
+    for (let index = 0; index < MAX_LOGISTICS_JOBS; index++) {
+        const source = place(TYPE.LUMBER, 12 + (index % 12) * 10, 96 + Math.floor(index / 12) * 8);
+        sources.push(source);
+        assert.equal(addLocalOutput(source, "logs", 2), 2);
+    }
+    for (const source of sources) assert.ok(requestHaul(source, "logs", 2));
+    assert.equal(state.city.logistics.jobs.filter(job => job.status !== "done" && job.status !== "cancelled").length, MAX_LOGISTICS_JOBS);
+    const started = performance.now();
+    advance(240);
+    const elapsed = performance.now() - started;
+    console.log("maximum-load logistics: " + MAX_LOGISTICS_JOBS + " orders, 12 stores, 240 ticks in " + Math.round(elapsed) + " ms");
+    assert.ok(elapsed < 5000, "240 ticks at maximum load must stay bounded; actual " + Math.round(elapsed) + " ms");
+    assert.ok(state.city.logistics.carriers.length <= MAX_CARRIERS);
+    assert.ok(state.city.logistics.jobs.filter(job => ["pending", "assigned", "blocked"].includes(job.status)).length <= MAX_LOGISTICS_JOBS);
+    const logs = getGoodsAudit().rows.find(row => row.good === "logs");
+    assert.equal(logs.balanced, true, "logs must reconcile after maximum load: " + JSON.stringify(logs));
+    assert.ok(logs.produced >= MAX_LOGISTICS_JOBS * 2);
     assertPhysicalBooks();
 });

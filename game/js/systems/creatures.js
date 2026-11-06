@@ -3,6 +3,7 @@ import {TYPE} from "../core/types.js";
 import {spawnEntity,canSpawnEntity} from "../world/entities.js";
 import {randInt,random} from "../core/random.js";
 import {addLog} from "./events.js";
+import {recordResourceMovement} from "./goods-book.js";
 const NAMES=["Emberwing","Ashscale","Cinder","Stormmaw","Goldvein","Nightflame","Thornfire","Dawnscale"];
 const TEMPERAMENTS=["curious","proud","gentle","fierce","mischievous","watchful"];
 const MAX_MEMORIES=16,MAX_ARCHIVE=100;
@@ -24,7 +25,7 @@ export function summonDragon(){
  if(!canSpawnEntity(TYPE.DRAGON))return {ok:false,reason:"entity-capacity"};
  const dragon=spawnEntity(king.x+2+living.length,king.y+1,TYPE.DRAGON);if(!dragon)return {ok:false,reason:"entity-capacity"};
  awakenDragon(dragon);
- state.resources.gold-=55;state.resources.food-=35;
+ state.resources.gold-=55;recordResourceMovement("food",-35,"dragon-tribute",{from:{kind:"realm",id:"royal-stores"},to:{kind:"creature",id:dragon.id}});state.resources.food-=35;
  addLog("A DRAGON HAS JOINED THE REALM: "+dragon.creature.name,"#e8b65f","creature");
  return {ok:true,dragon};
 }
@@ -39,7 +40,7 @@ export function updateCreatures(){
   c.hunger=Math.min(100,Math.max(0,Number(c.hunger)||0)+elapsed*16);
   const king=state.entities.find(e=>!e.dead&&e.isKing);
   const nearKing=king&&Math.hypot(king.x-dragon.x,king.y-dragon.y)<=10;
-  if((Number(state.resources?.food)||0)>=6&&c.hunger>=35){state.resources.food-=6;c.hunger=Math.max(0,c.hunger-42);c.health=Math.min(100,(Number(c.health)||0)+3);}
+  if((Number(state.resources?.food)||0)>=6&&c.hunger>=35){recordResourceMovement("food",-6,"dragon-feeding",{from:{kind:"realm",id:"royal-stores"},to:{kind:"creature",id:dragon.id},key:"food:dragon:"+dragon.id+":"+year});state.resources.food-=6;c.hunger=Math.max(0,c.hunger-42);c.health=Math.min(100,(Number(c.health)||0)+3);}
   else if(c.hunger>=65){c.health=Math.max(0,(Number(c.health)||0)-Math.min(45,elapsed*12));state.morale=Math.max(0,(Number(state.morale)||0)-Math.min(6,elapsed*1.5));}
   if(nearKing)c.bond=Math.min(100,(Number(c.bond)||0)+Math.min(8,elapsed*2));
   else c.bond=Math.max(0,(Number(c.bond)||0)-Math.min(4,elapsed));

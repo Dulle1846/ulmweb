@@ -14,6 +14,8 @@ import {
 } from "../systems/logistics.js";
 import { findNearestResourceNode, harvestForest, extractStone } from "../systems/resource-geography.js";
 
+import { recordResourceMovement } from "../systems/goods-book.js";
+
 const PRODUCTION_INTERVAL = 6;
 const CIVIC_INTERVAL = 55;
 
@@ -65,13 +67,8 @@ function consumeInputs(building) {
 function finishOutput(building, output, production) {
     const recipe = RECIPES[building.type];
     for (const [good, amount] of Object.entries(output)) {
-        const accepted = addLocalOutput(building, good, amount);
+        const accepted = addLocalOutput(building, good, amount, { cause: "recipe-output" });
         if (accepted > 0) {
-            recordGoodMovement({
-                type: "produced", good, quantity: accepted,
-                from: { kind: "recipe", id: recipe.label }, to: { kind: "building", id: building.id },
-                cause: "recipe-output"
-            });
             if (good === "logs") production.logsHarvested += accepted;
             else if (good === "planks") production.planksProduced += accepted;
             else if (good === "flour") production.flourProduced += accepted;
@@ -167,6 +164,10 @@ export function updateBuildingIncome() {
             if (efficiency <= 0) continue;
             const provisions = Math.min(Number(state.resources.food) || 0, efficiency);
             if (provisions <= 0) continue;
+            recordResourceMovement("food", -provisions, "tavern-provisions", {
+                from: { kind: "realm", id: "royal-stores" }, to: { kind: "building", id: tavern.id },
+                key: "food:tavern:" + tavern.id + ":" + state.tick
+            });
             addResource("food", -provisions);
             const gold = 3 * efficiency * (provisions / Math.max(0.0001, efficiency));
             addResource("gold", gold);

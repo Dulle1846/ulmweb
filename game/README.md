@@ -18,6 +18,8 @@
 - Make changes on a feature branch, never directly on the production branch.
 - Keep `game/` as the canonical game root.
 - Run `npm test` from this directory.
+- Browser E2E setup, dependencies, fonts and the reproduction commands are documented in [tests/browser/README.md](tests/browser/README.md).
+- Settlement stock, the central goods audit, local household supply and the abstract carrier model are documented in [docs/LOGISTICS_ARCHITECTURE.md](docs/LOGISTICS_ARCHITECTURE.md).
 - Required browser E2E must pass on the exact PR head.
 - Do not treat a green CI run as proof of a Pages deployment.
 - Do not merge old feature branches mechanically; preserve and review unique work first.

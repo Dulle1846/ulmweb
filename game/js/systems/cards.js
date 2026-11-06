@@ -10,6 +10,7 @@ import { CARD_PROTOTYPES,CARD_CATEGORIES,CARD_VARIANT_DIMENSIONS,createCardForCa
 import { addLog } from "./events.js";
 import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE,normalizeHouseholdAssignments } from "./population.js";
 import { queueParticle,queueFloater } from "../core/presentation-effects.js";
+import { recordResourceMovement } from "./goods-book.js";
 import { rand as seededRand,randInt as seededRandInt } from "../core/random.js";
 import { awakenDragon } from "./creatures.js";
 import { activateEdict } from "./edicts.js";
@@ -118,12 +119,12 @@ function realmPopulation(){
 }
 function healthState(){return state.health||(state.health={containment:0,cases:0});}
 function resolveEffectCard(card){
-    if(card.effect==="harvest"){addResource("food",35);return " +35 FOOD";}
+    if(card.effect==="harvest"){recordResourceMovement("food",35,"card-harvest",{to:{kind:"realm",id:"royal-stores"},key:"food:card:"+card.uid});addResource("food",35);return " +35 FOOD";}
     if(card.effect==="gold-rush"){addResource("gold",24);return " +24 GOLD";}
     if(card.effect==="festival"){state.morale=Math.min(100,state.morale+14);return " +14 MORALE";}
-    if(card.effect==="supply-cache"){addResource("wood",8);addResource("food",6);return " SUPPLIES FOUND";}
-    if(card.effect==="granary-cache"){addResource("food",45);return " +45 FOOD";}
-    if(card.effect==="apiary"){addResource("food",18);state.morale=Math.min(100,state.morale+3);return " +18 FOOD · +3 MORALE";}
+    if(card.effect==="supply-cache"){addResource("wood",8);recordResourceMovement("food",6,"card-supply-cache",{to:{kind:"realm",id:"royal-stores"},key:"food:card:"+card.uid});addResource("food",6);return " SUPPLIES FOUND";}
+    if(card.effect==="granary-cache"){recordResourceMovement("food",45,"card-granary",{to:{kind:"realm",id:"royal-stores"},key:"food:card:"+card.uid});addResource("food",45);return " +45 FOOD";}
+    if(card.effect==="apiary"){recordResourceMovement("food",18,"card-apiary",{to:{kind:"realm",id:"royal-stores"},key:"food:card:"+card.uid});addResource("food",18);state.morale=Math.min(100,state.morale+3);return " +18 FOOD · +3 MORALE";}
     if(card.effect==="vintage"){addResource("gold",14);state.morale=Math.min(100,state.morale+8);return " +14 GOLD · +8 MORALE";}
     if(card.effect==="clean-water"){state.morale=Math.min(100,state.morale+7);healthState().containment=Math.min(100,(healthState().containment||0)+10);return " +7 MORALE · CLEAN WATER";}
     if(card.effect==="healers"){healthState().containment=Math.min(100,(healthState().containment||0)+15);state.morale=Math.min(100,state.morale+4);return " HEALERS TEND THE SICK";}

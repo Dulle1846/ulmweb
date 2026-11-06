@@ -33,6 +33,25 @@ import {initializeSettlementForRealm} from "../systems/settlement.js";
 import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
 
+const SAVE_SCHEMA_VERSION=4;
+// Snapshot field migrations run in order. Each step is defensive because
+// imported or hand-edited saves may be missing any field.
+const SAVE_SCHEMA_MIGRATIONS=Object.freeze({
+    0:snapshot=>{snapshot.hiddenRealm=snapshot.hiddenRealm&&typeof snapshot.hiddenRealm==="object"?snapshot.hiddenRealm:{};snapshot.health=snapshot.health&&typeof snapshot.health==="object"?snapshot.health:{};snapshot.economy=snapshot.economy&&typeof snapshot.economy==="object"?snapshot.economy:{};},
+    1:snapshot=>{snapshot.statistics=snapshot.statistics&&typeof snapshot.statistics==="object"?snapshot.statistics:{};snapshot.personArchive=Array.isArray(snapshot.personArchive)?snapshot.personArchive:[];snapshot.creatureArchive=Array.isArray(snapshot.creatureArchive)?snapshot.creatureArchive:[];},
+    2:snapshot=>{snapshot.randomStreams=snapshot.randomStreams&&typeof snapshot.randomStreams==="object"?snapshot.randomStreams:null;snapshot.availableCards=Array.isArray(snapshot.availableCards)?snapshot.availableCards:[];snapshot.issueSequence=Number.isFinite(Number(snapshot.issueSequence))?Math.max(0,Math.floor(Number(snapshot.issueSequence))):0;},
+    3:snapshot=>{if(snapshot.city===undefined)snapshot.city=null;if(snapshot.market===undefined)snapshot.market=null;}
+});
+function migrateSaveSnapshot(snapshot){
+    if(!snapshot||typeof snapshot!=="object"||Array.isArray(snapshot))return snapshot;
+    const declared=Number(snapshot.saveSchemaVersion);
+    let version=Number.isFinite(declared)?Math.max(0,Math.floor(declared)):0;
+    if(version>SAVE_SCHEMA_VERSION)throw new Error("Save data was written by a newer game build (schema "+version+").");
+    while(version<SAVE_SCHEMA_VERSION){const step=SAVE_SCHEMA_MIGRATIONS[version];if(step)step(snapshot);version++;}
+    snapshot.saveSchemaVersion=SAVE_SCHEMA_VERSION;
+    return snapshot;
+}
+
 let loopStarted=false;
 let settings=loadSettings();
 function applyInterfaceSettings(){
@@ -190,7 +209,7 @@ function createSaveSnapshot(){
     const indexes=new Map(state.entities.map((entity,index)=>[entity,index]));
     return {
         playerName:state.playerName,kingdomName:state.kingdomName,worldSeed:state.worldSeed,
-        worldOptions:{...state.worldOptions},randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:4,nextCardDrawTick:state.nextCardDrawTick,
+        worldOptions:{...state.worldOptions},randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:SAVE_SCHEMA_VERSION,nextCardDrawTick:state.nextCardDrawTick,
         nextIssueAtTick:state.nextIssueAtTick,issueSequence:state.issueSequence,
         hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),health:JSON.parse(JSON.stringify(state.health||{})),
         camera:{...state.camera},zoom:state.zoom,
@@ -237,6 +256,7 @@ function saveCurrentGame(){
 const SAVE_MOBILE_TYPES=new Set([TYPE.VILLAGER,TYPE.GUARD,TYPE.ARCHER,TYPE.KNIGHT,TYPE.PRIEST,TYPE.DRAGON,TYPE.DEER,TYPE.GOBLIN,TYPE.ORC,TYPE.TROLL]);
 function validateSaveSnapshot(snapshot){
     if(!snapshot||typeof snapshot!=="object"||Array.isArray(snapshot))throw new Error("Save data is not a valid realm object.");
+    if(Number.isFinite(Number(snapshot.saveSchemaVersion))&&Number(snapshot.saveSchemaVersion)>SAVE_SCHEMA_VERSION)throw new Error("Save data was written by a newer game build.");
     if(!Number.isSafeInteger(Number(snapshot.worldSeed))||Number(snapshot.worldSeed)<=0)throw new Error("Save data has an invalid world seed.");
     if(!Array.isArray(snapshot.entities)||snapshot.entities.length>900)throw new Error("Save data has an invalid or oversized entity list.");
     let mobile=0;
@@ -277,6 +297,7 @@ function validateSaveSnapshot(snapshot){
 }
 
 function loadSnapshotIntoGame(profile,snapshot){
+    snapshot=migrateSaveSnapshot(snapshot);
     validateSaveSnapshot(snapshot);
     resetForRun(profile);
     state.worldSeed=snapshot.worldSeed||randomSeed();
@@ -396,7 +417,7 @@ function loadCurrentGame(){
     try{
         loadSnapshotIntoGame(profile,save.snapshot);
         syncWorldForge(state.worldOptions);
-        showStatus("Loaded realm"+(save.restoredFromBackup?" · previous backup restored":"")+" · "+new Date(save.savedAt).toLocaleString());
+        showStatus("Loaded realm"+(save.migratedFrom!=null?" · save migrated from schema "+save.migratedFrom:"")+(save.restoredFromBackup?" · previous backup restored":"")+" · "+new Date(save.savedAt).toLocaleString());
         setSaveStatus("LOADED · "+new Date(save.savedAt).toLocaleTimeString(),"saved");
         addLog("SAVE LOADED","#a3d6a7","system");
         renderSaveSlots();

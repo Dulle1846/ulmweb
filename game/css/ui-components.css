@@ -44,6 +44,9 @@
 .ui-window--large{--ui-window-width:1160px}
 .ui-window__header{flex:0 0 auto;min-width:0}
 .ui-window__body{flex:1 1 auto;min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+/* Settings has no separate body wrapper, so the window itself owns the scroll
+   path. Without it the option list is clipped and unreachable on short phones. */
+.settings-panel{overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 .ui-window__footer{flex:0 0 auto;min-width:0}
 .ui-window__body:focus-visible{outline:2px solid var(--ui-control-focus);outline-offset:-2px}
 @media(max-width:720px){

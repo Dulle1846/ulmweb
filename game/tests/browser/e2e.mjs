@@ -6,7 +6,8 @@ import {tmpdir} from "node:os";
 import {chromium} from "playwright";
 
 const root=process.cwd();
-const screenshotDir=resolve(tmpdir(),"kac-ui-viewport-review");
+const port=Number(process.env.E2E_PORT)||4173;
+const screenshotDir=process.env.E2E_SCREENSHOT_DIR?resolve(root,process.env.E2E_SCREENSHOT_DIR):resolve(tmpdir(),"kac-ui-viewport-review");
 await mkdir(screenshotDir,{recursive:true});
 const mime={
     ".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",
@@ -26,15 +27,19 @@ const server=createServer(async(req,res)=>{
         res.writeHead(404,{"content-type":"text/plain"}).end("Not found");
     }
 });
-await new Promise(resolveListen=>server.listen(4173,"127.0.0.1",resolveListen));
-const browser=await chromium.launch({headless:true,args:["--no-sandbox","--disable-dev-shm-usage"]});
+await new Promise(resolveListen=>server.listen(port,"127.0.0.1",resolveListen));
+const browser=await chromium.launch({
+    headless:process.env.E2E_HEADED!=="1",
+    executablePath:process.env.E2E_CHROMIUM_EXECUTABLE||undefined,
+    args:["--no-sandbox","--disable-dev-shm-usage"]
+});
 const errors=[],consoleErrors=[];
 try{
     const context=await browser.newContext({viewport:{width:1600,height:1000},reducedMotion:"reduce"});
     const page=await context.newPage();
     page.on("pageerror",error=>errors.push(error.message));
     page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text());});
-    await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
+    await page.goto("http://127.0.0.1:"+port+"/",{waitUntil:"networkidle"});
     assert.equal(await page.title(),"KINGS & CARDS • Eternal Realm");
     assert.equal(await page.locator("#start-screen").isVisible(),true);
     assert.equal(await page.locator("#start-screen .start-hero-art").getAttribute("src"),"assets/royal-title-illustration.svg","the founding screen must use the original muted royal title artwork");
@@ -298,10 +303,13 @@ try{
     // a static explanation. Production runs every six ticks, so wait for it.
     if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-dismiss").click();
     await page.locator('[data-command-tab="buildings"]').click();
-    assert.ok((await page.locator("#command-panel-content").innerText()).includes("LATEST GOOD MOVEMENTS"),"transport overview must expose the movement ledger");
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("MOVEMENT ARCHIVE"),"transport overview must expose the movement archive");
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("GOODS AUDIT"),"transport overview must expose the goods audit");
+    assert.ok(await page.locator("#command-panel-content .warehouse-row").count()>=1,"the store overview must list every warehouse");
+    assert.ok(await page.locator("#command-panel-content .logistics-audit").count()>=10,"the audit must expose every physical good and royal food");
     await page.waitForFunction(()=>document.querySelectorAll("#command-panel-content .logistics-movement").length>0,null,{timeout:15000});
     const movementTypes=await page.locator("#command-panel-content .logistics-movement").evaluateAll(nodes=>nodes.map(node=>node.dataset.movementType));
-    assert.ok(movementTypes.length>0&&movementTypes.length<=8,"the movement ledger preview must stay bounded to the newest records");
+    assert.ok(movementTypes.length>0&&movementTypes.length<=40,"the movement archive must stay bounded to the newest 40 records");
     assert.ok(movementTypes.every(type=>["produced","consumed","deposited","withdrawn","evacuated","reserved","picked","delivered"].includes(type)),"every ledger row must expose a known movement type: "+movementTypes.join(","));
     await page.waitForFunction(async()=>{
         const {state}=await import("./js/core/state.js");
@@ -315,13 +323,17 @@ try{
         return {
             length:ledger.length,
             types:ledger.map(entry=>entry.type),
-            invalidGoods:ledger.filter(entry=>entry.good!==null&&!GOOD_KEYS.includes(entry.good)).map(entry=>entry.good)
+            resourceEntries:ledger.filter(entry=>entry.scope==="resource"&&entry.good==="food").length,
+            invalidScopes:ledger.filter(entry=>entry.scope!==undefined&&!["good","resource"].includes(entry.scope)).map(entry=>entry.scope),
+            invalidGoods:ledger.filter(entry=>entry.good!==null&&!GOOD_KEYS.includes(entry.good)&&!(entry.scope==="resource"&&entry.good==="food")).map(entry=>entry.good)
         };
     });
     assert.ok(ledgerAudit.types.includes("produced"),"production output must reach the central ledger");
     assert.ok(ledgerAudit.types.some(type=>["reserved","picked","delivered"].includes(type)),"transport movements must share the same ledger");
     assert.deepEqual(ledgerAudit.invalidGoods,[],"the ledger must never record an unknown good");
-    assert.ok(ledgerAudit.length<=160,"the central movement ledger must stay bounded");
+    assert.deepEqual(ledgerAudit.invalidScopes,[],"every ledger entry must use a known stock scope");
+    assert.ok(ledgerAudit.resourceEntries>=1,"royal food consumption must be booked in the same ledger with resource scope");
+    assert.ok(ledgerAudit.length<=600,"the central movement ledger must stay bounded to 600 entries");
 
     // Pause while the deterministic warehouse fixture is inspected and the
     // demolition feedback is exercised; resume before the map action tests.
@@ -761,7 +773,333 @@ try{
     assert.ok((await page.locator("#person-dossier").innerText()).includes("DECEASED"));
     await page.locator("#people-close").click();
     await page.locator("#pause-btn").click();
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
 
+    // Legacy saves and very large logistics workloads must survive the real
+    // localStorage save/load path without inventing or losing stock.
+    const dismissRealmEvent=async()=>{
+        if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-dismiss").click();
+    };
+    const loadRealm=async()=>{
+        await page.evaluate(()=>{const status=document.querySelector("#status-message");if(status)status.textContent="";});
+        await dismissRealmEvent();
+        await page.locator("#load-btn").click();
+        await page.waitForFunction(()=>{
+            const message=document.querySelector("#status-message")?.textContent||"";
+            return message.includes("Loaded realm")||message.includes("Load failed")||message.includes("No valid saved realm");
+        },null,{timeout:10000});
+        return (await page.locator("#status-message").textContent()||"").trim();
+    };
+    const ensurePaused=async()=>{
+        await dismissRealmEvent();
+        if((await page.locator("#pause-text").textContent()||"").trim()!=="RESUME"){
+            await page.locator("#pause-btn").click();
+            await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
+        }
+    };
+
+    const warehouseId=await page.evaluate(async()=>{
+        const [{state},{TYPE},{spawnEntity},{ensureInventory}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/core/types.js"),
+            import("./js/world/entities.js"),import("./js/systems/logistics.js")
+        ]);
+        let warehouse=state.entities.find(entity=>!entity.dead&&entity.type===TYPE.WAREHOUSE);
+        if(!warehouse){
+            warehouse=spawnEntity(4,4,TYPE.WAREHOUSE);
+            if(!warehouse)throw new Error("Could not create a warehouse fixture for the legacy save test");
+            ensureInventory(warehouse);
+        }
+        return warehouse.id;
+    });
+    await dismissRealmEvent();
+    await page.evaluate(()=>{const status=document.querySelector("#status-message");if(status)status.textContent="";});
+    await page.locator("#save-btn").click();
+    await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Realm saved"),null,{timeout:5000});
+    const goodSave=await page.evaluate(async({warehouseId})=>{
+        const {state}=await import("./js/core/state.js");
+        const key=Object.keys(localStorage).find(candidate=>candidate.startsWith("kings-and-cards:save:v")&&candidate.endsWith(":"+state.activeProfileId));
+        if(!key)throw new Error("The good save was not written to localStorage");
+        const backupKey=key.replace("kings-and-cards:save:","kings-and-cards:save-backup:");
+        const raw=localStorage.getItem(key);
+        if(!raw)throw new Error("The good save was not written to localStorage");
+        const envelope=JSON.parse(raw);
+        return {profileId:state.activeProfileId,key,backupKey,raw,tick:Number(envelope.snapshot.tick)||0,warehouseId};
+    },{warehouseId});
+
+    const legacy=await page.evaluate(async({key,backupKey,raw,warehouseId})=>{
+        const {GOOD_KEYS}=await import("./js/systems/city-config.js");
+        const good=JSON.parse(raw);
+        const snapshot=structuredClone(good.snapshot);
+        snapshot.tick=(Number(snapshot.tick)||0)+777;
+        snapshot.gameSpeed=2;
+        const dto=snapshot.entities.find(entity=>entity.id===warehouseId&&entity.warehouse&&!entity.dead);
+        if(!dto)throw new Error("Warehouse fixture is missing from the save snapshot");
+        delete dto.warehouse.profile;
+        dto.warehouse.filters=["grain","flour","bread"];
+        dto.warehouse.capacity="legacy";
+        const stored={};
+        for(const good of GOOD_KEYS)stored[good]=0;
+        stored.grain=12.9;stored.flour=-4;stored.bread=3;stored.mystery=5;
+        dto.warehouse.stored=stored;
+        dto.warehouse.reservedIn={grain:999,flour:-2,bread:1000000};
+        dto.warehouse.reservedOut={grain:999,flour:2};
+        snapshot.city=snapshot.city||{};
+        snapshot.city.version=1;
+        snapshot.city.logistics={
+            version:1,nextJobId:1,
+            jobs:[{
+                id:"legacy-huge-job",kind:"haul",good:"grain",quantity:1000000000,
+                from:{kind:"building",id:warehouseId},to:{kind:"warehouse",id:warehouseId},
+                status:"pending",createdTick:0
+            }],
+            carriers:[]
+        };
+        localStorage.setItem(key,JSON.stringify({...good,savedAt:new Date().toISOString(),snapshot}));
+        localStorage.removeItem(backupKey);
+        return {tick:snapshot.tick};
+    },goodSave);
+    const legacyStatus=await loadRealm();
+    assert.ok(legacyStatus.includes("Loaded realm"),"legacy save must load; actual status: "+legacyStatus);
+    assert.ok(!legacyStatus.includes("backup"),"legacy primary save must load without falling back to a backup");
+    await ensurePaused();
+
+    const legacyState=await page.evaluate(async({warehouseId})=>{
+        const {state}=await import("./js/core/state.js");
+        const {GOOD_KEYS}=await import("./js/systems/city-config.js");
+        const warehouse=state.entities.find(entity=>entity.id===warehouseId);
+        const logistics=state.city.logistics;
+        const values=[];
+        for(const map of [warehouse.warehouse.stored,warehouse.warehouse.reservedIn,warehouse.warehouse.reservedOut,warehouse.inventory.input,warehouse.inventory.output,warehouse.inventory.reservedIn,warehouse.inventory.reservedOut]){
+            for(const [good,value] of Object.entries(map||{}))values.push({good,value});
+        }
+        return {
+            tick:Number(state.tick),
+            profile:warehouse.warehouse.profile,
+            capacity:Number(warehouse.warehouse.capacity),
+            filters:[...warehouse.warehouse.filters],
+            stored:{...warehouse.warehouse.stored},
+            reservedIn:{...warehouse.warehouse.reservedIn},
+            reservedOut:{...warehouse.warehouse.reservedOut},
+            invalidValues:values.filter(entry=>!Number.isFinite(Number(entry.value))||Number(entry.value)<0),
+            jobs:logistics.jobs.map(job=>({
+                id:job.id,quantity:Number(job.quantity),reserved:Number(job.reserved),
+                picked:Number(job.picked),delivered:Number(job.delivered),
+                sourceReserved:Boolean(job.sourceReserved),targetReserved:Boolean(job.targetReserved),
+                status:job.status
+            })),
+            ledgerLength:logistics.ledger.length,
+            nextLedgerId:Number(logistics.nextLedgerId),
+            goodKeys:GOOD_KEYS
+        };
+    },{warehouseId});
+    assert.ok(Number.isSafeInteger(legacyState.tick)&&legacyState.tick>=legacy.tick,"legacy save must restore a valid tick at or beyond its saved tick");
+    assert.equal(legacyState.profile,"food","legacy warehouse filters must be recognised as the food profile");
+    assert.deepEqual(legacyState.filters,["grain","flour","bread"],"legacy warehouse filters must be preserved");
+    assert.equal(legacyState.capacity,180,"an invalid legacy capacity must fall back to the warehouse default");
+    assert.equal(legacyState.stored.grain,12,"fractional legacy stock must be floored");
+    assert.equal(legacyState.stored.flour,0,"negative legacy stock must be clamped to zero");
+    assert.equal(legacyState.stored.bread,3,"valid legacy stock must be preserved");
+    assert.equal(legacyState.stored.logs,0,"missing goods must be initialised to zero");
+    assert.deepEqual(legacyState.invalidValues,[],"legacy stock and reservations must be finite and non-negative");
+    assert.equal(legacyState.jobs.length,1,"the legacy job must survive validation");
+    assert.equal(legacyState.jobs[0].quantity,1000000000,"the huge legacy job quantity must be preserved");
+    assert.ok(legacyState.jobs[0].targetReserved,"the huge legacy job must reserve only the real destination space");
+    assert.equal(legacyState.reservedIn.grain,165,"the huge legacy job must be clamped to the free warehouse space");
+    assert.equal(legacyState.reservedOut.grain,0,"stale warehouse outbound reservations must be rebuilt from active jobs");
+    assert.equal(legacyState.ledgerLength,0,"a missing legacy ledger must restore as an empty bounded ledger");
+    assert.ok(legacyState.nextLedgerId>=1,"a missing legacy ledger sequence must restart safely");
+
+    const backup=await page.evaluate(({key,backupKey,raw})=>{
+        const good=JSON.parse(raw);
+        const backup=structuredClone(good);
+        backup.savedAt=new Date(Date.now()-60000).toISOString();
+        backup.snapshot.tick=(Number(good.snapshot.tick)||0)+321;
+        localStorage.setItem(backupKey,JSON.stringify(backup));
+        localStorage.setItem(key,"{corrupt-primary-save");
+        return {tick:Number(backup.snapshot.tick)};
+    },goodSave);
+    const backupStatus=await loadRealm();
+    assert.ok(backupStatus.includes("Loaded realm"),"backup recovery must load; actual status: "+backupStatus);
+    assert.ok(backupStatus.includes("previous backup restored"),"a corrupt primary save must fall back to the valid backup");
+    await ensurePaused();
+    const backupTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
+    assert.ok(Number(backupTick)>=backup.tick,"backup recovery must restore the backup tick");
+
+    await page.evaluate(({key,backupKey,raw})=>{localStorage.setItem(key,raw);localStorage.removeItem(backupKey);},goodSave);
+    const restoredStatus=await loadRealm();
+    assert.ok(restoredStatus.includes("Loaded realm"),"the known-good save must load again; actual status: "+restoredStatus);
+    assert.ok(!restoredStatus.includes("backup"),"the known-good primary save must not require backup recovery");
+    await ensurePaused();
+    const restoredTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
+    assert.ok(Number(restoredTick)>=goodSave.tick,"the known-good save must restore its tick");
+
+    // The outer save envelope must migrate instead of rejecting an older save.
+    // Write the same snapshot under a version 1 envelope at the legacy key and
+    // remove the current primary, so the real read path has to migrate it.
+    const legacyEnvelopeKey=await page.evaluate(async({raw,key})=>{
+        const {state}=await import("./js/core/state.js");
+        const legacyKey="kings-and-cards:save:v1:"+state.activeProfileId;
+        const envelope=JSON.parse(raw);
+        envelope.version=1;
+        envelope.savedAt=new Date(Date.now()-120000).toISOString();
+        localStorage.setItem(legacyKey,JSON.stringify(envelope));
+        localStorage.removeItem(key);
+        return legacyKey;
+    },goodSave);
+    const migratedStatus=await loadRealm();
+    assert.ok(migratedStatus.includes("Loaded realm"),"a version 1 envelope must load; actual status: "+migratedStatus);
+    assert.ok(migratedStatus.includes("save migrated from schema 1"),"the load path must report the envelope migration; actual: "+migratedStatus);
+    await ensurePaused();
+    await page.evaluate(({key,raw,legacyKey})=>{
+        localStorage.setItem(key,raw);
+        localStorage.removeItem(legacyKey);
+    },{key:goodSave.key,raw:goodSave.raw,legacyKey:legacyEnvelopeKey});
+
+    const largeOrder=await page.evaluate(async()=>{
+        const [
+            {state},{TYPE},{spawnEntity},
+            {ensureInventory,requestHaul,cancelJobsForEntity,serializeCity,restoreCity,rebuildLogisticsReservations},
+            {GOOD_KEYS},{MAX_LOGISTICS_JOBS,MAX_CARRIERS}
+        ]=await Promise.all([
+            import("./js/core/state.js"),import("./js/core/types.js"),import("./js/world/entities.js"),
+            import("./js/systems/logistics.js"),import("./js/systems/city-config.js"),import("./js/systems/logistics.js")
+        ]);
+        const stockTotal=()=>state.entities.filter(entity=>!entity.dead&&entity.warehouse)
+            .reduce((sum,entity)=>sum+GOOD_KEYS.reduce((inner,good)=>inner+Number(entity.warehouse.stored[good]||0),0),0);
+        state.city.logistics.jobs=[];
+        state.city.logistics.carriers=[];
+        rebuildLogisticsReservations();
+        const stockBefore=stockTotal();
+        const target=spawnEntity(2,2,TYPE.WAREHOUSE);
+        if(!target)throw new Error("large-order target warehouse could not spawn");
+        ensureInventory(target);
+        target.warehouse.profile="general";
+        target.warehouse.filters=[...GOOD_KEYS];
+        target.warehouse.capacity=1000000000;
+        for(const good of GOOD_KEYS){
+            target.warehouse.stored[good]=0;
+            target.warehouse.reservedIn[good]=0;
+            target.warehouse.reservedOut[good]=0;
+        }
+        for(const warehouse of state.entities.filter(entity=>!entity.dead&&entity.warehouse&&entity.id!==target.id)){
+            ensureInventory(warehouse);
+            warehouse.warehouse.filters=warehouse.warehouse.filters.filter(good=>good!=="water");
+        }
+        const source=spawnEntity(3,2,TYPE.WELL);
+        if(!source)throw new Error("large-order source could not spawn");
+        ensureInventory(source);
+        source.inventory.output.water=1000000000;
+        const hugeJob=requestHaul(source,"water",1000000000);
+        if(!hugeJob)throw new Error("the huge order was not created");
+        const huge={
+            quantity:Number(hugeJob.quantity),
+            sourceReserved:Number(source.inventory.reservedOut.water),
+            targetReserved:Number(target.warehouse.reservedIn.water),
+            targetReservedFlag:Boolean(hugeJob.targetReserved)
+        };
+        cancelJobsForEntity(target.id);
+        const afterCancel={
+            status:hugeJob.status,
+            sourceReserved:Number(source.inventory.reservedOut.water),
+            targetReserved:Number(target.warehouse.reservedIn.water)
+        };
+        state.city.logistics.jobs=[];
+        state.city.logistics.carriers=[];
+        rebuildLogisticsReservations();
+        target.warehouse.capacity=400;
+        for(const good of GOOD_KEYS){
+            target.warehouse.stored[good]=0;
+            target.warehouse.reservedIn[good]=0;
+            target.warehouse.reservedOut[good]=0;
+        }
+        // Reachability is now a real path check. The queue fixture must sit on
+        // connected land, so flatten the terrain for the fixture and restore it
+        // immediately afterwards; the jobs themselves stay in the queue.
+        const savedHeights=Float32Array.from(state.heightMap);
+        state.heightMap.fill(0.62);
+        state.buildingCollisionVersion=(state.buildingCollisionVersion||0)+1;
+        const wells=[];
+        for(let index=0;index<80;index++){
+            const well=spawnEntity(5+(index%10),5+Math.floor(index/10),TYPE.WELL);
+            if(!well)throw new Error("queue fixture well could not spawn at "+index);
+            ensureInventory(well);
+            well.inventory.output.water=1;
+            wells.push(well);
+        }
+        const created=wells.map(well=>requestHaul(well,"water",1)).filter(Boolean);
+        state.heightMap.set(savedHeights);
+        state.buildingCollisionVersion=(state.buildingCollisionVersion||0)+1;
+        const active=()=>state.city.logistics.jobs.filter(job=>["pending","assigned","blocked"].includes(job.status));
+        const queue={
+            created:created.length,
+            active:active().length,
+            total:state.city.logistics.jobs.length,
+            targetReserved:Number(target.warehouse.reservedIn.water),
+            sourceReserved:wells.reduce((sum,well)=>sum+Number(well.inventory.reservedOut.water||0),0)
+        };
+        const roundTripSnapshot=serializeCity();
+        restoreCity(roundTripSnapshot);
+        const roundTrip={
+            active:active().length,
+            total:state.city.logistics.jobs.length,
+            targetReserved:Number(target.warehouse.reservedIn.water),
+            sourceReserved:wells.reduce((sum,well)=>sum+Number(well.inventory.reservedOut.water||0),0)
+        };
+        const issues=[];
+        const invalid=value=>!Number.isFinite(Number(value))||Number(value)<0;
+        for(const entity of state.entities){
+            if(entity.dead||!entity.isBuilding())continue;
+            for(const map of [entity.inventory?.input,entity.inventory?.output,entity.inventory?.reservedIn,entity.inventory?.reservedOut,entity.warehouse?.stored,entity.warehouse?.reservedIn,entity.warehouse?.reservedOut]){
+                for(const [good,value] of Object.entries(map||{})){
+                    if(invalid(value))issues.push(entity.id+" "+good+" has invalid quantity "+value);
+                }
+            }
+            for(const good of GOOD_KEYS){
+                if(entity.warehouse){
+                    if(Number(entity.warehouse.reservedOut?.[good]||0)>Number(entity.warehouse.stored?.[good]||0))issues.push(entity.id+" "+good+" outbound reservation exceeds stock");
+                }else if(Number(entity.inventory?.reservedOut?.[good]||0)>Number(entity.inventory?.output?.[good]||0)){
+                    issues.push(entity.id+" "+good+" output reservation exceeds output");
+                }
+            }
+        }
+        for(const job of state.city.logistics.jobs){
+            if(invalid(job.quantity)||invalid(job.reserved)||invalid(job.picked)||invalid(job.delivered))issues.push(job.id+" has invalid job amounts");
+        }
+        if(active().length>MAX_LOGISTICS_JOBS)issues.push("active jobs exceed the queue limit");
+        if(state.city.logistics.carriers.length>MAX_CARRIERS)issues.push("carriers exceed the carrier limit");
+        if(state.city.logistics.ledger.length>600)issues.push("movement ledger exceeds its limit");
+        return {
+            huge,afterCancel,queue,roundTrip,
+            stockBefore,stockAfter:stockTotal(),
+            limits:{MAX_LOGISTICS_JOBS,MAX_CARRIERS},
+            issues
+        };
+    });
+    assert.equal(largeOrder.huge.quantity,1000000000,"a very large haul order must retain its requested quantity");
+    assert.equal(largeOrder.huge.sourceReserved,1000000000,"a very large haul order must reserve the real source stock");
+    assert.equal(largeOrder.huge.targetReserved,1000000000,"a very large haul order must reserve the real destination space");
+    assert.equal(largeOrder.huge.targetReservedFlag,true,"a very large haul order must be marked as destination-reserved");
+    assert.equal(largeOrder.afterCancel.status,"cancelled","cancelling a huge order must mark it cancelled");
+    assert.equal(largeOrder.afterCancel.sourceReserved,0,"cancelling a huge order must release the source reservation");
+    assert.equal(largeOrder.afterCancel.targetReserved,0,"cancelling a huge order must release the destination reservation");
+    assert.equal(largeOrder.queue.created,72,"the order queue must accept exactly 72 active jobs");
+    assert.equal(largeOrder.queue.active,72,"the order queue must stop at the active-job limit");
+    assert.equal(largeOrder.queue.targetReserved,72,"the queue must reserve exactly the accepted destination space");
+    assert.equal(largeOrder.queue.sourceReserved,72,"the queue must reserve exactly the accepted source stock");
+    assert.equal(largeOrder.roundTrip.active,72,"serializing and restoring the city must preserve the active queue");
+    assert.equal(largeOrder.roundTrip.total,72,"the restored queue must stay within the persisted job limit");
+    assert.equal(largeOrder.roundTrip.targetReserved,72,"the restored queue must rebuild the destination reservations");
+    assert.equal(largeOrder.roundTrip.sourceReserved,72,"the restored queue must rebuild the source reservations");
+    assert.equal(largeOrder.stockAfter,largeOrder.stockBefore,"creating, cancelling and restoring orders must not change physical warehouse stock");
+    assert.deepEqual(largeOrder.issues,[],"large orders and legacy recovery must not create negative or phantom reservations");
+
+    await page.evaluate(({key,backupKey,raw})=>{localStorage.setItem(key,raw);localStorage.removeItem(backupKey);},goodSave);
+    const finalStatus=await loadRealm();
+    assert.ok(finalStatus.includes("Loaded realm"),"the known-good realm must be restored after the logistics load test; actual status: "+finalStatus);
+    await ensurePaused();
+    assert.deepEqual(errors,[],"legacy save and large-order checks must not emit uncaught page errors: "+JSON.stringify(errors));
+    assert.deepEqual(consoleErrors,[],"legacy save and large-order checks must not emit console errors: "+JSON.stringify(consoleErrors));
+    console.log("Legacy-save and large-order E2E passed:",JSON.stringify({legacyTick:legacyState.tick,backupTick,queue:largeOrder.queue.active,roundTrip:largeOrder.roundTrip.active}));
 
     // Verify the global action bar and primary dialog fit the full requested viewport matrix.
     for(const [width,height] of [[390,844],[768,1024],[1280,720],[1366,768],[1600,900],[1920,1080],[2560,1440]]){

@@ -29,20 +29,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install temporary browser test dependency
+      - name: Install browser test dependency
         working-directory: game
-        run: npm install --no-save --package-lock=false playwright@1.56.1
+        run: npm install --no-audit --no-fund --package-lock=false
       - name: Cache Playwright Chromium
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-chromium-1.56.1
-      - name: Install Chromium
+      - name: Install Chromium, system libraries and fonts
         working-directory: game
-        run: npx playwright install chromium
+        run: npm run test:e2e:setup -- --with-deps
       - name: Run local browser end-to-end test
         working-directory: game
-        run: node tests/browser/e2e.mjs
+        run: npm run test:e2e
       - name: Upload responsive UI review screenshots
         if: always()
         uses: actions/upload-artifact@v4

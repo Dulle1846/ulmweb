@@ -1,9 +1,14 @@
 // Local player profiles and versioned browser saves.
 // This adapter is intentionally device-local. It is not server authentication.
+//
+// The envelope is migrated on read: a save written by an older build (or one
+// without a version marker at all) is normalised to the current version instead
+// of being discarded. A save from a newer build is never guessed at.
 const PROFILE_KEY = "kings-and-cards:profiles:v1";
 const ACTIVE_PROFILE_KEY = "kings-and-cards:active-profile:v1";
 const SETTINGS_KEY = "kings-and-cards:settings:v1";
-const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
+export const LEGACY_SAVE_VERSIONS = Object.freeze([1]);
 
 function readJson(key, fallback) {
     try {
@@ -55,18 +60,37 @@ export function selectLocalProfile(profileId) {
     return profile;
 }
 
+function saveKeyFor(version, profileId) {
+    return "kings-and-cards:save:v" + version + ":" + profileId;
+}
+
+function backupKeyFor(version, profileId) {
+    return "kings-and-cards:save-backup:v" + version + ":" + profileId;
+}
+
 function saveKey(profileId) {
-    return "kings-and-cards:save:v" + SAVE_VERSION + ":" + profileId;
+    return saveKeyFor(SAVE_VERSION, profileId);
 }
 
 function backupKey(profileId) {
-    return "kings-and-cards:save-backup:v" + SAVE_VERSION + ":" + profileId;
+    return backupKeyFor(SAVE_VERSION, profileId);
 }
 
-function isValidSave(value, profileId) {
-    return Boolean(value && typeof value === "object" && !Array.isArray(value) &&
-        value.version === SAVE_VERSION && value.profileId === profileId &&
-        value.snapshot && typeof value.snapshot === "object" && !Array.isArray(value.snapshot));
+// Accepts every known envelope version, including a missing version field.
+export function migrateSaveEnvelope(value, profileId) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    if (!value.snapshot || typeof value.snapshot !== "object" || Array.isArray(value.snapshot)) return null;
+    if (value.profileId !== profileId) return null;
+    const declared = Number(value.version);
+    const version = Number.isFinite(declared) ? Math.max(0, Math.floor(declared)) : 0;
+    if (version > SAVE_VERSION) return null;
+    return {
+        ...value,
+        version: SAVE_VERSION,
+        savedAt: typeof value.savedAt === "string" && value.savedAt ? value.savedAt : new Date(0).toISOString(),
+        migratedFrom: version < SAVE_VERSION ? version : null,
+        snapshot: value.snapshot
+    };
 }
 
 export function writeLocalSave(profileId, snapshot) {
@@ -80,12 +104,12 @@ export function writeLocalSave(profileId, snapshot) {
         profileId,
         snapshot
     };
-    const current=readJson(saveKey(profileId),null);
-    // Preserve the last valid save before replacing it. If quota prevents the
-    // backup write, the existing primary save remains untouched and the new
-    // write is still attempted; localStorage.setItem is atomic per key.
-    if(isValidSave(current,profileId)){
-        try { writeJson(backupKey(profileId),current); } catch { /* best-effort backup */ }
+    // Preserve the last readable save (current or legacy) before replacing the
+    // primary slot. A quota failure on the backup never blocks the new save.
+    const current = readLocalSave(profileId);
+    if (current) {
+        const { restoredFromBackup, ...previous } = current;
+        try { writeJson(backupKey(profileId), previous); } catch { /* best-effort backup */ }
     }
     writeJson(saveKey(profileId), envelope);
     return envelope.savedAt;
@@ -93,15 +117,28 @@ export function writeLocalSave(profileId, snapshot) {
 
 export function readLocalSave(profileId) {
     if (!profileId) return null;
-    const current=readJson(saveKey(profileId),null);
-    if(isValidSave(current,profileId))return current;
-    const backup=readJson(backupKey(profileId),null);
-    return isValidSave(backup,profileId)?{...backup,restoredFromBackup:true}:null;
+    const candidates = [
+        { key: saveKey(profileId), backup: false },
+        ...LEGACY_SAVE_VERSIONS.map(version => ({ key: saveKeyFor(version, profileId), backup: false })),
+        { key: backupKey(profileId), backup: true },
+        ...LEGACY_SAVE_VERSIONS.map(version => ({ key: backupKeyFor(version, profileId), backup: true }))
+    ];
+    for (const candidate of candidates) {
+        const envelope = migrateSaveEnvelope(readJson(candidate.key, null), profileId);
+        if (!envelope) continue;
+        return candidate.backup ? { ...envelope, restoredFromBackup: true } : envelope;
+    }
+    return null;
 }
 
 export function getLocalSaveInfo(profileId) {
     const value = readLocalSave(profileId);
-    return value ? { savedAt: value.savedAt, version: value.version, restoredFromBackup:Boolean(value.restoredFromBackup) } : null;
+    return value ? {
+        savedAt: value.savedAt,
+        version: value.version,
+        migratedFrom: value.migratedFrom ?? null,
+        restoredFromBackup: Boolean(value.restoredFromBackup)
+    } : null;
 }
 
 export function loadSettings() {

@@ -106,7 +106,8 @@ function renderBuildSummary(){
     if(stock)stock.textContent=warehouse?summary.warehouses.used+" / "+summary.warehouses.capacity+" storage used · "+summary.warehouses.reservedIn+" reserved in · "+summary.warehouses.reservedOut+" reserved out":"No supplied warehouse";
     const blocked=logistics.jobs.filter(job=>job.status==="blocked"||job.reason).length;
     const fleet=document.getElementById("city-logistics-note");
-    if(fleet)fleet.textContent=blocked?blocked+" delivery job"+(blocked===1?"":"s")+" blocked · inspect the building register":summary.activeJobs+" active delivery job"+(summary.activeJobs===1?"":"s")+" · "+summary.carriers+" carrier"+(summary.carriers===1?"":"s");
+    const rejected=logistics.lastRejection?" · last order rejected: "+logistics.lastRejection.reason:"";
+    if(fleet)fleet.textContent=(blocked?blocked+" delivery job"+(blocked===1?"":"s")+" blocked · inspect the building register":summary.activeJobs+" active delivery job"+(summary.activeJobs===1?"":"s")+" · "+summary.carriers+" carrier"+(summary.carriers===1?"":"s"))+rejected;
 }
 function startRoad(type){
     if(!setRoadBuildMode(type))return;
