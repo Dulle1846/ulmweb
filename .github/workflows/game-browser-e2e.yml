@@ -28,7 +28,14 @@ jobs:
     name: Chromium gameplay smoke test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      started_at: ${{ steps.timing.outputs.started_at }}
+      finished_at: ${{ steps.finish.outputs.finished_at }}
+      e2e_exit_code: ${{ steps.browser-e2e.outputs.exit_code }}
     steps:
+      - name: Record test start time
+        id: timing
+        run: echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - name: Check out repository
         uses: actions/checkout@v4
       - name: Set up Node.js
@@ -47,8 +54,14 @@ jobs:
         working-directory: game
         run: npm run test:e2e:setup -- --with-deps
       - name: Run local browser end-to-end test
+        id: browser-e2e
         working-directory: game
-        run: npm run test:e2e
+        run: |
+          set +e
+          npm run test:e2e
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit "$code"
       - name: Upload responsive UI review screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,3 +70,65 @@ jobs:
           path: /tmp/kac-ui-viewport-review/*.png
           if-no-files-found: warn
           retention-days: 7
+      - name: Record test finish time
+        id: finish
+        if: always()
+        run: echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+  record-run:
+    name: Record workflow run receipt
+    needs: browser-e2e
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Create run receipt
+        env:
+          RUN_ID: ${{ github.run_id }}
+          RUN_NUMBER: ${{ github.run_number }}
+          COMMIT_SHA: ${{ github.sha }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BRANCH: ${{ github.ref_name }}
+          JOB_RESULT: ${{ needs.browser-e2e.result }}
+          E2E_EXIT_CODE: ${{ needs.browser-e2e.outputs.e2e_exit_code }}
+          STARTED_AT: ${{ needs.browser-e2e.outputs.started_at }}
+          FINISHED_AT: ${{ needs.browser-e2e.outputs.finished_at }}
+        run: |
+          e2e_exit="${E2E_EXIT_CODE:-not-run}"
+          started_at="${STARTED_AT:-unknown}"
+          finished_at="${FINISHED_AT:-unknown}"
+          if [ "${JOB_RESULT:-unknown}" = "success" ]; then
+            overall_result="success"
+          else
+            overall_result="${JOB_RESULT:-unknown}"
+          fi
+          cat > "$RUNNER_TEMP/game-browser-e2e.json" <<JSON
+          {
+            "commit_sha": "${COMMIT_SHA}",
+            "run_id": "${RUN_ID}",
+            "run_number": "${RUN_NUMBER}",
+            "workflow_name": "${WORKFLOW_NAME}",
+            "run_url": "${RUN_URL}",
+            "branch": "${BRANCH}",
+            "started_at": "${started_at}",
+            "finished_at": "${finished_at}",
+            "job_status": "${JOB_RESULT:-unknown}",
+            "workflow_result": "${overall_result}",
+            "browser_e2e_exit_code": "${e2e_exit}"
+          }
+          JSON
+      - name: Publish run receipt branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan ci-run-receipts
+          git rm -rf .
+          mkdir -p ci
+          cp "$RUNNER_TEMP/game-browser-e2e.json" ci/game-browser-e2e.json
+          git add ci/game-browser-e2e.json
+          git commit -m "Record workflow run ${GITHUB_RUN_ID}"
+          git push --force origin HEAD:refs/heads/ci-run-receipts

@@ -4,7 +4,7 @@ import { resetState, state } from "../../js/core/state.js";
 import { TYPE } from "../../js/core/types.js";
 import { spawnEntity } from "../../js/world/entities.js";
 import {
-    initializeCityForRealm, ensureInventory, requestHaul, requestSupply, requestConstructionDelivery, getInputCapacity, inputSpace, cancelJobsForEntity,
+    initializeCityForRealm, ensureInventory, requestHaul, requestSupply, requestConstructionDelivery, getInputCapacity, getInputCapacityUsage, inputSpace, reserveInputCapacity, releaseInputCapacity, cancelJobsForEntity,
     updateLogistics, updateLogisticsMovement, serializeCity, restoreCity, validateCitySnapshot,
     evacuateBuildingInventory, setWarehouseProfile, getWarehouseProfile, depositGood, withdrawGood,
     addLocalOutput, consumeFromWarehouse, getLocalWarehouseStock, getGoodsAudit, getPhysicalStock,
@@ -1003,6 +1003,49 @@ test("50 a real supply job uses free mill input capacity and releases it on canc
     cancelJobsForEntity(warehouse.id);
     assert.equal(replacement.status, "cancelled");
     assert.equal(inputSpace(mill), 10);
+    assertPhysicalBooks();
+});
+
+test("50b shared input capacity reserves two different goods without exceeding the limit", () => {
+    setup();
+    const mill = place(TYPE.MILL, 40, 30);
+    const capacity = 10;
+
+    // Physical occupancy and reservations use the same shared limit, regardless
+    // of the good name. A small physically occupied input also proves that the
+    // free-space calculation is not based on reservations alone.
+    mill.inventory.input.grain = 3;
+    assert.equal(getInputCapacityUsage(mill, capacity).free, 7);
+    mill.inventory.input.grain = 0;
+
+    assert.equal(reserveInputCapacity(mill, "grain", 8, capacity), 8);
+    assert.equal(mill.inventory.reservedIn.grain, 8);
+    assert.equal(reserveInputCapacity(mill, "flour", 8, capacity), 2,
+        "the second, different good may only receive the remaining capacity");
+    assert.equal(mill.inventory.reservedIn.flour, 2);
+    let usage = getInputCapacityUsage(mill, capacity);
+    assert.equal(usage.occupied, 10);
+    assert.equal(usage.free, 0);
+    assert.ok(usage.occupied <= capacity, "physical stock plus reservations must never exceed capacity");
+
+    const physical = Object.values(mill.inventory.input).reduce((sum, value) => sum + Number(value || 0), 0);
+    assert.ok(physical + usage.reserved <= capacity);
+
+    // Invalid requests must neither reserve nor consume capacity.
+    for (const invalid of [-1, -8, 0, NaN, Infinity, -Infinity, 1.5, true, "8", null]) {
+        assert.equal(reserveInputCapacity(mill, "grain", invalid, capacity), 0,
+            "only a positive safe integer amount may reserve capacity");
+    }
+    assert.equal(getInputCapacityUsage(mill, capacity).occupied, 10);
+
+    assert.equal(releaseInputCapacity(mill, "grain", 8), 8);
+    assert.equal(mill.inventory.reservedIn.grain, 0);
+    assert.equal(mill.inventory.reservedIn.flour, 2, "cancelling the first reservation must not touch the second");
+    usage = getInputCapacityUsage(mill, capacity);
+    assert.equal(usage.free, 8);
+    assert.equal(releaseInputCapacity(mill, "flour", 2), 2);
+    assert.equal(mill.inventory.reservedIn.flour, 0);
+    assert.equal(getInputCapacityUsage(mill, capacity).free, 10);
     assertPhysicalBooks();
 });
 

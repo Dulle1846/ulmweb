@@ -460,10 +460,45 @@ export function outputSpace(entity) {
     const used = ensureInventory(entity) ? usedOutput(entity) : 0;
     return Math.max(0, capacity - used);
 }
+// The input store is shared by every good. This function is deliberately
+// independent of a recipe: requestSupply() decides which goods are allowed,
+// while this allocator only decides how much physical input space remains.
+export function getInputCapacityUsage(entity, capacity = null) {
+    if (!entity || entity.dead || !entity.isBuilding?.()) return { capacity: 0, used: 0, reserved: 0, occupied: 0, free: 0 };
+    const limit = capacity === null || capacity === undefined ? getInputCapacity(entity.type) : Number(capacity);
+    if (!Number.isFinite(limit) || limit <= 0) return { capacity: 0, used: 0, reserved: 0, occupied: 0, free: 0 };
+    if (!ensureInventory(entity)) return { capacity: 0, used: 0, reserved: 0, occupied: 0, free: 0 };
+    const used = usedInput(entity);
+    const reserved = totalReservedIn(entity.inventory);
+    const occupied = used + reserved;
+    return { capacity: limit, used, reserved, occupied, free: Math.max(0, limit - occupied) };
+}
 export function inputSpace(entity) {
-    const capacity = getInputCapacity(entity.type);
-    if (!ensureInventory(entity)) return 0;
-    return Math.max(0, capacity - usedInput(entity) - totalReservedIn(entity.inventory));
+    return getInputCapacityUsage(entity).free;
+}
+
+// Reserves only the part of a request that fits. The caller remains responsible
+// for releasing the reservation when its job is cancelled or cannot be created.
+export function reserveInputCapacity(entity, good, quantity, capacity = null) {
+    if (!entity || entity.dead || !entity.isBuilding?.() || !GOOD_KEYS.includes(good)) return 0;
+    if (!Number.isSafeInteger(quantity) || quantity <= 0) return 0;
+    const usage = getInputCapacityUsage(entity, capacity);
+    if (usage.capacity <= 0) return 0;
+    const amount = Math.min(Math.floor(quantity), usage.free);
+    if (amount <= 0) return 0;
+    const inventory = ensureInventory(entity);
+    inventory.reservedIn[good] = cleanQuantity(inventory.reservedIn[good]) + amount;
+    return amount;
+}
+
+export function releaseInputCapacity(entity, good, quantity) {
+    if (!entity?.inventory || !GOOD_KEYS.includes(good)) return 0;
+    if (!Number.isSafeInteger(quantity) || quantity <= 0) return 0;
+    const reserved = cleanQuantity(entity.inventory.reservedIn[good]);
+    const amount = Math.min(Math.floor(quantity), reserved);
+    if (amount <= 0) return 0;
+    entity.inventory.reservedIn[good] = reserved - amount;
+    return amount;
 }
 export function addLocalOutput(entity, good, quantity, extra = {}) {
     const inventory = ensureInventory(entity);
@@ -589,19 +624,23 @@ export function requestHaul(building, good, quantity) {
 export function requestSupply(building, good, quantity) {
     if (!building || building.dead || !RECIPES[building.type] || !RECIPES[building.type].input?.[good]) return null;
     ensureInventory(building);
-    const availableSpace = inputSpace(building);
-    const amount = Math.min(cleanQuantity(quantity), availableSpace);
+    const amount = Math.min(cleanQuantity(quantity), inputSpace(building));
     if (amount <= 0 || hasActiveJob(job => job.kind === "supply" && job.to?.id === building.id && job.good === good)) return null;
-    const warehouse = pickWarehouse(good, amount, building, { requireStock: true });
+    const reserved = reserveInputCapacity(building, good, amount);
+    if (reserved <= 0) return null;
+    const warehouse = pickWarehouse(good, reserved, building, { requireStock: true });
     if (!warehouse) {
+        releaseInputCapacity(building, good, reserved);
         rejectOrder("No reachable store holds " + good, "supply", good);
         return null;
     }
-    const job = makeJob("supply", good, amount, { kind: "warehouse", id: warehouse.id }, { kind: "building", id: building.id });
-    if (!job) return null;
-    warehouse.warehouse.reservedOut[good] += amount;
+    const job = makeJob("supply", good, reserved, { kind: "warehouse", id: warehouse.id }, { kind: "building", id: building.id });
+    if (!job) {
+        releaseInputCapacity(building, good, reserved);
+        return null;
+    }
+    warehouse.warehouse.reservedOut[good] += reserved;
     job.sourceReserved = true;
-    building.inventory.reservedIn[good] += amount;
     job.targetReserved = true;
     return job;
 }
@@ -654,7 +693,7 @@ function releaseTargetReservation(job, amount = job.quantity) {
     const quantity = cleanQuantity(amount);
     const target = entityFromRef(job.to);
     if (job.to.kind === "warehouse" && isWarehouse(target)) target.warehouse.reservedIn[job.good] = Math.max(0, cleanQuantity(target.warehouse.reservedIn[job.good]) - quantity);
-    else if (job.to.kind === "building" && target?.inventory) target.inventory.reservedIn[job.good] = Math.max(0, cleanQuantity(target.inventory.reservedIn[job.good]) - quantity);
+    else if (job.to.kind === "building" && target?.inventory) releaseInputCapacity(target, job.good, quantity);
     if (quantity >= job.quantity) job.targetReserved = false;
 }
 function takeFromSource(job) {
@@ -749,7 +788,7 @@ function deliverToDestination(job, carrier) {
         const space = Math.max(0, capacity - usedInput(target) - other);
         const accepted = Math.min(quantity, space);
         if (accepted <= 0) return { ok: false, reason: "Destination input store is full" };
-        if (own > 0) target.inventory.reservedIn[job.good] = Math.max(0, own - accepted);
+        if (own > 0) releaseInputCapacity(target, job.good, accepted);
         target.inventory.input[job.good] += accepted;
         recordDelivery(job, accepted);
         carrier.cargo.quantity -= accepted;

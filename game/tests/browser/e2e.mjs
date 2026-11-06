@@ -11,21 +11,94 @@ const screenshotDir=process.env.E2E_SCREENSHOT_DIR?resolve(root,process.env.E2E_
 await mkdir(screenshotDir,{recursive:true});
 
 // Capture the active campaign, not just the counters used by older smoke tests.
-// Raw render buffers are omitted because they are not persistent game state and
-// would make the comparison depend on the viewport and redraw timing.
+// Raw canvases and transient animation queues are omitted, but persistent world
+// arrays are hashed in full. Any value that cannot be compared reliably aborts
+// the test instead of being replaced by a mask that could hide a change.
 async function captureRealmState(page){
     return page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");
-        const ignored=new Set(["canvas","ctx","minimapCanvas","minimapCtx","terrainCanvas","fogCanvas","heightMap","moistureMap","temperatureMap","explored","fogExploredRef","lastFrameTime","lastUiRender","lastMinimapRender","tickAccumulator","particles","floaters","pendingPresentationEffects"]);
+        const ignored=new Set(["canvas","ctx","minimapCanvas","minimapCtx","terrainCanvas","fogCanvas","fogExploredRef","lastFrameTime","lastUiRender","lastMinimapRender","tickAccumulator","particles","floaters","pendingPresentationEffects"]);
+        const hashed=new Set(["heightMap","moistureMap","temperatureMap","explored"]);
+        const hashPersistent=(value,label)=>{
+            let hashA=2166136261>>>0,hashB=5381>>>0;
+            const addByte=byte=>{
+                hashA^=byte;hashA=Math.imul(hashA,16777619)>>>0;
+                hashB=((hashB<<5)+hashB+byte)>>>0;
+            };
+            const addText=text=>{
+                addByte(255);
+                for(let index=0;index<text.length;index++){
+                    const code=text.charCodeAt(index);
+                    addByte(code&255);addByte((code>>>8)&255);
+                }
+            };
+            const walk=(item,path)=>{
+                if(item===null){addText("null");return;}
+                if(item===undefined){addText("undefined");return;}
+                if(typeof item==="number"){
+                    if(!Number.isFinite(item))throw new Error("Cannot hash non-finite persistent value at "+path);
+                    addText("number:"+String(item));return;
+                }
+                if(typeof item==="boolean"){addText("boolean:"+(item?"1":"0"));return;}
+                if(typeof item==="string"){addText("string:"+item);return;}
+                if(ArrayBuffer.isView(item)){
+                    addText("typed:"+item.constructor.name+":"+item.length);
+                    const bytes=new Uint8Array(item.buffer,item.byteOffset,item.byteLength);
+                    for(const byte of bytes)addByte(byte);
+                    return;
+                }
+                if(Array.isArray(item)){
+                    addText("array:"+item.length);
+                    for(let index=0;index<item.length;index++)walk(item[index],path+"["+index+"]");
+                    return;
+                }
+                if(typeof item==="object"){
+                    const keys=Object.keys(item).sort();
+                    addText("object:"+keys.length);
+                    for(const key of keys){
+                        addText("key:"+key);
+                        walk(item[key],path+"."+key);
+                    }
+                    return;
+                }
+                throw new Error("Cannot hash persistent value at "+path+" of type "+typeof item);
+            };
+            walk(value,label);
+            return {
+                kind:value===null?"null":Array.isArray(value)?"array":ArrayBuffer.isView(value)?value.constructor.name:typeof value,
+                length:Array.isArray(value)||ArrayBuffer.isView(value)?value.length:null,
+                hashA:hashA.toString(16).padStart(8,"0"),
+                hashB:hashB.toString(16).padStart(8,"0")
+            };
+        };
+        const comparable=(value,path,stack=[])=>{
+            if(value===undefined)return {__undefined:true};
+            if(value===null||typeof value==="string"||typeof value==="boolean")return value;
+            if(typeof value==="number"){
+                if(!Number.isFinite(value))throw new Error("Cannot compare non-finite persistent value at "+path);
+                return value;
+            }
+            if(typeof value==="function"||typeof value==="symbol"||typeof value==="bigint"){
+                throw new Error("Cannot compare persistent value at "+path+" of type "+typeof value);
+            }
+            if(ArrayBuffer.isView(value))return hashPersistent(value,path);
+            if(Array.isArray(value)){
+                if(stack.includes(value))throw new Error("Circular persistent array at "+path);
+                return value.map((item,index)=>comparable(item,path+"["+index+"]",[...stack,value]));
+            }
+            if(typeof value==="object"){
+                if(value.id&&value.type&&"x" in value)return {__entityRef:String(value.id)};
+                if(stack.includes(value))throw new Error("Circular persistent object at "+path);
+                const result={};
+                for(const key of Object.keys(value).sort())result[key]=comparable(value[key],path+"."+key,[...stack,value]);
+                return result;
+            }
+            throw new Error("Cannot compare persistent value at "+path+" of type "+typeof value);
+        };
         const entityRows=state.entities.map(entity=>{
             const row={};
             for(const key of Object.keys(entity).sort()){
-                const value=entity[key];
-                if(typeof value==="function")continue;
-                if(value&&typeof value==="object"&&value.id&&value.type&&"x" in value){row[key]={entityId:value.id};continue;}
-                if(value&&typeof value==="object"){
-                    try{row[key]=JSON.parse(JSON.stringify(value));}catch{row[key]="[unserializable]";}
-                }else row[key]=value;
+                row[key]=comparable(entity[key],"entities."+String(entity.id||"unknown")+"."+key);
             }
             return row;
         }).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
@@ -34,10 +107,8 @@ async function captureRealmState(page){
             if(ignored.has(key))continue;
             if(key==="entities"){result.entities=entityRows;continue;}
             const value=state[key];
-            if(typeof value==="function")continue;
-            if(value&&typeof value==="object"){
-                try{result[key]=JSON.parse(JSON.stringify(value));}catch{result[key]="[unserializable]";}
-            }else result[key]=value;
+            if(hashed.has(key)||ArrayBuffer.isView(value)){result[key]=hashPersistent(value,key);continue;}
+            result[key]=comparable(value,key);
         }
         return result;
     });
@@ -129,6 +200,12 @@ try{
         return state.isPaused===true;
     },null,{timeout:3000});
     const beforeInvalidImport=await captureRealmState(page);
+    for(const key of ["heightMap","moistureMap","temperatureMap","explored"]){
+        assert.ok(beforeInvalidImport[key]&&beforeInvalidImport[key].hashA,"persistent terrain data must be included in the state comparison: "+key);
+    }
+    assert.ok(beforeInvalidImport.heightMap.length>0,"the height map hash must cover the complete map");
+    assert.ok(beforeInvalidImport.explored.length>0,"the exploration map hash must cover the complete map");
+    assert.equal(JSON.stringify(beforeInvalidImport).includes("[unserializable]"),false,"persistent state must never be replaced by an unverifiable placeholder");
     const invalidSavePath=resolve(tmpdir(),"kac-invalid-resource-save-"+Date.now()+".json");
     await writeFile(invalidSavePath,JSON.stringify({
         saveSchemaVersion:4,
