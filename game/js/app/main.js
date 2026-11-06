@@ -10,6 +10,7 @@ import { createMarketState } from "../systems/market.js";
 import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeHouseholdAssignments } from "../systems/population.js";
 import { invalidateRoomBonusCache } from "../systems/rooms.js";
+import { normalizeRoomFurniture } from "../systems/furniture.js";
 import { addLog } from "../systems/events.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera } from "../presentation/camera.js";
@@ -146,7 +147,7 @@ function serializeEntity(entity,indexByEntity){
     return {
         id:entity.id||null,personId:entity.personId||null,person:entity.person?JSON.parse(JSON.stringify(entity.person)):null,
         x:entity.x,y:entity.y,type:entity.type,hp:entity.hp,maxHp:entity.maxHp,dead:entity.dead,age:entity.age,
-        rotation:entity.rotation||0,footprintScale:entity.footprintScale||1,interior:entity.interior?{...entity.interior}:null,layout:entity.layout?serializeLayout(entity.type,entity.layout,1,1):null,
+        rotation:entity.rotation||0,footprintScale:entity.footprintScale||1,interior:entity.interior?{...entity.interior}:null,roomFurniture:entity.roomFurniture&&typeof entity.roomFurniture==="object"?JSON.parse(JSON.stringify(entity.roomFurniture)):null,layout:entity.layout?serializeLayout(entity.type,entity.layout,1,1):null,
         anim:entity.anim,facing:entity.facing,visualState:entity.visualState,anchor:entity.anchor,home:entity.home,
         illnessUntilTick:entity.illnessUntilTick,illnessStartedTick:entity.illnessStartedTick,illnessSeverity:entity.illnessSeverity,
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
@@ -215,6 +216,7 @@ function validateSaveSnapshot(snapshot){
         }
         if(!dto.dead&&SAVE_MOBILE_TYPES.has(dto.type))mobile++;
         if(dto.layout!==undefined&&dto.layout!==null&&(typeof dto.layout!=="object"||!Array.isArray(dto.layout.cells)||dto.layout.cells.length>225))throw new Error("Save data contains an invalid floor plan at position "+index+".");
+        if(dto.roomFurniture!==undefined&&dto.roomFurniture!==null&&(typeof dto.roomFurniture!=="object"||Array.isArray(dto.roomFurniture)||Object.keys(dto.roomFurniture).length>64))throw new Error("Save data contains invalid room furniture at position "+index+".");
     }
     if(mobile>420)throw new Error("Save data exceeds the supported mobile population limit.");
     for(const key of ["wood","stone","gold","food"]){
@@ -253,7 +255,7 @@ function loadSnapshotIntoGame(profile,snapshot){
         Object.assign(entity,{
             id:typeof dto.id==="string"?dto.id:null,personId:typeof dto.personId==="string"?dto.personId:null,person:dto.person&&typeof dto.person==="object"?dto.person:null,
             hp:dto.hp,maxHp:dto.maxHp,dead:dto.dead,age:dto.age,anim:dto.anim,facing:dto.facing,
-            rotation:Number.isFinite(dto.rotation)?dto.rotation:0,footprintScale:Number.isFinite(dto.footprintScale)?dto.footprintScale:1,interior:dto.interior&&typeof dto.interior==="object"?{...dto.interior}:null,layout:dto.layout&&typeof dto.layout==="object"?normalizeLayout(dto.type,dto.layout,1,1):null,
+            rotation:Number.isFinite(dto.rotation)?dto.rotation:0,footprintScale:Number.isFinite(dto.footprintScale)?dto.footprintScale:1,interior:dto.interior&&typeof dto.interior==="object"?{...dto.interior}:null,roomFurniture:dto.roomFurniture&&typeof dto.roomFurniture==="object"&&!Array.isArray(dto.roomFurniture)?normalizeRoomFurniture(dto.roomFurniture):null,layout:dto.layout&&typeof dto.layout==="object"?normalizeLayout(dto.type,dto.layout,1,1):null,
             visualState:dto.visualState,anchor:dto.anchor||{x:dto.x,y:dto.y},home:dto.home||{x:dto.x,y:dto.y},
             illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
@@ -298,7 +300,7 @@ function loadSnapshotIntoGame(profile,snapshot){
         ? snapshot.availableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [];
     state.statistics={totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,totalRoadTilesBuilt:0,...snapshot.statistics};
-    state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,births:0,lastBirthCheckYear:state.year,lastSocialYear:state.year,lastAgencyYear:state.year,deaths:0,lastMortalityYear:state.year,lastLedger:null,...snapshot.economy};
+    state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,furnitureUpkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,unpaidFurniture:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,births:0,lastBirthCheckYear:state.year,lastSocialYear:state.year,lastAgencyYear:state.year,deaths:0,lastMortalityYear:state.year,lastLedger:null,...snapshot.economy};
     const growthYear=state.economy.lastGrowthYear;
     state.economy.lastGrowthYear=Number.isFinite(growthYear)?Math.max(1,Math.min(state.year,Math.floor(growthYear))):state.year;
     const populationGrowth=Number(state.economy.populationGrowth);

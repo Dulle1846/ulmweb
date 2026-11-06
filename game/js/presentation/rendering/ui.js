@@ -122,7 +122,7 @@ function tabSignature(){
     if(state.selectedTab===1)return ["stats",state.tick,state.entities.length,state.totalRaidsSurvived,state.statistics.totalTrades,
         state.statistics.totalBuildingsBuilt,state.statistics.totalUnitsRecruited,Math.floor(state.morale),
         Math.round(Number(state.politics?.legitimacy)||0),state.buildingLayoutVersion||0,state.buildingInteriorVersion||0,state.buildingCollisionVersion||0,state.nextEntityId||0,
-        state.economy?.daysElapsed,state.economy?.foodConsumed,state.economy?.taxesCollected,state.economy?.wagesPaid,state.economy?.upkeepPaid,
+        state.economy?.daysElapsed,state.economy?.foodConsumed,state.economy?.taxesCollected,state.economy?.wagesPaid,state.economy?.upkeepPaid,state.economy?.furnitureUpkeepPaid,
         state.health?.cases,state.health?.recovered,state.health?.outbreakActive,
         JSON.stringify(state.hiddenRealm?.activeThreads||[]),state.hiddenRealm?.completedThreads?.length,
         ...Object.values(state.resources)].join("|");
@@ -166,7 +166,8 @@ function renderStatistics(container){
         ["TAXES COLLECTED",Number(ledger.taxesCollected||0).toFixed(2)+" gold"],
         ["WAGES PAID",Number(ledger.wagesPaid||0).toFixed(2)+" gold"],
         ["BUILDING UPKEEP",Number(ledger.upkeepPaid||0).toFixed(2)+" gold"],
-        ["UNPAID COSTS",(Number(ledger.unpaidWages||0)+Number(ledger.unpaidUpkeep||0)).toFixed(2)+" gold"],
+        ["FURNITURE UPKEEP",Number(ledger.furnitureUpkeepPaid||0).toFixed(2)+" gold"],
+        ["UNPAID COSTS",(Number(ledger.unpaidWages||0)+Number(ledger.unpaidUpkeep||0)+Number(ledger.unpaidFurniture||0)).toFixed(2)+" gold"],
         ["MILL TIMBER USED",Number(production.millWoodConsumed||0).toFixed(1)+" wood"],
         ["MILL BONUS FOOD",Number(production.millBonusFood||0).toFixed(1)+" food"],
         ["TAVERN PROVISIONS",Number(production.tavernFoodConsumed||0).toFixed(1)+" food"],
@@ -187,7 +188,7 @@ function renderStatistics(container){
     const roomSealed=roomSnapshot.sealed
         ?'<div class="stat-cell room-bonus-stat-cell"><div class="stat-label">SEALED ROOMS</div><div class="stat-value" style="color:#b23b2e">'+roomSnapshot.sealed+' · NO BONUS</div></div>'
         :'';
-    const roomCapNote='<div class="room-bonus-cap-note">Role values include furnishings and are contributions before realm caps: '+ROOM_BONUS_CAPS.gold+' gold · '+ROOM_BONUS_CAPS.legitimacy+' legitimacy · '+ROOM_BONUS_CAPS.morale+' morale per 20 days; growth '+ROOM_BONUS_CAPS.growth+', defense '+Math.round(ROOM_BONUS_CAPS.defense*100)+'%. Growth lowers the yearly morale threshold; defense is passive.</div>';
+    const roomCapNote='<div class="room-bonus-cap-note">Role values include furnishings and are contributions before realm caps: '+ROOM_BONUS_CAPS.gold+' gold · '+ROOM_BONUS_CAPS.legitimacy+' legitimacy · '+ROOM_BONUS_CAPS.morale+' morale per 20 days; growth '+ROOM_BONUS_CAPS.growth+', defense '+Math.round(ROOM_BONUS_CAPS.defense*100)+'%. Furnishings add their own bounded bonus on top and cost upkeep every settlement. Growth lowers the yearly morale threshold; defense is passive.</div>';
     const roomMarkup='<div class="stat-heading" style="margin-top:14px">ROOM BONUSES · EVERY 20 DAYS</div><div class="stat-grid">'+
         (roomCells||'<div class="empty-state">No reachable rooms yet. Add doors and interior rooms.</div>')+roomSealed+roomCapNote+'</div>';
     const activeThreads=state.hiddenRealm?.activeThreads||[];

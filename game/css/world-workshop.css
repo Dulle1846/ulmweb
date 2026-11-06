@@ -203,7 +203,60 @@
 }
 
 .workshop-stepper button:hover { background: #f2dfb8; }
+.workshop-stepper button:disabled { opacity: 0.32; cursor: not-allowed; }
 .workshop-stepper strong { min-width: 14px; text-align: center; font-size: 12px; }
+
+.workshop-rooms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 5px;
+}
+
+.workshop-room {
+  padding: 3px 6px;
+  border: 1px solid rgba(92, 72, 42, 0.35);
+  border-radius: 3px;
+  background: rgba(255, 252, 242, 0.75);
+  color: #5b4a32;
+  font: 700 8px/1.2 "Trebuchet MS", sans-serif;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.workshop-room:hover { background: #f2dfb8; }
+.workshop-room.is-active { background: #f2dfb8; border-color: #8a6a38; color: #33240f; }
+.workshop-room.is-sealed { opacity: 0.5; border-style: dashed; }
+
+.workshop-room-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 2px 5px;
+  color: #7b5f36;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.workshop-item-label small {
+  display: block;
+  color: #8a7351;
+  font-size: 7.5px;
+  letter-spacing: 0.04em;
+}
+
+.workshop-upkeep {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(120, 96, 58, 0.25);
+  color: #7b5f36;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
 
 .workshop-empty {
   padding: 10px 4px;

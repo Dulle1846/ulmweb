@@ -7,6 +7,7 @@ import { CELL, BUILDING_SIZE, BUILDING_ROOF_COLOR, BUILDING_ICON } from '../../c
 import { TYPE } from '../../core/types.js';
 import { state } from '../../core/state.js';
 import { PLAN, normalizeLayout, roomsOf } from '../building-layout.js';
+import { getRoomFurniturePlan, MAX_FURNITURE_PER_ROOM } from '../../systems/furniture.js';
 
 // Cost of rebuilding a structure in the workshop, in materials.
 export const REBUILD_COST = {
@@ -861,36 +862,36 @@ function drawAuthoredInterior(ctx, box) {
         }
     }
 
-    // Furnishings are dealt across the detected rooms, never onto walls.
+    // Furnishings belong to individual rooms, never to the walls. The same
+    // plan that drives the room bonuses decides what is drawn where, so a
+    // furnished throne room is visibly furnished and the treasury is not.
     const items = normalizeInterior(e.type, e.interior);
-    const pointers = new Array(rooms.length).fill(0);
-    const used = new Set();
-    const takeCell = preferred => {
-        for (let pass = 0; pass < rooms.length; pass++) {
-            const index = (preferred + pass) % rooms.length;
-            const list = rooms[index].cells;
-            for (let k = 0; k < list.length; k++) {
-                const cell = list[(pointers[index] + k) % list.length];
-                const key = cell.y * n + cell.x;
-                if (used.has(key)) continue;
-                used.add(key);
-                pointers[index] = (pointers[index] + k + 1) % list.length;
-                return cell;
-            }
-        }
-        return null;
-    };
+    const plan = getRoomFurniturePlan({ rooms, interior: items, roomFurniture: e.roomFurniture });
     const furnitureScale = Math.min(cw, ch) / 14;
-    for (const id of ['hearth', 'bed', 'table', 'chair', 'shelf', 'rug', 'statue', 'candle']) {
-        const count = Math.min(24, items[id] || 0);
-        for (let i = 0; i < count; i++) {
-            let preferred = 0;
-            if (id === 'bed' && rooms.length > 1) preferred = 1;
-            else if (id === 'candle') preferred = i % rooms.length;
-            else if (id === 'chair' && rooms.length > 2) preferred = 2 % rooms.length;
-            const cell = takeCell(preferred);
-            if (!cell) break;
-            drawFurniture(ctx, id, left + cell.x * cw + cw / 2, top + cell.y * ch + ch / 2, furnitureScale, tick, id === 'hearth');
+    for (const room of rooms) {
+        const assigned = plan.byRoom[room.name] || {};
+        const used = new Set();
+        let stacked = 0;
+        for (const id of ['hearth', 'bed', 'table', 'chair', 'shelf', 'rug', 'statue', 'candle']) {
+            const count = Math.min(MAX_FURNITURE_PER_ROOM, Math.max(0, Number(assigned[id]) || 0));
+            for (let i = 0; i < count; i++) {
+                let cell = null;
+                for (const candidate of room.cells) {
+                    const key = candidate.y * n + candidate.x;
+                    if (used.has(key)) continue;
+                    used.add(key);
+                    cell = candidate;
+                    break;
+                }
+                // A room with more items than floor cells stacks the last ones
+                // on its first tile instead of silently dropping them.
+                if (!cell) {
+                    cell = room.cells[stacked % Math.max(1, room.cells.length)];
+                    stacked++;
+                }
+                if (!cell) break;
+                drawFurniture(ctx, id, left + cell.x * cw + cw / 2, top + cell.y * ch + ch / 2, furnitureScale, tick, id === 'hearth');
+            }
         }
     }
 

@@ -3,13 +3,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const root = new URL("../../", import.meta.url);
-const [html, css, ui, rooms, plan, workshopCss] = await Promise.all([
+const [html, css, ui, rooms, plan, workshopCss, furniture, workshop] = await Promise.all([
     readFile(new URL("index.html", root), "utf8"),
     readFile(new URL("css/hud-v3.css", root), "utf8"),
     readFile(new URL("js/presentation/rendering/ui.js", root), "utf8"),
     readFile(new URL("js/systems/rooms.js", root), "utf8"),
     readFile(new URL("js/presentation/plan-editor.js", root), "utf8"),
     readFile(new URL("css/world-workshop.css", root), "utf8"),
+    readFile(new URL("js/systems/furniture.js", root), "utf8"),
+    readFile(new URL("js/presentation/build-mode.js", root), "utf8"),
 ]);
 
 test("the royal HUD exposes room bonuses and their source rooms", () => {
@@ -24,7 +26,9 @@ test("the royal HUD exposes room bonuses and their source rooms", () => {
     assert.ok(ui.includes("ROOM_BONUS_CAPS"));
     assert.ok(rooms.includes("ROOM_BONUS_INTERVAL = 20"));
     assert.ok(rooms.includes("applyRoomBonuses"));
-    assert.ok(rooms.includes("FURNITURE_AFFINITY"));
+    assert.ok(rooms.includes("getRoomFurniturePlan"));
+    assert.ok(furniture.includes("FURNITURE_AFFINITY"));
+    assert.ok(furniture.includes("FURNITURE_UPKEEP"));
 });
 
 test("the workshop shows per-room bonuses, furnishings and sealed rooms", () => {
@@ -36,4 +40,14 @@ test("the workshop shows per-room bonuses, furnishings and sealed rooms", () => 
     assert.ok(workshopCss.includes(".building-room-row"));
     assert.ok(workshopCss.includes(".building-room-effects span.is-furnished"));
     assert.ok(workshopCss.includes(".building-room-row.is-sealed"));
+});
+
+test("the workshop assigns, buys and maintains furniture per room", () => {
+    assert.ok(workshop.includes("adjustFurniture"));
+    assert.ok(workshop.includes("data-room"));
+    assert.ok(workshop.includes("FURNITURE_COSTS"));
+    assert.ok(workshop.includes("FURNITURE UPKEEP"));
+    assert.ok(workshopCss.includes(".workshop-rooms"));
+    assert.ok(workshopCss.includes(".workshop-room.is-active"));
+    assert.ok(workshopCss.includes(".workshop-upkeep"));
 });

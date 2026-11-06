@@ -8,6 +8,19 @@ import { hasInterior, normalizeLayout, roomsOf } from "../presentation/building-
 import { normalizeInterior } from "../presentation/rendering/building-art.js";
 import { addResource } from "./resources.js";
 import { normalizePoliticalState } from "./politics.js";
+import {
+    FURNITURE_BONUS_CAP,
+    FURNITURE_POINT_VALUE,
+    FURNITURE_REALM_CAPS,
+    getRoomFurniturePlan,
+    furnitureCount,
+    furnitureMultiplier,
+    furnitureUpkeep,
+    normalizeRoomName,
+    roomRoleId,
+} from "./furniture.js";
+
+export { FURNITURE_BONUS_CAP, FURNITURE_POINT_VALUE, FURNITURE_REALM_CAPS, roomRoleId };
 
 export const ROOM_BONUS_INTERVAL = 20;
 export const ROOM_BONUS_CAPS = Object.freeze({
@@ -16,20 +29,6 @@ export const ROOM_BONUS_CAPS = Object.freeze({
     morale: 0.7,
     growth: 5,
     defense: 0.5,
-});
-
-// Furniture makes a room's function stronger. The affinity weights decide
-// which furnishings matter most for each role; the result is a percentage
-// bonus on that role's base effects, capped so furniture never dwarfs rooms.
-export const FURNITURE_BONUS_CAP = 0.35;
-export const FURNITURE_POINT_VALUE = 0.015;
-export const FURNITURE_AFFINITY = Object.freeze({
-    crown: Object.freeze({ chair: 2, table: 1, statue: 3, rug: 1, candle: 1 }),
-    treasury: Object.freeze({ shelf: 3, statue: 1, candle: 2 }),
-    household: Object.freeze({ bed: 4, rug: 2, hearth: 2, candle: 1 }),
-    garrison: Object.freeze({ shelf: 2, table: 1, hearth: 1, bed: 1 }),
-    faith: Object.freeze({ candle: 3, statue: 3, rug: 1, chair: 1 }),
-    common: Object.freeze({ table: 2, chair: 1, hearth: 2, shelf: 1, rug: 1, candle: 1 }),
 });
 
 // Each role has a clear purpose in the realm. Area scales the contribution,
@@ -81,35 +80,9 @@ export const ROOM_ROLES = Object.freeze({
 
 const ROLE_ORDER = Object.keys(ROOM_ROLES);
 const EFFECT_KEYS = Object.keys(ROOM_BONUS_CAPS);
-const ROLE_BY_NAME = new Map([
-    ["THRONE ROOM", "crown"],
-    ["TREASURY", "treasury"],
-    ["VAULT", "treasury"],
-    ["ROYAL CHAMBER", "household"],
-    ["BEDCHAMBER", "household"],
-    ["GUEST ROOM", "household"],
-    ["BUNKS", "household"],
-    ["ALCOVE", "household"],
-    ["CHAMBER", "household"],
-    ["GUARD HALL", "garrison"],
-    ["DRILL HALL", "garrison"],
-    ["ARMORY", "garrison"],
-    ["LOOKOUT", "garrison"],
-    ["TOWER ROOM", "garrison"],
-    ["CELL", "garrison"],
-    ["NAVE", "faith"],
-    ["AISLE", "faith"],
-    ["CHAPEL", "faith"],
-    ["VESTRY", "faith"],
-    ["SHRINE", "faith"],
-]);
 
 const round = value => Math.round(value * 1000) / 1000;
 const zeroEffects = () => Object.fromEntries(EFFECT_KEYS.map(effect => [effect, 0]));
-
-export function roomRoleId(name) {
-    return ROLE_BY_NAME.get(String(name || "").trim().toUpperCase()) || "common";
-}
 
 export function roomWeight(area) {
     const value = Number(area);
@@ -122,15 +95,17 @@ function footprintDims(entity) {
     return { w: base.w * scale, h: base.h * scale };
 }
 
-export function getFurnitureMultiplier(entity, roleId) {
-    const affinity = FURNITURE_AFFINITY[roleId];
-    if (!affinity || !entity) return 1;
-    const interior = normalizeInterior(entity.type, entity.interior);
-    let points = 0;
-    for (const [item, weight] of Object.entries(affinity)) {
-        points += Math.max(0, Number(interior[item]) || 0) * weight;
-    }
-    return 1 + Math.min(FURNITURE_BONUS_CAP, points * FURNITURE_POINT_VALUE);
+export function getFurnitureMultiplier(entity, roomName, roleId = roomRoleId(roomName)) {
+    if (!entity) return 1;
+    const dims = footprintDims(entity);
+    if (!hasInterior(entity.type, dims.w, dims.h)) return 1;
+    const rooms = roomsOf(normalizeLayout(entity.type, entity.layout, dims.w, dims.h), entity.type);
+    const plan = getRoomFurniturePlan({
+        rooms,
+        interior: normalizeInterior(entity.type, entity.interior),
+        roomFurniture: entity.roomFurniture,
+    });
+    return furnitureMultiplier(plan.byRoom[normalizeRoomName(roomName)] || {}, roleId);
 }
 
 // The workshop needs the same numbers the realm ledger uses. This breakdown
@@ -141,16 +116,24 @@ export function getBuildingRoomBreakdown(entity) {
     const dims = footprintDims(entity);
     if (!hasInterior(entity.type, dims.w, dims.h)) return null;
     const layout = normalizeLayout(entity.type, entity.layout, dims.w, dims.h);
-    const multipliers = Object.fromEntries(ROLE_ORDER.map(role => [role, getFurnitureMultiplier(entity, role)]));
-    const rooms = roomsOf(layout, entity.type).map(room => {
+    const detected = roomsOf(layout, entity.type);
+    const plan = getRoomFurniturePlan({
+        rooms: detected,
+        interior: normalizeInterior(entity.type, entity.interior),
+        roomFurniture: entity.roomFurniture,
+    });
+    const multipliers = {};
+    const rooms = detected.map(room => {
         const role = roomRoleId(room.name);
         const weight = roomWeight(room.area);
+        const assigned = plan.byRoom[room.name] || {};
+        const multiplier = room.accessible ? furnitureMultiplier(assigned, role) : 1;
+        multipliers[room.name] = multiplier;
         const baseEffects = zeroEffects();
         const furnitureEffects = zeroEffects();
         const effects = zeroEffects();
         if (room.accessible) {
             const base = ROOM_ROLES[role].effects;
-            const multiplier = multipliers[role];
             for (const effect of EFFECT_KEYS) {
                 baseEffects[effect] = round((base[effect] || 0) * weight);
                 furnitureEffects[effect] = round(baseEffects[effect] * (multiplier - 1));
@@ -167,7 +150,10 @@ export function getBuildingRoomBreakdown(entity) {
             baseEffects,
             furnitureEffects,
             effects,
-            furnitureMultiplier: room.accessible ? multipliers[role] : 1,
+            furnitureItems: { ...assigned },
+            furnitureCount: furnitureCount(assigned),
+            furnitureUpkeep: furnitureUpkeep(assigned),
+            furnitureMultiplier: multiplier,
         };
     });
     const totals = zeroEffects();
@@ -183,7 +169,22 @@ export function getBuildingRoomBreakdown(entity) {
         sealed: rooms.filter(room => !room.accessible).length,
         accessible: rooms.filter(room => room.accessible).length,
         furniture: multipliers,
+        furnitureExplicit: plan.explicit,
+        furnitureTotal: plan.totalItems,
+        furnitureUpkeep: plan.upkeep,
     };
+}
+
+// Furniture is maintained whether or not its room is currently reachable; the
+// ledger charges every assigned item once per settlement period.
+export function getFurnitureUpkeepTotal() {
+    let total = 0;
+    for (const entity of Array.isArray(state.entities) ? state.entities : []) {
+        const breakdown = getBuildingRoomBreakdown(entity);
+        if (!breakdown) continue;
+        total += breakdown.furnitureUpkeep;
+    }
+    return round(total);
 }
 
 let cacheKey = "";
@@ -225,12 +226,14 @@ export function getRoomBonusSnapshot() {
     let rooms = 0;
     let sealed = 0;
     let buildings = 0;
+    let furnitureUpkeep = 0;
     const entities = Array.isArray(state.entities) ? state.entities : [];
     for (const entity of entities) {
         const breakdown = getBuildingRoomBreakdown(entity);
         if (!breakdown) continue;
         buildings++;
         sealed += breakdown.sealed;
+        furnitureUpkeep += breakdown.furnitureUpkeep;
         for (const room of breakdown.rooms) {
             if (!room.accessible) continue;
             const role = roleMap.get(room.role);
@@ -246,20 +249,32 @@ export function getRoomBonusSnapshot() {
     }
 
     const rawTotals = zeroEffects();
+    const baseRawTotals = zeroEffects();
+    const furnitureRawTotals = zeroEffects();
     for (const role of roleMap.values()) {
         for (const effect of EFFECT_KEYS) {
             role.baseEffects[effect] = round(role.baseEffects[effect]);
             role.furnitureEffects[effect] = round(role.furnitureEffects[effect]);
             role.effects[effect] = round(role.effects[effect]);
+            baseRawTotals[effect] += role.baseEffects[effect];
+            furnitureRawTotals[effect] += role.furnitureEffects[effect];
             rawTotals[effect] += role.effects[effect];
         }
     }
+    const baseTotals = zeroEffects();
+    const furnitureTotals = zeroEffects();
     const totals = zeroEffects();
     const capped = {};
+    const furnitureCapped = {};
     for (const effect of EFFECT_KEYS) {
         rawTotals[effect] = round(rawTotals[effect]);
-        capped[effect] = rawTotals[effect] > ROOM_BONUS_CAPS[effect] + 0.0001;
-        totals[effect] = round(Math.min(ROOM_BONUS_CAPS[effect], Math.max(0, rawTotals[effect])));
+        baseRawTotals[effect] = round(baseRawTotals[effect]);
+        furnitureRawTotals[effect] = round(furnitureRawTotals[effect]);
+        capped[effect] = baseRawTotals[effect] > ROOM_BONUS_CAPS[effect] + 0.0001;
+        furnitureCapped[effect] = furnitureRawTotals[effect] > FURNITURE_REALM_CAPS[effect] + 0.0001;
+        baseTotals[effect] = round(Math.min(ROOM_BONUS_CAPS[effect], Math.max(0, baseRawTotals[effect])));
+        furnitureTotals[effect] = round(Math.min(FURNITURE_REALM_CAPS[effect], Math.max(0, furnitureRawTotals[effect])));
+        totals[effect] = round(baseTotals[effect] + furnitureTotals[effect]);
     }
 
     const snapshot = {
@@ -269,8 +284,14 @@ export function getRoomBonusSnapshot() {
         interval: ROOM_BONUS_INTERVAL,
         roles: [...roleMap.values()],
         rawTotals,
+        baseRawTotals,
+        furnitureRawTotals,
+        baseTotals,
+        furnitureTotals,
         totals,
         capped,
+        furnitureCapped,
+        furnitureUpkeep: round(furnitureUpkeep),
     };
     cacheKey = key;
     cachedSnapshot = snapshot;
@@ -285,6 +306,7 @@ export function roomBonusSignature() {
         snapshot.buildings,
         ...EFFECT_KEYS.map(effect => snapshot.totals[effect]),
         ...snapshot.roles.map(role => role.roomCount),
+        snapshot.furnitureUpkeep,
     ].join("|");
 }
 

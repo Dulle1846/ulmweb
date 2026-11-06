@@ -5,6 +5,7 @@ import { Entity, TYPE } from "../../js/core/types.js";
 import { PLAN, defaultLayout } from "../../js/presentation/building-layout.js";
 import {
     FURNITURE_BONUS_CAP,
+    FURNITURE_REALM_CAPS,
     ROOM_BONUS_CAPS,
     ROOM_BONUS_INTERVAL,
     applyRoomBonuses,
@@ -193,12 +194,18 @@ test("furniture changes invalidate the realm snapshot cache", () => {
     assert.ok(second.rawTotals.morale > first.rawTotals.morale);
 });
 
-test("realm caps are explicit and the starting keep reaches the morale and growth caps", () => {
+test("base caps and furniture caps are both explicit and bounded", () => {
     state.entities = [keepEntity()];
     const snapshot = getRoomBonusSnapshot();
-    assert.equal(snapshot.totals.morale, ROOM_BONUS_CAPS.morale);
-    assert.equal(snapshot.totals.growth, ROOM_BONUS_CAPS.growth);
+    assert.equal(snapshot.baseTotals.morale, ROOM_BONUS_CAPS.morale);
     assert.equal(snapshot.capped.morale, true);
-    assert.equal(snapshot.capped.growth, true);
-    assert.ok(snapshot.rawTotals.morale > snapshot.totals.morale);
+    assert.ok(snapshot.rawTotals.morale > snapshot.baseTotals.morale);
+    assert.ok(snapshot.furnitureTotals.morale > 0);
+    assert.ok(snapshot.furnitureTotals.morale <= FURNITURE_REALM_CAPS.morale + 0.0001);
+    // Furnishings add a bounded layer on top of the base cap, so a decorated
+    // keep is measurably stronger than a bare one instead of both saturating.
+    assert.ok(snapshot.totals.morale > snapshot.baseTotals.morale);
+    assert.ok(snapshot.totals.morale <= ROOM_BONUS_CAPS.morale + FURNITURE_REALM_CAPS.morale + 0.0001);
+    assert.ok(snapshot.totals.growth > 0);
+    assert.ok(snapshot.totals.growth <= ROOM_BONUS_CAPS.growth + FURNITURE_REALM_CAPS.growth + 0.0001);
 });

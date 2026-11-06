@@ -6,7 +6,7 @@ import { addResource } from "./resources.js";
 import { updatePolitics } from "./politics.js";
 import { getRoadUpkeepTotal } from "./roads.js";
 import { getEdictModifiers } from "./edicts.js";
-import { applyRoomBonuses } from "./rooms.js";
+import { applyRoomBonuses, getFurnitureUpkeepTotal } from "./rooms.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -23,7 +23,7 @@ export const BUILDING_WORKFORCE = Object.freeze({
 
 const clampNonNegative = value => Math.max(0, Number.isFinite(value) ? value : 0);
 
-export function calculateDailyLedger({ population, employed, buildings, foodAvailable, goldAvailable, taxRate = 10, roadUpkeep = 0 }) {
+export function calculateDailyLedger({ population, employed, buildings, foodAvailable, goldAvailable, taxRate = 10, roadUpkeep = 0, furnitureUpkeep = 0 }) {
     const people = Math.floor(clampNonNegative(population));
     const workers = Math.min(people, Math.floor(clampNonNegative(employed)));
     const buildingCount = Math.floor(clampNonNegative(buildings));
@@ -35,9 +35,11 @@ export function calculateDailyLedger({ population, employed, buildings, foodAvai
     const wagesAssessed = workers * 0.015 * DAYS_PER_LEDGER;
     const roadUpkeepAssessed = clampNonNegative(roadUpkeep);
     const upkeepAssessed = buildingCount * 0.003 * DAYS_PER_LEDGER + roadUpkeepAssessed;
+    const furnitureUpkeepAssessed = clampNonNegative(furnitureUpkeep);
     const treasuryAfterTaxes = clampNonNegative(goldAvailable) + taxesAssessed;
     const wagesPaid = Math.min(treasuryAfterTaxes, wagesAssessed);
     const upkeepPaid = Math.min(Math.max(0, treasuryAfterTaxes - wagesPaid), upkeepAssessed);
+    const furnitureUpkeepPaid = Math.min(Math.max(0, treasuryAfterTaxes - wagesPaid - upkeepPaid), furnitureUpkeepAssessed);
     return {
         population: people,
         employed: workers,
@@ -50,9 +52,12 @@ export function calculateDailyLedger({ population, employed, buildings, foodAvai
         upkeepPaid,
         upkeepAssessed,
         roadUpkeepAssessed,
+        furnitureUpkeepAssessed,
+        furnitureUpkeepPaid,
         unpaidWages: wagesAssessed - wagesPaid,
         unpaidUpkeep: upkeepAssessed - upkeepPaid,
-        netGold: taxesAssessed - wagesPaid - upkeepPaid
+        unpaidFurniture: furnitureUpkeepAssessed - furnitureUpkeepPaid,
+        netGold: taxesAssessed - wagesPaid - upkeepPaid - furnitureUpkeepPaid
     };
 }
 
@@ -93,7 +98,8 @@ export function updateEconomy() {
         buildings: workforce.buildings,
         foodAvailable: state.resources.food,
         goldAvailable: state.resources.gold,
-        roadUpkeep: getRoadUpkeepTotal() * DAYS_PER_LEDGER
+        roadUpkeep: getRoadUpkeepTotal() * DAYS_PER_LEDGER,
+        furnitureUpkeep: getFurnitureUpkeepTotal()
     });
 
     // Royal edicts bend the ledger before it settles: a harvest law lowers
@@ -104,7 +110,7 @@ export function updateEconomy() {
     ledger.foodConsumed = Math.min(state.resources.food, ledger.foodDemand);
     ledger.foodShortage = Math.max(0, ledger.foodDemand - ledger.foodConsumed);
     ledger.taxesCollected *= edicts.tax;
-    ledger.netGold = ledger.taxesCollected - ledger.wagesPaid - ledger.upkeepPaid;
+    ledger.netGold = ledger.taxesCollected - ledger.wagesPaid - ledger.upkeepPaid - ledger.furnitureUpkeepPaid;
 
     addResource("food", -ledger.foodConsumed);
     addResource("gold", ledger.netGold);
@@ -114,13 +120,13 @@ export function updateEconomy() {
     if (ledger.foodShortage > 0) {
         state.morale = Math.max(0, state.morale - Math.min(2.5, 0.35 + ledger.foodShortage * 0.12));
     }
-    if (ledger.unpaidWages > 0 || ledger.unpaidUpkeep > 0) {
+    if (ledger.unpaidWages > 0 || ledger.unpaidUpkeep > 0 || ledger.unpaidFurniture > 0) {
         state.morale = Math.max(0, state.morale - 0.2);
     }
 
     const totals = state.economy || (state.economy = {});
     totals.daysElapsed = (totals.daysElapsed || 0) + DAYS_PER_LEDGER;
-    for (const key of ["foodConsumed", "taxesCollected", "wagesPaid", "upkeepPaid", "roadUpkeepAssessed", "unpaidWages", "unpaidUpkeep"]) {
+    for (const key of ["foodConsumed", "taxesCollected", "wagesPaid", "upkeepPaid", "furnitureUpkeepPaid", "roadUpkeepAssessed", "unpaidWages", "unpaidUpkeep", "unpaidFurniture"]) {
         totals[key] = (totals[key] || 0) + ledger[key];
     }
     totals.lastLedger = ledger;
