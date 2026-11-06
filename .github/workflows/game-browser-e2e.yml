@@ -1,5 +1,6 @@
 name: Game Browser E2E
 
+# Stability sample 2: repeat the identical browser suite after the one-off failure.
 on:
   push:
     branches:
