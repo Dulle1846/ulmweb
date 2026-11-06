@@ -11,6 +11,12 @@ Kings & Cards is a browser-based medieval realm and strategy simulation.
 
 Vercel is not used. The workers.dev hostname is a separate/legacy Worker endpoint, not the canonical Pages release.
 
+## Repository layout
+
+- `game/` — the complete game: HTML, CSS, JavaScript, assets, tests and docs. This is the only folder Cloudflare Pages publishes.
+- `.github/` — CI workflows only; nothing here is deployed.
+- The root HTML files belong to the separate ulmweb website and are not part of the game deployment.
+
 ## Cloudflare Pages settings
 
 - Framework preset: None
