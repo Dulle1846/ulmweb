@@ -4,7 +4,7 @@ import {resetState,state} from "../../js/core/state.js";
 import {TYPE} from "../../js/core/types.js";
 import {WORLD_W,WORLD_H} from "../../js/core/config.js";
 import {spawnEntity} from "../../js/world/entities.js";
-import {findPath,isWalkable,updateFriendlyMovement} from "../../js/simulation/villagers.js";
+import {findPath,isWalkable,updateFriendlyMovement,getPathCacheStats,clearPathCache} from "../../js/simulation/villagers.js";
 
 function prepare(){
     resetState();
@@ -63,6 +63,32 @@ test("pathfinding and walkability use the full larger world bounds",()=>{
     const route=findPath(395.5,400.5,405.5,400.5,400);
     assert.ok(Array.isArray(route)&&route.length>0,"A* must find a route on a larger map");
     assert.ok(route.every(node=>node.x>390&&node.x<410),"the route must stay near the requested larger-map coordinates");
+});
+
+test("hierarchical path cache stays bounded across repeated world epochs",()=>{
+    resetState();
+    const W=128,H=128;
+    state.worldW=W;state.worldH=H;
+    state.terrainResolution=1;state.terrainPixW=W;state.terrainPixH=H;
+    state.heightMap=new Float32Array(W*H).fill(0.5);
+    clearPathCache();
+    let route=null;
+    for(let index=0;index<30;index++){
+        state.worldEpoch=(state.worldEpoch||0)+1;
+        route=findPath(10.5,10.5,110.5,110.5,40);
+        assert.ok(Array.isArray(route),"the coarse route must remain available after cache churn");
+        assert.deepEqual(route.at(-1),{x:110.5,y:110.5});
+    }
+    const stats=getPathCacheStats();
+    assert.equal(stats.limit,24);
+    assert.ok(stats.size<=stats.limit,"the hierarchical grid cache must never exceed its limit");
+    assert.ok(stats.misses>=30,"each world epoch must miss the old cache key");
+    assert.ok(stats.evictions>0,"the bounded cache must evict old grids");
+    assert.ok(stats.invalidations>0,"world changes must be visible in diagnostics");
+    const afterEviction=findPath(10.5,10.5,110.5,110.5,40);
+    assert.ok(Array.isArray(afterEviction),"evicting an old grid must not break a fresh route");
+    assert.deepEqual(afterEviction.at(-1),{x:110.5,y:110.5});
+    clearPathCache();
 });
 
 test("units follow cached routes instead of repeatedly pushing into a building",()=>{

@@ -431,17 +431,43 @@ function findPathDirect(startX,startY,targetX,targetY,maxNodes=1800){
 
 const HIERARCHICAL_TRIGGER_DISTANCE = 64;
 const HIERARCHICAL_LOCAL_CAP = 5000;
+const HIERARCHICAL_GRID_CACHE_LIMIT = 24;
 const hierarchicalGridCache = new Map();
+const pathCacheStats = { hits: 0, misses: 0, evictions: 0, invalidations: 0 };
 let reachableTileCache = null;
+let lastWalkabilityKey = null;
 
 function walkabilityKey() {
     return [state.worldEpoch || 0, worldWidth(), worldHeight(), state.buildingCollisionVersion || 0].join(":");
 }
 
+// Read-only diagnostics for tests and the developer overlay. The caller gets
+// a snapshot, never a mutable reference to the cache counters.
+export function getPathCacheStats() {
+    return {
+        size: hierarchicalGridCache.size,
+        limit: HIERARCHICAL_GRID_CACHE_LIMIT,
+        ...pathCacheStats
+    };
+}
+
+export function clearPathCache() {
+    hierarchicalGridCache.clear();
+    reachableTileCache = null;
+    lastWalkabilityKey = null;
+    pathCacheStats.hits = 0;
+    pathCacheStats.misses = 0;
+    pathCacheStats.evictions = 0;
+    pathCacheStats.invalidations = 0;
+}
+
 function getReachableTiles(startX, startY) {
     const W = worldWidth(), H = worldHeight();
+    const currentKey = walkabilityKey();
+    if (lastWalkabilityKey !== null && lastWalkabilityKey !== currentKey) pathCacheStats.invalidations++;
+    lastWalkabilityKey = currentKey;
     const startTile = Math.floor(startY) * W + Math.floor(startX);
-    const key = `${walkabilityKey()}:${startTile}`;
+    const key = `${currentKey}:${startTile}`;
     if (reachableTileCache && reachableTileCache.key === key) return reachableTileCache;
     if (!isWalkable(startX, startY)) return null;
 
@@ -478,7 +504,15 @@ function getHierarchicalGrid(cellSize, reachable) {
     const W = reachable.W, H = reachable.H;
     const key = `${reachable.key}:${cellSize}`;
     const cached = hierarchicalGridCache.get(key);
-    if (cached) return cached;
+    if (cached) {
+        // Map preserves insertion order. Re-inserting a hit makes the oldest
+        // entry the least recently used candidate for the next eviction.
+        pathCacheStats.hits++;
+        hierarchicalGridCache.delete(key);
+        hierarchicalGridCache.set(key, cached);
+        return cached;
+    }
+    pathCacheStats.misses++;
 
     const cols = Math.ceil(W / cellSize), rows = Math.ceil(H / cellSize);
     const reps = new Int32Array(cols * rows).fill(-1);
@@ -500,6 +534,11 @@ function getHierarchicalGrid(cellSize, reachable) {
     }
     const grid = { cellSize, cols, rows, reps, W, H, key, reachable };
     hierarchicalGridCache.set(key, grid);
+    while (hierarchicalGridCache.size > HIERARCHICAL_GRID_CACHE_LIMIT) {
+        const oldestKey = hierarchicalGridCache.keys().next().value;
+        hierarchicalGridCache.delete(oldestKey);
+        pathCacheStats.evictions++;
+    }
     return grid;
 }
 
