@@ -293,15 +293,117 @@ try{
     await page.locator("#building-search").fill("farm");
     assert.ok(await page.locator("#command-panel-content .building-record:not(.is-filtered)").count()>=1,"building filter must retain matching structures");
     await page.locator("#building-search").fill("");
+
+    // The movement ledger must show real production and transport records, not
+    // a static explanation. Production runs every six ticks, so wait for it.
+    if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-dismiss").click();
+    await page.locator('[data-command-tab="buildings"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("LATEST GOOD MOVEMENTS"),"transport overview must expose the movement ledger");
+    await page.waitForFunction(()=>document.querySelectorAll("#command-panel-content .logistics-movement").length>0,null,{timeout:15000});
+    const movementTypes=await page.locator("#command-panel-content .logistics-movement").evaluateAll(nodes=>nodes.map(node=>node.dataset.movementType));
+    assert.ok(movementTypes.length>0&&movementTypes.length<=8,"the movement ledger preview must stay bounded to the newest records");
+    assert.ok(movementTypes.every(type=>["produced","consumed","deposited","withdrawn","evacuated","reserved","picked","delivered"].includes(type)),"every ledger row must expose a known movement type: "+movementTypes.join(","));
+    await page.waitForFunction(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return state.city.logistics.ledger.some(entry=>entry.type==="produced");
+    },null,{timeout:15000});
+    const ledgerAudit=await page.evaluate(async()=>{
+        const [{state},{GOOD_KEYS}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/city-config.js")
+        ]);
+        const ledger=state.city.logistics.ledger;
+        return {
+            length:ledger.length,
+            types:ledger.map(entry=>entry.type),
+            invalidGoods:ledger.filter(entry=>entry.good!==null&&!GOOD_KEYS.includes(entry.good)).map(entry=>entry.good)
+        };
+    });
+    assert.ok(ledgerAudit.types.includes("produced"),"production output must reach the central ledger");
+    assert.ok(ledgerAudit.types.some(type=>["reserved","picked","delivered"].includes(type)),"transport movements must share the same ledger");
+    assert.deepEqual(ledgerAudit.invalidGoods,[],"the ledger must never record an unknown good");
+    assert.ok(ledgerAudit.length<=160,"the central movement ledger must stay bounded");
+
+    // Pause while the deterministic warehouse fixture is inspected and the
+    // demolition feedback is exercised; resume before the map action tests.
+    if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-dismiss").click();
+    await page.locator("#command-close").click();
+    if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-dismiss").click();
+    await page.locator("#pause-btn").click();
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
+
+    // A fresh, empty warehouse makes the profile switch deterministic even when
+    // the seeded stores already hold goods.
+    const warehouseFixture=await page.evaluate(async()=>{
+        const [{state},{TYPE},{spawnEntity},{ensureInventory},{WAREHOUSE_PROFILES},{isWaterAt},{BUILDING_SIZE}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/core/types.js"),import("./js/world/entities.js"),
+            import("./js/systems/logistics.js"),import("./js/systems/city-config.js"),
+            import("./js/world/world.js"),import("./js/core/config.js")
+        ]);
+        const occupied=(x,y)=>state.entities.some(entity=>{
+            if(entity.dead||!entity.isBuilding?.())return false;
+            const size=BUILDING_SIZE[entity.type]||{w:1,h:1};
+            const scale=Math.max(.25,Math.min(6,Number(entity.footprintScale)||1));
+            return Math.abs(x+.5-(entity.x+.5))<size.w*scale/2+1&&Math.abs(y+.5-(entity.y+.5))<size.h*scale/2+1;
+        });
+        const findSpot=()=>{
+            const centerX=Math.round(state.worldW/2),centerY=Math.round(state.worldH/2);
+            for(let radius=4;radius<=48;radius++){
+                for(let oy=-radius;oy<=radius;oy++){
+                    for(let ox=-radius;ox<=radius;ox++){
+                        if(Math.max(Math.abs(ox),Math.abs(oy))!==radius)continue;
+                        const x=centerX+ox,y=centerY+oy;
+                        if(x<2||y<2||x>=state.worldW-2||y>=state.worldH-2)continue;
+                        if(!state.explored?.[x]?.[y]||isWaterAt(x+.5,y+.5)||occupied(x,y))continue;
+                        return {x,y};
+                    }
+                }
+            }
+            return null;
+        };
+        const createWarehouse=()=>{
+            const spot=findSpot();
+            if(!spot)throw new Error("No dry tile was available for the warehouse profile fixture");
+            const entity=spawnEntity(spot.x,spot.y,TYPE.WAREHOUSE);
+            if(!entity)throw new Error("The warehouse profile fixture could not be created");
+            ensureInventory(entity);
+            return entity;
+        };
+        // A second empty store guarantees that the evacuation has somewhere to
+        // go, independent of how full the seeded stores are at this point.
+        const warehouse=createWarehouse();
+        const recipient=createWarehouse();
+        const stored=Object.entries(warehouse.warehouse.stored).filter(([,quantity])=>quantity>0).map(([good])=>good);
+        const target=Object.values(WAREHOUSE_PROFILES).find(profile=>profile.id!=="general"&&stored.every(good=>profile.filters.includes(good)));
+        if(!target)throw new Error("No compatible warehouse profile was available for the fixture");
+        return {id:warehouse.id,profile:warehouse.warehouse.profile,stored,targetId:target.id,targetCapacity:target.capacity,targetFilters:[...target.filters]};
+    });
+    await page.locator('.realm-nav-button[data-kac-panel="buildings"]').click();
+    const warehouseSelect=page.locator('[data-warehouse-profile="'+warehouseFixture.id+'"]');
+    assert.equal(await warehouseSelect.count(),1,"a warehouse must expose its profile selector");
+    const warehouseRecord=page.locator(".building-record").filter({has:warehouseSelect});
+    if(!(await warehouseRecord.evaluate(record=>record.open)))await warehouseRecord.locator("summary").click();
+    assert.ok((await warehouseRecord.innerText()).includes("Warehouse profile"),"the expanded warehouse must label its profile control");
+    await warehouseSelect.selectOption(warehouseFixture.targetId);
+    await page.waitForFunction(({id,profile})=>document.querySelector('[data-warehouse-profile="'+id+'"]')?.value===profile,{id:warehouseFixture.id,profile:warehouseFixture.targetId},{timeout:3000});
+    assert.match(await page.locator("#action-toast").innerText(),/WAREHOUSE PROFILE UPDATED/i,"profile changes must confirm through the shared toast");
+    const appliedProfile=await page.evaluate(async({id})=>{
+        const {state}=await import("./js/core/state.js");
+        const warehouse=state.entities.find(entity=>entity.id===id);
+        return {profile:warehouse.warehouse.profile,capacity:warehouse.warehouse.capacity,filters:[...warehouse.warehouse.filters]};
+    },{id:warehouseFixture.id});
+    assert.equal(appliedProfile.profile,warehouseFixture.targetId,"the UI must change the real warehouse profile");
+    assert.equal(appliedProfile.capacity,warehouseFixture.targetCapacity,"the profile must apply its capacity");
+    assert.deepEqual(appliedProfile.filters,warehouseFixture.targetFilters,"the profile must replace the accepted goods filter");
+
     await page.evaluate(async()=>{
         const [{state},{addLog,triggerRandomEvent}]=await Promise.all([
             import("./js/core/state.js"),import("./js/systems/events.js")
         ]);
         state.activeEvent=null;
-        const {renderUI}=await import("./js/presentation/rendering/ui.js");
-        renderUI();
         addLog("E2E CHRONICLE ENTRY","#c5a66b","e2e");
         triggerRandomEvent();
+        const {renderUI}=await import("./js/presentation/rendering/ui.js");
+        renderUI();
     });
     await page.locator("#realm-event-modal").waitFor({state:"visible",timeout:5000});
     await page.locator("#realm-event-dismiss").click();
@@ -317,6 +419,73 @@ try{
     await page.locator('[data-command-tab="cards"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Card management"));
     await page.locator("#command-close").click();
+
+    // Demolition must report a full store and keep it intact, then demolish the
+    // same store once evacuation space is available without losing its goods.
+    const demolitionFixture=await page.evaluate(async({warehouseId})=>{
+        const {state}=await import("./js/core/state.js");
+        const warehouse=state.entities.find(entity=>entity.id===warehouseId);
+        if(!warehouse)throw new Error("The warehouse profile fixture disappeared before demolition");
+        for(const key of Object.keys(warehouse.warehouse.stored))warehouse.warehouse.stored[key]=0;
+        warehouse.warehouse.stored.logs=1;
+        const backup=state.entities.filter(entity=>!entity.dead&&entity.warehouse&&entity.id!==warehouseId)
+            .map(entity=>({id:entity.id,filters:[...entity.warehouse.filters]}));
+        for(const entity of state.entities){
+            if(!entity.dead&&entity.warehouse&&entity.id!==warehouseId)entity.warehouse.filters=[];
+        }
+        return {id:warehouseId,backup};
+    },{warehouseId:warehouseFixture.id});
+    await page.evaluate(async({id})=>{
+        const [{state},{selectBuilding}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/presentation/build-mode.js")
+        ]);
+        selectBuilding(state.entities.find(entity=>entity.id===id));
+    },{id:demolitionFixture.id});
+    if(!(await page.locator("#workshop-panel").isVisible()))await page.locator("#workshop-open-btn").click();
+    await page.locator("#workshop-panel").waitFor({state:"visible",timeout:3000});
+    assert.equal(await page.locator('[data-build-action="demolish"]').isEnabled(),true,"a completed store must be demolishable");
+    await page.locator('[data-build-action="demolish"]').click();
+    await page.waitForFunction(()=>document.querySelector("#action-toast")?.textContent.includes("CANNOT DEMOLISH"),null,{timeout:3000});
+    assert.match(await page.locator("#action-toast").innerText(),/CANNOT DEMOLISH · STORE FULL/i,"a store with nowhere to evacuate must refuse demolition");
+    const refusedDemolition=await page.evaluate(async({id})=>{
+        const {state}=await import("./js/core/state.js");
+        const warehouse=state.entities.find(entity=>entity.id===id);
+        return {alive:!warehouse.dead,storedLogs:warehouse.warehouse.stored.logs};
+    },{id:demolitionFixture.id});
+    assert.equal(refusedDemolition.alive,true,"a refused demolition must keep the store alive");
+    assert.equal(refusedDemolition.storedLogs,1,"a refused demolition must keep its goods in the store");
+    await page.evaluate(async({backup})=>{
+        const {state}=await import("./js/core/state.js");
+        for(const row of backup){
+            const entity=state.entities.find(entity=>entity.id===row.id);
+            if(entity?.warehouse)entity.warehouse.filters=row.filters;
+        }
+    },{backup:demolitionFixture.backup});
+    const logsBeforeEvacuation=await page.evaluate(async({id})=>{
+        const {state}=await import("./js/core/state.js");
+        return state.entities.filter(entity=>!entity.dead&&entity.warehouse&&entity.id!==id)
+            .reduce((sum,entity)=>sum+(entity.warehouse.stored.logs||0),0);
+    },{id:demolitionFixture.id});
+    await page.locator('[data-build-action="demolish"]').click();
+    await page.waitForFunction(()=>document.querySelector("#action-toast")?.textContent.includes("DEMOLISHED"),null,{timeout:3000});
+    const successfulDemolition=await page.evaluate(async({id,previousLogs})=>{
+        const {state}=await import("./js/core/state.js");
+        const warehouse=state.entities.find(entity=>entity.id===id);
+        const logsNow=state.entities.filter(entity=>!entity.dead&&entity.warehouse&&entity.id!==id)
+            .reduce((sum,entity)=>sum+(entity.warehouse.stored.logs||0),0);
+        return {dead:Boolean(warehouse?.dead),logsNow,evacuated:logsNow>=previousLogs+1};
+    },{id:demolitionFixture.id,previousLogs:logsBeforeEvacuation});
+    assert.equal(successfulDemolition.dead,true,"a successful demolition must remove the structure");
+    assert.equal(successfulDemolition.evacuated,true,"demolition must evacuate its stored goods instead of deleting them");
+    const evacuationLedger=await page.evaluate(async({id})=>{
+        const {state}=await import("./js/core/state.js");
+        return state.city.logistics.ledger.filter(entry=>entry.type==="evacuated"&&entry.from==="building:"+id);
+    },{id:demolitionFixture.id});
+    assert.equal(evacuationLedger.length,1,"a demolition evacuation must be recorded in the central ledger exactly once");
+    assert.equal(evacuationLedger[0].quantity,1,"the ledger must record the actually evacuated quantity");
+    if(await page.locator("#workshop-panel").isVisible())await page.locator("#workshop-close").click();
+    await page.locator("#pause-btn").click();
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="PAUSE",null,{timeout:3000});
 
 
     // Create deterministic guardian/ward records so the dossier UI can be tested
