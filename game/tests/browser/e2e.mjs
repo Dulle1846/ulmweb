@@ -141,6 +141,23 @@ const errors=[],consoleErrors=[];
 try{
     const context=await browser.newContext({viewport:{width:1600,height:1000},reducedMotion:"reduce"});
     const page=await context.newPage();
+    await page.addInitScript(()=>{globalThis.__KAC_RESET_PROBE__={calls:0};});
+    // The reset counter is injected only into the test server's module response.
+    // It makes the negative import assertion explicit without adding test-only
+    // hooks to production code.
+    const resetMarker="function resetForRun(profile){";
+    await page.route("**/js/app/main.js",async route=>{
+        const response=await route.fetch();
+        const source=await response.text();
+        if(!source.includes(resetMarker))throw new Error("Could not instrument resetForRun for the E2E reset probe");
+        const headers={...response.headers()};
+        delete headers["content-length"];
+        await route.fulfill({
+            status:response.status(),
+            headers,
+            body:source.replace(resetMarker,resetMarker+" if(globalThis.__KAC_RESET_PROBE__)globalThis.__KAC_RESET_PROBE__.calls++;")
+        });
+    });
     page.on("pageerror",error=>errors.push(error.message));
     page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text());});
     await page.goto("http://127.0.0.1:"+port+"/",{waitUntil:"networkidle"});
@@ -172,6 +189,8 @@ try{
         throw error;
     }
     assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
+    const resetCallsAfterStart=await page.evaluate(()=>globalThis.__KAC_RESET_PROBE__?.calls??-1);
+    assert.ok(resetCallsAfterStart>=1,"the reset probe must observe the normal realm reset before it is armed for the invalid import");
     const exactPreview=await page.evaluate(async()=>{
         const [{state},{getWorldData}]=await Promise.all([
             import("./js/core/state.js"),import("./js/world/terrain-model.js")
@@ -199,6 +218,7 @@ try{
         const {state}=await import("./js/core/state.js");
         return state.isPaused===true;
     },null,{timeout:3000});
+    await page.evaluate(()=>{globalThis.__KAC_RESET_PROBE__.calls=0;});
     const beforeInvalidImport=await captureRealmState(page);
     for(const key of ["heightMap","moistureMap","temperatureMap","explored"]){
         assert.ok(beforeInvalidImport[key]&&beforeInvalidImport[key].hashA,"persistent terrain data must be included in the state comparison: "+key);
@@ -206,6 +226,55 @@ try{
     assert.ok(beforeInvalidImport.heightMap.length>0,"the height map hash must cover the complete map");
     assert.ok(beforeInvalidImport.explored.length>0,"the exploration map hash must cover the complete map");
     assert.equal(JSON.stringify(beforeInvalidImport).includes("[unserializable]"),false,"persistent state must never be replaced by an unverifiable placeholder");
+
+    // Mutate each persistent terrain array via the live state and prove that the
+    // complete-state hash detects it. Restore the exact original element before
+    // continuing with the invalid-import test.
+    for(const key of ["heightMap","moistureMap","temperatureMap","explored"]){
+        const mutation=await page.evaluate(async key=>{
+            const {state}=await import("./js/core/state.js");
+            const findAndMutate=(value,path)=>{
+                if(ArrayBuffer.isView(value)){
+                    if(!value.length)return null;
+                    const old=value[0];
+                    const next=typeof old==="boolean"?!old:old===0?1:0;
+                    if(Object.is(next,old))throw new Error("Could not mutate persistent value at "+path.join("."));
+                    value[0]=next;
+                    return {path:[...path,0],old};
+                }
+                if(Array.isArray(value)){
+                    for(let index=0;index<value.length;index++){
+                        const item=value[index];
+                        if(typeof item==="number"||typeof item==="boolean"){
+                            const next=typeof item==="boolean"?!item:item===0?1:0;
+                            if(Object.is(next,item))throw new Error("Could not mutate persistent value at "+[...path,index].join("."));
+                            value[index]=next;
+                            return {path:[...path,index],old:item};
+                        }
+                        const nested=findAndMutate(item,[...path,index]);
+                        if(nested)return nested;
+                    }
+                }
+                return null;
+            };
+            const result=findAndMutate(state[key],[key]);
+            if(!result)throw new Error("No mutable element found in persistent terrain array "+key);
+            return result;
+        },key);
+        try{
+            const mutated=await captureRealmState(page);
+            assert.notDeepEqual(mutated,beforeInvalidImport,"a change to "+key+" must make the complete-state comparison fail");
+        }finally{
+            await page.evaluate(async ({path,old})=>{
+                const {state}=await import("./js/core/state.js");
+                let target=state;
+                for(const segment of path.slice(0,-1))target=target[segment];
+                target[path[path.length-1]]=old;
+            },mutation);
+        }
+    }
+    const restoredAfterTerrainProbe=await captureRealmState(page);
+    assert.deepEqual(restoredAfterTerrainProbe,beforeInvalidImport,"the terrain mutation probe must restore the exact original state");
     const invalidSavePath=resolve(tmpdir(),"kac-invalid-resource-save-"+Date.now()+".json");
     await writeFile(invalidSavePath,JSON.stringify({
         saveSchemaVersion:4,
@@ -216,6 +285,7 @@ try{
     await page.locator("#import-save-input").setInputFiles(invalidSavePath);
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("negative wood"),null,{timeout:5000});
     const afterInvalidImport=await captureRealmState(page);
+    assert.equal(await page.evaluate(()=>globalThis.__KAC_RESET_PROBE__?.calls),0,"a rejected import must not call resetForRun");
     assert.deepEqual(afterInvalidImport,beforeInvalidImport,"a rejected import must leave the entire active realm unchanged, including entities, positions, resources, income, world options, roads, city logistics, random streams, profile, selection and speed");
     assert.match(await page.locator("#status-message").innerText(),/current realm was not changed/i,"the rejected import must explain that the active realm is untouched");
     await page.locator("#pause-btn").click();
