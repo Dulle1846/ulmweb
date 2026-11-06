@@ -34,11 +34,16 @@ test("roads spend materials, upgrade in place and expose movement modifiers",()=
     assert.equal(first.ok,true);
     assert.equal(getRoadCount(),1);
     assert.ok(state.resources.wood<100);
+    assert.ok(Math.abs(state.incomeThisTick.wood+0.15)<1e-9,"dirt road wood cost must reach the tick ledger");
+    assert.equal(state.incomeThisTick.stone,0);
+    assert.equal(state.incomeThisTick.gold,0);
     assert.equal(getRoadSpeedMultiplier(20.5,20.5),1.08);
     assert.equal(getRoadTravelCost(20.5,20.5),1);
     assert.equal(placeRoad(20,20,"dirt").ok,false);
     assert.equal(placeRoad(20,20,"gravel").upgraded,true);
     assert.equal(getRoadCount(),1);
+    assert.ok(Math.abs(state.incomeThisTick.wood+0.10)<1e-9,"the cheaper upgrade wood share must refund 0.05 on top of the dirt cost");
+    assert.ok(Math.abs(state.incomeThisTick.stone+0.22)<1e-9,"the upgrade stone delta must reach the tick ledger");
     assert.equal(getRoadAt(20,20).type,"gravel");
     assert.equal(getRoadSpeedMultiplier(20,20),1.18);
     assert.equal(getRoadTravelCost(20,20),0.9);
@@ -48,11 +53,27 @@ test("roads spend materials, upgrade in place and expose movement modifiers",()=
 test("road removal refunds part of the material cost and invalidates the tile",()=>{
     setup();
     assert.equal(placeRoad(21,21,"paved").ok,true);
-    const before=state.resources.stone;
+    const before={...state.resources};
+    const incomeBefore={...state.incomeThisTick};
     assert.equal(removeRoad(21,21).ok,true);
     assert.equal(getRoadAt(21,21),null);
-    assert.ok(state.resources.stone>before);
+    const refund={wood:0.1*0.25,stone:0.38*0.25,gold:0.025*0.25};
+    for(const [resource,amount] of Object.entries(refund)){
+        assert.ok(Math.abs(state.resources[resource]-before[resource]-amount)<1e-9,"refund must increase "+resource);
+        assert.ok(Math.abs(state.incomeThisTick[resource]-incomeBefore[resource]-amount)<1e-9,"refund must reach the "+resource+" tick ledger");
+    }
     assert.equal(removeRoad(21,21).ok,false);
+});
+
+test("an unaffordable multi-resource road leaves every balance and tick entry untouched",()=>{
+    setup();
+    state.resources={wood:100,stone:0,gold:100,food:100};
+    state.incomeThisTick={wood:0,stone:0,gold:0,food:0};
+    const result=placeRoad(22,22,"paved");
+    assert.equal(result.ok,false);
+    assert.deepEqual(state.resources,{wood:100,stone:0,gold:100,food:100});
+    assert.deepEqual(state.incomeThisTick,{wood:0,stone:0,gold:0,food:0});
+    assert.equal(getRoadCount(),0);
 });
 
 test("road save data round-trips and malformed entries are discarded",()=>{

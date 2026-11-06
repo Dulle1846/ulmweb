@@ -2,6 +2,7 @@
 import { state } from "../core/state.js";
 import { BUILDING_SIZE } from "../core/config.js";
 import { isWaterAt, worldWidth, worldHeight } from "../world/world.js";
+import { addResource } from "./resources.js";
 
 export const ROAD_TYPES = Object.freeze({
     dirt: Object.freeze({ id:"dirt", label:"Dirt path", speed:1.08, travelCost:1.0, upkeep:0.0004, cost:Object.freeze({wood:0.15,stone:0,gold:0}), color:"#a97849", edge:"#4e3526" }),
@@ -48,8 +49,10 @@ function canAfford(delta){
 }
 function applyCost(delta){
     for(const [resource,amount] of Object.entries(delta)){
-        if(amount>0)state.resources[resource]=Math.max(0,Number(state.resources[resource]||0)-amount);
-        else if(amount<0)state.resources[resource]=Number(state.resources[resource]||0)-amount;
+        if(amount===0)continue;
+        // addResource owns clamping and the per-tick ledger. Road costs and
+        // refunds must not bypass it with direct state.resources writes.
+        addResource(resource,-amount);
     }
 }
 function bumpRevision(){
@@ -128,7 +131,8 @@ export function removeRoad(x,y){
     if(!existing)return {ok:false,reason:"No road on this tile"};
     const cost=ROAD_TYPES[existing.type].cost;
     for(const [resource,amount] of Object.entries(cost)){
-        state.resources[resource]=(Number(state.resources[resource])||0)+amount*0.25;
+        const refund=amount*0.25;
+        if(refund>0)addResource(resource,refund);
     }
     delete roads.tiles[key];
     bumpRevision();
