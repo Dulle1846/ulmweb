@@ -49,8 +49,8 @@ try{
         },value);
     }
     await page.locator("#world-seed-input").fill("20261104");
-    await page.waitForTimeout(350);
     assert.equal(await page.locator("#world-size option").count(),7,"the forge must offer seven map sizes");
+    await page.waitForFunction(()=>document.querySelector("#world-preview-status")?.textContent.includes("SEED 20261104"),null,{timeout:10000});
     assert.match(await page.locator("#world-preview-status").innerText(),/EXACT PREVIEW/,"the forge must report an exact preview");
     await page.locator("#player-name-input").fill("CI-Browser-Check");
     assert.ok((await page.locator("#start-new-game-btn").getAttribute("class")).includes("ui-button--primary"),"founding action must use the shared primary button");
