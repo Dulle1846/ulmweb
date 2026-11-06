@@ -21,7 +21,7 @@ import {
     furnitureCost, getRoomFurniturePlan, normalizeRoomFurniture,
 } from '../systems/furniture.js';
 import { constructionSnapshot, isUnderConstruction, pauseConstruction, resumeConstruction, cancelConstruction, placeDirectBuilding } from '../systems/construction.js';
-import { getInventorySummary } from '../systems/logistics.js';
+import { getInventorySummary, cancelJobsForEntity, evacuateBuildingInventory } from '../systems/logistics.js';
 import { getServiceReason } from '../systems/settlement.js';
 
 const RADIUS_SEARCH = 9;
@@ -248,6 +248,16 @@ export function demolishSelected() {
         const result = cancelConstruction(entity);
         selectBuilding(null);
         toast(result.ok ? 'SITE CANCELLED · 35% OF PAID MATERIALS RECOVERED' : result.reason);
+        return;
+    }
+    // A store is more than a sprite: cancel its deliveries and evacuate every
+    // physically stored good before the structure is removed. If the nearby
+    // stores have no room, demolition is refused instead of destroying goods.
+    cancelJobsForEntity(entity.id);
+    const evacuation = evacuateBuildingInventory(entity);
+    if (!evacuation.ok) {
+        toast('CANNOT DEMOLISH · STORE FULL · ' + Object.entries(evacuation.remaining).map(([good, value]) => value + ' ' + good).join(' · '));
+        renderWorkshop();
         return;
     }
     pushUndo(entity);

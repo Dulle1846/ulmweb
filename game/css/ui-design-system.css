@@ -219,6 +219,19 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .building-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .building-detail-grid>span{display:grid;gap:4px;min-width:0;padding:7px;border:1px solid #b99a5930;border-radius:2px;color:#a89572;font-size:9px}
 .building-detail-grid strong{overflow-wrap:anywhere;color:#ead9b5;font-size:10px;font-weight:600}
+.building-detail-grid>span:nth-child(8) strong,.building-detail-grid>span:nth-child(9) strong{color:#d9c49a;line-height:1.45}
+.logistics-overview{display:grid;gap:5px;margin:8px 0 10px}
+/* The management window is parchment, so haul rows need a solid dark card
+   of their own; a translucent dark fill washed the light text out. */
+.logistics-job{display:grid;gap:3px;padding:8px 9px;border:1px solid #5c4a33;border-radius:3px;background:linear-gradient(145deg,#2b2620,#1b1916)}
+.logistics-job strong{color:#f0e3c7;font:600 10px var(--ui-body-font)}
+.logistics-job small{color:#bba984;font-size:9px;line-height:1.4;overflow-wrap:anywhere}
+.logistics-job.is-blocked{border-color:#b56b5f;background:linear-gradient(145deg,#33231f,#241b19)}
+.logistics-job.is-blocked strong{color:#f0b8ad}
+.logistics-movement[data-movement-type="produced"] strong{color:#a9c08c}
+.logistics-movement[data-movement-type="consumed"] strong{color:#d0b184}
+.logistics-movement[data-movement-type="withdrawn"],.logistics-movement[data-movement-type="evacuated"] strong{color:#c9a5a0}
+.warehouse-profile-select{width:100%;min-height:28px;padding:3px 5px;border:1px solid var(--ui-line-strong);border-radius:3px;background:#171512;color:#f0e3c7;font:10px var(--ui-body-font)}
 @media(max-width:790px){.ledger-grid,.building-detail-grid{grid-template-columns:1fr}.building-record>summary{padding:8px}.building-type-summary{gap:4px}}
 
 

@@ -10,7 +10,7 @@ import { getWorkforceSnapshot, getBuildingEfficiency } from "../systems/economy.
 import { RECIPES } from "../systems/city-config.js";
 import {
     ensureInventory, addLocalOutput, getAvailableInput, getAvailableOutput,
-    requestSupply, requestHaul, getBuildingSupplyReason
+    requestSupply, requestHaul, getBuildingSupplyReason, outputSpace, recordGoodMovement
 } from "../systems/logistics.js";
 import { findNearestResourceNode, harvestForest, extractStone } from "../systems/resource-geography.js";
 
@@ -51,7 +51,14 @@ function consumeInputs(building) {
     for (const [good, amount] of Object.entries(recipe.input || {})) {
         if (inventory.input[good] < amount) return false;
     }
-    for (const [good, amount] of Object.entries(recipe.input || {})) inventory.input[good] -= amount;
+    for (const [good, amount] of Object.entries(recipe.input || {})) {
+        inventory.input[good] -= amount;
+        recordGoodMovement({
+            type: "consumed", good, quantity: amount,
+            from: { kind: "building", id: building.id }, to: { kind: "recipe", id: recipe.label },
+            cause: "recipe-input"
+        });
+    }
     return true;
 }
 
@@ -60,6 +67,11 @@ function finishOutput(building, output, production) {
     for (const [good, amount] of Object.entries(output)) {
         const accepted = addLocalOutput(building, good, amount);
         if (accepted > 0) {
+            recordGoodMovement({
+                type: "produced", good, quantity: accepted,
+                from: { kind: "recipe", id: recipe.label }, to: { kind: "building", id: building.id },
+                cause: "recipe-output"
+            });
             if (good === "logs") production.logsHarvested += accepted;
             else if (good === "planks") production.planksProduced += accepted;
             else if (good === "flour") production.flourProduced += accepted;
@@ -71,6 +83,11 @@ function finishOutput(building, output, production) {
     }
 }
 
+function canStoreOutput(building, output) {
+    const required = Object.values(output).reduce((sum, amount) => sum + Math.max(0, Number(amount) || 0), 0);
+    return outputSpace(building) >= required;
+}
+
 function produceRecipe(building, workforce, production) {
     const recipe = RECIPES[building.type];
     if (!recipe || recipe.field) return;
@@ -80,6 +97,10 @@ function produceRecipe(building, workforce, production) {
     }
     ensureInventory(building);
     if (recipe.site === "forest" || recipe.site === "stone" || recipe.site === "water") {
+        if (!canStoreOutput(building, recipe.site === "forest" ? { logs: recipe.batch } : recipe.site === "stone" ? { stoneBlocks: Math.max(1, Math.floor(recipe.batch * 2 / 2)) } : { water: recipe.batch })) {
+            building.productionReason = "Output store is full";
+            return;
+        }
         const node = findNearestResourceNode(recipe.site, building.x, building.y, recipe.site === "water" ? 8 : 7);
         if (!node) {
             building.productionReason = recipe.site === "forest" ? "No forest in working range" : recipe.site === "stone" ? "No stone deposit in working range" : "No water in working range";
@@ -107,10 +128,14 @@ function produceRecipe(building, workforce, production) {
         building.productionReason = getBuildingSupplyReason(building) || "Waiting for input stock";
         return;
     }
-    if (!consumeInputs(building)) return;
     const efficiency = Math.max(0.35, getBuildingEfficiency(building, workforce));
     const output = {};
     for (const [good, amount] of Object.entries(recipe.output || {})) output[good] = Math.max(0, Math.round(amount * efficiency));
+    if (!canStoreOutput(building, output)) {
+        building.productionReason = "Output store is full";
+        return;
+    }
+    if (!consumeInputs(building)) return;
     finishOutput(building, output, production);
     building.productionReason = null;
 }

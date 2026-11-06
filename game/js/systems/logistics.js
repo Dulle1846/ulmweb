@@ -1,6 +1,11 @@
 // Physical settlement logistics: local inventories, bounded warehouses,
 // reserved delivery jobs and visible carriers. Gameplay never moves a good
 // directly from one producer to a consumer; a carrier job owns that movement.
+//
+// Every active job owns explicit source and destination reservations. The
+// actual picked quantity is written back into the job before the carrier
+// leaves, and every failed delivery is either retried or returned to a store.
+// Goods are never deleted to make a broken route disappear.
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { BUILDING_SIZE } from "../core/config.js";
@@ -8,7 +13,7 @@ import { addResource } from "./resources.js";
 import { getResourceNodeAt } from "./resource-geography.js";
 import { findPath, isWalkable, rebuildBlockedBuildingTiles } from "../simulation/villagers.js";
 import { getRoadSpeedMultiplier } from "./roads.js";
-import { GOOD_KEYS, GOODS, CITY_VERSION, NEW_BUILDING_TYPES, RECIPES } from "./city-config.js";
+import { GOOD_KEYS, GOODS, CITY_VERSION, NEW_BUILDING_TYPES, RECIPES, WAREHOUSE_PROFILES, WAREHOUSE_PROFILE_IDS } from "./city-config.js";
 
 export const WAREHOUSE_CAPACITY = Object.freeze({ [TYPE.KEEP]: 320, [TYPE.WAREHOUSE]: 180 });
 export const CARRIER_CAPACITY = 8;
@@ -16,6 +21,12 @@ export const MAX_CARRIERS = 6;
 export const MAX_LOGISTICS_JOBS = 72;
 export const JOB_RETRY_TICKS = 30;
 export const JOB_EXPIRE_TICKS = 900;
+export const MAX_JOB_ATTEMPTS = 8;
+export const JOB_PRIORITIES = Object.freeze({ food: 100, water: 90, firewood: 80, bread: 100, flour: 60, grain: 50, construction: 70, supply: 60, haul: 40 });
+const LOGISTICS_VERSION = 2;
+const LEDGER_LIMIT = 160;
+const ACTIVE_STATUSES = Object.freeze(["pending", "assigned", "blocked"]);
+const JOB_STATUSES = new Set([...ACTIVE_STATUSES, "done", "cancelled"]);
 const CITY_TYPES = new Set([...NEW_BUILDING_TYPES, TYPE.KEEP, TYPE.HOUSE, TYPE.FARM, TYPE.LUMBER, TYPE.QUARRY, TYPE.TOWER, TYPE.WALL, TYPE.TAVERN, TYPE.TEMPLE, TYPE.BARRACKS, TYPE.MILL, TYPE.STABLE, TYPE.WONDER, TYPE.GOLDMINE, TYPE.BARREL]);
 
 function number(value, fallback = 0) {
@@ -52,6 +63,18 @@ function nearestWalkable(x, y) {
     }
     return { x: centerX + 0.5, y: centerY + 0.5 };
 }
+function isActive(job) {
+    return Boolean(job && ACTIVE_STATUSES.includes(job.status));
+}
+function totalReservedIn(inventory) {
+    return GOOD_KEYS.reduce((sum, key) => sum + cleanQuantity(inventory?.reservedIn?.[key]), 0);
+}
+function usedInput(entity) {
+    return GOOD_KEYS.reduce((sum, key) => sum + cleanQuantity(entity?.inventory?.input?.[key]), 0);
+}
+function usedOutput(entity) {
+    return GOOD_KEYS.reduce((sum, key) => sum + cleanQuantity(entity?.inventory?.output?.[key]), 0);
+}
 
 export function ensureCityState() {
     if (!state.city || typeof state.city !== "object") state.city = {};
@@ -60,16 +83,18 @@ export function ensureCityState() {
     city.enabled = Boolean(city.enabled);
     city.constructionVersion = Math.max(0, Math.floor(number(city.constructionVersion)));
     if (!city.logistics || typeof city.logistics !== "object") {
-        city.logistics = { version: 1, nextJobId: 1, nextCarrierId: 1, jobs: [], carriers: [], lastTick: 0, stats: {} };
+        city.logistics = { version: LOGISTICS_VERSION, nextJobId: 1, nextCarrierId: 1, jobs: [], carriers: [], lastTick: 0, stats: {} };
     }
     const logistics = city.logistics;
-    logistics.version = 1;
+    logistics.version = LOGISTICS_VERSION;
     logistics.nextJobId = Math.max(1, Math.floor(number(logistics.nextJobId, 1)));
     logistics.nextCarrierId = Math.max(1, Math.floor(number(logistics.nextCarrierId, 1)));
-    logistics.jobs = Array.isArray(logistics.jobs) ? logistics.jobs.filter(job => job && typeof job === "object").slice(-MAX_LOGISTICS_JOBS) : [];
+    logistics.jobs = Array.isArray(logistics.jobs) ? logistics.jobs.filter(job => job && typeof job === "object") : [];
     logistics.carriers = Array.isArray(logistics.carriers) ? logistics.carriers.filter(carrier => carrier && typeof carrier === "object").slice(-MAX_CARRIERS) : [];
     logistics.lastTick = Math.max(0, Math.floor(number(logistics.lastTick)));
     logistics.stats = logistics.stats && typeof logistics.stats === "object" ? logistics.stats : {};
+    logistics.ledger = Array.isArray(logistics.ledger) ? logistics.ledger.filter(entry => entry && typeof entry === "object").slice(-LEDGER_LIMIT) : [];
+    logistics.nextLedgerId = Math.max(1, Math.floor(number(logistics.nextLedgerId, 1)));
     return city;
 }
 
@@ -77,7 +102,7 @@ export function ensureInventory(entity) {
     if (!entity || !entity.isBuilding?.()) return null;
     if (!entity.inventory || typeof entity.inventory !== "object") entity.inventory = {};
     const inventory = entity.inventory;
-    inventory.version = 1;
+    inventory.version = LOGISTICS_VERSION;
     inventory.input = inventory.input && typeof inventory.input === "object" ? inventory.input : {};
     inventory.output = inventory.output && typeof inventory.output === "object" ? inventory.output : {};
     inventory.reservedIn = inventory.reservedIn && typeof inventory.reservedIn === "object" ? inventory.reservedIn : {};
@@ -86,14 +111,33 @@ export function ensureInventory(entity) {
         inventory.input[key] = cleanQuantity(inventory.input[key]);
         inventory.output[key] = cleanQuantity(inventory.output[key]);
         inventory.reservedIn[key] = cleanQuantity(inventory.reservedIn[key]);
-        inventory.reservedOut[key] = cleanQuantity(inventory.reservedOut[key]);
+        inventory.reservedOut[key] = Math.min(cleanQuantity(inventory.reservedOut[key]), cleanQuantity(inventory.output[key]));
     }
     if (entity.type === TYPE.WAREHOUSE || entity.type === TYPE.KEEP) {
         if (!entity.warehouse || typeof entity.warehouse !== "object") entity.warehouse = {};
-        entity.warehouse.capacity = Math.max(1, Math.floor(number(entity.warehouse.capacity, WAREHOUSE_CAPACITY[entity.type] || 180)));
+        const savedFilters = Array.isArray(entity.warehouse.filters) ? entity.warehouse.filters.filter(key => GOOD_KEYS.includes(key)) : null;
+        let profileId = WAREHOUSE_PROFILES[entity.warehouse.profile] ? entity.warehouse.profile : null;
+        if (!profileId && savedFilters) {
+            // A legacy save predates profiles. Recognise the shipped filter sets
+            // instead of silently relabelling a specialised store as general.
+            profileId = WAREHOUSE_PROFILE_IDS.find(id => {
+                const filters = WAREHOUSE_PROFILES[id].filters;
+                return filters.length === savedFilters.length && filters.every(good => savedFilters.includes(good));
+            }) || null;
+        }
+        const profile = WAREHOUSE_PROFILES[profileId || "general"];
+        entity.warehouse.profile = profile.id;
+        const defaultCapacity = entity.type === TYPE.KEEP ? WAREHOUSE_CAPACITY[TYPE.KEEP] : (WAREHOUSE_CAPACITY[entity.type] || profile.capacity);
+        entity.warehouse.capacity = Math.max(1, Math.floor(number(entity.warehouse.capacity, defaultCapacity)));
         entity.warehouse.stored = entity.warehouse.stored && typeof entity.warehouse.stored === "object" ? entity.warehouse.stored : {};
-        entity.warehouse.filters = Array.isArray(entity.warehouse.filters) ? entity.warehouse.filters.filter(key => GOOD_KEYS.includes(key)) : [...GOOD_KEYS];
-        for (const key of GOOD_KEYS) entity.warehouse.stored[key] = cleanQuantity(entity.warehouse.stored[key]);
+        entity.warehouse.filters = savedFilters || [...profile.filters];
+        entity.warehouse.reservedIn = entity.warehouse.reservedIn && typeof entity.warehouse.reservedIn === "object" ? entity.warehouse.reservedIn : {};
+        entity.warehouse.reservedOut = entity.warehouse.reservedOut && typeof entity.warehouse.reservedOut === "object" ? entity.warehouse.reservedOut : {};
+        for (const key of GOOD_KEYS) {
+            entity.warehouse.stored[key] = cleanQuantity(entity.warehouse.stored[key]);
+            entity.warehouse.reservedIn[key] = cleanQuantity(entity.warehouse.reservedIn[key]);
+            entity.warehouse.reservedOut[key] = Math.min(cleanQuantity(entity.warehouse.reservedOut[key]), entity.warehouse.stored[key]);
+        }
     }
     return inventory;
 }
@@ -112,20 +156,90 @@ export function warehouseUsed(warehouse) {
     ensureInventory(warehouse);
     return GOOD_KEYS.reduce((sum, key) => sum + cleanQuantity(warehouse.warehouse?.stored?.[key]), 0);
 }
+export function warehouseReservedIn(warehouse) {
+    ensureInventory(warehouse);
+    return GOOD_KEYS.reduce((sum, key) => sum + cleanQuantity(warehouse.warehouse?.reservedIn?.[key]), 0);
+}
+export function warehouseReservedOut(warehouse) {
+    ensureInventory(warehouse);
+    return GOOD_KEYS.reduce((sum, key) => sum + cleanQuantity(warehouse.warehouse?.reservedOut?.[key]), 0);
+}
 export function getWarehouseStock(good) {
     return getWarehouses().reduce((sum, warehouse) => sum + cleanQuantity(warehouse.warehouse?.stored?.[good]), 0);
+}
+export function getAvailableWarehouseStock(good) {
+    return getWarehouses().reduce((sum, warehouse) => sum + Math.max(0, cleanQuantity(warehouse.warehouse?.stored?.[good]) - cleanQuantity(warehouse.warehouse?.reservedOut?.[good])), 0);
 }
 export function getWarehouseSnapshot() {
     const rows = getWarehouses().map(warehouse => ({
         id: warehouse.id, x: warehouse.x, y: warehouse.y, type: warehouse.type,
+        profile: warehouse.warehouse.profile, profileLabel: WAREHOUSE_PROFILES[warehouse.warehouse.profile]?.label || "General store",
         capacity: warehouse.warehouse.capacity, used: warehouseUsed(warehouse),
+        free: getWarehouseSpace(warehouse), reservedIn: warehouseReservedIn(warehouse),
+        reservedOut: warehouseReservedOut(warehouse), filters: [...warehouse.warehouse.filters],
         stored: { ...warehouse.warehouse.stored }
     }));
-    return { rows, used: rows.reduce((sum, row) => sum + row.used, 0), capacity: rows.reduce((sum, row) => sum + row.capacity, 0), stock: Object.fromEntries(GOOD_KEYS.map(key => [key, getWarehouseStock(key)])) };
+    return {
+        rows,
+        used: rows.reduce((sum, row) => sum + row.used, 0),
+        capacity: rows.reduce((sum, row) => sum + row.capacity, 0),
+        free: rows.reduce((sum, row) => sum + row.free, 0),
+        reservedIn: rows.reduce((sum, row) => sum + row.reservedIn, 0),
+        reservedOut: rows.reduce((sum, row) => sum + row.reservedOut, 0),
+        stock: Object.fromEntries(GOOD_KEYS.map(key => [key, getWarehouseStock(key)]))
+    };
 }
 export function getWarehouseSpace(warehouse) {
     ensureInventory(warehouse);
-    return Math.max(0, warehouse.warehouse.capacity - warehouseUsed(warehouse));
+    return Math.max(0, warehouse.warehouse.capacity - warehouseUsed(warehouse) - warehouseReservedIn(warehouse));
+}
+export function getWarehouseProfile(entity) {
+    if (!isWarehouse(entity)) return null;
+    ensureInventory(entity);
+    return WAREHOUSE_PROFILES[entity.warehouse.profile] || WAREHOUSE_PROFILES.general;
+}
+export function setWarehouseProfile(entity, profileId) {
+    if (!isWarehouse(entity)) return { ok: false, reason: "not-a-warehouse" };
+    const profile = WAREHOUSE_PROFILES[profileId];
+    if (!profile) return { ok: false, reason: "unknown-warehouse-profile" };
+    if (entity.type === TYPE.KEEP) return { ok: false, reason: "royal-keep-is-always-a-general-store" };
+    ensureInventory(entity);
+    const blocked = GOOD_KEYS.filter(good => !profile.filters.includes(good) && (
+        cleanQuantity(entity.warehouse.stored[good]) > 0 ||
+        cleanQuantity(entity.warehouse.reservedIn[good]) > 0 ||
+        cleanQuantity(entity.warehouse.reservedOut[good]) > 0
+    ));
+    if (blocked.length) return { ok: false, reason: "store-still-holds-" + blocked.join("-") };
+    entity.warehouse.profile = profile.id;
+    entity.warehouse.filters = [...profile.filters];
+    entity.warehouse.capacity = Math.max(profile.capacity, warehouseUsed(entity) + warehouseReservedIn(entity));
+    return { ok: true, profile: profile.id, capacity: entity.warehouse.capacity, filters: [...entity.warehouse.filters] };
+}
+function depositToWarehouse(warehouse, good, quantity) {
+    if (!isWarehouse(warehouse) || !warehouse.warehouse.filters.includes(good)) return 0;
+    const space = getWarehouseSpace(warehouse);
+    const amount = Math.min(space, cleanQuantity(quantity));
+    if (amount <= 0) return 0;
+    warehouse.warehouse.stored[good] += amount;
+    return amount;
+}
+function withdrawUnreservedFromWarehouse(warehouse, good, quantity) {
+    if (!isWarehouse(warehouse) || !warehouse.warehouse.filters.includes(good)) return 0;
+    const available = Math.max(0, cleanQuantity(warehouse.warehouse.stored[good]) - cleanQuantity(warehouse.warehouse.reservedOut[good]));
+    const amount = Math.min(available, cleanQuantity(quantity));
+    if (amount <= 0) return 0;
+    warehouse.warehouse.stored[good] -= amount;
+    return amount;
+}
+function withdrawReservedFromWarehouse(warehouse, good, quantity) {
+    if (!isWarehouse(warehouse) || !warehouse.warehouse.filters.includes(good)) return 0;
+    const reserved = cleanQuantity(warehouse.warehouse.reservedOut[good]);
+    const stored = cleanQuantity(warehouse.warehouse.stored[good]);
+    const amount = Math.min(reserved, stored, cleanQuantity(quantity));
+    if (amount <= 0) return 0;
+    warehouse.warehouse.stored[good] -= amount;
+    warehouse.warehouse.reservedOut[good] -= amount;
+    return amount;
 }
 export function depositGood(good, quantity, x = 0, y = 0) {
     let remaining = cleanQuantity(quantity);
@@ -134,11 +248,10 @@ export function depositGood(good, quantity, x = 0, y = 0) {
         .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y) || String(a.id).localeCompare(String(b.id)));
     let moved = 0;
     for (const warehouse of warehouses) {
-        const space = getWarehouseSpace(warehouse);
-        const amount = Math.min(space, remaining);
+        const amount = depositToWarehouse(warehouse, good, remaining);
         if (amount <= 0) continue;
-        warehouse.warehouse.stored[good] += amount;
         moved += amount; remaining -= amount;
+        recordGoodMovement({ type: "deposited", good, quantity: amount, to: { kind: "warehouse", id: warehouse.id }, cause: "manual-deposit" });
         if (remaining <= 0) break;
     }
     return moved;
@@ -150,11 +263,10 @@ export function withdrawGood(good, quantity, x = 0, y = 0) {
         .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y) || String(a.id).localeCompare(String(b.id)));
     let moved = 0;
     for (const warehouse of warehouses) {
-        const available = cleanQuantity(warehouse.warehouse.stored[good]);
-        const amount = Math.min(available, remaining);
+        const amount = withdrawUnreservedFromWarehouse(warehouse, good, remaining);
         if (amount <= 0) continue;
-        warehouse.warehouse.stored[good] -= amount;
         moved += amount; remaining -= amount;
+        recordGoodMovement({ type: "withdrawn", good, quantity: amount, from: { kind: "warehouse", id: warehouse.id }, cause: "manual-withdrawal" });
         if (remaining <= 0) break;
     }
     return moved;
@@ -162,11 +274,21 @@ export function withdrawGood(good, quantity, x = 0, y = 0) {
 export function getInventorySummary(entity) {
     if (!entity || !entity.isBuilding()) return null;
     ensureInventory(entity);
-    if (isWarehouse(entity)) return { kind: "warehouse", capacity: entity.warehouse.capacity, used: warehouseUsed(entity), stored: { ...entity.warehouse.stored } };
+    if (isWarehouse(entity)) {
+        return {
+            kind: "warehouse", profile: entity.warehouse.profile, profileLabel: WAREHOUSE_PROFILES[entity.warehouse.profile]?.label || "General store",
+            capacity: entity.warehouse.capacity, used: warehouseUsed(entity),
+            free: getWarehouseSpace(entity), reservedIn: { ...entity.warehouse.reservedIn },
+            reservedOut: { ...entity.warehouse.reservedOut }, filters: [...entity.warehouse.filters],
+            stored: { ...entity.warehouse.stored }
+        };
+    }
     return {
         kind: "building",
         input: Object.fromEntries(GOOD_KEYS.filter(key => entity.inventory.input[key] > 0).map(key => [key, entity.inventory.input[key]])),
-        output: Object.fromEntries(GOOD_KEYS.filter(key => entity.inventory.output[key] > 0).map(key => [key, entity.inventory.output[key]]))
+        output: Object.fromEntries(GOOD_KEYS.filter(key => entity.inventory.output[key] > 0).map(key => [key, entity.inventory.output[key]])),
+        reservedIn: { ...entity.inventory.reservedIn },
+        reservedOut: { ...entity.inventory.reservedOut }
     };
 }
 export function getOutputCapacity(type) {
@@ -179,18 +301,18 @@ export function getInputCapacity(type) {
 }
 export function outputSpace(entity) {
     const capacity = getOutputCapacity(entity.type);
-    const used = ensureInventory(entity) ? GOOD_KEYS.reduce((sum, key) => sum + entity.inventory.output[key], 0) : 0;
+    const used = ensureInventory(entity) ? usedOutput(entity) : 0;
     return Math.max(0, capacity - used);
 }
 export function inputSpace(entity) {
     const capacity = getInputCapacity(entity.type);
-    const used = ensureInventory(entity) ? GOOD_KEYS.reduce((sum, key) => sum + entity.inventory.input[key], 0) : 0;
-    return Math.max(0, capacity - used);
+    if (!ensureInventory(entity)) return 0;
+    return Math.max(0, capacity - usedInput(entity) - totalReservedIn(entity.inventory));
 }
 export function addLocalOutput(entity, good, quantity) {
     const inventory = ensureInventory(entity);
     if (!inventory || !GOOD_KEYS.includes(good)) return 0;
-    const space = outputSpace(entity);
+    const space = Math.max(0, getOutputCapacity(entity.type) - usedOutput(entity));
     const amount = Math.min(space, cleanQuantity(quantity));
     inventory.output[good] += amount;
     return amount;
@@ -198,7 +320,7 @@ export function addLocalOutput(entity, good, quantity) {
 export function addLocalInput(entity, good, quantity) {
     const inventory = ensureInventory(entity);
     if (!inventory || !GOOD_KEYS.includes(good)) return 0;
-    const space = inputSpace(entity);
+    const space = Math.max(0, getInputCapacity(entity.type) - usedInput(entity));
     const amount = Math.min(space, cleanQuantity(quantity));
     inventory.input[good] += amount;
     return amount;
@@ -213,20 +335,57 @@ export function getAvailableInput(entity) {
 }
 
 function hasActiveJob(predicate) {
-    return ensureCityState().logistics.jobs.some(job => job.status !== "done" && job.status !== "cancelled" && predicate(job));
+    return ensureCityState().logistics.jobs.some(job => isActive(job) && predicate(job));
+}
+function priorityFor(kind, good) {
+    if (kind === "construction") return JOB_PRIORITIES.construction;
+    if (kind === "supply") return JOB_PRIORITIES.supply;
+    return JOB_PRIORITIES[good] ?? JOB_PRIORITIES[kind] ?? JOB_PRIORITIES.haul;
+}
+function refName(ref) {
+    return ref ? ref.kind + ":" + ref.id : "unknown";
+}
+export function recordGoodMovement(entry) {
+    if (!entry || typeof entry !== "object") return null;
+    const good = entry.good === null || entry.good === undefined ? null : String(entry.good);
+    if (good !== null && !GOOD_KEYS.includes(good)) return null;
+    const quantity = cleanQuantity(entry.quantity);
+    if (quantity <= 0) return null;
+    appendLedger({ ...entry, good, quantity });
+    const ledger = ensureCityState().logistics.ledger;
+    return ledger[ledger.length - 1] || null;
+}
+function appendLedger(entry) {
+    const logistics = ensureCityState().logistics;
+    logistics.ledger.push({
+        id: "l" + logistics.nextLedgerId++, tick: Math.max(0, Math.floor(number(state.tick))),
+        type: entry.type, good: entry.good || null, quantity: cleanQuantity(entry.quantity),
+        from: entry.from ? refName(entry.from) : null, to: entry.to ? refName(entry.to) : null,
+        cause: entry.cause || entry.type, jobId: entry.jobId || null, status: entry.status || entry.type
+    });
+    if (logistics.ledger.length > LEDGER_LIMIT) logistics.ledger.splice(0, logistics.ledger.length - LEDGER_LIMIT);
+}
+function trimJobs() {
+    const logistics = ensureCityState().logistics;
+    const active = logistics.jobs.filter(isActive);
+    const finished = logistics.jobs.filter(job => !isActive(job));
+    const room = Math.max(0, MAX_LOGISTICS_JOBS - active.length);
+    logistics.jobs = [...active, ...finished.slice(-room)];
 }
 function makeJob(kind, good, quantity, from, to, extra = {}) {
     const city = ensureCityState();
-    if (city.logistics.jobs.filter(job => job.status !== "done" && job.status !== "cancelled").length >= MAX_LOGISTICS_JOBS) return null;
+    if (city.logistics.jobs.filter(isActive).length >= MAX_LOGISTICS_JOBS) return null;
     const id = "j" + city.logistics.nextJobId++;
     const job = {
-        id, kind, good, quantity: cleanQuantity(quantity),
-        from, to, status: "pending", reason: null,
-        carrierId: null, createdTick: state.tick, retryAt: state.tick,
-        attempts: 0, ...extra
+        id, kind, good, quantity: cleanQuantity(quantity), reserved: cleanQuantity(quantity),
+        priority: priorityFor(kind, good), from, to, status: "pending", reason: null,
+        carrierId: null, createdTick: state.tick || 0, retryAt: state.tick || 0,
+        attempts: 0, picked: 0, delivered: 0, sourceReserved: false, targetReserved: false,
+        ...extra
     };
     city.logistics.jobs.push(job);
-    if (city.logistics.jobs.length > MAX_LOGISTICS_JOBS) city.logistics.jobs.splice(0, city.logistics.jobs.length - MAX_LOGISTICS_JOBS);
+    appendLedger({ type: "reserved", good, quantity: job.quantity, from, to, cause: "job-created", jobId: id });
+    trimJobs();
     return job;
 }
 function entityFromRef(ref) {
@@ -235,61 +394,82 @@ function entityFromRef(ref) {
 function canAcceptWarehouseGood(warehouse, good, quantity) {
     return isWarehouse(warehouse) && warehouse.warehouse.filters.includes(good) && getWarehouseSpace(warehouse) >= quantity;
 }
+function activeCarrier(job) {
+    return ensureCityState().logistics.carriers.find(carrier => carrier.id === job?.carrierId) || null;
+}
+function removeCarrier(job) {
+    const logistics = ensureCityState().logistics;
+    if (job?.carrierId) logistics.carriers = logistics.carriers.filter(carrier => carrier.id !== job.carrierId);
+    if (job) job.carrierId = null;
+}
 
 export function requestHaul(building, good, quantity) {
-    if (!building || building.dead || !RECIPES[building.type]) return null;
+    if (!building || building.dead || !RECIPES[building.type] || !GOOD_KEYS.includes(good)) return null;
     ensureInventory(building);
     const available = getAvailableOutput(building, good);
     const amount = Math.min(available, cleanQuantity(quantity));
     if (amount <= 0 || hasActiveJob(job => job.kind === "haul" && job.from?.id === building.id && job.good === good)) return null;
-    const warehouses = getWarehouses().filter(warehouse => canAcceptWarehouseGood(warehouse, good, amount) && warehouse.warehouse.filters.includes(good))
-        .sort((a, b) => Math.hypot(a.x - building.x, a.y - building.y) - Math.hypot(b.x - building.x, b.y - building.y) || String(a.id).localeCompare(String(b.id)));
+    const isBread = good === "bread";
+    const warehouses = getWarehouses().filter(warehouse =>
+        warehouse.warehouse.filters.includes(good) && (isBread || getWarehouseSpace(warehouse) >= amount)
+    ).sort((a, b) => Math.hypot(a.x - building.x, a.y - building.y) - Math.hypot(b.x - building.x, b.y - building.y) || String(a.id).localeCompare(String(b.id)));
     const warehouse = warehouses[0];
     if (!warehouse) return null;
+    const job = makeJob("haul", good, amount, { kind: "building", id: building.id }, { kind: "warehouse", id: warehouse.id });
+    if (!job) return null;
     building.inventory.reservedOut[good] += amount;
-    return makeJob("haul", good, amount, { kind: "building", id: building.id }, { kind: "warehouse", id: warehouse.id });
+    job.sourceReserved = true;
+    if (!isBread) {
+        warehouse.warehouse.reservedIn[good] += amount;
+        job.targetReserved = true;
+    }
+    return job;
 }
 
 export function requestSupply(building, good, quantity) {
-    if (!building || building.dead || !RECIPES[building.type]) return null;
+    if (!building || building.dead || !RECIPES[building.type] || !RECIPES[building.type].input?.[good]) return null;
     ensureInventory(building);
-    const amount = Math.min(cleanQuantity(quantity), Math.max(0, inputSpace(building) - cleanQuantity(building.inventory.reservedIn[good])));
+    const availableSpace = inputSpace(building);
+    const amount = Math.min(cleanQuantity(quantity), availableSpace);
     if (amount <= 0 || hasActiveJob(job => job.kind === "supply" && job.to?.id === building.id && job.good === good)) return null;
-    const stock = getWarehouseStock(good);
-    if (stock < amount) return null;
-    const warehouses = getWarehouses().filter(warehouse => cleanQuantity(warehouse.warehouse.stored[good]) > 0)
+    if (getAvailableWarehouseStock(good) < amount) return null;
+    const warehouses = getWarehouses().filter(warehouse => warehouse.warehouse.filters.includes(good) &&
+        Math.max(0, cleanQuantity(warehouse.warehouse.stored[good]) - cleanQuantity(warehouse.warehouse.reservedOut[good])) >= amount)
         .sort((a, b) => Math.hypot(a.x - building.x, a.y - building.y) - Math.hypot(b.x - building.x, b.y - building.y) || String(a.id).localeCompare(String(b.id)));
     const warehouse = warehouses[0];
     if (!warehouse) return null;
+    const job = makeJob("supply", good, amount, { kind: "warehouse", id: warehouse.id }, { kind: "building", id: building.id });
+    if (!job) return null;
+    warehouse.warehouse.reservedOut[good] += amount;
+    job.sourceReserved = true;
     building.inventory.reservedIn[good] += amount;
-    return makeJob("supply", good, amount, { kind: "warehouse", id: warehouse.id }, { kind: "building", id: building.id });
+    job.targetReserved = true;
+    return job;
 }
 
 export function requestConstructionDelivery(site, material, quantity) {
-    if (!site || site.dead) return null;
-    const amount = cleanQuantity(quantity);
-    if (amount <= 0 || getWarehouseStock(material) < amount) return null;
+    if (!site || site.dead || !GOOD_KEYS.includes(material)) return null;
+    const amount = Math.min(cleanQuantity(quantity), getAvailableWarehouseStock(material));
+    if (amount <= 0) return null;
     if (hasActiveJob(job => job.kind === "construction" && job.to?.id === site.id && job.good === material)) return null;
-    const warehouses = getWarehouses().filter(warehouse => cleanQuantity(warehouse.warehouse.stored[material]) >= amount)
+    const warehouses = getWarehouses().filter(warehouse => warehouse.warehouse.filters.includes(material) &&
+        Math.max(0, cleanQuantity(warehouse.warehouse.stored[material]) - cleanQuantity(warehouse.warehouse.reservedOut[material])) >= amount)
         .sort((a, b) => Math.hypot(a.x - site.x, a.y - site.y) - Math.hypot(b.x - site.x, b.y - site.y) || String(a.id).localeCompare(String(b.id)));
     const warehouse = warehouses[0];
     if (!warehouse) return null;
-    return makeJob("construction", material, amount, { kind: "warehouse", id: warehouse.id }, { kind: "construction", id: site.id });
+    const job = makeJob("construction", material, amount, { kind: "warehouse", id: warehouse.id }, { kind: "construction", id: site.id });
+    if (!job) return null;
+    warehouse.warehouse.reservedOut[material] += amount;
+    job.sourceReserved = true;
+    return job;
 }
 
 export function cancelJobsForEntity(entityId) {
     const city = ensureCityState();
-    for (const job of city.logistics.jobs) {
-        if (job.status === "done" || job.status === "cancelled") continue;
+    for (const job of [...city.logistics.jobs]) {
+        if (!isActive(job)) continue;
         if (job.from?.id !== entityId && job.to?.id !== entityId) continue;
-        job.status = "cancelled";
-        job.reason = "Site or store removed";
-        const source = entityFromRef(job.from);
-        if (source?.inventory) {
-            if (job.from.kind === "building") source.inventory.reservedOut[job.good] = Math.max(0, cleanQuantity(source.inventory.reservedOut[job.good]) - job.quantity);
-        }
-        const target = entityFromRef(job.to);
-        if (target?.inventory) target.inventory.reservedIn[job.good] = Math.max(0, cleanQuantity(target.inventory.reservedIn[job.good]) - job.quantity);
+        cancelJob(job, "Site or store removed");
     }
 }
 
@@ -300,33 +480,273 @@ export function markConstructionDelivered(site, good, quantity) {
     return site.construction.delivered[good];
 }
 
-function releaseJobReservation(job) {
+function releaseSourceReservation(job, amount = job.quantity) {
+    if (!job.sourceReserved) return;
+    const quantity = cleanQuantity(amount);
     const source = entityFromRef(job.from);
-    if (source?.inventory && job.from?.kind === "building") source.inventory.reservedOut[job.good] = Math.max(0, cleanQuantity(source.inventory.reservedOut[job.good]) - job.quantity);
+    if (source?.inventory) {
+        if (job.from.kind === "warehouse" && isWarehouse(source)) source.warehouse.reservedOut[job.good] = Math.max(0, cleanQuantity(source.warehouse.reservedOut[job.good]) - quantity);
+        else source.inventory.reservedOut[job.good] = Math.max(0, cleanQuantity(source.inventory.reservedOut[job.good]) - quantity);
+    }
+    if (quantity >= job.quantity) job.sourceReserved = false;
+}
+function releaseTargetReservation(job, amount = job.quantity) {
+    if (!job.targetReserved) return;
+    const quantity = cleanQuantity(amount);
     const target = entityFromRef(job.to);
-    if (target?.inventory) target.inventory.reservedIn[job.good] = Math.max(0, cleanQuantity(target.inventory.reservedIn[job.good]) - job.quantity);
+    if (job.to.kind === "warehouse" && isWarehouse(target)) target.warehouse.reservedIn[job.good] = Math.max(0, cleanQuantity(target.warehouse.reservedIn[job.good]) - quantity);
+    else if (job.to.kind === "building" && target?.inventory) target.inventory.reservedIn[job.good] = Math.max(0, cleanQuantity(target.inventory.reservedIn[job.good]) - quantity);
+    if (quantity >= job.quantity) job.targetReserved = false;
 }
-
-function sourcePosition(job) {
-    if (job.from?.kind === "warehouse") return entityFromRef(job.from) || { x: 0, y: 0 };
-    return entityFromRef(job.from) || { x: 0, y: 0 };
+function takeFromSource(job) {
+    let moved = 0;
+    if (job.from.kind === "warehouse") {
+        const warehouse = entityFromRef(job.from);
+        if (!isWarehouse(warehouse)) return 0;
+        moved = job.sourceReserved
+            ? withdrawReservedFromWarehouse(warehouse, job.good, job.quantity)
+            : withdrawUnreservedFromWarehouse(warehouse, job.good, job.quantity);
+    } else {
+        const building = entityFromRef(job.from);
+        if (!building?.inventory) return 0;
+        const output = cleanQuantity(building.inventory.output[job.good]);
+        const reserved = cleanQuantity(building.inventory.reservedOut[job.good]);
+        const limit = job.sourceReserved ? Math.min(output, reserved, job.quantity) : Math.min(output, job.quantity);
+        moved = Math.min(limit, cleanQuantity(job.quantity));
+        if (moved > 0) {
+            building.inventory.output[job.good] -= moved;
+            if (job.sourceReserved) building.inventory.reservedOut[job.good] = Math.max(0, reserved - moved);
+        }
+    }
+    if (moved <= 0) return 0;
+    const planned = job.quantity;
+    job.sourceReserved = false;
+    if (moved < planned && job.targetReserved) releaseTargetReservation(job, planned - moved);
+    job.quantity = moved;
+    job.picked = moved;
+    appendLedger({ type: "picked", good: job.good, quantity: moved, from: job.from, to: { kind: "carrier", id: job.carrierId }, cause: "pickup", jobId: job.id });
+    return moved;
 }
-function destinationPosition(job) {
-    if (job.to?.kind === "warehouse") return entityFromRef(job.to) || { x: 0, y: 0 };
-    return entityFromRef(job.to) || null;
+function recordDelivery(job, quantity) {
+    const amount = cleanQuantity(quantity);
+    if (amount <= 0) return;
+    const stats = ensureCityState().logistics.stats;
+    stats.delivered = (cleanQuantity(stats.delivered) || 0) + amount;
+    stats[job.good] = (cleanQuantity(stats[job.good]) || 0) + amount;
+    if (job.good === "bread") stats.breadDelivered = (cleanQuantity(stats.breadDelivered) || 0) + amount;
+    job.delivered = cleanQuantity(job.delivered) + amount;
+    appendLedger({ type: "delivered", good: job.good, quantity: amount, from: { kind: "carrier", id: job.carrierId }, to: job.to, cause: "delivery", jobId: job.id });
 }
-
+function deliverToDestination(job, carrier) {
+    if (!carrier?.cargo || cleanQuantity(carrier.cargo.quantity) <= 0) return { ok: false, reason: "Carrier has no cargo" };
+    const quantity = cleanQuantity(carrier.cargo.quantity);
+    const target = entityFromRef(job.to);
+    if (!target) return { ok: false, reason: "Destination removed", missing: true };
+    if (job.to.kind === "warehouse") {
+        if (!isWarehouse(target) || !target.warehouse.filters.includes(job.good)) return { ok: false, reason: "Destination store cannot accept " + job.good, missing: true };
+        if (job.good === "bread") {
+            addResource("food", quantity);
+            recordDelivery(job, quantity);
+            carrier.cargo = null;
+            job.quantity = 0;
+            job.targetReserved = false;
+            return { ok: true, completed: true, delivered: quantity };
+        }
+        const own = job.targetReserved ? Math.min(cleanQuantity(target.warehouse.reservedIn[job.good]), quantity) : 0;
+        const other = Math.max(0, warehouseReservedIn(target) - own);
+        const space = Math.max(0, target.warehouse.capacity - warehouseUsed(target) - other);
+        const accepted = Math.min(quantity, space);
+        if (accepted <= 0) return { ok: false, reason: "Warehouse is full" };
+        if (own > 0) target.warehouse.reservedIn[job.good] = Math.max(0, own - accepted);
+        target.warehouse.stored[job.good] += accepted;
+        recordDelivery(job, accepted);
+        carrier.cargo.quantity -= accepted;
+        job.quantity = carrier.cargo.quantity;
+        if (carrier.cargo.quantity <= 0) {
+            carrier.cargo = null;
+            job.quantity = 0;
+            job.targetReserved = false;
+            return { ok: true, completed: true, delivered: accepted };
+        }
+        job.targetReserved = own - accepted > 0;
+        return { ok: true, completed: false, delivered: accepted, reason: "Warehouse space exhausted" };
+    }
+    if (job.to.kind === "construction") {
+        if (!target.construction || target.construction.stage >= 3) return { ok: false, reason: "Construction is complete", missing: true };
+        markConstructionDelivered(target, job.good, quantity);
+        recordDelivery(job, quantity);
+        carrier.cargo = null;
+        job.quantity = 0;
+        return { ok: true, completed: true, delivered: quantity };
+    }
+    if (job.to.kind === "building") {
+        ensureInventory(target);
+        if (!target.inventory) return { ok: false, reason: "Destination removed", missing: true };
+        const capacity = getInputCapacity(target.type);
+        if (capacity <= 0) return { ok: false, reason: "Destination has no input store", missing: true };
+        const own = job.targetReserved ? Math.min(cleanQuantity(target.inventory.reservedIn[job.good]), quantity) : 0;
+        const other = Math.max(0, totalReservedIn(target.inventory) - own);
+        const space = Math.max(0, capacity - usedInput(target) - other);
+        const accepted = Math.min(quantity, space);
+        if (accepted <= 0) return { ok: false, reason: "Destination input store is full" };
+        if (own > 0) target.inventory.reservedIn[job.good] = Math.max(0, own - accepted);
+        target.inventory.input[job.good] += accepted;
+        recordDelivery(job, accepted);
+        carrier.cargo.quantity -= accepted;
+        job.quantity = carrier.cargo.quantity;
+        if (carrier.cargo.quantity <= 0) {
+            carrier.cargo = null;
+            job.quantity = 0;
+            job.targetReserved = false;
+            return { ok: true, completed: true, delivered: accepted };
+        }
+        job.targetReserved = own - accepted > 0;
+        return { ok: true, completed: false, delivered: accepted, reason: "Input store is full" };
+    }
+    return { ok: false, reason: "Unknown destination", missing: true };
+}
+function completeJob(job) {
+    job.status = "done";
+    job.reason = null;
+    job.sourceReserved = false;
+    job.targetReserved = false;
+    if (job.delivered > 0) job.quantity = job.delivered;
+    removeCarrier(job);
+    ensureCityState().logistics.stats.carriers = Math.max(cleanQuantity(ensureCityState().logistics.stats.carriers), ensureCityState().logistics.carriers.length);
+}
+function returnCargo(job, carrier) {
+    const cargo = carrier?.cargo;
+    if (!cargo || cleanQuantity(cargo.quantity) <= 0) return true;
+    const quantity = cleanQuantity(cargo.quantity);
+    releaseTargetReservation(job, job.quantity);
+    job.targetReserved = false;
+    if (job.good === "bread") {
+        const warehouse = getWarehouses().find(entry => entry.warehouse.filters.includes(job.good));
+        if (!warehouse) return false;
+        addResource("food", quantity);
+        recordDelivery(job, quantity);
+        carrier.cargo = null;
+        job.quantity = 0;
+        return true;
+    }
+    let remaining = quantity;
+    const warehouses = getWarehouses().filter(entry => entry.warehouse.filters.includes(job.good))
+        .sort((a, b) => Math.hypot(a.x - carrier.x, a.y - carrier.y) - Math.hypot(b.x - carrier.x, b.y - carrier.y) || String(a.id).localeCompare(String(b.id)));
+    for (const warehouse of warehouses) {
+        const amount = depositToWarehouse(warehouse, job.good, remaining);
+        if (amount <= 0) continue;
+        remaining -= amount;
+        if (remaining <= 0) break;
+    }
+    if (remaining > 0) {
+        carrier.cargo.quantity = remaining;
+        job.quantity = remaining;
+        return false;
+    }
+    carrier.cargo = null;
+    job.quantity = 0;
+    return true;
+}
+function retargetWarehouse(job) {
+    const target = entityFromRef(job.to);
+    const quantity = cleanQuantity(job.quantity);
+    if (quantity <= 0) return false;
+    const isBread = job.good === "bread";
+    releaseTargetReservation(job, job.quantity);
+    job.targetReserved = false;
+    const candidates = getWarehouses().filter(warehouse =>
+        warehouse.warehouse.filters.includes(job.good) &&
+        (isBread || getWarehouseSpace(warehouse) >= quantity)
+    ).sort((a, b) => {
+        const origin = target || { x: 0, y: 0 };
+        return Math.hypot(a.x - origin.x, a.y - origin.y) - Math.hypot(b.x - origin.x, b.y - origin.y) || String(a.id).localeCompare(String(b.id));
+    });
+    const warehouse = candidates[0];
+    if (!warehouse) return false;
+    job.to = { kind: "warehouse", id: warehouse.id };
+    if (!isBread) {
+        warehouse.warehouse.reservedIn[job.good] += quantity;
+        job.targetReserved = true;
+    }
+    job.status = "assigned";
+    job.reason = null;
+    job.retryAt = 0;
+    return true;
+}
+function cancelJob(job, reason) {
+    if (!isActive(job)) return true;
+    // Recovery may zero quantity/picked while depositing cargo, so the amount
+    // owed to the target is captured before any stock moves.
+    const releaseQuantity = Math.max(cleanQuantity(job.quantity), cleanQuantity(job.picked), cleanQuantity(job.reserved));
+    const carrier = activeCarrier(job);
+    if (carrier?.cargo && cleanQuantity(carrier.cargo.quantity) > 0) {
+        if (!returnCargo(job, carrier)) {
+            job.status = "blocked";
+            job.reason = "Cargo awaiting warehouse space";
+            job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+            carrier.status = "blocked";
+            return false;
+        }
+    } else if (!carrier && job.picked > 0) {
+        // A missing carrier must not erase already-picked cargo. Restore the
+        // picked quantity to a warehouse before retiring the job.
+        if (!recoverVirtualCargo(job)) {
+            job.status = "blocked";
+            job.reason = "Cargo awaiting warehouse space";
+            job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+            return false;
+        }
+    }
+    if (job.picked > 0) releaseTargetReservation(job, releaseQuantity);
+    else {
+        releaseSourceReservation(job, releaseQuantity);
+        releaseTargetReservation(job, releaseQuantity);
+    }
+    job.status = "cancelled";
+    job.reason = reason;
+    job.sourceReserved = false;
+    job.targetReserved = false;
+    removeCarrier(job);
+    return true;
+}
+function recoverVirtualCargo(job) {
+    const quantity = cleanQuantity(job.picked);
+    if (quantity <= 0) return true;
+    if (job.good === "bread") {
+        if (!getWarehouses().some(warehouse => warehouse.warehouse.filters.includes(job.good))) return false;
+        addResource("food", quantity);
+        recordDelivery(job, quantity);
+        job.picked = 0;
+        job.quantity = 0;
+        return true;
+    }
+    let remaining = quantity;
+    for (const warehouse of getWarehouses().filter(entry => entry.warehouse.filters.includes(job.good))) {
+        const amount = depositToWarehouse(warehouse, job.good, remaining);
+        if (amount <= 0) continue;
+        remaining -= amount;
+        if (remaining <= 0) break;
+    }
+    job.picked = remaining;
+    job.quantity = remaining;
+    return remaining === 0;
+}
 function spawnCarrier(job) {
     const city = ensureCityState();
-    if (city.logistics.carriers.length >= MAX_CARRIERS) return null;
-    const source = sourcePosition(job), destination = destinationPosition(job);
-    if (!source || !destination) return null;
+    if (city.logistics.carriers.length >= MAX_CARRIERS) {
+        job.reason = "All carriers are busy";
+        job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+        return null;
+    }
+    const source = entityFromRef(job.from), destination = entityFromRef(job.to);
+    if (!source) { job.reason = "Source removed"; job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS; return null; }
+    if (!destination) { job.reason = "Destination removed"; job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS; return null; }
     const start = nearestWalkable(source.x, source.y);
     const end = nearestWalkable(destination.x, destination.y);
     const path = findPath(start.x, start.y, end.x, end.y, 2400);
     if (!path && (Math.abs(start.x - end.x) > 1 || Math.abs(start.y - end.y) > 1)) {
         job.reason = "No overland route";
-        job.retryAt = state.tick + JOB_RETRY_TICKS;
+        job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
         return null;
     }
     const carrier = {
@@ -342,108 +762,191 @@ function spawnCarrier(job) {
     job.reason = null;
     return carrier;
 }
-
-function takeFromSource(job) {
-    if (job.from.kind === "warehouse") {
-        const warehouse = entityFromRef(job.from);
-        return withdrawGood(job.good, job.quantity, warehouse?.x, warehouse?.y) > 0;
-    }
-    const building = entityFromRef(job.from);
-    if (!building?.inventory) return false;
-    const available = cleanQuantity(building.inventory.output[job.good]);
-    const amount = Math.min(available, job.quantity);
-    if (amount <= 0) return false;
-    building.inventory.output[job.good] -= amount;
-    building.inventory.reservedOut[job.good] = Math.max(0, cleanQuantity(building.inventory.reservedOut[job.good]) - amount);
-    job.quantity = amount;
-    return true;
-}
-function deliverToDestination(job) {
-    if (job.to.kind === "warehouse") {
-        const warehouse = entityFromRef(job.to);
-        if (job.good === "bread") {
-            addResource("food", job.quantity);
-            const city = ensureCityState();
-            city.logistics.stats.breadDelivered = (cleanQuantity(city.logistics.stats.breadDelivered) || 0) + job.quantity;
-            return true;
-        }
-        const accepted = isWarehouse(warehouse) ? depositGood(job.good, job.quantity, warehouse.x, warehouse.y) : 0;
-        if (accepted < job.quantity) {
-            // Store surplus back in the nearest warehouse or keep it in the
-            // carrier's home store; nothing is destroyed.
-            const overflow = job.quantity - accepted;
-            const fallback = getWarehouses().sort((a, b) => Math.hypot(a.x - warehouse.x, a.y - warehouse.y) - Math.hypot(b.x - warehouse.x, b.y - warehouse.y))[0];
-            if (fallback) fallback.warehouse.stored[job.good] += Math.max(0, Math.min(overflow, getWarehouseSpace(fallback)));
-            else addResource("wood", 0);
-        }
-        return accepted > 0;
-    }
-    const target = entityFromRef(job.to);
-    if (!target) return false;
-    if (job.to.kind === "construction") {
-        markConstructionDelivered(target, job.good, job.quantity);
-        return true;
-    }
-    const accepted = addLocalInput(target, job.good, job.quantity);
-    if (accepted < job.quantity) {
-        const overflow = job.quantity - accepted;
-        const fallback = getWarehouses().sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) - Math.hypot(b.x - target.x, b.y - target.y))[0];
-        if (fallback) fallback.warehouse.stored[job.good] += Math.max(0, Math.min(overflow, getWarehouseSpace(fallback)));
-    }
-    target.inventory.reservedIn[job.good] = Math.max(0, cleanQuantity(target.inventory.reservedIn[job.good]) - job.quantity);
-    return accepted > 0;
-}
-function completeJob(job) {
-    job.status = "done";
-    job.reason = null;
-    const city = ensureCityState();
-    city.logistics.stats.delivered = (cleanQuantity(city.logistics.stats.delivered) || 0) + job.quantity;
-    city.logistics.stats[job.good] = (cleanQuantity(city.logistics.stats[job.good]) || 0) + job.quantity;
-    const index = city.logistics.carriers.findIndex(carrier => carrier.id === job.carrierId);
-    if (index >= 0) city.logistics.carriers.splice(index, 1);
-}
-
 function assignPendingJobs() {
     const city = ensureCityState();
-    for (const job of city.logistics.jobs) {
-        if (job.status !== "pending") continue;
-        if ((job.retryAt || 0) > state.tick) continue;
+    const pending = city.logistics.jobs.filter(job => job.status === "pending" && (job.retryAt || 0) <= (state.tick || 0))
+        .sort((a, b) => (b.priority || 0) - (a.priority || 0) || a.createdTick - b.createdTick || String(a.id).localeCompare(String(b.id)));
+    for (const job of pending) {
         if (city.logistics.carriers.length >= MAX_CARRIERS) break;
-        const carrier = spawnCarrier(job);
-        if (!carrier) continue;
-        if (!takeFromSource(job)) {
-            job.reason = "Source stock unavailable";
-            job.retryAt = state.tick + JOB_RETRY_TICKS;
-            job.status = "pending";
-            job.carrierId = null;
-            city.logistics.carriers = city.logistics.carriers.filter(item => item.id !== carrier.id);
+        if (!entityFromRef(job.from)) {
+            job.attempts = (job.attempts || 0) + 1;
+            cancelJob(job, "Source removed");
             continue;
         }
+        if (!entityFromRef(job.to)) {
+            if (job.to.kind === "warehouse" && job.kind === "haul" && retargetWarehouse(job)) {
+                // Retargeting succeeded; continue with the new destination.
+            } else {
+                cancelJob(job, "Destination removed");
+                continue;
+            }
+        }
+        const carrier = spawnCarrier(job);
+        if (!carrier) {
+            job.attempts = (job.attempts || 0) + 1;
+            job.status = "pending";
+            if (job.attempts >= MAX_JOB_ATTEMPTS) cancelJob(job, job.reason || "No route after retries");
+            continue;
+        }
+        const moved = takeFromSource(job);
+        if (moved <= 0) {
+            city.logistics.carriers = city.logistics.carriers.filter(entry => entry.id !== carrier.id);
+            job.carrierId = null;
+            job.status = "pending";
+            job.reason = "Source stock unavailable";
+            job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+            job.attempts = (job.attempts || 0) + 1;
+            if (job.attempts >= MAX_JOB_ATTEMPTS) cancelJob(job, "Source stock unavailable");
+            continue;
+        }
+        carrier.cargo = { good: job.good, quantity: moved };
         carrier.status = "to-destination";
-        carrier.cargo = { good: job.good, quantity: job.quantity };
-        carrier.path = carrier.path?.length ? carrier.path : findPath(carrier.x, carrier.y, destinationPosition(job)?.x || carrier.x, destinationPosition(job)?.y || carrier.y, 2400) || [];
-        carrier.pathIndex = 0;
+        job.status = "assigned";
+        job.attempts = 0;
+        job.reason = null;
+        const destination = entityFromRef(job.to);
+        if (destination) {
+            const end = nearestWalkable(destination.x, destination.y);
+            carrier.path = findPath(carrier.x, carrier.y, end.x, end.y, 2400) || [];
+            carrier.pathIndex = 0;
+        }
     }
+}
+function retryBlockedJobs() {
+    const city = ensureCityState();
+    const blocked = city.logistics.jobs.filter(job => job.status === "blocked" && (job.retryAt || 0) <= (state.tick || 0))
+        .sort((a, b) => a.createdTick - b.createdTick || String(a.id).localeCompare(String(b.id)));
+    for (const job of blocked) {
+        const carrier = activeCarrier(job);
+        if (!carrier) {
+            if (job.picked > 0) {
+                if (recoverVirtualCargo(job)) cancelJob(job, "Cargo recovered from missing carrier");
+                else {
+                    job.reason = "Cargo awaiting warehouse space";
+                    job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+                }
+            } else {
+                job.status = "pending";
+                job.carrierId = null;
+                job.reason = null;
+                job.retryAt = 0;
+            }
+            continue;
+        }
+        if (!carrier.cargo || cleanQuantity(carrier.cargo.quantity) <= 0) {
+            if (job.delivered > 0) completeJob(job);
+            else {
+                job.status = "pending";
+                job.carrierId = null;
+                job.reason = null;
+                job.retryAt = 0;
+            }
+            continue;
+        }
+        const target = entityFromRef(job.to);
+        if (!target) {
+            if (job.to.kind === "warehouse" && retargetWarehouse(job)) {
+                carrier.path = [];
+                carrier.pathIndex = 0;
+                carrier.pathVersion = "";
+                carrier.status = "to-destination";
+                continue;
+            }
+            if (returnCargo(job, carrier)) cancelJob(job, "Destination removed");
+            else {
+                job.reason = "No warehouse space to return cargo";
+                job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+            }
+            continue;
+        }
+        const result = deliverToDestination(job, carrier);
+        if (result.ok) {
+            if (!carrier.cargo) completeJob(job);
+            else {
+                job.status = "blocked";
+                job.reason = result.reason || "Destination cannot accept all cargo";
+                job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+                carrier.status = "blocked";
+                carrier.path = [];
+            }
+            continue;
+        }
+        job.attempts = (job.attempts || 0) + 1;
+        if (result.missing) {
+            if (job.to.kind === "warehouse" && retargetWarehouse(job)) {
+                carrier.path = [];
+                carrier.pathIndex = 0;
+                carrier.pathVersion = "";
+                carrier.status = "to-destination";
+                continue;
+            }
+            if (returnCargo(job, carrier)) { cancelJob(job, result.reason); continue; }
+        }
+        if (job.to.kind === "warehouse" && job.attempts >= 2 && retargetWarehouse(job)) {
+            carrier.path = [];
+            carrier.pathIndex = 0;
+            carrier.pathVersion = "";
+            carrier.status = "to-destination";
+            continue;
+        }
+        if (job.attempts >= 3 && returnCargo(job, carrier)) {
+            cancelJob(job, result.reason);
+            continue;
+        }
+        job.status = "blocked";
+        job.reason = result.reason;
+        job.retryAt = (state.tick || 0) + (job.attempts >= 6 ? 120 : JOB_RETRY_TICKS);
+        carrier.status = "blocked";
+        carrier.path = [];
+    }
+}
+function sweepCarriers() {
+    const city = ensureCityState();
+    city.logistics.carriers = city.logistics.carriers.filter(carrier => {
+        const job = city.logistics.jobs.find(entry => entry.id === carrier.jobId);
+        if (!job || !isActive(job)) return false;
+        if (job.carrierId && job.carrierId !== carrier.id) return false;
+        return true;
+    });
 }
 
 export function updateLogistics() {
     const city = ensureCityState();
     if (!city.enabled) return null;
-    const logistics = city.logistics;
     if (state.tick <= 0 || state.tick % 2 !== 0) return null;
+    const logistics = city.logistics;
     logistics.lastTick = state.tick;
     ensureAllInventories();
-    const activeJobs = logistics.jobs.filter(job => job.status !== "done" && job.status !== "cancelled");
-    for (const job of activeJobs) {
-        if (state.tick - job.createdTick > JOB_EXPIRE_TICKS) {
-            job.status = "cancelled";
-            job.reason = "Delivery expired";
-            releaseJobReservation(job);
+    sweepCarriers();
+    for (const job of [...logistics.jobs]) {
+        if (!isActive(job)) continue;
+        if ((state.tick || 0) - (job.createdTick || 0) > JOB_EXPIRE_TICKS) {
+            if (!cancelJob(job, "Delivery expired")) {
+                job.reason = "Delivery expired · cargo awaiting warehouse space";
+                job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+            }
+            continue;
+        }
+        const carrier = activeCarrier(job);
+        if (!carrier && job.status === "assigned") {
+            if (job.picked > 0) {
+                if (recoverVirtualCargo(job)) cancelJob(job, "Cargo recovered from missing carrier");
+                else {
+                    job.status = "blocked";
+                    job.reason = "Cargo awaiting warehouse space";
+                    job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+                }
+            } else {
+                job.status = "pending";
+                job.carrierId = null;
+                job.reason = "Carrier missing";
+                job.retryAt = 0;
+            }
         }
     }
+    retryBlockedJobs();
     assignPendingJobs();
-    // Keep only a bounded history of completed jobs.
-    if (logistics.jobs.length > MAX_LOGISTICS_JOBS) logistics.jobs = logistics.jobs.slice(-MAX_LOGISTICS_JOBS);
+    trimJobs();
     return getLogisticsSnapshot();
 }
 
@@ -454,18 +957,49 @@ export function updateLogisticsMovement(deltaSeconds) {
     const version = (state.buildingCollisionVersion || 0) + ":" + (state.roads?.revision || 0);
     for (const carrier of [...logistics.carriers]) {
         const job = logistics.jobs.find(item => item.id === carrier.jobId);
-        if (!job || job.status === "done" || job.status === "cancelled") {
+        if (!job || !isActive(job)) {
             logistics.carriers = logistics.carriers.filter(item => item.id !== carrier.id);
             continue;
         }
+        if (job.status === "blocked") continue;
         if (carrier.pathVersion !== version) { carrier.path = []; carrier.pathVersion = version; }
         if (!carrier.path?.length) {
-            const destination = destinationPosition(job);
-            if (!destination) { job.status = "cancelled"; job.reason = "Destination removed"; logistics.carriers = logistics.carriers.filter(item => item.id !== carrier.id); continue; }
+            const destination = entityFromRef(job.to);
+            if (!destination) {
+                job.status = "blocked";
+                job.reason = "Destination removed";
+                job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+                carrier.status = "blocked";
+                continue;
+            }
             const end = nearestWalkable(destination.x, destination.y);
+            const distance = Math.hypot(carrier.x - end.x, carrier.y - end.y);
+            if (distance <= 1.35) {
+                const result = deliverToDestination(job, carrier);
+                if (result.ok && !carrier.cargo) completeJob(job);
+                else if (!result.ok) {
+                    job.status = "blocked";
+                    job.reason = result.reason;
+                    job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+                    carrier.status = "blocked";
+                } else {
+                    job.status = "blocked";
+                    job.reason = result.reason || "Destination cannot accept all cargo";
+                    job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+                    carrier.status = "blocked";
+                    carrier.path = [];
+                }
+                continue;
+            }
             carrier.path = findPath(carrier.x, carrier.y, end.x, end.y, 2400) || [];
             carrier.pathIndex = 0;
-            if (!carrier.path.length) { job.reason = "No overland route"; job.retryAt = state.tick + JOB_RETRY_TICKS; continue; }
+            if (!carrier.path.length) {
+                job.status = "blocked";
+                job.reason = "No overland route";
+                job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+                carrier.status = "blocked";
+                continue;
+            }
         }
         let remaining = carrier.speed * getRoadSpeedMultiplier(carrier.x, carrier.y) * deltaSeconds;
         while (remaining > 0 && carrier.pathIndex < carrier.path.length) {
@@ -481,13 +1015,14 @@ export function updateLogisticsMovement(deltaSeconds) {
             }
         }
         if (carrier.pathIndex >= (carrier.path?.length || 0)) {
-            if (deliverToDestination(job)) {
-                completeJob(job);
-            } else {
+            const result = deliverToDestination(job, carrier);
+            if (result.ok && !carrier.cargo) completeJob(job);
+            else {
                 job.status = "blocked";
-                job.reason = "Destination refused delivery";
-                job.retryAt = state.tick + JOB_RETRY_TICKS;
-                logistics.carriers = logistics.carriers.filter(item => item.id !== carrier.id);
+                job.reason = result.ok ? (result.reason || "Destination cannot accept all cargo") : result.reason;
+                job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
+                carrier.status = "blocked";
+                carrier.path = [];
             }
         }
     }
@@ -495,20 +1030,32 @@ export function updateLogisticsMovement(deltaSeconds) {
 
 export function getLogisticsSnapshot() {
     const city = ensureCityState();
-    const active = city.logistics.jobs.filter(job => job.status !== "done" && job.status !== "cancelled");
+    const active = city.logistics.jobs.filter(isActive);
     const counts = { pending: 0, assigned: 0, blocked: 0, done: 0, cancelled: 0 };
     for (const job of city.logistics.jobs) counts[job.status] = (counts[job.status] || 0) + 1;
+    const ledger = city.logistics.ledger.slice(-20).map(entry => ({ ...entry }));
+    const copyJob = job => ({
+        ...job, from: { ...job.from }, to: { ...job.to },
+        quantity: cleanQuantity(job.quantity), reserved: cleanQuantity(job.reserved),
+        picked: cleanQuantity(job.picked), delivered: cleanQuantity(job.delivered)
+    });
     return {
-        jobs: active.slice(-20).map(job => ({ ...job, from: { ...job.from }, to: { ...job.to } })),
+        jobs: active.slice(-20).map(copyJob),
+        completed: city.logistics.jobs.filter(job => !isActive(job)).slice(-10).map(copyJob),
         carriers: city.logistics.carriers.map(carrier => ({ ...carrier, path: undefined })),
-        counts, warehouses: getWarehouseSnapshot(), stats: { ...city.logistics.stats }
+        counts, warehouses: getWarehouseSnapshot(), stats: { ...city.logistics.stats }, ledger
     };
 }
 
 export function getBuildingLogisticsStatus(entity) {
     if (!entity) return null;
-    const jobs = ensureCityState().logistics.jobs.filter(job => job.status !== "done" && job.status !== "cancelled" && (job.from?.id === entity.id || job.to?.id === entity.id));
-    return jobs.map(job => ({ id: job.id, kind: job.kind, good: job.good, quantity: job.quantity, status: job.status, reason: job.reason, carrierId: job.carrierId }));
+    return ensureCityState().logistics.jobs
+        .filter(job => isActive(job) && (job.from?.id === entity.id || job.to?.id === entity.id))
+        .map(job => ({
+            id: job.id, kind: job.kind, good: job.good, quantity: job.quantity,
+            delivered: job.delivered || 0, status: job.status, reason: job.reason,
+            carrierId: job.carrierId, attempts: job.attempts || 0
+        }));
 }
 
 export function getBuildingSupplyReason(entity) {
@@ -519,7 +1066,9 @@ export function getBuildingSupplyReason(entity) {
         for (const [good, amount] of Object.entries(recipe.input)) {
             if (cleanQuantity(entity.inventory.input[good]) < amount) {
                 const jobs = getBuildingLogisticsStatus(entity).filter(job => job.good === good && job.kind === "supply");
-                return jobs.length ? "Waiting for " + GOODS[good].plural + " delivery" : "No " + GOODS[good].plural + " in reachable stores";
+                if (jobs.length) return "Waiting for " + GOODS[good].plural + " delivery";
+                if (getAvailableWarehouseStock(good) <= 0) return "No " + GOODS[good].plural + " in reachable stores";
+                return "Waiting for a carrier for " + GOODS[good].plural;
             }
         }
     }
@@ -543,7 +1092,7 @@ export function resourceNodeSummary(entity) {
 export function getCitySummary() {
     const city = ensureCityState();
     const warehouses = getWarehouseSnapshot();
-    const active = city.logistics.jobs.filter(job => job.status !== "done" && job.status !== "cancelled");
+    const active = city.logistics.jobs.filter(isActive);
     return {
         enabled: city.enabled,
         warehouses,
@@ -555,6 +1104,30 @@ export function getCitySummary() {
     };
 }
 
+function normalizeJob(job) {
+    if (!job || typeof job !== "object") return null;
+    const status = JOB_STATUSES.has(job.status) ? job.status : "pending";
+    const quantity = cleanQuantity(job.quantity);
+    return {
+        ...job,
+        id: typeof job.id === "string" ? job.id : "j" + Math.random().toString(36).slice(2),
+        kind: typeof job.kind === "string" ? job.kind : "haul",
+        good: GOOD_KEYS.includes(job.good) ? job.good : "logs",
+        quantity,
+        reserved: Math.max(quantity, cleanQuantity(job.reserved ?? quantity)),
+        picked: cleanQuantity(job.picked),
+        delivered: cleanQuantity(job.delivered),
+        status,
+        reason: typeof job.reason === "string" ? job.reason : null,
+        priority: Math.max(0, Math.floor(number(job.priority, priorityFor(job.kind, job.good)))),
+        createdTick: Math.max(0, Math.floor(number(job.createdTick))),
+        retryAt: Math.max(0, Math.floor(number(job.retryAt))),
+        attempts: Math.max(0, Math.floor(number(job.attempts))),
+        sourceReserved: Boolean(job.sourceReserved),
+        targetReserved: Boolean(job.targetReserved)
+    };
+}
+
 export function serializeCity() {
     const city = ensureCityState();
     return {
@@ -562,13 +1135,16 @@ export function serializeCity() {
         enabled: city.enabled,
         constructionVersion: city.constructionVersion || 0,
         logistics: {
-            version: 1, nextJobId: city.logistics.nextJobId, nextCarrierId: city.logistics.nextCarrierId,
-            lastTick: city.logistics.lastTick || 0, stats: { ...city.logistics.stats },
+            version: LOGISTICS_VERSION, nextJobId: city.logistics.nextJobId, nextCarrierId: city.logistics.nextCarrierId,
+            lastTick: city.logistics.lastTick || 0, nextLedgerId: city.logistics.nextLedgerId || 1, stats: { ...city.logistics.stats },
+            ledger: city.logistics.ledger.slice(-LEDGER_LIMIT).map(entry => ({ ...entry })),
             jobs: city.logistics.jobs.slice(-MAX_LOGISTICS_JOBS).map(job => ({
                 id: job.id, kind: job.kind, good: job.good, quantity: job.quantity,
+                reserved: job.reserved, picked: job.picked, delivered: job.delivered,
                 from: job.from ? { ...job.from } : null, to: job.to ? { ...job.to } : null,
-                status: job.status, reason: job.reason || null, createdTick: job.createdTick,
-                retryAt: job.retryAt || 0, attempts: job.attempts || 0
+                status: job.status, reason: job.reason || null, carrierId: job.carrierId || null, priority: job.priority, createdTick: job.createdTick,
+                retryAt: job.retryAt || 0, attempts: job.attempts || 0,
+                sourceReserved: Boolean(job.sourceReserved), targetReserved: Boolean(job.targetReserved)
             })),
             carriers: city.logistics.carriers.slice(-MAX_CARRIERS).map(carrier => ({
                 id: carrier.id, jobId: carrier.jobId, x: carrier.x, y: carrier.y,
@@ -591,13 +1167,22 @@ export function validateCitySnapshot(snapshot) {
     if (logistics !== undefined && logistics !== null) {
         if (typeof logistics !== "object" || !Array.isArray(logistics.jobs) || logistics.jobs.length > MAX_LOGISTICS_JOBS) throw new Error("Save data contains an invalid logistics job list.");
         if (!Array.isArray(logistics.carriers) || logistics.carriers.length > MAX_CARRIERS) throw new Error("Save data contains an invalid carrier list.");
+        if (logistics.ledger !== undefined && (!Array.isArray(logistics.ledger) || logistics.ledger.length > 200)) throw new Error("Save data contains an invalid movement ledger.");
+        const ids = new Set();
         for (const job of logistics.jobs) {
-            if (!job || typeof job !== "object" || !GOOD_KEYS.includes(job.good) || !Number.isFinite(Number(job.quantity)) || Number(job.quantity) < 0) throw new Error("Save data contains an invalid delivery job.");
+            if (!job || typeof job !== "object" || !GOOD_KEYS.includes(job.good)) throw new Error("Save data contains an invalid delivery job.");
+            if (typeof job.id !== "string" || !job.id || ids.has(job.id)) throw new Error("Save data contains an invalid or duplicate delivery job id.");
+            ids.add(job.id);
+            for (const key of ["quantity", "reserved", "picked", "delivered"]) {
+                if (job[key] !== undefined && (!Number.isFinite(Number(job[key])) || Number(job[key]) < 0)) throw new Error("Save data contains an invalid delivery amount.");
+            }
+            if (job.status !== undefined && !JOB_STATUSES.has(job.status)) throw new Error("Save data contains an unknown delivery job status.");
             if (!job.from || !job.to || typeof job.from !== "object" || typeof job.to !== "object") throw new Error("Save data contains a job without endpoints.");
+            if (typeof job.from.kind !== "string" || typeof job.to.kind !== "string" || typeof job.from.id !== "string" || typeof job.to.id !== "string") throw new Error("Save data contains invalid job endpoints.");
         }
         for (const carrier of logistics.carriers) {
             if (!carrier || !Number.isFinite(Number(carrier.x)) || !Number.isFinite(Number(carrier.y))) throw new Error("Save data contains an invalid carrier.");
-            if (carrier.cargo && (!GOOD_KEYS.includes(carrier.cargo.good) || !Number.isFinite(Number(carrier.cargo.quantity)))) throw new Error("Save data contains invalid carrier cargo.");
+            if (carrier.cargo && (!GOOD_KEYS.includes(carrier.cargo.good) || !Number.isFinite(Number(carrier.cargo.quantity)) || Number(carrier.cargo.quantity) < 0)) throw new Error("Save data contains invalid carrier cargo.");
         }
     }
     for (const key of ["fields", "services", "needs"]) {
@@ -612,38 +1197,108 @@ export function restoreCity(snapshot) {
     const city = state.city;
     if (!snapshot) {
         city.fields = null; city.services = null; city.needs = null;
-        city.logistics = { version: 1, nextJobId: 1, nextCarrierId: 1, jobs: [], carriers: [], lastTick: 0, stats: {} };
+        city.logistics = { version: LOGISTICS_VERSION, nextJobId: 1, nextCarrierId: 1, jobs: [], carriers: [], lastTick: 0, stats: {} };
+        ensureAllInventories();
         return city;
     }
     city.enabled = Boolean(snapshot.enabled);
     city.constructionVersion = Math.max(0, Math.floor(number(snapshot.constructionVersion)));
     const saved = snapshot.logistics || {};
+    const jobs = Array.isArray(saved.jobs) ? saved.jobs.map(normalizeJob).filter(Boolean) : [];
+    const carriers = Array.isArray(saved.carriers) ? saved.carriers.map(carrier => ({
+        ...carrier,
+        x: number(carrier.x), y: number(carrier.y),
+        home: carrier.home ? { x: number(carrier.home.x), y: number(carrier.home.y) } : { x: number(carrier.x), y: number(carrier.y) },
+        path: [], pathIndex: 0, pathVersion: "",
+        status: carrier.status || "to-destination",
+        cargo: carrier.cargo && GOOD_KEYS.includes(carrier.cargo.good) ? { good: carrier.cargo.good, quantity: cleanQuantity(carrier.cargo.quantity) } : null,
+        speed: Math.max(0.5, Math.min(4, number(carrier.speed, 1.9)))
+    })) : [];
+    for (const carrier of carriers) {
+        const job = jobs.find(entry => entry.id === carrier.jobId);
+        if (job) job.carrierId = carrier.id;
+    }
     city.logistics = {
-        version: 1,
+        version: LOGISTICS_VERSION,
         nextJobId: Math.max(1, Math.floor(number(saved.nextJobId, 1))),
         nextCarrierId: Math.max(1, Math.floor(number(saved.nextCarrierId, 1))),
+        nextLedgerId: Math.max(1, Math.floor(number(saved.nextLedgerId, 1))),
         lastTick: Math.max(0, Math.floor(number(saved.lastTick))),
         stats: saved.stats && typeof saved.stats === "object" ? { ...saved.stats } : {},
-        jobs: Array.isArray(saved.jobs) ? saved.jobs.map(job => ({
-            ...job,
-            quantity: cleanQuantity(job.quantity),
-            createdTick: Math.max(0, Math.floor(number(job.createdTick))),
-            retryAt: Math.max(0, Math.floor(number(job.retryAt))),
-            attempts: Math.max(0, Math.floor(number(job.attempts)))
-        })) : [],
-        carriers: Array.isArray(saved.carriers) ? saved.carriers.map(carrier => ({
-            ...carrier,
-            x: number(carrier.x), y: number(carrier.y),
-            home: carrier.home ? { x: number(carrier.home.x), y: number(carrier.home.y) } : { x: number(carrier.x), y: number(carrier.y) },
-            path: [], pathIndex: 0, pathVersion: "", status: carrier.status || "to-destination",
-            speed: Math.max(0.5, Math.min(4, number(carrier.speed, 1.9)))
-        })) : []
+        ledger: Array.isArray(saved.ledger) ? saved.ledger.filter(entry => entry && typeof entry === "object").slice(-LEDGER_LIMIT).map(entry => ({ ...entry })) : [],
+        jobs, carriers
     };
     city.fields = snapshot.fields && typeof snapshot.fields === "object" ? JSON.parse(JSON.stringify(snapshot.fields)) : null;
     city.services = snapshot.services && typeof snapshot.services === "object" ? JSON.parse(JSON.stringify(snapshot.services)) : null;
     city.needs = snapshot.needs && typeof snapshot.needs === "object" ? JSON.parse(JSON.stringify(snapshot.needs)) : null;
     ensureAllInventories();
+    rebuildLogisticsReservations();
     return city;
+}
+
+export function rebuildLogisticsReservations() {
+    const city = ensureCityState();
+    ensureAllInventories();
+    for (const entity of state.entities) {
+        if (entity.dead || !entity.isBuilding()) continue;
+        for (const key of GOOD_KEYS) {
+            entity.inventory.reservedIn[key] = 0;
+            entity.inventory.reservedOut[key] = 0;
+            if (entity.warehouse) {
+                entity.warehouse.reservedIn[key] = 0;
+                entity.warehouse.reservedOut[key] = 0;
+            }
+        }
+    }
+    const jobs = city.logistics.jobs.filter(isActive)
+        .sort((a, b) => (a.createdTick || 0) - (b.createdTick || 0) || String(a.id).localeCompare(String(b.id)));
+    for (const job of jobs) {
+        const carrier = city.logistics.carriers.find(entry => entry.id === job.carrierId);
+        if (carrier?.cargo && cleanQuantity(carrier.cargo.quantity) > 0 && cleanQuantity(job.picked) <= 0) job.picked = cleanQuantity(carrier.cargo.quantity);
+        if (job.quantity <= 0 && job.picked > 0) job.quantity = job.picked;
+        const remaining = cleanQuantity(job.quantity);
+        if (remaining <= 0) continue;
+        if (cleanQuantity(job.picked) <= 0) {
+            const source = entityFromRef(job.from);
+            if (source?.inventory) {
+                if (job.from.kind === "warehouse" && isWarehouse(source)) {
+                    const available = Math.max(0, cleanQuantity(source.warehouse.stored[job.good]) - cleanQuantity(source.warehouse.reservedOut[job.good]));
+                    const reserved = Math.min(remaining, available);
+                    if (reserved > 0) {
+                        source.warehouse.reservedOut[job.good] += reserved;
+                        job.sourceReserved = true;
+                    }
+                } else if (job.from.kind === "building") {
+                    const available = Math.max(0, cleanQuantity(source.inventory.output[job.good]) - cleanQuantity(source.inventory.reservedOut[job.good]));
+                    const reserved = Math.min(remaining, available);
+                    if (reserved > 0) {
+                        source.inventory.reservedOut[job.good] += reserved;
+                        job.sourceReserved = true;
+                    }
+                }
+            }
+        }
+        if (job.to.kind === "warehouse" && job.good !== "bread") {
+            const target = entityFromRef(job.to);
+            if (isWarehouse(target)) {
+                const reserved = Math.min(remaining, getWarehouseSpace(target));
+                if (reserved > 0) {
+                    target.warehouse.reservedIn[job.good] += reserved;
+                    job.targetReserved = true;
+                }
+            }
+        } else if (job.to.kind === "building" && job.kind === "supply") {
+            const target = entityFromRef(job.to);
+            if (target?.inventory) {
+                const free = Math.max(0, getInputCapacity(target.type) - usedInput(target) - totalReservedIn(target.inventory));
+                const reserved = Math.min(remaining, free);
+                if (reserved > 0) {
+                    target.inventory.reservedIn[job.good] += reserved;
+                    job.targetReserved = true;
+                }
+            }
+        }
+    }
 }
 
 export function initializeCityForRealm({ seedWarehouse = true } = {}) {
@@ -663,7 +1318,37 @@ export function initializeCityForRealm({ seedWarehouse = true } = {}) {
             entity.warehouse.stored.logs = Math.max(entity.warehouse.stored.logs, 8);
         }
     }
+    rebuildLogisticsReservations();
     return city;
+}
+
+export function evacuateBuildingInventory(entity) {
+    if (!entity || !entity.isBuilding() || entity.dead) return { ok: true, moved: 0, remaining: {} };
+    ensureInventory(entity);
+    const pools = isWarehouse(entity)
+        ? [{ map: entity.warehouse.stored, warehouse: true }]
+        : [{ map: entity.inventory.output, warehouse: false }, { map: entity.inventory.input, warehouse: false }];
+    let moved = 0;
+    const remaining = {};
+    for (const pool of pools) {
+        for (const good of GOOD_KEYS) {
+            let left = cleanQuantity(pool.map[good]);
+            if (left <= 0) continue;
+            const targets = getWarehouses().filter(warehouse => warehouse !== entity && warehouse.warehouse.filters.includes(good))
+                .sort((a, b) => Math.hypot(a.x - entity.x, a.y - entity.y) - Math.hypot(b.x - entity.x, b.y - entity.y) || String(a.id).localeCompare(String(b.id)));
+            for (const warehouse of targets) {
+                const amount = depositToWarehouse(warehouse, good, left);
+                if (amount <= 0) continue;
+                pool.map[good] -= amount;
+                left -= amount;
+                moved += amount;
+                recordGoodMovement({ type: "evacuated", good, quantity: amount, from: { kind: "building", id: entity.id }, to: { kind: "warehouse", id: warehouse.id }, cause: "demolition-evacuation" });
+                if (left <= 0) break;
+            }
+            if (left > 0) remaining[good] = (remaining[good] || 0) + left;
+        }
+    }
+    return { ok: Object.keys(remaining).length === 0, moved, remaining };
 }
 
 export function isCityBuilding(type) {

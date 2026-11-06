@@ -92,6 +92,22 @@ export const GOODS = Object.freeze({
 
 export const GOOD_KEYS = Object.freeze(Object.keys(GOODS));
 
+// A warehouse profile is not a second building type: it narrows what an
+// existing store accepts and how much it can hold. The royal keep is always a
+// general store so bread and construction materials can always find a home.
+export const WAREHOUSE_PROFILES = Object.freeze({
+    general: Object.freeze({ id: "general", label: "General store", capacity: 180, filters: GOOD_KEYS, description: "Accepts every hauled good." }),
+    timber: Object.freeze({ id: "timber", label: "Timber yard", capacity: 220, filters: Object.freeze(["logs", "planks", "firewood"]), description: "Logs, planks and firewood only." }),
+    stone: Object.freeze({ id: "stone", label: "Stone depot", capacity: 220, filters: Object.freeze(["stoneBlocks", "cutStone"]), description: "Rough and dressed stone only." }),
+    food: Object.freeze({ id: "food", label: "Granary", capacity: 210, filters: Object.freeze(["grain", "flour", "bread"]), description: "Grain, flour and bread only." }),
+    water: Object.freeze({ id: "water", label: "Cistern", capacity: 160, filters: Object.freeze(["water"]), description: "Drawn water only." })
+});
+export const WAREHOUSE_PROFILE_IDS = Object.freeze(Object.keys(WAREHOUSE_PROFILES));
+
+export function warehouseProfile(id) {
+    return WAREHOUSE_PROFILES[id] || WAREHOUSE_PROFILES.general;
+}
+
 // Recipes run in bounded batches. A producer first fills its local output or
 // input store; carriers move goods between those stores and a warehouse.
 export const RECIPES = Object.freeze({

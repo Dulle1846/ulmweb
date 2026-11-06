@@ -13,7 +13,8 @@ import { renderUI, cardSprite } from "./rendering/ui.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
 import { constructionSnapshot, isUnderConstruction } from "../systems/construction.js";
-import { getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReason, getCitySummary } from "../systems/logistics.js";
+import { getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReason, getCitySummary, getLogisticsSnapshot, setWarehouseProfile } from "../systems/logistics.js";
+import { WAREHOUSE_PROFILES } from "../systems/city-config.js";
 import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
 let activePanel="kingdom",dynastyStylesRequested=false;
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -144,7 +145,7 @@ function economy(){
  '<p class="command-note">No forecasts are inferred. A bounded historical time series now retains the latest 24 completed 20-day settlements; the latest completed ledger is shown above and the charts record stock and ledger values only.</p>';
 }
 function buildings(){
- const workforce=getWorkforceSnapshot();const city=getCitySummary(),settlement=getSettlementSnapshot();
+ const workforce=getWorkforceSnapshot();const city=getCitySummary(),settlement=getSettlementSnapshot(),logistics=getLogisticsSnapshot();
  const records=state.entities.filter(entity=>!entity.dead&&entity.isBuilding()).slice().sort((a,b)=>{
   const an=CARD_DECK.find(card=>card.type===a.type)?.name||BUILDING_LABELS[a.type]||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||BUILDING_LABELS[b.type]||String(b.type);
   return an.localeCompare(bn)||String(a.id).localeCompare(String(b.id));
@@ -187,16 +188,29 @@ function buildings(){
   const inventory=getInventorySummary(building);
   const jobs=getBuildingLogisticsStatus(building)||[];
   const supply=getBuildingSupplyReason(building)||getServiceReason(building);
-  const storeText=!inventory?"No local store":inventory.kind==="warehouse"?inventory.used+" / "+inventory.capacity+" storage used":[
+  const reservedIn=Object.entries(inventory?.reservedIn||{}).filter(([,value])=>Number(value)>0).map(([good,value])=>value+" "+good).join(", ");
+  const reservedOut=Object.entries(inventory?.reservedOut||{}).filter(([,value])=>Number(value)>0).map(([good,value])=>value+" "+good).join(", ");
+  const storedGoods=inventory?Object.entries(inventory.stored||{}).filter(([,value])=>Number(value)>0).map(([good,value])=>value+" "+good).join(" · "):"";
+  const storeText=!inventory?"No local store":inventory.kind==="warehouse"?
+   inventory.used+" / "+inventory.capacity+" used"+
+   (storedGoods?" · "+storedGoods:" · empty")+
+   (reservedIn?" · reserved in: "+reservedIn:"")+(reservedOut?" · reserved out: "+reservedOut:""):[
    ...Object.entries(inventory.input||{}).map(([good,value])=>value+" "+good+" in"),
-   ...Object.entries(inventory.output||{}).map(([good,value])=>value+" "+good+" out")
+   ...Object.entries(inventory.output||{}).map(([good,value])=>value+" "+good+" out"),
+   ...(reservedIn?["reserved in: "+reservedIn]:[]),
+   ...(reservedOut?["reserved out: "+reservedOut]:[])
   ].join(" · ")||"Empty";
-  const haulText=jobs.length?jobs.map(job=>job.quantity+" "+job.good+" · "+job.status+(job.reason?" · "+job.reason:"")).join(" | "):"No active haul";
+  const haulText=jobs.length?jobs.map(job=>job.quantity+" "+job.good+" · "+job.status+(job.reason?" · "+job.reason:"")+" · "+job.quantity+" reserved, "+job.delivered+" delivered").join(" | "):"No active haul";
+  const profileField=inventory?.kind==="warehouse"?'<span>Warehouse profile<strong>'+(building.type===TYPE.KEEP?esc(inventory.profileLabel||"General store")+" · fixed by the crown":'<select class="warehouse-profile-select" data-warehouse-profile="'+esc(building.id)+'" aria-label="Warehouse profile for '+esc(name)+'">'+Object.values(WAREHOUSE_PROFILES).map(profile=>'<option value="'+esc(profile.id)+'"'+(inventory.profile===profile.id?' selected':'')+'>'+esc(profile.label)+" · "+number(profile.capacity)+'</option>').join("")+'</select>')+'</strong></span>':"";
   const fieldText=building.field?" · field "+building.field.stage+" ("+Math.round(building.field.growth)+"%)":"";
-  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p><div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span><span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span></div></div></details>';
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p><div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+profileField+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span></div></div></details>';
  }).join("");
+ const logisticsRows=[...(logistics.jobs||[]),...(logistics.completed||[])].slice(-10).map(job=>'<div class="logistics-job'+(job.status==="blocked"?' is-blocked':'')+'"><strong>'+esc(job.quantity+" "+job.good)+" · "+esc(job.status)+'</strong><small>'+esc((job.from?.kind||"?")+" "+(job.from?.id||"?")+" → "+(job.to?.kind||"?")+" "+(job.to?.id||"?"))+(job.reason?" · "+esc(job.reason):"")+'</small></div>').join("");
+ const movementRows=(logistics.ledger||[]).slice().reverse().slice(0,8).map(entry=>'<div class="logistics-job logistics-movement" data-movement-type="'+esc(entry.type||"move")+'"><strong>'+esc(String(entry.type||"move").toUpperCase())+" · "+esc(entry.quantity+" "+(entry.good||"stock"))+'</strong><small>'+esc(entry.from||"—")+" → "+esc(entry.to||"—")+" · tick "+esc(entry.tick)+(entry.cause?" · "+esc(entry.cause):"")+'</small></div>').join("");
  return intro("SETTLEMENT ARCHITECTURE","Building register","Inspect every surviving structure using its actual simulation entity, health, footprint, staffing and site data.")+
- '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+records.length+'</strong></div><div><small>CONSTRUCTION SITES</small><strong>'+city.construction+'</strong></div><div><small>CARRIERS</small><strong>'+city.carriers+'</strong></div><div><small>ACTIVE HAULS</small><strong>'+city.activeJobs+'</strong></div><div><small>WAREHOUSE SPACE USED</small><strong>'+number(city.warehouses?.used||0)+' / '+number(city.warehouses?.capacity||0)+'</strong></div><div><small>WATER COVERAGE</small><strong>'+(settlement.needs?Math.round(settlement.needs.water*100)+'%':'—')+'</strong></div></div>'+
+ '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+records.length+'</strong></div><div><small>CONSTRUCTION SITES</small><strong>'+city.construction+'</strong></div><div><small>CARRIERS</small><strong>'+city.carriers+'</strong></div><div><small>ACTIVE HAULS</small><strong>'+city.activeJobs+'</strong></div><div><small>BLOCKED HAULS</small><strong>'+number(city.blockedJobs||0)+'</strong></div><div><small>WAREHOUSE SPACE USED</small><strong>'+number(city.warehouses?.used||0)+' / '+number(city.warehouses?.capacity||0)+'</strong></div><div><small>WAREHOUSE RESERVED</small><strong>'+number(city.warehouses?.reservedIn||0)+' in · '+number(city.warehouses?.reservedOut||0)+' out</strong></div><div><small>WATER COVERAGE</small><strong>'+(settlement.needs?Math.round(settlement.needs.water*100)+'%':'—')+'</strong></div></div>'+
+ '<div class="command-section-title">TRANSPORT OVERVIEW</div><div class="logistics-overview">'+(logisticsRows||'<p class="command-note">No delivery jobs are recorded.</p>')+'</div>'+
+ '<div class="command-section-title">LATEST GOOD MOVEMENTS</div><div class="logistics-overview">'+(movementRows||'<p class="command-note">No good movement is recorded yet.</p>')+'</div>'+
  '<div class="building-type-summary">'+typeSummary+'</div><label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">'+
  '<div class="building-register">'+(rows||'<p class="command-note">No buildings are recorded in this realm yet.</p>')+'</div>'+
  '<p class="command-note">Construction, local stores, field stages and active hauls are read from live simulation state. Site resource values are taken from the structure centre tile only; they are not a production rate. Construction and demolition remain in the build interface.</p>';
@@ -460,6 +474,14 @@ export function setupManagementUI(){
    const kind=$("chronicle-kind-filter")?.value||"all";
    document.querySelectorAll(".chronicle-entry").forEach(record=>record.classList.toggle("is-filtered",(kind!=="all"&&record.dataset.kind!==kind)||(query&&!record.dataset.search.includes(query))));
   }
+ });
+ $("command-panel-content")?.addEventListener("change",e=>{
+  const select=e.target.closest("[data-warehouse-profile]");
+  if(!select)return;
+  const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(select.dataset.warehouseProfile));
+  const result=setWarehouseProfile(entity,select.value);
+  if(result.ok){toast("WAREHOUSE PROFILE UPDATED");render();}
+  else toast(String(result.reason||"PROFILE CHANGE FAILED").replaceAll("-"," ").toUpperCase());
  });
  $("command-panel-content")?.addEventListener("click",e=>{
   const person=e.target.closest("[data-open-person]");

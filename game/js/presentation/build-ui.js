@@ -103,7 +103,7 @@ function renderBuildSummary(){
     const warehouse=summary.warehouses?.rows?.[0];
     set("city-warehouse-count",summary.warehouses?.rows?.length||0);
     const stock=document.getElementById("city-warehouse-stock");
-    if(stock)stock.textContent=warehouse?warehouse.used+" / "+warehouse.capacity+" storage used":"No supplied warehouse";
+    if(stock)stock.textContent=warehouse?summary.warehouses.used+" / "+summary.warehouses.capacity+" storage used · "+summary.warehouses.reservedIn+" reserved in · "+summary.warehouses.reservedOut+" reserved out":"No supplied warehouse";
     const blocked=logistics.jobs.filter(job=>job.status==="blocked"||job.reason).length;
     const fleet=document.getElementById("city-logistics-note");
     if(fleet)fleet.textContent=blocked?blocked+" delivery job"+(blocked===1?"":"s")+" blocked · inspect the building register":summary.activeJobs+" active delivery job"+(summary.activeJobs===1?"":"s")+" · "+summary.carriers+" carrier"+(summary.carriers===1?"":"s");

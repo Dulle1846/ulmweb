@@ -6,7 +6,7 @@ import { TYPE } from "../core/types.js";
 import { addResource } from "./resources.js";
 import { getBuildingEfficiency } from "./economy.js";
 import { isOperational } from "./construction.js";
-import { getWarehouseStock, withdrawGood } from "./logistics.js";
+import { getAvailableWarehouseStock, getWarehouseStock, withdrawGood } from "./logistics.js";
 import { HOUSING_TIERS, SERVICE_DEFINITIONS, isHousingType } from "./city-config.js";
 
 export const SETTLEMENT_INTERVAL = 10;
@@ -16,6 +16,15 @@ const NEED_KEYS = Object.freeze(Object.keys(NEED_WEIGHTS));
 function number(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
 function clamp01(value) { return Math.max(0, Math.min(1, number(value))); }
 function homes() { return state.entities.filter(entity => !entity.dead && isHousingType(entity.type)); }
+function houseIsOccupied(house) {
+    if (Math.max(0, Math.floor(number(house.occupants))) > 0) return true;
+    return state.entities.some(entity => {
+        if (entity.dead || entity.type !== TYPE.VILLAGER) return false;
+        if (entity.householdId === house.id || entity.householdId === "house:" + house.id || entity.homeId === house.id || entity.homeBuildingId === house.id) return true;
+        if (entity.home && Math.abs(number(entity.home.x) - number(house.x)) < 0.6 && Math.abs(number(entity.home.y) - number(house.y)) < 0.6) return true;
+        return Boolean(entity.anchor && Math.abs(number(entity.anchor.x) - number(house.x)) < 0.6 && Math.abs(number(entity.anchor.y) - number(house.y)) < 0.6);
+    });
+}
 function serviceBuildings() { return state.entities.filter(entity => !entity.dead && entity.isBuilding() && isOperational(entity)); }
 function serviceIsStaffed(building) {
     if (building.type === TYPE.WALL) return true;
@@ -23,7 +32,7 @@ function serviceIsStaffed(building) {
 }
 function serviceIsSupplied(building) {
     if (building.type === TYPE.TAVERN) return (Number(state.resources.food) || 0) > 0;
-    if (building.type === TYPE.WELL) return getWarehouseStock("water") > 0 || (building.inventory?.output?.water || 0) > 0;
+    if (building.type === TYPE.WELL) return getAvailableWarehouseStock("water") > 0 || (building.inventory?.output?.water || 0) > 0;
     return true;
 }
 function activeService(building) {
@@ -108,12 +117,15 @@ export function updateSettlementNeeds() {
     const city = ensureSettlementState();
     const population = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER).length;
     const houseRows = homes();
+    // Empty structures do not burn firewood and must not drag the settlement
+    // average down. Only inhabited houses create household demand.
+    const occupiedHomes = houseRows.filter(houseIsOccupied);
     const services = city.services.summary || updateServices();
     const season = Math.max(0, Math.min(3, Math.floor(number(state.seasonIndex))));
-    const firewood = warmthSatisfaction(houseRows.length, season);
+    const firewood = warmthSatisfaction(occupiedHomes.length, season);
     let total = 0, count = 0;
     const householdRows = {};
-    for (const house of houseRows) {
+    for (const house of occupiedHomes) {
         const coverage = city.services.byHouse[house.id] || {};
         const comfort = housingComfort(house);
         const row = {
@@ -139,7 +151,7 @@ export function updateSettlementNeeds() {
     city.needs.productivity = Math.max(0.72, Math.min(1.05, 0.72 + average * 0.33));
     const warmth = firewood;
     const summary = {
-        population, households: houseRows.length,
+        population, households: occupiedHomes.length,
         food: foodSatisfaction(population), water: services.water || 0,
         warmth, safety: services.safety || 0, social: services.social || 0,
         health: services.health || 0, satisfaction: average,
