@@ -10,6 +10,7 @@ import { getWorkforceSnapshot } from "./economy.js";
 import { canAccommodateVillagers,normalizeHouseholdAssignments } from "./population.js";
 import { createCardForCategory } from "./card-catalog.js";
 import { applyPoliticalEffects,getPoliticalSnapshot } from "./politics.js";
+import { addResource } from "./resources.js";
 import { applyHealthEffects } from "./health.js";
 import { createEventParticipants,recordPersonEventOutcome } from "./people.js";
 import { recordResourceMovement } from "./goods-book.js";
@@ -168,7 +169,7 @@ export function resolveEventChoice(index){
  if(Object.entries(resources).some(([key,value])=>value<0&&(!Number.isFinite(state.resources[key])||state.resources[key]<-value))){
   addLog("ISSUE UNRESOLVED: NOT ENOUGH RESOURCES","#e9857b","issue");return false;
  }
- for(const [key,value] of Object.entries(resources))state.resources[key]=(state.resources[key]||0)+value;
+ for(const [key,value] of Object.entries(resources))addResource(key,value);
  if(Number(resources.food))recordResourceMovement("food",Number(resources.food),"event-choice",{to:{kind:"realm",id:"royal-stores"}});
  if(rewardCard){
   state.cardRewardQueue=Array.isArray(state.cardRewardQueue)?state.cardRewardQueue:[];

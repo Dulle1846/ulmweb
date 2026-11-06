@@ -29,6 +29,8 @@ test("direct construction opens a site, charges only the opening share and remai
     assert.equal(result.entity.construction.stage, 0);
     assert.ok(state.resources.wood < 200);
     assert.ok(state.resources.stone < 200);
+    assert.equal(state.incomeThisTick.wood, state.resources.wood - 200, "opening share must reach the wood tick ledger");
+    assert.equal(state.incomeThisTick.stone, state.resources.stone - 200, "opening share must reach the stone tick ledger");
     const snapshot = constructionSnapshot(result.entity);
     assert.equal(snapshot.percent, 0);
     assert.equal(snapshot.status, "SITE PREPARATION");
@@ -45,6 +47,7 @@ test("cancelling a site removes it and refunds part of the paid materials", () =
     assert.equal(result.entity.dead, true);
     assert.ok(state.resources.wood > before);
     assert.ok(state.resources.wood <= before + paidWood);
+    assert.equal(state.incomeThisTick.wood, state.resources.wood - 200, "refund must reach the wood tick ledger");
 });
 
 test("city-builder save state validates and round-trips", () => {

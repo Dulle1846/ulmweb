@@ -65,30 +65,85 @@ test("pathfinding and walkability use the full larger world bounds",()=>{
     assert.ok(route.every(node=>node.x>390&&node.x<410),"the route must stay near the requested larger-map coordinates");
 });
 
-test("hierarchical path cache stays bounded across repeated world epochs",()=>{
+test("hierarchical path cache keeps LRU eviction within one world",()=>{
     resetState();
     const W=128,H=128;
     state.worldW=W;state.worldH=H;
     state.terrainResolution=1;state.terrainPixW=W;state.terrainPixH=H;
     state.heightMap=new Float32Array(W*H).fill(0.5);
     clearPathCache();
-    let route=null;
+    findPath(10.5,8.5,110.5,70.5,40);
+    const beforeHit=getPathCacheStats();
+    const hitRoute=findPath(10.5,8.5,110.5,70.5,40);
+    assert.ok(Array.isArray(hitRoute));
+    assert.ok(getPathCacheStats().hits>beforeHit.hits,"a repeated grid must be a cache hit");
     for(let index=0;index<30;index++){
-        state.worldEpoch=(state.worldEpoch||0)+1;
-        route=findPath(10.5,10.5,110.5,110.5,40);
+        const route=findPath(10.5,8.5+index*2,110.5,70.5,40);
         assert.ok(Array.isArray(route),"the coarse route must remain available after cache churn");
-        assert.deepEqual(route.at(-1),{x:110.5,y:110.5});
+        assert.deepEqual(route.at(-1),{x:110.5,y:70.5});
     }
     const stats=getPathCacheStats();
     assert.equal(stats.limit,24);
     assert.ok(stats.size<=stats.limit,"the hierarchical grid cache must never exceed its limit");
-    assert.ok(stats.misses>=30,"each world epoch must miss the old cache key");
     assert.ok(stats.evictions>0,"the bounded cache must evict old grids");
-    assert.ok(stats.invalidations>0,"world changes must be visible in diagnostics");
-    const afterEviction=findPath(10.5,10.5,110.5,110.5,40);
+    assert.equal(stats.invalidations,0,"same-world churn must not invalidate the world");
+    assert.ok(stats.estimatedBytes>0,"the diagnostic must expose retained grid memory");
+    const afterEviction=findPath(10.5,8.5,110.5,70.5,40);
     assert.ok(Array.isArray(afterEviction),"evicting an old grid must not break a fresh route");
-    assert.deepEqual(afterEviction.at(-1),{x:110.5,y:110.5});
+    assert.deepEqual(afterEviction.at(-1),{x:110.5,y:70.5});
     clearPathCache();
+});
+
+test("world, collision, size and terrain changes invalidate old grids immediately",()=>{
+    resetState();
+    const W=128,H=128;
+    state.worldW=W;state.worldH=H;
+    state.terrainResolution=1;state.terrainPixW=W;state.terrainPixH=H;
+    state.heightMap=new Float32Array(W*H).fill(0.5);
+    clearPathCache();
+    state.worldEpoch=(state.worldEpoch||0)+1;
+    assert.ok(Array.isArray(findPath(10.5,10.5,110.5,110.5,40)),"warm-up world must route");
+    let previousInvalidations=getPathCacheStats().invalidations;
+    for(let epoch=2;epoch<=6;epoch++){
+        state.worldEpoch=(state.worldEpoch||0)+1;
+        const route=findPath(10.5,10.5,110.5,110.5,40);
+        assert.ok(Array.isArray(route),"a fresh world must produce a fresh route");
+        const stats=getPathCacheStats();
+        assert.ok(stats.size<=3,"only the current world's grids may remain");
+        assert.ok(stats.invalidations>previousInvalidations,"world changes must be counted");
+        assert.ok(stats.worldKey.startsWith(String(state.worldEpoch)+":"),"diagnostics must identify the current world");
+        previousInvalidations=stats.invalidations;
+    }
+
+    state.buildingCollisionVersion=(state.buildingCollisionVersion||0)+1;
+    assert.ok(Array.isArray(findPath(10.5,10.5,110.5,110.5,40)));
+    assert.ok(getPathCacheStats().invalidations>previousInvalidations,"collision changes must invalidate");
+    previousInvalidations=getPathCacheStats().invalidations;
+
+    state.worldW=96;state.worldH=96;
+    state.terrainPixW=96;state.terrainPixH=96;
+    state.heightMap=new Float32Array(96*96).fill(0.5);
+    assert.ok(Array.isArray(findPath(10.5,10.5,80.5,80.5,40)));
+    assert.ok(getPathCacheStats().invalidations>previousInvalidations,"world-size changes must invalidate");
+    previousInvalidations=getPathCacheStats().invalidations;
+
+    state.heightMap.fill(0.1);
+    state.worldEpoch=(state.worldEpoch||0)+1;
+    assert.equal(findPath(10.5,10.5,80.5,80.5,40),null,"the new water world must not reuse an old land route");
+    let stats=getPathCacheStats();
+    assert.equal(stats.size,0,"a failed reachability probe must not retain a grid");
+    assert.ok(stats.invalidations>previousInvalidations);
+    assert.equal(stats.estimatedBytes,0);
+
+    state.heightMap.fill(0.5);
+    state.worldEpoch=(state.worldEpoch||0)+1;
+    assert.ok(Array.isArray(findPath(10.5,10.5,80.5,80.5,40)),"the restored land world must produce a fresh route");
+    stats=getPathCacheStats();
+    assert.ok(stats.size>0&&stats.estimatedBytes>0);
+    assert.ok(stats.invalidations>previousInvalidations);
+    clearPathCache();
+    assert.equal(getPathCacheStats().size,0);
+    assert.equal(getPathCacheStats().estimatedBytes,0);
 });
 
 test("units follow cached routes instead of repeatedly pushing into a building",()=>{

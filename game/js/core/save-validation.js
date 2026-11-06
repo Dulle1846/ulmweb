@@ -1,5 +1,6 @@
-// Pure, DOM-free validation for imported and persisted realm snapshots.
-// The validator runs before the active game state is reset or replaced.
+// Pure, DOM-free validation and normalization for imported realm snapshots.
+// Validation never changes its input. Normalization returns a shallow copy
+// with new resource maps and must run before the snapshot is loaded.
 import { TYPE } from "./types.js";
 import { ROAD_TYPES } from "../systems/roads.js";
 import { validateCitySnapshot } from "../systems/logistics.js";
@@ -44,10 +45,10 @@ function invalidResource(message, field, value, code = "INVALID_RESOURCE_VALUE")
     });
 }
 
-function normalizeResourceValue(value, field) {
+function normalizeResourceValue(value, field, { allowNegative = false } = {}) {
     if (typeof value === "number") {
         if (!Number.isFinite(value)) invalidResource("Save data contains an invalid " + field + " resource balance.", field, value);
-        if (value < 0) invalidResource("Save data contains a negative " + field + " resource balance.", field, value);
+        if (!allowNegative && value < 0) invalidResource("Save data contains a negative " + field + " resource balance.", field, value);
         if (Math.abs(value) > MAX_SAFE_BALANCE) invalidResource("Save data contains an out-of-range " + field + " resource balance.", field, value, "RESOURCE_OUT_OF_RANGE");
         return value;
     }
@@ -55,15 +56,17 @@ function normalizeResourceValue(value, field) {
         if (!NUMERIC_STRING.test(value)) invalidResource("Save data contains an invalid " + field + " resource balance.", field, value);
         const numeric = Number(value);
         if (!Number.isFinite(numeric)) invalidResource("Save data contains an invalid " + field + " resource balance.", field, value);
-        if (numeric < 0) invalidResource("Save data contains a negative " + field + " resource balance.", field, value);
+        if (!allowNegative && numeric < 0) invalidResource("Save data contains a negative " + field + " resource balance.", field, value);
         if (Math.abs(numeric) > MAX_SAFE_BALANCE) invalidResource("Save data contains an out-of-range " + field + " resource balance.", field, value, "RESOURCE_OUT_OF_RANGE");
         return numeric;
     }
     invalidResource("Save data contains an invalid " + field + " resource balance.", field, value);
 }
 
-function validateResourceMap(resources, label, { allowNegative = false, normalize = false } = {}) {
-    if (resources === undefined) return;
+// Builds a new map. The input map is never written to, including when a later
+// key turns out to be invalid.
+function normalizeResourceMap(resources, label, { allowNegative = false } = {}) {
+    if (resources === undefined) return undefined;
     if (!resources || typeof resources !== "object" || Array.isArray(resources)) {
         fail("Save data contains an invalid " + label + " map.", { code: "INVALID_RESOURCE_MAP", field: label, valueType: typeOf(resources), phase: "resources" });
     }
@@ -72,21 +75,31 @@ function validateResourceMap(resources, label, { allowNegative = false, normaliz
             fail("Save data contains an unknown " + label + " key: " + key + ".", { code: "UNKNOWN_RESOURCE_KEY", field: label + "." + key, valueType: "key", phase: "resources" });
         }
     }
+    const normalized = { ...resources };
     for (const key of RESOURCE_KEYS) {
         if (!Object.prototype.hasOwnProperty.call(resources, key)) continue;
-        const value = resources[key];
-        if (allowNegative) {
-            if (typeof value !== "number" && typeof value !== "string") invalidResource("Save data contains an invalid " + label + "." + key + " value.", label + "." + key, value);
-            const numeric = typeof value === "string" && NUMERIC_STRING.test(value) ? Number(value) : value;
-            if (typeof numeric !== "number" || !Number.isFinite(numeric) || Math.abs(numeric) > MAX_SAFE_BALANCE) {
-                invalidResource("Save data contains an invalid " + label + "." + key + " value.", label + "." + key, value);
-            }
-            if (normalize && typeof value === "string") resources[key] = numeric;
-            continue;
-        }
-        const normalized = normalizeResourceValue(value, key);
-        if (normalize && normalized !== value) resources[key] = normalized;
+        normalized[key] = normalizeResourceValue(resources[key], allowNegative ? label + "." + key : key, { allowNegative });
     }
+    return normalized;
+}
+
+function validateResourceMap(resources, label, options = {}) {
+    normalizeResourceMap(resources, label, options);
+}
+
+// Returns a new snapshot object. Only the resource maps are copied because
+// those are the only fields normalization changes. The input snapshot and the
+// live game state are never used as normalization targets.
+export function normalizeSaveSnapshot(snapshot) {
+    if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) return snapshot;
+    const normalized = { ...snapshot };
+    if (Object.prototype.hasOwnProperty.call(snapshot, "resources")) {
+        normalized.resources = normalizeResourceMap(snapshot.resources, "resources");
+    }
+    if (Object.prototype.hasOwnProperty.call(snapshot, "incomeThisTick")) {
+        normalized.incomeThisTick = normalizeResourceMap(snapshot.incomeThisTick, "incomeThisTick", { allowNegative: true });
+    }
+    return normalized;
 }
 
 function validateDomainSnapshot(snapshot, phase, validator) {
@@ -137,9 +150,9 @@ export function validateSaveSnapshot(snapshot) {
         fail("Save data exceeds the supported mobile population limit.", { code: "MOBILE_LIMIT", field: "entities", phase: "entities" });
     }
 
-    validateResourceMap(snapshot.resources, "resources", { normalize: true });
+    validateResourceMap(snapshot.resources, "resources");
     // incomeThisTick is a net value: expenses legitimately make it negative.
-    validateResourceMap(snapshot.incomeThisTick, "incomeThisTick", { allowNegative: true, normalize: true });
+    validateResourceMap(snapshot.incomeThisTick, "incomeThisTick", { allowNegative: true });
 
     if (snapshot.roads !== undefined) {
         if (!snapshot.roads || typeof snapshot.roads !== "object" || snapshot.roads.version !== 1 || !snapshot.roads.tiles || typeof snapshot.roads.tiles !== "object" || Object.keys(snapshot.roads.tiles).length > 5000) {

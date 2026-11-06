@@ -73,16 +73,17 @@ missing `libnss3`, `libatk`, `libgbm`, `libasound` or fontconfig are the common
 causes. `E2E_CHROMIUM_EXECUTABLE` can select a browser that is already present
 in the environment.
 
-## Known current blocker
+## Responsive status
 
-The full suite reaches an existing responsive assertion at `390x844`: the side
-panel is about 59 px high while the selected card is about 118 px high. That is
-a mobile card/dock layout issue, not a browser or font setup failure. The run
-therefore exits non-zero after the legacy and logistics checks. Its screenshots
-are still written to the configured directory.
+The former `390x844` card/dock blocker is resolved. The full suite now asserts
+that the side panel scrolls where needed and that the selected card is fully
+reachable above the action dock at every tested viewport. There is no known
+viewport blocker in the current suite; screenshots are still written to the
+configured directory for review.
 
 ## CI
 
-`.github/workflows/game-browser-e2e.yml` installs the pinned dependency, caches
-Chromium, runs the setup with `--with-deps`, and then runs `npm run test:e2e`.
-Screenshots from the responsive review are uploaded even when the test fails.
+`.github/workflows/game-browser-e2e.yml` runs on pull requests and on pushes to
+`ulmweb-branch`, installs the pinned dependency, caches Chromium, runs the setup
+with `--with-deps`, and then runs `npm run test:e2e`. Screenshots from the
+responsive review are uploaded even when the test fails.

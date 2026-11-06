@@ -922,6 +922,7 @@ test("47 card food costs are booked as consumption", () => {
     state.resources = { wood: 0, stone: 0, gold: 0, food: 50 };
     setAuditOpening({ food: 50 });
     assert.equal(payForCard({ id: "test-card", cost: { food: 10 } }), true);
+    assert.equal(state.incomeThisTick.food, -10, "card spending must reach the tick ledger");
     const food = getGoodsAudit().rows.find(row => row.good === "food");
     assert.equal(food.physical, 40);
     assert.equal(food.consumed, 10);
@@ -934,8 +935,10 @@ test("48 market food trades are booked on both sides", () => {
     setAuditOpening({ food: 50 });
     const partner = getTradePartners()[0];
     assert.equal(executeTrade(partner.id, "food", "sell", 5).ok, true);
+    assert.equal(state.incomeThisTick.food, -5, "selling food must reach the tick ledger");
     assert.equal(getGoodsAudit().rows.find(row => row.good === "food").balanced, true);
     assert.equal(executeTrade(partner.id, "food", "buy", 5).ok, true);
+    assert.equal(state.incomeThisTick.food, 0, "buying food must offset the sale in the tick ledger");
     const food = getGoodsAudit().rows.find(row => row.good === "food");
     assert.equal(food.physical, 50);
     assert.equal(food.produced, 5);
@@ -961,22 +964,45 @@ test("49 two construction sites cannot reserve more stone blocks than the store 
     assertPhysicalBooks();
 });
 
-test("50 input reservations for different goods share the same free capacity", () => {
+test("50 a real supply job uses free mill input capacity and releases it on cancellation", () => {
     setup();
     const warehouse = place(TYPE.WAREHOUSE, 30, 30);
     warehouse.warehouse.stored.grain = 20;
-    warehouse.warehouse.stored.flour = 20;
     const mill = place(TYPE.MILL, 40, 30);
     const capacity = getInputCapacity(TYPE.MILL);
     mill.inventory.input.grain = capacity - 10;
-    mill.inventory.reservedIn.flour = 8;
-    assert.equal(inputSpace(mill), 2, "both goods must consume the same free input capacity");
-    const job = requestSupply(mill, "grain", 8);
-    assert.ok(job, "the remaining input capacity should still allow a partial supply");
-    assert.equal(job.quantity, 2);
-    assert.equal(mill.inventory.reservedIn.grain, 2);
-    assert.equal(warehouse.warehouse.reservedOut.grain, 2);
-    assert.equal(inputSpace(mill), 0, "the combined reservations must fill the input store exactly");
+
+    // The mill consumes grain only. A second supply for flour is not a real
+    // recipe at this building, so the test proves that rejection explicitly
+    // instead of writing a fake reservation by hand.
+    const first = requestSupply(mill, "grain", 8);
+    assert.ok(first, "a real supply order must reserve the free input capacity");
+    assert.equal(first.quantity, 8);
+    assert.equal(first.status, "pending");
+    assert.equal(state.city.logistics.jobs.filter(job => job.id === first.id).length, 1, "the job must be queued exactly once");
+    assert.equal(mill.inventory.reservedIn.grain, 8);
+    assert.equal(warehouse.warehouse.reservedOut.grain, 8);
+    assert.equal(inputSpace(mill), 2, "the job must consume the shared input space");
+    assert.equal(requestSupply(mill, "flour", 8), null, "a mill has no flour input recipe");
+    assert.equal(mill.inventory.reservedIn.flour, 0);
+    assert.equal(warehouse.warehouse.reservedOut.flour, 0);
+    assertPhysicalBooks();
+
+    cancelJobsForEntity(warehouse.id);
+    assert.equal(first.status, "cancelled");
+    assert.equal(mill.inventory.reservedIn.grain, 0, "cancelling must release the destination reservation");
+    assert.equal(warehouse.warehouse.reservedOut.grain, 0, "cancelling must release the source reservation");
+    assert.equal(inputSpace(mill), 10, "the full free capacity must be restored");
+
+    const replacement = requestSupply(mill, "grain", 8);
+    assert.ok(replacement, "a fresh job must be accepted after cancellation");
+    assert.equal(replacement.quantity, 8);
+    assert.equal(mill.inventory.reservedIn.grain, 8);
+    assert.equal(warehouse.warehouse.reservedOut.grain, 8);
+    assert.equal(inputSpace(mill), 2);
+    cancelJobsForEntity(warehouse.id);
+    assert.equal(replacement.status, "cancelled");
+    assert.equal(inputSpace(mill), 10);
     assertPhysicalBooks();
 });
 

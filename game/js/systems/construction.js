@@ -36,7 +36,7 @@ function affordable(cost) {
 function chargeResources(cost) {
     if (!affordable(cost)) return false;
     const charge = cleanCost(cost);
-    for (const [key, amount] of Object.entries(charge)) state.resources[key] = Math.max(0, (Number(state.resources[key]) || 0) - amount);
+    for (const [key, amount] of Object.entries(charge)) addResource(key, -amount);
     if (charge.food > 0) recordResourceMovement("food", -charge.food, "construction-cost", { from: { kind: "realm", id: "royal-stores" } });
     return true;
 }

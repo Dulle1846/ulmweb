@@ -4,6 +4,7 @@ import {spawnEntity,canSpawnEntity} from "../world/entities.js";
 import {ensurePersonProfile,addPersonMemory} from "./people.js";
 import {linkParentChild,setPartnership,getFamilySnapshot} from "./families.js";
 import {recordResourceMovement} from "./goods-book.js";
+import {addResource} from "./resources.js";
 const MAX_HISTORY=48,personId=e=>String(e?.personId||e?.person?.id||e?.id||""),alive=e=>Boolean(e&&!e.dead);
 function royalState(){
  const s=state.royal&&typeof state.royal==="object"&&!Array.isArray(state.royal)?state.royal:{};
@@ -57,7 +58,7 @@ export function createRoyalChild(){
  const p=ensurePersonProfile(child,{role:"royal-child",species:kp.species});p.ageYears=0;p.lifeStage="young";p.role="royal-child";p.species=kp.species;p.familyName=s.dynastyName;p.name=p.firstName+" "+s.dynastyName;p.bornAtYear=Math.max(1,Number(state.year)||1);p.lastAgedYear=p.bornAtYear;
  const links=[linkParentChild(personId(king),personId(child),{kind:"biological"}),linkParentChild(personId(consort),personId(child),{kind:"biological"})];
  if(links.some(x=>!x.ok)){for(const parent of [king,consort])parent.person.kinship.children=parent.person.kinship.children.filter(x=>x.personId!==personId(child));p.kinship.parents=[];state.entities=state.entities.filter(e=>e!==child);return {ok:false,reason:"kinship-link-failed"};}
- recordResourceMovement("food",-20,"royal-household",{from:{kind:"realm",id:"royal-stores"},to:{kind:"dynasty",id:s.dynastyName||"royal-house"},key:"food:royal-birth:"+child.id});state.resources.food-=20;state.resources.gold-=15;s.lastBirthYear=Math.max(1,Number(state.year)||1);
+ recordResourceMovement("food",-20,"royal-household",{from:{kind:"realm",id:"royal-stores"},to:{kind:"dynasty",id:s.dynastyName||"royal-house"},key:"food:royal-birth:"+child.id});addResource("food",-20);addResource("gold",-15);s.lastBirthYear=Math.max(1,Number(state.year)||1);
  for(const [entity,id,text] of [[king,"king","A royal child, "+p.name+", was born in year "+state.year+"."],[consort,"consort","I welcomed "+p.name+" into the royal house in year "+state.year+"."],[child,"origin","I was born into the royal "+s.dynastyName+" dynasty in year "+state.year+"."]])addPersonMemory(entity,{id:"royal-birth:"+child.id+":"+id,type:"dynasty",text,tick:state.tick,importance:100});
  record("birth","Royal child born: "+p.name);
  if(!s.heirId){s.heirId=personId(child);p.role="heir";record("heir-designated",p.name);}

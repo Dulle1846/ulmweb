@@ -9,6 +9,39 @@ const root=process.cwd();
 const port=Number(process.env.E2E_PORT)||4173;
 const screenshotDir=process.env.E2E_SCREENSHOT_DIR?resolve(root,process.env.E2E_SCREENSHOT_DIR):resolve(tmpdir(),"kac-ui-viewport-review");
 await mkdir(screenshotDir,{recursive:true});
+
+// Capture the active campaign, not just the counters used by older smoke tests.
+// Raw render buffers are omitted because they are not persistent game state and
+// would make the comparison depend on the viewport and redraw timing.
+async function captureRealmState(page){
+    return page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        const ignored=new Set(["canvas","ctx","minimapCanvas","minimapCtx","terrainCanvas","fogCanvas","heightMap","moistureMap","temperatureMap","explored","fogExploredRef","lastFrameTime","lastUiRender","lastMinimapRender","tickAccumulator","particles","floaters","pendingPresentationEffects"]);
+        const entityRows=state.entities.map(entity=>{
+            const row={};
+            for(const key of Object.keys(entity).sort()){
+                const value=entity[key];
+                if(typeof value==="function")continue;
+                if(value&&typeof value==="object"&&value.id&&value.type&&"x" in value){row[key]={entityId:value.id};continue;}
+                if(value&&typeof value==="object"){
+                    try{row[key]=JSON.parse(JSON.stringify(value));}catch{row[key]="[unserializable]";}
+                }else row[key]=value;
+            }
+            return row;
+        }).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+        const result={};
+        for(const key of Object.keys(state).sort()){
+            if(ignored.has(key))continue;
+            if(key==="entities"){result.entities=entityRows;continue;}
+            const value=state[key];
+            if(typeof value==="function")continue;
+            if(value&&typeof value==="object"){
+                try{result[key]=JSON.parse(JSON.stringify(value));}catch{result[key]="[unserializable]";}
+            }else result[key]=value;
+        }
+        return result;
+    });
+}
 const mime={
     ".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",
     ".css":"text/css; charset=utf-8",".svg":"image/svg+xml",".json":"application/json",
@@ -95,13 +128,7 @@ try{
         const {state}=await import("./js/core/state.js");
         return state.isPaused===true;
     },null,{timeout:3000});
-    const beforeInvalidImport=await page.evaluate(async()=>{
-        const {state}=await import("./js/core/state.js");
-        return {
-            resources:{...state.resources},entities:state.entities.length,tick:state.tick,
-            worldEpoch:state.worldEpoch,isPaused:state.isPaused,activeProfileId:state.activeProfileId
-        };
-    });
+    const beforeInvalidImport=await captureRealmState(page);
     const invalidSavePath=resolve(tmpdir(),"kac-invalid-resource-save-"+Date.now()+".json");
     await writeFile(invalidSavePath,JSON.stringify({
         saveSchemaVersion:4,
@@ -111,14 +138,8 @@ try{
     }));
     await page.locator("#import-save-input").setInputFiles(invalidSavePath);
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("negative wood"),null,{timeout:5000});
-    const afterInvalidImport=await page.evaluate(async()=>{
-        const {state}=await import("./js/core/state.js");
-        return {
-            resources:{...state.resources},entities:state.entities.length,tick:state.tick,
-            worldEpoch:state.worldEpoch,isPaused:state.isPaused,activeProfileId:state.activeProfileId
-        };
-    });
-    assert.deepEqual(afterInvalidImport,beforeInvalidImport,"a rejected import must not reset or reload the active realm");
+    const afterInvalidImport=await captureRealmState(page);
+    assert.deepEqual(afterInvalidImport,beforeInvalidImport,"a rejected import must leave the entire active realm unchanged, including entities, positions, resources, income, world options, roads, city logistics, random streams, profile, selection and speed");
     assert.match(await page.locator("#status-message").innerText(),/current realm was not changed/i,"the rejected import must explain that the active realm is untouched");
     await page.locator("#pause-btn").click();
 

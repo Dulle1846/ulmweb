@@ -15,6 +15,8 @@ test("buying goods exchanges gold for stock and updates inventory",()=>{
     assert.equal(result.ok,true);
     assert.equal(state.resources.wood,before+5);
     assert.ok(state.resources.gold<100);
+    assert.equal(state.incomeThisTick.wood,5);
+    assert.equal(state.incomeThisTick.gold,state.resources.gold-100);
 });
 test("selling goods pays gold and adds stock to the partner",()=>{
     const before=state.resources.gold;
@@ -22,6 +24,8 @@ test("selling goods pays gold and adds stock to the partner",()=>{
     const result=executeTrade("northmere","wood","sell",5);
     assert.equal(result.ok,true);
     assert.equal(state.resources.gold,before+result.gold);
+    assert.equal(state.incomeThisTick.wood,-5);
+    assert.equal(state.incomeThisTick.gold,result.gold);
     assert.equal(state.market.partners[0].stock.wood,stockBefore+5);
 });
 test("trades reject unaffordable purchases without changing resources",()=>{

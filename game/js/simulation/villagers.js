@@ -11,6 +11,7 @@ import { state } from '../core/state.js';
 import { getEntitiesOfType } from '../world/entities.js';
 import { isWaterAt, worldWidth, worldHeight } from '../world/world.js';
 import { recordResourceMovement } from '../systems/goods-book.js';
+import { addResource } from '../systems/resources.js';
 import { distance } from '../core/utils.js';
 import { rand as seededRand } from '../core/random.js';
 const rand=(min,max)=>seededRand(min,max,"villagers");
@@ -115,7 +116,7 @@ export function updateVillagers() {
             from: { kind: "realm", id: "royal-stores" }, to: { kind: "population", id: "residents" },
             key: "food:residents:" + state.tick
         });
-        state.resources.food -= 1;
+        addResource("food", -1);
     }
 }
 
@@ -435,18 +436,46 @@ const HIERARCHICAL_GRID_CACHE_LIMIT = 24;
 const hierarchicalGridCache = new Map();
 const pathCacheStats = { hits: 0, misses: 0, evictions: 0, invalidations: 0 };
 let reachableTileCache = null;
-let lastWalkabilityKey = null;
+let cacheWorldKey = null;
 
 function walkabilityKey() {
     return [state.worldEpoch || 0, worldWidth(), worldHeight(), state.buildingCollisionVersion || 0].join(":");
 }
 
-// Read-only diagnostics for tests and the developer overlay. The caller gets
-// a snapshot, never a mutable reference to the cache counters.
+// A world key describes the walkability and dimensions that a cached grid
+// belongs to. If it changes, every old grid is unusable and is dropped now
+// instead of waiting for LRU eviction. Terrain painters must bump worldEpoch;
+// building placement already bumps buildingCollisionVersion.
+function invalidateWorldCache(nextKey) {
+    if (cacheWorldKey === null) {
+        cacheWorldKey = nextKey;
+        return;
+    }
+    if (cacheWorldKey === nextKey) return;
+    hierarchicalGridCache.clear();
+    reachableTileCache = null;
+    cacheWorldKey = nextKey;
+    pathCacheStats.invalidations++;
+}
+
+// Read-only diagnostics for tests and the developer overlay. estimatedBytes
+// counts the retained grid representatives plus each unique reachability
+// buffer; it is a lower bound, not a heap measurement.
 export function getPathCacheStats() {
+    const uniqueReachable = new Set();
+    let estimatedBytes = 0;
+    for (const grid of hierarchicalGridCache.values()) {
+        estimatedBytes += grid.reps.byteLength;
+        if (!uniqueReachable.has(grid.reachable)) {
+            uniqueReachable.add(grid.reachable);
+            estimatedBytes += grid.reachable.tiles.byteLength;
+        }
+    }
     return {
         size: hierarchicalGridCache.size,
         limit: HIERARCHICAL_GRID_CACHE_LIMIT,
+        estimatedBytes,
+        worldKey: cacheWorldKey,
         ...pathCacheStats
     };
 }
@@ -454,7 +483,7 @@ export function getPathCacheStats() {
 export function clearPathCache() {
     hierarchicalGridCache.clear();
     reachableTileCache = null;
-    lastWalkabilityKey = null;
+    cacheWorldKey = null;
     pathCacheStats.hits = 0;
     pathCacheStats.misses = 0;
     pathCacheStats.evictions = 0;
@@ -464,8 +493,7 @@ export function clearPathCache() {
 function getReachableTiles(startX, startY) {
     const W = worldWidth(), H = worldHeight();
     const currentKey = walkabilityKey();
-    if (lastWalkabilityKey !== null && lastWalkabilityKey !== currentKey) pathCacheStats.invalidations++;
-    lastWalkabilityKey = currentKey;
+    invalidateWorldCache(currentKey);
     const startTile = Math.floor(startY) * W + Math.floor(startX);
     const key = `${currentKey}:${startTile}`;
     if (reachableTileCache && reachableTileCache.key === key) return reachableTileCache;
@@ -626,6 +654,9 @@ function findHierarchicalPath(startX, startY, targetX, targetY) {
 }
 
 export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
+    // A world change invalidates old grids even when this particular search
+    // never reaches the hierarchical fallback (for example, all-water terrain).
+    invalidateWorldCache(walkabilityKey());
     const direct = findPathDirect(startX,startY,targetX,targetY,maxNodes);
     if (direct) return direct;
     // Only a search that hit the node guard gets the hierarchical retry.

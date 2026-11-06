@@ -1,6 +1,7 @@
 import {state} from "../core/state.js";
 import {applyPoliticalEffects,getPoliticalSnapshot} from "./politics.js";
 import {recordResourceMovement} from "./goods-book.js";
+import {addResource} from "./resources.js";
 export const GOVERNMENT_FORMS=Object.freeze({
  feudal:{label:"Feudal monarchy",tax:10,legitimacy:1.2,factions:{commons:-.2,nobility:.8,guilds:0,clergy:.2}},
  royal:{label:"Royal centralism",tax:12,legitimacy:.4,factions:{commons:-.5,nobility:-.6,guilds:.3,clergy:0}},
@@ -24,7 +25,7 @@ export function setGovernmentForm(form){
  if(!Object.hasOwn(GOVERNMENT_FORMS,form))return {ok:false,reason:"unknown-government"};
  const g=normalizeGovernment();if(g.form===form)return {ok:false,reason:"already-in-force"};
  if((Number(state.resources?.gold)||0)<20)return {ok:false,reason:"insufficient-gold"};
- state.resources.gold-=20;const previous=g.form;g.form=form;g.taxRate=GOVERNMENT_FORMS[form].tax;
+ addResource("gold",-20);const previous=g.form;g.form=form;g.taxRate=GOVERNMENT_FORMS[form].tax;
  g.history.push({year:state.year||1,kind:"government-form",from:previous,to:form});g.history=g.history.slice(-40);
  applyPoliticalEffects(GOVERNMENT_FORMS[form].factions);state.politics.legitimacy=clamp(state.politics.legitimacy+GOVERNMENT_FORMS[form].legitimacy);g.decrees++;
  return {ok:true,government:g,politics:getPoliticalSnapshot()};
@@ -33,7 +34,7 @@ export function enactPolicy(id){
  const p=GOVERNMENT_POLICIES[id];if(!p)return {ok:false,reason:"unknown-policy"};
  const g=normalizeGovernment();if(g.lastDecisionYear===state.year)return {ok:false,reason:"one-decree-per-year"};
  for(const [k,v] of Object.entries(p.cost))if((Number(state.resources?.[k])||0)<v)return {ok:false,reason:"insufficient-"+k};
- for(const [k,v] of Object.entries(p.cost))state.resources[k]-=v;
+ for(const [k,v] of Object.entries(p.cost))addResource(k,-v);
  const foodCost=Number(p.cost?.food||0);
  if(foodCost>0)recordResourceMovement("food",-foodCost,"policy-cost",{from:{kind:"realm",id:"royal-stores"},to:{kind:"policy",id}});
  applyPoliticalEffects(p.effects);state.morale=clamp((Number(state.morale)||0)+p.morale);

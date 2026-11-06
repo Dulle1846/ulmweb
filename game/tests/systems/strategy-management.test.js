@@ -29,7 +29,7 @@ test("government normalization bounds malformed settings and keeps a supported c
 test("changing government costs treasury and changes political support",()=>{
  resetState();state.resources.gold=30;const before=getPoliticalSnapshot();
  const result=setGovernmentForm("council");
- assert.equal(result.ok,true);assert.equal(state.resources.gold,10);assert.equal(state.government.form,"council");
+ assert.equal(result.ok,true);assert.equal(state.resources.gold,10);assert.equal(state.incomeThisTick.gold,-20);assert.equal(state.government.form,"council");
  assert.ok(result.politics.factions.guilds>before.factions.guilds);
  assert.equal(setGovernmentForm("council").reason,"already-in-force");
  assert.equal(setGovernmentForm("elective").reason,"insufficient-gold");
@@ -38,7 +38,7 @@ test("changing government costs treasury and changes political support",()=>{
 test("a royal decree charges its exact costs and only one policy can be enacted per year",()=>{
  resetState();state.resources={wood:30,stone:0,gold:30,food:40};state.year=7;
  const result=enactPolicy("bread");
- assert.equal(result.ok,true);assert.equal(state.resources.gold,18);assert.equal(state.resources.food,22);assert.equal(state.morale,74);
+ assert.equal(result.ok,true);assert.equal(state.resources.gold,18);assert.equal(state.resources.food,22);assert.equal(state.incomeThisTick.gold,-12);assert.equal(state.incomeThisTick.food,-18);assert.equal(state.morale,74);
  assert.equal(enactPolicy("charter").reason,"one-decree-per-year");
  state.year++;assert.equal(enactPolicy("charter").ok,true);
 });
@@ -67,8 +67,8 @@ test("succession transfers the crown to the living designated heir after the sov
 
 test("a dragon is a persistent friendly entity with age, hunger, bond and a bounded memorial",()=>{
  const {king}=startRealm();const result=summonDragon();assert.equal(result.ok,true);
- const dragon=result.dragon;assert.equal(dragon.type,TYPE.DRAGON);assert.equal(dragon.isDragon,true);
- assert.equal(state.resources.gold,45);assert.equal(state.resources.food,85);
+ const dragon=result.dragon; assert.equal(dragon.type,TYPE.DRAGON);assert.equal(dragon.isDragon,true);
+ assert.equal(state.resources.gold,45);assert.equal(state.resources.food,85);assert.equal(state.incomeThisTick.gold,-55);assert.equal(state.incomeThisTick.food,-35);
  state.year++;updateCreatures();
  assert.equal(dragon.creature.ageYears,1);assert.ok(dragon.creature.bond>18);assert.equal(dragon.creature.hunger,0);
  dragon.creature.health=5;dragon.creature.hunger=80;state.resources.food=0;state.year++;updateCreatures();

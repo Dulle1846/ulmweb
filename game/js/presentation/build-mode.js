@@ -23,6 +23,7 @@ import {
 import { constructionSnapshot, isUnderConstruction, pauseConstruction, resumeConstruction, cancelConstruction, placeDirectBuilding } from '../systems/construction.js';
 import { getInventorySummary, cancelJobsForEntity, evacuateBuildingInventory } from '../systems/logistics.js';
 import { getServiceReason } from '../systems/settlement.js';
+import { addResource } from '../systems/resources.js';
 
 const RADIUS_SEARCH = 9;
 
@@ -262,9 +263,7 @@ export function demolishSelected() {
     }
     pushUndo(entity);
     const cost = REBUILD_COST[entity.type] || REBUILD_COST[TYPE.HOUSE];
-    for (const [resource, amount] of Object.entries(cost)) {
-        state.resources[resource] = (state.resources[resource] || 0) + Math.round(amount * 0.3);
-    }
+    for (const [resource, amount] of Object.entries(cost)) addResource(resource, Math.round(amount * 0.3));
     entity.dead = true;
     state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
     state.selectedBuildingId = null;
@@ -315,7 +314,7 @@ export function adjustFurniture(itemId, delta, roomName = null) {
         }
         const map = roomFurnitureMap(entity, breakdown);
         pushUndo(entity);
-        for (const [resource, amount] of Object.entries(cost)) state.resources[resource] -= amount;
+        for (const [resource, amount] of Object.entries(cost)) addResource(resource, -amount);
         const assigned = map[room.name] || (map[room.name] = {});
         assigned[itemId] = (assigned[itemId] || 0) + 1;
         entity.roomFurniture = map;

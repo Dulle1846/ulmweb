@@ -1,6 +1,12 @@
 name: Game Browser E2E
 
 on:
+  push:
+    branches:
+      - ulmweb-branch
+    paths:
+      - "game/**"
+      - ".github/workflows/game-browser-e2e.yml"
   pull_request:
     branches:
       - ulmweb-branch

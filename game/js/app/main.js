@@ -29,7 +29,7 @@ import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
 import {serializeResourceGeography,restoreResourceGeography} from "../systems/resource-geography.js";import { setupBuildUI } from "../presentation/build-ui.js";import { normalizeLayout,serializeLayout } from "../presentation/building-layout.js";
 import {serializeCity,restoreCity,initializeCityForRealm,openGoodsBookForNewRealm} from "../systems/logistics.js";
-import {SAVE_SCHEMA_VERSION,validateSaveSnapshot} from "../core/save-validation.js";
+import {SAVE_SCHEMA_VERSION,normalizeSaveSnapshot,validateSaveSnapshot} from "../core/save-validation.js";
 import {initializeSettlementForRealm} from "../systems/settlement.js";
 import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
@@ -256,7 +256,7 @@ function saveCurrentGame(){
 
 function loadSnapshotIntoGame(profile,snapshot){
     try{
-        snapshot=migrateSaveSnapshot(snapshot);
+        snapshot=normalizeSaveSnapshot(migrateSaveSnapshot(snapshot));
         validateSaveSnapshot(snapshot);
     }catch(error){
         // Preflight failed before resetForRun. Callers must not reload a
