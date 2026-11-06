@@ -255,8 +255,15 @@ function saveCurrentGame(){
 }
 
 function loadSnapshotIntoGame(profile,snapshot){
-    snapshot=migrateSaveSnapshot(snapshot);
-    validateSaveSnapshot(snapshot);
+    try{
+        snapshot=migrateSaveSnapshot(snapshot);
+        validateSaveSnapshot(snapshot);
+    }catch(error){
+        // Preflight failed before resetForRun. Callers must not reload a
+        // rollback snapshot in this case: the active realm was never touched.
+        if(error&&typeof error==="object")error.preStateChange=true;
+        throw error;
+    }
     resetForRun(profile);
     state.worldSeed=snapshot.worldSeed||randomSeed();
     state.worldOptions=snapshot.worldOptions||{landmass:50,ruggedness:55,forests:52,water:48};
@@ -382,7 +389,7 @@ function loadCurrentGame(){
         return true;
     }catch(error){
         let recovery="";
-        if(rollbackProfile&&rollbackSnapshot){
+        if(rollbackProfile&&rollbackSnapshot&&!error?.preStateChange){
             try{
                 loadSnapshotIntoGame(rollbackProfile,rollbackSnapshot);
                 recovery=" · previous realm restored";
@@ -511,7 +518,7 @@ async function importRealm(file){
         try{
             loadSnapshotIntoGame(profile,snapshot);
         }catch(error){
-            if(rollbackProfile&&rollbackSnapshot){
+            if(rollbackProfile&&rollbackSnapshot&&!error?.preStateChange){
                 try{loadSnapshotIntoGame(rollbackProfile,rollbackSnapshot);}catch{/* keep the original error */}
             }
             throw error;

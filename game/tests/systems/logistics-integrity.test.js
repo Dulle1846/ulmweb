@@ -4,7 +4,7 @@ import { resetState, state } from "../../js/core/state.js";
 import { TYPE } from "../../js/core/types.js";
 import { spawnEntity } from "../../js/world/entities.js";
 import {
-    initializeCityForRealm, ensureInventory, requestHaul, requestSupply, cancelJobsForEntity,
+    initializeCityForRealm, ensureInventory, requestHaul, requestSupply, requestConstructionDelivery, getInputCapacity, inputSpace, cancelJobsForEntity,
     updateLogistics, updateLogisticsMovement, serializeCity, restoreCity, validateCitySnapshot,
     evacuateBuildingInventory, setWarehouseProfile, getWarehouseProfile, depositGood, withdrawGood,
     addLocalOutput, consumeFromWarehouse, getLocalWarehouseStock, getGoodsAudit, getPhysicalStock,
@@ -941,4 +941,66 @@ test("48 market food trades are booked on both sides", () => {
     assert.equal(food.produced, 5);
     assert.equal(food.consumed, 5);
     assert.equal(food.balanced, true);
+});
+
+test("49 two construction sites cannot reserve more stone blocks than the store holds", () => {
+    setup();
+    const warehouse = place(TYPE.WAREHOUSE, 30, 30);
+    warehouse.warehouse.stored.stoneBlocks = 10;
+    const firstSite = place(TYPE.HOUSE, 40, 30);
+    const secondSite = place(TYPE.HOUSE, 40, 45);
+    firstSite.construction = { stage: 0, progress: 0 };
+    secondSite.construction = { stage: 0, progress: 0 };
+    const first = requestConstructionDelivery(firstSite, "stoneBlocks", 8);
+    const second = requestConstructionDelivery(secondSite, "stoneBlocks", 8);
+    assert.ok(first, "the first construction delivery should reserve");
+    assert.ok(second, "the second delivery should receive only the remaining stock");
+    assert.equal(first.quantity, 8);
+    assert.equal(second.quantity, 2);
+    assert.equal(warehouse.warehouse.reservedOut.stoneBlocks, 10, "source reservations must not exceed physical stock");
+    assertPhysicalBooks();
+});
+
+test("50 input reservations for different goods share the same free capacity", () => {
+    setup();
+    const warehouse = place(TYPE.WAREHOUSE, 30, 30);
+    warehouse.warehouse.stored.grain = 20;
+    warehouse.warehouse.stored.flour = 20;
+    const mill = place(TYPE.MILL, 40, 30);
+    const capacity = getInputCapacity(TYPE.MILL);
+    mill.inventory.input.grain = capacity - 10;
+    mill.inventory.reservedIn.flour = 8;
+    assert.equal(inputSpace(mill), 2, "both goods must consume the same free input capacity");
+    const job = requestSupply(mill, "grain", 8);
+    assert.ok(job, "the remaining input capacity should still allow a partial supply");
+    assert.equal(job.quantity, 2);
+    assert.equal(mill.inventory.reservedIn.grain, 2);
+    assert.equal(warehouse.warehouse.reservedOut.grain, 2);
+    assert.equal(inputSpace(mill), 0, "the combined reservations must fill the input store exactly");
+    assertPhysicalBooks();
+});
+
+test("51 producers cannot reserve more inbound warehouse space than remains", () => {
+    setup();
+    const warehouse = place(TYPE.WAREHOUSE, 30, 30);
+    warehouse.warehouse.capacity = 10;
+    warehouse.warehouse.stored.logs = 8;
+    const sources = [
+        place(TYPE.LUMBER, 20, 20),
+        place(TYPE.LUMBER, 20, 40),
+        place(TYPE.LUMBER, 20, 60)
+    ];
+    for (const source of sources) source.inventory.output.logs = 1;
+    const first = requestHaul(sources[0], "logs", 1);
+    const second = requestHaul(sources[1], "logs", 1);
+    const third = requestHaul(sources[2], "logs", 1);
+    assert.ok(first);
+    assert.ok(second);
+    assert.equal(third, null, "a producer must not receive space already reserved by another job");
+    assert.equal(warehouse.warehouse.reservedIn.logs, 2);
+    assert.equal(warehouse.warehouse.stored.logs, 8);
+    assert.equal(sources[0].inventory.reservedOut.logs, 1);
+    assert.equal(sources[1].inventory.reservedOut.logs, 1);
+    assert.equal(sources[2].inventory.reservedOut.logs, 0);
+    assertPhysicalBooks();
 });

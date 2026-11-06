@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {createServer} from "node:http";
-import {mkdir,readFile} from "node:fs/promises";
+import {mkdir,readFile,writeFile} from "node:fs/promises";
 import {extname,resolve,sep} from "node:path";
 import {tmpdir} from "node:os";
 import {chromium} from "playwright";
@@ -88,6 +88,39 @@ try{
     await page.locator("#speed-0-5").click();
     assert.ok(await page.locator("#speed-0-5").evaluate(el=>el.classList.contains("is-active")),"half-speed control must become active");
     await page.locator("#speed-1").click();
+
+    // A corrupt import must fail before resetForRun and leave the live realm untouched.
+    await page.locator("#pause-btn").click();
+    await page.waitForFunction(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return state.isPaused===true;
+    },null,{timeout:3000});
+    const beforeInvalidImport=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {
+            resources:{...state.resources},entities:state.entities.length,tick:state.tick,
+            worldEpoch:state.worldEpoch,isPaused:state.isPaused,activeProfileId:state.activeProfileId
+        };
+    });
+    const invalidSavePath=resolve(tmpdir(),"kac-invalid-resource-save-"+Date.now()+".json");
+    await writeFile(invalidSavePath,JSON.stringify({
+        saveSchemaVersion:4,
+        worldSeed:20261104,
+        entities:[],
+        resources:{wood:-1,stone:5,gold:5,food:5}
+    }));
+    await page.locator("#import-save-input").setInputFiles(invalidSavePath);
+    await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("negative wood"),null,{timeout:5000});
+    const afterInvalidImport=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {
+            resources:{...state.resources},entities:state.entities.length,tick:state.tick,
+            worldEpoch:state.worldEpoch,isPaused:state.isPaused,activeProfileId:state.activeProfileId
+        };
+    });
+    assert.deepEqual(afterInvalidImport,beforeInvalidImport,"a rejected import must not reset or reload the active realm");
+    assert.match(await page.locator("#status-message").innerText(),/current realm was not changed/i,"the rejected import must explain that the active realm is untouched");
+    await page.locator("#pause-btn").click();
 
     // Primary navigation must be operable by keyboard and expose the current page semantically.
     const economyNav=page.locator('.realm-nav-button[data-kac-panel="economy"]');
