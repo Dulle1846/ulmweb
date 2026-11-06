@@ -1,0 +1,389 @@
+﻿2026-11-06T22:25:53.5556651Z Current runner version: '2.338.2'
+2026-11-06T22:25:53.5582358Z ##[group]Runner Image Provisioner
+2026-11-06T22:25:53.5583181Z Hosted Compute Agent
+2026-11-06T22:25:53.5584117Z Version: 20261028.624
+2026-11-06T22:25:53.5584825Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+2026-11-06T22:25:53.5585497Z Build Date: 2026-10-28T21:51:42Z
+2026-11-06T22:25:53.5586206Z Worker ID: {8fb73a91-014a-4cfb-92d4-9dc8d69026e0}
+2026-11-06T22:25:53.5586920Z Region: westus2
+2026-11-06T22:25:53.5587518Z Cloud: Azure
+2026-11-06T22:25:53.5588132Z ##[endgroup]
+2026-11-06T22:25:53.5589920Z ##[group]Operating System
+2026-11-06T22:25:53.5590627Z Ubuntu
+2026-11-06T22:25:53.5591138Z 24.04.5
+2026-11-06T22:25:53.5591665Z LTS
+2026-11-06T22:25:53.5592254Z ##[endgroup]
+2026-11-06T22:25:53.5592782Z ##[group]Runner Image
+2026-11-06T22:25:53.5593348Z Image: ubuntu-24.04
+2026-11-06T22:25:53.5594253Z Version: 20261101.360.1
+2026-11-06T22:25:53.5595994Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261101.360/images/ubuntu/Ubuntu2404-Readme.md
+2026-11-06T22:25:53.5597478Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261101.360
+2026-11-06T22:25:53.5598489Z ##[endgroup]
+2026-11-06T22:25:53.5599581Z ##[group]GITHUB_TOKEN Permissions
+2026-11-06T22:25:53.5601803Z Contents: write
+2026-11-06T22:25:53.5602371Z Metadata: read
+2026-11-06T22:25:53.5602889Z ##[endgroup]
+2026-11-06T22:25:53.5605369Z Secret source: Actions
+2026-11-06T22:25:53.5606377Z Cache mode: write
+2026-11-06T22:25:53.5607230Z Prepare workflow directory
+2026-11-06T22:25:53.5920869Z Prepare all required actions
+2026-11-06T22:25:53.5967298Z Getting action download info
+2026-11-06T22:25:53.9639050Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-06T22:25:54.1377977Z Complete job name: Record workflow run receipt
+2026-11-06T22:25:54.1988886Z ##[group]Run actions/checkout@v4
+2026-11-06T22:25:54.1989318Z with:
+2026-11-06T22:25:54.1989566Z   repository: Dulle1846/ulmweb
+2026-11-06T22:25:54.1991825Z   token: ***
+2026-11-06T22:25:54.1992067Z   ssh-strict: true
+2026-11-06T22:25:54.1992383Z   ssh-user: git
+2026-11-06T22:25:54.1992637Z   persist-credentials: true
+2026-11-06T22:25:54.1992906Z   clean: true
+2026-11-06T22:25:54.1993167Z   sparse-checkout-cone-mode: true
+2026-11-06T22:25:54.1993656Z   fetch-depth: 1
+2026-11-06T22:25:54.1993916Z   fetch-tags: false
+2026-11-06T22:25:54.1994167Z   show-progress: true
+2026-11-06T22:25:54.1994423Z   lfs: false
+2026-11-06T22:25:54.1994657Z   submodules: false
+2026-11-06T22:25:54.1994909Z   set-safe-directory: true
+2026-11-06T22:25:54.1995191Z   allow-unsafe-pr-checkout: false
+2026-11-06T22:25:54.1995576Z ##[endgroup]
+2026-11-06T22:25:54.4340954Z Syncing repository: Dulle1846/ulmweb
+2026-11-06T22:25:54.4343389Z ##[group]Getting Git version info
+2026-11-06T22:25:54.4347324Z Working directory is '/home/runner/work/ulmweb/ulmweb'
+2026-11-06T22:25:54.4349353Z [command]/usr/bin/git version
+2026-11-06T22:25:54.4565975Z git version 2.56.0
+2026-11-06T22:25:54.4665559Z ##[endgroup]
+2026-11-06T22:25:54.4825870Z Temporarily overriding HOME='/home/runner/work/_temp/7f584588-a54f-41a6-88a3-7a4d35c12401' before making global git config changes
+2026-11-06T22:25:54.4827198Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-06T22:25:54.4828635Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ulmweb/ulmweb
+2026-11-06T22:25:54.4860034Z Deleting the contents of '/home/runner/work/ulmweb/ulmweb'
+2026-11-06T22:25:54.4862739Z ##[group]Initializing the repository
+2026-11-06T22:25:54.4874390Z [command]/usr/bin/git init /home/runner/work/ulmweb/ulmweb
+2026-11-06T22:25:54.4875253Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-06T22:25:54.4876103Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-06T22:25:54.4877046Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-06T22:25:54.4894166Z hint: call:
+2026-11-06T22:25:54.4904243Z hint:
+2026-11-06T22:25:54.4979046Z hint: 	git config --global init.defaultBranch <name>
+2026-11-06T22:25:54.5032200Z hint:
+2026-11-06T22:25:54.5033150Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-06T22:25:54.5050010Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-06T22:25:54.5051032Z hint:
+2026-11-06T22:25:54.5066215Z hint: 	git branch -m <name>
+2026-11-06T22:25:54.5066914Z hint:
+2026-11-06T22:25:54.5067868Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-06T22:25:54.5068957Z Initialized empty Git repository in /home/runner/work/ulmweb/ulmweb/.git/
+2026-11-06T22:25:54.5071463Z [command]/usr/bin/git remote add origin https://github.com/Dulle1846/ulmweb
+2026-11-06T22:25:54.5074144Z ##[endgroup]
+2026-11-06T22:25:54.5075080Z ##[group]Disabling automatic garbage collection
+2026-11-06T22:25:54.5098210Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-06T22:25:54.5144843Z ##[endgroup]
+2026-11-06T22:25:54.5145744Z ##[group]Setting up auth
+2026-11-06T22:25:54.5146558Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-06T22:25:54.5149314Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-06T22:25:54.5496986Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-06T22:25:54.5539019Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-06T22:25:54.5758191Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-06T22:25:54.5799140Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-06T22:25:54.6045236Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-06T22:25:54.6085888Z ##[endgroup]
+2026-11-06T22:25:54.6087198Z ##[group]Fetching the repository
+2026-11-06T22:25:54.6096889Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +90f856c6fc6e9cd137151ac4c0d7a18ae8e7872d:refs/remotes/origin/ulmweb-branch
+2026-11-06T22:25:55.1474200Z From https://github.com/Dulle1846/ulmweb
+2026-11-06T22:25:55.1476138Z  * [new ref]         90f856c6fc6e9cd137151ac4c0d7a18ae8e7872d -> origin/ulmweb-branch
+2026-11-06T22:25:55.1481073Z ##[endgroup]
+2026-11-06T22:25:55.1482293Z ##[group]Determining the checkout info
+2026-11-06T22:25:55.1483783Z ##[endgroup]
+2026-11-06T22:25:55.1484647Z [command]/usr/bin/git sparse-checkout disable
+2026-11-06T22:25:55.1487062Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-06T22:25:55.1489934Z ##[group]Checking out the ref
+2026-11-06T22:25:55.1491513Z [command]/usr/bin/git checkout --progress --force -B ulmweb-branch refs/remotes/origin/ulmweb-branch
+2026-11-06T22:25:55.1554629Z Switched to a new branch 'ulmweb-branch'
+2026-11-06T22:25:55.1559405Z branch 'ulmweb-branch' set up to track 'origin/ulmweb-branch'.
+2026-11-06T22:25:55.1567957Z ##[endgroup]
+2026-11-06T22:25:55.1614789Z [command]/usr/bin/git log -1 --format=%H
+2026-11-06T22:25:55.1644882Z 90f856c6fc6e9cd137151ac4c0d7a18ae8e7872d
+2026-11-06T22:25:55.1905660Z ##[group]Run e2e_exit="${E2E_EXIT_CODE:-not-run}"
+2026-11-06T22:25:55.1906691Z [36;1me2e_exit="${E2E_EXIT_CODE:-not-run}"[0m
+2026-11-06T22:25:55.1907608Z [36;1mstarted_at="${STARTED_AT:-unknown}"[0m
+2026-11-06T22:25:55.1908531Z [36;1mfinished_at="${FINISHED_AT:-unknown}"[0m
+2026-11-06T22:25:55.1909531Z [36;1mif [ "${JOB_RESULT:-unknown}" = "success" ]; then[0m
+2026-11-06T22:25:55.1910483Z [36;1m  overall_result="success"[0m
+2026-11-06T22:25:55.1911256Z [36;1melse[0m
+2026-11-06T22:25:55.1912126Z [36;1m  overall_result="${JOB_RESULT:-unknown}"[0m
+2026-11-06T22:25:55.1912977Z [36;1mfi[0m
+2026-11-06T22:25:55.1913896Z [36;1mcat > "$RUNNER_TEMP/game-browser-e2e.json" <<JSON[0m
+2026-11-06T22:25:55.1914816Z [36;1m{[0m
+2026-11-06T22:25:55.1915440Z [36;1m  "commit_sha": "${COMMIT_SHA}",[0m
+2026-11-06T22:25:55.1916259Z [36;1m  "run_id": "${RUN_ID}",[0m
+2026-11-06T22:25:55.1917042Z [36;1m  "run_number": "${RUN_NUMBER}",[0m
+2026-11-06T22:25:55.1917945Z [36;1m  "workflow_name": "${WORKFLOW_NAME}",[0m
+2026-11-06T22:25:55.1918819Z [36;1m  "run_url": "${RUN_URL}",[0m
+2026-11-06T22:25:55.1919595Z [36;1m  "branch": "${BRANCH}",[0m
+2026-11-06T22:25:55.1920378Z [36;1m  "started_at": "${started_at}",[0m
+2026-11-06T22:25:55.1921221Z [36;1m  "finished_at": "${finished_at}",[0m
+2026-11-06T22:25:55.1922120Z [36;1m  "job_status": "${JOB_RESULT:-unknown}",[0m
+2026-11-06T22:25:55.1923055Z [36;1m  "workflow_result": "${overall_result}",[0m
+2026-11-06T22:25:55.1924052Z [36;1m  "browser_e2e_exit_code": "${e2e_exit}"[0m
+2026-11-06T22:25:55.1924891Z [36;1m}[0m
+2026-11-06T22:25:55.1925448Z [36;1mJSON[0m
+2026-11-06T22:25:55.1945132Z shell: /usr/bin/bash -e {0}
+2026-11-06T22:25:55.1945792Z env:
+2026-11-06T22:25:55.1946311Z   RUN_ID: 42304394611
+2026-11-06T22:25:55.1946898Z   RUN_NUMBER: 467
+2026-11-06T22:25:55.1947581Z   COMMIT_SHA: 90f856c6fc6e9cd137151ac4c0d7a18ae8e7872d
+2026-11-06T22:25:55.1948462Z   WORKFLOW_NAME: Game Browser E2E
+2026-11-06T22:25:55.1949445Z   RUN_URL: https://github.com/Dulle1846/ulmweb/actions/runs/42304394611
+2026-11-06T22:25:55.1950438Z   BRANCH: ulmweb-branch
+2026-11-06T22:25:55.1951056Z   JOB_RESULT: failure
+2026-11-06T22:25:55.1951647Z   E2E_EXIT_CODE: 1
+2026-11-06T22:25:55.1952234Z   STARTED_AT: 2026-11-06T22:23:57Z
+2026-11-06T22:25:55.1952931Z   FINISHED_AT: 2026-11-06T22:25:47Z
+2026-11-06T22:25:55.1953906Z ##[endgroup]
+2026-11-06T22:25:55.2068982Z ##[group]Run git config user.name "github-actions[bot]"
+2026-11-06T22:25:55.2069953Z [36;1mgit config user.name "github-actions[bot]"[0m
+2026-11-06T22:25:55.2071166Z [36;1mgit config user.email "41898282+github-actions[bot]@users.noreply.github.com"[0m
+2026-11-06T22:25:55.2072367Z [36;1mgit checkout --orphan ci-run-receipts[0m
+2026-11-06T22:25:55.2073155Z [36;1mgit rm -rf .[0m
+2026-11-06T22:25:55.2073970Z [36;1mmkdir -p ci[0m
+2026-11-06T22:25:55.2074831Z [36;1mcp "$RUNNER_TEMP/game-browser-e2e.json" ci/game-browser-e2e.json[0m
+2026-11-06T22:25:55.2075891Z [36;1mgit add ci/game-browser-e2e.json[0m
+2026-11-06T22:25:55.2076803Z [36;1mgit commit -m "Record workflow run ${GITHUB_RUN_ID}"[0m
+2026-11-06T22:25:55.2077873Z [36;1mgit push --force origin HEAD:refs/heads/ci-run-receipts[0m
+2026-11-06T22:25:55.2093151Z shell: /usr/bin/bash -e {0}
+2026-11-06T22:25:55.2093975Z ##[endgroup]
+2026-11-06T22:25:55.2226857Z Switched to a new branch 'ci-run-receipts'
+2026-11-06T22:25:55.2288698Z rm '.github/workflows/game-browser-e2e.yml'
+2026-11-06T22:25:55.2290332Z rm '.github/workflows/game-quality.yml'
+2026-11-06T22:25:55.2292017Z rm '.github/workflows/kings-cards-2-1-ci.yml'
+2026-11-06T22:25:55.2293336Z rm '.gitignore'
+2026-11-06T22:25:55.2294678Z rm 'README.md'
+2026-11-06T22:25:55.2295726Z rm 'baden-wuerttemberg-feed.html'
+2026-11-06T22:25:55.2297181Z rm 'bundesrecht-feed.html'
+2026-11-06T22:25:55.2299883Z rm 'count-since.html'
+2026-11-06T22:25:55.2300750Z rm 'game/CHANGELOG.md'
+2026-11-06T22:25:55.2301678Z rm 'game/LONG_TERM_PLAYABILITY_AUDIT.md'
+2026-11-06T22:25:55.2302732Z rm 'game/README.md'
+2026-11-06T22:25:55.2303690Z rm 'game/assets/ASSET_CATALOG.md'
+2026-11-06T22:25:55.2304783Z rm 'game/assets/city-builder-sprites.svg'
+2026-11-06T22:25:55.2305917Z rm 'game/assets/comic-card-frame.svg'
+2026-11-06T22:25:55.2307005Z rm 'game/assets/comic-realm-banner.svg'
+2026-11-06T22:25:55.2308101Z rm 'game/assets/command-emblems.svg'
+2026-11-06T22:25:55.2309187Z rm 'game/assets/dragon-companion.svg'
+2026-11-06T22:25:55.2310244Z rm 'game/assets/favicon.svg'
+2026-11-06T22:25:55.2311260Z rm 'game/assets/kingdom-illustration.svg'
+2026-11-06T22:25:55.2312563Z rm 'game/assets/realm-banner.svg'
+2026-11-06T22:25:55.2313780Z rm 'game/assets/realm-icons.svg'
+2026-11-06T22:25:55.2314801Z rm 'game/assets/realm-sprites.svg'
+2026-11-06T22:25:55.2315866Z rm 'game/assets/royal-building-atlas.svg'
+2026-11-06T22:25:55.2317012Z rm 'game/assets/royal-card-atlas.svg'
+2026-11-06T22:25:55.2318075Z rm 'game/assets/royal-card-frame.svg'
+2026-11-06T22:25:55.2319130Z rm 'game/assets/royal-court-art.svg'
+2026-11-06T22:25:55.2320172Z rm 'game/assets/royal-crest.svg'
+2026-11-06T22:25:55.2321188Z rm 'game/assets/royal-dragon-atlas.svg'
+2026-11-06T22:25:55.2322280Z rm 'game/assets/royal-portraits.svg'
+2026-11-06T22:25:55.2323390Z rm 'game/assets/royal-title-illustration.svg'
+2026-11-06T22:25:55.2324645Z rm 'game/css/comic-strategy.css'
+2026-11-06T22:25:55.2325648Z rm 'game/css/dynasty-network.css'
+2026-11-06T22:25:55.2326637Z rm 'game/css/game.css'
+2026-11-06T22:25:55.2327480Z rm 'game/css/hud-v3.css'
+2026-11-06T22:25:55.2328358Z rm 'game/css/medieval.css'
+2026-11-06T22:25:55.2329310Z rm 'game/css/sovereign-dossier.css'
+2026-11-06T22:25:55.2330167Z rm 'game/css/ui-components.css'
+2026-11-06T22:25:55.2330931Z rm 'game/css/ui-design-system.css'
+2026-11-06T22:25:55.2331971Z rm 'game/css/world-workshop.css'
+2026-11-06T22:25:55.2332981Z rm 'game/docs/AI_DELEGATION_3.9.md'
+2026-11-06T22:25:55.2334154Z rm 'game/docs/AI_REVIEW_PLAYBOOK.md'
+2026-11-06T22:25:55.2335045Z rm 'game/docs/BASELINE_FIX_REVIEW.md'
+2026-11-06T22:25:55.2335808Z rm 'game/docs/BRANCH_CONSOLIDATION_AUDIT.md'
+2026-11-06T22:25:55.2336612Z rm 'game/docs/CLOUDFLARE_PAGES_RELEASE.md'
+2026-11-06T22:25:55.2337367Z rm 'game/docs/CODEBASE_AUDIT.md'
+2026-11-06T22:25:55.2338114Z rm 'game/docs/EXTENSIBILITY_AND_MODULE_DESIGN.md'
+2026-11-06T22:25:55.2338940Z rm 'game/docs/F0_BASELINE_CHECKLIST.md'
+2026-11-06T22:25:55.2339682Z rm 'game/docs/FOUNDATION_BACKLOG.md'
+2026-11-06T22:25:55.2342572Z rm 'game/docs/LITE_CITY_BUILDER_SPEC.md'
+2026-11-06T22:25:55.2343828Z rm 'game/docs/LOGISTICS_ARCHITECTURE.md'
+2026-11-06T22:25:55.2344992Z rm 'game/docs/MASTER_UI_IMPLEMENTATION.md'
+2026-11-06T22:25:55.2346220Z rm 'game/docs/NEXT_AI_WORK_PACKAGE.md'
+2026-11-06T22:25:55.2347264Z rm 'game/docs/README.md'
+2026-11-06T22:25:55.2348185Z rm 'game/docs/ROADMAP_3.3-4.0.md'
+2026-11-06T22:25:55.2349280Z rm 'game/docs/SIMULATION_DESIGN_AND_STORY_ENGINE.md'
+2026-11-06T22:25:55.2350508Z rm 'game/docs/STUDIO_OPERATIONS.md'
+2026-11-06T22:25:55.2351573Z rm 'game/docs/TECHNICAL_FOUNDATION.md'
+2026-11-06T22:25:55.2352644Z rm 'game/docs/V2_FOUNDATION.md'
+2026-11-06T22:25:55.2353992Z rm 'game/docs/ZOOM_AND_BUILDING_PLACEMENT.md'
+2026-11-06T22:25:55.2355315Z rm 'game/docs/releases/3.7.0-dev-sovereign-dossier.md'
+2026-11-06T22:25:55.2356624Z rm 'game/docs/releases/3.8.0-throne-room-hud.md'
+2026-11-06T22:25:55.2357772Z rm 'game/game-structure'
+2026-11-06T22:25:55.2358782Z rm 'game/index.html'
+2026-11-06T22:25:55.2359659Z rm 'game/js/app/game-loop.js'
+2026-11-06T22:25:55.2360603Z rm 'game/js/app/main.js'
+2026-11-06T22:25:55.2361506Z rm 'game/js/core/config.js'
+2026-11-06T22:25:55.2362472Z rm 'game/js/core/persistence.js'
+2026-11-06T22:25:55.2364788Z rm 'game/js/core/presentation-effects.js'
+2026-11-06T22:25:55.2365882Z rm 'game/js/core/random.js'
+2026-11-06T22:25:55.2366838Z rm 'game/js/core/save-validation.js'
+2026-11-06T22:25:55.2367927Z rm 'game/js/core/simulation-clock.js'
+2026-11-06T22:25:55.2368980Z rm 'game/js/core/soundtrack.js'
+2026-11-06T22:25:55.2369931Z rm 'game/js/core/state.js'
+2026-11-06T22:25:55.2370841Z rm 'game/js/core/types.js'
+2026-11-06T22:25:55.2371881Z rm 'game/js/core/utils.js'
+2026-11-06T22:25:55.2372821Z rm 'game/js/core/zoom-model.js'
+2026-11-06T22:25:55.2374245Z rm 'game/js/presentation/build-mode.js'
+2026-11-06T22:25:55.2375355Z rm 'game/js/presentation/build-ui.js'
+2026-11-06T22:25:55.2376479Z rm 'game/js/presentation/building-layout.js'
+2026-11-06T22:25:55.2377633Z rm 'game/js/presentation/camera.js'
+2026-11-06T22:25:55.2378758Z rm 'game/js/presentation/character-dossier.js'
+2026-11-06T22:25:55.2379931Z rm 'game/js/presentation/effects.js'
+2026-11-06T22:25:55.2381161Z rm 'game/js/presentation/input.js'
+2026-11-06T22:25:55.2382234Z rm 'game/js/presentation/management-ui.js'
+2026-11-06T22:25:55.2383590Z rm 'game/js/presentation/modal-accessibility.js'
+2026-11-06T22:25:55.2384949Z rm 'game/js/presentation/plan-editor.js'
+2026-11-06T22:25:55.2385866Z rm 'game/js/presentation/rendering/building-art.js'
+2026-11-06T22:25:55.2387163Z rm 'game/js/presentation/rendering/entities.js'
+2026-11-06T22:25:55.2388409Z rm 'game/js/presentation/rendering/minimap.js'
+2026-11-06T22:25:55.2389649Z rm 'game/js/presentation/rendering/particles.js'
+2026-11-06T22:25:55.2391057Z rm 'game/js/presentation/rendering/placement-preview.js'
+2026-11-06T22:25:55.2392411Z rm 'game/js/presentation/rendering/renderer.js'
+2026-11-06T22:25:55.2393906Z rm 'game/js/presentation/rendering/terrain.js'
+2026-11-06T22:25:55.2395119Z rm 'game/js/presentation/rendering/ui.js'
+2026-11-06T22:25:55.2396250Z rm 'game/js/simulation/buildings.js'
+2026-11-06T22:25:55.2397309Z rm 'game/js/simulation/combat.js'
+2026-11-06T22:25:55.2398346Z rm 'game/js/simulation/simulation.js'
+2026-11-06T22:25:55.2399418Z rm 'game/js/simulation/villagers.js'
+2026-11-06T22:25:55.2400467Z rm 'game/js/systems/agency.js'
+2026-11-06T22:25:55.2401429Z rm 'game/js/systems/births.js'
+2026-11-06T22:25:55.2402229Z rm 'game/js/systems/card-catalog.js'
+2026-11-06T22:25:55.2402915Z rm 'game/js/systems/cards.js'
+2026-11-06T22:25:55.2403827Z rm 'game/js/systems/city-config.js'
+2026-11-06T22:25:55.2404533Z rm 'game/js/systems/construction.js'
+2026-11-06T22:25:55.2405727Z rm 'game/js/systems/creatures.js'
+2026-11-06T22:25:55.2406760Z rm 'game/js/systems/economy.js'
+2026-11-06T22:25:55.2407734Z rm 'game/js/systems/edicts.js'
+2026-11-06T22:25:55.2408783Z rm 'game/js/systems/event-chains.js'
+2026-11-06T22:25:55.2409870Z rm 'game/js/systems/events.js'
+2026-11-06T22:25:55.2483318Z rm 'game/js/systems/families.js'
+2026-11-06T22:25:55.2484693Z rm 'game/js/systems/fields.js'
+2026-11-06T22:25:55.2486404Z rm 'game/js/systems/furniture.js'
+2026-11-06T22:25:55.2487889Z rm 'game/js/systems/goods-book.js'
+2026-11-06T22:25:55.2507765Z rm 'game/js/systems/government.js'
+2026-11-06T22:25:55.2510763Z rm 'game/js/systems/guardianship.js'
+2026-11-06T22:25:55.2511800Z rm 'game/js/systems/health.js'
+2026-11-06T22:25:55.2512790Z rm 'game/js/systems/logistics.js'
+2026-11-06T22:25:55.2513939Z rm 'game/js/systems/market.js'
+2026-11-06T22:25:55.2514878Z rm 'game/js/systems/morale.js'
+2026-11-06T22:25:55.2515855Z rm 'game/js/systems/mortality.js'
+2026-11-06T22:25:55.2516848Z rm 'game/js/systems/people.js'
+2026-11-06T22:25:55.2517804Z rm 'game/js/systems/politics.js'
+2026-11-06T22:25:55.2518784Z rm 'game/js/systems/population.js'
+2026-11-06T22:25:55.2519678Z rm 'game/js/systems/resource-geography.js'
+2026-11-06T22:25:55.2520759Z rm 'game/js/systems/resources.js'
+2026-11-06T22:25:55.2521738Z rm 'game/js/systems/roads.js'
+2026-11-06T22:25:55.2522711Z rm 'game/js/systems/rooms.js'
+2026-11-06T22:25:55.2523910Z rm 'game/js/systems/royal-dynasty.js'
+2026-11-06T22:25:55.2524786Z rm 'game/js/systems/settlement.js'
+2026-11-06T22:25:55.2525573Z rm 'game/js/systems/social.js'
+2026-11-06T22:25:55.2526289Z rm 'game/js/world/entities.js'
+2026-11-06T22:25:55.2526969Z rm 'game/js/world/terrain-model.js'
+2026-11-06T22:25:55.2527693Z rm 'game/js/world/weather.js'
+2026-11-06T22:25:55.2528405Z rm 'game/js/world/world.js'
+2026-11-06T22:25:55.2529091Z rm 'game/package.json'
+2026-11-06T22:25:55.2529768Z rm 'game/scripts/check-syntax.js'
+2026-11-06T22:25:55.2530561Z rm 'game/scripts/colossal-decade-growth.mjs'
+2026-11-06T22:25:55.2531437Z rm 'game/scripts/colossal-decade-seeds.mjs'
+2026-11-06T22:25:55.2532259Z rm 'game/scripts/colossal-decade.mjs'
+2026-11-06T22:25:55.2533065Z rm 'game/scripts/path-limit-audit.mjs'
+2026-11-06T22:25:55.2533983Z rm 'game/tests/agency.test.js'
+2026-11-06T22:25:55.2534695Z rm 'game/tests/births.test.js'
+2026-11-06T22:25:55.2535422Z rm 'game/tests/browser/README.md'
+2026-11-06T22:25:55.2536220Z rm 'game/tests/browser/browser-preflight.mjs'
+2026-11-06T22:25:55.2537257Z rm 'game/tests/browser/e2e.mjs'
+2026-11-06T22:25:55.2537915Z rm 'game/tests/browser/run-e2e.mjs'
+2026-11-06T22:25:55.2538674Z rm 'game/tests/browser/setup-e2e.mjs'
+2026-11-06T22:25:55.2539465Z rm 'game/tests/core/persistence.test.js'
+2026-11-06T22:25:55.2540382Z rm 'game/tests/core/presentation-effects.test.js'
+2026-11-06T22:25:55.2541281Z rm 'game/tests/core/save-validation.test.js'
+2026-11-06T22:25:55.2542144Z rm 'game/tests/core/simulation-clock.test.js'
+2026-11-06T22:25:55.2542992Z rm 'game/tests/core/zoom-model.test.js'
+2026-11-06T22:25:55.2543889Z rm 'game/tests/economy.test.js'
+2026-11-06T22:25:55.2544618Z rm 'game/tests/event-chains.test.js'
+2026-11-06T22:25:55.2545396Z rm 'game/tests/guardianship.test.js'
+2026-11-06T22:25:55.2546186Z rm 'game/tests/health.test.js'
+2026-11-06T22:25:55.2546902Z rm 'game/tests/mortality.test.js'
+2026-11-06T22:25:55.2547659Z rm 'game/tests/population.test.js'
+2026-11-06T22:25:55.2548454Z rm 'game/tests/presentation-effects.test.js'
+2026-11-06T22:25:55.2549395Z rm 'game/tests/simulation/bread-production-chain.test.js'
+2026-11-06T22:25:55.2550395Z rm 'game/tests/simulation/combat-determinism.test.js'
+2026-11-06T22:25:55.2551442Z rm 'game/tests/simulation/full-city-multi-year.test.js'
+2026-11-06T22:25:55.2552408Z rm 'game/tests/simulation/gold-production.test.js'
+2026-11-06T22:25:55.2553323Z rm 'game/tests/simulation/long-campaign.test.js'
+2026-11-06T22:25:55.2554376Z rm 'game/tests/simulation/long-simulation.test.js'
+2026-11-06T22:25:55.2555302Z rm 'game/tests/simulation/pathfinding.test.js'
+2026-11-06T22:25:55.2556220Z rm 'game/tests/simulation/performance-guards.test.js'
+2026-11-06T22:25:55.2557182Z rm 'game/tests/simulation/production-chains.test.js'
+2026-11-06T22:25:55.2558414Z rm 'game/tests/simulation/production-determinism.test.js'
+2026-11-06T22:25:55.2559803Z rm 'game/tests/simulation/workforce-assignment.test.js'
+2026-11-06T22:25:55.2561162Z rm 'game/tests/social.test.js'
+2026-11-06T22:25:55.2561928Z rm 'game/tests/systems/card-catalog.test.js'
+2026-11-06T22:25:55.2562686Z rm 'game/tests/systems/card-hand.test.js'
+2026-11-06T22:25:55.2563696Z rm 'game/tests/systems/card-placement-preview.test.js'
+2026-11-06T22:25:55.2564635Z rm 'game/tests/systems/card-sprite-assets.test.js'
+2026-11-06T22:25:55.2565440Z rm 'game/tests/systems/city-builder.test.js'
+2026-11-06T22:25:55.2566172Z rm 'game/tests/systems/depth.test.js'
+2026-11-06T22:25:55.2566931Z rm 'game/tests/systems/events.test.js'
+2026-11-06T22:25:55.2567625Z rm 'game/tests/systems/families.test.js'
+2026-11-06T22:25:55.2568349Z rm 'game/tests/systems/furniture.test.js'
+2026-11-06T22:25:55.2569132Z rm 'game/tests/systems/logistics-integrity.test.js'
+2026-11-06T22:25:55.2569984Z rm 'game/tests/systems/market-determinism.test.js'
+2026-11-06T22:25:55.2570827Z rm 'game/tests/systems/market.test.js'
+2026-11-06T22:25:55.2571590Z rm 'game/tests/systems/people.test.js'
+2026-11-06T22:25:55.2572308Z rm 'game/tests/systems/politics.test.js'
+2026-11-06T22:25:55.2573016Z rm 'game/tests/systems/random.test.js'
+2026-11-06T22:25:55.2573899Z rm 'game/tests/systems/resource-geography.test.js'
+2026-11-06T22:25:55.2574674Z rm 'game/tests/systems/roads.test.js'
+2026-11-06T22:25:55.2575379Z rm 'game/tests/systems/room-balance.test.js'
+2026-11-06T22:25:55.2576137Z rm 'game/tests/systems/room-bonuses.test.js'
+2026-11-06T22:25:55.2576934Z rm 'game/tests/systems/strategy-management.test.js'
+2026-11-06T22:25:55.2577775Z rm 'game/tests/ui/contrast.test.js'
+2026-11-06T22:25:55.2578459Z rm 'game/tests/ui/dynasty-network.test.js'
+2026-11-06T22:25:55.2579152Z rm 'game/tests/ui/hud-v3.test.js'
+2026-11-06T22:25:55.2579840Z rm 'game/tests/ui/master-ui-contract.test.js'
+2026-11-06T22:25:55.2580625Z rm 'game/tests/ui/modal-accessibility.test.js'
+2026-11-06T22:25:55.2581398Z rm 'game/tests/ui/room-bonuses-hud.test.js'
+2026-11-06T22:25:55.2582149Z rm 'game/tests/ui/sovereign-dossier.test.js'
+2026-11-06T22:25:55.2582900Z rm 'game/tests/ui/viewport-matrix.test.js'
+2026-11-06T22:25:55.2583833Z rm 'game/tests/villager-determinism.test.js'
+2026-11-06T22:25:55.2584609Z rm 'game/tests/world/building-editor.test.js'
+2026-11-06T22:25:55.2585503Z rm 'game/tests/world/building-occupancy.test.js'
+2026-11-06T22:25:55.2586298Z rm 'game/tests/world/entity-capacity.test.js'
+2026-11-06T22:25:55.2587080Z rm 'game/tests/world/entity-identity.test.js'
+2026-11-06T22:25:55.2587843Z rm 'game/tests/world/terrain-depth.test.js'
+2026-11-06T22:25:55.2588590Z rm 'game/tests/world/world-options.test.js'
+2026-11-06T22:25:55.2589269Z rm 'index.html'
+2026-11-06T22:25:55.2589771Z rm 'lto-feed.html'
+2026-11-06T22:25:55.2590294Z rm 'random-number.html'
+2026-11-06T22:25:55.2591149Z [ci-run-receipts (root-commit) d318a24] Record workflow run 42304394611
+2026-11-06T22:25:55.2592062Z  1 file changed, 13 insertions(+)
+2026-11-06T22:25:55.2592739Z  create mode 100644 ci/game-browser-e2e.json
+2026-11-06T22:25:56.2884316Z remote: 
+2026-11-06T22:25:56.2915090Z remote: Create a pull request for 'ci-run-receipts' on GitHub by visiting:        
+2026-11-06T22:25:56.2924347Z remote:      https://github.com/Dulle1846/ulmweb/pull/new/ci-run-receipts        
+2026-11-06T22:25:56.2944073Z remote: 
+2026-11-06T22:25:56.2951650Z To https://github.com/Dulle1846/ulmweb
+2026-11-06T22:25:56.2958911Z  * [new branch]      HEAD -> ci-run-receipts
+2026-11-06T22:25:56.3076228Z Post job cleanup.
+2026-11-06T22:25:56.3997932Z [command]/usr/bin/git version
+2026-11-06T22:25:56.4186248Z git version 2.56.0
+2026-11-06T22:25:56.4274382Z Temporarily overriding HOME='/home/runner/work/_temp/bfebdbac-365f-4c98-9398-33d6727f4e66' before making global git config changes
+2026-11-06T22:25:56.4275165Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-06T22:25:56.4275874Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ulmweb/ulmweb
+2026-11-06T22:25:56.4346134Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-06T22:25:56.4475159Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-06T22:25:56.4886114Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-06T22:25:56.4933180Z http.https://github.com/.extraheader
+2026-11-06T22:25:56.4964329Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-06T22:25:56.5026709Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-06T22:25:56.5364384Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-06T22:25:56.5434425Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-06T22:25:56.5886284Z Cleaning up orphan processes
+2026-11-06T22:25:56.6127921Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

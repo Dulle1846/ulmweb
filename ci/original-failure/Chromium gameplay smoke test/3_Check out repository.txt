@@ -1,0 +1,73 @@
+﻿2026-11-06T22:23:57.9482815Z ##[group]Run actions/checkout@v4
+2026-11-06T22:23:57.9483364Z with:
+2026-11-06T22:23:57.9483739Z   repository: Dulle1846/ulmweb
+2026-11-06T22:23:57.9487506Z   token: ***
+2026-11-06T22:23:57.9488019Z   ssh-strict: true
+2026-11-06T22:23:57.9488399Z   ssh-user: git
+2026-11-06T22:23:57.9488790Z   persist-credentials: true
+2026-11-06T22:23:57.9489211Z   clean: true
+2026-11-06T22:23:57.9489614Z   sparse-checkout-cone-mode: true
+2026-11-06T22:23:57.9490086Z   fetch-depth: 1
+2026-11-06T22:23:57.9490484Z   fetch-tags: false
+2026-11-06T22:23:57.9490877Z   show-progress: true
+2026-11-06T22:23:57.9491266Z   lfs: false
+2026-11-06T22:23:57.9491640Z   submodules: false
+2026-11-06T22:23:57.9492034Z   set-safe-directory: true
+2026-11-06T22:23:57.9492474Z   allow-unsafe-pr-checkout: false
+2026-11-06T22:23:57.9492927Z ##[endgroup]
+2026-11-06T22:23:58.2071242Z Syncing repository: Dulle1846/ulmweb
+2026-11-06T22:23:58.2074510Z ##[group]Getting Git version info
+2026-11-06T22:23:58.2076148Z Working directory is '/home/runner/work/ulmweb/ulmweb'
+2026-11-06T22:23:58.2082378Z [command]/usr/bin/git version
+2026-11-06T22:23:58.2250116Z git version 2.56.0
+2026-11-06T22:23:58.2286010Z ##[endgroup]
+2026-11-06T22:23:58.2314838Z Temporarily overriding HOME='/home/runner/work/_temp/a8bfe688-b8b2-4a7b-93dd-d2f3268994ee' before making global git config changes
+2026-11-06T22:23:58.2319774Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-06T22:23:58.2327141Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ulmweb/ulmweb
+2026-11-06T22:23:58.2487984Z Deleting the contents of '/home/runner/work/ulmweb/ulmweb'
+2026-11-06T22:23:58.2491840Z ##[group]Initializing the repository
+2026-11-06T22:23:58.2495473Z [command]/usr/bin/git init /home/runner/work/ulmweb/ulmweb
+2026-11-06T22:23:58.2570320Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-06T22:23:58.2573435Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-06T22:23:58.2576459Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-06T22:23:58.2598865Z hint: call:
+2026-11-06T22:23:58.2602312Z hint:
+2026-11-06T22:23:58.2603568Z hint: 	git config --global init.defaultBranch <name>
+2026-11-06T22:23:58.2605072Z hint:
+2026-11-06T22:23:58.2606361Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-06T22:23:58.2608459Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-06T22:23:58.2610088Z hint:
+2026-11-06T22:23:58.2611348Z hint: 	git branch -m <name>
+2026-11-06T22:23:58.2612342Z hint:
+2026-11-06T22:23:58.2613665Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-06T22:23:58.2615561Z Initialized empty Git repository in /home/runner/work/ulmweb/ulmweb/.git/
+2026-11-06T22:23:58.2640396Z [command]/usr/bin/git remote add origin https://github.com/Dulle1846/ulmweb
+2026-11-06T22:23:58.2670585Z ##[endgroup]
+2026-11-06T22:23:58.2671803Z ##[group]Disabling automatic garbage collection
+2026-11-06T22:23:58.2688164Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-06T22:23:58.2828633Z ##[endgroup]
+2026-11-06T22:23:58.2862917Z ##[group]Setting up auth
+2026-11-06T22:23:58.2864875Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-06T22:23:58.2871102Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-06T22:23:58.3423988Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-06T22:23:58.3437598Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-06T22:23:58.3605714Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-06T22:23:58.3641322Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-06T22:23:58.3836742Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-06T22:23:58.3877922Z ##[endgroup]
+2026-11-06T22:23:58.3879530Z ##[group]Fetching the repository
+2026-11-06T22:23:58.3895783Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +90f856c6fc6e9cd137151ac4c0d7a18ae8e7872d:refs/remotes/origin/ulmweb-branch
+2026-11-06T22:23:59.1345789Z From https://github.com/Dulle1846/ulmweb
+2026-11-06T22:23:59.1388827Z  * [new ref]         90f856c6fc6e9cd137151ac4c0d7a18ae8e7872d -> origin/ulmweb-branch
+2026-11-06T22:23:59.1454142Z ##[endgroup]
+2026-11-06T22:23:59.1472182Z ##[group]Determining the checkout info
+2026-11-06T22:23:59.1479274Z ##[endgroup]
+2026-11-06T22:23:59.1497414Z [command]/usr/bin/git sparse-checkout disable
+2026-11-06T22:23:59.1508426Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-06T22:23:59.1513039Z ##[group]Checking out the ref
+2026-11-06T22:23:59.1515209Z [command]/usr/bin/git checkout --progress --force -B ulmweb-branch refs/remotes/origin/ulmweb-branch
+2026-11-06T22:23:59.1671076Z Switched to a new branch 'ulmweb-branch'
+2026-11-06T22:23:59.1678156Z branch 'ulmweb-branch' set up to track 'origin/ulmweb-branch'.
+2026-11-06T22:23:59.1688890Z ##[endgroup]
+2026-11-06T22:23:59.1741195Z [command]/usr/bin/git log -1 --format=%H
+2026-11-06T22:23:59.1758927Z 90f856c6fc6e9cd137151ac4c0d7a18ae8e7872d

@@ -1,0 +1,8 @@
+2026-11-06T22:25:51.3820000Z Job is about to start running on the hosted runner: GitHub Actions 1000001773
+2026-11-06T22:25:51.3820000Z Job is waiting for a hosted runner to come online.
+2026-11-06T22:25:51.3770000Z Evaluating record-run.if
+2026-11-06T22:25:51.3770000Z Evaluating: always()
+2026-11-06T22:25:51.3770000Z Result: true
+2026-11-06T22:25:51.3770000Z Requested labels: ubuntu-latest
+2026-11-06T22:25:51.3770000Z Job defined at: Dulle1846/ulmweb/.github/workflows/game-browser-e2e.yml@refs/heads/ulmweb-branch
+2026-11-06T22:25:51.3770000Z Waiting for a runner to pick up this job...

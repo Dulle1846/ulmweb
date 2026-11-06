@@ -1,0 +1,6 @@
+﻿2026-11-06T22:23:59.8952095Z ##[group]Run npm install --no-audit --no-fund --package-lock=false
+2026-11-06T22:23:59.8954042Z [36;1mnpm install --no-audit --no-fund --package-lock=false[0m
+2026-11-06T22:23:59.8978143Z shell: /usr/bin/bash -e {0}
+2026-11-06T22:23:59.8979245Z ##[endgroup]
+2026-11-06T22:24:01.9898271Z 
+2026-11-06T22:24:01.9908306Z added 2 packages in 2s

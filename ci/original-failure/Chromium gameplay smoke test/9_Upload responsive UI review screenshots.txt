@@ -1,0 +1,13 @@
+﻿2026-11-06T22:25:46.8213713Z ##[group]Run actions/upload-artifact@v4
+2026-11-06T22:25:46.8214009Z with:
+2026-11-06T22:25:46.8214239Z   name: kings-and-cards-ui-viewport-review
+2026-11-06T22:25:46.8214552Z   path: /tmp/kac-ui-viewport-review/*.png
+2026-11-06T22:25:46.8214825Z   if-no-files-found: warn
+2026-11-06T22:25:46.8215052Z   retention-days: 7
+2026-11-06T22:25:46.8215261Z   compression-level: 6
+2026-11-06T22:25:46.8215473Z   overwrite: false
+2026-11-06T22:25:46.8215687Z   include-hidden-files: false
+2026-11-06T22:25:46.8215916Z ##[endgroup]
+2026-11-06T22:25:47.0049520Z (node:2449) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-06T22:25:47.0113261Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-06T22:25:47.0205923Z ##[warning]No files were found with the provided path: /tmp/kac-ui-viewport-review/*.png. No artifacts will be uploaded.

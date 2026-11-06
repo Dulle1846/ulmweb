@@ -1,0 +1,20 @@
+﻿2026-11-06T22:24:02.0253590Z ##[group]Run actions/cache@v4
+2026-11-06T22:24:02.0253944Z with:
+2026-11-06T22:24:02.0254208Z   path: ~/.cache/ms-playwright
+2026-11-06T22:24:02.0254525Z   key: playwright-Linux-chromium-1.56.1
+2026-11-06T22:24:02.0254873Z   enableCrossOsArchive: false
+2026-11-06T22:24:02.0255159Z   fail-on-cache-miss: false
+2026-11-06T22:24:02.0255431Z   lookup-only: false
+2026-11-06T22:24:02.0255680Z   save-always: false
+2026-11-06T22:24:02.0255929Z ##[endgroup]
+2026-11-06T22:24:02.1367023Z (node:2154) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-06T22:24:02.1369292Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-06T22:24:02.4154292Z (node:2154) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-06T22:24:02.4161919Z Cache hit for: playwright-Linux-chromium-1.56.1
+2026-11-06T22:24:03.6409473Z Received 37748736 of 279455037 (13.5%), 36.0 MBs/sec
+2026-11-06T22:24:04.6396744Z Received 197132288 of 279455037 (70.5%), 94.0 MBs/sec
+2026-11-06T22:24:05.3769570Z Received 279455037 of 279455037 (100.0%), 97.4 MBs/sec
+2026-11-06T22:24:05.3774196Z Cache Size: ~267 MB (279455037 B)
+2026-11-06T22:24:05.3829691Z [command]/usr/bin/tar -xf /home/runner/work/_temp/bcc990c5-2d27-4dc3-a5ff-f57972d108b1/cache.tzst -P -C /home/runner/work/ulmweb/ulmweb --use-compress-program unzstd
+2026-11-06T22:24:06.8963275Z Cache restored successfully
+2026-11-06T22:24:08.1763394Z Cache restored from key: playwright-Linux-chromium-1.56.1

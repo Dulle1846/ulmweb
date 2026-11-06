@@ -1,0 +1,8 @@
+2026-11-06T22:23:54.0520000Z Requested labels: ubuntu-latest
+2026-11-06T22:23:54.0520000Z Job defined at: Dulle1846/ulmweb/.github/workflows/game-browser-e2e.yml@refs/heads/ulmweb-branch
+2026-11-06T22:23:54.0520000Z Waiting for a runner to pick up this job...
+2026-11-06T22:23:54.0480000Z Evaluating browser-e2e.if
+2026-11-06T22:23:54.0480000Z Evaluating: success()
+2026-11-06T22:23:54.0480000Z Result: true
+2026-11-06T22:23:54.0760000Z Job is about to start running on the hosted runner: GitHub Actions 1000001771
+2026-11-06T22:23:54.0760000Z Job is waiting for a hosted runner to come online.

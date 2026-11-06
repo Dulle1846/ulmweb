@@ -1,0 +1,9 @@
+﻿2026-11-06T22:24:08.1924500Z ##[group]Run npm run test:e2e:setup -- --with-deps
+2026-11-06T22:24:08.1924901Z [36;1mnpm run test:e2e:setup -- --with-deps[0m
+2026-11-06T22:24:08.1939657Z shell: /usr/bin/bash -e {0}
+2026-11-06T22:24:08.1939969Z ##[endgroup]
+2026-11-06T22:24:08.2897634Z 
+2026-11-06T22:24:08.2904104Z > kings-and-cards@3.9.0 test:e2e:setup
+2026-11-06T22:24:08.2904964Z > node tests/browser/setup-e2e.mjs --with-deps
+2026-11-06T22:24:08.2905530Z 
+2026-11-06T22:24:09.1034496Z Chromium is already installed and can render native text inputs.

@@ -1,0 +1,60 @@
+﻿2026-11-06T22:24:09.1161858Z ##[group]Run set +e
+2026-11-06T22:24:09.1162124Z [36;1mset +e[0m
+2026-11-06T22:24:09.1162351Z [36;1mnpm run test:e2e[0m
+2026-11-06T22:24:09.1162584Z [36;1mcode=$?[0m
+2026-11-06T22:24:09.1162820Z [36;1mecho "exit_code=$code" >> "$GITHUB_OUTPUT"[0m
+2026-11-06T22:24:09.1163114Z [36;1mexit "$code"[0m
+2026-11-06T22:24:09.1175943Z shell: /usr/bin/bash -e {0}
+2026-11-06T22:24:09.1176426Z ##[endgroup]
+2026-11-06T22:24:09.2109628Z 
+2026-11-06T22:24:09.2110723Z > kings-and-cards@3.9.0 test:e2e
+2026-11-06T22:24:09.2111876Z > node tests/browser/run-e2e.mjs
+2026-11-06T22:24:09.2112394Z 
+2026-11-06T22:24:09.8125197Z Browser preflight passed. Running browser E2E...
+2026-11-06T22:24:26.4317095Z Creature dossier fixture: {"gold":196.222054245283,"food":215,"dragons":["Stormmaw"]}
+2026-11-06T22:25:11.2922456Z Drag diagnostic: {"lastTarget":"canvas","selectedCard":"FINE OUTPOST MARKETS OF THE HARVEST","handBefore":3,"handAfter":2,"toast":"REALM ISSUE RESOLVED","placement":"DRAG A CARD ONTO THE MAP","eventVisible":false}
+2026-11-06T22:25:46.7940471Z node:internal/modules/run_main:123
+2026-11-06T22:25:46.7942802Z     triggerUncaughtException(
+2026-11-06T22:25:46.7944598Z     ^
+2026-11-06T22:25:46.7946950Z 
+2026-11-06T22:25:46.7948286Z locator.click: Timeout 30000ms exceeded.
+2026-11-06T22:25:46.7971300Z Call log:
+2026-11-06T22:25:46.7971797Z   - waiting for locator('#pause-btn')
+2026-11-06T22:25:46.7981666Z     - locator resolved to <button type="button" id="pause-btn" class="control-button" aria-label="Pause simulation">…</button>
+2026-11-06T22:25:46.7982781Z   - attempting click action
+2026-11-06T22:25:46.7983423Z     - waiting for element to be visible, enabled and stable
+2026-11-06T22:25:46.7984094Z     - element is visible, enabled and stable
+2026-11-06T22:25:46.7984597Z     - scrolling into view if needed
+2026-11-06T22:25:46.7985076Z     - done scrolling
+2026-11-06T22:25:46.7985510Z     - performing click action
+2026-11-06T22:25:46.7987665Z     - <div role="dialog" tabindex="-1" aria-modal="true" id="realm-event-modal" data-event-kind="harvest" aria-labelledby="realm-event-title" class="screen-overlay event-overlay" aria-describedby="realm-event-description">…</div> intercepts pointer events
+2026-11-06T22:25:46.7989594Z   - retrying click action
+2026-11-06T22:25:46.7990100Z     - waiting for element to be visible, enabled and stable
+2026-11-06T22:25:46.7990721Z     - element is visible, enabled and stable
+2026-11-06T22:25:46.7991219Z     - scrolling into view if needed
+2026-11-06T22:25:46.7991654Z     - done scrolling
+2026-11-06T22:25:46.7993599Z     - <div role="dialog" tabindex="-1" aria-modal="true" id="realm-event-modal" data-event-kind="harvest" aria-labelledby="realm-event-title" class="screen-overlay event-overlay" aria-describedby="realm-event-description">…</div> intercepts pointer events
+2026-11-06T22:25:46.7995202Z   - retrying click action
+2026-11-06T22:25:46.7995609Z     - waiting 20ms
+2026-11-06T22:25:46.7996249Z     2 × waiting for element to be visible, enabled and stable
+2026-11-06T22:25:46.7996893Z       - element is visible, enabled and stable
+2026-11-06T22:25:46.7997421Z       - scrolling into view if needed
+2026-11-06T22:25:46.7998936Z       - done scrolling
+2026-11-06T22:25:46.8001076Z       - <div role="dialog" tabindex="-1" aria-modal="true" id="realm-event-modal" data-event-kind="harvest" aria-labelledby="realm-event-title" class="screen-overlay event-overlay" aria-describedby="realm-event-description">…</div> intercepts pointer events
+2026-11-06T22:25:46.8002509Z     - retrying click action
+2026-11-06T22:25:46.8002886Z       - waiting 100ms
+2026-11-06T22:25:46.8003536Z     42 × waiting for element to be visible, enabled and stable
+2026-11-06T22:25:46.8004204Z        - element is visible, enabled and stable
+2026-11-06T22:25:46.8004789Z        - scrolling into view if needed
+2026-11-06T22:25:46.8005272Z        - done scrolling
+2026-11-06T22:25:46.8007144Z        - <div role="dialog" tabindex="-1" aria-modal="true" id="realm-event-modal" data-event-kind="harvest" aria-labelledby="realm-event-title" class="screen-overlay event-overlay" aria-describedby="realm-event-description">…</div> intercepts pointer events
+2026-11-06T22:25:46.8011297Z      - retrying click action
+2026-11-06T22:25:46.8011728Z        - waiting 500ms
+2026-11-06T22:25:46.8011983Z 
+2026-11-06T22:25:46.8012509Z     at ensurePaused (/home/runner/work/ulmweb/ulmweb/game/tests/browser/e2e.mjs:938:46)
+2026-11-06T22:25:46.8014338Z     at async file:///home/runner/work/ulmweb/ulmweb/game/tests/browser/e2e.mjs:1006:5 {
+2026-11-06T22:25:46.8014945Z   name: 'TimeoutError'
+2026-11-06T22:25:46.8015256Z }
+2026-11-06T22:25:46.8015408Z 
+2026-11-06T22:25:46.8015546Z Node.js v22.23.4
+2026-11-06T22:25:46.8146160Z ##[error]Process completed with exit code 1.

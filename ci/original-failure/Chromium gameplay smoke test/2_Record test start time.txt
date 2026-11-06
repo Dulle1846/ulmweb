@@ -1,0 +1,4 @@
+﻿2026-11-06T22:23:57.9104719Z ##[group]Run echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+2026-11-06T22:23:57.9105695Z [36;1mecho "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"[0m
+2026-11-06T22:23:57.9122512Z shell: /usr/bin/bash -e {0}
+2026-11-06T22:23:57.9123249Z ##[endgroup]
