@@ -58,10 +58,19 @@ jobs:
         working-directory: game
         run: |
           set +e
-          npm run test:e2e
+          set -o pipefail
+          npm run test:e2e 2>&1 | tee "$RUNNER_TEMP/browser-e2e.log"
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit "$code"
+      - name: Upload browser E2E log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-browser-e2e-log
+          path: ${{ runner.temp }}/browser-e2e.log
+          if-no-files-found: warn
+          retention-days: 7
       - name: Upload responsive UI review screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -85,6 +94,12 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      - name: Download browser E2E log
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: kings-and-cards-browser-e2e-log
+          path: ${{ runner.temp }}/ci-artifacts
       - name: Create run receipt
         env:
           RUN_ID: ${{ github.run_id }}
@@ -129,6 +144,10 @@ jobs:
           git rm -rf .
           mkdir -p ci
           cp "$RUNNER_TEMP/game-browser-e2e.json" ci/game-browser-e2e.json
+          if [ -f "$RUNNER_TEMP/ci-artifacts/browser-e2e.log" ]; then
+            cp "$RUNNER_TEMP/ci-artifacts/browser-e2e.log" ci/browser-e2e.log
+            git add ci/browser-e2e.log
+          fi
           git add ci/game-browser-e2e.json
           git commit -m "Record workflow run ${GITHUB_RUN_ID}"
           git push --force origin HEAD:refs/heads/ci-run-receipts
