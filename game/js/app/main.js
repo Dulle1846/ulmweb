@@ -1,5 +1,5 @@
 // Application composition root: boot menu, local profiles, save/load and runtime.
-import { WORLD_W,WORLD_H } from "../core/config.js";
+import { WORLD_W,WORLD_H,CELL } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { state,resetState } from "../core/state.js";
 import { initWorld } from "../world/world.js";
@@ -12,11 +12,12 @@ import { normalizeHouseholdAssignments } from "../systems/population.js";
 import { invalidateRoomBonusCache } from "../systems/rooms.js";
 import { normalizeRoomFurniture } from "../systems/furniture.js";
 import { addLog } from "../systems/events.js";
+import { ECONOMY_HISTORY_LIMIT } from "../systems/economy.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera } from "../presentation/camera.js";
 import { setupInput } from "../presentation/input.js";
-import { renderUI,showBigMessage } from "../presentation/rendering/ui.js";
-import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,loadSettings,saveSettings } from "../core/persistence.js";
+import { renderUI,showBigMessage,setupMapViewControls } from "../presentation/rendering/ui.js";
+import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,getLocalSaveInfo,listLocalProfiles,selectLocalProfile,loadSettings,saveSettings } from "../core/persistence.js";
 import { startSoundtrack,setMusicEnabled,setMusicVolume,applySoundtrackSettings } from "../core/soundtrack.js";
 import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
 import {ensurePersonProfile,normalizePersonProfile,normalizePersonMemorial,MAX_PERSON_ARCHIVE} from "../systems/people.js";
@@ -27,6 +28,8 @@ import {normalizeRoyalState} from "../systems/royal-dynasty.js";
 import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
 import {serializeResourceGeography,restoreResourceGeography,validateResourceGeographySnapshot} from "../systems/resource-geography.js";import { setupBuildUI } from "../presentation/build-ui.js";import { normalizeLayout,serializeLayout } from "../presentation/building-layout.js";
+import {serializeCity,restoreCity,validateCitySnapshot,initializeCityForRealm} from "../systems/logistics.js";
+import {initializeSettlementForRealm} from "../systems/settlement.js";
 import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
 
@@ -152,7 +155,9 @@ function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     state.worldOptions={...worldOptions};
     initWorld(seed,state.worldOptions);
     initStartingKingdom();
+    initializeCityForRealm();
     normalizeHouseholdAssignments();
+    initializeSettlementForRealm();
     drawStartingHand();
     state.camera.x=0;state.camera.y=0;
     centerCamera();
@@ -171,6 +176,7 @@ function serializeEntity(entity,indexByEntity){
         id:entity.id||null,personId:entity.personId||null,person:entity.person?JSON.parse(JSON.stringify(entity.person)):null,
         x:entity.x,y:entity.y,type:entity.type,hp:entity.hp,maxHp:entity.maxHp,dead:entity.dead,age:entity.age,
         rotation:entity.rotation||0,footprintScale:entity.footprintScale||1,interior:entity.interior?{...entity.interior}:null,roomFurniture:entity.roomFurniture&&typeof entity.roomFurniture==="object"?JSON.parse(JSON.stringify(entity.roomFurniture)):null,layout:entity.layout?serializeLayout(entity.type,entity.layout,1,1):null,
+        construction:entity.construction?JSON.parse(JSON.stringify(entity.construction)):null,inventory:entity.inventory?JSON.parse(JSON.stringify(entity.inventory)):null,warehouse:entity.warehouse?JSON.parse(JSON.stringify(entity.warehouse)):null,field:entity.field?{...entity.field}:null,
         anim:entity.anim,facing:entity.facing,visualState:entity.visualState,anchor:entity.anchor,home:entity.home,
         illnessUntilTick:entity.illnessUntilTick,illnessStartedTick:entity.illnessStartedTick,illnessSeverity:entity.illnessSeverity,
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
@@ -184,13 +190,14 @@ function createSaveSnapshot(){
     const indexes=new Map(state.entities.map((entity,index)=>[entity,index]));
     return {
         playerName:state.playerName,kingdomName:state.kingdomName,worldSeed:state.worldSeed,
-        worldOptions:{...state.worldOptions},randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:3,nextCardDrawTick:state.nextCardDrawTick,
+        worldOptions:{...state.worldOptions},randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:4,nextCardDrawTick:state.nextCardDrawTick,
         nextIssueAtTick:state.nextIssueAtTick,issueSequence:state.issueSequence,
         hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),health:JSON.parse(JSON.stringify(state.health||{})),
         camera:{...state.camera},zoom:state.zoom,
         explored:state.explored.map(column=>column.map(Boolean)),
         roads:serializeRoads(),
         resourceGeography:serializeResourceGeography(),
+        city:serializeCity(),
         tick:state.tick,year:state.year,dayOfYear:state.dayOfYear,seasonIndex:state.seasonIndex,gameSpeed:state.gameSpeed,
         morale:state.morale,resources:{...state.resources},incomeThisTick:{...state.incomeThisTick},
         kingHp:state.kingHp,totalRaidsSurvived:state.totalRaidsSurvived,raidActive:state.raidActive,
@@ -217,6 +224,7 @@ function saveCurrentGame(){
         showStatus("Realm saved · "+new Date(savedAt).toLocaleTimeString());
         setSaveStatus("LAST SAVED · "+new Date(savedAt).toLocaleTimeString(),"saved");
         addLog("GAME SAVED","#a3d6a7","system");
+        renderSaveSlots();
         renderUI();
         return true;
     }catch(error){
@@ -252,6 +260,16 @@ function validateSaveSnapshot(snapshot){
         for(const [key,tile] of Object.entries(snapshot.roads.tiles)){if(!/^\d+:\d+$/.test(key)||!tile||!["dirt","gravel","paved"].includes(tile.type))throw new Error("Save data contains an invalid road tile.");}
     }
     if(snapshot.resourceGeography!==undefined)validateResourceGeographySnapshot(snapshot.resourceGeography);
+    if(snapshot.city!==undefined)validateCitySnapshot(snapshot.city);
+    for(const [index,dto] of snapshot.entities.entries()){
+        if(dto.construction!==undefined&&dto.construction!==null){
+            const c=dto.construction;
+            if(typeof c!=="object"||!Number.isInteger(c.stage)||c.stage<0||c.stage>3||!Number.isFinite(Number(c.progress)))throw new Error("Save data contains an invalid construction site at position "+index+".");
+        }
+        if(dto.inventory!==undefined&&dto.inventory!==null&&(typeof dto.inventory!=="object"||Array.isArray(dto.inventory)))throw new Error("Save data contains invalid building inventory at position "+index+".");
+        if(dto.warehouse!==undefined&&dto.warehouse!==null&&(typeof dto.warehouse!=="object"||Array.isArray(dto.warehouse)))throw new Error("Save data contains an invalid warehouse at position "+index+".");
+        if(dto.field!==undefined&&dto.field!==null&&(typeof dto.field!=="object"||Array.isArray(dto.field)))throw new Error("Save data contains an invalid field at position "+index+".");
+    }
     if(snapshot.hand!==undefined&&(!Array.isArray(snapshot.hand)||snapshot.hand.length>5)){
         throw new Error("Save data contains an invalid card hand.");
     }
@@ -279,6 +297,7 @@ function loadSnapshotIntoGame(profile,snapshot){
             id:typeof dto.id==="string"?dto.id:null,personId:typeof dto.personId==="string"?dto.personId:null,person:dto.person&&typeof dto.person==="object"?dto.person:null,
             hp:dto.hp,maxHp:dto.maxHp,dead:dto.dead,age:dto.age,anim:dto.anim,facing:dto.facing,
             rotation:Number.isFinite(dto.rotation)?dto.rotation:0,footprintScale:Number.isFinite(dto.footprintScale)?dto.footprintScale:1,interior:dto.interior&&typeof dto.interior==="object"?{...dto.interior}:null,roomFurniture:dto.roomFurniture&&typeof dto.roomFurniture==="object"&&!Array.isArray(dto.roomFurniture)?normalizeRoomFurniture(dto.roomFurniture):null,layout:dto.layout&&typeof dto.layout==="object"?normalizeLayout(dto.type,dto.layout,1,1):null,
+            construction:dto.construction&&typeof dto.construction==="object"?JSON.parse(JSON.stringify(dto.construction)):null,inventory:dto.inventory&&typeof dto.inventory==="object"?JSON.parse(JSON.stringify(dto.inventory)):null,warehouse:dto.warehouse&&typeof dto.warehouse==="object"?JSON.parse(JSON.stringify(dto.warehouse)):null,field:dto.field&&typeof dto.field==="object"?{...dto.field}:null,
             visualState:dto.visualState,anchor:dto.anchor||{x:dto.x,y:dto.y},home:dto.home||{x:dto.x,y:dto.y},
             illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
@@ -290,6 +309,8 @@ function loadSnapshotIntoGame(profile,snapshot){
     (snapshot.entities||[]).forEach((dto,index)=>{
         if(Number.isInteger(dto.workplaceIndex)&&restored[dto.workplaceIndex]&&restored[index])restored[index].workplace=restored[dto.workplaceIndex];
     });
+    restoreCity(snapshot.city);
+    initializeCityForRealm({seedWarehouse:!snapshot.city});
     state.tick=snapshot.tick||0;state.year=snapshot.year||1;state.dayOfYear=snapshot.dayOfYear||0;
     const savedSpeed=Number(snapshot.gameSpeed);
     state.gameSpeed=[0.5,1,2,4].includes(savedSpeed)?savedSpeed:1;
@@ -323,7 +344,12 @@ function loadSnapshotIntoGame(profile,snapshot){
         ? snapshot.availableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [];
     state.statistics={totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,totalRoadTilesBuilt:0,...snapshot.statistics};
-    state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,furnitureUpkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,unpaidFurniture:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,births:0,lastBirthCheckYear:state.year,lastSocialYear:state.year,lastAgencyYear:state.year,deaths:0,lastMortalityYear:state.year,lastLedger:null,...snapshot.economy};
+    state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,furnitureUpkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,unpaidFurniture:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,births:0,lastBirthCheckYear:state.year,lastSocialYear:state.year,lastAgencyYear:state.year,deaths:0,lastMortalityYear:state.year,lastLedger:null,history:[],...snapshot.economy};
+    // Older saves have no series; imported or hand-edited saves may contain an
+    // invalid one. Keep only bounded, numeric settlement records for the charts.
+    state.economy.history=(Array.isArray(state.economy.history)?state.economy.history:[])
+        .filter(entry=>entry&&typeof entry==="object"&&!Array.isArray(entry)&&Number.isFinite(Number(entry.tick)))
+        .slice(-ECONOMY_HISTORY_LIMIT);
     const growthYear=state.economy.lastGrowthYear;
     state.economy.lastGrowthYear=Number.isFinite(growthYear)?Math.max(1,Math.min(state.year,Math.floor(growthYear))):state.year;
     const populationGrowth=Number(state.economy.populationGrowth);
@@ -344,6 +370,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     normalizeGovernment(snapshot.government);
     normalizeRoyalState(snapshot.royal);
     normalizeHouseholdAssignments();
+    initializeSettlementForRealm();
     state.market=snapshot.market||createMarketState();
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===(Number(state.worldW)||WORLD_W))state.explored=snapshot.explored;
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
@@ -372,6 +399,7 @@ function loadCurrentGame(){
         showStatus("Loaded realm"+(save.restoredFromBackup?" · previous backup restored":"")+" · "+new Date(save.savedAt).toLocaleString());
         setSaveStatus("LOADED · "+new Date(save.savedAt).toLocaleTimeString(),"saved");
         addLog("SAVE LOADED","#a3d6a7","system");
+        renderSaveSlots();
         return true;
     }catch(error){
         let recovery="";
@@ -399,6 +427,129 @@ function setSaveStatus(message,kind=""){
     status.textContent=message;
     status.classList.toggle("is-saved",kind==="saved");
     status.classList.toggle("is-error",kind==="error");
+}
+
+function setArchiveStatus(message){
+    const status=document.getElementById("save-archive-status");
+    if(status)status.textContent=message;
+}
+
+function formatSaveDate(value){
+    if(!value)return "NO SAVE RECORDED";
+    const date=new Date(value);
+    return Number.isNaN(date.getTime())?"SAVE RECORD PRESENT":date.toLocaleString();
+}
+
+function renderSaveSlots(){
+    const host=document.getElementById("save-slot-list");
+    if(!host)return;
+    host.replaceChildren();
+    const profiles=listLocalProfiles();
+    if(!profiles.length){
+        const empty=document.createElement("p");
+        empty.className="settings-archive-note";
+        empty.textContent="No local profile exists yet. Found a realm to create the first save slot.";
+        host.append(empty);
+        return;
+    }
+    const active=getActiveProfile();
+    const activeId=state.activeProfileId||active?.id||null;
+    const sorted=profiles.slice().sort((a,b)=>String(a.displayName||"").localeCompare(String(b.displayName||""))||String(a.id).localeCompare(String(b.id)));
+    for(const profile of sorted){
+        const info=getLocalSaveInfo(profile.id);
+        const row=document.createElement("div");
+        row.className="save-slot"+(profile.id===activeId?" is-active":"");
+        const copy=document.createElement("span");
+        copy.className="save-slot__copy";
+        const name=document.createElement("strong");
+        name.textContent=profile.displayName||"Unnamed keeper";
+        const date=document.createElement("small");
+        date.textContent=formatSaveDate(info?.savedAt);
+        const stateLabel=document.createElement("em");
+        stateLabel.textContent=(profile.id===activeId?"ACTIVE PROFILE · ":"")+(info?(info.restoredFromBackup?"BACKUP RECOVERY RECORD":"LOCAL SAVE"):"NO REALM SAVED");
+        copy.append(name,date,stateLabel);
+        const button=document.createElement("button");
+        button.type="button";
+        button.textContent=info?(profile.id===activeId?"RELOAD":"LOAD"):"NO SAVE";
+        button.disabled=!info;
+        button.title=info?"Load "+(profile.displayName||"this local realm"):"This profile has no saved realm";
+        button.addEventListener("click",()=>{
+            try{
+                if(getActiveProfile()?.id!==profile.id)selectLocalProfile(profile.id);
+                if(loadCurrentGame()){
+                    document.getElementById("settings-modal")?.classList.add("hidden");
+                    setArchiveStatus("Loaded "+(profile.displayName||"local realm")+" · "+formatSaveDate(info.savedAt));
+                }
+            }catch(error){
+                setArchiveStatus(error.message);
+            }
+        });
+        row.append(copy,button);
+        host.append(row);
+    }
+}
+
+function exportRealm(){
+    if(!state.hasStarted||!state.activeProfileId){
+        setArchiveStatus("Start a realm before exporting a save.");
+        showStatus("Start a realm before exporting a save.");
+        return;
+    }
+    try{
+        const profile=getActiveProfile();
+        const payload={
+            version:1,
+            savedAt:new Date().toISOString(),
+            profileId:state.activeProfileId,
+            profileName:profile?.displayName||state.playerName,
+            snapshot:createSaveSnapshot()
+        };
+        const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+        const url=URL.createObjectURL(blob);
+        const link=document.createElement("a");
+        const safeName=String(state.kingdomName||"realm").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"realm";
+        link.href=url;
+        link.download="kings-and-cards-"+safeName+"-"+new Date().toISOString().slice(0,10)+".json";
+        document.body.append(link);link.click();link.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),2000);
+        setArchiveStatus("Realm exported as a local JSON file. Keep it somewhere safe.");
+        showStatus("Realm exported.");
+    }catch(error){
+        setArchiveStatus("Export failed: "+error.message);
+        showStatus("Export failed: "+error.message);
+    }
+}
+
+async function importRealm(file){
+    if(!file)return;
+    try{
+        const payload=JSON.parse(await file.text());
+        const snapshot=payload&&typeof payload==="object"&&payload.snapshot&&typeof payload.snapshot==="object"&&!Array.isArray(payload.snapshot)?payload.snapshot:payload;
+        if(!snapshot||typeof snapshot!=="object"||Array.isArray(snapshot))throw new Error("The selected file does not contain a realm snapshot.");
+        const profile=getActiveProfile()||ensureProfile();
+        const rollbackProfile=state.hasStarted&&state.activeProfileId?{id:state.activeProfileId,displayName:state.playerName}:null;
+        const rollbackSnapshot=rollbackProfile?createSaveSnapshot():null;
+        try{
+            loadSnapshotIntoGame(profile,snapshot);
+        }catch(error){
+            if(rollbackProfile&&rollbackSnapshot){
+                try{loadSnapshotIntoGame(rollbackProfile,rollbackSnapshot);}catch{/* keep the original error */}
+            }
+            throw error;
+        }
+        const savedAt=writeLocalSave(profile.id,createSaveSnapshot());
+        syncWorldForge(state.worldOptions);
+        document.getElementById("start-screen")?.classList.add("hidden");
+        setSaveStatus("IMPORTED · "+new Date(savedAt).toLocaleTimeString(),"saved");
+        setArchiveStatus("Imported realm saved to "+(profile.displayName||"this profile")+".");
+        showStatus("Realm imported · "+new Date(savedAt).toLocaleTimeString());
+        addLog("IMPORTED REALM","#a3d6a7","system");
+        renderSaveSlots();
+        renderUI();
+    }catch(error){
+        setArchiveStatus("Import failed: "+error.message);
+        showStatus("Import failed: "+error.message);
+    }
 }
 
 function bindMenu(){
@@ -441,9 +592,16 @@ function bindMenu(){
 
     document.getElementById("save-btn")?.addEventListener("click",saveCurrentGame);
     document.getElementById("load-btn")?.addEventListener("click",loadCurrentGame);
-    const openSettings=()=>document.getElementById("settings-modal").classList.remove("hidden");
+    const openSettings=()=>{renderSaveSlots();document.getElementById("settings-modal").classList.remove("hidden");};
     document.getElementById("settings-btn")?.addEventListener("click",openSettings);
     document.getElementById("start-settings-btn")?.addEventListener("click",openSettings);
+    document.getElementById("export-save-btn")?.addEventListener("click",exportRealm);
+    const importInput=document.getElementById("import-save-input");
+    importInput?.addEventListener("change",async event=>{
+        const file=event.target.files?.[0];
+        await importRealm(file);
+        event.target.value="";
+    });
     document.getElementById("settings-close")?.addEventListener("click",()=>document.getElementById("settings-modal").classList.add("hidden"));
     document.getElementById("settings-music-toggle")?.addEventListener("change",event=>{
         settings.musicEnabled=event.target.checked;setMusicEnabled(settings.musicEnabled);saveSettings(settings);
@@ -466,6 +624,14 @@ function bindMenu(){
     document.getElementById("big-message-close")?.addEventListener("click",()=>document.getElementById("big-message").classList.add("hidden"));
     window.addEventListener("kac:save-request",saveCurrentGame);
     window.addEventListener("kac:load-request",loadCurrentGame);
+    window.addEventListener("kac:focus-map",event=>{
+        const x=Number(event.detail?.x),y=Number(event.detail?.y);
+        if(!Number.isFinite(x)||!Number.isFinite(y)||!state.canvas)return;
+        state.camera.x=x*CELL*state.zoom-state.canvas.width/2;
+        state.camera.y=y*CELL*state.zoom-state.canvas.height/2;
+        clampCamera();
+        document.getElementById("people-modal")?.classList.add("hidden");
+    });
 }
 
 function init(){
@@ -473,7 +639,24 @@ function init(){
     setupInput();
     setupCharacterDossier();
     setupManagementUI();
+    setupMapViewControls();
     setupModalAccessibility();
+    document.getElementById("warning-inbox-btn")?.addEventListener("click",()=>{
+        if(state.activeEvent&&!state.activeEvent.dismissed)state.activeEvent.dismissed=true;
+        document.getElementById("realm-event-modal")?.classList.add("hidden");
+        renderUI();
+    });
+    document.getElementById("realm-event-chronicle")?.addEventListener("click",()=>{
+        if(state.activeEvent)state.activeEvent.dismissed=true;
+        document.getElementById("realm-event-modal")?.classList.add("hidden");
+        document.querySelector('.realm-nav-button[data-kac-panel="chronicle"]')?.click();
+        renderUI();
+    });
+    document.getElementById("realm-event-participants")?.addEventListener("click",event=>{
+        const button=event.target.closest("[data-event-person]");
+        if(!button)return;
+        window.dispatchEvent(new CustomEvent("kac:open-person",{detail:{personId:String(button.dataset.eventPerson||"")}}));
+    });
     document.getElementById("realm-event-dismiss")?.addEventListener("click",()=>{
         if(state.activeEvent){state.activeEvent.dismissed=true;renderUI();}
     });

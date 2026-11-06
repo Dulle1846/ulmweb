@@ -26,6 +26,16 @@ export const REBUILD_COST = {
     [TYPE.WONDER]: { stone: 70, gold: 40 },
     [TYPE.GOLDMINE]: { wood: 30, stone: 18 },
     [TYPE.BARREL]: { wood: 4 },
+    [TYPE.TENT]: { wood: 8, food: 8 },
+    [TYPE.STONE_HOUSE]: { wood: 18, stone: 30 },
+    [TYPE.WAREHOUSE]: { wood: 34, stone: 14 },
+    [TYPE.SAWMILL]: { wood: 28, stone: 10 },
+    [TYPE.BAKERY]: { wood: 22, stone: 14 },
+    [TYPE.WELL]: { wood: 8, stone: 18 },
+    [TYPE.MASON]: { wood: 20, stone: 22 },
+    [TYPE.FORESTER]: { wood: 16, stone: 4 },
+    [TYPE.CLINIC]: { wood: 24, stone: 18, gold: 6 },
+    [TYPE.MARKET]: { wood: 26, stone: 8 },
 };
 
 export const INTERIOR_ITEM_IDS = ['bed', 'table', 'chair', 'shelf', 'hearth', 'rug', 'statue', 'candle'];
@@ -57,6 +67,16 @@ const DEFAULT_INTERIOR = {
     [TYPE.STABLE]:   { bed: 1, table: 1, chair: 1, shelf: 2, hearth: 0, rug: 0, statue: 0, candle: 1 },
     [TYPE.WONDER]:   { bed: 0, table: 0, chair: 0, shelf: 0, hearth: 0, rug: 1, statue: 6, candle: 8 },
     [TYPE.BARREL]:   { bed: 0, table: 0, chair: 0, shelf: 1, hearth: 0, rug: 0, statue: 0, candle: 0 },
+    [TYPE.TENT]:     { bed: 2, table: 0, chair: 1, shelf: 0, hearth: 1, rug: 1, statue: 0, candle: 1 },
+    [TYPE.STONE_HOUSE]: { bed: 3, table: 2, chair: 3, shelf: 2, hearth: 1, rug: 2, statue: 1, candle: 4 },
+    [TYPE.WAREHOUSE]: { bed: 0, table: 1, chair: 1, shelf: 5, hearth: 0, rug: 0, statue: 0, candle: 2 },
+    [TYPE.SAWMILL]:  { bed: 0, table: 1, chair: 1, shelf: 3, hearth: 0, rug: 0, statue: 0, candle: 1 },
+    [TYPE.BAKERY]:   { bed: 1, table: 1, chair: 1, shelf: 3, hearth: 2, rug: 0, statue: 0, candle: 2 },
+    [TYPE.WELL]:     { bed: 0, table: 0, chair: 0, shelf: 0, hearth: 0, rug: 0, statue: 0, candle: 1 },
+    [TYPE.MASON]:    { bed: 0, table: 1, chair: 1, shelf: 3, hearth: 0, rug: 0, statue: 1, candle: 1 },
+    [TYPE.FORESTER]: { bed: 1, table: 1, chair: 1, shelf: 2, hearth: 1, rug: 0, statue: 0, candle: 1 },
+    [TYPE.CLINIC]:   { bed: 4, table: 1, chair: 2, shelf: 3, hearth: 1, rug: 1, statue: 0, candle: 3 },
+    [TYPE.MARKET]:   { bed: 0, table: 1, chair: 2, shelf: 3, hearth: 0, rug: 0, statue: 1, candle: 2 },
 };
 
 export function defaultInterior(type) {
@@ -92,6 +112,16 @@ const TYPE_NAMES = {
     [TYPE.WONDER]: 'WONDER',
     [TYPE.GOLDMINE]: 'GOLD MINE',
     [TYPE.BARREL]: 'SUPPLY BARREL',
+    [TYPE.TENT]: 'TENT',
+    [TYPE.STONE_HOUSE]: 'STONE HOUSE',
+    [TYPE.WAREHOUSE]: 'WAREHOUSE',
+    [TYPE.SAWMILL]: 'SAWMILL',
+    [TYPE.BAKERY]: 'BAKERY',
+    [TYPE.WELL]: 'WELL',
+    [TYPE.MASON]: "MASON'S YARD",
+    [TYPE.FORESTER]: "FORESTER'S LODGE",
+    [TYPE.CLINIC]: 'CLINIC',
+    [TYPE.MARKET]: 'MARKET',
 };
 
 const ROOF_STYLES = {
@@ -110,6 +140,16 @@ const ROOF_STYLES = {
     [TYPE.TOWER]:    { roof: '#6e695c', wall: '#b9b1a0', trim: '#8d8576' },
     [TYPE.WALL]:     { roof: '#8a8578', wall: '#a8a292', trim: '#6c675c' },
     [TYPE.BARREL]:   { roof: '#795a3b', wall: '#a98254', trim: '#4e3a26' },
+    [TYPE.TENT]:     { roof: '#8c6d47', wall: '#cbb58b', trim: '#5f4a32' },
+    [TYPE.STONE_HOUSE]: { roof: '#5f6258', wall: '#c3bca8', trim: '#6b5a3e' },
+    [TYPE.WAREHOUSE]: { roof: '#6d4d32', wall: '#c8b58d', trim: '#4c3927' },
+    [TYPE.SAWMILL]:  { roof: '#4d5c3a', wall: '#baa985', trim: '#5c4630' },
+    [TYPE.BAKERY]:   { roof: '#9a5538', wall: '#dcc9a0', trim: '#6e442e' },
+    [TYPE.WELL]:     { roof: '#5d6b6e', wall: '#aaa99c', trim: '#4b5557' },
+    [TYPE.MASON]:    { roof: '#6c655c', wall: '#b8b2a4', trim: '#4b4740' },
+    [TYPE.FORESTER]: { roof: '#3f5637', wall: '#b7a781', trim: '#5c4630' },
+    [TYPE.CLINIC]:   { roof: '#856c73', wall: '#ddd2c3', trim: '#9a6d7e' },
+    [TYPE.MARKET]:   { roof: '#8a5638', wall: '#d3bd94', trim: '#b99a59' },
 };
 
 function sizeOf(e) {
@@ -189,11 +229,120 @@ function drawRooftopPlan(ctx, box) {
         case TYPE.TOWER: drawTower(ctx, box); break;
         case TYPE.WALL: drawWall(ctx, box); break;
         case TYPE.BARREL: drawBarrels(ctx, box); break;
+        case TYPE.TENT: drawTent(ctx, box); break;
+        case TYPE.WELL: drawWell(ctx, box); break;
+        case TYPE.WAREHOUSE: drawWarehouse(ctx, box); break;
+        case TYPE.MARKET: drawMarket(ctx, box); break;
+        case TYPE.CLINIC: drawClinic(ctx, box); break;
+        case TYPE.STONE_HOUSE: drawStoneHouse(ctx, box); break;
+        case TYPE.SAWMILL: drawSawmill(ctx, box); break;
+        case TYPE.BAKERY: drawBakery(ctx, box); break;
+        case TYPE.MASON: drawMason(ctx, box); break;
+        case TYPE.FORESTER: drawForester(ctx, box); break;
         default: drawCottage(ctx, box); break;
     }
     drawDoor(ctx, box);
     drawOrientation(ctx, box);
 }
+
+function drawTent(ctx, box) {
+    const { left, top, w, h, scale, style } = box;
+    ctx.fillStyle = style.wall;
+    ctx.beginPath();
+    ctx.moveTo(left + w * 0.08, top + h * 0.86);
+    ctx.lineTo(left + w * 0.5, top + h * 0.12);
+    ctx.lineTo(left + w * 0.92, top + h * 0.86);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(40,30,20,0.65)';
+    ctx.lineWidth = Math.max(1, 1.5 * scale);
+    ctx.stroke();
+    ctx.strokeStyle = style.trim;
+    ctx.beginPath();
+    ctx.moveTo(left + w * 0.5, top + h * 0.12);
+    ctx.lineTo(left + w * 0.5, top + h * 0.09);
+    ctx.moveTo(left + w * 0.24, top + h * 0.86);
+    ctx.lineTo(left + w * 0.5, top + h * 0.36);
+    ctx.lineTo(left + w * 0.76, top + h * 0.86);
+    ctx.stroke();
+}
+function drawStoneHouse(ctx, box) {
+    drawCottage(ctx, box);
+    const { left, top, w, h, scale } = box;
+    ctx.strokeStyle = 'rgba(74,70,60,0.55)';
+    ctx.lineWidth = Math.max(0.6, 0.8 * scale);
+    for (let row = 1; row < 5; row++) {
+        const y = top + h * (0.28 + row * 0.12);
+        ctx.beginPath(); ctx.moveTo(left + w * 0.1, y); ctx.lineTo(left + w * 0.9, y); ctx.stroke();
+    }
+}
+function drawWarehouse(ctx, box) {
+    baseBuild(ctx, box, 0.12);
+    const { left, top, w, h, scale, style } = box;
+    ctx.fillStyle = style.trim;
+    ctx.fillRect(left + w * 0.17, top + h * 0.45, w * 0.66, h * 0.3);
+    ctx.strokeStyle = 'rgba(45,32,22,0.6)';
+    ctx.lineWidth = Math.max(1, scale);
+    ctx.strokeRect(left + w * 0.17, top + h * 0.45, w * 0.66, h * 0.3);
+    ctx.beginPath();
+    ctx.moveTo(left + w * 0.5, top + h * 0.45);
+    ctx.lineTo(left + w * 0.5, top + h * 0.75);
+    ctx.stroke();
+}
+function drawMarket(ctx, box) {
+    baseBuild(ctx, box, 0.12);
+    const { left, top, w, h, scale, style } = box;
+    for (let i = 0; i < 3; i++) {
+        ctx.fillStyle = i === 1 ? '#d8c59d' : style.roof;
+        ctx.fillRect(left + w * (0.12 + i * 0.27), top + h * 0.24, w * 0.26, h * 0.13);
+        ctx.strokeStyle = 'rgba(50,35,22,0.5)';
+        ctx.lineWidth = Math.max(0.6, 0.8 * scale);
+        ctx.strokeRect(left + w * (0.12 + i * 0.27), top + h * 0.24, w * 0.26, h * 0.13);
+    }
+    ctx.fillStyle = '#c9a24a';
+    ctx.beginPath();
+    ctx.arc(left + w * 0.5, top + h * 0.62, Math.max(1.5, w * 0.08), 0, Math.PI * 2);
+    ctx.fill();
+}
+function drawWell(ctx, box) {
+    const { left, top, w, h, scale, style } = box;
+    ctx.fillStyle = style.wall;
+    ctx.beginPath();
+    ctx.arc(left + w * 0.5, top + h * 0.56, Math.min(w, h) * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(42,36,28,0.75)';
+    ctx.lineWidth = Math.max(1, 1.5 * scale);
+    ctx.stroke();
+    ctx.fillStyle = '#365e70';
+    ctx.beginPath();
+    ctx.arc(left + w * 0.5, top + h * 0.56, Math.min(w, h) * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = style.trim;
+    ctx.beginPath();
+    ctx.moveTo(left + w * 0.28, top + h * 0.5);
+    ctx.lineTo(left + w * 0.28, top + h * 0.2);
+    ctx.lineTo(left + w * 0.72, top + h * 0.2);
+    ctx.lineTo(left + w * 0.72, top + h * 0.5);
+    ctx.stroke();
+}
+function drawClinic(ctx, box) {
+    drawTemple(ctx, box);
+    const { left, top, w, h, scale } = box;
+    ctx.fillStyle = '#f0e6d2';
+    ctx.fillRect(left + w * 0.18, top + h * 0.48, w * 0.64, h * 0.22);
+    ctx.strokeStyle = '#8e3a2c';
+    ctx.lineWidth = Math.max(1, 2 * scale);
+    ctx.beginPath();
+    ctx.moveTo(left + w * 0.5, top + h * 0.52);
+    ctx.lineTo(left + w * 0.5, top + h * 0.66);
+    ctx.moveTo(left + w * 0.4, top + h * 0.59);
+    ctx.lineTo(left + w * 0.6, top + h * 0.59);
+    ctx.stroke();
+}
+const drawSawmill = (ctx, box) => drawLumber(ctx, box);
+const drawBakery = (ctx, box) => drawTavern(ctx, box);
+const drawMason = (ctx, box) => drawQuarry(ctx, box);
+const drawForester = (ctx, box) => drawLumber(ctx, box);
 
 function baseBuild(ctx, box, roofInset = 0.12) {
     const { left, top, w, h, style, scale } = box;

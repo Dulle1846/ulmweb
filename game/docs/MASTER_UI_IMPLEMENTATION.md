@@ -50,13 +50,13 @@
 | UI-01 — inventory and architecture review | **Implemented** | Existing HTML shell, three legacy stylesheets, management modal, character dossier, card hand, canvas and existing management data modules reviewed. |
 | UI-02 — design system | **First implementation** | New `css/ui-design-system.css`; canonical color, spacing, typography, radius, line and shadow tokens; parchment and timber component treatment; existing royal crest and SVG resource sprites replace several placeholder glyphs. Further component extraction remains. |
 | UI-03 — button library | **Phase 2 increment** | Shared states for primary/secondary, speed, navigation, management tabs, build options and modal controls; Phase 2 adds reusable panel/card/section/icon-button primitives, tooltip surfaces and hover/focus/pressed states. Full component API and tooltip coverage remain. |
-| UI-04 — main interface | **Phase 2 increment** | Adds a contextual sidebar action dock for people, dynasty, cards, chronicle and manual save; save status reflects confirmed save/load success or failure. This is not autosave. The final full-width lower action bar, clickable ruler portrait and dedicated event inbox remain. |
-| UI-05 — administration screens | **Phase 3 increment** | Economy separates current stock, per-tick flow, latest 20-day settlement and cumulative totals. A searchable read-only building register exposes live structures, health, footprint, workforce, efficiency, catalogue costs and site-tile resource data. Historical charts, per-building output, storage and forecasts remain unavailable until the simulation retains those contracts. |
-| UI-06 — character and dynasty | **Phase 2 sovereign/lineage increments shipped** | Current sovereign dossier now shows recorded consort, heir, children and bounded royal-house chronicle; former monarchs are separated from live succession state. Dynasty screen now draws a bounded connected multi-lane network with verified grandparents, parents, siblings, consort, collateral relatives, cousins and children. Graph nodes open canonical dossiers. The seven-archetype portrait suite remains; deeper network exploration and expanded character actions remain. |
-| UI-07 — fantasy areas | **Partial** | Existing dragon/creature management and card rarity styles retained. Full creature dossiers, bestiary, magic screen and illustrated legendary card treatment remain. |
-| UI-08 — menu and settings | **Partial** | Existing main menu and settings remain; visual override applied. Version/credits/save-slot management and graphics/accessibility controls remain. |
-| UI-09 — art and animation | **Phase 4 increment** | Adds seven original, locally bundled heraldic portrait archetypes and reuses existing illustrated building sprites in the register. The complete building/creature/card illustration atlas, house-specific heraldry, asset audit and animation pass remain. |
-| UI-10 — QA | **Phase 5 increment** | Adds centralized dialog naming, focus containment/restoration and compact-height overflow handling. Full viewport matrix, screen-reader review and visual screenshot audit remain. |
+| UI-04 — main interface | **Phase 6 implemented** | Sovereign portrait/identity, kingdom crest, population, treasury trend and a live warning inbox now occupy the top status layer. The full-width action bar retains real save status. The ruler portrait opens the sovereign dossier; the warning inbox opens the chronicle. |
+| UI-05 — administration screens | **Phase 6 implemented** | Economy separates stock, per-tick flow, latest settlement and cumulative totals, with two real treasury charts. The new Stores screen exposes each resource's stock, current flow, related recorded structures and a bounded 24-settlement history; the building register remains live and read-only. Per-building output, storage and upkeep are still not exposed by the simulation. |
+| UI-06 — character and dynasty | **Phase 6 implemented for current data** | Sovereign/royal-house dossier, connected lineage graph, relationship navigation and dossier actions for locating a recorded home and opening the royal dynasty are wired. Deeper network exploration remains a future data feature. |
+| UI-07 — fantasy areas | **Implemented for current dragon species** | Live dragon dossiers, life-stage artwork, memories and memorials are present. Other species, a full bestiary and a magic screen are not modeled by the current simulation. |
+| UI-08 — menu and settings | **Phase 6 implemented** | Local save slots, export/import, version/credits metadata, named accessibility controls and the existing settings remain. |
+| UI-09 — art and animation | **Phase 6 increment** | Card management, portraits, buildings, dragons and the sovereign banner use the local illustrated atlases; the asset catalogue now records the full current inventory and provenance status. House-specific heraldry and a complete animation pass remain. |
+| UI-10 — QA | **Phase 6 increment** | Eleven-panel viewport matrix, dialog focus containment, runtime Chromium geometry and a 356-test full suite are present. Visual review covered 390×844, 1366×768 and 2560×1440; the remaining four viewports, full screen-reader review and animation acceptance remain. |
 
 ## Phase 2 implementation increment (released in 3.5.0)
 
@@ -86,8 +86,11 @@ Visible left-rail actions:
 - Rule → existing government screen.
 - People → existing character dossier browser.
 - Dynasty → existing royal dynasty screen.
+- Chronicle → event inbox and stored chronicle.
 - Politics → existing faction/political screen.
 - Economy → existing live economy screen.
+- Stores → resource dossiers and bounded settlement charts.
+- Buildings → live read-only building register.
 - Cards → existing card hand/deck management.
 - Beasts → existing creature/dragon screen.
 - Build → existing road/build interface.
@@ -95,41 +98,23 @@ Visible left-rail actions:
 
 The kingdom overview intentionally omits capital and territory because authoritative data is not currently exposed; it does not fabricate those values. Before a campaign starts, the overview displays an awaiting-founding state and the resource strip uses neutral placeholders instead of implying that starting values are live.
 
-Top status resource chips mirror the simulation's wood, stone, gold, food and population values. Clicking resource chips opens the real economy screen; clicking population opens real character dossiers. They do not invent a resource-detail view.
+Top status resource chips mirror the simulation's wood, stone, gold, food and population values. Clicking a resource opens its Stores dossier with current stock, current-tick flow, related recorded structures and the bounded settlement history; clicking population opens real character dossiers. The sovereign portrait opens the actual royal dossier, the warning badge counts open issues/outbreaks/raids, and the warning button opens the chronicle.
 
-## Work still required for full specification acceptance
+## Remaining acceptance after the Phase 6 pass
 
-### Layout and information hierarchy
-- Full ruler identity/portrait, kingdom crest, population, treasury trend and warning inbox in the top status layer.
-- A full-width lower contextual action bar with live save status and responsive wrapping (Phase 2 increment; PR #52).
-- Resource chips open a dedicated resource detail panel with production, consumption, trends, storage and relevant buildings once those data contracts exist.
-- Map layer selector and legend only when each overlay has real simulation data.
+- Visual review completed at 390×844, 1366×768 and 2560×1440; fixed low-contrast Stores copy, clipped mobile management tabs, overlapping modal corner ornaments, map legend/drag-status collisions and the clipped 1366 px administration rail. The remaining four viewports and a human screen-reader pass still need review.
+- A complete animation pass and additional house-specific heraldry. The current art inventory is documented in `assets/ASSET_CATALOG.md`.
+- Per-building production, storage and upkeep values, plus wood/stone settlement lines, remain unavailable because the simulation does not expose those contracts. The UI states this instead of inventing numbers.
+- Additional character simulation actions beyond the implemented locate-home and open-dynasty navigation.
+- Other creature species and a full bestiary/magic screen are future simulation features, not hidden current content.
 
-### Reusable components
-- Extract shared button, icon button, tab, panel, modal, tooltip, notification, progress, resource and card-frame primitives.
-- Normalize focus, disabled, selected, pressed, loading and notification states.
-- Add tooltip descriptions, costs, prerequisites and keyboard hints where supported.
-
-### Screens
-- Kingdom overview, building dossier, resource details and economic charts.
-- Character relationship and family views.
-- A navigable multi-generation family tree.
-- Full creature dossier and history.
-- Event presentation with people/place links and event category treatment.
-- Chronicle with chronology, filtering and search.
-- Save-slot management, credits, version display and accessible settings.
-
-### Art direction
-- Complete asset inventory and usage/license record.
-- Consistent SVG heraldry, icons and frames.
-- Cohesive portrait, building, creature, event and card illustration sets.
-- Optimize raster assets to WebP/AVIF only where the build/runtime supports it; do not add multi-gigabyte assets. Prefer compact, purpose-built SVG and optimized raster art.
-- Do not use emoji as substitutes for finished game art.
-
-### Responsive and performance validation
-Test 1280×720, 1366×768, 1600×900, 1920×1080 and 2560×1440 plus narrow browser windows.
-Check overlays, scroll containment, text legibility, focus, keyboard operation, canvas resize, long character lists, card-hand rendering and management-modal performance.
-Respect `prefers-reduced-motion`.
+### Verified in the Phase 6 pass
+- Top status: ruler portrait/identity, crest, population, treasury trend and warning inbox.
+- Resource chips open a dedicated Stores panel with stock, flow, related structures and real bounded history; economy charts read the same series.
+- Map layer selector and legend for real resource, fertility and road overlays, sampled from explored geography only.
+- Event category kicker, recorded participant links, chronicle hand-off and existing active-issue dismissal/reopen flow.
+- Character dossier locate-home and royal-dynasty actions, local save slots, JSON export/import, version/credits and named settings controls.
+- Full suite 356/356 passed; Chromium visual review at 390×844, 1366×768 and 2560×1440 passed with no page errors. The seven-viewport geometry checks remain part of the browser E2E matrix.
 
 ## Release rule
 
@@ -232,7 +217,7 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 
 - Changed the active royal administration item from toggle-button semantics (`aria-pressed`) to current-page semantics (`aria-current="page"`). The control remains a native button so it is still keyboard-operable.
 - Inactive navigation items remove the current-page attribute; only the currently selected section is announced as current.
-- Added a static contract covering all twelve navigation destinations and rejecting the previous toggle semantics.
+- Added a static contract covering all twelve navigation destinations at that time; the current rail has thirteen after the Stores destination was added in Phase 6.
 - Added a Chromium E2E check that focuses the Economy navigation item, activates it with Enter, verifies the real Economy screen opens, and checks the accessible current-page state.
 - This is a targeted accessibility correction, not a complete keyboard or screen-reader audit. The broader Phase 5 checklist remains open.
 

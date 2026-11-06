@@ -22,18 +22,23 @@
             <div><div class="brand-title">KINGS &amp; CARDS</div><div id="kingdom-name" class="brand-subtitle">THE REALM OF ELDRIA</div></div>
         </div>
         <div class="header-middle">
+            <button class="ruler-status" id="ruler-dossier-btn" type="button" aria-haspopup="dialog" aria-controls="people-modal" title="Open the sovereign's dossier">
+                <svg class="ruler-portrait" viewBox="0 0 256 320" aria-hidden="true"><use id="ruler-portrait-use" href="assets/royal-portraits.svg#portrait-king"></use></svg>
+                <span class="ruler-copy"><small>THE CROWN</small><strong id="ruler-name">THE CROWN VACANT</strong><em id="ruler-title">AWAITING SUCCESSION</em><span id="treasury-trend" class="ruler-trend">TREASURY · AWAITING LEDGER</span></span>
+            </button>
             <div class="date-block"><div class="date-label">Realm calendar</div><div class="date-value"><span id="season">SPRING</span> · <span id="year">YEAR 1</span></div></div>
             <div class="morale-block"><div class="morale-topline"><span>REALM MORALE</span><span id="morale-value">72</span></div><div class="morale-track"><div id="morale-bar"></div></div></div>
             <div class="player-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c.4-4.1 2.9-6.2 7.5-6.2s7.1 2.1 7.5 6.2"/></svg><span id="player-name">GUEST</span></div>
         </div>
         <div class="realm-resource-strip" aria-label="Royal resources">
-            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 8l2 12h10l2-12-7-5Z"/><path d="M8 9h8M9 13h6"/></svg><small>WOOD</small><strong data-resource-value="wood">—</strong><em class="resource-delta" data-resource-income="wood"></em></button>
-            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 19 5-13 4 7 3-5 4 11H4Z"/><path d="M7 16h10"/></svg><small>STONE</small><strong data-resource-value="stone">—</strong><em class="resource-delta" data-resource-income="stone"></em></button>
-            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M15 8.5c-.7-.7-1.7-1-3-1-1.7 0-2.8.8-2.8 2s1.1 1.8 2.8 2 2.8.8 2.8 2-1.1 2-2.8 2c-1.2 0-2.3-.4-3-1.1M12 6v12"/></svg><small>GOLD</small><strong data-resource-value="gold">—</strong><em class="resource-delta" data-resource-income="gold"></em></button>
-            <button class="realm-resource-chip" type="button" data-kac-panel="economy" title="Open the live economy overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c2-5 4-9 8-14 0 6 3 9 8 10-3 4-8 6-16 4Z"/><path d="M7 17c3-2 6-5 8-9"/></svg><small>FOOD</small><strong data-resource-value="food">—</strong><em class="resource-delta" data-resource-income="food"></em></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="resources" data-resource-detail="wood" title="Open wood stores, flow and the bounded settlement history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 8l2 12h10l2-12-7-5Z"/><path d="M8 9h8M9 13h6"/></svg><small>WOOD</small><strong data-resource-value="wood">—</strong><em class="resource-delta" data-resource-income="wood"></em></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="resources" data-resource-detail="stone" title="Open stone stores, flow and the bounded settlement history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 19 5-13 4 7 3-5 4 11H4Z"/><path d="M7 16h10"/></svg><small>STONE</small><strong data-resource-value="stone">—</strong><em class="resource-delta" data-resource-income="stone"></em></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="resources" data-resource-detail="gold" title="Open gold stores, flow and the bounded settlement history"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M15 8.5c-.7-.7-1.7-1-3-1-1.7 0-2.8.8-2.8 2s1.1 1.8 2.8 2 2.8.8 2.8 2-1.1 2-2.8 2c-1.2 0-2.3-.4-3-1.1M12 6v12"/></svg><small>GOLD</small><strong data-resource-value="gold">—</strong><em class="resource-delta" data-resource-income="gold"></em></button>
+            <button class="realm-resource-chip" type="button" data-kac-panel="resources" data-resource-detail="food" title="Open food stores, flow and the bounded settlement history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c2-5 4-9 8-14 0 6 3 9 8 10-3 4-8 6-16 4Z"/><path d="M7 17c3-2 6-5 8-9"/></svg><small>FOOD</small><strong data-resource-value="food">—</strong><em class="resource-delta" data-resource-income="food"></em></button>
             <button class="realm-resource-chip" type="button" data-kac-panel="people" title="Open character dossiers"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2-6 6-6s6 2 6 6M16 5a3 3 0 0 1 0 6m2 3c2 .7 3 2.5 3 5"/></svg><small>PEOPLE</small><strong data-population>—</strong><em class="resource-delta" id="population-capacity"></em></button>
         </div>
         <div class="header-actions">
+            <button id="warning-inbox-btn" class="control-button warning-inbox" type="button" data-kac-panel="chronicle" title="Open the realm warning inbox" aria-label="Open the realm warning inbox"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v3l-2 4h16l-2-4V9a6 6 0 0 0-6-6Z"/><path d="M10 20h4M12 3V1"/></svg><span>WARNINGS</span><b id="warning-count">0</b></button>
             <button id="save-btn" class="control-button" type="button" title="Save · Ctrl+S">SAVE</button>
             <button id="load-btn" class="control-button" type="button" title="Load · Ctrl+O">LOAD</button>
             <button id="build-open-btn" class="control-button" type="button" aria-haspopup="dialog" aria-controls="build-modal">BUILD</button>
@@ -76,6 +81,9 @@
             <button class="realm-nav-button" type="button" data-kac-panel="economy" title="Treasury and economy">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M8 15h3"/><circle cx="16" cy="14" r="2"/></svg><span>Economy</span>
             </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="resources" title="Resource stores, flow and settlement history">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v12H4zM7 8V5h4v3m2 0V4h4v4M4 12h16M9 16h6"/></svg><span>Stores</span>
+            </button>
             <button class="realm-nav-button" type="button" data-kac-panel="buildings" title="Building register and structure details">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20V9l5-4 4 3 4-4 5 5v11H3Z"/><path d="M8 20v-6h4v6m4-7h2m-2 3h2"/></svg><span>Buildings</span>
             </button>
@@ -99,7 +107,9 @@
             <div class="stage-topline">
                 <div class="stage-chip">WORLD VIEW <strong>· ELDRIA</strong> <span id="zoom-level-name">ROOFTOPS</span> <span id="zoom-value">×1.00</span></div>
                 <div class="stage-chip">DRAG TO PAN</div>
+                <label class="map-layer-chip" for="map-layer-select"><span>MAP LAYER</span><select id="map-layer-select"><option value="terrain">Terrain</option><option value="resources">Resource survey</option><option value="fertility">Fertility</option><option value="roads">Road network</option><option value="services">Service coverage</option><option value="logistics">Logistics routes</option><option value="fields">Field seasons</option></select></label>
             </div>
+            <div id="map-layer-legend" class="map-layer-legend hidden" aria-live="polite"></div>
             <div class="zoom-panel" aria-label="Zoom controls">
                 <button id="zoom-out" class="zoom-button" type="button" aria-label="Zoom out">−</button>
                 <div class="zoom-presets" role="group" aria-label="Zoom detail level">
@@ -257,11 +267,21 @@
 <div id="settings-modal" class="screen-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
     <div class="ui-panel ui-window ui-window--small modal-panel settings-panel">
         <div class="ui-window__header ui-panel__header modal-heading"><div><div class="start-kicker">REALM OPTIONS</div><h2 id="settings-title">SETTINGS</h2></div><button id="settings-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close settings">×</button></div>
-        <div class="setting-row"><div><strong>Original soundtrack</strong><small>One original instrumental theme, composed for a continuous loop.</small></div><label class="toggle"><input id="settings-music-toggle" type="checkbox" checked><span></span></label></div>
-        <div class="setting-row volume-setting"><div><strong>Music volume</strong><small>Adjust the soundtrack level.</small></div><input id="settings-music-volume" type="range" min="0" max="100" value="22"></div>
-        <div class="setting-row"><div><strong>Resource change badges</strong><small>Show the per-tick change beside each resource in the royal ledger.</small></div><label class="toggle"><input id="settings-deltas-toggle" type="checkbox" checked><span></span></label></div>
-        <div class="setting-row"><div><strong>Reduce interface motion</strong><small>Turn off card and navigation transitions for calmer play.</small></div><label class="toggle"><input id="settings-motion-toggle" type="checkbox"><span></span></label></div>
-        <div class="setting-row"><div><strong>Card draw pace</strong><small>How quickly new cards arrive at court.</small></div><select id="settings-card-pace" class="settings-select"><option value="1.6">Slow</option><option value="1" selected>Normal</option><option value="0.65">Fast</option></select></div>
+        <div class="setting-row"><div><strong>Original soundtrack</strong><small>One original instrumental theme, composed for a continuous loop.</small></div><label class="toggle"><input id="settings-music-toggle" type="checkbox" aria-label="Original soundtrack enabled" checked><span></span></label></div>
+        <div class="setting-row volume-setting"><div><strong>Music volume</strong><small>Adjust the soundtrack level.</small></div><input id="settings-music-volume" type="range" min="0" max="100" value="22" aria-label="Music volume"></div>
+        <div class="setting-row"><div><strong>Resource change badges</strong><small>Show the per-tick change beside each resource in the royal ledger.</small></div><label class="toggle"><input id="settings-deltas-toggle" type="checkbox" aria-label="Show resource change badges" checked><span></span></label></div>
+        <div class="setting-row"><div><strong>Reduce interface motion</strong><small>Turn off card and navigation transitions for calmer play.</small></div><label class="toggle"><input id="settings-motion-toggle" type="checkbox" aria-label="Reduce interface motion"><span></span></label></div>
+        <div class="setting-row"><div><strong>Card draw pace</strong><small>How quickly new cards arrive at court.</small></div><select id="settings-card-pace" class="settings-select" aria-label="Card draw pace"><option value="1.6">Slow</option><option value="1" selected>Normal</option><option value="0.65">Fast</option></select></div>
+        <section class="settings-archive" aria-labelledby="settings-archive-title">
+            <div class="settings-section-heading" id="settings-archive-title">REALM ARCHIVE</div>
+            <p class="settings-archive-note">Local save slots for this browser. Loading a slot replaces the current campaign; save first if it matters.</p>
+            <div id="save-slot-list" class="save-slot-list"></div>
+            <div class="settings-action-row">
+                <button id="export-save-btn" class="ui-button ui-button--secondary secondary-button" type="button">EXPORT REALM</button>
+                <label class="ui-button ui-button--secondary secondary-button import-button" for="import-save-input">IMPORT REALM<input id="import-save-input" type="file" accept="application/json,.json" hidden></label>
+            </div>
+            <p id="save-archive-status" class="settings-archive-status" role="status" aria-live="polite">Local saves are stored in this browser only.</p>
+        </section>
         <div class="shortcut-list">
             <h3>KEYBOARD &amp; SHORTCUTS</h3>
             <div><span>Pause / Resume</span><kbd>SPACE</kbd></div><div><span>Zoom detail levels</span><kbd>1–4</kbd></div>
@@ -270,6 +290,7 @@
             <div><span>Help / close</span><kbd>? / ESC</kbd></div>
         </div>
         <div class="profile-note">Saves are currently stored per local browser profile. Do not use this as secure multi-user authentication or cloud backup.</div>
+        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.9.0</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
     </div>
 </div>
 
@@ -292,8 +313,10 @@
         <div class="ui-window__body event-panel-body">
             <h2 id="realm-event-title">A Bountiful Harvest</h2>
             <p id="realm-event-description"></p>
+            <div id="realm-event-participants" class="event-participants"></div>
             <div id="realm-event-choices" class="event-choices"></div>
         </div>
+        <footer class="event-panel-footer"><span>THE CROWN MAY REVIEW THE RECORD BEFORE DECIDING.</span><button id="realm-event-chronicle" class="ui-button ui-button--secondary" type="button">VIEW IN CHRONICLE</button></footer>
     </div>
 </div>
 
@@ -305,6 +328,7 @@
 <button type="button" class="ui-button ui-button--tab" data-command-tab="decisions"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>DECISIONS</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="cards"><svg aria-hidden="true"><use href="assets/command-emblems.svg#cards"></use></svg><span>CARDS</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="economy"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>ECONOMY</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="resources"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>STORES</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="buildings"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>BUILDINGS</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="dynasty"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>DYNASTY</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="creatures"><svg aria-hidden="true"><use href="assets/command-emblems.svg#dragon"></use></svg><span>CREATURES</span></button>
@@ -326,16 +350,20 @@
             </div>
             <button id="build-close-btn" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close construction panel">×</button>
         </header>
-        <p class="build-intro">Lay connected routes across explored land. Better roads speed up residents and make longer journeys more efficient.</p>
+        <p class="build-intro">Lay connected routes and open real construction sites. Every building needs dry land, materials and builder labour; carriers then deliver the remaining supplies from a warehouse.</p>
         <nav class="build-category-tabs" aria-label="Construction categories">
             <button class="is-active" type="button" data-build-category="roads">ROADS</button>
-            <button type="button" disabled>PRODUCTION · NEXT</button>
-            <button type="button" disabled>HOUSING · NEXT</button>
-            <button type="button" disabled>SERVICES · NEXT</button>
+            <button type="button" data-build-category="housing">HOUSING</button>
+            <button type="button" data-build-category="production">PRODUCTION</button>
+            <button type="button" data-build-category="storage">STORAGE</button>
+            <button type="button" data-build-category="services">SERVICES</button>
+            <button type="button" data-build-category="military">MILITARY</button>
+            <button type="button" data-build-category="nature">NATURE</button>
         </nav>
-        <div class="build-stats"><span>ROAD TILES BUILT</span><strong id="road-count">0</strong></div>
+        <div class="build-stats"><span>ROAD TILES</span><strong id="road-count">0</strong><span>SITES</span><strong id="city-site-count">0</strong><span>CARRIERS</span><strong id="city-carrier-count">0</strong><span>ACTIVE HAULS</span><strong id="city-job-count">0</strong></div>
+        <div class="build-logistics-summary"><span><b id="city-warehouse-count">0</b> WAREHOUSES · <b id="city-warehouse-stock">No supplied warehouse</b></span><span>WATER COVERAGE <b id="city-water-need">—</b></span><small id="city-logistics-note">No delivery jobs recorded.</small></div>
         <div id="build-options" class="ui-window__body build-options"></div>
-        <footer class="ui-window__footer build-footer"><span>Choose a road, then click or drag over explored land. Press ESC or EXIT BUILD to stop.</span></footer>
+        <footer class="ui-window__footer build-footer"><span>Choose a structure, then click a dry site. A construction site is not a finished building. Press ESC or EXIT BUILD to stop.</span></footer>
     </section>
 </div>
 <aside id="workshop-panel" class="workshop-panel hidden" aria-label="Realm workshop">
@@ -348,7 +376,9 @@
         <button type="button" data-build-action="move">MOVE</button>
         <button type="button" data-build-action="rotate">ROTATE 90°</button>
         <button type="button" data-build-action="duplicate">REBUILD</button>
-        <button type="button" data-build-action="demolish">DEMOLISH</button>
+        <button type="button" data-build-action="pause">PAUSE SITE</button>
+        <button type="button" data-build-action="resume">RESUME SITE</button>
+        <button type="button" data-build-action="demolish">DEMOLISH / CANCEL</button>
         <button type="button" data-build-action="undo">UNDO</button>
         <button type="button" data-build-action="close">CLOSE</button>
     </div>

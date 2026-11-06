@@ -12,6 +12,8 @@ import { toggleSoundtrack } from "../core/soundtrack.js";
 import { loadSettings,saveSettings } from "../core/persistence.js";
 import { getRoadBuildMode,placeRoad,removeRoad } from "../systems/roads.js";
 import { isWorkshopOpen,handleWorkshopClick,cancelWorkshopTool,closeWorkshop,toggleWorkshop } from "./build-mode.js";
+import { placeDirectBuilding,constructionStatus } from "../systems/construction.js";
+import { cancelBuildPlacement } from "./build-ui.js";
 
 export function setupInput(){
     const canvas=state.canvas;
@@ -95,7 +97,7 @@ export function setupInput(){
     });
 
     function beginCardDrag(event,cardId){
-        if(event.button!==0||!cardId||state.gameOver||state.isPaused||isWorkshopOpen())return;
+        if(event.button!==0||!cardId||state.gameOver||state.isPaused||isWorkshopOpen()||state.directBuildType)return;
         if(!selectCard(cardId))return;
         event.preventDefault();
         cardPointerId=event.pointerId;
@@ -173,6 +175,7 @@ export function setupInput(){
             if(cardPointerId!==null)endCardDrag();
             if(state.buildTool){cancelWorkshopTool();return;}
             if(isWorkshopOpen()){closeWorkshop();return;}
+            if(state.directBuildType||getRoadBuildMode()){cancelBuildPlacement();return;}
             closeTopModal();
             return;
         }
@@ -265,6 +268,17 @@ export function setupInput(){
         const boundsW=Number(state.worldW)||WORLD_W,boundsH=Number(state.worldH)||WORLD_H;
         if(tx<0||ty<0||tx>=boundsW||ty>=boundsH)return;
         if(isWorkshopOpen()){handleWorkshopClick(tx,ty);return;}
+        if(state.directBuildType){
+            const result=placeDirectBuilding(state.directBuildType,tx,ty);
+            if(placementStatus){
+                placementStatus.textContent=result.ok
+                    ?constructionStatus(result.entity)+" · SITE AT "+tx+", "+ty+" · CLICK ANOTHER DRY SITE"
+                    :String(result.reason||"SITE REJECTED").toUpperCase();
+                placementStatus.dataset.valid=String(Boolean(result.ok));
+            }
+            if(result.ok){addBuildFeedback(result.entity);renderUI();}
+            return;
+        }
         const roadType=getRoadBuildMode();
         if(roadType){paintRoadAtScreen(event);return;}
         const enemy=state.entities.find(entity=>!entity.dead&&entity.isEnemy()&&distance(entity.x,entity.y,world.x,world.y)<0.8);
@@ -275,6 +289,11 @@ export function setupInput(){
             return;
         }
         if(state.currentCard)placeCurrentCard(tx,ty);
+    }
+    function addBuildFeedback(entity){
+        if(!entity)return;
+        createParticle(entity.x*CELL+CELL/2,entity.y*CELL+CELL/2,"#e4bd72",18);
+        showToast("CONSTRUCTION SITE OPENED · "+entity.x+", "+entity.y);
     }
 }
 

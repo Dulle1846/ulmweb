@@ -12,6 +12,10 @@ import { updateCardDraw } from "../systems/cards.js";
 import { updateWeather } from "../world/weather.js";
 import { updateBuildingIncome } from "./buildings.js";
 import { updateVillagers } from "./villagers.js";
+import { updateConstruction } from "../systems/construction.js";
+import { updateFields } from "../systems/fields.js";
+import { updateLogistics } from "../systems/logistics.js";
+import { updateSettlement } from "../systems/settlement.js";
 import { updateCombat } from "./combat.js";
 import { queueMessage } from "../core/presentation-effects.js";
 import { updatePeople } from "../systems/people.js";
@@ -45,6 +49,7 @@ export function updateSimulation(){
     }
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
     resetIncome();
+    updateSettlement();
     const newcomer=newborn?null:updatePopulation();
     for(const death of deaths){
         addLog("A RESIDENT DIED: "+death.name+" · "+death.cause,"#b99a9a","death");
@@ -59,7 +64,7 @@ export function updateSimulation(){
     }
     if(newborn)addLog("A CHILD WAS BORN: "+newborn.person.name,"#e8c77b","family");
     else if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
-    updateBuildingIncome();updateVillagers();updateCombat();checkRandomEvents();updateCardDraw();
+    updateFields();updateBuildingIncome();updateLogistics();updateConstruction();updateVillagers();updateCombat();checkRandomEvents();updateCardDraw();
     updateWeather();updateMorale();updateMarket();updateEconomy();updateHealth();
     state.entities=state.entities.filter(entity=>!entity.dead);
     if(state.raidActive&&!state.entities.some(entity=>entity.isEnemy())){

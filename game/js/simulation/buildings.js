@@ -1,79 +1,158 @@
-// Building production and recurring settlement income.
+// Building production and recurring settlement income. Physical producers
+// place goods into their local stores; logistics carriers move them to a
+// warehouse or consumer. Only bread is converted to the royal food ledger at
+// the warehouse, after the carrier has actually delivered it.
 import { TYPE } from "../core/types.js";
-import { TILE_SIZE } from "../core/config.js";
 import { state } from "../core/state.js";
 import { getEntitiesOfType } from "../world/entities.js";
 import { addResource } from "../systems/resources.js";
-import { queueParticle,queueFloater } from "../core/presentation-effects.js";
-import { distance } from "../core/utils.js";
-import { getWorkforceSnapshot,getBuildingEfficiency } from "../systems/economy.js";
-import { random } from "../core/random.js";
-function getProductionLedger(){
-    const economy=state.economy||(state.economy={});
-    const ledger=economy.productionChains||(economy.productionChains={});
-    for(const key of ["millWoodConsumed","millBonusFood","tavernFoodConsumed","tavernGoldProduced"]){
-        const value=Number(ledger[key]);
-        ledger[key]=Number.isFinite(value)&&value>=0?value:0;
+import { getWorkforceSnapshot, getBuildingEfficiency } from "../systems/economy.js";
+import { RECIPES } from "../systems/city-config.js";
+import {
+    ensureInventory, addLocalOutput, getAvailableInput, getAvailableOutput,
+    requestSupply, requestHaul, getBuildingSupplyReason
+} from "../systems/logistics.js";
+import { findNearestResourceNode, harvestForest, extractStone } from "../systems/resource-geography.js";
+
+const PRODUCTION_INTERVAL = 6;
+const CIVIC_INTERVAL = 55;
+
+function ledger() {
+    const economy = state.economy || (state.economy = {});
+    const production = economy.productionChains || (economy.productionChains = {});
+    for (const key of ["logsHarvested", "stoneExtracted", "planksProduced", "flourProduced", "breadProduced", "waterDrawn", "grainHarvested", "millWoodConsumed", "millBonusFood", "tavernFoodConsumed", "tavernGoldProduced"]) {
+        production[key] = Math.max(0, Number(production[key]) || 0);
     }
-    return ledger;
+    return production;
 }
-export function updateBuildingIncome(){
-    const tick=state.tick,productionTick=tick%18===0,civicTick=tick%55===0;
-    if(!productionTick&&!civicTick)return;
-    const workforce=getWorkforceSnapshot();
-    const farms=getEntitiesOfType(TYPE.FARM),lumbers=getEntitiesOfType(TYPE.LUMBER);
-    const quarries=getEntitiesOfType(TYPE.QUARRY),goldMines=getEntitiesOfType(TYPE.GOLDMINE);
-    const taverns=getEntitiesOfType(TYPE.TAVERN),temples=getEntitiesOfType(TYPE.TEMPLE),mills=getEntitiesOfType(TYPE.MILL);
-    if(productionTick){
-        const production=getProductionLedger();
-        const activeMills=new Map();
-        // A mill is a real production link: it consumes timber to improve nearby farms.
-        mills.forEach(mill=>{
-            const efficiency=getBuildingEfficiency(mill,workforce);
-            const requiredWood=0.5*efficiency;
-            if(requiredWood<=0)return;
-            const fuel=Math.min(state.resources.wood,requiredWood);
-            if(fuel>0){
-                addResource("wood",-fuel);
-                production.millWoodConsumed+=fuel;
-                activeMills.set(mill,fuel/requiredWood);
-            }
-        });
-        farms.forEach(f=>{
-            const base=(state.seasonIndex===0||state.seasonIndex===1)?5:3;
-            let millRatio=0;
-            for(const [mill,ratio] of activeMills){
-                if(distance(mill.x,mill.y,f.x,f.y)<6)millRatio=Math.max(millRatio,ratio);
-            }
-            const efficiency=getBuildingEfficiency(f,workforce);
-            const output=base*efficiency*(1+0.6*millRatio);
-            addResource("food",output);
-            production.millBonusFood+=base*efficiency*0.6*millRatio;
-            if(random("presentation")<0.12)queueParticle(f.x*TILE_SIZE+20,f.y*TILE_SIZE+12,"#bef575",26,0,-1.5);
-        });
-        lumbers.forEach(building=>addResource("wood",(3+(random("production")>0.6?2:0))*getBuildingEfficiency(building,workforce)));
-        quarries.forEach(building=>addResource("stone",4*getBuildingEfficiency(building,workforce)));
-        goldMines.forEach(mine=>{
-            addResource("gold",(state.seasonIndex===3?1:2)*getBuildingEfficiency(mine,workforce));
-            if(random("presentation")<0.07)queueFloater(mine.x*TILE_SIZE,mine.y*TILE_SIZE-18,"GOLD VEIN","#fde047");
-        });
+
+function canWork(building, workforce) {
+    return !building.construction || building.construction.stage >= 3
+        ? getBuildingEfficiency(building, workforce) > 0
+        : false;
+}
+
+function requestInputs(building) {
+    const recipe = RECIPES[building.type];
+    if (!recipe?.input) return true;
+    const available = getAvailableInput(building);
+    for (const [good, amount] of Object.entries(recipe.input)) {
+        if (available[good] < amount) {
+            requestSupply(building, good, amount - available[good]);
+            return false;
+        }
     }
-    if(civicTick){
-        const production=getProductionLedger();
-        // Taverns convert surplus food into trade income; without provisions they cannot operate.
-        taverns.forEach(building=>{
-            const efficiency=getBuildingEfficiency(building,workforce);
-            const requiredFood=1*efficiency;
-            if(requiredFood<=0)return;
-            const provisions=Math.min(state.resources.food,requiredFood);
-            const operatingRatio=provisions/requiredFood;
-            addResource("food",-provisions);
-            const gold=3*efficiency*operatingRatio;
-            addResource("gold",gold);
-            production.tavernFoodConsumed+=provisions;
-            production.tavernGoldProduced+=gold;
-            state.morale=Math.min(100,state.morale+0.6*efficiency*operatingRatio);
-        });
-        temples.forEach(building=>{state.morale=Math.min(100,state.morale+1.2*getBuildingEfficiency(building,workforce));});
+    return true;
+}
+
+function consumeInputs(building) {
+    const recipe = RECIPES[building.type];
+    const inventory = ensureInventory(building);
+    for (const [good, amount] of Object.entries(recipe.input || {})) {
+        if (inventory.input[good] < amount) return false;
+    }
+    for (const [good, amount] of Object.entries(recipe.input || {})) inventory.input[good] -= amount;
+    return true;
+}
+
+function finishOutput(building, output, production) {
+    const recipe = RECIPES[building.type];
+    for (const [good, amount] of Object.entries(output)) {
+        const accepted = addLocalOutput(building, good, amount);
+        if (accepted > 0) {
+            if (good === "logs") production.logsHarvested += accepted;
+            else if (good === "planks") production.planksProduced += accepted;
+            else if (good === "flour") production.flourProduced += accepted;
+            else if (good === "bread") production.breadProduced += accepted;
+            else if (good === "water") production.waterDrawn += accepted;
+            else if (good === "grain") production.grainHarvested += accepted;
+            requestHaul(building, good, getAvailableOutput(building, good));
+        }
+    }
+}
+
+function produceRecipe(building, workforce, production) {
+    const recipe = RECIPES[building.type];
+    if (!recipe || recipe.field) return;
+    if (!canWork(building, workforce)) {
+        building.productionReason = building.construction && building.construction.stage < 3 ? "Under construction" : "No staff assigned";
+        return;
+    }
+    ensureInventory(building);
+    if (recipe.site === "forest" || recipe.site === "stone" || recipe.site === "water") {
+        const node = findNearestResourceNode(recipe.site, building.x, building.y, recipe.site === "water" ? 8 : 7);
+        if (!node) {
+            building.productionReason = recipe.site === "forest" ? "No forest in working range" : recipe.site === "stone" ? "No stone deposit in working range" : "No water in working range";
+            return;
+        }
+        if (recipe.site === "forest") {
+            const taken = harvestForest(node.x, node.y, recipe.batch);
+            if (taken <= 0) { building.productionReason = "Forest stand is depleted"; return; }
+            finishOutput(building, { logs: taken }, production);
+            return;
+        }
+        if (recipe.site === "stone") {
+            const taken = extractStone(node.x, node.y, recipe.batch * 2);
+            if (taken <= 0) { building.productionReason = "Stone deposit is depleted"; return; }
+            production.stoneExtracted += taken;
+            finishOutput(building, { stoneBlocks: Math.max(1, Math.floor(taken / 2)) }, production);
+            return;
+        }
+        if (recipe.site === "water") {
+            finishOutput(building, { water: recipe.batch }, production);
+            return;
+        }
+    }
+    if (!requestInputs(building)) {
+        building.productionReason = getBuildingSupplyReason(building) || "Waiting for input stock";
+        return;
+    }
+    if (!consumeInputs(building)) return;
+    const efficiency = Math.max(0.35, getBuildingEfficiency(building, workforce));
+    const output = {};
+    for (const [good, amount] of Object.entries(recipe.output || {})) output[good] = Math.max(0, Math.round(amount * efficiency));
+    finishOutput(building, output, production);
+    building.productionReason = null;
+}
+
+export function updateBuildingIncome() {
+    const tick = state.tick;
+    const productionTick = tick % PRODUCTION_INTERVAL === 0;
+    const civicTick = tick % CIVIC_INTERVAL === 0;
+    if (!productionTick && !civicTick) return;
+    const workforce = getWorkforceSnapshot();
+    const production = ledger();
+    if (productionTick) {
+        for (const building of state.entities) {
+            if (!building.dead && building.isBuilding() && RECIPES[building.type]) produceRecipe(building, workforce, production);
+        }
+        for (const temple of getEntitiesOfType(TYPE.TEMPLE)) {
+            if (temple.construction && temple.construction.stage < 3) continue;
+            state.morale = Math.min(100, state.morale + 0.6 * getBuildingEfficiency(temple, workforce));
+        }
+        for (const mine of getEntitiesOfType(TYPE.GOLDMINE)) {
+            if (mine.construction && mine.construction.stage < 3) continue;
+            addResource("gold", (state.seasonIndex === 3 ? 1 : 2) * getBuildingEfficiency(mine, workforce));
+        }
+    }
+    if (civicTick) {
+        for (const tavern of getEntitiesOfType(TYPE.TAVERN)) {
+            if (tavern.construction && tavern.construction.stage < 3) continue;
+            const efficiency = getBuildingEfficiency(tavern, workforce);
+            if (efficiency <= 0) continue;
+            const provisions = Math.min(Number(state.resources.food) || 0, efficiency);
+            if (provisions <= 0) continue;
+            addResource("food", -provisions);
+            const gold = 3 * efficiency * (provisions / Math.max(0.0001, efficiency));
+            addResource("gold", gold);
+            production.tavernFoodConsumed += provisions;
+            production.tavernGoldProduced += gold;
+            state.morale = Math.min(100, state.morale + 0.6 * efficiency);
+        }
+        for (const mill of getEntitiesOfType(TYPE.MILL)) {
+            if (mill.construction && mill.construction.stage < 3) continue;
+            const flour = mill.inventory?.output?.flour || 0;
+            if (flour > 0) requestHaul(mill, "flour", flour);
+        }
     }
 }

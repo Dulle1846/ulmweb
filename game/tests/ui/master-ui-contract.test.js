@@ -3,14 +3,17 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const root=new URL("../../",import.meta.url);
-const [html,css,cardCss,ui,management,dossier,main]=await Promise.all([
+const [html,css,cardCss,ui,management,dossier,main,economy,renderer,hud]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/ui-design-system.css",root),"utf8"),
   readFile(new URL("css/medieval.css",root),"utf8"),
   readFile(new URL("js/presentation/rendering/ui.js",root),"utf8"),
   readFile(new URL("js/presentation/management-ui.js",root),"utf8"),
   readFile(new URL("js/presentation/character-dossier.js",root),"utf8"),
-  readFile(new URL("js/app/main.js",root),"utf8")
+  readFile(new URL("js/app/main.js",root),"utf8"),
+  readFile(new URL("js/systems/economy.js",root),"utf8"),
+  readFile(new URL("js/presentation/rendering/renderer.js",root),"utf8"),
+  readFile(new URL("css/hud-v3.css",root),"utf8")
 ]);
 
 test("master UI stylesheet is loaded after the legacy visual layers",()=>{
@@ -35,7 +38,7 @@ test("the approved royal palette is represented by central design tokens",()=>{
 test("every visible royal navigation action has a real handler",()=>{
   const targets=[...html.matchAll(/data-kac-panel="([^"]+)"/g)].map(match=>match[1]);
   assert.ok(targets.length>=10,"expected the administration rail and resource shortcuts");
-  const supported=new Set(["kingdom","government","people","dynasty","chronicle","politics","economy","buildings","cards","creatures","build","settings"]);
+  const supported=new Set(["kingdom","government","people","dynasty","chronicle","politics","economy","resources","buildings","cards","creatures","build","settings"]);
   for(const target of targets)assert.ok(supported.has(target),"unwired navigation target: "+target);
   for(const target of supported)assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing visible navigation target: "+target);
   assert.ok(management.includes('addEventListener("click"'),"navigation must use real click handlers");
@@ -91,6 +94,78 @@ test("economy panel distinguishes stock, current-tick flow and the actual latest
   assert.ok(management.includes("latest completed ledger"));
   assert.ok(management.includes("historical time series"));
   assert.ok(management.includes("No forecasts are inferred"));
+  assert.ok(management.includes("state.economy?.history"));
+  assert.ok(management.includes("treasuryCharts(history)"));
+  assert.ok(economy.includes("ECONOMY_HISTORY_LIMIT"));
+  assert.ok(economy.includes("totals.history.push"));
+  assert.ok(economy.includes("netGold: Number(ledger.netGold)"));
+});
+
+test("the sovereign banner exposes identity, treasury trend and a live warning inbox",()=>{
+  assert.ok(html.includes('id="ruler-dossier-btn"'));
+  assert.ok(html.includes('id="ruler-portrait-use"'));
+  assert.ok(html.includes('id="ruler-name"'));
+  assert.ok(html.includes('id="treasury-trend"'));
+  assert.ok(html.includes('id="warning-inbox-btn"'));
+  assert.ok(html.includes('id="warning-count"'));
+  assert.ok(ui.includes("getRoyalHouse"));
+  assert.ok(ui.includes("renderTopStatus"));
+  assert.ok(ui.includes("state.economy?.history"));
+  assert.ok(ui.includes("warning-count"));
+  assert.ok(dossier.includes("ruler-dossier-btn"));
+  assert.ok(hud.includes(".ruler-status"));
+  assert.ok(hud.includes(".warning-inbox"));
+});
+
+test("resource details expose real stocks, flows, related buildings and bounded history",()=>{
+  assert.ok(html.includes('data-kac-panel="resources"'));
+  assert.ok(html.includes('data-command-tab="resources"'));
+  assert.ok(html.includes('id="map-layer-select"'));
+  assert.ok(management.includes("function resources()"));
+  assert.ok(management.includes("function resourceCard("));
+  assert.ok(management.includes("RESOURCE_ORDER"));
+  assert.ok(management.includes("state.economy?.history"));
+  assert.ok(management.includes("At least two completed settlements"));
+  assert.ok(management.includes("Latest settlement:"));
+  assert.ok(hud.includes(".resource-detail-grid"));
+  assert.ok(hud.includes(".command-trend"));
+});
+
+test("map layer selector and legend are wired to real geography overlays",()=>{
+  assert.ok(html.includes('id="map-layer-select"'));
+  assert.ok(html.includes('id="map-layer-legend"'));
+  assert.ok(renderer.includes("drawMapLayer"));
+  assert.ok(renderer.includes("getResourceNodeAt"));
+  assert.ok(renderer.includes("state.mapLayer"));
+  assert.ok(ui.includes("MAP_LAYER_LEGENDS"));
+  assert.ok(ui.includes("setupMapViewControls"));
+  assert.ok(hud.includes(".map-layer-legend"));
+});
+
+test("settings expose local save slots, import/export and version/credits metadata",()=>{
+  assert.ok(html.includes('id="save-slot-list"'));
+  assert.ok(html.includes('id="export-save-btn"'));
+  assert.ok(html.includes('id="import-save-input"'));
+  assert.ok(html.includes('id="save-archive-status"'));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.9.0</b>"));
+  assert.ok(main.includes("function renderSaveSlots()"));
+  assert.ok(main.includes("function exportRealm()"));
+  assert.ok(main.includes("async function importRealm(file)"));
+  assert.ok(main.includes("ECONOMY_HISTORY_LIMIT"));
+  assert.ok(hud.includes(".save-slot"));
+  for(const label of ["Original soundtrack enabled","Music volume","Show resource change badges","Reduce interface motion","Card draw pace"]){
+    assert.ok(html.includes('aria-label="'+label+'"'),"settings control needs an accessible name: "+label);
+  }
+});
+
+test("realm issue presentation exposes real participants and the chronicle record",()=>{
+  assert.ok(html.includes('id="realm-event-participants"'));
+  assert.ok(html.includes('id="realm-event-chronicle"'));
+  assert.ok(ui.includes("issue.family"));
+  assert.ok(ui.includes("data-event-person"));
+  assert.ok(main.includes("realm-event-participants"));
+  assert.ok(main.includes("realm-event-chronicle"));
+  assert.ok(hud.includes(".event-participants"));
 });
 
 test("building register uses live entities, staffing, footprint and site data without inventing output",()=>{
@@ -100,7 +175,10 @@ test("building register uses live entities, staffing, footprint and site data wi
   assert.ok(management.includes("getBuildingEfficiency(building,workforce)"));
   assert.ok(management.includes("BUILDING_SIZE[building.type]"));
   assert.ok(management.includes("getResourceNodeAt(building.x,building.y)"));
-  assert.ok(management.includes("Per-building production output, storage and upkeep are not currently exposed"));
+  assert.ok(management.includes("constructionSnapshot(building)"));
+  assert.ok(management.includes("getInventorySummary(building)"));
+  assert.ok(management.includes("Local store"));
+  assert.ok(management.includes("getBuildingLogisticsStatus(building)"));
   assert.ok(management.includes('id="building-search"'));
 });
 
@@ -157,6 +235,10 @@ test("original royal portrait sprite is wired into roster, dossiers and dynasty 
 test("character relationship links navigate to real dossiers and dynasty uses verified collateral kin",()=>{
   assert.ok(dossier.includes("dossier-related-person"));
   assert.ok(dossier.includes('getElementById("person-dossier")?.addEventListener("click"'));
+  assert.ok(dossier.includes('data-dossier-action="locate"'));
+  assert.ok(dossier.includes('data-dossier-action="dynasty"'));
+  assert.ok(main.includes('window.addEventListener("kac:focus-map"'));
+  assert.ok(hud.includes(".dossier-actions"));
   assert.ok(management.includes("rootFamily.parents"));
   assert.ok(management.includes("rootFamily.siblings"));
   assert.ok(management.includes("getFamilySnapshot(auntId)?.children"));
@@ -250,7 +332,7 @@ test("royal administration navigation exposes current-page semantics, not toggle
   assert.ok(management.includes('button.setAttribute("aria-current","page")'));
   assert.ok(management.includes('button.removeAttribute("aria-current")'));
   assert.ok(!management.includes('button.setAttribute("aria-pressed"'),"navigation links must not be announced as toggle buttons");
-  for(const target of ["kingdom","government","people","dynasty","chronicle","politics","economy","buildings","cards","creatures","build","settings"]){
+  for(const target of ["kingdom","government","people","dynasty","chronicle","politics","economy","resources","buildings","cards","creatures","build","settings"]){
     assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing navigation target "+target);
   }
 });

@@ -20,6 +20,9 @@ import {
     FURNITURE_COSTS, FURNITURE_UPKEEP, MAX_FURNITURE_PER_ROOM,
     furnitureCost, getRoomFurniturePlan, normalizeRoomFurniture,
 } from '../systems/furniture.js';
+import { constructionSnapshot, isUnderConstruction, pauseConstruction, resumeConstruction, cancelConstruction, placeDirectBuilding } from '../systems/construction.js';
+import { getInventorySummary } from '../systems/logistics.js';
+import { getServiceReason } from '../systems/settlement.js';
 
 const RADIUS_SEARCH = 9;
 
@@ -232,27 +235,21 @@ export function duplicateSelected() {
     if (!entity) return;
     const spot = findFreeTileAround(entity);
     if (!spot) { toast('NO FREE GROUND NEARBY'); return; }
-    const cost = REBUILD_COST[entity.type] || REBUILD_COST[TYPE.HOUSE];
-    for (const [resource, amount] of Object.entries(cost)) {
-        if ((state.resources[resource] || 0) < amount) { toast('CANNOT AFFORD · ' + resource.toUpperCase()); return; }
-    }
-    for (const [resource, amount] of Object.entries(cost)) state.resources[resource] -= amount;
-
-    const copy = spawnEntity(spot.x, spot.y, entity.type);
-    if (!copy) { toast('REALM CAPACITY REACHED'); return; }
-    copy.rotation = entity.rotation || 0;
-    copy.interior = { ...normalizeInterior(entity.type, entity.interior) };
-    copy.roomFurniture = cloneRoomFurniture(entity.roomFurniture);
-    copy.layout = entity.layout ? cloneLayout(entity.layout) : null;
-    copy.footprintScale = entity.footprintScale || 1;
-    selectBuilding(copy);
-    state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
-    toast('REBUILT · ' + buildingName(entity.type));
+    const result = placeDirectBuilding(entity.type, spot.x, spot.y);
+    if (!result.ok) { toast(String(result.reason || 'SITE REJECTED').toUpperCase()); return; }
+    selectBuilding(result.entity);
+    toast('CONSTRUCTION SITE OPENED · ' + buildingName(entity.type));
 }
 
 export function demolishSelected() {
     const entity = selectedBuilding();
     if (!entity) return;
+    if (isUnderConstruction(entity)) {
+        const result = cancelConstruction(entity);
+        selectBuilding(null);
+        toast(result.ok ? 'SITE CANCELLED · 35% OF PAID MATERIALS RECOVERED' : result.reason);
+        return;
+    }
     pushUndo(entity);
     const cost = REBUILD_COST[entity.type] || REBUILD_COST[TYPE.HOUSE];
     for (const [resource, amount] of Object.entries(cost)) {
@@ -264,6 +261,20 @@ export function demolishSelected() {
     state.buildTool = null;
     renderWorkshop();
     toast('DEMOLISHED · MATERIALS RECOVERED');
+}
+export function pauseSelectedSite() {
+    const entity = selectedBuilding();
+    if (!entity || !isUnderConstruction(entity)) { toast('SELECT A CONSTRUCTION SITE'); return; }
+    const result = entity.construction.paused ? resumeConstruction(entity) : pauseConstruction(entity);
+    renderWorkshop();
+    toast(result.ok ? (entity.construction.paused ? 'SITE PAUSED' : 'SITE RESUMED') : result.reason);
+}
+export function resumeSelectedSite() {
+    const entity = selectedBuilding();
+    if (!entity || !isUnderConstruction(entity)) { toast('SELECT A CONSTRUCTION SITE'); return; }
+    const result = resumeConstruction(entity);
+    renderWorkshop();
+    toast(result.ok ? 'SITE RESUMED' : result.reason);
 }
 
 export function selectedRoomName(entity = selectedBuilding()) {
@@ -352,9 +363,16 @@ export function renderWorkshop() {
 
     if (title) title.textContent = entity ? buildingName(entity.type) : 'REALM WORKSHOP';
     if (meta) {
-        meta.textContent = entity
-            ? `TILE ${entity.x}, ${entity.y} · ROTATION ${(entity.rotation || 0) * 90}° · ${entity.type === TYPE.WALL ? 'WALL' : 'INTERIOR ' + (state.zoomLevel >= 4 ? 'OPEN' : 'AT ZOOM 4')}`
-            : 'Click any structure on the map to inspect and reshape it.';
+        if (entity) {
+            const site = constructionSnapshot(entity);
+            const inventory = getInventorySummary(entity);
+            const stored = !inventory ? 'no local store' : inventory.kind === 'warehouse'
+                ? inventory.used + ' / ' + inventory.capacity + ' warehouse space'
+                : [...Object.entries(inventory.input || {}).map(([good, value]) => value + ' ' + good + ' in'), ...Object.entries(inventory.output || {}).map(([good, value]) => value + ' ' + good + ' out')].join(' · ') || 'local store empty';
+            meta.textContent = `TILE ${entity.x}, ${entity.y} · ${site.status.toUpperCase()}${site.percent < 100 ? ' · ' + site.percent + '%' : ''} · ${stored}`;
+        } else {
+            meta.textContent = 'Click any structure on the map to inspect and reshape it.';
+        }
     }
     if (actions) actions.classList.toggle('is-disabled', !entity);
     if (items) {
@@ -362,7 +380,10 @@ export function renderWorkshop() {
             items.innerHTML = '<div class="workshop-empty">No structure selected.</div>';
         } else {
             const breakdown = getBuildingRoomBreakdown(entity);
-            if (!breakdown) {
+            if (isUnderConstruction(entity)) {
+                const site = constructionSnapshot(entity);
+                items.innerHTML = `<div class="workshop-construction"><strong>${site.status} · ${site.percent}%</strong><p>This is a construction site, not an operating building. It needs builder labour and physical material deliveries before rooms, production or furniture become active.</p><div class="workshop-upkeep"><span>DELIVERED</span><strong>${Object.entries(site.delivered || {}).map(([good, value]) => value + ' ' + good).join(' · ') || 'No materials delivered yet'}</strong></div></div>`;
+            } else if (!breakdown) {
                 items.innerHTML = '<div class="workshop-empty">This structure has no interior.</div>';
             } else {
                 const room = activeRoom(entity, breakdown);
@@ -405,7 +426,9 @@ export function renderWorkshop() {
     panel.classList.toggle('is-moving', state.buildTool === 'move');
     document.querySelectorAll('[data-build-action]').forEach(button => {
         const action = button.dataset.buildAction;
-        const disabled = !entity && action !== 'undo' && action !== 'close';
+        let disabled = !entity && action !== 'undo' && action !== 'close';
+        if (action === 'pause') disabled = !entity || !isUnderConstruction(entity) || Boolean(entity.construction?.paused);
+        if (action === 'resume') disabled = !entity || !isUnderConstruction(entity) || !entity.construction?.paused;
         button.disabled = disabled;
         button.classList.toggle('is-active', action === 'move' && state.buildTool === 'move');
     });
@@ -427,6 +450,8 @@ export function setupWorkshopUI() {
             case 'rotate': rotateSelected(); break;
             case 'duplicate': duplicateSelected(); break;
             case 'demolish': demolishSelected(); break;
+            case 'pause': pauseSelectedSite(); break;
+            case 'resume': resumeSelectedSite(); break;
             case 'undo': undoBuildAction(); break;
             case 'close': closeWorkshop(); break;
             default: break;

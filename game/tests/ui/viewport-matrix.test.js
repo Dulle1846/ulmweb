@@ -5,11 +5,11 @@ import {readFile} from "node:fs/promises";
 const root=new URL("../../",import.meta.url);
 const source=await readFile(new URL("tests/browser/e2e.mjs",root),"utf8");
 
-test("seven-viewport matrix covers all ten strategic management panels",()=>{
+test("seven-viewport matrix covers all eleven strategic management panels",()=>{
   for(const viewport of ["390,844","768,1024","1280,720","1366,768","1600,900","1920,1080","2560,1440"]){
     assert.ok(source.includes(viewport),"missing required viewport "+viewport);
   }
-  for(const panel of ["kingdom","government","politics","decisions","cards","economy","buildings","dynasty","creatures","chronicle"]){
+  for(const panel of ["kingdom","government","politics","decisions","cards","economy","resources","buildings","dynasty","creatures","chronicle"]){
     assert.ok(source.includes('"'+panel+'"'),"missing management panel "+panel);
     assert.ok(source.includes('"management-"+tab'),"missing per-tab screenshot naming for "+panel);
   }

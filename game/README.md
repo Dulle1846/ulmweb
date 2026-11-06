@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.8.0  
-**Next development line:** 3.9.0-dev  
+**Production version:** 3.9.0
+**Next development line:** 3.10.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 

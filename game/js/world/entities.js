@@ -170,6 +170,30 @@ export function initStartingKingdom() {
     const goldmine = spawnEntity(cx + 12, cy - 10, TYPE.GOLDMINE);
     const temple = spawnEntity(cx - 10, cy + 2, TYPE.TEMPLE);
 
+    // The starting settlement already owns the physical infrastructure its
+    // first production chains need. These are complete buildings, not free
+    // construction placeholders; the crown must still staff and supply them.
+    function placeExtra(type, ox, oy) {
+        for (let radius = 0; radius <= 5; radius++) {
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+                    const x = cx + ox + dx, y = cy + oy + dy;
+                    if (!buildingOverlaps(x, y, type)) return spawnEntity(x, y, type);
+                }
+            }
+        }
+        return null;
+    }
+    const warehouse = placeExtra(TYPE.WAREHOUSE, -14, -3);
+    const sawmill = placeExtra(TYPE.SAWMILL, 13, 2);
+    const bakery = placeExtra(TYPE.BAKERY, 7, 9);
+    const well = placeExtra(TYPE.WELL, -1, 4);
+    const mason = placeExtra(TYPE.MASON, -6, 11);
+    const forester = placeExtra(TYPE.FORESTER, -16, -7);
+    const market = placeExtra(TYPE.MARKET, 15, -4);
+    const stoneHouse = placeExtra(TYPE.STONE_HOUSE, 7, -10);
+
     // König – markiert als König, bleibt nah an der Burg
     const king = spawnEntity(cx + 1, cy - 2, TYPE.KNIGHT);
     king.hp = 300;
@@ -192,6 +216,12 @@ export function initStartingKingdom() {
         { x: cx + 1, y: cy + 9,  home: quarry },
         { x: cx + 11, y: cy - 9, home: goldmine },
         { x: cx - 11, y: cy + 3, home: temple },
+        { x: cx - 13, y: cy - 2, home: stoneHouse || h2, workplace: warehouse, job: "hauler" },
+        { x: cx + 12, y: cy + 3, home: stoneHouse || h2, workplace: sawmill, job: "sawyer" },
+        { x: cx + 8, y: cy + 9, home: stoneHouse || h3, workplace: bakery, job: "baker" },
+        { x: cx - 2, y: cy + 5, home: stoneHouse || h1, workplace: well, job: "wellkeeper" },
+        { x: cx - 7, y: cy + 11, home: stoneHouse || h3, workplace: mason, job: "mason" },
+        { x: cx + 14, y: cy - 4, home: stoneHouse || h2, workplace: market, job: "merchant" },
     ];
 
     villagerSpawns.forEach(s => {
@@ -202,7 +232,14 @@ export function initStartingKingdom() {
         );
         v.home = { x: s.home.x, y: s.home.y };
         v.anchor = { x: s.home.x, y: s.home.y };
-        v.jobRefreshTimer = 0; // sofort Job zuweisen
+        if (s.workplace) {
+            v.workplace = s.workplace;
+            v.job = s.job;
+            v.anchor = { x: s.workplace.x, y: s.workplace.y };
+            v.jobRefreshTimer = 220;
+        } else {
+            v.jobRefreshTimer = 0; // sofort Job zuweisen
+        }
     });
 
     // Wachen

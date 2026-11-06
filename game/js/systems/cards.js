@@ -5,6 +5,7 @@ import { state } from "../core/state.js";
 import { spawnEntity,buildingOverlaps,canSpawnEntity } from "../world/entities.js";
 import { revealArea,isWaterAt } from "../world/world.js";
 import { canAfford,payForCard,addResource } from "./resources.js";
+import { beginConstruction,siteSuitability } from "./construction.js";
 import { CARD_PROTOTYPES,CARD_CATEGORIES,CARD_VARIANT_DIMENSIONS,createCardForCategory,createCardVariant } from "./card-catalog.js";
 import { addLog } from "./events.js";
 import { canAccommodateVillagers,getHousingSnapshot,RESIDENTS_PER_HOUSE,normalizeHouseholdAssignments } from "./population.js";
@@ -93,6 +94,10 @@ export function getCardPlacementPreview(tx,ty){
     const size=footprintFor(card),terrainValid=hasBuildableTerrain(tx,ty,card);
     const occupied=card.kind==="effect"?false:buildingOverlaps(tx,ty,card.type,card.sizeMultiplier||1),affordable=canAfford(card);
     let reason=null;if(!terrainValid)reason="INVALID TERRAIN";else if(occupied)reason="SPACE OCCUPIED";else if(!affordable)reason="CANNOT AFFORD";
+    if(!reason&&card.kind==="building"){
+        const suitability=siteSuitability(card.type,tx,ty);
+        if(!suitability.ok)reason=suitability.reason;
+    }
     return {tx,ty,type:card.type,width:size.w,height:size.h,valid:reason===null,reason,kind:card.kind};
 }
 function findNearestBuildableTile(cx,cy){
@@ -101,6 +106,7 @@ function findNearestBuildableTile(cx,cy){
         if(Math.abs(ox)!==radius&&Math.abs(oy)!==radius)continue;
         const tx=cx+ox,ty=cy+oy;
         if(!hasBuildableTerrain(tx,ty,state.currentCard)||(state.currentCard.kind!=="effect"&&buildingOverlaps(tx,ty,state.currentCard.type)))continue;
+        if(state.currentCard.kind==="building"&&!siteSuitability(state.currentCard.type,tx,ty).ok)continue;
         return {tx,ty};
     }
     return null;
@@ -153,39 +159,34 @@ export function placeCurrentCard(targetX,targetY){
         queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"NO HOUSING AVAILABLE","#f59e0b");
         return false;
     }
-    if(card.kind!=="effect"&&card.type===TYPE.HOUSE){
-        const housing=getHousingSnapshot();
-        if(housing.capacity-housing.population+RESIDENTS_PER_HOUSE<3||
-            !canSpawnEntity(TYPE.HOUSE,4)||!canSpawnEntity(TYPE.VILLAGER,3)){
-            queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"HOUSING OR REALM CAPACITY REACHED","#f59e0b");
-            return false;
-        }
-    }
-    if(!payForCard(card))return false;
+    const isBuilding=card.kind==="building";
+    if(!isBuilding&&!payForCard(card))return false;
     if(card.kind==="effect"){
         const result=resolveEffectCard(card);
         queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"CARD PLAYED"+result,"#e4bd72");
         addLog("PLAYED "+card.name,"#e4bd72","card");
     }else{
         const entity=spawnEntity(tx,ty,card.type);
+        if(!entity){queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,"REALM CAPACITY REACHED","#f59e0b");return false;}
         entity.footprintScale=Number.isFinite(card.sizeMultiplier)?Math.max(0.25,Math.min(6,card.sizeMultiplier)):1;
         if(card.type===TYPE.DRAGON)awakenDragon(entity);
         if(card.kind==="unit"||card.kind==="person"||card.kind==="animal"){
             entity.anchor={x:tx,y:ty};entity.home={x:tx,y:ty};entity.jobRefreshTimer=0;
             if(card.kind!=="animal")state.statistics.totalUnitsRecruited++;
         }else{
-            state.statistics.totalBuildingsBuilt++;
-            if(card.type===TYPE.HOUSE)for(let i=0;i<3;i++){
-                if(!canSpawnEntity(TYPE.VILLAGER))break;
-                const villager=spawnEntity(tx+randInt(-2,2),ty+randInt(-2,2),TYPE.VILLAGER);
-                if(villager){villager.home={x:tx,y:ty};villager.anchor={x:tx,y:ty};villager.jobRefreshTimer=0;}
+            const started=beginConstruction(entity,card.cost,{source:"card"});
+            if(!started.ok){
+                entity.dead=true;
+                state.buildingCollisionVersion=(state.buildingCollisionVersion||0)+1;
+                queueFloater(tx*TILE_SIZE,ty*TILE_SIZE,started.reason.toUpperCase(),"#f59e0b");
+                return false;
             }
             revealArea(tx,ty,9);
         }
         if(card.kind==="person"&&card.type===TYPE.VILLAGER)normalizeHouseholdAssignments();
         for(let i=0;i<10;i++)queueParticle(tx*TILE_SIZE+rand(0,TILE_SIZE),ty*TILE_SIZE+rand(0,TILE_SIZE),"#fde047",24,rand(-2,2),rand(-3,-0.5),4);
-        queueFloater(tx*TILE_SIZE+TILE_SIZE/2,ty*TILE_SIZE+10,card.kind==="animal"?"RELEASED!":card.unit?"RECRUITED!":"BUILT!","#a3e635");
-        addLog((card.unit||card.kind==="animal"?"RECRUITED ":"BUILT ")+card.name,"#a3d6a7","card");
+        queueFloater(tx*TILE_SIZE+TILE_SIZE/2,ty*TILE_SIZE+10,card.kind==="animal"?"RELEASED!":card.unit?"RECRUITED!":"SITE OPENED!","#a3e635");
+        addLog((card.unit||card.kind==="animal"?"RECRUITED ":"CONSTRUCTION BEGUN — ")+card.name,"#a3d6a7","card");
     }
     consumeCurrentCard();return true;
 }

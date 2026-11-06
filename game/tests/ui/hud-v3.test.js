@@ -45,6 +45,11 @@ test("administration rail reserves readable width for every label",()=>{
   assert.ok(html.includes('class="realm-nav-divider"'));
 });
 
+test("short desktop windows compact the rail so every destination stays visible",()=>{
+  assert.ok(hud.includes("@media(max-height:800px) and (min-width:901px)"));
+  assert.ok(hud.includes(".realm-nav-button{min-height:36px"));
+});
+
 test("the hand renders five explicit slots and an honest empty state",()=>{
   assert.ok(ui.includes("const HAND_SLOTS=5"));
   assert.ok(ui.includes("SLOT_NUMERALS"));

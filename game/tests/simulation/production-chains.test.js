@@ -4,6 +4,7 @@ import {resetState,state} from "../../js/core/state.js";
 import {TYPE} from "../../js/core/types.js";
 import {spawnEntity} from "../../js/world/entities.js";
 import {updateBuildingIncome} from "../../js/simulation/buildings.js";
+import {ensureInventory,getInventorySummary,initializeCityForRealm} from "../../js/systems/logistics.js";
 
 function prepare(tick){
     resetState();
@@ -13,29 +14,29 @@ function prepare(tick){
     state.morale=70;
 }
 
-test("a staffed mill consumes timber and increases nearby farm output",()=>{
-    prepare(18);
-    const farm=spawnEntity(80,80,TYPE.FARM);
-    const mill=spawnEntity(84,80,TYPE.MILL);
-    for(let i=0;i<4;i++)spawnEntity(81+i,80,TYPE.VILLAGER).workplace=farm;
-    for(let i=0;i<2;i++)spawnEntity(84+i,81,TYPE.VILLAGER).workplace=mill;
+test("a staffed sawmill consumes logs and produces planks in its local store",()=>{
+    prepare(24);
+    initializeCityForRealm({seedWarehouse:false});
+    const sawmill=spawnEntity(84,80,TYPE.SAWMILL);
+    ensureInventory(sawmill);
+    sawmill.inventory.input.logs=4;
+    for(let i=0;i<2;i++)spawnEntity(84+i,81,TYPE.VILLAGER).workplace=sawmill;
     updateBuildingIncome();
-    assert.equal(state.resources.food,28);
-    assert.equal(state.resources.wood,19.5);
-    assert.equal(state.economy.productionChains.millWoodConsumed,0.5);
-    assert.equal(state.economy.productionChains.millBonusFood,3);
+    const summary=getInventorySummary(sawmill);
+    assert.ok(summary.output.planks>0);
+    assert.ok(summary.input.logs<4);
+    assert.equal(state.economy.productionChains.planksProduced,summary.output.planks);
 });
 
-test("a mill cannot boost production without timber to fuel it",()=>{
-    prepare(18);
-    state.resources.wood=0;
-    const farm=spawnEntity(80,80,TYPE.FARM);
-    const mill=spawnEntity(84,80,TYPE.MILL);
-    for(let i=0;i<4;i++)spawnEntity(81+i,80,TYPE.VILLAGER).workplace=farm;
-    for(let i=0;i<2;i++)spawnEntity(84+i,81,TYPE.VILLAGER).workplace=mill;
+test("a sawmill without logs cannot create planks from nothing",()=>{
+    prepare(24);
+    initializeCityForRealm({seedWarehouse:false});
+    const sawmill=spawnEntity(84,80,TYPE.SAWMILL);
+    for(let i=0;i<2;i++)spawnEntity(84+i,81,TYPE.VILLAGER).workplace=sawmill;
     updateBuildingIncome();
-    assert.equal(state.resources.food,25);
-    assert.equal(state.economy.productionChains.millBonusFood,0);
+    const summary=getInventorySummary(sawmill);
+    assert.equal(summary.output.planks||0,0);
+    assert.equal(sawmill.productionReason,"No logs in reachable stores");
 });
 
 test("a staffed tavern converts provisions into gold and morale",()=>{

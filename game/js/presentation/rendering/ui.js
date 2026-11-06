@@ -9,6 +9,7 @@ import { getHousingSnapshot,getHouseholdSnapshot } from "../../systems/populatio
 import { getPoliticalSnapshot } from "../../systems/politics.js";
 import { getHealthSnapshot } from "../../systems/health.js";
 import { getRoomBonusSnapshot, roomBonusSignature, ROOM_BONUS_CAPS } from "../../systems/rooms.js";
+import { getRoyalHouse } from "../../systems/royal-dynasty.js";
 
 let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRoomBonusSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
@@ -18,6 +19,52 @@ function income(v){
     if(!Number.isFinite(value)||value===0)return "";
     const rounded=Math.round(value*10)/10;
     return (rounded>0?"+":"")+rounded.toLocaleString("en-US",{maximumFractionDigits:1});
+}
+function rulerPortraitSymbol(entity){
+    const person=entity?.person||{};
+    const role=String(person.role||"").toLowerCase();
+    const sex=String(person.sex||"").toLowerCase();
+    const female=sex==="f"||sex.includes("female")||sex.includes("woman");
+    if(entity?.isKing||/sovereign|monarch|ruler|king|queen/.test(role))return female?"portrait-queen":"portrait-king";
+    if(/scholar|scribe|healer|cleric|priest|mage|teacher/.test(role))return "portrait-scholar";
+    if(/knight|guard|soldier|marshal|captain|archer/.test(role))return "portrait-knight";
+    if(/noble|lord|lady|court|consort/.test(role))return female?"portrait-noblewoman":"portrait-nobleman";
+    return female?"portrait-noblewoman":"portrait-villager";
+}
+function personName(personId){
+    const id=String(personId||"");
+    const live=state.entities.find(entity=>!entity.dead&&String(entity.personId||entity.person?.id||"")===id);
+    if(live?.person?.name)return live.person.name;
+    const memorial=(state.personArchive||[]).find(entry=>String(entry.personId||"")===id);
+    return memorial?.person?.name||("Recorded person "+id);
+}
+function renderTopStatus(){
+    let house=null;
+    try{house=getRoyalHouse();}catch{/* The realm has not appointed a sovereign yet. */}
+    const ruler=house?.king||null,person=ruler?.person||null;
+    const personId=String(ruler?.personId||person?.id||"");
+    setText("ruler-name",person?.name||"THE CROWN VACANT");
+    setText("ruler-title",person?String(person.role||"sovereign").toUpperCase()+" OF "+(state.kingdomName||"ELDRIA"):"AWAITING SUCCESSION");
+    const portrait=document.getElementById("ruler-portrait-use");
+    if(portrait)portrait.setAttribute("href","assets/royal-portraits.svg#"+rulerPortraitSymbol(ruler));
+    const button=document.getElementById("ruler-dossier-btn");
+    if(button){
+        button.disabled=!personId;
+        button.dataset.personId=personId;
+        button.title=person?"Open the dossier of "+person.name:"No sovereign has been recorded";
+    }
+    const history=Array.isArray(state.economy?.history)?state.economy.history:[];
+    const latest=history[history.length-1],previous=history[history.length-2];
+    const delta=latest&&previous?Number(latest.gold)-Number(previous.gold):null;
+    setText("treasury-trend",delta===null?"TREASURY · AWAITING LEDGER":"TREASURY "+(delta>=0?"+":"")+Math.round(delta)+" · LAST SETTLEMENT");
+    const warnings=(state.activeEvent&&!state.activeEvent.dismissed?1:0)+(state.health?.outbreakActive?1:0)+(state.raidActive?1:0);
+    setText("warning-count",String(warnings));
+    const warning=document.getElementById("warning-inbox-btn");
+    if(warning){
+        warning.classList.toggle("has-warning",warnings>0);
+        warning.setAttribute("aria-label",warnings+" open warning"+(warnings===1?"":"s"));
+        warning.title=warnings?warnings+" realm warning"+(warnings===1?"":"s")+" need attention":"No realm warnings are open";
+    }
 }
 function roomEffectValue(value){
     const rounded=Math.round(Number(value)*10)/10;
@@ -89,9 +136,10 @@ const GROUP_SPRITES={
  spirits:"icon-spirit",relics:"icon-relic",botany:"icon-botany",geology:"icon-geology",
  administration:"icon-admin",frontier:"icon-frontier",urbanism:"icon-urban",scholarship:"icon-scholar"
 };
+export function cardSprite(group){return GROUP_SPRITES[group]||"icon-scroll";}
 const HAND_SLOTS=5,SLOT_NUMERALS=["I","II","III","IV","V"];
 function handCardMarkup(card){
- const sprite=GROUP_SPRITES[card.group]||"icon-scroll";
+ const sprite=cardSprite(card.group);
  return '<button type="button" class="hand-card rarity-'+esc(card.rarity||"common")+(card.instanceId===state.selectedCardInstanceId?" is-selected":"")+'" data-card-group="'+esc(card.group||"general")+'" data-card-id="'+esc(card.instanceId)+'" title="'+esc(card.desc||card.name)+'" aria-label="Select '+esc(card.name)+': '+esc(card.desc||"")+'">'+
   '<span class="hand-card-banner"><svg class="hand-card-sprite" aria-hidden="true"><use href="assets/royal-card-atlas.svg#'+sprite+'"></use></svg></span>'+
   '<span class="hand-card-name">'+esc(card.name)+'</span><span class="hand-card-category">'+esc(card.categoryName||card.group||card.kind||"CARD")+'</span>'+
@@ -245,9 +293,18 @@ function renderRealmEvent(){
     if(issue.dismissed){modal.classList.add("hidden");return;}
     if(lastRenderedIssueId===issue.id){modal.classList.remove("hidden");return;}
     lastRenderedIssueId=issue.id;
-    setText("realm-event-kicker","REALM ISSUE · YEAR "+state.year);
+    const kind=String(issue.family||"realm");
+    modal.dataset.eventKind=kind;
+    setText("realm-event-kicker","REALM ISSUE · "+kind.toUpperCase()+" · YEAR "+state.year);
     setText("realm-event-title",issue.title);
     setText("realm-event-description",issue.description);
+    const participants=Array.isArray(issue.participants)?issue.participants:[];
+    const participantBox=document.getElementById("realm-event-participants");
+    if(participantBox){
+        participantBox.innerHTML=participants.length
+            ? '<span>PEOPLE INVOLVED</span>'+participants.map(participant=>'<button type="button" data-event-person="'+esc(participant.personId)+'">'+esc(personName(participant.personId))+' · '+esc(participant.role||"participant")+'</button>').join("")
+            : '<span>PEOPLE INVOLVED</span><em>No named participant is recorded for this issue.</em>';
+    }
     const choices=document.getElementById("realm-event-choices");
     if(choices)choices.innerHTML=issue.choices.map((choice,index)=>
         '<button type="button" class="event-choice" data-event-choice="'+index+'"><strong>'+esc(choice.label)+'</strong><span>'+esc(choice.description)+'</span></button>'
@@ -279,6 +336,7 @@ export function renderUI(){
     setText("season",SEASONS[state.seasonIndex]||SEASONS[0]);setText("year","YEAR "+state.year);
     setText("tick-count",state.tick.toLocaleString("en-US"));setText("kingdom-name","THE REALM OF "+state.kingdomName);
     setText("player-name",state.playerName||"GUEST");
+    renderTopStatus();
     const housing=getHousingSnapshot();
     document.querySelectorAll("[data-population]").forEach(node=>{node.textContent=String(housing.population);});
     const pop=document.getElementById("population");if(pop)pop.innerHTML="POP <strong>"+housing.population+"</strong> / "+housing.capacity+" · "+housing.available+" FREE";
@@ -288,7 +346,7 @@ export function renderUI(){
         cardPanel?.classList.remove("is-empty");
         const cardArt=document.getElementById("card-icon");
         if(cardArt){
-            const sprite=GROUP_SPRITES[card.group]||"icon-scroll";
+            const sprite=cardSprite(card.group);
             cardArt.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-card-atlas.svg#'+sprite+'"></use></svg>';
         }
         setText("card-name",card.name);setText("card-desc",card.desc);
@@ -305,9 +363,67 @@ export function renderUI(){
     }
     const labels=["","LANDSCAPE","DISTRICTS","ROOFTOPS","INTERIORS"];
     setText("zoom-level-name",labels[state.zoomLevel]||"ROOFTOPS");setText("zoom-value","×"+state.zoom.toFixed(2));
+    const layerSelect=document.getElementById("map-layer-select");
+    if(layerSelect&&layerSelect.value!==state.mapLayer)layerSelect.value=state.mapLayer||"terrain";
+    renderMapLayerLegend();
     document.querySelectorAll(".zoom-preset").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.zoomLevel)===state.zoomLevel));
     document.querySelectorAll(".speed-button").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.speed)===state.gameSpeed));
     document.getElementById("pause-btn")?.classList.toggle("is-paused",state.isPaused);
     setText("pause-text",state.isPaused?"RESUME":"PAUSE");
     renderHand();renderTabContent();renderRealmEvent();
+}
+
+const MAP_LAYER_LEGENDS=Object.freeze({
+    resources:{
+        label:"RESOURCE SURVEY",
+        items:[["map-swatch--forest","Forest stock"],["map-swatch--stone","Stone stock"],["map-swatch--fertile","Fertile land"]],
+        note:"Sampled from explored map tiles. Squares show relative forest stock, diamonds show stone, and gold points mark fertile land."
+    },
+    fertility:{
+        label:"FERTILITY SURVEY",
+        items:[["map-swatch--low","Low"],["map-swatch--mid","Moderate"],["map-swatch--high","High"]],
+        note:"Shading reads the generated fertility value of each explored map tile. It is not a crop forecast."
+    },
+    roads:{
+        label:"ROAD NETWORK",
+        items:[["map-swatch--dirt","Dirt road"],["map-swatch--gravel","Gravel road"],["map-swatch--stone-road","Stone road"]],
+        note:"Highlights every explored road tile in the real road network. The same routes are used by resident pathfinding."
+    },
+    services:{
+        label:"SERVICE COVERAGE",
+        items:[["map-swatch--water","Water"],["map-swatch--social","Social life"],["map-swatch--safety","Safety"],["map-swatch--health","Health"]],
+        note:"Circles are drawn from operating service buildings only. A building under construction, without staff or without supplies covers no households."
+    },
+    logistics:{
+        label:"LOGISTICS ROUTES",
+        items:[["map-swatch--carrier","Carrier"],["map-swatch--warehouse","Warehouse"],["map-swatch--job","Delivery job"]],
+        note:"Routes are drawn from the current delivery jobs. Dashed segments are blocked or waiting; moving carriers show the goods they actually haul."
+    },
+    fields:{
+        label:"FIELD SEASONS",
+        items:[["map-swatch--fallow","Fallow"],["map-swatch--sown","Sown"],["map-swatch--growing","Growing"],["map-swatch--ripe","Ripe"]],
+        note:"Field colours read the persisted field stage. Harvest depends on the current season and farm labour."
+    }
+});
+let lastMapLayerLegend="";
+function renderMapLayerLegend(){
+    const legend=document.getElementById("map-layer-legend");
+    if(!legend)return;
+    if(lastMapLayerLegend===state.mapLayer)return;
+    lastMapLayerLegend=state.mapLayer;
+    const data=MAP_LAYER_LEGENDS[state.mapLayer];
+    if(!data){legend.classList.add("hidden");legend.innerHTML="";return;}
+    legend.classList.remove("hidden");
+    legend.innerHTML='<strong>'+esc(data.label)+'</strong>'+data.items.map(([swatch,label])=>'<span class="map-legend-item"><i class="map-swatch '+swatch+'"></i>'+esc(label)+'</span>').join("")+'<small>'+esc(data.note)+'</small>';
+}
+export function setupMapViewControls(){
+    const select=document.getElementById("map-layer-select");
+    if(!select)return;
+    if(!select.value)select.value=state.mapLayer||"terrain";
+    state.mapLayer=select.value;
+    select.addEventListener("change",()=>{
+        state.mapLayer=select.value||"terrain";
+        renderMapLayerLegend();
+    });
+    renderMapLayerLegend();
 }

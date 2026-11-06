@@ -9,9 +9,12 @@ import { BUILDING_SIZE } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { CARD_DECK } from "../systems/cards.js";
 import { getResourceNodeAt } from "../systems/resource-geography.js";
-import { renderUI } from "./rendering/ui.js";
+import { renderUI, cardSprite } from "./rendering/ui.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
+import { constructionSnapshot, isUnderConstruction } from "../systems/construction.js";
+import { getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReason, getCitySummary } from "../systems/logistics.js";
+import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
 let activePanel="kingdom",dynastyStylesRequested=false;
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
@@ -20,7 +23,10 @@ const BUILDING_LABELS=Object.freeze({
  [TYPE.KEEP]:"Royal Keep",[TYPE.HOUSE]:"House",[TYPE.FARM]:"Farm",[TYPE.LUMBER]:"Lumber Yard",
  [TYPE.QUARRY]:"Quarry",[TYPE.TOWER]:"Watchtower",[TYPE.WALL]:"Defensive Wall",[TYPE.TAVERN]:"Tavern",
  [TYPE.TEMPLE]:"Temple",[TYPE.BARRACKS]:"Barracks",[TYPE.MILL]:"Mill",[TYPE.STABLE]:"Stables",
- [TYPE.WONDER]:"Wonder",[TYPE.GOLDMINE]:"Gold Mine",[TYPE.BARREL]:"Storage Barrel"
+ [TYPE.WONDER]:"Wonder",[TYPE.GOLDMINE]:"Gold Mine",[TYPE.BARREL]:"Storage Barrel",
+ [TYPE.TENT]:"Tent",[TYPE.STONE_HOUSE]:"Stone House",[TYPE.WAREHOUSE]:"Warehouse",[TYPE.SAWMILL]:"Sawmill",
+ [TYPE.BAKERY]:"Bakery",[TYPE.WELL]:"Well",[TYPE.MASON]:"Mason's Yard",[TYPE.FORESTER]:"Forester's Lodge",
+ [TYPE.CLINIC]:"Clinic",[TYPE.MARKET]:"Market"
 });
 function setNavigationActive(target){
  document.querySelectorAll(".realm-nav-button").forEach(button=>{
@@ -33,6 +39,53 @@ function setNavigationActive(target){
 function toast(message){const el=$("action-toast");if(!el)return;el.textContent=message;el.classList.add("is-visible");setTimeout(()=>el.classList.remove("is-visible"),1800);}
 function meter(label,value){const v=Math.max(0,Math.min(100,Number(value)||0));return '<div class="command-meter"><span>'+esc(label)+'</span><i><b style="width:'+v+'%"></b></i><strong>'+Math.round(v)+'</strong></div>';}
 function intro(k,t,p){return '<div class="command-panel-intro"><span>'+esc(k)+'</span><h3>'+esc(t)+'</h3><p>'+esc(p)+'</p></div>';}
+const RESOURCE_ORDER=["wood","stone","gold","food"];
+const RESOURCE_META=Object.freeze({
+ wood:{label:"Wood",unit:"timber",art:"assets/realm-icons.svg#tree",buildings:[TYPE.LUMBER,TYPE.MILL,TYPE.BARREL],note:"Lumber yards harvest forests, mills consume timber, and storage barrels expand what the realm can hold."},
+ stone:{label:"Stone",unit:"stone",art:"assets/city-builder-sprites.svg#quarry",buildings:[TYPE.QUARRY,TYPE.WALL,TYPE.TOWER],note:"Quarries extract stone; walls and watchtowers record the realm's defensive construction."},
+ gold:{label:"Gold",unit:"gold",art:"assets/realm-icons.svg#coin",buildings:[TYPE.GOLDMINE,TYPE.TAVERN,TYPE.KEEP],note:"Taxes and wages settle every 20 days. Gold mines, taverns and the royal keep are listed because they are recorded structures, not because each is assigned a per-tick output here."},
+ food:{label:"Food",unit:"food",art:"assets/city-builder-sprites.svg#mill",buildings:[TYPE.FARM,TYPE.MILL,TYPE.TAVERN],note:"Farms and mills supply food; taverns consume provisions. Household demand is settled every 20 days."}
+});
+function trendChart(entries,key,label,color="#b99a59"){
+ const points=(Array.isArray(entries)?entries:[]).map(entry=>({value:Number(entry?.[key]),tick:Number(entry?.tick)})).filter(point=>Number.isFinite(point.value)&&Number.isFinite(point.tick));
+ if(points.length<2)return '<div class="command-chart-empty">At least two completed settlements are needed before this line can be drawn.</div>';
+ const width=560,height=104,pad=10;
+ const values=points.map(point=>point.value),min=Math.min(...values),max=Math.max(...values),span=max-min||1;
+ const coords=points.map((point,index)=>{
+  const x=pad+(points.length===1?0:index/(points.length-1))*(width-pad*2);
+  const y=height-pad-((point.value-min)/span)*(height-pad*2);
+  return [x,y];
+ });
+ const line=coords.map(([x,y])=>x.toFixed(1)+","+y.toFixed(1)).join(" ");
+ const area=[pad+","+(height-pad),...coords.map(([x,y])=>x.toFixed(1)+","+y.toFixed(1)),(width-pad)+","+(height-pad)].join(" ");
+ const last=points[points.length-1],first=points[0];
+ return '<figure class="command-trend"><svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+esc(label)+': '+esc(first.value.toLocaleString("en-US"))+' to '+esc(last.value.toLocaleString("en-US"))+' across '+points.length+' settlements"><title>'+esc(label)+'</title><path class="command-trend-area" d="M'+area.replaceAll(" "," L")+'Z" style="fill:'+esc(color)+'"></path><polyline points="'+line+'" fill="none" stroke="'+esc(color)+'" stroke-width="2.5" vector-effect="non-scaling-stroke"></polyline><circle cx="'+coords[coords.length-1][0].toFixed(1)+'" cy="'+coords[coords.length-1][1].toFixed(1)+'" r="3.5" fill="'+esc(color)+'"></circle></svg><figcaption><span>'+esc(label)+'</span><span>'+esc(first.value.toLocaleString("en-US"))+' → '+esc(last.value.toLocaleString("en-US"))+' · '+points.length+' SETTLEMENTS</span></figcaption></figure>';
+}
+function treasuryCharts(history){
+ return '<div class="command-chart-grid">'+trendChart(history,"gold","Treasury stock · gold","#b99a59")+trendChart(history,"netGold","Net treasury change · per settlement","#8eaa7a")+'</div>';
+}
+function resourceCard(key,history){
+ const meta=RESOURCE_META[key],stock=Math.max(0,Number(state.resources?.[key])||0),flow=Number(state.incomeThisTick?.[key])||0;
+ const previous=history.length>1?history[history.length-2]:null;
+ const delta=previous?stock-(Number(previous[key])||0):null;
+ const counts=new Map();
+ for(const entity of state.entities){if(!entity.dead&&entity.isBuilding())counts.set(entity.type,(counts.get(entity.type)||0)+1);}
+ const related=meta.buildings.map(type=>({name:CARD_DECK.find(card=>card.type===type)?.name||BUILDING_LABELS[type]||("Building "+type),count:counts.get(type)||0})).filter(item=>item.count>0);
+ const ledger=state.economy?.lastLedger;
+ let ledgerNote;
+ if(key==="gold"&&ledger)ledgerNote="Latest settlement: "+amount(ledger.taxesCollected)+" gold taxes · "+amount((Number(ledger.wagesPaid)||0)+(Number(ledger.upkeepPaid)||0)+(Number(ledger.furnitureUpkeepPaid)||0))+" gold in wages and upkeep · net "+(Number(ledger.netGold)>=0?"+":"")+amount(ledger.netGold)+" gold.";
+ else if(key==="food"&&ledger)ledgerNote="Latest settlement: "+amount(ledger.foodDemand)+" food demanded · "+amount(ledger.foodConsumed)+" consumed · "+amount(ledger.foodShortage)+" shortage.";
+ else ledgerNote="The 20-day financial ledger does not settle "+esc(meta.unit)+"; this chart records stock at each completed settlement.";
+ return '<article class="resource-detail-card" data-resource="'+esc(key)+'"><header><svg class="resource-detail-art" viewBox="0 0 64 64" aria-hidden="true"><use href="'+meta.art+'"></use></svg><div><small>ROYAL STORE</small><h4>'+esc(meta.label)+'</h4></div><div class="resource-detail-stock"><strong>'+number(stock)+'</strong><span>IN STORE</span></div></header><div class="resource-detail-stats"><div><small>CURRENT TICK FLOW</small><strong class="'+(flow>0?'is-positive':flow<0?'is-negative':'')+'">'+(flow>0?'+':'')+amount(flow)+'</strong></div><div><small>SETTLEMENT CHANGE</small><strong class="'+(delta!==null&&delta>=0?'is-positive':delta!==null?'is-negative':'')+'">'+(delta===null?'AWAITING DATA':(delta>=0?'+':'')+amount(delta))+'</strong></div><div><small>RELATED STRUCTURES</small><strong>'+related.reduce((sum,item)=>sum+item.count,0)+'</strong></div></div>'+trendChart(history,key,meta.label+" stock at settlement")+'<p class="command-note">'+ledgerNote+'</p><div class="resource-related"><span>RECORDED BUILDINGS</span>'+(related.length?related.map(item=>'<b class="resource-building-chip">'+esc(item.name)+' ×'+item.count+'</b>').join(""):'<em>No related structure is recorded.</em>')+'</div><p class="command-note">'+esc(meta.note)+'</p></article>';
+}
+function resources(){
+ if(!state.hasStarted)return intro("ROYAL STORES","Awaiting its founding","Resource detail becomes active when a new campaign begins.")+'<div class="command-note">No campaign is running yet. Found a realm to read its stocks, flows and bounded settlement history.</div>';
+ const history=Array.isArray(state.economy?.history)?state.economy.history:[];
+ return intro("THE ROYAL STORES","Resource detail","Inspect every store together with its current-tick flow, the latest completed settlement and a real, bounded stock history. Charts use stored settlement points only.")+
+ '<div class="command-summary"><div><small>WOOD</small><strong>'+number(state.resources.wood)+'</strong></div><div><small>STONE</small><strong>'+number(state.resources.stone)+'</strong></div><div><small>GOLD</small><strong>'+number(state.resources.gold)+'</strong></div><div><small>FOOD</small><strong>'+number(state.resources.food)+'</strong></div></div>'+
+ '<div class="resource-detail-grid">'+RESOURCE_ORDER.map(key=>resourceCard(key,history)).join("")+'</div>'+
+ '<p class="command-note">Stock history contains up to 24 completed 20-day settlements. The chart is intentionally blank until two settlements exist; no interpolated or invented points are drawn.</p>';
+}
 function kingdom(){
  if(!state.hasStarted)return intro("THE REALM OF "+(state.kingdomName||"ELDRIA"),"Awaiting its founding","The royal ledger becomes active when a new campaign begins.")+'<div class="command-note">No campaign is running yet. Begin a new game to appoint the sovereign, populate the settlement and activate the royal ledger.</div>';
  const h=getRoyalHouse(),p=getPoliticalSnapshot(),w=getWorkforceSnapshot(),housing=getHousingSnapshot();
@@ -64,7 +117,7 @@ function decisions(){
  return intro("ROYAL HOUSE","Royal decisions","Dynastic actions are explicit and recorded in personal memories.")+'<img class="command-hero-art" src="assets/royal-court-art.svg" alt="Royal court, castle and heraldic banners" loading="lazy"><div class="command-summary"><div><small>SOVEREIGN</small><strong>'+esc(h.king?.person?.name||"No sovereign")+'</strong></div><div><small>CONSORT</small><strong>'+esc(h.consort?.person?.name||"None")+'</strong></div><div><small>HEIR</small><strong>'+esc(h.heir?.person?.name||"Undesignated")+'</strong></div></div>'+(h.consort?'':'<div class="command-section-title">ROYAL MARRIAGE</div><div class="command-inline"><select id="royal-consort-select"><option value="">Choose an adult resident…</option>'+options+'</select><button data-command="consort">FORM MARRIAGE</button></div>')+'<div class="command-actions"><button data-command="royal-birth" '+(!h.consort?'disabled':'')+'>WELCOME ROYAL CHILD · 20 FOOD / 15 GOLD</button></div><div class="command-section-title">LIVING ROYAL CHILDREN</div><div class="command-policy-list">'+(children||'<p class="command-note">No living royal children are recorded yet.</p>')+'</div><p class="command-note">Succession uses the designated living heir; absent one, it falls back to a living child in the late sovereign’s explicit family record. No unrelated person is silently promoted.</p>';
 }
 function cards(){
- const rows=(state.hand||[]).map(c=>'<article class="command-card"><span class="command-card-art">'+esc(c.icon||"✦")+'</span><div><strong>'+esc(c.name)+'</strong><small>'+esc(c.categoryName||c.group||"Card")+' · '+esc(c.rarity||"common")+'</small><p>'+esc(c.desc||"")+'</p></div><button data-command="select-card" data-value="'+esc(c.instanceId)+'">SELECT</button></article>').join("");
+ const rows=(state.hand||[]).map(c=>'<article class="command-card"><span class="command-card-art"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-card-atlas.svg#'+esc(cardSprite(c.group))+'"></use></svg></span><div><strong>'+esc(c.name)+'</strong><small>'+esc(c.categoryName||c.group||"Card")+' · '+esc(c.rarity||"common")+'</small><p>'+esc(c.desc||"")+'</p></div><button data-command="select-card" data-value="'+esc(c.instanceId)+'">SELECT</button></article>').join("");
  return intro("ROYAL DECK","Card management","Inspect your hand and select a card before placing it on the map.")+'<div class="command-summary"><div><small>HAND</small><strong>'+(state.hand||[]).length+' / 5</strong></div><div><small>DRAW PILE</small><strong>'+number(state.availableCards?.length)+'</strong></div><div><small>REWARDS QUEUED</small><strong>'+number(state.cardRewardQueue?.length)+'</strong></div></div><div class="command-card-list">'+(rows||'<p class="command-note">Your hand is empty. Advance the simulation to draw cards.</p>')+'</div>';
 }
 function economy(){
@@ -72,6 +125,7 @@ function economy(){
  const resources=Object.entries(state.resources||{}).map(([k,v])=>'<div class="command-resource"><span>'+esc(k)+'</span><strong>'+amount(v)+'</strong></div>').join("");
  const flow=Object.entries(state.incomeThisTick||{}).map(([k,v])=>'<div class="command-resource"><span>'+esc(k)+' · this tick</span><strong class="'+(Number(v)>0?'is-positive':Number(v)<0?'is-negative':'')+'">'+(Number(v)>0?'+':'')+amount(v)+'</strong></div>').join("");
  const ledger=state.economy?.lastLedger;
+ const history=Array.isArray(state.economy?.history)?state.economy.history:[];
  const ledgerRows=ledger?[
   ["Food demand",ledger.foodDemand,"food"],["Food consumed",ledger.foodConsumed,"food"],["Food shortage",ledger.foodShortage,"food"],
   ["Taxes collected",ledger.taxesCollected,"gold"],["Wages paid",ledger.wagesPaid,"gold"],["Building & road upkeep",ledger.upkeepPaid,"gold"],
@@ -84,12 +138,13 @@ function economy(){
  '<div class="command-section-title">CURRENT ROYAL STORES · STOCK</div><div class="command-resource-grid">'+resources+'</div>'+
  '<div class="command-section-title">RESOURCE FLOW · CURRENT SIMULATION TICK</div><div class="command-resource-grid">'+flow+'</div>'+
  '<div class="command-section-title">LATEST FINANCIAL SETTLEMENT · 20 IN-GAME DAYS</div><div class="ledger-grid">'+ledgerRows+'</div>'+
+ '<div class="command-section-title">TREASURY HISTORY · '+(history.length?history.length+' COMPLETED SETTLEMENTS':'AWAITING FIRST SETTLEMENT')+'</div>'+treasuryCharts(history)+
  '<div class="command-section-title">CUMULATIVE LEDGER TOTALS</div><div class="command-summary"><div><small>DAYS SETTLED</small><strong>'+number(totals.daysElapsed)+'</strong></div><div><small>TAXES</small><strong>'+amount(totals.taxesCollected)+' G</strong></div><div><small>WAGES</small><strong>'+amount(totals.wagesPaid)+' G</strong></div><div><small>UPKEEP</small><strong>'+amount(totals.upkeepPaid)+' G</strong></div><div><small>FURNITURE</small><strong>'+amount(totals.furnitureUpkeepPaid)+' G</strong></div></div>'+
  '<div class="command-section-title">WORKFORCE & HOUSEHOLDS</div><div class="command-summary"><div><small>WORKERS</small><strong>'+number(w.population)+'</strong></div><div><small>UNEMPLOYED</small><strong>'+number(w.unemployed)+'</strong></div><div><small>BUILDINGS</small><strong>'+number(w.buildings)+'</strong></div><div><small>HOMES</small><strong>'+number(homes.length)+'</strong></div></div>'+
- '<p class="command-note">The simulation currently retains only its latest completed ledger, not a historical time series. Long-term trend charts and forecasts are intentionally withheld until real history is stored.</p>';
+ '<p class="command-note">No forecasts are inferred. A bounded historical time series now retains the latest 24 completed 20-day settlements; the latest completed ledger is shown above and the charts record stock and ledger values only.</p>';
 }
 function buildings(){
- const workforce=getWorkforceSnapshot();
+ const workforce=getWorkforceSnapshot();const city=getCitySummary(),settlement=getSettlementSnapshot();
  const records=state.entities.filter(entity=>!entity.dead&&entity.isBuilding()).slice().sort((a,b)=>{
   const an=CARD_DECK.find(card=>card.type===a.type)?.name||BUILDING_LABELS[a.type]||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||BUILDING_LABELS[b.type]||String(b.type);
   return an.localeCompare(bn)||String(a.id).localeCompare(String(b.id));
@@ -98,13 +153,16 @@ function buildings(){
  for(const building of records)counts.set(building.type,(counts.get(building.type)||0)+1);
  const typeSummary=[...counts.entries()].map(([type,count])=>{
   const card=CARD_DECK.find(item=>item.type===type);
-  return '<span class="building-type-chip">'+esc(card?.name||("Building "+type))+' <strong>'+count+'</strong></span>';
+  return '<span class="building-type-chip">'+esc(card?.name||BUILDING_LABELS[type]||("Building "+type))+' <strong>'+count+'</strong></span>';
  }).join("");
  const buildingSprite=(type)=>({
   [TYPE.KEEP]:"keep",[TYPE.HOUSE]:"cottage",[TYPE.FARM]:"farm",[TYPE.LUMBER]:"lumber-yard",
   [TYPE.QUARRY]:"quarry",[TYPE.TOWER]:"watchtower",[TYPE.WALL]:"wall",[TYPE.TAVERN]:"tavern",
   [TYPE.TEMPLE]:"temple",[TYPE.BARRACKS]:"barracks",[TYPE.MILL]:"windmill",[TYPE.STABLE]:"stable",
-  [TYPE.WONDER]:"wonder",[TYPE.GOLDMINE]:"goldmine",[TYPE.BARREL]:"storehouse"
+  [TYPE.WONDER]:"wonder",[TYPE.GOLDMINE]:"goldmine",[TYPE.BARREL]:"storehouse",
+  [TYPE.TENT]:"cottage",[TYPE.STONE_HOUSE]:"cottage",[TYPE.WAREHOUSE]:"storehouse",[TYPE.SAWMILL]:"lumber-yard",
+  [TYPE.BAKERY]:"windmill",[TYPE.WELL]:"windmill",[TYPE.MASON]:"quarry",[TYPE.FORESTER]:"lumber-yard",
+  [TYPE.CLINIC]:"temple",[TYPE.MARKET]:"tavern"
  }[type]||"cottage");
  const rows=records.map((building,index)=>{
   const card=CARD_DECK.find(item=>item.type===building.type);
@@ -119,18 +177,29 @@ function buildings(){
   let siteNote="No dedicated resource-site indicator is defined for this building type.";
   try{
    const node=getResourceNodeAt(building.x,building.y);
-   if(building.type===TYPE.LUMBER)siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity);
-   else if(building.type===TYPE.QUARRY)siteNote="Stone stock at site tile: "+number(node.stoneStock)+" / "+number(node.stoneCapacity);
+   if([TYPE.LUMBER,TYPE.FORESTER].includes(building.type))siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity);
+   else if([TYPE.QUARRY,TYPE.MASON].includes(building.type))siteNote="Stone stock at site tile: "+number(node.stoneStock)+" / "+number(node.stoneCapacity);
    else if(building.type===TYPE.FARM)siteNote="Site fertility: "+number(node.fertility)+" / 100 · water access: "+(node.waterAccess?"yes":"no");
+   else if(building.type===TYPE.WELL)siteNote="Water access at site tile: "+(node.waterAccess?"yes":"no");
   }catch{}
-  const detail=card?.desc||"No additional building description is recorded in the card catalogue.";
-  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+condition+'%</b><small>condition</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p><div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Site data<strong>'+esc(siteNote)+'</strong></span></div><p class="command-note">Per-building production output, storage and upkeep are not currently exposed by the simulation, so no values are fabricated here.</p></div></details>';
+  const detail=card?.desc||BUILDING_LABELS[building.type]||"No additional building description is recorded.";
+  const site=constructionSnapshot(building);
+  const inventory=getInventorySummary(building);
+  const jobs=getBuildingLogisticsStatus(building)||[];
+  const supply=getBuildingSupplyReason(building)||getServiceReason(building);
+  const storeText=!inventory?"No local store":inventory.kind==="warehouse"?inventory.used+" / "+inventory.capacity+" storage used":[
+   ...Object.entries(inventory.input||{}).map(([good,value])=>value+" "+good+" in"),
+   ...Object.entries(inventory.output||{}).map(([good,value])=>value+" "+good+" out")
+  ].join(" · ")||"Empty";
+  const haulText=jobs.length?jobs.map(job=>job.quantity+" "+job.good+" · "+job.status+(job.reason?" · "+job.reason:"")).join(" | "):"No active haul";
+  const fieldText=building.field?" · field "+building.field.stage+" ("+Math.round(building.field.growth)+"%)":"";
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p><div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span><span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span></div></div></details>';
  }).join("");
  return intro("SETTLEMENT ARCHITECTURE","Building register","Inspect every surviving structure using its actual simulation entity, health, footprint, staffing and site data.")+
- '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+records.length+'</strong></div><div><small>BUILDING TYPES</small><strong>'+counts.size+'</strong></div><div><small>EMPLOYED</small><strong>'+number(workforce.employed)+'</strong></div><div><small>POPULATION</small><strong>'+number(workforce.population)+'</strong></div></div>'+
+ '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+records.length+'</strong></div><div><small>CONSTRUCTION SITES</small><strong>'+city.construction+'</strong></div><div><small>CARRIERS</small><strong>'+city.carriers+'</strong></div><div><small>ACTIVE HAULS</small><strong>'+city.activeJobs+'</strong></div><div><small>WAREHOUSE SPACE USED</small><strong>'+number(city.warehouses?.used||0)+' / '+number(city.warehouses?.capacity||0)+'</strong></div><div><small>WATER COVERAGE</small><strong>'+(settlement.needs?Math.round(settlement.needs.water*100)+'%':'—')+'</strong></div></div>'+
  '<div class="building-type-summary">'+typeSummary+'</div><label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">'+
  '<div class="building-register">'+(rows||'<p class="command-note">No buildings are recorded in this realm yet.</p>')+'</div>'+
- '<p class="command-note">Site resource values are taken from the structure centre tile only. They are not a production rate. The register is read-only; construction and demolition remain in the existing build interface.</p>';
+ '<p class="command-note">Construction, local stores, field stages and active hauls are read from live simulation state. Site resource values are taken from the structure centre tile only; they are not a production rate. Construction and demolition remain in the build interface.</p>';
 }
 function familyRecord(id){
  const key=String(id||"");
@@ -348,7 +417,7 @@ function chronicle(){
 }
 function render(){
  const panel=$("command-panel-content");if(!panel)return;
- panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,buildings,dynasty,creatures,chronicle}[activePanel]||kingdom)();
+ panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,resources,buildings,dynasty,creatures,chronicle}[activePanel]||kingdom)();
  if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
  document.querySelectorAll("[data-command-tab]").forEach(b=>{
   const active=b.dataset.commandTab===activePanel;
@@ -371,8 +440,9 @@ export function setupManagementUI(){
   if(target==="people"){$("people-btn")?.click();return;}
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
-  if(["kingdom","government","politics","decisions","cards","economy","buildings","dynasty","creatures","chronicle"].includes(target)){
+  if(["kingdom","government","politics","decisions","cards","economy","resources","buildings","dynasty","creatures","chronicle"].includes(target)){
    activePanel=target;$("command-modal")?.classList.remove("hidden");render();
+   if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));
   }
  }));
  $("command-open-btn")?.addEventListener("click",()=>{$("command-modal")?.classList.remove("hidden");render();});

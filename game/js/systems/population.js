@@ -4,9 +4,13 @@ import { state } from "../core/state.js";
 import { spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { randInt as seededRandInt } from "../core/random.js";
 import { getRoomBonusSnapshot } from "./rooms.js";
+import { HOUSING_TIERS, housingCapacityFor, isHousingType } from "./city-config.js";
+import { canSettleNewcomer } from "./settlement.js";
 const randInt=(min,max)=>seededRandInt(min,max,"population");
+const housingEntities=()=>state.entities.filter(entity=>!entity.dead&&isHousingType(entity.type));
+const capacityOf=house=>housingCapacityFor(house.type);
 
-export const RESIDENTS_PER_HOUSE = 4;
+export const RESIDENTS_PER_HOUSE = HOUSING_TIERS[TYPE.HOUSE].capacity;
 export const POPULATION_GROWTH_FOOD_RESERVE = 0.75;
 export const POPULATION_GROWTH_MORALE = 55;
 
@@ -17,11 +21,11 @@ export function getPopulationGrowthMoraleThreshold() {
 
 export function getHousingSnapshot() {
     const population = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER).length;
-    const houses = state.entities.filter(entity => !entity.dead && entity.type === TYPE.HOUSE).length;
-    const capacity = houses * RESIDENTS_PER_HOUSE;
+    const houses = state.entities.filter(entity => !entity.dead && isHousingType(entity.type) && !(entity.construction && entity.construction.stage < 3));
+    const capacity = houses.reduce((sum,house)=>sum+capacityOf(house),0);
     return {
         population,
-        houses,
+        houses: houses.length,
         capacity,
         available: Math.max(0, capacity - population),
         overcrowded: population > capacity
@@ -29,7 +33,7 @@ export function getHousingSnapshot() {
 }
 
 export function getHouseholdSnapshot() {
-    const houses = state.entities.filter(entity => !entity.dead && entity.type === TYPE.HOUSE);
+    const houses = housingEntities().filter(house => !(house.construction && house.construction.stage < 3));
     const villagers = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER);
     const counts = new Map(houses.map(house => [house, 0]));
     for (const villager of villagers) {
@@ -40,27 +44,27 @@ export function getHouseholdSnapshot() {
         households: houses.length,
         housed: [...counts.values()].reduce((sum, count) => sum + count, 0),
         unhoused: villagers.length - [...counts.values()].reduce((sum, count) => sum + count, 0),
-        homes: houses.map(house => ({ x: house.x, y: house.y, residents: counts.get(house), capacity: RESIDENTS_PER_HOUSE }))
+        homes: houses.map(house => ({ x: house.x, y: house.y, residents: counts.get(house), capacity: capacityOf(house), type: house.type }))
     };
 }
 
 // Repairs older saves whose villagers used workplaces as their home anchor.
 // Assignments are deterministic and never exceed the four-resident household limit.
 export function normalizeHouseholdAssignments() {
-    const houses = state.entities.filter(entity => !entity.dead && entity.type === TYPE.HOUSE);
+    const houses = housingEntities().filter(house => !(house.construction && house.construction.stage < 3));
     if (!houses.length) return getHouseholdSnapshot();
     const counts = new Map(houses.map(house => [house, 0]));
     const villagers = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER);
     for (const villager of villagers) {
         const current = houses.find(house => villager.home?.x === house.x && villager.home?.y === house.y);
-        if (current && counts.get(current) < RESIDENTS_PER_HOUSE) {
+        if (current && counts.get(current) < capacityOf(current)) {
             counts.set(current, counts.get(current) + 1);
             villager.householdId = `house:${current.x}:${current.y}`;
             if (!Number.isFinite(villager.lastAgedYear)) villager.lastAgedYear = state.year;
             continue;
         }
         const candidates = houses
-            .filter(house => counts.get(house) < RESIDENTS_PER_HOUSE)
+            .filter(house => counts.get(house) < capacityOf(house))
             .sort((a, b) => {
                 const occupancy = counts.get(a) - counts.get(b);
                 if (occupancy) return occupancy;
@@ -83,8 +87,8 @@ function chooseAvailableHouse() {
     const snapshot = getHouseholdSnapshot();
     const counts = new Map(snapshot.homes.map(home => [`${home.x}:${home.y}`, home.residents]));
     return state.entities
-        .filter(entity => !entity.dead && entity.type === TYPE.HOUSE)
-        .filter(house => (counts.get(`${house.x}:${house.y}`) || 0) < RESIDENTS_PER_HOUSE)
+        .filter(entity => !entity.dead && isHousingType(entity.type) && !(entity.construction && entity.construction.stage < 3))
+        .filter(house => (counts.get(`${house.x}:${house.y}`) || 0) < capacityOf(house))
         .sort((a, b) => {
             const occupancy = (counts.get(`${a.x}:${a.y}`) || 0) - (counts.get(`${b.x}:${b.y}`) || 0);
             if (occupancy) return occupancy;
@@ -110,6 +114,10 @@ export function updatePopulation() {
     const housing = getHousingSnapshot();
     if (housing.available < 1 || state.morale < getPopulationGrowthMoraleThreshold()) return null;
     if ((state.resources.food || 0) < housing.population * POPULATION_GROWTH_FOOD_RESERVE) return null;
+    if (state.city?.enabled) {
+        const gate=canSettleNewcomer();
+        if(!gate.ok)return null;
+    }
     if (!canSpawnEntity(TYPE.VILLAGER)) return null;
 
     normalizeHouseholdAssignments();

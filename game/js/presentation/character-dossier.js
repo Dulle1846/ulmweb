@@ -200,13 +200,20 @@ function renderDossier(personId) {
         personId: link.personId, label: link.status + " · since year " + link.sinceYear +
             (link.endedYear == null ? "" : " · ended year " + link.endedYear)
     }));
+    const canLocate = !entity.isArchived && entity.home && Number.isFinite(Number(entity.home.x)) && Number.isFinite(Number(entity.home.y));
+    const dossierActions = canLocate || entity.isKing || entity.isRoyalFamily
+        ? '<div class="dossier-actions">' +
+          (canLocate ? '<button type="button" data-dossier-action="locate">LOCATE HOME ON MAP</button>' : '') +
+          (entity.isKing || entity.isRoyalFamily ? '<button type="button" data-dossier-action="dynasty">OPEN ROYAL DYNASTY</button>' : '') +
+          '</div>'
+        : '';
     detail.innerHTML =
         '<header class="dossier-identity"><svg class="dossier-portrait" viewBox="0 0 256 320" role="img" aria-label="Portrait of ' + esc(person.name) + '"><use href="assets/royal-portraits.svg#' + portraitSymbol(entity) + '"></use></svg>' +
         '<div class="dossier-identity-copy"><div class="dossier-kicker">' + (entity.isArchived ? "DECEASED · " : "") + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) +
         '</div><h2>' + esc(person.name) + '</h2><p>Age ' + Math.floor(Number(person.ageYears) || 0) +
         ' · ' + esc(person.lifeStage) + ' · Born in year ' + Math.max(1, Number(person.bornAtYear) || 1) +
         (entity.isArchived ? ' · Died in year ' + Math.max(1, Number(entity.deathYear) || 1) + ' · ' + esc(entity.deathCause || 'unknown') : '') +
-        '</p></div></header>' +
+        '</p></div></header>' + dossierActions +
         renderSovereignDossier(entity, family) +
         '<div class="dossier-columns">' +
         '<div class="dossier-column">' +
@@ -254,6 +261,16 @@ export function setupCharacterDossier() {
         search.focus();
     };
     open.addEventListener("click", show);
+    // The sovereign portrait in the royal banner is a direct dossier link.
+    document.getElementById("ruler-dossier-btn")?.addEventListener("click", () => {
+        const personId = String(document.getElementById("ruler-dossier-btn")?.dataset.personId || "");
+        if (!personId || !people().some(entity => String(entity.personId) === personId)) return;
+        selectedPersonId = personId;
+        if (search) search.value = "";
+        refreshDossier();
+        modal.classList.remove("hidden");
+        search.focus();
+    });
     close.addEventListener("click", () => modal.classList.add("hidden"));
     modal.addEventListener("click", event => {
         if (event.target === modal) modal.classList.add("hidden");
@@ -263,6 +280,18 @@ export function setupCharacterDossier() {
         document.getElementById(id)?.addEventListener("change",refreshDossier);
     });
     document.getElementById("person-dossier")?.addEventListener("click", event => {
+        const action = event.target.closest("[data-dossier-action]");
+        if (action) {
+            const selected = people().find(item => String(item.personId) === String(selectedPersonId));
+            if (action.dataset.dossierAction === "locate" && selected?.home && Number.isFinite(Number(selected.home.x)) && Number.isFinite(Number(selected.home.y))) {
+                window.dispatchEvent(new CustomEvent("kac:focus-map", {detail:{x:Number(selected.home.x),y:Number(selected.home.y)}}));
+                modal.classList.add("hidden");
+            } else if (action.dataset.dossierAction === "dynasty") {
+                modal.classList.add("hidden");
+                document.querySelector('.realm-nav-button[data-kac-panel="dynasty"]')?.click();
+            }
+            return;
+        }
         const related = event.target.closest("[data-person-id]");
         if (!related) return;
         const personId = String(related.dataset.personId || "");

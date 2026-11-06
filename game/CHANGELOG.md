@@ -1,11 +1,11 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.8.0`  
-**Next development line:** `3.9.0-dev`  
+**Current production version:** `3.9.0`
+**Next development line:** `3.10.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-05 (UTC)
+**Last repository verification:** 2026-11-06 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
@@ -23,6 +23,19 @@ Kings & Cards uses a practical semantic version format:
 The version in `game/package.json` is the machine-readable game version. Update this file and this changelog together for every release.
 
 ## Production release history
+
+### 3.9.0 — The Living City: construction, logistics and production
+**Released:** 2026-11-06
+**Scope:** City-builder foundation. New structures are construction sites; physical carriers move goods between producers, consumers and warehouses; seasonal farms and managed forests supply the realm.
+
+- Added construction sites with staged material deliveries, staffing and cancellation.
+- Added local inventories, bounded warehouses, haul and supply reservations, and visible carriers.
+- Added grain → flour → bread, logs → planks and firewood, stone → cut stone, and well-water chains. Bread becomes royal food only after warehouse arrival.
+- Added seasonal field states, forest stewardship, housing tiers, settlement needs and service coverage.
+- Added city HUD and construction panels plus save schema 4 with backward-compatible normalization.
+- Added a five-year full-city test with 26 buildings, 43 workers and three parallel material chains, plus a focused grain-to-bread chain test.
+
+**Verification:** `cd game && npm test` — 363 tests pass; the syntax/import check passes for 69 source files and 159 referenced UI ids. Chromium browser E2E was not completed in this cloud session because the Playwright headless-shell package could not be installed within the command limit; the production push triggers the repository Game Quality workflow.
 
 ### 3.8.0 — HUD 3.8: The Throne Room
 **Released:** 2026-11-05  

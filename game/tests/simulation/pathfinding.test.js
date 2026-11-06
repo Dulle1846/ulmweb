@@ -29,6 +29,28 @@ test("A-star does not invent a route through a full-width water barrier",()=>{
     assert.equal(findPath(35.5,40.5,45.5,40.5),null);
 });
 
+test("hierarchical fallback routes a long open-map path without raising the local A* cap",()=>{
+    resetState();
+    const W=576,H=576;
+    state.worldW=W;state.worldH=H;
+    state.terrainResolution=1;state.terrainPixW=W;state.terrainPixH=H;
+    state.heightMap=new Float32Array(W*H).fill(0.5);
+    const route=findPath(20.5,20.5,520.5,520.5,1800);
+    assert.ok(Array.isArray(route),"the coarse route must bridge the local search cap");
+    assert.ok(route.length>400,"the route must actually reach across the large map");
+    assert.deepEqual(route.at(-1),{x:520.5,y:520.5});
+    assert.ok(route.every(node=>isWalkable(node.x,node.y)),"every coarse and local node must be walkable");
+    for(let i=1;i<route.length;i++){
+        assert.ok(Math.hypot(route[i].x-route[i-1].x,route[i].y-route[i-1].y)<=1.5,"local segments must remain contiguous");
+    }
+});
+
+test("hierarchical fallback does not bridge a full-width water barrier",()=>{
+    prepare();
+    for(let y=0;y<WORLD_H;y++)state.heightMap[y*WORLD_W+80]=0.1;
+    assert.equal(findPath(20.5,40.5,140.5,40.5),null);
+});
+
 test("pathfinding and walkability use the full larger world bounds",()=>{
     resetState();
     const W=448,H=448;

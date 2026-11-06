@@ -4,6 +4,7 @@ import { state } from "../core/state.js";
 import { consumeSimulationTime } from "../core/simulation-clock.js";
 import { updateSimulation } from "../simulation/simulation.js";
 import { updateFriendlyMovement } from "../simulation/villagers.js";
+import { updateLogisticsMovement } from "../systems/logistics.js";
 import { drawWorld,drawVignette } from "../presentation/rendering/renderer.js";
 import { renderUI } from "../presentation/rendering/ui.js";
 import { updateCamera } from "../presentation/camera.js";
@@ -60,6 +61,7 @@ function gameLoop(timestamp){
     let movementSteps=0;
     while(state.movementAccumulator>=movementStep&&movementSteps<3){
      updateFriendlyMovement(movementStep*state.gameSpeed*(BASE_TICK_INTERVAL/MOVEMENT_TICK_REFERENCE_MS));
+     updateLogisticsMovement(movementStep*state.gameSpeed*(BASE_TICK_INTERVAL/MOVEMENT_TICK_REFERENCE_MS));
      state.movementAccumulator-=movementStep;movementSteps++;
     }
     if(movementSteps===3)state.movementAccumulator=Math.min(state.movementAccumulator,movementStep);

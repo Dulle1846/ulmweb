@@ -129,6 +129,16 @@ export const BUILDING_SIZE = {
     12: { w: 4, h: 4 },   // WONDER
     13: { w: 2.2, h: 2 }, // GOLDMINE
     14: { w: 0.7, h: 0.7 }, // BARREL
+    60: { w: 1.2, h: 1.1 }, // TENT
+    61: { w: 1.8, h: 1.6 }, // STONE HOUSE
+    62: { w: 2.4, h: 2 },   // WAREHOUSE
+    63: { w: 2, h: 1.8 },   // SAWMILL
+    64: { w: 1.8, h: 1.4 }, // BAKERY
+    65: { w: 1, h: 1 },     // WELL
+    66: { w: 1.8, h: 1.4 }, // MASON
+    67: { w: 1.4, h: 1.2 }, // FORESTER
+    68: { w: 2, h: 1.5 },   // CLINIC
+    69: { w: 1.8, h: 1.4 }, // MARKET
 };
 
 // Gebäude-Dachfarben (für Level-1-Icons und Level-2-Top-Down)
@@ -148,6 +158,16 @@ export const BUILDING_ROOF_COLOR = {
     12: "#f2c744",  // WONDER — Gold
     13: "#b99139",  // GOLDMINE — Gold ore
     14: "#795a3b",  // BARREL — Supplies
+    60: "#a58b65",  // TENT — canvas
+    61: "#746d62",  // STONE HOUSE — slate
+    62: "#6d5437",  // WAREHOUSE — timber
+    63: "#6b5834",  // SAWMILL — sawdust
+    64: "#a0713e",  // BAKERY — crust
+    65: "#587a80",  // WELL — water
+    66: "#777168",  // MASON — stone
+    67: "#3f6639",  // FORESTER — green
+    68: "#8d6b55",  // CLINIC — clay
+    69: "#9a6b3f",  // MARKET — awning
 };
 
 // Gebäude-Icons für Level 1
@@ -156,6 +176,9 @@ export const BUILDING_ICON = {
     4:  "⛰️", 5:  "🗼", 6:  "🧱", 7:  "🍺",
     8:  "⛪", 9:  "🛡️", 10: "⚙️", 11: "🐎",
     12: "✨", 13: "⛏️", 14: "🛢️",
+    60: "⛺", 61: "🏛️", 62: "🏚️", 63: "🪚",
+    64: "🥖", 65: "💧", 66: "🧱", 67: "🌱",
+    68: "🩺", 69: "⚖️",
 };
 
 // ═══════════════════════════════════════════════════════════════

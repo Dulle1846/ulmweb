@@ -139,6 +139,17 @@ function extract(type,x,y,amount){
 export function harvestForest(x,y,amount){return extract("forest",x,y,amount);}
 export function extractStone(x,y,amount){return extract("stone",x,y,amount);}
 
+export function plantForestAt(x,y,amount=1){
+    const point=readTile(x,y);
+    const requested=Math.floor(Number(amount));
+    if(!point||!Number.isFinite(requested)||requested<1)return 0;
+    const geo=ensureGeography();
+    const missing=geo.forestCapacity[point.index]-geo.forestStock[point.index];
+    const planted=Math.min(missing,requested);
+    if(planted>0)geo.forestStock[point.index]+=planted;
+    return planted;
+}
+
 export function regrowForests(days=1){
     const elapsed=Number(days);
     if(!Number.isFinite(elapsed)||elapsed<=0)return 0;

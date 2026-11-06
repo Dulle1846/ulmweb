@@ -10,6 +10,7 @@ import { applyRoomBonuses, getFurnitureUpkeepTotal } from "./rooms.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
+export const ECONOMY_HISTORY_LIMIT = 24;
 export const BUILDING_WORKFORCE = Object.freeze({
     [TYPE.FARM]: 4,
     [TYPE.LUMBER]: 3,
@@ -18,7 +19,15 @@ export const BUILDING_WORKFORCE = Object.freeze({
     [TYPE.TAVERN]: 2,
     [TYPE.TEMPLE]: 2,
     [TYPE.MILL]: 2,
-    [TYPE.STABLE]: 2
+    [TYPE.STABLE]: 2,
+    [TYPE.WAREHOUSE]: 2,
+    [TYPE.SAWMILL]: 2,
+    [TYPE.BAKERY]: 2,
+    [TYPE.WELL]: 1,
+    [TYPE.MASON]: 2,
+    [TYPE.FORESTER]: 2,
+    [TYPE.CLINIC]: 2,
+    [TYPE.MARKET]: 2
 });
 
 const clampNonNegative = value => Math.max(0, Number.isFinite(value) ? value : 0);
@@ -68,7 +77,8 @@ export function getWorkforceSnapshot() {
     for (const villager of villagers) {
         if ((villager.illnessUntilTick || 0) > state.tick) continue;
         const workplace = villager.workplace;
-        if (!workplace || workplace.dead || !BUILDING_WORKFORCE[workplace.type]) continue;
+        const constructionCapacity = workplace?.construction && workplace.construction.stage < 3 ? 2 : 0;
+        if (!workplace || workplace.dead || (!BUILDING_WORKFORCE[workplace.type] && !constructionCapacity)) continue;
         workersByBuilding.set(workplace, (workersByBuilding.get(workplace) || 0) + 1);
         employed++;
     }
@@ -83,10 +93,14 @@ export function getWorkforceSnapshot() {
 }
 
 export function getBuildingEfficiency(building, workforce = null) {
-    const capacity = BUILDING_WORKFORCE[building?.type];
+    if (!building || building.dead) return 0;
+    if (building.construction && building.construction.stage < 3) return 0;
+    const constructionCapacity = building.construction && building.construction.stage < 3 ? 2 : 0;
+    const capacity = BUILDING_WORKFORCE[building.type] || constructionCapacity;
     if (!capacity) return 0;
     const workers = (workforce || getWorkforceSnapshot()).workersByBuilding.get(building) || 0;
-    return Math.max(0, Math.min(1, workers / capacity));
+    const productivity = state.city?.enabled ? Math.max(0.7, Math.min(1.05, Number(state.city?.needs?.productivity) || 1)) : 1;
+    return Math.max(0, Math.min(1, workers / capacity)) * productivity;
 }
 
 export function updateEconomy() {
@@ -133,6 +147,26 @@ export function updateEconomy() {
     totals.population = workforce.population;
     totals.employed = workforce.employed;
     totals.unemployed = workforce.unemployed;
+    // Keep a bounded, real time series for the charts in the economy and store
+    // panels. Every point is copied from a completed settlement; nothing here
+    // is a forecast or a synthesized interpolation.
+    totals.history = Array.isArray(totals.history) ? totals.history.slice(-(ECONOMY_HISTORY_LIMIT - 1)) : [];
+    totals.history.push({
+        tick: state.tick,
+        year: state.year,
+        dayOfYear: state.dayOfYear,
+        wood: Math.max(0, Number(state.resources.wood) || 0),
+        stone: Math.max(0, Number(state.resources.stone) || 0),
+        gold: Math.max(0, Number(state.resources.gold) || 0),
+        food: Math.max(0, Number(state.resources.food) || 0),
+        netGold: Number(ledger.netGold) || 0,
+        taxesCollected: Number(ledger.taxesCollected) || 0,
+        foodDemand: Number(ledger.foodDemand) || 0,
+        foodConsumed: Number(ledger.foodConsumed) || 0,
+        foodShortage: Number(ledger.foodShortage) || 0,
+        population: workforce.population,
+        employed: workforce.employed
+    });
     const roomBonuses = applyRoomBonuses();
     updatePolitics(ledger,workforce);
     ledger.roomGold = roomBonuses.totals.gold;

@@ -21,6 +21,19 @@ export const TYPE = {
     GOLDMINE: 13,
     BARREL: 14,
 
+    // City-builder structures use their own contiguous block so older save
+    // ids, mobile units and enemy ids keep their established meanings.
+    TENT: 60,
+    STONE_HOUSE: 61,
+    WAREHOUSE: 62,
+    SAWMILL: 63,
+    BAKERY: 64,
+    WELL: 65,
+    MASON: 66,
+    FORESTER: 67,
+    CLINIC: 68,
+    MARKET: 69,
+
     VILLAGER: 20,
     GUARD: 21,
     ARCHER: 22,
@@ -54,6 +67,16 @@ const MAX_HP = {
     [TYPE.WONDER]:   9999,
     [TYPE.GOLDMINE]: 240,
     [TYPE.BARREL]:    45,
+    [TYPE.TENT]:      70,
+    [TYPE.STONE_HOUSE]: 320,
+    [TYPE.WAREHOUSE]: 260,
+    [TYPE.SAWMILL]:   180,
+    [TYPE.BAKERY]:    160,
+    [TYPE.WELL]:      120,
+    [TYPE.MASON]:     170,
+    [TYPE.FORESTER]:  105,
+    [TYPE.CLINIC]:    200,
+    [TYPE.MARKET]:    155,
     [TYPE.VILLAGER]: 35,
     [TYPE.GUARD]:    160,
     [TYPE.ARCHER]:   95,
@@ -80,6 +103,15 @@ export const JOB_ICONS = {
     acolyte:     "✨",
     miller:      "⚙️",
     stablehand:  "🐴",
+    sawyer:      "🪚",
+    baker:       "🥖",
+    wellkeeper:  "💧",
+    mason:       "🧱",
+    forester:    "🌱",
+    healer:      "🩺",
+    merchant:    "⚖️",
+    hauler:      "🧺",
+    builder:     "🔨",
     guard:       "🛡️",
     archer:      "🏹",
     knight:      "⚔️",
@@ -133,7 +165,7 @@ export class Entity {
     }
 
     isBuilding() {
-        return this.type < 20;
+        return this.type < 20 || (this.type >= 60 && this.type < 70);
     }
 
     isUnit() {

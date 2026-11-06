@@ -57,6 +57,14 @@ const JOB_MAP = [
     { building: TYPE.TEMPLE,  job: "acolyte" },
     { building: TYPE.MILL,    job: "miller" },
     { building: TYPE.STABLE,  job: "stablehand" },
+    { building: TYPE.SAWMILL, job: "sawyer" },
+    { building: TYPE.BAKERY,  job: "baker" },
+    { building: TYPE.WELL,    job: "wellkeeper" },
+    { building: TYPE.MASON,   job: "mason" },
+    { building: TYPE.FORESTER, job: "forester" },
+    { building: TYPE.WAREHOUSE, job: "hauler" },
+    { building: TYPE.CLINIC,  job: "healer" },
+    { building: TYPE.MARKET,   job: "merchant" },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -364,13 +372,15 @@ const pathHeuristic=(x,y,tx,ty)=>{
 // A bounded A* search is only invoked when direct steering meets an obstacle.
 // Routes are cached on each unit and invalidated when its destination or the
 // building-collision version changes.
-export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
+let lastDirectPathResult = "none";
+function findPathDirect(startX,startY,targetX,targetY,maxNodes=1800){
     rebuildBlockedBuildingTiles();
+    lastDirectPathResult = "none";
     const W=worldWidth(),H=worldHeight();
     const sx=Math.floor(startX),sy=Math.floor(startY),tx=Math.floor(targetX),ty=Math.floor(targetY);
-    if(sx<0||sy<0||tx<0||ty<0||sx>=W||sy>=H||tx>=W||ty>=H)return null;
-    if(sx===tx&&sy===ty)return [];
-    if(!isWalkable(tx+0.5,ty+0.5))return null;
+    if(sx<0||sy<0||tx<0||ty<0||sx>=W||sy>=H||tx>=W||ty>=H){lastDirectPathResult="invalid";return null;}
+    if(sx===tx&&sy===ty){lastDirectPathResult="found";return [];}
+    if(!isWalkable(tx+0.5,ty+0.5)){lastDirectPathResult="unreachable";return null;}
     const start=sy*W+sx,target=ty*W+tx;
     const open=[],costs=new Map([[start,0]]),parents=new Map(),closed=new Set();
     heapPush(open,{index:start,x:sx,y:sy,g:0,f:pathHeuristic(sx,sy,tx,ty)*0.78});
@@ -385,8 +395,9 @@ export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
             while(cursor!==start){
                 route.push({x:(cursor%W)+0.5,y:Math.floor(cursor/W)+0.5});
                 cursor=parents.get(cursor);
-                if(cursor===undefined)return null;
+                if(cursor===undefined){lastDirectPathResult="unreachable";return null;}
             }
+            lastDirectPathResult="found";
             route.reverse();return route;
         }
         closed.add(current.index);visited++;
@@ -402,7 +413,182 @@ export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
             heapPush(open,{index:next,x:nx,y:ny,g:nextCost,f:nextCost+pathHeuristic(nx,ny,tx,ty)*0.78});
         }
     }
+    lastDirectPathResult = open.length ? "cap" : "unreachable";
     return null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HIERARCHICAL FALLBACK — coarse route, local A* segments
+//  Local unit paths keep the 5,000-node search guard. A failed long
+//  direct search is refined through a coarse walkability grid, never by
+//  increasing the per-call node budget.
+// ═══════════════════════════════════════════════════════════════
+
+const HIERARCHICAL_TRIGGER_DISTANCE = 64;
+const HIERARCHICAL_LOCAL_CAP = 5000;
+const hierarchicalGridCache = new Map();
+let reachableTileCache = null;
+
+function walkabilityKey() {
+    return [state.worldEpoch || 0, worldWidth(), worldHeight(), state.buildingCollisionVersion || 0].join(":");
+}
+
+function getReachableTiles(startX, startY) {
+    const W = worldWidth(), H = worldHeight();
+    const startTile = Math.floor(startY) * W + Math.floor(startX);
+    const key = `${walkabilityKey()}:${startTile}`;
+    if (reachableTileCache && reachableTileCache.key === key) return reachableTileCache;
+    if (!isWalkable(startX, startY)) return null;
+
+    const tiles = new Uint8Array(W * H);
+    const queue = new Int32Array(W * H);
+    let head = 0, tail = 0;
+    tiles[startTile] = 1;
+    queue[tail++] = startTile;
+    while (head < tail) {
+        const current = queue[head++];
+        const x = current % W, y = Math.floor(current / W);
+        if (x > 0) {
+            const next = current - 1;
+            if (!tiles[next] && isWalkable(x - 0.5, y + 0.5)) { tiles[next] = 1; queue[tail++] = next; }
+        }
+        if (x + 1 < W) {
+            const next = current + 1;
+            if (!tiles[next] && isWalkable(x + 1.5, y + 0.5)) { tiles[next] = 1; queue[tail++] = next; }
+        }
+        if (y > 0) {
+            const next = current - W;
+            if (!tiles[next] && isWalkable(x + 0.5, y - 0.5)) { tiles[next] = 1; queue[tail++] = next; }
+        }
+        if (y + 1 < H) {
+            const next = current + W;
+            if (!tiles[next] && isWalkable(x + 0.5, y + 1.5)) { tiles[next] = 1; queue[tail++] = next; }
+        }
+    }
+    reachableTileCache = { key, tiles, W, H };
+    return reachableTileCache;
+}
+
+function getHierarchicalGrid(cellSize, reachable) {
+    const W = reachable.W, H = reachable.H;
+    const key = `${reachable.key}:${cellSize}`;
+    const cached = hierarchicalGridCache.get(key);
+    if (cached) return cached;
+
+    const cols = Math.ceil(W / cellSize), rows = Math.ceil(H / cellSize);
+    const reps = new Int32Array(cols * rows).fill(-1);
+    for (let cy = 0; cy < rows; cy++) {
+        for (let cx = 0; cx < cols; cx++) {
+            const left = cx * cellSize, top = cy * cellSize;
+            const centerX = left + cellSize / 2, centerY = top + cellSize / 2;
+            let best = -1, bestDistance = Infinity;
+            for (let y = top; y < Math.min(H, top + cellSize); y++) {
+                for (let x = left; x < Math.min(W, left + cellSize); x++) {
+                    const tile = y * W + x;
+                    if (!reachable.tiles[tile]) continue;
+                    const d = (x + 0.5 - centerX) ** 2 + (y + 0.5 - centerY) ** 2;
+                    if (d < bestDistance) { bestDistance = d; best = tile; }
+                }
+            }
+            reps[cy * cols + cx] = best;
+        }
+    }
+    const grid = { cellSize, cols, rows, reps, W, H, key, reachable };
+    hierarchicalGridCache.set(key, grid);
+    return grid;
+}
+
+function hierarchicalRoute(grid, startX, startY, targetX, targetY) {
+    const { cols, rows, reps, W } = grid;
+    const startTile = Math.floor(startY) * W + Math.floor(startX);
+    const targetTile = Math.floor(targetY) * W + Math.floor(targetX);
+    if (!grid.reachable.tiles[startTile] || !grid.reachable.tiles[targetTile]) return null;
+    const cellIndex = (x, y) => {
+        const cx = Math.max(0, Math.min(cols - 1, Math.floor(x / grid.cellSize)));
+        const cy = Math.max(0, Math.min(rows - 1, Math.floor(y / grid.cellSize)));
+        return cy * cols + cx;
+    };
+    const startCell = cellIndex(startX, startY);
+    const targetCell = cellIndex(targetX, targetY);
+    if (reps[startCell] < 0 || reps[targetCell] < 0) return null;
+    if (startCell === targetCell) return null;
+
+    const total = cols * rows;
+    const seen = new Int32Array(total).fill(-1);
+    const parent = new Int32Array(total).fill(-1);
+    const queue = new Int32Array(total);
+    let head = 0, tail = 0;
+    queue[tail++] = startCell;
+    seen[startCell] = 0;
+    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    while (head < tail) {
+        const current = queue[head++];
+        if (current === targetCell) break;
+        const cx = current % cols, cy = Math.floor(current / cols);
+        for (const [dx, dy] of directions) {
+            const nx = cx + dx, ny = cy + dy;
+            if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+            const next = ny * cols + nx;
+            if (seen[next] !== -1 || reps[next] < 0) continue;
+            seen[next] = seen[current] + 1;
+            parent[next] = current;
+            queue[tail++] = next;
+        }
+    }
+    if (seen[targetCell] === -1) return null;
+
+    const cells = [];
+    let cursor = targetCell;
+    while (cursor !== -1) {
+        cells.push(cursor);
+        if (cursor === startCell) break;
+        cursor = parent[cursor];
+    }
+    cells.reverse();
+    if (cells[0] !== startCell) return null;
+
+    const waypoints = [{ x: startX, y: startY }];
+    for (let index = 1; index < cells.length - 1; index++) {
+        const tile = reps[cells[index]];
+        if (tile < 0) return null;
+        waypoints.push({ x: (tile % W) + 0.5, y: Math.floor(tile / W) + 0.5 });
+    }
+    waypoints.push({ x: targetX, y: targetY });
+
+    const route = [];
+    for (let index = 0; index < waypoints.length - 1; index++) {
+        const from = waypoints[index], to = waypoints[index + 1];
+        const segment = findPathDirect(from.x, from.y, to.x, to.y, HIERARCHICAL_LOCAL_CAP);
+        if (!segment) return null;
+        for (const node of segment) {
+            if (!isWalkable(node.x, node.y)) return null;
+            route.push(node);
+        }
+    }
+    return route.length ? route : null;
+}
+
+function findHierarchicalPath(startX, startY, targetX, targetY) {
+    const reachable = getReachableTiles(startX, startY);
+    if (!reachable) return null;
+    // 16-tile cells keep refinement local; 8- and 4-tile cells are the
+    // safety net around narrow coastlines and dense building footprints.
+    for (const cellSize of [16, 8, 4]) {
+        const grid = getHierarchicalGrid(cellSize, reachable);
+        const route = hierarchicalRoute(grid, startX, startY, targetX, targetY);
+        if (route) return route;
+    }
+    return null;
+}
+
+export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
+    const direct = findPathDirect(startX,startY,targetX,targetY,maxNodes);
+    if (direct) return direct;
+    // Only a search that hit the node guard gets the hierarchical retry.
+    // Genuinely unreachable targets must stay cheap and return null.
+    if (lastDirectPathResult !== "cap") return null;
+    if (Math.max(Math.abs(targetX - startX), Math.abs(targetY - startY)) < HIERARCHICAL_TRIGGER_DISTANCE) return null;
+    return findHierarchicalPath(startX,startY,targetX,targetY);
 }
 
 function followCachedPath(unit,dt,speedMultiplier=1){
@@ -440,6 +626,19 @@ function assignJob(villager,workplaces=null,workerCounts=new Map()) {
             const score = d + (preferredBuilding ? (m.building === preferredBuilding ? -12 : 8) : 0);
             if (score < bestScore) { bestScore = score; bestDist = d; best = { workplace: b, job: m.job }; }
         }
+    }
+    // Construction sites reserve up to two builders. They compete with normal
+    // workplaces by distance so a new foundation is not ignored simply because
+    // every resident already holds a production job.
+    const constructionSites = state.entities.filter(entity =>
+        !entity.dead && entity.isBuilding() && entity.construction && entity.construction.stage < 3 &&
+        !entity.construction.paused && (workerCounts.get(entity) || 0) < 2
+    );
+    for (const site of constructionSites) {
+        const d = Math.hypot(villager.x - site.x, villager.y - site.y);
+        if (d > 40 || d >= bestDist - 6) continue;
+        bestDist = d;
+        best = { workplace: site, job: "builder" };
     }
     const nextWorkplace = best && bestDist <= 40 ? best.workplace : null;
     if(nextWorkplace)workerCounts.set(nextWorkplace,(workerCounts.get(nextWorkplace)||0)+1);
