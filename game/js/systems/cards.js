@@ -81,7 +81,7 @@ function footprintFor(card){
 function hasBuildableTerrain(tx,ty,card){
     const size=footprintFor(card);
     const left=tx+0.5-size.w/2,right=tx+0.5+size.w/2,top=ty+0.5-size.h/2,bottom=ty+0.5+size.h/2;
-    if(left<0||top<0||right>WORLD_WIDTH||bottom>WORLD_HEIGHT)return false;
+    if(left<0||top<0||right>(Number(state.worldW)||WORLD_WIDTH)||bottom>(Number(state.worldH)||WORLD_HEIGHT))return false;
     for(let x=Math.floor(left);x<right;x++)for(let y=Math.floor(top);y<bottom;y++){
         const sx=(Math.max(left,x)+Math.min(right,x+1))/2,sy=(Math.max(top,y)+Math.min(bottom,y+1))/2;
         if(isWaterAt(sx,sy))return false;
@@ -135,8 +135,8 @@ function resolveEffectCard(card){
 export function placeCurrentCard(targetX,targetY){
     const card=state.currentCard;if(!card||state.gameOver||state.isPaused)return false;
     const canvas=state.canvas,camera=state.camera;
-    const fallbackX=canvas?Math.floor((camera.x+canvas.width/2)/(TILE_SIZE*state.zoom)):WORLD_WIDTH/2;
-    const fallbackY=canvas?Math.floor((camera.y+canvas.height/2)/(TILE_SIZE*state.zoom)):WORLD_HEIGHT/2;
+    const fallbackX=canvas?Math.floor((camera.x+canvas.width/2)/(TILE_SIZE*state.zoom)):(Number(state.worldW)||WORLD_WIDTH)/2;
+    const fallbackY=canvas?Math.floor((camera.y+canvas.height/2)/(TILE_SIZE*state.zoom)):(Number(state.worldH)||WORLD_HEIGHT)/2;
     const requested=Number.isInteger(targetX)&&Number.isInteger(targetY)?{tx:targetX,ty:targetY}:findNearestBuildableTile(fallbackX,fallbackY);
     if(!requested){queueFloater(fallbackX*TILE_SIZE,fallbackY*TILE_SIZE,"NO SPACE NEARBY","#f59e0b");return false;}
     const {tx,ty}=requested,preview=getCardPlacementPreview(tx,ty);

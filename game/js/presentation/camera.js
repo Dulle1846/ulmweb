@@ -71,8 +71,8 @@ export function setZoomLevel(level) {
 export function clampCamera() {
     if (!state.canvas) return;
 
-    const worldPixelW = WORLD_W * CELL * state.zoom;
-    const worldPixelH = WORLD_H * CELL * state.zoom;
+    const worldPixelW = (Number(state.worldW)||WORLD_W) * CELL * state.zoom;
+    const worldPixelH = (Number(state.worldH)||WORLD_H) * CELL * state.zoom;
     const viewportW = state.canvas.width;
     const viewportH = state.canvas.height;
 
@@ -98,8 +98,8 @@ function openingViewBias() {
 
 export function centerCamera() {
     if (!state.canvas) return;
-    state.camera.x = WORLD_W * CELL * state.zoom / 2 - state.canvas.width / 2;
-    state.camera.y = WORLD_H * CELL * state.zoom / 2 - state.canvas.height / 2 + openingViewBias();
+    state.camera.x = (Number(state.worldW)||WORLD_W) * CELL * state.zoom / 2 - state.canvas.width / 2;
+    state.camera.y = (Number(state.worldH)||WORLD_H) * CELL * state.zoom / 2 - state.canvas.height / 2 + openingViewBias();
     clampCamera();
 }
 
@@ -113,8 +113,8 @@ export function resize() {
 
     const oldWidth = state.canvas.width;
     const oldHeight = state.canvas.height;
-    const centerWorldX = oldWidth > 0 ? (state.camera.x + oldWidth / 2) / (CELL * state.zoom) : WORLD_W / 2;
-    const centerWorldY = oldHeight > 0 ? (state.camera.y + oldHeight / 2) / (CELL * state.zoom) : WORLD_H / 2;
+    const centerWorldX = oldWidth > 0 ? (state.camera.x + oldWidth / 2) / (CELL * state.zoom) : (Number(state.worldW)||WORLD_W) / 2;
+    const centerWorldY = oldHeight > 0 ? (state.camera.y + oldHeight / 2) / (CELL * state.zoom) : (Number(state.worldH)||WORLD_H) / 2;
 
     if (state.canvas.width !== width || state.canvas.height !== height) {
         // A resize changes screen coordinates; preserve the view centre and release a cursor anchor.

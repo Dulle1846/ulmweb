@@ -11,6 +11,7 @@ import { distance } from "../core/utils.js";
 import { toggleSoundtrack } from "../core/soundtrack.js";
 import { loadSettings,saveSettings } from "../core/persistence.js";
 import { getRoadBuildMode,placeRoad,removeRoad } from "../systems/roads.js";
+import { isWorkshopOpen,handleWorkshopClick,cancelWorkshopTool,closeWorkshop,toggleWorkshop } from "./build-mode.js";
 
 export function setupInput(){
     const canvas=state.canvas;
@@ -94,7 +95,7 @@ export function setupInput(){
     });
 
     function beginCardDrag(event,cardId){
-        if(event.button!==0||!cardId||state.gameOver||state.isPaused)return;
+        if(event.button!==0||!cardId||state.gameOver||state.isPaused||isWorkshopOpen())return;
         if(!selectCard(cardId))return;
         event.preventDefault();
         cardPointerId=event.pointerId;
@@ -134,7 +135,7 @@ export function setupInput(){
         // The hand dock and zoom/minimap controls overlay the canvas rectangle.
         // Releasing on one of those controls must never place the selected card.
         const releasedOnMap=document.elementFromPoint(event.clientX,event.clientY)===canvas;
-        if(inside&&releasedOnMap&&state.cardPreview?.valid)placeCurrentCard(state.cardPreview.tx,state.cardPreview.ty);
+        if(inside&&releasedOnMap&&state.cardPreview?.valid&&!isWorkshopOpen())placeCurrentCard(state.cardPreview.tx,state.cardPreview.ty);
         endCardDrag();
         renderUI();
     });
@@ -170,6 +171,8 @@ export function setupInput(){
         const typing=target instanceof HTMLElement&&(["INPUT","TEXTAREA","SELECT"].includes(target.tagName)||target.isContentEditable);
         if(event.key==="Escape"){
             if(cardPointerId!==null)endCardDrag();
+            if(state.buildTool){cancelWorkshopTool();return;}
+            if(isWorkshopOpen()){closeWorkshop();return;}
             closeTopModal();
             return;
         }
@@ -181,6 +184,7 @@ export function setupInput(){
             event.preventDefault();window.dispatchEvent(new Event("kac:load-request"));return;
         }
         if(event.code==="Space"){event.preventDefault();togglePause();return;}
+        if(event.key.toLowerCase()==="b"){toggleWorkshop();return;}
         if(event.key.toLowerCase()==="m"){
             const settings=loadSettings();
             settings.musicEnabled=toggleSoundtrack();
@@ -258,7 +262,9 @@ export function setupInput(){
         const rect=canvas.getBoundingClientRect();
         const world=screenToWorld(event.clientX-rect.left,event.clientY-rect.top);
         const tx=Math.floor(world.x),ty=Math.floor(world.y);
-        if(tx<0||ty<0||tx>=WORLD_W||ty>=WORLD_H)return;
+        const boundsW=Number(state.worldW)||WORLD_W,boundsH=Number(state.worldH)||WORLD_H;
+        if(tx<0||ty<0||tx>=boundsW||ty>=boundsH)return;
+        if(isWorkshopOpen()){handleWorkshopClick(tx,ty);return;}
         const roadType=getRoadBuildMode();
         if(roadType){paintRoadAtScreen(event);return;}
         const enemy=state.entities.find(entity=>!entity.dead&&entity.isEnemy()&&distance(entity.x,entity.y,world.x,world.y)<0.8);

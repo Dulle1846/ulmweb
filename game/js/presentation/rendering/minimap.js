@@ -1,11 +1,10 @@
 // ═══════════════════════════════════════════════════════════════
-//  MINIMAP — mit Zoom-Level-Anzeige
+//  MINIMAP — terrain, structures, army and viewport
 // ═══════════════════════════════════════════════════════════════
 
 import { WORLD_W, WORLD_H, CELL, BIOME } from '../../core/config.js';
 import { TYPE } from '../../core/types.js';
 import { state } from '../../core/state.js';
-import { getHeightAt } from '../../world/world.js';
 
 export function updateMinimap() {
     const mctx = state.minimapCtx;
@@ -14,25 +13,28 @@ export function updateMinimap() {
     const mw = 140;
     const mh = 140;
 
-    mctx.fillStyle = "#052e16";
+    mctx.fillStyle = '#052e16';
     mctx.fillRect(0, 0, mw, mh);
 
-    const scaleX = mw / WORLD_W;
-    const scaleY = mh / WORLD_H;
+    const W = Number(state.worldW) || WORLD_W;
+    const H = Number(state.worldH) || WORLD_H;
+    const scaleX = mw / W;
+    const scaleY = mh / H;
+    const sea = Number(state.seaLevel) || BIOME.SHALLOW_WATER;
 
-    // Terrain (gesampled)
-    const step = 3;
-    for (let x = 0; x < WORLD_W; x += step) {
-        for (let y = 0; y < WORLD_H; y += step) {
-            if (!state.explored[x] || !state.explored[x][y]) continue;
+    const step = Math.max(2, Math.floor(Math.max(W, H) / 64));
+    for (let x = 0; x < W; x += step) {
+        for (let y = 0; y < H; y += step) {
+            if (!state.explored[x]?.[y]) continue;
+            const h = state.heightMap
+                ? state.heightMap[Math.min(state.terrainPixH - 1, Math.floor((y + 0.5) * state.terrainResolution)) * state.terrainPixW + Math.min(state.terrainPixW - 1, Math.floor((x + 0.5) * state.terrainResolution))]
+                : 0;
 
-            const h = getHeightAt(x + 0.5, y + 0.5);
-
-            if (h < BIOME.SHALLOW_WATER) mctx.fillStyle = "#0c4a6e";
-            else if (h < BIOME.SAND)      mctx.fillStyle = "#c2b280";
-            else if (h < BIOME.FOREST)    mctx.fillStyle = "#365314";
-            else if (h < BIOME.ROCK)      mctx.fillStyle = "#166534";
-            else                           mctx.fillStyle = "#6e6e6e";
+            if (h < sea) mctx.fillStyle = '#0c4a6e';
+            else if (h < sea + 0.02) mctx.fillStyle = '#c2b280';
+            else if (h < BIOME.FOREST) mctx.fillStyle = '#365314';
+            else if (h < BIOME.ROCK) mctx.fillStyle = '#166534';
+            else mctx.fillStyle = '#6e6e6e';
 
             mctx.fillRect(
                 Math.floor(x * scaleX),
@@ -43,12 +45,12 @@ export function updateMinimap() {
         }
     }
 
-    // Entities
     state.entities.forEach(e => {
         if (e.dead) return;
-        let color = "#eab308";
-        if (e.isEnemy()) color = "#e11d48";
-        if (e.type === TYPE.KEEP) color = "#f2c744";
+        let color = '#eab308';
+        if (e.isEnemy()) color = '#e11d48';
+        if (e.type === TYPE.KEEP) color = '#f2c744';
+        if (e.isBuilding() && e.type !== TYPE.KEEP) color = '#b8a37a';
 
         mctx.fillStyle = color;
         mctx.fillRect(
@@ -58,24 +60,22 @@ export function updateMinimap() {
         );
     });
 
-    // Kamera-Viewport
     const zoom = state.zoom;
-    const left = Math.max(0, Math.min(WORLD_W, state.camera.x / (CELL * zoom)));
-    const top = Math.max(0, Math.min(WORLD_H, state.camera.y / (CELL * zoom)));
-    const right = Math.max(left, Math.min(WORLD_W, (state.camera.x + state.canvas.width) / (CELL * zoom)));
-    const bottom = Math.max(top, Math.min(WORLD_H, (state.camera.y + state.canvas.height) / (CELL * zoom)));
+    const left = Math.max(0, Math.min(W, state.camera.x / (CELL * zoom)));
+    const top = Math.max(0, Math.min(H, state.camera.y / (CELL * zoom)));
+    const right = Math.max(left, Math.min(W, (state.camera.x + state.canvas.width) / (CELL * zoom)));
+    const bottom = Math.max(top, Math.min(H, (state.camera.y + state.canvas.height) / (CELL * zoom)));
     const camX = left * scaleX;
     const camY = top * scaleY;
     const camW = Math.max(0, (right - left) * scaleX);
     const camH = Math.max(0, (bottom - top) * scaleY);
 
-    mctx.strokeStyle = "#fcd34d";
+    mctx.strokeStyle = '#fcd34d';
     mctx.lineWidth = 1.5;
     mctx.strokeRect(camX, camY, camW, camH);
 
-    // Four-level zoom indicator.
-    const labels = ["", "L1", "L2", "L3", "L4"];
-    mctx.fillStyle = "#fcd34d";
-    mctx.font = "bold 9px monospace";
+    const labels = ['', 'L1', 'L2', 'L3', 'L4'];
+    mctx.fillStyle = '#fcd34d';
+    mctx.font = 'bold 9px monospace';
     mctx.fillText(labels[state.zoomLevel], 3, 10);
 }

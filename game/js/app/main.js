@@ -3,6 +3,7 @@ import { WORLD_W,WORLD_H } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { state,resetState } from "../core/state.js";
 import { initWorld } from "../world/world.js";
+import { renderWorldPreview,normalizeWorldOptions,resolveWorldDimensions } from "../world/terrain-model.js";
 import { initStartingKingdom,spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
@@ -23,8 +24,8 @@ import {normalizeGovernment} from "../systems/government.js";
 import {normalizeRoyalState} from "../systems/royal-dynasty.js";
 import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
-import {serializeResourceGeography,restoreResourceGeography,validateResourceGeographySnapshot} from "../systems/resource-geography.js";
-import {setupBuildUI} from "../presentation/build-ui.js";
+import {serializeResourceGeography,restoreResourceGeography,validateResourceGeographySnapshot} from "../systems/resource-geography.js";import { setupBuildUI } from "../presentation/build-ui.js";
+import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
 
 let loopStarted=false;
@@ -71,19 +72,52 @@ function resetForRun(profile){
 
 function readWorldOptions(){
     const value=id=>Number(document.getElementById(id)?.value);
-    return {landmass:value("world-landmass"),ruggedness:value("world-ruggedness"),forests:value("world-forests"),water:value("world-water")};
+    const choice=id=>document.getElementById(id)?.value;
+    return normalizeWorldOptions({
+        size:choice("world-size"),shape:choice("world-shape"),climate:choice("world-climate"),
+        landmass:value("world-landmass"),ruggedness:value("world-ruggedness"),forests:value("world-forests"),
+        water:value("world-water"),fertility:value("world-fertility"),resources:value("world-resources")
+    });
 }
 function syncWorldForge(options){
+    const normalized=normalizeWorldOptions(options);
+    for(const [key,id] of [["size","world-size"],["shape","world-shape"],["climate","world-climate"]]){
+        const select=document.getElementById(id);
+        if(select)select.value=normalized[key];
+    }
     const controls=[
         ["landmass",document.getElementById("world-landmass"),document.getElementById("world-landmass-value")],
         ["ruggedness",document.getElementById("world-ruggedness"),document.getElementById("world-ruggedness-value")],
         ["forests",document.getElementById("world-forests"),document.getElementById("world-forests-value")],
-        ["water",document.getElementById("world-water"),document.getElementById("world-water-value")]
+        ["water",document.getElementById("world-water"),document.getElementById("world-water-value")],
+        ["fertility",document.getElementById("world-fertility"),document.getElementById("world-fertility-value")],
+        ["resources",document.getElementById("world-resources"),document.getElementById("world-resources-value")]
     ];
     for(const [key,input,output] of controls){
-        if(input&&Number.isFinite(Number(options?.[key])))input.value=String(options[key]);
+        if(input&&Number.isFinite(Number(normalized[key])))input.value=String(normalized[key]);
         if(output)output.textContent=input?.value||"50";
     }
+    scheduleForgePreview();
+}
+
+let forgePreviewTimer=0;
+function drawForgePreview(){
+    const canvas=document.getElementById("world-preview");
+    if(!canvas)return;
+    const ctx=canvas.getContext("2d");
+    if(!ctx)return;
+    const options=readWorldOptions();
+    const seed=Number(document.getElementById("world-seed-input")?.value)||1;
+    try{renderWorldPreview(ctx,canvas.width,canvas.height,options,seed);}catch(error){/* a preview failure must never block founding */}
+    const dims=resolveWorldDimensions(options);
+    const size=document.getElementById("world-preview-size");
+    if(size)size.textContent=dims.w+" × "+dims.h+" TILES";
+    const summary=document.getElementById("world-preview-summary");
+    if(summary)summary.textContent=options.climate.toUpperCase()+" · "+options.shape.toUpperCase();
+}
+function scheduleForgePreview(){
+    window.clearTimeout(forgePreviewTimer);
+    forgePreviewTimer=window.setTimeout(drawForgePreview,180);
 }
 
 function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
@@ -110,6 +144,7 @@ function serializeEntity(entity,indexByEntity){
     return {
         id:entity.id||null,personId:entity.personId||null,person:entity.person?JSON.parse(JSON.stringify(entity.person)):null,
         x:entity.x,y:entity.y,type:entity.type,hp:entity.hp,maxHp:entity.maxHp,dead:entity.dead,age:entity.age,
+        rotation:entity.rotation||0,footprintScale:entity.footprintScale||1,interior:entity.interior?{...entity.interior}:null,
         anim:entity.anim,facing:entity.facing,visualState:entity.visualState,anchor:entity.anchor,home:entity.home,
         illnessUntilTick:entity.illnessUntilTick,illnessStartedTick:entity.illnessStartedTick,illnessSeverity:entity.illnessSeverity,
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
@@ -215,6 +250,7 @@ function loadSnapshotIntoGame(profile,snapshot){
         Object.assign(entity,{
             id:typeof dto.id==="string"?dto.id:null,personId:typeof dto.personId==="string"?dto.personId:null,person:dto.person&&typeof dto.person==="object"?dto.person:null,
             hp:dto.hp,maxHp:dto.maxHp,dead:dto.dead,age:dto.age,anim:dto.anim,facing:dto.facing,
+            rotation:Number.isFinite(dto.rotation)?dto.rotation:0,footprintScale:Number.isFinite(dto.footprintScale)?dto.footprintScale:1,interior:dto.interior&&typeof dto.interior==="object"?{...dto.interior}:null,
             visualState:dto.visualState,anchor:dto.anchor||{x:dto.x,y:dto.y},home:dto.home||{x:dto.x,y:dto.y},
             illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
@@ -281,7 +317,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     normalizeRoyalState(snapshot.royal);
     normalizeHouseholdAssignments();
     state.market=snapshot.market||createMarketState();
-    if(Array.isArray(snapshot.explored)&&snapshot.explored.length===WORLD_W)state.explored=snapshot.explored;
+    if(Array.isArray(snapshot.explored)&&snapshot.explored.length===(Number(state.worldW)||WORLD_W))state.explored=snapshot.explored;
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
     if(hasSavedCamera)state.camera={x:snapshot.camera.x,y:snapshot.camera.y};
     if(Number.isFinite(snapshot.zoom)){state.zoom=snapshot.zoom;state.zoomTarget=snapshot.zoom;state.zoomLevel=3;}
@@ -349,22 +385,29 @@ function bindMenu(){
     }
     const seedInput=document.getElementById("world-seed-input");
     if(seedInput)seedInput.value=String(randomSeed());
-    const forgeDefaults={landmass:50,ruggedness:55,forests:52,water:48};
+    const forgeDefaults=normalizeWorldOptions({});
     syncWorldForge(forgeDefaults);
-    document.getElementById("world-landmass")?.addEventListener("input",()=>syncWorldForge(readWorldOptions()));
-    document.getElementById("world-ruggedness")?.addEventListener("input",()=>syncWorldForge(readWorldOptions()));
-    document.getElementById("world-forests")?.addEventListener("input",()=>syncWorldForge(readWorldOptions()));
-    document.getElementById("world-water")?.addEventListener("input",()=>syncWorldForge(readWorldOptions()));
-    document.getElementById("random-seed-btn")?.addEventListener("click",()=>{if(seedInput)seedInput.value=String(randomSeed());});
-    document.getElementById("start-new-game-btn")?.addEventListener("click",()=>{
-        try{
-            const active=getActiveProfile();
-            const typed=nameInput?.value?.trim();
-            const player=active&&(!typed||typed===active.displayName)?active:createLocalProfile(typed||"Realm Keeper");
-            const seed=Number(seedInput?.value);
-            startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player,readWorldOptions());
-        }catch(error){showStatus(error.message);}
+    const forgeControls=["world-size","world-shape","world-climate","world-landmass","world-ruggedness","world-forests","world-water","world-fertility","world-resources"];
+    forgeControls.forEach(id=>document.getElementById(id)?.addEventListener("input",()=>syncWorldForge(readWorldOptions())));
+    seedInput?.addEventListener("input",scheduleForgePreview);
+    document.getElementById("random-seed-btn")?.addEventListener("click",()=>{if(seedInput)seedInput.value=String(randomSeed());scheduleForgePreview();});
+    const startButton=document.getElementById("start-new-game-btn");
+    startButton?.addEventListener("click",()=>{
+        const label=startButton.textContent;
+        startButton.disabled=true;
+        startButton.textContent="FORGING THE REALM…";
+        window.setTimeout(()=>{
+            try{
+                const active=getActiveProfile();
+                const typed=nameInput?.value?.trim();
+                const player=active&&(!typed||typed===active.displayName)?active:createLocalProfile(typed||"Realm Keeper");
+                const seed=Number(seedInput?.value);
+                startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player,readWorldOptions());
+            }catch(error){showStatus(error.message);}
+            finally{startButton.disabled=false;startButton.textContent=label;}
+        },40);
     });
+    drawForgePreview();
     continueButton?.addEventListener("click",loadCurrentGame);
     document.getElementById("load-game-btn")?.addEventListener("click",loadCurrentGame);
 
@@ -407,6 +450,7 @@ function init(){
         if(state.activeEvent){state.activeEvent.dismissed=true;renderUI();}
     });
 setupBuildUI();
+    setupWorkshopUI();
     bindMenu();
     applySoundtrackSettings(settings);
     window.addEventListener("resize",resize);

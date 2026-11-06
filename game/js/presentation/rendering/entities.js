@@ -8,6 +8,7 @@ import {
 } from '../../core/config.js';
 import { TYPE, JOB_ICONS } from '../../core/types.js';
 import { state } from '../../core/state.js';
+import { drawAuthoredBuilding } from './building-art.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  HAUPT-EINSTIEG
@@ -35,9 +36,8 @@ export function drawEntity(ctx, e, tick, zoom, cam) {
     }
 
     if (e.isBuilding()) {
-        if (zl === 2)      drawBuildingZone(ctx, e, sx, sy, cellPx);
-        else if (zl === 3) drawBuildingLevel2(ctx, e, sx, sy, cellPx, tick);
-        else               drawBuildingLevel3(ctx, e, sx, sy, cellPx, tick);
+        if (zl === 2) drawBuildingZone(ctx, e, sx, sy, cellPx);
+        else drawAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, { interior: zl >= 4 });
     } else if (e.isFriendly()) {
         if (zl === 2) drawPersonRoleIcon(ctx, e, sx, sy, cellPx);
         else drawPersonIcon(ctx, e, sx, sy, cellPx, tick);

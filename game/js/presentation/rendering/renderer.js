@@ -8,6 +8,7 @@ import { drawTerrain } from './terrain.js';
 import { drawEntity } from './entities.js';
 import { drawPlacementPreview } from './placement-preview.js';
 import { getRoadTiles,getRoadAt,ROAD_TYPES } from '../../systems/roads.js';
+import { worldWidth,worldHeight } from '../../world/world.js';
 
 let visibleEntitiesCache=[];
 let visibleEntitiesUntil=0;
@@ -89,8 +90,8 @@ function drawRoadNetwork(ctx,zoom,camera,canvas){
     if(tileSize<1.5)return;
     const minX=Math.max(0,Math.floor(camera.x/tileSize)-1);
     const minY=Math.max(0,Math.floor(camera.y/tileSize)-1);
-    const maxX=Math.min(159,Math.ceil((camera.x+canvas.width)/tileSize)+1);
-    const maxY=Math.min(159,Math.ceil((camera.y+canvas.height)/tileSize)+1);
+    const maxX=Math.min(worldWidth()-1,Math.ceil((camera.x+canvas.width)/tileSize)+1);
+    const maxY=Math.min(worldHeight()-1,Math.ceil((camera.y+canvas.height)/tileSize)+1);
     const roads=getRoadTiles();
     if(!roads.length)return;
     ctx.save();

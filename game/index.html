@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/ui-design-system.css">
     <link rel="stylesheet" href="css/ui-components.css">
     <link rel="stylesheet" href="css/hud-v3.css">
+    <link rel="stylesheet" href="css/world-workshop.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
 <body>
@@ -36,6 +37,7 @@
             <button id="save-btn" class="control-button" type="button" title="Save · Ctrl+S">SAVE</button>
             <button id="load-btn" class="control-button" type="button" title="Load · Ctrl+O">LOAD</button>
             <button id="build-open-btn" class="control-button" type="button" aria-haspopup="dialog" aria-controls="build-modal">BUILD</button>
+            <button id="workshop-open-btn" class="control-button" type="button" title="Realm workshop · B" aria-controls="workshop-panel">WORKSHOP</button>
             <button id="road-build-cancel" class="control-button hidden" type="button">EXIT BUILD</button>
             <button id="command-open-btn" class="control-button" type="button" aria-haspopup="dialog" aria-controls="command-modal">MANAGEMENT</button>
             <button id="settings-btn" class="control-button" type="button" title="Settings">⚙</button>
@@ -185,11 +187,41 @@
             <div class="seed-row"><input id="world-seed-input" type="number" min="1" step="1"><button id="random-seed-btn" class="ui-button ui-button--secondary secondary-button" type="button">RANDOMIZE</button></div>
             <section class="world-forge" aria-label="World generation options">
                 <div class="forge-heading"><span>THE WORLD FORGE</span><span>SHAPE THE UNKNOWN</span></div>
-                <label class="forge-slider"><span>LANDMASS <output id="world-landmass-value">50</output></span><input id="world-landmass" type="range" min="0" max="100" value="50"></label>
-                <label class="forge-slider"><span>RUGGEDNESS <output id="world-ruggedness-value">55</output></span><input id="world-ruggedness" type="range" min="0" max="100" value="55"></label>
-                <label class="forge-slider"><span>FORESTS <output id="world-forests-value">52</output></span><input id="world-forests" type="range" min="0" max="100" value="52"></label>
-                <label class="forge-slider"><span>WATER LEVEL <output id="world-water-value">48</output></span><input id="world-water" type="range" min="0" max="100" value="48"></label>
-                <div class="forge-note">The same seed and settings always forge the same landscape.</div>
+                <div class="forge-preview-wrap">
+                    <canvas id="world-preview" width="360" height="180" aria-label="Live terrain preview of the chosen world"></canvas>
+                    <div class="forge-preview-meta"><span id="world-preview-size">176 × 176 TILES</span><span id="world-preview-summary">TEMPERATE · CONTINENT</span></div>
+                </div>
+                <div class="forge-selects">
+                    <label class="forge-select"><span>MAP SIZE</span><select id="world-size">
+                        <option value="compact">Compact · 128 × 128</option>
+                        <option value="standard" selected>Standard · 176 × 176</option>
+                        <option value="grand">Grand · 224 × 224</option>
+                        <option value="vast">Vast · 288 × 288</option>
+                    </select></label>
+                    <label class="forge-select"><span>WORLD SHAPE</span><select id="world-shape">
+                        <option value="continent" selected>Continent</option>
+                        <option value="archipelago">Archipelago</option>
+                        <option value="coastal">Coast</option>
+                        <option value="inland">Inland basin</option>
+                        <option value="valley">Mountain valley</option>
+                    </select></label>
+                    <label class="forge-select"><span>CLIMATE</span><select id="world-climate">
+                        <option value="temperate" selected>Temperate</option>
+                        <option value="northern">Northern</option>
+                        <option value="mediterranean">Mediterranean</option>
+                        <option value="arid">Arid</option>
+                        <option value="enchanted">Enchanted</option>
+                    </select></label>
+                </div>
+                <div class="forge-sliders">
+                    <label class="forge-slider"><span>LANDMASS <output id="world-landmass-value">50</output></span><input id="world-landmass" type="range" min="0" max="100" value="50"></label>
+                    <label class="forge-slider"><span>RUGGEDNESS <output id="world-ruggedness-value">55</output></span><input id="world-ruggedness" type="range" min="0" max="100" value="55"></label>
+                    <label class="forge-slider"><span>FORESTS <output id="world-forests-value">52</output></span><input id="world-forests" type="range" min="0" max="100" value="52"></label>
+                    <label class="forge-slider"><span>WATER LEVEL <output id="world-water-value">48</output></span><input id="world-water" type="range" min="0" max="100" value="48"></label>
+                    <label class="forge-slider"><span>FERTILITY <output id="world-fertility-value">55</output></span><input id="world-fertility" type="range" min="0" max="100" value="55"></label>
+                    <label class="forge-slider"><span>RESOURCES <output id="world-resources-value">50</output></span><input id="world-resources" type="range" min="0" max="100" value="50"></label>
+                </div>
+                <div class="forge-note">The preview is forged from the same seed and rules as the realm itself. Larger worlds take a moment to raise.</div>
             </section>
             <button id="start-new-game-btn" class="ui-button ui-button--primary primary-button" type="button">FOUND A NEW REALM</button>
             <button id="continue-game-btn" class="ui-button ui-button--secondary secondary-button" type="button" disabled>NO SAVED REALM</button>
@@ -285,5 +317,23 @@
         <footer class="ui-window__footer build-footer"><span>Choose a road, then click or drag over explored land. Press ESC or EXIT BUILD to stop.</span></footer>
     </section>
 </div>
+<aside id="workshop-panel" class="workshop-panel hidden" aria-label="Realm workshop">
+    <header class="workshop-header">
+        <div><span class="command-ribbon">BUILD MODE</span><h2 id="workshop-title">REALM WORKSHOP</h2></div>
+        <button id="workshop-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close workshop">×</button>
+    </header>
+    <p id="workshop-meta" class="workshop-meta">Click any structure on the map to inspect and reshape it.</p>
+    <div id="workshop-actions" class="workshop-actions">
+        <button type="button" data-build-action="move">MOVE</button>
+        <button type="button" data-build-action="rotate">ROTATE 90°</button>
+        <button type="button" data-build-action="duplicate">REBUILD</button>
+        <button type="button" data-build-action="demolish">DEMOLISH</button>
+        <button type="button" data-build-action="undo">UNDO</button>
+        <button type="button" data-build-action="close">CLOSE</button>
+    </div>
+    <h3 class="workshop-subtitle">INTERIOR &amp; FURNISHINGS</h3>
+    <div id="workshop-items" class="workshop-items"></div>
+    <p id="workshop-hint" class="workshop-hint">SELECT A STRUCTURE TO BEGIN</p>
+</aside>
 </body>
 </html>

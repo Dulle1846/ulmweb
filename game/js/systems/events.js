@@ -184,7 +184,7 @@ export function resolveEventChoice(index){
  const hidden=state.hiddenRealm||(state.hiddenRealm={tension:0,prosperity:0,mystery:0,memories:[]});
  for(const key of ["tension","prosperity","mystery"])hidden[key]=Math.max(-30,Math.min(100,(hidden[key]||0)+(effects.hidden?.[key]||0)));
  if(arrivals>0){
-  const keep=state.entities.find(e=>e.type===TYPE.KEEP&&!e.dead),x=keep?.x??WORLD_W/2,y=keep?.y??WORLD_H/2;
+  const keep=state.entities.find(e=>e.type===TYPE.KEEP&&!e.dead),x=keep?.x??(Number(state.worldW)||WORLD_W)/2,y=keep?.y??(Number(state.worldH)||WORLD_H)/2;
   for(let i=0;i<arrivals;i++){
    const villager=spawnEntity(x+randInt(-3,4),y+randInt(-3,4),TYPE.VILLAGER);
    if(villager){villager.home={x,y};villager.anchor={x,y};villager.lastAgedYear=state.year;villager.jobRefreshTimer=0;}

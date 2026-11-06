@@ -3,14 +3,15 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const root=new URL("../../",import.meta.url);
-const [html,hud,ui,world,entities,renderer,favicon]=await Promise.all([
+const [html,hud,ui,world,entities,renderer,favicon,terrainModel]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/hud-v3.css",root),"utf8"),
   readFile(new URL("js/presentation/rendering/ui.js",root),"utf8"),
   readFile(new URL("js/world/world.js",root),"utf8"),
   readFile(new URL("js/presentation/rendering/entities.js",root),"utf8"),
   readFile(new URL("js/presentation/rendering/renderer.js",root),"utf8"),
-  readFile(new URL("assets/favicon.svg",root),"utf8")
+  readFile(new URL("assets/favicon.svg",root),"utf8"),
+  readFile(new URL("js/world/terrain-model.js",root),"utf8")
 ]);
 
 test("HUD 3.8 layer loads after every legacy and component stylesheet",()=>{
@@ -79,10 +80,12 @@ test("the minimap is docked above the hand and cannot overlap it",()=>{
 test("terrain gains hillshade, coastal shading and water depth without per-frame work",()=>{
   assert.ok(world.includes("hillshade"));
   assert.ok(world.includes("terrainHeight(px - 1, py, h)"));
-  assert.ok(world.includes("waterTone"));
-  assert.ok(world.includes("const coast ="));
-  assert.ok(world.includes("function clampByte"));
+  assert.ok(terrainModel.includes("waterDeep"),"deep water palette must exist");
+  assert.ok(terrainModel.includes("const shore"),"coastal shading must blend into the water");
+  assert.ok(terrainModel.includes("P.foam"),"shore foam must be part of the baked colour field");
+  assert.ok(terrainModel.includes("carveWaterFeatures"),"rivers and lakes come from the shared terrain model");
   assert.ok(world.includes("prerenderTerrain"),"shading must be baked during prerender");
+  assert.ok(world.includes("state.temperatureMap"),"climate must feed the baked colour field");
 });
 
 test("every building type draws its own roof silhouette",()=>{

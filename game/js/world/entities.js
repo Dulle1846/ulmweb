@@ -58,7 +58,7 @@ export function buildingAt(tx, ty) {
 }
 
 // Check the full rectangular footprint, not only the building's centre tile.
-export function buildingOverlaps(tx, ty, type, footprintScale = 1) {
+export function buildingOverlaps(tx, ty, type, footprintScale = 1, ignore = null) {
     const scale = Math.max(0.25, Math.min(6, Number(footprintScale) || 1));
     const baseCandidate = BUILDING_SIZE[type] || { w: 1, h: 1 };
     const candidate = { w: baseCandidate.w * scale, h: baseCandidate.h * scale };
@@ -68,7 +68,7 @@ export function buildingOverlaps(tx, ty, type, footprintScale = 1) {
     const bottom = ty + 0.5 + candidate.h / 2;
 
     return state.entities.some(e => {
-        if (e.dead || !e.isBuilding()) return false;
+        if (e.dead || !e.isBuilding() || e === ignore) return false;
         const size = BUILDING_SIZE[e.type] || { w: 1, h: 1 };
         const otherLeft = e.x + 0.5 - size.w / 2;
         const otherRight = e.x + 0.5 + size.w / 2;
@@ -123,9 +123,36 @@ export function getNearestFriendlyBuilding(x, y, type, maxDist = Infinity) {
 
 // ── Startaufbau des Königreichs ───────────────────────────────
 
+function findDryStart(cx, cy) {
+    const sea = Number(state.seaLevel) || 0.33;
+    const res = Number(state.terrainResolution) || 1;
+    const dry = (x, y) => {
+        const px = Math.min(state.terrainPixW - 1, Math.floor((x + 0.5) * res));
+        const py = Math.min(state.terrainPixH - 1, Math.floor((y + 0.5) * res));
+        const h = state.heightMap?.[py * state.terrainPixW + px];
+        return !Number.isFinite(h) || h >= sea + 0.012;
+    };
+    if (dry(cx, cy)) return { cx, cy };
+    const maxRadius = Math.max(48, Math.round((Number(state.worldW) || WORLD_WIDTH) * 0.22));
+    for (let radius = 1; radius <= maxRadius; radius++) {
+        for (let ox = -radius; ox <= radius; ox++) {
+            for (let oy = -radius; oy <= radius; oy++) {
+                if (Math.max(Math.abs(ox), Math.abs(oy)) !== radius) continue;
+                const x = cx + ox, y = cy + oy;
+                if (x < 3 || y < 3 || x > (Number(state.worldW) || WORLD_WIDTH) - 4 || y > (Number(state.worldH) || WORLD_HEIGHT) - 4) continue;
+                if (dry(x, y)) return { cx: x, cy: y };
+            }
+        }
+    }
+    return { cx, cy };
+}
+
 export function initStartingKingdom() {
-    const cx = Math.floor(WORLD_WIDTH / 2);
-    const cy = Math.floor(WORLD_HEIGHT / 2);
+    const center = findDryStart(
+        Math.floor((Number(state.worldW) || WORLD_WIDTH) / 2),
+        Math.floor((Number(state.worldH) || WORLD_HEIGHT) / 2)
+    );
+    const cx = center.cx, cy = center.cy;
 
     // Burg
     const keep = spawnEntity(cx, cy, TYPE.KEEP);
