@@ -4,8 +4,11 @@ import { resetState, state } from "../../js/core/state.js";
 import { Entity, TYPE } from "../../js/core/types.js";
 import { PLAN, defaultLayout } from "../../js/presentation/building-layout.js";
 import {
+    FURNITURE_BONUS_CAP,
+    ROOM_BONUS_CAPS,
     ROOM_BONUS_INTERVAL,
     applyRoomBonuses,
+    getBuildingRoomBreakdown,
     getRaidDamageMultiplier,
     getRoomBonusSnapshot,
     invalidateRoomBonusCache,
@@ -25,6 +28,10 @@ function keepEntity() {
 
 function sealAllDoors(layout) {
     layout.cells = layout.cells.map(value => value === PLAN.DOOR ? PLAN.WALL : value);
+}
+
+function clearFurniture(entity) {
+    entity.interior = { bed: 0, table: 0, chair: 0, shelf: 0, hearth: 0, rug: 0, statue: 0, candle: 0 };
 }
 
 beforeEach(() => {
@@ -128,4 +135,70 @@ test("the bonus cache refreshes when the layout version changes", () => {
     assert.equal(first.rooms, 5);
     assert.equal(second.rooms, 0);
     assert.notEqual(roomBonusSignature(), signature);
+});
+
+test("furniture raises the room function it supports and respects the furniture cap", () => {
+    const keep = keepEntity();
+    clearFurniture(keep);
+    state.entities = [keep];
+    invalidateRoomBonusCache();
+    const bare = getRoomBonusSnapshot();
+
+    keep.interior = { chair: 12, table: 12, statue: 12 };
+    state.buildingInteriorVersion = (state.buildingInteriorVersion || 0) + 1;
+    const furnished = getRoomBonusSnapshot();
+    const crown = furnished.roles.find(role => role.id === "crown");
+    const room = getBuildingRoomBreakdown(keep).rooms.find(entry => entry.role === "crown");
+
+    assert.ok(furnished.rawTotals.legitimacy > bare.rawTotals.legitimacy);
+    assert.ok(crown.furnitureEffects.legitimacy > 0);
+    assert.ok(room.furnitureMultiplier > 1);
+    assert.ok(room.furnitureMultiplier <= 1 + FURNITURE_BONUS_CAP + 0.0001);
+    assert.ok(room.effects.legitimacy > room.baseEffects.legitimacy);
+});
+
+test("the building breakdown keeps sealed rooms visible with zero effects", () => {
+    const keep = keepEntity();
+    state.entities = [keep];
+    const open = getBuildingRoomBreakdown(keep);
+    assert.equal(open.rooms.length, 5);
+    assert.equal(open.accessible, 5);
+    assert.equal(open.sealed, 0);
+    assert.ok(open.rooms.find(room => room.name === "THRONE ROOM").furnitureMultiplier > 1);
+
+    sealAllDoors(keep.layout);
+    const sealed = getBuildingRoomBreakdown(keep);
+    assert.equal(sealed.accessible, 0);
+    assert.ok(sealed.sealed >= 5);
+    assert.deepEqual(sealed.totals, { gold: 0, legitimacy: 0, morale: 0, growth: 0, defense: 0 });
+    for (const room of sealed.rooms) {
+        assert.equal(room.accessible, false);
+        assert.equal(room.furnitureMultiplier, 1);
+        for (const value of Object.values(room.effects)) assert.equal(value, 0);
+    }
+});
+
+test("furniture changes invalidate the realm snapshot cache", () => {
+    const keep = keepEntity();
+    clearFurniture(keep);
+    state.entities = [keep];
+    invalidateRoomBonusCache();
+    const first = getRoomBonusSnapshot();
+
+    keep.interior = { chair: 12, table: 12, statue: 12 };
+    state.buildingInteriorVersion = (state.buildingInteriorVersion || 0) + 1;
+    const second = getRoomBonusSnapshot();
+
+    assert.ok(second.rawTotals.legitimacy > first.rawTotals.legitimacy);
+    assert.ok(second.rawTotals.morale > first.rawTotals.morale);
+});
+
+test("realm caps are explicit and the starting keep reaches the morale and growth caps", () => {
+    state.entities = [keepEntity()];
+    const snapshot = getRoomBonusSnapshot();
+    assert.equal(snapshot.totals.morale, ROOM_BONUS_CAPS.morale);
+    assert.equal(snapshot.totals.growth, ROOM_BONUS_CAPS.growth);
+    assert.equal(snapshot.capped.morale, true);
+    assert.equal(snapshot.capped.growth, true);
+    assert.ok(snapshot.rawTotals.morale > snapshot.totals.morale);
 });

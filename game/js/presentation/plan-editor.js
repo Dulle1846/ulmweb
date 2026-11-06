@@ -2,6 +2,7 @@
 // The canvas works on the same grid model the interior renderer uses.
 import { state } from '../core/state.js';
 import { footprintOf } from './rendering/building-art.js';
+import { getBuildingRoomBreakdown } from '../systems/rooms.js';
 import {
     PLAN, hasInterior, normalizeLayout, roomsOf, layoutStats,
     setPlanCell, movePlanCell, isBorder,
@@ -149,12 +150,70 @@ function drawPlan(ctx, layout, rooms) {
     }
 }
 
+function roomEffectText(effect, value) {
+    if (!(value > 0.0001)) return '';
+    return effect === 'defense'
+        ? Math.round(value * 100) + '% defense'
+        : '+' + (Math.round(value * 10) / 10) + ' ' + effect;
+}
+
+function setBuildingBonuses(entity) {
+    const statusEl = document.getElementById('building-bonus-status');
+    const roomsEl = document.getElementById('building-bonus-rooms');
+    const furnitureEl = document.getElementById('building-bonus-furniture');
+    if (!statusEl || !roomsEl || !furnitureEl) return;
+    if (!entity) {
+        statusEl.textContent = '—';
+        roomsEl.innerHTML = '';
+        furnitureEl.innerHTML = '';
+        return;
+    }
+    const breakdown = getBuildingRoomBreakdown(entity);
+    if (!breakdown) {
+        statusEl.textContent = 'NO ROOM BONUSES';
+        roomsEl.innerHTML = '<div class="building-bonus-empty">This structure has no interior.</div>';
+        furnitureEl.innerHTML = '';
+        return;
+    }
+    statusEl.textContent = breakdown.accessible + ' ACCESSIBLE' +
+        (breakdown.sealed ? ' · ' + breakdown.sealed + ' SEALED' : ' · ALL REACHABLE');
+    roomsEl.innerHTML = breakdown.rooms.map(room => {
+        const effects = Object.entries(room.effects)
+            .filter(([, value]) => value > 0.0001)
+            .map(([effect, value]) => roomEffectText(effect, value));
+        const base = Object.entries(room.baseEffects)
+            .filter(([, value]) => value > 0.0001)
+            .map(([effect, value]) => roomEffectText(effect, value));
+        const furnished = room.furnitureMultiplier > 1
+            ? Math.round((room.furnitureMultiplier - 1) * 100) + '%'
+            : '0%';
+        const title = room.accessible
+            ? 'Base: ' + (base.join(' · ') || 'none') + ' · Furniture: +' + furnished
+            : 'Sealed rooms provide no bonuses until a door connects them.';
+        return '<div class="building-room-row' + (room.accessible ? '' : ' is-sealed') + '" title="' + title + '">' +
+            '<div class="building-room-head"><span>' + room.roleIcon + ' ' + room.name + '</span><span>' +
+            (room.accessible ? 'AREA ' + room.area : 'SEALED · NO BONUS') + '</span></div>' +
+            '<div class="building-room-effects">' + (effects.join('') || '<span>NO EFFECT</span>') +
+            (room.accessible && room.furnitureMultiplier > 1
+                ? '<span class="is-furnished">FURNISHED +' + furnished + '</span>'
+                : '') + '</div></div>';
+    }).join('') || '<div class="building-bonus-empty">No rooms detected.</div>';
+    const roleRows = [...new Map(breakdown.rooms.filter(room => room.accessible).map(room => [room.role, room])).values()];
+    furnitureEl.innerHTML = roleRows.length
+        ? '<span>FURNISHINGS</span>' + roleRows.map(room => {
+            const percent = Math.round((room.furnitureMultiplier - 1) * 100);
+            return '<span>' + room.roleIcon + ' ' + room.roleShort + ' +' + percent + '%</span>';
+        }).join('')
+        : '<span>FURNISHINGS · NO ACCESSIBLE ROOMS</span>';
+}
+
 function setStats(entity, layout, rooms) {
     const statsEl = document.getElementById('plan-stats');
     const roomsEl = document.getElementById('plan-rooms');
     if (!entity || !layout) {
         if (statsEl) statsEl.textContent = '—';
         if (roomsEl) roomsEl.innerHTML = '';
+        setBuildingBonuses(null);
         return;
     }
     const stats = layoutStats(layout, entity.type);
@@ -167,6 +226,7 @@ function setStats(entity, layout, rooms) {
             '<span class="plan-room' + (room.accessible ? '' : ' is-warning') + '">' + room.name + ' · ' + room.area + '</span>'
         ).join('');
     }
+    setBuildingBonuses(entity);
 }
 
 function setToolbar(enabled) {

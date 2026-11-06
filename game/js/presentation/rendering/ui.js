@@ -8,7 +8,7 @@ import { EVENT_CHAINS } from "../../systems/event-chains.js";
 import { getHousingSnapshot,getHouseholdSnapshot } from "../../systems/population.js";
 import { getPoliticalSnapshot } from "../../systems/politics.js";
 import { getHealthSnapshot } from "../../systems/health.js";
-import { getRoomBonusSnapshot, roomBonusSignature } from "../../systems/rooms.js";
+import { getRoomBonusSnapshot, roomBonusSignature, ROOM_BONUS_CAPS } from "../../systems/rooms.js";
 
 let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRoomBonusSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
@@ -44,12 +44,13 @@ function renderRoomBonuses(){
         {key:"morale",label:"MORALE",icon:"✦",value:snapshot.totals.morale,unit:"/ 20 DAYS",title:"Comfortable, reachable rooms lift realm morale every 20 days."},
         {key:"growth",label:"GROWTH",icon:"↑",value:snapshot.totals.growth,unit:"LESS MORALE",title:"Population growth needs this much less morale; household rooms provide it."},
         {key:"defense",label:"DEFENSE",icon:"♜",value:snapshot.totals.defense,unit:"DMG REDUCTION",title:"Guards and watch posts reduce damage from raids."}
-    ].filter(entry=>entry.value>0.0001);
+    ].filter(entry=>entry.value>0.0001).map(entry=>({...entry,capped:Boolean(snapshot.capped[entry.key])}));
     grid.innerHTML=effects.length?effects.map(entry=>{
         const value=entry.key==="defense"?Math.round(entry.value*100)+"%":roomEffectValue(entry.value);
-        return '<div class="room-bonus-stat" title="'+esc(entry.title)+'">'+
+        const title=entry.capped?entry.title+" Realm cap reached.":entry.title;
+        return '<div class="room-bonus-stat'+(entry.capped?' is-capped':'')+'" title="'+esc(title)+'">'+
             '<span class="room-bonus-icon" aria-hidden="true">'+entry.icon+'</span>'+
-            '<span class="room-bonus-copy"><small>'+entry.label+'</small><strong>'+value+'</strong><em>'+entry.unit+'</em></span>'+
+            '<span class="room-bonus-copy"><small>'+entry.label+(entry.capped?' · CAP':'')+'</small><strong>'+value+'</strong><em>'+entry.unit+'</em></span>'+
             '</div>';
     }).join(""):'<div class="room-bonus-empty">Build and connect rooms to earn realm bonuses.</div>';
     const roomsEl=document.getElementById("room-bonus-rooms");
@@ -120,7 +121,7 @@ function tabSignature(){
     if(state.selectedTab===0)return "events:"+state.eventLog.slice(0,40).map(e=>e.id).join(",");
     if(state.selectedTab===1)return ["stats",state.tick,state.entities.length,state.totalRaidsSurvived,state.statistics.totalTrades,
         state.statistics.totalBuildingsBuilt,state.statistics.totalUnitsRecruited,Math.floor(state.morale),
-        Math.round(Number(state.politics?.legitimacy)||0),state.buildingLayoutVersion||0,state.buildingCollisionVersion||0,state.nextEntityId||0,
+        Math.round(Number(state.politics?.legitimacy)||0),state.buildingLayoutVersion||0,state.buildingInteriorVersion||0,state.buildingCollisionVersion||0,state.nextEntityId||0,
         state.economy?.daysElapsed,state.economy?.foodConsumed,state.economy?.taxesCollected,state.economy?.wagesPaid,state.economy?.upkeepPaid,
         state.health?.cases,state.health?.recovered,state.health?.outbreakActive,
         JSON.stringify(state.hiddenRealm?.activeThreads||[]),state.hiddenRealm?.completedThreads?.length,
@@ -186,7 +187,7 @@ function renderStatistics(container){
     const roomSealed=roomSnapshot.sealed
         ?'<div class="stat-cell room-bonus-stat-cell"><div class="stat-label">SEALED ROOMS</div><div class="stat-value" style="color:#b23b2e">'+roomSnapshot.sealed+' · NO BONUS</div></div>'
         :'';
-    const roomCapNote='<div class="room-bonus-cap-note">Role values are contributions before realm caps: 6 gold · 2 legitimacy · 4 morale per 20 days. Growth lowers the yearly morale threshold; defense is passive.</div>';
+    const roomCapNote='<div class="room-bonus-cap-note">Role values include furnishings and are contributions before realm caps: '+ROOM_BONUS_CAPS.gold+' gold · '+ROOM_BONUS_CAPS.legitimacy+' legitimacy · '+ROOM_BONUS_CAPS.morale+' morale per 20 days; growth '+ROOM_BONUS_CAPS.growth+', defense '+Math.round(ROOM_BONUS_CAPS.defense*100)+'%. Growth lowers the yearly morale threshold; defense is passive.</div>';
     const roomMarkup='<div class="stat-heading" style="margin-top:14px">ROOM BONUSES · EVERY 20 DAYS</div><div class="stat-grid">'+
         (roomCells||'<div class="empty-state">No reachable rooms yet. Add doors and interior rooms.</div>')+roomSealed+roomCapNote+'</div>';
     const activeThreads=state.hiddenRealm?.activeThreads||[];
