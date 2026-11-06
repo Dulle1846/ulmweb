@@ -3,6 +3,7 @@ import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { queueParticle,queueFloater,queueMessage } from "../core/presentation-effects.js";
 import { rand as seededRand } from "../core/random.js";
+import { getRaidDamageMultiplier } from "../systems/rooms.js";
 const rand=(min,max)=>seededRand(min,max,"combat");
 
 const CELL=8;
@@ -34,6 +35,7 @@ function nearestFromBuckets(x,y,buckets,radius,accept=()=>true){
 export function updateCombat(){
  const enemies=state.entities.filter(e=>!e.dead&&e.isEnemy());
  if(!enemies.length)return;
+ const raidDamageMultiplier=getRaidDamageMultiplier();
  const defenders=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER,TYPE.TOWER].includes(e.type));
  const enemyBuckets=indexEntities(enemies),defenderBuckets=indexEntities(defenders);
  const keep=state.entities.find(e=>!e.dead&&e.type===TYPE.KEEP)||null;
@@ -46,7 +48,8 @@ export function updateCombat(){
   const dx=target.x-enemy.x,dy=target.y-enemy.y,dist=Math.hypot(dx,dy);
   if(dist>1.8){enemy.x+=Math.sign(dx)*0.065;enemy.y+=Math.sign(dy)*0.065;}
   else if(tick%13===0){
-   target.hp-=enemy.type===TYPE.TROLL?32:13;
+   const baseDamage=enemy.type===TYPE.TROLL?32:13;
+   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier));
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
    if(target.hp<=0){
     target.dead=true;

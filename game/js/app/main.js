@@ -9,6 +9,7 @@ import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
 import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeHouseholdAssignments } from "../systems/population.js";
+import { invalidateRoomBonusCache } from "../systems/rooms.js";
 import { addLog } from "../systems/events.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera } from "../presentation/camera.js";
@@ -60,6 +61,7 @@ function ensureProfile(){
 
 function resetForRun(profile){
     resetState();
+    invalidateRoomBonusCache();
     bindCanvas();
     state.activeProfileId=profile.id;
     state.playerName=profile.displayName;

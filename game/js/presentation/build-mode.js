@@ -88,6 +88,7 @@ export function undoBuildAction() {
         const dims = footprintOf(entity);
         entity.layout = normalizeLayout(entity.type, entry.layout, dims.w, dims.h);
     }
+    state.buildingLayoutVersion = (state.buildingLayoutVersion || 0) + 1;
     state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
     renderWorkshop();
     toast('CHANGE REVERTED');
@@ -163,6 +164,7 @@ export function rotateSelected() {
     entity.rotation = ((Number(entity.rotation) || 0) + 1) % 4;
     const dims = footprintOf(entity);
     entity.layout = rotateLayout(normalizeLayout(entity.type, entity.layout, dims.w, dims.h));
+    state.buildingLayoutVersion = (state.buildingLayoutVersion || 0) + 1;
     renderWorkshop();
     toast('ROTATED · ' + entity.rotation * 90 + '°');
 }

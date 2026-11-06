@@ -8,8 +8,9 @@ import { EVENT_CHAINS } from "../../systems/event-chains.js";
 import { getHousingSnapshot,getHouseholdSnapshot } from "../../systems/population.js";
 import { getPoliticalSnapshot } from "../../systems/politics.js";
 import { getHealthSnapshot } from "../../systems/health.js";
+import { getRoomBonusSnapshot, roomBonusSignature } from "../../systems/rooms.js";
 
-let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRenderedIssueId=null;
+let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRoomBonusSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);}
 function income(v){
@@ -18,6 +19,49 @@ function income(v){
     const rounded=Math.round(value*10)/10;
     return (rounded>0?"+":"")+rounded.toLocaleString("en-US",{maximumFractionDigits:1});
 }
+function roomEffectValue(value){
+    const rounded=Math.round(Number(value)*10)/10;
+    if(!Number.isFinite(rounded)||rounded<=0)return "—";
+    return "+"+(Number.isInteger(rounded)?String(rounded):rounded.toFixed(1));
+}
+
+function renderRoomBonuses(){
+    const grid=document.getElementById("room-bonus-grid");
+    if(!grid)return;
+    const signature=roomBonusSignature();
+    if(signature===lastRoomBonusSignature)return;
+    lastRoomBonusSignature=signature;
+    const snapshot=getRoomBonusSnapshot();
+    const status=document.getElementById("room-bonus-status");
+    if(status){
+        status.textContent=snapshot.rooms
+            ? snapshot.rooms+" ROOMS"+(snapshot.sealed?" · "+snapshot.sealed+" SEALED":" · ALL REACHABLE")
+            : "NO ACCESSIBLE ROOMS";
+    }
+    const effects=[
+        {key:"gold",label:"GOLD",icon:"◉",value:snapshot.totals.gold,unit:"/ 20 DAYS",title:"Accessible treasury rooms add this much gold every 20 days."},
+        {key:"legitimacy",label:"LEGITIMACY",icon:"♛",value:snapshot.totals.legitimacy,unit:"/ 20 DAYS",title:"Throne rooms and places of faith add legitimacy every 20 days."},
+        {key:"morale",label:"MORALE",icon:"✦",value:snapshot.totals.morale,unit:"/ 20 DAYS",title:"Comfortable, reachable rooms lift realm morale every 20 days."},
+        {key:"growth",label:"GROWTH",icon:"↑",value:snapshot.totals.growth,unit:"LESS MORALE",title:"Population growth needs this much less morale; household rooms provide it."},
+        {key:"defense",label:"DEFENSE",icon:"♜",value:snapshot.totals.defense,unit:"DMG REDUCTION",title:"Guards and watch posts reduce damage from raids."}
+    ].filter(entry=>entry.value>0.0001);
+    grid.innerHTML=effects.length?effects.map(entry=>{
+        const value=entry.key==="defense"?Math.round(entry.value*100)+"%":roomEffectValue(entry.value);
+        return '<div class="room-bonus-stat" title="'+esc(entry.title)+'">'+
+            '<span class="room-bonus-icon" aria-hidden="true">'+entry.icon+'</span>'+
+            '<span class="room-bonus-copy"><small>'+entry.label+'</small><strong>'+value+'</strong><em>'+entry.unit+'</em></span>'+
+            '</div>';
+    }).join(""):'<div class="room-bonus-empty">Build and connect rooms to earn realm bonuses.</div>';
+    const roomsEl=document.getElementById("room-bonus-rooms");
+    if(roomsEl){
+        const chips=snapshot.roles.filter(role=>role.roomCount>0).map(role=>
+            '<span class="room-bonus-room" title="'+esc(role.description)+'">'+role.icon+' '+esc(role.short)+' ×'+role.roomCount+'</span>'
+        );
+        if(snapshot.sealed)chips.push('<span class="room-bonus-room is-warning" title="Sealed rooms grant no bonuses until a door connects them.">⚠ '+snapshot.sealed+' SEALED</span>');
+        roomsEl.innerHTML=chips.join("");
+    }
+}
+
 function updateCost(id,amount){
     const el=document.getElementById(id);if(!el)return;
     el.style.display=amount>0?"inline-flex":"none";
@@ -76,6 +120,7 @@ function tabSignature(){
     if(state.selectedTab===0)return "events:"+state.eventLog.slice(0,40).map(e=>e.id).join(",");
     if(state.selectedTab===1)return ["stats",state.tick,state.entities.length,state.totalRaidsSurvived,state.statistics.totalTrades,
         state.statistics.totalBuildingsBuilt,state.statistics.totalUnitsRecruited,Math.floor(state.morale),
+        Math.round(Number(state.politics?.legitimacy)||0),state.buildingLayoutVersion||0,state.buildingCollisionVersion||0,state.nextEntityId||0,
         state.economy?.daysElapsed,state.economy?.foodConsumed,state.economy?.taxesCollected,state.economy?.wagesPaid,state.economy?.upkeepPaid,
         state.health?.cases,state.health?.recovered,state.health?.outbreakActive,
         JSON.stringify(state.hiddenRealm?.activeThreads||[]),state.hiddenRealm?.completedThreads?.length,
@@ -97,6 +142,7 @@ function renderStatistics(container){
     const buildings=state.entities.filter(e=>!e.dead&&e.isBuilding()).length;
     const military=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER].includes(e.type)).length;
     const workforce=getWorkforceSnapshot(),housing=getHousingSnapshot(),households=getHouseholdSnapshot(),economy=state.economy||{},politics=getPoliticalSnapshot(),health=getHealthSnapshot();
+    const roomSnapshot=getRoomBonusSnapshot();
     const stats=[
         ["POPULATION",workforce.population],["EMPLOYED",workforce.employed],
         ["UNEMPLOYED",workforce.unemployed],["HOUSING",housing.population+" / "+housing.capacity],
@@ -127,6 +173,22 @@ function renderStatistics(container){
     ].map(([label,value])=>'<div class="stat-cell"><div class="stat-label">'+label+'</div><div class="stat-value">'+esc(value)+'</div></div>').join("");
     const politicalRows=[["ROYAL LEGITIMACY",politics.legitimacy],["COMMONERS",politics.factions.commons],["NOBILITY",politics.factions.nobility],["GUILDS",politics.factions.guilds],["CLERGY",politics.factions.clergy]];
     const politicalMarkup='<div class="stat-heading" style="margin-top:14px">THE ROYAL COUNCIL</div><div class="stat-grid">'+politicalRows.map(([label,value])=>'<div class="stat-cell political-stat"><div class="stat-label">'+label+'</div><div class="stat-value">'+Number(value).toFixed(0)+'%</div><div class="faction-meter"><i style="width:'+Math.max(0,Math.min(100,Number(value)))+'%"></i></div></div>').join("")+'</div>';
+    const roomCells=roomSnapshot.roles.filter(role=>role.roomCount>0).map(role=>{
+        const effects=Object.entries(role.effects)
+            .filter(([,value])=>value>0.0001)
+            .map(([key,value])=>key==="defense"
+                ?Math.round(value*100)+"% defense"
+                :key==="growth"
+                    ?roomEffectValue(value)+" growth"
+                    :roomEffectValue(value)+" "+key);
+        return '<div class="stat-cell room-bonus-stat-cell"><div class="stat-label">'+role.icon+' '+role.label+' · '+role.roomCount+' ROOM'+(role.roomCount===1?'':'S')+'</div><div class="stat-value">'+esc(effects.join(' · ')||'—')+'</div></div>';
+    }).join('');
+    const roomSealed=roomSnapshot.sealed
+        ?'<div class="stat-cell room-bonus-stat-cell"><div class="stat-label">SEALED ROOMS</div><div class="stat-value" style="color:#b23b2e">'+roomSnapshot.sealed+' · NO BONUS</div></div>'
+        :'';
+    const roomCapNote='<div class="room-bonus-cap-note">Role values are contributions before realm caps: 6 gold · 2 legitimacy · 4 morale per 20 days. Growth lowers the yearly morale threshold; defense is passive.</div>';
+    const roomMarkup='<div class="stat-heading" style="margin-top:14px">ROOM BONUSES · EVERY 20 DAYS</div><div class="stat-grid">'+
+        (roomCells||'<div class="empty-state">No reachable rooms yet. Add doors and interior rooms.</div>')+roomSealed+roomCapNote+'</div>';
     const activeThreads=state.hiddenRealm?.activeThreads||[];
     const chronicles=activeThreads.length?activeThreads.map(thread=>{
         const stages=EVENT_CHAINS[thread.id]||[],stage=stages[thread.stage];
@@ -134,6 +196,7 @@ function renderStatistics(container){
     }).join(""):'<div class="empty-state">No long-running stories are unfolding. The realm is quiet — for now.</div>';
     container.innerHTML='<div class="stat-heading">KINGDOM OVERVIEW</div><div class="stat-grid">'+cells+'</div>'+
         '<div class="stat-heading" style="margin-top:14px">ROYAL STORES</div><div class="stat-grid">'+resources+'</div>'+
+        roomMarkup+
         '<div class="stat-heading" style="margin-top:14px">THE ROYAL LEDGER</div><div class="stat-grid">'+economyCells+'</div>'+
         politicalMarkup+'<div class="stat-heading" style="margin-top:14px">THE CHRONICLES</div><div class="stat-grid">'+chronicles+'</div>';
 }
@@ -210,6 +273,7 @@ export function renderUI(){
     const bar=document.getElementById("morale-bar");
     if(bar){bar.style.width=Math.max(0,Math.min(100,state.morale))+"%";bar.classList.toggle("is-low",state.morale<30);}
     setText("morale-value",Math.floor(state.morale));
+    renderRoomBonuses();
     setText("season",SEASONS[state.seasonIndex]||SEASONS[0]);setText("year","YEAR "+state.year);
     setText("tick-count",state.tick.toLocaleString("en-US"));setText("kingdom-name","THE REALM OF "+state.kingdomName);
     setText("player-name",state.playerName||"GUEST");

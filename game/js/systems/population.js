@@ -3,11 +3,17 @@ import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { randInt as seededRandInt } from "../core/random.js";
+import { getRoomBonusSnapshot } from "./rooms.js";
 const randInt=(min,max)=>seededRandInt(min,max,"population");
 
 export const RESIDENTS_PER_HOUSE = 4;
 export const POPULATION_GROWTH_FOOD_RESERVE = 0.75;
 export const POPULATION_GROWTH_MORALE = 55;
+
+export function getPopulationGrowthMoraleThreshold() {
+    const growth = Math.max(0, Number(getRoomBonusSnapshot().totals.growth) || 0);
+    return Math.max(30, POPULATION_GROWTH_MORALE - growth);
+}
 
 export function getHousingSnapshot() {
     const population = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER).length;
@@ -102,7 +108,7 @@ export function updatePopulation() {
 
     economy.lastGrowthYear = state.year;
     const housing = getHousingSnapshot();
-    if (housing.available < 1 || state.morale < POPULATION_GROWTH_MORALE) return null;
+    if (housing.available < 1 || state.morale < getPopulationGrowthMoraleThreshold()) return null;
     if ((state.resources.food || 0) < housing.population * POPULATION_GROWTH_FOOD_RESERVE) return null;
     if (!canSpawnEntity(TYPE.VILLAGER)) return null;
 

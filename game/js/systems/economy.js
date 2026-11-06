@@ -6,6 +6,7 @@ import { addResource } from "./resources.js";
 import { updatePolitics } from "./politics.js";
 import { getRoadUpkeepTotal } from "./roads.js";
 import { getEdictModifiers } from "./edicts.js";
+import { applyRoomBonuses } from "./rooms.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -126,6 +127,13 @@ export function updateEconomy() {
     totals.population = workforce.population;
     totals.employed = workforce.employed;
     totals.unemployed = workforce.unemployed;
+    const roomBonuses = applyRoomBonuses();
     updatePolitics(ledger,workforce);
+    ledger.roomGold = roomBonuses.totals.gold;
+    ledger.roomMorale = roomBonuses.totals.morale;
+    ledger.roomLegitimacy = roomBonuses.totals.legitimacy;
+    totals.roomGold = (Number(totals.roomGold) || 0) + roomBonuses.totals.gold;
+    totals.roomMorale = (Number(totals.roomMorale) || 0) + roomBonuses.totals.morale;
+    totals.roomLegitimacy = (Number(totals.roomLegitimacy) || 0) + roomBonuses.totals.legitimacy;
     return ledger;
 }
