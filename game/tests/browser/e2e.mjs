@@ -146,17 +146,17 @@ try{
     // It makes the negative import assertion explicit without adding test-only
     // hooks to production code.
     const resetMarker="function resetForRun(profile){";
+    const afterImportMarker="const savedAt=writeLocalSave(profile.id,createSaveSnapshot());";
     await page.route("**/js/app/main.js",async route=>{
         const response=await route.fetch();
         const source=await response.text();
         if(!source.includes(resetMarker))throw new Error("Could not instrument resetForRun for the E2E reset probe");
+        if(!source.includes(afterImportMarker))throw new Error("Could not instrument the successful-import boundary for the E2E continuity probe");
+        let body=source.replace(resetMarker,resetMarker+" if(globalThis.__KAC_RESET_PROBE__)globalThis.__KAC_RESET_PROBE__.calls++;");
+        body=body.replace(afterImportMarker,"globalThis.__KAC_AFTER_IMPORT__?.(state);"+afterImportMarker);
         const headers={...response.headers()};
         delete headers["content-length"];
-        await route.fulfill({
-            status:response.status(),
-            headers,
-            body:source.replace(resetMarker,resetMarker+" if(globalThis.__KAC_RESET_PROBE__)globalThis.__KAC_RESET_PROBE__.calls++;")
-        });
+        await route.fulfill({status:response.status(),headers,body});
     });
     page.on("pageerror",error=>errors.push(error.message));
     page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text());});
@@ -1326,10 +1326,53 @@ try{
     const exportedFile=await exportDownload;
     const exportedPath=await exportedFile.path();
     assert.ok(exportedPath,"the exported realm file must be available to the import control");
-    await page.evaluate(()=>{globalThis.__KAC_RESET_PROBE__.calls=0;});
+    const importTransientEntityFields=new Set(["path","pathIndex","pathTargetX","pathTargetY","pathVersion","state"]);
+    const canonicalImportState=snapshot=>{
+        const stateKeys=[
+            "playerName","kingdomName","worldSeed","worldOptions","randomStreams","nextEntityId",
+            "nextCardDrawTick","nextIssueAtTick","issueSequence","hiddenRealm","health","camera","zoom",
+            "explored","roads","resourceGeography","city","tick","year","dayOfYear","seasonIndex",
+            "gameSpeed","morale","resources","incomeThisTick","kingHp","totalRaidsSurvived","raidActive",
+            "gameOver","victory","lastRandomEvent","weather","weatherTimer","personArchive","creatureArchive",
+            "hand","cardRewardQueue","selectedCardInstanceId","availableCards","activeEvent","statistics",
+            "economy","politics","government","royal","market","totalPopulation","heightMap","moistureMap",
+            "temperatureMap","activeProfileId","hasStarted"
+        ];
+        const selected={};
+        for(const key of stateKeys)selected[key]=snapshot[key];
+        // Navigation caches are deliberately not part of the save schema: the
+        // exporter omits them and the importer rebuilds them on the next tick.
+        // Event log/sequence are omitted too because a successful import appends
+        // an IMPORTED REALM entry. Everything else is the complete persisted state.
+        selected.entities=(snapshot.entities||[]).map(entity=>Object.fromEntries(
+            Object.entries(entity).filter(([key])=>!importTransientEntityFields.has(key))
+        ));
+        selected.city=structuredClone(snapshot.city);
+        // A load refreshes the current needs sample; the rolling chart is a
+        // derived presentation history and is not part of the save schema.
+        delete selected.city?.needs?.history;
+        for(const carrier of selected.city?.logistics?.carriers||[]){
+            delete carrier.path;
+            delete carrier.pathIndex;
+            delete carrier.pathVersion;
+        }
+        return selected;
+    };
+    const beforeSuccessfulImport=canonicalImportState(await captureRealmState(page));
+    await page.evaluate(()=>{
+        globalThis.__KAC_RESET_PROBE__.calls=0;
+        globalThis.__KAC_AFTER_IMPORT__=state=>{state.isPaused=true;};
+    });
     await page.locator("#import-save-input").setInputFiles(exportedPath);
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Realm imported"),null,{timeout:10000});
     assert.equal(await page.evaluate(()=>globalThis.__KAC_RESET_PROBE__?.calls),1,"a successful import must call resetForRun exactly once");
+    assert.equal(await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.isPaused;}),true,"the successful-import continuity probe must freeze the restored realm before comparing it");
+    const afterSuccessfulImport=canonicalImportState(await captureRealmState(page));
+    for(const key of Object.keys(beforeSuccessfulImport)){
+        assert.deepEqual(afterSuccessfulImport[key],beforeSuccessfulImport[key],"a successful import must preserve the complete persisted state: "+key);
+    }
+    assert.deepEqual(afterSuccessfulImport.city?.logistics?.jobs,beforeSuccessfulImport.city?.logistics?.jobs,"a successful import must preserve all logistics jobs and reservations");
+    assert.deepEqual(afterSuccessfulImport.entities,beforeSuccessfulImport.entities,"a successful import must preserve every persisted entity field");
     if(await page.locator("#settings-modal").isVisible())await page.locator("#settings-close").click();
 
     assert.deepEqual(errors,[],"legacy save and large-order checks must not emit uncaught page errors: "+JSON.stringify(errors));

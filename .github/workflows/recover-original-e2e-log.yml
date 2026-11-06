@@ -1,0 +1,62 @@
+name: Recover Original Browser E2E Log
+
+# Temporary diagnostic workflow for the one-off failure at run 42304394611.
+# It is removed after the authenticated log has been recovered.
+on:
+  push:
+    branches:
+      - ulmweb-branch
+    paths:
+      - ".github/workflows/recover-original-e2e-log.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  recover:
+    name: Recover authenticated Actions log
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Download original failed run logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: "42304394611"
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/original-log"
+          if command -v gh >/dev/null 2>&1; then
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/logs" > "$RUNNER_TEMP/original.zip"
+          else
+            curl --fail --silent --show-error --location \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/logs" \
+              > "$RUNNER_TEMP/original.zip"
+          fi
+          unzip -q "$RUNNER_TEMP/original.zip" -d "$RUNNER_TEMP/original-log"
+          find "$RUNNER_TEMP/original-log" -maxdepth 3 -type f -print
+      - name: Publish recovered logs
+        env:
+          SOURCE_RUN_ID: "42304394611"
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan ci-original-failure
+          git rm -rf .
+          mkdir -p ci/original-failure
+          cp -R "$RUNNER_TEMP/original-log/." ci/original-failure/
+          cat > ci/original-failure/run.json <<JSON
+          {
+            "source_run_id": "${SOURCE_RUN_ID}",
+            "source_commit_sha": "90f856c6fc6e9cd137151ac4c0d7a18ae8e7872d",
+            "source_run_url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}",
+            "recovered_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          JSON
+          git add ci/original-failure
+          git commit -m "Recover original failed browser E2E logs"
+          git push --force origin HEAD:refs/heads/ci-original-failure
