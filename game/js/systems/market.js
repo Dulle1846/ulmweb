@@ -2,6 +2,7 @@
 import { state } from "../core/state.js";
 import { addLog } from "./events.js";
 import { random } from "../core/random.js";
+import { recordResourceMovement } from "./goods-book.js";
 
 export const MARKET_RESOURCES = Object.freeze(["wood","stone","food"]);
 export const BASE_PRICES = Object.freeze({ wood:2, stone:3, food:2 });
@@ -119,6 +120,7 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
         if (state.resources.gold<cost) return {ok:false,reason:"NOT ENOUGH GOLD"};
         state.resources.gold-=cost;
         state.resources[resource]+=amount;
+        if(resource==="food")recordResourceMovement("food",amount,"market-buy",{to:{kind:"realm",id:"royal-stores"}});
         partner.stock[resource]-=amount;
         partner.treasury+=cost;
         state.market.totalGoldTraded+=cost;
@@ -131,6 +133,7 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     if ((state.resources[resource]||0)<amount) return {ok:false,reason:"NOT ENOUGH "+resource.toUpperCase()};
     if (partner.treasury<payout) return {ok:false,reason:"PARTNER TREASURY TOO LOW"};
     state.resources[resource]-=amount;
+    if(resource==="food")recordResourceMovement("food",-amount,"market-sell",{from:{kind:"realm",id:"royal-stores"},to:{kind:"market",id:partner.id}});
     state.resources.gold+=payout;
     partner.stock[resource]=(partner.stock[resource]||0)+amount;
     partner.treasury-=payout;

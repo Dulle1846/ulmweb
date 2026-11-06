@@ -28,7 +28,7 @@ import {normalizeRoyalState} from "../systems/royal-dynasty.js";
 import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
 import {serializeResourceGeography,restoreResourceGeography,validateResourceGeographySnapshot} from "../systems/resource-geography.js";import { setupBuildUI } from "../presentation/build-ui.js";import { normalizeLayout,serializeLayout } from "../presentation/building-layout.js";
-import {serializeCity,restoreCity,validateCitySnapshot,initializeCityForRealm} from "../systems/logistics.js";
+import {serializeCity,restoreCity,validateCitySnapshot,initializeCityForRealm,openGoodsBookForNewRealm} from "../systems/logistics.js";
 import {initializeSettlementForRealm} from "../systems/settlement.js";
 import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
@@ -177,6 +177,7 @@ function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     initializeCityForRealm();
     normalizeHouseholdAssignments();
     initializeSettlementForRealm();
+    openGoodsBookForNewRealm();
     drawStartingHand();
     state.camera.x=0;state.camera.y=0;
     centerCamera();

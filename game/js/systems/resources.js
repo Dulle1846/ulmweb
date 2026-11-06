@@ -1,5 +1,6 @@
 // Resource ledger. Every resource change is validated and recorded per simulation tick.
 import { state } from "../core/state.js";
+import { recordResourceMovement } from "./goods-book.js";
 export const RESOURCE_KEYS=Object.freeze(["wood","stone","gold","food"]);
 export function resetIncome(){state.incomeThisTick={wood:0,stone:0,gold:0,food:0};}
 export function addResource(type,amount){
@@ -15,5 +16,7 @@ export function canAfford(card){
 export function payForCard(card){
     if(!canAfford(card))return false;
     for(const [resource,amount] of Object.entries(card.cost||{})){state.resources[resource]-=amount;state.incomeThisTick[resource]-=amount;}
+    const foodCost=Number(card.cost?.food||0);
+    if(foodCost>0)recordResourceMovement("food",-foodCost,"card-cost",{from:{kind:"realm",id:"royal-stores"},to:{kind:"card",id:String(card.id||card.uid||"card")}});
     return true;
 }

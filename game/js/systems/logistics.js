@@ -704,6 +704,7 @@ function deliverToDestination(job, carrier) {
     if (job.to.kind === "warehouse") {
         if (!isWarehouse(target) || !target.warehouse.filters.includes(job.good)) return { ok: false, reason: "Destination store cannot accept " + job.good, missing: true };
         if (job.good === "bread") {
+            recordGoodMovement({ type: "consumed", good: "bread", quantity, from: { kind: "warehouse", id: job.to?.id || job.from?.id || "unknown" }, to: { kind: "realm", id: "food-store" }, cause: "bread-converted-to-food", jobId: job.id });
             addResource("food", quantity);
             recordDelivery(job, quantity);
             carrier.cargo = null;
@@ -1502,6 +1503,14 @@ export function rebuildLogisticsReservations() {
             }
         }
     }
+}
+
+// A newly founded realm opens its books with whatever the starting stores
+// already hold. Without this, the initial royal granary would look like
+// unbooked production for the rest of the campaign.
+export function openGoodsBookForNewRealm() {
+    setAuditOpening(getPhysicalStockMap());
+    return getGoodsAudit();
 }
 
 export function initializeCityForRealm({ seedWarehouse = true } = {}) {

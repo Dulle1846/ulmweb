@@ -267,8 +267,13 @@ try{
     await page.locator('[data-command-tab="dynasty"]').click();
     await page.locator('[data-command-tab="creatures"]').click();
     await page.evaluate(async()=>{
-        const {state}=await import("./js/core/state.js");
-        state.resources.gold=250;state.resources.food=250;
+        const [{state},{recordResourceMovement}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/goods-book.js")
+        ]);
+        state.resources.gold=250;
+        const foodGrant=Math.max(0,250-Number(state.resources.food||0));
+        state.resources.food=250;
+        if(foodGrant>0)recordResourceMovement("food",foodGrant,"test-fixture");
     });
     await page.locator('[data-command="summon-dragon"]').click();
     const creatureFixture=await page.evaluate(async()=>{
@@ -307,6 +312,7 @@ try{
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("GOODS AUDIT"),"transport overview must expose the goods audit");
     assert.ok(await page.locator("#command-panel-content .warehouse-row").count()>=1,"the store overview must list every warehouse");
     assert.ok(await page.locator("#command-panel-content .logistics-audit").count()>=10,"the audit must expose every physical good and royal food");
+    assert.equal(await page.locator("#command-panel-content .logistics-audit.is-blocked").count(),0,"a fresh realm must reconcile every physical good and royal food");
     await page.waitForFunction(()=>document.querySelectorAll("#command-panel-content .logistics-movement").length>0,null,{timeout:15000});
     const movementTypes=await page.locator("#command-panel-content .logistics-movement").evaluateAll(nodes=>nodes.map(node=>node.dataset.movementType));
     assert.ok(movementTypes.length>0&&movementTypes.length<=40,"the movement archive must stay bounded to the newest 40 records");
@@ -558,8 +564,8 @@ try{
     // The living sovereign receives a dedicated royal dossier whose heir link
     // navigates to the canonical dossier for that same persisted person.
     const royalFixture=await page.evaluate(async()=>{
-        const [{state},{Entity,TYPE},{ensurePersonProfile},{getRoyalHouse,appointRoyalConsort,createRoyalChild,designateHeir}]=await Promise.all([
-            import("./js/core/state.js"),import("./js/core/types.js"),import("./js/systems/people.js"),import("./js/systems/royal-dynasty.js")
+        const [{state},{Entity,TYPE},{ensurePersonProfile},{getRoyalHouse,appointRoyalConsort,createRoyalChild,designateHeir},{recordResourceMovement}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/core/types.js"),import("./js/systems/people.js"),import("./js/systems/royal-dynasty.js"),import("./js/systems/goods-book.js")
         ]);
         const king=state.entities.find(entity=>!entity.dead&&entity.isKing&&entity.personId);
         if(!king)throw new Error("A living sovereign is required for the royal dossier E2E");
@@ -567,12 +573,17 @@ try{
         if(!house.consort){
             const consort=new Entity(0,0,TYPE.VILLAGER);consort.id="e2e-royal-consort";consort.personId=consort.id;
             const profile=ensurePersonProfile(consort,{role:"resident",species:"human"});profile.ageYears=30;profile.lifeStage="adult";
-            state.entities.push(consort);state.resources.food=Math.max(100,Number(state.resources.food)||0);state.resources.gold=Math.max(100,Number(state.resources.gold)||0);
+            state.entities.push(consort);
+            const consortFoodGrant=Math.max(0,100-Number(state.resources.food||0));
+            state.resources.food=Math.max(100,Number(state.resources.food)||0);state.resources.gold=Math.max(100,Number(state.resources.gold)||0);
+            if(consortFoodGrant>0)recordResourceMovement("food",consortFoodGrant,"test-fixture");
             const marriage=appointRoyalConsort(consort.personId);if(!marriage.ok)throw new Error("Could not create royal dossier consort fixture: "+marriage.reason);
             house=getRoyalHouse();
         }
         if(!house.children.length){
+            const birthFoodGrant=Math.max(0,100-Number(state.resources.food||0));
             state.resources.food=Math.max(100,Number(state.resources.food)||0);state.resources.gold=Math.max(100,Number(state.resources.gold)||0);
+            if(birthFoodGrant>0)recordResourceMovement("food",birthFoodGrant,"test-fixture");
             const birth=createRoyalChild();if(!birth.ok)throw new Error("Could not create royal dossier heir fixture: "+birth.reason);
             house=getRoyalHouse();
         }

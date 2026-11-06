@@ -5,6 +5,7 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { WORLD_W, WORLD_H, BUILDING_SIZE } from "../core/config.js";
 import { addResource } from "./resources.js";
+import { recordResourceMovement } from "./goods-book.js";
 import { spawnEntity, canSpawnEntity, buildingOverlaps } from "../world/entities.js";
 import { isWaterAt, worldWidth, worldHeight, revealArea } from "../world/world.js";
 import { getResourceNodeAt } from "./resource-geography.js";
@@ -34,11 +35,15 @@ function affordable(cost) {
 }
 function chargeResources(cost) {
     if (!affordable(cost)) return false;
-    for (const [key, amount] of Object.entries(cleanCost(cost))) state.resources[key] = Math.max(0, (Number(state.resources[key]) || 0) - amount);
+    const charge = cleanCost(cost);
+    for (const [key, amount] of Object.entries(charge)) state.resources[key] = Math.max(0, (Number(state.resources[key]) || 0) - amount);
+    if (charge.food > 0) recordResourceMovement("food", -charge.food, "construction-cost", { from: { kind: "realm", id: "royal-stores" } });
     return true;
 }
 function refundResources(cost, ratio) {
-    for (const [key, amount] of Object.entries(cleanCost(cost))) addResource(key, amount * ratio);
+    const refund = cleanCost(cost);
+    for (const [key, amount] of Object.entries(refund)) addResource(key, amount * ratio);
+    if (refund.food > 0) recordResourceMovement("food", refund.food * ratio, "construction-refund", { to: { kind: "realm", id: "royal-stores" } });
 }
 function entityById(id) { return state.entities.find(entity => !entity.dead && entity.id === id) || null; }
 function distanceTo(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }

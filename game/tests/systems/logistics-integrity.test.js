@@ -8,8 +8,11 @@ import {
     updateLogistics, updateLogisticsMovement, serializeCity, restoreCity, validateCitySnapshot,
     evacuateBuildingInventory, setWarehouseProfile, getWarehouseProfile, depositGood, withdrawGood,
     addLocalOutput, consumeFromWarehouse, getLocalWarehouseStock, getGoodsAudit, getPhysicalStock,
+    getPhysicalStockMap, openGoodsBookForNewRealm,
     normalizeLegacyWarehouseCapacity, recordResourceMovement, MAX_LOGISTICS_JOBS, MAX_CARRIERS, JOB_PRIORITIES
 } from "../../js/systems/logistics.js";
+import { payForCard } from "../../js/systems/resources.js";
+import { executeTrade, getTradePartners } from "../../js/systems/market.js";
 import { setAuditOpening } from "../../js/systems/goods-book.js";
 import { GOOD_KEYS } from "../../js/systems/city-config.js";
 import { updateFields } from "../../js/systems/fields.js";
@@ -878,4 +881,64 @@ test("44 maximum load stays bounded and auditable", () => {
     assert.equal(logs.balanced, true, "logs must reconcile after maximum load: " + JSON.stringify(logs));
     assert.ok(logs.produced >= MAX_LOGISTICS_JOBS * 2);
     assertPhysicalBooks();
+});
+
+test("45 a new realm opens its goods book with the starting stores", () => {
+    resetState();
+    state.tick = 0;
+    state.resources = { wood: 180, stone: 95, gold: 75, food: 120 };
+    state.entities = [];
+    initializeCityForRealm({ seedWarehouse: false });
+    openGoodsBookForNewRealm();
+    const audit = getGoodsAudit();
+    const food = audit.rows.find(row => row.good === "food");
+    assert.equal(food.opening, 120);
+    assert.equal(food.physical, 120);
+    assert.equal(food.difference, 0);
+    assert.equal(audit.balanced, true);
+});
+
+test("46 bread delivered to a granary is booked as consumed when it becomes royal food", () => {
+    setup();
+    const bakery = place(TYPE.BAKERY, 20, 20);
+    const granary = place(TYPE.WAREHOUSE, 30, 20);
+    granary.warehouse.filters = ["grain", "flour", "bread"];
+    bakery.inventory.output.bread = 4;
+    setAuditOpening(getPhysicalStockMap());
+    const foodBefore = state.resources.food;
+    const job = requestHaul(bakery, "bread", 3);
+    assert.ok(job);
+    advance(80);
+    assert.equal(job.status, "done");
+    assert.equal(state.resources.food, foodBefore + 3);
+    const bread = getGoodsAudit().rows.find(row => row.good === "bread");
+    assert.equal(bread.consumed, 3);
+    assert.equal(bread.physical, 1);
+    assert.equal(bread.balanced, true);
+});
+
+test("47 card food costs are booked as consumption", () => {
+    resetState();
+    state.resources = { wood: 0, stone: 0, gold: 0, food: 50 };
+    setAuditOpening({ food: 50 });
+    assert.equal(payForCard({ id: "test-card", cost: { food: 10 } }), true);
+    const food = getGoodsAudit().rows.find(row => row.good === "food");
+    assert.equal(food.physical, 40);
+    assert.equal(food.consumed, 10);
+    assert.equal(food.balanced, true);
+});
+
+test("48 market food trades are booked on both sides", () => {
+    resetState();
+    state.resources = { wood: 0, stone: 0, gold: 100, food: 50 };
+    setAuditOpening({ food: 50 });
+    const partner = getTradePartners()[0];
+    assert.equal(executeTrade(partner.id, "food", "sell", 5).ok, true);
+    assert.equal(getGoodsAudit().rows.find(row => row.good === "food").balanced, true);
+    assert.equal(executeTrade(partner.id, "food", "buy", 5).ok, true);
+    const food = getGoodsAudit().rows.find(row => row.good === "food");
+    assert.equal(food.physical, 50);
+    assert.equal(food.produced, 5);
+    assert.equal(food.consumed, 5);
+    assert.equal(food.balanced, true);
 });

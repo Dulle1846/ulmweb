@@ -1,5 +1,6 @@
 import {state} from "../core/state.js";
 import {applyPoliticalEffects,getPoliticalSnapshot} from "./politics.js";
+import {recordResourceMovement} from "./goods-book.js";
 export const GOVERNMENT_FORMS=Object.freeze({
  feudal:{label:"Feudal monarchy",tax:10,legitimacy:1.2,factions:{commons:-.2,nobility:.8,guilds:0,clergy:.2}},
  royal:{label:"Royal centralism",tax:12,legitimacy:.4,factions:{commons:-.5,nobility:-.6,guilds:.3,clergy:0}},
@@ -33,6 +34,8 @@ export function enactPolicy(id){
  const g=normalizeGovernment();if(g.lastDecisionYear===state.year)return {ok:false,reason:"one-decree-per-year"};
  for(const [k,v] of Object.entries(p.cost))if((Number(state.resources?.[k])||0)<v)return {ok:false,reason:"insufficient-"+k};
  for(const [k,v] of Object.entries(p.cost))state.resources[k]-=v;
+ const foodCost=Number(p.cost?.food||0);
+ if(foodCost>0)recordResourceMovement("food",-foodCost,"policy-cost",{from:{kind:"realm",id:"royal-stores"},to:{kind:"policy",id}});
  applyPoliticalEffects(p.effects);state.morale=clamp((Number(state.morale)||0)+p.morale);
  g.lastDecisionYear=Math.max(1,Math.floor(Number(state.year)||1));g.decrees++;g.history.push({year:state.year||1,kind:"policy",id,label:p.label});g.history=g.history.slice(-40);
  return {ok:true,policy:p,government:g,politics:getPoliticalSnapshot()};
