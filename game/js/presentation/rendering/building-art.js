@@ -6,6 +6,7 @@
 import { CELL, BUILDING_SIZE, BUILDING_ROOF_COLOR, BUILDING_ICON } from '../../core/config.js';
 import { TYPE } from '../../core/types.js';
 import { state } from '../../core/state.js';
+import { PLAN, normalizeLayout, roomsOf } from '../building-layout.js';
 
 // Cost of rebuilding a structure in the workshop, in materials.
 export const REBUILD_COST = {
@@ -142,7 +143,7 @@ export function drawAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, options = {})
     ctx.fillStyle = 'rgba(0,0,0,0.24)';
     ctx.fill();
 
-    if (options.interior && state.zoomLevel >= 4) drawInteriorPlan(ctx, box);
+    if (options.interior && state.zoomLevel >= 4) drawAuthoredInterior(ctx, box);
     else drawRooftopPlan(ctx, box);
 
     // Selection ring from the workshop.
@@ -781,17 +782,25 @@ function drawOrientation(ctx, box) {
 
 // ── interiors ─────────────────────────────────────────────────
 
-function drawInteriorPlan(ctx, box) {
+function drawAuthoredInterior(ctx, box) {
     const { left, top, w, h, scale, e, tick } = box;
-    const style = box.style;
+    const dims = sizeOf(e);
+    const layout = normalizeLayout(e.type, e.layout, dims.w, dims.h);
+    const n = layout.w;
+    const cw = w / n;
+    const ch = h / n;
+    const rooms = roomsOf(layout, e.type);
+    const tints = ['rgba(86,58,30,0.05)', 'rgba(255,248,220,0.10)', 'rgba(70,48,26,0.06)', 'rgba(255,246,214,0.07)'];
 
-    // Floorboards.
-    ctx.fillStyle = '#cdb78e';
+    ctx.save();
+    ctx.fillStyle = '#c9b184';
     roundRect(ctx, left, top, w, h, 2 * scale);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(96,72,42,0.28)';
-    ctx.lineWidth = Math.max(0.6, 0.8 * scale);
-    const plank = Math.max(4, 7 * scale);
+
+    // Floorboards run beneath the room tints.
+    ctx.strokeStyle = 'rgba(96,72,42,0.18)';
+    ctx.lineWidth = Math.max(0.5, 0.7 * scale);
+    const plank = Math.max(3, 5 * scale);
     for (let y = top + plank; y < top + h - 1; y += plank) {
         ctx.beginPath();
         ctx.moveTo(left + 1, y);
@@ -799,39 +808,111 @@ function drawInteriorPlan(ctx, box) {
         ctx.stroke();
     }
 
-    // Walls: thick outer shell with a lighter inner face.
-    ctx.strokeStyle = style.wall;
-    ctx.lineWidth = Math.max(2, 3.2 * scale);
-    ctx.strokeRect(left + 1.5, top + 1.5, w - 3, h - 3);
-    ctx.strokeStyle = 'rgba(60,44,28,0.55)';
-    ctx.lineWidth = Math.max(0.8, 1 * scale);
-    ctx.strokeRect(left + 1.5, top + 1.5, w - 3, h - 3);
+    rooms.forEach((room, index) => {
+        ctx.fillStyle = room.accessible ? tints[index % tints.length] : 'rgba(140,52,40,0.16)';
+        for (const cell of room.cells) {
+            ctx.fillRect(left + cell.x * cw, top + cell.y * ch, cw + 0.5, ch + 0.5);
+        }
+    });
 
+    for (let y = 0; y < n; y++) {
+        for (let x = 0; x < n; x++) {
+            const value = layout.cells[y * n + x];
+            if (value === PLAN.EMPTY) continue;
+            const px = left + x * cw;
+            const py = top + y * ch;
+            if (value === PLAN.WALL || value === PLAN.WINDOW) {
+                const border = x === 0 || y === 0 || x === n - 1 || y === n - 1;
+                ctx.fillStyle = border ? '#6d5739' : '#7d6441';
+                ctx.fillRect(px, py, cw + 0.4, ch + 0.4);
+                ctx.fillStyle = 'rgba(255,246,220,0.14)';
+                ctx.fillRect(px, py, cw + 0.4, Math.max(1, ch * 0.16));
+                if (value === PLAN.WINDOW) {
+                    const horizontal = y === 0 || y === n - 1;
+                    ctx.fillStyle = '#a8ced6';
+                    if (horizontal) ctx.fillRect(px + cw * 0.16, py + ch * 0.34, cw * 0.68, Math.max(1.4, ch * 0.32));
+                    else ctx.fillRect(px + cw * 0.34, py + ch * 0.16, Math.max(1.4, cw * 0.32), ch * 0.68);
+                    ctx.strokeStyle = '#4d3c26';
+                    ctx.lineWidth = Math.max(0.6, 0.7 * scale);
+                    ctx.strokeRect(px + 0.5, py + 0.5, cw - 1, ch - 1);
+                }
+            } else if (value === PLAN.DOOR) {
+                ctx.fillStyle = '#c9b184';
+                ctx.fillRect(px + 0.5, py + 0.5, cw - 1, ch - 1);
+                ctx.strokeStyle = 'rgba(74,51,32,0.9)';
+                ctx.lineWidth = Math.max(1, 1.1 * scale);
+                const neighbour = (nx, ny) => nx >= 0 && ny >= 0 && nx < n && ny < n &&
+                    (layout.cells[ny * n + nx] === PLAN.WALL || layout.cells[ny * n + nx] === PLAN.WINDOW);
+                const horizontalWall = neighbour(x - 1, y) || neighbour(x + 1, y);
+                ctx.beginPath();
+                if (horizontalWall) {
+                    ctx.moveTo(px + 1, py); ctx.lineTo(px + 1, py + ch);
+                    ctx.moveTo(px + cw - 1, py); ctx.lineTo(px + cw - 1, py + ch);
+                    ctx.moveTo(px + 1.5, py + ch * 0.85);
+                    ctx.lineTo(px + cw * 0.72, py + ch * 0.4);
+                } else {
+                    ctx.moveTo(px, py + 1); ctx.lineTo(px + cw, py + 1);
+                    ctx.moveTo(px, py + ch - 1); ctx.lineTo(px + cw, py + ch - 1);
+                    ctx.moveTo(px + cw * 0.15, py + ch - 1.5);
+                    ctx.lineTo(px + cw * 0.6, py + ch * 0.28);
+                }
+                ctx.stroke();
+            }
+        }
+    }
+
+    // Furnishings are dealt across the detected rooms, never onto walls.
     const items = normalizeInterior(e.type, e.interior);
-    const slots = [];
-    const cols = Math.max(2, Math.floor(w / (12 * scale)));
-    const rows = Math.max(2, Math.floor(h / (12 * scale)));
-    for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-            slots.push({
-                x: left + w * (0.16 + col * 0.68 / Math.max(1, cols - 1)),
-                y: top + h * (0.18 + row * 0.64 / Math.max(1, rows - 1)),
-            });
+    const pointers = new Array(rooms.length).fill(0);
+    const used = new Set();
+    const takeCell = preferred => {
+        for (let pass = 0; pass < rooms.length; pass++) {
+            const index = (preferred + pass) % rooms.length;
+            const list = rooms[index].cells;
+            for (let k = 0; k < list.length; k++) {
+                const cell = list[(pointers[index] + k) % list.length];
+                const key = cell.y * n + cell.x;
+                if (used.has(key)) continue;
+                used.add(key);
+                pointers[index] = (pointers[index] + k + 1) % list.length;
+                return cell;
+            }
+        }
+        return null;
+    };
+    const furnitureScale = Math.min(cw, ch) / 14;
+    for (const id of ['hearth', 'bed', 'table', 'chair', 'shelf', 'rug', 'statue', 'candle']) {
+        const count = Math.min(24, items[id] || 0);
+        for (let i = 0; i < count; i++) {
+            let preferred = 0;
+            if (id === 'bed' && rooms.length > 1) preferred = 1;
+            else if (id === 'candle') preferred = i % rooms.length;
+            else if (id === 'chair' && rooms.length > 2) preferred = 2 % rooms.length;
+            const cell = takeCell(preferred);
+            if (!cell) break;
+            drawFurniture(ctx, id, left + cell.x * cw + cw / 2, top + cell.y * ch + ch / 2, furnitureScale, tick, id === 'hearth');
         }
     }
 
-    let slot = 0;
-    const order = ['hearth', 'bed', 'table', 'chair', 'shelf', 'rug', 'statue', 'candle'];
-    for (const id of order) {
-        const count = items[id] || 0;
-        for (let i = 0; i < count && slot < slots.length; i++, slot++) {
-            const point = slots[(slot * 7 + i * 3) % slots.length];
-            drawFurniture(ctx, id, point.x, point.y, scale, tick, id === 'hearth');
-        }
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const room of rooms) {
+        if (room.area < 4) continue;
+        const font = Math.max(5, Math.min(8, cw * 0.52));
+        const label = room.name;
+        ctx.font = '700 ' + font.toFixed(1) + 'px "Trebuchet MS", sans-serif';
+        const width = ctx.measureText(label).width + 5;
+        if (width > (room.maxX - room.minX + 1) * cw) continue;
+        const cx = left + room.cx * cw;
+        const cy = top + room.cy * ch;
+        ctx.fillStyle = 'rgba(36,26,16,0.55)';
+        ctx.fillRect(cx - width / 2, cy - font * 0.75, width, font * 1.5);
+        ctx.fillStyle = room.accessible ? '#f4e8cc' : '#ffd2c6';
+        ctx.fillText(label, cx, cy);
     }
 
-    drawDoor(ctx, box);
     drawInteriorLabel(ctx, box);
+    ctx.restore();
 }
 
 function drawFurniture(ctx, id, x, y, scale, tick, lit) {

@@ -13,6 +13,8 @@ import {
     defaultInterior, normalizeInterior, INTERIOR_ITEMS, INTERIOR_ITEM_IDS,
     REBUILD_COST, buildingName, footprintOf,
 } from './rendering/building-art.js';
+import { normalizeLayout, cloneLayout, rotateLayout } from './building-layout.js';
+import { renderPlanEditor, setupPlanEditor } from './plan-editor.js';
 
 const RADIUS_SEARCH = 9;
 
@@ -61,12 +63,14 @@ function validPlacement(tx, ty, entity) {
 
 function pushUndo(entity) {
     state.buildUndo = state.buildUndo || [];
+    const dims = footprintOf(entity);
     state.buildUndo.push({
         id: entity.id,
         x: entity.x,
         y: entity.y,
         rotation: entity.rotation || 0,
         interior: { ...normalizeInterior(entity.type, entity.interior) },
+        layout: cloneLayout(normalizeLayout(entity.type, entity.layout, dims.w, dims.h)),
     });
     if (state.buildUndo.length > 30) state.buildUndo.shift();
 }
@@ -80,6 +84,10 @@ export function undoBuildAction() {
     entity.y = entry.y;
     entity.rotation = entry.rotation;
     entity.interior = { ...entry.interior };
+    if (entry.layout) {
+        const dims = footprintOf(entity);
+        entity.layout = normalizeLayout(entity.type, entry.layout, dims.w, dims.h);
+    }
     state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
     renderWorkshop();
     toast('CHANGE REVERTED');
@@ -153,6 +161,8 @@ export function rotateSelected() {
     if (!entity) return;
     pushUndo(entity);
     entity.rotation = ((Number(entity.rotation) || 0) + 1) % 4;
+    const dims = footprintOf(entity);
+    entity.layout = rotateLayout(normalizeLayout(entity.type, entity.layout, dims.w, dims.h));
     renderWorkshop();
     toast('ROTATED · ' + entity.rotation * 90 + '°');
 }
@@ -193,6 +203,7 @@ export function duplicateSelected() {
     if (!copy) { toast('REALM CAPACITY REACHED'); return; }
     copy.rotation = entity.rotation || 0;
     copy.interior = { ...normalizeInterior(entity.type, entity.interior) };
+    copy.layout = entity.layout ? cloneLayout(entity.layout) : null;
     copy.footprintScale = entity.footprintScale || 1;
     selectBuilding(copy);
     state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
@@ -284,6 +295,7 @@ export function renderWorkshop() {
         button.disabled = disabled;
         button.classList.toggle('is-active', action === 'move' && state.buildTool === 'move');
     });
+    renderPlanEditor();
 }
 
 export function setupWorkshopUI() {
@@ -313,5 +325,6 @@ export function setupWorkshopUI() {
         adjustInterior(button.dataset.furniture, Number(button.dataset.delta) || 0);
     });
 
+    setupPlanEditor({ beforeChange: entity => pushUndo(entity), toast });
     renderWorkshop();
 }

@@ -24,7 +24,7 @@ import {normalizeGovernment} from "../systems/government.js";
 import {normalizeRoyalState} from "../systems/royal-dynasty.js";
 import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
-import {serializeResourceGeography,restoreResourceGeography,validateResourceGeographySnapshot} from "../systems/resource-geography.js";import { setupBuildUI } from "../presentation/build-ui.js";
+import {serializeResourceGeography,restoreResourceGeography,validateResourceGeographySnapshot} from "../systems/resource-geography.js";import { setupBuildUI } from "../presentation/build-ui.js";import { normalizeLayout,serializeLayout } from "../presentation/building-layout.js";
 import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
 
@@ -144,7 +144,7 @@ function serializeEntity(entity,indexByEntity){
     return {
         id:entity.id||null,personId:entity.personId||null,person:entity.person?JSON.parse(JSON.stringify(entity.person)):null,
         x:entity.x,y:entity.y,type:entity.type,hp:entity.hp,maxHp:entity.maxHp,dead:entity.dead,age:entity.age,
-        rotation:entity.rotation||0,footprintScale:entity.footprintScale||1,interior:entity.interior?{...entity.interior}:null,
+        rotation:entity.rotation||0,footprintScale:entity.footprintScale||1,interior:entity.interior?{...entity.interior}:null,layout:entity.layout?serializeLayout(entity.type,entity.layout,1,1):null,
         anim:entity.anim,facing:entity.facing,visualState:entity.visualState,anchor:entity.anchor,home:entity.home,
         illnessUntilTick:entity.illnessUntilTick,illnessStartedTick:entity.illnessStartedTick,illnessSeverity:entity.illnessSeverity,
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
@@ -212,6 +212,7 @@ function validateSaveSnapshot(snapshot){
             throw new Error("Save data contains an invalid entity at position "+index+".");
         }
         if(!dto.dead&&SAVE_MOBILE_TYPES.has(dto.type))mobile++;
+        if(dto.layout!==undefined&&dto.layout!==null&&(typeof dto.layout!=="object"||!Array.isArray(dto.layout.cells)||dto.layout.cells.length>225))throw new Error("Save data contains an invalid floor plan at position "+index+".");
     }
     if(mobile>420)throw new Error("Save data exceeds the supported mobile population limit.");
     for(const key of ["wood","stone","gold","food"]){
@@ -250,7 +251,7 @@ function loadSnapshotIntoGame(profile,snapshot){
         Object.assign(entity,{
             id:typeof dto.id==="string"?dto.id:null,personId:typeof dto.personId==="string"?dto.personId:null,person:dto.person&&typeof dto.person==="object"?dto.person:null,
             hp:dto.hp,maxHp:dto.maxHp,dead:dto.dead,age:dto.age,anim:dto.anim,facing:dto.facing,
-            rotation:Number.isFinite(dto.rotation)?dto.rotation:0,footprintScale:Number.isFinite(dto.footprintScale)?dto.footprintScale:1,interior:dto.interior&&typeof dto.interior==="object"?{...dto.interior}:null,
+            rotation:Number.isFinite(dto.rotation)?dto.rotation:0,footprintScale:Number.isFinite(dto.footprintScale)?dto.footprintScale:1,interior:dto.interior&&typeof dto.interior==="object"?{...dto.interior}:null,layout:dto.layout&&typeof dto.layout==="object"?normalizeLayout(dto.type,dto.layout,1,1):null,
             visualState:dto.visualState,anchor:dto.anchor||{x:dto.x,y:dto.y},home:dto.home||{x:dto.x,y:dto.y},
             illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,

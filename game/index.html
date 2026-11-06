@@ -333,6 +333,16 @@
     </div>
     <h3 class="workshop-subtitle">INTERIOR &amp; FURNISHINGS</h3>
     <div id="workshop-items" class="workshop-items"></div>
+    <div class="workshop-divider"><span>FLOOR PLAN</span><span id="plan-stats" class="plan-stats">—</span></div>
+    <div id="plan-tools" class="plan-tools" role="toolbar" aria-label="Floor plan tools">
+        <button type="button" data-plan-tool="wall" class="is-active">WALL</button>
+        <button type="button" data-plan-tool="door">DOOR</button>
+        <button type="button" data-plan-tool="window">WINDOW</button>
+        <button type="button" data-plan-tool="erase">ERASE</button>
+        <button type="button" data-plan-tool="move">MOVE</button>
+    </div>
+    <canvas id="plan-editor" class="plan-editor" width="260" height="260" aria-label="Floor plan editor">Your browser cannot display the floor plan editor.</canvas>
+    <div id="plan-rooms" class="plan-rooms"></div>
     <p id="workshop-hint" class="workshop-hint">SELECT A STRUCTURE TO BEGIN</p>
 </aside>
 </body>
