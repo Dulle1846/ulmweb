@@ -1,0 +1,30 @@
+{
+  "seed": "20261104",
+  "description": "Expected full terrain hashes for the fixed browser E2E world. Generated locally; the browser E2E and CI compare their state against these values.",
+  "hashes": {
+    "heightMap": {
+      "kind": "Float32Array",
+      "length": 495616,
+      "hashA": "183cfaec",
+      "hashB": "880cae32"
+    },
+    "moistureMap": {
+      "kind": "Float32Array",
+      "length": 495616,
+      "hashA": "0e2f4d9c",
+      "hashB": "220b3524"
+    },
+    "temperatureMap": {
+      "kind": "Float32Array",
+      "length": 495616,
+      "hashA": "933677d4",
+      "hashB": "d00a02c0"
+    },
+    "explored": {
+      "kind": "array",
+      "length": 176,
+      "hashA": "57e4bf98",
+      "hashB": "a50889ec"
+    }
+  }
+}

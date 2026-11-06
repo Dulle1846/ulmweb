@@ -226,6 +226,13 @@ try{
     assert.ok(beforeInvalidImport.heightMap.length>0,"the height map hash must cover the complete map");
     assert.ok(beforeInvalidImport.explored.length>0,"the exploration map hash must cover the complete map");
     assert.equal(JSON.stringify(beforeInvalidImport).includes("[unserializable]"),false,"persistent state must never be replaced by an unverifiable placeholder");
+    const terrainHashSnapshot=Object.fromEntries(["heightMap","moistureMap","temperatureMap","explored"].map(key=>[key,{
+        kind:beforeInvalidImport[key].kind,length:beforeInvalidImport[key].length,
+        hashA:beforeInvalidImport[key].hashA,hashB:beforeInvalidImport[key].hashB
+    }]));
+    console.log("Terrain hash snapshot:",JSON.stringify(terrainHashSnapshot));
+    const expectedTerrainHashes=JSON.parse(await readFile(resolve(root,"tests/browser/terrain-hashes.golden.json"),"utf8"));
+    assert.deepEqual(terrainHashSnapshot,expectedTerrainHashes.hashes,"terrain hashes must match the locally generated golden values");
 
     // Mutate each persistent terrain array via the live state and prove that the
     // complete-state hash detects it. Restore the exact original element before
@@ -1309,6 +1316,22 @@ try{
     const finalStatus=await loadRealm();
     assert.ok(finalStatus.includes("Loaded realm"),"the known-good realm must be restored after the logistics load test; actual status: "+finalStatus);
     await ensurePaused();
+
+    // A valid exported realm must take the reset path exactly once. This is the
+    // positive counterpart to the rejected-import zero-reset assertion above.
+    if(!(await page.locator("#settings-modal").isVisible()))await page.locator("#settings-btn").click();
+    await page.locator("#settings-modal").waitFor({state:"visible",timeout:3000});
+    const exportDownload=page.waitForEvent("download");
+    await page.locator("#export-save-btn").click();
+    const exportedFile=await exportDownload;
+    const exportedPath=await exportedFile.path();
+    assert.ok(exportedPath,"the exported realm file must be available to the import control");
+    await page.evaluate(()=>{globalThis.__KAC_RESET_PROBE__.calls=0;});
+    await page.locator("#import-save-input").setInputFiles(exportedPath);
+    await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Realm imported"),null,{timeout:10000});
+    assert.equal(await page.evaluate(()=>globalThis.__KAC_RESET_PROBE__?.calls),1,"a successful import must call resetForRun exactly once");
+    if(await page.locator("#settings-modal").isVisible())await page.locator("#settings-close").click();
+
     assert.deepEqual(errors,[],"legacy save and large-order checks must not emit uncaught page errors: "+JSON.stringify(errors));
     assert.deepEqual(consoleErrors,[],"legacy save and large-order checks must not emit console errors: "+JSON.stringify(consoleErrors));
     console.log("Legacy-save and large-order E2E passed:",JSON.stringify({legacyTick:legacyState.tick,backupTick,queue:largeOrder.queue.active,roundTrip:largeOrder.roundTrip.active}));
