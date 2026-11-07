@@ -1,0 +1,82 @@
+{
+  "seed": 20261104,
+  "viewport": {
+    "width": 800,
+    "height": 800
+  },
+  "canvas": {
+    "width": 800,
+    "height": 800
+  },
+  "renderer": "WebKit WebGL",
+  "maxTextureSize": 8192,
+  "generatedAt": "2026-11-07T22:34:16.619Z",
+  "seasons": [
+    {
+      "key": "spring",
+      "label": "SPRING",
+      "day": 0
+    },
+    {
+      "key": "summer",
+      "label": "SUMMER",
+      "day": 100
+    },
+    {
+      "key": "autumn",
+      "label": "AUTUMN",
+      "day": 200
+    },
+    {
+      "key": "winter",
+      "label": "WINTER",
+      "day": 300
+    }
+  ],
+  "zooms": [
+    {
+      "key": "landscape",
+      "label": "LANDSCAPE",
+      "level": 1,
+      "scale": 0.09
+    },
+    {
+      "key": "districts",
+      "label": "DISTRICTS",
+      "level": 2,
+      "scale": 0.3
+    },
+    {
+      "key": "rooftops",
+      "label": "ROOFTOPS",
+      "level": 3,
+      "scale": 0.95
+    },
+    {
+      "key": "interiors",
+      "label": "INTERIORS",
+      "level": 4,
+      "scale": 2.4
+    }
+  ],
+  "framesDirectory": "/tmp/kac-terrain-reference-frames",
+  "frames": [
+    "spring-landscape.png",
+    "spring-districts.png",
+    "spring-rooftops.png",
+    "spring-interiors.png",
+    "summer-landscape.png",
+    "summer-districts.png",
+    "summer-rooftops.png",
+    "summer-interiors.png",
+    "autumn-landscape.png",
+    "autumn-districts.png",
+    "autumn-rooftops.png",
+    "autumn-interiors.png",
+    "winter-landscape.png",
+    "winter-districts.png",
+    "winter-rooftops.png",
+    "winter-interiors.png"
+  ],
+  "note": "HUD, entities, fog and weather hidden; paused simulation; camera centred. Not a GPU performance benchmark."
+}

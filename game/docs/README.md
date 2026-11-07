@@ -18,6 +18,7 @@ For the current development stage, these documents focus on making the existing 
 - [Baseline Fix Review](BASELINE_FIX_REVIEW.md) — source repairs, known gaps and verification still required.
 - [Source Structure](../game-structure) — current directory tree and module responsibilities.
 - [Zoom and Building Placement](ZOOM_AND_BUILDING_PLACEMENT.md) — four detail levels, camera behaviour and drag-and-drop validation.
+- [Terrain Visual Reference](TERRAIN_VISUAL_REFERENCE.md) — committed four-season, four-zoom contact sheet and reproduction script.
 - [Kings & Cards Foundation](V2_FOUNDATION.md) — current playable systems, exact limits and verified checks.
 - [Next AI Work Package](NEXT_AI_WORK_PACKAGE.md) — ready-to-use handoff brief for contributors and AI sessions.
 - [Simulation Design and Story Engine](SIMULATION_DESIGN_AND_STORY_ENGINE.md) — systemic gameplay vision, interdependencies, cards, issue chains, cadence and phased implementation plan.
