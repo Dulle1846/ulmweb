@@ -1037,7 +1037,15 @@ try{
     const loadRealm=async()=>{
         await page.evaluate(()=>{const status=document.querySelector("#status-message");if(status)status.textContent="";});
         await dismissRealmEvent();
-        await page.locator("#load-btn").click();
+        // Loading resumes the simulation, so the restored realm would keep
+        // advancing ticks while the test reads it back. Pause inside the same
+        // synchronous task as the load click: no frame can run in between, so
+        // the assertions see exactly the snapshot that was restored.
+        await page.evaluate(()=>{
+            document.querySelector("#load-btn").click();
+            const pauseButton=document.querySelector("#pause-btn");
+            if(pauseButton&&!pauseButton.classList.contains("is-paused"))pauseButton.click();
+        });
         await page.waitForFunction(()=>{
             const message=document.querySelector("#status-message")?.textContent||"";
             return message.includes("Loaded realm")||message.includes("Load failed")||message.includes("No valid saved realm");
