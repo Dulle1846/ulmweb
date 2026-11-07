@@ -16,6 +16,8 @@ import { worldWidth, worldHeight } from '../../world/world.js';
 import { getRoadTiles } from '../../systems/roads.js';
 import { terrainShaderPalette } from './terrain-palette.js';
 import { buildTerrainAtlas, TERRAIN_ATLAS_COLUMNS, TERRAIN_ATLAS_ROWS } from './terrain-atlas.js';
+import { buildHeightOcclusion } from './terrain-ao.js';
+import { advanceWearField, buildWearTargets, createWearField, encodeWearField, wearGridSize } from './terrain-wear.js';
 
 const VERTEX_SHADER = `#version 300 es
 in vec2 aPosition;
@@ -33,6 +35,16 @@ uniform sampler2D uWaterDist;
 uniform sampler2D uAtlas;
 uniform vec2 uAtlasGrid;
 uniform float uAtlasStrength;
+uniform sampler2D uAO;
+uniform vec3 uSunDirection;
+uniform vec2 uSunShadowDir;
+uniform float uSunShadowStep;
+uniform float uSunShadowSlope;
+uniform float uSunShadowStrength;
+uniform float uContourStrength;
+uniform float uContourScale;
+uniform float uSpring;
+uniform float uSummer;
 uniform vec2 uWorldSize;
 uniform vec2 uDataSize;
 uniform vec2 uCamera;
@@ -277,7 +289,16 @@ vec3 grassMaterial(vec2 world, float moisture, float macro, float meso, float fi
     color = mix(color, color * 0.72, smoothstep(0.90, 0.99, fine) * 0.22 * detail);
     float detailMap = groundDetail(world, 0.0, 1.0, 0.42);
     color *= mix(1.0, 0.84 + 0.34 * detailMap, uAtlasStrength * (0.45 + 0.55 * uCloseDetail));
-    if (uAutumn > 0.5) color = mix(color, uDry * 0.94, 0.20);
+    // Seasonal ground cover changes the surface itself, not just its palette:
+    // fallen leaves, spring blossom, scorched summer patches and winter frost.
+    float leafLitter = smoothstep(0.50, 0.86, fbm2(world * 2.6 + vec2(3.1, 8.7)) + (micro - 0.5) * 0.24);
+    color = mix(color, mix(uDry * 0.98, uEarth * 1.30, 0.38), leafLitter * uAutumn * 0.32 * (0.45 + 0.55 * detail));
+    float blossom = smoothstep(0.80, 0.97, vnoise(world * 6.1 + vec2(2.3, 4.9))) * uSpring;
+    color += vec3(0.075, 0.058, 0.030) * blossom * detail;
+    float dryPatch = smoothstep(0.58, 0.88, vnoise(world * 1.4 + vec2(7.7, 1.3)));
+    color = mix(color, uDry * 0.92, dryPatch * uSummer * 0.10);
+    float frost = smoothstep(0.46, 0.80, vnoise(world * 2.1 + vec2(9.3, 3.1))) * uWinter;
+    color = mix(color, uSnow * 0.94, frost * 0.30);
     return color;
 }
 
@@ -298,7 +319,11 @@ vec3 forestMaterial(vec2 world, float macro, float meso, float fine, float micro
     color = mix(color, color * 0.70, smoothstep(0.86, 0.99, fine) * 0.26 * detail);
     float detailMap = groundDetail(world, 2.0, 3.0, 0.55);
     color *= mix(1.0, 0.80 + 0.42 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
-    if (uAutumn > 0.5) color = mix(color, uForest * 1.22 + vec3(0.075, 0.017, 0.0), 0.34);
+    color = mix(color, uForest * 1.18 + vec3(0.060, 0.020, 0.0), uAutumn * 0.30);
+    float leafCarpet = smoothstep(0.46, 0.84, fbm2(world * 3.1 + vec2(5.7, 2.2)) + (micro - 0.5) * 0.22);
+    color = mix(color, mix(uEarth * 1.25, uDry, 0.42), leafCarpet * uAutumn * 0.34 * detail);
+    float canopySnow = smoothstep(0.52, 0.88, fbm2(world * 2.4 + vec2(1.3, 9.1))) * uWinter;
+    color = mix(color, mix(uSnow * 0.92, uForest, 0.35), canopySnow * 0.30);
     return color;
 }
 
@@ -358,6 +383,9 @@ vec3 snowMaterial(vec2 world, float micro, float detail) {
     color = mix(color, color * 0.78, smoothstep(0.60, 0.80, vnoise(world * 6.2)) * 0.24);
     float detailMap = groundDetail(world, 8.0, 9.0, 0.50);
     color *= mix(1.0, 0.90 + 0.20 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
+    // Spring melt opens dark ground under the crust instead of only recolouring.
+    float melt = smoothstep(0.52, 0.84, vnoise(world * 1.7 + vec2(6.4, 2.8))) * uSpring;
+    color = mix(color, uEarth * 1.15, melt * 0.26 * detail);
     return color + vec3(0.075) * sparkle;
 }
 
@@ -381,6 +409,10 @@ vec3 waterMaterial(vec2 world, float sd, float micro) {
     // The surf line is left out on purpose: on a two-tile pond it draws a
     // bright outline around the polygon instead of lapping at a shore.
 
+    if (uSummer > 0.5) {
+        float algae = smoothstep(0.55, 0.86, fbm2(world * 0.9 + vec2(3.4, 6.1)));
+        color = mix(color, uLush * 0.62, algae * 0.12);
+    }
     if (uWinter > 0.5) {
         float ice = smoothstep(0.32, 0.74, fbm2(world * 0.4)) * uWinter;
         color = mix(color, mix(uSnow, uWaterShallow, 0.40), ice * 0.32);
@@ -509,6 +541,10 @@ void main() {
 
         float wear = texture(uWear, world / uWorldSize).r;
         landColor = mix(landColor, mix(uEarth, uDry * 0.82, 0.30), smoothstep(0.02, 0.62, wear) * 0.40);
+        // Ambient occlusion is baked from the smoothed height field once per
+        // world: open ground stays bright, hollows and valley floors darken.
+        float skyOpen = texture(uAO, world / uWorldSize).r;
+        landColor *= mix(0.74, 1.03, skyOpen);
         // Shade from the smoothed field: it has no one-texel carve wall, so
         // no ring mask is needed and the shore cannot read as a gear. The
         // bank is flattened completely so grain cannot stripe the slope.
@@ -519,13 +555,39 @@ void main() {
             -grade.x * 90.0 - (micro - 0.5) * 0.12 * grain,
             -grade.y * 90.0 - (fine - 0.5) * 0.12 * grain,
             1.0));
-        vec3 lightDirection = normalize(vec3(-0.58, -0.46, 0.78));
-        float diffuse = clamp(dot(normal, lightDirection), 0.0, 1.0);
-        landColor *= mix(0.90, 1.10, diffuse);
+        float diffuse = clamp(dot(normal, uSunDirection), 0.0, 1.0);
+        landColor *= mix(0.84, 1.16, diffuse);
+        // A low winter sun warms the light less than a high summer one.
+        landColor *= 1.0 + (uSunDirection.z - 0.62) * 0.10;
 
-        float blocker = heightBilinear(world + vec2(-0.7, -0.7));
-        float castShadow = smoothstep(0.012, 0.070, blocker - h) * smoothstep(-0.02, 0.03, e);
-        landColor *= 1.0 - castShadow * 0.05 * (1.0 - flatBank);
+        // Directional cast shadow: march away from the sun and keep the tallest
+        // blocker. The required rise per step is tan(elevation), so a low sun
+        // reaches farther across the ground.
+        float castShadow = 0.0;
+        if (uSunShadowStrength > 0.001) {
+            for (int step = 1; step <= 3; step++) {
+                float reach = float(step) * uSunShadowStep;
+                float blocker = heightBilinear(world + uSunShadowDir * reach);
+                castShadow = max(castShadow, blocker - h - reach * uSunShadowSlope);
+            }
+            castShadow = smoothstep(0.006, 0.030, castShadow) * smoothstep(-0.02, 0.03, e);
+            landColor *= 1.0 - castShadow * 0.34 * uSunShadowStrength * (1.0 - flatBank);
+            landColor = mix(landColor, landColor * vec3(0.84, 0.90, 1.02), castShadow * 0.55);
+        }
+
+        // Contour lines and slope hachures make height legible at map zoom, then
+        // fade out before rooftop scale where the shading already reads.
+        if (uContourStrength > 0.001) {
+            float contour = elevation * uContourScale;
+            float band = contour - floor(contour);
+            float aa = max(fwidth(contour), 0.0001);
+            float line = 1.0 - smoothstep(0.0, aa * 1.7, min(band, 1.0 - band));
+            vec2 downhill = normalize(vec2(hx, hy) + vec2(0.0001, 0.0001));
+            float hatch = abs(fract(dot(world, downhill) * 4.0 + macro * 2.0) - 0.5) * 2.0;
+            float steep = smoothstep(0.12, 0.34, slope);
+            float hachure = smoothstep(0.72, 1.0, hatch) * steep;
+            landColor = mix(landColor, landColor * (0.86 - 0.10 * steep), (line * 0.55 + hachure * 0.45) * uContourStrength);
+        }
     }
 
     vec3 waterColor = waterMaterial(world, sd, micro);
@@ -554,12 +616,22 @@ let wearTexture = null;
 let waterDistTexture = null;
 let atlasTexture = null;
 let atlasUploaded = false;
-let wearCanvas = null;
+let occlusionTexture = null;
+let wearField = null;
+let wearTargets = null;
+let wearBytes = null;
+let wearColumns = 0;
+let wearRows = 0;
+let wearScale = 2;
+let wearWorldKey = "";
+let wearSourceKey = "";
+let wearLastUpdate = 0;
+let wearNeedsUpload = true;
+let wearLastUpload = 0;
 let uniforms = {};
 let failed = false;
 let uploadedWorldEpoch = -1;
 let uploadedHeights = null;
-let uploadedWearKey = "";
 let uploadedWidth = 0;
 let uploadedHeight = 0;
 let initialized = false;
@@ -655,7 +727,8 @@ function init() {
     wearTexture = gl.createTexture();
     waterDistTexture = gl.createTexture();
     atlasTexture = gl.createTexture();
-    if (!terrainTexture || !wearTexture || !waterDistTexture || !atlasTexture) {
+    occlusionTexture = gl.createTexture();
+    if (!terrainTexture || !wearTexture || !waterDistTexture || !atlasTexture || !occlusionTexture) {
         failed = true;
         return false;
     }
@@ -693,6 +766,13 @@ function init() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([128, 128, 128, 255]));
 
+    gl.bindTexture(gl.TEXTURE_2D, occlusionTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 1, 1, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array([255]));
+
     gl.useProgram(program);
     uniforms = {
         terrain: gl.getUniformLocation(program, "uTerrain"),
@@ -701,6 +781,16 @@ function init() {
         atlas: gl.getUniformLocation(program, "uAtlas"),
         atlasGrid: gl.getUniformLocation(program, "uAtlasGrid"),
         atlasStrength: gl.getUniformLocation(program, "uAtlasStrength"),
+        ao: gl.getUniformLocation(program, "uAO"),
+        sunDirection: gl.getUniformLocation(program, "uSunDirection"),
+        sunShadowDir: gl.getUniformLocation(program, "uSunShadowDir"),
+        sunShadowStep: gl.getUniformLocation(program, "uSunShadowStep"),
+        sunShadowSlope: gl.getUniformLocation(program, "uSunShadowSlope"),
+        sunShadowStrength: gl.getUniformLocation(program, "uSunShadowStrength"),
+        contourStrength: gl.getUniformLocation(program, "uContourStrength"),
+        contourScale: gl.getUniformLocation(program, "uContourScale"),
+        spring: gl.getUniformLocation(program, "uSpring"),
+        summer: gl.getUniformLocation(program, "uSummer"),
         worldSize: gl.getUniformLocation(program, "uWorldSize"),
         dataSize: gl.getUniformLocation(program, "uDataSize"),
         camera: gl.getUniformLocation(program, "uCamera"),
@@ -734,6 +824,7 @@ function init() {
     gl.uniform1i(uniforms.wear, 1);
     gl.uniform1i(uniforms.waterDist, 2);
     gl.uniform1i(uniforms.atlas, 3);
+    gl.uniform1i(uniforms.ao, 4);
     gl.clearColor(0.055, 0.075, 0.055, 1.0);
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
@@ -747,7 +838,8 @@ function init() {
         failed = false;
         initialized = false;
         uploadedWorldEpoch = -1;
-        uploadedWearKey = "";
+        wearSourceKey = "";
+        wearNeedsUpload = true;
         atlasUploaded = false;
     });
 
@@ -912,6 +1004,13 @@ function uploadWorldData() {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, width, height, 0, gl.RED, gl.UNSIGNED_BYTE, distanceBytes);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
 
+    const occlusionBytes = buildHeightOcclusion(smoothed, width, height);
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, occlusionTexture);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, width, height, 0, gl.RED, gl.UNSIGNED_BYTE, occlusionBytes);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+
     uploadedWidth = width;
     uploadedHeight = height;
     uploadedWorldEpoch = state.worldEpoch;
@@ -919,60 +1018,63 @@ function uploadWorldData() {
     return true;
 }
 
-function drawWearSpot(context, x, y, radius, strength) {
-    if (radius <= 0) return;
-    const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
-    gradient.addColorStop(0, `rgba(255,255,255,${strength})`);
-    gradient.addColorStop(0.55, `rgba(255,255,255,${strength * 0.40})`);
-    gradient.addColorStop(1, "rgba(255,255,255,0)");
-    context.fillStyle = gradient;
-    context.beginPath();
-    context.arc(x, y, radius, 0, Math.PI * 2);
-    context.fill();
-}
-
+// Wear is a persistent field instead of a per-frame paint: ground compacts
+// while a road or building stands on it and recovers slowly once it is gone.
+// The field only re-uploads when it actually changed.
 function uploadWearData() {
     const W = Math.max(1, Math.floor(worldWidth()));
     const H = Math.max(1, Math.floor(worldHeight()));
-    const scale = 2;
-    const roads = getRoadTiles();
-    const key = [state.worldEpoch, state.roads?.revision ?? 0, state.buildingCollisionVersion ?? 0,
-        state.entities.length, state.worldSeed].join(":");
-    if (key === uploadedWearKey) return true;
-
-    if (!wearCanvas || wearCanvas.width !== W * scale || wearCanvas.height !== H * scale) {
-        wearCanvas = document.createElement("canvas");
-        wearCanvas.width = W * scale;
-        wearCanvas.height = H * scale;
-    }
-    const context = wearCanvas.getContext("2d", { willReadFrequently: true });
-    if (!context) return false;
-    context.globalCompositeOperation = "source-over";
-    context.fillStyle = "#000";
-    context.fillRect(0, 0, wearCanvas.width, wearCanvas.height);
-    context.globalCompositeOperation = "lighter";
-
-    for (const road of roads) {
-        drawWearSpot(context, (road.x + 0.5) * scale, (road.y + 0.5) * scale, 1.5 * scale, 0.55);
+    const worldKey = [state.worldEpoch, W, H, state.worldSeed].join(":");
+    const grid = wearGridSize(W, H, 2);
+    if (worldKey !== wearWorldKey || !wearField || wearColumns !== grid.columns || wearRows !== grid.rows) {
+        wearColumns = grid.columns;
+        wearRows = grid.rows;
+        wearScale = grid.scale;
+        wearField = createWearField(wearColumns, wearRows);
+        wearTargets = createWearField(wearColumns, wearRows);
+        wearBytes = new Uint8Array(wearColumns * wearRows * 4);
+        wearWorldKey = worldKey;
+        wearSourceKey = "";
+        wearLastUpdate = 0;
+        wearNeedsUpload = true;
     }
 
-    for (const entity of state.entities) {
-        if (entity.dead) continue;
-        const isBuilding = entity.type <= 14 || entity.type >= 60;
-        if (!isBuilding) continue;
-        const footprint = BUILDING_SIZE[entity.type] || { w: 1.4, h: 1.4 };
-        const radius = Math.max(1.2, Math.max(footprint.w, footprint.h) * 0.62 + 0.7);
-        drawWearSpot(context, entity.x * scale, entity.y * scale, radius * scale, 0.42);
-        if (entity.field) drawWearSpot(context, entity.x * scale, entity.y * scale, 1.8 * scale, 0.24);
+    const sourceKey = [state.roads?.revision ?? 0, state.buildingCollisionVersion ?? 0, state.entities.length].join(":");
+    if (sourceKey !== wearSourceKey) {
+        const buildings = [];
+        for (const entity of state.entities) {
+            if (entity.dead) continue;
+            const isBuilding = entity.type <= 14 || entity.type >= 60;
+            if (!isBuilding) continue;
+            const footprint = BUILDING_SIZE[entity.type] || { w: 1.4, h: 1.4 };
+            buildings.push({
+                x: entity.x,
+                y: entity.y,
+                radius: Math.max(1.2, Math.max(footprint.w, footprint.h) * 0.62 + 0.7),
+                strength: 0.46,
+                field: Boolean(entity.field),
+            });
+        }
+        buildWearTargets(wearTargets, wearColumns, wearRows, { roads: getRoadTiles(), buildings }, wearScale);
+        wearSourceKey = sourceKey;
     }
 
-    context.globalCompositeOperation = "source-over";
-    const image = context.getImageData(0, 0, wearCanvas.width, wearCanvas.height);
+    const now = performance.now() / 1000;
+    const delta = wearLastUpdate > 0 ? Math.min(0.5, now - wearLastUpdate) : 0;
+    wearLastUpdate = now;
+    const change = advanceWearField(wearField, wearTargets, delta);
+    if (!wearNeedsUpload) {
+        if (change < 1 / 512) return true;
+        if (now - wearLastUpload < 0.12) return true;
+    }
+
+    encodeWearField(wearField, wearBytes);
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, wearTexture);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, wearCanvas.width, wearCanvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, image.data);
-    uploadedWearKey = key;
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, wearColumns, wearRows, 0, gl.RGBA, gl.UNSIGNED_BYTE, wearBytes);
+    wearNeedsUpload = false;
+    wearLastUpload = now;
     return true;
 }
 
@@ -1018,6 +1120,51 @@ function setPalette() {
     gl.uniform1f(uniforms.snowBias, palette.snowBias);
     gl.uniform1f(uniforms.autumn, palette.autumn);
     gl.uniform1f(uniforms.winter, palette.winter);
+
+    const season = ((Math.trunc(Number(state.seasonIndex) || 0) % 4) + 4) % 4;
+    gl.uniform1f(uniforms.spring, season === 0 ? 1 : 0);
+    gl.uniform1f(uniforms.summer, season === 1 ? 1 : 0);
+    const sun = sunState(season);
+    gl.uniform3f(uniforms.sunDirection, sun.direction[0], sun.direction[1], sun.direction[2]);
+    gl.uniform2f(uniforms.sunShadowDir, sun.shadowX, sun.shadowY);
+    gl.uniform1f(uniforms.sunShadowStep, sun.step);
+    gl.uniform1f(uniforms.sunShadowSlope, sun.slope);
+    gl.uniform1f(uniforms.sunShadowStrength, sun.strength);
+    gl.uniform1f(uniforms.contourStrength, sun.contour);
+    gl.uniform1f(uniforms.contourScale, 14.0);
+}
+
+// A realm year is 400 days, so the sun turns once per year while its elevation
+// follows the season. Shadows stay stable within a day but travel across a
+// campaign, and the low winter sun reaches farthest across the ground.
+const SEASON_SUN = [
+    { elevation: 0.95, strength: 0.55 },
+    { elevation: 1.16, strength: 0.75 },
+    { elevation: 0.72, strength: 0.55 },
+    { elevation: 0.44, strength: 0.42 },
+];
+
+function sunState(season) {
+    const spec = SEASON_SUN[season] || SEASON_SUN[0];
+    const day = Math.max(0, Number(state.dayOfYear) || 0);
+    const azimuth = (day / 400) * Math.PI * 2 + 0.6;
+    const x = Math.cos(azimuth) * Math.cos(spec.elevation);
+    const y = Math.sin(azimuth) * Math.cos(spec.elevation);
+    const length = Math.hypot(x, y) || 1;
+    const tanElevation = Math.tan(spec.elevation);
+    const weather = String(state.weather || "").toLowerCase();
+    const weatherFactor = weather === "rain" || weather === "storm" ? 0.55
+        : weather === "overcast" || weather === "fog" ? 0.75 : 1;
+    const zoom = Number(state.zoom) || 1;
+    return {
+        direction: [x, y, Math.sin(spec.elevation)],
+        shadowX: -x / length,
+        shadowY: -y / length,
+        slope: tanElevation,
+        step: Math.max(0.55, Math.min(3.0, 1.05 / Math.max(0.25, tanElevation))),
+        strength: spec.strength * weatherFactor,
+        contour: Math.max(0, Math.min(1, (1.15 - zoom) / 0.85)) * 0.75,
+    };
 }
 
 export function drawTerrainGL() {
@@ -1051,6 +1198,8 @@ export function drawTerrainGL() {
     gl.bindTexture(gl.TEXTURE_2D, waterDistTexture);
     gl.activeTexture(gl.TEXTURE3);
     gl.bindTexture(gl.TEXTURE_2D, atlasTexture);
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, occlusionTexture);
 
     setPalette();
     gl.uniform2f(uniforms.worldSize, Math.max(1, worldWidth()), Math.max(1, worldHeight()));
