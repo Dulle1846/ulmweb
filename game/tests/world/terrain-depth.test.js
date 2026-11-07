@@ -1,12 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
     WORLD_SIZES, WORLD_SHAPES, CLIMATES, DEFAULT_WORLD_OPTIONS,
     normalizeWorldOptions, resolveWorldDimensions, seaLevelFor,
     initNoise, sampleHeight, sampleMoisture, sampleTemperature,
     classifyTerrain, gameplayBiome, carveWaterFeatures,
     terrainResolutionFor, generateWorldData, getWorldData, clearWorldDataCache, worldDataKey,
-    TERRAIN_GENERATION_VERSION,
+    TERRAIN_GENERATION_VERSION, resolveSavedTerrainVersion, renderWorldPreview,
 } from "../../js/world/terrain-model.js";
 import {
     defaultInterior, normalizeInterior, INTERIOR_ITEM_IDS, REBUILD_COST,
@@ -182,7 +183,7 @@ test("river carving cuts a channel and ends in water or a lake", () => {
     assert.ok(underwater > rivers[0].length, "the river must widen into water");
 });
 
-test("generation v2 carves soft basins while version 1 stays reproducible", () => {
+test("generation v3 carves soft basins while older versions stay reproducible", () => {
     clearWorldDataCache();
     const options = { size: "standard", shape: "continent", climate: "temperate" };
     const current = generateWorldData(20261104, options);
@@ -195,8 +196,8 @@ test("generation v2 carves soft basins while version 1 stays reproducible", () =
         if (Math.abs(height - (sea - 0.012)) < 1e-7) flatLegacyPlates++;
     }
     assert.ok(water > 0, "a temperate continent must contain water");
-    assert.equal(flatLegacyPlates, 0, "v2 must not leave flat sea-level plates behind");
-    assert.ok(current.rivers.length > 0, "v2 must still carve rivers");
+    assert.equal(flatLegacyPlates, 0, "v3 must not leave flat sea-level plates behind");
+    assert.ok(current.rivers.length > 0, "v3 must still carve rivers");
 
     const legacy = generateWorldData(20261104, options, 1);
     assert.equal(legacy.terrainVersion, 1);
@@ -212,6 +213,123 @@ test("generation v2 carves soft basins while version 1 stays reproducible", () =
 function overlapKey(options) {
     return worldDataKey(20261104, options, TERRAIN_GENERATION_VERSION);
 }
+
+test("saved terrain versions keep their generator", () => {
+    assert.equal(resolveSavedTerrainVersion(undefined), 1);
+    assert.equal(resolveSavedTerrainVersion(0), 1);
+    assert.equal(resolveSavedTerrainVersion(1), 1);
+    assert.equal(resolveSavedTerrainVersion(2), 2);
+    assert.equal(resolveSavedTerrainVersion(3), 3);
+    assert.equal(resolveSavedTerrainVersion(99), TERRAIN_GENERATION_VERSION);
+});
+
+test("generation v2 keeps old saves byte-for-byte", () => {
+    const options = {
+        size: "standard", shape: "continent", climate: "temperate",
+        landmass: 72, ruggedness: 64, forests: 81, water: 43,
+    };
+    const legacy = generateWorldData(20261104, options, 2);
+    assert.equal(legacy.terrainVersion, 2);
+    assert.deepEqual(hashFloat32(legacy.heights), { hashA: "053909d4", hashB: "af5c36b0" });
+    assert.deepEqual(hashFloat32(legacy.moistures), { hashA: "bba41b21", hashB: "8e013dad" });
+});
+
+test("generation v3 blends steep banks into the local slope", () => {
+    const options = {
+        size: "standard", shape: "continent", climate: "temperate",
+        landmass: 66, ruggedness: 88, mountains: 78, forests: 74,
+        water: 55, rivers: 65, lakes: 65,
+    };
+    const legacy = generateWorldData(20261203, options, 2);
+    const current = generateWorldData(20261203, options, 3);
+    const sea = legacy.sea;
+
+    // The v2 generator leaves a one-sample wall at steep banks. Every such
+    // water/land edge is a regression fixture for the v3 bank blend.
+    const abrupt = [];
+    for (let y = 0; y < legacy.pixH; y++) {
+        for (let x = 0; x < legacy.pixW; x++) {
+            const index = y * legacy.pixW + x;
+            const height = legacy.heights[index];
+            for (const [dx, dy] of [[1, 0], [0, 1]]) {
+                const nx = x + dx, ny = y + dy;
+                if (nx >= legacy.pixW || ny >= legacy.pixH) continue;
+                const neighbour = legacy.heights[ny * legacy.pixW + nx];
+                if ((height < sea) === (neighbour < sea)) continue;
+                if (Math.abs(height - neighbour) > 0.3) abrupt.push({ x, y, dx, dy });
+            }
+        }
+    }
+    assert.ok(abrupt.length >= 20, "the fixture must still contain steep v2 banks");
+
+    let worstLegacyEdge = 0;
+    for (const edge of abrupt) {
+        const step = Math.abs(
+            current.heights[edge.y * current.pixW + edge.x]
+            - current.heights[(edge.y + edge.dy) * current.pixW + edge.x + edge.dx]
+        );
+        worstLegacyEdge = Math.max(worstLegacyEdge, step);
+    }
+    assert.ok(worstLegacyEdge < 0.12, "v3 must not leave a wall where v2 cut into a steep bank");
+
+    // No water/land edge in the new terrain should read as a carved cliff.
+    let worstShore = 0;
+    for (let y = 0; y < current.pixH; y++) {
+        for (let x = 0; x < current.pixW; x++) {
+            const index = y * current.pixW + x;
+            const height = current.heights[index];
+            for (const [dx, dy] of [[1, 0], [0, 1]]) {
+                const nx = x + dx, ny = y + dy;
+                if (nx >= current.pixW || ny >= current.pixH) continue;
+                const neighbour = current.heights[ny * current.pixW + nx];
+                if ((height < sea) === (neighbour < sea)) continue;
+                worstShore = Math.max(worstShore, Math.abs(height - neighbour));
+            }
+        }
+    }
+    assert.ok(worstShore < 0.12, "v3 shorelines must not end in a one-sample wall");
+});
+
+test("terrain preview pixels and tile seams are stable", () => {
+    clearWorldDataCache();
+    const options = {
+        size: "standard", shape: "continent", climate: "temperate",
+        landmass: 72, ruggedness: 64, forests: 81, water: 43,
+    };
+    let image = null;
+    const context = {
+        createImageData(width, height) {
+            return { width, height, data: new Uint8ClampedArray(width * height * 4) };
+        },
+        putImageData(value) { image = value; },
+    };
+    renderWorldPreview(context, 1, 1, options, 20261104);
+    assert.ok(image, "the preview must produce a pixel buffer without a DOM");
+    assert.deepEqual(hashBytes(image.data), { hashA: "44974c7f", hashB: "6885a8bf" });
+    assert.deepEqual(terrainSeamSpikes(image, 4), [], "tile boundaries must not create pixel seams");
+    clearWorldDataCache();
+});
+
+test("browser terrain goldens match the current generator", async () => {
+    const golden = JSON.parse(await readFile(
+        new URL("../browser/terrain-hashes.golden.json", import.meta.url), "utf8"
+    ));
+    const options = {
+        size: "standard", shape: "continent", climate: "temperate",
+        landmass: 72, ruggedness: 64, forests: 81, water: 43,
+    };
+    const data = generateWorldData(20261104, options);
+    const hashes = {
+        heightMap: { kind: "Float32Array", length: data.heights.length, ...hashFloat32(data.heights) },
+        moistureMap: { kind: "Float32Array", length: data.moistures.length, ...hashFloat32(data.moistures) },
+        temperatureMap: { kind: "Float32Array", length: data.temperatures.length, ...hashFloat32(data.temperatures) },
+    };
+    assert.deepEqual(hashes, {
+        heightMap: golden.hashes.heightMap,
+        moistureMap: golden.hashes.moistureMap,
+        temperatureMap: golden.hashes.temperatureMap,
+    });
+});
 
 test("preview and realm share one cached world data set", () => {
     clearWorldDataCache();
@@ -268,3 +386,79 @@ test("every structure knows what rebuilding it costs", () => {
         assert.ok(Object.values(cost).some(amount => amount > 0), "empty rebuild cost for " + key);
     }
 });
+
+function hashFloat32(value) {
+    let hashA = 2166136261 >>> 0;
+    let hashB = 5381 >>> 0;
+    const addByte = byte => {
+        hashA ^= byte; hashA = Math.imul(hashA, 16777619) >>> 0;
+        hashB = ((hashB << 5) + hashB + byte) >>> 0;
+    };
+    const addText = text => {
+        addByte(255);
+        for (let index = 0; index < text.length; index++) {
+            const code = text.charCodeAt(index);
+            addByte(code & 255); addByte((code >>> 8) & 255);
+        }
+    };
+    addText("typed:Float32Array:" + value.length);
+    for (const byte of new Uint8Array(value.buffer, value.byteOffset, value.byteLength)) addByte(byte);
+    return {
+        hashA: hashA.toString(16).padStart(8, "0"),
+        hashB: hashB.toString(16).padStart(8, "0"),
+    };
+}
+
+function hashBytes(bytes) {
+    let hashA = 2166136261 >>> 0;
+    let hashB = 5381 >>> 0;
+    for (const byte of bytes) {
+        hashA ^= byte; hashA = Math.imul(hashA, 16777619) >>> 0;
+        hashB = ((hashB << 5) + hashB + byte) >>> 0;
+    }
+    return {
+        hashA: hashA.toString(16).padStart(8, "0"),
+        hashB: hashB.toString(16).padStart(8, "0"),
+    };
+}
+
+// A display-space seam test: tile boundaries are every `resolution` terrain
+// samples. Compare each boundary's mean luminance step with its immediate
+// neighbourhood; a boundary-specific spike would mean a tiled artifact.
+function terrainSeamSpikes(image, resolution) {
+    const { width, height, data } = image;
+    const luminance = new Float64Array(width * height);
+    for (let pixel = 0, index = 0; pixel < data.length; pixel += 4, index++) {
+        luminance[index] = data[pixel] * 0.2126 + data[pixel + 1] * 0.7152 + data[pixel + 2] * 0.0722;
+    }
+    const columnDiff = new Float64Array(width - 1);
+    const rowDiff = new Float64Array(height - 1);
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width - 1; x++) {
+            columnDiff[x] += Math.abs(luminance[y * width + x] - luminance[y * width + x + 1]);
+        }
+    }
+    for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height - 1; y++) {
+            rowDiff[y] += Math.abs(luminance[y * width + x] - luminance[(y + 1) * width + x]);
+        }
+    }
+    for (let x = 0; x < columnDiff.length; x++) columnDiff[x] /= height;
+    for (let y = 0; y < rowDiff.length; y++) rowDiff[y] /= width;
+
+    const spikes = [];
+    const inspect = (diffs, axis) => {
+        for (let index = resolution - 1; index < diffs.length; index += resolution) {
+            const local = Math.max(
+                diffs[index - 1] ?? 0, diffs[index + 1] ?? 0,
+                diffs[index - 2] ?? 0, diffs[index + 2] ?? 0,
+            );
+            if (diffs[index] > local * 1.35 + 2) {
+                spikes.push(axis + ":" + index + ":" + diffs[index].toFixed(3));
+            }
+        }
+    };
+    inspect(columnDiff, "column");
+    inspect(rowDiff, "row");
+    return spikes;
+}

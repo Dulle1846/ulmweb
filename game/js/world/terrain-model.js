@@ -366,23 +366,39 @@ function carveWaterFeaturesLegacy(heights, width, height, seed, sea, options = {
     return rivers;
 }
 
-// ── water carving, generation version 2 ───────────────────────
+// ── water carving, generation versions 2 and 3 ─────────────────
 //
 // Version 1 lowered complete discs to `sea - 0.012`. That made flat plates
 // with vertical rims: at four samples per tile a small pond could only be an
 // eight-sided star. Version 2 subtracts a smooth, noise-warped depression from
 // the real height field instead, so the shoreline is wherever the carved
 // terrain crosses sea level and follows the landscape instead of a stamp.
-// Saved realms keep version 1: their terrain is rebuilt from seed and options.
-export const TERRAIN_GENERATION_VERSION = 2;
+// Version 3 keeps the same water bodies but blends the bank into the untouched
+// local slope. A fixed bank slope cut a shelf into steep hillsides and ended in
+// a one-sample wall; the blend reaches the original height with zero slope at
+// the outer edge instead. Saved realms keep their generation version: version
+// 2 remains available for old saves, version 1 for pre-v2 saves.
+export const TERRAIN_GENERATION_VERSION = 3;
+
+// A save without a version marker belongs to version 1. Versions 2 and 3 are
+// rebuilt with their original generator; an unknown newer version falls back to
+// the newest version this build understands rather than silently using v1.
+export function resolveSavedTerrainVersion(value, current = TERRAIN_GENERATION_VERSION) {
+    const version = Number(value);
+    if (!Number.isInteger(version) || version < 2) return 1;
+    return Math.min(version, current);
+}
 
 // A flat bed with a short, gentle bank. Carving a deep bowl made the shader
 // paint the whole slope as bare rock, and the visible water shrank to a dot in
 // the middle. The bed follows `sea - bedDepth` for lakes and the local channel
-// for rivers; the bank rises at a slope below the rock threshold.
-function carveBasin(heights, width, height, cx, cy, radius, bed, bankSlope, bankWidth, seedA, seedB, irregular) {
+// for rivers. Version 2 rises at a fixed slope; version 3 instead blends toward
+// the terrain that was there before the carve, so a steep hillside stays steep
+// without forming a terrace or a wall.
+function carveBasin(heights, width, height, cx, cy, radius, bed, bankSlope, bankWidth, seedA, seedB, irregular, smoothBank = false, maxBankWidth = bankWidth) {
     if (!(radius > 0) || !(bankSlope > 0) || !(bankWidth > 0)) return;
-    const reach = Math.ceil(radius * 1.22 + bankWidth);
+    const reachWidth = smoothBank ? Math.max(bankWidth, maxBankWidth) : bankWidth;
+    const reach = Math.ceil(radius * 1.22 + reachWidth);
     const x0 = Math.max(0, Math.floor(cx - reach));
     const x1 = Math.min(width - 1, Math.ceil(cx + reach));
     const y0 = Math.max(0, Math.floor(cy - reach));
@@ -401,11 +417,26 @@ function carveBasin(heights, width, height, cx, cy, radius, bed, bankSlope, bank
                     + 0.05 * Math.sin(angle * 8 + seedA * 1.7);
             }
             const flat = radius * rim;
-            if (d > flat + bankWidth) continue;
+            if (d > flat + reachWidth) continue;
             const grain = 0.985 + 0.03 * hash2(x + ((seedA * 97) | 0), y + ((seedB * 89) | 0));
-            const target = (bed + Math.max(0, d - flat) * bankSlope) * grain;
             const index = row + x;
-            if (target < heights[index]) heights[index] = target > 0 ? target : 0;
+            const original = heights[index];
+            let target;
+            if (smoothBank) {
+                // A fixed-width bank had to climb a steep hillside too fast and
+                // then jumped to the untouched slope. Widen it only as far as
+                // this cell's relief needs to stay at the base slope, capped by
+                // maxBankWidth. Smoothstep has zero derivative at both ends, so
+                // the bank flows into the bed and the hillside without a wall.
+                const neededWidth = original > bed ? (original - bed) / bankSlope : bankWidth;
+                const width = Math.min(reachWidth, Math.max(bankWidth, neededWidth));
+                const t = clamp((d - flat) / width, 0, 1);
+                const blend = t * t * (3 - 2 * t);
+                target = bed * grain * (1 - blend) + original * blend;
+            } else {
+                target = (bed + Math.max(0, d - flat) * bankSlope) * grain;
+            }
+            if (target < original) heights[index] = target > 0 ? target : 0;
         }
     }
 }
@@ -413,6 +444,7 @@ function carveBasin(heights, width, height, cx, cy, radius, bed, bankSlope, bank
 export function carveWaterFeatures(heights, width, height, seed, sea, options = {}) {
     const version = Number(options.__terrainVersion) || TERRAIN_GENERATION_VERSION;
     if (version < 2) return carveWaterFeaturesLegacy(heights, width, height, seed, sea, options);
+    const smoothBank = version >= 3;
 
     const rand = hashSeed(seed ^ 0x9e3779b9);
     const riverSetting = sliderValue(options, 'rivers');
@@ -464,7 +496,7 @@ export function carveWaterFeatures(heights, width, height, seed, sea, options = 
                     const radius = (2.4 + rand() * 2.4) * lakeScale * resolution;
                     carveBasin(heights, width, height, cx, cy, radius, sea - 0.028,
                         0.018 + rand() * 0.008, 11 * resolution,
-                        rand() * 6.283, rand() * 6.283, true);
+                        rand() * 6.283, rand() * 6.283, true, smoothBank);
                     bodies.push({ x: cx, y: cy, r: radius });
                 }
                 break;
@@ -485,7 +517,8 @@ export function carveWaterFeatures(heights, width, height, seed, sea, options = 
             // high ground and fills only where its bed falls below sea level.
             const bed = heights[index] - 0.045;
             carveBasin(heights, width, height, px, py, channelWidth * wobble, bed,
-                0.030, 1.7 * resolution, px * 0.7, py * 0.9, false);
+                0.030, 1.7 * resolution, px * 0.7, py * 0.9, false, smoothBank,
+                6 * resolution);
         }
         rivers.push(path);
     }
@@ -512,7 +545,7 @@ export function carveWaterFeatures(heights, width, height, seed, sea, options = 
         if (bodies.some(body => Math.hypot(body.x - lx, body.y - ly) < (body.r + radius) * 0.45)) continue;
         carveBasin(heights, width, height, lx, ly, radius, sea - 0.028,
             0.018 + rand() * 0.008, 11 * resolution,
-            rand() * 6.283, rand() * 6.283, true);
+            rand() * 6.283, rand() * 6.283, true, smoothBank);
         bodies.push({ x: lx, y: ly, r: radius });
     }
 

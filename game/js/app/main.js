@@ -3,7 +3,7 @@ import { WORLD_W,WORLD_H,CELL } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { state,resetState } from "../core/state.js";
 import { initWorld } from "../world/world.js";
-import { renderWorldPreview,normalizeWorldOptions,resolveWorldDimensions,TERRAIN_GENERATION_VERSION } from "../world/terrain-model.js";
+import { renderWorldPreview,normalizeWorldOptions,resolveWorldDimensions,TERRAIN_GENERATION_VERSION,resolveSavedTerrainVersion } from "../world/terrain-model.js";
 import { initStartingKingdom,spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
@@ -271,7 +271,8 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.worldOptions=snapshot.worldOptions||{landmass:50,ruggedness:55,forests:52,water:48};
     // Terrain is rebuilt from the seed, so a save without a version marker was
     // created by the version-1 generator and must keep that exact landscape.
-    state.terrainVersion=Number(snapshot.terrainVersion)>=TERRAIN_GENERATION_VERSION?TERRAIN_GENERATION_VERSION:1;
+    // Version 2 saves must keep their v2 banks instead of being rebuilt as v1.
+    state.terrainVersion=resolveSavedTerrainVersion(snapshot.terrainVersion);
     initWorld(state.worldSeed,state.worldOptions,state.terrainVersion);
     restoreRoads(snapshot.roads);
     restoreResourceGeography(snapshot.resourceGeography);
