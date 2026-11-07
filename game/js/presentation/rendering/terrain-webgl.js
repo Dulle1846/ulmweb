@@ -388,6 +388,10 @@ void main() {
     // carve grain fades out slowly, and any residual normal stripe reads as a
     // ripple at district zoom.
     float flatBank = (1.0 - smoothstep(2.00, 3.20, sd)) * (1.0 - water);
+    // Wider clean band for exposed materials: the carve grain leaves small
+    // slope spikes just outside the flat bank, and they paint beige earth
+    // patches at the outer edge. Low banks should stay grassy.
+    float bankClean = (1.0 - smoothstep(3.40, 5.00, sd)) * (1.0 - water);
     float shoreDetail = smoothstep(0.25, 0.7, detail);
 
     float coastNoise = (vnoise(world * 2.2 + vec2(11.0, 4.0)) - 0.5) * 0.013
@@ -430,9 +434,9 @@ void main() {
             0.0, 1.0);
         // The carve wall around rivers is a one-texel drop in the data. It must
         // read as a bank, not as a ring of cliffs, so slopes near water are masked.
-        float cliff = smoothstep(0.035, 0.095, slope) * (1.0 - snow * 0.70) * (1.0 - shoreCalm);
+        float cliff = smoothstep(0.035, 0.095, slope) * (1.0 - snow * 0.70) * (1.0 - max(shoreCalm, bankClean));
         float rock = clamp(smoothstep(0.56, 0.82, elevN) + cliff * 0.65, 0.0, 1.0)
-            * (1.0 - shoreCalm) * (1.0 - snow * 0.55);
+            * (1.0 - max(shoreCalm, bankClean)) * (1.0 - snow * 0.55);
         float forest = smoothstep(0.36, 0.63, terrain.m)
             * (1.0 - smoothstep(0.80, 0.94, terrain.t))
             * smoothstep(0.010, 0.070, elevation)
@@ -448,7 +452,7 @@ void main() {
             smoothstep(0.30, 0.14, terrain.m) * (1.0 - forest) * (1.0 - rock) * (1.0 - wet) * 0.40
             + smoothstep(0.07, 0.16, slope) * 0.30 * (1.0 - rock) * (1.0 - snow) * (1.0 - nearShore),
             0.0, 0.60);
-        bare *= 1.0 - flatBank;
+        bare *= 1.0 - max(flatBank, bankClean);
         grass = max(0.0, grass - bare);
 
         float weight = grass + forest + rock + wet + sand + snow + bare;
