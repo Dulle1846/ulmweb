@@ -414,12 +414,10 @@ vec3 waterMaterial(vec2 world, float sd, float micro) {
     color += vec3(0.010, 0.018, 0.021) * wave;
 
     float crest = smoothstep(0.55, 0.95, wave * 0.5 + 0.52) * smoothstep(0.38, 0.85, micro);
-
-    // Thin surf line that follows the shore distance, broken by noise.
-    float rim = smoothstep(0.0, 0.09, -sd) * (1.0 - smoothstep(0.11, 0.34, -sd));
-    float foamPattern = vnoise(world * 2.8 + vec2(uTime * 0.05, 0.0));
-    // The surf line is left out on purpose: on a two-tile pond it draws a
-    // bright outline around the polygon instead of lapping at a shore.
+    // A broken crest catches the low sun at close zoom. A complete surf ring
+    // made small ponds read as stamped outlines, so this stays a highlight
+    // instead of a shoreline outline.
+    color += uFoam * crest * (0.035 + 0.075 * uDetail);
 
     // Weighted instead of thresholded: the water surface fades into the next
     // season on the same days as the land instead of switching overnight.
@@ -462,7 +460,6 @@ void main() {
     // The carve leaves a narrow bank with one-texel grain. Read it as soft
     // ground: no cliff material, no grain and no relief inside this band.
     float shoreCalm = (1.0 - smoothstep(0.10, 2.10, sd)) * (1.0 - water);
-    float bank = shoreCalm;
     // Shading stays flat further inland than the colour band: the one-texel
     // carve grain fades out slowly, and any residual normal stripe reads as a
     // ripple at district zoom.
@@ -471,7 +468,6 @@ void main() {
     // slope spikes just outside the flat bank, and they paint beige earth
     // patches at the outer edge. Low banks should stay grassy.
     float bankClean = (1.0 - smoothstep(3.40, 5.00, sd)) * (1.0 - water);
-    float shoreDetail = smoothstep(0.25, 0.7, detail);
 
     float coastNoise = (vnoise(world * 2.2 + vec2(11.0, 4.0)) - 0.5) * 0.013
         + (vnoise(world * 8.5 + vec2(2.0, 8.0)) - 0.5) * 0.0026;
@@ -510,10 +506,18 @@ void main() {
         // Beach width measured from the shore, not from a height band: the
         // carved rims sit on a flat shelf just above sea level and a height
         // band would paint the whole crater rim as sand.
-        // No painted beach collar: the carve wall is only a few texels wide,
-        // so a sand band reads as a stamped ring. Arid ground keeps its sand.
-        float beach = 0.0;
-        float rimMask = 1.0 - smoothstep(0.18, 0.90, sd);
+        // A narrow, noise-broken sand fringe makes low shores read as beaches
+        // without the stamped beige collar the old constant-width band drew.
+        // It appears only once the camera is close enough to show grain, and
+        // disappears on steep banks and under snow.
+        float beachNoise = fbm2(world * 0.78 + vec2(4.7, 9.2));
+        float beachWidth = 0.55 + beachNoise * 0.65;
+        float beach = (1.0 - smoothstep(0.0, beachWidth, sd))
+            * smoothstep(0.12, 0.35, detail)
+            * (1.0 - smoothstep(0.16, 0.30, slope))
+            * smoothstep(-0.02, 0.040, elevation)
+            * smoothstep(0.15, 0.55, beachNoise + 0.20);
+        beach = clamp(beach, 0.0, 0.68);
         float snow = clamp(
             smoothstep(0.62, 0.86, elevW)
             + smoothstep(0.28, 0.08, tempW)
@@ -532,8 +536,11 @@ void main() {
         float wet = smoothstep(0.60, 0.92, moistW) * (1.0 - smoothstep(0.10, 0.02, elevation))
             * (1.0 - shoreCalm);
         float arid = smoothstep(0.56, 0.94, tempW) * (1.0 - smoothstep(0.12, 0.46, moistW));
-        float sand = clamp(beach, 0.0, 1.0) * (1.0 - shoreCalm);
         arid *= 1.0 - shoreCalm;
+        // The sand material previously existed only in the atlas; the arid
+        // weight was calculated but never added to the surface mix. Keep the
+        // narrow beach fringe and let hot, dry ground contribute real sand.
+        float sand = clamp(beach + arid, 0.0, 0.72);
         float grass = clamp(1.0 - forest * 0.85 - rock * 0.95 - snow - wet - sand, 0.0, 1.0);
         float bare = clamp(
             smoothstep(0.34, 0.10, moistW) * (1.0 - forest) * (1.0 - rock) * (1.0 - wet) * 0.40
@@ -982,8 +989,10 @@ function blurDistance(bytes, width, height, passes = 2) {
 
 // Signed shore distance in tiles, encoded into one byte: 0 = six tiles
 // inland, 128 = shoreline, 255 = six tiles out. Used for every shore band so
-// the one-texel carve wall cannot break them.
-function buildWaterDistance(heights, width, height, sea) {
+// the one-texel carve wall cannot break them. The sample-to-tile factor must
+// follow the world resolution; large worlds use only two samples per tile.
+export function buildWaterDistance(heights, width, height, sea, resolution = 4) {
+    const samplesPerTile = Math.max(1, Math.floor(Number(resolution) || 4));
     const count = width * height;
     const toWater = new Float32Array(count);
     const toLand = new Float32Array(count);
@@ -997,7 +1006,7 @@ function buildWaterDistance(heights, width, height, sea) {
     chamferDistance(toLand, width, height);
     const bytes = new Uint8Array(count);
     for (let i = 0; i < count; i++) {
-        const tiles = (heights[i] < sea ? -toLand[i] : toWater[i]) / 4;
+        const tiles = (heights[i] < sea ? -toLand[i] : toWater[i]) / samplesPerTile;
         bytes[i] = Math.round((Math.max(-6, Math.min(6, tiles)) + 6) / 12 * 255);
     }
     return blurDistance(bytes, width, height);
@@ -1032,7 +1041,9 @@ function uploadWorldData() {
         return false;
     }
 
-    const distanceBytes = buildWaterDistance(heights, width, height, state.seaLevel ?? 0.33);
+    const distanceBytes = buildWaterDistance(
+        heights, width, height, state.seaLevel ?? 0.33, state.terrainResolution || 4
+    );
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, waterDistTexture);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
