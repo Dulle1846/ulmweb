@@ -915,6 +915,9 @@ test("46 bread delivered to a granary is booked as consumed when it becomes roya
     assert.equal(bread.consumed, 3);
     assert.equal(bread.physical, 1);
     assert.equal(bread.balanced, true);
+    const food = getGoodsAudit().rows.find(row => row.good === "food");
+    assert.equal(food.produced, 3, "bread delivered to the granary must book its food output");
+    assert.equal(food.balanced, true, "bread conversion must reconcile royal food: " + JSON.stringify(food));
 });
 
 test("47 card food costs are booked as consumption", () => {

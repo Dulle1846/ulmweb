@@ -744,6 +744,7 @@ function deliverToDestination(job, carrier) {
         if (!isWarehouse(target) || !target.warehouse.filters.includes(job.good)) return { ok: false, reason: "Destination store cannot accept " + job.good, missing: true };
         if (job.good === "bread") {
             recordGoodMovement({ type: "consumed", good: "bread", quantity, from: { kind: "warehouse", id: job.to?.id || job.from?.id || "unknown" }, to: { kind: "realm", id: "food-store" }, cause: "bread-converted-to-food", jobId: job.id });
+            recordResourceMovement("food", quantity, "bread-delivered", { to: { kind: "realm", id: "royal-stores" }, jobId: job.id });
             addResource("food", quantity);
             recordDelivery(job, quantity);
             carrier.cargo = null;
