@@ -188,7 +188,18 @@ try{
         console.error("Startup console errors:",JSON.stringify(consoleErrors));
         throw error;
     }
-    assert.equal((await page.locator("#hand-count").innerText()).trim(),"0 / 5","new realms must begin with an empty hand");
+    assert.equal(await page.locator("#hand-dock").count(),0,"new realms must not show a permanent card hotbar");
+    assert.equal(await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.length;}),0,"new realms must begin with an empty hand");
+    const panBefore=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return {x:state.camera.x,y:state.camera.y};});
+    const panCanvasBox=await page.locator("#canvas").boundingBox();
+    assert.ok(panCanvasBox);
+    await page.mouse.move(panCanvasBox.x+panCanvasBox.width*0.45,panCanvasBox.y+panCanvasBox.height*0.4);
+    await page.mouse.down();
+    await page.mouse.move(panCanvasBox.x+panCanvasBox.width*0.45+90,panCanvasBox.y+panCanvasBox.height*0.4+40,{steps:6});
+    await page.mouse.up();
+    const panAfter=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return {x:state.camera.x,y:state.camera.y};});
+    assert.ok(Math.abs((panBefore.x-panAfter.x)-90)<=3,"dragging the map must pan it horizontally: "+JSON.stringify({panBefore,panAfter}));
+    assert.ok(Math.abs((panBefore.y-panAfter.y)-40)<=3,"dragging the map must pan it vertically: "+JSON.stringify({panBefore,panAfter}));
     const resetCallsAfterStart=await page.evaluate(()=>globalThis.__KAC_RESET_PROBE__?.calls??-1);
     assert.ok(resetCallsAfterStart>=1,"the reset probe must observe the normal realm reset before it is armed for the invalid import");
     const exactPreview=await page.evaluate(async()=>{
@@ -842,97 +853,97 @@ try{
     assert.ok(memorialDossier.includes("Died in year"));
     await page.locator("#people-close").click();
 
-    await page.locator("#speed-4").click();
-    try{
-        await page.waitForFunction(()=>{
-            const value=document.querySelector("#hand-count")?.textContent||"0 / 5";
-            return Number.parseInt(value,10)>=3;
-        },null,{timeout:150000,polling:250});
-    }catch(error){
-        const diagnostic=await page.evaluate(async()=>{
-            const {state}=await import("./js/core/state.js");
-            return {
-                tick:state.tick,gameSpeed:state.gameSpeed,isPaused:state.isPaused,frameFaulted:state.frameFaulted,
-                hand:state.hand.length,nextCardDrawTick:state.nextCardDrawTick,hasStarted:state.hasStarted,
-                gameOver:state.gameOver,victory:state.victory,
-                handCount:document.querySelector("#hand-count")?.textContent,
-                pauseText:document.querySelector("#pause-text")?.textContent,
-                eventVisible:!document.querySelector("#realm-event-modal")?.classList.contains("hidden")
-            };
-        }).catch(diagnosticError=>({diagnosticError:String(diagnosticError)}));
-        console.log("Card draw timeout diagnostic:",JSON.stringify({diagnostic,pageErrors:errors,consoleErrors}));
-        throw error;
-    }
-    const countBeforeClick=Number.parseInt(await page.locator("#hand-count").innerText(),10);
-    const cardButtons=page.locator("#card-hand .hand-card");
-    assert.ok(await page.locator("#card-hand .hand-card-sprite use").count()>=1,"every card must display original category artwork");
-    assert.ok((await page.locator("#card-hand .hand-card-sprite use").first().getAttribute("href")).startsWith("assets/royal-card-atlas.svg#"),"card hand must use the dedicated royal card atlas");
-
-    assert.ok(countBeforeClick>=3);
-    const eventModal=page.locator("#realm-event-modal");
-    if(await eventModal.isVisible())await page.locator("#realm-event-choices button").first().click();
+    // Cards are only dealt when the player asks from the Cards panel.
     await page.locator("#speed-1").click();
-
-    // Clicking a card selects it; it must not accidentally place it merely
-    // because the hand dock overlays the canvas element's bounding rectangle.
-    let chosenIndex=-1;
-    for(let i=0;i<await cardButtons.count();i++){
-        await cardButtons.nth(i).click();
-        const affordable=await page.evaluate(()=>{
-            const resources={};
-            for(const key of ["wood","stone","gold","food"])resources[key]=Number(document.querySelector("#res-"+key)?.textContent||0);
-            return ["wood","stone","gold","food"].every(key=>{
-                const amount=Number(document.querySelector("#card-cost-"+key+" span:nth-child(2)")?.textContent||0);
-                return amount<=resources[key];
-            });
+    if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-choices button").first().click();
+    assert.equal(await page.locator("#hand-dock").count(),0,"the permanent card hotbar must be gone");
+    assert.equal(await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.length;}),0,"cards must not arrive on a timer");
+    await page.locator('[data-kac-dock-action="cards"]').click();
+    await page.locator("#command-modal").waitFor({state:"visible",timeout:3000});
+    const drawButton=page.locator('[data-command="draw-card"]');
+    for(let i=0;i<5;i++)await drawButton.click();
+    assert.equal(await page.locator("#command-panel-content .command-card").count(),5,"five explicit draws must fill the hand");
+    assert.ok(await drawButton.isDisabled(),"a full hand must disable further draws");
+    const drawnState=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {hand:state.hand.length,selected:state.selectedCardInstanceId,current:state.currentCard?state.currentCard.instanceId:null};
+    });
+    assert.deepEqual(drawnState,{hand:5,selected:null,current:null},"drawing must not select a card");
+    assert.ok(await page.locator("#command-panel-content .command-card-art use").count()>=5,"every drawn card must display category artwork");
+    assert.ok((await page.locator("#command-panel-content .command-card-art use").first().getAttribute("href")).startsWith("assets/royal-card-atlas.svg#"),"the deck panel must use the royal card atlas");
+    const countBeforeClick=5;
+    let chosen=false;
+    for(let i=0;i<5;i++){
+        await page.locator("#command-panel-content .command-card button").nth(i).click();
+        await page.waitForFunction(()=>document.querySelector("#command-modal")?.classList.contains("hidden"),null,{timeout:3000});
+        const affordable=await page.evaluate(async()=>{
+            const {state}=await import("./js/core/state.js");
+            const card=state.currentCard;
+            return Boolean(card)&&Object.entries(card.cost||{}).every(([key,value])=>(state.resources[key]||0)>=value);
         });
-        if(affordable){chosenIndex=i;break;}
+        if(affordable){chosen=true;break;}
+        await page.locator('[data-kac-dock-action="cards"]').click();
+        await page.locator("#command-modal").waitFor({state:"visible",timeout:3000});
     }
-    assert.ok(chosenIndex>=0,"at least one of the first three cards should be affordable");
-    assert.equal(Number.parseInt(await page.locator("#hand-count").innerText(),10),countBeforeClick,"selecting a card must not remove it");
-    const logBeforeClick=await page.locator("#tab-content").innerText();
-    assert.equal(logBeforeClick.includes("PLAYED "),false,"clicking the hand must not play a card");
+    assert.ok(chosen,"at least one of five drawn cards should be affordable");
+    assert.equal(await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.length;}),countBeforeClick,"selecting a card must not remove it");
+    assert.equal((await page.locator("#tab-content").innerText()).includes("PLAYED "),false,"selecting a card must not play it");
+    const selectedName=(await page.locator("#card-name").innerText()).trim();
+    assert.notEqual(selectedName,"NO CARD SELECTED","the selected card must be shown in the inspector");
 
-    // Exercise an actual pointer drag. Search a small safe interior grid for a
-    // legal placement preview; the random map seed can change valid terrain.
-    const cardBox=await cardButtons.nth(chosenIndex).boundingBox();
-    const canvasBox=await page.locator("#canvas").boundingBox();
-    assert.ok(cardBox&&canvasBox);
-    await page.mouse.move(cardBox.x+cardBox.width/2,cardBox.y+cardBox.height/2);
+    // A plain map click must not place anything; placement is drag-only now.
+    const cardDragCanvasBox=await page.locator("#canvas").boundingBox();
+    assert.ok(cardDragCanvasBox);
+    await page.mouse.click(cardDragCanvasBox.x+cardDragCanvasBox.width*0.5,cardDragCanvasBox.y+cardDragCanvasBox.height*0.5);
+    await page.waitForTimeout(80);
+    assert.equal(await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.length;}),countBeforeClick,"clicking the map must not place a card");
+    assert.equal((await page.locator("#tab-content").innerText()).includes("PLAYED "),false,"clicking the map must not play a card");
+
+    // Drag the selected card from the inspector onto a legal map tile.
+    const cardDragCardBox=await page.locator("#card-container").boundingBox();
+    assert.ok(cardDragCardBox);
+    await page.mouse.move(cardDragCardBox.x+cardDragCardBox.width/2,cardDragCardBox.y+cardDragCardBox.height/2);
     await page.mouse.down();
-    let placed=false,lastTarget="none";
+    let cardDragPlaced=false,lastTarget="none";
     for(const fy of [0.24,0.32,0.40,0.48,0.56,0.64,0.72]){
         for(const fx of [0.18,0.28,0.38,0.48,0.58,0.68,0.78,0.88]){
-            const x=canvasBox.x+canvasBox.width*fx,y=canvasBox.y+canvasBox.height*fy;
+            const x=cardDragCanvasBox.x+cardDragCanvasBox.width*fx,y=cardDragCanvasBox.y+cardDragCanvasBox.height*fy;
             await page.mouse.move(x,y,{steps:3});
             await page.waitForTimeout(35);
             if(await page.locator("#placement-status").getAttribute("data-valid")==="true"){
                 lastTarget=await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.id||document.elementFromPoint(x,y)?.tagName||"none",{x,y});
-                if(lastTarget==="canvas"){await page.mouse.up();placed=true;break;}
+                if(lastTarget==="canvas"){await page.mouse.up();cardDragPlaced=true;break;}
             }
         }
-        if(placed)break;
+        if(cardDragPlaced)break;
     }
-    if(!placed){
+    if(!cardDragPlaced){
         await page.mouse.up();
         throw new Error("no legal map canvas target was found; last target: "+lastTarget);
     }
     await page.waitForTimeout(150);
-    const handAfterDrag=Number.parseInt(await page.locator("#hand-count").innerText(),10);
+    const handAfterDrag=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.length;});
+    const selectionAfterDrag=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {selected:state.selectedCardInstanceId,current:state.currentCard?state.currentCard.instanceId:null};
+    });
     console.log("Drag diagnostic:",JSON.stringify({
         lastTarget,
-        selectedCard:await page.locator("#card-name").innerText(),
+        selectedCard:selectedName,
         handBefore:countBeforeClick,
         handAfter:handAfterDrag,
         toast:await page.locator("#action-toast").innerText(),
         placement:await page.locator("#placement-status").innerText(),
-        eventVisible:await eventModal.isVisible()
+        eventVisible:await page.locator("#realm-event-modal").isVisible()
     }));
     assert.equal(handAfterDrag,countBeforeClick-1,"a valid drag must consume exactly the selected card");
-    assert.ok((await page.locator("#card-hand .hand-card").count())<countBeforeClick,"successful placement must remove the consumed card from the hand");
+    assert.deepEqual(selectionAfterDrag,{selected:null,current:null},"placing a card must not auto-select the next one");
+    await page.locator('[data-kac-dock-action="cards"]').click();
+    assert.equal(await page.locator("#command-panel-content .command-card").count(),countBeforeClick-1,"successful placement must remove the consumed card from the hand");
+    await page.locator("#command-close").click();
 
     // Event decisions can overlay the map during a long accelerated test.
-    if(await eventModal.isVisible())await page.locator("#realm-event-choices button").first().click();
+    if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-choices button").first().click();
 
     await page.locator("#settings-btn").click();
     assert.equal(await page.locator("#settings-modal").isVisible(),true);
@@ -964,7 +975,7 @@ try{
     await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
     await page.locator("#speed-2").click();
     const savedTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
-    const savedHand=(await page.locator("#hand-count").innerText()).trim();
+    const savedHand=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.map(card=>card.instanceId);});
     const savedRoadCount=await page.evaluate(()=>(import("./js/systems/roads.js")).then(module=>module.getRoadCount()));
     const resourceFixture=await page.evaluate(async()=>{
         const {getResourceNodeAt,harvestForest,extractStone}=await import("./js/systems/resource-geography.js");
@@ -1004,7 +1015,7 @@ try{
     assert.ok(await page.locator("#speed-2").evaluate(el=>el.classList.contains("is-active")),"save/load must restore the saved simulation speed");
     assert.equal(await page.locator("#speed-4").evaluate(el=>el.classList.contains("is-active")),false,"load must clear the previous speed selection");
     assert.equal(loadedTick,savedTick,"save/load must restore the exact simulation tick");
-    assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
+    assert.deepEqual(await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.map(card=>card.instanceId);}),savedHand,"save/load must restore the card hand");
     assert.equal(await page.evaluate(async()=>(await import("./js/systems/roads.js")).getRoadCount()),savedRoadCount,"save/load must restore the road network");
     assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y)?.type,{x:roadFixture.x,y:roadFixture.y}),"dirt","save/load must restore the placed road tile");
     assert.equal(await page.evaluate(async({type,x,y})=>{
@@ -1601,7 +1612,7 @@ try{
     await page.setViewportSize({width:1600,height:1000});
     assert.deepEqual(errors,[],"browser runtime must not emit uncaught page errors");
     assert.deepEqual(consoleErrors,[],"browser runtime must not emit console errors");
-    console.log("Browser E2E passed: world forge, seed, guardian/ward dossier links, memorial archive, empty/timed hand, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.");
+    console.log("Browser E2E passed: world forge, seed, guardian/ward dossier links, memorial archive, on-demand card draw, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.");
     await context.close();
 }finally{
     await browser.close();

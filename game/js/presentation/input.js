@@ -1,4 +1,4 @@
-// Keyboard, camera, card-hand and modal interaction bindings.
+// Pointer camera, card placement and modal interaction bindings.
 import { WORLD_W,WORLD_H,CELL } from "../core/config.js";
 import { state } from "../core/state.js";
 import { clampCamera,applyZoomDelta,screenToWorld,setZoomLevel } from "./camera.js";
@@ -8,17 +8,14 @@ import { executeTrade } from "../systems/market.js";
 import { createParticle } from "./rendering/particles.js";
 import { showBigMessage,renderUI } from "./rendering/ui.js";
 import { distance } from "../core/utils.js";
-import { toggleSoundtrack } from "../core/soundtrack.js";
-import { loadSettings,saveSettings } from "../core/persistence.js";
 import { getRoadBuildMode,placeRoad,removeRoad } from "../systems/roads.js";
-import { isWorkshopOpen,handleWorkshopClick,cancelWorkshopTool,closeWorkshop,toggleWorkshop } from "./build-mode.js";
+import { isWorkshopOpen,handleWorkshopClick,cancelWorkshopTool,closeWorkshop } from "./build-mode.js";
 import { placeDirectBuilding,constructionStatus } from "../systems/construction.js";
 import { cancelBuildPlacement } from "./build-ui.js";
 
 export function setupInput(){
     const canvas=state.canvas;
     const cardContainer=document.getElementById("card-container");
-    const handContainer=document.getElementById("card-hand");
     const dragGhost=document.getElementById("card-drag-ghost");
     const placementStatus=document.getElementById("placement-status");
     let isPanning=false,pointerMoved=false,lastX=0,lastY=0,startX=0,startY=0;
@@ -30,27 +27,37 @@ export function setupInput(){
         applyZoomDelta(event.deltaY,event.clientX-rect.left,event.clientY-rect.top);
     },{passive:false});
 
-    canvas.addEventListener("mousedown",event=>{
-        if(event.button!==0)return;
+    // Pointer capture keeps a drag alive when the cursor leaves the canvas or
+    // passes over a HUD plaque, which plain mousemove listeners did not.
+    canvas.addEventListener("pointerdown",event=>{
+        if(event.pointerType==="touch"||event.button!==0)return;
         isPanning=true;pointerMoved=false;lastRoadTileKey=null;
         lastX=startX=event.clientX;lastY=startY=event.clientY;
+        try{canvas.setPointerCapture(event.pointerId);}catch{}
         if(getRoadBuildMode())paintRoadAtScreen(event);
     });
-    window.addEventListener("mouseup",event=>{
-        if(isPanning&&!pointerMoved&&event.button===0)clickOnCanvas(event);
-        isPanning=false;lastRoadTileKey=null;
-    });
-    canvas.addEventListener("mousemove",event=>{
-        if(!isPanning)return;
+    canvas.addEventListener("pointermove",event=>{
+        if(!isPanning||event.pointerType==="touch")return;
         const dx=event.clientX-lastX,dy=event.clientY-lastY;
-        if(Math.hypot(event.clientX-startX,event.clientY-startY)>5)pointerMoved=true;
+        if(Math.hypot(event.clientX-startX,event.clientY-startY)>4)pointerMoved=true;
         if(getRoadBuildMode()){
             if(pointerMoved)paintRoadAtScreen(event);
             lastX=event.clientX;lastY=event.clientY;
             return;
         }
-        state.zoomAnchor=null;state.camera.x-=dx;state.camera.y-=dy;clampCamera();
+        if(dx||dy){state.zoomAnchor=null;state.camera.x-=dx;state.camera.y-=dy;clampCamera();}
         lastX=event.clientX;lastY=event.clientY;
+    });
+    const endPointerPan=event=>{
+        if(event.pointerType==="touch")return;
+        if(isPanning&&!pointerMoved&&event.button===0)clickOnCanvas(event);
+        isPanning=false;lastRoadTileKey=null;
+        try{if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);}catch{}
+    };
+    canvas.addEventListener("pointerup",endPointerPan);
+    canvas.addEventListener("pointercancel",event=>{
+        isPanning=false;lastRoadTileKey=null;
+        try{if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);}catch{}
     });
     canvas.addEventListener("contextmenu",event=>{event.preventDefault();clickOnCanvas(event);});
 
@@ -111,10 +118,6 @@ export function setupInput(){
         renderUI();
     }
     cardContainer?.addEventListener("pointerdown",event=>beginCardDrag(event,state.selectedCardInstanceId));
-    handContainer?.addEventListener("pointerdown",event=>{
-        const cardButton=event.target.closest(".hand-card");
-        if(cardButton)beginCardDrag(event,cardButton.dataset.cardId);
-    });
 
     window.addEventListener("pointermove",event=>{
         if(cardPointerId!==event.pointerId)return;
@@ -165,46 +168,19 @@ export function setupInput(){
         cardContainer?.classList.remove("is-dragging");
         document.body.classList.remove("card-dragging");
         dragGhost?.classList.remove("is-visible");
-        if(placementStatus){placementStatus.textContent="DRAG A CARD ONTO THE MAP";delete placementStatus.dataset.valid;}
+        if(placementStatus){placementStatus.textContent="DRAG THE SELECTED CARD ONTO THE MAP";delete placementStatus.dataset.valid;}
     }
 
+    // Escape is the only gameplay-independent key the page still listens for:
+    // it cancels a drag or closes the topmost dialog. Panning and every other
+    // control are pointer- or button-driven.
     window.addEventListener("keydown",event=>{
-        const target=event.target;
-        const typing=target instanceof HTMLElement&&(["INPUT","TEXTAREA","SELECT"].includes(target.tagName)||target.isContentEditable);
-        if(event.key==="Escape"){
-            if(cardPointerId!==null)endCardDrag();
-            if(state.buildTool){cancelWorkshopTool();return;}
-            if(isWorkshopOpen()){closeWorkshop();return;}
-            if(state.directBuildType||getRoadBuildMode()){cancelBuildPlacement();return;}
-            closeTopModal();
-            return;
-        }
-        if(typing)return;
-        if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="s"){
-            event.preventDefault();window.dispatchEvent(new Event("kac:save-request"));return;
-        }
-        if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="o"){
-            event.preventDefault();window.dispatchEvent(new Event("kac:load-request"));return;
-        }
-        if(event.code==="Space"){event.preventDefault();togglePause();return;}
-        if(event.key.toLowerCase()==="b"){toggleWorkshop();return;}
-        if(event.key.toLowerCase()==="m"){
-            const settings=loadSettings();
-            settings.musicEnabled=toggleSoundtrack();
-            saveSettings(settings);
-            return;
-        }
-        if(event.key==="?"||event.key==="/"){showHelp();return;}
-        if(event.key==="+"||event.key==="=")applyZoomDelta(-100,canvas.width/2,canvas.height/2);
-        if(event.key==="-")applyZoomDelta(100,canvas.width/2,canvas.height/2);
-        if(event.key>="1"&&event.key<="4")setZoomLevel(Number(event.key));
-        const pan=24;
-        if(event.key==="ArrowLeft"||event.key.toLowerCase()==="a")state.camera.x-=pan;
-        else if(event.key==="ArrowRight"||event.key.toLowerCase()==="d")state.camera.x+=pan;
-        else if(event.key==="ArrowUp"||event.key.toLowerCase()==="w")state.camera.y-=pan;
-        else if(event.key==="ArrowDown"||event.key.toLowerCase()==="s")state.camera.y+=pan;
-        else return;
-        event.preventDefault();state.zoomAnchor=null;clampCamera();
+        if(event.key!=="Escape")return;
+        if(cardPointerId!==null)endCardDrag();
+        if(state.buildTool){cancelWorkshopTool();return;}
+        if(isWorkshopOpen()){closeWorkshop();return;}
+        if(state.directBuildType||getRoadBuildMode()){cancelBuildPlacement();return;}
+        closeTopModal();
     });
 
     document.getElementById("pause-btn")?.addEventListener("click",togglePause);
@@ -288,7 +264,6 @@ export function setupInput(){
             if(enemy.hp<=0){enemy.dead=true;}
             return;
         }
-        if(state.currentCard)placeCurrentCard(tx,ty);
     }
     function addBuildFeedback(entity){
         if(!entity)return;
@@ -306,7 +281,7 @@ function setSpeed(speed){state.gameSpeed=speed;document.querySelectorAll(".speed
 function switchTab(tab){state.selectedTab=tab;document.querySelectorAll(".tab-button").forEach((button,index)=>button.classList.toggle("is-active",index===tab));renderUI();}
 function showHelp(){
     showBigMessage("HOW TO PLAY",
-        "• Drag one of the five cards in your hand onto the map<br>• Scroll to move through four detail levels<br>• Use WASD or arrow keys to pan<br>• Space pauses; 1–4 selects zoom; M toggles music<br>• Ctrl+S saves; Ctrl+O loads your local save<br><br><strong>Build. Protect. Prosper.</strong>",0);
+        "• Drag anywhere on the map to pan; scroll to change detail level<br>• Open the Cards tab and draw a card when you want one<br>• Select it, then drag it from the Selected Card panel onto the map<br>• Use the zoom presets and the pause button; no keyboard is needed<br><br><strong>Build. Protect. Prosper.</strong>",0);
 }
 function showToast(message){
     const el=document.getElementById("action-toast");if(!el)return;

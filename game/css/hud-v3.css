@@ -753,3 +753,13 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
   min-height:32px;padding:0 8px;border:1px solid #9d7d50;border-radius:2px;
   background:#fff6df;color:#39291b;font:700 10px var(--ui-title-font);letter-spacing:.06em;
 }
+
+/* ── Hand hotbar removed: corner controls use the freed space ─────── */
+.stage-compass{bottom:18px}
+.minimap-frame{bottom:16px}
+@media(max-width:900px){
+  .minimap-frame{bottom:10px}
+}
+@media(max-width:620px){
+  .minimap-frame{bottom:8px}
+}

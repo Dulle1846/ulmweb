@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const root=new URL("../../",import.meta.url);
-const [html,hud,ui,world,entities,renderer,favicon,terrainModel]=await Promise.all([
+const [html,hud,ui,world,entities,renderer,favicon,terrainModel,management]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/hud-v3.css",root),"utf8"),
   readFile(new URL("js/presentation/rendering/ui.js",root),"utf8"),
@@ -11,7 +11,8 @@ const [html,hud,ui,world,entities,renderer,favicon,terrainModel]=await Promise.a
   readFile(new URL("js/presentation/rendering/entities.js",root),"utf8"),
   readFile(new URL("js/presentation/rendering/renderer.js",root),"utf8"),
   readFile(new URL("assets/favicon.svg",root),"utf8"),
-  readFile(new URL("js/world/terrain-model.js",root),"utf8")
+  readFile(new URL("js/world/terrain-model.js",root),"utf8"),
+  readFile(new URL("js/presentation/management-ui.js",root),"utf8")
 ]);
 
 test("HUD 3.8 layer loads after every legacy and component stylesheet",()=>{
@@ -50,17 +51,14 @@ test("short desktop windows compact the rail so every destination stays visible"
   assert.ok(hud.includes(".realm-nav-button{min-height:36px"));
 });
 
-test("the hand renders five explicit slots and an honest empty state",()=>{
-  assert.ok(ui.includes("const HAND_SLOTS=5"));
-  assert.ok(ui.includes("SLOT_NUMERALS"));
-  assert.ok(ui.includes("emptySlotMarkup(index)"));
-  assert.ok(ui.includes('class="hand-slot"'));
-  assert.ok(hud.includes(".card-hand{"));
-  assert.ok(hud.includes("repeat(5,minmax(0,1fr))"),"the dock must reserve five equal slots");
-  assert.ok(hud.includes(".hand-slot{"));
-  assert.ok(hud.includes(".hand-slot-label"));
-  assert.ok(ui.includes('setText("hand-count",state.hand.length+" / "+HAND_SLOTS)'));
-  assert.ok(ui.includes('classList.toggle("is-empty",state.hand.length===0)'));
+test("the card hotbar is gone and cards are drawn only on request",()=>{
+  assert.equal(html.includes('id="hand-dock"'),false,"the permanent hand hotbar must not exist");
+  assert.equal(html.includes('id="card-hand"'),false);
+  assert.equal(ui.includes("renderHand"),false,"the UI must not render a hand dock");
+  assert.ok(management.includes('data-command="draw-card"'),"the deck panel must offer an explicit draw action");
+  assert.ok(management.includes("drawPlayerCard"),"the draw action must go through the on-demand draw helper");
+  assert.ok(management.includes('data-command="select-card"'));
+  assert.ok(html.includes("DRAW IN THE CARDS TAB"));
 });
 
 test("the card inspector shows a real empty state instead of a PLAY ribbon",()=>{
@@ -74,10 +72,11 @@ test("the card inspector shows a real empty state instead of a PLAY ribbon",()=>
   assert.ok(ui.includes("NO CARD SELECTED"));
 });
 
-test("the minimap is docked above the hand and cannot overlap it",()=>{
-  assert.ok(hud.includes("--hud-dock-height"));
-  assert.ok(hud.includes("bottom:calc(var(--hud-dock-height) + 16px)"));
-  assert.ok(hud.includes(".stage-compass{"));
+test("the minimap and compass sit in the stage corner without reserving hand space",()=>{
+  assert.ok(hud.includes(".minimap-frame{"));
+  assert.ok(hud.includes("Hand hotbar removed"),"the removed dock must hand its space back to the stage");
+  assert.ok(hud.includes(".stage-compass{bottom:18px}"));
+  assert.ok(hud.includes(".minimap-frame{bottom:16px}"));
   assert.ok(html.includes('class="stage-grain"'));
   assert.ok(html.includes('class="stage-compass"'));
 });

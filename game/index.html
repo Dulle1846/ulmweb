@@ -121,15 +121,11 @@
                 </div>
                 <button id="zoom-in" class="zoom-button" type="button" aria-label="Zoom in">+</button>
             </div>
-            <div id="placement-status" class="placement-status">DRAG A CARD ONTO THE MAP</div>
+            <div id="placement-status" class="placement-status">DRAG THE SELECTED CARD ONTO THE MAP</div>
             <div class="minimap-frame"><div class="minimap-heading"><span>WORLD MAP</span><span>ELDRIA</span></div><canvas id="minimap" width="140" height="140" aria-label="Minimap"></canvas></div>
             <div class="stage-compass" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26"/><circle cx="32" cy="32" r="18"/><path d="M32 4 37 32 32 60 27 32Z"/><path d="M4 32 32 27 60 32 32 37Z" opacity=".45"/></svg><span>N</span></div>
             <div id="hint-box" class="hint-box hidden" role="button" tabindex="0" aria-label="Dismiss tip">
                 <div class="hint-title"><span>FIELD NOTE</span><span>×</span></div><div id="hint-text">Scroll to move through the realm's four levels of detail.</div>
-            </div>
-            <div id="hand-dock" class="hand-dock">
-                <div class="hand-dock-heading"><span>YOUR HAND</span><span id="hand-count">0 / 5</span><span class="hand-help">SELECT OR DRAG A CARD</span></div>
-                <div id="card-hand" class="card-hand" aria-label="Cards in your hand"></div>
             </div>
         </section>
 
@@ -161,9 +157,9 @@
                         <div id="card-cost-food" class="card-cost"><span><svg viewBox="0 0 64 64"><use href="assets/city-builder-sprites.svg#mill"></use></svg></span><span>0</span></div>
                     </div>
                     <div class="card-play-tag">PLAY</div>
-                    <div class="card-empty-state"><span class="card-empty-glyph">✦</span><strong>No card selected</strong><span>The hand fills as the realm advances. Select a card to inspect its cost before placing it.</span></div>
+                    <div class="card-empty-state"><span class="card-empty-glyph">✦</span><strong>No card selected</strong><span>Open the Cards tab to draw a card when you want one, then select it to inspect its cost.</span></div>
                 </div>
-                <div class="card-instruction">DRAG FROM YOUR HAND ONTO THE WORLD MAP</div>
+                <div class="card-instruction">DRAW IN THE CARDS TAB, THEN DRAG THE SELECTED CARD ONTO THE WORLD MAP</div>
             </section>
 
             <nav class="tabs" aria-label="Kingdom information">
@@ -272,7 +268,6 @@
         <div class="setting-row volume-setting"><div><strong>Music volume</strong><small>Adjust the soundtrack level.</small></div><input id="settings-music-volume" type="range" min="0" max="100" value="22" aria-label="Music volume"></div>
         <div class="setting-row"><div><strong>Resource change badges</strong><small>Show the per-tick change beside each resource in the royal ledger.</small></div><label class="toggle"><input id="settings-deltas-toggle" type="checkbox" aria-label="Show resource change badges" checked><span></span></label></div>
         <div class="setting-row"><div><strong>Reduce interface motion</strong><small>Turn off card and navigation transitions for calmer play.</small></div><label class="toggle"><input id="settings-motion-toggle" type="checkbox" aria-label="Reduce interface motion"><span></span></label></div>
-        <div class="setting-row"><div><strong>Card draw pace</strong><small>How quickly new cards arrive at court.</small></div><select id="settings-card-pace" class="settings-select" aria-label="Card draw pace"><option value="1.6">Slow</option><option value="1" selected>Normal</option><option value="0.65">Fast</option></select></div>
         <section class="settings-archive" aria-labelledby="settings-archive-title">
             <div class="settings-section-heading" id="settings-archive-title">REALM ARCHIVE</div>
             <p class="settings-archive-note">Local save slots for this browser. Loading a slot replaces the current campaign; save first if it matters.</p>

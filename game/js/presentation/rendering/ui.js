@@ -11,7 +11,7 @@ import { getHealthSnapshot } from "../../systems/health.js";
 import { getRoomBonusSnapshot, roomBonusSignature, ROOM_BONUS_CAPS } from "../../systems/rooms.js";
 import { getRoyalHouse } from "../../systems/royal-dynasty.js";
 
-let messageTimeout=null,lastTabSignature="",lastHandSignature="",lastRoomBonusSignature="",lastRenderedIssueId=null;
+let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);}
 function income(v){
@@ -137,34 +137,6 @@ const GROUP_SPRITES={
  administration:"icon-admin",frontier:"icon-frontier",urbanism:"icon-urban",scholarship:"icon-scholar"
 };
 export function cardSprite(group){return GROUP_SPRITES[group]||"icon-scroll";}
-const HAND_SLOTS=5,SLOT_NUMERALS=["I","II","III","IV","V"];
-function handCardMarkup(card){
- const sprite=cardSprite(card.group);
- return '<button type="button" class="hand-card rarity-'+esc(card.rarity||"common")+(card.instanceId===state.selectedCardInstanceId?" is-selected":"")+'" data-card-group="'+esc(card.group||"general")+'" data-card-id="'+esc(card.instanceId)+'" title="'+esc(card.desc||card.name)+'" aria-label="Select '+esc(card.name)+': '+esc(card.desc||"")+'">'+
-  '<span class="hand-card-banner"><svg class="hand-card-sprite" aria-hidden="true"><use href="assets/royal-card-atlas.svg#'+sprite+'"></use></svg></span>'+
-  '<span class="hand-card-name">'+esc(card.name)+'</span><span class="hand-card-category">'+esc(card.categoryName||card.group||card.kind||"CARD")+'</span>'+
-  '<span class="hand-card-rarity">'+esc(card.rarity||"common")+'</span></button>';
-}
-function emptySlotMarkup(index){
- return '<span class="hand-slot" data-hand-slot="'+(index+1)+'" aria-hidden="true"><span class="hand-slot-numeral">'+SLOT_NUMERALS[index]+'</span><span class="hand-slot-label">EMPTY</span></span>';
-}
-function renderHand(){
- const container=document.getElementById("card-hand");if(!container)return;
- const signature=state.hand.map(c=>c.instanceId+":"+c.name+":"+c.rarity).join("|")+":"+state.selectedCardInstanceId+":"+HAND_SLOTS;
- if(signature===lastHandSignature)return;
- lastHandSignature=signature;
- const slots=[];
- for(let index=0;index<HAND_SLOTS;index++){
-  const card=state.hand[index];
-  slots.push(card?handCardMarkup(card):emptySlotMarkup(index));
- }
- container.innerHTML=slots.join("");
- container.dataset.slotCount=String(HAND_SLOTS);
- container.dataset.handCount=String(state.hand.length);
- document.getElementById("hand-dock")?.classList.toggle("is-empty",state.hand.length===0);
- setText("hand-count",state.hand.length+" / "+HAND_SLOTS);
-}
-
 function tabSignature(){
     if(state.selectedTab===0)return "events:"+state.eventLog.slice(0,40).map(e=>e.id).join(",");
     if(state.selectedTab===1)return ["stats",state.tick,state.entities.length,state.totalRaidsSurvived,state.statistics.totalTrades,
@@ -358,7 +330,7 @@ export function renderUI(){
         cardPanel?.classList.add("is-empty");
         cardPanel?.classList.remove("is-unavailable");
         cardPanel?.setAttribute("aria-label","No card selected yet");
-        setText("card-icon","—");setText("card-name","NO CARD SELECTED");setText("card-desc","The hand fills as the realm advances.");
+        setText("card-icon","—");setText("card-name","NO CARD SELECTED");setText("card-desc","Open the Cards tab to draw a card when you want one.");
         ["wood","stone","gold","food"].forEach(key=>updateCost("card-cost-"+key,0));
     }
     const labels=["","LANDSCAPE","DISTRICTS","ROOFTOPS","INTERIORS"];
@@ -370,7 +342,7 @@ export function renderUI(){
     document.querySelectorAll(".speed-button").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.speed)===state.gameSpeed));
     document.getElementById("pause-btn")?.classList.toggle("is-paused",state.isPaused);
     setText("pause-text",state.isPaused?"RESUME":"PAUSE");
-    renderHand();renderTabContent();renderRealmEvent();
+    renderTabContent();renderRealmEvent();
 }
 
 const MAP_LAYER_LEGENDS=Object.freeze({

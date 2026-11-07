@@ -148,7 +148,6 @@ export function loadSettings() {
         showTooltips: true,
         showDeltas: true,
         reduceMotion: false,
-        cardPace: 1,
         ...readJson(SETTINGS_KEY, {})
     };
 }
@@ -160,6 +159,5 @@ export function saveSettings(settings) {
         showTooltips: settings.showTooltips !== false,
         showDeltas: settings.showDeltas !== false,
         reduceMotion: settings.reduceMotion === true,
-        cardPace: Math.max(0.5, Math.min(2, Number(settings.cardPace) || 1))
     });
 }

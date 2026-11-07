@@ -22,8 +22,6 @@ export const CARD_DECK=Object.freeze(CARD_CATEGORIES.map(category=>{
 }));
 const HAND_LIMIT=5;
 let nextCardInstance=1;
-function cardPace(){const value=Number(state.cardPace);return Number.isFinite(value)&&value>0?Math.max(0.4,Math.min(2.5,value)):1;}
-function pacedTicks(base){return Math.max(4,Math.round(base*cardPace()));}
 function makeHandCard(card){return {...card,instanceId:"card-"+(nextCardInstance++)};}
 export function drawNewCard(){
     if(state.hand.length>=HAND_LIMIT)return null;
@@ -42,20 +40,20 @@ export function drawNewCard(){
     const context=CARD_VARIANT_DIMENSIONS.contexts[randInt(0,CARD_VARIANT_DIMENSIONS.contexts.length)];
     const card=createCardVariant(prototype,{scale,rarity,context});
     const handCard=makeHandCard(card);state.hand.push(handCard);
-    if(!state.currentCard||!state.hand.some(item=>item.instanceId===state.selectedCardInstanceId))selectCard(handCard.instanceId);
     return handCard;
+}
+// The player draws explicitly from the Cards panel. Nothing is dealt on a
+// timer and a new card is never selected behind the player's back.
+export function drawPlayerCard(){
+    if(!state.hasStarted)return {ok:false,reason:"The realm has not been founded yet"};
+    if(state.gameOver)return {ok:false,reason:"The realm is over"};
+    if(state.hand.length>=HAND_LIMIT)return {ok:false,reason:"Your hand is full; place or discard a card first"};
+    const card=drawNewCard();
+    return card?{ok:true,card}:{ok:false,reason:"No card could be drawn"};
 }
 export function drawStartingHand(){
     state.hand=[];state.availableCards=[...CARD_DECK];state.cardRewardQueue=[];state.currentCard=null;state.selectedCardInstanceId=null;
-    state.nextCardDrawTick=state.tick+pacedTicks(28+randInt(0,44));
-}
-export function updateCardDraw(){
-    if(state.hand.length>=HAND_LIMIT){state.nextCardDrawTick=0;return false;}
-    if(!Number.isFinite(state.nextCardDrawTick)||state.nextCardDrawTick<=0)state.nextCardDrawTick=state.tick+pacedTicks(22+randInt(0,38));
-    if(state.tick<state.nextCardDrawTick)return false;
-    const card=drawNewCard();
-    state.nextCardDrawTick=state.hand.length<HAND_LIMIT?state.tick+pacedTicks(22+randInt(0,68)):0;
-    return Boolean(card);
+    state.nextCardDrawTick=0;
 }
 export function selectCard(instanceId){
     const card=state.hand.find(item=>item.instanceId===instanceId);if(!card)return false;
@@ -65,8 +63,6 @@ function consumeCurrentCard(){
     const index=state.hand.findIndex(item=>item.instanceId===state.selectedCardInstanceId);
     if(index>=0)state.hand.splice(index,1);
     state.currentCard=null;state.selectedCardInstanceId=null;
-    if(state.hand.length)selectCard(state.hand[0].instanceId);
-    state.nextCardDrawTick=state.hand.length<HAND_LIMIT?state.tick+pacedTicks(18+randInt(0,54)):0;
 }
 export function skipCard(){
     if(!state.currentCard)return false;
@@ -196,11 +192,13 @@ export function restoreHand(savedHand,selectedId,savedAvailableCards,nextDrawTic
     const numericIds=state.hand.map(card=>Number(String(card.instanceId).replace("card-",""))||0);
     if(numericIds.length)nextCardInstance=Math.max(nextCardInstance,Math.max(...numericIds)+1);
     state.selectedCardInstanceId=null;state.currentCard=null;
-    const selected=state.hand.find(card=>card.instanceId===selectedId)||state.hand[0];
+    // Only a card the save explicitly selected is restored; loading must not
+    // arm a placement the player did not choose.
+    const selected=selectedId?state.hand.find(card=>card.instanceId===selectedId):null;
     if(selected)selectCard(selected.instanceId);
     state.availableCards=Array.isArray(savedAvailableCards)
         ? savedAvailableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [...CARD_DECK];
     state.cardRewardQueue=Array.isArray(savedRewards)?savedRewards.slice(0,12).map(card=>({...card,cost:{...(card.cost||{})}})):[];
-    state.nextCardDrawTick=Number.isFinite(nextDrawTick)?nextDrawTick:(state.hand.length<HAND_LIMIT?state.tick+24+randInt(0,48):0);
+    state.nextCardDrawTick=0;
 }

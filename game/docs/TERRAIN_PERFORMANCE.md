@@ -106,8 +106,10 @@ hardware numbers can be produced there. To record a row:
 
 1. Open the page on the target machine in the foreground, at the resolution you
    want to document.
-2. Copy the renderer string and the draw median/p95 for each level from the
-   report (`window.__terrainPerf` has the same object).
+2. Save the report with the **Download JSON** button, or open the page with
+   `?json=1`; the file contains the renderer string, viewport, WebGL version and
+   the draw median/p95 for each level (`window.__terrainPerf` has the same
+   object).
 3. Add one row per level under a heading named after that renderer string and
    keep the viewport size in the caption.
 4. Never compare software rows with hardware rows; they measure different

@@ -22,7 +22,7 @@ This is a handoff brief for another contributor or AI session. It is written to 
 ## Current implemented foundations on the development branch
 
 - Parchment / illuminated-manuscript UI, four zoom bands, procedural terrain, exploration and world-forge controls.
-- Hand-based cards: empty starting hand, delayed randomized draw, hand limit five, placement preview and validated placement.
+- Hand-based cards: empty starting hand, on-demand random draw from the Cards panel, hand limit five, placement preview and validated placement.
 - Card catalogue: 50 thematic groups × 10 categories = 500 categories; 10 scales × 10 rarities × 10 contexts = 500,000 possible on-demand variants. These are not 500,000 hand-authored cards.
 - Event generator: 30 families × 10 places × 10 scene openings × 10 details × 5 text variants = 150,000 generated combinations. These are not individually authored quests.
 - Eleven hand-authored three-stage chronicle arcs: migration, crime, ruins, diplomacy, plague, rebellion, guild, succession, shortage, flood and fire.

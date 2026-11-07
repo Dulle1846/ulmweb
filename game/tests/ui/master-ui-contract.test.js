@@ -153,7 +153,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(main.includes("async function importRealm(file)"));
   assert.ok(main.includes("ECONOMY_HISTORY_LIMIT"));
   assert.ok(hud.includes(".save-slot"));
-  for(const label of ["Original soundtrack enabled","Music volume","Show resource change badges","Reduce interface motion","Card draw pace"]){
+  for(const label of ["Original soundtrack enabled","Music volume","Show resource change badges","Reduce interface motion"]){
     assert.ok(html.includes('aria-label="'+label+'"'),"settings control needs an accessible name: "+label);
   }
 });

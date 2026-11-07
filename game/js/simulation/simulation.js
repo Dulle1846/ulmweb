@@ -8,7 +8,6 @@ import { updateEconomy } from "../systems/economy.js";
 import { updateEdicts } from "../systems/edicts.js";
 import { updateHealth } from "../systems/health.js";
 import { updatePopulation } from "../systems/population.js";
-import { updateCardDraw } from "../systems/cards.js";
 import { updateWeather } from "../world/weather.js";
 import { updateBuildingIncome } from "./buildings.js";
 import { updateVillagers } from "./villagers.js";
@@ -64,7 +63,7 @@ export function updateSimulation(){
     }
     if(newborn)addLog("A CHILD WAS BORN: "+newborn.person.name,"#e8c77b","family");
     else if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
-    updateFields();updateBuildingIncome();updateLogistics();updateConstruction();updateVillagers();updateCombat();checkRandomEvents();updateCardDraw();
+    updateFields();updateBuildingIncome();updateLogistics();updateConstruction();updateVillagers();updateCombat();checkRandomEvents();
     updateWeather();updateMorale();updateMarket();updateEconomy();updateHealth();
     state.entities=state.entities.filter(entity=>!entity.dead);
     if(state.raidActive&&!state.entities.some(entity=>entity.isEnemy())){

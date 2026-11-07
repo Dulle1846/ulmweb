@@ -14,6 +14,8 @@
     #stage { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
     pre { margin: 18px 0 0; padding: 14px 16px; background: #111b14; border: 1px solid #2a3a2c; color: #d7e4d2; white-space: pre-wrap; min-width: 560px; }
     .note { margin-top: 12px; font-size: 12px; color: #7f937d; }
+    button { margin-top: 14px; padding: 9px 14px; border: 1px solid #6f8a5d; background: #1b2a1d; color: #dfe8dc; font: 600 12px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; cursor: pointer; }
+    button:disabled { opacity: .45; cursor: default; }
 </style>
 </head>
 <body>
@@ -24,7 +26,8 @@
     <canvas id="stage" aria-hidden="true"></canvas>
 </div>
 <pre id="out">Generating a standard realm and measuring…</pre>
-<p class="note">Open this page on the machine you want to measure. Add <code>?w=1600&amp;h=900</code> to change the viewport. Results are also available as <code>window.__terrainPerf</code>.</p>
+<p class="note">Open this page on the machine you want to measure. Add <code>?w=1600&amp;h=900</code> to change the viewport. Results are also available as <code>window.__terrainPerf</code>; the button below saves the complete report as JSON. Add <code>?json=1</code> to download it automatically once the run finishes.</p>
+<button id="download-report" type="button" disabled>DOWNLOAD JSON</button>
 
 <script type="module">
 import { state } from "../../js/core/state.js";
@@ -139,12 +142,34 @@ try {
 }
 
 const report = {
+    capturedAt: new Date().toISOString(),
     renderer,
+    vendor: gl.getParameter(gl.VENDOR),
+    version: gl.getParameter(gl.VERSION),
+    userAgent: navigator.userAgent,
+    devicePixelRatio: window.devicePixelRatio || 1,
     viewport: [width, height],
     world: [state.worldW, state.worldH],
     results,
 };
 window.__terrainPerf = report;
+window.__terrainPerfJSON = () => JSON.stringify(report, null, 2);
+const downloadButton = document.getElementById("download-report");
+const rendererSlug = (renderer.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "gpu").slice(0, 60);
+function downloadReport() {
+    const blob = new Blob([window.__terrainPerfJSON()], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "terrain-perf-" + rendererSlug + ".json";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+downloadButton.disabled = false;
+downloadButton.addEventListener("click", downloadReport);
+if (params.get("json")) downloadReport();
 const lines = [
     "Renderer : " + renderer,
     "Viewport : " + width + " × " + height,

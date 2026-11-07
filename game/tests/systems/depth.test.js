@@ -148,21 +148,20 @@ test("interface settings ship with safe defaults and persist", () => {
     const main = read("../../js/app/main.js");
     assert.ok(persistence.includes("showDeltas: true"));
     assert.ok(persistence.includes("reduceMotion: false"));
-    assert.ok(persistence.includes("cardPace: 1"));
     assert.ok(persistence.includes("showDeltas: settings.showDeltas !== false"));
     assert.ok(persistence.includes("reduceMotion: settings.reduceMotion === true"));
-    for (const id of ["settings-deltas-toggle", "settings-motion-toggle", "settings-card-pace"]) {
+    for (const id of ["settings-deltas-toggle", "settings-motion-toggle"]) {
         assert.ok(html.includes('id="' + id + '"'), id + " must exist in the settings modal");
     }
     assert.ok(main.includes("hide-resource-deltas"));
     assert.ok(main.includes("reduce-interface-motion"));
-    assert.ok(main.includes("state.cardPace"));
 });
 
-test("card draw pacing honours the chosen tempo", () => {
+test("cards are drawn on request instead of on a hidden timer", () => {
     const cards = read("../../js/systems/cards.js");
-    assert.ok(cards.includes("state.cardPace"));
-    assert.ok((cards.match(/pacedTicks\(/g) || []).length >= 4, "every draw interval must be paced");
+    assert.equal(cards.includes("updateCardDraw"), false, "no automatic draw loop may remain");
+    assert.equal(cards.includes("cardPace"), false, "a manual draw ignores the old pace setting");
+    assert.ok(cards.includes("drawPlayerCard"), "the deck panel must use the explicit draw helper");
 });
 
 test("delta and motion settings have real CSS contracts", () => {

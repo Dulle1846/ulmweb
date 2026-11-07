@@ -11,9 +11,9 @@ This document describes the current implementation, not a promise that every fut
 - A medieval-fantasy parchment interface with timber, oxblood, brass and vellum styling, plus a reusable SVG sprite sheet containing 36 symbols.
 - A start screen with player display name, numeric world seed and four world-forge sliders: landmass, ruggedness, forests and water level.
 - A procedural landscape. The same seed and same slider settings produce the same terrain; the sliders alter the height and moisture fields before the terrain is prerendered.
-- A card hand that starts empty. The first card arrives after a random delay of 28–72 simulation ticks. Further cards arrive at randomized intervals while the hand has fewer than five cards. Playing or discarding a card schedules a delayed replacement. Discarding is free.
-- Four visual zoom bands, keyboard and pointer input, and pointer-based drag/drop placement. Placement validation checks terrain, world bounds, occupied building footprints and affordability.
-- Browser-local profiles, versioned localStorage save slots, save/load controls and Ctrl+S / Ctrl+O.
+- A card hand that starts empty. Cards are drawn only when the player asks for one in the Cards panel; there is no automatic draw timer. The hand holds at most five cards, and playing or discarding a card frees its slot. Discarding is free.
+- Four visual zoom bands, pointer drag panning and pointer-based drag/drop placement. Placement validation checks terrain, world bounds, occupied building footprints and affordability.
+- Browser-local profiles, versioned localStorage save slots, save/load controls and save import/export.
 - One original procedural instrumental loop generated through Web Audio, with a music toggle and volume control.
 
 ## Cards
@@ -22,7 +22,7 @@ The playable catalogue currently contains **400 distinct category IDs** across s
 
 Each category has a prototype/archetype. The variant generator combines ten scales, ten rarity levels and ten contexts, giving a theoretical space of **400,000 combinations**. Variants are generated on demand; the game does not allocate 400,000 card objects and the catalogue is not 400,000 hand-written unique designs. There are 23 more curated initial prototypes; most categories currently use reusable group archetypes. Richer bespoke card rules, illustrations and balancing remain content work.
 
-The hand holds at most five cards. Cards cover buildings, people, units, animals and immediate effects. The card-deck and draw timer are included in local saves.
+The hand holds at most five cards. Cards cover buildings, people, units, animals and immediate effects. The card deck and current hand are included in local saves; there is no draw timer.
 
 ## Realm issues and emergent outcomes
 
