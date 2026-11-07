@@ -1009,8 +1009,11 @@ try{
     await page.locator("#people-list .person-list-item").first().click();
     assert.ok((await page.locator("#person-dossier").innerText()).includes("DECEASED"));
     await page.locator("#people-close").click();
-    await page.locator("#pause-btn").click();
-    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
+    const pausedAfterLoad=await page.evaluate(async()=>(await import("./js/core/state.js")).state.isPaused);
+    if(!pausedAfterLoad){
+        await page.locator("#pause-btn").click();
+        await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
+    }
 
     // Legacy saves and very large logistics workloads must survive the real
     // localStorage save/load path without inventing or losing stock.
