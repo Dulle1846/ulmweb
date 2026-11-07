@@ -371,15 +371,23 @@ void main() {
     // produced at the one-texel carve wall. Fine noise only breaks the
     // mathematically round carve into an organic edge.
     float sd = texture(uWaterDist, world / uWorldSize).r * 12.0 - 6.0;
-    float edgeNoise = (vnoise(world * 9.0 + vec2(4.1, 7.3)) - 0.5) * 0.10
-        + (vnoise(world * 21.0 + vec2(1.7, 5.2)) - 0.5) * 0.035;
-    float water = 1.0 - smoothstep(-0.02, 0.02, sd - edgeNoise);
+    // Low-frequency lobes read as a natural bank. The old 21-per-tile term was
+    // small and fast enough to scallop the shoreline into beads at district
+    // zoom, so it is now a gentle second octave instead of a toothed edge.
+    float edgeNoise = (vnoise(world * 3.4 + vec2(4.1, 7.3)) - 0.5) * 0.06;
+    // A wider transition antialiases the shore instead of drawing a crisp rim.
+    float water = 1.0 - smoothstep(-0.05, 0.05, sd - edgeNoise);
     float wx = hx + terrain.ax;
     float wy = hy + terrain.ay;
-    float nearShore = (1.0 - smoothstep(0.02, 0.40, sd)) * (1.0 - water);
-    // The carve drops one texel and leaves a cliff ring. Read it as a bank:
-    // no cliff material, no grain and no relief inside this band.
-    float shoreCalm = (1.0 - smoothstep(0.30, 2.60, sd)) * (1.0 - water);
+    float nearShore = (1.0 - smoothstep(0.02, 0.55, sd)) * (1.0 - water);
+    // The carve leaves a narrow bank with one-texel grain. Read it as soft
+    // ground: no cliff material, no grain and no relief inside this band.
+    float shoreCalm = (1.0 - smoothstep(0.10, 2.10, sd)) * (1.0 - water);
+    float bank = shoreCalm;
+    // Shading stays flat further inland than the colour band: the one-texel
+    // carve grain fades out slowly, and any residual normal stripe reads as a
+    // ripple at district zoom.
+    float flatBank = (1.0 - smoothstep(2.00, 3.20, sd)) * (1.0 - water);
     float shoreDetail = smoothstep(0.25, 0.7, detail);
 
     float coastNoise = (vnoise(world * 2.2 + vec2(11.0, 4.0)) - 0.5) * 0.013
@@ -413,7 +421,7 @@ void main() {
         // band would paint the whole crater rim as sand.
         // No painted beach collar: the carve wall is only a few texels wide,
         // so a sand band reads as a stamped ring. Arid ground keeps its sand.
-        float beach = nearShore * 0.02 * shoreDetail;
+        float beach = 0.0;
         float rimMask = 1.0 - smoothstep(0.18, 0.90, sd);
         float snow = clamp(
             smoothstep(0.66, 0.80, elevN)
@@ -440,7 +448,7 @@ void main() {
             smoothstep(0.30, 0.14, terrain.m) * (1.0 - forest) * (1.0 - rock) * (1.0 - wet) * 0.40
             + smoothstep(0.07, 0.16, slope) * 0.30 * (1.0 - rock) * (1.0 - snow) * (1.0 - nearShore),
             0.0, 0.60);
-        bare *= 1.0 - shoreCalm;
+        bare *= 1.0 - flatBank;
         grass = max(0.0, grass - bare);
 
         float weight = grass + forest + rock + wet + sand + snow + bare;
@@ -454,25 +462,18 @@ void main() {
         if (bare > 0.02) material += earthMaterial(meso, fine, micro, detail) * bare;
         landColor = material / max(0.0001, weight);
 
-        // Damp margin on the land side of the true shore. It comes from the
-        // signed distance field, so it follows every inlet without painting a
-        // ring around the carve.
-        float wetMargin = (1.0 - smoothstep(0.0, 0.85, sd)) * (1.0 - water);
-        landColor = mix(landColor, landColor * vec3(0.74, 0.79, 0.75), wetMargin * 0.34);
-
         // Broad pasture patches keep large meadows from reading as one flat wash.
         float pasture = smoothstep(0.40, 0.72, vnoise(world * 0.33 + vec2(3.3, 8.1)));
         landColor = mix(landColor, landColor * vec3(1.08, 1.03, 0.86), pasture * 0.10);
 
         float wear = texture(uWear, world / uWorldSize).r;
         landColor = mix(landColor, mix(uEarth, uDry * 0.82, 0.30), smoothstep(0.02, 0.62, wear) * 0.40);
-        landColor = mix(landColor, landColor * vec3(0.88, 0.90, 0.86), nearShore * 0.18 * shoreDetail);
-
         // Shade from the smoothed field: it has no one-texel carve wall, so
-        // no ring mask is needed and the shore cannot read as a gear.
+        // no ring mask is needed and the shore cannot read as a gear. The
+        // bank is flattened completely so grain cannot stripe the slope.
         vec2 grade = vec2(wx, wy);
         float grain = (1.0 - shoreCalm) * (1.0 - water);
-        grade *= 1.0 - shoreCalm * 0.92;
+        grade *= 1.0 - flatBank;
         vec3 normal = normalize(vec3(
             -grade.x * 90.0 - (micro - 0.5) * 0.12 * grain,
             -grade.y * 90.0 - (fine - 0.5) * 0.12 * grain,
@@ -483,7 +484,7 @@ void main() {
 
         float blocker = heightBilinear(world + vec2(-0.7, -0.7));
         float castShadow = smoothstep(0.012, 0.070, blocker - h) * smoothstep(-0.02, 0.03, e);
-        landColor *= 1.0 - castShadow * 0.05 * (1.0 - shoreCalm * 0.6);
+        landColor *= 1.0 - castShadow * 0.05 * (1.0 - flatBank);
     }
 
     vec3 waterColor = waterMaterial(world, sd, micro);
@@ -759,6 +760,41 @@ function chamferDistance(field, width, height) {
     return field;
 }
 
+// The chamfer transform is fast but its four/eight-neighbour metric leaves
+// small cusps on curved shores, which the shader turns into a beaded edge at
+// district zoom. A separable 5-tap blur is display-only and costs one pass
+// over the grid at upload time.
+function blurDistance(bytes, width, height, passes = 2) {
+    const kernel = [1, 4, 6, 4, 1];
+    let source = bytes;
+    let target = new Uint8Array(bytes.length);
+    for (let pass = 0; pass < passes; pass++) {
+        for (let y = 0; y < height; y++) {
+            const row = y * width;
+            for (let x = 0; x < width; x++) {
+                let sum = 0;
+                for (let k = -2; k <= 2; k++) {
+                    const sx = Math.max(0, Math.min(width - 1, x + k));
+                    sum += source[row + sx] * kernel[k + 2];
+                }
+                target[row + x] = sum >> 4;
+            }
+        }
+        for (let y = 0; y < height; y++) {
+            const row = y * width;
+            for (let x = 0; x < width; x++) {
+                let sum = 0;
+                for (let k = -2; k <= 2; k++) {
+                    const sy = Math.max(0, Math.min(height - 1, y + k));
+                    sum += target[sy * width + x] * kernel[k + 2];
+                }
+                source[row + x] = sum >> 4;
+            }
+        }
+    }
+    return source;
+}
+
 // Signed shore distance in tiles, encoded into one byte: 0 = six tiles
 // inland, 128 = shoreline, 255 = six tiles out. Used for every shore band so
 // the one-texel carve wall cannot break them.
@@ -779,7 +815,7 @@ function buildWaterDistance(heights, width, height, sea) {
         const tiles = (heights[i] < sea ? -toLand[i] : toWater[i]) / 4;
         bytes[i] = Math.round((Math.max(-6, Math.min(6, tiles)) + 6) / 12 * 255);
     }
-    return bytes;
+    return blurDistance(bytes, width, height);
 }
 
 function uploadWorldData() {
