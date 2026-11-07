@@ -1,7 +1,7 @@
 // Pointer camera, card placement and modal interaction bindings.
 import { WORLD_W,WORLD_H,CELL } from "../core/config.js";
 import { state } from "../core/state.js";
-import { clampCamera,applyZoomDelta,screenToWorld,setZoomLevel } from "./camera.js";
+import { clampCamera,applyZoomDelta,screenToWorld,setZoomLevel,setZoomTarget } from "./camera.js";
 import { placeCurrentCard,skipCard,getCardPlacementPreview,selectCard } from "../systems/cards.js";
 import { resolveEventChoice } from "../systems/events.js";
 import { executeTrade } from "../systems/market.js";
@@ -70,6 +70,9 @@ export function setupInput(){
         }else if(event.touches.length===2){
             const [a,b]=event.touches;
             lastPinchDistance=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);isPanning=false;
+            // A pinch is a gesture, never a tap. Without this the final
+            // touchend would click the map and could start a direct build.
+            pointerMoved=true;
         }
     },{passive:false});
     canvas.addEventListener("touchmove",event=>{
@@ -87,9 +90,11 @@ export function setupInput(){
         }else if(event.touches.length===2){
             const [a,b]=event.touches;
             const distanceNow=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
-            if(lastPinchDistance>0){
+            if(lastPinchDistance>0&&distanceNow>0){
                 const rect=canvas.getBoundingClientRect();
-                applyZoomDelta((lastPinchDistance-distanceNow)*0.5,(a.clientX+b.clientX)/2-rect.left,(a.clientY+b.clientY)/2-rect.top);
+                // Scale with the gesture, not with wheel delta: doubling the
+                // finger distance doubles the zoom target.
+                setZoomTarget(state.zoomTarget*(distanceNow/lastPinchDistance),(a.clientX+b.clientX)/2-rect.left,(a.clientY+b.clientY)/2-rect.top);
             }
             lastPinchDistance=distanceNow;
         }
@@ -99,8 +104,12 @@ export function setupInput(){
             if(isPanning&&!pointerMoved)clickOnCanvas({clientX:lastX,clientY:lastY});
             isPanning=false;lastPinchDistance=0;lastRoadTileKey=null;
         }else if(event.touches.length===1){
-            const touch=event.touches[0];lastX=startX=touch.clientX;lastY=startY=touch.clientY;isPanning=true;
+            const touch=event.touches[0];lastX=startX=touch.clientX;lastY=startY=touch.clientY;isPanning=true;lastPinchDistance=0;
         }
+    });
+    canvas.addEventListener("touchcancel",()=>{
+        // A cancelled gesture must not keep a stale pan or pinch anchor.
+        isPanning=false;lastPinchDistance=0;lastRoadTileKey=null;
     });
 
     function beginCardDrag(event,cardId){
