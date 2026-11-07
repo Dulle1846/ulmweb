@@ -14,7 +14,7 @@ import { BUILDING_SIZE, CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
 import { worldWidth, worldHeight } from '../../world/world.js';
 import { getRoadTiles } from '../../systems/roads.js';
-import { terrainShaderPalette } from './terrain-palette.js';
+import { terrainSeasonPhase, terrainShaderPaletteForPhase } from './terrain-palette.js';
 import { buildTerrainAtlas, TERRAIN_ATLAS_COLUMNS, TERRAIN_ATLAS_ROWS } from './terrain-atlas.js';
 import { buildHeightOcclusion } from './terrain-ao.js';
 import { advanceWearField, buildWearTargets, createWearField, encodeWearField, wearGridSize } from './terrain-wear.js';
@@ -414,14 +414,12 @@ vec3 waterMaterial(vec2 world, float sd, float micro) {
     // The surf line is left out on purpose: on a two-tile pond it draws a
     // bright outline around the polygon instead of lapping at a shore.
 
-    if (uSummer > 0.5) {
-        float algae = smoothstep(0.50, 0.88, fbm2(world * 0.9 + vec2(3.4, 6.1)));
-        color = mix(color, uLush * 0.62, algae * 0.22);
-    }
-    if (uWinter > 0.5) {
-        float ice = smoothstep(0.28, 0.76, fbm2(world * 0.4)) * uWinter;
-        color = mix(color, mix(uSnow, uWaterShallow, 0.40), ice * 0.44);
-    }
+    // Weighted instead of thresholded: the water surface fades into the next
+    // season on the same days as the land instead of switching overnight.
+    float algae = smoothstep(0.50, 0.88, fbm2(world * 0.9 + vec2(3.4, 6.1)));
+    color = mix(color, uLush * 0.62, algae * 0.22 * uSummer);
+    float ice = smoothstep(0.28, 0.76, fbm2(world * 0.4));
+    color = mix(color, mix(uSnow, uWaterShallow, 0.40), ice * 0.44 * uWinter);
     return color;
 }
 
@@ -1138,7 +1136,8 @@ function uploadAtlasData() {
 }
 
 function setPalette() {
-    const palette = terrainShaderPalette(state.worldOptions?.climate, state.seasonIndex ?? 0);
+    const phase = terrainSeasonPhase(state.dayOfYear, state.seasonIndex);
+    const palette = terrainShaderPaletteForPhase(state.worldOptions?.climate, phase);
     gl.uniform3fv(uniforms.grass, palette.grass);
     gl.uniform3fv(uniforms.lush, palette.lush);
     gl.uniform3fv(uniforms.dry, palette.dry);
@@ -1154,11 +1153,9 @@ function setPalette() {
     gl.uniform1f(uniforms.snowBias, palette.snowBias);
     gl.uniform1f(uniforms.autumn, palette.autumn);
     gl.uniform1f(uniforms.winter, palette.winter);
-
-    const season = ((Math.trunc(Number(state.seasonIndex) || 0) % 4) + 4) % 4;
-    gl.uniform1f(uniforms.spring, season === 0 ? 1 : 0);
-    gl.uniform1f(uniforms.summer, season === 1 ? 1 : 0);
-    const sun = sunState(season);
+    gl.uniform1f(uniforms.spring, palette.spring);
+    gl.uniform1f(uniforms.summer, palette.summer);
+    const sun = sunState(phase);
     gl.uniform3f(uniforms.sunDirection, sun.direction[0], sun.direction[1], sun.direction[2]);
     gl.uniform2f(uniforms.sunShadowDir, sun.shadowX, sun.shadowY);
     gl.uniform1f(uniforms.sunShadowStep, sun.step);
@@ -1178,25 +1175,32 @@ const SEASON_SUN = [
     { elevation: 0.44, strength: 0.55 },
 ];
 
-function sunState(season) {
-    const spec = SEASON_SUN[season] || SEASON_SUN[0];
+function sunState(phase) {
+    const wrapped = ((Number(phase) % 4) + 4) % 4;
+    const lower = Math.floor(wrapped) % 4;
+    const fraction = wrapped - Math.floor(wrapped);
+    const from = SEASON_SUN[lower];
+    const to = SEASON_SUN[(lower + 1) % 4];
+    // The sun climbs and sinks across the season boundary instead of jumping.
+    const elevation = from.elevation + (to.elevation - from.elevation) * fraction;
+    const strength = from.strength + (to.strength - from.strength) * fraction;
     const day = Math.max(0, Number(state.dayOfYear) || 0);
     const azimuth = (day / 400) * Math.PI * 2 + 0.6;
-    const x = Math.cos(azimuth) * Math.cos(spec.elevation);
-    const y = Math.sin(azimuth) * Math.cos(spec.elevation);
+    const x = Math.cos(azimuth) * Math.cos(elevation);
+    const y = Math.sin(azimuth) * Math.cos(elevation);
     const length = Math.hypot(x, y) || 1;
-    const tanElevation = Math.tan(spec.elevation);
+    const tanElevation = Math.tan(elevation);
     const weather = String(state.weather || "").toLowerCase();
     const weatherFactor = weather === "rain" || weather === "storm" ? 0.55
         : weather === "overcast" || weather === "fog" ? 0.75 : 1;
     const zoom = Number(state.zoom) || 1;
     return {
-        direction: [x, y, Math.sin(spec.elevation)],
+        direction: [x, y, Math.sin(elevation)],
         shadowX: -x / length,
         shadowY: -y / length,
         slope: tanElevation,
         step: Math.max(0.55, Math.min(3.0, 1.05 / Math.max(0.25, tanElevation))),
-        strength: spec.strength * weatherFactor,
+        strength: strength * weatherFactor,
         contour: Math.max(0, Math.min(1, (1.15 - zoom) / 0.85)) * 0.75,
     };
 }

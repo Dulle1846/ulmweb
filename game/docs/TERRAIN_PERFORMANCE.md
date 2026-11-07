@@ -97,3 +97,33 @@ to spot missed frames.
 | District | _pending_ | _pending_ | _pending_ | _pending_ |
 | Rooftop | _pending_ | _pending_ | _pending_ | _pending_ |
 | Interior | _pending_ | _pending_ | _pending_ | _pending_ |
+
+#### Recording a hardware row
+
+The cloud workspace has no GPU. Its browser reports only the generic software
+renderer string and `gl.finish()` does not wait for rasterisation, so no
+hardware numbers can be produced there. To record a row:
+
+1. Open the page on the target machine in the foreground, at the resolution you
+   want to document.
+2. Copy the renderer string and the draw median/p95 for each level from the
+   report (`window.__terrainPerf` has the same object).
+3. Add one row per level under a heading named after that renderer string and
+   keep the viewport size in the caption.
+4. Never compare software rows with hardware rows; they measure different
+   things.
+
+### Weather overlay
+
+The snowfall and rain are drawn in screen space after the terrain pass, so
+they cost a flat amount per frame independent of zoom:
+
+| Effect | Particles | Cost per frame |
+| --- | --- | --- |
+| Snow | 170 flakes | 0.40 ms |
+| Rain | 160 streaks | 0.15 ms |
+| Clear | — | 0 ms (early return) |
+
+Viewport: 1440 × 900, software rendering (`WebKit WebGL`). The overlay only
+touches a 2D canvas and is capped by the particle counts above, so it scales
+with the frame area rather than with the terrain detail.

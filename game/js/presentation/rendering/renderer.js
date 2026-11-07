@@ -12,6 +12,7 @@ import { getResourceNodeAt } from '../../systems/resource-geography.js';
 import { getServiceBuildingsForOverlay } from '../../systems/settlement.js';
 import { getLogisticsSnapshot } from '../../systems/logistics.js';
 import { worldWidth,worldHeight } from '../../world/world.js';
+import { drawWeatherOverlay } from './weather-overlay.js';
 
 let visibleEntitiesCache=[];
 let visibleEntitiesUntil=0;
@@ -91,6 +92,9 @@ export function drawWorld() {
 
     ctx.globalAlpha = 1;
     ctx.textAlign = "left";
+
+    // Screen-space weather sits above the map but below the vignette.
+    drawWeatherOverlay(ctx, canvas);
 }
 
 function drawRoadNetwork(ctx,zoom,camera,canvas){

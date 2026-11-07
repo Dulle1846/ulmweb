@@ -88,6 +88,91 @@ function unitColor(color) {
     return [color[0] / 255, color[1] / 255, color[2] / 255];
 }
 
+// Continuous season phase: 0 is the first day of spring, 1 the first day of
+// summer, 2 autumn, 3 winter and 4 spring again. The surface blends across the
+// boundary instead of snapping when dayOfYear crosses 100.
+export function terrainSeasonPhase(dayOfYear, seasonIndex = 0) {
+    const day = Number(dayOfYear);
+    if (Number.isFinite(day)) {
+        const wrapped = ((day % 400) + 400) % 400;
+        return wrapped / 100;
+    }
+    const season = ((Math.trunc(Number(seasonIndex) || 0) % 4) + 4) % 4;
+    return season;
+}
+
+// Triangular basis over the four seasons. At a season boundary the two
+// neighbours share the weight; mid-season one weight is exactly one.
+export function seasonWeights(phase) {
+    const wrapped = ((Number(phase) % 4) + 4) % 4;
+    const weights = [0, 0, 0, 0];
+    for (let index = 0; index < 4; index++) {
+        let distance = Math.abs(wrapped - index);
+        distance = Math.min(distance, 4 - distance);
+        weights[index] = Math.max(0, 1 - distance);
+    }
+    const total = weights.reduce((sum, value) => sum + value, 0) || 1;
+    return weights.map(value => value / total);
+}
+
+function mixPalette(from, to, amount) {
+    const result = {};
+    for (const key of Object.keys(from)) {
+        if (Array.isArray(from[key]) && Array.isArray(to[key]) && from[key].length === to[key].length) {
+            result[key] = mix(from[key], to[key], amount);
+        } else if (typeof from[key] === "number" && typeof to[key] === "number") {
+            result[key] = from[key] + (to[key] - from[key]) * amount;
+        } else {
+            result[key] = from[key];
+        }
+    }
+    return result;
+}
+
+// Palette for a fractional season phase. Colours interpolate between the two
+// neighbouring seasons and the effect flags become weights, so shader passes
+// such as leaf litter or frost fade in over the last days of a season.
+export function terrainPaletteForPhase(climate, phase) {
+    const wrapped = ((Number(phase) % 4) + 4) % 4;
+    const lower = Math.floor(wrapped) % 4;
+    const fraction = wrapped - Math.floor(wrapped);
+    const base = TERRAIN_PALETTES[climate] || TERRAIN_PALETTES.temperate;
+    const from = seasonalPalette(base, lower);
+    const to = seasonalPalette(base, (lower + 1) % 4);
+    const palette = fraction < 1e-4 ? from : mixPalette(from, to, fraction);
+    const weights = seasonWeights(wrapped);
+    return {
+        ...palette,
+        season: lower,
+        seasonPhase: wrapped,
+        snowBias: 0.28 * weights[3],
+        spring: weights[0],
+        summer: weights[1],
+        autumn: weights[2],
+        winter: weights[3],
+    };
+}
+
+const SHADER_COLOR_KEYS = Object.freeze({
+    grass: "meadow", lush: "lush", dry: "dry", earth: "earth", forest: "forest",
+    rock: "rock", sand: "sand", snow: "snow", swamp: "swamp",
+    waterDeep: "waterDeep", waterShallow: "waterShallow", foam: "foam",
+});
+
+export function terrainShaderPaletteForPhase(climate, phase) {
+    const p = terrainPaletteForPhase(climate, phase);
+    const result = {};
+    for (const [uniform, key] of Object.entries(SHADER_COLOR_KEYS)) {
+        result[uniform] = unitColor(p[key]);
+    }
+    result.snowBias = p.snowBias;
+    result.spring = p.spring;
+    result.summer = p.summer;
+    result.autumn = p.autumn;
+    result.winter = p.winter;
+    return result;
+}
+
 export function terrainShaderPalette(climate, seasonIndex = 0) {
     const p = terrainPaletteFor(climate, seasonIndex);
     return {
