@@ -264,7 +264,7 @@ function sliderValue(options, key) {
     return Number.isFinite(value) ? clamp(value, 0, 100) : DEFAULT_WORLD_OPTIONS[key];
 }
 
-export function carveWaterFeatures(heights, width, height, seed, sea, options = {}) {
+function carveWaterFeaturesLegacy(heights, width, height, seed, sea, options = {}) {
     const rand = hashSeed(seed ^ 0x9e3779b9);
     const riverSetting = sliderValue(options, 'rivers');
     const lakeSetting = sliderValue(options, 'lakes');
@@ -363,6 +363,159 @@ export function carveWaterFeatures(heights, width, height, seed, sea, options = 
             }
         }
     }
+    return rivers;
+}
+
+// ── water carving, generation version 2 ───────────────────────
+//
+// Version 1 lowered complete discs to `sea - 0.012`. That made flat plates
+// with vertical rims: at four samples per tile a small pond could only be an
+// eight-sided star. Version 2 subtracts a smooth, noise-warped depression from
+// the real height field instead, so the shoreline is wherever the carved
+// terrain crosses sea level and follows the landscape instead of a stamp.
+// Saved realms keep version 1: their terrain is rebuilt from seed and options.
+export const TERRAIN_GENERATION_VERSION = 2;
+
+// A flat bed with a short, gentle bank. Carving a deep bowl made the shader
+// paint the whole slope as bare rock, and the visible water shrank to a dot in
+// the middle. The bed follows `sea - bedDepth` for lakes and the local channel
+// for rivers; the bank rises at a slope below the rock threshold.
+function carveBasin(heights, width, height, cx, cy, radius, bed, bankSlope, bankWidth, seedA, seedB, irregular) {
+    if (!(radius > 0) || !(bankSlope > 0) || !(bankWidth > 0)) return;
+    const reach = Math.ceil(radius * 1.22 + bankWidth);
+    const x0 = Math.max(0, Math.floor(cx - reach));
+    const x1 = Math.min(width - 1, Math.ceil(cx + reach));
+    const y0 = Math.max(0, Math.floor(cy - reach));
+    const y1 = Math.min(height - 1, Math.ceil(cy + reach));
+    for (let y = y0; y <= y1; y++) {
+        const oy = y - cy;
+        const row = y * width;
+        for (let x = x0; x <= x1; x++) {
+            const ox = x - cx;
+            const d = Math.hypot(ox, oy);
+            let rim = 1;
+            if (irregular) {
+                const angle = Math.atan2(oy, ox);
+                rim += 0.18 * Math.sin(angle * 3 + seedA)
+                    + 0.09 * Math.sin(angle * 5 - seedB)
+                    + 0.05 * Math.sin(angle * 8 + seedA * 1.7);
+            }
+            const flat = radius * rim;
+            if (d > flat + bankWidth) continue;
+            const grain = 0.985 + 0.03 * hash2(x + ((seedA * 97) | 0), y + ((seedB * 89) | 0));
+            const target = (bed + Math.max(0, d - flat) * bankSlope) * grain;
+            const index = row + x;
+            if (target < heights[index]) heights[index] = target > 0 ? target : 0;
+        }
+    }
+}
+
+export function carveWaterFeatures(heights, width, height, seed, sea, options = {}) {
+    const version = Number(options.__terrainVersion) || TERRAIN_GENERATION_VERSION;
+    if (version < 2) return carveWaterFeaturesLegacy(heights, width, height, seed, sea, options);
+
+    const rand = hashSeed(seed ^ 0x9e3779b9);
+    const riverSetting = sliderValue(options, 'rivers');
+    const lakeSetting = sliderValue(options, 'lakes');
+    const resolution = Math.max(1, Math.min(6, Math.round(Number(options.__resolution) || 1)));
+    const tiles = (width / resolution) * (height / resolution);
+    // The old budget counted terrain samples. At four samples per tile that
+    // put roughly one puddle in every five tiles, which is the leopard pattern.
+    // Count tiles instead, so a standard realm gets a handful of real rivers.
+    const riverBudget = Math.min(26, Math.max(1, Math.round(tiles / 5200 * (0.15 + riverSetting / 100 * 1.5))));
+    const lakeFactor = Math.max(0, (lakeSetting - 10) / 90);
+    const lakeBudget = Math.min(40, Math.round((tiles / 5000) * lakeFactor));
+    const lakeScale = 0.75 + lakeSetting / 100 * 0.85;
+    const channelWidth = 1.05 * resolution;
+    const bodies = [];
+    const rivers = [];
+    const width2 = width - 2;
+
+    for (let attempt = 0; attempt < riverBudget * 18 && rivers.length < riverBudget; attempt++) {
+        const sx = 1 + Math.floor(rand() * width2);
+        const sy = 1 + Math.floor(rand() * (height - 2));
+        if (!(heights[sy * width + sx] > sea + 0.16)) continue;
+
+        const path = [];
+        let cx = sx, cy = sy;
+
+        for (let step = 0; step < Math.max(120, width + height); step++) {
+            const index = cy * width + cx;
+            path.push(index);
+            if (heights[index] < sea - 0.002) break;
+
+            let best = Infinity, bx = cx, by = cy;
+            for (let oy = -1; oy <= 1; oy++) {
+                for (let ox = -1; ox <= 1; ox++) {
+                    if (!ox && !oy) continue;
+                    const nx = cx + ox, ny = cy + oy;
+                    if (nx < 1 || ny < 1 || nx >= width - 1 || ny >= height - 1) continue;
+                    const value = heights[ny * width + nx] + rand() * 0.004;
+                    if (value < best) { best = value; bx = nx; by = ny; }
+                }
+            }
+            const here = heights[index];
+            if (best >= here - 0.0004) {
+                // A local basin becomes a lake only when it sits close enough
+                // to sea level to fill naturally. High shelves stay dry hollows
+                // instead of the deep craters version 1 cut into plateaus.
+                const need = here - sea;
+                if (need > 0.006 && need < 0.16) {
+                    const radius = (2.4 + rand() * 2.4) * lakeScale * resolution;
+                    carveBasin(heights, width, height, cx, cy, radius, sea - 0.028,
+                        0.018 + rand() * 0.008, 11 * resolution,
+                        rand() * 6.283, rand() * 6.283, true);
+                    bodies.push({ x: cx, y: cy, r: radius });
+                }
+                break;
+            }
+            cx = bx; cy = by;
+        }
+
+        if (path.length < 12) continue;
+
+        // Carve a valley with a soft cross-section. The bed only drops below
+        // sea level in the lower reaches, so a river is a dry valley on high
+        // ground and gains water as it descends instead of climbing a canal.
+        for (const index of path) {
+            const px = index % width;
+            const py = (index / width) | 0;
+            const wobble = 0.9 + 0.28 * Math.sin(px * 0.11 + py * 0.07 + (seed % 31) * 0.13);
+            // The bed is relative to the local ground. The channel is dry on
+            // high ground and fills only where its bed falls below sea level.
+            const bed = heights[index] - 0.045;
+            carveBasin(heights, width, height, px, py, channelWidth * wobble, bed,
+                0.030, 1.7 * resolution, px * 0.7, py * 0.9, false);
+        }
+        rivers.push(path);
+    }
+
+    // Standalone lakes prefer real low ground. Their rims are noise-warped and
+    // their depth is tied to the local relief, so the sea contour is organic.
+    for (let lake = 0; lake < lakeBudget; lake++) {
+        const margin = Math.max(3, Math.round(3 * resolution));
+        let cx = margin + Math.floor(rand() * Math.max(1, width - margin * 2));
+        let cy = margin + Math.floor(rand() * Math.max(1, height - margin * 2));
+        let lowest = Infinity, lx = cx, ly = cy;
+        const search = Math.max(2, Math.round(4 * resolution));
+        for (let oy = -search; oy <= search; oy++) {
+            for (let ox = -search; ox <= search; ox++) {
+                const nx = cx + ox, ny = cy + oy;
+                if (nx < 2 || ny < 2 || nx >= width - 2 || ny >= height - 2) continue;
+                const value = heights[ny * width + nx];
+                if (value < lowest) { lowest = value; lx = nx; ly = ny; }
+            }
+        }
+        const need = lowest - sea;
+        if (!(need > 0.006 && need < 0.145)) continue;
+        const radius = (2.2 + rand() * 2.8) * lakeScale * resolution;
+        if (bodies.some(body => Math.hypot(body.x - lx, body.y - ly) < (body.r + radius) * 0.45)) continue;
+        carveBasin(heights, width, height, lx, ly, radius, sea - 0.028,
+            0.018 + rand() * 0.008, 11 * resolution,
+            rand() * 6.283, rand() * 6.283, true);
+        bodies.push({ x: lx, y: ly, r: radius });
+    }
+
     return rivers;
 }
 
@@ -503,7 +656,7 @@ export function terrainColor(height, moisture, temperature, px, py, climate, sea
 // The preview and the live realm both read this one cached world. Starting a
 // realm with the options currently shown in the forge therefore reuses the
 // exact height, moisture, temperature and river arrays the player saw.
-export function generateWorldData(seed, rawOptions = {}) {
+export function generateWorldData(seed, rawOptions = {}, terrainVersion = TERRAIN_GENERATION_VERSION) {
     const options = normalizeWorldOptions(rawOptions);
     const sampling = { ...options, __normalized: true };
     const worldSeed = normalizeWorldSeed(seed);
@@ -532,20 +685,25 @@ export function generateWorldData(seed, rawOptions = {}) {
 
     // Rivers and their terminal lakes are carved into the very same grid the
     // realm uses. The preview never runs a separate, smaller simulation.
-    const rivers = carveWaterFeatures(heights, pixW, pixH, worldSeed, sea, sampling)
+    const rivers = carveWaterFeatures(heights, pixW, pixH, worldSeed, sea,
+        { ...sampling, __resolution: resolution, __terrainVersion: terrainVersion })
         .map(path => path.map(index => ({ x: index % pixW, y: Math.floor(index / pixW) })));
 
     // A little moisture bleeds into the banks so river valleys turn green.
+    // The band is measured in tiles and falls off smoothly; the old four-pixel
+    // ring read as a painted collar around every puddle.
+    const bleedRadius = Math.max(2, Math.round(3.2 * resolution));
     for (const path of rivers) {
-        for (const point of path) {
-            for (let oy = -4; oy <= 4; oy++) {
-                for (let ox = -4; ox <= 4; ox++) {
+        for (let p = 0; p < path.length; p += 2) {
+            const point = path[p];
+            for (let oy = -bleedRadius; oy <= bleedRadius; oy++) {
+                for (let ox = -bleedRadius; ox <= bleedRadius; ox++) {
                     const nx = point.x + ox, ny = point.y + oy;
                     if (nx < 0 || ny < 0 || nx >= pixW || ny >= pixH) continue;
-                    const d = Math.hypot(ox, oy);
-                    if (d > 4.5) continue;
+                    const d = Math.hypot(ox, oy) / bleedRadius;
+                    if (d >= 1) continue;
                     const index = ny * pixW + nx;
-                    const boost = (1 - d / 4.5) * 0.22;
+                    const boost = (1 - d) * (1 - d) * 0.16;
                     moistures[index] = Math.min(1, moistures[index] + boost);
                 }
             }
@@ -553,7 +711,7 @@ export function generateWorldData(seed, rawOptions = {}) {
     }
 
     return {
-        seed: worldSeed, options, dims, sea, resolution, pixW, pixH,
+        seed: worldSeed, options, dims, sea, resolution, pixW, pixH, terrainVersion,
         heights, moistures, temperatures, rivers,
     };
 }
@@ -561,14 +719,14 @@ export function generateWorldData(seed, rawOptions = {}) {
 let cachedWorldKey = '';
 let cachedWorldData = null;
 
-export function worldDataKey(seed, rawOptions = {}) {
-    return normalizeWorldSeed(seed) + '|' + JSON.stringify(normalizeWorldOptions(rawOptions));
+export function worldDataKey(seed, rawOptions = {}, terrainVersion = TERRAIN_GENERATION_VERSION) {
+    return normalizeWorldSeed(seed) + '|' + terrainVersion + '|' + JSON.stringify(normalizeWorldOptions(rawOptions));
 }
 
-export function getWorldData(seed, rawOptions = {}) {
-    const key = worldDataKey(seed, rawOptions);
+export function getWorldData(seed, rawOptions = {}, terrainVersion = TERRAIN_GENERATION_VERSION) {
+    const key = worldDataKey(seed, rawOptions, terrainVersion);
     if (key !== cachedWorldKey || !cachedWorldData) {
-        cachedWorldData = generateWorldData(seed, rawOptions);
+        cachedWorldData = generateWorldData(seed, rawOptions, terrainVersion);
         cachedWorldKey = key;
     }
     return cachedWorldData;

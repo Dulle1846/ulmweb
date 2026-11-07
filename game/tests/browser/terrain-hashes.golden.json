@@ -5,14 +5,14 @@
     "heightMap": {
       "kind": "Float32Array",
       "length": 495616,
-      "hashA": "183cfaec",
-      "hashB": "880cae32"
+      "hashA": "053909d4",
+      "hashB": "af5c36b0"
     },
     "moistureMap": {
       "kind": "Float32Array",
       "length": 495616,
-      "hashA": "0e2f4d9c",
-      "hashB": "220b3524"
+      "hashA": "bba41b21",
+      "hashB": "8e013dad"
     },
     "temperatureMap": {
       "kind": "Float32Array",

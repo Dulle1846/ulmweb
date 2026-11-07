@@ -152,6 +152,9 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             const py = y * cellPx - cam.y + cellPx * (0.3 + s3 * 0.45);
             const above = h - sea;
 
+            // Only the shoreline band needs to know where the water lies.
+            const shoreDir = above > -0.01 && above < 0.09 ? shoreDirection(x, y, sea) : null;
+
             // Open water: animated glints and shore foam.
             if (above < 0) {
                 if (zoom >= 0.5 && s1 > 0.72) drawWaterGlint(ctx, px, py, cellPx, tick, s1);
@@ -159,9 +162,13 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                 continue;
             }
 
-            // Reeds and lilies at the waterline.
-            if (above < 0.03 && m > 0.35) {
-                if (s1 > 0.45) drawReeds(ctx, px, py, cellPx, s1, s2, temp);
+            // The shoreline is a place, not a colour boundary: wet sand,
+            // pebbles, driftwood and denser reed clusters sit on the land side.
+            if (above < 0.055 && m > 0.3) {
+                if (shoreDir && above < 0.016) drawWetEdge(ctx, px, py, cellPx, shoreDir, s1);
+                if (s1 > 0.42) drawReeds(ctx, px, py, cellPx, s1, s2, temp, shoreDir);
+                else if (s1 > 0.30) drawShoreStones(ctx, px, py, cellPx, s1, s2);
+                else if (s1 > 0.27) drawDriftwood(ctx, px, py, cellPx, s1, shoreDir);
                 continue;
             }
 
@@ -183,7 +190,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                 (m - 0.4) / 0.42 + (state.worldOptions?.forests ?? 52) * 0.001 - 0.05));
             const treeChance = (0.08 + forestDensity * 0.72) * (0.5 + cluster * 0.95);
             if (forestDensity > 0.08 && s1 < treeChance) {
-                drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, m, season);
+                drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, m, season, shoreDir);
                 continue;
             }
             if (cluster > 0.6 && m > 0.34 && s1 > 0.8) {
@@ -276,15 +283,23 @@ function drawShoreFoam(ctx, px, py, cellPx, tick, s2, zoom) {
     ctx.stroke();
 }
 
-function drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, moisture, season) {
+function drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, moisture, season, shore = null) {
     const s = cellPx / 48;
     const sway = Math.sin(tick * 0.045 + s1 * 10 + s2 * 7) * 1.6 * s;
 
     // A soft grounded shadow is enough to lift trees off the new surface
-    // without baking hard directional shadows into the seasonal ground.
-    ctx.fillStyle = "rgba(7, 15, 8, 0.22)";
+    // without baking hard directional shadows into the seasonal ground. On the
+    // bank the shadow stretches over the water, which anchors the crown to the
+    // shore instead of leaving it floating on a reflective surface.
+    ctx.fillStyle = shore ? "rgba(5, 12, 8, 0.26)" : "rgba(7, 15, 8, 0.22)";
     ctx.beginPath();
-    ctx.ellipse(px + 3.2 * s, py + 8.0 * s, 10.5 * s, 3.6 * s, 0.15, 0, Math.PI * 2);
+    ctx.ellipse(
+        px + 3.2 * s + (shore ? shore.x * 5.5 * s : 0),
+        py + 8.0 * s + (shore ? shore.y * 5.5 * s : 0),
+        (shore ? 13.5 : 10.5) * s,
+        (shore ? 4.2 : 3.6) * s,
+        0.15, 0, Math.PI * 2
+    );
     ctx.fill();
     const variant = Math.min(3, Math.floor(Math.abs(s2) * 4));
 
@@ -485,22 +500,106 @@ function drawCactus(ctx, px, py, cellPx, s1) {
     ctx.fillRect(px + 2 * s, py - 6 * s, 5 * s, 2.2 * s);
 }
 
-function drawReeds(ctx, px, py, cellPx, s1, s2, temp) {
+// Direction from a land tile towards the nearest water, or null inland. One
+// step is enough for the shoreline dressing band and keeps this cheap.
+function shoreDirection(x, y, sea) {
+    let dx = 0, dy = 0;
+    if (getHeightAt(x + 1.5, y + 0.5) < sea) dx += 1;
+    if (getHeightAt(x - 0.5, y + 0.5) < sea) dx -= 1;
+    if (getHeightAt(x + 0.5, y + 1.5) < sea) dy += 1;
+    if (getHeightAt(x + 0.5, y - 0.5) < sea) dy -= 1;
+    if (!dx && !dy) return null;
+    const length = Math.hypot(dx, dy) || 1;
+    return { x: dx / length, y: dy / length };
+}
+
+function drawWetEdge(ctx, px, py, cellPx, shore, s1) {
     const s = cellPx / 48;
-    const height = (7 + s2 * 7) * s;
-    ctx.strokeStyle = temp < 0.4 ? "rgba(142,150,120,0.75)" : "rgba(88,116,62,0.8)";
-    ctx.lineWidth = Math.max(1, 1.2 * s);
+    const angle = Math.atan2(shore.y, shore.x);
+    ctx.save();
+    ctx.fillStyle = `rgba(26, 38, 33, ${0.08 + s1 * 0.07})`;
+    ctx.beginPath();
+    ctx.ellipse(px + shore.x * cellPx * 0.22, py + shore.y * cellPx * 0.22,
+        cellPx * 0.40, cellPx * 0.17, angle, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(196, 214, 204, 0.14)";
+    ctx.lineWidth = Math.max(0.7, 0.9 * s);
+    ctx.beginPath();
+    ctx.ellipse(px + shore.x * cellPx * 0.44, py + shore.y * cellPx * 0.44,
+        cellPx * 0.36, cellPx * 0.14, angle, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawShoreStones(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    ctx.fillStyle = "rgba(94, 100, 96, 0.82)";
     for (let i = 0; i < 3; i++) {
-        const offset = (i - 1) * 2.6 * s;
+        const ox = (i - 1) * 4.5 * s + (s1 - 0.5) * 3 * s;
+        const oy = (i % 2 === 0 ? 1 : -1) * 2.2 * s + (s2 - 0.5) * 2 * s;
+        ctx.beginPath();
+        ctx.ellipse(px + ox, py + oy, (2.6 + (i % 2) * 1.2) * s, (1.7 + (i % 3)) * s, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = "rgba(198, 206, 198, 0.32)";
+    ctx.beginPath();
+    ctx.ellipse(px - 3 * s, py - 1 * s, 1.6 * s, 0.8 * s, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawDriftwood(ctx, px, py, cellPx, s1, shore) {
+    const s = cellPx / 48;
+    const angle = Math.atan2(shore?.y ?? 0.4, shore?.x ?? 0.8) + Math.PI * 0.5;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(angle);
+    ctx.strokeStyle = "rgba(104, 86, 62, 0.85)";
+    ctx.lineWidth = Math.max(1.2, 2 * s);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-7 * s, 0);
+    ctx.quadraticCurveTo(0, (-1.2 + s1) * s, 8 * s, 0.6 * s);
+    ctx.stroke();
+    ctx.lineWidth = Math.max(0.8, 1.1 * s);
+    ctx.beginPath();
+    ctx.moveTo(2 * s, 0);
+    ctx.lineTo(5 * s, -3.4 * s);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawReeds(ctx, px, py, cellPx, s1, s2, temp, shore = null) {
+    const s = cellPx / 48;
+    const height = (8 + s2 * 8) * s;
+    if (shore) {
+        // A faint reflection keeps the cluster attached to the bank.
+        ctx.strokeStyle = temp < 0.4 ? "rgba(110,120,104,0.18)" : "rgba(58,84,48,0.20)";
+        ctx.lineWidth = Math.max(0.8, 1.1 * s);
+        for (let i = 0; i < 3; i++) {
+            const offset = (i - 1) * 2.6 * s;
+            ctx.beginPath();
+            ctx.moveTo(px + offset + shore.x * 4 * s, py + 5 * s + shore.y * 4 * s);
+            ctx.lineTo(px + offset + shore.x * 7 * s, py + 8 * s + shore.y * 7 * s);
+            ctx.stroke();
+        }
+    }
+    ctx.strokeStyle = temp < 0.4 ? "rgba(142,150,120,0.78)" : "rgba(84,112,58,0.85)";
+    ctx.lineWidth = Math.max(1, 1.25 * s);
+    for (let i = 0; i < 5; i++) {
+        const offset = (i - 2) * 1.9 * s;
+        const lean = (s1 - 0.5) * (4 + i * 0.7) * s;
+        const tall = height * (0.72 + ((i * 37) % 10) / 18);
         ctx.beginPath();
         ctx.moveTo(px + offset, py + 4 * s);
-        ctx.quadraticCurveTo(px + offset + (s1 - 0.5) * 3 * s, py - height * 0.5, px + offset + (s1 - 0.5) * 5 * s, py - height);
+        ctx.quadraticCurveTo(px + offset + lean * 0.4, py - tall * 0.55, px + offset + lean, py - tall);
         ctx.stroke();
     }
     ctx.fillStyle = "#7b5d34";
-    ctx.beginPath();
-    ctx.ellipse(px + (s1 - 0.5) * 4 * s, py - height, 1.4 * s, 3 * s, 0, 0, Math.PI * 2);
-    ctx.fill();
+    for (let i = 0; i < 2; i++) {
+        ctx.beginPath();
+        ctx.ellipse(px + (s1 - 0.5) * 3 * s + i * 2.4 * s, py - height * (0.92 - i * 0.1), 1.3 * s, 2.8 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
 }
 
 function drawFlower(ctx, px, py, cellPx, s1, season) {

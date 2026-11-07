@@ -18,7 +18,7 @@ function createInitialState() {
         currentCard:null,availableCards:[],hand:[],cardRewardQueue:[],selectedCardInstanceId:null,cardPreview:null,
         nextCardDrawTick:0,issueSequence:0,nextIssueAtTick:0,
         worldOptions:{size:"standard",shape:"continent",climate:"temperate",landmass:50,ruggedness:55,forests:52,water:48,fertility:55,resources:50},
-        worldW:0,worldH:0,worldSizeId:"standard",seaLevel:0.33,rivers:[],temperatureMap:null,
+        worldW:0,worldH:0,worldSizeId:"standard",seaLevel:0.33,rivers:[],temperatureMap:null,terrainVersion:1,
         selectedBuildingId:null,selectedRoom:null,buildTool:null,buildMoveFrom:null,buildUndo:[],workshopOpen:false,buildingInteriorVersion:0,
         hiddenRealm:{tension:0,prosperity:0,mystery:0,memories:[],activeThreads:[],completedThreads:[]},
         frameFaulted:false,frameErrorCount:0,worldEpoch:0,buildingCollisionVersion:0,

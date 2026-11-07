@@ -6,7 +6,7 @@
 
 import { WORLD_W, WORLD_H, NOISE_SCALE } from '../core/config.js';
 import {
-    getWorldData,
+    getWorldData, TERRAIN_GENERATION_VERSION,
     classifyTerrain, gameplayBiome, terrainColor,
     normalizeWorldOptions, resolveWorldDimensions, seaLevelFor,
 } from './terrain-model.js';
@@ -30,7 +30,7 @@ export function worldHeight() {
 //  GENERATION
 // ═══════════════════════════════════════════════════════════════
 
-export function initWorld(seed = state.worldSeed, options = state.worldOptions) {
+export function initWorld(seed = state.worldSeed, options = state.worldOptions, terrainVersion = TERRAIN_GENERATION_VERSION) {
     state.worldOptions = normalizeWorldOptions(options);
     const worldSeed = Number.isSafeInteger(Number(seed)) && Number(seed) > 0
         ? Number(seed)
@@ -42,13 +42,14 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions) 
     state.worldH = dims.h;
     state.worldSizeId = dims.id;
     state.seaLevel = seaLevelFor(state.worldOptions);
+    state.terrainVersion = terrainVersion;
     state.fogCanvas = null;
     state.fogDirty = true;
     state.fogExploredRef = null;
 
     // One shared, cached world data set backs both the forge preview and the
     // live realm. Starting the displayed world reuses its exact terrain arrays.
-    const worldData = getWorldData(worldSeed, state.worldOptions);
+    const worldData = getWorldData(worldSeed, state.worldOptions, terrainVersion);
     state.heightMap = worldData.heights;
     state.moistureMap = worldData.moistures;
     state.temperatureMap = worldData.temperatures;

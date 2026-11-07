@@ -379,7 +379,7 @@ void main() {
     float nearShore = (1.0 - smoothstep(0.02, 0.40, sd)) * (1.0 - water);
     // The carve drops one texel and leaves a cliff ring. Read it as a bank:
     // no cliff material, no grain and no relief inside this band.
-    float shoreCalm = (1.0 - smoothstep(0.30, 1.40, sd)) * (1.0 - water);
+    float shoreCalm = (1.0 - smoothstep(0.30, 2.60, sd)) * (1.0 - water);
     float shoreDetail = smoothstep(0.25, 0.7, detail);
 
     float coastNoise = (vnoise(world * 2.2 + vec2(11.0, 4.0)) - 0.5) * 0.013
@@ -453,6 +453,12 @@ void main() {
         if (snow > 0.02) material += snowMaterial(world, micro, detail) * snow;
         if (bare > 0.02) material += earthMaterial(meso, fine, micro, detail) * bare;
         landColor = material / max(0.0001, weight);
+
+        // Damp margin on the land side of the true shore. It comes from the
+        // signed distance field, so it follows every inlet without painting a
+        // ring around the carve.
+        float wetMargin = (1.0 - smoothstep(0.0, 0.85, sd)) * (1.0 - water);
+        landColor = mix(landColor, landColor * vec3(0.74, 0.79, 0.75), wetMargin * 0.34);
 
         // Broad pasture patches keep large meadows from reading as one flat wash.
         float pasture = smoothstep(0.40, 0.72, vnoise(world * 0.33 + vec2(3.3, 8.1)));

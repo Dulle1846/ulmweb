@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KINGS &amp; CARDS · Terrain Performance</title>
+<style>
+    :root { color-scheme: dark; }
+    body { margin: 0; padding: 24px; background: #0d1410; color: #dfe8dc; font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    h1 { margin: 0 0 4px; font: 600 18px/1.2 Georgia, serif; letter-spacing: .08em; color: #e8cf98; }
+    p { margin: 0 0 16px; max-width: 900px; color: #9fb19b; }
+    .stack { position: relative; width: max-content; max-width: 100%; }
+    #terrain, #stage { display: block; border: 1px solid #2a3a2c; background: #101a14; max-width: 100%; height: auto; }
+    #stage { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+    pre { margin: 18px 0 0; padding: 14px 16px; background: #111b14; border: 1px solid #2a3a2c; color: #d7e4d2; white-space: pre-wrap; min-width: 560px; }
+    .note { margin-top: 12px; font-size: 12px; color: #7f937d; }
+</style>
+</head>
+<body>
+<h1>TERRAIN PERFORMANCE</h1>
+<p>Measures the WebGL2 terrain layer at the four gameplay zoom levels. The GPU is synchronised after every draw, so the draw time includes rasterisation rather than only command submission.</p>
+<div class="stack">
+    <canvas id="terrain" aria-label="Terrain benchmark output"></canvas>
+    <canvas id="stage" aria-hidden="true"></canvas>
+</div>
+<pre id="out">Generating a standard realm and measuring…</pre>
+<p class="note">Open this page on the machine you want to measure. Add <code>?w=1600&amp;h=900</code> to change the viewport. Results are also available as <code>window.__terrainPerf</code>.</p>
+
+<script type="module">
+import { state } from "../../js/core/state.js";
+import { initWorld } from "../../js/world/world.js";
+import { drawTerrainGL } from "../../js/presentation/rendering/terrain-webgl.js";
+import { CELL } from "../../js/core/config.js";
+
+const params = new URLSearchParams(location.search);
+const width = Math.max(320, Math.min(2560, Number(params.get("w")) || 1200));
+const height = Math.max(240, Math.min(1440, Number(params.get("h")) || 700));
+const frames = Math.max(8, Math.min(240, Number(params.get("frames")) || 60));
+const terrain = document.getElementById("terrain");
+const stage = document.getElementById("stage");
+for (const canvas of [terrain, stage]) {
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+}
+
+state.canvas = stage;
+state.ctx = stage.getContext("2d");
+state.terrainCanvasEl = terrain;
+state.zoom = 1;
+state.zoomTarget = 1;
+state.zoomLevel = 3;
+
+initWorld(20261104, {
+    size: "standard", shape: "continent", climate: "temperate",
+    landmass: 72, ruggedness: 64, forests: 81, water: 43,
+});
+state.roads = state.roads || { version: 1, revision: 0, tiles: {} };
+
+const gl = terrain.getContext("webgl2");
+if (!gl) {
+    document.getElementById("out").textContent = "WebGL2 is unavailable in this browser.";
+    throw new Error("WebGL2 is unavailable");
+}
+const debug = gl.getExtension("WEBGL_debug_renderer_info");
+const renderer = String(gl.getParameter(debug ? debug.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
+
+const LEVELS = [
+    { label: "Landscape", zoom: 0.30, level: 1 },
+    { label: "District", zoom: 0.95, level: 2 },
+    { label: "Rooftop", zoom: 2.40, level: 3 },
+    { label: "Interior", zoom: 4.20, level: 4 },
+];
+
+function stats(values) {
+    const sorted = values.slice().sort((a, b) => a - b);
+    const at = p => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+    const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+    return { median: +at(0.5).toFixed(3), p95: +at(0.95).toFixed(3), mean: +mean.toFixed(3) };
+}
+
+const results = [];
+try {
+    for (const level of LEVELS) {
+        state.zoom = level.zoom;
+        state.zoomTarget = level.zoom;
+        state.zoomLevel = level.level;
+        state.camera.x = state.worldW * 0.5 * CELL * level.zoom - width / 2;
+        state.camera.y = state.worldH * 0.5 * CELL * level.zoom - height / 2;
+
+        for (let i = 0; i < 12; i++) {
+            if (!drawTerrainGL()) throw new Error("The WebGL terrain layer did not initialise");
+        }
+        gl.finish();
+
+        const draws = [];
+        for (let i = 0; i < frames; i++) {
+            const start = performance.now();
+            drawTerrainGL();
+            gl.finish();
+            draws.push(performance.now() - start);
+        }
+
+        const intervals = [];
+        await new Promise(resolve => {
+            let previous = performance.now();
+            let count = 0;
+            let settled = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                resolve();
+            };
+            const frame = now => {
+                intervals.push(now - previous);
+                previous = now;
+                drawTerrainGL();
+                if (++count < frames) requestAnimationFrame(frame);
+                else finish();
+            };
+            requestAnimationFrame(frame);
+            // Background tabs suspend animation frames; never hang the report.
+            setTimeout(finish, 5000);
+        });
+
+        results.push({
+            label: level.label,
+            zoom: level.zoom,
+            draw: stats(draws),
+            frame: intervals.length ? stats(intervals) : null,
+        });
+        document.getElementById("out").textContent =
+            "Measuring… " + results.map(r => r.label + " " + r.draw.median + " ms").join(" · ");
+    }
+} catch (error) {
+    document.getElementById("out").textContent = "Benchmark failed: " + error.message;
+    throw error;
+}
+
+const report = {
+    renderer,
+    viewport: [width, height],
+    world: [state.worldW, state.worldH],
+    results,
+};
+window.__terrainPerf = report;
+const lines = [
+    "Renderer : " + renderer,
+    "Viewport : " + width + " × " + height,
+    "World    : " + state.worldW + " × " + state.worldH + " tiles",
+    "",
+    "LEVEL      ZOOM   DRAW MEDIAN   P95   FRAME MEDIAN   P95",
+];
+for (const result of results) {
+    lines.push(
+        result.label.padEnd(10) + String(result.zoom).padEnd(7)
+        + String(result.draw.median + " ms").padEnd(14)
+        + String(result.draw.p95 + " ms").padEnd(6)
+        + (result.frame ? String(result.frame.median + " ms").padEnd(15) : "n/a".padEnd(15))
+        + (result.frame ? result.frame.p95 + " ms" : "frame sampling unavailable")
+    );
+}
+document.getElementById("out").textContent = lines.join("\n");
+console.log(JSON.stringify(report));
+
+// Optional review captures for the local capture server. Each shot is the
+// canvas at full benchmark resolution, independent of the browser viewport.
+if (params.get("shots")) {
+    for (const level of LEVELS) {
+        state.zoom = level.zoom;
+        state.zoomTarget = level.zoom;
+        state.zoomLevel = level.level;
+        state.camera.x = state.worldW * 0.5 * CELL * level.zoom - width / 2;
+        state.camera.y = state.worldH * 0.5 * CELL * level.zoom - height / 2;
+        drawTerrainGL();
+        await fetch("/shot?name=terrain-" + level.label.toLowerCase(), {
+            method: "POST",
+            headers: { "content-type": "text/plain" },
+            body: terrain.toDataURL("image/png"),
+        });
+    }
+    document.getElementById("out").textContent += "\n\nReview captures written to artifacts/.";
+}
+</script>
+</body>
+</html>

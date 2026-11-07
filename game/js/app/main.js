@@ -3,7 +3,7 @@ import { WORLD_W,WORLD_H,CELL } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { state,resetState } from "../core/state.js";
 import { initWorld } from "../world/world.js";
-import { renderWorldPreview,normalizeWorldOptions,resolveWorldDimensions } from "../world/terrain-model.js";
+import { renderWorldPreview,normalizeWorldOptions,resolveWorldDimensions,TERRAIN_GENERATION_VERSION } from "../world/terrain-model.js";
 import { initStartingKingdom,spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
@@ -173,7 +173,8 @@ function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     resetForRun(profile);
     state.worldSeed=seed;
     state.worldOptions={...worldOptions};
-    initWorld(seed,state.worldOptions);
+    state.terrainVersion=TERRAIN_GENERATION_VERSION;
+    initWorld(seed,state.worldOptions,state.terrainVersion);
     initStartingKingdom();
     initializeCityForRealm();
     normalizeHouseholdAssignments();
@@ -211,7 +212,7 @@ function createSaveSnapshot(){
     const indexes=new Map(state.entities.map((entity,index)=>[entity,index]));
     return {
         playerName:state.playerName,kingdomName:state.kingdomName,worldSeed:state.worldSeed,
-        worldOptions:{...state.worldOptions},randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:SAVE_SCHEMA_VERSION,nextCardDrawTick:state.nextCardDrawTick,
+        worldOptions:{...state.worldOptions},terrainVersion:state.terrainVersion||1,randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:SAVE_SCHEMA_VERSION,nextCardDrawTick:state.nextCardDrawTick,
         nextIssueAtTick:state.nextIssueAtTick,issueSequence:state.issueSequence,
         hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),health:JSON.parse(JSON.stringify(state.health||{})),
         camera:{...state.camera},zoom:state.zoom,
@@ -268,7 +269,10 @@ function loadSnapshotIntoGame(profile,snapshot){
     resetForRun(profile);
     state.worldSeed=snapshot.worldSeed||randomSeed();
     state.worldOptions=snapshot.worldOptions||{landmass:50,ruggedness:55,forests:52,water:48};
-    initWorld(state.worldSeed,state.worldOptions);
+    // Terrain is rebuilt from the seed, so a save without a version marker was
+    // created by the version-1 generator and must keep that exact landscape.
+    state.terrainVersion=Number(snapshot.terrainVersion)>=TERRAIN_GENERATION_VERSION?TERRAIN_GENERATION_VERSION:1;
+    initWorld(state.worldSeed,state.worldOptions,state.terrainVersion);
     restoreRoads(snapshot.roads);
     restoreResourceGeography(snapshot.resourceGeography);
     state.entities=[];

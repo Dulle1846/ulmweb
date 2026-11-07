@@ -6,6 +6,7 @@ import {
     initNoise, sampleHeight, sampleMoisture, sampleTemperature,
     classifyTerrain, gameplayBiome, carveWaterFeatures,
     terrainResolutionFor, generateWorldData, getWorldData, clearWorldDataCache, worldDataKey,
+    TERRAIN_GENERATION_VERSION,
 } from "../../js/world/terrain-model.js";
 import {
     defaultInterior, normalizeInterior, INTERIOR_ITEM_IDS, REBUILD_COST,
@@ -180,6 +181,37 @@ test("river carving cuts a channel and ends in water or a lake", () => {
     for (const value of heights) if (value < sea) underwater++;
     assert.ok(underwater > rivers[0].length, "the river must widen into water");
 });
+
+test("generation v2 carves soft basins while version 1 stays reproducible", () => {
+    clearWorldDataCache();
+    const options = { size: "standard", shape: "continent", climate: "temperate" };
+    const current = generateWorldData(20261104, options);
+    assert.equal(current.terrainVersion, TERRAIN_GENERATION_VERSION);
+    const sea = current.sea;
+    let water = 0;
+    let flatLegacyPlates = 0;
+    for (const height of current.heights) {
+        if (height < sea) water++;
+        if (Math.abs(height - (sea - 0.012)) < 1e-7) flatLegacyPlates++;
+    }
+    assert.ok(water > 0, "a temperate continent must contain water");
+    assert.equal(flatLegacyPlates, 0, "v2 must not leave flat sea-level plates behind");
+    assert.ok(current.rivers.length > 0, "v2 must still carve rivers");
+
+    const legacy = generateWorldData(20261104, options, 1);
+    assert.equal(legacy.terrainVersion, 1);
+    let differences = 0;
+    for (let index = 0; index < legacy.heights.length; index += 97) {
+        if (legacy.heights[index] !== current.heights[index]) differences++;
+    }
+    assert.ok(differences > 0, "a legacy world must keep the version-1 generator");
+    assert.notEqual(overlapKey(options), worldDataKey(20261104, options, 1));
+    clearWorldDataCache();
+});
+
+function overlapKey(options) {
+    return worldDataKey(20261104, options, TERRAIN_GENERATION_VERSION);
+}
 
 test("preview and realm share one cached world data set", () => {
     clearWorldDataCache();
