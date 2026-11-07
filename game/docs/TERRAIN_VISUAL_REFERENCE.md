@@ -28,7 +28,9 @@ The script:
 2. Pauses the simulation, reveals the full map and hides the HUD, entities, weather and fog.
 3. Captures each season at each zoom preset.
 4. Writes `docs/terrain-reference/contact-sheet.png` and `docs/terrain-reference/reference.json`.
-5. Writes the sixteen individual frames to `$TMPDIR/kac-terrain-reference-frames` by default. Set `TERRAIN_REFERENCE_FRAMES` to keep them somewhere else; set `TERRAIN_REFERENCE_OUT` to redirect the committed artifacts.
+5. Writes the sixteen individual frames to `$TMPDIR/kac-terrain-reference-frames` by default. Set `TERRAIN_REFERENCE_FRAMES` to keep them somewhere else; set `TERRAIN_REFERENCE_OUT` to redirect the reference artifacts.
+
+The GitHub browser workflow runs the same command with `TERRAIN_REFERENCE_OUT` pointing at `$RUNNER_TEMP/terrain-reference` and uploads the contact sheet and metadata as the `kings-and-cards-terrain-reference` artifact. That step runs even when the gameplay E2E step fails, so the surface report remains available for review.
 
 The Playwright environment variables described in [tests/browser/README.md](../tests/browser/README.md) apply.
 

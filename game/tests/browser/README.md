@@ -87,3 +87,9 @@ configured directory for review.
 `ulmweb-branch`, installs the pinned dependency, caches Chromium, runs the setup
 with `--with-deps`, and then runs `npm run test:e2e`. Screenshots from the
 responsive review are uploaded even when the test fails.
+
+After the E2E step, the same job generates the four-season, four-zoom terrain
+reference into `$RUNNER_TEMP/terrain-reference` and uploads the labelled contact
+sheet and `reference.json` as the `kings-and-cards-terrain-reference` artifact.
+The reference step also runs when the E2E step fails, so a failed gameplay run
+still produces the visual surface report.
