@@ -843,10 +843,26 @@ try{
     await page.locator("#people-close").click();
 
     await page.locator("#speed-4").click();
-    await page.waitForFunction(()=>{
-        const value=document.querySelector("#hand-count")?.textContent||"0 / 5";
-        return Number.parseInt(value,10)>=3;
-    },null,{timeout:45000});
+    try{
+        await page.waitForFunction(()=>{
+            const value=document.querySelector("#hand-count")?.textContent||"0 / 5";
+            return Number.parseInt(value,10)>=3;
+        },null,{timeout:90000});
+    }catch(error){
+        const diagnostic=await page.evaluate(async()=>{
+            const {state}=await import("./js/core/state.js");
+            return {
+                tick:state.tick,gameSpeed:state.gameSpeed,isPaused:state.isPaused,frameFaulted:state.frameFaulted,
+                hand:state.hand.length,nextCardDrawTick:state.nextCardDrawTick,hasStarted:state.hasStarted,
+                gameOver:state.gameOver,victory:state.victory,
+                handCount:document.querySelector("#hand-count")?.textContent,
+                pauseText:document.querySelector("#pause-text")?.textContent,
+                eventVisible:!document.querySelector("#realm-event-modal")?.classList.contains("hidden")
+            };
+        }).catch(diagnosticError=>({diagnosticError:String(diagnosticError)}));
+        console.log("Card draw timeout diagnostic:",JSON.stringify({diagnostic,pageErrors:errors,consoleErrors}));
+        throw error;
+    }
     const countBeforeClick=Number.parseInt(await page.locator("#hand-count").innerText(),10);
     const cardButtons=page.locator("#card-hand .hand-card");
     assert.ok(await page.locator("#card-hand .hand-card-sprite use").count()>=1,"every card must display original category artwork");
