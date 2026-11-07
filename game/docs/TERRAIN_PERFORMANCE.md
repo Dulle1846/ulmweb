@@ -34,7 +34,7 @@ and most of the expensive work is amortised instead of running per pixel.
 
 | Pass | Where it runs | Cost | Frequency |
 | --- | --- | --- | --- |
-| Detail atlas | fragment | up to 2 texture fetches for the variant cross-fade | every frame |
+| Detail atlas | fragment | up to 2 texture fetches for the four-variant cross-fade | every frame |
 | Baked ambient occlusion | world upload | 16 height samples per output texel, half resolution | once per realm |
 | Directional shadow | fragment | 3 bilinear height taps, land fragments only | every frame |
 | Contours and hachures | fragment | `fwidth` and two noise fetches, no texture taps | every frame below zoom 1.15 |
@@ -58,7 +58,10 @@ sits inside the land branch, so deep water never pays for it.
 Memory: the wear field and its targets are two `Float32Array`s of
 `ceil(width × 2) × ceil(height × 2)` cells, about 1 MB together for a standard
 realm, plus a 0.5 MB RGBA byte buffer for the upload. The occlusion texture is a
-single `R8` at half resolution.
+single `R8` at half resolution. The terrain detail atlas is a 2048 × 1024 RGBA
+texture (8 MiB) uploaded once per WebGL context; it is not re-uploaded while
+the realm runs. The atlas trades memory for 256 px detail tiles and four
+seamless variants per material.
 
 ## Measured values
 

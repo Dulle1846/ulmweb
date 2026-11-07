@@ -15,7 +15,7 @@ import { state } from '../../core/state.js';
 import { worldWidth, worldHeight } from '../../world/world.js';
 import { getRoadTiles } from '../../systems/roads.js';
 import { terrainSeasonPhase, terrainShaderPaletteForPhase } from './terrain-palette.js';
-import { buildTerrainAtlas, TERRAIN_ATLAS_COLUMNS, TERRAIN_ATLAS_ROWS } from './terrain-atlas.js';
+import { buildTerrainAtlas, TERRAIN_ATLAS_COLUMNS, TERRAIN_ATLAS_ROWS, TERRAIN_ATLAS_VARIANTS } from './terrain-atlas.js';
 import { buildHeightOcclusion } from './terrain-ao.js';
 import { advanceWearField, buildWearTargets, createWearField, encodeWearField, wearGridSize } from './terrain-wear.js';
 
@@ -34,6 +34,7 @@ uniform sampler2D uWear;
 uniform sampler2D uWaterDist;
 uniform sampler2D uAtlas;
 uniform vec2 uAtlasGrid;
+uniform float uAtlasVariants;
 uniform float uAtlasStrength;
 uniform sampler2D uAO;
 uniform vec3 uSunDirection;
@@ -112,27 +113,33 @@ float ridged3(vec2 p) {
 }
 
 // ── baked ground detail ─────────────────────────────────────────
-// Seamless detail tiles from the deterministic atlas, two variants per material
-// picked per region so a meadow or rock field is not one repeated stamp.
-// textureLod keeps the fetch legal inside material branches, which are not
-// uniformly taken across a quad.
+// Seamless detail tiles from the deterministic atlas, four variants per
+// material selected by region so a meadow or rock field is not one repeated
+// stamp. textureLod keeps the fetch legal inside material branches, which are
+// not uniformly taken across a quad.
 
 float atlasDetail(float tile, vec2 world, float scale) {
     float column = mod(tile, uAtlasGrid.x);
     float row = floor(tile / uAtlasGrid.x);
     vec2 local = fract(world * scale);
     vec2 uv = (vec2(column, row) + local) / uAtlasGrid;
-    return textureLod(uAtlas, uv, 0.0).r;
+    vec4 texel = textureLod(uAtlas, uv, 0.0);
+    // Red is surface relief; green adds macro contrast and blue a fine crust.
+    // Using only red left two thirds of the atlas data unused and made close
+    // surfaces look softer than the authored tiles.
+    return clamp(texel.r * (0.80 + 0.40 * texel.g) + (texel.b - 0.5) * 0.06, 0.0, 1.2);
 }
 
-float groundDetail(vec2 world, float variantA, float variantB, float scale) {
-    // Cross-fade the two variants instead of stepping between them: a hard
-    // pick draws a straight seam across a meadow wherever the noise crosses
-    // its threshold, which read as a sudden material change.
-    float pick = smoothstep(0.35, 0.65, vnoise(world * 0.031 + uSeed * 3.7));
-    if (pick <= 0.01) return atlasDetail(variantA, world, scale);
-    if (pick >= 0.99) return atlasDetail(variantB, world, scale);
-    return mix(atlasDetail(variantA, world, scale), atlasDetail(variantB, world, scale), pick);
+float groundDetail(vec2 world, float base, float scale) {
+    // Walk a ring of variants and cross-fade neighbours. A hard pick draws a
+    // straight seam across a meadow wherever the noise crosses its threshold;
+    // the ring keeps the transition continuous, including at the wrap.
+    float region = vnoise(world * 0.031 + uSeed * 3.7) * uAtlasVariants;
+    float index = floor(region);
+    float blend = smoothstep(0.35, 0.65, fract(region));
+    float variantA = base + mod(index, uAtlasVariants);
+    float variantB = base + mod(index + 1.0, uAtlasVariants);
+    return mix(atlasDetail(variantA, world, scale), atlasDetail(variantB, world, scale), blend);
 }
 
 // ── smooth height field ─────────────────────────────────────────
@@ -292,7 +299,7 @@ vec3 grassMaterial(vec2 world, float moisture, float macro, float meso, float fi
 
     color = mix(color, uLush * 0.80, smoothstep(0.56, 0.80, fleck) * 0.14 * uCloseDetail);
     color = mix(color, color * 0.72, smoothstep(0.90, 0.99, fine) * 0.22 * detail);
-    float detailMap = groundDetail(world, 0.0, 1.0, 0.42);
+    float detailMap = groundDetail(world, 0.0, 0.42);
     color *= mix(1.0, 0.84 + 0.34 * detailMap, uAtlasStrength * (0.45 + 0.55 * uCloseDetail));
     // Seasonal ground cover changes the surface itself, not just its palette:
     // fallen leaves, spring blossom, scorched summer patches and winter frost.
@@ -322,7 +329,7 @@ vec3 forestMaterial(vec2 world, float macro, float meso, float fine, float micro
     color = mix(color, color * 1.12, smoothstep(0.36, 0.12, canopy) * 0.14 * detail);
     color += vec3(0.030, 0.038, 0.012) * (fine - 0.5) * detail;
     color = mix(color, color * 0.70, smoothstep(0.86, 0.99, fine) * 0.26 * detail);
-    float detailMap = groundDetail(world, 2.0, 3.0, 0.55);
+    float detailMap = groundDetail(world, 4.0, 0.55);
     color *= mix(1.0, 0.80 + 0.42 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
     color = mix(color, uForest * 1.18 + vec3(0.060, 0.020, 0.0), uAutumn * 0.38);
     float leafCarpet = smoothstep(0.42, 0.86, fbm2(world * 3.1 + vec2(5.7, 2.2)) + (micro - 0.5) * 0.22);
@@ -337,7 +344,7 @@ vec3 earthMaterial(vec2 world, float meso, float fine, float micro, float detail
     vec3 color = mix(uEarth, uDry, meso * 0.38);
     color *= 0.76 + 0.24 * micro + 0.20 * fine - grit;
     color = mix(color, color * 0.64, smoothstep(0.60, 0.84, micro) * 0.20);
-    float detailMap = groundDetail(world, 10.0, 11.0, 0.75);
+    float detailMap = groundDetail(world, 20.0, 0.75);
     color *= mix(1.0, 0.80 + 0.42 * detailMap, uAtlasStrength * (0.45 + 0.55 * detail));
     return color;
 }
@@ -351,7 +358,7 @@ vec3 rockMaterial(vec2 world, float meso, float micro, float detail) {
     color = mix(color, color * 0.62, crack * 0.22);
     color = mix(color, color * 1.10, strata * 0.12 * detail);
     color = mix(color, color * 1.10, step(0.80, micro) * 0.10 * detail);
-    float detailMap = groundDetail(world, 4.0, 5.0, 0.30);
+    float detailMap = groundDetail(world, 8.0, 0.30);
     color *= mix(1.0, 0.78 + 0.46 * detailMap, uAtlasStrength * (0.50 + 0.50 * uCloseDetail));
     return color;
 }
@@ -363,7 +370,7 @@ vec3 wetlandMaterial(vec2 world, float macro, float meso, float micro) {
     color *= 0.70 + 0.28 * meso + 0.18 * micro;
     color = mix(color, color * 0.72, smoothstep(0.62, 0.9, moss) * 0.26);
     color = mix(color, color * 1.20, step(0.76, micro) * 0.18);
-    float detailMap = groundDetail(world, 12.0, 13.0, 0.45);
+    float detailMap = groundDetail(world, 24.0, 0.45);
     color *= mix(1.0, 0.82 + 0.36 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
     return color;
 }
@@ -375,7 +382,7 @@ vec3 sandMaterial(vec2 world, float meso, float fine, float micro, float detail)
     color += vec3(0.052, 0.040, 0.019) * (ripple - 0.5) * detail;
     color = mix(color, color * 0.74, step(0.70, fine) * 0.36 * detail);
     color = mix(color, color * 1.12, step(0.76, grit) * 0.22 * uCloseDetail);
-    float detailMap = groundDetail(world, 6.0, 7.0, 0.90);
+    float detailMap = groundDetail(world, 12.0, 0.90);
     color *= mix(1.0, 0.86 + 0.28 * detailMap, uAtlasStrength * uCloseDetail);
     return color;
 }
@@ -386,7 +393,7 @@ vec3 snowMaterial(vec2 world, float micro, float detail) {
     vec3 color = mix(uSnow, uSnow * 0.86, drift * 0.32);
     color = mix(color, color * 1.06, step(0.68, micro) * 0.16);
     color = mix(color, color * 0.78, smoothstep(0.60, 0.80, vnoise(world * 6.2)) * 0.24);
-    float detailMap = groundDetail(world, 8.0, 9.0, 0.50);
+    float detailMap = groundDetail(world, 16.0, 0.50);
     color *= mix(1.0, 0.90 + 0.20 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
     // Spring melt opens dark ground under the crust instead of only recolouring.
     float melt = smoothstep(0.46, 0.86, vnoise(world * 1.7 + vec2(6.4, 2.8))) * uSpring;
@@ -807,6 +814,7 @@ function init() {
         waterDist: gl.getUniformLocation(program, "uWaterDist"),
         atlas: gl.getUniformLocation(program, "uAtlas"),
         atlasGrid: gl.getUniformLocation(program, "uAtlasGrid"),
+        atlasVariants: gl.getUniformLocation(program, "uAtlasVariants"),
         atlasStrength: gl.getUniformLocation(program, "uAtlasStrength"),
         ao: gl.getUniformLocation(program, "uAO"),
         sunDirection: gl.getUniformLocation(program, "uSunDirection"),
@@ -1126,7 +1134,7 @@ function uploadAtlasData() {
     gl.bindTexture(gl.TEXTURE_2D, atlasTexture);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
     clearStaleErrors();
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, atlas.size, atlas.size, 0, gl.RGBA, gl.UNSIGNED_BYTE, atlas.data);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, atlas.width, atlas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, atlas.data);
     if (gl.getError() !== gl.NO_ERROR) {
         console.warn("Terrain detail atlas upload failed; keeping procedural detail only.");
         return false;
@@ -1253,6 +1261,7 @@ export function drawTerrainGL() {
     gl.uniform1f(uniforms.seed, (state.worldSeed % 1000) * 0.013);
     gl.uniform1f(uniforms.highQuality, state.zoom >= 0.45 ? 1 : 0);
     gl.uniform2f(uniforms.atlasGrid, TERRAIN_ATLAS_COLUMNS, TERRAIN_ATLAS_ROWS);
+    gl.uniform1f(uniforms.atlasVariants, TERRAIN_ATLAS_VARIANTS);
     gl.uniform1f(uniforms.atlasStrength, atlasReady ? 1 : 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.bindVertexArray(null);

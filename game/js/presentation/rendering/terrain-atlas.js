@@ -7,33 +7,35 @@
 // texture without decoding image files or shipping binary assets.
 //
 // Every pattern is built from integer sine cycles or lattice noise wrapped at
-// the tile border, which makes each tile tile seamlessly and lets two variants
-// per material be swapped by region instead of tiling one stamp everywhere.
+// the tile border, which makes each tile tile seamlessly. Four variants per
+// material are selected by region and cross-faded, so a meadow or rock field
+// does not repeat one stamp across the whole map.
 //
 // The module is DOM-free: it allocates plain typed arrays so it can be unit
 // tested in Node. Uploading to a texture is the renderer's job.
 
-export const TERRAIN_ATLAS_TILE = 128;
-export const TERRAIN_ATLAS_COLUMNS = 4;
+export const TERRAIN_ATLAS_TILE = 256;
+export const TERRAIN_ATLAS_COLUMNS = 8;
 export const TERRAIN_ATLAS_ROWS = 4;
-export const TERRAIN_ATLAS_SIZE = TERRAIN_ATLAS_TILE * TERRAIN_ATLAS_COLUMNS;
+export const TERRAIN_ATLAS_VARIANTS = 4;
+export const TERRAIN_ATLAS_WIDTH = TERRAIN_ATLAS_TILE * TERRAIN_ATLAS_COLUMNS;
+export const TERRAIN_ATLAS_HEIGHT = TERRAIN_ATLAS_TILE * TERRAIN_ATLAS_ROWS;
 
-// Tile index pairs per shader material. The atlas has 16 slots; 14 are used and
-// the remaining two stay neutral so a mis-sampled index reads as flat detail
-// instead of inventing a pattern.
+// Four contiguous tiles per material. The shader selects a base tile and walks
+// the ring, so every material must stay a consecutive block.
 export const TERRAIN_ATLAS_TILES = Object.freeze({
-    grass: Object.freeze([0, 1]),
-    forest: Object.freeze([2, 3]),
-    rock: Object.freeze([4, 5]),
-    sand: Object.freeze([6, 7]),
-    snow: Object.freeze([8, 9]),
-    earth: Object.freeze([10, 11]),
-    wetland: Object.freeze([12, 13]),
+    grass: Object.freeze([0, 1, 2, 3]),
+    forest: Object.freeze([4, 5, 6, 7]),
+    rock: Object.freeze([8, 9, 10, 11]),
+    sand: Object.freeze([12, 13, 14, 15]),
+    snow: Object.freeze([16, 17, 18, 19]),
+    earth: Object.freeze([20, 21, 22, 23]),
+    wetland: Object.freeze([24, 25, 26, 27]),
 });
 
 export const TERRAIN_ATLAS_MATERIALS = Object.freeze(Object.keys(TERRAIN_ATLAS_TILES));
 
-const NEUTRAL_TILES = Object.freeze([14, 15]);
+export const TERRAIN_ATLAS_NEUTRAL_TILES = Object.freeze([28, 29, 30, 31]);
 
 // ── periodic noise ──────────────────────────────────────────────
 // The lattice wraps at `period` cells, so a caller feeding u,v in [0,1) times
@@ -122,7 +124,7 @@ function forestTile(u, v, variant) {
     let value = 112 + 42 * canopy + 16 * leaf;
     value += 26 * smoothRange(0.58, 0.86, litter);
     value -= 22 * smoothRange(0.76, 0.98, canopy);
-    return [value, 100 + 70 * litter, 120 + 40 * canopy];
+    return [value, 100 + 70 * litter, 120 + 40 * canopy + 24 * leaf];
 }
 
 function rockTile(u, v, variant) {
@@ -196,7 +198,7 @@ const PAINTERS = Object.freeze({
     wetland: wetlandTile,
 });
 
-function paintTile(data, size, index, material, variant) {
+function paintTile(data, width, index, material, variant) {
     const painter = PAINTERS[material];
     const tile = TERRAIN_ATLAS_TILE;
     const column = index % TERRAIN_ATLAS_COLUMNS;
@@ -208,7 +210,7 @@ function paintTile(data, size, index, material, variant) {
         for (let x = 0; x < tile; x++) {
             const u = x / tile;
             const [detail, macro, contrast] = painter(u, v, variant);
-            const offset = ((originY + y) * size + originX + x) * 4;
+            const offset = ((originY + y) * width + originX + x) * 4;
             data[offset] = clamp255(detail);
             data[offset + 1] = clamp255(macro);
             data[offset + 2] = clamp255(contrast);
@@ -217,7 +219,7 @@ function paintTile(data, size, index, material, variant) {
     }
 }
 
-function paintNeutralTile(data, size, index) {
+function paintNeutralTile(data, width, index) {
     const tile = TERRAIN_ATLAS_TILE;
     const column = index % TERRAIN_ATLAS_COLUMNS;
     const row = Math.floor(index / TERRAIN_ATLAS_COLUMNS);
@@ -225,7 +227,7 @@ function paintNeutralTile(data, size, index) {
     const originY = row * tile;
     for (let y = 0; y < tile; y++) {
         for (let x = 0; x < tile; x++) {
-            const offset = ((originY + y) * size + originX + x) * 4;
+            const offset = ((originY + y) * width + originX + x) * 4;
             data[offset] = 128;
             data[offset + 1] = 128;
             data[offset + 2] = 128;
@@ -238,21 +240,25 @@ let cachedAtlas = null;
 
 export function buildTerrainAtlas({ fresh = false } = {}) {
     if (cachedAtlas && !fresh) return cachedAtlas;
-    const size = TERRAIN_ATLAS_SIZE;
-    const data = new Uint8Array(size * size * 4);
+    const width = TERRAIN_ATLAS_WIDTH;
+    const height = TERRAIN_ATLAS_HEIGHT;
+    const data = new Uint8Array(width * height * 4);
     for (const material of TERRAIN_ATLAS_MATERIALS) {
         const variants = TERRAIN_ATLAS_TILES[material];
         for (let variant = 0; variant < variants.length; variant++) {
-            paintTile(data, size, variants[variant], material, variant);
+            paintTile(data, width, variants[variant], material, variant);
         }
     }
-    for (const index of NEUTRAL_TILES) paintNeutralTile(data, size, index);
+    for (const index of TERRAIN_ATLAS_NEUTRAL_TILES) paintNeutralTile(data, width, index);
     const atlas = Object.freeze({
-        size,
+        width,
+        height,
         tile: TERRAIN_ATLAS_TILE,
         columns: TERRAIN_ATLAS_COLUMNS,
         rows: TERRAIN_ATLAS_ROWS,
+        variants: TERRAIN_ATLAS_VARIANTS,
         tiles: TERRAIN_ATLAS_TILES,
+        neutralTiles: TERRAIN_ATLAS_NEUTRAL_TILES,
         data,
     });
     if (!fresh) cachedAtlas = atlas;
