@@ -15,6 +15,7 @@ import { state } from '../../core/state.js';
 import { worldWidth, worldHeight } from '../../world/world.js';
 import { getRoadTiles } from '../../systems/roads.js';
 import { terrainShaderPalette } from './terrain-palette.js';
+import { buildTerrainAtlas, TERRAIN_ATLAS_COLUMNS, TERRAIN_ATLAS_ROWS } from './terrain-atlas.js';
 
 const VERTEX_SHADER = `#version 300 es
 in vec2 aPosition;
@@ -29,6 +30,9 @@ precision highp float;
 uniform sampler2D uTerrain;
 uniform sampler2D uWear;
 uniform sampler2D uWaterDist;
+uniform sampler2D uAtlas;
+uniform vec2 uAtlasGrid;
+uniform float uAtlasStrength;
 uniform vec2 uWorldSize;
 uniform vec2 uDataSize;
 uniform vec2 uCamera;
@@ -93,6 +97,25 @@ float ridged3(vec2 p) {
     float total = (1.0 - abs(vnoise(p) * 2.0 - 1.0)) * 0.62;
     total += (1.0 - abs(vnoise(p * 2.07 + vec2(11.3, 3.7)) * 2.0 - 1.0)) * 0.38;
     return total;
+}
+
+// ── baked ground detail ─────────────────────────────────────────
+// Seamless detail tiles from the deterministic atlas, two variants per material
+// picked per region so a meadow or rock field is not one repeated stamp.
+// textureLod keeps the fetch legal inside material branches, which are not
+// uniformly taken across a quad.
+
+float atlasDetail(float tile, vec2 world, float scale) {
+    float column = mod(tile, uAtlasGrid.x);
+    float row = floor(tile / uAtlasGrid.x);
+    vec2 local = fract(world * scale);
+    vec2 uv = (vec2(column, row) + local) / uAtlasGrid;
+    return textureLod(uAtlas, uv, 0.0).r;
+}
+
+float groundDetail(vec2 world, float variantA, float variantB, float scale) {
+    float pick = step(0.5, vnoise(world * 0.031 + uSeed * 3.7));
+    return atlasDetail(mix(variantA, variantB, pick), world, scale);
 }
 
 // ── smooth height field ─────────────────────────────────────────
@@ -252,6 +275,8 @@ vec3 grassMaterial(vec2 world, float moisture, float macro, float meso, float fi
 
     color = mix(color, uLush * 0.80, smoothstep(0.56, 0.80, fleck) * 0.14 * uCloseDetail);
     color = mix(color, color * 0.72, smoothstep(0.90, 0.99, fine) * 0.22 * detail);
+    float detailMap = groundDetail(world, 0.0, 1.0, 0.42);
+    color *= mix(1.0, 0.84 + 0.34 * detailMap, uAtlasStrength * (0.45 + 0.55 * uCloseDetail));
     if (uAutumn > 0.5) color = mix(color, uDry * 0.94, 0.20);
     return color;
 }
@@ -271,15 +296,19 @@ vec3 forestMaterial(vec2 world, float macro, float meso, float fine, float micro
     color = mix(color, color * 1.12, smoothstep(0.36, 0.12, canopy) * 0.14 * detail);
     color += vec3(0.030, 0.038, 0.012) * (fine - 0.5) * detail;
     color = mix(color, color * 0.70, smoothstep(0.86, 0.99, fine) * 0.26 * detail);
+    float detailMap = groundDetail(world, 2.0, 3.0, 0.55);
+    color *= mix(1.0, 0.80 + 0.42 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
     if (uAutumn > 0.5) color = mix(color, uForest * 1.22 + vec3(0.075, 0.017, 0.0), 0.34);
     return color;
 }
 
-vec3 earthMaterial(float meso, float fine, float micro, float detail) {
+vec3 earthMaterial(vec2 world, float meso, float fine, float micro, float detail) {
     float grit = (step(0.66, fine) * 0.20 + step(0.86, micro) * 0.12) * detail;
     vec3 color = mix(uEarth, uDry, meso * 0.38);
     color *= 0.76 + 0.24 * micro + 0.20 * fine - grit;
     color = mix(color, color * 0.64, smoothstep(0.60, 0.84, micro) * 0.20);
+    float detailMap = groundDetail(world, 10.0, 11.0, 0.75);
+    color *= mix(1.0, 0.80 + 0.42 * detailMap, uAtlasStrength * (0.45 + 0.55 * detail));
     return color;
 }
 
@@ -292,6 +321,8 @@ vec3 rockMaterial(vec2 world, float meso, float micro, float detail) {
     color = mix(color, color * 0.62, crack * 0.22);
     color = mix(color, color * 1.10, strata * 0.12 * detail);
     color = mix(color, color * 1.10, step(0.80, micro) * 0.10 * detail);
+    float detailMap = groundDetail(world, 4.0, 5.0, 0.30);
+    color *= mix(1.0, 0.78 + 0.46 * detailMap, uAtlasStrength * (0.50 + 0.50 * uCloseDetail));
     return color;
 }
 
@@ -302,6 +333,8 @@ vec3 wetlandMaterial(vec2 world, float macro, float meso, float micro) {
     color *= 0.70 + 0.28 * meso + 0.18 * micro;
     color = mix(color, color * 0.72, smoothstep(0.62, 0.9, moss) * 0.26);
     color = mix(color, color * 1.20, step(0.76, micro) * 0.18);
+    float detailMap = groundDetail(world, 12.0, 13.0, 0.45);
+    color *= mix(1.0, 0.82 + 0.36 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
     return color;
 }
 
@@ -312,6 +345,8 @@ vec3 sandMaterial(vec2 world, float meso, float fine, float micro, float detail)
     color += vec3(0.052, 0.040, 0.019) * (ripple - 0.5) * detail;
     color = mix(color, color * 0.74, step(0.70, fine) * 0.36 * detail);
     color = mix(color, color * 1.12, step(0.76, grit) * 0.22 * uCloseDetail);
+    float detailMap = groundDetail(world, 6.0, 7.0, 0.90);
+    color *= mix(1.0, 0.86 + 0.28 * detailMap, uAtlasStrength * uCloseDetail);
     return color;
 }
 
@@ -321,6 +356,8 @@ vec3 snowMaterial(vec2 world, float micro, float detail) {
     vec3 color = mix(uSnow, uSnow * 0.86, drift * 0.32);
     color = mix(color, color * 1.06, step(0.68, micro) * 0.16);
     color = mix(color, color * 0.78, smoothstep(0.60, 0.80, vnoise(world * 6.2)) * 0.24);
+    float detailMap = groundDetail(world, 8.0, 9.0, 0.50);
+    color *= mix(1.0, 0.90 + 0.20 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
     return color + vec3(0.075) * sparkle;
 }
 
@@ -463,7 +500,7 @@ void main() {
         if (wet > 0.02) material += wetlandMaterial(world, macro, meso, micro) * wet;
         if (sand > 0.02) material += sandMaterial(world, meso, fine, micro, detail) * sand;
         if (snow > 0.02) material += snowMaterial(world, micro, detail) * snow;
-        if (bare > 0.02) material += earthMaterial(meso, fine, micro, detail) * bare;
+        if (bare > 0.02) material += earthMaterial(world, meso, fine, micro, detail) * bare;
         landColor = material / max(0.0001, weight);
 
         // Broad pasture patches keep large meadows from reading as one flat wash.
@@ -515,6 +552,8 @@ let vertexBuffer = null;
 let terrainTexture = null;
 let wearTexture = null;
 let waterDistTexture = null;
+let atlasTexture = null;
+let atlasUploaded = false;
 let wearCanvas = null;
 let uniforms = {};
 let failed = false;
@@ -615,7 +654,8 @@ function init() {
     terrainTexture = gl.createTexture();
     wearTexture = gl.createTexture();
     waterDistTexture = gl.createTexture();
-    if (!terrainTexture || !wearTexture || !waterDistTexture) {
+    atlasTexture = gl.createTexture();
+    if (!terrainTexture || !wearTexture || !waterDistTexture || !atlasTexture) {
         failed = true;
         return false;
     }
@@ -644,11 +684,23 @@ function init() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 1, 1, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array([128]));
 
+    // Atlas tiles wrap internally through fract() in the shader, so the texture
+    // itself clamps and never repeats across slots.
+    gl.bindTexture(gl.TEXTURE_2D, atlasTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([128, 128, 128, 255]));
+
     gl.useProgram(program);
     uniforms = {
         terrain: gl.getUniformLocation(program, "uTerrain"),
         wear: gl.getUniformLocation(program, "uWear"),
         waterDist: gl.getUniformLocation(program, "uWaterDist"),
+        atlas: gl.getUniformLocation(program, "uAtlas"),
+        atlasGrid: gl.getUniformLocation(program, "uAtlasGrid"),
+        atlasStrength: gl.getUniformLocation(program, "uAtlasStrength"),
         worldSize: gl.getUniformLocation(program, "uWorldSize"),
         dataSize: gl.getUniformLocation(program, "uDataSize"),
         camera: gl.getUniformLocation(program, "uCamera"),
@@ -681,6 +733,7 @@ function init() {
     gl.uniform1i(uniforms.terrain, 0);
     gl.uniform1i(uniforms.wear, 1);
     gl.uniform1i(uniforms.waterDist, 2);
+    gl.uniform1i(uniforms.atlas, 3);
     gl.clearColor(0.055, 0.075, 0.055, 1.0);
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
@@ -695,6 +748,7 @@ function init() {
         initialized = false;
         uploadedWorldEpoch = -1;
         uploadedWearKey = "";
+        atlasUploaded = false;
     });
 
     return true;
@@ -922,6 +976,31 @@ function uploadWearData() {
     return true;
 }
 
+// The atlas is deterministic and independent of the realm, so it is uploaded
+// once per context. A failure degrades to the procedural detail only.
+function uploadAtlasData() {
+    if (atlasUploaded) return true;
+    if (!atlasTexture) return false;
+    let atlas;
+    try {
+        atlas = buildTerrainAtlas();
+    } catch (error) {
+        console.warn("Terrain detail atlas could not be built; keeping procedural detail only.", error);
+        return false;
+    }
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, atlasTexture);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+    clearStaleErrors();
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, atlas.size, atlas.size, 0, gl.RGBA, gl.UNSIGNED_BYTE, atlas.data);
+    if (gl.getError() !== gl.NO_ERROR) {
+        console.warn("Terrain detail atlas upload failed; keeping procedural detail only.");
+        return false;
+    }
+    atlasUploaded = true;
+    return true;
+}
+
 function setPalette() {
     const palette = terrainShaderPalette(state.worldOptions?.climate, state.seasonIndex ?? 0);
     gl.uniform3fv(uniforms.grass, palette.grass);
@@ -957,6 +1036,7 @@ export function drawTerrainGL() {
         if (!uploadWorldData()) return false;
     }
     if (!uploadWearData()) return false;
+    const atlasReady = uploadAtlasData();
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -969,6 +1049,8 @@ export function drawTerrainGL() {
     gl.bindTexture(gl.TEXTURE_2D, wearTexture);
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, waterDistTexture);
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, atlasTexture);
 
     setPalette();
     gl.uniform2f(uniforms.worldSize, Math.max(1, worldWidth()), Math.max(1, worldHeight()));
@@ -983,6 +1065,8 @@ export function drawTerrainGL() {
     gl.uniform1f(uniforms.closeDetail, Math.max(0, Math.min(1, (state.zoom - 1.10) / 1.50)));
     gl.uniform1f(uniforms.seed, (state.worldSeed % 1000) * 0.013);
     gl.uniform1f(uniforms.highQuality, state.zoom >= 0.45 ? 1 : 0);
+    gl.uniform2f(uniforms.atlasGrid, TERRAIN_ATLAS_COLUMNS, TERRAIN_ATLAS_ROWS);
+    gl.uniform1f(uniforms.atlasStrength, atlasReady ? 1 : 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.bindVertexArray(null);
     return true;
