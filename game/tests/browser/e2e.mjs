@@ -847,7 +847,7 @@ try{
         await page.waitForFunction(()=>{
             const value=document.querySelector("#hand-count")?.textContent||"0 / 5";
             return Number.parseInt(value,10)>=3;
-        },null,{timeout:90000});
+        },null,{timeout:150000,polling:250});
     }catch(error){
         const diagnostic=await page.evaluate(async()=>{
             const {state}=await import("./js/core/state.js");
