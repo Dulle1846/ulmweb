@@ -73,8 +73,9 @@ function gameLoop(timestamp){
    if(timestamp-lastRenderTimestamp>=1000/60){
     const {ctx,canvas}=state;
     if(ctx&&canvas){
+     // The terrain now lives on its own surface behind this canvas. Keep the
+     // gameplay/overlay canvas transparent so the surface shows through.
      ctx.clearRect(0,0,canvas.width,canvas.height);
-     ctx.fillStyle="#0a120a";ctx.fillRect(0,0,canvas.width,canvas.height);
      drawWorld();
      if(timestamp-state.lastUiRender>=160){renderUI();state.lastUiRender=timestamp;}
      drawVignette();

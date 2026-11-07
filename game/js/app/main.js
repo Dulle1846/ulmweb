@@ -62,6 +62,7 @@ function applyInterfaceSettings(){
 
 function bindCanvas(){
     state.canvas=document.getElementById("canvas");
+    state.terrainCanvasEl=document.getElementById("terrain-canvas");
     state.ctx=state.canvas.getContext("2d",{alpha:true});
     state.minimapCanvas=document.getElementById("minimap");
     state.minimapCtx=state.minimapCanvas.getContext("2d");

@@ -642,4 +642,4 @@ export function renderWorldPreview(ctx, width, height, rawOptions = {}, seed = 1
     return world;
 }
 
-export { BIOME };
+export { BIOME, PALETTES as TERRAIN_PALETTES };

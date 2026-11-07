@@ -5,6 +5,7 @@
 import { WORLD_W, WORLD_H, CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
 import { getHeightAt, getMoistureAt, getTemperatureAt, worldWidth, worldHeight } from '../../world/world.js';
+import { drawTerrainGL } from './terrain-webgl.js';
 
 const worldW = () => Number(state.worldW) || WORLD_W;
 const worldH = () => Number(state.worldH) || WORLD_H;
@@ -17,8 +18,29 @@ export function drawTerrain(ctx) {
     const zoom = state.zoom;
     const cam = state.camera;
     const canvas = state.canvas;
+    const glActive = drawTerrainGL();
+
+    if (!glActive) {
+        drawBakedGround(ctx, zoom, cam, canvas);
+        if (state.zoomLevel >= 3) drawGroundGrain(ctx, zoom, cam, canvas);
+    }
+
+    drawFogOfWar(ctx, zoom, cam, canvas);
+    if (state.zoomLevel >= 2) drawTerrainDecorations(ctx, zoom, cam, canvas);
+}
+
+function drawBakedGround(ctx, zoom, cam, canvas) {
+    // Safety net for browsers without WebGL2. Smoothing stays on even at the
+    // closest zoom; the old hard nearest-neighbour switch was the main source
+    // of the visible block pattern.
     const tc = state.terrainCanvas;
-    if (!tc) return;
+    ctx.save();
+    ctx.fillStyle = "#0a120a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (!tc) {
+        ctx.restore();
+        return;
+    }
 
     const res = state.terrainResolution || 1;
     const pxPerWorld = CELL * zoom;
@@ -33,10 +55,13 @@ export function drawTerrain(ctx) {
     const sw = Math.min(tc.width - sx, Math.ceil(srcW) + 2);
     const sh = Math.min(tc.height - sy, Math.ceil(srcH) + 2);
 
-    if (sw <= 0 || sh <= 0) return;
+    if (sw <= 0 || sh <= 0) {
+        ctx.restore();
+        return;
+    }
 
-    ctx.save();
-    ctx.imageSmoothingEnabled = zoom < 2.2;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(
         tc,
         sx, sy, sw, sh,
@@ -46,10 +71,6 @@ export function drawTerrain(ctx) {
         Math.ceil((sh / res) * pxPerWorld)
     );
     ctx.restore();
-
-    if (state.zoomLevel >= 3) drawGroundGrain(ctx, zoom, cam, canvas);
-    drawFogOfWar(ctx, zoom, cam, canvas);
-    if (state.zoomLevel >= 2) drawTerrainDecorations(ctx, zoom, cam, canvas);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -89,7 +110,10 @@ function drawFogOfWar(ctx, zoom, cam, canvas) {
     const fog = getFogCanvas();
     const cellPx = CELL * zoom;
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    // The exploration mask is one cell per tile. Bilinear display would soften
+    // the old hard cell edges; the fog itself is still authoritative.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(fog, 0, 0, fog.width, fog.height, -cam.x, -cam.y, fog.width * cellPx, fog.height * cellPx);
     ctx.restore();
 }
@@ -255,6 +279,13 @@ function drawShoreFoam(ctx, px, py, cellPx, tick, s2, zoom) {
 function drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, moisture, season) {
     const s = cellPx / 48;
     const sway = Math.sin(tick * 0.045 + s1 * 10 + s2 * 7) * 1.6 * s;
+
+    // A soft grounded shadow is enough to lift trees off the new surface
+    // without baking hard directional shadows into the seasonal ground.
+    ctx.fillStyle = "rgba(7, 15, 8, 0.22)";
+    ctx.beginPath();
+    ctx.ellipse(px + 3.2 * s, py + 8.0 * s, 10.5 * s, 3.6 * s, 0.15, 0, Math.PI * 2);
+    ctx.fill();
     const variant = Math.min(3, Math.floor(Math.abs(s2) * 4));
 
     if (temp < 0.4 || (temp < 0.54 && variant === 3)) { drawConifer(ctx, px, py, s, sway, s1, season); return; }

@@ -121,6 +121,11 @@ export function resize() {
         state.zoomAnchor = null;
         state.canvas.width = width;
         state.canvas.height = height;
+        const terrainCanvas = state.terrainCanvasEl || document.getElementById("terrain-canvas");
+        if (terrainCanvas) {
+            terrainCanvas.width = width;
+            terrainCanvas.height = height;
+        }
         state.camera.x = centerWorldX * CELL * state.zoom - width / 2;
         state.camera.y = centerWorldY * CELL * state.zoom - height / 2;
         clampCamera();
