@@ -30,35 +30,41 @@ function seasonalPalette(base, season) {
     const p = clonePalette(base);
 
     if (season === 0) {
-        // Spring: young, slightly brighter growth.
-        p.meadow = toward(p.meadow, [118, 158, 84], 0.16);
-        p.lush = toward(p.lush, [72, 126, 64], 0.12);
-        p.forest = toward(p.forest, [46, 92, 50], 0.10);
-        p.dry = toward(p.dry, [158, 152, 92], 0.08);
+        // Spring: fresh young growth, cool green and a light blossom cast.
+        p.meadow = toward(p.meadow, [124, 172, 94], 0.24);
+        p.lush = toward(p.lush, [66, 128, 60], 0.18);
+        p.forest = toward(p.forest, [42, 94, 50], 0.16);
+        p.dry = toward(p.dry, [156, 156, 88], 0.06);
+        p.sand = toward(p.sand, [206, 194, 148], 0.10);
     } else if (season === 1) {
-        // Summer: warmer grass, deeper canopy, drier edges.
-        p.meadow = toward(p.meadow, [132, 148, 72], 0.18);
-        p.lush = toward(p.lush, [74, 112, 58], 0.12);
-        p.forest = toward(p.forest, [38, 76, 40], 0.12);
-        p.dry = toward(p.dry, [174, 154, 92], 0.14);
+        // Summer: warm golden grass, deep canopy, parched edges.
+        p.meadow = toward(p.meadow, [152, 148, 64], 0.32);
+        p.lush = toward(p.lush, [76, 108, 50], 0.20);
+        p.forest = toward(p.forest, [32, 70, 34], 0.20);
+        p.dry = toward(p.dry, [184, 158, 86], 0.24);
+        p.sand = toward(p.sand, [216, 198, 146], 0.14);
+        p.waterShallow = toward(p.waterShallow, [62, 126, 122], 0.14);
     } else if (season === 2) {
         // Autumn: ochre grass, copper canopy, muted wetland.
-        p.meadow = toward(p.meadow, [158, 134, 72], 0.38);
-        p.lush = toward(p.lush, [126, 112, 58], 0.30);
-        p.forest = toward(p.forest, [128, 82, 44], 0.46);
-        p.dry = toward(p.dry, [184, 150, 82], 0.24);
-        p.swamp = toward(p.swamp, [104, 84, 50], 0.30);
+        p.meadow = toward(p.meadow, [172, 132, 60], 0.50);
+        p.lush = toward(p.lush, [132, 110, 54], 0.38);
+        p.forest = toward(p.forest, [138, 76, 34], 0.58);
+        p.dry = toward(p.dry, [190, 146, 70], 0.34);
+        p.swamp = toward(p.swamp, [108, 82, 44], 0.40);
+        p.rock = toward(p.rock, [132, 116, 94], 0.12);
+        p.waterDeep = toward(p.waterDeep, [30, 46, 50], 0.14);
     } else {
         // Winter: bleached grass, bare canopy, pale snow.
-        p.meadow = toward(p.meadow, [178, 186, 172], 0.52);
-        p.lush = toward(p.lush, [148, 162, 154], 0.48);
-        p.forest = toward(p.forest, [86, 104, 96], 0.44);
-        p.dry = toward(p.dry, [164, 160, 144], 0.42);
-        p.sand = toward(p.sand, [204, 200, 186], 0.24);
-        p.snow = toward(p.snow, [238, 244, 247], 0.38);
-        p.swamp = toward(p.swamp, [104, 116, 108], 0.40);
-        p.waterDeep = toward(p.waterDeep, [20, 44, 62], 0.18);
-        p.waterShallow = toward(p.waterShallow, [52, 106, 118], 0.18);
+        p.meadow = toward(p.meadow, [190, 198, 188], 0.64);
+        p.lush = toward(p.lush, [156, 170, 160], 0.58);
+        p.forest = toward(p.forest, [96, 112, 102], 0.54);
+        p.dry = toward(p.dry, [168, 166, 150], 0.50);
+        p.sand = toward(p.sand, [208, 204, 192], 0.32);
+        p.snow = toward(p.snow, [242, 248, 252], 0.46);
+        p.rock = toward(p.rock, [148, 154, 158], 0.18);
+        p.swamp = toward(p.swamp, [108, 122, 116], 0.46);
+        p.waterDeep = toward(p.waterDeep, [18, 42, 60], 0.24);
+        p.waterShallow = toward(p.waterShallow, [56, 112, 126], 0.24);
     }
 
     p.earth = mix(p.dry, p.rock, 0.52);
@@ -72,7 +78,7 @@ export function terrainPaletteFor(climate, seasonIndex = 0) {
     return {
         ...palette,
         season,
-        snowBias: season === 3 ? 0.18 : 0,
+        snowBias: season === 3 ? 0.28 : 0,
         autumn: season === 2 ? 1 : 0,
         winter: season === 3 ? 1 : 0,
     };

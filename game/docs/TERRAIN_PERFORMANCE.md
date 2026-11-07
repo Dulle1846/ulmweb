@@ -27,6 +27,39 @@ Open <http://localhost:3000/tests/browser/terrain-perf.html>. Add
 | Rooftop | 2.40 | Full detail and close-detail noise |
 | Interior | 4.20 | Maximum shader work per screen pixel |
 
+## Shading pass costs
+
+The surface shader carries four passes that are not free. Each one is bounded,
+and most of the expensive work is amortised instead of running per pixel.
+
+| Pass | Where it runs | Cost | Frequency |
+| --- | --- | --- | --- |
+| Detail atlas | fragment | up to 2 texture fetches for the variant cross-fade | every frame |
+| Baked ambient occlusion | world upload | 16 height samples per output texel, half resolution | once per realm |
+| Directional shadow | fragment | 3 bilinear height taps, land fragments only | every frame |
+| Contours and hachures | fragment | `fwidth` and two noise fetches, no texture taps | every frame below zoom 1.15 |
+| Wear field | frame | two typed-array passes and one encode | every frame, upload throttled to about 8 Hz |
+
+Measured on the workspace CPU (Node 26, calling the same modules the browser
+calls) for a standard realm with 704 × 704 height texels:
+
+| Operation | Time |
+| --- | --- |
+| Ambient-occlusion bake, stride 2 (352 × 352 bytes) | 6.6 ms |
+| Ambient-occlusion bake, stride 1 (704 × 704 bytes) | 30.8 ms |
+| Wear advance, 352 × 352 cells | 0.28 ms per frame |
+| Wear encode, 352 × 352 cells | 0.54 ms per upload |
+
+The occlusion bake is the only visible hitch, and it runs once per realm load
+inside `uploadWorldData`, never per frame. Half resolution is deliberate: the
+term is low frequency and the shader samples it with `LINEAR`. The shadow march
+sits inside the land branch, so deep water never pays for it.
+
+Memory: the wear field and its targets are two `Float32Array`s of
+`ceil(width × 2) × ceil(height × 2)` cells, about 1 MB together for a standard
+realm, plus a 0.5 MB RGBA byte buffer for the upload. The occlusion texture is a
+single `R8` at half resolution.
+
 ## Measured values
 
 ### Cloud sandbox browser (no GPU access)

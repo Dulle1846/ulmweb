@@ -520,6 +520,9 @@
 .warning-inbox.has-warning{border-color:#b96a5b;color:#ffd3c8}
 .warning-inbox.has-warning b{border-color:#b96a5b;background:#762f35;color:#fff4e8}
 .map-layer-chip{
+  /* The topline itself is inert so map drags pass through it; the picker has
+     to opt back in or the select can never be clicked. */
+  pointer-events:auto;
   display:flex;align-items:center;gap:5px;padding:4px 7px;
   border:1px solid #a98a52;border-radius:2px;
   background:linear-gradient(160deg,rgba(44,32,22,.94),rgba(16,12,9,.95));

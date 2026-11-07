@@ -126,8 +126,13 @@ float atlasDetail(float tile, vec2 world, float scale) {
 }
 
 float groundDetail(vec2 world, float variantA, float variantB, float scale) {
-    float pick = step(0.5, vnoise(world * 0.031 + uSeed * 3.7));
-    return atlasDetail(mix(variantA, variantB, pick), world, scale);
+    // Cross-fade the two variants instead of stepping between them: a hard
+    // pick draws a straight seam across a meadow wherever the noise crosses
+    // its threshold, which read as a sudden material change.
+    float pick = smoothstep(0.35, 0.65, vnoise(world * 0.031 + uSeed * 3.7));
+    if (pick <= 0.01) return atlasDetail(variantA, world, scale);
+    if (pick >= 0.99) return atlasDetail(variantB, world, scale);
+    return mix(atlasDetail(variantA, world, scale), atlasDetail(variantB, world, scale), pick);
 }
 
 // ── smooth height field ─────────────────────────────────────────
@@ -291,14 +296,14 @@ vec3 grassMaterial(vec2 world, float moisture, float macro, float meso, float fi
     color *= mix(1.0, 0.84 + 0.34 * detailMap, uAtlasStrength * (0.45 + 0.55 * uCloseDetail));
     // Seasonal ground cover changes the surface itself, not just its palette:
     // fallen leaves, spring blossom, scorched summer patches and winter frost.
-    float leafLitter = smoothstep(0.50, 0.86, fbm2(world * 2.6 + vec2(3.1, 8.7)) + (micro - 0.5) * 0.24);
-    color = mix(color, mix(uDry * 0.98, uEarth * 1.30, 0.38), leafLitter * uAutumn * 0.32 * (0.45 + 0.55 * detail));
-    float blossom = smoothstep(0.80, 0.97, vnoise(world * 6.1 + vec2(2.3, 4.9))) * uSpring;
-    color += vec3(0.075, 0.058, 0.030) * blossom * detail;
-    float dryPatch = smoothstep(0.58, 0.88, vnoise(world * 1.4 + vec2(7.7, 1.3)));
-    color = mix(color, uDry * 0.92, dryPatch * uSummer * 0.10);
-    float frost = smoothstep(0.46, 0.80, vnoise(world * 2.1 + vec2(9.3, 3.1))) * uWinter;
-    color = mix(color, uSnow * 0.94, frost * 0.30);
+    float leafLitter = smoothstep(0.46, 0.88, fbm2(world * 2.6 + vec2(3.1, 8.7)) + (micro - 0.5) * 0.24);
+    color = mix(color, mix(uDry * 0.98, uEarth * 1.30, 0.38), leafLitter * uAutumn * 0.48 * (0.45 + 0.55 * detail));
+    float blossom = smoothstep(0.70, 0.97, vnoise(world * 6.1 + vec2(2.3, 4.9))) * uSpring;
+    color += vec3(0.095, 0.072, 0.036) * blossom * detail;
+    float dryPatch = smoothstep(0.52, 0.90, vnoise(world * 1.4 + vec2(7.7, 1.3)));
+    color = mix(color, uDry * 0.92, dryPatch * uSummer * 0.20);
+    float frost = smoothstep(0.42, 0.82, vnoise(world * 2.1 + vec2(9.3, 3.1))) * uWinter;
+    color = mix(color, uSnow * 0.94, frost * 0.46);
     return color;
 }
 
@@ -319,11 +324,11 @@ vec3 forestMaterial(vec2 world, float macro, float meso, float fine, float micro
     color = mix(color, color * 0.70, smoothstep(0.86, 0.99, fine) * 0.26 * detail);
     float detailMap = groundDetail(world, 2.0, 3.0, 0.55);
     color *= mix(1.0, 0.80 + 0.42 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
-    color = mix(color, uForest * 1.18 + vec3(0.060, 0.020, 0.0), uAutumn * 0.30);
-    float leafCarpet = smoothstep(0.46, 0.84, fbm2(world * 3.1 + vec2(5.7, 2.2)) + (micro - 0.5) * 0.22);
-    color = mix(color, mix(uEarth * 1.25, uDry, 0.42), leafCarpet * uAutumn * 0.34 * detail);
-    float canopySnow = smoothstep(0.52, 0.88, fbm2(world * 2.4 + vec2(1.3, 9.1))) * uWinter;
-    color = mix(color, mix(uSnow * 0.92, uForest, 0.35), canopySnow * 0.30);
+    color = mix(color, uForest * 1.18 + vec3(0.060, 0.020, 0.0), uAutumn * 0.38);
+    float leafCarpet = smoothstep(0.42, 0.86, fbm2(world * 3.1 + vec2(5.7, 2.2)) + (micro - 0.5) * 0.22);
+    color = mix(color, mix(uEarth * 1.25, uDry, 0.42), leafCarpet * uAutumn * 0.46 * detail);
+    float canopySnow = smoothstep(0.48, 0.88, fbm2(world * 2.4 + vec2(1.3, 9.1))) * uWinter;
+    color = mix(color, mix(uSnow * 0.92, uForest, 0.35), canopySnow * 0.44);
     return color;
 }
 
@@ -384,8 +389,8 @@ vec3 snowMaterial(vec2 world, float micro, float detail) {
     float detailMap = groundDetail(world, 8.0, 9.0, 0.50);
     color *= mix(1.0, 0.90 + 0.20 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
     // Spring melt opens dark ground under the crust instead of only recolouring.
-    float melt = smoothstep(0.52, 0.84, vnoise(world * 1.7 + vec2(6.4, 2.8))) * uSpring;
-    color = mix(color, uEarth * 1.15, melt * 0.26 * detail);
+    float melt = smoothstep(0.46, 0.86, vnoise(world * 1.7 + vec2(6.4, 2.8))) * uSpring;
+    color = mix(color, uEarth * 1.15, melt * 0.34 * detail);
     return color + vec3(0.075) * sparkle;
 }
 
@@ -410,12 +415,12 @@ vec3 waterMaterial(vec2 world, float sd, float micro) {
     // bright outline around the polygon instead of lapping at a shore.
 
     if (uSummer > 0.5) {
-        float algae = smoothstep(0.55, 0.86, fbm2(world * 0.9 + vec2(3.4, 6.1)));
-        color = mix(color, uLush * 0.62, algae * 0.12);
+        float algae = smoothstep(0.50, 0.88, fbm2(world * 0.9 + vec2(3.4, 6.1)));
+        color = mix(color, uLush * 0.62, algae * 0.22);
     }
     if (uWinter > 0.5) {
-        float ice = smoothstep(0.32, 0.74, fbm2(world * 0.4)) * uWinter;
-        color = mix(color, mix(uSnow, uWaterShallow, 0.40), ice * 0.32);
+        float ice = smoothstep(0.28, 0.76, fbm2(world * 0.4)) * uWinter;
+        color = mix(color, mix(uSnow, uWaterShallow, 0.40), ice * 0.44);
     }
     return color;
 }
@@ -484,6 +489,14 @@ void main() {
 
     float elevationNoise = (n3 - 0.5) * 0.030 + (n7 - 0.5) * 0.012;
     float elevN = clamp(elevation + elevationNoise, 0.0, 1.0);
+    // Domain warp: every biome threshold is offset by slow noise, so material
+    // borders follow organic lobes instead of elevation contours. This is what
+    // lets the transition bands below stay wide without turning into mush.
+    float warpA = (vnoise(world * 0.42 + vec2(3.7, 1.1)) - 0.5);
+    float warpB = (vnoise(world * 0.78 + vec2(8.2, 5.4)) - 0.5);
+    float elevW = clamp(elevN + warpA * 0.09 + warpB * 0.03, 0.0, 1.0);
+    float moistW = clamp(terrain.m + warpA * 0.20 + warpB * 0.09, 0.0, 1.0);
+    float tempW = clamp(terrain.t + warpB * 0.16 - warpA * 0.07, 0.0, 1.0);
 
     vec3 landColor = vec3(0.0);
     // Deep water skips the entire land material stack. The branch is coherent
@@ -497,28 +510,28 @@ void main() {
         float beach = 0.0;
         float rimMask = 1.0 - smoothstep(0.18, 0.90, sd);
         float snow = clamp(
-            smoothstep(0.66, 0.80, elevN)
-            + smoothstep(0.26, 0.11, terrain.t)
+            smoothstep(0.62, 0.86, elevW)
+            + smoothstep(0.28, 0.08, tempW)
             + uSnowBias,
             0.0, 1.0);
         // The carve wall around rivers is a one-texel drop in the data. It must
         // read as a bank, not as a ring of cliffs, so slopes near water are masked.
         float cliff = smoothstep(0.035, 0.095, slope) * (1.0 - snow * 0.70) * (1.0 - max(shoreCalm, bankClean));
-        float rock = clamp(smoothstep(0.56, 0.82, elevN) + cliff * 0.65, 0.0, 1.0)
+        float rock = clamp(smoothstep(0.48, 0.86, elevW) + cliff * 0.65, 0.0, 1.0)
             * (1.0 - max(shoreCalm, bankClean)) * (1.0 - snow * 0.55);
-        float forest = smoothstep(0.36, 0.63, terrain.m)
-            * (1.0 - smoothstep(0.80, 0.94, terrain.t))
+        float forest = smoothstep(0.28, 0.72, moistW)
+            * (1.0 - smoothstep(0.74, 0.96, tempW))
             * smoothstep(0.010, 0.070, elevation)
-            * (1.0 - smoothstep(0.80, 0.95, elevN))
+            * (1.0 - smoothstep(0.76, 0.97, elevW))
             * (1.0 - smoothstep(0.040, 0.100, slope));
-        float wet = smoothstep(0.66, 0.86, terrain.m) * (1.0 - smoothstep(0.10, 0.02, elevation))
+        float wet = smoothstep(0.60, 0.92, moistW) * (1.0 - smoothstep(0.10, 0.02, elevation))
             * (1.0 - shoreCalm);
-        float arid = smoothstep(0.62, 0.90, terrain.t) * (1.0 - smoothstep(0.18, 0.40, terrain.m));
+        float arid = smoothstep(0.56, 0.94, tempW) * (1.0 - smoothstep(0.12, 0.46, moistW));
         float sand = clamp(beach, 0.0, 1.0) * (1.0 - shoreCalm);
         arid *= 1.0 - shoreCalm;
         float grass = clamp(1.0 - forest * 0.85 - rock * 0.95 - snow - wet - sand, 0.0, 1.0);
         float bare = clamp(
-            smoothstep(0.30, 0.14, terrain.m) * (1.0 - forest) * (1.0 - rock) * (1.0 - wet) * 0.40
+            smoothstep(0.34, 0.10, moistW) * (1.0 - forest) * (1.0 - rock) * (1.0 - wet) * 0.40
             + smoothstep(0.07, 0.16, slope) * 0.30 * (1.0 - rock) * (1.0 - snow) * (1.0 - nearShore),
             0.0, 0.60);
         bare *= 1.0 - max(flatBank, bankClean);
@@ -526,7 +539,7 @@ void main() {
 
         float weight = grass + forest + rock + wet + sand + snow + bare;
         vec3 material = vec3(0.0);
-        if (grass > 0.02) material += grassMaterial(world, terrain.m, macro, meso, fine, micro, detail) * grass;
+        if (grass > 0.02) material += grassMaterial(world, moistW, macro, meso, fine, micro, detail) * grass;
         if (forest > 0.02) material += forestMaterial(world, macro, meso, fine, micro, detail) * forest;
         if (rock > 0.02) material += rockMaterial(world, meso, micro, detail) * rock;
         if (wet > 0.02) material += wetlandMaterial(world, macro, meso, micro) * wet;
@@ -538,6 +551,17 @@ void main() {
         // Broad pasture patches keep large meadows from reading as one flat wash.
         float pasture = smoothstep(0.40, 0.72, vnoise(world * 0.33 + vec2(3.3, 8.1)));
         landColor = mix(landColor, landColor * vec3(1.08, 1.03, 0.86), pasture * 0.10);
+        // One global seasonal grade over every material: spring cool and fresh,
+        // summer warm, autumn amber, winter desaturated blue. This makes the
+        // seasons unmistakable even where two palette values are close.
+        vec3 seasonTint = vec3(1.0);
+        seasonTint = mix(seasonTint, vec3(0.93, 1.05, 0.92), uSpring);
+        seasonTint = mix(seasonTint, vec3(1.08, 1.01, 0.85), uSummer);
+        seasonTint = mix(seasonTint, vec3(1.10, 0.92, 0.76), uAutumn);
+        seasonTint = mix(seasonTint, vec3(0.86, 0.94, 1.09), uWinter);
+        landColor *= mix(vec3(1.0), seasonTint, 0.62);
+        float seasonLuma = dot(landColor, vec3(0.299, 0.587, 0.114));
+        landColor = mix(landColor, vec3(seasonLuma), uWinter * 0.30);
 
         float wear = texture(uWear, world / uWorldSize).r;
         landColor = mix(landColor, mix(uEarth, uDry * 0.82, 0.30), smoothstep(0.02, 0.62, wear) * 0.40);
@@ -571,8 +595,8 @@ void main() {
                 castShadow = max(castShadow, blocker - h - reach * uSunShadowSlope);
             }
             castShadow = smoothstep(0.006, 0.030, castShadow) * smoothstep(-0.02, 0.03, e);
-            landColor *= 1.0 - castShadow * 0.34 * uSunShadowStrength * (1.0 - flatBank);
-            landColor = mix(landColor, landColor * vec3(0.84, 0.90, 1.02), castShadow * 0.55);
+            landColor *= 1.0 - castShadow * 0.42 * uSunShadowStrength * (1.0 - flatBank);
+            landColor = mix(landColor, landColor * vec3(0.80, 0.88, 1.04), castShadow * 0.65);
         }
 
         // Contour lines and slope hachures make height legible at map zoom, then
@@ -583,10 +607,15 @@ void main() {
             float aa = max(fwidth(contour), 0.0001);
             float line = 1.0 - smoothstep(0.0, aa * 1.7, min(band, 1.0 - band));
             vec2 downhill = normalize(vec2(hx, hy) + vec2(0.0001, 0.0001));
-            float hatch = abs(fract(dot(world, downhill) * 4.0 + macro * 2.0) - 0.5) * 2.0;
-            float steep = smoothstep(0.12, 0.34, slope);
-            float hachure = smoothstep(0.72, 1.0, hatch) * steep;
-            landColor = mix(landColor, landColor * (0.86 - 0.10 * steep), (line * 0.55 + hachure * 0.45) * uContourStrength);
+            // Hachures are short strokes along the fall line, not more contour
+            // lines: dashes run downhill and repeat across the slope.
+            vec2 across = vec2(-downhill.y, downhill.x);
+            float along = dot(world, downhill);
+            float lane = abs(fract(dot(world, across) * 7.0 + macro * 1.7) - 0.5) * 2.0;
+            float dash = abs(fract(along * 4.5) - 0.5) * 2.0;
+            float steep = smoothstep(0.045, 0.150, slope);
+            float hachure = smoothstep(0.55, 0.95, dash) * smoothstep(0.30, 0.85, lane) * steep;
+            landColor = mix(landColor, landColor * (0.84 - 0.12 * steep), (line * 0.55 + hachure * 0.50) * uContourStrength);
         }
     }
 
@@ -1004,11 +1033,16 @@ function uploadWorldData() {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, width, height, 0, gl.RED, gl.UNSIGNED_BYTE, distanceBytes);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
 
-    const occlusionBytes = buildHeightOcclusion(smoothed, width, height);
+    // Half-resolution is plenty for a low-frequency term and keeps the load
+    // pause short; the shader filters it back up bilinearly.
+    const occlusionStride = 2;
+    const occlusionBytes = buildHeightOcclusion(smoothed, width, height, { stride: occlusionStride });
+    const occlusionWidth = Math.ceil(width / occlusionStride);
+    const occlusionHeight = Math.ceil(height / occlusionStride);
     gl.activeTexture(gl.TEXTURE4);
     gl.bindTexture(gl.TEXTURE_2D, occlusionTexture);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, width, height, 0, gl.RED, gl.UNSIGNED_BYTE, occlusionBytes);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, occlusionWidth, occlusionHeight, 0, gl.RED, gl.UNSIGNED_BYTE, occlusionBytes);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
 
     uploadedWidth = width;
@@ -1138,10 +1172,10 @@ function setPalette() {
 // follows the season. Shadows stay stable within a day but travel across a
 // campaign, and the low winter sun reaches farthest across the ground.
 const SEASON_SUN = [
-    { elevation: 0.95, strength: 0.55 },
-    { elevation: 1.16, strength: 0.75 },
-    { elevation: 0.72, strength: 0.55 },
-    { elevation: 0.44, strength: 0.42 },
+    { elevation: 0.95, strength: 0.62 },
+    { elevation: 1.16, strength: 0.80 },
+    { elevation: 0.72, strength: 0.60 },
+    { elevation: 0.44, strength: 0.55 },
 ];
 
 function sunState(season) {
