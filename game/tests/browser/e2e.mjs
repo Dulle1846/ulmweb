@@ -984,7 +984,17 @@ try{
         if(type==="forest")module.harvestForest(x,y,1);else module.extractStone(x,y,1);
     },resourceFixture);
     await page.locator("#speed-4").click();
-    await page.locator("#load-btn").click();
+    const loadedTick=await page.evaluate(()=>{
+        document.querySelector("#load-btn").click();
+        // Loading resets the pause flag and the restored realm keeps running, so
+        // the next animation frame would advance the tick before it is read.
+        // Pause inside the same synchronous task as the click: no frame can run
+        // in between, and loading has just re-rendered #tick-count from the
+        // restored tick, so this is the exact tick that was restored.
+        const pauseButton=document.querySelector("#pause-btn");
+        if(pauseButton&&!pauseButton.classList.contains("is-paused"))pauseButton.click();
+        return Number((document.querySelector("#tick-count")?.textContent||"").replace(/,/g,""));
+    });
     await page.waitForFunction(()=>{
         const message=document.querySelector("#status-message")?.textContent||"";
         return message.includes("Loaded realm")||message.includes("Load failed")||message.includes("No valid saved realm");
@@ -993,7 +1003,6 @@ try{
     assert.ok(loadStatus.includes("Loaded realm"),"load must succeed; actual status: "+loadStatus);
     assert.ok(await page.locator("#speed-2").evaluate(el=>el.classList.contains("is-active")),"save/load must restore the saved simulation speed");
     assert.equal(await page.locator("#speed-4").evaluate(el=>el.classList.contains("is-active")),false,"load must clear the previous speed selection");
-    const loadedTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
     assert.equal(loadedTick,savedTick,"save/load must restore the exact simulation tick");
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
     assert.equal(await page.evaluate(async()=>(await import("./js/systems/roads.js")).getRoadCount()),savedRoadCount,"save/load must restore the road network");
