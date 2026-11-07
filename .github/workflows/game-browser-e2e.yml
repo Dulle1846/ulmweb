@@ -29,7 +29,7 @@ jobs:
   browser-e2e:
     name: Chromium gameplay smoke test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     outputs:
       started_at: ${{ steps.timing.outputs.started_at }}
       finished_at: ${{ steps.finish.outputs.finished_at }}

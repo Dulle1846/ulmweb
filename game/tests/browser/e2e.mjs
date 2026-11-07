@@ -961,8 +961,9 @@ try{
     }
 
     await page.locator("#pause-btn").click();
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
     await page.locator("#speed-2").click();
-    const savedTick=(await page.locator("#tick-count").innerText()).trim();
+    const savedTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
     const savedHand=(await page.locator("#hand-count").innerText()).trim();
     const savedRoadCount=await page.evaluate(()=>(import("./js/systems/roads.js")).then(module=>module.getRoadCount()));
     const resourceFixture=await page.evaluate(async()=>{
@@ -992,7 +993,8 @@ try{
     assert.ok(loadStatus.includes("Loaded realm"),"load must succeed; actual status: "+loadStatus);
     assert.ok(await page.locator("#speed-2").evaluate(el=>el.classList.contains("is-active")),"save/load must restore the saved simulation speed");
     assert.equal(await page.locator("#speed-4").evaluate(el=>el.classList.contains("is-active")),false,"load must clear the previous speed selection");
-    assert.equal((await page.locator("#tick-count").innerText()).trim(),savedTick,"save/load must restore the exact simulation tick");
+    const loadedTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
+    assert.equal(loadedTick,savedTick,"save/load must restore the exact simulation tick");
     assert.equal((await page.locator("#hand-count").innerText()).trim(),savedHand,"save/load must restore the card hand");
     assert.equal(await page.evaluate(async()=>(await import("./js/systems/roads.js")).getRoadCount()),savedRoadCount,"save/load must restore the road network");
     assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y)?.type,{x:roadFixture.x,y:roadFixture.y}),"dirt","save/load must restore the placed road tile");
