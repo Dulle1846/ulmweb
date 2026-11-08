@@ -22,6 +22,7 @@ npm run test:season-year
 npm run test:climate-reference
 npm run test:forest-reference
 npm run test:terrain-stability
+npm run test:device-benchmark
 ```
 
 `test:terrain-reference` writes the four-season, transition and grove sheets.
@@ -34,7 +35,11 @@ formations and `forest-seasons.png` with one ancient wood on days 50, 150, 250
 and 350, plus `forest-reference.json`. `test:terrain-stability` drives the live
 Canvas2D cache through all four zoom levels, a long pan and a zoom, and asserts
 that the decoration layer stays visible and rebuilds only after the view has
-settled. None of these commands is part of `npm test`.
+settled. `test:device-benchmark` opens the in-game Settings benchmark, runs it
+on the landscape view and writes `device-benchmark.json` plus a screenshot.
+The 60-point Laubwald audit is documented in
+`docs/terrain-reference/laubwald-checklist.md`, with screenshot references and
+explicit partial/gap status. None of these commands is part of `npm test`.
 
 The forest run scans the fixed realm for a real forest resource node of every
 formation, captures each at the same 2.40× camera, and fails on a missing
@@ -73,6 +78,8 @@ The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
 - `E2E_SOFTWARE_GL=1` - launch Chromium with SwiftShader so WebGL2 references
   can run on a rootless container or CI runner without a GPU.
 - `CLIMATE_REFERENCE_OUT` - climate artifact directory, default
+  `docs/terrain-reference`.
+- `DEVICE_BENCHMARK_OUT` - benchmark artifact directory, default
   `docs/terrain-reference`.
 
 ## What the suite covers

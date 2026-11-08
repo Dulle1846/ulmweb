@@ -4,34 +4,34 @@
     "width": 1000,
     "height": 700
   },
-  "generatedAt": "2026-11-08T16:17:47.093Z",
+  "generatedAt": "2026-11-08T16:37:32.831Z",
   "levels": [
     {
       "level": 1,
       "zoom": 0.09,
       "treeDraws": 1565,
-      "peakDrawMs": 48.10000002384186,
+      "peakDrawMs": 45.89999997615814,
       "cacheMisses": 2
     },
     {
       "level": 2,
       "zoom": 0.3,
       "treeDraws": 780,
-      "peakDrawMs": 18.299999952316284,
+      "peakDrawMs": 17.899999976158142,
       "cacheMisses": 3
     },
     {
       "level": 3,
       "zoom": 0.95,
       "treeDraws": 99,
-      "peakDrawMs": 22,
+      "peakDrawMs": 19.700000047683716,
       "cacheMisses": 4
     },
     {
       "level": 4,
       "zoom": 2.4,
       "treeDraws": 33,
-      "peakDrawMs": 9.299999952316284,
+      "peakDrawMs": 5.600000023841858,
       "cacheMisses": 5
     }
   ],
@@ -44,7 +44,7 @@
   "zoom": {
     "beforeZoom": 0.3,
     "afterZoom": 0.354,
-    "duringTransform": "translate(79.0955px, 81.3282px) scale(1.08119)"
+    "duringTransform": "translate(79.1648px, 81.3995px) scale(1.08126)"
   },
   "note": "Chromium in this container uses software rendering. Peak draw times are diagnostic, not device FPS claims."
 }

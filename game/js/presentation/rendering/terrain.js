@@ -526,6 +526,10 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             if (!state.explored[x]?.[y]) continue;
             const detail = detailColumn && y >= gridY && (y - gridY) % step === 0;
             const treeSample = treeColumn && y >= treeGridY && (y - treeGridY) % treeStep === 0;
+            // Most tiles are neither on the coarse ground lattice nor on the
+            // tree lattice. Do not pay for three world samples, four hashes and
+            // an ecosystem query only to discard the tile afterwards.
+            if (!detail && !treeSample) continue;
 
             const wx = x + 0.5, wy = y + 0.5;
             const h = getHeightAt(wx, wy);
