@@ -6,6 +6,7 @@ import { ROAD_TYPES } from "../systems/roads.js";
 import { validateCitySnapshot } from "../systems/logistics.js";
 import { validateResourceGeographySnapshot } from "../systems/resource-geography.js";
 import { validateForestFaunaSnapshot } from "../systems/forest-fauna.js";
+import { validateForestGatheringSnapshot } from "../systems/forest-gathering.js";
 
 export const SAVE_SCHEMA_VERSION = 4;
 
@@ -167,6 +168,7 @@ export function validateSaveSnapshot(snapshot) {
     }
     if (snapshot.resourceGeography !== undefined) validateDomainSnapshot(snapshot.resourceGeography, "resourceGeography", validateResourceGeographySnapshot);
     if (snapshot.forestFauna !== undefined) validateDomainSnapshot(snapshot.forestFauna, "forestFauna", validateForestFaunaSnapshot);
+    if (snapshot.forestGathering !== undefined) validateDomainSnapshot(snapshot.forestGathering, "forestGathering", validateForestGatheringSnapshot);
     if (snapshot.city !== undefined) validateDomainSnapshot(snapshot.city, "city", validateCitySnapshot);
 
     for (const [index, dto] of snapshot.entities.entries()) {

@@ -613,6 +613,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                 if (detail && zoom >= 0.55) {
                     drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
                     drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom);
+                    if (zoom >= 0.8) drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey);
                     if (zoom >= 0.85 && s3 < 0.4) drawForestMist(ctx, px, py, cellPx, stand, s2, tick);
                 }
                 if (tree) {
@@ -980,12 +981,19 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
     ctx.globalAlpha = 1;
 
     // Ancient trees carry hollows and broken limbs; these also become nesting
-    // sites in the fauna layer.
+    // sites in the fauna layer. Keep the hollow on the clear lower trunk: any
+    // higher and the summer crown hides it completely.
     if (ageScale > 1.05) {
-        ctx.fillStyle = "rgba(35, 25, 17, 0.65)";
+        const hollowY = py - trunkH * 0.24;
+        ctx.fillStyle = "rgba(26, 18, 11, 0.84)";
         ctx.beginPath();
-        ctx.ellipse(px + trunkW * 0.2 + lean, py - trunkH * 0.42, Math.max(0.8, s * 0.9), s * 1.7, 0.15, 0, Math.PI * 2);
+        ctx.ellipse(px + trunkW * 0.18 + lean, hollowY, Math.max(1, s * 1.05), s * 1.9, 0.12, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = mixHex(definition.bark, "#2f2115", 0.4);
+        ctx.lineWidth = Math.max(1, 1.2 * s);
+        ctx.beginPath();
+        ctx.ellipse(px + trunkW * 0.18 + lean, hollowY, Math.max(1.2, s * 1.35), s * 2.2, 0.12, Math.PI * 0.12, Math.PI * 1.45);
+        ctx.stroke();
         ctx.strokeStyle = definition.bark;
         ctx.lineWidth = Math.max(1, 1.4 * s);
         ctx.beginPath();
@@ -994,11 +1002,11 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
         ctx.moveTo(px + lean, crownY + 8 * s);
         ctx.lineTo(px + lean + 6 * s, crownY + 1 * s);
         ctx.stroke();
-        if (seed > 0.58) drawNest(ctx, px + lean + 5 * s, crownY + 9 * s, s, seed);
     }
 
     if (foliage.bare) {
         drawBareCrown(ctx, px, py, s, sway, seed, foliage, definition.bark, ageScale);
+        if (ageScale > 1.05 && seed > 0.58) drawNest(ctx, px + lean + 5 * s, crownY + 9 * s, s, seed);
         drawSnowCaps(ctx, px, py, s * ageScale, sway, seed, foliage.snow, py - 12 * s * ageScale, 10);
         return;
     }
@@ -1106,6 +1114,11 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
         ctx.stroke();
     }
 
+    // Nests sit on the canopy, so they must be painted after the crown lobes;
+    // previously they were drawn underneath and vanished in the foliage.
+    if (ageScale > 1.05 && seed > 0.58) {
+        drawNest(ctx, px + lean - radius * 0.34, crownY - radius * 0.04, s, seed);
+    }
     drawSnowCaps(ctx, px, py, s * ageScale, sway, seed, foliage.snow, crownY + radius * 0.25, 9 * ageScale);
 }
 
@@ -1244,6 +1257,35 @@ function drawBramble(ctx, px, py, s, seed, turn, snow) {
     ctx.restore();
 }
 
+function drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey) {
+    const season = seasonalState(dayOfYear, climateKey);
+    if (season.snowCover > 0.4 || season.foliageTurn < 0.35) return;
+    const fruits = (stand.goods || []).filter(id => ["acorns", "beechnuts", "chestnuts", "berries"].includes(id));
+    if (!fruits.length) return;
+    const s = cellPx / 48;
+    const colors = { acorns: "#9b6a32", beechnuts: "#8b5c34", chestnuts: "#7d432b", berries: "#8f3e4a" };
+    ctx.save();
+    for (let i = 0; i < 9; i++) {
+        const id = fruits[i % fruits.length];
+        const ox = px + ((i * 17) % 29 - 14) * s * 0.62;
+        const oy = py + ((i * 11) % 17 - 7) * s * 0.5 + 3 * s;
+        ctx.fillStyle = colors[id] || "#7d5a32";
+        ctx.globalAlpha = 0.82;
+        ctx.beginPath();
+        ctx.ellipse(ox, oy, Math.max(1, 1.35 * s), Math.max(0.7, 0.9 * s), i * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        if (id !== "berries") {
+            // A pale cup makes the mast read against brown autumn litter
+            // instead of merging into it.
+            ctx.fillStyle = "rgba(211, 180, 128, 0.8)";
+            ctx.beginPath();
+            ctx.ellipse(ox, oy - 0.35 * s, Math.max(0.7, 0.85 * s), Math.max(0.3, 0.4 * s), i * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
 function drawMushroomCluster(ctx, px, py, s, seed, snow) {
     if (snow > 0.6) return;
     ctx.save();
@@ -1263,10 +1305,14 @@ function drawMushroomCluster(ctx, px, py, s, seed, snow) {
 
 function drawNest(ctx, px, py, s, seed) {
     ctx.save();
-    ctx.strokeStyle = "rgba(84, 62, 39, 0.9)";
-    ctx.lineWidth = Math.max(0.6, 0.8 * s);
+    // A twig basket needs a solid warm fill to separate from the leaf mass; a
+    // bare outline disappeared against both summer green and autumn brown.
+    ctx.fillStyle = "rgba(122, 88, 51, 0.94)";
     ctx.beginPath();
-    ctx.ellipse(px, py, 2.2 * s, 1.2 * s, -0.2, 0, Math.PI * 2);
+    ctx.ellipse(px, py, 2.4 * s, 1.4 * s, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(52, 36, 21, 0.95)";
+    ctx.lineWidth = Math.max(0.7, 0.8 * s);
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(px - 2.4 * s, py + 0.2 * s);
@@ -1401,12 +1447,12 @@ function drawSapling(ctx, px, py, s, seed, turn, snow, ageScale = 1) {
 function drawDeerTrail(ctx, px, py, cellPx, stand, seed) {
     const s = cellPx / 48;
     ctx.save();
-    ctx.globalAlpha = 0.26;
-    ctx.fillStyle = "#8b7b5d";
+    ctx.globalAlpha = 0.34;
+    ctx.fillStyle = "#7c6a4c";
     ctx.beginPath();
     ctx.ellipse(px, py + 2.5 * s, (8 + seed * 5) * s, (1.2 + seed) * s, -0.25, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "rgba(63, 49, 33, 0.5)";
+    ctx.fillStyle = "rgba(63, 49, 33, 0.62)";
     for (let i = 0; i < 4; i++) {
         ctx.beginPath();
         ctx.ellipse(px + (i - 1.5) * 4 * s, py + 2.5 * s + (i % 2) * 1.2 * s, 0.7 * s, 0.4 * s, 0.2, 0, Math.PI * 2);

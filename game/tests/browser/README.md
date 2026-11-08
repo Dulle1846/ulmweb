@@ -21,6 +21,7 @@ npm run test:terrain-reference
 npm run test:season-year
 npm run test:climate-reference
 npm run test:forest-reference
+npm run test:forest-detail
 npm run test:terrain-stability
 npm run test:device-benchmark
 npm run test:atmosphere-reference
@@ -33,7 +34,12 @@ comparison. `test:climate-reference` writes the same-grove 5 × 4 climate
 matrix, five live 1280 × 800 climate screenshots and their JSON logs.
 `test:forest-reference` writes `forest-reference.png` with all fifteen Laubwald
 formations and `forest-seasons.png` with one ancient wood on days 50, 150, 250
-and 350, plus `forest-reference.json`. `test:terrain-stability` drives the live
+and 350, plus `forest-reference.json`. `test:forest-detail` writes
+`forest-detail-reference.png` with the thirteen native close-ups for the
+formerly open checklist items, plus `forest-detail-reference.json`. Small
+motifs carry a review ring; every frame is a real terrain render, and the
+script waits for the decoration cache to rebuild before each capture.
+`test:terrain-stability` drives the live
 Canvas2D cache through all four zoom levels, a long pan and a zoom, and asserts
 that the decoration layer stays visible and rebuilds only after the view has
 settled. `test:device-benchmark` opens the in-game Settings benchmark, runs it
@@ -82,6 +88,10 @@ The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
   can run on a rootless container or CI runner without a GPU.
 - `CLIMATE_REFERENCE_OUT` - climate artifact directory, default
   `docs/terrain-reference`.
+- `FOREST_DETAIL_OUT` - detail-sheet artifact directory, default
+  `docs/terrain-reference`.
+- `FOREST_DETAIL_FRAMES` - optional directory for the individual uncropped
+  detail frames; useful when reviewing a single motif.
 - `DEVICE_BENCHMARK_OUT` - benchmark artifact directory, default
   `docs/terrain-reference`.
 

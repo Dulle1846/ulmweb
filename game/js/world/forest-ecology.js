@@ -460,6 +460,15 @@ export function forestTreeCopies(stand) {
     return 1;
 }
 
+// Compaction is a real regeneration brake, not only a floor tint. A stand
+// with heavy trail/cut-over pressure restores less stock per elapsed period;
+// the caller still guarantees at least one unit once a period has elapsed.
+export function forestRegrowthFactor(stand) {
+    if (!stand) return 1;
+    const compaction = clamp01(Number(stand.ground?.compaction) || 0);
+    return Math.max(0.35, 1 - compaction * 0.65);
+}
+
 export function pickSpecies(stand, roll = 0.5) {
     if (!stand?.species?.length) return 'oak';
     const total = stand.species.reduce((sum, entry) => sum + entry.weight, 0) || 1;

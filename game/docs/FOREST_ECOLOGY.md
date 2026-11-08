@@ -2,11 +2,11 @@
 
 This is the implementation record for **1.2.1 Laubwälder**. The shared source of truth is [`world/forest-ecology.js`](../js/world/forest-ecology.js); the renderer (`presentation/rendering/terrain.js`), resource geography (`systems/resource-geography.js`) and management UI all read the same deterministic stand instead of inventing separate forest descriptions.
 
-The visual baseline is documented in the [terrain visual reference](TERRAIN_VISUAL_REFERENCE.md): [`forest-reference.png`](terrain-reference/forest-reference.png) captures all fifteen formations and [`forest-seasons.png`](terrain-reference/forest-seasons.png) follows one ancient wood through spring, summer, autumn and winter. [`forest-reference.json`](terrain-reference/forest-reference.json) records the exact tiles, species mixes, age, goods and fauna behind every frame.
+The visual baseline is documented in the [terrain visual reference](TERRAIN_VISUAL_REFERENCE.md): [`forest-reference.png`](terrain-reference/forest-reference.png) captures all fifteen formations and [`forest-seasons.png`](terrain-reference/forest-seasons.png) follows one ancient wood through spring, summer, autumn and winter. [`forest-reference.json`](terrain-reference/forest-reference.json) records the exact tiles, species mixes, age, goods and fauna behind every frame. The thirteen close-ups that close the former visual gaps are in [`forest-detail-reference.png`](terrain-reference/forest-detail-reference.png); small motifs carry a review ring, but every frame is a native terrain render from the same realm, not a hand-placed prop.
 
 ## Model in one paragraph
 
-A tile gets one deterministic **stand** from its moisture, temperature, height and a small coarse-patch hash. The stand selects a formation (oakwood, beechwood, birch grove, maplewood, chestnut grove, linden/elm stand, mixed wood, alluvial wood, hillside wood, ancient wood, regenerating wood, burn scar, windthrow, diseased stand or cut-over wood), a species mix, an age class, a canopy density, a clearing/edge state, an understorey, ground layers, disturbance, goods and fauna. The renderer turns the same values into trees, saplings, shrubs, ferns, brambles, moss, leaf litter, roots, stones, stumps, logs, fungi, nests, hollows, wildlife herds and ambient insects. Resource geography uses the same formation to set timber capacity and expose a survey; it still keeps its original durable stock arrays, so old saves remain readable.
+A tile gets one deterministic **stand** from its moisture, temperature, height and a small coarse-patch hash. The stand selects a formation (oakwood, beechwood, birch grove, maplewood, chestnut grove, linden/elm stand, mixed wood, alluvial wood, hillside wood, ancient wood, regenerating wood, burn scar, windthrow, diseased stand or cut-over wood), a species mix, an age class, a canopy density, a clearing/edge state, an understorey, ground layers, disturbance, goods and fauna. The renderer turns the same values into trees, saplings, shrubs, ferns, brambles, moss, leaf litter, roots, stones, stumps, logs, fungi, nests, hollows, wildlife herds and ambient insects. Resource geography uses the same formation to set timber capacity and expose a survey; it still keeps its original durable stock arrays, so old saves remain readable. A seasonal gathering ledger consumes the stand's goods, and harvest pressure now feeds back into regrowth and wildlife growth instead of remaining a display-only value.
 
 The wildlife layer is no longer one silhouette per tile. [`systems/forest-fauna.js`](../js/systems/forest-fauna.js) keeps a bounded, deterministic metapopulation of real herds. Each herd has a species, a home wood, a population, a carrying capacity, seasonal births and deaths, hunting pressure, periodic migration and occasional dispersal into a neighbouring wood. Large mammals and resident birds are simulated; butterflies, beetles, ants, bees and the remaining songbirds stay habitat markers in the renderer.
 
@@ -48,8 +48,8 @@ There are fifteen formations, including the three shade characters requested sep
 | 1.2.1.17 | Moss-covered ground | Implemented | `ground.moss`, `drawMossPatch`, moss on logs and old roots. |
 | 1.2.1.18 | Woodland edges and grassland transitions | Implemented | `edge` increases light, flowers, shrubs and fauna; edge only occurs at low pressure or clearing margins. |
 | 1.2.1.19 | Different sightlines and canopy densities | Implemented | `canopy`, `light`, clearing and species crowns; dense/dark oakwood contrasts with airy birch and bright beech. |
-| 1.2.1.20 | Natural trails, game paths and open ground | Implemented | Deterministic `trail` field draws deer trails; clearings and cut-over gaps open the canopy. |
-| 1.2.1.21 | Different forest soils and moisture | Implemented | `ground.soil` (`alluvial`, `dry`, `humus`, `loam`) and `humus`/`moss`/`litter` values; floor tint follows them. |
+| 1.2.1.20 | Natural trails, game paths and open ground | Implemented | Deterministic `trail` field draws deer trails; clearings and cut-over gaps open the canopy. `forest-detail-reference.png` shows a ring-marked trail at (114,24). |
+| 1.2.1.21 | Different forest soils and moisture | Implemented | `ground.soil` (`alluvial`, `dry`, `humus`, `loam`) and `humus`/`moss`/`litter` values; floor tint follows them. `forest-detail-reference.png` compares alluvial wet (70% moisture) with well-drained loam (38%). |
 | 1.2.1.22 | Fresh and weathered leaf carpets | Implemented | `drawLeafCarpet` mixes fresh green/yellow and weathered brown leaves by season and litter. |
 | 1.2.1.23 | Dark humus-rich soils | Implemented | `humus` and `ground.soil` drive the dark forest-floor tint in `drawForestGround`. |
 | 1.2.1.24 | Exposed roots, stones and weathered branches | Implemented | `drawRoots`, rock/stones in the floor, fallen branches/logs; ancient trees flare roots. |
@@ -66,13 +66,13 @@ There are fifteen formations, including the three shade characters requested sep
 | 1.2.1.35 | Insects, beetles, butterflies and ants | Implemented (ambient) | Beetle, butterfly, ant and bee habitat entries and tiny insect marks. |
 | 1.2.1.36 | Trails, nests, hollows and feeding places | Implemented | Deer trails, ancient hollows, nests on old trees, mushrooms/berries as feeding grounds. |
 | 1.2.1.37 | Seasonal migration and breeding seasons | Implemented (simulated) | Spring reproduction bonus, winter mortality, seasonal capacity and period-based migration between neighbouring woods; dispersal splits crowded herds. |
-| 1.2.1.38 | Timber from different broadleaf species | Implemented | Per-species timber values and stand goods; Lumber Yard/Forester survey shows the formation and stock. |
-| 1.2.1.39 | Firewood and charcoal | Implemented | Firewood is always available; charcoal appears in ancient/burned stands and winter seasonal data. |
-| 1.2.1.40 | Mushrooms, berries, nuts and wild fruit | Implemented (survey) | Seasonal goods descriptors on each stand and resource node; existing wood/food ledger remains the economy authority. |
-| 1.2.1.41 | Medicinal plants and herbs | Implemented (survey) | Herb seasonal goods and species-associated herb finds. |
-| 1.2.1.42 | Wild meat, furs and hides | Implemented (survey) | `game`, `fur` and `hides` goods on hunting-capable stands, season-gated. |
-| 1.2.1.43 | Honey and beeswax | Implemented (survey) | Linden/edge honey and the derived beeswax good; seasonal summer peak. |
-| 1.2.1.44 | Acorns and natural fodder | Implemented (survey) | Acorn/beechnut/chestnut mast goods; autumn abundance. |
+| 1.2.1.38 | Timber from different broadleaf species | Implemented (ledger) | Per-species timber values; `forest-gathering.js` gathers timber from real forest stock through the Lumber Yard/Forester action. |
+| 1.2.1.39 | Firewood and charcoal | Implemented (ledger) | Firewood is always available; charcoal appears in ancient/burned stands. Both draws reduce the real forest stock. |
+| 1.2.1.40 | Mushrooms, berries, nuts and wild fruit | Implemented (ledger) | Seasonal mushrooms, berries, acorns, beechnuts and chestnuts are gathered into a bounded ledger; forage does not remove standing timber. |
+| 1.2.1.41 | Medicinal plants and herbs | Implemented (ledger) | Seasonal herbs are gathered from alluvial and linden/elm stands into the same ledger. |
+| 1.2.1.42 | Wild meat, furs and hides | Implemented (ledger) | `game`, `fur` and `hides` are seasonal ledger goods; hunting pressure reduces herd growth in the population model. |
+| 1.2.1.43 | Honey and beeswax | Implemented (ledger) | Linden/edge honey and the derived beeswax good; seasonal summer peak and ledger entry. |
+| 1.2.1.44 | Acorns and natural fodder | Implemented (ledger) | Acorn/beechnut/chestnut mast goods; autumn abundance, visible as `drawMast` and gathered into the ledger. |
 | 1.2.1.45 | Old-growth-like broadleaf woods | Implemented | `ancient` formation, ancient age bias, hollows, deep humus, logs, moss and rich fauna. |
 | 1.2.1.46 | Bright beechwoods and dark oakwoods | Implemented | Distinct formations and palettes; beech palette is lighter and oak density/darkness higher. |
 | 1.2.1.47 | Airy birch groves | Implemented | Low density, white trunks, heather, light canopy and pioneer goods. |
@@ -83,7 +83,7 @@ There are fifteen formations, including the three shade characters requested sep
 | 1.2.1.52 | Pest infestation and tree disease | Implemented | `diseased` formation with bare/thin crowns, deadwood and beetle/woodpecker fauna. |
 | 1.2.1.53 | Storm damage and uprooted trees | Implemented | `windthrow` formation, toppled logs, root plates and shattered crowns. |
 | 1.2.1.54 | Over-cutting and canopy loss | Implemented | Low stock ratio becomes `cutover`; low canopy, stumps, bramble and pioneer regrowth; resource stock is authoritative. |
-| 1.2.1.55 | Soil compaction and over-hunting | Implemented (herd pressure) | Deterministic `ground.compaction` stays a presentation proxy; `ground.huntingPressure` now reduces herd growth in the population model. |
+| 1.2.1.55 | Soil compaction and over-hunting | Implemented | `forestRegrowthFactor` reduces regrowth to 35% at full compaction and is applied by `regrowForests`; `forestHerdGrowth` adds a 2.5% population loss per unit `huntingPressure`. |
 | 1.2.1.56 | Regeneration after fire, clearing and storm | Implemented | Burned/windthrow/cut-over stands transition to pioneer regeneration; `regrowForests` restores stock and the cutover branch recedes. |
 | 1.2.1.57 | Sunbeams through canopy gaps | Implemented | `drawCanopyLight` screen-blended shafts and warm pool on clearing tiles. |
 | 1.2.1.58 | Light ground mist and damp morning mood | Implemented | `drawForestMist` low-alpha drifting floor mist; no separate hour-of-day clock in the renderer. |
@@ -93,11 +93,21 @@ There are fifteen formations, including the three shade characters requested sep
 ## Wildlife population model
 
 - **Bounded metapopulation.** The world holds at most 240 herds (`MAX_HERDS`). A herd lives on one wooded tile and is capped at 135% of its current carrying capacity. The herd list, not the renderer, is the source of truth for wildlife.
-- **Deterministic growth.** Each species has a base population, reproduction rate, mortality rate, mobility and migration period. Carrying capacity follows stand preference (edge, clearing, young growth, mushrooms, mast, ancient trees, disease), forest stock and season. Spring raises reproduction, winter lowers it and raises losses, and hunting pressure reduces growth.
+- **Deterministic growth.** Each species has a base population, reproduction rate, mortality rate, mobility and migration period. Carrying capacity follows stand preference (edge, clearing, young growth, mushrooms, mast, ancient trees, disease), forest stock and season. Spring raises reproduction, winter lowers it and raises losses, and hunting pressure reduces growth. The daily step is the pure `forestHerdGrowth` helper: crowding reduces gain, mortality removes a fixed share, and each unit of `huntingPressure` adds a 2.5% loss. This isolates over-hunting from the capacity effect in `tests/world/forest-pressure.test.js`.
 - **Movement and dispersal.** A herd checks a bounded neighbourhood when its migration period is due or it is crowded, and moves to a better neighbouring wood. A herd above 118% of capacity can split off a satellite herd into an empty neighbouring wood, respecting the 240-herd cap.
 - **Persistence.** `state.forestFauna` is saved as optional version-1 data. Old saves without it still load and build herds on first use. Validation rejects malformed versions, herd lists, species, coordinates, populations and capacities.
 - **Presentation and survey.** The renderer draws the herd on its home tile; the Lumber Yard and Forester site note reports the herd mix and population through `forestFaunaSummaryAt`. If no herd is present, the older habitat list remains a display fallback.
 - **Not modelled.** This is not individual-animal genealogy, a predator-prey kill ledger or a territory polygon engine. Insects, butterflies, bees and ants remain ambient markers, and songbirds/raptors remain survey silhouettes rather than simulated populations.
+
+## Forest products ledger
+
+The seasonal gathering ledger lives in [`systems/forest-gathering.js`](../js/systems/forest-gathering.js) and is deliberately local to the wood. It is not a second city currency and adds no HUD bar.
+
+- **Same stand as the renderer.** `forestProductsAt(x, y, day)` re-reads the resource node and `forestStandAt`, so the gather list, season and abundance are the values the player sees on the tile. Timber, firewood and charcoal come from the standing stock; mushrooms, berries, nuts, herbs, honey, beeswax, game, fur and hides are seasonal forage goods.
+- **Harvest has a cost.** Timber, firewood and charcoal reduce the node's real `forestStock`, so gathering feeds depletion, the cut-over formation and the compaction brake. Forage does not remove standing timber, but it is still recorded in the ledger.
+- **Bounded and repeatable.** A tile can be gathered once per day, the ledger stock and history are capped, and `gatherNearestForestProducts` lets a Lumber Yard or Forester's Lodge act on the nearest real forest node. The management panel exposes one `GATHER FOREST PRODUCTS` action.
+- **Persistent.** `state.forestGathering` is version-1 save data with strict validation and a serialize/restore round trip. Old saves without it load and start with an empty ledger.
+- **Tested.** `tests/systems/forest-gathering.test.js` covers seasonality, the same-day cooldown, stock bounds, save round trips and the nearest-node action.
 
 ## Long-run audit
 
@@ -124,8 +134,8 @@ The durable regression is `tests/systems/forest-fauna-longrun.test.js`: three se
 ## Deliberate limits
 
 - **Wildlife is simulated at herd level, not per animal.** There is no individual pedigree, predator-prey kill accounting or territory geometry. The herd model is deterministic, saveable and observable through the map and site survey; the ambient insect layer is still decoration.
-- **Forest products are descriptors, not a second currency.** The existing wood/food economy and logistics ledger remain authoritative. The survey exposes timber, firewood, charcoal, mushrooms, berries, nuts, herbs, honey, wax, game, fur and hides with seasonal abundance; a future gathering module can consume these descriptors without changing saves.
-- **Compaction remains a pressure proxy; over-hunting feeds the herd model.** `ground.compaction` derives from harvest stock, trails, edges and cut-over state and affects presentation. `ground.huntingPressure` is read by the wildlife simulation and lowers herd growth; neither is a soil-chemistry or per-animal hunting model.
+- **Forest products are a local seasonal ledger, not a second city currency.** The existing wood/food economy and logistics ledger remain authoritative; the forest ledger records what a wood yielded, keeps a bounded stock and history, and reduces real standing timber for wood products. It does not add a parallel treasury or HUD economy.
+- **Compaction is a real regrowth brake; over-hunting is a herd-level pressure.** `ground.compaction` derives from harvest stock, trails, edges and cut-over state. `forestRegrowthFactor(stand) = max(0.35, 1 − 0.65 × compaction)` is applied by `regrowForests`, so a compacted wood recovers visibly less stock. `ground.huntingPressure` adds a population loss in `forestHerdGrowth`; neither is a soil-chemistry or per-animal kill model.
 - **Disturbances are rare deterministic states**, not a live fire-spread or storm physics engine. The resource stock and regenerating formation still change what the player sees and harvests.
 - **No real-GPU validation.** The committed sheets use Chromium's available WebGL renderer, which is software WebGL in this workspace. They prove the code paths, not target-GPU colour or frame time.
 
@@ -135,6 +145,7 @@ The durable regression is `tests/systems/forest-fauna-longrun.test.js`: three se
 cd game
 npm test
 npm run test:forest-reference
+npm run test:forest-detail
 ```
 
-`npm test` covers the 15 formations, determinism, reachable site conditions, all eight species, age classes, disturbances, seasonal goods, fauna filtering, the herd population/migration/restore tests, resource-node integration and the seasonal foliage timings. `test:forest-reference` requires Chromium and Playwright; it captures all 15 formations plus a four-season sequence and fails on a missing formation, a page runtime error or a fatal WebGL diagnostic. Set `FOREST_REFERENCE_OUT` to redirect its artifacts.
+`npm test` covers the 15 formations, determinism, reachable site conditions, all eight species, age classes, disturbances, seasonal goods, fauna filtering, the herd population/migration/restore tests, forest gathering, compaction and over-hunting, resource-node integration and the seasonal foliage timings. `test:forest-reference` requires Chromium and Playwright; it captures all 15 formations plus a four-season sequence and fails on a missing formation, a page runtime error or a fatal WebGL diagnostic. `test:forest-detail` captures the thirteen native close-ups and writes `forest-detail-reference.png`/`.json`; it waits for the terrain cache to rebuild before each frame, so a slow software renderer cannot silently save the previous view. Set `FOREST_REFERENCE_OUT` or `FOREST_DETAIL_OUT` to redirect the artifacts.

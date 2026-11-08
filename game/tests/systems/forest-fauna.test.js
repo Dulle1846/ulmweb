@@ -65,7 +65,12 @@ test("forest fauna serializes and restores deterministic herd state", () => {
     const restored = restoreForestFauna(snapshot);
     assert.equal(restored, snapshot.herds.length);
     assert.equal(serializeForestFauna().herds.length, snapshot.herds.length);
-    assert.equal(forestFaunaAt(snapshot.herds[0].x, snapshot.herds[0].y).length > 0, true);
+    const present = forestFaunaAt(snapshot.herds[0].x, snapshot.herds[0].y);
+    assert.equal(present.length > 0, true);
+    // The renderer keys its animal shape off `id`; the herd's stable id must
+    // not overwrite the species name.
+    assert.equal(present[0].id, present[0].species);
+    assert.equal(present[0].herdId, snapshot.herds[0].id);
     assert.match(forestFaunaSummaryAt(snapshot.herds[0].x, snapshot.herds[0].y), /[A-Za-z]/);
     assert.throws(() => validateForestFaunaSnapshot({ version: 1, day: 0, herds: [{ species: "unknown" }] }), /herd entry/);
     assert.throws(() => validateForestFaunaSnapshot({ version: 99, day: 0, herds: [] }), /forest-fauna state/);

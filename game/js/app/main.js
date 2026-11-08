@@ -28,7 +28,7 @@ import {normalizeGovernment} from "../systems/government.js";
 import {normalizeRoyalState} from "../systems/royal-dynasty.js";
 import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
-import {serializeResourceGeography,restoreResourceGeography} from "../systems/resource-geography.js";import {serializeForestFauna,restoreForestFauna} from "../systems/forest-fauna.js";import { setupBuildUI } from "../presentation/build-ui.js";import { normalizeLayout,serializeLayout } from "../presentation/building-layout.js";
+import {serializeResourceGeography,restoreResourceGeography} from "../systems/resource-geography.js";import {serializeForestFauna,restoreForestFauna} from "../systems/forest-fauna.js";import {serializeForestGathering,restoreForestGathering} from "../systems/forest-gathering.js";import { setupBuildUI } from "../presentation/build-ui.js";import { normalizeLayout,serializeLayout } from "../presentation/building-layout.js";
 import {serializeCity,restoreCity,initializeCityForRealm,openGoodsBookForNewRealm} from "../systems/logistics.js";
 import {SAVE_SCHEMA_VERSION,normalizeSaveSnapshot,validateSaveSnapshot} from "../core/save-validation.js";
 import {initializeSettlementForRealm} from "../systems/settlement.js";
@@ -503,6 +503,7 @@ function createSaveSnapshot(){
         roads:serializeRoads(),
         resourceGeography:serializeResourceGeography(),
         forestFauna:serializeForestFauna(),
+        forestGathering:serializeForestGathering(),
         city:serializeCity(),
         tick:state.tick,year:state.year,dayOfYear:state.dayOfYear,seasonIndex:state.seasonIndex,gameSpeed:state.gameSpeed,
         morale:state.morale,resources:{...state.resources},incomeThisTick:{...state.incomeThisTick},
@@ -561,6 +562,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     restoreRoads(snapshot.roads);
     restoreResourceGeography(snapshot.resourceGeography);
     restoreForestFauna(snapshot.forestFauna);
+    restoreForestGathering(snapshot.forestGathering);
     state.entities=[];
     const restored=[];
     for(const dto of snapshot.entities||[]){

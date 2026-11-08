@@ -3,7 +3,7 @@ function createInitialState() {
     return {
         canvas:null,ctx:null,terrainCanvasEl:null,minimapCanvas:null,minimapCtx:null,
         camera:{x:0,y:0},zoom:1,zoomTarget:1,zoomLevel:3,zoomAnchor:null,renderScale:1,
-        roads:{version:1,revision:0,tiles:{}},roadBuildMode:null,directBuildType:null,resourceGeography:null,forestFauna:null,mapLayer:"terrain",
+        roads:{version:1,revision:0,tiles:{}},roadBuildMode:null,directBuildType:null,resourceGeography:null,forestFauna:null,forestGathering:null,mapLayer:"terrain",
         city:{version:1,enabled:false,constructionVersion:0,logistics:null,fields:null,services:null,needs:null},
         tick:0,gameSpeed:1,isPaused:false,tickAccumulator:0,lastFrameTime:0,
         randomStreams:{},nextEntityId:1,

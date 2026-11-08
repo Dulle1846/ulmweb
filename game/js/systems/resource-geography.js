@@ -3,7 +3,7 @@
 import { state } from "../core/state.js";
 import { WORLD_W,WORLD_H,BIOME } from "../core/config.js";
 import {
-    FOREST_TYPES, forestStandAt, forestTypeFromIndex, forestTypeIndex,
+    FOREST_TYPES, forestRegrowthFactor, forestStandAt, forestTypeFromIndex, forestTypeIndex,
 } from "../world/forest-ecology.js";
 
 const VERSION=1;
@@ -183,14 +183,29 @@ export function plantForestAt(x,y,amount=1){
 export function regrowForests(days=1){
     const elapsed=Number(days);
     if(!Number.isFinite(elapsed)||elapsed<=0)return 0;
-    const geo=ensureGeography(),growth=Math.max(0,Math.floor(elapsed/25));
-    if(!growth)return 0;
+    const geo=ensureGeography(),baseGrowth=Math.max(0,Math.floor(elapsed/25));
+    if(!baseGrowth)return 0;
     let restored=0;
-    const count=cellCount();
+    const count=cellCount(),W=worldW(),H=worldH();
+    const resolution=Math.max(1,Number(state.terrainResolution)||1);
+    const mapW=Number(state.terrainPixW)||0,mapH=Number(state.terrainPixH)||0;
+    const climate=state.worldOptions?.climate||"temperate";
+    const forests=state.worldOptions?.forests??52;
     for(let i=0;i<count;i++){
         const missing=geo.forestCapacity[i]-geo.forestStock[i];
         if(missing<=0)continue;
-        const amount=Math.min(missing,growth);
+        const x=i%W,y=Math.floor(i/W);
+        const px=mapW?clamp(Math.floor((x+0.5)*resolution),0,mapW-1):0;
+        const py=mapH?clamp(Math.floor((y+0.5)*resolution),0,mapH-1):0;
+        const mapIndex=py*mapW+px;
+        const stand=forestStandAt(x+0.5,y+0.5,{
+            seed:Number(state.worldSeed)||1,
+            moisture:Number(state.moistureMap?.[mapIndex])||0.55,
+            temperature:Number(state.temperatureMap?.[mapIndex])||0.55,
+            height:Number(state.heightMap?.[mapIndex])||0.55,
+            climate,forests,stockRatio:geo.forestStock[i]/Math.max(1,geo.forestCapacity[i]),rockLine:0.92,
+        });
+        const amount=Math.min(missing,Math.max(1,Math.round(baseGrowth*forestRegrowthFactor(stand))));
         geo.forestStock[i]+=amount;
         restored+=amount;
     }

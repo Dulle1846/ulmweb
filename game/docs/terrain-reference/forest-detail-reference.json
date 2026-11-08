@@ -1,0 +1,1546 @@
+{
+  "seed": 20261104,
+  "viewport": {
+    "width": 900,
+    "height": 900
+  },
+  "canvas": {
+    "width": 900,
+    "height": 900
+  },
+  "renderer": "WebKit WebGL",
+  "maxTextureSize": 8192,
+  "generatedAt": "2026-11-08T18:47:15.296Z",
+  "world": {
+    "width": 176,
+    "height": 176,
+    "climate": "temperate",
+    "forests": 52
+  },
+  "days": {
+    "summer": 150,
+    "spring": 60,
+    "autumn": 250
+  },
+  "flora": {
+    "summer": {
+      "foliageTurn": 0,
+      "snowCover": 0
+    },
+    "springBloom": 0.985,
+    "autumn": {
+      "foliageTurn": 0.802,
+      "snowCover": 0
+    }
+  },
+  "panels": [
+    {
+      "id": "1.2.1.13",
+      "title": "A light-flooded clearing",
+      "note": "Open sky over flowering grass in the middle of a regenerating wood.",
+      "frames": [
+        {
+          "label": "CLEARING",
+          "tile": {
+            "x": 87,
+            "y": 42,
+            "tree": false,
+            "s1": 0.685,
+            "s2": 0.099,
+            "s3": 0.876,
+            "moisture": 0.692,
+            "temperature": 0.407,
+            "height": 0.785,
+            "stockRatio": 1,
+            "type": "regenerating",
+            "label": "Regenerating Wood",
+            "age": "young",
+            "soil": "loam",
+            "clearing": 1,
+            "treeChance": 0.483,
+            "light": 1,
+            "compaction": 0.12,
+            "huntingPressure": 0.1,
+            "flowers": 0.77,
+            "roots": 0.18,
+            "stones": 0.316,
+            "mushrooms": 0.287,
+            "stumps": 0,
+            "logs": 0,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "berries",
+              "birch-sap",
+              "firewood",
+              "herbs",
+              "honey",
+              "linden-flower",
+              "maple-syrup",
+              "mushrooms"
+            ],
+            "species": [
+              "Birch",
+              "Maple",
+              "Beech"
+            ]
+          },
+          "day": 150,
+          "zoom": 2.4,
+          "crop": 700,
+          "mark": null,
+          "focus": {
+            "x": 87.2995,
+            "y": 42.694199999999995
+          },
+          "sha256": "30d900ec8b77e0156052c4f4d0b28b3fbeb9fb458834415efe57a10ad0810ff3",
+          "animal": null
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.14",
+      "title": "A small natural meadow",
+      "note": "A grassy gap inside the canopy, next to the taller regeneration.",
+      "frames": [
+        {
+          "label": "MEADOW",
+          "tile": {
+            "x": 86,
+            "y": 44,
+            "tree": false,
+            "s1": 0.706,
+            "s2": 0.2,
+            "s3": 0.784,
+            "moisture": 0.691,
+            "temperature": 0.406,
+            "height": 0.807,
+            "stockRatio": 1,
+            "type": "regenerating",
+            "label": "Regenerating Wood",
+            "age": "young",
+            "soil": "loam",
+            "clearing": 1,
+            "treeChance": 0.483,
+            "light": 1,
+            "compaction": 0.12,
+            "huntingPressure": 0.1,
+            "flowers": 0.77,
+            "roots": 0.18,
+            "stones": 0.345,
+            "mushrooms": 0.287,
+            "stumps": 0,
+            "logs": 0,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "berries",
+              "birch-sap",
+              "firewood",
+              "herbs",
+              "honey",
+              "linden-flower",
+              "maple-syrup",
+              "mushrooms"
+            ],
+            "species": [
+              "Birch",
+              "Maple",
+              "Beech"
+            ]
+          },
+          "day": 150,
+          "zoom": 2.4,
+          "crop": 700,
+          "mark": null,
+          "focus": {
+            "x": 86.35,
+            "y": 44.6528
+          },
+          "sha256": "e1ec87f0e925bb2ba3ce04d794566c59f5c9f5c62cb1dd3282fa3a1c0ea42c39",
+          "animal": null
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.20",
+      "title": "Deer trail through the stand",
+      "note": "The trail branch replaces the leaf carpet on this tile; hooves compact the litter.",
+      "frames": [
+        {
+          "label": "TRAIL",
+          "tile": {
+            "x": 114,
+            "y": 24,
+            "tree": false,
+            "s1": 0.874,
+            "s2": 0.999,
+            "s3": 0.374,
+            "moisture": 0.449,
+            "temperature": 0.47,
+            "height": 0.385,
+            "stockRatio": 1,
+            "type": "beechwood",
+            "label": "Beechwood",
+            "age": "mature",
+            "soil": "loam",
+            "clearing": 0,
+            "treeChance": 0.513,
+            "light": 0.747,
+            "compaction": 0.12,
+            "huntingPressure": 0.1,
+            "flowers": 0.35,
+            "roots": 0.08,
+            "stones": 0,
+            "mushrooms": 0.335,
+            "stumps": 0,
+            "logs": 0,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "birch-sap",
+              "firewood",
+              "game",
+              "hides",
+              "honey",
+              "linden-flower",
+              "maple-syrup",
+              "mushrooms"
+            ],
+            "species": [
+              "Beech",
+              "Oak",
+              "Maple"
+            ]
+          },
+          "day": 150,
+          "zoom": 4.2,
+          "crop": 360,
+          "mark": "TRAIL",
+          "focus": {
+            "x": 114.7495,
+            "y": 24.5083
+          },
+          "sha256": "273aa0364cf9e16ba02d22f3d92830194640d2cedc368c11978e3a9ea2960483",
+          "animal": null
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.21",
+      "title": "Two forest soils",
+      "note": "Alluvial floor beside the water against a well-drained loam floor; moisture, humus and litter are measured on the tile.",
+      "frames": [
+        {
+          "label": "ALLUVIAL · WET",
+          "tile": {
+            "x": 80,
+            "y": 38,
+            "tree": false,
+            "s1": 0.73,
+            "s2": 0.365,
+            "s3": 0.646,
+            "moisture": 0.761,
+            "temperature": 0.417,
+            "height": 0.566,
+            "stockRatio": 1,
+            "type": "alluvial",
+            "label": "Alluvial Woodland",
+            "age": "ancient",
+            "soil": "alluvial",
+            "clearing": 0,
+            "treeChance": 0.628,
+            "light": 0.452,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.4,
+            "stones": 0.008,
+            "mushrooms": 0.308,
+            "stumps": 0,
+            "logs": 0.14,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "alder-cones",
+              "bark",
+              "beeswax",
+              "birch-sap",
+              "charcoal",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey"
+            ],
+            "species": [
+              "Alder",
+              "Elm",
+              "Birch"
+            ]
+          },
+          "day": 150,
+          "zoom": 3.9,
+          "crop": 560,
+          "mark": null,
+          "focus": {
+            "x": 80.4325,
+            "y": 38.5907
+          },
+          "sha256": "0eaca3c52fa97984ff57c278a0c7fd94c8885555346005ba389bfe84e976c608",
+          "animal": null
+        },
+        {
+          "label": "LOAM · WELL-DRAINED",
+          "tile": {
+            "x": 65,
+            "y": 109,
+            "tree": false,
+            "s1": 0.502,
+            "s2": 0.152,
+            "s3": 0.924,
+            "moisture": 0.411,
+            "temperature": 0.535,
+            "height": 0.597,
+            "stockRatio": 1,
+            "type": "regenerating",
+            "label": "Regenerating Wood",
+            "age": "young",
+            "soil": "loam",
+            "clearing": 0,
+            "treeChance": 0.436,
+            "light": 0.935,
+            "compaction": 0.12,
+            "huntingPressure": 0.1,
+            "flowers": 0.47,
+            "roots": 0.18,
+            "stones": 0.051,
+            "mushrooms": 0.203,
+            "stumps": 0,
+            "logs": 0,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "berries",
+              "birch-sap",
+              "firewood",
+              "herbs",
+              "honey",
+              "linden-flower",
+              "maple-syrup",
+              "mushrooms"
+            ],
+            "species": [
+              "Birch",
+              "Maple",
+              "Beech"
+            ]
+          },
+          "day": 150,
+          "zoom": 3.9,
+          "crop": 560,
+          "mark": null,
+          "focus": {
+            "x": 65.326,
+            "y": 109.7158
+          },
+          "sha256": "c05fdccc959dd6d54de851d33e877f67bd6205f97509470656567410757005c9",
+          "animal": null
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.24",
+      "title": "Roots, stones and weathered wood",
+      "note": "Root flares under an ancient tree, scree on a hillside tile, and a storm-thrown log in the litter.",
+      "frames": [
+        {
+          "label": "ROOTS",
+          "tile": {
+            "x": 56,
+            "y": 139,
+            "tree": false,
+            "s1": 0.845,
+            "s2": 0.444,
+            "s3": 0.835,
+            "moisture": 0.518,
+            "temperature": 0.427,
+            "height": 0.648,
+            "stockRatio": 1,
+            "type": "linden-elm",
+            "label": "Linden and Elm Stand",
+            "age": "ancient",
+            "soil": "humus",
+            "clearing": 0,
+            "treeChance": 0.466,
+            "light": 0.614,
+            "compaction": 0.12,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.4,
+            "stones": 0.123,
+            "mushrooms": 0.236,
+            "stumps": 0,
+            "logs": 0.14,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "bark",
+              "beeswax",
+              "charcoal",
+              "chestnuts",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower"
+            ],
+            "species": [
+              "Linden",
+              "Elm",
+              "Oak"
+            ]
+          },
+          "day": 150,
+          "zoom": 4.2,
+          "crop": 420,
+          "mark": null,
+          "focus": {
+            "x": 56.472,
+            "y": 139.71575
+          },
+          "sha256": "df85839a5a28c7bb19974f4c280be31e700f97ec08a77dcf7e80fc0671fa804f",
+          "animal": null
+        },
+        {
+          "label": "STONES",
+          "tile": {
+            "x": 87,
+            "y": 61,
+            "tree": false,
+            "s1": 0.888,
+            "s2": 0.756,
+            "s3": 0.027,
+            "moisture": 0.545,
+            "temperature": 0.448,
+            "height": 0.828,
+            "stockRatio": 1,
+            "type": "hillside",
+            "label": "Hillside Forest",
+            "age": "mature",
+            "soil": "loam",
+            "clearing": 0,
+            "treeChance": 0.455,
+            "light": 0.625,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.18,
+            "stones": 0.555,
+            "mushrooms": 0.243,
+            "stumps": 0,
+            "logs": 0,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower",
+              "maple-syrup"
+            ],
+            "species": [
+              "Beech",
+              "Oak",
+              "Maple"
+            ]
+          },
+          "day": 150,
+          "zoom": 4.2,
+          "crop": 420,
+          "mark": null,
+          "focus": {
+            "x": 87.628,
+            "y": 61.312149999999995
+          },
+          "sha256": "913ce626db746aa0e76453188b9a63db6b23fcc808b1dfd94ed19457061e48d6",
+          "animal": null
+        },
+        {
+          "label": "FALLEN LOG",
+          "tile": {
+            "x": 126,
+            "y": 133,
+            "tree": false,
+            "s1": 0.997,
+            "s2": 0.718,
+            "s3": 0.198,
+            "moisture": 0.603,
+            "temperature": 0.485,
+            "height": 0.532,
+            "stockRatio": 1,
+            "type": "windthrow",
+            "label": "Windthrow",
+            "age": "mature",
+            "soil": "loam",
+            "clearing": 0,
+            "treeChance": 0.444,
+            "light": 0.636,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.08,
+            "stones": 0,
+            "mushrooms": 0.381,
+            "stumps": 0.22,
+            "logs": 0.5,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "birch-sap",
+              "elm-seeds",
+              "firewood",
+              "herbs",
+              "maple-syrup",
+              "mushrooms",
+              "timber",
+              "truffles"
+            ],
+            "species": [
+              "Beech",
+              "Oak",
+              "Maple"
+            ]
+          },
+          "day": 150,
+          "zoom": 4.2,
+          "crop": 420,
+          "mark": null,
+          "focus": {
+            "x": 126.609,
+            "y": 133.43910000000002
+          },
+          "sha256": "e5f12d364c0988e33e8b8aec37e24b0d4dac45c03e8200d153dfe61091c53624",
+          "animal": null
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.25",
+      "title": "Fungi on stumps and deadwood",
+      "note": "Mushroom clusters on the floor and on a stump left by windthrow.",
+      "frames": [
+        {
+          "label": "STUMP",
+          "tile": {
+            "x": 128,
+            "y": 133,
+            "tree": false,
+            "s1": 0.955,
+            "s2": 0.976,
+            "s3": 0.405,
+            "moisture": 0.568,
+            "temperature": 0.487,
+            "height": 0.521,
+            "stockRatio": 1,
+            "type": "windthrow",
+            "label": "Windthrow",
+            "age": "mature",
+            "soil": "loam",
+            "clearing": 0,
+            "treeChance": 0.43,
+            "light": 0.65,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.08,
+            "stones": 0,
+            "mushrooms": 0.37,
+            "stumps": 0.22,
+            "logs": 0.5,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "birch-sap",
+              "elm-seeds",
+              "firewood",
+              "herbs",
+              "maple-syrup",
+              "mushrooms",
+              "timber",
+              "truffles"
+            ],
+            "species": [
+              "Beech",
+              "Oak",
+              "Maple"
+            ]
+          },
+          "day": 150,
+          "zoom": 4.6,
+          "crop": 340,
+          "mark": "STUMP FUNGI",
+          "focus": {
+            "x": 128.738,
+            "y": 133.48225000000002
+          },
+          "sha256": "524860dfbbc6889f88dfd4d8910ebb43f554c4e3a2a0957ac6bf508e8c0f32d5",
+          "animal": null
+        },
+        {
+          "label": "FLOOR",
+          "tile": {
+            "x": 88,
+            "y": 30,
+            "tree": false,
+            "s1": 0.77,
+            "s2": 0.81,
+            "s3": 0.731,
+            "moisture": 0.694,
+            "temperature": 0.412,
+            "height": 0.474,
+            "stockRatio": 1,
+            "type": "birchwood",
+            "label": "Birch Grove",
+            "age": "young",
+            "soil": "loam",
+            "clearing": 0,
+            "treeChance": 0.413,
+            "light": 0.727,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.08,
+            "stones": 0,
+            "mushrooms": 0.288,
+            "stumps": 0,
+            "logs": 0,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "alder-cones",
+              "bark",
+              "beechnuts",
+              "berries",
+              "birch-sap",
+              "firewood",
+              "herbs",
+              "maple-syrup",
+              "mushrooms",
+              "timber",
+              "truffles"
+            ],
+            "species": [
+              "Birch",
+              "Maple",
+              "Oak"
+            ]
+          },
+          "day": 150,
+          "zoom": 4.6,
+          "crop": 340,
+          "mark": "FLOOR FUNGI",
+          "focus": {
+            "x": 88.655,
+            "y": 30.62895
+          },
+          "sha256": "22580ab83f4baf1c032695d4c70c8db7339ebae85d849f0f0443f270165b0e1b",
+          "animal": null
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.31",
+      "title": "Blossom and autumn mast",
+      "note": "Spring flowers in the light, then acorns and nuts scattered under the same wood in autumn.",
+      "frames": [
+        {
+          "label": "SPRING BLOSSOM",
+          "tile": {
+            "x": 88,
+            "y": 42,
+            "tree": false,
+            "s1": 0.942,
+            "s2": 0.819,
+            "s3": 0.747,
+            "moisture": 0.688,
+            "temperature": 0.403,
+            "height": 0.8,
+            "stockRatio": 1,
+            "type": "regenerating",
+            "label": "Regenerating Wood",
+            "age": "young",
+            "soil": "loam",
+            "clearing": 1,
+            "treeChance": 0.482,
+            "light": 1,
+            "compaction": 0.12,
+            "huntingPressure": 0.1,
+            "flowers": 0.77,
+            "roots": 0.18,
+            "stones": 0.336,
+            "mushrooms": 0.286,
+            "stumps": 0,
+            "logs": 0,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "berries",
+              "birch-sap",
+              "firewood",
+              "herbs",
+              "honey",
+              "linden-flower",
+              "maple-syrup",
+              "mushrooms"
+            ],
+            "species": [
+              "Birch",
+              "Maple",
+              "Beech"
+            ]
+          },
+          "day": 60,
+          "zoom": 4.4,
+          "crop": 360,
+          "mark": "BLOSSOM",
+          "focus": {
+            "x": 88.7795,
+            "y": 42.78615
+          },
+          "sha256": "cd10bf3b23db4f239f7c620acbb6b866edb248d01d01a244707300851f494a4a",
+          "animal": null
+        },
+        {
+          "label": "AUTUMN MAST",
+          "tile": {
+            "x": 104,
+            "y": 21,
+            "tree": false,
+            "s1": 0.347,
+            "s2": 0.385,
+            "s3": 0.912,
+            "moisture": 0.48,
+            "temperature": 0.465,
+            "height": 0.391,
+            "stockRatio": 1,
+            "type": "oakwood",
+            "label": "Oakwood",
+            "age": "ancient",
+            "soil": "humus",
+            "clearing": 0.814,
+            "treeChance": 0.105,
+            "light": 0.953,
+            "compaction": 0.12,
+            "huntingPressure": 0.1,
+            "flowers": 0.65,
+            "roots": 0.3,
+            "stones": 0,
+            "mushrooms": 0.224,
+            "stumps": 0,
+            "logs": 0.14,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "charcoal",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower"
+            ],
+            "species": [
+              "Oak",
+              "Beech",
+              "Elm"
+            ]
+          },
+          "day": 250,
+          "zoom": 4.4,
+          "crop": 360,
+          "mark": "MAST",
+          "focus": {
+            "x": 104.4425,
+            "y": 21.7704
+          },
+          "sha256": "fe7bb1cf97cf6f511d8655dc81baf8f31e9690c43521d423f2d6368217f2bfd6",
+          "animal": null
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.33",
+      "title": "Squirrels and small mammals",
+      "note": "A simulated squirrel herd on its home tile, plus a native close-up of the same animal.",
+      "frames": [
+        {
+          "label": "TILE",
+          "tile": {
+            "x": 71,
+            "y": 104,
+            "tree": true,
+            "s1": 0.267,
+            "s2": 0.978,
+            "s3": 0.812,
+            "moisture": 0.579,
+            "temperature": 0.553,
+            "height": 0.591,
+            "stockRatio": 1,
+            "type": "maplewood",
+            "label": "Maplewood",
+            "age": "mature",
+            "soil": "loam",
+            "clearing": 0,
+            "treeChance": 0.507,
+            "light": 0.573,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.18,
+            "stones": 0.043,
+            "mushrooms": 0.254,
+            "stumps": 0,
+            "logs": 0,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "birch-sap",
+              "elm-seeds",
+              "firewood",
+              "herbs",
+              "maple-syrup",
+              "mushrooms",
+              "timber",
+              "truffles"
+            ],
+            "species": [
+              "Maple",
+              "Beech",
+              "Oak"
+            ]
+          },
+          "day": 150,
+          "zoom": 2.4,
+          "crop": 700,
+          "mark": null,
+          "focus": {
+            "x": 71.739,
+            "y": 104.66539999999999
+          },
+          "sha256": "877921f3b41f07eb622ab93a380d7ab9a40674adc2f8a96b6d05201414d2b314",
+          "animal": {
+            "id": "squirrel",
+            "label": "Squirrel",
+            "group": "small",
+            "simulatedHerd": true,
+            "population": 8.6
+          }
+        },
+        {
+          "label": "CLOSE-UP",
+          "tile": {
+            "x": 71,
+            "y": 104,
+            "tree": true,
+            "s1": 0.267,
+            "s2": 0.978,
+            "s3": 0.812,
+            "moisture": 0.579,
+            "temperature": 0.553,
+            "height": 0.591,
+            "stockRatio": 1,
+            "type": "maplewood",
+            "label": "Maplewood",
+            "age": "mature",
+            "soil": "loam",
+            "clearing": 0,
+            "treeChance": 0.507,
+            "light": 0.573,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.18,
+            "stones": 0.043,
+            "mushrooms": 0.254,
+            "stumps": 0,
+            "logs": 0,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "birch-sap",
+              "elm-seeds",
+              "firewood",
+              "herbs",
+              "maple-syrup",
+              "mushrooms",
+              "timber",
+              "truffles"
+            ],
+            "species": [
+              "Maple",
+              "Beech",
+              "Oak"
+            ]
+          },
+          "day": 150,
+          "zoom": 5.2,
+          "crop": 320,
+          "mark": "Squirrel",
+          "focus": {
+            "x": 71.80728571428571,
+            "y": 104.66539999999999
+          },
+          "sha256": "f5868feb0073634a0ae36f957ea38429a7565f33e8125fc9bd552378842eb088",
+          "animal": {
+            "id": "squirrel",
+            "label": "Squirrel",
+            "group": "small",
+            "simulatedHerd": true,
+            "population": 8.6
+          }
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.34",
+      "title": "Owls, woodpeckers and songbirds",
+      "note": "A resident bird herd drawn on its wood; the habitat fallback is used when no herd owns the tile.",
+      "frames": [
+        {
+          "label": "TILE",
+          "tile": {
+            "x": 97,
+            "y": 18,
+            "tree": true,
+            "s1": 0.355,
+            "s2": 0.112,
+            "s3": 0.704,
+            "moisture": 0.5,
+            "temperature": 0.456,
+            "height": 0.39,
+            "stockRatio": 1,
+            "type": "linden-elm",
+            "label": "Linden and Elm Stand",
+            "age": "young",
+            "soil": "loam",
+            "clearing": 0,
+            "treeChance": 0.457,
+            "light": 0.691,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.08,
+            "stones": 0,
+            "mushrooms": 0.23,
+            "stumps": 0,
+            "logs": 0,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "bark",
+              "beeswax",
+              "chestnuts",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower",
+              "maple-syrup"
+            ],
+            "species": [
+              "Linden",
+              "Elm",
+              "Oak"
+            ]
+          },
+          "day": 150,
+          "zoom": 2.4,
+          "crop": 700,
+          "mark": null,
+          "focus": {
+            "x": 97.306,
+            "y": 18.6168
+          },
+          "sha256": "5b174d206b7b9b3cef46a2a3366081eae4cdfcf93db9ceee6258bf2f04f1e8aa",
+          "animal": {
+            "id": "songbird",
+            "label": "Songbird",
+            "group": "bird",
+            "activity": "singing in the understorey",
+            "simulatedHerd": false,
+            "population": null
+          }
+        },
+        {
+          "label": "CLOSE-UP",
+          "tile": {
+            "x": 97,
+            "y": 18,
+            "tree": true,
+            "s1": 0.355,
+            "s2": 0.112,
+            "s3": 0.704,
+            "moisture": 0.5,
+            "temperature": 0.456,
+            "height": 0.39,
+            "stockRatio": 1,
+            "type": "linden-elm",
+            "label": "Linden and Elm Stand",
+            "age": "young",
+            "soil": "loam",
+            "clearing": 0,
+            "treeChance": 0.457,
+            "light": 0.691,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.08,
+            "stones": 0,
+            "mushrooms": 0.23,
+            "stumps": 0,
+            "logs": 0,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "bark",
+              "beeswax",
+              "chestnuts",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower",
+              "maple-syrup"
+            ],
+            "species": [
+              "Linden",
+              "Elm",
+              "Oak"
+            ]
+          },
+          "day": 150,
+          "zoom": 5.2,
+          "crop": 320,
+          "mark": "Songbird",
+          "focus": {
+            "x": 97.25057142857142,
+            "y": 18.6168
+          },
+          "sha256": "80171d8c0cefb06f109d86eee27c82ca36577120c6200a8d8688927b0ad2e6b7",
+          "animal": {
+            "id": "songbird",
+            "label": "Songbird",
+            "group": "bird",
+            "activity": "singing in the understorey",
+            "simulatedHerd": false,
+            "population": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.35",
+      "title": "Insects, beetles, butterflies and ants",
+      "note": "A habitat insect mark on a forest tile; it is deliberately small, so the second frame is a native 4.2× close-up.",
+      "frames": [
+        {
+          "label": "TILE",
+          "tile": {
+            "x": 89,
+            "y": 16,
+            "tree": false,
+            "s1": 0.957,
+            "s2": 0.515,
+            "s3": 0.679,
+            "moisture": 0.498,
+            "temperature": 0.465,
+            "height": 0.335,
+            "stockRatio": 1,
+            "type": "linden-elm",
+            "label": "Linden and Elm Stand",
+            "age": "ancient",
+            "soil": "humus",
+            "clearing": 0,
+            "treeChance": 0.456,
+            "light": 0.624,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.3,
+            "stones": 0,
+            "mushrooms": 0.229,
+            "stumps": 0,
+            "logs": 0.14,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "bark",
+              "beeswax",
+              "charcoal",
+              "chestnuts",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower"
+            ],
+            "species": [
+              "Linden",
+              "Elm",
+              "Oak"
+            ]
+          },
+          "day": 150,
+          "zoom": 2.4,
+          "crop": 700,
+          "mark": null,
+          "focus": {
+            "x": 89.5075,
+            "y": 16.60555
+          },
+          "sha256": "8922d9ad34ce277634739213e2bf1221989066bdaadd4abecdea3bb78a2f153f",
+          "animal": {
+            "id": "butterfly",
+            "label": "Woodland butterfly",
+            "group": "insect",
+            "activity": "drifting through the light",
+            "simulatedHerd": false,
+            "population": null
+          }
+        },
+        {
+          "label": "CLOSE-UP",
+          "tile": {
+            "x": 89,
+            "y": 16,
+            "tree": false,
+            "s1": 0.957,
+            "s2": 0.515,
+            "s3": 0.679,
+            "moisture": 0.498,
+            "temperature": 0.465,
+            "height": 0.335,
+            "stockRatio": 1,
+            "type": "linden-elm",
+            "label": "Linden and Elm Stand",
+            "age": "ancient",
+            "soil": "humus",
+            "clearing": 0,
+            "treeChance": 0.456,
+            "light": 0.624,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.3,
+            "stones": 0,
+            "mushrooms": 0.229,
+            "stumps": 0,
+            "logs": 0.14,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "bark",
+              "beeswax",
+              "charcoal",
+              "chestnuts",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower"
+            ],
+            "species": [
+              "Linden",
+              "Elm",
+              "Oak"
+            ]
+          },
+          "day": 150,
+          "zoom": 6.4,
+          "crop": 320,
+          "mark": "Woodland butterfly",
+          "focus": {
+            "x": 89.53307142857142,
+            "y": 16.60555
+          },
+          "sha256": "7d1049e1fef0b3b3807614f2676141ed757cee72075925cd791717ea150d1999",
+          "animal": {
+            "id": "butterfly",
+            "label": "Woodland butterfly",
+            "group": "insect",
+            "activity": "drifting through the light",
+            "simulatedHerd": false,
+            "population": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.36",
+      "title": "Nests and hollows in ancient trees",
+      "note": "A nest in the crown and a dark hollow in the trunk of the same old tree; trails and mast supply the feeding places.",
+      "frames": [
+        {
+          "label": "CROWN",
+          "tile": {
+            "x": 59,
+            "y": 46,
+            "tree": true,
+            "s1": 0.485,
+            "s2": 0.995,
+            "s3": 0.062,
+            "moisture": 0.448,
+            "temperature": 0.475,
+            "height": 0.607,
+            "stockRatio": 1,
+            "type": "oakwood",
+            "label": "Oakwood",
+            "age": "ancient",
+            "soil": "humus",
+            "clearing": 0,
+            "treeChance": 0.543,
+            "light": 0.717,
+            "compaction": 0.12,
+            "huntingPressure": 0.1,
+            "flowers": 0.35,
+            "roots": 0.4,
+            "stones": 0.066,
+            "mushrooms": 0.214,
+            "stumps": 0,
+            "logs": 0.14,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "charcoal",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower"
+            ],
+            "species": [
+              "Oak",
+              "Beech",
+              "Elm"
+            ]
+          },
+          "day": 150,
+          "zoom": 3.2,
+          "crop": 620,
+          "mark": null,
+          "focus": {
+            "x": 59.7475,
+            "y": 46.3279
+          },
+          "sha256": "87be52b3f17a2f71d84c105fe307c224974e4e3ef91f8fb2dd278ad59a2b9e69",
+          "animal": null
+        },
+        {
+          "label": "NEST",
+          "tile": {
+            "x": 59,
+            "y": 46,
+            "tree": true,
+            "s1": 0.485,
+            "s2": 0.995,
+            "s3": 0.062,
+            "moisture": 0.448,
+            "temperature": 0.475,
+            "height": 0.607,
+            "stockRatio": 1,
+            "type": "oakwood",
+            "label": "Oakwood",
+            "age": "ancient",
+            "soil": "humus",
+            "clearing": 0,
+            "treeChance": 0.543,
+            "light": 0.717,
+            "compaction": 0.12,
+            "huntingPressure": 0.1,
+            "flowers": 0.35,
+            "roots": 0.4,
+            "stones": 0.066,
+            "mushrooms": 0.214,
+            "stumps": 0,
+            "logs": 0.14,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "charcoal",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower"
+            ],
+            "species": [
+              "Oak",
+              "Beech",
+              "Elm"
+            ]
+          },
+          "day": 150,
+          "zoom": 5,
+          "crop": 360,
+          "mark": "NEST",
+          "focus": {
+            "x": 59.7275,
+            "y": 45.9979
+          },
+          "sha256": "2317fa20c03a72b4e07c27ff2b8c35baee0727a4833fa97b61a005b93fcd64ce",
+          "animal": null
+        },
+        {
+          "label": "HOLLOW",
+          "tile": {
+            "x": 59,
+            "y": 46,
+            "tree": true,
+            "s1": 0.485,
+            "s2": 0.995,
+            "s3": 0.062,
+            "moisture": 0.448,
+            "temperature": 0.475,
+            "height": 0.607,
+            "stockRatio": 1,
+            "type": "oakwood",
+            "label": "Oakwood",
+            "age": "ancient",
+            "soil": "humus",
+            "clearing": 0,
+            "treeChance": 0.543,
+            "light": 0.717,
+            "compaction": 0.12,
+            "huntingPressure": 0.1,
+            "flowers": 0.35,
+            "roots": 0.4,
+            "stones": 0.066,
+            "mushrooms": 0.214,
+            "stumps": 0,
+            "logs": 0.14,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "charcoal",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower"
+            ],
+            "species": [
+              "Oak",
+              "Beech",
+              "Elm"
+            ]
+          },
+          "day": 150,
+          "zoom": 5,
+          "crop": 360,
+          "mark": "HOLLOW",
+          "focus": {
+            "x": 59.6575,
+            "y": 46.237899999999996
+          },
+          "sha256": "3b80946870931cf2a3613502bff899ff188059c86458bd85004832f7ecb40d3d",
+          "animal": null
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.50",
+      "title": "A lone tree in open country",
+      "note": "The lone-tree branch outside closed forest, with the same species and crown code as the wood.",
+      "frames": [
+        {
+          "label": "LONE TREE",
+          "tile": {
+            "x": 108,
+            "y": 74,
+            "tree": false,
+            "s1": 0.97,
+            "s2": 0.757,
+            "s3": 0.261,
+            "moisture": 0.348,
+            "temperature": 0.524,
+            "height": 0.711,
+            "stockRatio": 1,
+            "type": "oakwood",
+            "label": "Oakwood",
+            "age": "mature",
+            "soil": "dry",
+            "clearing": 0,
+            "treeChance": 0,
+            "light": 0.647,
+            "compaction": 0,
+            "huntingPressure": 0,
+            "flowers": 0.06,
+            "roots": 0.18,
+            "stones": 0.211,
+            "mushrooms": 0.184,
+            "stumps": 0,
+            "logs": 0,
+            "trail": false,
+            "goods": [
+              "acorns",
+              "bark",
+              "beechnuts",
+              "beeswax",
+              "elm-seeds",
+              "firewood",
+              "game",
+              "herbs",
+              "hides",
+              "honey",
+              "linden-flower",
+              "maple-syrup"
+            ],
+            "species": [
+              "Oak",
+              "Beech",
+              "Elm"
+            ]
+          },
+          "day": 150,
+          "zoom": 2.4,
+          "crop": 700,
+          "mark": null,
+          "focus": {
+            "x": 108.6285,
+            "y": 74.41745
+          },
+          "sha256": "4c9003cb8a137cf9ce5654fd3593bd4fda3d2f9b6b5594ce86f03368c8f66b9b",
+          "animal": null
+        }
+      ]
+    },
+    {
+      "id": "1.2.1.57",
+      "title": "Sunbeams through a canopy gap",
+      "note": "The screen-blended shaft and warm pool are drawn only on a clearing tile with the right gap hash.",
+      "frames": [
+        {
+          "label": "SUN SHAFT",
+          "tile": {
+            "x": 87,
+            "y": 40,
+            "tree": false,
+            "s1": 0.739,
+            "s2": 0.974,
+            "s3": 0.624,
+            "moisture": 0.697,
+            "temperature": 0.418,
+            "height": 0.732,
+            "stockRatio": 1,
+            "type": "birchwood",
+            "label": "Birch Grove",
+            "age": "young",
+            "soil": "loam",
+            "clearing": 1,
+            "treeChance": 0,
+            "light": 1,
+            "compaction": 0.12,
+            "huntingPressure": 0.1,
+            "flowers": 0.65,
+            "roots": 0.18,
+            "stones": 0.241,
+            "mushrooms": 0.289,
+            "stumps": 0,
+            "logs": 0,
+            "trail": true,
+            "goods": [
+              "acorns",
+              "alder-cones",
+              "bark",
+              "beechnuts",
+              "berries",
+              "birch-sap",
+              "firewood",
+              "herbs",
+              "maple-syrup",
+              "mushrooms",
+              "timber",
+              "truffles"
+            ],
+            "species": [
+              "Birch",
+              "Maple",
+              "Oak"
+            ]
+          },
+          "day": 150,
+          "zoom": 2.4,
+          "crop": 620,
+          "mark": "SUN SHAFT",
+          "focus": {
+            "x": 87.737,
+            "y": 40.520799999999994
+          },
+          "sha256": "c7ecfe44208b67f5a31ac56e28bdd520e3312574d3c3c53c05a287e642086ae2",
+          "animal": null
+        }
+      ]
+    }
+  ],
+  "note": "HUD, entities, fog and weather hidden; simulation paused. Every frame is a real generated tile rendered by the normal terrain pass. Close-ups are native renders centred on the motif, not upscaled crops. No demo props were placed by hand."
+}

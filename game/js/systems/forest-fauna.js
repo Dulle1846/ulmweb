@@ -309,6 +309,16 @@ function maybeMigrate(model, herd, current, day, additions = []) {
     return true;
 }
 
+// The daily population step is pure so the over-hunting model can be tested
+// without advancing a whole realm. `mortality` is the already season-adjusted
+// rate; hunting pressure adds a loss proportional to the herd.
+export function forestHerdGrowth({ population, capacity, reproduction, mortality, huntingPressure = 0 }) {
+    const crowding = population / Math.max(1, capacity);
+    const gain = reproduction * population * Math.max(-0.2, 1 - crowding);
+    const loss = mortality * population + Math.max(0, Number(huntingPressure) || 0) * population * 0.025;
+    return gain - loss;
+}
+
 export function updateForestFauna(days = 1) {
     const model = ensureForestFauna();
     if (!model) return null;
@@ -330,13 +340,13 @@ export function updateForestFauna(days = 1) {
             const winterReproduction = Number(spec.winterReproduction ?? 0.85);
             const reproduction = spec.reproduction * (season === "spring" ? 1.18 : season === "winter" ? winterReproduction : 1);
             const hunting = Number(stand?.ground?.huntingPressure) || 0;
-            const gain = reproduction * herd.population * Math.max(-0.2, 1 - crowding);
             // Winter is a lean season, not a population reset. The old 1.55
             // multiplier removed roughly seven eighths of every herd by spring.
-            const loss = spec.mortality * herd.population * (season === "winter" ? 0.95 : 0.9)
-                + hunting * herd.population * 0.025;
+            const mortality = spec.mortality * (season === "winter" ? 0.95 : 0.9);
             const before = herd.population;
-            const next = clamp(before + gain - loss, 0, capacity * 1.35);
+            const next = clamp(before + forestHerdGrowth({
+                population: before, capacity, reproduction, mortality, huntingPressure: hunting,
+            }), 0, capacity * 1.35);
             if (next > before + 0.05) model.stats.births++;
             if (next < before - 0.05) model.stats.deaths++;
             herd.population = Math.round(next * 10) / 10;
@@ -381,7 +391,9 @@ export function forestFaunaAt(x, y, stand = null, day = state.dayOfYear) {
     if (tx < 0 || ty < 0) return [];
     const herds = model.herds
         .filter(herd => herd.x === tx && herd.y === ty && herd.population >= 0.8)
-        .map(herd => ({ ...herd, ...speciesMeta(herd.species), day: model.day }));
+        // `id` must name the species: the renderer keys its animal shapes and
+        // colours off it. The herd's stable id lives on as `herdId`.
+        .map(herd => ({ ...herd, ...speciesMeta(herd.species), herdId: String(herd.id), id: herd.species, day: model.day }));
     if (herds.length || !stand) return herds;
     return [];
 }

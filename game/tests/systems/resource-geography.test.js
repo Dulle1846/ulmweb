@@ -122,6 +122,10 @@ test("forests regrow slowly and only up to their original capacity",()=>{
     assert.equal(regrowForests(24),0);
     assert.equal(regrowForests(25),1);
     assert.equal(getResourceNodeAt(forest.x,forest.y).forestStock,1);
-    assert.equal(regrowForests(10000),capacity-1);
+    // Trail/cut-over compaction deliberately makes full recovery take longer
+    // than the old uniform timer; the long run still caps at capacity.
+    const partial=regrowForests(10000);
+    assert.ok(partial>0&&partial<capacity-1);
+    assert.equal(regrowForests(10000),capacity-1-partial);
     assert.equal(getResourceNodeAt(forest.x,forest.y).forestStock,capacity);
 });
