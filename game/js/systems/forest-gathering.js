@@ -10,12 +10,16 @@ import { FOREST_GOODS, forestGoodsFor, forestStandAt } from "../world/forest-eco
 import {
     findNearestResourceNode, getResourceNodeAt, harvestForest,
 } from "./resource-geography.js";
+import { harvestForestGameAt } from "./forest-fauna.js";
 
 const VERSION = 1;
 const MAX_HISTORY = 32;
 const MAX_LAST_GATHER = 256;
 const MAX_STOCK = 999999;
 const GATHER_RADIUS = 7;
+const QUALITY_TIERS = Object.freeze(["prime", "good", "lean"]);
+const HUNT_GOODS = Object.freeze(new Set(["game", "fur", "hides", "cured-game", "tanned-fur", "cured-hides"]));
+const PROCESSED_FROM = Object.freeze({ game: "cured-game", fur: "tanned-fur", hides: "cured-hides" });
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -25,6 +29,7 @@ function emptyLedger() {
         version: VERSION,
         stock: {},
         totalGathered: {},
+        quality: {},
         history: [],
         lastGather: {},
     };
@@ -37,7 +42,10 @@ function activeLedger() {
 
 export function ensureForestGathering() {
     const current = activeLedger();
-    if (current) return current;
+    if (current) {
+        if (!current.quality || typeof current.quality !== "object" || Array.isArray(current.quality)) current.quality = {};
+        return current;
+    }
     state.forestGathering = emptyLedger();
     return state.forestGathering;
 }
@@ -73,14 +81,43 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
     };
 }
 
-function addStock(ledger, id, amount) {
+function addStock(ledger, id, amount, quality = null) {
     const key = String(id);
     if (!FOREST_GOODS[key] || !Number.isFinite(amount) || amount <= 0) return 0;
     const current = Math.max(0, Math.floor(number(ledger.stock[key])));
     const accepted = Math.min(MAX_STOCK - current, Math.max(0, Math.floor(amount)));
     ledger.stock[key] = current + accepted;
     ledger.totalGathered[key] = Math.max(0, Math.floor(number(ledger.totalGathered[key]))) + accepted;
+    if (accepted > 0 && quality && HUNT_GOODS.has(key) && QUALITY_TIERS.includes(quality)) {
+        if (!ledger.quality || typeof ledger.quality !== "object" || Array.isArray(ledger.quality)) ledger.quality = {};
+        const row = ledger.quality[key] && typeof ledger.quality[key] === "object" ? ledger.quality[key] : {};
+        row[quality] = Math.max(0, Math.floor(number(row[quality]))) + accepted;
+        ledger.quality[key] = row;
+    }
     return accepted;
+}
+
+// Remove raw hunt stock together with its quality bands. Old saves and
+// unqualified stock fall back to "good" instead of disappearing.
+function takeHuntStock(ledger, id, amount) {
+    const key = String(id);
+    const available = Math.min(Math.max(0, Math.floor(number(ledger.stock[key]))), Math.max(0, Math.floor(number(amount))));
+    if (available <= 0) return [];
+    const row = ledger.quality?.[key] && typeof ledger.quality[key] === "object" ? ledger.quality[key] : {};
+    const parts = [];
+    let remaining = available;
+    for (const quality of QUALITY_TIERS) {
+        const take = Math.min(remaining, Math.max(0, Math.floor(number(row[quality]))));
+        if (take <= 0) continue;
+        row[quality] = Math.max(0, Math.floor(number(row[quality]))) - take;
+        remaining -= take;
+        parts.push({ quality, amount: take });
+    }
+    if (remaining > 0) parts.push({ quality: "good", amount: remaining });
+    ledger.stock[key] = Math.max(0, Math.floor(number(ledger.stock[key])) - available);
+    ledger.quality = ledger.quality && typeof ledger.quality === "object" ? ledger.quality : {};
+    if (parts.length) ledger.quality[key] = row;
+    return parts;
 }
 
 function isValidGather(ledger, x, y, day, year) {
@@ -100,38 +137,76 @@ export function gatherForestProducts(x, y, options = {}) {
     }
     // Prefer the characteristic foods and materials, but keep a small,
     // deterministic selection so a single click never empties every category.
+    const huntGoods = products.goods.filter(good => good.category === "hunt" && FOREST_GOODS[good.id]);
+    const hunt = huntGoods.length ? harvestForestGameAt(products.x, products.y, 2) : null;
     const candidates = products.goods
         .filter(good => FOREST_GOODS[good.id])
         .slice(0, 5);
+    // Hunting is a distinct action inside the same visit. Keep the seasonal
+    // hunt goods even if the generic five-item selection would omit them.
+    for (const good of huntGoods) {
+        if (!candidates.some(entry => entry.id === good.id)) candidates.push(good);
+    }
     if (!candidates.length) return { ok: false, reason: "No seasonal product is available" };
     const gathered = [];
     for (const good of candidates) {
         let amount = Math.max(1, Math.round(1 + good.abundance * 3));
+        let quality = null;
         if (good.category === "wood") {
             const taken = harvestForest(products.x, products.y, Math.max(1, Math.ceil(amount / 2)));
             if (taken <= 0) continue;
             amount = taken;
+        } else if (good.category === "hunt") {
+            if (!hunt) continue;
+            amount = good.id === "game" ? Math.max(1, hunt.taken * 2) : Math.max(1, Math.ceil(hunt.taken / 2));
+            quality = hunt.quality;
         }
-        const accepted = addStock(ledger, good.id, amount);
-        if (accepted > 0) gathered.push({ ...good, amount: accepted });
+        const accepted = addStock(ledger, good.id, amount, quality);
+        if (accepted > 0) gathered.push({ ...good, amount: accepted, ...(quality ? { quality } : {}) });
     }
-    if (!gathered.length) return { ok: false, reason: "The selected products could not be gathered" };
+    if (!gathered.length) return { ok: false, reason: huntGoods.length && !hunt ? "No huntable herd at this tile" : "The selected products could not be gathered" };
     ledger.lastGather[products.x + ":" + products.y] = { day, year };
     const keys = Object.keys(ledger.lastGather);
     if (keys.length > MAX_LAST_GATHER) {
         for (const key of keys.slice(0, keys.length - MAX_LAST_GATHER)) delete ledger.lastGather[key];
     }
     ledger.history.push({
-        x: products.x, y: products.y, day, year,
-        goods: gathered.map(good => ({ id: good.id, amount: good.amount })),
+        x: products.x, y: products.y, day, year, kind: "gather",
+        goods: gathered.map(good => ({ id: good.id, amount: good.amount, ...(good.quality ? { quality: good.quality } : {}) })),
     });
     if (ledger.history.length > MAX_HISTORY) ledger.history.splice(0, ledger.history.length - MAX_HISTORY);
     return {
         ok: true,
         tile: { x: products.x, y: products.y, type: products.stand.type, label: products.stand.label },
         goods: gathered,
+        hunt: hunt ? { species: hunt.species, label: hunt.label, taken: hunt.taken, quality: hunt.quality } : null,
         total: gathered.reduce((sum, good) => sum + good.amount, 0),
     };
+}
+
+// Curing and tanning turn raw wild products into storable processed goods. The
+// quality bands travel with each unit, so a prime hide remains a prime hide.
+export function processForestHunt(limit = 2, options = {}) {
+    const ledger = ensureForestGathering();
+    const perGood = Math.max(1, Math.min(5, Math.floor(number(limit, 2))));
+    const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
+    const year = Math.floor(number(options.year, state.year) || 1);
+    const processed = [];
+    for (const [raw, finished] of Object.entries(PROCESSED_FROM)) {
+        const available = Math.max(0, Math.floor(number(ledger.stock[raw])));
+        if (!available) continue;
+        for (const part of takeHuntStock(ledger, raw, Math.min(perGood, available))) {
+            const accepted = addStock(ledger, finished, part.amount, part.quality);
+            if (accepted > 0) processed.push({ from: raw, to: finished, amount: accepted, quality: part.quality });
+        }
+    }
+    if (!processed.length) return { ok: false, reason: "No raw wild meat, furs or hides to process" };
+    ledger.history.push({
+        x: 0, y: 0, day, year, kind: "process",
+        goods: processed.map(good => ({ id: good.to, amount: good.amount, quality: good.quality })),
+    });
+    if (ledger.history.length > MAX_HISTORY) ledger.history.splice(0, ledger.history.length - MAX_HISTORY);
+    return { ok: true, processed, total: processed.reduce((sum, good) => sum + good.amount, 0) };
 }
 
 export function gatherNearestForestProducts(x, y, radius = GATHER_RADIUS) {
@@ -147,7 +222,16 @@ export function forestGatheringSummary(limit = 4) {
         .filter(([, amount]) => Number(amount) > 0)
         .sort((a, b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0]))
         .slice(0, Math.max(1, Math.floor(limit)))
-        .map(([id, amount]) => (FOREST_GOODS[id]?.label || id) + " " + Math.floor(Number(amount)))
+        .map(([id, amount]) => {
+            const base = (FOREST_GOODS[id]?.label || id) + " " + Math.floor(Number(amount));
+            const row = ledger.quality?.[id];
+            if (!row || typeof row !== "object") return base;
+            const detail = QUALITY_TIERS
+                .filter(quality => Number(row[quality]) > 0)
+                .map(quality => quality + " " + Math.floor(Number(row[quality])))
+                .join(" · ");
+            return detail ? base + " (" + detail + ")" : base;
+        })
         .join(" · ");
 }
 
@@ -156,21 +240,34 @@ export function serializeForestGathering() {
     if (!ledger) return emptyLedger();
     const stock = {};
     const totalGathered = {};
+    const quality = {};
     for (const [id, amount] of Object.entries(ledger.stock)) {
         if (FOREST_GOODS[id] && Number(amount) > 0) stock[id] = Math.min(MAX_STOCK, Math.floor(Number(amount)));
     }
     for (const [id, amount] of Object.entries(ledger.totalGathered)) {
         if (FOREST_GOODS[id] && Number(amount) > 0) totalGathered[id] = Math.min(MAX_STOCK, Math.floor(Number(amount)));
     }
+    for (const [id, row] of Object.entries(ledger.quality || {})) {
+        if (!FOREST_GOODS[id] || !HUNT_GOODS.has(id) || !row || typeof row !== "object") continue;
+        const clean = {};
+        for (const tier of QUALITY_TIERS) {
+            const amount = Math.floor(number(row[tier]));
+            if (amount > 0) clean[tier] = Math.min(MAX_STOCK, amount);
+        }
+        if (Object.keys(clean).length) quality[id] = clean;
+    }
     return {
         version: VERSION,
         stock,
         totalGathered,
+        quality,
         history: ledger.history.slice(-MAX_HISTORY).map(entry => ({
             x: Math.floor(number(entry.x)), y: Math.floor(number(entry.y)),
             day: Math.floor(number(entry.day)), year: Math.floor(number(entry.year, 1)),
+            kind: entry.kind === "process" ? "process" : "gather",
             goods: (entry.goods || []).filter(good => good && FOREST_GOODS[good.id]).map(good => ({
                 id: good.id, amount: Math.max(0, Math.floor(number(good.amount))),
+                ...(QUALITY_TIERS.includes(good.quality) ? { quality: good.quality } : {}),
             })),
         })),
         lastGather: Object.fromEntries(Object.entries(ledger.lastGather)
@@ -197,6 +294,21 @@ export function validateForestGatheringSnapshot(snapshot) {
             throw new Error("Save data contains an invalid forest product stock entry.");
         }
     }
+    if (snapshot.quality !== undefined) {
+        if (!snapshot.quality || typeof snapshot.quality !== "object" || Array.isArray(snapshot.quality)) {
+            throw new Error("Save data contains an invalid forest product quality map.");
+        }
+        for (const [id, row] of Object.entries(snapshot.quality)) {
+            if (!FOREST_GOODS[id] || !HUNT_GOODS.has(id) || !row || typeof row !== "object" || Array.isArray(row)) {
+                throw new Error("Save data contains an invalid forest product quality entry.");
+            }
+            for (const [quality, amount] of Object.entries(row)) {
+                if (!QUALITY_TIERS.includes(quality) || !Number.isFinite(Number(amount)) || Number(amount) < 0 || Number(amount) > MAX_STOCK) {
+                    throw new Error("Save data contains an invalid forest product quality amount.");
+                }
+            }
+        }
+    }
     if (snapshot.history !== undefined && (!Array.isArray(snapshot.history) || snapshot.history.length > MAX_HISTORY)) {
         throw new Error("Save data contains an invalid forest-gathering history.");
     }
@@ -206,7 +318,8 @@ export function validateForestGatheringSnapshot(snapshot) {
             throw new Error("Save data contains an invalid forest-gathering history entry.");
         }
         for (const good of entry.goods || []) {
-            if (!good || !FOREST_GOODS[good.id] || !Number.isFinite(Number(good.amount)) || Number(good.amount) < 0) {
+            if (!good || !FOREST_GOODS[good.id] || !Number.isFinite(Number(good.amount)) || Number(good.amount) < 0
+                || (good.quality !== undefined && !QUALITY_TIERS.includes(good.quality))) {
                 throw new Error("Save data contains an invalid gathered product entry.");
             }
         }
@@ -230,11 +343,21 @@ export function restoreForestGathering(snapshot) {
     for (const [id, amount] of Object.entries(snapshot.totalGathered || {})) {
         if (FOREST_GOODS[id]) ledger.totalGathered[id] = Math.max(0, Math.floor(number(amount)));
     }
+    for (const [id, row] of Object.entries(snapshot.quality || {})) {
+        if (!FOREST_GOODS[id] || !HUNT_GOODS.has(id) || !row || typeof row !== "object") continue;
+        const clean = {};
+        for (const quality of QUALITY_TIERS) {
+            if (Number(row[quality]) > 0) clean[quality] = Math.max(0, Math.floor(number(row[quality])));
+        }
+        if (Object.keys(clean).length) ledger.quality[id] = clean;
+    }
     ledger.history = (snapshot.history || []).map(entry => ({
         x: Math.floor(number(entry.x)), y: Math.floor(number(entry.y)),
         day: Math.floor(number(entry.day)), year: Math.floor(number(entry.year, 1)),
+        kind: entry.kind === "process" ? "process" : "gather",
         goods: (entry.goods || []).filter(good => good && FOREST_GOODS[good.id]).map(good => ({
             id: good.id, amount: Math.max(0, Math.floor(number(good.amount))),
+            ...(QUALITY_TIERS.includes(good.quality) ? { quality: good.quality } : {}),
         })),
     }));
     ledger.lastGather = Object.fromEntries(Object.entries(snapshot.lastGather || {}).map(([key, value]) => [key, {
@@ -243,4 +366,4 @@ export function restoreForestGathering(snapshot) {
     return Object.keys(ledger.stock).length;
 }
 
-export const FOREST_GATHERING_LIMITS = Object.freeze({ version: VERSION, maxHistory: MAX_HISTORY, maxStock: MAX_STOCK });
+export const FOREST_GATHERING_LIMITS = Object.freeze({ version: VERSION, maxHistory: MAX_HISTORY, maxStock: MAX_STOCK, qualityTiers: QUALITY_TIERS });

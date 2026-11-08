@@ -4,9 +4,10 @@ import { resetState, state } from "../../js/core/state.js";
 import { generateResourceGeography, getResourceNodeAt } from "../../js/systems/resource-geography.js";
 import {
     ensureForestGathering, forestGatheringSummary, forestProductsAt, gatherForestProducts,
-    gatherNearestForestProducts, restoreForestGathering, serializeForestGathering, validateForestGatheringSnapshot,
-    FOREST_GATHERING_LIMITS,
+    gatherNearestForestProducts, processForestHunt, restoreForestGathering, serializeForestGathering,
+    validateForestGatheringSnapshot, FOREST_GATHERING_LIMITS,
 } from "../../js/systems/forest-gathering.js";
+import { ensureForestFauna } from "../../js/systems/forest-fauna.js";
 
 function setup(seed = 20261108) {
     resetState();
@@ -41,7 +42,7 @@ test("reading or serializing a fresh realm does not create a forest ledger", () 
     assert.equal(forestGatheringSummary(), "");
     const snapshot = serializeForestGathering();
     assert.equal(state.forestGathering, null, "serialization must not mutate the live realm");
-    assert.deepEqual(snapshot, { version: 1, stock: {}, totalGathered: {}, history: [], lastGather: {} });
+    assert.deepEqual(snapshot, { version: 1, stock: {}, totalGathered: {}, quality: {}, history: [], lastGather: {} });
 });
 
 test("forest products are read from the same real stand as the renderer", () => {
@@ -88,6 +89,49 @@ test("forest gathering round-trips through validated save data", () => {
     assert.equal(restoreForestGathering(null), 0);
     assert.throws(() => validateForestGatheringSnapshot({ version: 2, stock: {} }), /forest-gathering/);
     assert.throws(() => validateForestGatheringSnapshot({ version: 1, stock: { timber: -1 } }), /forest product stock/);
+});
+
+test("hunting removes animals from a real herd, raises its pressure and yields quality-tagged goods", () => {
+    setup();
+    const model = ensureForestFauna();
+    const herd = model.herds.find(entry => entry.population >= 2);
+    assert.ok(herd, "the test realm must contain a huntable herd");
+    const before = herd.population;
+    const result = gatherForestProducts(herd.x, herd.y, { dayOfYear: 250, year: 1 });
+    assert.equal(result.ok, true);
+    assert.ok(result.hunt, "the gather action must report the hunted herd");
+    assert.ok(result.hunt.taken >= 1);
+    assert.ok(herd.population < before, "the harvest must remove animals from this herd");
+    assert.ok(herd.huntingPressure > 0, "the harvest must create hunting pressure");
+    assert.ok(["prime", "good", "lean"].includes(result.hunt.quality));
+    const ledger = ensureForestGathering();
+    assert.ok(ledger.stock.game > 0);
+    assert.ok(ledger.quality.game && Object.values(ledger.quality.game).some(value => value > 0));
+    assert.match(forestGatheringSummary(), /Wild game/);
+});
+
+test("raw wild products can be cured and tanned without losing their quality", () => {
+    setup();
+    const model = ensureForestFauna();
+    const herd = model.herds.find(entry => entry.population >= 2);
+    assert.ok(herd);
+    const gathered = gatherForestProducts(herd.x, herd.y, { dayOfYear: 250, year: 1 });
+    assert.equal(gathered.ok, true);
+    const ledger = ensureForestGathering();
+    const rawBefore = { game: ledger.stock.game, fur: ledger.stock.fur, hides: ledger.stock.hides };
+    const processed = processForestHunt(2, { dayOfYear: 251, year: 1 });
+    assert.equal(processed.ok, true);
+    assert.ok(ledger.stock.game < rawBefore.game);
+    assert.ok(ledger.stock["cured-game"] > 0);
+    assert.ok(ledger.stock["tanned-fur"] > 0);
+    assert.ok(ledger.stock["cured-hides"] > 0);
+    assert.ok(ledger.quality["cured-game"]);
+    assert.ok(ledger.quality["tanned-fur"]);
+    const snapshot = serializeForestGathering();
+    assert.equal(validateForestGatheringSnapshot(snapshot), true);
+    setup();
+    restoreForestGathering(snapshot);
+    assert.deepEqual(serializeForestGathering(), snapshot);
 });
 
 test("a lumber yard can gather from the nearest real forest node", () => {

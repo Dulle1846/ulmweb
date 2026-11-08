@@ -8,6 +8,7 @@ import { validateResourceGeographySnapshot } from "../systems/resource-geography
 import { validateForestFaunaSnapshot } from "../systems/forest-fauna.js";
 import { validateForestGatheringSnapshot } from "../systems/forest-gathering.js";
 import { validateForestSuccessionSnapshot } from "../systems/forest-succession.js";
+import { validatePannage } from "../systems/forest-pannage.js";
 
 export const SAVE_SCHEMA_VERSION = 4;
 
@@ -188,6 +189,13 @@ export function validateSaveSnapshot(snapshot) {
         }
         if (dto.field !== undefined && dto.field !== null && (typeof dto.field !== "object" || Array.isArray(dto.field))) {
             fail("Save data contains an invalid field at position " + index + ".", { code: "INVALID_FIELD", field: "entities[" + index + "].field", valueType: typeOf(dto.field), phase: "entities" });
+        }
+        if (dto.pannage !== undefined && dto.pannage !== null) {
+            try {
+                validatePannage(dto.pannage);
+            } catch (error) {
+                fail("Save data contains an invalid pannage reserve at position " + index + ".", { code: "INVALID_PANNAGE", field: "entities[" + index + "].pannage", valueType: typeOf(dto.pannage), phase: "entities" });
+            }
         }
     }
     if (snapshot.hand !== undefined && (!Array.isArray(snapshot.hand) || snapshot.hand.length > 5)) {

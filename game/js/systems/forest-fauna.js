@@ -182,6 +182,10 @@ function initialHerd(tile) {
         population,
         capacity: Math.max(population, Math.round(carryingCapacity({ species, x: tile.x, y: tile.y }, tile.stand, tile.node, Number(state.dayOfYear) || 0) * 10) / 10),
         trend: "stable",
+        // Hunting pressure is real offtake pressure, not a habitat proxy. It
+        // rises when this herd loses animals and decays during quiet days.
+        huntingPressure: 0,
+        lastHuntedDay: 0,
         // A newly built wood starts settled; it should not migrate on the very
         // first day merely because its lastMoved value is the year origin.
         lastMoved: Number(state.dayOfYear) || 0,
@@ -213,7 +217,7 @@ function buildModel() {
         seed,
         day: Number(state.dayOfYear) || 0,
         herds,
-        stats: { births: 0, deaths: 0, migrations: 0, splits: 0 },
+        stats: { births: 0, deaths: 0, migrations: 0, splits: 0, hunts: 0 },
         history: [],
     };
 }
@@ -320,6 +324,44 @@ export function forestHerdGrowth({ population, capacity, reproduction, mortality
     return gain - loss;
 }
 
+// Player hunting removes animals from one concrete herd. The returned quality
+// is the condition of that herd at the moment of the shot, not a fixed loot
+// tier. Pressure rises with the share removed and only decays over later days.
+export function harvestForestGameAt(x, y, requested = 1) {
+    const model = ensureForestFauna();
+    if (!model) return null;
+    const tx = Math.floor(number(x, -1));
+    const ty = Math.floor(number(y, -1));
+    if (tx < 0 || ty < 0) return null;
+    const herds = model.herds
+        .filter(herd => herd.x === tx && herd.y === ty && herd.population >= 1)
+        .sort((a, b) => b.population - a.population || String(a.id).localeCompare(String(b.id)));
+    const herd = herds[0];
+    if (!herd) return null;
+    const before = Math.max(1, Number(herd.population) || 0);
+    const wanted = Math.max(1, Math.min(3, Math.floor(number(requested, 1))));
+    const taken = Math.min(wanted, Math.max(0, Math.floor(before - 0.8)));
+    if (taken <= 0) return null;
+    const after = Math.round((before - taken) * 10) / 10;
+    const share = taken / before;
+    herd.population = after;
+    herd.huntingPressure = Math.min(2, Math.max(0, number(herd.huntingPressure)) + share * 2);
+    herd.lastHuntedDay = model.day;
+    herd.trend = "declining";
+    model.stats.hunts = Math.max(0, Math.floor(number(model.stats.hunts))) + 1;
+    const condition = before / Math.max(1, Number(herd.capacity) || before);
+    const quality = condition >= 0.72 && herd.huntingPressure < 0.85 ? "prime"
+        : condition >= 0.4 ? "good" : "lean";
+    addHistory(model, {
+        day: model.day, kind: "hunt", species: herd.species,
+        at: [tx, ty], taken, populationBefore: before, populationAfter: after, quality,
+    });
+    return {
+        ok: true, herdId: herd.id, species: herd.species, label: speciesMeta(herd.species).label,
+        taken, populationBefore: before, populationAfter: after, quality,
+    };
+}
+
 export function updateForestFauna(days = 1) {
     const model = ensureForestFauna();
     if (!model) return null;
@@ -340,7 +382,7 @@ export function updateForestFauna(days = 1) {
             const crowding = herd.population / Math.max(1, capacity);
             const winterReproduction = Number(spec.winterReproduction ?? 0.85);
             const reproduction = spec.reproduction * (season === "spring" ? 1.18 : season === "winter" ? winterReproduction : 1);
-            const hunting = Number(stand?.ground?.huntingPressure) || 0;
+            const hunting = clamp(number(herd.huntingPressure), 0, 2);
             // Winter is a lean season, not a population reset. The old 1.55
             // multiplier removed roughly seven eighths of every herd by spring.
             const mortality = spec.mortality * (season === "winter" ? 0.95 : 0.9);
@@ -351,6 +393,7 @@ export function updateForestFauna(days = 1) {
             if (next > before + 0.05) model.stats.births++;
             if (next < before - 0.05) model.stats.deaths++;
             herd.population = Math.round(next * 10) / 10;
+            herd.huntingPressure = Math.max(0, Math.round(hunting * 0.985 * 1000) / 1000);
             herd.trend = herd.population > before + 0.2 ? "growing" : herd.population < before - 0.2 ? "declining" : "stable";
             maybeMigrate(model, herd, resolved, model.day, additions);
 
@@ -371,6 +414,7 @@ export function updateForestFauna(days = 1) {
                         population: split,
                         capacity: Math.max(split, Math.round(carryingCapacity({ species: herd.species, x: target.x, y: target.y }, target.stand, target.node, model.day) * 10) / 10),
                         trend: "growing", lastMoved: model.day,
+                        huntingPressure: 0, lastHuntedDay: model.day,
                     });
                     model.stats.splits++;
                     addHistory(model, { day: model.day, kind: "dispersal", species: herd.species, from: [herd.x, herd.y], to: [target.x, target.y], population: split });
@@ -422,6 +466,8 @@ export function serializeForestFauna() {
             capacity: Math.round(number(herd.capacity) * 10) / 10,
             trend: ["growing", "stable", "declining"].includes(herd.trend) ? herd.trend : "stable",
             lastMoved: Math.max(0, Math.floor(number(herd.lastMoved))),
+            huntingPressure: Math.round(clamp(number(herd.huntingPressure), 0, 2) * 1000) / 1000,
+            lastHuntedDay: Math.max(0, Math.floor(number(herd.lastHuntedDay))),
         })),
         stats: { ...model.stats },
         history: (model.history || []).slice(-16).map(entry => ({ ...entry })),
@@ -440,7 +486,8 @@ export function validateForestFaunaSnapshot(snapshot) {
         if (!herd || typeof herd !== "object" || !SIMULATED_SPECIES[herd.species]
             || !Number.isFinite(Number(herd.x)) || !Number.isFinite(Number(herd.y))
             || !Number.isFinite(Number(herd.population)) || Number(herd.population) < 0 || Number(herd.population) > 500
-            || !Number.isFinite(Number(herd.capacity)) || Number(herd.capacity) < 0 || Number(herd.capacity) > 2000) {
+            || !Number.isFinite(Number(herd.capacity)) || Number(herd.capacity) < 0 || Number(herd.capacity) > 2000
+            || (herd.huntingPressure !== undefined && (!Number.isFinite(Number(herd.huntingPressure)) || Number(herd.huntingPressure) < 0 || Number(herd.huntingPressure) > 5))) {
             throw new Error("Save data contains an invalid forest-fauna herd entry.");
         }
     }
@@ -464,8 +511,10 @@ export function restoreForestFauna(snapshot) {
             population: Math.round(Number(herd.population) * 10) / 10,
             capacity: Math.round(Number(herd.capacity) * 10) / 10,
             lastMoved: Math.max(0, Math.floor(Number(herd.lastMoved) || 0)),
+            huntingPressure: Math.max(0, Math.min(2, Number(herd.huntingPressure) || 0)),
+            lastHuntedDay: Math.max(0, Math.floor(Number(herd.lastHuntedDay) || 0)),
         })),
-        stats: { births: 0, deaths: 0, migrations: 0, splits: 0, ...(snapshot.stats || {}) },
+        stats: { births: 0, deaths: 0, migrations: 0, splits: 0, hunts: 0, ...(snapshot.stats || {}) },
         history: Array.isArray(snapshot.history) ? snapshot.history.slice(-32) : [],
     };
     return state.forestFauna.herds.length;

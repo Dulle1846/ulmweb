@@ -127,28 +127,40 @@ test("four simulated years keep herds, migration and dispersal bounded", () => {
     }
 });
 
-test("hunting pressure lowers stable populations without collapsing them", () => {
+function advanceWithPressure(model, days, pressure, label) {
+    for (let day = 0; day < days; day++) {
+        // This is a sustained-pressure scenario, not a stock proxy: every herd
+        // carries the pressure explicitly before the daily step. The real
+        // harvest path that creates this state is tested in forest-gathering.
+        for (const herd of model.herds) herd.huntingPressure = pressure;
+        updateForestFauna(1);
+        assertUnstacked(model, `${label}, day ${model.day}`);
+        if (day % 10 === 0) assertBounded(model, `${label}, day ${model.day}`);
+    }
+}
+
+test("sustained hunting pressure lowers stable populations without collapsing them", () => {
     const baseline = (() => {
         const model = setup(20261108);
-        advance(model, DAYS_PER_YEAR * 2, "full stock");
+        advance(model, DAYS_PER_YEAR, "no sustained pressure");
         return summary(model);
     })();
     const mid = (() => {
-        const model = setup(20261108, 0.6);
-        advance(model, DAYS_PER_YEAR * 2, "60% stock");
+        const model = setup(20261108);
+        advanceWithPressure(model, DAYS_PER_YEAR, 0.4, "moderate sustained pressure");
         return summary(model);
     })();
     const low = (() => {
-        const model = setup(20261108, 0.3);
-        advance(model, DAYS_PER_YEAR * 2, "30% stock");
+        const model = setup(20261108);
+        advanceWithPressure(model, DAYS_PER_YEAR, 0.6, "heavy sustained pressure");
         return summary(model);
     })();
 
-    for (const [label, result] of [["full", baseline], ["60%", mid], ["30%", low]]) {
-        assert.equal(result.stackedTiles, 0, `${label} stock stacked herds`);
-        assert.equal(result.duplicateIds, 0, `${label} stock duplicated herd ids`);
-        assert.ok(result.herds >= 40, `${label} stock lost the metapopulation`);
-        assert.ok(result.fill >= 0.3 && result.fill <= 0.5, `${label} stock fill ${result.fill.toFixed(3)} is implausible`);
+    for (const [label, result] of [["baseline", baseline], ["moderate", mid], ["heavy", low]]) {
+        assert.equal(result.stackedTiles, 0, `${label} pressure stacked herds`);
+        assert.equal(result.duplicateIds, 0, `${label} pressure duplicated herd ids`);
+        assert.ok(result.herds >= 40, `${label} pressure lost the metapopulation`);
+        assert.ok(result.fill >= 0.3 && result.fill <= 0.5, `${label} pressure fill ${result.fill.toFixed(3)} is implausible`);
     }
 
     assert.ok(mid.total < baseline.total * 0.9, "moderate hunting pressure must lower the population");

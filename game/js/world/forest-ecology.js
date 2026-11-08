@@ -225,6 +225,9 @@ export const FOREST_GOODS = Object.freeze({
     game: Object.freeze({ id: 'game', label: 'Wild game', category: 'hunt' }),
     fur: Object.freeze({ id: 'fur', label: 'Furs', category: 'hunt' }),
     hides: Object.freeze({ id: 'hides', label: 'Hides', category: 'hunt' }),
+    'cured-game': Object.freeze({ id: 'cured-game', label: 'Cured game', category: 'hunt', processed: true }),
+    'tanned-fur': Object.freeze({ id: 'tanned-fur', label: 'Tanned furs', category: 'hunt', processed: true }),
+    'cured-hides': Object.freeze({ id: 'cured-hides', label: 'Cured hides', category: 'hunt', processed: true }),
 });
 
 const SEASON_GOODS = Object.freeze({
@@ -483,7 +486,7 @@ export function forestStandAt(x, y, context = {}) {
     baseGoods.add('firewood');
     if (ageClass === 'ancient' || disturbance === 'burned') baseGoods.add('charcoal');
     if (baseGoods.has('honey')) baseGoods.add('beeswax');
-    if (baseGoods.has('game')) baseGoods.add('hides');
+    if (baseGoods.has('game')) { baseGoods.add('fur'); baseGoods.add('hides'); }
 
     const trail = coarseUnit(seed, tx, ty, 6, 0x54524149) > 0.78 || edge;
     const successionProfile = succession ? forestSuccessionProfile(succession.kind) : null;

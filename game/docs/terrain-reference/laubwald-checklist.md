@@ -67,9 +67,9 @@ Die Referenzbilder sind menschliche Prüfbilder, keine Pixel-Goldens. Das Laubwa
 | 1.2.1.39 | Brennholz und Holzkohle | `forest-gathering.js` · firewood/charcoal draw the real forest stock; Burn Scar and Ancient Woodland | ✅ |
 | 1.2.1.40 | Pilze, Beeren, Nüsse, Wildfrüchte | `forest-gathering.js` · seasonal mushrooms, berries, acorns, beechnuts, chestnuts; `forest-gathering.test.js` | ✅ |
 | 1.2.1.41 | Heilpflanzen und Kräuter | `forest-gathering.js` · seasonal herbs; Alluvial and Linden/Elm stands | ✅ |
-| 1.2.1.42 | Wildfleisch, Felle, Häute | `forest-gathering.js` · game/hides; `forestHerdGrowth` applies `huntingPressure`; `forest-pressure.test.js` | ✅ |
+| 1.2.1.42 | Wildfleisch, Felle, Häute | `forest-gathering.js` · hunt draws down a real herd; prime/good/lean; curing/tanning; `forest-gathering.test.js` | ✅ |
 | 1.2.1.43 | Honig und Bienenwachs | `forest-gathering.js` · seasonal honey/beeswax; Linden/Elm stand | ✅ |
-| 1.2.1.44 | Eicheln und natürliche Futtermittel | `forest-gathering.js` · acorns and other mast; Oakwood; autumn `drawMast` | ✅ |
+| 1.2.1.44 | Eicheln und natürliche Futtermittel | `forest-gathering.js` + `forest-pannage.js` · mast gathered; Stable consumes it into a bounded pannage reserve; `forest-pannage.test.js` | ✅ |
 | 1.2.1.45 | Alte, urwaldähnliche Laubwälder | `forest-reference.png` · Ancient Woodland | ✅ |
 | 1.2.1.46 | Helle Buchenwälder und dunkle Eichenwälder | `forest-reference.png` · Beechwood vs. Oakwood | ✅ |
 | 1.2.1.47 | Lichte Birkenhaine | `forest-reference.png` · Birch Grove | ✅ |
@@ -80,7 +80,7 @@ Die Referenzbilder sind menschliche Prüfbilder, keine Pixel-Goldens. Das Laubwa
 | 1.2.1.52 | Schädlingsbefall und Baumkrankheiten | `forest-reference.png` · Diseased Stand; `disturbance: diseased` | ✅ |
 | 1.2.1.53 | Sturmschäden und umgestürzte Bäume | `forest-reference.png` · Windthrow; Wurzelteiler/Logs | ✅ |
 | 1.2.1.54 | Übermäßige Abholzung und Verlust des Kronendachs | `forest-reference.png` · Cut-over Wood; `stockRatio < 0.18` | ✅ |
-| 1.2.1.55 | Bodenverdichtung und Überjagung | `forestRegrowthFactor` = max(0,35; 1 − 0,65 × compaction) in `regrowForests`; `forestHerdGrowth` adds hunting loss; `forest-pressure.test.js` | ✅ |
+| 1.2.1.55 | Bodenverdichtung und Überjagung | `forestRegrowthFactor` in `regrowForests`; `harvestForestGameAt` creates herd pressure from the actual removal; `forest-pressure.test.js` | ✅ |
 | 1.2.1.56 | Regeneration nach Bränden, Rodungen, Sturm | `forest-reference.png` · Regenerating Wood + Burn Scar/Windthrow/Cut-over | ✅ |
 | 1.2.1.57 | Sonnenstrahlen durch Kronenlücken | `forest-detail-reference.png` · Sun shaft (87,40), ring-marked; `drawCanopyLight` | ✅ |
 | 1.2.1.58 | Leichter Bodennebel und feuchte Morgenstimmung | `drawForestMist` zeichnet bei 2,40× drei weiche, überlappende Nebelschwaden unter der Krone; `mist-reference.png` ist der echte 500×500-Ausschnitt des Morgenframes (Tag 150, 06:00) | ✅ |
