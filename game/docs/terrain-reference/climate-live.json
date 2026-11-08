@@ -1,0 +1,584 @@
+{
+  "seed": 20261104,
+  "generatedAt": "2026-11-08T11:08:59.092Z",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "screenshotDay": 330,
+  "climates": [
+    {
+      "climate": "temperate",
+      "label": "TEMPERATE",
+      "note": "mixed forest, four full seasons",
+      "weatherCounts": {
+        "clear": 146,
+        "rain": 165,
+        "snow": 89
+      },
+      "weatherChanges": 38,
+      "snowDays": 89,
+      "summerSnowDays": 0,
+      "maxSnow": 1,
+      "day30": {
+        "snowCover": 0.055,
+        "foliageTurn": 0,
+        "greenUp": 1,
+        "trees": {
+          "broadleaf": {
+            "leaf": 0.772,
+            "turn": 0,
+            "snow": 0.03,
+            "bare": 0,
+            "holding": 0
+          },
+          "birch": {
+            "leaf": 0.938,
+            "turn": 0,
+            "snow": 0.006,
+            "bare": 0,
+            "holding": 0
+          },
+          "oak": {
+            "leaf": 0.586,
+            "turn": 0,
+            "snow": 0.06,
+            "bare": 0,
+            "holding": 7
+          },
+          "beech": {
+            "leaf": 0.642,
+            "turn": 0,
+            "snow": 0.05,
+            "bare": 0,
+            "holding": 7
+          },
+          "conifer": {
+            "leaf": 1,
+            "turn": 0,
+            "snow": 0.165,
+            "bare": 0,
+            "holding": 0
+          },
+          "shrub": {
+            "leaf": 0.722,
+            "turn": 0,
+            "snow": 0.018,
+            "bare": 0,
+            "holding": 1
+          }
+        }
+      },
+      "day330": {
+        "snowCover": 1,
+        "foliageTurn": 0.741,
+        "greenUp": 0,
+        "trees": {
+          "broadleaf": {
+            "leaf": 0.01,
+            "turn": 1,
+            "snow": 0.55,
+            "bare": 7,
+            "holding": 0
+          },
+          "birch": {
+            "leaf": 0,
+            "turn": 1,
+            "snow": 0.44,
+            "bare": 7,
+            "holding": 0
+          },
+          "oak": {
+            "leaf": 0.557,
+            "turn": 1,
+            "snow": 0.578,
+            "bare": 0,
+            "holding": 7
+          },
+          "beech": {
+            "leaf": 0.42,
+            "turn": 1,
+            "snow": 0.55,
+            "bare": 0,
+            "holding": 7
+          },
+          "conifer": {
+            "leaf": 1,
+            "turn": 0,
+            "snow": 1,
+            "bare": 0,
+            "holding": 0
+          },
+          "shrub": {
+            "leaf": 0.12,
+            "turn": 1,
+            "snow": 0.495,
+            "bare": 7,
+            "holding": 7
+          }
+        }
+      },
+      "screenshot": "docs/terrain-reference/climate-live/temperate.png"
+    },
+    {
+      "climate": "northern",
+      "label": "NORTHERN",
+      "note": "early snow, long melt, late leaf-out",
+      "weatherCounts": {
+        "clear": 129,
+        "rain": 156,
+        "snow": 115
+      },
+      "weatherChanges": 38,
+      "snowDays": 115,
+      "summerSnowDays": 0,
+      "maxSnow": 1,
+      "day30": {
+        "snowCover": 0.632,
+        "foliageTurn": 0,
+        "greenUp": 0.991,
+        "trees": {
+          "broadleaf": {
+            "leaf": 0.586,
+            "turn": 0,
+            "snow": 0.4,
+            "bare": 0,
+            "holding": 0
+          },
+          "birch": {
+            "leaf": 0.818,
+            "turn": 0,
+            "snow": 0.262,
+            "bare": 0,
+            "holding": 0
+          },
+          "oak": {
+            "leaf": 0.434,
+            "turn": 0,
+            "snow": 0.48,
+            "bare": 0,
+            "holding": 7
+          },
+          "beech": {
+            "leaf": 0.45,
+            "turn": 0,
+            "snow": 0.443,
+            "bare": 0,
+            "holding": 7
+          },
+          "conifer": {
+            "leaf": 1,
+            "turn": 0,
+            "snow": 0.935,
+            "bare": 0,
+            "holding": 0
+          },
+          "shrub": {
+            "leaf": 0.529,
+            "turn": 0,
+            "snow": 0.334,
+            "bare": 0,
+            "holding": 3
+          }
+        }
+      },
+      "day330": {
+        "snowCover": 1,
+        "foliageTurn": 0.55,
+        "greenUp": 0,
+        "trees": {
+          "broadleaf": {
+            "leaf": 0.004,
+            "turn": 1,
+            "snow": 0.633,
+            "bare": 7,
+            "holding": 0
+          },
+          "birch": {
+            "leaf": 0,
+            "turn": 1,
+            "snow": 0.506,
+            "bare": 7,
+            "holding": 0
+          },
+          "oak": {
+            "leaf": 0.471,
+            "turn": 1,
+            "snow": 0.664,
+            "bare": 0,
+            "holding": 7
+          },
+          "beech": {
+            "leaf": 0.357,
+            "turn": 1,
+            "snow": 0.633,
+            "bare": 0,
+            "holding": 7
+          },
+          "conifer": {
+            "leaf": 1,
+            "turn": 0,
+            "snow": 1,
+            "bare": 0,
+            "holding": 0
+          },
+          "shrub": {
+            "leaf": 0.102,
+            "turn": 1,
+            "snow": 0.569,
+            "bare": 7,
+            "holding": 7
+          }
+        }
+      },
+      "screenshot": "docs/terrain-reference/climate-live/northern.png"
+    },
+    {
+      "climate": "mediterranean",
+      "label": "MEDITERRANEAN",
+      "note": "short snow window, early green-up",
+      "weatherCounts": {
+        "clear": 161,
+        "rain": 188,
+        "snow": 51
+      },
+      "weatherChanges": 38,
+      "snowDays": 51,
+      "summerSnowDays": 0,
+      "maxSnow": 0.55,
+      "day30": {
+        "snowCover": 0,
+        "foliageTurn": 0,
+        "greenUp": 1,
+        "trees": {
+          "broadleaf": {
+            "leaf": 0.895,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 0
+          },
+          "birch": {
+            "leaf": 0.986,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 0
+          },
+          "oak": {
+            "leaf": 0.747,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 5
+          },
+          "beech": {
+            "leaf": 0.795,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 3
+          },
+          "conifer": {
+            "leaf": 1,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 0
+          },
+          "shrub": {
+            "leaf": 0.859,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 0
+          }
+        }
+      },
+      "day330": {
+        "snowCover": 0.55,
+        "foliageTurn": 0.759,
+        "greenUp": 0,
+        "trees": {
+          "broadleaf": {
+            "leaf": 0.006,
+            "turn": 0.9,
+            "snow": 0.212,
+            "bare": 7,
+            "holding": 0
+          },
+          "birch": {
+            "leaf": 0,
+            "turn": 0.9,
+            "snow": 0.169,
+            "bare": 7,
+            "holding": 0
+          },
+          "oak": {
+            "leaf": 0.452,
+            "turn": 0.9,
+            "snow": 0.222,
+            "bare": 0,
+            "holding": 7
+          },
+          "beech": {
+            "leaf": 0.252,
+            "turn": 0.9,
+            "snow": 0.212,
+            "bare": 0,
+            "holding": 7
+          },
+          "conifer": {
+            "leaf": 1,
+            "turn": 0,
+            "snow": 0.386,
+            "bare": 0,
+            "holding": 0
+          },
+          "shrub": {
+            "leaf": 0.072,
+            "turn": 0.9,
+            "snow": 0.191,
+            "bare": 7,
+            "holding": 7
+          }
+        }
+      },
+      "screenshot": "docs/terrain-reference/climate-live/mediterranean.png"
+    },
+    {
+      "climate": "arid",
+      "label": "ARID",
+      "note": "thin cover, fast melt, restrained autumn",
+      "weatherCounts": {
+        "clear": 181,
+        "rain": 215,
+        "snow": 4
+      },
+      "weatherChanges": 40,
+      "snowDays": 4,
+      "summerSnowDays": 0,
+      "maxSnow": 0.12,
+      "day30": {
+        "snowCover": 0,
+        "foliageTurn": 0,
+        "greenUp": 1,
+        "trees": {
+          "broadleaf": {
+            "leaf": 0.925,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 0
+          },
+          "birch": {
+            "leaf": 0.994,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 0
+          },
+          "oak": {
+            "leaf": 0.795,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 1
+          },
+          "beech": {
+            "leaf": 0.839,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 0
+          },
+          "conifer": {
+            "leaf": 1,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 0
+          },
+          "shrub": {
+            "leaf": 0.895,
+            "turn": 0,
+            "snow": 0,
+            "bare": 0,
+            "holding": 0
+          }
+        }
+      },
+      "day330": {
+        "snowCover": 0.117,
+        "foliageTurn": 0.509,
+        "greenUp": 0,
+        "trees": {
+          "broadleaf": {
+            "leaf": 0,
+            "turn": 0.55,
+            "snow": 0.022,
+            "bare": 7,
+            "holding": 0
+          },
+          "birch": {
+            "leaf": 0,
+            "turn": 0.55,
+            "snow": 0.018,
+            "bare": 7,
+            "holding": 0
+          },
+          "oak": {
+            "leaf": 0.377,
+            "turn": 0.55,
+            "snow": 0.024,
+            "bare": 1,
+            "holding": 7
+          },
+          "beech": {
+            "leaf": 0.114,
+            "turn": 0.55,
+            "snow": 0.022,
+            "bare": 7,
+            "holding": 7
+          },
+          "conifer": {
+            "leaf": 1,
+            "turn": 0,
+            "snow": 0.041,
+            "bare": 0,
+            "holding": 0
+          },
+          "shrub": {
+            "leaf": 0.03,
+            "turn": 0.55,
+            "snow": 0.02,
+            "bare": 7,
+            "holding": 0
+          }
+        }
+      },
+      "screenshot": "docs/terrain-reference/climate-live/arid.png"
+    },
+    {
+      "climate": "enchanted",
+      "label": "ENCHANTED",
+      "note": "mild winter with heavier snow load",
+      "weatherCounts": {
+        "clear": 146,
+        "rain": 155,
+        "snow": 99
+      },
+      "weatherChanges": 40,
+      "snowDays": 99,
+      "summerSnowDays": 0,
+      "maxSnow": 1,
+      "day30": {
+        "snowCover": 0.035,
+        "foliageTurn": 0,
+        "greenUp": 1,
+        "trees": {
+          "broadleaf": {
+            "leaf": 0.696,
+            "turn": 0,
+            "snow": 0.021,
+            "bare": 0,
+            "holding": 0
+          },
+          "birch": {
+            "leaf": 0.895,
+            "turn": 0,
+            "snow": 0.002,
+            "bare": 0,
+            "holding": 0
+          },
+          "oak": {
+            "leaf": 0.517,
+            "turn": 0,
+            "snow": 0.047,
+            "bare": 0,
+            "holding": 7
+          },
+          "beech": {
+            "leaf": 0.557,
+            "turn": 0,
+            "snow": 0.038,
+            "bare": 0,
+            "holding": 7
+          },
+          "conifer": {
+            "leaf": 1,
+            "turn": 0,
+            "snow": 0.14,
+            "bare": 0,
+            "holding": 0
+          },
+          "shrub": {
+            "leaf": 0.642,
+            "turn": 0,
+            "snow": 0.011,
+            "bare": 0,
+            "holding": 3
+          }
+        }
+      },
+      "day330": {
+        "snowCover": 1,
+        "foliageTurn": 0.672,
+        "greenUp": 0,
+        "trees": {
+          "broadleaf": {
+            "leaf": 0.005,
+            "turn": 1,
+            "snow": 0.594,
+            "bare": 7,
+            "holding": 0
+          },
+          "birch": {
+            "leaf": 0,
+            "turn": 1,
+            "snow": 0.475,
+            "bare": 7,
+            "holding": 0
+          },
+          "oak": {
+            "leaf": 0.55,
+            "turn": 1,
+            "snow": 0.624,
+            "bare": 0,
+            "holding": 7
+          },
+          "beech": {
+            "leaf": 0.42,
+            "turn": 1,
+            "snow": 0.594,
+            "bare": 0,
+            "holding": 7
+          },
+          "conifer": {
+            "leaf": 1,
+            "turn": 0,
+            "snow": 1,
+            "bare": 0,
+            "holding": 0
+          },
+          "shrub": {
+            "leaf": 0.12,
+            "turn": 1,
+            "snow": 0.535,
+            "bare": 7,
+            "holding": 7
+          }
+        }
+      },
+      "screenshot": "docs/terrain-reference/climate-live/enchanted.png"
+    }
+  ],
+  "checks": {
+    "summerSnowFree": true,
+    "weatherChangesAboveTen": true,
+    "oakMarcescence": true,
+    "northernSnowierThanArid": true,
+    "conifersHoldSnow": true
+  },
+  "note": "Each climate ran its own 400-day weather audit in a real realm. Screenshots show day 330 after the audit, with clear skies so the ground snow remains visible."
+}

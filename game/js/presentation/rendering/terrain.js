@@ -330,38 +330,106 @@ function drawSnowCaps(ctx, px, py, s, sway, seed, snow, topY, spread) {
     ctx.restore();
 }
 
-// A leafless crown is a real silhouette, not a grey ball: trunk plus a handful
-// of tapering branches. Oaks and beeches keep a few brown leaves into winter.
+// A leafless crown is a real silhouette, not a grey ball: a tapered trunk,
+// primary limbs and fine twigs. Birch keeps an upright broom, oak spreads wide
+// and gnarled, and marcescent species keep a few leaves at the branch tips.
 function drawBareCrown(ctx, px, py, s, sway, seed, foliage, ink = "#6b5138") {
+    const species = foliage.species || "broadleaf";
+    const slender = species === "birch";
+    const wide = species === "oak";
+    const crownY = py - (slender ? 13 : 11) * s;
+    const spread = (wide ? 12.5 : slender ? 8 : 9.5 + seed * 3) * s;
+    const topY = crownY - (slender ? 7 : 5) * s;
+    const lean = sway * (slender ? 0.6 : 0.45);
+    const tips = [];
+
     ctx.save();
-    ctx.strokeStyle = ink;
-    ctx.lineWidth = Math.max(0.9, 1.4 * s);
     ctx.lineCap = "round";
-    const crownY = py - 11 * s;
-    const spread = (9 + seed * 4) * s;
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = ink;
+
+    // The trunk tapers into the fork instead of ending in a straight stick.
+    ctx.lineWidth = Math.max(1.2, (wide ? 2 : 1.55) * s);
     ctx.beginPath();
-    ctx.moveTo(px + sway * 0.4, crownY + 8 * s);
-    ctx.lineTo(px + sway * 0.7, crownY - 6 * s);
-    const branches = 5;
+    ctx.moveTo(px, py + 8 * s);
+    ctx.quadraticCurveTo(px + lean * 0.35, py + 1 * s, px + lean, topY);
+    ctx.stroke();
+
+    const branches = wide ? 7 : slender ? 5 : 6;
     for (let i = 0; i < branches; i++) {
-        const angle = -Math.PI * 0.82 + (i / (branches - 1)) * Math.PI * 0.64;
-        const length = spread * (0.62 + ((i * 37) % 10) / 22);
-        const startY = crownY + 2 * s - i * 1.2 * s;
-        ctx.moveTo(px + sway * 0.6, startY);
-        ctx.lineTo(px + sway + Math.cos(angle) * length, startY + Math.sin(angle) * length);
+        const pair = Math.floor(i / 2);
+        const side = i % 2 === 0 ? -1 : 1;
+        const baseY = crownY + (1.8 - pair * 2.3) * s;
+        const reach = spread * (slender ? 0.78 : wide ? 1.06 : 0.95)
+            * (0.66 + ((i * 37) % 10) / 28);
+        const angle = -Math.PI / 2 + side * (slender ? 0.55 : wide ? 0.95 : 0.74)
+            * (0.72 + ((i * 53) % 7) / 22);
+        const baseX = px + lean * 0.6;
+        const endX = baseX + Math.cos(angle) * reach;
+        const endY = baseY + Math.sin(angle) * reach;
+        const controlX = baseX + Math.cos(angle) * reach * 0.42 + side * 1.6 * s;
+        const controlY = baseY + Math.sin(angle) * reach * 0.42 - 1.8 * s;
+
+        ctx.lineWidth = Math.max(1.1, (wide ? 1.8 : 1.4) * s);
+        ctx.beginPath();
+        ctx.moveTo(baseX, baseY);
+        ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+        ctx.stroke();
+
+        // Two short twigs per limb break up the silhouette without turning it
+        // into a solid fan; the upper twig leans out, the lower one lifts.
+        for (const at of [0.56, 0.82]) {
+            const inv = 1 - at;
+            const twigX = inv * inv * baseX + 2 * inv * at * controlX + at * at * endX;
+            const twigY = inv * inv * baseY + 2 * inv * at * controlY + at * at * endY;
+            const twigAngle = angle + side * (at < 0.7 ? -0.5 : 0.45);
+            const twigLength = (wide ? 4.2 : slender ? 2.8 : 3.6) * s * (1.05 - at * 0.3);
+            ctx.lineWidth = Math.max(0.7, 0.9 * s);
+            ctx.beginPath();
+            ctx.moveTo(twigX, twigY);
+            ctx.lineTo(twigX + Math.cos(twigAngle) * twigLength, twigY + Math.sin(twigAngle) * twigLength);
+            ctx.stroke();
+        }
+        tips.push({ x: endX, y: endY, angle, index: i });
     }
+
+    // A short leader above the fork keeps the crown from looking cut off.
+    ctx.lineWidth = Math.max(0.9, 1.05 * s);
+    ctx.beginPath();
+    ctx.moveTo(px + lean, topY);
+    ctx.lineTo(px + lean + sway * 0.25, topY - (slender ? 3.2 : 2.2) * s);
     ctx.stroke();
     ctx.restore();
+
+    // Snow rests on the upper twigs before it covers the whole crown.
+    if (foliage.snow > 0.18) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(0.85, foliage.snow * 0.9);
+        ctx.fillStyle = "#edf6fb";
+        for (let i = 0; i < tips.length; i++) {
+            const tip = tips[i];
+            ctx.beginPath();
+            ctx.ellipse(tip.x, tip.y - 0.5 * s, (1.7 + (i % 2) * 0.5) * s, 0.62 * s, tip.angle, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // Marcescent oaks and beeches hold their leaves at the branch tips rather
+    // than floating a brown cloud around the trunk.
     if (foliage.holding) {
         ctx.save();
-        ctx.globalAlpha = 0.55;
+        ctx.globalAlpha = 0.68;
         ctx.fillStyle = "#8a5c30";
-        for (let i = 0; i < 6; i++) {
-            const ox = ((i * 53) % 17 - 8) / 8 * spread * 0.7;
-            const oy = ((i * 71) % 13 - 6) / 6 * 3 * s;
-            ctx.beginPath();
-            ctx.ellipse(px + ox + sway, crownY + oy, 1.7 * s, 1.1 * s, 0.4, 0, Math.PI * 2);
-            ctx.fill();
+        for (let i = 0; i < tips.length; i++) {
+            const tip = tips[i];
+            for (let j = 0; j < 2; j++) {
+                const ox = ((i * 13 + j * 7) % 7 - 3) * 0.55 * s;
+                const oy = ((i * 17 + j * 5) % 5 - 2) * 0.45 * s;
+                ctx.beginPath();
+                ctx.ellipse(tip.x + ox, tip.y + oy, 1.45 * s, 0.9 * s, 0.35 + j * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
         ctx.restore();
     }
@@ -457,6 +525,13 @@ function drawBroadleaf(ctx, px, py, s, sway, seed, dayOfYear, variant = 0, speci
         ctx.restore();
     }
 
+    // Marcescent crowns are brown clusters, not solid lollipops. Drawing the
+    // branch silhouette over the remaining leaves keeps the tree structure
+    // legible through winter.
+    if (foliage.holding && foliage.leaf < 0.9) {
+        drawBareCrown(ctx, px, py, s, sway, seed, { ...foliage, holding: false, snow: 0 }, "#5f442c");
+    }
+
     drawSnowCaps(ctx, px, py, s, sway, seed, foliage.snow, py - 11 * s, 12);
 }
 
@@ -542,29 +617,66 @@ function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temper
     const height = (20 + seed * 8) * s;
     // Needles stay on the tree all year; only their tone cools and the snow
     // load grows, so a conifer never turns into the old grey blob.
-    const needle = mixHex("#24543a", "#31504a", foliage.snowCover * 0.55);
-    const needleLight = mixHex("#2c6343", "#3c6a4c", foliage.snowCover * 0.35);
-    for (let layer = 0; layer < 3; layer++) {
-        const width = (12 - layer * 3) * s;
-        const baseY = py + 2 * s - layer * height * 0.3;
-        ctx.fillStyle = layer === 0 ? needle : needleLight;
+    const needle = mixHex("#1f4a34", "#31504a", foliage.snowCover * 0.5);
+    const needleLight = mixHex("#2b6041", "#3c6a4c", foliage.snowCover * 0.32);
+
+    // Four tiers give the tree a layered spruce silhouette instead of three
+    // flat triangles. Snow is accumulated and shed per tier, so a light dusting
+    // sits on the upper branches while a deep winter buries every layer.
+    for (let layer = 0; layer < 4; layer++) {
+        const baseY = py + 2 * s - layer * height * 0.235;
+        const topY = baseY - height * (0.47 - layer * 0.025);
+        const width = (12.5 - layer * 2.3) * s;
+        ctx.fillStyle = layer % 2 === 0 ? needle : needleLight;
         ctx.beginPath();
-        ctx.moveTo(px + sway, baseY - height * 0.42);
+        ctx.moveTo(px + sway, topY);
         ctx.lineTo(px - width, baseY);
         ctx.lineTo(px + width, baseY);
         ctx.closePath();
         ctx.fill();
+
+        const snow = Math.min(1, foliage.snow * (1.04 - layer * 0.05));
+        if (snow > 0.1) {
+            const snowLine = topY + (baseY - topY) * (0.42 + snow * 0.28);
+            const snowWidth = width * ((snowLine - topY) / (baseY - topY));
+            ctx.save();
+            ctx.globalAlpha = Math.min(0.94, snow);
+            ctx.fillStyle = "#edf6fb";
+            ctx.beginPath();
+            ctx.moveTo(px + sway, topY + 0.9 * s);
+            ctx.lineTo(px + sway - snowWidth, snowLine);
+            // Scalloped lower edge: snow hangs in small clumps along the tier.
+            for (let i = 1; i < 5; i++) {
+                const t = i / 5;
+                const clump = i % 2 === 0 ? 0.9 : 0.2;
+                ctx.lineTo(px + sway - snowWidth + t * snowWidth * 2, snowLine + clump * s);
+            }
+            ctx.lineTo(px + sway + snowWidth, snowLine);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "rgba(155, 191, 207, 0.5)";
+            ctx.lineWidth = Math.max(0.55, 0.65 * s);
+            ctx.beginPath();
+            ctx.moveTo(px + sway - snowWidth, snowLine);
+            ctx.quadraticCurveTo(px + sway, snowLine + 1.1 * s, px + sway + snowWidth, snowLine);
+            ctx.stroke();
+            ctx.restore();
+        }
     }
-    if (foliage.snow > 0.15) {
+
+    // A few clumps on the outer branch tips keep the load from reading as a
+    // single white triangle.
+    if (foliage.snow > 0.22) {
         ctx.save();
         ctx.globalAlpha = Math.min(0.9, foliage.snow);
         ctx.fillStyle = "#eef6fb";
-        ctx.beginPath();
-        ctx.moveTo(px + sway, py - height * 0.42 + 2 * s);
-        ctx.lineTo(px - 3.5 * s, py - height * 0.08);
-        ctx.lineTo(px + 3.5 * s, py - height * 0.08);
-        ctx.closePath();
-        ctx.fill();
+        for (let i = 0; i < 3; i++) {
+            const y = py - height * (0.18 + i * 0.2);
+            const x = px + sway + (i % 2 === 0 ? -1 : 1) * (7 - i * 1.5) * s;
+            ctx.beginPath();
+            ctx.ellipse(x, y, (2.6 - i * 0.35) * s, 0.8 * s, 0.15, 0, Math.PI * 2);
+            ctx.fill();
+        }
         ctx.restore();
     }
 }

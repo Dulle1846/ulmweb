@@ -77,6 +77,12 @@ jobs:
         env:
           SEASON_YEAR_OUT: ${{ runner.temp }}/terrain-reference/season-year.json
         run: npm run test:season-year
+      - name: Generate climate reference and live screenshots
+        if: always()
+        working-directory: game
+        env:
+          CLIMATE_REFERENCE_OUT: ${{ runner.temp }}/terrain-reference
+        run: npm run test:climate-reference
       - name: Upload terrain visual reference
         if: always()
         uses: actions/upload-artifact@v4
@@ -88,6 +94,11 @@ jobs:
             ${{ runner.temp }}/terrain-reference/tree-seasons.png
             ${{ runner.temp }}/terrain-reference/reference.json
             ${{ runner.temp }}/terrain-reference/season-year.json
+            ${{ runner.temp }}/terrain-reference/climate-reference.png
+            ${{ runner.temp }}/terrain-reference/climate-reference.json
+            ${{ runner.temp }}/terrain-reference/climate-live.png
+            ${{ runner.temp }}/terrain-reference/climate-live.json
+            ${{ runner.temp }}/terrain-reference/climate-live/*.png
           if-no-files-found: warn
           retention-days: 7
       - name: Upload browser E2E log

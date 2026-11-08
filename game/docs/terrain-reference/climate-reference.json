@@ -1,0 +1,1073 @@
+{
+  "seed": 20261104,
+  "focus": {
+    "x": 90,
+    "y": 22
+  },
+  "viewport": {
+    "width": 560,
+    "height": 560
+  },
+  "canvas": {
+    "width": 560,
+    "height": 560
+  },
+  "renderer": "WebKit WebGL",
+  "generatedAt": "2026-11-08T11:08:11.531Z",
+  "days": [
+    250,
+    280,
+    310,
+    50
+  ],
+  "climates": [
+    {
+      "id": "temperate",
+      "label": "TEMPERATE",
+      "note": "mixed forest, four full seasons"
+    },
+    {
+      "id": "northern",
+      "label": "NORTHERN",
+      "note": "early snow, long melt, late leaf-out"
+    },
+    {
+      "id": "mediterranean",
+      "label": "MEDITERRANEAN",
+      "note": "short snow window, early green-up"
+    },
+    {
+      "id": "arid",
+      "label": "ARID",
+      "note": "thin cover, fast melt, restrained autumn"
+    },
+    {
+      "id": "enchanted",
+      "label": "ENCHANTED",
+      "note": "mild winter with heavier snow load"
+    }
+  ],
+  "panels": [
+    {
+      "climate": "temperate",
+      "day": 250,
+      "snowCover": 0,
+      "foliageTurn": 0.802,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 1,
+          "turn": 0.533,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 1,
+          "turn": 0.935,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 1,
+          "turn": 0.247,
+          "snow": 0,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 1,
+          "turn": 0.432,
+          "snow": 0,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 1,
+          "turn": 0.628,
+          "snow": 0,
+          "bare": 0,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "temperate",
+      "day": 280,
+      "snowCover": 0.432,
+      "foliageTurn": 1,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.932,
+          "turn": 0.985,
+          "snow": 0.238,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0.5,
+          "turn": 1,
+          "snow": 0.19,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 1,
+          "turn": 0.785,
+          "snow": 0.249,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 0.998,
+          "turn": 0.968,
+          "snow": 0.238,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0.433,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.97,
+          "turn": 1,
+          "snow": 0.214,
+          "bare": 0,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "temperate",
+      "day": 310,
+      "snowCover": 1,
+      "foliageTurn": 1,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.282,
+          "turn": 1,
+          "snow": 0.55,
+          "bare": 3,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0,
+          "turn": 1,
+          "snow": 0.44,
+          "bare": 7,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 0.828,
+          "turn": 1,
+          "snow": 0.578,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 0.561,
+          "turn": 1,
+          "snow": 0.55,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 1,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.248,
+          "turn": 1,
+          "snow": 0.495,
+          "bare": 3,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "temperate",
+      "day": 50,
+      "snowCover": 0,
+      "foliageTurn": 0,
+      "greenUp": 1,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.999,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 0.975,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 1
+        },
+        "beech": {
+          "leaf": 0.986,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.996,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        }
+      }
+    },
+    {
+      "climate": "northern",
+      "day": 250,
+      "snowCover": 0.113,
+      "foliageTurn": 0.932,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 1,
+          "turn": 0.588,
+          "snow": 0.071,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0.98,
+          "turn": 0.952,
+          "snow": 0.057,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 1,
+          "turn": 0.307,
+          "snow": 0.075,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 1,
+          "turn": 0.503,
+          "snow": 0.071,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0.13,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 1,
+          "turn": 0.696,
+          "snow": 0.064,
+          "bare": 0,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "northern",
+      "day": 280,
+      "snowCover": 0.868,
+      "foliageTurn": 1,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.822,
+          "turn": 0.985,
+          "snow": 0.549,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0.319,
+          "turn": 1,
+          "snow": 0.439,
+          "bare": 2,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 0.998,
+          "turn": 0.792,
+          "snow": 0.577,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 0.966,
+          "turn": 0.97,
+          "snow": 0.549,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 1,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.866,
+          "turn": 1,
+          "snow": 0.494,
+          "bare": 0,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "northern",
+      "day": 310,
+      "snowCover": 1,
+      "foliageTurn": 0.951,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.195,
+          "turn": 1,
+          "snow": 0.633,
+          "bare": 4,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0,
+          "turn": 1,
+          "snow": 0.506,
+          "bare": 7,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 0.722,
+          "turn": 1,
+          "snow": 0.664,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 0.441,
+          "turn": 1,
+          "snow": 0.633,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 1,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.154,
+          "turn": 1,
+          "snow": 0.569,
+          "bare": 6,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "northern",
+      "day": 50,
+      "snowCover": 0.202,
+      "foliageTurn": 0,
+      "greenUp": 1,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.975,
+          "turn": 0,
+          "snow": 0.128,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0.061,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 0.895,
+          "turn": 0,
+          "snow": 0.185,
+          "bare": 0,
+          "holding": 3
+        },
+        "beech": {
+          "leaf": 0.925,
+          "turn": 0,
+          "snow": 0.163,
+          "bare": 0,
+          "holding": 2
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0.417,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.959,
+          "turn": 0,
+          "snow": 0.095,
+          "bare": 0,
+          "holding": 0
+        }
+      }
+    },
+    {
+      "climate": "mediterranean",
+      "day": 250,
+      "snowCover": 0,
+      "foliageTurn": 0.628,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 1,
+          "turn": 0.447,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 1,
+          "turn": 0.834,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 1,
+          "turn": 0.184,
+          "snow": 0,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 1,
+          "turn": 0.342,
+          "snow": 0,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 1,
+          "turn": 0.522,
+          "snow": 0,
+          "bare": 0,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "mediterranean",
+      "day": 280,
+      "snowCover": 0.034,
+      "foliageTurn": 0.9,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.962,
+          "turn": 0.89,
+          "snow": 0.013,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0.564,
+          "turn": 0.9,
+          "snow": 0.01,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 1,
+          "turn": 0.713,
+          "snow": 0.014,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 1,
+          "turn": 0.874,
+          "snow": 0.013,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0.024,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.991,
+          "turn": 0.9,
+          "snow": 0.012,
+          "bare": 0,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "mediterranean",
+      "day": 310,
+      "snowCover": 0.443,
+      "foliageTurn": 0.9,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.288,
+          "turn": 0.9,
+          "snow": 0.17,
+          "bare": 3,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0,
+          "turn": 0.9,
+          "snow": 0.136,
+          "bare": 7,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 0.863,
+          "turn": 0.9,
+          "snow": 0.179,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 0.591,
+          "turn": 0.9,
+          "snow": 0.17,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0.311,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.265,
+          "turn": 0.9,
+          "snow": 0.153,
+          "bare": 3,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "mediterranean",
+      "day": 50,
+      "snowCover": 0,
+      "foliageTurn": 0,
+      "greenUp": 0.999,
+      "trees": {
+        "broadleaf": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 0.998,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "beech": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        }
+      }
+    },
+    {
+      "climate": "arid",
+      "day": 250,
+      "snowCover": 0,
+      "foliageTurn": 0.321,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 1,
+          "turn": 0.273,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 1,
+          "turn": 0.518,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 1,
+          "turn": 0.099,
+          "snow": 0,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 1,
+          "turn": 0.197,
+          "snow": 0,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 1,
+          "turn": 0.313,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        }
+      }
+    },
+    {
+      "climate": "arid",
+      "day": 280,
+      "snowCover": 0,
+      "foliageTurn": 0.55,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.969,
+          "turn": 0.549,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0.546,
+          "turn": 0.55,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 1,
+          "turn": 0.462,
+          "snow": 0,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 1,
+          "turn": 0.543,
+          "snow": 0,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.996,
+          "turn": 0.55,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        }
+      }
+    },
+    {
+      "climate": "arid",
+      "day": 310,
+      "snowCover": 0.06,
+      "foliageTurn": 0.55,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.222,
+          "turn": 0.55,
+          "snow": 0.012,
+          "bare": 4,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0,
+          "turn": 0.55,
+          "snow": 0.009,
+          "bare": 7,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 0.862,
+          "turn": 0.55,
+          "snow": 0.012,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 0.56,
+          "turn": 0.55,
+          "snow": 0.012,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0.021,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.215,
+          "turn": 0.55,
+          "snow": 0.01,
+          "bare": 4,
+          "holding": 0
+        }
+      }
+    },
+    {
+      "climate": "arid",
+      "day": 50,
+      "snowCover": 0,
+      "foliageTurn": 0,
+      "greenUp": 0.991,
+      "trees": {
+        "broadleaf": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "beech": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        }
+      }
+    },
+    {
+      "climate": "enchanted",
+      "day": 250,
+      "snowCover": 0.004,
+      "foliageTurn": 0.857,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 1,
+          "turn": 0.566,
+          "snow": 0.002,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0.997,
+          "turn": 0.948,
+          "snow": 0.002,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 1,
+          "turn": 0.279,
+          "snow": 0.002,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 1,
+          "turn": 0.472,
+          "snow": 0.002,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0.004,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 1,
+          "turn": 0.669,
+          "snow": 0.002,
+          "bare": 0,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "enchanted",
+      "day": 280,
+      "snowCover": 0.621,
+      "foliageTurn": 1,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.884,
+          "turn": 0.988,
+          "snow": 0.369,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0.403,
+          "turn": 1,
+          "snow": 0.295,
+          "bare": 1,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 1,
+          "turn": 0.798,
+          "snow": 0.387,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 0.99,
+          "turn": 0.973,
+          "snow": 0.369,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0.673,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.932,
+          "turn": 1,
+          "snow": 0.332,
+          "bare": 0,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "enchanted",
+      "day": 310,
+      "snowCover": 1,
+      "foliageTurn": 0.993,
+      "greenUp": 0,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.229,
+          "turn": 1,
+          "snow": 0.594,
+          "bare": 3,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 0,
+          "turn": 1,
+          "snow": 0.475,
+          "bare": 7,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 0.776,
+          "turn": 1,
+          "snow": 0.624,
+          "bare": 0,
+          "holding": 7
+        },
+        "beech": {
+          "leaf": 0.508,
+          "turn": 1,
+          "snow": 0.594,
+          "bare": 0,
+          "holding": 7
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 1,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.196,
+          "turn": 1,
+          "snow": 0.535,
+          "bare": 5,
+          "holding": 7
+        }
+      }
+    },
+    {
+      "climate": "enchanted",
+      "day": 50,
+      "snowCover": 0,
+      "foliageTurn": 0,
+      "greenUp": 1,
+      "trees": {
+        "broadleaf": {
+          "leaf": 0.994,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "birch": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "oak": {
+          "leaf": 0.949,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 2
+        },
+        "beech": {
+          "leaf": 0.967,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "conifer": {
+          "leaf": 1,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        },
+        "shrub": {
+          "leaf": 0.986,
+          "turn": 0,
+          "snow": 0,
+          "bare": 0,
+          "holding": 0
+        }
+      }
+    }
+  ],
+  "note": "The same generated world and tree group; only the climate curve is switched, so the seasonal response is directly comparable. HUD, entities, fog and weather hidden."
+}

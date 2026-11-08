@@ -19,12 +19,23 @@ The visual reference and the full-year audit are separate, explicit runs:
 ```sh
 npm run test:terrain-reference
 npm run test:season-year
+npm run test:climate-reference
 ```
 
 `test:terrain-reference` writes the four-season, transition and grove sheets.
 `test:season-year` writes `docs/terrain-reference/season-year.json` with a daily
 weather and foliage log for a complete 400-day year plus a five-climate
-comparison. Neither command is part of `npm test`.
+comparison. `test:climate-reference` writes the same-grove 5 × 4 climate
+matrix, five live 1280 × 800 climate screenshots and their JSON logs. None of
+these commands is part of `npm test`.
+
+The climate run starts five separate realms and drives 400 real
+`updateWeather()` days in each. It writes `climate-reference.png`,
+`climate-reference.json`, `climate-live.png`, `climate-live.json` and
+`climate-live/<climate>.png`. The assertions cover summer snow, weather
+variability, oak marcescence at day 330, northern versus arid snow days and
+conifer-versus-birch snow retention at day 30. Set `CLIMATE_REFERENCE_OUT` to
+write the climate artifacts somewhere other than `docs/terrain-reference/`.
 
 `test:e2e:setup` installs Chromium for the pinned Playwright version. It then
 opens a page containing a native text input, fills it, and verifies the value.
@@ -46,6 +57,8 @@ The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
   `$TMPDIR/kac-ui-viewport-review`.
 - `E2E_CHROMIUM_EXECUTABLE` - explicit Chromium executable path.
 - `E2E_HEADED=1` - run headed (requires a display server).
+- `CLIMATE_REFERENCE_OUT` - climate artifact directory, default
+  `docs/terrain-reference`.
 
 ## What the suite covers
 
@@ -101,9 +114,11 @@ with `--with-deps`, and then runs `npm run test:e2e`. Screenshots from the
 responsive review are uploaded even when the test fails.
 
 After the E2E step, the same job generates the four-season, four-zoom terrain
-reference and the 400-day season audit into `$RUNNER_TEMP/terrain-reference`.
-It uploads `contact-sheet.png`, `season-transition.png`, `tree-seasons.png`,
-`reference.json` and `season-year.json` as the
-`kings-and-cards-terrain-reference` artifact. Both steps also run when the E2E
-step fails, so a failed gameplay run still produces the visual surface report
-and the daily weather/foliage record.
+reference, the 400-day season audit and the climate matrix/live check into
+`$RUNNER_TEMP/terrain-reference`. It uploads `contact-sheet.png`,
+`season-transition.png`, `tree-seasons.png`, `reference.json`,
+`season-year.json`, `climate-reference.png`, `climate-reference.json`,
+`climate-live.png`, `climate-live.json` and `climate-live/*.png` as the
+`kings-and-cards-terrain-reference` artifact. All three generation steps also
+run when the E2E step fails, so a failed gameplay run still produces the visual
+surface report and the weather/foliage records.

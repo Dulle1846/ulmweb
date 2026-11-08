@@ -137,6 +137,11 @@ try {
         const height = Number(state.worldH) || 160;
         state.explored = Array.from({ length: width }, () => Array(height).fill(true));
         state.fogDirty = true;
+        // Keep the grove frames free of villagers and floating text; at 2.4x
+        // their brown silhouettes are easy to mistake for extra trees.
+        state.entities = [];
+        state.particles = [];
+        state.floaters = [];
         const { resize, centerCamera } = await import("./js/presentation/camera.js");
         resize();
         centerCamera();
