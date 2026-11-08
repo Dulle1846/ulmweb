@@ -15,6 +15,10 @@ This is the current implementation audit for **1.1 Grundlegende Terrain-Grafik**
 | 1.1.9 Abnutzung durch menschliche Aktivität | **Implemented** | A persistent wear field is stamped by roads and building footprints, builds up while they exist and recovers slowly. Roads, fields and buildings are drawn from the same world data. | `terrain-wear.js`; four wear tests; shader wear tint. |
 | 1.1.10 Jahreszeitenabhängige Optik | **Implemented** | Continuous season curves drive palette, sun and effects: snow accumulates through late autumn, peaks in winter and melts through early spring; leaf litter and green-up follow their own ramps. Palette colours are anchored mid-season, trees turn and drop per tree and species (oaks hold brown leaves, conifers stay green), and weather is season-gated so summer cannot snow. Five climate profiles shift the same curves: northern snow arrives earlier and melts later, mediterranean and arid winters hold less snow, and per-species snow retention lets conifers keep their load while birches shed it early. Bare crowns use tapered limbs and snow-tipped twigs; conifers use four snow-bearing tiers. | `world/season.js`, `terrain-palette.js`, `seasonal-foliage.js`, `weather.js`; season, weather and foliage tests; `season-year.json`; `climate-reference.json`, `climate-live.json`; transition, grove and both climate sheets. |
 
+## Biomes — 1.2.1 Laubwälder
+
+The broader biome work is tracked in [FOREST_ECOLOGY.md](FOREST_ECOLOGY.md). It maps all sixty items of **1.2.1 Laubwälder** to the shared deterministic stand model, the renderer, resource geography, the management survey and the dedicated `forest-reference.png` / `forest-seasons.png` sheets. The 1.1 checklist above remains authoritative for the terrain surface itself.
+
 ## Remaining limits
 
 - **Real-GPU validation is still open.** The cloud workspace renders with software WebGL. The contact sheet proves the shader paths, seasonal states and zoom bands, but not the final colour response or frame time on target hardware. See [TERRAIN_PERFORMANCE.md](TERRAIN_PERFORMANCE.md).

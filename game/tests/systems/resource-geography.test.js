@@ -100,6 +100,19 @@ test("resource depletion is sparse, validates and round-trips over deterministic
     assert.throws(()=>validateResourceGeographySnapshot({version:2,forest:[],stone:[]}),/unsupported resource geography version/);
 });
 
+test("forest resource nodes carry their formation and standing value",()=>{
+    setup();
+    const forest=findNode("forest",0,24);
+    assert.ok(forest,"the forest belt should contain a stand");
+    assert.ok(forest.node.forestTypeLabel,"a forest node should name its formation");
+    assert.match(forest.node.forestAge,/^(young|mature|ancient)$/);
+    assert.ok(forest.node.forestSpecies.length>=5);
+    assert.ok(forest.node.forestGoods.includes("timber"));
+    assert.ok(forest.node.forestGoods.includes("firewood"));
+    assert.ok(forest.node.forestFauna.length>0);
+    assert.equal(forest.node.forestStock,forest.node.forestCapacity);
+});
+
 test("forests regrow slowly and only up to their original capacity",()=>{
     setup();
     const forest=findNode("forest",0,24);

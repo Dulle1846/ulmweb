@@ -9,6 +9,7 @@ import { BUILDING_SIZE } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { CARD_DECK, drawPlayerCard, selectCard } from "../systems/cards.js";
 import { getResourceNodeAt } from "../systems/resource-geography.js";
+import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
 import { renderUI, cardSprite } from "./rendering/ui.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
@@ -179,7 +180,7 @@ function buildings(){
   let siteNote="No dedicated resource-site indicator is defined for this building type.";
   try{
    const node=getResourceNodeAt(building.x,building.y);
-   if([TYPE.LUMBER,TYPE.FORESTER].includes(building.type))siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity);
+   if([TYPE.LUMBER,TYPE.FORESTER].includes(building.type))siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity)+(node.forestTypeLabel?" · "+node.forestTypeLabel+" · "+(node.forestAge||"age unknown")+" · "+(node.forestSpecies||[]).slice(0,4).join(", "):"")+" · Wildlife: "+(forestFaunaSummaryAt(building.x,building.y,node.forestFauna)||"none recorded at this tile");
    else if([TYPE.QUARRY,TYPE.MASON].includes(building.type))siteNote="Stone stock at site tile: "+number(node.stoneStock)+" / "+number(node.stoneCapacity);
    else if(building.type===TYPE.FARM)siteNote="Site fertility: "+number(node.fertility)+" / 100 · water access: "+(node.waterAccess?"yes":"no");
    else if(building.type===TYPE.WELL)siteNote="Water access at site tile: "+(node.waterAccess?"yes":"no");

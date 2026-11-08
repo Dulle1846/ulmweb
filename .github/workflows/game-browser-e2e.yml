@@ -83,6 +83,12 @@ jobs:
         env:
           CLIMATE_REFERENCE_OUT: ${{ runner.temp }}/terrain-reference
         run: npm run test:climate-reference
+      - name: Generate forest ecology reference
+        if: always()
+        working-directory: game
+        env:
+          FOREST_REFERENCE_OUT: ${{ runner.temp }}/terrain-reference
+        run: npm run test:forest-reference
       - name: Upload terrain visual reference
         if: always()
         uses: actions/upload-artifact@v4
@@ -99,6 +105,9 @@ jobs:
             ${{ runner.temp }}/terrain-reference/climate-live.png
             ${{ runner.temp }}/terrain-reference/climate-live.json
             ${{ runner.temp }}/terrain-reference/climate-live/*.png
+            ${{ runner.temp }}/terrain-reference/forest-reference.png
+            ${{ runner.temp }}/terrain-reference/forest-seasons.png
+            ${{ runner.temp }}/terrain-reference/forest-reference.json
           if-no-files-found: warn
           retention-days: 7
       - name: Upload browser E2E log

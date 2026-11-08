@@ -2,6 +2,9 @@
 // Durable state is limited to sparse changes from the seed-generated baseline.
 import { state } from "../core/state.js";
 import { WORLD_W,WORLD_H,BIOME } from "../core/config.js";
+import {
+    FOREST_TYPES, forestStandAt, forestTypeFromIndex, forestTypeIndex,
+} from "../world/forest-ecology.js";
 
 const VERSION=1;
 
@@ -43,12 +46,17 @@ export function generateResourceGeography(seed=state.worldSeed){
     const count=cellCount();
     const forestCapacity=new Uint16Array(count);
     const forestStock=new Uint16Array(count);
+    const forestKind=new Uint8Array(count);
+    const forestAge=new Uint8Array(count);
     const stoneCapacity=new Uint16Array(count);
     const stoneStock=new Uint16Array(count);
     const fertility=new Uint8Array(count);
     const waterAccess=new Uint8Array(count);
     const forestShift=((state.worldOptions?.forests??52)-50)*0.0016;
-    const forestLine=BIOME.FOREST-forestShift;
+    // Woodland begins at the grassy lower slopes, not only at the old .78
+    // render-biome threshold. The moisture-gated presence below still keeps
+    // dry grassland open and lets lowland alluvial/alder woods hold stock.
+    const forestLine=BIOME.GRASS-forestShift;
     const sea=Number(state.seaLevel)||BIOME.SHALLOW_WATER;
     const resourceBias=((state.worldOptions?.resources??50)-50)*0.004;
     const fertilityBias=((state.worldOptions?.fertility??55)-50)*0.003;
@@ -61,16 +69,30 @@ export function generateResourceGeography(seed=state.worldSeed){
             const mapIndex=py*width+px;
             const h=Number(heights[mapIndex])||0;
             const moisture=clamp(Number(moistures[mapIndex])||0,0,1);
+            const temperature=clamp(Number(state.temperatureMap?.[mapIndex] ?? 0.55)||0,0,1);
             if(h<sea)waterAccess[index]=1;
 
-            // Forest stands follow the same terrain threshold used by the renderer.
+            // Forest stands follow the same ecology model as the renderer. The
+            // capacity is not one universal number: an old oakwood holds more
+            // timber than a thin birch grove, and a burn scar holds less.
             if(h>=forestLine&&h<BIOME.ROCK){
                 const density=clamp((h-forestLine)/Math.max(0.001,BIOME.ROCK-forestLine),0,1);
                 const presence=0.42+density*0.34+moisture*0.18+resourceBias;
                 if(unitHash(worldSeed,index,0x46525354)<presence){
-                    const capacity=35+Math.floor(density*85+moisture*55+unitHash(worldSeed,index,0x46434150)*45);
-                    forestCapacity[index]=capacity;
-                    forestStock[index]=capacity;
+                    const stand=forestStandAt(x+0.5,y+0.5,{
+                        seed:worldSeed, moisture, temperature, height:h,
+                        climate:state.worldOptions?.climate||"temperate",
+                        forests:state.worldOptions?.forests??52,
+                        stockRatio:1, rockLine:BIOME.ROCK,
+                    });
+                    if(stand.forest){
+                        const base=35+density*85+moisture*55+unitHash(worldSeed,index,0x46434150)*45;
+                        const capacity=Math.max(1,Math.min(65535,Math.round(base*(0.68+stand.productivity*0.6))));
+                        forestCapacity[index]=capacity;
+                        forestStock[index]=capacity;
+                        forestKind[index]=forestTypeIndex(stand.type);
+                        forestAge[index]=stand.ageClass==="ancient"?3:stand.ageClass==="young"?1:2;
+                    }
                 }
             }
 
@@ -88,7 +110,7 @@ export function generateResourceGeography(seed=state.worldSeed){
             }
         }
     }
-    state.resourceGeography={version:VERSION,seed:worldSeed,forestCapacity,forestStock,stoneCapacity,stoneStock,fertility,waterAccess};
+    state.resourceGeography={version:VERSION,seed:worldSeed,forestCapacity,forestStock,forestKind,forestAge,stoneCapacity,stoneStock,fertility,waterAccess};
     return state.resourceGeography;
 }
 
@@ -96,9 +118,17 @@ export function getResourceNodeAt(x,y){
     const point=readTile(x,y);
     if(!point)return null;
     const geo=ensureGeography(),i=point.index;
+    const forestType=forestTypeFromIndex(geo.forestKind?.[i]||0);
+    const forestDefinition=forestType?FOREST_TYPES[forestType]:null;
+    const forestAgeIndex=Number(geo.forestAge?.[i]||0);
     return {
         x:point.x,y:point.y,
         forestStock:geo.forestStock[i],forestCapacity:geo.forestCapacity[i],
+        forestType,forestTypeLabel:forestDefinition?.label||null,
+        forestAge:forestAgeIndex?["young","mature","ancient"][forestAgeIndex-1]||null:null,
+        forestSpecies:forestDefinition?Object.keys(forestDefinition.species):[],
+        forestGoods:forestDefinition?[...new Set([...forestDefinition.goods,"timber","firewood"])]:[],
+        forestFauna:forestDefinition?[...forestDefinition.fauna]:[],
         stoneStock:geo.stoneStock[i],stoneCapacity:geo.stoneCapacity[i],
         waterAccess:Boolean(geo.waterAccess[i]),fertility:geo.fertility[i]
     };

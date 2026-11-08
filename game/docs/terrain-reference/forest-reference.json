@@ -1,0 +1,720 @@
+{
+  "seed": 20261104,
+  "viewport": {
+    "width": 800,
+    "height": 800
+  },
+  "canvas": {
+    "width": 800,
+    "height": 800
+  },
+  "renderer": "WebKit WebGL",
+  "maxTextureSize": 8192,
+  "generatedAt": "2026-11-08T13:24:56.265Z",
+  "world": {
+    "width": 176,
+    "height": 176,
+    "climate": "temperate",
+    "forests": 52
+  },
+  "formations": [
+    {
+      "type": "oakwood",
+      "x": 60,
+      "y": 42,
+      "label": "Oakwood",
+      "age": "ancient",
+      "species": [
+        "Oak",
+        "Beech",
+        "Elm",
+        "Linden",
+        "Maple"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "beeswax",
+        "charcoal",
+        "elm-seeds",
+        "firewood",
+        "game",
+        "herbs",
+        "hides",
+        "honey",
+        "linden-flower",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "deer",
+        "boar",
+        "squirrel",
+        "woodpecker",
+        "owl",
+        "beetle"
+      ],
+      "moisture": 0.457,
+      "temperature": 0.47,
+      "height": 0.583,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "beechwood",
+      "x": 90,
+      "y": 26,
+      "label": "Beechwood",
+      "age": "mature",
+      "species": [
+        "Beech",
+        "Oak",
+        "Maple",
+        "Birch",
+        "Linden"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "beeswax",
+        "birch-sap",
+        "firewood",
+        "game",
+        "hides",
+        "honey",
+        "linden-flower",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "deer",
+        "squirrel",
+        "owl",
+        "songbird",
+        "beetle"
+      ],
+      "moisture": 0.66,
+      "temperature": 0.423,
+      "height": 0.579,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "birchwood",
+      "x": 94,
+      "y": 28,
+      "label": "Birch Grove",
+      "age": "young",
+      "species": [
+        "Birch",
+        "Maple",
+        "Oak",
+        "Beech",
+        "Alder"
+      ],
+      "goods": [
+        "acorns",
+        "alder-cones",
+        "bark",
+        "beechnuts",
+        "berries",
+        "birch-sap",
+        "firewood",
+        "herbs",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "roe-deer",
+        "hare",
+        "songbird",
+        "woodpecker",
+        "butterfly"
+      ],
+      "moisture": 0.645,
+      "temperature": 0.418,
+      "height": 0.617,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "maplewood",
+      "x": 102,
+      "y": 36,
+      "label": "Maplewood",
+      "age": "mature",
+      "species": [
+        "Maple",
+        "Beech",
+        "Oak",
+        "Elm",
+        "Birch"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "birch-sap",
+        "elm-seeds",
+        "firewood",
+        "herbs",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "squirrel",
+        "songbird",
+        "fox",
+        "butterfly",
+        "deer"
+      ],
+      "moisture": 0.579,
+      "temperature": 0.42,
+      "height": 0.686,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "chestnut-grove",
+      "x": 38,
+      "y": 80,
+      "label": "Chestnut Grove",
+      "age": "mature",
+      "species": [
+        "Chestnut",
+        "Linden",
+        "Oak",
+        "Maple",
+        "Elm"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beeswax",
+        "chestnuts",
+        "elm-seeds",
+        "firewood",
+        "game",
+        "herbs",
+        "hides",
+        "honey",
+        "linden-flower",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "boar",
+        "squirrel",
+        "mouse",
+        "woodpecker",
+        "songbird"
+      ],
+      "moisture": 0.538,
+      "temperature": 0.58,
+      "height": 0.587,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "linden-elm",
+      "x": 112,
+      "y": 36,
+      "label": "Linden and Elm Stand",
+      "age": "ancient",
+      "species": [
+        "Linden",
+        "Elm",
+        "Oak",
+        "Chestnut",
+        "Maple"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beeswax",
+        "charcoal",
+        "chestnuts",
+        "elm-seeds",
+        "firewood",
+        "game",
+        "herbs",
+        "hides",
+        "honey",
+        "linden-flower",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "songbird",
+        "squirrel",
+        "owl",
+        "ant",
+        "deer"
+      ],
+      "moisture": 0.534,
+      "temperature": 0.444,
+      "height": 0.587,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "mixed",
+      "x": 86,
+      "y": 70,
+      "label": "Mixed Woodland",
+      "age": "mature",
+      "species": [
+        "Oak",
+        "Beech",
+        "Birch",
+        "Maple",
+        "Linden",
+        "Elm"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "beeswax",
+        "berries",
+        "birch-sap",
+        "elm-seeds",
+        "firewood",
+        "game",
+        "herbs",
+        "hides",
+        "honey",
+        "linden-flower",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "deer",
+        "roe-deer",
+        "fox",
+        "squirrel",
+        "songbird",
+        "woodpecker",
+        "owl",
+        "beetle"
+      ],
+      "moisture": 0.459,
+      "temperature": 0.478,
+      "height": 0.816,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "alluvial",
+      "x": 84,
+      "y": 36,
+      "label": "Alluvial Woodland",
+      "age": "mature",
+      "species": [
+        "Alder",
+        "Elm",
+        "Birch",
+        "Maple",
+        "Oak"
+      ],
+      "goods": [
+        "acorns",
+        "alder-cones",
+        "bark",
+        "beeswax",
+        "birch-sap",
+        "elm-seeds",
+        "firewood",
+        "game",
+        "herbs",
+        "hides",
+        "honey",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "hare",
+        "fox",
+        "owl",
+        "songbird",
+        "butterfly",
+        "deer"
+      ],
+      "moisture": 0.7,
+      "temperature": 0.413,
+      "height": 0.642,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "hillside",
+      "x": 86,
+      "y": 60,
+      "label": "Hillside Forest",
+      "age": "mature",
+      "species": [
+        "Beech",
+        "Oak",
+        "Maple",
+        "Linden",
+        "Elm"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "beeswax",
+        "elm-seeds",
+        "firewood",
+        "game",
+        "herbs",
+        "hides",
+        "honey",
+        "linden-flower",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "roe-deer",
+        "fox",
+        "raptor",
+        "hare",
+        "woodpecker"
+      ],
+      "moisture": 0.551,
+      "temperature": 0.446,
+      "height": 0.826,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "ancient",
+      "x": 56,
+      "y": 72,
+      "label": "Ancient Woodland",
+      "age": "ancient",
+      "species": [
+        "Oak",
+        "Linden",
+        "Elm",
+        "Beech",
+        "Maple"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "beeswax",
+        "charcoal",
+        "elm-seeds",
+        "firewood",
+        "game",
+        "herbs",
+        "hides",
+        "honey",
+        "linden-flower",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "owl",
+        "woodpecker",
+        "beetle",
+        "deer",
+        "squirrel",
+        "raptor"
+      ],
+      "moisture": 0.661,
+      "temperature": 0.553,
+      "height": 0.598,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "regenerating",
+      "x": 78,
+      "y": 42,
+      "label": "Regenerating Wood",
+      "age": "young",
+      "species": [
+        "Birch",
+        "Maple",
+        "Beech",
+        "Oak",
+        "Linden"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "beeswax",
+        "berries",
+        "birch-sap",
+        "firewood",
+        "herbs",
+        "honey",
+        "linden-flower",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "hare",
+        "roe-deer",
+        "butterfly",
+        "ant",
+        "songbird"
+      ],
+      "moisture": 0.706,
+      "temperature": 0.431,
+      "height": 0.693,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "burned",
+      "x": 86,
+      "y": 64,
+      "label": "Burn Scar",
+      "age": "mature",
+      "species": [
+        "Birch",
+        "Maple",
+        "Beech",
+        "Linden",
+        "Oak"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "beeswax",
+        "berries",
+        "birch-sap",
+        "charcoal",
+        "firewood",
+        "honey",
+        "linden-flower",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "woodpecker",
+        "beetle",
+        "fox",
+        "hare"
+      ],
+      "moisture": 0.531,
+      "temperature": 0.467,
+      "height": 0.794,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "windthrow",
+      "x": 106,
+      "y": 140,
+      "label": "Windthrow",
+      "age": "mature",
+      "species": [
+        "Beech",
+        "Oak",
+        "Maple",
+        "Birch",
+        "Elm"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "birch-sap",
+        "elm-seeds",
+        "firewood",
+        "herbs",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "beetle",
+        "woodpecker",
+        "fox",
+        "owl"
+      ],
+      "moisture": 0.494,
+      "temperature": 0.434,
+      "height": 0.629,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "diseased",
+      "x": 98,
+      "y": 32,
+      "label": "Diseased Stand",
+      "age": "mature",
+      "species": [
+        "Oak",
+        "Beech",
+        "Elm",
+        "Maple",
+        "Birch"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "birch-sap",
+        "elm-seeds",
+        "firewood",
+        "herbs",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "beetle",
+        "woodpecker",
+        "owl",
+        "fox"
+      ],
+      "moisture": 0.616,
+      "temperature": 0.431,
+      "height": 0.616,
+      "stockRatio": 1,
+      "frame": "forest-reference.png"
+    },
+    {
+      "type": "cutover",
+      "x": 60,
+      "y": 42,
+      "label": "Cut-over Wood",
+      "age": "young",
+      "species": [
+        "Birch",
+        "Maple",
+        "Beech",
+        "Oak",
+        "Linden"
+      ],
+      "goods": [
+        "acorns",
+        "bark",
+        "beechnuts",
+        "beeswax",
+        "berries",
+        "birch-sap",
+        "firewood",
+        "honey",
+        "linden-flower",
+        "maple-syrup",
+        "mushrooms",
+        "timber",
+        "truffles"
+      ],
+      "fauna": [
+        "hare",
+        "fox",
+        "ant",
+        "butterfly"
+      ],
+      "moisture": 0.457,
+      "temperature": 0.47,
+      "height": 0.583,
+      "stockRatio": 0,
+      "frame": "forest-reference.png"
+    }
+  ],
+  "seasonalFocus": {
+    "x": 56,
+    "y": 72,
+    "type": "ancient",
+    "label": "Ancient Woodland",
+    "age": "ancient",
+    "species": [
+      "Oak",
+      "Linden",
+      "Elm",
+      "Beech",
+      "Maple"
+    ],
+    "goods": [
+      "acorns",
+      "bark",
+      "beechnuts",
+      "beeswax",
+      "charcoal",
+      "elm-seeds",
+      "firewood",
+      "game",
+      "herbs",
+      "hides",
+      "honey",
+      "linden-flower",
+      "maple-syrup",
+      "mushrooms",
+      "timber",
+      "truffles"
+    ],
+    "fauna": [
+      "owl",
+      "woodpecker",
+      "beetle",
+      "deer",
+      "squirrel",
+      "raptor"
+    ],
+    "moisture": 0.661,
+    "temperature": 0.553,
+    "height": 0.598,
+    "stockRatio": 1
+  },
+  "seasonalDays": [
+    50,
+    150,
+    250,
+    350
+  ],
+  "seasonalFrames": [
+    {
+      "day": 50
+    },
+    {
+      "day": 150
+    },
+    {
+      "day": 250
+    },
+    {
+      "day": 350
+    }
+  ],
+  "note": "HUD, entities, fog and weather hidden; paused simulation; camera centred at 2.40x. Forest formations are real generated tiles, not hand-placed demo props. The cutover frame uses a wooded tile with stock set to zero. Not a GPU performance benchmark."
+}

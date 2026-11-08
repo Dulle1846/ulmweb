@@ -20,14 +20,24 @@ The visual reference and the full-year audit are separate, explicit runs:
 npm run test:terrain-reference
 npm run test:season-year
 npm run test:climate-reference
+npm run test:forest-reference
 ```
 
 `test:terrain-reference` writes the four-season, transition and grove sheets.
 `test:season-year` writes `docs/terrain-reference/season-year.json` with a daily
 weather and foliage log for a complete 400-day year plus a five-climate
 comparison. `test:climate-reference` writes the same-grove 5 × 4 climate
-matrix, five live 1280 × 800 climate screenshots and their JSON logs. None of
-these commands is part of `npm test`.
+matrix, five live 1280 × 800 climate screenshots and their JSON logs.
+`test:forest-reference` writes `forest-reference.png` with all fifteen Laubwald
+formations and `forest-seasons.png` with one ancient wood on days 50, 150, 250
+and 350, plus `forest-reference.json`. None of these commands is part of
+`npm test`.
+
+The forest run scans the fixed realm for a real forest resource node of every
+formation, captures each at the same 2.40× camera, and fails on a missing
+formation, a runtime page error or a fatal terrain/WebGL diagnostic. It also
+captures an ancient wood through all four seasons. Set `FOREST_REFERENCE_OUT`
+to write the forest artifacts somewhere other than `docs/terrain-reference/`.
 
 The climate run starts five separate realms and drives 400 real
 `updateWeather()` days in each. It writes `climate-reference.png`,
@@ -114,11 +124,13 @@ with `--with-deps`, and then runs `npm run test:e2e`. Screenshots from the
 responsive review are uploaded even when the test fails.
 
 After the E2E step, the same job generates the four-season, four-zoom terrain
-reference, the 400-day season audit and the climate matrix/live check into
-`$RUNNER_TEMP/terrain-reference`. It uploads `contact-sheet.png`,
-`season-transition.png`, `tree-seasons.png`, `reference.json`,
-`season-year.json`, `climate-reference.png`, `climate-reference.json`,
-`climate-live.png`, `climate-live.json` and `climate-live/*.png` as the
-`kings-and-cards-terrain-reference` artifact. All three generation steps also
-run when the E2E step fails, so a failed gameplay run still produces the visual
-surface report and the weather/foliage records.
+reference, the 400-day season audit, the climate matrix/live check and the
+forest formation/season reference into `$RUNNER_TEMP/terrain-reference`. It
+uploads `contact-sheet.png`, `season-transition.png`, `tree-seasons.png`,
+`reference.json`, `season-year.json`, `climate-reference.png`,
+`climate-reference.json`, `climate-live.png`, `climate-live.json`,
+`climate-live/*.png`, `forest-reference.png`, `forest-seasons.png` and
+`forest-reference.json` as the `kings-and-cards-terrain-reference` artifact.
+All four generation steps also run when the E2E step fails, so a failed
+gameplay run still produces the visual surface report and the weather/foliage
+records.

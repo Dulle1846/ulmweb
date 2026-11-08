@@ -33,6 +33,26 @@ export const TREE_SPECIES = Object.freeze({
         turnOffset: 6, dropOffset: 12, leafOutOffset: 5, turnSpan: 64, dropSpan: 56, marcescent: 0.42,
         evergreen: false, snowRetention: 1, snowMeltShift: 3,
     }),
+    maple: Object.freeze({
+        turnOffset: -6, dropOffset: -2, leafOutOffset: 2, turnSpan: 62, dropSpan: 50, marcescent: 0.08,
+        evergreen: false, snowRetention: 0.95, snowMeltShift: 0,
+    }),
+    chestnut: Object.freeze({
+        turnOffset: 2, dropOffset: 4, leafOutOffset: 1, turnSpan: 58, dropSpan: 48, marcescent: 0.04,
+        evergreen: false, snowRetention: 0.9, snowMeltShift: -1,
+    }),
+    linden: Object.freeze({
+        turnOffset: 8, dropOffset: 10, leafOutOffset: 3, turnSpan: 58, dropSpan: 48, marcescent: 0.12,
+        evergreen: false, snowRetention: 0.95, snowMeltShift: 2,
+    }),
+    elm: Object.freeze({
+        turnOffset: -8, dropOffset: -5, leafOutOffset: -3, turnSpan: 50, dropSpan: 42, marcescent: 0.06,
+        evergreen: false, snowRetention: 0.9, snowMeltShift: -3,
+    }),
+    alder: Object.freeze({
+        turnOffset: -4, dropOffset: -2, leafOutOffset: -5, turnSpan: 54, dropSpan: 46, marcescent: 0.12,
+        evergreen: false, snowRetention: 0.85, snowMeltShift: -2,
+    }),
     conifer: Object.freeze({
         turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
         evergreen: true, snowRetention: 1.18, snowMeltShift: 8,
