@@ -216,6 +216,18 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .building-record-status b{color:#d9c49a;font:700 12px var(--ui-title-font)}
 .building-record-details{padding:10px;border-top:1px solid var(--ui-line);background:#17151255}
 .building-record-details>p:first-child{margin:0 0 9px;color:#d6c7a8;font-size:11px;line-height:1.5}
+.forester-stewardship{margin:0 0 9px;padding:10px 11px;border:1px solid #b99a5955;border-radius:3px;background:linear-gradient(145deg,#243322,#1a2418)}
+.forester-stewardship-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.forester-stewardship-heading span{color:#b9c9a3;font:700 9px var(--ui-title-font);letter-spacing:.09em}
+.forester-stewardship-heading strong{color:#f0e3c7;font:700 13px var(--ui-title-font);font-variant-numeric:tabular-nums}
+.forester-stewardship-meter{display:flex;align-items:center;gap:8px;margin:8px 0}
+.forester-stewardship-meter>span{flex:1;height:8px;border:1px solid #7e8b62;border-radius:999px;background:#0e150d;overflow:hidden}
+.forester-stewardship-meter i{display:block;height:100%;background:linear-gradient(90deg,#8f743f,#d2b46e);transition:width .2s}
+.forester-stewardship-meter>strong{min-width:34px;color:#e6d6ae;font:700 11px var(--ui-title-font);text-align:right}
+.forester-stewardship-facts{display:grid;grid-template-columns:1fr 1.4fr;gap:7px}
+.forester-stewardship-facts>span{display:grid;gap:3px;color:#a9b995;font-size:8px;letter-spacing:.06em}
+.forester-stewardship-facts strong{color:#e9dcc0;font-size:10px;font-weight:600;letter-spacing:0}
+.forester-stewardship-facts>span:last-child strong{color:#e4c884}
 .building-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .building-detail-grid>span{display:grid;gap:4px;min-width:0;padding:7px;border:1px solid #b99a5930;border-radius:2px;color:#a89572;font-size:9px}
 .building-detail-grid strong{overflow-wrap:anywhere;color:#ead9b5;font-size:10px;font-weight:600}
@@ -232,7 +244,7 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .logistics-movement[data-movement-type="consumed"] strong{color:#d0b184}
 .logistics-movement[data-movement-type="withdrawn"],.logistics-movement[data-movement-type="evacuated"] strong{color:#c9a5a0}
 .warehouse-profile-select{width:100%;min-height:28px;padding:3px 5px;border:1px solid var(--ui-line-strong);border-radius:3px;background:#171512;color:#f0e3c7;font:10px var(--ui-body-font)}
-@media(max-width:790px){.ledger-grid,.building-detail-grid{grid-template-columns:1fr}.building-record>summary{padding:8px}.building-type-summary{gap:4px}}
+@media(max-width:790px){.ledger-grid,.building-detail-grid,.forester-stewardship-facts{grid-template-columns:1fr}.building-record>summary{padding:8px}.building-type-summary{gap:4px}}
 
 
 /* Phase 3 — creature dossiers and searchable royal chronicle. */

@@ -4,6 +4,7 @@
 
 import { CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
+import { TYPE } from '../../core/types.js';
 import { drawTerrain } from './terrain.js';
 import { drawEntity } from './entities.js';
 import { drawPlacementPreview } from './placement-preview.js';
@@ -31,6 +32,7 @@ export function drawWorld() {
     drawRoadNetwork(ctx,zoom,camera,canvas);
     drawFieldPatches(ctx,zoom,camera,canvas);
     drawMapLayer(ctx,zoom,camera,canvas);
+    drawForesterStewardshipOverlay(ctx,zoom,camera,canvas);
     drawLogisticsRoutes(ctx,zoom,camera,canvas);
 
     // ── Entities (sortiert nach Y für Pseudo-Tiefe) ──────────
@@ -251,6 +253,43 @@ function drawMapLayer(ctx,zoom,camera,canvas){
 function fieldColor(stage){
     return {fallow:"#9b8156",sown:"#b9a45c",growing:"#71934d",ripe:"#d8ac45",harvested:"#8a7450"}[stage]||"#9b8156";
 }
+function drawForesterStewardshipOverlay(ctx,zoom,camera,canvas){
+    const selected=state.entities.find(entity=>!entity.dead&&entity.type===TYPE.FORESTER&&String(entity.id)===String(state.selectedBuildingId));
+    if(!selected)return;
+    const cellPx=CELL*zoom;
+    if(cellPx<10)return;
+    const x=Math.floor(selected.x),y=Math.floor(selected.y),radius=5;
+    const left=(x-radius)*cellPx-camera.x,top=(y-radius)*cellPx-camera.y;
+    const size=(radius*2+1)*cellPx;
+    if(left+size<0||top+size<0||left>canvas.width||top>canvas.height)return;
+    ctx.save();
+    ctx.setLineDash([Math.max(4,cellPx*.13),Math.max(3,cellPx*.09)]);
+    ctx.lineWidth=Math.max(1,zoom*1.1);
+    ctx.strokeStyle="rgba(209,180,118,.5)";
+    ctx.strokeRect(left,top,size,size);
+    ctx.setLineDash([]);
+    for(let oy=-radius;oy<=radius;oy++){
+        for(let ox=-radius;ox<=radius;ox++){
+            const node=getResourceNodeAt(x+ox,y+oy);
+            if(!node||node.forestCapacity<=0||node.forestStock>=node.forestCapacity)continue;
+            const ratio=node.forestStock/Math.max(1,node.forestCapacity);
+            const px=(x+ox+.5)*cellPx-camera.x;
+            const py=(y+oy+.5)*cellPx-camera.y;
+            if(px< -cellPx||py< -cellPx||px>canvas.width+cellPx||py>canvas.height+cellPx)continue;
+            ctx.beginPath();
+            ctx.arc(px,py,Math.max(3,cellPx*.085),0,Math.PI*2);
+            ctx.fillStyle=ratio<=0?"#e9857b":ratio<.5?"#e4bd72":"#a3d6a7";
+            ctx.globalAlpha=.92;
+            ctx.fill();
+            ctx.globalAlpha=1;
+            ctx.lineWidth=Math.max(1,cellPx*.018);
+            ctx.strokeStyle="rgba(15,22,13,.85)";
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
 function drawFieldTile(ctx,entity,zoom,camera,alpha=1){
     const tile=CELL*zoom,x=entity.x*tile-camera.x,y=entity.y*tile-camera.y;
     const size=tile*1.9;

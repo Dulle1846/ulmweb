@@ -35,6 +35,22 @@ function ensureGeography(){
     return geo;
 }
 
+// The terrain detail layer is cached because a full woodland redraw is costly.
+// Forest stock is not part of that cache key, so a player-driven planting or
+// felling must invalidate it explicitly. Quantising to visible stages avoids
+// rebuilding the whole layer for every single sapling while still exposing the
+// cut-over -> young wood transition and the later density gains.
+function forestVisualBucket(stock,capacity){
+    const cap=Number(capacity);
+    if(!Number.isFinite(cap)||cap<=0)return 0;
+    const ratio=clamp(Number(stock)/cap,0,1);
+    return ratio<=0?0:1+Math.ceil(ratio*10);
+}
+function noteForestVisualChange(before,capacity,after){
+    if(forestVisualBucket(before,capacity)===forestVisualBucket(after,capacity))return;
+    state.forestVisualRevision=(Number(state.forestVisualRevision)||0)+1;
+}
+
 export function generateResourceGeography(seed=state.worldSeed){
     const resolution=Number(state.terrainResolution)||0;
     const width=Number(state.terrainPixW)||0;
@@ -166,8 +182,10 @@ function extract(type,x,y,amount){
     if(!point||!Number.isFinite(requested)||requested<1)return 0;
     const geo=ensureGeography();
     const stock=type==="forest"?geo.forestStock:geo.stoneStock;
+    const before=stock[point.index];
     const taken=Math.min(stock[point.index],requested);
     stock[point.index]=Math.max(0,Math.floor(stock[point.index]-taken+1e-9));
+    if(type==="forest")noteForestVisualChange(before,geo.forestCapacity[point.index],stock[point.index]);
     return taken;
 }
 export function harvestForest(x,y,amount){return extract("forest",x,y,amount);}
@@ -178,9 +196,13 @@ export function plantForestAt(x,y,amount=1){
     const requested=Math.floor(Number(amount));
     if(!point||!Number.isFinite(requested)||requested<1)return 0;
     const geo=ensureGeography();
-    const missing=geo.forestCapacity[point.index]-geo.forestStock[point.index];
+    const before=geo.forestStock[point.index];
+    const missing=geo.forestCapacity[point.index]-before;
     const planted=Math.min(missing,requested);
-    if(planted>0)geo.forestStock[point.index]+=planted;
+    if(planted>0){
+        geo.forestStock[point.index]+=planted;
+        noteForestVisualChange(before,geo.forestCapacity[point.index],geo.forestStock[point.index]);
+    }
     return planted;
 }
 

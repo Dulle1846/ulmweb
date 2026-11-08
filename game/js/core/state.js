@@ -28,7 +28,7 @@ function createInitialState() {
         fogCanvas:null,fogDirty:true,fogExploredRef:null,
         terrainResolution:0,terrainPixW:0,terrainPixH:0,
         terrainRenderer:"auto",terrainAutoMode:"webgl",terrainMode:"webgl",terrainRendererName:"",terrainFallback:false,
-        terrainCacheRevision:0,terrainCacheHits:0,terrainCacheMisses:0,
+        terrainCacheRevision:0,forestVisualRevision:0,terrainCacheHits:0,terrainCacheMisses:0,
         frameLimit:60,adaptiveQuality:true,showFps:false,renderStats:{fps:0,frameMs:0,mode:"auto",fallback:false},lastDrawMs:0,renderedFrames:0,
         exploredRevision:0,
         lastRandomEvent:0,weather:"clear",weatherTimer:0,

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { resetState,state } from "../../js/core/state.js";
 import {
     generateResourceGeography,getResourceNodeAt,findNearestResourceNode,
-    harvestForest,extractStone,regrowForests,serializeResourceGeography,
+    harvestForest,extractStone,regrowForests,serializeResourceGeography,plantForestAt,
     restoreResourceGeography,validateResourceGeographySnapshot
 } from "../../js/systems/resource-geography.js";
 
@@ -98,6 +98,22 @@ test("resource depletion is sparse, validates and round-trips over deterministic
     assert.equal(getResourceNodeAt(stone.x,stone.y).stoneStock,stone.node.stoneStock-13);
     assert.throws(()=>validateResourceGeographySnapshot({version:1,forest:[[0,1],[0,2]],stone:[]}),/invalid forest resource entry/);
     assert.throws(()=>validateResourceGeographySnapshot({version:2,forest:[],stone:[]}),/unsupported resource geography version/);
+});
+
+test("forest stock edits invalidate the cached woodland at visible stages",()=>{
+    setup();
+    const forest=findNode("forest",0,24);
+    const capacity=forest.node.forestCapacity;
+    state.forestVisualRevision=0;
+    harvestForest(forest.x,forest.y,capacity);
+    assert.equal(getResourceNodeAt(forest.x,forest.y).forestStock,0);
+    assert.ok(state.forestVisualRevision>=1,"clearing a stand must invalidate the cached cut-over view");
+    const cutOverRevision=state.forestVisualRevision;
+    assert.equal(plantForestAt(forest.x,forest.y,1),1);
+    assert.ok(state.forestVisualRevision>cutOverRevision,"the first sapling must replace the bare cut-over layer");
+    const saplingRevision=state.forestVisualRevision;
+    plantForestAt(forest.x,forest.y,1);
+    assert.equal(state.forestVisualRevision,saplingRevision,"single saplings must not rebuild the whole terrain layer");
 });
 
 test("forest resource nodes carry their formation and standing value",()=>{

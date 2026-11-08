@@ -12,6 +12,7 @@ From `game/`:
 npm install
 npm run test:e2e:setup
 npm run test:e2e
+npm run test:forester-stewardship
 ```
 
 The visual reference and the full-year audit are separate, explicit runs:
@@ -90,6 +91,9 @@ The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
 - `E2E_HEADED=1` - run headed (requires a display server).
 - `E2E_SOFTWARE_GL=1` - launch Chromium with SwiftShader so WebGL2 references
   can run on a rootless container or CI runner without a GPU.
+- `FORESTER_AUDIT_OUT` - directory for the Forester browser evidence, default
+  `docs/forester-stewardship`. The audit writes `forester-stewardship.json`
+  plus cut-over/progress/grown map and management screenshots.
 - `CLIMATE_REFERENCE_OUT` - climate artifact directory, default
   `docs/terrain-reference`.
 - `FOREST_DETAIL_OUT` - detail-sheet artifact directory, default
@@ -106,6 +110,11 @@ The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
 - The forest-product action in a real Lumber Yard/Forester: opening the
   building record, gathering from a reachable forest tile, the confirmation
   toast, the persisted product ledger and the reduced forest-tile stock.
+- Forester stewardship in a real realm: a staffed lodge in three cut-over
+  stands, the dedicated range block and live DOM values across ticks, the
+  red/amber/green map markers, the 6,512 → 6,866 stock rise, and the
+  `Planting saplings` → `Forest is fully grown` transition without a false
+  depletion status.
 - Legacy saves with missing logistics fields, legacy warehouse filters,
   fractional/negative stock, stale reservations and an oversized legacy job.
 - Recovery from a corrupt primary save through the device-local backup.

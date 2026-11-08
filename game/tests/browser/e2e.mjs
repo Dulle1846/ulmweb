@@ -21,7 +21,7 @@ async function captureRealmState(page){
         // Render telemetry changes every animation frame even while the realm
         // is paused. It is not persistent world state, so comparing it makes
         // this probe depend on when the screenshot happened to land.
-        const ignored=new Set(["canvas","ctx","minimapCanvas","minimapCtx","terrainCanvas","terrainCanvasEl","fogCanvas","fogExploredRef","lastFrameTime","lastUiRender","lastMinimapRender","tickAccumulator","particles","floaters","pendingPresentationEffects","lastDrawMs","renderedFrames","renderStats","terrainCacheHits","terrainCacheMisses","terrainCacheRevision","terrainDirty","fogDirty"]);
+        const ignored=new Set(["canvas","ctx","minimapCanvas","minimapCtx","terrainCanvas","terrainCanvasEl","fogCanvas","fogExploredRef","lastFrameTime","lastUiRender","lastMinimapRender","tickAccumulator","particles","floaters","pendingPresentationEffects","lastDrawMs","renderedFrames","renderStats","terrainCacheHits","terrainCacheMisses","terrainCacheRevision","forestVisualRevision","terrainDirty","fogDirty"]);
         const hashed=new Set(["heightMap","moistureMap","temperatureMap","explored"]);
         const hashPersistent=(value,label)=>{
             let hashA=2166136261>>>0,hashB=5381>>>0;

@@ -198,6 +198,7 @@ function detailContentKey() {
         Math.floor(day / dayBucket),
         Number(state.exploredRevision) || 0,
         Number(state.terrainCacheRevision) || 0,
+        Number(state.forestVisualRevision) || 0,
     ].join("|");
 }
 
