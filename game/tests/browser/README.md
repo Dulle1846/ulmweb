@@ -103,6 +103,9 @@ The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
 
 - Realm founding, world forge, save/load, roads, resource depletion and the
   memorial archive.
+- The forest-product action in a real Lumber Yard/Forester: opening the
+  building record, gathering from a reachable forest tile, the confirmation
+  toast, the persisted product ledger and the reduced forest-tile stock.
 - Legacy saves with missing logistics fields, legacy warehouse filters,
   fractional/negative stock, stale reservations and an oversized legacy job.
 - Recovery from a corrupt primary save through the device-local backup.

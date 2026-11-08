@@ -526,6 +526,107 @@ try{
     const buildingArtSources=await page.locator("#command-panel-content .building-record-art use").evaluateAll(nodes=>nodes.map(node=>node.getAttribute("href")));
     assert.ok(buildingArtSources.every(source=>source?.startsWith("assets/royal-building-atlas.svg#")),"every building must use the dedicated royal atlas");
 
+    // The building register must expose the real forest-product action on a
+    // reachable forest tile, not just descriptive site data. This follows the
+    // same UI path a player takes: open the building record, then gather.
+    const forestFixture=await page.evaluate(async()=>{
+        const [{state},{TYPE},{findNearestResourceNode,getResourceNodeAt},{forestProductsAt}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/core/types.js"),
+            import("./js/systems/resource-geography.js"),import("./js/systems/forest-gathering.js")
+        ]);
+        const buildings=state.entities.filter(entity=>!entity.dead&&entity.isBuilding?.()&&[TYPE.LUMBER,TYPE.FORESTER].includes(entity.type));
+        if(!buildings.length)throw new Error("No lumber yard or forester exists in the starting realm");
+        const initialDay=state.dayOfYear;
+        const woodInRange=products=>products.goods.slice(0,5).some(good=>good.category==="wood");
+        let chosen=null;
+        for(const day of [state.dayOfYear,250,150,50]){
+            for(const building of buildings){
+                const node=findNearestResourceNode("forest",building.x,building.y,7);
+                if(!node)continue;
+                const products=forestProductsAt(node.x,node.y,day);
+                if(!products?.goods?.length||!woodInRange(products))continue;
+                chosen={buildingId:building.id,buildingType:building.type,original:{x:building.x,y:building.y},node:{x:node.x,y:node.y},day,goods:products.goods.map(good=>good.id),moved:false};
+                break;
+            }
+            if(chosen)break;
+        }
+        if(!chosen){
+            // If the seeded settlement is not already next to a forest, move one
+            // lumber building temporarily instead of inventing a resource node.
+            const building=buildings[0];
+            let best=null;
+            for(let radius=1;radius<=48&&!best;radius++){
+                for(let dy=-radius;dy<=radius&&!best;dy++){
+                    for(let dx=-radius;dx<=radius;dx++){
+                        if(Math.max(Math.abs(dx),Math.abs(dy))!==radius)continue;
+                        const x=building.x+dx,y=building.y+dy;
+                        if(x<0||y<0||x>=state.worldW||y>=state.worldH)continue;
+                        const node=getResourceNodeAt(x,y);
+                        if(!node?.forestCapacity||!node.forestStock)continue;
+                        for(const day of [state.dayOfYear,250,150,50]){
+                            const products=forestProductsAt(x,y,day);
+                            if(products?.goods?.length&&woodInRange(products)){
+                                best={x,y,day,goods:products.goods.map(good=>good.id)};
+                                break;
+                            }
+                        }
+                        if(best)break;
+                    }
+                }
+            }
+            if(!best)throw new Error("No forest tile with a gatherable wood product was found");
+            chosen={buildingId:building.id,buildingType:building.type,original:{x:building.x,y:building.y},node:{x:best.x,y:best.y},day:best.day,goods:best.goods,moved:true};
+            building.x=best.x;building.y=best.y;
+        }
+        state.dayOfYear=chosen.day;
+        return {...chosen,initialDay,dayOfYear:chosen.day};
+    });
+    assert.ok(forestFixture.goods.some(id=>["timber","firewood","charcoal"].includes(id)),"the fixture must select a real wood product");
+    const forestGatherButton=page.locator('#command-panel-content [data-gather-forest="'+forestFixture.buildingId+'"]');
+    assert.equal(await forestGatherButton.count(),1,"the selected forest building must expose one gather action");
+    await forestGatherButton.evaluate(element=>{const record=element.closest("details");if(record)record.open=true;});
+    await forestGatherButton.scrollIntoViewIfNeeded();
+    assert.equal((await forestGatherButton.innerText()).trim(),"GATHER FOREST PRODUCTS");
+    const beforeGather=await page.evaluate(async({node})=>{
+        const [{state},{getResourceNodeAt}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/resource-geography.js")
+        ]);
+        const ledger=state.forestGathering;
+        return {
+            stock:{...(ledger?.stock||{})},
+            total:Object.values(ledger?.stock||{}).reduce((sum,value)=>sum+Number(value||0),0),
+            history:ledger?.history?.length||0,
+            nodeStock:getResourceNodeAt(node.x,node.y)?.forestStock
+        };
+    },forestFixture);
+    if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-dismiss").click();
+    await forestGatherButton.click();
+    await page.waitForFunction(()=>document.querySelector("#action-toast")?.textContent.includes("GATHERED"),null,{timeout:5000});
+    const gatherToast=(await page.locator("#action-toast").innerText()).trim();
+    assert.match(gatherToast,/^GATHERED /,"the gather action must confirm the collected products");
+    const afterGather=await page.evaluate(async({node})=>{
+        const [{state},{getResourceNodeAt}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/resource-geography.js")
+        ]);
+        const ledger=state.forestGathering;
+        return {
+            stock:{...(ledger?.stock||{})},
+            total:Object.values(ledger?.stock||{}).reduce((sum,value)=>sum+Number(value||0),0),
+            history:ledger?.history?.length||0,
+            nodeStock:getResourceNodeAt(node.x,node.y)?.forestStock
+        };
+    },forestFixture);
+    assert.ok(afterGather.total>beforeGather.total,"the gather action must increase the persisted forest-product ledger");
+    assert.ok(afterGather.history>beforeGather.history,"the gather action must append a history entry");
+    assert.ok(afterGather.nodeStock<beforeGather.nodeStock,"gathering timber or firewood must reduce the real forest tile stock");
+    console.log("Forest product button E2E:",JSON.stringify({...forestFixture,before:beforeGather,after:afterGather,toast:gatherToast}));
+    await page.evaluate(async({buildingId,original,initialDay})=>{
+        const {state}=await import("./js/core/state.js");
+        const building=state.entities.find(entity=>String(entity.id)===String(buildingId));
+        if(building){building.x=original.x;building.y=original.y;}
+        state.dayOfYear=initialDay;
+    },forestFixture);
+
     await page.locator("#building-search").fill("farm");
     assert.ok(await page.locator("#command-panel-content .building-record:not(.is-filtered)").count()>=1,"building filter must retain matching structures");
     await page.locator("#building-search").fill("");
