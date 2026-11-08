@@ -613,6 +613,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                 if (detail && zoom >= 0.55) {
                     drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
                     drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom);
+                    if (zoom >= 0.85 && s3 < 0.4) drawForestMist(ctx, px, py, cellPx, stand, s2, tick);
                 }
                 if (tree) {
                     // Dense stands need overlapping crowns to read as a wood. The
@@ -1415,18 +1416,40 @@ function drawDeerTrail(ctx, px, py, cellPx, stand, seed) {
 }
 
 function drawForestMist(ctx, px, py, cellPx, stand, seed, tick) {
-    // Mist belongs to the long view. At rooftop zoom a flat translucent ellipse
-    // reads as a pale crown or a hole, so keep the close-up forest crisp and let
-    // the canopy light and leaf carpet carry the atmosphere.
-    if (cellPx > 68) return;
     const s = cellPx / 48;
     const drift = Math.sin(tick * 0.006 + seed * 9) * 4 * s;
+    const close = cellPx > 68;
     ctx.save();
-    ctx.globalAlpha = 0.035 + stand.canopy * 0.025;
-    ctx.fillStyle = "#dce6df";
-    ctx.beginPath();
-    ctx.ellipse(px + drift, py + 3 * s, (8 + seed * 5) * s, (2.2 + seed * 1.5) * s, 0, 0, Math.PI * 2);
-    ctx.fill();
+    if (close) {
+        // Three overlapping puffs form a soft bank below the canopy. A single
+        // large pool either left a pale ring around the crown or, when
+        // feathered with a transform, read as a rectangular wash. Small
+        // overlapping radial puffs have no hard edge in either axis.
+        const alpha = 0.05 + stand.canopy * 0.022;
+        for (let i = 0; i < 3; i++) {
+            const ox = (i - 1) * cellPx * 0.34 + drift + (seed - 0.5) * cellPx * 0.12;
+            const oy = py + (11 + i * 2) * s;
+            const radius = cellPx * (0.34 + (i % 2) * 0.08);
+            ctx.save();
+            ctx.translate(px + ox, oy);
+            ctx.scale(1, 0.28);
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+            gradient.addColorStop(0, `rgba(220, 230, 223, ${alpha})`);
+            gradient.addColorStop(0.5, `rgba(220, 230, 223, ${alpha * 0.55})`);
+            gradient.addColorStop(1, "rgba(220, 230, 223, 0)");
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    } else {
+        ctx.globalAlpha = 0.035 + stand.canopy * 0.025;
+        ctx.fillStyle = "#dce6df";
+        ctx.beginPath();
+        ctx.ellipse(px + drift, py + 3 * s, (8 + seed * 5) * s, (2.2 + seed * 1.5) * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
     ctx.restore();
 }
 
@@ -1491,7 +1514,6 @@ function drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clim
     if (stand.understory.shrub > 0.2 && s3 > 0.55) { drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey); return; }
     if (stand.ground.flowers > 0.3) drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey);
     else drawGrassTufts(ctx, px, py, cellPx, s1, s2, season.foliageTurn > 0.55, season.foliageTurn, season.snowCover);
-    if (zoom >= 0.85 && s3 < 0.4) drawForestMist(ctx, px, py, cellPx, stand, s2, tick);
 }
 
 function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey) {

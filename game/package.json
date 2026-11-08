@@ -12,7 +12,8 @@
     "test:climate-reference": "node tests/browser/climate-reference.mjs",
     "test:forest-reference": "node tests/browser/forest-reference.mjs",
     "test:terrain-stability": "node tests/browser/terrain-stability.mjs",
-    "test:device-benchmark": "node tests/browser/device-benchmark.mjs"
+    "test:device-benchmark": "node tests/browser/device-benchmark.mjs",
+    "test:atmosphere-reference": "node tests/browser/daylight-reference.mjs"
   },
   "engines": {
     "node": ">=20"

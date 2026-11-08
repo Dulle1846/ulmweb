@@ -13,6 +13,7 @@ import { getServiceBuildingsForOverlay } from '../../systems/settlement.js';
 import { getLogisticsSnapshot } from '../../systems/logistics.js';
 import { worldWidth,worldHeight } from '../../world/world.js';
 import { drawWeatherOverlay } from './weather-overlay.js';
+import { drawDaylightOverlay } from './daylight.js';
 
 let visibleEntitiesCache=[];
 let visibleEntitiesUntil=0;
@@ -93,6 +94,10 @@ export function drawWorld() {
     ctx.globalAlpha = 1;
     ctx.textAlign = "left";
 
+    // Daily light sits above the terrain and units, but below the weather and
+    // vignette. At noon its alpha is zero, so the 100% default look is intact.
+    const seasonName = ["spring", "summer", "autumn", "winter"][Number(state.seasonIndex) || 0] || "summer";
+    drawDaylightOverlay(ctx, canvas, state.timeOfDay, seasonName);
     // Screen-space weather sits above the map but below the vignette.
     drawWeatherOverlay(ctx, canvas);
 }

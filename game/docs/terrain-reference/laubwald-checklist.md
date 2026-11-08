@@ -7,8 +7,8 @@ Bezug: `# 1.2.1 Laubwälder`, Punkte 1.2.1.1–1.2.1.60
 
 Die Prüfung kombiniert vier Nachweisarten:
 
-1. **Visuell:** `docs/terrain-reference/forest-reference.png` (15 echte Formationen bei 2,40×), `forest-seasons.png` (ein Ancient Wood an Tag 50/150/250/350), `tree-seasons.png` (acht Tage von Herbst bis Frühling), `terrain-stability-level-4.png` (Nahansicht) und `contact-sheet.png` (vier Zoomstufen über vier Jahreszeiten).
-2. **Modell/Test:** `node --test tests/world/forest-ecology.test.js` und die bestehenden Wald-/Fauna-/Season-Tests.
+1. **Visuell:** `docs/terrain-reference/forest-reference.png` (15 echte Formationen bei 2,40×), `forest-seasons.png` (ein Ancient Wood an Tag 50/150/250/350), `tree-seasons.png` (acht Tage von Herbst bis Frühling), `terrain-stability-level-4.png` (Nahansicht), `contact-sheet.png` (vier Zoomstufen über vier Jahreszeiten), `daylight-reference.png` (acht Tageszeit-Frames) und `mist-reference.png` (Nahaufnahme des Bodennebels).
+2. **Modell/Test:** `node --test tests/world/forest-ecology.test.js`, `tests/presentation/daylight.test.js` und die bestehenden Wald-/Fauna-/Season-Tests.
 3. **Browser-Regression:** `node tests/browser/terrain-stability.mjs` für Persistenz und Cache-Verhalten.
 4. **Live-Benchmark:** `node tests/browser/device-benchmark.mjs` für die Landscape-Szene. Die Werte stammen aus Chromium/SwiftShader und sind keine Aussage über eine echte GPU.
 
@@ -81,19 +81,17 @@ Die Referenzbilder sind menschliche Prüfbilder, keine Pixel-Goldens. Das Laubwa
 | 1.2.1.55 | Bodenverdichtung und Überjagung | `compaction`, `huntingPressure` im Bestand; Ressourcen-/Fauna-Tests | ◐ |
 | 1.2.1.56 | Regeneration nach Bränden, Rodungen, Sturm | `forest-reference.png` · Regenerating Wood + Burn Scar/Windthrow/Cut-over | ✅ |
 | 1.2.1.57 | Sonnenstrahlen durch Kronenlücken | `drawCanopyLight`; Clearing-/Lückenlogik | ◐ |
-| 1.2.1.58 | Leichter Bodennebel und feuchte Morgenstimmung | `drawForestMist` nur für die lange Sicht (`cellPx <= 68`); im 2,40×-Close-up bewusst ausgeblendet | ⚠ teilweise |
+| 1.2.1.58 | Leichter Bodennebel und feuchte Morgenstimmung | `drawForestMist` zeichnet bei 2,40× drei weiche, überlappende Nebelschwaden unter der Krone; `mist-reference.png` ist der echte 500×500-Ausschnitt des Morgenframes (Tag 150, 06:00) | ✅ |
 | 1.2.1.59 | Blätterbewegung durch Wind und fallendes Laub | `sway` in `drawTree`, fallende Blätter in `drawBroadleaf`; Herbst-Frames | ✅ |
-| 1.2.1.60 | Licht-/Farbwirkung nach Tageszeit und Jahreszeit | Jahreszeiten belegt (`forest-seasons.png`); **Tageszeit** hat derzeit keinen eigenen Terrain-Lichtzustand | ⚠ teilweise |
+| 1.2.1.60 | Licht-/Farbwirkung nach Tageszeit und Jahreszeit | `daylight-reference.png`: Sommer/Winter × 06:00/12:00/18:00/23:00 auf Oakwood (60,42); `daylight.js` mit `timeOfDay`, Dawn-/Dusk-Gradient und Nachtveil. 12:00 bleibt Alpha 0; der Terrain-Cache wird nicht neu gerastert | ✅ |
 
 ## Ergebnis
 
-- **37 Punkte** sind visuell und modellseitig belegt.
+- **39 Punkte** sind visuell und modellseitig belegt.
 - **21 Punkte** sind als „Test/Modell“ markiert: vorhanden und getestet, aber ohne isolierte Einzelmotiv-Aufnahme (u. a. Waldlichtung, Wiese, Wechsel, Böden, Wurzeln/Pilze, Forstprodukte).
-- **2 Punkte** bleiben teilweise offen:
-  - **1.2.1.58:** Bodennebel existiert, wird aber im Nahbereich absichtlich nicht gezeichnet; ein eigener Nahaufnahme-Beleg fehlt.
-  - **1.2.1.60:** Jahreszeitenlicht und Farbwirkung sind belegt; eine Tageszeit-Lichtphase gibt es im Terrain derzeit nicht.
+- **0 Punkte** sind noch als offene Lücke markiert.
 
-Die offenen Punkte sind keine behaupteten Erfolge. Für 1.2.1.60 wäre ein echter Tageszeit-Zustand mit eigener Lichtkurve nötig; das ist ein separates Feature und wurde hier nicht vorgetäuscht.
+Die Tageszeit ist ein reiner Präsentationszustand: Sie färbt die bereits gerenderte Welt und löst keinen Terrain-Rebuild aus. Um 12:00 ist der Overlay Alpha 0, damit die Standardoptik unverändert bleibt. Der Bodennebel ist im Nahbereich sichtbar, ohne die Krone zu einem hellen Ring zu machen.
 
 ## Reproduktion
 
@@ -102,6 +100,7 @@ cd game
 node --test tests/world/forest-ecology.test.js tests/systems/forest-fauna.test.js tests/systems/forest-fauna-longrun.test.js
 npm run test:forest-reference
 npm run test:terrain-stability
+npm run test:atmosphere-reference
 npm run test:device-benchmark
 ```
 

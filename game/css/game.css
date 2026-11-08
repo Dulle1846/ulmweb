@@ -977,6 +977,9 @@ button:focus-visible, [role="button"]:focus-visible {
 .setting-row strong {display:block;color:#e7ddc9;font-size:11px}
 .setting-row small {display:block;margin-top:4px;color:#87968e;font-size:9px;line-height:1.4}
 .volume-setting input {width:150px;accent-color:#d6b77e}
+.time-of-day-control {display:flex;align-items:center;gap:9px}
+.time-of-day-control input {width:132px;accent-color:#d6b77e}
+.time-of-day-control output {min-width:36px;color:#d6b77e;font:700 10px/1 monospace;text-align:right}
 .toggle {position:relative;width:42px;height:24px;flex:0 0 42px}
 .toggle input {position:absolute;opacity:0}
 .toggle span {position:absolute;inset:0;border:1px solid rgba(221,190,126,.3);border-radius:30px;background:#111b1c;cursor:pointer}

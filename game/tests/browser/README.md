@@ -23,6 +23,7 @@ npm run test:climate-reference
 npm run test:forest-reference
 npm run test:terrain-stability
 npm run test:device-benchmark
+npm run test:atmosphere-reference
 ```
 
 `test:terrain-reference` writes the four-season, transition and grove sheets.
@@ -37,9 +38,11 @@ Canvas2D cache through all four zoom levels, a long pan and a zoom, and asserts
 that the decoration layer stays visible and rebuilds only after the view has
 settled. `test:device-benchmark` opens the in-game Settings benchmark, runs it
 on the landscape view and writes `device-benchmark.json` plus a screenshot.
-The 60-point Laubwald audit is documented in
-`docs/terrain-reference/laubwald-checklist.md`, with screenshot references and
-explicit partial/gap status. None of these commands is part of `npm test`.
+`test:atmosphere-reference` writes the eight-frame dawn/noon/dusk/night
+sheet and a 500 × 500 dawn mist close-up. The 60-point Laubwald audit is
+documented in `docs/terrain-reference/laubwald-checklist.md`, with screenshot
+references and an explicit status for every point. None of these commands is part of
+`npm test`.
 
 The forest run scans the fixed realm for a real forest resource node of every
 formation, captures each at the same 2.40× camera, and fails on a missing

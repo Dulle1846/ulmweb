@@ -874,6 +874,12 @@ function bindMenu(){
         if(benchmarkRunning)return;
         renderSaveSlots();
         refreshBenchmarkAvailability();
+        const timeControl=document.getElementById("settings-time-of-day");
+        if(timeControl){
+            const current=Number(state.timeOfDay);
+            timeControl.value=String(Number.isFinite(current)?Math.max(0,Math.min(23,current)):12);
+            timeControl.dispatchEvent(new Event("input"));
+        }
         document.getElementById("settings-modal").classList.remove("hidden");
     };
     document.getElementById("settings-btn")?.addEventListener("click",openSettings);
@@ -910,6 +916,23 @@ function bindMenu(){
     const deltasToggle=document.getElementById("settings-deltas-toggle");
     const motionToggle=document.getElementById("settings-motion-toggle");
     if(motionToggle){motionToggle.checked=settings.reduceMotion===true;motionToggle.addEventListener("change",event=>{settings.reduceMotion=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    const timeOfDayControl=document.getElementById("settings-time-of-day");
+    const timeOfDayValue=document.getElementById("settings-time-of-day-value");
+    if(timeOfDayControl){
+        const syncTimeOfDay=()=>{
+            const value=Number(timeOfDayControl.value);
+            state.timeOfDay=Number.isFinite(value)?Math.max(0,Math.min(23,value)):12;
+            const hour=Math.floor(state.timeOfDay)%24;
+            const minutes=Math.round((state.timeOfDay-hour)*60)%60;
+            const label=String(hour).padStart(2,"0")+":"+String(minutes).padStart(2,"0");
+            if(timeOfDayValue)timeOfDayValue.textContent=label;
+            timeOfDayControl.setAttribute("aria-valuetext",label);
+        };
+        const initialTime=Number(state.timeOfDay);
+        timeOfDayControl.value=String(Number.isFinite(initialTime)?Math.max(0,Math.min(23,initialTime)):12);
+        syncTimeOfDay();
+        timeOfDayControl.addEventListener("input",syncTimeOfDay);
+    }
     const rendererSelect=document.getElementById("settings-terrain-renderer");
     if(rendererSelect){
         rendererSelect.value=settings.terrainRenderer;
