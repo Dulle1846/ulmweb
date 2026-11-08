@@ -170,6 +170,21 @@ A deterministic audit ran three seeds (`20261108`, `7`, `99`) for four calendar 
 
 The durable regression is `tests/systems/forest-fauna-longrun.test.js`: three seeds × four years on a 48 × 48 world, daily stacking checks, year-boundary migration, first-year dispersal, bounded populations, species persistence and the 60 %/30 % stock scenarios.
 
+### Hundred-year harvest and regrowth audit
+
+The forestry audit used the same deterministic 64 × 64 realm (seed `20261108`, 70 forest setting, full starting stock). For 100 years (40,000 days) it ran daily disturbance succession and the game's sliced `regrowForests` pass. Lumber Yards were modelled at the real recipe cadence: every six days each yard took two stock from the nearest forest within seven tiles. A player visit used the real `gatherNearestForestProducts` action at four sites every five days, harvesting the normal several wood goods from one tile.
+
+| Scenario | Lumber Yards | Gathering | Stock harvested | Stock regrown | Lowest fill | Final fill | Depleted tiles at end |
+|---|---:|---|---:|---:|---:|---:|---:|
+| Managed forestry | 8 | none | 102,167 | 367,569 | 91.7 % (year 63) | 91.8 % | 62 |
+| Managed + player gathering | 8 | 4 sites every 5 days | 234,530 | 477,413 | 85.0 % (year 95) | 85.1 % | 175 |
+| Intensive stress | 40 | 8 sites every 5 days | 769,440 | 917,977 | 60.0 % (year 98) | 60.1 % | 499 |
+
+- **Verdict.** Managed forestry is sustainable over a century. Lumber Yards alone leave 91.8 % of the original stock; adding regular player gathering still ends at 85.1 %, with no failed harvesting action and only 7.1 % of forest tiles fully depleted.
+- **The intensive case thins rather than collapses.** It removes 769,440 stock but regrows 917,977, yet ends at 60.1 % fill. The loss is spatial, not global: fixed yards and gather sites keep pressing the same neighbourhoods while regrowth happens across the whole map. 499 of 2,469 forest tiles are fully depleted and 908 are below a quarter of capacity at year 100. Harvest and regrowth rates were left unchanged.
+- **Operating point, not a proven ceiling.** Pressures above 40 yards plus eight gathering sites were not simulated, so the intensive row is an observed thinned state at the end of the run, not a limit the game enforces.
+- **Durable regression.** The century scenario with 8 yards and 4 gathering sites is the first test in `tests/systems/forest-succession-longrun.test.js`. It fails if regrowth does not cover harvest, fill drops below 80 %, more than a tenth of forest tiles become fully depleted, or harvesting actions start failing. It adds about six seconds to the suite.
+
 ## Deliberate limits
 
 - **Wildlife is simulated at herd level, not per animal.** There is no individual pedigree, predator-prey kill accounting or territory geometry. The herd model is deterministic, saveable and observable through the map and site survey; the ambient insect layer is still decoration.
@@ -189,4 +204,4 @@ npm run test:forest-reference
 npm run test:forest-detail
 ```
 
-`npm test` currently passes **568/568** and covers the 15 formations, determinism, reachable site conditions, all eight species, age classes, disturbances and their temporal succession, seasonal goods, fauna filtering, the herd population/migration/restore tests, real hunting offtake, quality/processing, pannage, forest gathering, compaction, disturbance spread and control, the four-decade disturbance/regrowth audit, solar vector and mist, microfauna, species timber, resource-node integration and the seasonal foliage timings. `test:forest-reference` requires Chromium and Playwright; it captures all 15 formations plus a four-season sequence and fails on a missing formation, a page runtime error or a fatal WebGL diagnostic. `test:forest-detail` captures the thirteen native close-ups and writes `forest-detail-reference.png`/`.json`; it waits for the terrain cache to rebuild before each frame, so a slow software renderer cannot silently save the previous view. Set `FOREST_REFERENCE_OUT` or `FOREST_DETAIL_OUT` to redirect the artifacts.
+`npm test` currently passes **569/569** and covers the 15 formations, determinism, reachable site conditions, all eight species, age classes, disturbances and their temporal succession, seasonal goods, fauna filtering, the herd population/migration/restore tests, real hunting offtake, quality/processing, pannage, forest gathering, compaction, disturbance spread and control, the four-decade disturbance/regrowth audit, the century timber-harvest/regrowth audit, solar vector and mist, microfauna, species timber, resource-node integration and the seasonal foliage timings. `test:forest-reference` requires Chromium and Playwright; it captures all 15 formations plus a four-season sequence and fails on a missing formation, a page runtime error or a fatal WebGL diagnostic. `test:forest-detail` captures the thirteen native close-ups and writes `forest-detail-reference.png`/`.json`; it waits for the terrain cache to rebuild before each frame, so a slow software renderer cannot silently save the previous view. Set `FOREST_REFERENCE_OUT` or `FOREST_DETAIL_OUT` to redirect the artifacts.

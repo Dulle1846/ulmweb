@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
-import { generateResourceGeography, regrowForests } from "../../js/systems/resource-geography.js";
+import {
+    findNearestResourceNode, generateResourceGeography, harvestForest, regrowForests,
+} from "../../js/systems/resource-geography.js";
+import { gatherNearestForestProducts } from "../../js/systems/forest-gathering.js";
 import {
     ensureForestSuccession, resetForestSuccession, suppressNearestForestDisturbance,
     updateForestSuccession,
@@ -95,6 +98,85 @@ function runYears(years, { control = false } = {}) {
     }
     return { model, geo, forestTiles, rows, suppressed };
 }
+
+function runTimberYears(years, { yards = 8, gathers = 4, gatherEvery = 5 } = {}) {
+    const model = ensureForestSuccession();
+    const geo = state.resourceGeography;
+    const forestTiles = geo.forestCapacity.reduce((count, capacity) => count + (capacity > 0 ? 1 : 0), 0);
+    const yardSites = Array.from({ length: yards }, (_, index) => ({
+        x: 8 + (index * 13) % 56,
+        y: 8 + (index * 23) % 56,
+    }));
+    const gatherSites = [[16, 16], [16, 48], [48, 16], [48, 48], [32, 16], [16, 32], [48, 32], [32, 48]]
+        .slice(0, gathers);
+    let harvested = 0;
+    let gathered = 0;
+    let regrown = 0;
+    let failed = 0;
+    const rows = [];
+
+    for (let year = 1; year <= years; year++) {
+        for (let day = 0; day < 400; day++) {
+            state.tick++;
+            state.dayOfYear++;
+            if (state.dayOfYear >= 400) {
+                state.dayOfYear = 0;
+                state.year++;
+            }
+            state.seasonIndex = Math.floor(state.dayOfYear / 100) % 4;
+            updateForestSuccession(1);
+            regrown += regrowForests(400, { slice: state.tick % 400, slices: 400 });
+
+            // The Lumber Yard recipe harvests two stock from its nearest wood
+            // every six simulation days, then checks its seven-tile range again.
+            if (state.tick % 6 === 0) {
+                for (const site of yardSites) {
+                    const node = findNearestResourceNode("forest", site.x, site.y, 7);
+                    if (!node) { failed++; continue; }
+                    const taken = harvestForest(node.x, node.y, 2);
+                    harvested += taken;
+                    if (taken <= 0) failed++;
+                }
+            }
+
+            // A player visit uses the real gather action: several wood goods
+            // from one tile, once per tile and day.
+            if (gatherSites.length && day % gatherEvery === 0) {
+                for (const [x, y] of gatherSites) {
+                    const result = gatherNearestForestProducts(x, y, 7);
+                    if (!result.ok) { failed++; continue; }
+                    const wood = (result.goods || [])
+                        .filter(good => good.category === "wood")
+                        .reduce((sum, good) => sum + good.amount, 0);
+                    gathered += wood;
+                    harvested += wood;
+                }
+            }
+        }
+        const metrics = forestMetrics(model, geo, forestTiles);
+        let depleted = 0;
+        for (let i = 0; i < geo.forestCapacity.length; i++) {
+            if ((geo.forestCapacity[i] || 0) > 0 && (geo.forestStock[i] || 0) <= 0) depleted++;
+        }
+        rows.push({ year, fill: metrics.fill, depleted });
+    }
+    return { rows, forestTiles, harvested, gathered, regrown, failed };
+}
+
+test("a century of timber harvest and regrowth keeps the wood standing", () => {
+    setup();
+    const run = runTimberYears(100, { yards: 8, gathers: 4, gatherEvery: 5 });
+    const last = run.rows[run.rows.length - 1];
+    const lowest = run.rows.reduce((low, row) => row.fill < low.fill ? row : low);
+
+    assert.ok(run.harvested > 150000, `only ${run.harvested} stock was harvested over the century`);
+    assert.ok(run.gathered > 100000, `only ${run.gathered} stock came from the real gathering action`);
+    assert.ok(run.regrown > run.harvested, `regrowth ${run.regrown} did not cover harvest ${run.harvested}`);
+    assert.ok(lowest.fill > 0.8, `forest fill fell to ${(lowest.fill * 100).toFixed(1)}% in year ${lowest.year}`);
+    assert.ok(last.fill > 0.84, `century-end forest fill was ${(last.fill * 100).toFixed(1)}%`);
+    assert.ok(last.depleted < run.forestTiles * 0.1, `${last.depleted} forest tiles were fully depleted`);
+    assert.ok(run.failed < 10, `${run.failed} harvesting actions found no reachable wood`);
+});
 
 test("four decades of fire, storm and disease stay below a fifth of the forest", () => {
     setup();
