@@ -30,9 +30,14 @@ function emptyLedger() {
     };
 }
 
-export function ensureForestGathering() {
+function activeLedger() {
     const current = state.forestGathering;
-    if (current && current.version === VERSION && current.stock && typeof current.stock === "object") return current;
+    return current && current.version === VERSION && current.stock && typeof current.stock === "object" ? current : null;
+}
+
+export function ensureForestGathering() {
+    const current = activeLedger();
+    if (current) return current;
     state.forestGathering = emptyLedger();
     return state.forestGathering;
 }
@@ -135,7 +140,8 @@ export function gatherNearestForestProducts(x, y, radius = GATHER_RADIUS) {
 }
 
 export function forestGatheringSummary(limit = 4) {
-    const ledger = ensureForestGathering();
+    const ledger = activeLedger();
+    if (!ledger) return "";
     return Object.entries(ledger.stock)
         .filter(([, amount]) => Number(amount) > 0)
         .sort((a, b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0]))
@@ -145,7 +151,8 @@ export function forestGatheringSummary(limit = 4) {
 }
 
 export function serializeForestGathering() {
-    const ledger = ensureForestGathering();
+    const ledger = activeLedger();
+    if (!ledger) return emptyLedger();
     const stock = {};
     const totalGathered = {};
     for (const [id, amount] of Object.entries(ledger.stock)) {

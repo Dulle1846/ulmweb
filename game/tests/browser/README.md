@@ -80,6 +80,10 @@ The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
 ## Environment
 
 - `E2E_PORT` - local static-server port, default `4173`.
+- `E2E_BASE_URL` - run the same suite against a deployed origin instead of
+  the local static server, for example `https://kings-and-cards.pages.dev`.
+  The test-only `main.js` instrumentation is applied in flight; no local files
+  are served for the page.
 - `E2E_SCREENSHOT_DIR` - screenshot directory, default
   `$TMPDIR/kac-ui-viewport-review`.
 - `E2E_CHROMIUM_EXECUTABLE` - explicit Chromium executable path.

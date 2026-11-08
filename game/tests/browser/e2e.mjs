@@ -7,6 +7,7 @@ import {chromium} from "playwright";
 
 const root=process.cwd();
 const port=Number(process.env.E2E_PORT)||4173;
+const remoteOrigin=process.env.E2E_BASE_URL?new URL(process.env.E2E_BASE_URL).origin:null;
 const screenshotDir=process.env.E2E_SCREENSHOT_DIR?resolve(root,process.env.E2E_SCREENSHOT_DIR):resolve(tmpdir(),"kac-ui-viewport-review");
 await mkdir(screenshotDir,{recursive:true});
 
@@ -121,7 +122,7 @@ const mime={
     ".css":"text/css; charset=utf-8",".svg":"image/svg+xml",".json":"application/json",
     ".png":"image/png",".jpg":"image/jpeg",".webp":"image/webp",".mp3":"audio/mpeg",".wav":"audio/wav"
 };
-const server=createServer(async(req,res)=>{
+const server=remoteOrigin?null:createServer(async(req,res)=>{
     try{
         const pathname=decodeURIComponent(new URL(req.url,"http://127.0.0.1").pathname);
         const relative=pathname==="/"?"index.html":pathname.slice(1);
@@ -134,7 +135,8 @@ const server=createServer(async(req,res)=>{
         res.writeHead(404,{"content-type":"text/plain"}).end("Not found");
     }
 });
-await new Promise(resolveListen=>server.listen(port,"127.0.0.1",resolveListen));
+if(server)await new Promise(resolveListen=>server.listen(port,"127.0.0.1",resolveListen));
+const baseUrl=remoteOrigin||("http://127.0.0.1:"+port);
 const browser=await chromium.launch({
     headless:process.env.E2E_HEADED!=="1",
     executablePath:process.env.E2E_CHROMIUM_EXECUTABLE||undefined,
@@ -158,12 +160,14 @@ try{
         let body=source.replace(resetMarker,resetMarker+" if(globalThis.__KAC_RESET_PROBE__)globalThis.__KAC_RESET_PROBE__.calls++;");
         body=body.replace(afterImportMarker,"globalThis.__KAC_AFTER_IMPORT__?.(state);"+afterImportMarker);
         const headers={...response.headers()};
+        delete headers["content-encoding"];
         delete headers["content-length"];
+        delete headers["transfer-encoding"];
         await route.fulfill({status:response.status(),headers,body});
     });
     page.on("pageerror",error=>errors.push(error.message));
     page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text());});
-    await page.goto("http://127.0.0.1:"+port+"/",{waitUntil:"networkidle"});
+    await page.goto(baseUrl+"/",{waitUntil:"networkidle"});
     assert.equal(await page.title(),"KINGS & CARDS • Eternal Realm");
     assert.equal(await page.locator("#start-screen").isVisible(),true);
     assert.equal(await page.locator("#start-screen .start-hero-art").getAttribute("src"),"assets/royal-title-illustration.svg","the founding screen must use the original muted royal title artwork");
@@ -1619,5 +1623,5 @@ try{
     await context.close();
 }finally{
     await browser.close();
-    await new Promise(resolveClose=>server.close(resolveClose));
+    if(server)await new Promise(resolveClose=>server.close(resolveClose));
 }

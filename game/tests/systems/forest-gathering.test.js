@@ -35,6 +35,15 @@ function findForestWithGoods() {
     return null;
 }
 
+test("reading or serializing a fresh realm does not create a forest ledger", () => {
+    setup();
+    assert.equal(state.forestGathering, null);
+    assert.equal(forestGatheringSummary(), "");
+    const snapshot = serializeForestGathering();
+    assert.equal(state.forestGathering, null, "serialization must not mutate the live realm");
+    assert.deepEqual(snapshot, { version: 1, stock: {}, totalGathered: {}, history: [], lastGather: {} });
+});
+
 test("forest products are read from the same real stand as the renderer", () => {
     setup();
     const tile = findForestWithGoods();
