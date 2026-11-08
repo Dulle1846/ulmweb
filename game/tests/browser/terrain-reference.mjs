@@ -145,7 +145,24 @@ try {
         const { resize, centerCamera } = await import("./js/presentation/camera.js");
         resize();
         centerCamera();
-        const canvas = document.getElementById("terrain-canvas");
+        // A software renderer makes the automatic choice fall back to Canvas2D
+        // and locks the original surface to a 2D context. This reference audits
+        // the WebGL ground, so force it and use a fresh surface.
+        const { resetTerrainWebGL } = await import("./js/presentation/rendering/terrain-webgl.js");
+        resetTerrainWebGL();
+        state.terrainRenderer = "webgl";
+        state.terrainAutoMode = "webgl";
+        state.terrainMode = "webgl";
+        state.terrainFallback = false;
+        const previousCanvas = document.getElementById("terrain-canvas");
+        const canvas = previousCanvas.cloneNode(false);
+        canvas.width = state.canvas.width;
+        canvas.height = state.canvas.height;
+        canvas.style.opacity = "";
+        canvas.style.transform = "";
+        previousCanvas.replaceWith(canvas);
+        state.terrainCanvasEl = canvas;
+        state.terrainCacheRevision = (Number(state.terrainCacheRevision) || 0) + 1;
         const gl = canvas.getContext("webgl2");
         return {
             hasGl: Boolean(gl),

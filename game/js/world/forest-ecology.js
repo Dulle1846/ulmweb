@@ -314,6 +314,19 @@ function ageClassFor(formation, x, y, seed) {
 
 const AGE_SCALE = Object.freeze({ young: 0.6, mature: 0.92, ancient: 1.26 });
 
+// Cheap land test used before generating a full stand. It mirrors the forest
+// gate in forestStandAt exactly; rendering can then skip the expensive wave,
+// species and goods work on open ground while still visiting every tile for
+// tree placement.
+export function forestPotentialAt({ moisture = 0.55, height = 0.55, forests = 52, rockLine = 0.92 } = {}) {
+    const m = clamp01(Number(moisture));
+    const h = clamp01(Number(height));
+    const f = Number.isFinite(Number(forests)) ? Number(forests) : 52;
+    const line = Number.isFinite(Number(rockLine)) ? Number(rockLine) : 0.92;
+    const pressure = clamp01((m - 0.34) / 0.46 + (f - 50) * 0.0018 - 0.04);
+    return pressure > 0.1 && h < line;
+}
+
 export function forestStandAt(x, y, context = {}) {
     const seed = Number.isSafeInteger(Number(context.seed)) && Number(context.seed) > 0
         ? Number(context.seed) >>> 0 : 1;
@@ -431,6 +444,20 @@ export function forestStandAt(x, y, context = {}) {
         productivity: formation.productivity * (ageClass === 'ancient' ? 1.18 : ageClass === 'young' ? 0.72 : 1) * (0.68 + stockRatio * 0.32),
         formation: formation.id,
     };
+}
+
+// A dense wood is drawn as overlapping crowns, not as one lonely tree per
+// tile. The count is a deterministic property of the stand; the renderer caps
+// it to one at landscape distance, where the extra copies would be invisible
+// but would still cost draw time.
+export function forestTreeCopies(stand) {
+    if (!stand?.forest) return 0;
+    const clearing = Number(stand.clearing) || 0;
+    const canopy = Number(stand.canopy) || 0;
+    if (clearing > 0.28) return 1;
+    if (stand.ageClass === 'ancient' && canopy > 0.62) return 3;
+    if (canopy > 0.52) return 2;
+    return 1;
 }
 
 export function pickSpecies(stand, roll = 0.5) {

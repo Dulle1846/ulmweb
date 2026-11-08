@@ -10,7 +10,8 @@
     "test:terrain-reference": "node tests/browser/terrain-reference.mjs",
     "test:season-year": "node tests/browser/season-year.mjs",
     "test:climate-reference": "node tests/browser/climate-reference.mjs",
-    "test:forest-reference": "node tests/browser/forest-reference.mjs"
+    "test:forest-reference": "node tests/browser/forest-reference.mjs",
+    "test:terrain-stability": "node tests/browser/terrain-stability.mjs"
   },
   "engines": {
     "node": ">=20"

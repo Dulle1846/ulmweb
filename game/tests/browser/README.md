@@ -21,6 +21,7 @@ npm run test:terrain-reference
 npm run test:season-year
 npm run test:climate-reference
 npm run test:forest-reference
+npm run test:terrain-stability
 ```
 
 `test:terrain-reference` writes the four-season, transition and grove sheets.
@@ -30,8 +31,10 @@ comparison. `test:climate-reference` writes the same-grove 5 × 4 climate
 matrix, five live 1280 × 800 climate screenshots and their JSON logs.
 `test:forest-reference` writes `forest-reference.png` with all fifteen Laubwald
 formations and `forest-seasons.png` with one ancient wood on days 50, 150, 250
-and 350, plus `forest-reference.json`. None of these commands is part of
-`npm test`.
+and 350, plus `forest-reference.json`. `test:terrain-stability` drives the live
+Canvas2D cache through all four zoom levels, a long pan and a zoom, and asserts
+that the decoration layer stays visible and rebuilds only after the view has
+settled. None of these commands is part of `npm test`.
 
 The forest run scans the fixed realm for a real forest resource node of every
 formation, captures each at the same 2.40× camera, and fails on a missing
@@ -67,6 +70,8 @@ The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
   `$TMPDIR/kac-ui-viewport-review`.
 - `E2E_CHROMIUM_EXECUTABLE` - explicit Chromium executable path.
 - `E2E_HEADED=1` - run headed (requires a display server).
+- `E2E_SOFTWARE_GL=1` - launch Chromium with SwiftShader so WebGL2 references
+  can run on a rootless container or CI runner without a GPU.
 - `CLIMATE_REFERENCE_OUT` - climate artifact directory, default
   `docs/terrain-reference`.
 

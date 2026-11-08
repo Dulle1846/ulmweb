@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
     FOREST_GOODS, FOREST_SPECIES, FOREST_TYPES, FOREST_TYPE_IDS,
-    forestFaunaFor, forestGoodsFor, forestMixLabel, forestStandAt,
+    forestFaunaFor, forestGoodsFor, forestMixLabel, forestPotentialAt, forestStandAt, forestTreeCopies,
     forestSurveyAt, forestTypeFromIndex, forestTypeIndex, pickAgeClass, pickSpecies,
 } from "../../js/world/forest-ecology.js";
 import { foliageState, treeTiming } from "../../js/presentation/rendering/seasonal-foliage.js";
@@ -40,6 +40,29 @@ test("forest species, formations and goods form a complete shared vocabulary", (
     }
     assert.equal(forestTypeFromIndex(0), null);
     assert.equal(forestTypeFromIndex(99), null);
+});
+
+test("the cheap forest gate matches the full stand on every sampled site", () => {
+    for (const moisture of [0.1, 0.3, 0.35, 0.48, 0.62, 0.8, 0.95]) {
+        for (const temperature of [0.2, 0.55, 0.8]) {
+            for (const height of [0.2, 0.5, 0.8, 0.92, 0.96]) {
+                for (let x = 0; x < 32; x += 7) {
+                    const context = standContext({ moisture, temperature, height, seed: 101 });
+                    const stand = forestStandAt(x + 0.5, 7.5, context);
+                    const potential = forestPotentialAt({ moisture, temperature, height, forests: 52, rockLine: 0.92 });
+                    assert.equal(potential, stand.forest, "gate mismatch at " + [moisture, temperature, height, x].join("/"));
+                }
+            }
+        }
+    }
+});
+
+test("dense and ancient stands get overlapping tree copies, open woods do not", () => {
+    assert.equal(forestTreeCopies({ forest: false }), 0);
+    assert.equal(forestTreeCopies({ forest: true, canopy: 0.3 }), 1);
+    assert.equal(forestTreeCopies({ forest: true, canopy: 0.6 }), 2);
+    assert.equal(forestTreeCopies({ forest: true, canopy: 0.8, ageClass: "ancient" }), 3);
+    assert.equal(forestTreeCopies({ forest: true, canopy: 0.8, clearing: 0.4 }), 1);
 });
 
 test("forest stand generation is deterministic for the same seed and tile", () => {

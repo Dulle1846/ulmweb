@@ -2,10 +2,23 @@
 // start without fontconfig, but then crashes while rendering native form
 // controls. That failure is easy to misdiagnose as a test bug.
 export function browserLaunchOptions() {
+    const args = ["--no-sandbox", "--disable-dev-shm-usage"];
+    // Rootless containers and CI runners often have no GPU. The visual
+    // references still need WebGL2, so allow an explicit software path without
+    // changing the normal browser suite's launch flags.
+    if (process.env.E2E_SOFTWARE_GL === "1") {
+        args.push(
+            "--use-gl=angle",
+            "--use-angle=swiftshader",
+            "--enable-unsafe-swiftshader",
+            "--disable-gpu-sandbox",
+            "--disable-dev-shm-usage"
+        );
+    }
     return {
         headless: process.env.E2E_HEADED !== "1",
         executablePath: process.env.E2E_CHROMIUM_EXECUTABLE || undefined,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"]
+        args
     };
 }
 

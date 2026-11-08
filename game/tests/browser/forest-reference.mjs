@@ -120,7 +120,27 @@ try {
         const { resize, centerCamera } = await import("./js/presentation/camera.js");
         resize();
         centerCamera();
-        const canvas = document.getElementById("terrain-canvas");
+        // This reference specifically audits the WebGL ground and its Canvas
+        // decoration overlay. On a software renderer the automatic setting may
+        // have chosen Canvas2D and locked the original surface to a 2D context;
+        // force the renderer and replace that surface with a fresh one before
+        // asking for WebGL2. Without this, a valid SwiftShader browser looks
+        // like it has no WebGL support.
+        const { resetTerrainWebGL } = await import("./js/presentation/rendering/terrain-webgl.js");
+        resetTerrainWebGL();
+        state.terrainRenderer = "webgl";
+        state.terrainAutoMode = "webgl";
+        state.terrainMode = "webgl";
+        state.terrainFallback = false;
+        const previousCanvas = document.getElementById("terrain-canvas");
+        const canvas = previousCanvas.cloneNode(false);
+        canvas.width = state.canvas.width;
+        canvas.height = state.canvas.height;
+        canvas.style.opacity = "";
+        canvas.style.transform = "";
+        previousCanvas.replaceWith(canvas);
+        state.terrainCanvasEl = canvas;
+        state.terrainCacheRevision = (Number(state.terrainCacheRevision) || 0) + 1;
         const gl = canvas.getContext("webgl2");
         return {
             hasGl: Boolean(gl),

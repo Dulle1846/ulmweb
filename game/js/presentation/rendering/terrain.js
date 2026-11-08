@@ -9,8 +9,13 @@ import { drawTerrainGL } from './terrain-webgl.js';
 import { flowerBloom, foliageState } from './seasonal-foliage.js';
 import { seasonalState } from '../../world/season.js';
 import {
-    FOREST_SPECIES, forestFaunaFor, forestStandAt, pickAgeClass, pickSpecies,
+    FOREST_SPECIES, forestFaunaFor, forestPotentialAt, forestStandAt, forestTreeCopies,
+    pickAgeClass, pickSpecies,
 } from '../../world/forest-ecology.js';
+import {
+    DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
+    transformedLayerRect, treeStepForZoom, visibleTileBounds,
+} from './terrain-detail-grid.js';
 import { getResourceNodeAt } from '../../systems/resource-geography.js';
 import { forestFaunaAt } from '../../systems/forest-fauna.js';
 
@@ -43,14 +48,17 @@ export function drawTerrain(ctx) {
 
     if (glActive) {
         drawFogOfWar(ctx, zoom, cam, canvas);
-        if (state.zoomLevel >= 2) drawOverlayDecorations(ctx, zoom, cam, canvas);
+        // Trees exist at every zoom level. The overlay is cached and keeps its
+        // old raster transformed while the camera moves, then re-rasterises at
+        // the settled view instead of blinking out of existence.
+        drawOverlayDecorations(ctx, zoom, cam, canvas);
         return;
     }
 
-    // At detail zoom the static terrain surface already contains baked ground,
-    // fog and decorations. It stays on the GPU/compositor as its own layer, so
-    // no full-screen copy or re-rasterisation is needed per frame.
-    if (state.zoomLevel >= 2 && drawCachedDecorations(ctx, zoom, cam, canvas)) return;
+    // The cached surface contains baked ground, fog and every decoration. It
+    // stays on the compositor as its own layer, so panning only moves it; the
+    // layer is rebuilt once after the view settles.
+    if (drawCachedDecorations(ctx, zoom, cam, canvas)) return;
     if (state.terrainCanvasEl) state.terrainCanvasEl.style.opacity = "0";
     drawBakedGround(ctx, zoom, cam, canvas);
     drawFogOfWar(ctx, zoom, cam, canvas);
@@ -154,7 +162,6 @@ function drawFogOfWar(ctx, zoom, cam, canvas) {
 // software rendering, so they live on an offscreen canvas and are copied in.
 // While the camera or zoom is moving the existing layer is merely shifted;
 // once the view settles, it is rebuilt once at the new position.
-const DETAIL_SETTLE_MS = 140;
 let detailCanvas = null;
 let detailCtx = null;
 let detailState = null;
@@ -166,7 +173,19 @@ let overlayState = null;
 let overlayView = "";
 let overlayLastChangeAt = 0;
 
-function detailCacheKey(zoom) {
+function detailWorldKey() {
+    return [
+        Number(state.worldSeed) || 0,
+        worldW(), worldH(),
+        Number(state.terrainVersion) || 0,
+        Number(state.seaLevel) || 0,
+        state.worldOptions?.climate || "temperate",
+        Number(state.worldOptions?.forests) || 0,
+        state.terrainMode,
+    ].join("|");
+}
+
+function detailContentKey() {
     const day = Number.isFinite(Number(state.dayOfYear))
         ? Number(state.dayOfYear)
         : (Number(state.seasonIndex) || 0) * 100;
@@ -174,22 +193,29 @@ function detailCacheKey(zoom) {
     // re-rasterisation at every day boundary while still following seasons.
     const dayBucket = state.terrainMode === "canvas" ? 12 : 4;
     return [
-        Number(state.worldSeed) || 0,
-        Number(state.worldW) || 0,
-        Number(state.worldH) || 0,
-        Number(state.terrainVersion) || 0,
-        Number(state.seaLevel) || 0,
-        state.worldOptions?.climate || "temperate",
-        Number(state.worldOptions?.forests) || 0,
-        state.terrainMode,
-        Number(state.zoomLevel) || 0,
-        Math.round(zoom * 1000),
-        state.canvas?.width || 0,
-        state.canvas?.height || 0,
+        detailWorldKey(),
         Math.floor(day / dayBucket),
         Number(state.exploredRevision) || 0,
         Number(state.terrainCacheRevision) || 0,
     ].join("|");
+}
+
+function rebuildDetailLayer(surfaceCtx, canvas, zoom, cam, key, worldKey) {
+    const renderScale = Number(state.renderScale) || 1;
+    surfaceCtx.clearRect(0, 0, detailCanvas.width, detailCanvas.height);
+    drawBakedGround(surfaceCtx, zoom, cam, canvas);
+    if (state.zoomLevel >= 3) drawGroundGrain(surfaceCtx, zoom, cam, canvas);
+    state.terrainTreeDraws = 0;
+    drawTerrainDecorations(surfaceCtx, zoom, cam, canvas);
+    drawFogOfWar(surfaceCtx, zoom, cam, canvas);
+    detailState = {
+        key, worldKey, zoom, camX: cam.x, camY: cam.y, renderScale,
+        width: canvas.width, height: canvas.height,
+    };
+    state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
+    state.terrainCanvasEl.style.transformOrigin = "0 0";
+    state.terrainCanvasEl.style.transform = "translate(0px, 0px) scale(1)";
+    state.terrainCanvasEl.style.opacity = "1";
 }
 
 function ensureTerrainSurface(canvas) {
@@ -198,6 +224,7 @@ function ensureTerrainSurface(canvas) {
     if (surface.width !== canvas.width || surface.height !== canvas.height) {
         surface.width = Math.max(1, canvas.width);
         surface.height = Math.max(1, canvas.height);
+        surface.style.transformOrigin = "0 0";
         surface.style.transform = "";
         detailState = null;
         observedView = "";
@@ -244,33 +271,77 @@ function drawOverlayDecorations(ctx, zoom, cam, canvas) {
     if (!overlayCtx) return;
 
     const now = performance.now();
+    // Use sub-pixel precision here. Rounding the zoom to three decimals made a
+    // slow final interpolation step look "settled" for several frames while
+    // the view was still creeping, which rebuilt the cache repeatedly.
     const signature = [
         canvas.width, canvas.height,
-        Math.round(cam.x), Math.round(cam.y),
-        Math.round(zoom * 1000),
+        Math.round(cam.x * 10), Math.round(cam.y * 10),
+        Math.round(zoom * 100000),
     ].join(":");
     if (signature !== overlayView) {
         overlayView = signature;
         overlayLastChangeAt = now;
     }
     const settled = now - overlayLastChangeAt >= DETAIL_SETTLE_MS;
-    const key = detailCacheKey(zoom);
-    const reusable = Boolean(overlayState && overlayState.key === key && overlayState.zoom === zoom);
+    const renderScale = Number(state.renderScale) || 1;
+    const key = detailContentKey();
+    const worldKey = detailWorldKey();
+    const surfaceMatches = Boolean(overlayState
+        && overlayState.width === canvas.width
+        && overlayState.height === canvas.height
+        && overlayState.renderScale === renderScale);
+    const sameWorld = surfaceMatches && overlayState.worldKey === worldKey;
 
-    if (!reusable && !settled && overlayState) return;
-    if (!reusable || (settled && (overlayState.camX !== cam.x || overlayState.camY !== cam.y))) {
+    if (!sameWorld) {
+        // A new realm or canvas cannot be reused. Wait for the view to settle
+        // before spending a full decoration rasterisation on a moving camera.
+        if (overlayState && !settled) return;
         overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        state.terrainTreeDraws = 0;
         drawTerrainDecorations(overlayCtx, zoom, cam, canvas);
-        overlayState = { key, zoom, camX: cam.x, camY: cam.y };
+        overlayState = {
+            key, worldKey, zoom, camX: cam.x, camY: cam.y, renderScale,
+            width: canvas.width, height: canvas.height,
+        };
         state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
         ctx.drawImage(overlayCanvas, 0, 0);
         return;
     }
 
-    const dx = overlayState.camX - cam.x;
-    const dy = overlayState.camY - cam.y;
-    if (Math.abs(dx) > canvas.width * 0.8 || Math.abs(dy) > canvas.height * 0.8) return;
-    ctx.drawImage(overlayCanvas, dx, dy);
+    const contentStale = overlayState.key !== key;
+    const viewMoved = Math.abs(overlayState.zoom - zoom) > 0.00005
+        || Math.abs(overlayState.camX - cam.x) > 0.02
+        || Math.abs(overlayState.camY - cam.y) > 0.02;
+    if (settled && (contentStale || viewMoved)) {
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        state.terrainTreeDraws = 0;
+        drawTerrainDecorations(overlayCtx, zoom, cam, canvas);
+        overlayState = {
+            key, worldKey, zoom, camX: cam.x, camY: cam.y, renderScale,
+            width: canvas.width, height: canvas.height,
+        };
+        state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
+        ctx.drawImage(overlayCanvas, 0, 0);
+        return;
+    }
+
+    // Keep the old raster on screen while panning or zooming. Its world-space
+    // positions are preserved by the transform, so trees do not vanish during
+    // the 140 ms settle window.
+    const transform = detailLayerTransform({
+        previousZoom: overlayState.zoom,
+        previousCameraX: overlayState.camX,
+        previousCameraY: overlayState.camY,
+        previousRenderScale: overlayState.renderScale,
+        zoom, cameraX: cam.x, cameraY: cam.y, renderScale,
+    });
+    ctx.drawImage(
+        overlayCanvas,
+        transform.backingX, transform.backingY,
+        overlayCanvas.width * transform.backingScale,
+        overlayCanvas.height * transform.backingScale
+    );
     state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
 }
 
@@ -281,77 +352,142 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
     const now = performance.now();
     const signature = [
         canvas.width, canvas.height,
-        Math.round(cam.x), Math.round(cam.y),
-        Math.round(zoom * 1000),
+        Math.round(cam.x * 10), Math.round(cam.y * 10),
+        Math.round(zoom * 100000),
     ].join(":");
     if (signature !== observedView) {
         observedView = signature;
         lastViewChangeAt = now;
     }
     const settled = now - lastViewChangeAt >= DETAIL_SETTLE_MS;
-    const key = detailCacheKey(zoom);
-    const reusable = Boolean(detailState && detailState.key === key && detailState.zoom === zoom);
+    const key = detailContentKey();
+    const worldKey = detailWorldKey();
     const renderScale = Number(state.renderScale) || 1;
-    const dx = detailState ? detailState.camX - cam.x : 0;
-    const dy = detailState ? detailState.camY - cam.y : 0;
 
-    // During a pan, shift the already-rasterised detail layer with CSS instead
-    // of hiding it. Only the newly exposed strips need the cheap baked ground.
-    const canShift = reusable && !settled
-        && Math.abs(dx) <= canvas.width * 0.45
-        && Math.abs(dy) <= canvas.height * 0.45;
-    if (canShift && (dx || dy)) {
-        state.terrainCanvasEl.style.transform = `translate(${dx / renderScale}px, ${dy / renderScale}px)`;
-        state.terrainCanvasEl.style.opacity = "1";
-        drawPanGaps(ctx, zoom, cam, canvas, dx, dy);
-        state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
+    // The first frame has no cached layer yet. Build it immediately; a resize
+    // or renderer switch can wait for the short settle window instead.
+    if (!detailState) {
+        rebuildDetailLayer(surfaceCtx, canvas, zoom, cam, key, worldKey);
         return true;
     }
 
-    if (!reusable && !settled && detailState) {
+    const surfaceMatches = detailState.width === canvas.width
+        && detailState.height === canvas.height
+        && detailState.renderScale === renderScale;
+    const worldMatches = detailState.worldKey === worldKey;
+    if (!surfaceMatches || !worldMatches) {
+        state.terrainCanvasEl.style.transformOrigin = "0 0";
         state.terrainCanvasEl.style.opacity = "0";
-        return false;
-    }
-
-    if (!reusable || (settled && (detailState.camX !== cam.x || detailState.camY !== cam.y))) {
-        surfaceCtx.clearRect(0, 0, detailCanvas.width, detailCanvas.height);
-        drawBakedGround(surfaceCtx, zoom, cam, canvas);
-        if (state.zoomLevel >= 3) drawGroundGrain(surfaceCtx, zoom, cam, canvas);
-        drawTerrainDecorations(surfaceCtx, zoom, cam, canvas);
-        drawFogOfWar(surfaceCtx, zoom, cam, canvas);
-        detailState = { key, zoom, camX: cam.x, camY: cam.y };
-        state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
-        state.terrainCanvasEl.style.transform = "translate(0, 0)";
-        state.terrainCanvasEl.style.opacity = "1";
+        if (!settled) return false;
+        rebuildDetailLayer(surfaceCtx, canvas, zoom, cam, key, worldKey);
         return true;
     }
 
-    if (detailState.camX !== cam.x || detailState.camY !== cam.y) {
-        state.terrainCanvasEl.style.opacity = "0";
-        return false;
+    const contentStale = detailState.key !== key;
+    const viewMoved = Math.abs(detailState.zoom - zoom) > 0.00005
+        || Math.abs(detailState.camX - cam.x) > 0.02
+        || Math.abs(detailState.camY - cam.y) > 0.02;
+    if (settled && (contentStale || viewMoved)) {
+        rebuildDetailLayer(surfaceCtx, canvas, zoom, cam, key, worldKey);
+        return true;
     }
-    state.terrainCanvasEl.style.transform = "translate(0, 0)";
+
+    // Keep the existing raster visible while the camera or zoom is moving.
+    // Trees and ground detail are world objects, so the whole layer can be
+    // translated and scaled without losing any of them. Newly exposed strips
+    // are filled with the cheap baked surface until the settled rebuild.
+    const transform = detailLayerTransform({
+        previousZoom: detailState.zoom,
+        previousCameraX: detailState.camX,
+        previousCameraY: detailState.camY,
+        previousRenderScale: detailState.renderScale,
+        zoom, cameraX: cam.x, cameraY: cam.y, renderScale,
+    });
+    state.terrainCanvasEl.style.transformOrigin = "0 0";
+    state.terrainCanvasEl.style.transform =
+        `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
     state.terrainCanvasEl.style.opacity = "1";
+    drawDetailLayerGaps(ctx, zoom, cam, canvas, transform);
     state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
     return true;
 }
 
-function drawPanGaps(ctx, zoom, cam, canvas, dx, dy) {
+function drawDetailLayerGaps(ctx, zoom, cam, canvas, transform) {
+    const rect = transformedLayerRect(transform, canvas.width, canvas.height, Number(state.renderScale) || 1);
+    if (rect.width <= 0 || rect.height <= 0) return;
     ctx.save();
     ctx.beginPath();
-    if (dx > 0) ctx.rect(0, 0, dx, canvas.height);
-    else if (dx < 0) ctx.rect(canvas.width + dx, 0, -dx, canvas.height);
-    if (dy > 0) ctx.rect(0, 0, canvas.width, dy);
-    else if (dy < 0) ctx.rect(0, canvas.height + dy, canvas.width, -dy);
-    ctx.clip();
+    ctx.rect(0, 0, canvas.width, canvas.height);
+    ctx.rect(rect.x, rect.y, rect.width, rect.height);
+    // The detail layer covers the inner rectangle. Everything outside it has
+    // to show the baked ground and fog immediately; otherwise a fast pan or a
+    // zoom reveals the dark stage background.
+    ctx.clip("evenodd");
     drawBakedGround(ctx, zoom, cam, canvas);
     drawFogOfWar(ctx, zoom, cam, canvas);
     ctx.restore();
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  DECORATIONS — vegetation and props follow the biome
-// ═══════════════════════════════════════════════════════════════
+// At rooftop distance the full bark, lobe and twig artwork is smaller than a
+// few pixels. This impostor keeps the tree's position, species colour and
+// silhouette, but avoids thousands of invisible path operations. It is still
+// a tree at that tile: it never fades out because the camera moved.
+function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayOfYear) {
+    const s = Math.max(0.35, cellPx / 48);
+    const definition = FOREST_SPECIES[stand?.forest ? pickSpecies(stand, s3) : 'oak'] || FOREST_SPECIES.oak;
+    const ageScale = stand?.forest ? Math.max(0.55, Number(stand.ageScale) || 1) : 1;
+    const sway = Math.sin(tick * 0.045 + s2 * 13) * Math.min(1.2, s * 0.9);
+    const trunkH = (10 + definition.height * 3) * s * ageScale;
+    const baseY = py + 5.5 * s;
+    const crownY = baseY - trunkH * 0.78;
+    const radius = Math.max(0.9, (8.4 + s2 * 2.5) * s * definition.crown * ageScale);
+    const bare = climate.snowCover > 0.55 && !['oak', 'beech', 'linden'].includes(definition.id);
+    const turn = Math.max(0, Math.min(1, climate.foliageTurn + (definition.id === 'birch' ? 0.12 : 0)));
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    if (bare) {
+        ctx.strokeStyle = definition.bark;
+        ctx.lineWidth = Math.max(0.65, s * (definition.trunk + 0.4));
+        ctx.beginPath();
+        ctx.moveTo(px, baseY);
+        ctx.lineTo(px + sway, crownY + radius * 0.25);
+        ctx.moveTo(px + sway * 0.5, crownY + radius * 0.55);
+        ctx.lineTo(px - radius * 0.65, crownY - radius * 0.1);
+        ctx.moveTo(px + sway * 0.5, crownY + radius * 0.35);
+        ctx.lineTo(px + radius * 0.7, crownY - radius * 0.2);
+        ctx.stroke();
+        if (definition.id === 'oak' || definition.id === 'beech') {
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = '#85562e';
+            ctx.beginPath();
+            ctx.ellipse(px + sway, crownY - radius * 0.1, radius * 0.8, radius * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else {
+        const crown = mixHex(definition.summer[0], definition.autumn[0], turn);
+        const light = mixHex(definition.summer[1], definition.autumn[1], turn);
+        ctx.fillStyle = definition.bark;
+        ctx.fillRect(px - Math.max(0.5, s * 0.75), baseY - trunkH * 0.72, Math.max(0.9, s * 1.5), trunkH * 0.78);
+        ctx.fillStyle = crown;
+        ctx.beginPath();
+        ctx.ellipse(px + sway, crownY, radius, radius * 0.82, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = light;
+        ctx.globalAlpha = 0.72;
+        ctx.beginPath();
+        ctx.ellipse(px - radius * 0.24 + sway, crownY - radius * 0.22, radius * 0.52, radius * 0.4, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        if (climate.snowCover > 0.18) {
+            ctx.globalAlpha = Math.min(0.9, climate.snowCover * 0.9);
+            ctx.fillStyle = '#eef6fb';
+            ctx.beginPath();
+            ctx.ellipse(px + sway, crownY - radius * 0.48, radius * 0.62, radius * 0.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
 
 function drawTerrainDecorations(ctx, zoom, cam, canvas) {
     if (!state.heightMap) return;
@@ -363,17 +499,33 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
         : (Number(state.seasonIndex) || 0) * 100;
     const climateKey = state.worldOptions?.climate || "temperate";
     const climate = seasonalState(dayOfYear, climateKey);
+    const forests = state.worldOptions?.forests ?? 52;
+    const bounds = visibleTileBounds({
+        cellPx, cameraX: cam.x, cameraY: cam.y, width: canvas.width, height: canvas.height,
+        worldWidth: worldW(), worldHeight: worldH(),
+    });
+    // The ground-detail lattice is anchored to the world. Its phase therefore
+    // cannot change when the camera moves; the old implementation restarted
+    // the grid at the viewport edge and made trees jump between frames.
+    const step = detailStepForZoom(zoom);
+    const gridX = alignToWorldGrid(bounds.startX, step);
+    const gridY = alignToWorldGrid(bounds.startY, step);
+    // Trees use their own world-anchored lattice. At landscape distance a
+    // 2×2-tile sample is enough to read as woodland; at district distance and
+    // closer every tree is present. The lattice is independent of the camera,
+    // so panning can never add or remove a tree from the sampled set.
+    const treeStep = treeStepForZoom(zoom);
+    const treeGridX = alignToWorldGrid(bounds.startX, treeStep);
+    const treeGridY = alignToWorldGrid(bounds.startY, treeStep);
+    const distant = cellPx < 19;
 
-    const startX = Math.max(0, Math.floor(cam.x / cellPx) - 1);
-    const startY = Math.max(0, Math.floor(cam.y / cellPx) - 1);
-    const endX = Math.min(worldW(), Math.ceil((cam.x + canvas.width) / cellPx) + 1);
-    const endY = Math.min(worldH(), Math.ceil((cam.y + canvas.height) / cellPx) + 1);
-
-    const step = zoom < 0.16 ? 9 : zoom < 0.3 ? 6 : zoom < 0.55 ? 4 : zoom < 1.0 ? 2 : 1;
-
-    for (let x = startX; x < endX; x += step) {
-        for (let y = startY; y < endY; y += step) {
+    for (let x = bounds.startX; x < bounds.endX; x++) {
+        const detailColumn = x >= gridX && (x - gridX) % step === 0;
+        const treeColumn = x >= treeGridX && (x - treeGridX) % treeStep === 0;
+        for (let y = bounds.startY; y < bounds.endY; y++) {
             if (!state.explored[x]?.[y]) continue;
+            const detail = detailColumn && y >= gridY && (y - gridY) % step === 0;
+            const treeSample = treeColumn && y >= treeGridY && (y - treeGridY) % treeStep === 0;
 
             const wx = x + 0.5, wy = y + 0.5;
             const h = getHeightAt(wx, wy);
@@ -392,23 +544,22 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             const py = y * cellPx - cam.y + cellPx * (0.3 + s3 * 0.45);
             const above = h - sea;
 
-            // Only the shoreline band needs to know where the water lies.
-            const shoreDir = above > -0.01 && above < 0.09 ? shoreDirection(x, y, sea) : null;
-
-            // Open water: animated glints and shore foam.
+            // Only the sampled ground grid needs animated water and shoreline
+            // dressing; tree placement is independent of that grid.
             if (above < 0) {
-                if (zoom >= 0.5 && s1 > 0.72) drawWaterGlint(ctx, px, py, cellPx, tick, s1);
-                if (above > -0.02 && s1 > 0.5) drawShoreFoam(ctx, px, py, cellPx, tick, s2, zoom);
+                if (detail && zoom >= 0.5 && s1 > 0.72) drawWaterGlint(ctx, px, py, cellPx, tick, s1);
+                if (detail && above > -0.02 && s1 > 0.5) drawShoreFoam(ctx, px, py, cellPx, tick, s2, zoom);
                 continue;
             }
 
-            // The shoreline is a place, not a colour boundary: wet sand,
-            // pebbles, driftwood and denser reed clusters sit on the land side.
+            const shoreDir = detail && above > -0.01 && above < 0.09 ? shoreDirection(x, y, sea) : null;
             if (above < 0.055 && m > 0.3) {
-                if (shoreDir && above < 0.016) drawWetEdge(ctx, px, py, cellPx, shoreDir, s1);
-                if (s1 > 0.42) drawReeds(ctx, px, py, cellPx, s1, s2, temp, shoreDir, climate.foliageTurn, climate.snowCover);
-                else if (s1 > 0.30) drawShoreStones(ctx, px, py, cellPx, s1, s2);
-                else if (s1 > 0.27) drawDriftwood(ctx, px, py, cellPx, s1, shoreDir);
+                if (detail) {
+                    if (shoreDir && above < 0.016) drawWetEdge(ctx, px, py, cellPx, shoreDir, s1);
+                    if (s1 > 0.42) drawReeds(ctx, px, py, cellPx, s1, s2, temp, shoreDir, climate.foliageTurn, climate.snowCover);
+                    else if (s1 > 0.30) drawShoreStones(ctx, px, py, cellPx, s1, s2);
+                    else if (s1 > 0.27) drawDriftwood(ctx, px, py, cellPx, s1, shoreDir);
+                }
                 continue;
             }
 
@@ -416,42 +567,70 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             // line rises in summer and sinks in winter, so peaks do not stay
             // painted white through July while the lowlands are green.
             if (temp < 0.22 || h > 0.92 - climate.snowCover * 0.05) {
-                if (s1 > 0.72) drawSnowTuft(ctx, px, py, cellPx, s1);
-                else if (s1 > 0.62) drawRock(ctx, px, py, cellPx, zoom, true);
+                if (detail) {
+                    if (s1 > 0.72) drawSnowTuft(ctx, px, py, cellPx, s1);
+                    else if (s1 > 0.62) drawRock(ctx, px, py, cellPx, zoom, true);
+                }
                 continue;
             }
 
-            // Mountain rock and scree sit above the woodland belt. The old
-            // 0.76 cutoff hid almost every high broadleaf stand behind rocks.
+            // Mountain rock and scree sit above the woodland belt.
             if (h > 0.88 && s1 > 0.4) {
-                drawRock(ctx, px, py, cellPx, zoom, false);
+                if (detail) drawRock(ctx, px, py, cellPx, zoom, false);
                 continue;
             }
 
+            // Most of the landscape is bare ground. Skip the ecosystem work
+            // entirely unless this tile is on either the ground-detail or the
+            // tree lattice. This keeps a full-world landscape rebuild cheap.
+            if (!detail && !treeSample) continue;
             const cluster = 0.5 + 0.5 * Math.sin(x * 0.19 + y * 0.13) * Math.sin(x * 0.06 - y * 0.11);
-            let stockRatio = 1;
-            try {
-                const node = getResourceNodeAt(x, y);
-                if (node?.forestCapacity > 0) stockRatio = node.forestStock / node.forestCapacity;
-            } catch { /* a preview can render before resource geography exists */ }
-            const stand = forestStandAt(x + 0.5, y + 0.5, {
-                seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
-                height: h, climate: climateKey, forests: state.worldOptions?.forests ?? 52,
-                stockRatio, rockLine: 0.92,
-            });
+            const potentialForest = forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 });
+            const loneTree = treeSample && !potentialForest && cluster > 0.74 && m > 0.3 && temp > 0.28 && s1 > 0.925;
+            if (!potentialForest && !loneTree && !detail) continue;
+
+            let stand = null;
+            if (potentialForest) {
+                let stockRatio = 1;
+                try {
+                    const node = getResourceNodeAt(x, y);
+                    if (node?.forestCapacity > 0) stockRatio = node.forestStock / node.forestCapacity;
+                } catch { /* a preview can render before resource geography exists */ }
+                stand = forestStandAt(x + 0.5, y + 0.5, {
+                    seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
+                    height: h, climate: climateKey, forests, stockRatio, rockLine: 0.92,
+                });
+            }
 
             // A forest is an ecosystem, not a tree sprinkle: floor, understorey,
             // gaps, deadwood and fauna are drawn from the same stand definition.
-            if (stand.forest) {
-                if (zoom >= 0.55) {
+            if (stand?.forest) {
+                const tree = treeSample && s1 < stand.treeChance;
+                if (detail && zoom >= 0.55) {
                     drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
                     drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom);
                 }
-                if (s1 < stand.treeChance) {
-                    drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, m, dayOfYear, climateKey, shoreDir, stand);
-                    if (zoom >= 0.9 && s3 > 0.7) drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s2, zoom, x, y);
+                if (tree) {
+                    // Dense stands need overlapping crowns to read as a wood. The
+                    // extra copies are deterministic per tile and stay inside the
+                    // tile, so panning cannot reveal or hide a tree. At landscape
+                    // distance a single LOD tree is enough and much cheaper.
+                    const copies = distant ? 1 : forestTreeCopies(stand);
+                    for (let copy = 0; copy < copies; copy++) {
+                        const spread = copy === 0 ? 0 : cellPx * 0.24;
+                        const ox = copy === 0 ? 0 : (copy === 1 ? (s2 - 0.5) * spread : (s3 - 0.5) * -spread);
+                        const oy = copy === 0 ? 0 : (copy === 1 ? (s3 - 0.5) * spread * 0.7 : (s1 - 0.5) * -spread * 0.6);
+                        const r1 = (s1 + copy * 0.31) % 1;
+                        const r2 = (s2 + copy * 0.27) % 1;
+                        const r3 = (s3 + copy * 0.43) % 1;
+                        state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + 1;
+                        if (distant) drawDistantTree(ctx, px + ox, py + oy, cellPx, tick, r2, r3, stand, climate, dayOfYear);
+                        else drawTree(ctx, px + ox, py + oy, cellPx, tick, r1, r2, r3, zoom, temp, m, dayOfYear, climateKey, shoreDir, stand);
+                    }
+                    if (detail && zoom >= 0.9 && s3 > 0.7) drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s2, zoom, x, y);
                     continue;
                 }
+                if (!detail) continue;
                 if (stand.clearing > 0.28) {
                     if (zoom >= 0.34) drawForestClearing(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
                     if (zoom >= 0.8 && s2 > 0.55) drawCanopyLight(ctx, px, py, cellPx, stand, s1, tick);
@@ -463,13 +642,15 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                 continue;
             }
 
-            // A lone mature tree or a small grove breaks up open grassland
-            // without turning every meadow tile into forest.
-            if (cluster > 0.74 && m > 0.3 && temp > 0.28 && s1 > 0.925) {
-                drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, m, dayOfYear, climateKey, shoreDir,
-                    { ...stand, forest: true, treeChance: 1, ageClass: 'mature', ageScale: 0.92, clearing: 0 });
+            if (loneTree) {
+                const loneStand = { forest: true, treeChance: 1, ageClass: 'mature', ageScale: 0.92, clearing: 0 };
+                state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + 1;
+                if (distant) drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, loneStand, climate, dayOfYear);
+                else drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, m, dayOfYear, climateKey, shoreDir, loneStand);
                 continue;
             }
+            if (!detail) continue;
+
             if (cluster > 0.6 && m > 0.34 && s1 > 0.8) {
                 drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey);
                 continue;
