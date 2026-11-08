@@ -5,6 +5,7 @@ import { WORLD_W,WORLD_H,BIOME } from "../core/config.js";
 import {
     FOREST_TYPES, forestRegrowthFactor, forestStandAt, forestTypeFromIndex, forestTypeIndex,
 } from "../world/forest-ecology.js";
+import { forestSuccessionAt } from "./forest-succession.js";
 
 const VERSION=1;
 
@@ -121,10 +122,13 @@ export function getResourceNodeAt(x,y){
     const forestType=forestTypeFromIndex(geo.forestKind?.[i]||0);
     const forestDefinition=forestType?FOREST_TYPES[forestType]:null;
     const forestAgeIndex=Number(geo.forestAge?.[i]||0);
+    const succession=forestSuccessionAt(point.x,point.y);
     return {
         x:point.x,y:point.y,
         forestStock:geo.forestStock[i],forestCapacity:geo.forestCapacity[i],
-        forestType,forestTypeLabel:forestDefinition?.label||null,
+        forestType,forestTypeLabel:succession?.label||forestDefinition?.label||null,
+        forestSuccession:succession,forestDisturbance:succession&&!succession.recovered?succession.kind:null,
+        forestSuccessionStage:succession?.stage||null,forestSuccessionAge:succession?.age??null,
         forestAge:forestAgeIndex?["young","mature","ancient"][forestAgeIndex-1]||null:null,
         forestSpecies:forestDefinition?Object.keys(forestDefinition.species):[],
         forestGoods:forestDefinition?[...new Set([...forestDefinition.goods,"timber","firewood"])]:[],
@@ -204,6 +208,7 @@ export function regrowForests(days=1){
             temperature:Number(state.temperatureMap?.[mapIndex])||0.55,
             height:Number(state.heightMap?.[mapIndex])||0.55,
             climate,forests,stockRatio:geo.forestStock[i]/Math.max(1,geo.forestCapacity[i]),rockLine:0.92,
+            succession:forestSuccessionAt(x,y),
         });
         const amount=Math.min(missing,Math.max(1,Math.round(baseGrowth*forestRegrowthFactor(stand))));
         geo.forestStock[i]+=amount;

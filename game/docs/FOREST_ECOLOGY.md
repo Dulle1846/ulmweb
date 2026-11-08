@@ -6,7 +6,7 @@ The visual baseline is documented in the [terrain visual reference](TERRAIN_VISU
 
 ## Model in one paragraph
 
-A tile gets one deterministic **stand** from its moisture, temperature, height and a small coarse-patch hash. The stand selects a formation (oakwood, beechwood, birch grove, maplewood, chestnut grove, linden/elm stand, mixed wood, alluvial wood, hillside wood, ancient wood, regenerating wood, burn scar, windthrow, diseased stand or cut-over wood), a species mix, an age class, a canopy density, a clearing/edge state, an understorey, ground layers, disturbance, goods and fauna. The renderer turns the same values into trees, saplings, shrubs, ferns, brambles, moss, leaf litter, roots, stones, stumps, logs, fungi, nests, hollows, wildlife herds and ambient insects. Resource geography uses the same formation to set timber capacity and expose a survey; it still keeps its original durable stock arrays, so old saves remain readable. A seasonal gathering ledger consumes the stand's goods, and harvest pressure now feeds back into regrowth and wildlife growth instead of remaining a display-only value.
+A tile gets one deterministic **stand** from its moisture, temperature, height and a small coarse-patch hash. The stand selects a formation (oakwood, beechwood, birch grove, maplewood, chestnut grove, linden/elm stand, mixed wood, alluvial wood, hillside wood, ancient wood, regenerating wood, burn scar, windthrow, diseased stand or cut-over wood), a species mix, an age class, a canopy density, a clearing/edge state, an understorey, ground layers, disturbance, goods and fauna. The renderer turns the same values into trees, saplings, shrubs, ferns, brambles, moss, leaf litter, roots, stones, stumps, logs, fungi, nests, hollows, wildlife herds and ambient insects. Resource geography uses the same formation to set timber capacity and expose a survey; it still keeps its original durable stock arrays, so old saves remain readable. A seasonal gathering ledger consumes the stand's goods, and harvest pressure now feeds back into regrowth and wildlife growth instead of remaining a display-only value. Burn scars, windthrow gaps and diseased patches are no longer frozen decorations: each one carries an age and moves through fresh growth, regeneration, young wood and recovery.
 
 The wildlife layer is no longer one silhouette per tile. [`systems/forest-fauna.js`](../js/systems/forest-fauna.js) keeps a bounded, deterministic metapopulation of real herds. Each herd has a species, a home wood, a population, a carrying capacity, seasonal births and deaths, hunting pressure, periodic migration and occasional dispersal into a neighbouring wood. Large mammals and resident birds are simulated; butterflies, beetles, ants, bees and the remaining songbirds stay habitat markers in the renderer.
 
@@ -79,12 +79,12 @@ There are fifteen formations, including the three shade characters requested sep
 | 1.2.1.48 | Damp alluvial broadleaf woods | Implemented | `alluvial` formation for wet low ground: alder/elm/birch, ferns, moss, butterflies and herbs. |
 | 1.2.1.49 | Hillside and steep mountain broadleaf woods | Implemented | `hillside` formation above the woodland belt: beech/oak/maple, mossy stone, raptors. |
 | 1.2.1.50 | Single tree groups in open landscapes | Implemented | Renderer's lone mature tree/grove branch places isolated crowns outside closed forest. |
-| 1.2.1.51 | Forest fires and dry burn scars | Implemented | Rare `burned` formation, charred snags, ash floor, charcoal and open regrowth. |
-| 1.2.1.52 | Pest infestation and tree disease | Implemented | `diseased` formation with bare/thin crowns, deadwood and beetle/woodpecker fauna. |
-| 1.2.1.53 | Storm damage and uprooted trees | Implemented | `windthrow` formation, toppled logs, root plates and shattered crowns. |
+| 1.2.1.51 | Forest fires and dry burn scars | Implemented (succession) | Rare `burned` formation, charred snags, ash floor, charcoal and open regrowth; a persistent record ages the burn into post-fire regrowth. |
+| 1.2.1.52 | Pest infestation and tree disease | Implemented (succession) | `diseased` formation with bare/thin crowns, deadwood and beetle/woodpecker fauna; recovery passes through diseased regrowth and young wood. |
+| 1.2.1.53 | Storm damage and uprooted trees | Implemented (succession) | `windthrow` formation, toppled logs, root plates and shattered crowns; the gap closes through post-storm regrowth. |
 | 1.2.1.54 | Over-cutting and canopy loss | Implemented | Low stock ratio becomes `cutover`; low canopy, stumps, bramble and pioneer regrowth; resource stock is authoritative. |
 | 1.2.1.55 | Soil compaction and over-hunting | Implemented | `forestRegrowthFactor` reduces regrowth to 35% at full compaction and is applied by `regrowForests`; `forestHerdGrowth` adds a 2.5% population loss per unit `huntingPressure`. |
-| 1.2.1.56 | Regeneration after fire, clearing and storm | Implemented | Burned/windthrow/cut-over stands transition to pioneer regeneration; `regrowForests` restores stock and the cutover branch recedes. |
+| 1.2.1.56 | Regeneration after fire, clearing and storm | Implemented (succession) | Burned, windthrow and diseased stands now pass through fresh → regrowth → young → recovering → recovered; `regrowForests` restores stock while the stand returns to its original woodland. |
 | 1.2.1.57 | Sunbeams through canopy gaps | Implemented | `drawCanopyLight` screen-blended shafts and warm pool on clearing tiles. |
 | 1.2.1.58 | Light ground mist and damp morning mood | Implemented | `drawForestMist` low-alpha drifting floor mist; no separate hour-of-day clock in the renderer. |
 | 1.2.1.59 | Wind movement and falling leaves | Implemented | Per-tree sway, animated falling leaf marks, leaf carpet and windthrow debris. |
@@ -98,6 +98,21 @@ There are fifteen formations, including the three shade characters requested sep
 - **Persistence.** `state.forestFauna` is saved as optional version-1 data. Old saves without it still load and build herds on first use. Validation rejects malformed versions, herd lists, species, coordinates, populations and capacities.
 - **Presentation and survey.** The renderer draws the herd on its home tile; the Lumber Yard and Forester site note reports the herd mix and population through `forestFaunaSummaryAt`. If no herd is present, the older habitat list remains a display fallback.
 - **Not modelled.** This is not individual-animal genealogy, a predator-prey kill ledger or a territory polygon engine. Insects, butterflies, bees and ants remain ambient markers, and songbirds/raptors remain survey silhouettes rather than simulated populations.
+
+## Temporal disturbance succession
+
+[`systems/forest-succession.js`](../js/systems/forest-succession.js) stores one compact record per disturbed tile: kind (`burned`, `windthrow`, `diseased`) and age in simulation days. The records are built from the same seeded stands the renderer shows and are included in save data as version-1 `forestSuccession` state.
+
+| Disturbance | Fresh | Regrowth | Young wood | Recovering | Recovered |
+|---|---:|---:|---:|---:|---:|
+| Burn | 0–79 days | 80–179 | 180–359 | 360–519 | 520+ |
+| Windthrow | 0–59 | 60–149 | 150–299 | 300–439 | 440+ |
+| Disease | 0–99 | 100–219 | 220–419 | 420–599 | 600+ |
+
+- **The stand follows the age, not a second formation list.** A fresh record keeps its existing burn/windthrow/diseased formation. Regrowth and young stages use the existing `regenerating` formation with the disturbance's deadwood/log cues. Recovering returns to the original woodland while retaining the record. A recovered record has no disturbance label and no seeded damage overlay, so the old burn scar cannot silently reappear.
+- **New events are rare and real.** Every 140 simulation days one new deterministic disturbance is chosen. It lowers that tile's actual `forestStock` to 35% (burn), 55% (windthrow) or 70% (disease) of its previous value and is recorded in a bounded 24-entry history. The existing `regrowForests` loop then rebuilds stock; compaction still slows that recovery.
+- **Recovered sites can be disturbed again.** A recovered record remains as a durable marker until a later event reuses the slot, so saves preserve both the recovery and the absence of the original seeded scar.
+- **Presentation and save.** The terrain renderer, resource node, forest fauna stand, gathering ledger and Lumber Yard/Forester site note all receive the same succession lookup. Records advance once per simulation day, capped at 30 days per update so a suspended tab cannot skip an entire stage.
 
 ## Forest products ledger
 
@@ -136,7 +151,7 @@ The durable regression is `tests/systems/forest-fauna-longrun.test.js`: three se
 - **Wildlife is simulated at herd level, not per animal.** There is no individual pedigree, predator-prey kill accounting or territory geometry. The herd model is deterministic, saveable and observable through the map and site survey; the ambient insect layer is still decoration.
 - **Forest products are a local seasonal ledger, not a second city currency.** The existing wood/food economy and logistics ledger remain authoritative; the forest ledger records what a wood yielded, keeps a bounded stock and history, and reduces real standing timber for wood products. It does not add a parallel treasury or HUD economy.
 - **Compaction is a real regrowth brake; over-hunting is a herd-level pressure.** `ground.compaction` derives from harvest stock, trails, edges and cut-over state. `forestRegrowthFactor(stand) = max(0.35, 1 − 0.65 × compaction)` is applied by `regrowForests`, so a compacted wood recovers visibly less stock. `ground.huntingPressure` adds a population loss in `forestHerdGrowth`; neither is a soil-chemistry or per-animal kill model.
-- **Disturbances are rare deterministic states**, not a live fire-spread or storm physics engine. The resource stock and regenerating formation still change what the player sees and harvests.
+- **Disturbances are deterministic succession states**, not a live fire-spread, wind-field or pathogen physics engine. They age, reduce real stock, reopen for later events and change the rendered formation, but they do not spread across neighbouring tiles or model firefighting/control measures yet.
 - **No real-GPU validation.** The committed sheets use Chromium's available WebGL renderer, which is software WebGL in this workspace. They prove the code paths, not target-GPU colour or frame time.
 
 ## Checks
@@ -148,4 +163,4 @@ npm run test:forest-reference
 npm run test:forest-detail
 ```
 
-`npm test` covers the 15 formations, determinism, reachable site conditions, all eight species, age classes, disturbances, seasonal goods, fauna filtering, the herd population/migration/restore tests, forest gathering, compaction and over-hunting, resource-node integration and the seasonal foliage timings. `test:forest-reference` requires Chromium and Playwright; it captures all 15 formations plus a four-season sequence and fails on a missing formation, a page runtime error or a fatal WebGL diagnostic. `test:forest-detail` captures the thirteen native close-ups and writes `forest-detail-reference.png`/`.json`; it waits for the terrain cache to rebuild before each frame, so a slow software renderer cannot silently save the previous view. Set `FOREST_REFERENCE_OUT` or `FOREST_DETAIL_OUT` to redirect the artifacts.
+`npm test` currently passes **550/550** and covers the 15 formations, determinism, reachable site conditions, all eight species, age classes, disturbances and their temporal succession, seasonal goods, fauna filtering, the herd population/migration/restore tests, forest gathering, compaction and over-hunting, resource-node integration and the seasonal foliage timings. `test:forest-reference` requires Chromium and Playwright; it captures all 15 formations plus a four-season sequence and fails on a missing formation, a page runtime error or a fatal WebGL diagnostic. `test:forest-detail` captures the thirteen native close-ups and writes `forest-detail-reference.png`/`.json`; it waits for the terrain cache to rebuild before each frame, so a slow software renderer cannot silently save the previous view. Set `FOREST_REFERENCE_OUT` or `FOREST_DETAIL_OUT` to redirect the artifacts.

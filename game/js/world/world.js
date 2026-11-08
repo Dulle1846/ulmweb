@@ -13,6 +13,7 @@ import {
 import { state } from '../core/state.js';
 import { distance } from '../core/utils.js';
 import { generateResourceGeography } from '../systems/resource-geography.js';
+import { ensureForestSuccession, resetForestSuccession } from '../systems/forest-succession.js';
 
 export { normalizeWorldOptions, resolveWorldDimensions, seaLevelFor };
 
@@ -62,6 +63,8 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions, 
     const H = dims.h;
 
     generateResourceGeography(worldSeed);
+    resetForestSuccession();
+    ensureForestSuccession();
 
     state.explored = [];
     for (let x = 0; x < W; x++) {

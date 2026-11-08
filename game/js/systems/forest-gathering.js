@@ -64,6 +64,7 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
         forests: state.worldOptions?.forests ?? 52,
         stockRatio: node.forestStock / Math.max(1, node.forestCapacity),
         rockLine: 0.92,
+        succession: node.forestSuccession,
     });
     if (!stand.forest) return null;
     return {

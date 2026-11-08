@@ -97,6 +97,7 @@ function standAt(x, y, node = null) {
             forests: state.worldOptions?.forests ?? 52,
             stockRatio: h,
             rockLine: 0.92,
+            succession: node?.forestSuccession || null,
         });
     } catch {
         return null;

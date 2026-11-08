@@ -314,6 +314,56 @@ function ageClassFor(formation, x, y, seed) {
 
 const AGE_SCALE = Object.freeze({ young: 0.6, mature: 0.92, ancient: 1.26 });
 
+// Succession is deliberately expressed as ages, not as a second formation
+// taxonomy. The renderer and the resource layer keep using the fifteen
+// existing formations; a disturbance progresses from its fresh formation to
+// regenerating regrowth and finally back to the site's original woodland.
+export const FOREST_SUCCESSION_PROFILES = Object.freeze({
+    burned: Object.freeze({
+        freshDays: 80, regrowthDays: 180, youngDays: 360, recoveredDays: 520,
+        freshLabel: 'Burn Scar', regrowthLabel: 'Post-fire Regrowth', youngLabel: 'Young Post-fire Wood',
+        recoveryLabel: 'Recovering Burn Site', severity: 0.35,
+    }),
+    windthrow: Object.freeze({
+        freshDays: 60, regrowthDays: 150, youngDays: 300, recoveredDays: 440,
+        freshLabel: 'Windthrow', regrowthLabel: 'Post-storm Regrowth', youngLabel: 'Young Storm Gap Wood',
+        recoveryLabel: 'Recovering Windthrow', severity: 0.55,
+    }),
+    diseased: Object.freeze({
+        freshDays: 100, regrowthDays: 220, youngDays: 420, recoveredDays: 600,
+        freshLabel: 'Diseased Stand', regrowthLabel: 'Disease Recovery', youngLabel: 'Young Recovery Wood',
+        recoveryLabel: 'Recovering Diseased Stand', severity: 0.7,
+    }),
+});
+
+export const FOREST_DISTURBANCE_KINDS = Object.freeze(Object.keys(FOREST_SUCCESSION_PROFILES));
+
+export function forestSuccessionProfile(kind) {
+    return FOREST_SUCCESSION_PROFILES[kind] || null;
+}
+
+// Return the current ecological stage for one disturbance age. The stage names
+// are used by the renderer, the survey and the save layer; no caller needs to
+// duplicate the day thresholds.
+export function forestSuccessionStage(kind, age) {
+    const profile = forestSuccessionProfile(kind);
+    if (!profile) return null;
+    const days = Math.max(0, Math.floor(Number(age) || 0));
+    if (days < profile.freshDays) {
+        return { id: 'fresh', formation: kind, disturbance: kind, label: profile.freshLabel, ageClass: 'mature' };
+    }
+    if (days < profile.regrowthDays) {
+        return { id: 'regrowth', formation: 'regenerating', disturbance: kind, label: profile.regrowthLabel, ageClass: 'young' };
+    }
+    if (days < profile.youngDays) {
+        return { id: 'young', formation: 'regenerating', disturbance: kind, label: profile.youngLabel, ageClass: 'young' };
+    }
+    if (days < profile.recoveredDays) {
+        return { id: 'recovering', formation: null, disturbance: null, label: profile.recoveryLabel, ageClass: 'young' };
+    }
+    return { id: 'recovered', formation: null, disturbance: null, label: null, ageClass: null };
+}
+
 // Cheap land test used before generating a full stand. It mirrors the forest
 // gate in forestStandAt exactly; rendering can then skip the expensive wave,
 // species and goods work on open ground while still visiting every tile for
@@ -350,6 +400,7 @@ export function forestStandAt(x, y, context = {}) {
     const edge = forest && (forestPressure < 0.28 || clearing > 0.22);
 
     let formation = FOREST_TYPES[formationFor(tx, ty, { moisture, temperature, height, seed, climate })];
+    const baseFormation = formation;
     let disturbance = formation.disturbance;
 
     const damage = coarseUnit(seed, tx, ty, 7, 0x44414d47);
@@ -371,7 +422,36 @@ export function forestStandAt(x, y, context = {}) {
         formation = FOREST_TYPES.regenerating;
     }
 
-    const ageClass = ageClassFor(formation, tx, ty, seed);
+    // A live disturbance overrides the deterministic base state. This is the
+    // bridge between the seeded landscape and the persistent succession model:
+    // a young burn is still a burn, a recovering burn is a regenerating wood,
+    // and a recovered site returns to the woodland that existed before it.
+    let succession = null;
+    let forcedAgeClass = null;
+    const activeSuccession = context.succession;
+    if (forest && activeSuccession && activeSuccession.kind) {
+        const stage = forestSuccessionStage(activeSuccession.kind, activeSuccession.age);
+        if (stage) {
+            succession = {
+                kind: activeSuccession.kind,
+                age: Math.max(0, Math.floor(Number(activeSuccession.age) || 0)),
+                stage: stage.id,
+                label: stage.label,
+            };
+            if (stage.formation) {
+                formation = FOREST_TYPES[stage.formation] || formation;
+                disturbance = stage.disturbance || null;
+            } else {
+                // A recovered site must not fall back to the base hash's
+                // disturbance; it returns to the undisturbed formation.
+                formation = baseFormation;
+                disturbance = null;
+            }
+            forcedAgeClass = stage.ageClass;
+        }
+    }
+
+    const ageClass = forcedAgeClass || ageClassFor(formation, tx, ty, seed);
     const ageScale = AGE_SCALE[ageClass];
     const density = clamp01(formation.density * (0.58 + forestPressure * 0.42) * (0.72 + stockRatio * 0.28));
     const canopy = clamp01(density * (1 - clearing * 0.74) * (ageClass === 'young' ? 0.82 : 1));
@@ -406,8 +486,19 @@ export function forestStandAt(x, y, context = {}) {
     if (baseGoods.has('game')) baseGoods.add('hides');
 
     const trail = coarseUnit(seed, tx, ty, 6, 0x54524149) > 0.78 || edge;
-    const stumps = clamp01((formation.id === 'cutover' ? 0.42 : 0) + (stockRatio < 0.65 ? (0.65 - stockRatio) * 0.8 : 0) + (disturbance === 'windthrow' ? 0.22 : 0));
-    const logs = clamp01((formation.id === 'windthrow' ? 0.5 : 0) + (disturbance === 'burned' ? 0.12 : 0) + (ageClass === 'ancient' ? 0.14 : 0));
+    const successionProfile = succession ? forestSuccessionProfile(succession.kind) : null;
+    const successionProgress = succession && successionProfile
+        ? clamp01(succession.age / Math.max(1, successionProfile.recoveredDays)) : 0;
+    const successionStumps = succession
+        ? (succession.kind === 'windthrow' ? 0.3 * (1 - successionProgress)
+            : succession.kind === 'burned' ? 0.2 * (1 - successionProgress) : 0)
+        : 0;
+    const successionLogs = succession
+        ? (succession.kind === 'windthrow' ? 0.42 * (1 - successionProgress)
+            : succession.kind === 'burned' ? 0.12 * (1 - successionProgress) : 0)
+        : 0;
+    const stumps = clamp01((formation.id === 'cutover' ? 0.42 : 0) + (stockRatio < 0.65 ? (0.65 - stockRatio) * 0.8 : 0) + (disturbance === 'windthrow' ? 0.22 : 0) + successionStumps);
+    const logs = clamp01((formation.id === 'windthrow' ? 0.5 : 0) + (disturbance === 'burned' ? 0.12 : 0) + (ageClass === 'ancient' ? 0.14 : 0) + successionLogs);
     const mushrooms = clamp01(0.08 + moisture * 0.3 + (formation.id === 'beechwood' ? 0.12 : 0) + (disturbance === 'burned' ? 0.2 : 0) + (stumps > 0.2 ? 0.12 : 0));
     const stones = clamp01((height > 0.56 ? (height - 0.56) * 1.4 : 0) + (formation.id === 'hillside' ? 0.18 : 0));
     const roots = clamp01((ageClass === 'ancient' ? 0.3 : 0.08) + (height > 0.56 ? 0.1 : 0));
@@ -424,8 +515,9 @@ export function forestStandAt(x, y, context = {}) {
         x: tx, y: ty, seed,
         forest,
         type: formation.id,
-        label: formation.label,
+        label: succession?.label || formation.label,
         note: formation.note,
+        succession,
         dominantSpecies,
         species: speciesList,
         ageClass,

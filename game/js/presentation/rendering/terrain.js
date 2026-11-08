@@ -596,13 +596,16 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             let stand = null;
             if (potentialForest) {
                 let stockRatio = 1;
+                let succession = null;
                 try {
                     const node = getResourceNodeAt(x, y);
                     if (node?.forestCapacity > 0) stockRatio = node.forestStock / node.forestCapacity;
+                    succession = node?.forestSuccession || null;
                 } catch { /* a preview can render before resource geography exists */ }
                 stand = forestStandAt(x + 0.5, y + 0.5, {
                     seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
                     height: h, climate: climateKey, forests, stockRatio, rockLine: 0.92,
+                    succession,
                 });
             }
 
