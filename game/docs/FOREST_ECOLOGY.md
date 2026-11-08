@@ -125,13 +125,13 @@ There are fifteen formations, including the three shade characters requested sep
 
 ## Herds as groups, signs and microfauna
 
-- **A herd is drawn as a group.** The number of silhouettes follows population (1–4 large animals, 1–3 birds, 1–3 small animals), each with a small deterministic in-tile walk. The same tile carries readable signs through `forestFaunaSignAt`: tracks, browsed shoots in young growth, a carcass after a recent kill and a nest/hollow for hollow-nesting birds. These are read-only views of the herd model, not a second save.
+- **A herd is drawn as a group.** The number of silhouettes follows population (1–4 large animals, 1–3 birds, 1–3 small animals), each with a small deterministic in-tile walk. The same tile carries readable signs through `forestFaunaSignAt`: tracks, browsed shoots in young growth, a carcass after a recent kill, a nest/hollow for hollow-nesting birds and territory marks (a fox's scent/scratch sign or a bird's song post). These are read-only views of the herd model, not a second save.
 - **Microfauna follows habitat.** `forestMicrofaunaAt` derives stag beetles, wood ants, woodland butterflies, wild bees and wood mice from deadwood, litter, flowers, light and season. Flying insects disappear in winter; the renderer caps the layer at three groups of three marks and only draws it at close zoom.
 - **Species-specific floor.** The dominant species contributes its leaf outline (lobed, oval, triangular, palmate, lance, heart, serrated, round) to the leaf carpet, so an oak wood and a birch grove read differently on the ground as well as in the crown.
 
 ## Species timber and forest goods
 
-- **Eight distinct timbers.** Every species declares a `wood` good: `oak-timber`, `beech-timber`, `birch-timber`, `maple-timber`, `chestnut-timber`, `linden-timber`, `elm-timber` and `alder-timber`. A stand lists the timbers of all species in its mix alongside generic `timber`, firewood and charcoal.
+- **Eight distinct timbers.** Every species declares a `wood` good: `oak-timber`, `beech-timber`, `birch-timber`, `maple-timber`, `chestnut-timber`, `linden-timber`, `elm-timber` and `alder-timber`. A stand lists the timbers of all species in its mix alongside generic `timber`, firewood and charcoal. Wood goods stay available in every season, so the species timber actually reaches the gather ledger instead of being filtered out as an out-of-season forage good.
 - **Linden and elm are named separately.** The shared `linden-elm` formation keeps its 15-formation slot, but the survey label is `Linden Stand` or `Elm Stand` according to the dominant linden/elm share, with a matching `subtype`.
 - **More real understory goods.** Chanterelles, porcini, wild garlic, wood sorrel, wild strawberries, sloes and crab apples extend the seasonal table. Spring favours wild garlic and sorrel, summer strawberries, autumn chanterelles, porcini, sloes and crab apples; they are subject to the same seasonal presence rule as the older goods.
 

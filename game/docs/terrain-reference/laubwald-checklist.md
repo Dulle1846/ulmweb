@@ -96,9 +96,9 @@ Die Punkte 1.2.1.1–1.2.1.60 bleiben unverändert belegt. Die folgende Vertiefu
 | P1 Boden und Feuchte | `ground.soil` (`loam`/`humus`/`alluvial`/`dry`), Humus, Streu, Moos und Blüten; Bodenwäsche und Trockenrisse im Renderer | `forestStandAt`; `drawSoilWash`; `forest-ecology.test.js` |
 | P1 Sonnenlicht | ein `solarVector` für Tageslicht-Gradient, Baumschatten, Kronenlicht und WebGL-Schatten | `daylight.js`; `terrain.js`; `terrain-webgl.js`; `daylight.test.js` |
 | P1 Nebel | `forestMistFactor` aus Tageszeit, Feuchte, Jahreszeit und Wetter; kein Nebel um 12:00 und nachts | `daylight.js`; `drawForestMist`; `daylight.test.js` |
-| P1 Herden | mehrere Tiere pro Herde, kleine Bewegung, Tierspuren, Verbiss, Kadaver, Nest/Höhle und Revier | `drawForestFaunaScene`; `forestFaunaSignAt`; `forest-fauna.test.js` |
+| P1 Herden | mehrere Tiere pro Herde, kleine Bewegung, Tierspuren, Verbiss, Kadaver, Nest/Höhle und sichtbare Reviermarken (Fuchs/Wildvogel) | `drawForestFaunaScene`; `drawFaunaTerritory`; `forestFaunaSignAt`; `forest-fauna.test.js` |
 | P1 Mikrofauna | Käfer, Ameisen, Schmetterlinge, Bienen und Mäuse aus Totholz, Streu, Blüten und Jahreszeit | `forestMicrofaunaAt`; `drawMicroFauna`; `forest-ecology.test.js` |
-| P2 Hölzer | acht artgetrennte Sorten von `oak-timber` bis `alder-timber` | `FOREST_SPECIES.wood`, `FOREST_GOODS`; `forest-ecology.test.js` |
+| P2 Hölzer | acht artgetrennte, ganzjährig sammelbare Sorten von `oak-timber` bis `alder-timber` | `FOREST_SPECIES.wood`, `FOREST_GOODS`, `forestGoodsFor`; `forest-ecology.test.js`, `forest-gathering.test.js` |
 | P2 Produkte | Chantarellen, Steinpilze, Bärlauch, Waldsauerklee, Walderdbeeren, Schlehen und Holzäpfel mit eigener Saison | `SEASON_GOODS`; `forestGoodsFor`; `forest-ecology.test.js` |
 | P2 Blattformen | acht Blattsilhouetten in der Laubstreu und getrennte Linden-/Ulmen-Labels | `drawSpeciesLeaf`; `subtype`/`label`; `forest-ecology.test.js` |
 | P3 Ausbreitung | Feuer, Sturm und Krankheit greifen alle 12 Tage auf ein Nachbartile über, max. 4 pro Pass, mit echtem Stockverlust und `spreadHistory` | `forest-succession.js`; `forest-succession.test.js` |

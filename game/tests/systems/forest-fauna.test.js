@@ -81,6 +81,14 @@ test("fauna signs expose tracks, browse, carcasses and nests per herd", () => {
     if (bird) {
         const nest = forestFaunaSignAt(bird.x, bird.y, { forest: true, ageClass: "ancient", ground: { logs: 0.5 } }, 150);
         assert.ok(nest.nest === "hollow" || nest.nest === "nest");
+        assert.equal(nest.territoryKind, "bird");
+        assert.ok(nest.territory > 0);
+    }
+    const fox = model.herds.find(entry => entry.species === "fox");
+    if (fox) {
+        const marked = forestFaunaSignAt(fox.x, fox.y);
+        assert.equal(marked.territoryKind, "predator");
+        assert.ok(marked.territory > 0);
     }
 
     let empty = null;

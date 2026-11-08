@@ -446,11 +446,16 @@ export function forestFaunaAt(x, y, stand = null, day = state.dayOfYear) {
 // Read-only signs of the herd on this tile. Tracks and browse follow the herd's
 // habitat, a carcass lingers for a short while after a kill, and hollow-nesting
 // birds claim an old tree rather than appearing as a floating icon.
-export function forestFaunaSignAt(x, y, stand = null, day = state.dayOfYear) {
+export function forestFaunaSignAt(x, y, stand = null, day = state.dayOfYear, herds = null) {
     const model = ensureForestFauna();
-    const herds = model ? forestFaunaAt(x, y, stand, day) : [];
-    if (!herds.length) return null;
-    const herd = herds.slice().sort((a, b) => b.population - a.population)[0];
+    // The terrain pass already resolved this tile's herds; reuse them instead
+    // of scanning the whole metapopulation twice per visible tile.
+    const present = Array.isArray(herds) ? herds : model ? forestFaunaAt(x, y, stand, day) : [];
+    if (!present.length) return null;
+    let herd = present[0];
+    for (const entry of present) {
+        if (Number(entry.population) > Number(herd.population)) herd = entry;
+    }
     const lastHunted = model.day - (Number(herd.lastHuntedDay) || 0);
     const recentHunt = herd.lastHuntedDay > 0 && lastHunted >= 0 && lastHunted <= 10;
     const large = herd.group === "large";
@@ -465,6 +470,7 @@ export function forestFaunaSignAt(x, y, stand = null, day = state.dayOfYear) {
         nest: bird && (stand?.ageClass === "ancient" || (stand?.ageClass === "mature" && stand?.ground?.logs > 0.2))
             ? (herd.species === "owl" ? "hollow" : "nest") : null,
         territory: bird || herd.species === "fox" ? Math.max(0.25, Math.min(1, herd.population / 8)) : 0,
+        territoryKind: bird ? "bird" : herd.species === "fox" ? "predator" : null,
     };
 }
 

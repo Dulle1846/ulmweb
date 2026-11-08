@@ -1849,7 +1849,7 @@ function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed
 function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed, zoom, tileX, tileY, tick) {
     const season = seasonalState(dayOfYear, climateKey);
     const herds = tileX !== null && tileY !== null ? forestFaunaAt(tileX, tileY, stand, dayOfYear) : [];
-    const signs = tileX !== null && tileY !== null ? forestFaunaSignAt(tileX, tileY, stand, dayOfYear) : null;
+    const signs = tileX !== null && tileY !== null ? forestFaunaSignAt(tileX, tileY, stand, dayOfYear, herds) : null;
     // Microfauna is only legible at close zoom and is capped at three groups
     // of at most three marks, so a dense wood cannot spend hundreds of path
     // operations per frame on insects the player cannot resolve.
@@ -1859,6 +1859,7 @@ function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey,
     const jitter = (hashA, hashB) => ((hashA * 37 + hashB * 17 + Math.floor(seed * 997)) % 100) / 100 - 0.5;
 
     if (signs?.tracks) drawFaunaTracks(ctx, px, py, cellPx, signs, s);
+    if (signs?.territory > 0) drawFaunaTerritory(ctx, px, py, cellPx, signs, s);
     if (signs?.browse > 0) drawBrowseLine(ctx, px, py, cellPx, signs.browse, s);
     if (signs?.carcass) drawFaunaCarcass(ctx, px, py, cellPx, signs, s);
     if (signs?.nest) drawFaunaNest(ctx, px, py, cellPx, signs.nest, s);
@@ -2032,6 +2033,39 @@ function drawFaunaTracks(ctx, px, py, cellPx, signs, s) {
         ctx.ellipse(x, y, 0.65 * s, 0.35 * s, 0.25, 0, Math.PI * 2);
         ctx.ellipse(x + 1.3 * s, y + 1.1 * s, 0.55 * s, 0.3 * s, 0.25, 0, Math.PI * 2);
         ctx.fill();
+    }
+    ctx.restore();
+}
+
+// Territory is not a painted polygon: a fox leaves scent and scratch marks at
+// a boundary tree, a bird keeps a song post above its nest. Both are small and
+// read as sign, not as a glowing range indicator.
+function drawFaunaTerritory(ctx, px, py, cellPx, signs, s) {
+    ctx.save();
+    ctx.globalAlpha = 0.22 + signs.territory * 0.2;
+    ctx.strokeStyle = signs.territoryKind === "bird" ? "#5e5140" : "#6d5335";
+    ctx.lineWidth = Math.max(0.6, 0.75 * s);
+    if (signs.territoryKind === "bird") {
+        ctx.beginPath();
+        ctx.moveTo(px - cellPx * 0.26, py + cellPx * 0.18);
+        ctx.lineTo(px - cellPx * 0.26, py - cellPx * 0.03);
+        ctx.moveTo(px - cellPx * 0.3, py - cellPx * 0.03);
+        ctx.lineTo(px - cellPx * 0.22, py - cellPx * 0.03);
+        ctx.stroke();
+        ctx.fillStyle = "#5e5140";
+        ctx.beginPath();
+        ctx.arc(px - cellPx * 0.17, py - cellPx * 0.05, 0.8 * s, 0, Math.PI * 2);
+        ctx.arc(px - cellPx * 0.13, py - cellPx * 0.09, 0.6 * s, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        ctx.beginPath();
+        ctx.moveTo(px + cellPx * 0.27, py + cellPx * 0.22);
+        ctx.lineTo(px + cellPx * 0.27, py + cellPx * 0.13);
+        for (let i = 0; i < 3; i++) {
+            ctx.moveTo(px + cellPx * 0.23 + i * 2.2 * s, py + cellPx * 0.2);
+            ctx.lineTo(px + cellPx * 0.24 + i * 2.2 * s, py + cellPx * 0.14);
+        }
+        ctx.stroke();
     }
     ctx.restore();
 }

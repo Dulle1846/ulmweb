@@ -50,6 +50,8 @@ test("forest products are read from the same real stand as the renderer", () => 
     const tile = findForestWithGoods();
     assert.ok(tile, "a generated forest tile should expose seasonal goods");
     assert.ok(tile.products.goods.some(good => good.id === "timber" || good.id === "firewood"));
+    assert.ok(tile.products.goods.some(good => good.id.endsWith("-timber")),
+        "a stand should expose the timber of its species, not only generic timber");
     assert.ok(tile.products.goods.some(good => ["mushrooms", "berries", "acorns", "beechnuts", "chestnuts", "herbs"].includes(good.id)));
     assert.ok(tile.products.stand.ground.compaction >= 0 && tile.products.stand.ground.compaction <= 1);
 });
@@ -62,6 +64,7 @@ test("gathering is seasonal, bounded and cannot repeat on the same day", () => {
     assert.equal(first.ok, true);
     assert.ok(first.total > 0);
     assert.ok(first.goods.every(good => good.amount > 0));
+    assert.ok(first.goods.some(good => good.category === "wood"), "the visit should work real timber");
     assert.match(forestGatheringSummary(), /[A-Za-z]/);
     const repeated = gatherForestProducts(tile.x, tile.y, { dayOfYear: 250, year: 1 });
     assert.equal(repeated.ok, false);

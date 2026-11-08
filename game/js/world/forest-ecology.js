@@ -618,9 +618,13 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
     for (const id of stand.goods) {
         // A seasonal good is absent when its season has no entry. Falling back
         // to a generic number here would put linden blossom and berries on a
-        // snowbound winter survey.
-        if (seasonal[id] === undefined && !['timber', 'firewood', 'charcoal'].includes(id)) continue;
-        const base = id === 'timber' ? 0.9 : id === 'firewood' ? 0.82 : id === 'charcoal' ? 0.55 : 0.2;
+        // snowbound winter survey. Wood is the exception: every species timber
+        // stays workable all year and must reach the gather ledger.
+        const category = FOREST_GOODS[id]?.category;
+        if (seasonal[id] === undefined && category !== 'wood') continue;
+        const base = category === 'wood'
+            ? (id === 'timber' ? 0.9 : id === 'firewood' ? 0.82 : id === 'charcoal' ? 0.55 : 0.68)
+            : 0.2;
         const abundance = clamp01((seasonal[id] ?? base) * (0.7 + stand.productivity * 0.3));
         if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
     }

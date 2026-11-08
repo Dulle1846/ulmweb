@@ -244,7 +244,9 @@ test("the dominant species contributes its timber to the stand ledger", () => {
             if (!stand.forest) continue;
             checked++;
             assert.ok(stand.goods.includes(FOREST_SPECIES[stand.dominantSpecies].wood));
-            assert.ok(forestGoodsFor(stand, 250).some(good => good.category === "wood"));
+            assert.ok(forestGoodsFor(stand, 250).some(good => good.id === FOREST_SPECIES[stand.dominantSpecies].wood),
+                "species timber must reach the all-season gather list");
+            assert.ok(forestGoodsFor(stand, 350).some(good => good.category === "wood"), "wood stays workable in winter");
         }
     }
     assert.ok(checked > 10);
