@@ -4,34 +4,34 @@
     "width": 1000,
     "height": 700
   },
-  "generatedAt": "2026-11-08T16:37:32.831Z",
+  "generatedAt": "2026-11-08T17:34:05.114Z",
   "levels": [
     {
       "level": 1,
       "zoom": 0.09,
       "treeDraws": 1565,
-      "peakDrawMs": 45.89999997615814,
+      "peakDrawMs": 73.90000009536743,
       "cacheMisses": 2
     },
     {
       "level": 2,
       "zoom": 0.3,
-      "treeDraws": 780,
-      "peakDrawMs": 17.899999976158142,
-      "cacheMisses": 3
+      "treeDraws": 1565,
+      "peakDrawMs": 0.7999999523162842,
+      "cacheMisses": 2
     },
     {
       "level": 3,
       "zoom": 0.95,
       "treeDraws": 99,
-      "peakDrawMs": 19.700000047683716,
+      "peakDrawMs": 12.600000023841858,
       "cacheMisses": 4
     },
     {
       "level": 4,
       "zoom": 2.4,
       "treeDraws": 33,
-      "peakDrawMs": 5.600000023841858,
+      "peakDrawMs": 8.600000023841858,
       "cacheMisses": 5
     }
   ],
@@ -39,12 +39,12 @@
     "beforeMisses": 6,
     "duringMisses": 6,
     "afterMisses": 7,
-    "duringTransform": "translate(-208px, 0px) scale(1)"
+    "duringTransform": "translate(-80px, 0px) scale(1)"
   },
   "zoom": {
     "beforeZoom": 0.3,
     "afterZoom": 0.354,
-    "duringTransform": "translate(79.1648px, 81.3995px) scale(1.08126)"
+    "duringTransform": "translate(0px, 0px) scale(1)"
   },
   "note": "Chromium in this container uses software rendering. Peak draw times are diagnostic, not device FPS claims."
 }
