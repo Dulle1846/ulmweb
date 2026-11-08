@@ -25,14 +25,17 @@ const MAX_DAY_STEP = 30;
 const DAYS_PER_YEAR = 400;
 
 const SIMULATED_SPECIES = Object.freeze({
-    deer: { base: 18, reproduction: 0.085, mortality: 0.032, mobility: 2, period: 9 },
-    "roe-deer": { base: 10, reproduction: 0.11, mortality: 0.038, mobility: 2, period: 8 },
-    boar: { base: 9, reproduction: 0.09, mortality: 0.04, mobility: 2, period: 11 },
-    fox: { base: 4, reproduction: 0.07, mortality: 0.052, mobility: 3, period: 7 },
-    hare: { base: 8, reproduction: 0.14, mortality: 0.075, mobility: 2, period: 6 },
-    squirrel: { base: 10, reproduction: 0.1, mortality: 0.04, mobility: 1, period: 10 },
-    owl: { base: 3, reproduction: 0.045, mortality: 0.035, mobility: 2, period: 14 },
-    woodpecker: { base: 4, reproduction: 0.05, mortality: 0.03, mobility: 2, period: 12 },
+    // Periods are seasonal movement intervals, not animation frames. With the
+    // old 6–14 day cadence every herd was constantly roaming, which produced
+    // thousands of migrations per year and stacked several herds on one tile.
+    deer: { base: 18, reproduction: 0.085, mortality: 0.032, mobility: 2, period: 80 },
+    "roe-deer": { base: 10, reproduction: 0.11, mortality: 0.038, mobility: 2, period: 70 },
+    boar: { base: 9, reproduction: 0.09, mortality: 0.04, mobility: 2, period: 90 },
+    fox: { base: 4, reproduction: 0.085, mortality: 0.052, mobility: 3, period: 65, winterReproduction: 0.9 },
+    hare: { base: 8, reproduction: 0.14, mortality: 0.075, mobility: 2, period: 55 },
+    squirrel: { base: 10, reproduction: 0.1, mortality: 0.04, mobility: 1, period: 75 },
+    owl: { base: 3, reproduction: 0.06, mortality: 0.035, mobility: 2, period: 95, winterReproduction: 0.9 },
+    woodpecker: { base: 4, reproduction: 0.065, mortality: 0.03, mobility: 2, period: 85, winterReproduction: 0.9 },
 });
 
 export const SIMULATED_FAUNA_IDS = Object.freeze(Object.keys(SIMULATED_SPECIES));
@@ -178,7 +181,9 @@ function initialHerd(tile) {
         population,
         capacity: Math.max(population, Math.round(carryingCapacity({ species, x: tile.x, y: tile.y }, tile.stand, tile.node, Number(state.dayOfYear) || 0) * 10) / 10),
         trend: "stable",
-        lastMoved: 0,
+        // A newly built wood starts settled; it should not migrate on the very
+        // first day merely because its lastMoved value is the year origin.
+        lastMoved: Number(state.dayOfYear) || 0,
     };
 }
 
@@ -253,21 +258,43 @@ function neighbourCandidates(herd, radius) {
     return candidates;
 }
 
-function maybeMigrate(model, herd, current, day) {
+function daysSince(lastMoved, day) {
+    return ((Number(day) || 0) - (Number(lastMoved) || 0) + DAYS_PER_YEAR) % DAYS_PER_YEAR;
+}
+
+function maybeMigrate(model, herd, current, day, additions = []) {
     const spec = SIMULATED_SPECIES[herd.species];
     if (!spec) return false;
     const lastMoved = Number(herd.lastMoved) || 0;
-    const due = model.day - lastMoved >= spec.period;
-    const crowded = herd.population > current.capacity * 0.92;
-    if (!due && !crowded) return false;
-    const candidates = neighbourCandidates(herd, spec.mobility);
+    // Compare in calendar days. A plain subtraction stops matching when the
+    // 400-day calendar wraps, which used to freeze migration for most of the
+    // following year.
+    const due = daysSince(lastMoved, model.day) >= spec.period;
+    const crowded = herd.population > current.capacity * 0.94;
+    const season = seasonFor(model.day);
+    if (!crowded && !due) return false;
+    // Outside the two movement seasons only a genuinely crowded herd moves.
+    // This keeps ordinary herds in their home wood and reserves roaming for
+    // spring dispersal and autumn range shifts.
+    if (!crowded && season !== "spring" && season !== "autumn") return false;
+    const occupied = new Set(model.herds
+        .filter(other => other !== herd)
+        .map(other => other.x + ":" + other.y));
+    // Splits are appended only after the daily herd loop. Reserve their target
+    // tiles now so a later migration cannot land on the same wood today.
+    for (const addition of additions) occupied.add(addition.x + ":" + addition.y);
+    const candidates = neighbourCandidates(herd, spec.mobility)
+        .filter(candidate => !occupied.has(candidate.x + ":" + candidate.y));
     if (!candidates.length) return false;
     const currentScore = preferenceScore(current.stand, herd.species, model.day);
     let best = null;
-    let bestScore = currentScore + 0.025;
+    // An empty wood may be better, but a herd must gain a meaningful amount of
+    // habitat quality to leave. Without this margin the random tie-breaker made
+    // almost every due herd move every season.
+    let bestScore = currentScore + (crowded ? 0.015 : 0.08);
     for (const candidate of candidates) {
         const score = preferenceScore(candidate.stand, herd.species, model.day)
-            + unit(model.seed, candidate.x + herd.x, candidate.y + herd.y, day + hash32(model.seed, herd.x, herd.y, 0x4d494752)) * 0.035;
+            + unit(model.seed, candidate.x + herd.x, candidate.y + herd.y, day + hash32(model.seed, herd.x, herd.y, 0x4d494752)) * 0.02;
         if (score > bestScore) {
             best = candidate;
             bestScore = score;
@@ -300,29 +327,35 @@ export function updateForestFauna(days = 1) {
             const { stand, node, capacity } = resolved;
             herd.capacity = Math.round(capacity * 10) / 10;
             const crowding = herd.population / Math.max(1, capacity);
-            const reproduction = spec.reproduction * (season === "spring" ? 1.22 : season === "winter" ? 0.48 : 1);
+            const winterReproduction = Number(spec.winterReproduction ?? 0.85);
+            const reproduction = spec.reproduction * (season === "spring" ? 1.18 : season === "winter" ? winterReproduction : 1);
             const hunting = Number(stand?.ground?.huntingPressure) || 0;
             const gain = reproduction * herd.population * Math.max(-0.2, 1 - crowding);
-            const loss = spec.mortality * herd.population * (season === "winter" ? 1.55 : 0.9)
-                + hunting * herd.population * 0.035;
+            // Winter is a lean season, not a population reset. The old 1.55
+            // multiplier removed roughly seven eighths of every herd by spring.
+            const loss = spec.mortality * herd.population * (season === "winter" ? 0.95 : 0.9)
+                + hunting * herd.population * 0.025;
             const before = herd.population;
             const next = clamp(before + gain - loss, 0, capacity * 1.35);
             if (next > before + 0.05) model.stats.births++;
             if (next < before - 0.05) model.stats.deaths++;
             herd.population = Math.round(next * 10) / 10;
             herd.trend = herd.population > before + 0.2 ? "growing" : herd.population < before - 0.2 ? "declining" : "stable";
-            maybeMigrate(model, herd, resolved, model.day);
+            maybeMigrate(model, herd, resolved, model.day, additions);
 
             // A crowded herd disperses a small satellite group into a
             // neighbouring wood. The cap is a hard save/performance bound.
             if (herd.population > capacity * 1.18 && model.herds.length + additions.length < MAX_HERDS) {
                 const candidates = neighbourCandidates(herd, 1);
-                const target = candidates.find(candidate => !model.herds.some(other => other.x === candidate.x && other.y === candidate.y));
+                const target = candidates.find(candidate =>
+                    !model.herds.some(other => other.x === candidate.x && other.y === candidate.y)
+                    && !additions.some(other => other.x === candidate.x && other.y === candidate.y));
                 if (target) {
                     const split = Math.max(1, Math.round(herd.population * 0.26 * 10) / 10);
                     herd.population = Math.round((herd.population - split) * 10) / 10;
+                    const splitSequence = Number(model.stats.splits) || 0;
                     additions.push({
-                        id: herd.id + "s" + model.day.toString(36),
+                        id: herd.id + "s" + splitSequence.toString(36),
                         species: herd.species, x: target.x, y: target.y,
                         population: split,
                         capacity: Math.max(split, Math.round(carryingCapacity({ species: herd.species, x: target.x, y: target.y }, target.stand, target.node, model.day) * 10) / 10),

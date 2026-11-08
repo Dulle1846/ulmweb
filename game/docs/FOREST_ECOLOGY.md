@@ -99,6 +99,28 @@ There are fifteen formations, including the three shade characters requested sep
 - **Presentation and survey.** The renderer draws the herd on its home tile; the Lumber Yard and Forester site note reports the herd mix and population through `forestFaunaSummaryAt`. If no herd is present, the older habitat list remains a display fallback.
 - **Not modelled.** This is not individual-animal genealogy, a predator-prey kill ledger or a territory polygon engine. Insects, butterflies, bees and ants remain ambient markers, and songbirds/raptors remain survey silhouettes rather than simulated populations.
 
+## Long-run audit
+
+A deterministic audit ran three seeds (`20261108`, `7`, `99`) for four calendar years (1,600 daily steps per seed) on a flat 64 × 64 temperate test world with the forest setting at 70 and full forest stock. The measured values below are from the final model, not hand-written targets.
+
+| Metric | Year 1 | Years 2–4 |
+|---|---:|---:|
+| Herds at year end | 132–148 | 132–148 |
+| Population at year end | 483.2–496.2 | 496.3–511.2 |
+| Year-end capacity fill | 0.370–0.375 | 0.376–0.382 |
+| Migrations per year | 217–230 (initial settling) | 41–76 |
+| Splits per year | 10–14 | 0 |
+| Maximum herds on one tile | 1 | 1 |
+| Duplicate herd IDs | 0 | 0 |
+
+- **Seasonal shape.** Day-300 winter fill was 0.945–0.988 of the reduced winter capacity; the population then lost 33.0–36.0 % by day 350, and the next year-end fill settled at 0.370–0.382. There is no multi-year decline or winter extinction wave.
+- **Movement.** After the first settling year, 41–76 migrations per year were enough for regular range shifts without moving every herd every season. Year boundaries no longer interrupt the period check.
+- **Dispersal.** Ten to fourteen crowded herds split during the first year, when winter capacity drops under the initial population. Once the population settles below the 118 % split threshold, no further split occurs; the long-run test rejects uncontrolled splitting.
+- **Species persistence.** Every species present at world creation was still present after four years. A seed that starts without a species (for example, seed `7` has no squirrel) does not gain one spontaneously; that is a seed-composition difference, not an extinction event.
+- **Hunting pressure.** After two years, reducing forest stock to 60 % lowered the stable population from 503.0 to 414.7 (−17.5 %); 30 % stock lowered it to 360.4 (−28.3 %). Capacity fill stayed at 0.356–0.379, so harvest pressure thins the herds without collapsing the metapopulation.
+
+The durable regression is `tests/systems/forest-fauna-longrun.test.js`: three seeds × four years on a 48 × 48 world, daily stacking checks, year-boundary migration, first-year dispersal, bounded populations, species persistence and the 60 %/30 % stock scenarios.
+
 ## Deliberate limits
 
 - **Wildlife is simulated at herd level, not per animal.** There is no individual pedigree, predator-prey kill accounting or territory geometry. The herd model is deterministic, saveable and observable through the map and site survey; the ambient insect layer is still decoration.
