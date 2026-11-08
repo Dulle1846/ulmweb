@@ -5,7 +5,7 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { getResourceNodeAt, plantForestAt } from "./resource-geography.js";
 import { addLocalOutput, getAvailableOutput, requestHaul } from "./logistics.js";
-import { getWorkforceSnapshot } from "./economy.js";
+import { getBuildingEfficiency, getWorkforceSnapshot } from "./economy.js";
 
 export const FIELD_STAGES = Object.freeze(["fallow", "sown", "growing", "ripe", "harvested"]);
 export const FIELD_LABELS = Object.freeze({
@@ -131,23 +131,60 @@ function seasonalFieldUpdate(farm) {
     field.lastReason = FIELD_LABELS[field.stage] || "Fallow";
 }
 
-function foresterUpdate(building) {
+export function foresterRangeSummary(building, radius = 5) {
+    const limit = Math.max(0, Math.floor(Number(radius) || 0));
+    const empty = { radius: limit, tiles: 0, stock: 0, capacity: 0, fill: 0, restorable: 0, depleted: 0 };
+    if (!building || !Number.isFinite(Number(building.x)) || !Number.isFinite(Number(building.y))) return empty;
+    const x = Math.floor(Number(building.x)), y = Math.floor(Number(building.y));
+    let tiles = 0, stock = 0, capacity = 0, restorable = 0, depleted = 0;
+    for (let oy = -limit; oy <= limit; oy++) {
+        for (let ox = -limit; ox <= limit; ox++) {
+            if (Math.max(Math.abs(ox), Math.abs(oy)) > limit) continue;
+            const node = getResourceNodeAt(x + ox, y + oy);
+            if (!node || node.forestCapacity <= 0) continue;
+            tiles++;
+            stock += node.forestStock;
+            capacity += node.forestCapacity;
+            if (node.forestStock < node.forestCapacity) restorable++;
+            if (node.forestStock <= 0) depleted++;
+        }
+    }
+    return { radius: limit, tiles, stock, capacity, fill: capacity > 0 ? stock / capacity : 0, restorable, depleted };
+}
+
+function foresterUpdate(building, workforce) {
     if (building.construction && building.construction.stage < 3) return;
-    const active = (Number(building.workerCount) || 0) > 0;
-    if (!active) return;
+    const efficiency = getBuildingEfficiency(building, workforce);
+    if (efficiency <= 0) {
+        building.foresterReason = "No staff assigned";
+        return;
+    }
     const radius = 5;
     const x = Math.floor(building.x), y = Math.floor(building.y);
-    let planted = 0;
-    for (let oy = -radius; oy <= radius && planted < 2; oy++) {
-        for (let ox = -radius; ox <= radius && planted < 2; ox++) {
+    const candidates = [];
+    for (let oy = -radius; oy <= radius; oy++) {
+        for (let ox = -radius; ox <= radius; ox++) {
             if (Math.max(Math.abs(ox), Math.abs(oy)) > radius) continue;
             const node = getResourceNodeAt(x + ox, y + oy);
             if (!node || node.forestCapacity <= 0 || node.forestStock >= node.forestCapacity) continue;
-            if (plantForestAt(x + ox, y + oy, 1)) planted++;
+            candidates.push({
+                x: x + ox, y: y + oy,
+                ratio: node.forestStock / Math.max(1, node.forestCapacity),
+                distance: Math.hypot(ox, oy),
+            });
         }
     }
+    // A Forester first repairs the most cut-over stands, then the nearest
+    // remaining gaps. The old row-major scan always started at the northwest
+    // corner and left the worst damage untouched until last.
+    candidates.sort((a, b) => a.ratio - b.ratio || a.distance - b.distance || a.y - b.y || a.x - b.x);
+    const plantingLimit = Math.max(1, Math.round(2 * efficiency));
+    let planted = 0;
+    for (const tile of candidates.slice(0, plantingLimit)) {
+        if (plantForestAt(tile.x, tile.y, 1)) planted++;
+    }
     building.foresterPlanted = (Number(building.foresterPlanted) || 0) + planted;
-    building.foresterReason = planted ? "Planting saplings" : "Forest is fully grown";
+    building.foresterReason = planted ? "Planting saplings" : candidates.length ? "Waiting for planting space" : "Forest is fully grown";
 }
 
 export function updateFields() {
@@ -162,7 +199,7 @@ export function updateFields() {
     const foresters = state.entities.filter(entity => !entity.dead && entity.type === TYPE.FORESTER);
     for (const forester of foresters) {
         forester.workerCount = workforce.workersByBuilding.get(forester) || 0;
-        foresterUpdate(forester);
+        foresterUpdate(forester, workforce);
     }
     return farms.length;
 }

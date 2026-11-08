@@ -20,6 +20,7 @@ import { constructionSnapshot, isUnderConstruction } from "../systems/constructi
 import { getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReason, getCitySummary, getLogisticsSnapshot, setWarehouseProfile } from "../systems/logistics.js";
 import { WAREHOUSE_PROFILES } from "../systems/city-config.js";
 import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
+import { foresterRangeSummary } from "../systems/fields.js";
 let activePanel="kingdom",dynastyStylesRequested=false;
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
@@ -189,6 +190,12 @@ function buildings(){
    else if(building.type===TYPE.WELL)siteNote="Water access at site tile: "+(node.waterAccess?"yes":"no");
    else if(building.type===TYPE.STABLE)siteNote="Pannage reserve: "+esc(pannageSummary(building))+" · feed comes from acorns, beechnuts and chestnuts gathered in the forest ledger.";
   }catch{}
+  if(building.type===TYPE.FORESTER){
+   try{
+    const range=foresterRangeSummary(building);
+    siteNote+=" · Stewardship range (5 tiles): "+number(range.stock)+" / "+number(range.capacity)+" forest stock ("+Math.round(range.fill*100)+"%) · "+number(range.restorable)+" restorable · "+esc(building.foresterReason||"Awaiting assignment");
+   }catch{}
+  }
   const forestGather=[TYPE.LUMBER,TYPE.FORESTER].includes(building.type)?'<button type="button" class="command-choice" data-gather-forest="'+esc(building.id)+'">GATHER FOREST PRODUCTS</button><button type="button" class="command-choice" data-process-hunt="'+esc(building.id)+'">PROCESS FOREST HUNT</button><button type="button" class="command-choice" data-suppress-forest="'+esc(building.id)+'">SUPPRESS FOREST DISTURBANCE</button>':"";
   const forestPannage=building.type===TYPE.STABLE?'<button type="button" class="command-choice" data-feed-stable="'+esc(building.id)+'">FEED STABLE FROM MAST</button>':"";
   const detail=card?.desc||BUILDING_LABELS[building.type]||"No additional building description is recorded.";

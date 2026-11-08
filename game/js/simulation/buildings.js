@@ -93,6 +93,13 @@ function produceRecipe(building, workforce, production) {
         return;
     }
     ensureInventory(building);
+    // The Forester's Lodge is a stewardship building: fields.js plants and
+    // tends stock. Its catalogue entry keeps site:"forest" for placement,
+    // but must never run the Lumber Yard's zero-batch harvest path.
+    if (building.type === TYPE.FORESTER) {
+        building.productionReason = building.foresterReason || "Tending the forest";
+        return;
+    }
     if (recipe.site === "forest" || recipe.site === "stone" || recipe.site === "water") {
         if (!canStoreOutput(building, recipe.site === "forest" ? { logs: recipe.batch } : recipe.site === "stone" ? { stoneBlocks: Math.max(1, Math.floor(recipe.batch * 2 / 2)) } : { water: recipe.batch })) {
             building.productionReason = "Output store is full";
