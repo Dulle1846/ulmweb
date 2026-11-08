@@ -176,6 +176,7 @@ export function isWaterAt(wx, wy) {
 
 export function revealArea(tx, ty, radius) {
     const W = worldWidth(), H = worldHeight();
+    let revealed = false;
     for (let x = tx - radius; x <= tx + radius; x++) {
         for (let y = ty - radius; y <= ty + radius; y++) {
             if (x < 0 || x >= W || y < 0 || y >= H) continue;
@@ -183,9 +184,11 @@ export function revealArea(tx, ty, radius) {
             if (distance(tx, ty, x, y) < radius && !state.explored[x][y]) {
                 state.explored[x][y] = true;
                 state.fogDirty = true;
+                revealed = true;
             }
         }
     }
+    if (revealed) state.exploredRevision = (Number(state.exploredRevision) || 0) + 1;
 }
 
 // Exposed for diagnostics and tests without importing the canvas pipeline.

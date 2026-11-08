@@ -45,7 +45,7 @@ export function setupInput(){
             lastX=event.clientX;lastY=event.clientY;
             return;
         }
-        if(dx||dy){state.zoomAnchor=null;state.camera.x-=dx;state.camera.y-=dy;clampCamera();}
+        if(dx||dy){const scale=state.renderScale||1;state.zoomAnchor=null;state.camera.x-=dx*scale;state.camera.y-=dy*scale;clampCamera();}
         lastX=event.clientX;lastY=event.clientY;
     });
     const endPointerPan=event=>{
@@ -85,7 +85,8 @@ export function setupInput(){
                 lastX=touch.clientX;lastY=touch.clientY;
                 return;
             }
-            state.zoomAnchor=null;state.camera.x-=dx;state.camera.y-=dy;clampCamera();
+            const scale=state.renderScale||1;
+            state.zoomAnchor=null;state.camera.x-=dx*scale;state.camera.y-=dy*scale;clampCamera();
             lastX=touch.clientX;lastY=touch.clientY;
         }else if(event.touches.length===2){
             const [a,b]=event.touches;
@@ -94,7 +95,8 @@ export function setupInput(){
                 const rect=canvas.getBoundingClientRect();
                 // Scale with the gesture, not with wheel delta: doubling the
                 // finger distance doubles the zoom target.
-                setZoomTarget(state.zoomTarget*(distanceNow/lastPinchDistance),(a.clientX+b.clientX)/2-rect.left,(a.clientY+b.clientY)/2-rect.top);
+                const scale=state.renderScale||1;
+                setZoomTarget((state.zoomTarget/scale)*(distanceNow/lastPinchDistance),(a.clientX+b.clientX)/2-rect.left,(a.clientY+b.clientY)/2-rect.top);
             }
             lastPinchDistance=distanceNow;
         }
@@ -197,8 +199,10 @@ export function setupInput(){
     document.getElementById("speed-1")?.addEventListener("click",()=>setSpeed(1));
     document.getElementById("speed-2")?.addEventListener("click",()=>setSpeed(2));
     document.getElementById("speed-4")?.addEventListener("click",()=>setSpeed(4));
-    document.getElementById("zoom-in")?.addEventListener("click",()=>applyZoomDelta(-100,canvas.width/2,canvas.height/2));
-    document.getElementById("zoom-out")?.addEventListener("click",()=>applyZoomDelta(100,canvas.width/2,canvas.height/2));
+    const zoomCenterX=()=>canvas.clientWidth/2||canvas.width/((state.renderScale||1)*2);
+    const zoomCenterY=()=>canvas.clientHeight/2||canvas.height/((state.renderScale||1)*2);
+    document.getElementById("zoom-in")?.addEventListener("click",()=>applyZoomDelta(-100,zoomCenterX(),zoomCenterY()));
+    document.getElementById("zoom-out")?.addEventListener("click",()=>applyZoomDelta(100,zoomCenterX(),zoomCenterY()));
     document.querySelectorAll(".zoom-preset").forEach(button=>button.addEventListener("click",()=>setZoomLevel(Number(button.dataset.zoomLevel))));
     document.getElementById("skip-card-btn")?.addEventListener("click",()=>{skipCard();renderUI();});
     document.getElementById("help-btn")?.addEventListener("click",showHelp);

@@ -14,7 +14,8 @@ import { normalizeRoomFurniture } from "../systems/furniture.js";
 import { addLog } from "../systems/events.js";
 import { ECONOMY_HISTORY_LIMIT } from "../systems/economy.js";
 import { startGameLoop } from "./game-loop.js";
-import { centerCamera,resize,clampCamera } from "../presentation/camera.js";
+import { centerCamera,resize,clampCamera,setRenderScale } from "../presentation/camera.js";
+import { terrainRendererInfo,resetTerrainWebGL } from "../presentation/rendering/terrain-webgl.js";
 import { setupInput } from "../presentation/input.js";
 import { renderUI,showBigMessage,setupMapViewControls } from "../presentation/rendering/ui.js";
 import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,getLocalSaveInfo,listLocalProfiles,selectLocalProfile,loadSettings,saveSettings } from "../core/persistence.js";
@@ -59,6 +60,45 @@ function applyInterfaceSettings(){
     document.body.classList.toggle("reduce-interface-motion",settings.reduceMotion===true);
 }
 
+function replaceTerrainCanvas(){
+    const previous=state.terrainCanvasEl;
+    if(!previous||!previous.parentElement)return;
+    const replacement=previous.cloneNode(false);
+    replacement.width=previous.width;replacement.height=previous.height;
+    replacement.style.opacity="";
+    previous.replaceWith(replacement);
+    state.terrainCanvasEl=replacement;
+}
+
+function applyPerformanceSettings(){
+    state.terrainRenderer=settings.terrainRenderer;
+    state.frameLimit=settings.frameLimit===30?30:60;
+    state.adaptiveQuality=settings.adaptiveQuality!==false;
+    state.showFps=settings.showFps===true;
+    setRenderScale(settings.renderScale);
+    let info=null;
+    if(settings.terrainRenderer!=="canvas")info=terrainRendererInfo();
+    state.terrainRendererName=info?.name||"";
+    const previousMode=state.terrainAutoMode;
+    const nextMode=settings.terrainRenderer==="auto"
+        ?(!info||info.software?"canvas":"webgl")
+        :settings.terrainRenderer;
+    if(previousMode!==nextMode){
+        // A canvas keeps its first context type forever. A renderer switch
+        // therefore needs a fresh surface and a clean WebGL resource set.
+        resetTerrainWebGL();
+        replaceTerrainCanvas();
+    }
+    state.terrainAutoMode=nextMode;
+    state.terrainMode=nextMode;
+    state.terrainFallback=false;
+    state.terrainCacheRevision=(Number(state.terrainCacheRevision)||0)+1;
+    state.terrainCacheHits=0;state.terrainCacheMisses=0;
+    state.renderStats={fps:0,frameMs:0,mode:state.terrainMode,fallback:false,renderScale:state.renderScale};
+    const hud=document.getElementById("performance-hud");
+    if(hud)hud.classList.toggle("hidden",state.showFps!==true);
+}
+
 function bindCanvas(){
     state.canvas=document.getElementById("canvas");
     state.terrainCanvasEl=document.getElementById("terrain-canvas");
@@ -93,6 +133,7 @@ function resetForRun(profile){
     state.gameSpeed=1;
     state.isPaused=false;
     state.zoom=1;state.zoomTarget=1;state.zoomLevel=3;
+    applyPerformanceSettings();
 }
 
 function readWorldOptions(){
@@ -214,7 +255,7 @@ function createSaveSnapshot(){
         worldOptions:{...state.worldOptions},terrainVersion:state.terrainVersion||1,randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:SAVE_SCHEMA_VERSION,nextCardDrawTick:state.nextCardDrawTick,
         nextIssueAtTick:state.nextIssueAtTick,issueSequence:state.issueSequence,
         hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),health:JSON.parse(JSON.stringify(state.health||{})),
-        camera:{...state.camera},zoom:state.zoom,
+        camera:{x:state.camera.x/(Number(state.renderScale)||1),y:state.camera.y/(Number(state.renderScale)||1)},zoom:state.zoom/(Number(state.renderScale)||1),
         explored:state.explored.map(column=>column.map(Boolean)),
         roads:serializeRoads(),
         resourceGeography:serializeResourceGeography(),
@@ -367,8 +408,9 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.market=snapshot.market||createMarketState();
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===(Number(state.worldW)||WORLD_W))state.explored=snapshot.explored;
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
-    if(hasSavedCamera)state.camera={x:snapshot.camera.x,y:snapshot.camera.y};
-    if(Number.isFinite(snapshot.zoom)){state.zoom=snapshot.zoom;state.zoomTarget=snapshot.zoom;state.zoomLevel=3;}
+    const savedScale=Number(state.renderScale)||1;
+    if(hasSavedCamera)state.camera={x:snapshot.camera.x*savedScale,y:snapshot.camera.y*savedScale};
+    if(Number.isFinite(snapshot.zoom)){state.zoom=snapshot.zoom*savedScale;state.zoomTarget=snapshot.zoom*savedScale;state.zoomLevel=3;}
     restoreHand(snapshot.hand,snapshot.selectedCardInstanceId,snapshot.availableCards,snapshot.nextCardDrawTick,snapshot.cardRewardQueue);
     if(hasSavedCamera)clampCamera();else centerCamera();
     document.getElementById("start-screen").classList.add("hidden");
@@ -609,7 +651,33 @@ function bindMenu(){
     const deltasToggle=document.getElementById("settings-deltas-toggle");
     const motionToggle=document.getElementById("settings-motion-toggle");
     if(motionToggle){motionToggle.checked=settings.reduceMotion===true;motionToggle.addEventListener("change",event=>{settings.reduceMotion=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    const rendererSelect=document.getElementById("settings-terrain-renderer");
+    if(rendererSelect){
+        rendererSelect.value=settings.terrainRenderer;
+        rendererSelect.addEventListener("change",event=>{settings.terrainRenderer=event.target.value;applyPerformanceSettings();saveSettings(settings);});
+    }
+    const frameLimitSelect=document.getElementById("settings-frame-limit");
+    if(frameLimitSelect){
+        frameLimitSelect.value=String(settings.frameLimit);
+        frameLimitSelect.addEventListener("change",event=>{settings.frameLimit=Number(event.target.value)===30?30:60;applyPerformanceSettings();saveSettings(settings);});
+    }
+    const renderScaleSelect=document.getElementById("settings-render-scale");
+    if(renderScaleSelect){
+        renderScaleSelect.value=String(Math.round(settings.renderScale*100));
+        renderScaleSelect.addEventListener("change",event=>{settings.renderScale=Number(event.target.value)/100;applyPerformanceSettings();saveSettings(settings);});
+    }
+    const adaptiveToggle=document.getElementById("settings-adaptive-toggle");
+    if(adaptiveToggle){
+        adaptiveToggle.checked=settings.adaptiveQuality!==false;
+        adaptiveToggle.addEventListener("change",event=>{settings.adaptiveQuality=event.target.checked;applyPerformanceSettings();saveSettings(settings);});
+    }
+    const fpsToggle=document.getElementById("settings-fps-toggle");
+    if(fpsToggle){
+        fpsToggle.checked=settings.showFps===true;
+        fpsToggle.addEventListener("change",event=>{settings.showFps=event.target.checked;applyPerformanceSettings();saveSettings(settings);});
+    }
     applyInterfaceSettings();
+    applyPerformanceSettings();
 
     document.getElementById("big-message-close")?.addEventListener("click",()=>document.getElementById("big-message").classList.add("hidden"));
     window.addEventListener("kac:save-request",saveCurrentGame);

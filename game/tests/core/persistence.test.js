@@ -47,6 +47,25 @@ test("settings are clamped and persisted with safe defaults",()=>{
     assert.equal(settings.musicEnabled,true);
     assert.equal(settings.musicVolume,1);
     assert.equal(settings.showTooltips,false);
+    assert.equal(settings.terrainRenderer,"auto");
+    assert.equal(settings.frameLimit,60);
+    assert.equal(settings.renderScale,1);
+    assert.equal(settings.adaptiveQuality,true);
+    assert.equal(settings.showFps,false);
+
+    saveSettings({terrainRenderer:"canvas",frameLimit:30,renderScale:0.7,adaptiveQuality:false,showFps:true});
+    const performanceSettings=loadSettings();
+    assert.equal(performanceSettings.terrainRenderer,"canvas");
+    assert.equal(performanceSettings.frameLimit,30);
+    assert.equal(performanceSettings.renderScale,0.7);
+    assert.equal(performanceSettings.adaptiveQuality,false);
+    assert.equal(performanceSettings.showFps,true);
+
+    saveSettings({terrainRenderer:"not-a-renderer",frameLimit:120,renderScale:0.33});
+    const sanitized=loadSettings();
+    assert.equal(sanitized.terrainRenderer,"auto");
+    assert.equal(sanitized.frameLimit,60);
+    assert.equal(sanitized.renderScale,1);
 });
 
 test("a second save preserves the previous valid realm as a recovery backup",()=>{

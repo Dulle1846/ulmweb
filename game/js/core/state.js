@@ -2,7 +2,7 @@
 function createInitialState() {
     return {
         canvas:null,ctx:null,terrainCanvasEl:null,minimapCanvas:null,minimapCtx:null,
-        camera:{x:0,y:0},zoom:1,zoomTarget:1,zoomLevel:3,zoomAnchor:null,
+        camera:{x:0,y:0},zoom:1,zoomTarget:1,zoomLevel:3,zoomAnchor:null,renderScale:1,
         roads:{version:1,revision:0,tiles:{}},roadBuildMode:null,directBuildType:null,resourceGeography:null,forestFauna:null,mapLayer:"terrain",
         city:{version:1,enabled:false,constructionVersion:0,logistics:null,fields:null,services:null,needs:null},
         tick:0,gameSpeed:1,isPaused:false,tickAccumulator:0,lastFrameTime:0,
@@ -27,6 +27,10 @@ function createInitialState() {
         heightMap:null,moistureMap:null,terrainCanvas:null,terrainDirty:true,explored:[],
         fogCanvas:null,fogDirty:true,fogExploredRef:null,
         terrainResolution:0,terrainPixW:0,terrainPixH:0,
+        terrainRenderer:"auto",terrainAutoMode:"webgl",terrainMode:"webgl",terrainRendererName:"",terrainFallback:false,
+        terrainCacheRevision:0,terrainCacheHits:0,terrainCacheMisses:0,
+        frameLimit:60,adaptiveQuality:true,showFps:false,renderStats:{fps:0,frameMs:0,mode:"auto",fallback:false},
+        exploredRevision:0,
         lastRandomEvent:0,weather:"clear",weatherTimer:0,
         kingHp:240,totalRaidsSurvived:0,raidActive:false,
         health:{outbreakActive:false,disease:"none",severity:0,containment:0,cases:0,recovered:0,outbreaks:0,lastUpdateTick:0,startedAtTick:0},market:null,politics:{legitimacy:65,factions:{commons:68,nobility:58,guilds:55,clergy:62},settlements:0},economy:{daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,furnitureUpkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,unpaidFurniture:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:1,births:0,lastBirthCheckYear:1,lastSocialYear:1,lastAgencyYear:1,lastGuardianshipYear:1,deaths:0,lastMortalityYear:1,lastLedger:null,history:[]},statistics:{totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,totalRoadTilesBuilt:0}

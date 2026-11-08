@@ -14,10 +14,82 @@ import { flushPresentationEffects } from "../presentation/effects.js";
 
 let loopStarted=false;
 let lastRenderTimestamp=0;
+let perfWindowStarted=0;
+let perfRenderedFrames=0;
+let perfIntervalTotal=0;
+let perfLastFrameAt=0;
+let slowRenderFrames=0;
+
 function resetFrameClock(){
  state.lastFrameTime=0;lastRenderTimestamp=0;state.tickAccumulator=0;state.movementAccumulator=0;
  state.lastMinimapRender=0;state.lastUiRender=0;
+ perfWindowStarted=0;perfRenderedFrames=0;perfIntervalTotal=0;perfLastFrameAt=0;slowRenderFrames=0;
 }
+
+function frameIntervalMs(){
+ return state.frameLimit===30?1000/30:1000/60;
+}
+
+function performanceLabel(){
+ const renderer=state.terrainRenderer==="auto"
+  ?(state.terrainFallback?"AUTO → CANVAS":"AUTO")  :String(state.terrainRenderer||"auto").toUpperCase();
+ const scale=Math.round((Number(state.renderScale)||1)*100);
+ return renderer+" · "+(state.terrainMode==="webgl"?"WEBGL":"CANVAS")+" · "+scale+"%";
+}
+
+function updatePerformanceHud(){
+ const hud=document.getElementById("performance-hud");
+ if(!hud)return;
+ const show=state.showFps===true;
+ hud.classList.toggle("hidden",!show);
+ if(!show)return;
+ const stats=state.renderStats||{};
+ const fps=Math.max(0,Math.round(Number(stats.fps)||0));
+ const frameMs=Math.max(0,Number(stats.frameMs)||0);
+ hud.textContent=fps+" FPS · "+frameMs.toFixed(1)+" MS · "+performanceLabel();
+}
+
+function samplePerformance(timestamp,deltaTime){
+ if(!perfWindowStarted){
+  perfWindowStarted=timestamp;perfRenderedFrames=0;perfIntervalTotal=0;perfLastFrameAt=0;
+ }
+ perfRenderedFrames++;
+ if(perfLastFrameAt)perfIntervalTotal+=Math.max(0,timestamp-perfLastFrameAt);
+ perfLastFrameAt=timestamp;
+ const elapsed=timestamp-perfWindowStarted;
+ if(elapsed<500)return;
+ const fps=Math.round(perfRenderedFrames*1000/Math.max(1,elapsed));
+ const interval=perfRenderedFrames>1?perfIntervalTotal/(perfRenderedFrames-1):deltaTime;
+ state.renderStats={
+  fps,
+  frameMs:Math.round(interval*10)/10,
+  mode:state.terrainMode,
+  fallback:state.terrainFallback===true,
+ };
+ updatePerformanceHud();
+ perfWindowStarted=timestamp;perfRenderedFrames=0;perfIntervalTotal=0;perfLastFrameAt=0;
+}
+
+// WebGL is normally the faster path, but software WebGL (SwiftShader/llvmpipe)
+// can be far slower than Canvas 2D. If frames remain slow after startup even
+// though the automatic choice picked WebGL, fall back without losing detail;
+// Canvas 2D keeps the full artwork and the terrain cache.
+function considerAdaptiveFallback(deltaTime){
+ if(!state.adaptiveQuality||state.terrainRenderer!=="auto"||state.terrainMode!=="webgl"||state.terrainFallback){
+  slowRenderFrames=0;
+  return;
+ }
+ if(deltaTime>48)slowRenderFrames++;
+ else slowRenderFrames=Math.max(0,slowRenderFrames-1);
+ if(slowRenderFrames<5)return;
+ state.terrainAutoMode="canvas";
+ state.terrainFallback=true;
+ state.terrainCacheRevision=(Number(state.terrainCacheRevision)||0)+1;
+ state.terrainCacheHits=0;state.terrainCacheMisses=0;
+ slowRenderFrames=0;
+ updatePerformanceHud();
+}
+
 export function startGameLoop(){
  if(loopStarted)return;
  loopStarted=true;resetFrameClock();
@@ -68,9 +140,11 @@ function gameLoop(timestamp){
    }
    flushPresentationEffects();
    if(timestamp-state.lastMinimapRender>=400){updateMinimap();state.lastMinimapRender=timestamp;}
-   // High-refresh displays can otherwise redraw the entire world 120–240 times per second.
-   // Simulation and camera updates remain frame-driven; expensive canvas work is capped at 60 FPS.
-   if(timestamp-lastRenderTimestamp>=1000/60){
+   // Simulation and camera updates stay smooth, while expensive world drawing
+   // follows the selected 60/30 FPS cap. A sub-millisecond tolerance avoids
+   // dropping every other frame on displays whose refresh interval is rounded.
+   const interval=frameIntervalMs();
+   if(timestamp-lastRenderTimestamp>=interval-0.75){
     const {ctx,canvas}=state;
     if(ctx&&canvas){
      // The terrain now lives on its own surface behind this canvas. Keep the
@@ -79,6 +153,8 @@ function gameLoop(timestamp){
      drawWorld();
      if(timestamp-state.lastUiRender>=160){renderUI();state.lastUiRender=timestamp;}
      drawVignette();
+     samplePerformance(timestamp,deltaTime);
+     considerAdaptiveFallback(deltaTime);
     }
     lastRenderTimestamp=timestamp;
    }

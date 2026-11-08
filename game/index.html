@@ -105,6 +105,7 @@
             <canvas id="terrain-canvas" aria-hidden="true"></canvas>
             <canvas id="canvas" aria-label="Interactive kingdom map"></canvas>
             <div class="stage-grain" aria-hidden="true"></div>
+            <div id="performance-hud" class="performance-hud hidden" role="status" aria-live="off">0 FPS · 0.0 MS · AUTO</div>
             <div class="stage-topline">
                 <div class="stage-chip">WORLD VIEW <strong>· ELDRIA</strong> <span id="zoom-level-name">ROOFTOPS</span> <span id="zoom-value">×1.00</span></div>
                 <div class="stage-chip">DRAG TO PAN</div>
@@ -268,6 +269,12 @@
         <div class="setting-row volume-setting"><div><strong>Music volume</strong><small>Adjust the soundtrack level.</small></div><input id="settings-music-volume" type="range" min="0" max="100" value="22" aria-label="Music volume"></div>
         <div class="setting-row"><div><strong>Resource change badges</strong><small>Show the per-tick change beside each resource in the royal ledger.</small></div><label class="toggle"><input id="settings-deltas-toggle" type="checkbox" aria-label="Show resource change badges" checked><span></span></label></div>
         <div class="setting-row"><div><strong>Reduce interface motion</strong><small>Turn off card and navigation transitions for calmer play.</small></div><label class="toggle"><input id="settings-motion-toggle" type="checkbox" aria-label="Reduce interface motion"><span></span></label></div>
+        <div class="settings-section-heading">PERFORMANCE</div>
+        <div class="setting-row"><div><strong>Terrain renderer</strong><small>Auto uses WebGL on real GPUs and Canvas 2D when WebGL is software-only. Canvas keeps every decoration and detail.</small></div><select id="settings-terrain-renderer" class="settings-select" aria-label="Terrain renderer"><option value="auto">Auto</option><option value="webgl">WebGL</option><option value="canvas">Canvas 2D</option></select></div>
+        <div class="setting-row"><div><strong>Frame limit</strong><small>Cap world drawing at 60 or 30 FPS. Simulation keeps running at full tick rate.</small></div><select id="settings-frame-limit" class="settings-select" aria-label="Frame limit"><option value="60">60 FPS</option><option value="30">30 FPS</option></select></div>
+        <div class="setting-row"><div><strong>Render scale</strong><small>Optional internal resolution for weak devices. 100% is the full-quality default; lower values upscale the same scene.</small></div><select id="settings-render-scale" class="settings-select" aria-label="Render scale"><option value="100">100%</option><option value="85">85%</option><option value="70">70%</option><option value="50">50%</option></select></div>
+        <div class="setting-row"><div><strong>Adaptive quality</strong><small>If automatic WebGL stays slow, fall back to the cached Canvas terrain without reducing artwork.</small></div><label class="toggle"><input id="settings-adaptive-toggle" type="checkbox" aria-label="Adaptive quality" checked><span></span></label></div>
+        <div class="setting-row"><div><strong>Performance overlay</strong><small>Show FPS, frame time and the active terrain renderer.</small></div><label class="toggle"><input id="settings-fps-toggle" type="checkbox" aria-label="Show performance overlay"><span></span></label></div>
         <section class="settings-archive" aria-labelledby="settings-archive-title">
             <div class="settings-section-heading" id="settings-archive-title">REALM ARCHIVE</div>
             <p class="settings-archive-note">Local save slots for this browser. Loading a slot replaces the current campaign; save first if it matters.</p>

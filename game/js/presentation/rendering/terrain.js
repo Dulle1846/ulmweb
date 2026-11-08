@@ -25,15 +25,35 @@ export function drawTerrain(ctx) {
     const zoom = state.zoom;
     const cam = state.camera;
     const canvas = state.canvas;
-    const glActive = drawTerrainGL();
+    const mode = state.terrainRenderer === "canvas"
+        ? "canvas"
+        : state.terrainRenderer === "webgl"
+            ? "webgl"
+            : state.terrainAutoMode === "canvas" ? "canvas" : "webgl";
 
-    if (!glActive) {
-        drawBakedGround(ctx, zoom, cam, canvas);
-        if (state.zoomLevel >= 3) drawGroundGrain(ctx, zoom, cam, canvas);
+    let glActive = false;
+    if (mode === "webgl") glActive = drawTerrainGL();
+    if (mode === "webgl" && !glActive) {
+        // If the automatic choice guessed wrong, keep the run alive on the
+        // Canvas2D path and remember the fallback for the options readout.
+        state.terrainAutoMode = "canvas";
+        if (state.terrainRenderer === "auto") state.terrainFallback = true;
+    }
+    state.terrainMode = glActive ? "webgl" : "canvas";
+
+    if (glActive) {
+        drawFogOfWar(ctx, zoom, cam, canvas);
+        if (state.zoomLevel >= 2) drawOverlayDecorations(ctx, zoom, cam, canvas);
+        return;
     }
 
+    // At detail zoom the static terrain surface already contains baked ground,
+    // fog and decorations. It stays on the GPU/compositor as its own layer, so
+    // no full-screen copy or re-rasterisation is needed per frame.
+    if (state.zoomLevel >= 2 && drawCachedDecorations(ctx, zoom, cam, canvas)) return;
+    if (state.terrainCanvasEl) state.terrainCanvasEl.style.opacity = "0";
+    drawBakedGround(ctx, zoom, cam, canvas);
     drawFogOfWar(ctx, zoom, cam, canvas);
-    if (state.zoomLevel >= 2) drawTerrainDecorations(ctx, zoom, cam, canvas);
 }
 
 function drawBakedGround(ctx, zoom, cam, canvas) {
@@ -126,10 +146,215 @@ function drawFogOfWar(ctx, zoom, cam, canvas) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  CACHED DETAIL LAYER
+// ═══════════════════════════════════════════════════════════════
+
+// Trees, understory, rocks, ground grain and shore detail are static for a
+// given view. Rasterising them every frame costs hundreds of milliseconds on
+// software rendering, so they live on an offscreen canvas and are copied in.
+// While the camera or zoom is moving the existing layer is merely shifted;
+// once the view settles, it is rebuilt once at the new position.
+const DETAIL_SETTLE_MS = 140;
+let detailCanvas = null;
+let detailCtx = null;
+let detailState = null;
+let observedView = "";
+let lastViewChangeAt = 0;
+let overlayCanvas = null;
+let overlayCtx = null;
+let overlayState = null;
+let overlayView = "";
+let overlayLastChangeAt = 0;
+
+function detailCacheKey(zoom) {
+    const day = Number.isFinite(Number(state.dayOfYear))
+        ? Number(state.dayOfYear)
+        : (Number(state.seasonIndex) || 0) * 100;
+    // Snow and foliage turn slowly. A multi-day bucket avoids a complete
+    // re-rasterisation at every day boundary while still following seasons.
+    const dayBucket = state.terrainMode === "canvas" ? 12 : 4;
+    return [
+        Number(state.worldSeed) || 0,
+        Number(state.worldW) || 0,
+        Number(state.worldH) || 0,
+        Number(state.terrainVersion) || 0,
+        Number(state.seaLevel) || 0,
+        state.worldOptions?.climate || "temperate",
+        Number(state.worldOptions?.forests) || 0,
+        state.terrainMode,
+        Number(state.zoomLevel) || 0,
+        Math.round(zoom * 1000),
+        state.canvas?.width || 0,
+        state.canvas?.height || 0,
+        Math.floor(day / dayBucket),
+        Number(state.exploredRevision) || 0,
+        Number(state.terrainCacheRevision) || 0,
+    ].join("|");
+}
+
+function ensureTerrainSurface(canvas) {
+    let surface = state.terrainCanvasEl || document.getElementById("terrain-canvas");
+    if (!surface) return null;
+    if (surface.width !== canvas.width || surface.height !== canvas.height) {
+        surface.width = Math.max(1, canvas.width);
+        surface.height = Math.max(1, canvas.height);
+        surface.style.transform = "";
+        detailState = null;
+        observedView = "";
+    }
+    let context = null;
+    try {
+        context = surface.getContext("2d", { alpha: false });
+    } catch { /* a WebGL canvas cannot become a 2D surface */ }
+    if (!context) {
+        // Switching renderer at runtime needs a fresh DOM canvas because a
+        // canvas keeps its first context type for its whole lifetime.
+        const replacement = surface.cloneNode(false);
+        replacement.width = surface.width;
+        replacement.height = surface.height;
+        replacement.style.opacity = "";
+        replacement.style.transform = "";
+        surface.replaceWith(replacement);
+        surface = replacement;
+        state.terrainCanvasEl = surface;
+        context = surface.getContext("2d", { alpha: false });
+    }
+    if (!context) return null;
+    if (detailCanvas !== surface) {
+        detailCanvas = surface;
+        detailCtx = context;
+        detailState = null;
+        observedView = "";
+    }
+    return detailCtx;
+}
+
+// WebGL paints the ground itself, but the authored trees, understory, rocks
+// and shore props are still Canvas artwork. Keep that transparent overlay in
+// its own cache so switching to WebGL does not lose a single decoration.
+function drawOverlayDecorations(ctx, zoom, cam, canvas) {
+    if (!overlayCanvas || overlayCanvas.width !== canvas.width || overlayCanvas.height !== canvas.height) {
+        overlayCanvas = document.createElement("canvas");
+        overlayCanvas.width = Math.max(1, canvas.width);
+        overlayCanvas.height = Math.max(1, canvas.height);
+        overlayCtx = overlayCanvas.getContext("2d");
+        overlayState = null;
+        overlayView = "";
+    }
+    if (!overlayCtx) return;
+
+    const now = performance.now();
+    const signature = [
+        canvas.width, canvas.height,
+        Math.round(cam.x), Math.round(cam.y),
+        Math.round(zoom * 1000),
+    ].join(":");
+    if (signature !== overlayView) {
+        overlayView = signature;
+        overlayLastChangeAt = now;
+    }
+    const settled = now - overlayLastChangeAt >= DETAIL_SETTLE_MS;
+    const key = detailCacheKey(zoom);
+    const reusable = Boolean(overlayState && overlayState.key === key && overlayState.zoom === zoom);
+
+    if (!reusable && !settled && overlayState) return;
+    if (!reusable || (settled && (overlayState.camX !== cam.x || overlayState.camY !== cam.y))) {
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        drawTerrainDecorations(overlayCtx, zoom, cam, canvas);
+        overlayState = { key, zoom, camX: cam.x, camY: cam.y };
+        state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
+        ctx.drawImage(overlayCanvas, 0, 0);
+        return;
+    }
+
+    const dx = overlayState.camX - cam.x;
+    const dy = overlayState.camY - cam.y;
+    if (Math.abs(dx) > canvas.width * 0.8 || Math.abs(dy) > canvas.height * 0.8) return;
+    ctx.drawImage(overlayCanvas, dx, dy);
+    state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
+}
+
+function drawCachedDecorations(ctx, zoom, cam, canvas) {
+    const surfaceCtx = ensureTerrainSurface(canvas);
+    if (!surfaceCtx) return false;
+
+    const now = performance.now();
+    const signature = [
+        canvas.width, canvas.height,
+        Math.round(cam.x), Math.round(cam.y),
+        Math.round(zoom * 1000),
+    ].join(":");
+    if (signature !== observedView) {
+        observedView = signature;
+        lastViewChangeAt = now;
+    }
+    const settled = now - lastViewChangeAt >= DETAIL_SETTLE_MS;
+    const key = detailCacheKey(zoom);
+    const reusable = Boolean(detailState && detailState.key === key && detailState.zoom === zoom);
+    const renderScale = Number(state.renderScale) || 1;
+    const dx = detailState ? detailState.camX - cam.x : 0;
+    const dy = detailState ? detailState.camY - cam.y : 0;
+
+    // During a pan, shift the already-rasterised detail layer with CSS instead
+    // of hiding it. Only the newly exposed strips need the cheap baked ground.
+    const canShift = reusable && !settled
+        && Math.abs(dx) <= canvas.width * 0.45
+        && Math.abs(dy) <= canvas.height * 0.45;
+    if (canShift && (dx || dy)) {
+        state.terrainCanvasEl.style.transform = `translate(${dx / renderScale}px, ${dy / renderScale}px)`;
+        state.terrainCanvasEl.style.opacity = "1";
+        drawPanGaps(ctx, zoom, cam, canvas, dx, dy);
+        state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
+        return true;
+    }
+
+    if (!reusable && !settled && detailState) {
+        state.terrainCanvasEl.style.opacity = "0";
+        return false;
+    }
+
+    if (!reusable || (settled && (detailState.camX !== cam.x || detailState.camY !== cam.y))) {
+        surfaceCtx.clearRect(0, 0, detailCanvas.width, detailCanvas.height);
+        drawBakedGround(surfaceCtx, zoom, cam, canvas);
+        if (state.zoomLevel >= 3) drawGroundGrain(surfaceCtx, zoom, cam, canvas);
+        drawTerrainDecorations(surfaceCtx, zoom, cam, canvas);
+        drawFogOfWar(surfaceCtx, zoom, cam, canvas);
+        detailState = { key, zoom, camX: cam.x, camY: cam.y };
+        state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
+        state.terrainCanvasEl.style.transform = "translate(0, 0)";
+        state.terrainCanvasEl.style.opacity = "1";
+        return true;
+    }
+
+    if (detailState.camX !== cam.x || detailState.camY !== cam.y) {
+        state.terrainCanvasEl.style.opacity = "0";
+        return false;
+    }
+    state.terrainCanvasEl.style.transform = "translate(0, 0)";
+    state.terrainCanvasEl.style.opacity = "1";
+    state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
+    return true;
+}
+
+function drawPanGaps(ctx, zoom, cam, canvas, dx, dy) {
+    ctx.save();
+    ctx.beginPath();
+    if (dx > 0) ctx.rect(0, 0, dx, canvas.height);
+    else if (dx < 0) ctx.rect(canvas.width + dx, 0, -dx, canvas.height);
+    if (dy > 0) ctx.rect(0, 0, canvas.width, dy);
+    else if (dy < 0) ctx.rect(0, canvas.height + dy, canvas.width, -dy);
+    ctx.clip();
+    drawBakedGround(ctx, zoom, cam, canvas);
+    drawFogOfWar(ctx, zoom, cam, canvas);
+    ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  DECORATIONS — vegetation and props follow the biome
 // ═══════════════════════════════════════════════════════════════
 
 function drawTerrainDecorations(ctx, zoom, cam, canvas) {
+    if (!state.heightMap) return;
     const cellPx = CELL * zoom;
     const tick = state.tick;
     const sea = state.seaLevel ?? 0.33;
@@ -272,6 +497,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
 // field, this adds tile-scale variation so close inspection never reads as
 // one blurred gradient.
 function drawGroundGrain(ctx, zoom, cam, canvas) {
+    if (!state.heightMap) return;
     const cellPx = CELL * zoom;
     if (cellPx < 14) return;
     const W = worldW(), H = worldH();

@@ -334,7 +334,7 @@ export function renderUI(){
         ["wood","stone","gold","food"].forEach(key=>updateCost("card-cost-"+key,0));
     }
     const labels=["","LANDSCAPE","DISTRICTS","ROOFTOPS","INTERIORS"];
-    setText("zoom-level-name",labels[state.zoomLevel]||"ROOFTOPS");setText("zoom-value","×"+state.zoom.toFixed(2));
+    setText("zoom-level-name",labels[state.zoomLevel]||"ROOFTOPS");setText("zoom-value","×"+(state.zoom/(Number(state.renderScale)||1)).toFixed(2));
     const layerSelect=document.getElementById("map-layer-select");
     if(layerSelect&&layerSelect.value!==state.mapLayer)layerSelect.value=state.mapLayer||"terrain";
     renderMapLayerLegend();

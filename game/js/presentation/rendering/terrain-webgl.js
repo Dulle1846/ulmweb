@@ -1230,12 +1230,74 @@ function sunState(phase) {
     };
 }
 
+// Probe on a detached canvas so choosing Canvas 2D never locks the visible
+// terrain surface into a WebGL context. The probe context is discarded again.
+export function terrainRendererInfo() {
+    if (typeof document === "undefined") return { name: "", software: true };
+    try {
+        const probeCanvas = document.createElement("canvas");
+        probeCanvas.width = 1;
+        probeCanvas.height = 1;
+        const probe = probeCanvas.getContext("webgl2", {
+            alpha: false,
+            antialias: false,
+            depth: false,
+            stencil: false,
+            powerPreference: "high-performance",
+        });
+        if (!probe) return { name: "", software: true };
+        const debug = probe.getExtension("WEBGL_debug_renderer_info");
+        const name = String(probe.getParameter(debug ? debug.UNMASKED_RENDERER_WEBGL : probe.RENDERER) || "");
+        probe.getExtension("WEBGL_lose_context")?.loseContext();
+        return {
+            name,
+            software: /swiftshader|llvmpipe|software|basic render|microsoft basic/i.test(name),
+        };
+    } catch {
+        return { name: "", software: true };
+    }
+}
+
+export function resetTerrainWebGL() {
+    try {
+        gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    } catch { /* a lost context is already unusable */ }
+    gl = null;
+    program = null;
+    vao = null;
+    vertexBuffer = null;
+    terrainTexture = null;
+    wearTexture = null;
+    waterDistTexture = null;
+    atlasTexture = null;
+    atlasUploaded = false;
+    occlusionTexture = null;
+    wearField = null;
+    wearTargets = null;
+    wearBytes = null;
+    wearColumns = 0;
+    wearRows = 0;
+    wearWorldKey = "";
+    wearSourceKey = "";
+    wearLastUpdate = 0;
+    wearNeedsUpload = true;
+    wearLastUpload = 0;
+    uniforms = {};
+    failed = false;
+    uploadedWorldEpoch = -1;
+    uploadedHeights = null;
+    uploadedWidth = 0;
+    uploadedHeight = 0;
+    initialized = false;
+}
+
 export function drawTerrainGL() {
     if (failed || !state.heightMap || !state.canvas) return false;
     if (!init()) return false;
 
     const canvas = state.terrainCanvasEl;
     if (!canvas) return false;
+    canvas.style.opacity = "1";
     if (canvas.width !== state.canvas.width || canvas.height !== state.canvas.height) {
         canvas.width = state.canvas.width;
         canvas.height = state.canvas.height;

@@ -141,23 +141,45 @@ export function getLocalSaveInfo(profileId) {
     } : null;
 }
 
-export function loadSettings() {
-    return {
-        musicEnabled: true,
-        musicVolume: 0.22,
-        showTooltips: true,
-        showDeltas: true,
-        reduceMotion: false,
-        ...readJson(SETTINGS_KEY, {})
-    };
-}
+const TERRAIN_RENDERERS = new Set(["auto", "webgl", "canvas"]);
+const FRAME_LIMITS = new Set([30, 60]);
+const RENDER_SCALES = new Set([0.5, 0.7, 0.85, 1]);
+const DEFAULT_SETTINGS = Object.freeze({
+    musicEnabled: true,
+    musicVolume: 0.22,
+    showTooltips: true,
+    showDeltas: true,
+    reduceMotion: false,
+    terrainRenderer: "auto",
+    frameLimit: 60,
+    renderScale: 1,
+    adaptiveQuality: true,
+    showFps: false,
+});
 
-export function saveSettings(settings) {
-    writeJson(SETTINGS_KEY, {
-        musicEnabled: Boolean(settings.musicEnabled),
-        musicVolume: Math.max(0, Math.min(1, Number(settings.musicVolume) || 0)),
+export function normalizeSettings(rawSettings = {}) {
+    const settings = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
+    const musicVolume = Number(settings.musicVolume);
+    const frameLimit = Number(settings.frameLimit);
+    const renderScale = Number(settings.renderScale);
+    return {
+        musicEnabled: settings.musicEnabled !== false,
+        musicVolume: Number.isFinite(musicVolume) ? Math.max(0, Math.min(1, musicVolume)) : DEFAULT_SETTINGS.musicVolume,
         showTooltips: settings.showTooltips !== false,
         showDeltas: settings.showDeltas !== false,
         reduceMotion: settings.reduceMotion === true,
-    });
+        terrainRenderer: TERRAIN_RENDERERS.has(settings.terrainRenderer) ? settings.terrainRenderer : DEFAULT_SETTINGS.terrainRenderer,
+        frameLimit: FRAME_LIMITS.has(frameLimit) ? frameLimit : DEFAULT_SETTINGS.frameLimit,
+        renderScale: RENDER_SCALES.has(renderScale) ? renderScale : DEFAULT_SETTINGS.renderScale,
+        adaptiveQuality: settings.adaptiveQuality !== false,
+        showFps: settings.showFps === true,
+    };
+}
+
+export function loadSettings() {
+    return normalizeSettings(readJson(SETTINGS_KEY, {}));
+}
+
+export function saveSettings(settings) {
+    writeJson(SETTINGS_KEY, normalizeSettings(settings));
 }
