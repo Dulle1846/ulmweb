@@ -129,3 +129,19 @@ test("forests regrow slowly and only up to their original capacity",()=>{
     assert.equal(regrowForests(10000),capacity-1-partial);
     assert.equal(getResourceNodeAt(forest.x,forest.y).forestStock,capacity);
 });
+
+test("a sliced regrowth cycle matches one whole-map pass",()=>{
+    setup();
+    const forest=findNode("forest",0,24);
+    const capacity=forest.node.forestCapacity;
+    harvestForest(forest.x,forest.y,capacity);
+    for(let slice=0;slice<8;slice++)regrowForests(200,{slice,slices:8});
+    const sliced=getResourceNodeAt(forest.x,forest.y).forestStock;
+    assert.ok(sliced>1,"the sliced cycle must still plant on every tile");
+
+    setup();
+    const again=findNode("forest",0,24);
+    harvestForest(again.x,again.y,capacity);
+    regrowForests(200);
+    assert.equal(sliced,getResourceNodeAt(again.x,again.y).forestStock,"eight 200-day slices must equal one full pass");
+});

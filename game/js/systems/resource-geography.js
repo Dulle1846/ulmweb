@@ -184,18 +184,27 @@ export function plantForestAt(x,y,amount=1){
     return planted;
 }
 
-export function regrowForests(days=1){
+// `options.slice`/`options.slices` let the simulation process one contiguous
+// share of the map per day instead of a full-world pass. A 400-day cycle sliced
+// into 400 daily pieces preserves the same one-stock-per-25-days average while
+// keeping the per-tick cost bounded even on a colossal realm. A caller without
+// options still gets the original whole-map pass.
+export function regrowForests(days=1,options={}){
     const elapsed=Number(days);
     if(!Number.isFinite(elapsed)||elapsed<=0)return 0;
     const geo=ensureGeography(),baseGrowth=Math.max(0,Math.floor(elapsed/25));
     if(!baseGrowth)return 0;
     let restored=0;
     const count=cellCount(),W=worldW(),H=worldH();
+    const slices=Math.max(1,Math.floor(Number(options?.slices)||1));
+    const slice=Math.min(slices-1,Math.max(0,Math.floor(Number(options?.slice)||0)));
+    const start=slices>1?Math.floor(count*slice/slices):0;
+    const end=slices>1?Math.floor(count*(slice+1)/slices):count;
     const resolution=Math.max(1,Number(state.terrainResolution)||1);
     const mapW=Number(state.terrainPixW)||0,mapH=Number(state.terrainPixH)||0;
     const climate=state.worldOptions?.climate||"temperate";
     const forests=state.worldOptions?.forests??52;
-    for(let i=0;i<count;i++){
+    for(let i=start;i<end;i++){
         const missing=geo.forestCapacity[i]-geo.forestStock[i];
         if(missing<=0)continue;
         const x=i%W,y=Math.floor(i/W);

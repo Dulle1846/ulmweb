@@ -103,7 +103,9 @@ Die Punkte 1.2.1.1–1.2.1.60 bleiben unverändert belegt. Die folgende Vertiefu
 | P2 Blattformen | acht Blattsilhouetten in der Laubstreu und getrennte Linden-/Ulmen-Labels | `drawSpeciesLeaf`; `subtype`/`label`; `forest-ecology.test.js` |
 | P3 Ausbreitung | Feuer, Sturm und Krankheit greifen alle 12 Tage auf ein Nachbartile über, max. 4 pro Pass, mit echtem Stockverlust und `spreadHistory` | `forest-succession.js`; `forest-succession.test.js` |
 | P3 Bekämpfung | `SUPPRESS FOREST DISTURBANCE` im Lumber Yard/Forester; 90 Tage Eindämmung gegen Holz, Nahrung oder Gold | `suppressNearestForestDisturbance`; `management-ui.js`; `forest-succession.test.js` |
+| P3 Langzeit | 40 Jahre auf zwei Seeds: 6,6–7,3 % aktive Störungen, Peak 9,5–10,0 % im ersten Jahr, 96,1–96,3 % Waldstock, 114 Ereignisse und ~5.323 Ausbreitungen; keine Überlastung, Raten unverändert | `tests/systems/forest-succession-longrun.test.js` |
 | Performance | Streu- und Moosschleifen reduziert (19→15, 5→4), Mikrofauna auf drei Gruppen × drei Marken und Nahzoom begrenzt, ein Solarvektor statt drei Berechnungen | `terrain.js`; `terrain-webgl.js` |
+| Performance Regrowth | 400-Tage-Zyklus in 400 Tagesscheiben; 576×576 mit 201.570 halb geleerten Wald-Tiles: 802 ms pro Vollpass → 2,34 ms Median / 5,71 ms Maximum pro Tagesscheibe | `regrowForests`; `resource-geography.test.js` |
 
 Die `GL Driver Message … GPU stall due to ReadPixels` ist eine Browser-/Screenshot-Rücklesewarnung des Software-WebGL-Pfads, kein Spielcode-Fehler: im Quellbaum gibt es kein `readPixels` außer im separaten Testwerkzeug `tests/browser/terrain-perf.html`.
 
@@ -119,7 +121,7 @@ Die Tageszeit ist ein reiner Präsentationszustand: Sie färbt die bereits geren
 
 ```sh
 cd game
-node --test tests/world/forest-ecology.test.js tests/systems/forest-fauna.test.js tests/systems/forest-fauna-longrun.test.js tests/systems/forest-gathering.test.js tests/systems/forest-pannage.test.js tests/systems/forest-succession.test.js tests/world/forest-pressure.test.js tests/presentation/daylight.test.js
+node --test tests/world/forest-ecology.test.js tests/systems/forest-fauna.test.js tests/systems/forest-fauna-longrun.test.js tests/systems/forest-gathering.test.js tests/systems/forest-pannage.test.js tests/systems/forest-succession.test.js tests/systems/forest-succession-longrun.test.js tests/world/forest-pressure.test.js tests/presentation/daylight.test.js
 npm run test:forest-reference
 npm run test:forest-detail
 npm run test:terrain-stability

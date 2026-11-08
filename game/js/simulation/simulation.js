@@ -12,6 +12,7 @@ import { updateWeather } from "../world/weather.js";
 import { updateBuildingIncome } from "./buildings.js";
 import { updateVillagers } from "./villagers.js";
 import { updateConstruction } from "../systems/construction.js";
+import { regrowForests } from "../systems/resource-geography.js";
 import { updateFields } from "../systems/fields.js";
 import { updateForestFauna } from "../systems/forest-fauna.js";
 import { updateForestSuccession } from "../systems/forest-succession.js";
@@ -66,7 +67,7 @@ export function updateSimulation(){
     }
     if(newborn)addLog("A CHILD WAS BORN: "+newborn.person.name,"#e8c77b","family");
     else if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
-    updateFields();updateForestSuccession();updateForestFauna();updateForestPannage();updateBuildingIncome();updateLogistics();updateConstruction();updateVillagers();updateCombat();checkRandomEvents();
+    updateFields();updateForestSuccession();if(state.resourceGeography)regrowForests(400,{slice:state.tick%400,slices:400});updateForestFauna();updateForestPannage();updateBuildingIncome();updateLogistics();updateConstruction();updateVillagers();updateCombat();checkRandomEvents();
     updateWeather();updateMorale();updateMarket();updateEconomy();updateHealth();
     state.entities=state.entities.filter(entity=>!entity.dead);
     if(state.raidActive&&!state.entities.some(entity=>entity.isEnemy())){
