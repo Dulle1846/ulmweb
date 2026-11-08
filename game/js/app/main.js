@@ -320,7 +320,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.incomeThisTick={wood:0,stone:0,gold:0,food:0,...snapshot.incomeThisTick};
     state.kingHp=snapshot.kingHp||240;state.totalRaidsSurvived=snapshot.totalRaidsSurvived||0;
     state.raidActive=Boolean(snapshot.raidActive);state.gameOver=Boolean(snapshot.gameOver);state.victory=Boolean(snapshot.victory);
-    state.lastRandomEvent=snapshot.lastRandomEvent||0;state.weather=snapshot.weather||"clear";state.weatherTimer=snapshot.weatherTimer||0;
+    state.lastRandomEvent=snapshot.lastRandomEvent||0;state.weather=snapshot.weather||"clear";state.weatherTimer=Math.min(12,Math.max(0,Number(snapshot.weatherTimer)||0));
     state.kingdomName=snapshot.kingdomName||"ELDRIA";state.eventLog=Array.isArray(snapshot.eventLog)?snapshot.eventLog:[];
     state.eventSequence=snapshot.eventSequence||state.eventLog.reduce((max,e)=>Math.max(max,e.id||0),0);
     state.activeEvent=snapshot.activeEvent||null;

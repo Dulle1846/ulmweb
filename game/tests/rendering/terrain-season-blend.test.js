@@ -26,25 +26,62 @@ test("season weights stay normalised and share the boundary", () => {
     assert.equal(seasonWeights(1)[1], 1);
 });
 
-test("palettes blend between neighbouring seasons", () => {
+test("palettes are anchored at mid-season and ease across boundaries", () => {
     const spring = terrainPaletteFor("temperate", 0);
     const summer = terrainPaletteFor("temperate", 1);
-    const middle = terrainPaletteForPhase("temperate", 0.5);
+    const springPeak = terrainPaletteForPhase("temperate", 0.5);
+    const boundary = terrainPaletteForPhase("temperate", 1);
+
+    assert.deepEqual(springPeak.meadow, spring.meadow, "day 50 must be full spring");
+    assert.deepEqual(terrainPaletteForPhase("temperate", 1.5).meadow, summer.meadow, "day 150 must be full summer");
+
+    let differs = 0;
     for (let channel = 0; channel < 3; channel++) {
         const low = Math.min(spring.meadow[channel], summer.meadow[channel]);
         const high = Math.max(spring.meadow[channel], summer.meadow[channel]);
-        assert.ok(middle.meadow[channel] >= low - 1e-6 && middle.meadow[channel] <= high + 1e-6);
+        assert.ok(boundary.meadow[channel] >= low - 1e-6 && boundary.meadow[channel] <= high + 1e-6);
+        differs += Math.abs(boundary.meadow[channel] - spring.meadow[channel]);
     }
-    assert.ok(Math.abs(middle.meadow[0] - spring.meadow[0]) > 1, "the midpoint must sit between both seasons");
+    assert.ok(differs > 3, "the spring/summer boundary must sit visibly between both seasons");
 });
 
-test("snow cover fades across the winter boundary instead of snapping", () => {
-    assert.equal(terrainPaletteForPhase("temperate", 0).snowBias, 0);
-    assert.ok(terrainPaletteForPhase("temperate", 2.98).snowBias > 0);
-    assert.ok(Math.abs(terrainPaletteForPhase("temperate", 3).snowBias - 0.28) < 1e-9);
-    assert.ok(terrainPaletteForPhase("temperate", 3.02).snowBias > 0);
-    const shader = terrainShaderPaletteForPhase("temperate", 2.5);
-    assert.ok(Math.abs(shader.autumn - 0.5) < 1e-9);
-    assert.ok(Math.abs(shader.winter - 0.5) < 1e-9);
-    assert.ok(Math.abs(shader.spring) < 1e-9);
+test("snow cover starts in late autumn, peaks in winter and melts in spring", () => {
+    assert.equal(terrainPaletteForPhase("temperate", 1.5).snowBias, 0, "summer has no ground snow");
+    assert.equal(terrainPaletteForPhase("temperate", 2.3).snowBias, 0, "early autumn stays bare");
+    assert.ok(terrainPaletteForPhase("temperate", 2.9).snowBias > 0.02, "late autumn gets the first cover");
+    assert.ok(terrainPaletteForPhase("temperate", 3.4).snowBias > 0.25, "deep winter is fully covered");
+    assert.ok(terrainPaletteForPhase("temperate", 0.05).snowBias > 0.10, "spring keeps a melting cover");
+    assert.equal(terrainPaletteForPhase("temperate", 0.6).snowBias, 0, "late spring is snow free");
+});
+
+test("autumn litter and spring green-up follow their own curves", () => {
+    const summer = terrainShaderPaletteForPhase("temperate", 1.5);
+    const autumn = terrainShaderPaletteForPhase("temperate", 2.5);
+    const winter = terrainShaderPaletteForPhase("temperate", 3.5);
+    const spring = terrainShaderPaletteForPhase("temperate", 0.25);
+
+    assert.equal(summer.autumn, 0);
+    assert.ok(autumn.autumn > 0.6);
+    assert.ok(autumn.winter < 0.05);
+    assert.ok(winter.winter > 0.95);
+    assert.ok(winter.autumn < 0.3);
+    assert.ok(spring.spring > 0.5);
+    assert.equal(spring.autumn, 0);
+});
+
+test("the whole palette changes gradually across the year", () => {
+    let previous = terrainPaletteForPhase("temperate", 0);
+    let previousBias = previous.snowBias;
+    for (let step = 1; step <= 80; step++) {
+        const phase = step * 0.05;
+        const current = terrainPaletteForPhase("temperate", phase);
+        let delta = 0;
+        for (let channel = 0; channel < 3; channel++) {
+            delta += Math.abs(current.meadow[channel] - previous.meadow[channel]);
+        }
+        assert.ok(delta < 24, "palette jumped " + delta.toFixed(1) + " at phase " + phase.toFixed(2));
+        assert.ok(Math.abs(current.snowBias - previousBias) < 0.06);
+        previous = current;
+        previousBias = current.snowBias;
+    }
 });

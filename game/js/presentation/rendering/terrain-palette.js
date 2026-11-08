@@ -2,6 +2,7 @@
 // The climate palettes stay authoritative; seasons only shift their mood.
 
 import { TERRAIN_PALETTES } from '../../world/terrain-model.js';
+import { seasonalState, seasonPhase } from '../../world/season.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -93,10 +94,7 @@ function unitColor(color) {
 // boundary instead of snapping when dayOfYear crosses 100.
 export function terrainSeasonPhase(dayOfYear, seasonIndex = 0) {
     const day = Number(dayOfYear);
-    if (Number.isFinite(day)) {
-        const wrapped = ((day % 400) + 400) % 400;
-        return wrapped / 100;
-    }
+    if (Number.isFinite(day)) return seasonPhase(day);
     const season = ((Math.trunc(Number(seasonIndex) || 0) % 4) + 4) % 4;
     return season;
 }
@@ -129,27 +127,34 @@ function mixPalette(from, to, amount) {
     return result;
 }
 
-// Palette for a fractional season phase. Colours interpolate between the two
-// neighbouring seasons and the effect flags become weights, so shader passes
-// such as leaf litter or frost fade in over the last days of a season.
+// Palette for a fractional season phase. Season colours are anchored at the
+// middle of their season, not at its first day, and the blend eases in and out.
+// Day 0 is therefore half winter and half spring, day 50 is full spring and day
+// 100 is half spring and half summer: the ground green up through spring and
+// brown off through autumn instead of changing its mood on one morning.
 export function terrainPaletteForPhase(climate, phase) {
     const wrapped = ((Number(phase) % 4) + 4) % 4;
-    const lower = Math.floor(wrapped) % 4;
-    const fraction = wrapped - Math.floor(wrapped);
+    const anchored = ((wrapped - 0.5) % 4 + 4) % 4;
+    const lower = Math.floor(anchored) % 4;
+    const raw = anchored - Math.floor(anchored);
+    const fraction = raw * raw * (3 - 2 * raw);
     const base = TERRAIN_PALETTES[climate] || TERRAIN_PALETTES.temperate;
     const from = seasonalPalette(base, lower);
     const to = seasonalPalette(base, (lower + 1) % 4);
     const palette = fraction < 1e-4 ? from : mixPalette(from, to, fraction);
-    const weights = seasonWeights(wrapped);
+    // Effects follow their own asymmetric curves: snow starts in late autumn and
+    // melts in early spring, leaves turn before the first frost and are gone by
+    // midwinter. They are not tied to the palette anchors.
+    const seasonal = seasonalState(wrapped * 100);
     return {
         ...palette,
         season: lower,
         seasonPhase: wrapped,
-        snowBias: 0.28 * weights[3],
-        spring: weights[0],
-        summer: weights[1],
-        autumn: weights[2],
-        winter: weights[3],
+        snowBias: 0.28 * seasonal.snowCover,
+        spring: seasonal.greenUp,
+        summer: seasonal.warmth,
+        autumn: seasonal.foliageTurn,
+        winter: seasonal.snowCover,
     };
 }
 

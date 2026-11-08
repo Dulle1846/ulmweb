@@ -6,6 +6,8 @@ import { WORLD_W, WORLD_H, CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
 import { getHeightAt, getMoistureAt, getTemperatureAt, worldWidth, worldHeight } from '../../world/world.js';
 import { drawTerrainGL } from './terrain-webgl.js';
+import { flowerBloom, foliageState } from './seasonal-foliage.js';
+import { seasonalState } from '../../world/season.js';
 
 const worldW = () => Number(state.worldW) || WORLD_W;
 const worldH = () => Number(state.worldH) || WORLD_H;
@@ -126,7 +128,10 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
     const cellPx = CELL * zoom;
     const tick = state.tick;
     const sea = state.seaLevel ?? 0.33;
-    const season = state.seasonIndex ?? 0;
+    const dayOfYear = Number.isFinite(Number(state.dayOfYear))
+        ? Number(state.dayOfYear)
+        : (Number(state.seasonIndex) || 0) * 100;
+    const climate = seasonalState(dayOfYear);
 
     const startX = Math.max(0, Math.floor(cam.x / cellPx) - 1);
     const startY = Math.max(0, Math.floor(cam.y / cellPx) - 1);
@@ -166,14 +171,16 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             // pebbles, driftwood and denser reed clusters sit on the land side.
             if (above < 0.055 && m > 0.3) {
                 if (shoreDir && above < 0.016) drawWetEdge(ctx, px, py, cellPx, shoreDir, s1);
-                if (s1 > 0.42) drawReeds(ctx, px, py, cellPx, s1, s2, temp, shoreDir);
+                if (s1 > 0.42) drawReeds(ctx, px, py, cellPx, s1, s2, temp, shoreDir, climate.foliageTurn, climate.snowCover);
                 else if (s1 > 0.30) drawShoreStones(ctx, px, py, cellPx, s1, s2);
                 else if (s1 > 0.27) drawDriftwood(ctx, px, py, cellPx, s1, shoreDir);
                 continue;
             }
 
-            // Snowfields get sparse rocks and drifts, not grass.
-            if (temp < 0.22 || h > 0.9) {
+            // Snowfields get sparse rocks and drifts, not grass. The alpine
+            // line rises in summer and sinks in winter, so peaks do not stay
+            // painted white through July while the lowlands are green.
+            if (temp < 0.22 || h > 0.92 - climate.snowCover * 0.05) {
                 if (s1 > 0.72) drawSnowTuft(ctx, px, py, cellPx, s1);
                 else if (s1 > 0.62) drawRock(ctx, px, py, cellPx, zoom, true);
                 continue;
@@ -190,26 +197,26 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                 (m - 0.4) / 0.42 + (state.worldOptions?.forests ?? 52) * 0.001 - 0.05));
             const treeChance = (0.08 + forestDensity * 0.72) * (0.5 + cluster * 0.95);
             if (forestDensity > 0.08 && s1 < treeChance) {
-                drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, m, season, shoreDir);
+                drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, m, dayOfYear, shoreDir);
                 continue;
             }
             if (cluster > 0.6 && m > 0.34 && s1 > 0.8) {
-                drawShrub(ctx, px, py, cellPx, s1, s2, season);
+                drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear);
                 continue;
             }
 
             // Desert and steppe flora.
             if (temp > 0.66 && m < 0.36) {
                 if (s1 > 0.74) drawCactus(ctx, px, py, cellPx, s1);
-                else if (s1 > 0.6) drawGrassTufts(ctx, px, py, cellPx, s1, s2, true);
+                else if (s1 > 0.6) drawGrassTufts(ctx, px, py, cellPx, s1, s2, true, climate.foliageTurn, climate.snowCover);
                 continue;
             }
 
             // Meadows: flower drifts, tufts and the occasional boulder.
             if (h >= sea && h < 0.62 && zoom >= 0.34) {
-                if (s1 > 0.9) drawFlowerCluster(ctx, px, py, cellPx, s1, s2, season);
-                else if (s1 > 0.76) drawFlower(ctx, px, py, cellPx, s1, season);
-                else if (s1 > 0.64) drawGrassTufts(ctx, px, py, cellPx, s1, s2, false);
+                if (s1 > 0.9) drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear);
+                else if (s1 > 0.76) drawFlower(ctx, px, py, cellPx, s1, dayOfYear);
+                else if (s1 > 0.64) drawGrassTufts(ctx, px, py, cellPx, s1, s2, false, climate.foliageTurn, climate.snowCover);
                 else if (s1 > 0.625) drawRock(ctx, px, py, cellPx, zoom, false);
             }
         }
@@ -283,7 +290,83 @@ function drawShoreFoam(ctx, px, py, cellPx, tick, s2, zoom) {
     ctx.stroke();
 }
 
-function drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, moisture, season, shore = null) {
+const COLOR_CACHE = new Map();
+
+function rgbTriplet(hex) {
+    let value = COLOR_CACHE.get(hex);
+    if (value) return value;
+    const raw = hex.replace("#", "");
+    value = [
+        parseInt(raw.slice(0, 2), 16),
+        parseInt(raw.slice(2, 4), 16),
+        parseInt(raw.slice(4, 6), 16),
+    ];
+    COLOR_CACHE.set(hex, value);
+    return value;
+}
+
+function mixHex(from, to, amount) {
+    const t = Math.max(0, Math.min(1, amount));
+    const a = rgbTriplet(from);
+    const b = rgbTriplet(to);
+    return `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
+}
+
+// Snow settles on the upper crown first; the alpha follows the snow-cover
+// curve so a dusting in late autumn is visibly thinner than deep winter.
+function drawSnowCaps(ctx, px, py, s, sway, seed, snow, topY, spread) {
+    if (snow <= 0.12) return;
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.95, snow * 1.05);
+    ctx.fillStyle = "#eef6fb";
+    const caps = 1 + Math.floor(seed * 2);
+    for (let i = 0; i < caps; i++) {
+        const ox = (i - (caps - 1) / 2) * spread * 0.45 * s + sway;
+        ctx.beginPath();
+        ctx.ellipse(px + ox, topY + i * 1.7 * s, (3.8 - i * 0.7) * s, (1.8 - i * 0.25) * s, -0.18, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// A leafless crown is a real silhouette, not a grey ball: trunk plus a handful
+// of tapering branches. Oaks and beeches keep a few brown leaves into winter.
+function drawBareCrown(ctx, px, py, s, sway, seed, foliage, ink = "#6b5138") {
+    ctx.save();
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = Math.max(0.9, 1.4 * s);
+    ctx.lineCap = "round";
+    const crownY = py - 11 * s;
+    const spread = (9 + seed * 4) * s;
+    ctx.beginPath();
+    ctx.moveTo(px + sway * 0.4, crownY + 8 * s);
+    ctx.lineTo(px + sway * 0.7, crownY - 6 * s);
+    const branches = 5;
+    for (let i = 0; i < branches; i++) {
+        const angle = -Math.PI * 0.82 + (i / (branches - 1)) * Math.PI * 0.64;
+        const length = spread * (0.62 + ((i * 37) % 10) / 22);
+        const startY = crownY + 2 * s - i * 1.2 * s;
+        ctx.moveTo(px + sway * 0.6, startY);
+        ctx.lineTo(px + sway + Math.cos(angle) * length, startY + Math.sin(angle) * length);
+    }
+    ctx.stroke();
+    ctx.restore();
+    if (foliage.holding) {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = "#8a5c30";
+        for (let i = 0; i < 6; i++) {
+            const ox = ((i * 53) % 17 - 8) / 8 * spread * 0.7;
+            const oy = ((i * 71) % 13 - 6) / 6 * 3 * s;
+            ctx.beginPath();
+            ctx.ellipse(px + ox + sway, crownY + oy, 1.7 * s, 1.1 * s, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+function drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, moisture, dayOfYear, shore = null) {
     const s = cellPx / 48;
     const sway = Math.sin(tick * 0.045 + s1 * 10 + s2 * 7) * 1.6 * s;
 
@@ -302,67 +385,114 @@ function drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, moisture, seaso
     );
     ctx.fill();
     const variant = Math.min(3, Math.floor(Math.abs(s2) * 4));
+    const seed = s2;
 
-    if (temp < 0.4 || (temp < 0.54 && variant === 3)) { drawConifer(ctx, px, py, s, sway, s1, season); return; }
-    if (temp > 0.68 && moisture < 0.45) { drawPalm(ctx, px, py, s, sway, s1); return; }
-    if (moisture > 0.52 && variant === 2) { drawBirch(ctx, px, py, s, sway, s1, season); return; }
+    if (temp < 0.4 || (temp < 0.54 && variant === 3)) { drawConifer(ctx, px, py, s, sway, seed, dayOfYear); return; }
+    if (temp > 0.68 && moisture < 0.45) { drawPalm(ctx, px, py, s, sway, seed); return; }
     if (moisture > 0.76 && temp > 0.5 && s1 > 0.9) { drawDeadTree(ctx, px, py, s, sway); return; }
-    drawBroadleaf(ctx, px, py, s, sway, s1, season, variant);
+    if (moisture > 0.52 && variant === 2) { drawBirch(ctx, px, py, s, sway, seed, dayOfYear); return; }
+    // Two crown types: marcescent oaks keep some leaves through winter, plain
+    // broadleaf trees go bare. Both turn on their own schedule from `seed`.
+    const species = variant === 1 || variant === 3 ? "oak" : "broadleaf";
+    drawBroadleaf(ctx, px, py, s, sway, seed, dayOfYear, variant, species);
 }
 
-function drawBroadleaf(ctx, px, py, s, sway, seed, season, variant = 0) {
-    const autumn = season === 2;
-    const winter = season === 3;
+function drawBroadleaf(ctx, px, py, s, sway, seed, dayOfYear, variant = 0, species = "broadleaf") {
+    const foliage = foliageState(dayOfYear, { seed, species });
     ctx.fillStyle = "#5d4028";
     ctx.fillRect(px - 2.4 * s, py + 2 * s, 4.8 * s, 13 * s);
 
+    if (foliage.bare) {
+        drawBareCrown(ctx, px, py, s, sway, seed, foliage);
+        drawSnowCaps(ctx, px, py, s, sway, seed, foliage.snow, py - 12 * s, 10);
+        return;
+    }
+
     const summer = [["#2f6b31", "#4d9c4b"], ["#36702e", "#5aa84d"], ["#2a5f33", "#468e46"], ["#3d7735", "#6aad52"]][Math.abs(variant) % 4];
-    const crown = winter ? "#7c8478" : autumn ? (seed > 0.5 ? "#a8642f" : "#b58537") : summer[0];
-    const light = winter ? "#98a196" : autumn ? "#c98a48" : summer[1];
+    const autumn = species === "oak" ? ["#9a5f2c", "#c08444"] : species === "beech" ? ["#a86f2f", "#c79a4b"] : ["#a8642f", "#c98a48"];
+    let crown = mixHex(summer[0], autumn[0], foliage.turn);
+    let light = mixHex(summer[1], autumn[1], foliage.turn);
+    if (foliage.holding && foliage.turn > 0.7) {
+        crown = mixHex(crown, "#7d5a34", 0.5);
+        light = mixHex(light, "#9a7442", 0.5);
+    }
+    if (foliage.fresh > 0) {
+        crown = mixHex(crown, "#73b352", foliage.fresh * 0.22);
+        light = mixHex(light, "#9ed070", foliage.fresh * 0.18);
+    }
+
+    const cover = Math.max(0.18, foliage.leaf);
+    ctx.save();
+    ctx.globalAlpha = 0.35 + 0.65 * cover;
+    const radius = (11 + seed * 4) * s * (0.62 + 0.38 * cover);
     ctx.fillStyle = crown;
     ctx.beginPath();
-    ctx.arc(px + sway, py - 4 * s, (11 + seed * 4) * s, 0, Math.PI * 2);
+    ctx.arc(px + sway, py - 4 * s, radius, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = light;
     ctx.beginPath();
-    ctx.arc(px - 3.6 * s + sway, py - 7 * s, (5.4 + seed * 2) * s, 0, Math.PI * 2);
+    ctx.arc(px - 3.6 * s + sway, py - 7 * s, (5.4 + seed * 2) * s * (0.7 + 0.3 * cover), 0, Math.PI * 2);
     ctx.fill();
     if (variant % 2 === 0) {
         ctx.fillStyle = crown;
         ctx.beginPath();
-        ctx.arc(px + 4 * s + sway, py - 2 * s, (4.6 + seed * 2) * s, 0, Math.PI * 2);
+        ctx.arc(px + 4 * s + sway, py - 2 * s, (4.6 + seed * 2) * s * (0.7 + 0.3 * cover), 0, Math.PI * 2);
         ctx.fill();
+    }
+    ctx.restore();
+
+    // Thinning crowns drop visible leaves around the trunk.
+    if (foliage.leaf > 0.2 && foliage.leaf < 0.78) {
+        ctx.save();
+        ctx.globalAlpha = 0.7 * (1 - foliage.leaf);
+        ctx.fillStyle = mixHex(autumn[0], "#6d4c24", 0.4);
+        for (let i = 0; i < 7; i++) {
+            const ox = ((i * 43) % 15 - 7) / 7 * 9 * s;
+            const oy = ((i * 67) % 11 - 5) / 5 * 7 * s;
+            ctx.beginPath();
+            ctx.ellipse(px + ox + sway, py + oy, 1.5 * s, 0.9 * s, i * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
     }
 
-    if (winter) {
-        ctx.fillStyle = "rgba(240,246,248,0.75)";
-        ctx.beginPath();
-        ctx.arc(px + sway, py - 9 * s, 4.4 * s, 0, Math.PI * 2);
-        ctx.fill();
-    }
+    drawSnowCaps(ctx, px, py, s, sway, seed, foliage.snow, py - 11 * s, 12);
 }
 
-function drawBirch(ctx, px, py, s, sway, seed, season) {
-    const winter = season === 3;
+function drawBirch(ctx, px, py, s, sway, seed, dayOfYear) {
+    const foliage = foliageState(dayOfYear, { seed, species: "birch" });
     ctx.fillStyle = "#e9e3d4";
     ctx.fillRect(px - 1.8 * s, py + 1 * s, 3.6 * s, 13 * s);
     ctx.fillStyle = "#4a4136";
     for (let i = 0; i < 3; i++) {
         ctx.fillRect(px - 1.8 * s, py + (3 + i * 3.4) * s, (1.6 + (i % 2) * 0.8) * s, 0.9 * s);
     }
-    ctx.fillStyle = winter ? "#8c9488" : (seed > 0.5 ? "#6a9e3e" : "#7fae48");
+    if (foliage.bare) {
+        drawBareCrown(ctx, px, py, s, sway, seed, foliage, "#8a7f6e");
+        drawSnowCaps(ctx, px, py, s, sway, seed, foliage.snow, py - 12 * s, 9);
+        return;
+    }
+    ctx.save();
+    ctx.globalAlpha = 0.35 + 0.65 * foliage.leaf;
+    ctx.fillStyle = mixHex("#6a9e3e", "#c9a83a", foliage.turn);
     ctx.beginPath();
-    ctx.arc(px + sway, py - 5 * s, (8.5 + seed * 3) * s, 0, Math.PI * 2);
+    ctx.arc(px + sway, py - 5 * s, (8.5 + seed * 3) * s * (0.68 + 0.32 * foliage.leaf), 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = winter ? "#a6aea2" : "#a3c463";
+    ctx.fillStyle = mixHex("#a3c463", "#e0c25a", foliage.turn);
     ctx.beginPath();
-    ctx.arc(px - 3 * s + sway, py - 8 * s, 4.4 * s, 0, Math.PI * 2);
+    ctx.arc(px - 3 * s + sway, py - 8 * s, 4.4 * s * (0.7 + 0.3 * foliage.leaf), 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
+    drawSnowCaps(ctx, px, py, s, sway, seed, foliage.snow, py - 10 * s, 9);
 }
 
-function drawShrub(ctx, px, py, cellPx, s1, s2, season) {
+function drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear) {
     const s = cellPx / 48;
-    if (season === 3) {
+    // Roughly a quarter of the shrubs are evergreen; the rest lose their
+    // leaves on the same continuous schedule as the broadleaf trees.
+    const evergreen = s1 > 0.72;
+    const foliage = foliageState(dayOfYear, { seed: s2, species: evergreen ? "conifer" : "shrub" });
+    if (!evergreen && foliage.bare) {
         ctx.strokeStyle = "rgba(120,112,96,0.8)";
         ctx.lineWidth = Math.max(0.8, 1.1 * s);
         for (let i = 0; i < 3; i++) {
@@ -371,18 +501,23 @@ function drawShrub(ctx, px, py, cellPx, s1, s2, season) {
             ctx.lineTo(px + (i - 1) * 4 * s, py - 4 * s);
             ctx.stroke();
         }
+        drawSnowCaps(ctx, px, py, s, 1, s2, foliage.snow, py - 4 * s, 5);
         return;
     }
-    const winterCrown = "#6f7a68";
-    ctx.fillStyle = season === 3 ? winterCrown : s1 > 0.5 ? "#3c7238" : "#4c7f3e";
+    const cover = evergreen ? 1 : Math.max(0.2, foliage.leaf);
+    const crown = mixHex(s1 > 0.5 ? "#3c7238" : "#4c7f3e", "#8a6a34", evergreen ? 0 : foliage.turn);
+    ctx.save();
+    ctx.globalAlpha = 0.4 + 0.6 * cover;
+    ctx.fillStyle = crown;
     ctx.beginPath();
-    ctx.ellipse(px, py, (6 + s2 * 3) * s, (4.2 + s1 * 2) * s, 0, 0, Math.PI * 2);
+    ctx.ellipse(px, py, (6 + s2 * 3) * s * (0.7 + 0.3 * cover), (4.2 + s1 * 2) * s * (0.7 + 0.3 * cover), 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "rgba(146,190,96,0.65)";
+    ctx.fillStyle = evergreen ? "rgba(146,190,96,0.65)" : `rgba(146,190,96,${0.25 + 0.4 * (1 - foliage.turn)})`;
     ctx.beginPath();
     ctx.ellipse(px - 2 * s, py - 2 * s, 2.6 * s, 1.8 * s, 0, 0, Math.PI * 2);
     ctx.fill();
-    if (s2 > 0.7) {
+    ctx.restore();
+    if (s2 > 0.7 && cover > 0.6) {
         ctx.fillStyle = "rgba(190,74,74,0.9)";
         for (let i = 0; i < 3; i++) {
             ctx.beginPath();
@@ -390,23 +525,28 @@ function drawShrub(ctx, px, py, cellPx, s1, s2, season) {
             ctx.fill();
         }
     }
+    drawSnowCaps(ctx, px, py, s, 1, s2, foliage.snow * 0.7, py - 4 * s, 6);
 }
 
-function drawFlowerCluster(ctx, px, py, cellPx, s1, s2, season) {
-    drawFlower(ctx, px, py, cellPx, s1, season);
-    drawFlower(ctx, px + (s2 - 0.5) * 7 * (cellPx / 48), py + 3 * (cellPx / 48), cellPx, 1 - s1, season);
-    drawFlower(ctx, px - 4 * (cellPx / 48), py + (s1 - 0.5) * 5 * (cellPx / 48), cellPx, s2, season);
+function drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear) {
+    drawFlower(ctx, px, py, cellPx, s1, dayOfYear);
+    drawFlower(ctx, px + (s2 - 0.5) * 7 * (cellPx / 48), py + 3 * (cellPx / 48), cellPx, 1 - s1, dayOfYear);
+    drawFlower(ctx, px - 4 * (cellPx / 48), py + (s1 - 0.5) * 5 * (cellPx / 48), cellPx, s2, dayOfYear);
 }
 
-function drawConifer(ctx, px, py, s, sway, seed, season) {
-    const winter = season === 3;
+function drawConifer(ctx, px, py, s, sway, seed, dayOfYear) {
+    const foliage = foliageState(dayOfYear, { seed, species: "conifer" });
     ctx.fillStyle = "#4c3724";
     ctx.fillRect(px - 2 * s, py + 4 * s, 4 * s, 11 * s);
     const height = (20 + seed * 8) * s;
+    // Needles stay on the tree all year; only their tone cools and the snow
+    // load grows, so a conifer never turns into the old grey blob.
+    const needle = mixHex("#24543a", "#31504a", foliage.snowCover * 0.55);
+    const needleLight = mixHex("#2c6343", "#3c6a4c", foliage.snowCover * 0.35);
     for (let layer = 0; layer < 3; layer++) {
         const width = (12 - layer * 3) * s;
         const baseY = py + 2 * s - layer * height * 0.3;
-        ctx.fillStyle = winter ? "#3f5a4c" : layer === 0 ? "#24543a" : "#2c6343";
+        ctx.fillStyle = layer === 0 ? needle : needleLight;
         ctx.beginPath();
         ctx.moveTo(px + sway, baseY - height * 0.42);
         ctx.lineTo(px - width, baseY);
@@ -414,14 +554,17 @@ function drawConifer(ctx, px, py, s, sway, seed, season) {
         ctx.closePath();
         ctx.fill();
     }
-    if (winter) {
-        ctx.fillStyle = "rgba(240,246,248,0.8)";
+    if (foliage.snow > 0.15) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(0.9, foliage.snow);
+        ctx.fillStyle = "#eef6fb";
         ctx.beginPath();
         ctx.moveTo(px + sway, py - height * 0.42 + 2 * s);
         ctx.lineTo(px - 3.5 * s, py - height * 0.08);
         ctx.lineTo(px + 3.5 * s, py - height * 0.08);
         ctx.closePath();
         ctx.fill();
+        ctx.restore();
     }
 }
 
@@ -568,7 +711,7 @@ function drawDriftwood(ctx, px, py, cellPx, s1, shore) {
     ctx.restore();
 }
 
-function drawReeds(ctx, px, py, cellPx, s1, s2, temp, shore = null) {
+function drawReeds(ctx, px, py, cellPx, s1, s2, temp, shore = null, turn = 0, snow = 0) {
     const s = cellPx / 48;
     const height = (8 + s2 * 8) * s;
     if (shore) {
@@ -583,7 +726,12 @@ function drawReeds(ctx, px, py, cellPx, s1, s2, temp, shore = null) {
             ctx.stroke();
         }
     }
-    ctx.strokeStyle = temp < 0.4 ? "rgba(142,150,120,0.78)" : "rgba(84,112,58,0.85)";
+    const reedBase = temp < 0.4 ? [142, 150, 120] : [84, 112, 58];
+    const reedWarm = [160, 128, 66];
+    const rr = Math.round(reedBase[0] + (reedWarm[0] - reedBase[0]) * turn);
+    const rg = Math.round(reedBase[1] + (reedWarm[1] - reedBase[1]) * turn);
+    const rb = Math.round(reedBase[2] + (reedWarm[2] - reedBase[2]) * turn);
+    ctx.strokeStyle = `rgba(${rr},${rg},${rb},${0.85 * (1 - snow * 0.5)})`;
     ctx.lineWidth = Math.max(1, 1.25 * s);
     for (let i = 0; i < 5; i++) {
         const offset = (i - 2) * 1.9 * s;
@@ -602,10 +750,16 @@ function drawReeds(ctx, px, py, cellPx, s1, s2, temp, shore = null) {
     }
 }
 
-function drawFlower(ctx, px, py, cellPx, s1, season) {
-    if (season === 3) return;
+function drawFlower(ctx, px, py, cellPx, s1, dayOfYear) {
+    const bloom = flowerBloom(dayOfYear);
+    if (bloom < 0.08) return;
+    const climate = seasonalState(dayOfYear);
     const r = cellPx * 0.045;
-    const color = season === 2 ? "rgba(196,132,64,0.8)" : s1 > 0.5 ? "rgba(214,96,132,0.8)" : "rgba(244,239,208,0.85)";
+    const color = climate.foliageTurn > 0.35
+        ? "rgba(196,132,64,0.8)"
+        : s1 > 0.5 ? "rgba(214,96,132,0.8)" : "rgba(244,239,208,0.85)";
+    ctx.save();
+    ctx.globalAlpha = bloom;
     ctx.fillStyle = color;
     for (let i = 0; i < 4; i++) {
         const angle = i * Math.PI / 2;
@@ -617,12 +771,21 @@ function drawFlower(ctx, px, py, cellPx, s1, season) {
     ctx.beginPath();
     ctx.arc(px, py, r * 0.5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
 }
 
-function drawGrassTufts(ctx, px, py, cellPx, s1, s2, dry) {
+function drawGrassTufts(ctx, px, py, cellPx, s1, s2, dry, turn = 0, snow = 0) {
+    if (snow > 0.7) return;
     const s = cellPx / 48;
     const lean = (s2 - 0.5) * 4 * s;
-    ctx.strokeStyle = dry ? "rgba(150,132,78,0.55)" : "rgba(38,82,36,0.5)";
+    // Grass browns off with the same curve as the trees instead of staying
+    // green until the first day of autumn and then snapping to ochre.
+    const base = dry ? [150, 132, 78] : [38, 82, 36];
+    const warm = [156, 112, 52];
+    const r = Math.round(base[0] + (warm[0] - base[0]) * turn);
+    const g = Math.round(base[1] + (warm[1] - base[1]) * turn);
+    const b = Math.round(base[2] + (warm[2] - base[2]) * turn);
+    ctx.strokeStyle = `rgba(${r},${g},${b},${(dry ? 0.55 : 0.5) * (1 - snow * 0.55)})`;
     ctx.lineWidth = Math.max(1, 1.05 * s);
     ctx.lineCap = "round";
     ctx.beginPath();

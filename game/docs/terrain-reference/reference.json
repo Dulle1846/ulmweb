@@ -10,27 +10,27 @@
   },
   "renderer": "WebKit WebGL",
   "maxTextureSize": 8192,
-  "generatedAt": "2026-11-07T22:58:02.690Z",
+  "generatedAt": "2026-11-08T09:59:54.935Z",
   "seasons": [
     {
       "key": "spring",
       "label": "SPRING",
-      "day": 0
+      "day": 50
     },
     {
       "key": "summer",
       "label": "SUMMER",
-      "day": 100
+      "day": 150
     },
     {
       "key": "autumn",
       "label": "AUTUMN",
-      "day": 200
+      "day": 250
     },
     {
       "key": "winter",
       "label": "WINTER",
-      "day": 300
+      "day": 350
     }
   ],
   "zooms": [
@@ -77,6 +77,80 @@
     "winter-districts.png",
     "winter-rooftops.png",
     "winter-interiors.png"
+  ],
+  "transitions": [
+    {
+      "day": 210
+    },
+    {
+      "day": 240
+    },
+    {
+      "day": 270
+    },
+    {
+      "day": 300
+    },
+    {
+      "day": 330
+    },
+    {
+      "day": 360
+    },
+    {
+      "day": 0
+    },
+    {
+      "day": 15
+    },
+    {
+      "day": 30
+    },
+    {
+      "day": 50
+    }
+  ],
+  "transitionNote": "Autumn to spring at district zoom (0.30×); one frame every 15–30 days across the darkest and the greenest month.",
+  "treeFocus": {
+    "x": 90,
+    "y": 22,
+    "score": 49
+  },
+  "treeDays": [
+    220,
+    250,
+    280,
+    310,
+    340,
+    0,
+    30,
+    60
+  ],
+  "treeFrames": [
+    {
+      "day": 220
+    },
+    {
+      "day": 250
+    },
+    {
+      "day": 280
+    },
+    {
+      "day": 310
+    },
+    {
+      "day": 340
+    },
+    {
+      "day": 0
+    },
+    {
+      "day": 30
+    },
+    {
+      "day": 60
+    }
   ],
   "note": "HUD, entities, fog and weather hidden; paused simulation; camera centred. Not a GPU performance benchmark."
 }

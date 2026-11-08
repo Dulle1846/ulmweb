@@ -518,11 +518,12 @@ void main() {
             * smoothstep(-0.02, 0.040, elevation)
             * smoothstep(0.15, 0.55, beachNoise + 0.20);
         beach = clamp(beach, 0.0, 0.68);
-        float snow = clamp(
-            smoothstep(0.62, 0.86, elevW)
-            + smoothstep(0.28, 0.08, tempW)
-            + uSnowBias,
-            0.0, 1.0);
+        // The snow line breathes with the season: a peak keeps its cap through
+        // winter and loses most of it in summer instead of staying a static
+        // white patch that reads as snow in July.
+        float alpine = smoothstep(0.62, 0.86, elevW) * (1.0 - 0.30 * uSummer);
+        float coldGround = smoothstep(0.28, 0.08, tempW) * (1.0 - 0.22 * uSummer);
+        float snow = clamp(alpine + coldGround + uSnowBias, 0.0, 1.0);
         // The carve wall around rivers is a one-texel drop in the data. It must
         // read as a bank, not as a ring of cliffs, so slopes near water are masked.
         float cliff = smoothstep(0.035, 0.095, slope) * (1.0 - snow * 0.70) * (1.0 - max(shoreCalm, bankClean));
@@ -1196,8 +1197,13 @@ const SEASON_SUN = [
 
 function sunState(phase) {
     const wrapped = ((Number(phase) % 4) + 4) % 4;
-    const lower = Math.floor(wrapped) % 4;
-    const fraction = wrapped - Math.floor(wrapped);
+    // Sun elevation is anchored mid-season, matching the palette: the highest
+    // sun belongs to midsummer and the lowest to midwinter, not to the first
+    // day of those seasons.
+    const anchored = ((wrapped - 0.5) % 4 + 4) % 4;
+    const lower = Math.floor(anchored) % 4;
+    const raw = anchored - Math.floor(anchored);
+    const fraction = raw * raw * (3 - 2 * raw);
     const from = SEASON_SUN[lower];
     const to = SEASON_SUN[(lower + 1) % 4];
     // The sun climbs and sinks across the season boundary instead of jumping.

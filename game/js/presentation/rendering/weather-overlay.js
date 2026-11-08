@@ -9,6 +9,7 @@
 // It is presentation-only and never mutates state.
 
 import { state } from '../../core/state.js';
+import { seasonalState } from '../../world/season.js';
 
 const SNOW_COUNT = 170;
 const RAIN_COUNT = 160;
@@ -52,6 +53,9 @@ export function weatherParticles(time, kind, count) {
 export function drawWeatherOverlay(ctx, canvas, time = performance.now() / 1000) {
     const kind = weatherKind(state.weather);
     if (!ctx || !canvas || kind === 'clear') return false;
+    // A saved game from the old timer could still carry a snowfall into summer;
+    // the ground curve is authoritative, so never draw flakes without snow cover.
+    if (kind === 'snow' && seasonalState(state.dayOfYear).snowCover <= 0.02) return false;
     const width = Number(canvas.width) || 0;
     const height = Number(canvas.height) || 0;
     if (width < 2 || height < 2) return false;

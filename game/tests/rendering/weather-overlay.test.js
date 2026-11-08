@@ -36,6 +36,21 @@ test("particles stay inside the frame and move over time", () => {
     assert.notDeepEqual(first.map(p => p.y), later.map(p => p.y), "flakes must fall");
 });
 
+test("a stale snowfall is not drawn in summer", () => {
+    const originalWeather = state.weather;
+    const originalDay = state.dayOfYear;
+    try {
+        state.weather = "snow";
+        state.dayOfYear = 150;
+        const summer = fakeContext();
+        assert.equal(drawWeatherOverlay(summer.ctx, { width: 800, height: 600 }, 1), false);
+        assert.equal(summer.calls.length, 0, "summer must not show flakes even from a stale save");
+    } finally {
+        state.weather = originalWeather;
+        state.dayOfYear = originalDay;
+    }
+});
+
 test("the overlay draws snow and rain and leaves clear skies alone", () => {
     const original = state.weather;
     try {
