@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import { generateResourceGeography } from "../../js/systems/resource-geography.js";
 import {
-    ensureForestFauna, forestFaunaAt, forestFaunaSummaryAt, resetForestFauna,
+    ensureForestFauna, forestFaunaAt, forestFaunaSignAt, forestFaunaSummaryAt, resetForestFauna,
     restoreForestFauna, serializeForestFauna, updateForestFauna,
     validateForestFaunaSnapshot, FOREST_FAUNA_LIMITS,
 } from "../../js/systems/forest-fauna.js";
@@ -52,6 +52,44 @@ test("herds grow, decline, move and stay within bounded populations", () => {
     assert.ok(model.herds.every(herd => herd.population <= Math.max(1, herd.capacity) * 1.35 + 0.11));
     assert.ok(model.stats.migrations >= 0 && model.stats.splits >= 0);
     assert.ok(model.history.length <= 32);
+});
+
+test("fauna signs expose tracks, browse, carcasses and nests per herd", () => {
+    const model = setup();
+    assert.ok(model.herds.length > 0);
+    const herd = model.herds[0];
+    const sign = forestFaunaSignAt(herd.x, herd.y);
+    assert.ok(sign);
+    assert.equal(sign.herdId, herd.id);
+    assert.equal(sign.tracks, true);
+    assert.equal(sign.carcass, false);
+    assert.ok(sign.territory >= 0 && sign.territory <= 1);
+
+    const deer = model.herds.find(entry => entry.species === "deer" || entry.species === "roe-deer");
+    assert.ok(deer, "a broadleaf realm should carry a deer herd");
+    const browsed = forestFaunaSignAt(deer.x, deer.y, { forest: true, ageClass: "young", ground: { logs: 0 } }, 150);
+    assert.ok(browsed && browsed.browse > 0, "deer leave browsed shoots in young growth");
+
+    model.day = 5;
+    herd.lastHuntedDay = 3;
+    herd.huntingPressure = 0.5;
+    const hunted = forestFaunaSignAt(herd.x, herd.y);
+    assert.equal(hunted.carcass, true);
+    assert.equal(hunted.carcassSpecies, herd.species);
+
+    const bird = model.herds.find(entry => entry.group === "bird");
+    if (bird) {
+        const nest = forestFaunaSignAt(bird.x, bird.y, { forest: true, ageClass: "ancient", ground: { logs: 0.5 } }, 150);
+        assert.ok(nest.nest === "hollow" || nest.nest === "nest");
+    }
+
+    let empty = null;
+    for (let y = 0; y < state.worldH && !empty; y++) {
+        for (let x = 0; x < state.worldW; x++) {
+            if (!forestFaunaSignAt(x, y)) { empty = [x, y]; break; }
+        }
+    }
+    assert.ok(empty, "some tile must have no herd and therefore no signs");
 });
 
 test("forest fauna serializes and restores deterministic herd state", () => {

@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import {
     ensureForestSuccession, forestSuccessionAt, resetForestSuccession,
-    restoreForestSuccession, serializeForestSuccession, updateForestSuccession,
+    restoreForestSuccession, serializeForestSuccession, suppressForestDisturbance,
+    suppressNearestForestDisturbance, updateForestSuccession,
     validateForestSuccessionSnapshot,
 } from "../../js/systems/forest-succession.js";
 import {
@@ -129,6 +130,97 @@ test("a new event lowers real stock and is recorded in bounded history", () => {
     assert.ok(event.stockAfter < event.stockBefore);
     assert.equal(state.resourceGeography.forestStock[event.y * state.worldW + event.x], event.stockAfter);
     assert.ok(model.events >= 1);
+});
+
+test("fire, storm and disease spread to neighbouring stands and stay bounded", () => {
+    const model = setup();
+    for (let i = 0; i < 50; i++) updateForestSuccession(12);
+    assert.ok(model.spreadings > 0, "a long campaign should spread at least one disturbance");
+    assert.ok(model.spreadHistory.length > 0);
+    assert.ok(model.spreadHistory.length <= 24);
+    for (const entry of model.spreadHistory) {
+        assert.ok(["burned", "windthrow", "diseased"].includes(entry.kind));
+        assert.notEqual(entry.to.join(":"), entry.from.join(":"));
+        assert.ok(entry.stockAfter < entry.stockBefore);
+        assert.equal(Math.max(Math.abs(entry.to[0] - entry.from[0]), Math.abs(entry.to[1] - entry.from[1])), 1);
+    }
+});
+
+test("a control party contains a disturbance and costs real resources", () => {
+    const model = setup();
+    state.resources.wood = 100;
+    state.resources.food = 100;
+    state.resources.gold = 100;
+    const key = Object.keys(model.tiles).find(key => {
+        const [x, y] = key.split(":").map(Number);
+        return forestSuccessionAt(x, y)?.stage === "fresh";
+    });
+    assert.ok(key);
+    const [x, y] = key.split(":").map(Number);
+    const record = model.tiles[key];
+    const costs = record.kind === "burned" ? { food: 6, wood: 4 }
+        : record.kind === "windthrow" ? { wood: 8 } : { gold: 6 };
+    const result = suppressForestDisturbance(x, y);
+    assert.equal(result.ok, true);
+    assert.equal(result.containedUntil, model.day + 90);
+    assert.deepEqual(result.cost, costs);
+    assert.equal(forestSuccessionAt(x, y).contained, true);
+    for (const [resource, amount] of Object.entries(costs)) {
+        assert.equal(state.resources[resource], 100 - amount);
+    }
+    assert.equal(model.suppressed, 1);
+    for (let i = 0; i < 3; i++) updateForestSuccession(30);
+    assert.equal(forestSuccessionAt(x, y)?.contained, false);
+});
+
+test("control fails without resources and can find the nearest disturbance", () => {
+    const model = setup();
+    state.resources.wood = 0;
+    state.resources.food = 0;
+    state.resources.gold = 0;
+    const [x, y] = Object.keys(model.tiles)[0].split(":").map(Number);
+    const denied = suppressForestDisturbance(x, y);
+    assert.equal(denied.ok, false);
+    assert.match(denied.reason, /Not enough/);
+    assert.equal(suppressNearestForestDisturbance(-50, -50, 4).ok, false);
+    state.resources.wood = 100;
+    state.resources.food = 100;
+    state.resources.gold = 100;
+    const nearest = suppressNearestForestDisturbance(x, y, 8);
+    assert.equal(nearest.ok, true);
+    assert.ok(Math.abs(nearest.x - x) + Math.abs(nearest.y - y) <= 8);
+});
+
+test("spread and control state survives a save and an older snapshot", () => {
+    const model = setup();
+    for (let i = 0; i < 12; i++) updateForestSuccession(30);
+    state.resources.wood = 100;
+    state.resources.food = 100;
+    state.resources.gold = 100;
+    const key = Object.keys(model.tiles).find(key => {
+        const [x, y] = key.split(":").map(Number);
+        const entry = forestSuccessionAt(x, y);
+        return entry && !entry.recovered;
+    });
+    assert.ok(key);
+    assert.equal(suppressForestDisturbance(...key.split(":").map(Number)).ok, true);
+    const snapshot = serializeForestSuccession();
+    assert.ok(snapshot.spreadHistory.length > 0);
+    assert.ok(snapshot.tiles[key].containedUntil > 0);
+    resetForestSuccession();
+    restoreForestSuccession(snapshot);
+    assert.equal(state.forestSuccession.spreadings, snapshot.spreadings);
+    assert.equal(state.forestSuccession.spreadHistory.length, snapshot.spreadHistory.length);
+    assert.equal(state.forestSuccession.tiles[key].containedUntil, snapshot.tiles[key].containedUntil);
+
+    const legacy = {
+        version: 1, seed: 7, day: 0, events: 0, lastEventDay: 0, daysSinceEvent: 0,
+        tiles: { "4:4": { kind: "burned", age: 0 } }, history: [],
+    };
+    resetForestSuccession();
+    assert.equal(restoreForestSuccession(legacy), 1);
+    updateForestSuccession(12);
+    assert.ok(Array.isArray(state.forestSuccession.spreadHistory));
 });
 
 test("succession saves validate and restore without inventing tiles", () => {

@@ -70,6 +70,43 @@ function rgba(hex, alpha) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+// A single solar vector drives the canopy shafts, tree shadows and the WebGL
+// shadow march. The sun rises in the east at 06:00, crosses south at noon and
+// sets west at 18:00; its seasonal height still comes from the calendar.
+export function solarVector(value, season = "summer") {
+    const hour = normalizeTimeOfDay(value);
+    const dayAltitude = Math.sin(((hour - 6) / HOURS_PER_DAY) * TWO_PI);
+    const seasonal = season === "winter" ? 0.5 : season === "summer" ? 0.82 : 0.65;
+    const elevation = Math.max(0.12, Math.min(1.18, seasonal + dayAltitude * 0.38));
+    const azimuth = ((hour - 6) / 12) * Math.PI;
+    const x = Math.cos(azimuth) * Math.cos(elevation);
+    const y = Math.sin(azimuth) * Math.cos(elevation);
+    const z = Math.sin(elevation);
+    const length = Math.hypot(x, y) || 1;
+    const tan = Math.tan(elevation);
+    return {
+        hour, elevation, azimuth,
+        direction: [x, y, z],
+        shadowX: -x / length,
+        shadowY: -y / length,
+        step: Math.max(0.55, Math.min(3, 1.05 / Math.max(0.25, tan))),
+    };
+}
+
+// Morning ground mist is a weather/soil state, not a constant decoration. It
+// peaks shortly after dawn over damp stands and fades before noon; rain and fog
+// extend it, while a dry summer wood has almost none.
+export function forestMistFactor(value, moisture = 0.55, season = "summer", weather = "clear") {
+    const hour = normalizeTimeOfDay(value);
+    const morning = clamp01(1 - Math.abs(hour - 7.2) / 4.2);
+    if (morning <= 0) return 0;
+    const wet = clamp01((Number(moisture) - 0.34) / 0.46);
+    const weatherName = String(weather || "clear").toLowerCase();
+    const weatherBoost = weatherName === "fog" ? 0.48 : weatherName === "rain" || weatherName === "storm" ? 0.3 : weatherName === "overcast" ? 0.16 : 0;
+    const seasonal = season === "winter" ? 0.7 : season === "autumn" ? 1.12 : season === "spring" ? 1.06 : 0.82;
+    return clamp01((morning * 0.72 + weatherBoost) * (0.22 + wet * 0.88) * seasonal);
+}
+
 export function drawDaylightOverlay(ctx, canvas, value, season = "summer") {
     if (!ctx || !canvas) return false;
     const light = daylightState(value, season);
@@ -80,8 +117,11 @@ export function drawDaylightOverlay(ctx, canvas, value, season = "summer") {
 
     ctx.save();
     if (light.phase === "dawn" || light.phase === "dusk") {
-        // Low sun warms the top of the view and fades into the shaded ground.
-        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        // Warm the side the sun is on, not the whole view evenly. This keeps the
+        // dawn/dusk wash tied to the same solar direction as the cast shadows.
+        const sun = solarVector(value, season);
+        const fromLeft = sun.shadowX > 0;
+        const gradient = ctx.createLinearGradient(fromLeft ? 0 : width, 0, fromLeft ? width : 0, height * 0.55);
         gradient.addColorStop(0, rgba(light.color, light.alpha));
         gradient.addColorStop(0.55, rgba(light.color, light.alpha * 0.55));
         gradient.addColorStop(1, rgba(light.color, light.alpha * 0.18));

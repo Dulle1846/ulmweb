@@ -17,6 +17,7 @@ import { getRoadTiles } from '../../systems/roads.js';
 import { terrainSeasonPhase, terrainShaderPaletteForPhase } from './terrain-palette.js';
 import { buildTerrainAtlas, TERRAIN_ATLAS_COLUMNS, TERRAIN_ATLAS_ROWS, TERRAIN_ATLAS_VARIANTS } from './terrain-atlas.js';
 import { buildHeightOcclusion } from './terrain-ao.js';
+import { solarVector } from './daylight.js';
 import { advanceWearField, buildWearTargets, createWearField, encodeWearField, wearGridSize } from './terrain-wear.js';
 
 const VERTEX_SHADER = `#version 300 es
@@ -1209,22 +1210,25 @@ function sunState(phase) {
     // The sun climbs and sinks across the season boundary instead of jumping.
     const elevation = from.elevation + (to.elevation - from.elevation) * fraction;
     const strength = from.strength + (to.strength - from.strength) * fraction;
-    const day = Math.max(0, Number(state.dayOfYear) || 0);
-    const azimuth = (day / 400) * Math.PI * 2 + 0.6;
-    const x = Math.cos(azimuth) * Math.cos(elevation);
-    const y = Math.sin(azimuth) * Math.cos(elevation);
+    // The seasonal sun gives the height; the daily phase gives the azimuth. A
+    // single solar vector keeps the cast-shadow direction synchronized with the
+    // canvas tree shadows and the canopy light shafts.
+    const seasonName = ["spring", "summer", "autumn", "winter"][Math.floor(wrapped) % 4] || "summer";
+    const solar = solarVector(state.timeOfDay, seasonName);
+    const x = solar.direction[0];
+    const y = solar.direction[1];
     const length = Math.hypot(x, y) || 1;
-    const tanElevation = Math.tan(elevation);
+    const tanElevation = Math.max(0.25, Math.tan(elevation));
     const weather = String(state.weather || "").toLowerCase();
     const weatherFactor = weather === "rain" || weather === "storm" ? 0.55
         : weather === "overcast" || weather === "fog" ? 0.75 : 1;
     const zoom = Number(state.zoom) || 1;
     return {
-        direction: [x, y, Math.sin(elevation)],
+        direction: [x, y, solar.direction[2]],
         shadowX: -x / length,
         shadowY: -y / length,
         slope: tanElevation,
-        step: Math.max(0.55, Math.min(3.0, 1.05 / Math.max(0.25, tanElevation))),
+        step: solar.step,
         strength: strength * weatherFactor,
         contour: Math.max(0, Math.min(1, (1.15 - zoom) / 0.85)) * 0.75,
     };

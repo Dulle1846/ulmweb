@@ -9,7 +9,7 @@ import { drawTerrainGL } from './terrain-webgl.js';
 import { flowerBloom, foliageState } from './seasonal-foliage.js';
 import { seasonalState } from '../../world/season.js';
 import {
-    FOREST_SPECIES, forestFaunaFor, forestPotentialAt, forestStandAt, forestTreeCopies,
+    FOREST_SPECIES, forestFaunaFor, forestMicrofaunaAt, forestPotentialAt, forestStandAt, forestTreeCopies,
     pickAgeClass, pickSpecies,
 } from '../../world/forest-ecology.js';
 import {
@@ -17,7 +17,8 @@ import {
     transformedLayerRect, treeStepForZoom, visibleTileBounds,
 } from './terrain-detail-grid.js';
 import { getResourceNodeAt } from '../../systems/resource-geography.js';
-import { forestFaunaAt } from '../../systems/forest-fauna.js';
+import { forestFaunaAt, forestFaunaSignAt } from '../../systems/forest-fauna.js';
+import { forestMistFactor, solarVector } from './daylight.js';
 
 const worldW = () => Number(state.worldW) || WORLD_W;
 const worldH = () => Number(state.worldH) || WORLD_H;
@@ -432,7 +433,7 @@ function drawDetailLayerGaps(ctx, zoom, cam, canvas, transform) {
 // few pixels. This impostor keeps the tree's position, species colour and
 // silhouette, but avoids thousands of invisible path operations. It is still
 // a tree at that tile: it never fades out because the camera moved.
-function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayOfYear) {
+function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayOfYear, sun = null) {
     const s = Math.max(0.35, cellPx / 48);
     const definition = FOREST_SPECIES[stand?.forest ? pickSpecies(stand, s3) : 'oak'] || FOREST_SPECIES.oak;
     const ageScale = stand?.forest ? Math.max(0.55, Number(stand.ageScale) || 1) : 1;
@@ -499,6 +500,9 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
         : (Number(state.seasonIndex) || 0) * 100;
     const climateKey = state.worldOptions?.climate || "temperate";
     const climate = seasonalState(dayOfYear, climateKey);
+    const seasonName = ["spring", "summer", "autumn", "winter"][climate.season] || "summer";
+    const hour = Number(state.timeOfDay);
+    const sun = solarVector(Number.isFinite(hour) ? hour : 12, seasonName);
     const forests = state.worldOptions?.forests ?? 52;
     const bounds = visibleTileBounds({
         cellPx, cameraX: cam.x, cameraY: cam.y, width: canvas.width, height: canvas.height,
@@ -617,7 +621,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                     drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
                     drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom);
                     if (zoom >= 0.8) drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey);
-                    if (zoom >= 0.85 && s3 < 0.4) drawForestMist(ctx, px, py, cellPx, stand, s2, tick);
+                    const mist = forestMistFactor(Number.isFinite(hour) ? hour : 12, m, seasonName, state.weather);
+                    if (zoom >= 0.85 && mist > 0.04) drawForestMist(ctx, px, py, cellPx, stand, s2, tick, mist);
                 }
                 if (tree) {
                     // Dense stands need overlapping crowns to read as a wood. The
@@ -633,20 +638,20 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                         const r2 = (s2 + copy * 0.27) % 1;
                         const r3 = (s3 + copy * 0.43) % 1;
                         state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + 1;
-                        if (distant) drawDistantTree(ctx, px + ox, py + oy, cellPx, tick, r2, r3, stand, climate, dayOfYear);
-                        else drawTree(ctx, px + ox, py + oy, cellPx, tick, r1, r2, r3, zoom, temp, m, dayOfYear, climateKey, shoreDir, stand);
+                        if (distant) drawDistantTree(ctx, px + ox, py + oy, cellPx, tick, r2, r3, stand, climate, dayOfYear, sun);
+                        else drawTree(ctx, px + ox, py + oy, cellPx, tick, r1, r2, r3, zoom, temp, m, dayOfYear, climateKey, shoreDir, stand, sun);
                     }
-                    if (detail && zoom >= 0.9 && s3 > 0.7) drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s2, zoom, x, y);
+                    if (detail && zoom >= 0.9 && s3 > 0.7) drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s2, zoom, x, y, tick);
                     continue;
                 }
                 if (!detail) continue;
                 if (stand.clearing > 0.28) {
                     if (zoom >= 0.34) drawForestClearing(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
-                    if (zoom >= 0.8 && s2 > 0.55) drawCanopyLight(ctx, px, py, cellPx, stand, s1, tick);
+                    if (zoom >= 0.8 && s2 > 0.55) drawCanopyLight(ctx, px, py, cellPx, stand, s1, tick, sun);
                 } else if (zoom >= 0.5) {
                     drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey);
                 }
-                if (zoom >= 0.75 && s1 > 0.95) drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s3, zoom, x, y);
+                if (zoom >= 0.75 && s1 > 0.95) drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s3, zoom, x, y, tick);
                 if (zoom >= 0.9 && s1 > 0.972) drawFallenLog(ctx, px, py, cellPx, stand, s2, s3, dayOfYear, climateKey);
                 continue;
             }
@@ -654,8 +659,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             if (loneTree) {
                 const loneStand = { forest: true, treeChance: 1, ageClass: 'mature', ageScale: 0.92, clearing: 0 };
                 state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + 1;
-                if (distant) drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, loneStand, climate, dayOfYear);
-                else drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, m, dayOfYear, climateKey, shoreDir, loneStand);
+                if (distant) drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, loneStand, climate, dayOfYear, sun);
+                else drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, m, dayOfYear, climateKey, shoreDir, loneStand, sun);
                 continue;
             }
             if (!detail) continue;
@@ -899,7 +904,7 @@ function drawBareCrown(ctx, px, py, s, sway, seed, foliage, ink = "#6b5138", sca
     }
 }
 
-function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, dayOfYear, climateKey = "temperate", shore = null, stand = null) {
+function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, dayOfYear, climateKey = "temperate", shore = null, stand = null, sun = null) {
     const s = cellPx / 48;
     const sway = Math.sin(tick * 0.045 + s1 * 10 + s2 * 7) * 1.6 * s;
     const ageScale = stand?.forest ? Math.max(0.52, Number(stand.ageScale) || 1) : 1;
@@ -907,12 +912,15 @@ function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, d
 
     // A soft grounded shadow is enough to lift trees off the surface without
     // baking hard directional shadows into the seasonal ground. Ancient trees
-    // cast a broader, softer pool than saplings.
+    // cast a broader, softer pool than saplings; its offset follows the same
+    // solar vector as the WebGL ground shadow, so morning and evening agree.
+    const shadow = sun || { shadowX: 0.35, shadowY: -0.2 };
+    const shadowReach = (4.5 + ageScale * 2.2) * s;
     ctx.fillStyle = shore ? "rgba(5, 12, 8, 0.14)" : "rgba(7, 15, 8, 0.11)";
     ctx.beginPath();
     ctx.ellipse(
-        px + 2.2 * s + (shore ? shore.x * 4 * s : 0),
-        py + 5.8 * s + (shore ? shore.y * 4 * s : 0),
+        px + 2.2 * s + (shore ? shore.x * 4 * s : 0) + shadow.shadowX * shadowReach,
+        py + 5.8 * s + (shore ? shore.y * 4 * s : 0) + shadow.shadowY * shadowReach * 0.55,
         (shore ? 9.5 : 7.4) * s * ageScale,
         (shore ? 2.9 : 2.5) * s * (0.7 + ageScale * 0.3),
         0.15, 0, Math.PI * 2
@@ -1179,6 +1187,19 @@ function drawLeafCarpet(ctx, px, py, cellPx, stand, roll, seed, dayOfYear, clima
         ctx.ellipse(px + ox, py + oy, (1.15 + (i % 3) * 0.38) * s, (0.55 + (i % 2) * 0.18) * s, angle + (i % 4) * 0.22, 0, Math.PI * 2);
         ctx.fill();
     }
+    // The dominant species leaves a few recognisable silhouettes in the
+    // carpet: lobed oak, heart-shaped linden, triangular birch, palmate maple.
+    // This keeps species-specific woodland readable at close zoom without a
+    // new per-tile texture.
+    const species = FOREST_SPECIES[stand.dominantSpecies];
+    if (species?.leafShape) {
+        ctx.globalAlpha = 0.46 + stand.ground.litter * 0.22;
+        for (let i = 0; i < 3; i++) {
+            const angle = i * 2.7 + seed * 5;
+            drawSpeciesLeaf(ctx, px + Math.cos(angle) * (2.4 + i * 1.5) * s, py + (2.8 + i * 0.8) * s,
+                (2.1 + i * 0.3) * s, angle, species.leafShape, colors[(i + 2) % colors.length]);
+        }
+    }
     // Two pale veins of exposed twig keep the carpet from reading as flat
     // confetti, especially at the close rooftop zoom.
     ctx.strokeStyle = "rgba(86, 65, 42, 0.52)";
@@ -1188,6 +1209,56 @@ function drawLeafCarpet(ctx, px, py, cellPx, stand, roll, seed, dayOfYear, clima
     ctx.quadraticCurveTo(px, py + 4 * s, px + 7 * s, py + 2 * s);
     ctx.moveTo(px - 2 * s, py + 4.5 * s);
     ctx.lineTo(px + 3 * s, py + 1.5 * s);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// Leaf silhouettes for the species that actually dominates the stand. The
+// shapes stay small and flat; they are floor litter, not floating icons.
+function drawSpeciesLeaf(ctx, x, y, size, angle, shape, fill) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    if (shape === 'lobed' || shape === 'palmate') {
+        const lobes = shape === 'lobed' ? 6 : 5;
+        for (let i = 0; i <= lobes * 2; i++) {
+            const a = -Math.PI / 2 + (i / (lobes * 2)) * Math.PI * 2;
+            const r = size * (i % 2 === 0 ? 1 : 0.55);
+            const lx = Math.cos(a) * r * 0.7;
+            const ly = Math.sin(a) * r;
+            if (i === 0) ctx.moveTo(lx, ly);
+            else ctx.lineTo(lx, ly);
+        }
+    } else if (shape === 'heart') {
+        ctx.moveTo(0, size * 0.9);
+        ctx.bezierCurveTo(-size * 0.9, size * 0.2, -size * 0.7, -size * 0.8, 0, -size * 0.35);
+        ctx.bezierCurveTo(size * 0.7, -size * 0.8, size * 0.9, size * 0.2, 0, size * 0.9);
+    } else if (shape === 'triangular') {
+        ctx.moveTo(0, size);
+        ctx.lineTo(-size * 0.62, -size * 0.55);
+        ctx.quadraticCurveTo(0, -size * 0.95, size * 0.62, -size * 0.55);
+    } else if (shape === 'serrated') {
+        for (let i = 0; i <= 10; i++) {
+            const a = -Math.PI / 2 + (i / 10) * Math.PI * 2;
+            const r = size * (i % 2 === 0 ? 0.54 : 0.42);
+            const lx = Math.cos(a) * r * 0.62;
+            const ly = Math.sin(a) * r;
+            if (i === 0) ctx.moveTo(lx, ly);
+            else ctx.lineTo(lx, ly);
+        }
+    } else {
+        const width = shape === 'lance' ? size * 0.26 : size * 0.46;
+        ctx.ellipse(0, 0, width, size * (shape === 'lance' ? 0.95 : 0.78), 0, 0, Math.PI * 2);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(52, 40, 28, 0.35)";
+    ctx.lineWidth = Math.max(0.35, size * 0.08);
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.6);
+    ctx.lineTo(0, size * 0.6);
     ctx.stroke();
     ctx.restore();
 }
@@ -1464,8 +1535,9 @@ function drawDeerTrail(ctx, px, py, cellPx, stand, seed) {
     ctx.restore();
 }
 
-function drawForestMist(ctx, px, py, cellPx, stand, seed, tick) {
+function drawForestMist(ctx, px, py, cellPx, stand, seed, tick, strength = 1) {
     const s = cellPx / 48;
+    if (strength <= 0.02) return;
     const drift = Math.sin(tick * 0.006 + seed * 9) * 4 * s;
     const close = cellPx > 68;
     ctx.save();
@@ -1474,7 +1546,7 @@ function drawForestMist(ctx, px, py, cellPx, stand, seed, tick) {
         // large pool either left a pale ring around the crown or, when
         // feathered with a transform, read as a rectangular wash. Small
         // overlapping radial puffs have no hard edge in either axis.
-        const alpha = 0.05 + stand.canopy * 0.022;
+        const alpha = (0.05 + stand.canopy * 0.022) * strength;
         for (let i = 0; i < 3; i++) {
             const ox = (i - 1) * cellPx * 0.34 + drift + (seed - 0.5) * cellPx * 0.12;
             const oy = py + (11 + i * 2) * s;
@@ -1493,11 +1565,49 @@ function drawForestMist(ctx, px, py, cellPx, stand, seed, tick) {
             ctx.restore();
         }
     } else {
-        ctx.globalAlpha = 0.035 + stand.canopy * 0.025;
+        ctx.globalAlpha = (0.035 + stand.canopy * 0.025) * strength;
         ctx.fillStyle = "#dce6df";
         ctx.beginPath();
         ctx.ellipse(px + drift, py + 3 * s, (8 + seed * 5) * s, (2.2 + seed * 1.5) * s, 0, 0, Math.PI * 2);
         ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawSoilWash(ctx, px, py, cellPx, stand, seed) {
+    const s = cellPx / 48;
+    const soil = stand.ground?.soil || "loam";
+    const palettes = {
+        dry: ["#9b8152", "#b29a63", "#7d633e"],
+        alluvial: ["#53613f", "#6e7148", "#3f4b35"],
+        humus: ["#4c3827", "#6b4d34", "#3b2d20"],
+        loam: ["#6b5438", "#8a6c46", "#55422d"],
+    };
+    const palette = palettes[soil] || palettes.loam;
+    ctx.save();
+    ctx.globalAlpha = 0.13 + (stand.ground?.humus || 0) * 0.17;
+    for (let i = 0; i < 3; i++) {
+        const angle = i * 2.3 + seed * 5;
+        ctx.fillStyle = palette[i % palette.length];
+        ctx.beginPath();
+        ctx.ellipse(
+            px + Math.cos(angle) * cellPx * (0.13 + i * 0.06),
+            py + 3.5 * s + Math.sin(angle) * cellPx * 0.1,
+            (5.2 + i * 1.5) * s, (1.5 + i * 0.5) * s, angle * 0.2, 0, Math.PI * 2
+        );
+        ctx.fill();
+    }
+    if (soil === "dry") {
+        ctx.globalAlpha = 0.28;
+        ctx.strokeStyle = "#675238";
+        ctx.lineWidth = Math.max(0.55, 0.65 * s);
+        ctx.beginPath();
+        ctx.moveTo(px - 6 * s, py + 3 * s);
+        ctx.lineTo(px - 2 * s, py + 4 * s);
+        ctx.lineTo(px + 1 * s, py + 2.5 * s);
+        ctx.moveTo(px + 2 * s, py + 5 * s);
+        ctx.lineTo(px + 5 * s, py + 4 * s);
+        ctx.stroke();
     }
     ctx.restore();
 }
@@ -1515,6 +1625,7 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climate
         ctx.restore();
         return;
     }
+    drawSoilWash(ctx, px, py, cellPx, stand, s1);
     // No per-tile fill here. A large circle under every tree read as polka dots,
     // and a full cell tint exposed the tile grid. Instead the floor is built from
     // leaf litter and humus specks, letting the baked ground and the leaf carpet
@@ -1522,7 +1633,9 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climate
     ctx.globalAlpha = 0.4 + stand.ground.litter * 0.22;
     const palette = turn > 0.42 ? ["#704b2b", "#986130", "#8c7138", "#5d472b", "#a8793a"]
         : ["#4c6538", "#70733a", "#57462d", "#7a5b36", "#617b40"];
-    for (let i = 0; i < 19; i++) {
+    // Fifteen, not nineteen, litter marks: the removed four were always covered
+    // by neighbours at normal zoom and cost a path fill per tile.
+    for (let i = 0; i < 15; i++) {
         const angle = i * 2.4 + s1 * 7;
         const ox = (Math.cos(angle) * (cellPx * 0.34) + (s2 - 0.5) * cellPx * 0.5) * (0.7 + (i % 3) * 0.12);
         const oy = (Math.sin(angle) * (cellPx * 0.25) + (s1 - 0.5) * cellPx * 0.32) * (0.8 + (i % 2) * 0.15);
@@ -1536,7 +1649,7 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climate
     // introducing another large stamp.
     ctx.globalAlpha = 0.24 + stand.ground.moss * 0.12;
     ctx.fillStyle = turn > 0.55 ? "#7b6538" : "#607c42";
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 4; i++) {
         ctx.beginPath();
         ctx.ellipse(px + ((i * 17) % 15 - 7) * s + (s1 - 0.5) * 8 * s,
             py + ((i * 11) % 9 - 4) * s + (s2 - 0.5) * 8 * s, 1.8 * s, 0.8 * s, i * 0.3, 0, Math.PI * 2);
@@ -1602,22 +1715,23 @@ function drawForestClearing(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, clima
     }
 }
 
-function drawCanopyLight(ctx, px, py, cellPx, stand, seed, tick) {
+function drawCanopyLight(ctx, px, py, cellPx, stand, seed, tick, sun = null) {
     const s = cellPx / 48;
+    const beam = sun || { shadowX: -0.35, shadowY: 0.2 };
     ctx.save();
     ctx.globalCompositeOperation = "screen";
     ctx.globalAlpha = 0.05 + stand.light * 0.08;
     ctx.fillStyle = "#f2e7aa";
     ctx.beginPath();
     ctx.moveTo(px + (seed - 0.5) * 4 * s, py - 18 * s);
-    ctx.lineTo(px + (seed - 0.5) * 9 * s - 4 * s, py + 4 * s);
-    ctx.lineTo(px + (seed - 0.5) * 9 * s + 5 * s, py + 4 * s);
+    ctx.lineTo(px + (seed - 0.5) * 9 * s - 4 * s + beam.shadowX * 12 * s, py + 4 * s + beam.shadowY * 5 * s);
+    ctx.lineTo(px + (seed - 0.5) * 9 * s + 5 * s + beam.shadowX * 12 * s, py + 4 * s + beam.shadowY * 5 * s);
     ctx.closePath();
     ctx.fill();
     ctx.globalAlpha = 0.1 + 0.08 * Math.abs(Math.sin(tick * 0.01 + seed * 5));
     ctx.fillStyle = "#fff4c4";
     ctx.beginPath();
-    ctx.ellipse(px + (seed - 0.5) * 4 * s, py + 2 * s, 3.5 * s, 1.4 * s, 0, 0, Math.PI * 2);
+    ctx.ellipse(px + (seed - 0.5) * 4 * s + beam.shadowX * 8 * s, py + 2 * s, 3.5 * s, 1.4 * s, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 }
@@ -1726,6 +1840,253 @@ function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed
             ctx.fill();
         }
     }
+}
+
+// P1 fauna: one herd is now read as a group. Population sets the number of
+// silhouettes, the solar tick gives them a small in-tile walk, and the same
+// tile carries the signs a hunter or naturalist would actually see: tracks,
+// browsed shoots, a recent carcass and a hollow-nesting bird's nest.
+function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed, zoom, tileX, tileY, tick) {
+    const season = seasonalState(dayOfYear, climateKey);
+    const herds = tileX !== null && tileY !== null ? forestFaunaAt(tileX, tileY, stand, dayOfYear) : [];
+    const signs = tileX !== null && tileY !== null ? forestFaunaSignAt(tileX, tileY, stand, dayOfYear) : null;
+    // Microfauna is only legible at close zoom and is capped at three groups
+    // of at most three marks, so a dense wood cannot spend hundreds of path
+    // operations per frame on insects the player cannot resolve.
+    const micro = zoom >= 1.05 ? forestMicrofaunaAt(stand, dayOfYear, climateKey, seed).slice(0, 3) : [];
+    if (!herds.length && !micro.length) return;
+    const s = cellPx / 56;
+    const jitter = (hashA, hashB) => ((hashA * 37 + hashB * 17 + Math.floor(seed * 997)) % 100) / 100 - 0.5;
+
+    if (signs?.tracks) drawFaunaTracks(ctx, px, py, cellPx, signs, s);
+    if (signs?.browse > 0) drawBrowseLine(ctx, px, py, cellPx, signs.browse, s);
+    if (signs?.carcass) drawFaunaCarcass(ctx, px, py, cellPx, signs, s);
+    if (signs?.nest) drawFaunaNest(ctx, px, py, cellPx, signs.nest, s);
+
+    const animals = herds.length ? herds : forestFaunaFor(stand, dayOfYear, climateKey, seed).slice(0, 2);
+    for (let herdIndex = 0; herdIndex < animals.length; herdIndex++) {
+        const animal = animals[herdIndex];
+        const population = Math.max(1, Number(animal.population) || 4);
+        const count = animal.group === 'large' ? Math.max(1, Math.min(4, Math.round(population / 3)))
+            : animal.group === 'bird' ? Math.max(1, Math.min(3, Math.round(population / 2)))
+                : Math.max(1, Math.min(3, Math.round(population / 4)));
+        for (let i = 0; i < count; i++) {
+            const phase = seed * 11 + herdIndex * 7 + i * 2.7;
+            const spread = cellPx * (animal.group === 'large' ? 0.19 : 0.14);
+            const ox = (i - (count - 1) / 2) * spread + Math.sin(tick * 0.018 + phase) * 1.7 * s + jitter(herdIndex + 1, i + 1) * 2 * s;
+            const oy = ((i % 2) - 0.5) * cellPx * 0.08 + Math.cos(tick * 0.014 + phase) * 1.1 * s + jitter(i + 2, herdIndex + 1) * 1.5 * s;
+            drawFaunaShape(ctx, animal, px + ox, py + 1.5 * s + oy, s, Math.sin(tick * 0.012 + phase) * 0.08, season, zoom);
+        }
+    }
+
+    // Small mammals and insects are population groups too, not one symbolic
+    // icon per tile. Their counts come from deadwood, flowers and moisture.
+    for (let entryIndex = 0; entryIndex < micro.length; entryIndex++) {
+        const entry = micro[entryIndex];
+        const count = Math.min(3, Math.max(1, entry.count));
+        for (let i = 0; i < count; i++) {
+            const phase = seed * 7 + entryIndex * 9 + i * 3.1;
+            const ox = jitter(entryIndex + 3, i + 5) * cellPx * 0.6 + Math.sin(tick * 0.018 + phase) * s;
+            const oy = 3.2 * s + jitter(i + 4, entryIndex + 2) * cellPx * 0.32 + Math.cos(tick * 0.015 + phase) * 0.7 * s;
+            drawMicroFauna(ctx, entry, px + ox, py + oy, s);
+        }
+    }
+}
+
+function drawFaunaShape(ctx, animal, x, y, s, rotation, season, zoom) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.globalAlpha = 0.78;
+    if (animal.group === 'large') {
+        const body = animal.id === 'boar' ? "#493d31" : animal.id === 'roe-deer' ? "#a77b52" : "#8d6947";
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.ellipse(0, -3 * s, 4.2 * s, 2 * s, 0.05, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(-2.6 * s, -2 * s, 0.8 * s, 3.6 * s);
+        ctx.fillRect(2 * s, -2 * s, 0.8 * s, 3.6 * s);
+        ctx.beginPath();
+        ctx.ellipse(4.4 * s, -4.5 * s, 1.4 * s, 1.2 * s, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        if (animal.id !== 'boar') {
+            ctx.strokeStyle = "#6b4e32";
+            ctx.lineWidth = Math.max(0.5, 0.6 * s);
+            ctx.beginPath();
+            ctx.moveTo(4.6 * s, -5.5 * s);
+            ctx.lineTo(5.6 * s, -8 * s);
+            ctx.moveTo(5.1 * s, -5.5 * s);
+            ctx.lineTo(7 * s, -7.2 * s);
+            ctx.stroke();
+        }
+    } else if (animal.group === 'predator') {
+        ctx.fillStyle = "#a85b2f";
+        ctx.beginPath();
+        ctx.ellipse(0, -2.5 * s, 3.6 * s, 1.6 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(3.3 * s, -3.5 * s, 1.2 * s, 1 * s, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#a85b2f";
+        ctx.lineWidth = 1.5 * s;
+        ctx.beginPath();
+        ctx.moveTo(-3.2 * s, -2.5 * s);
+        ctx.quadraticCurveTo(-8 * s, -4 * s, -8 * s, -1 * s);
+        ctx.stroke();
+    } else if (animal.group === 'small') {
+        ctx.fillStyle = animal.id === 'hare' ? "#a38b68" : animal.id === 'squirrel' ? "#9a633a" : "#76604d";
+        ctx.beginPath();
+        ctx.ellipse(0, -1.5 * s, 2.2 * s, 1.3 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(1.8 * s, -2.4 * s, 0.9 * s, 0, Math.PI * 2);
+        ctx.fill();
+        if (animal.id === 'hare') {
+            ctx.strokeStyle = "#a38b68";
+            ctx.lineWidth = 0.7 * s;
+            ctx.beginPath();
+            ctx.moveTo(2 * s, -3 * s);
+            ctx.lineTo(2.6 * s, -5.2 * s);
+            ctx.stroke();
+        }
+    } else if (animal.group === 'bird') {
+        if (animal.id === 'raptor') {
+            ctx.strokeStyle = "#564b3c";
+            ctx.lineWidth = 1.2 * s;
+            ctx.beginPath();
+            ctx.moveTo(-5 * s, -12 * s);
+            ctx.quadraticCurveTo(0, -15 * s, 5 * s, -12 * s);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = animal.id === 'owl' ? "#8d7a5e" : "#655946";
+            ctx.beginPath();
+            ctx.ellipse(0, -4 * s, 1.5 * s, 2.1 * s, 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc((animal.id === 'woodpecker' ? 1.4 : 0.8) * s, -5.6 * s, 0.9 * s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else {
+        ctx.fillStyle = animal.id === 'butterfly' ? "#d9b24d" : animal.id === 'bee' ? "#c9a33e" : "#554637";
+        ctx.beginPath();
+        ctx.ellipse(0, -3 * s, 1.1 * s, 0.6 * s, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+    if (zoom > 1.4 && season.snowCover < 0.4 && animal.group === 'large') {
+        ctx.fillStyle = "rgba(62, 48, 32, 0.55)";
+        for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            ctx.arc(x + (i - 2) * 2.6 * s, y + 3.2 * s + (i % 2) * 0.5 * s, 0.55 * s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+function drawMicroFauna(ctx, entry, x, y, s) {
+    ctx.save();
+    ctx.globalAlpha = 0.62;
+    if (entry.id === 'butterfly') {
+        ctx.fillStyle = "#d9b24d";
+        ctx.beginPath();
+        ctx.ellipse(x - 0.9 * s, y - 1.2 * s, 1 * s, 0.65 * s, -0.6, 0, Math.PI * 2);
+        ctx.ellipse(x + 0.9 * s, y - 1.2 * s, 1 * s, 0.65 * s, 0.6, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (entry.id === 'bee') {
+        ctx.fillStyle = "#c9a33e";
+        ctx.beginPath();
+        ctx.arc(x, y - 1.5 * s, 0.7 * s, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (entry.id === 'ant') {
+        ctx.fillStyle = "#4b3b2c";
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(x + (i - 1) * 0.65 * s, y + (i % 2) * 0.25 * s, 0.3 * s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (entry.id === 'mouse') {
+        ctx.fillStyle = "#76604d";
+        ctx.beginPath();
+        ctx.ellipse(x, y - 0.8 * s, 1.2 * s, 0.65 * s, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 1 * s, y - 1.2 * s, 0.45 * s, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        ctx.fillStyle = "#554637";
+        ctx.beginPath();
+        ctx.ellipse(x, y - 0.5 * s, 0.8 * s, 0.45 * s, 0.25, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawFaunaTracks(ctx, px, py, cellPx, signs, s) {
+    ctx.save();
+    ctx.globalAlpha = 0.28 + Math.min(0.24, signs.browse * 0.2);
+    ctx.fillStyle = "#554431";
+    for (let i = 0; i < 4; i++) {
+        const x = px - cellPx * 0.2 + i * cellPx * 0.13;
+        const y = py + cellPx * 0.3 + (i % 2) * 1.2 * s;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 0.65 * s, 0.35 * s, 0.25, 0, Math.PI * 2);
+        ctx.ellipse(x + 1.3 * s, y + 1.1 * s, 0.55 * s, 0.3 * s, 0.25, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawBrowseLine(ctx, px, py, cellPx, strength, s) {
+    ctx.save();
+    ctx.globalAlpha = 0.24 + strength * 0.18;
+    ctx.strokeStyle = "#6e5938";
+    ctx.lineWidth = Math.max(0.65, 0.8 * s);
+    ctx.beginPath();
+    ctx.moveTo(px - cellPx * 0.28, py + cellPx * 0.18);
+    ctx.lineTo(px + cellPx * 0.26, py + cellPx * 0.21);
+    ctx.stroke();
+    for (let i = 0; i < 4; i++) {
+        const x = px - cellPx * 0.22 + i * cellPx * 0.13;
+        ctx.beginPath();
+        ctx.moveTo(x, py + cellPx * 0.2);
+        ctx.lineTo(x + 1.5 * s, py + cellPx * 0.25);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawFaunaCarcass(ctx, px, py, cellPx, signs, s) {
+    ctx.save();
+    ctx.globalAlpha = 0.62;
+    ctx.translate(px + cellPx * 0.14, py + cellPx * 0.24);
+    ctx.rotate(-0.18);
+    ctx.fillStyle = "#6f5138";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 3.8 * s, 1.5 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#d4c6a2";
+    ctx.lineWidth = 0.55 * s;
+    for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.arc(-2 * s + i * 1.3 * s, -0.4 * s, 0.65 * s, 0.1, Math.PI - 0.1);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawFaunaNest(ctx, px, py, cellPx, kind, s) {
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = kind === 'hollow' ? "#2f2418" : "#6d5539";
+    ctx.beginPath();
+    ctx.ellipse(px + cellPx * 0.2, py + cellPx * 0.09, 1.7 * s, 1.0 * s, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#93744c";
+    ctx.lineWidth = Math.max(0.45, 0.5 * s);
+    ctx.beginPath();
+    ctx.arc(px + cellPx * 0.2, py + cellPx * 0.09, 2.1 * s, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+    ctx.restore();
 }
 
 function drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey = "temperate") {

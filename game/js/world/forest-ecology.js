@@ -61,65 +61,65 @@ export const FOREST_SPECIES = Object.freeze({
         id: 'oak', label: 'Oak', latin: 'Quercus',
         bark: '#5b432d', barkLight: '#80613e',
         summer: ['#2d5c31', '#4c8b42'], autumn: ['#9a5f2c', '#c08444'],
-        form: 'spreading', height: 1.12, crown: 1.08, trunk: 1.2, lobes: 3,
-        timber: 1.28, firewood: 1.18, charcoal: 1.32,
-        goods: ['acorns', 'truffles', 'bark'], understory: ['fern', 'bramble'],
+        form: 'spreading', leafShape: 'lobed', height: 1.12, crown: 1.08, trunk: 1.2, lobes: 3,
+        timber: 1.28, firewood: 1.18, charcoal: 1.32, wood: 'oak-timber',
+        goods: ['acorns', 'truffles', 'bark', 'crab-apples'], understory: ['fern', 'bramble'],
     }),
     beech: Object.freeze({
         id: 'beech', label: 'Beech', latin: 'Fagus',
         bark: '#8e8a7d', barkLight: '#b2ad9b',
         summer: ['#2b6134', '#4c8f42'], autumn: ['#a86f2f', '#c79a4b'],
-        form: 'dome', height: 1.1, crown: 1.02, trunk: 0.96, lobes: 2,
-        timber: 1.1, firewood: 1.24, charcoal: 1.14,
-        goods: ['beechnuts', 'mushrooms'], understory: ['fern', 'moss'],
+        form: 'dome', leafShape: 'oval', height: 1.1, crown: 1.02, trunk: 0.96, lobes: 2,
+        timber: 1.1, firewood: 1.24, charcoal: 1.14, wood: 'beech-timber',
+        goods: ['beechnuts', 'mushrooms', 'wood-sorrel', 'porcini'], understory: ['fern', 'moss'],
     }),
     birch: Object.freeze({
         id: 'birch', label: 'Birch', latin: 'Betula',
         bark: '#e8e2d3', barkLight: '#f6f1e5',
         summer: ['#5d963f', '#86ba5b'], autumn: ['#c9a83a', '#e0c25a'],
-        form: 'airy', height: 1.02, crown: 0.78, trunk: 0.62, lobes: 2,
-        timber: 0.78, firewood: 1.1, charcoal: 0.9,
-        goods: ['birch-sap', 'mushrooms'], understory: ['heather', 'fern'],
+        form: 'airy', leafShape: 'triangular', height: 1.02, crown: 0.78, trunk: 0.62, lobes: 2,
+        timber: 0.78, firewood: 1.1, charcoal: 0.9, wood: 'birch-timber',
+        goods: ['birch-sap', 'mushrooms', 'chanterelle'], understory: ['heather', 'fern'],
     }),
     maple: Object.freeze({
         id: 'maple', label: 'Maple', latin: 'Acer',
         bark: '#68655a', barkLight: '#8f8b7a',
         summer: ['#346a33', '#5b9b47'], autumn: ['#b65a2e', '#d89a3d'],
-        form: 'round', height: 1.04, crown: 0.94, trunk: 0.86, lobes: 4,
-        timber: 0.96, firewood: 1.04, charcoal: 1.02,
-        goods: ['maple-syrup', 'mushrooms'], understory: ['fern', 'bramble'],
+        form: 'round', leafShape: 'palmate', height: 1.04, crown: 0.94, trunk: 0.86, lobes: 4,
+        timber: 0.96, firewood: 1.04, charcoal: 1.02, wood: 'maple-timber',
+        goods: ['maple-syrup', 'mushrooms', 'wood-sorrel'], understory: ['fern', 'bramble'],
     }),
     chestnut: Object.freeze({
         id: 'chestnut', label: 'Chestnut', latin: 'Castanea',
         bark: '#6e5138', barkLight: '#9a7550',
         summer: ['#2f6335', '#4f9444'], autumn: ['#a85d2d', '#cf8f3d'],
-        form: 'spreading', height: 1.08, crown: 1.0, trunk: 1.04, lobes: 3,
-        timber: 0.92, firewood: 1.12, charcoal: 1.0,
-        goods: ['chestnuts', 'mushrooms'], understory: ['bramble', 'fern'],
+        form: 'spreading', leafShape: 'lance', height: 1.08, crown: 1.0, trunk: 1.04, lobes: 3,
+        timber: 0.92, firewood: 1.12, charcoal: 1.0, wood: 'chestnut-timber',
+        goods: ['chestnuts', 'mushrooms', 'chanterelle'], understory: ['bramble', 'fern'],
     }),
     linden: Object.freeze({
         id: 'linden', label: 'Linden', latin: 'Tilia',
         bark: '#716d5d', barkLight: '#98927c',
         summer: ['#326b35', '#579a45'], autumn: ['#9d7b31', '#c6a64b'],
-        form: 'oval', height: 1.16, crown: 1.06, trunk: 0.98, lobes: 3,
-        timber: 0.84, firewood: 1.0, charcoal: 0.92,
-        goods: ['linden-flower', 'honey'], understory: ['shrub', 'fern'],
+        form: 'oval', leafShape: 'heart', height: 1.16, crown: 1.06, trunk: 0.98, lobes: 3,
+        timber: 0.84, firewood: 1.0, charcoal: 0.92, wood: 'linden-timber',
+        goods: ['linden-flower', 'honey', 'wild-garlic'], understory: ['shrub', 'fern'],
     }),
     elm: Object.freeze({
         id: 'elm', label: 'Elm', latin: 'Ulmus',
         bark: '#5f5645', barkLight: '#827761',
         summer: ['#356b35', '#5a9b48'], autumn: ['#9a7534', '#c5a24a'],
-        form: 'vase', height: 1.22, crown: 1.1, trunk: 1.08, lobes: 3,
-        timber: 1.02, firewood: 1.06, charcoal: 0.98,
-        goods: ['elm-seeds', 'herbs'], understory: ['fern', 'moss'],
+        form: 'vase', leafShape: 'serrated', height: 1.22, crown: 1.1, trunk: 1.08, lobes: 3,
+        timber: 1.02, firewood: 1.06, charcoal: 0.98, wood: 'elm-timber',
+        goods: ['elm-seeds', 'herbs', 'wood-sorrel'], understory: ['fern', 'moss'],
     }),
     alder: Object.freeze({
         id: 'alder', label: 'Alder', latin: 'Alnus',
         bark: '#554f42', barkLight: '#766d59',
         summer: ['#2c5f3b', '#4b854f'], autumn: ['#8d6934', '#b08b45'],
-        form: 'airy', height: 0.96, crown: 0.86, trunk: 0.72, lobes: 2,
-        timber: 0.7, firewood: 0.9, charcoal: 0.82,
-        goods: ['alder-cones', 'herbs'], understory: ['moss', 'heather'],
+        form: 'airy', leafShape: 'round', height: 0.96, crown: 0.86, trunk: 0.72, lobes: 2,
+        timber: 0.7, firewood: 0.9, charcoal: 0.82, wood: 'alder-timber',
+        goods: ['alder-cones', 'herbs', 'sloes'], understory: ['moss', 'heather'],
     }),
 });
 
@@ -205,9 +205,24 @@ export function forestTypeFromIndex(index) {
 // survey and the forester/lumber panels explain what a particular wood offers.
 export const FOREST_GOODS = Object.freeze({
     timber: Object.freeze({ id: 'timber', label: 'Timber', category: 'wood' }),
+    'oak-timber': Object.freeze({ id: 'oak-timber', label: 'Oak timber', category: 'wood' }),
+    'beech-timber': Object.freeze({ id: 'beech-timber', label: 'Beech timber', category: 'wood' }),
+    'birch-timber': Object.freeze({ id: 'birch-timber', label: 'Birch timber', category: 'wood' }),
+    'maple-timber': Object.freeze({ id: 'maple-timber', label: 'Maple timber', category: 'wood' }),
+    'chestnut-timber': Object.freeze({ id: 'chestnut-timber', label: 'Chestnut timber', category: 'wood' }),
+    'linden-timber': Object.freeze({ id: 'linden-timber', label: 'Linden timber', category: 'wood' }),
+    'elm-timber': Object.freeze({ id: 'elm-timber', label: 'Elm timber', category: 'wood' }),
+    'alder-timber': Object.freeze({ id: 'alder-timber', label: 'Alder timber', category: 'wood' }),
     firewood: Object.freeze({ id: 'firewood', label: 'Firewood', category: 'wood' }),
     charcoal: Object.freeze({ id: 'charcoal', label: 'Charcoal', category: 'wood' }),
     mushrooms: Object.freeze({ id: 'mushrooms', label: 'Mushrooms', category: 'gather' }),
+    chanterelle: Object.freeze({ id: 'chanterelle', label: 'Chanterelles', category: 'gather' }),
+    porcini: Object.freeze({ id: 'porcini', label: 'Porcini', category: 'gather' }),
+    'wild-garlic': Object.freeze({ id: 'wild-garlic', label: 'Wild garlic', category: 'gather' }),
+    'wood-sorrel': Object.freeze({ id: 'wood-sorrel', label: 'Wood sorrel', category: 'gather' }),
+    'wild-strawberry': Object.freeze({ id: 'wild-strawberry', label: 'Wild strawberries', category: 'gather' }),
+    sloes: Object.freeze({ id: 'sloes', label: 'Sloes', category: 'gather' }),
+    'crab-apples': Object.freeze({ id: 'crab-apples', label: 'Crab apples', category: 'gather' }),
     berries: Object.freeze({ id: 'berries', label: 'Berries', category: 'gather' }),
     acorns: Object.freeze({ id: 'acorns', label: 'Acorns', category: 'mast' }),
     beechnuts: Object.freeze({ id: 'beechnuts', label: 'Beechnuts', category: 'mast' }),
@@ -231,9 +246,9 @@ export const FOREST_GOODS = Object.freeze({
 });
 
 const SEASON_GOODS = Object.freeze({
-    spring: { herbs: 0.9, 'birch-sap': 0.9, 'maple-syrup': 0.75, 'linden-flower': 0.45, honey: 0.55, beeswax: 0.25, mushrooms: 0.18, berries: 0.12, game: 0.3, fur: 0.25, hides: 0.2 },
-    summer: { herbs: 0.65, 'linden-flower': 0.95, honey: 0.95, beeswax: 0.55, berries: 0.9, mushrooms: 0.3, game: 0.35, fur: 0.2, hides: 0.16, 'maple-syrup': 0.3 },
-    autumn: { mushrooms: 0.95, berries: 0.55, acorns: 0.95, beechnuts: 0.9, chestnuts: 0.95, truffles: 0.7, game: 0.9, fur: 0.5, hides: 0.45, herbs: 0.25, honey: 0.2, beeswax: 0.18 },
+    spring: { herbs: 0.9, 'wild-garlic': 0.88, 'wood-sorrel': 0.72, 'wild-strawberry': 0.3, 'birch-sap': 0.9, 'maple-syrup': 0.75, 'linden-flower': 0.45, honey: 0.55, beeswax: 0.25, mushrooms: 0.18, berries: 0.12, game: 0.3, fur: 0.25, hides: 0.2 },
+    summer: { herbs: 0.65, 'wild-garlic': 0.38, 'wood-sorrel': 0.55, 'wild-strawberry': 0.9, chanterelle: 0.18, 'linden-flower': 0.95, honey: 0.95, beeswax: 0.55, berries: 0.9, mushrooms: 0.3, game: 0.35, fur: 0.2, hides: 0.16, 'maple-syrup': 0.3 },
+    autumn: { mushrooms: 0.95, chanterelle: 0.9, porcini: 0.82, sloes: 0.76, 'crab-apples': 0.7, 'wood-sorrel': 0.3, 'wild-strawberry': 0.15, berries: 0.55, acorns: 0.95, beechnuts: 0.9, chestnuts: 0.95, truffles: 0.7, game: 0.9, fur: 0.5, hides: 0.45, herbs: 0.25, honey: 0.2, beeswax: 0.18 },
     winter: { game: 0.55, fur: 0.85, hides: 0.65, mushrooms: 0.08, berries: 0.04, charcoal: 0.5 },
 });
 
@@ -325,17 +340,17 @@ export const FOREST_SUCCESSION_PROFILES = Object.freeze({
     burned: Object.freeze({
         freshDays: 80, regrowthDays: 180, youngDays: 360, recoveredDays: 520,
         freshLabel: 'Burn Scar', regrowthLabel: 'Post-fire Regrowth', youngLabel: 'Young Post-fire Wood',
-        recoveryLabel: 'Recovering Burn Site', severity: 0.35,
+        recoveryLabel: 'Recovering Burn Site', severity: 0.35, spreadChance: 0.16,
     }),
     windthrow: Object.freeze({
         freshDays: 60, regrowthDays: 150, youngDays: 300, recoveredDays: 440,
         freshLabel: 'Windthrow', regrowthLabel: 'Post-storm Regrowth', youngLabel: 'Young Storm Gap Wood',
-        recoveryLabel: 'Recovering Windthrow', severity: 0.55,
+        recoveryLabel: 'Recovering Windthrow', severity: 0.55, spreadChance: 0.11,
     }),
     diseased: Object.freeze({
         freshDays: 100, regrowthDays: 220, youngDays: 420, recoveredDays: 600,
         freshLabel: 'Diseased Stand', regrowthLabel: 'Disease Recovery', youngLabel: 'Young Recovery Wood',
-        recoveryLabel: 'Recovering Diseased Stand', severity: 0.7,
+        recoveryLabel: 'Recovering Diseased Stand', severity: 0.7, spreadChance: 0.09,
     }),
 });
 
@@ -472,6 +487,14 @@ export function forestStandAt(x, y, context = {}) {
     const litter = clamp01(0.16 + (1 - canopy) * 0.34 + moisture * 0.12 + (ageClass === 'ancient' ? 0.18 : 0));
 
     const dominantSpecies = weightedPick(formation.species, unitHash(seed, tx, ty, 0x53504543));
+    // Linden and elm share one ecological formation but the survey names the
+    // stand after the linden/elm share that actually dominates the local
+    // canopy; another species may still be the single most common tree.
+    const lindenElm = formation.id === 'linden-elm'
+        ? (dominantSpecies === 'elm' ? 'elm' : dominantSpecies === 'linden' ? 'linden'
+            : (Number(formation.species.elm) || 0) > (Number(formation.species.linden) || 0) ? 'elm' : 'linden')
+        : null;
+    const standLabel = lindenElm === 'elm' ? 'Elm Stand' : lindenElm === 'linden' ? 'Linden Stand' : formation.label;
     const speciesList = Object.entries(formation.species)
         .sort((a, b) => b[1] - a[1])
         .map(([id, weight]) => ({ id, label: FOREST_SPECIES[id]?.label || id, weight }));
@@ -479,6 +502,10 @@ export function forestStandAt(x, y, context = {}) {
     const baseGoods = new Set([...formation.goods]);
     for (const entry of speciesList) {
         for (const good of FOREST_SPECIES[entry.id]?.goods || []) baseGoods.add(good);
+        // Species-specific timber keeps an oak beam distinguishable from beech,
+        // birch, maple, chestnut, linden, elm or alder in the forest ledger.
+        const wood = FOREST_SPECIES[entry.id]?.wood;
+        if (wood) baseGoods.add(wood);
     }
     // Every wood can be worked for timber and firewood; charcoal belongs to
     // the older, denser stands and to burn scars.
@@ -518,7 +545,8 @@ export function forestStandAt(x, y, context = {}) {
         x: tx, y: ty, seed,
         forest,
         type: formation.id,
-        label: succession?.label || formation.label,
+        label: succession?.label || standLabel,
+        subtype: lindenElm,
         note: formation.note,
         succession,
         dominantSpecies,
@@ -630,6 +658,28 @@ export function forestFaunaFor(stand, dayOfYear, climate = 'temperate', roll = 0
         picked.push({ id, ...FAUNA[id], activity: FAUNA[id].note, season });
     }
     return picked;
+}
+
+// Small mammals and insects are a local, deterministic population layer rather
+// than one decorative marker per tile. Counts respond to deadwood, flowers,
+// moisture, season and stand age; they are intentionally not a second herd
+// save because they are short-lived and habitat-bound.
+export function forestMicrofaunaAt(stand, dayOfYear = 150, climate = 'temperate', roll = 0.5) {
+    if (!stand?.forest) return [];
+    const season = seasonKeyFor(dayOfYear, climate);
+    const winter = season === 'winter';
+    const shade = clamp01(1 - (stand.light || 0.4));
+    const counts = [
+        ['beetle', 'Stag beetle', Math.max(0, Math.round((stand.ground?.logs || 0) * 5 + (stand.ageClass === 'ancient' ? 2 : 0) + roll * 1.4))],
+        ['ant', 'Wood ant', winter ? 0 : Math.max(0, Math.round((stand.ground?.litter || 0) * 4 + (stand.edge ? 1 : 0) + roll))],
+        ['butterfly', 'Woodland butterfly', winter ? 0 : Math.max(0, Math.round((stand.ground?.flowers || 0) * 5 + (stand.clearing || 0) * 3 + roll * 0.8))],
+        ['bee', 'Wild bee', winter ? 0 : Math.max(0, Math.round((stand.ground?.flowers || 0) * 3 + (stand.edge ? 1 : 0)))],
+        ['mouse', 'Wood mouse', winter ? Math.max(0, Math.round(shade * 2 + (stand.ground?.litter || 0) * 2)) : Math.max(0, Math.round(shade * 3 + (stand.ground?.litter || 0) * 2 + roll))],
+    ];
+    return counts
+        .filter(([, , count]) => count > 0)
+        .slice(0, 5)
+        .map(([id, label, count]) => ({ id, label, group: id === 'mouse' ? 'small' : 'insect', count: Math.min(6, count) }));
 }
 
 export function forestSurveyAt(x, y, context = {}) {

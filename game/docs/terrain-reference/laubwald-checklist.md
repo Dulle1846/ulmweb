@@ -87,6 +87,26 @@ Die Referenzbilder sind menschliche Prüfbilder, keine Pixel-Goldens. Das Laubwa
 | 1.2.1.59 | Blätterbewegung durch Wind und fallendes Laub | `sway` in `drawTree`, fallende Blätter in `drawBroadleaf`; Herbst-Frames | ✅ |
 | 1.2.1.60 | Licht-/Farbwirkung nach Tageszeit und Jahreszeit | `daylight-reference.png`: Sommer/Winter × 06:00/12:00/18:00/23:00 auf Oakwood (60,42); `daylight.js` mit `timeOfDay`, Dawn-/Dusk-Gradient und Nachtveil. 12:00 bleibt Alpha 0; der Terrain-Cache wird nicht neu gerastert | ✅ |
 
+## Vertiefung P1–P3
+
+Die Punkte 1.2.1.1–1.2.1.60 bleiben unverändert belegt. Die folgende Vertiefung ergänzt sie, ohne die 15 Formationen oder die 8 Arten zu vermehren.
+
+| Thema | Umsetzung | Nachweis |
+|---|---|---|
+| P1 Boden und Feuchte | `ground.soil` (`loam`/`humus`/`alluvial`/`dry`), Humus, Streu, Moos und Blüten; Bodenwäsche und Trockenrisse im Renderer | `forestStandAt`; `drawSoilWash`; `forest-ecology.test.js` |
+| P1 Sonnenlicht | ein `solarVector` für Tageslicht-Gradient, Baumschatten, Kronenlicht und WebGL-Schatten | `daylight.js`; `terrain.js`; `terrain-webgl.js`; `daylight.test.js` |
+| P1 Nebel | `forestMistFactor` aus Tageszeit, Feuchte, Jahreszeit und Wetter; kein Nebel um 12:00 und nachts | `daylight.js`; `drawForestMist`; `daylight.test.js` |
+| P1 Herden | mehrere Tiere pro Herde, kleine Bewegung, Tierspuren, Verbiss, Kadaver, Nest/Höhle und Revier | `drawForestFaunaScene`; `forestFaunaSignAt`; `forest-fauna.test.js` |
+| P1 Mikrofauna | Käfer, Ameisen, Schmetterlinge, Bienen und Mäuse aus Totholz, Streu, Blüten und Jahreszeit | `forestMicrofaunaAt`; `drawMicroFauna`; `forest-ecology.test.js` |
+| P2 Hölzer | acht artgetrennte Sorten von `oak-timber` bis `alder-timber` | `FOREST_SPECIES.wood`, `FOREST_GOODS`; `forest-ecology.test.js` |
+| P2 Produkte | Chantarellen, Steinpilze, Bärlauch, Waldsauerklee, Walderdbeeren, Schlehen und Holzäpfel mit eigener Saison | `SEASON_GOODS`; `forestGoodsFor`; `forest-ecology.test.js` |
+| P2 Blattformen | acht Blattsilhouetten in der Laubstreu und getrennte Linden-/Ulmen-Labels | `drawSpeciesLeaf`; `subtype`/`label`; `forest-ecology.test.js` |
+| P3 Ausbreitung | Feuer, Sturm und Krankheit greifen alle 12 Tage auf ein Nachbartile über, max. 4 pro Pass, mit echtem Stockverlust und `spreadHistory` | `forest-succession.js`; `forest-succession.test.js` |
+| P3 Bekämpfung | `SUPPRESS FOREST DISTURBANCE` im Lumber Yard/Forester; 90 Tage Eindämmung gegen Holz, Nahrung oder Gold | `suppressNearestForestDisturbance`; `management-ui.js`; `forest-succession.test.js` |
+| Performance | Streu- und Moosschleifen reduziert (19→15, 5→4), Mikrofauna auf drei Gruppen × drei Marken und Nahzoom begrenzt, ein Solarvektor statt drei Berechnungen | `terrain.js`; `terrain-webgl.js` |
+
+Die `GL Driver Message … GPU stall due to ReadPixels` ist eine Browser-/Screenshot-Rücklesewarnung des Software-WebGL-Pfads, kein Spielcode-Fehler: im Quellbaum gibt es kein `readPixels` außer im separaten Testwerkzeug `tests/browser/terrain-perf.html`.
+
 ## Ergebnis
 
 - **60 Punkte** sind belegt: 52 mit dem bestehenden visuellen bzw. Modell-/Testnachweis, 8 über den neuen Forstprodukte-Ledger sowie das Verdichtungs-/Überjagungsmodell samt Tests.
@@ -99,7 +119,7 @@ Die Tageszeit ist ein reiner Präsentationszustand: Sie färbt die bereits geren
 
 ```sh
 cd game
-node --test tests/world/forest-ecology.test.js tests/systems/forest-fauna.test.js tests/systems/forest-fauna-longrun.test.js tests/systems/forest-gathering.test.js tests/world/forest-pressure.test.js
+node --test tests/world/forest-ecology.test.js tests/systems/forest-fauna.test.js tests/systems/forest-fauna-longrun.test.js tests/systems/forest-gathering.test.js tests/systems/forest-pannage.test.js tests/systems/forest-succession.test.js tests/world/forest-pressure.test.js tests/presentation/daylight.test.js
 npm run test:forest-reference
 npm run test:forest-detail
 npm run test:terrain-stability

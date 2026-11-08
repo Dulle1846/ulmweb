@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
     FOREST_GOODS, FOREST_SPECIES, FOREST_TYPES, FOREST_TYPE_IDS,
-    forestFaunaFor, forestGoodsFor, forestMixLabel, forestPotentialAt, forestStandAt, forestTreeCopies,
+    forestFaunaFor, forestGoodsFor, forestMicrofaunaAt, forestMixLabel, forestPotentialAt, forestStandAt, forestTreeCopies,
     forestSurveyAt, forestTypeFromIndex, forestTypeIndex, pickAgeClass, pickSpecies,
 } from "../../js/world/forest-ecology.js";
 import { foliageState, treeTiming } from "../../js/presentation/rendering/seasonal-foliage.js";
@@ -208,6 +208,82 @@ test("seasonal forest goods and fauna follow the year", () => {
         summerFauna.push(...forestFaunaFor(stand, 150, "temperate", roll));
     }
     assert.ok(summerFauna.some(animal => ["songbird", "butterfly", "bee"].includes(animal.id)));
+});
+
+test("every species names its own timber and a leaf silhouette", () => {
+    const woods = new Set();
+    const shapes = new Set();
+    for (const [id, species] of Object.entries(FOREST_SPECIES)) {
+        assert.ok(FOREST_GOODS[species.wood], id + " timber must be a known good");
+        assert.equal(FOREST_GOODS[species.wood].category, "wood");
+        assert.ok(!woods.has(species.wood), "species timber must be distinct");
+        woods.add(species.wood);
+        assert.ok(species.leafShape && typeof species.leafShape === "string");
+        shapes.add(species.leafShape);
+    }
+    assert.equal(woods.size, Object.keys(FOREST_SPECIES).length);
+    assert.ok(shapes.size >= 6, "leaf silhouettes should differ by species");
+    for (const id of ["chanterelle", "porcini", "wild-garlic", "wood-sorrel", "wild-strawberry", "sloes", "crab-apples"]) {
+        assert.ok(FOREST_GOODS[id], "expected forest good " + id);
+    }
+    const autumn = forestGoodsFor({
+        goods: ["chanterelle", "porcini", "sloes", "crab-apples", "wild-garlic", "timber"],
+        productivity: 0.9,
+    }, 250);
+    for (const id of ["chanterelle", "porcini", "sloes", "crab-apples"]) {
+        assert.ok(autumn.some(good => good.id === id), "autumn should offer " + id);
+    }
+    assert.ok(!autumn.some(good => good.id === "wild-garlic"), "wild garlic is a spring green");
+});
+
+test("the dominant species contributes its timber to the stand ledger", () => {
+    let checked = 0;
+    for (let y = 0; y < 40; y += 4) {
+        for (let x = 0; x < 40; x += 6) {
+            const stand = forestStandAt(x + 0.5, y + 0.5, standContext({ moisture: 0.55 }));
+            if (!stand.forest) continue;
+            checked++;
+            assert.ok(stand.goods.includes(FOREST_SPECIES[stand.dominantSpecies].wood));
+            assert.ok(forestGoodsFor(stand, 250).some(good => good.category === "wood"));
+        }
+    }
+    assert.ok(checked > 10);
+});
+
+test("a linden/elm stand is labelled by its dominant linden or elm share", () => {
+    let found = 0;
+    for (const moisture of [0.35, 0.48, 0.53, 0.58, 0.66, 0.8]) {
+        for (const height of [0.44, 0.54, 0.7, 0.9]) {
+            for (let x = 0; x < 48; x += 5) {
+                for (let y = 0; y < 48; y += 7) {
+                    const stand = forestStandAt(x + 0.5, y + 0.5, standContext({ moisture, height }));
+                    if (!stand.forest || stand.type !== "linden-elm") continue;
+                    found++;
+                    assert.ok(["linden", "elm"].includes(stand.subtype));
+                    assert.equal(stand.label, stand.subtype === "elm" ? "Elm Stand" : "Linden Stand");
+                }
+            }
+        }
+    }
+    assert.ok(found > 0, "the sampled realm should contain a linden/elm stand");
+});
+
+test("microfauna follows deadwood, flowers and season", () => {
+    const stand = forestStandAt(0.5, 0.5, standContext({ moisture: 0.66 }));
+    assert.equal(stand.forest, true);
+    const summer = forestMicrofaunaAt(stand, 150);
+    const winter = forestMicrofaunaAt(stand, 350);
+    assert.ok(summer.length > 0 && summer.length <= 5);
+    assert.ok(winter.length > 0 && winter.length <= 5);
+    for (const entry of summer) {
+        assert.ok(entry.label && ["insect", "small"].includes(entry.group));
+        assert.ok(entry.count >= 1 && entry.count <= 6);
+    }
+    assert.ok(!winter.some(entry => ["ant", "butterfly", "bee"].includes(entry.id)), "winter hides flying insects");
+    const deadwood = forestMicrofaunaAt({ ...stand, ageClass: "ancient", ground: { ...stand.ground, logs: 0.9 } }, 150);
+    const beetle = deadwood.find(entry => entry.id === "beetle");
+    assert.ok(beetle && beetle.count > (summer.find(entry => entry.id === "beetle")?.count || 0));
+    assert.deepEqual(forestMicrofaunaAt({ forest: false }, 150), []);
 });
 
 test("forest survey exposes a complete tile profile and rejects open ground", () => {

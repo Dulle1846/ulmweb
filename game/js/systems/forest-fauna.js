@@ -443,6 +443,31 @@ export function forestFaunaAt(x, y, stand = null, day = state.dayOfYear) {
     return [];
 }
 
+// Read-only signs of the herd on this tile. Tracks and browse follow the herd's
+// habitat, a carcass lingers for a short while after a kill, and hollow-nesting
+// birds claim an old tree rather than appearing as a floating icon.
+export function forestFaunaSignAt(x, y, stand = null, day = state.dayOfYear) {
+    const model = ensureForestFauna();
+    const herds = model ? forestFaunaAt(x, y, stand, day) : [];
+    if (!herds.length) return null;
+    const herd = herds.slice().sort((a, b) => b.population - a.population)[0];
+    const lastHunted = model.day - (Number(herd.lastHuntedDay) || 0);
+    const recentHunt = herd.lastHuntedDay > 0 && lastHunted >= 0 && lastHunted <= 10;
+    const large = herd.group === "large";
+    const bird = herd.group === "bird";
+    return {
+        herdId: herd.herdId,
+        tracks: herd.population >= 0.8,
+        browse: large && ["deer", "roe-deer"].includes(herd.species) && stand?.ageClass === "young"
+            ? Math.max(0.2, Math.min(1, herd.population / 14)) : 0,
+        carcass: recentHunt && Number(herd.huntingPressure) > 0.12,
+        carcassSpecies: recentHunt ? herd.species : null,
+        nest: bird && (stand?.ageClass === "ancient" || (stand?.ageClass === "mature" && stand?.ground?.logs > 0.2))
+            ? (herd.species === "owl" ? "hollow" : "nest") : null,
+        territory: bird || herd.species === "fox" ? Math.max(0.25, Math.min(1, herd.population / 8)) : 0,
+    };
+}
+
 export function forestFaunaSummaryAt(x, y, fallback = []) {
     const herds = forestFaunaAt(x, y);
     if (!herds.length) return fallback.slice(0, 3).map(id => speciesMeta(id).label).join(" · ");

@@ -12,6 +12,7 @@ import { getResourceNodeAt } from "../systems/resource-geography.js";
 import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
 import { forestGatheringSummary, gatherNearestForestProducts, processForestHunt } from "../systems/forest-gathering.js";
 import { feedStableFromMast, pannageSummary } from "../systems/forest-pannage.js";
+import { suppressNearestForestDisturbance } from "../systems/forest-succession.js";
 import { renderUI, cardSprite } from "./rendering/ui.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
@@ -182,13 +183,13 @@ function buildings(){
   let siteNote="No dedicated resource-site indicator is defined for this building type.";
   try{
    const node=getResourceNodeAt(building.x,building.y);
-   if([TYPE.LUMBER,TYPE.FORESTER].includes(building.type))siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity)+(node.forestTypeLabel?" · "+node.forestTypeLabel+" · "+(node.forestAge||"age unknown")+" · "+(node.forestSpecies||[]).slice(0,4).join(", "):"")+(node.forestSuccession?(node.forestSuccession.label?" · Succession: "+esc(node.forestSuccession.label)+" · "+number(node.forestSuccession.age)+" days":" · Recovered woodland"):"")+" · Wildlife: "+(forestFaunaSummaryAt(building.x,building.y,node.forestFauna)||"none recorded at this tile")+" · Forest products: "+(forestGatheringSummary()||"none gathered yet");
+   if([TYPE.LUMBER,TYPE.FORESTER].includes(building.type))siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity)+(node.forestTypeLabel?" · "+node.forestTypeLabel+" · "+(node.forestAge||"age unknown")+" · "+(node.forestSpecies||[]).slice(0,4).join(", "):"")+(node.forestSuccession?(node.forestSuccession.label?" · Succession: "+esc(node.forestSuccession.label)+" · "+number(node.forestSuccession.age)+" days":" · Recovered woodland")+(node.forestSuccession?.contained?" · Control party until day "+number(node.forestSuccession.containedUntil):""):"")+" · Wildlife: "+(forestFaunaSummaryAt(building.x,building.y,node.forestFauna)||"none recorded at this tile")+" · Forest products: "+(forestGatheringSummary()||"none gathered yet");
    else if([TYPE.QUARRY,TYPE.MASON].includes(building.type))siteNote="Stone stock at site tile: "+number(node.stoneStock)+" / "+number(node.stoneCapacity);
    else if(building.type===TYPE.FARM)siteNote="Site fertility: "+number(node.fertility)+" / 100 · water access: "+(node.waterAccess?"yes":"no");
    else if(building.type===TYPE.WELL)siteNote="Water access at site tile: "+(node.waterAccess?"yes":"no");
    else if(building.type===TYPE.STABLE)siteNote="Pannage reserve: "+esc(pannageSummary(building))+" · feed comes from acorns, beechnuts and chestnuts gathered in the forest ledger.";
   }catch{}
-  const forestGather=[TYPE.LUMBER,TYPE.FORESTER].includes(building.type)?'<button type="button" class="command-choice" data-gather-forest="'+esc(building.id)+'">GATHER FOREST PRODUCTS</button><button type="button" class="command-choice" data-process-hunt="'+esc(building.id)+'">PROCESS FOREST HUNT</button>':"";
+  const forestGather=[TYPE.LUMBER,TYPE.FORESTER].includes(building.type)?'<button type="button" class="command-choice" data-gather-forest="'+esc(building.id)+'">GATHER FOREST PRODUCTS</button><button type="button" class="command-choice" data-process-hunt="'+esc(building.id)+'">PROCESS FOREST HUNT</button><button type="button" class="command-choice" data-suppress-forest="'+esc(building.id)+'">SUPPRESS FOREST DISTURBANCE</button>':"";
   const forestPannage=building.type===TYPE.STABLE?'<button type="button" class="command-choice" data-feed-stable="'+esc(building.id)+'">FEED STABLE FROM MAST</button>':"";
   const detail=card?.desc||BUILDING_LABELS[building.type]||"No additional building description is recorded.";
   const site=constructionSnapshot(building);
@@ -518,6 +519,14 @@ export function setupManagementUI(){
    const result=entity?feedStableFromMast(entity):{ok:false,reason:"Building not found"};
    if(result.ok){toast("PANNAGE "+result.fed+" MAST · "+result.days+" DAYS RESERVED");renderUI();render();}
    else toast(String(result.reason||"PANNAGE FAILED").toUpperCase());
+   return;
+  }
+  const suppress=e.target.closest("[data-suppress-forest]");
+  if(suppress){
+   const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(suppress.dataset.suppressForest));
+   const result=entity?suppressNearestForestDisturbance(entity.x,entity.y,8):{ok:false,reason:"Building not found"};
+   if(result.ok){toast("CONTROL PARTY · "+String(result.kind).toUpperCase()+" HELD UNTIL DAY "+result.containedUntil);renderUI();render();}
+   else toast(String(result.reason||"CONTROL PARTY FAILED").toUpperCase());
    return;
   }
   const gather=e.target.closest("[data-gather-forest]");

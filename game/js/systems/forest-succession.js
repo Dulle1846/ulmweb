@@ -17,6 +17,9 @@ const MAX_TILES = 4096;
 const MAX_HISTORY = 24;
 const MAX_STEP_DAYS = 30;
 const EVENT_INTERVAL_DAYS = 140;
+const SPREAD_INTERVAL_DAYS = 12;
+const MAX_SPREAD_PER_PASS = 4;
+const CONTROL_DAYS = 90;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -49,8 +52,12 @@ function emptyModel(seed) {
         events: 0,
         lastEventDay: 0,
         daysSinceEvent: 0,
+        daysSinceSpread: 0,
+        spreadings: 0,
+        suppressed: 0,
         tiles: {},
         history: [],
+        spreadHistory: [],
     };
 }
 
@@ -111,7 +118,7 @@ export function ensureForestSuccession() {
             const stand = standAtTile(geo, x, y);
             if (!stand?.forest) continue;
             if (!FOREST_DISTURBANCE_KINDS.includes(stand.disturbance)) continue;
-            model.tiles[tileKey(x, y)] = { kind: stand.disturbance, age: 0 };
+            model.tiles[tileKey(x, y)] = { kind: stand.disturbance, age: 0, containedUntil: 0 };
             count++;
         }
     }
@@ -131,12 +138,15 @@ export function forestSuccessionAt(x, y) {
     const stage = forestSuccessionStage(record.kind, record.age);
     if (!stage) return null;
     const profile = forestSuccessionProfile(record.kind);
+    const containedUntil = Math.max(0, Math.floor(number(record.containedUntil)));
     return {
         kind: record.kind,
         age: Math.max(0, Math.floor(number(record.age))),
         stage: stage.id,
         label: stage.label,
         recovered: stage.id === "recovered",
+        contained: containedUntil > model.day,
+        containedUntil,
         progress: profile ? clamp(number(record.age) / profile.recoveredDays, 0, 1) : 0,
     };
 }
@@ -189,7 +199,7 @@ function spawnDisturbance(model) {
         const before = Math.max(1, Math.floor(number(geo.forestStock[index], 1)));
         const after = Math.max(1, Math.min(before, Math.floor(before * profile.severity)));
         geo.forestStock[index] = after;
-        model.tiles[key] = { kind, age: 0 };
+        model.tiles[key] = { kind, age: 0, containedUntil: 0 };
         model.events++;
         model.lastEventDay = model.day;
         model.history.push({ day: model.day, kind, x, y, stockBefore: before, stockAfter: after });
@@ -208,7 +218,7 @@ export function updateForestSuccession(days = 1) {
     const steps = Math.max(0, Math.min(MAX_STEP_DAYS, Math.floor(number(days, 1))));
     if (!steps) return model;
 
-    for (const record of Object.values(model.tiles)) {
+    for (const [key, record] of Object.entries(model.tiles)) {
         const profile = forestSuccessionProfile(record.kind);
         if (!profile) {
             delete model.tiles[key];
@@ -225,7 +235,122 @@ export function updateForestSuccession(days = 1) {
         spawnDisturbance(model);
         model.daysSinceEvent = 0;
     }
+    // Fire, wind and disease do not stay inside their ignition tile. The pass is
+    // deliberately coarse (every 12 days) and capped, so a long campaign gets
+    // spreading disturbances without a per-day neighbour scan of the whole map.
+    model.daysSinceSpread = Math.max(0, Math.floor(number(model.daysSinceSpread))) + steps;
+    if (model.daysSinceSpread >= SPREAD_INTERVAL_DAYS) {
+        spreadDisturbances(model);
+        model.daysSinceSpread = 0;
+    }
     return model;
+}
+
+function activeSuccessionRecord(record) {
+    if (!record) return false;
+    const stage = forestSuccessionStage(record.kind, record.age);
+    return Boolean(stage && stage.id !== "recovered");
+}
+
+function controlCost(kind) {
+    if (kind === "burned") return { food: 6, wood: 4 };
+    if (kind === "windthrow") return { wood: 8 };
+    if (kind === "diseased") return { gold: 6 };
+    return {};
+}
+
+function spreadDisturbances(model) {
+    if (!Array.isArray(model.spreadHistory)) model.spreadHistory = [];
+    const geo = state.resourceGeography;
+    const width = Number(state.worldW) || 0;
+    const height = Number(state.worldH) || 0;
+    if (!geo || !width || !height) return 0;
+    const keys = Object.keys(model.tiles);
+    const neighbourOrder = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
+    let spreads = 0;
+
+    for (const key of keys) {
+        if (spreads >= MAX_SPREAD_PER_PASS) break;
+        const record = model.tiles[key];
+        if (!record || !activeSuccessionRecord(record)) continue;
+        if (Math.max(0, number(record.containedUntil)) > model.day) continue;
+        const profile = forestSuccessionProfile(record.kind);
+        if (!profile?.spreadChance) continue;
+        const stage = forestSuccessionStage(record.kind, record.age);
+        if (!stage || stage.id === "recovered") continue;
+        const [x, y] = key.split(":").map(Number);
+        const season = Math.floor(number(state.seasonIndex, 0)) % 4;
+        let chance = profile.spreadChance;
+        if (record.kind === "burned") chance *= season === 1 ? 1.35 : state.weather === "rain" || state.weather === "storm" ? 0.35 : 0.85;
+        if (record.kind === "windthrow") chance *= state.weather === "storm" ? 1.5 : season === 2 ? 1.15 : 0.8;
+        if (record.kind === "diseased") chance *= stage.id === "fresh" ? 1.1 : 0.75;
+        const roll = unitHash(model.seed, x * 37 + model.day, y * 53 + model.events, 0x53505244);
+        if (roll > chance) continue;
+        const start = hash32(model.seed, x, y, model.day + 0x53505244) % neighbourOrder.length;
+        for (let offset = 0; offset < neighbourOrder.length; offset++) {
+            const [dx, dy] = neighbourOrder[(start + offset) % neighbourOrder.length];
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+            const nkey = tileKey(nx, ny);
+            const existing = model.tiles[nkey];
+            if (existing && activeSuccessionRecord(existing)) continue;
+            if (!existing && Object.keys(model.tiles).length >= MAX_TILES) break;
+            const index = ny * width + nx;
+            const before = Math.max(0, Math.floor(number(geo.forestStock?.[index])));
+            if (!geo.forestCapacity?.[index] || before < 12) continue;
+            const stand = standAtTile(geo, nx, ny);
+            if (!stand?.forest || stand.type === "cutover") continue;
+            const after = Math.max(1, Math.floor(before * 0.72));
+            geo.forestStock[index] = after;
+            model.tiles[nkey] = { kind: record.kind, age: 0, containedUntil: 0 };
+            model.spreadings = Math.max(0, Math.floor(number(model.spreadings))) + 1;
+            model.spreadHistory.push({
+                day: model.day, kind: record.kind, from: [x, y], to: [nx, ny],
+                stockBefore: before, stockAfter: after,
+            });
+            if (model.spreadHistory.length > MAX_HISTORY) model.spreadHistory.splice(0, model.spreadHistory.length - MAX_HISTORY);
+            spreads++;
+            break;
+        }
+    }
+    return spreads;
+}
+
+export function suppressForestDisturbance(x, y) {
+    const model = ensureForestSuccession();
+    if (!model) return { ok: false, reason: "No active succession model" };
+    const record = model.tiles[tileKey(x, y)];
+    const stage = record ? forestSuccessionStage(record.kind, record.age) : null;
+    if (!record || !stage || stage.id === "recovered") return { ok: false, reason: "No active disturbance at this tile" };
+    const cost = controlCost(record.kind);
+    for (const [key, amount] of Object.entries(cost)) {
+        if ((Number(state.resources?.[key]) || 0) < amount) {
+            return { ok: false, reason: "Not enough " + key + " for a control party" };
+        }
+    }
+    for (const [key, amount] of Object.entries(cost)) state.resources[key] = Math.max(0, (Number(state.resources[key]) || 0) - amount);
+    record.containedUntil = model.day + CONTROL_DAYS;
+    model.suppressed = Math.max(0, Math.floor(number(model.suppressed))) + 1;
+    return { ok: true, x: Math.floor(x), y: Math.floor(y), kind: record.kind, days: CONTROL_DAYS, cost, containedUntil: record.containedUntil };
+}
+
+export function suppressNearestForestDisturbance(x, y, radius = 8) {
+    const model = ensureForestSuccession();
+    if (!model) return { ok: false, reason: "No active succession model" };
+    const cx = Math.floor(number(x));
+    const cy = Math.floor(number(y));
+    const limit = Math.max(1, Math.floor(number(radius, 8)));
+    let best = null;
+    for (const [key, record] of Object.entries(model.tiles)) {
+        if (!activeSuccessionRecord(record) || Math.max(0, number(record.containedUntil)) > model.day) continue;
+        const [tx, ty] = key.split(":").map(Number);
+        const distance = Math.abs(tx - cx) + Math.abs(ty - cy);
+        if (distance > limit) continue;
+        if (!best || distance < best.distance) best = { x: tx, y: ty, distance };
+    }
+    if (!best) return { ok: false, reason: "No active disturbance within " + limit + " tiles" };
+    return suppressForestDisturbance(best.x, best.y);
 }
 
 export function serializeForestSuccession() {
@@ -237,6 +362,7 @@ export function serializeForestSuccession() {
         tiles[key] = {
             kind: record.kind,
             age: Math.max(0, Math.min(100000, Math.floor(number(record.age)))),
+            containedUntil: Math.max(0, Math.floor(number(record.containedUntil))),
         };
     }
     return {
@@ -246,7 +372,20 @@ export function serializeForestSuccession() {
         events: Math.max(0, Math.floor(number(model.events))),
         lastEventDay: Math.max(0, Math.floor(number(model.lastEventDay))),
         daysSinceEvent: Math.max(0, Math.floor(number(model.daysSinceEvent))),
+        daysSinceSpread: Math.max(0, Math.floor(number(model.daysSinceSpread))),
+        spreadings: Math.max(0, Math.floor(number(model.spreadings))),
+        suppressed: Math.max(0, Math.floor(number(model.suppressed))),
         tiles,
+        spreadHistory: (Array.isArray(model.spreadHistory) ? model.spreadHistory : [])
+            .filter(entry => entry && FOREST_DISTURBANCE_KINDS.includes(entry.kind))
+            .slice(-MAX_HISTORY)
+            .map(entry => ({
+                day: Math.max(0, Math.floor(number(entry.day))), kind: entry.kind,
+                from: Array.isArray(entry.from) ? entry.from.map(value => Math.floor(number(value))) : [0, 0],
+                to: Array.isArray(entry.to) ? entry.to.map(value => Math.floor(number(value))) : [0, 0],
+                stockBefore: Math.max(0, Math.floor(number(entry.stockBefore))),
+                stockAfter: Math.max(0, Math.floor(number(entry.stockAfter))),
+            })),
         history: (Array.isArray(model.history) ? model.history : [])
             .filter(entry => entry && FOREST_DISTURBANCE_KINDS.includes(entry.kind))
             .slice(-MAX_HISTORY)
@@ -281,6 +420,9 @@ export function validateForestSuccessionSnapshot(snapshot) {
         if (!Number.isFinite(Number(record.age)) || Number(record.age) < 0 || Number(record.age) > 100000) {
             throw new Error("Save data contains an invalid forest-succession age.");
         }
+        if (record.containedUntil !== undefined && (!Number.isFinite(Number(record.containedUntil)) || Number(record.containedUntil) < 0)) {
+            throw new Error("Save data contains an invalid forest-succession control date.");
+        }
     }
     if (snapshot.history !== undefined) {
         if (!Array.isArray(snapshot.history) || snapshot.history.length > MAX_HISTORY) {
@@ -289,6 +431,16 @@ export function validateForestSuccessionSnapshot(snapshot) {
         for (const entry of snapshot.history) {
             if (!entry || !FOREST_DISTURBANCE_KINDS.includes(entry.kind)) {
                 throw new Error("Save data contains an invalid forest-succession event.");
+            }
+        }
+    }
+    if (snapshot.spreadHistory !== undefined) {
+        if (!Array.isArray(snapshot.spreadHistory) || snapshot.spreadHistory.length > MAX_HISTORY) {
+            throw new Error("Save data contains an invalid forest-succession spread history.");
+        }
+        for (const entry of snapshot.spreadHistory) {
+            if (!entry || !FOREST_DISTURBANCE_KINDS.includes(entry.kind)) {
+                throw new Error("Save data contains an invalid forest-succession spread event.");
             }
         }
     }
@@ -304,6 +456,7 @@ export function restoreForestSuccession(snapshot) {
         tiles[key] = {
             kind: record.kind,
             age: Math.max(0, Math.floor(number(record.age))),
+            containedUntil: Math.max(0, Math.floor(number(record.containedUntil))),
         };
     }
     state.forestSuccession = {
@@ -313,8 +466,12 @@ export function restoreForestSuccession(snapshot) {
         events: Math.max(0, Math.floor(number(snapshot.events))),
         lastEventDay: Math.max(0, Math.floor(number(snapshot.lastEventDay))),
         daysSinceEvent: Math.max(0, Math.floor(number(snapshot.daysSinceEvent))),
+        daysSinceSpread: Math.max(0, Math.floor(number(snapshot.daysSinceSpread))),
+        spreadings: Math.max(0, Math.floor(number(snapshot.spreadings))),
+        suppressed: Math.max(0, Math.floor(number(snapshot.suppressed))),
         tiles,
         history: (Array.isArray(snapshot.history) ? snapshot.history : []).slice(-MAX_HISTORY),
+        spreadHistory: (Array.isArray(snapshot.spreadHistory) ? snapshot.spreadHistory : []).slice(-MAX_HISTORY),
     };
     return Object.keys(tiles).length;
 }
