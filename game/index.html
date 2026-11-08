@@ -275,6 +275,23 @@
         <div class="setting-row"><div><strong>Render scale</strong><small>Optional internal resolution for weak devices. 100% is the full-quality default; lower values upscale the same scene.</small></div><select id="settings-render-scale" class="settings-select" aria-label="Render scale"><option value="100">100%</option><option value="85">85%</option><option value="70">70%</option><option value="50">50%</option></select></div>
         <div class="setting-row"><div><strong>Adaptive quality</strong><small>If automatic WebGL stays slow, fall back to the cached Canvas terrain without reducing artwork.</small></div><label class="toggle"><input id="settings-adaptive-toggle" type="checkbox" aria-label="Adaptive quality" checked><span></span></label></div>
         <div class="setting-row"><div><strong>Performance overlay</strong><small>Show FPS, frame time and the active terrain renderer.</small></div><label class="toggle"><input id="settings-fps-toggle" type="checkbox" aria-label="Show performance overlay"><span></span></label></div>
+        <div class="performance-benchmark" aria-labelledby="performance-benchmark-title">
+            <div class="performance-benchmark__intro">
+                <div><strong id="performance-benchmark-title">Device benchmark</strong><small>Measure the live scene across Auto, WebGL and Canvas 2D at 100, 85, 70 and 50% scale. Your saved settings return when it finishes.</small></div>
+                <button id="run-performance-benchmark" class="ui-button ui-button--secondary secondary-button performance-benchmark__run" type="button" disabled>RUN BENCHMARK</button>
+            </div>
+            <p id="performance-benchmark-status" class="performance-benchmark__status" role="status" aria-live="polite">Found a realm to benchmark the live scene.</p>
+            <div id="performance-benchmark-meta" class="performance-benchmark__device hidden"></div>
+            <progress id="performance-benchmark-progress" class="performance-benchmark__progress hidden" max="12" value="0" aria-label="Benchmark progress"></progress>
+            <div id="performance-benchmark-results" class="performance-benchmark__results hidden">
+                <div id="performance-benchmark-summary" class="performance-benchmark__summary"></div>
+                <table class="performance-benchmark__table" aria-label="Renderer benchmark results">
+                    <thead><tr><th scope="col">Renderer</th><th scope="col">Scale</th><th scope="col">FPS</th><th scope="col">Draw</th></tr></thead>
+                    <tbody id="performance-benchmark-body"></tbody>
+                </table>
+                <p class="performance-benchmark__note">Measured at a 60 FPS target. Draw is the average main-thread render time; settings are restored after the run.</p>
+            </div>
+        </div>
         <section class="settings-archive" aria-labelledby="settings-archive-title">
             <div class="settings-section-heading" id="settings-archive-title">REALM ARCHIVE</div>
             <p class="settings-archive-note">Local save slots for this browser. Loading a slot replaces the current campaign; save first if it matters.</p>
@@ -294,6 +311,14 @@
         </div>
         <div class="profile-note">Saves are currently stored per local browser profile. Do not use this as secure multi-user authentication or cloud backup.</div>
         <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.9.0</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
+    </div>
+</div>
+
+<div id="performance-benchmark-live" class="benchmark-live hidden">
+    <div class="benchmark-live__panel">
+        <div class="benchmark-live__copy"><strong>DEVICE BENCHMARK</strong><span id="performance-benchmark-live-status" role="status" aria-live="polite">Preparing the live scene…</span></div>
+        <progress id="performance-benchmark-live-progress" class="benchmark-live__progress" max="12" value="0" aria-label="Benchmark progress"></progress>
+        <button id="performance-benchmark-cancel" class="ui-button ui-button--secondary secondary-button benchmark-live__cancel" type="button">CANCEL</button>
     </div>
 </div>
 

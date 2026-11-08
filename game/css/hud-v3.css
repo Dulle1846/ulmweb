@@ -603,6 +603,36 @@
 .settings-action-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
 .import-button{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-align:center}
 .settings-archive-status{margin:7px 0 0;font-size:7.5px;line-height:1.4;color:#806d52}
+.performance-benchmark{margin-top:11px;padding:9px 10px;border:1px solid #b69a6888;border-radius:2px;background:#fff7e588}
+.performance-benchmark__intro{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.performance-benchmark__intro>div{min-width:0}
+.performance-benchmark__intro strong{display:block;font:700 9px var(--ui-title-font);letter-spacing:.08em;color:#4b3927}
+.performance-benchmark__intro small{display:block;margin-top:2px;font-size:7.5px;line-height:1.4;color:#806d52}
+.performance-benchmark__run{flex:0 0 auto;min-height:27px;padding:0 9px;border-color:#b99a59;background:linear-gradient(180deg,#6a5135,#3a2d20);color:#f3e4c2;font-size:7px;letter-spacing:.05em;text-shadow:0 1px #0009}
+.performance-benchmark__run:hover:not(:disabled){border-color:#e0c17e;background:linear-gradient(180deg,#80623e,#4a3828);color:#fff1d0}
+.performance-benchmark__run:disabled{opacity:.5;filter:grayscale(.35)}
+.performance-benchmark__status{margin:8px 0 0;font-size:7.5px;line-height:1.4;color:#806d52}
+.performance-benchmark__status.is-error{color:#8f3f35}
+.performance-benchmark__device{margin-top:5px;font:700 6.5px var(--ui-number-font);letter-spacing:.06em;color:#9b6a42}
+.performance-benchmark__progress{display:block;width:100%;height:7px;margin-top:7px;accent-color:#80633f}
+.performance-benchmark__results{margin-top:8px;padding-top:7px;border-top:1px solid #b69a6855}
+.performance-benchmark__summary{font:700 6.5px var(--ui-title-font);letter-spacing:.08em;color:#806d52}
+.performance-benchmark__table{width:100%;margin-top:5px;border-collapse:collapse;font:700 8px var(--ui-number-font);font-variant-numeric:tabular-nums}
+.performance-benchmark__table th{padding:0 4px 4px 0;text-align:left;font:700 6.5px var(--ui-title-font);letter-spacing:.1em;color:#806d52}
+.performance-benchmark__table th:not(:first-child),.performance-benchmark__table td:not(:first-child){text-align:right}
+.performance-benchmark__table td{padding:4px;border-top:1px solid #b69a6833;color:#4b3927;vertical-align:middle}
+.performance-benchmark__table tbody tr.is-best{background:#d9c39a55}
+.performance-benchmark__table td strong,.performance-benchmark__table td small{display:block}
+.performance-benchmark__table td small{margin-top:1px;font:700 6px var(--ui-title-font);letter-spacing:.04em;color:#806d52}
+.performance-benchmark__table td em{display:inline-block;margin-top:2px;padding:1px 4px;border:1px solid #8f7448;border-radius:2px;font:700 6px var(--ui-title-font);font-style:normal;letter-spacing:.08em;color:#4b3927}
+.performance-benchmark__note{margin:6px 0 0;font-size:7px;line-height:1.4;color:#806d52}
+.benchmark-live{position:fixed;inset:0;z-index:80;display:flex;align-items:flex-start;justify-content:center;padding:18px 16px;pointer-events:auto}
+.benchmark-live__panel{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"copy cancel" "progress progress";align-items:center;gap:4px 12px;width:min(620px,calc(100vw - 32px));padding:8px 10px;border:1px solid #b99a59;border-radius:3px;background:rgba(18,15,11,.96);box-shadow:0 6px 22px #000a;color:#e5d3ad}
+.benchmark-live__copy{grid-area:copy;display:grid;gap:2px;min-width:0}
+.benchmark-live__copy strong{font:700 8px var(--ui-title-font);letter-spacing:.12em;color:#f0d9a8;white-space:nowrap}
+.benchmark-live__copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 7px var(--ui-number-font);letter-spacing:.03em;color:#cbbb98}
+.benchmark-live__progress{grid-area:progress;width:100%;height:7px;accent-color:#c0a066}
+.benchmark-live__cancel{grid-area:cancel;min-height:25px;padding:0 8px;font-size:7px;letter-spacing:.05em}
 .settings-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;margin-top:13px;padding-top:9px;border-top:1px solid #9d7d5044;color:#806d52;font:700 6.5px var(--ui-body-font);letter-spacing:.08em}
 
 .dossier-actions{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 2px;padding:8px;border:1px solid #b99a5944;border-radius:3px;background:#241d1688}
@@ -766,6 +796,10 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
 }
 @media(max-width:620px){
   .performance-hud{top:52px;right:8px}
+  .performance-benchmark__intro{flex-direction:column}
+  .performance-benchmark__run{width:100%}
+  .benchmark-live__panel{gap:5px 8px;padding:7px 8px}
+  .benchmark-live__copy span{white-space:normal}
 }
 
 /* ── Hand hotbar removed: corner controls use the freed space ─────── */

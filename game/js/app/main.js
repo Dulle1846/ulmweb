@@ -34,6 +34,7 @@ import {SAVE_SCHEMA_VERSION,normalizeSaveSnapshot,validateSaveSnapshot} from "..
 import {initializeSettlementForRealm} from "../systems/settlement.js";
 import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
+import {BENCHMARK_MIN_FRAMES,BENCHMARK_SAMPLE_MS,BENCHMARK_WARMUP_MS,buildBenchmarkPlan,findBenchmarkWinner,summarizeBenchmarkSamples} from "./performance-benchmark.js";
 
 // Snapshot field migrations run in order. Each step is defensive because
 // imported or hand-edited saves may be missing any field.
@@ -97,6 +98,248 @@ function applyPerformanceSettings(){
     state.renderStats={fps:0,frameMs:0,mode:state.terrainMode,fallback:false,renderScale:state.renderScale};
     const hud=document.getElementById("performance-hud");
     if(hud)hud.classList.toggle("hidden",state.showFps!==true);
+}
+
+let benchmarkRunning=false;
+let benchmarkCancelRequested=false;
+
+function setBenchmarkStatus(message,tone=""){
+    const status=document.getElementById("performance-benchmark-status");
+    if(!status)return;
+    status.textContent=message;
+    status.classList.toggle("is-error",tone==="error");
+}
+
+function setBenchmarkLiveStatus(message){
+    const status=document.getElementById("performance-benchmark-live-status");
+    if(status)status.textContent=message;
+}
+
+function setBenchmarkLiveVisible(visible){
+    const live=document.getElementById("performance-benchmark-live");
+    if(live)live.classList.toggle("hidden",!visible);
+}
+
+function updateBenchmarkProgress(value,max){
+    for(const id of ["performance-benchmark-progress","performance-benchmark-live-progress"]){
+        const progress=document.getElementById(id);
+        if(!progress)continue;
+        progress.max=max;progress.value=value;
+        progress.classList.remove("hidden");
+    }
+}
+
+function setBenchmarkControlsDisabled(disabled){
+    for(const id of ["settings-terrain-renderer","settings-frame-limit","settings-render-scale","settings-adaptive-toggle","settings-fps-toggle"]){
+        const control=document.getElementById(id);
+        if(control)control.disabled=disabled;
+    }
+}
+
+function benchmarkReady(){
+    return state.hasStarted===true&&state.frameFaulted!==true&&Boolean(state.canvas&&state.ctx);
+}
+
+function refreshBenchmarkAvailability(){
+    const button=document.getElementById("run-performance-benchmark");
+    if(!button||benchmarkRunning)return;
+    const ready=benchmarkReady();
+    button.disabled=!ready;
+    button.textContent="RUN BENCHMARK";
+    if(!ready)setBenchmarkStatus("Found a realm to benchmark the live scene.");
+}
+
+function benchmarkDeviceSummary(){
+    const rect=state.canvas?.getBoundingClientRect?.();
+    const threads=Number(navigator.hardwareConcurrency);
+    return [
+        "LIVE SCENE",
+        rect?Math.round(rect.width)+" × "+Math.round(rect.height)+" VIEW":null,
+        Number.isFinite(threads)&&threads>0?threads+" THREADS":null
+    ].filter(Boolean).join(" · ");
+}
+
+function benchmarkActualMode(row){
+    const actual=row.mode==="webgl"?"WEBGL":"CANVAS";
+    return row.renderer==="auto"||row.mode!==row.renderer?"ACTUAL "+actual:"";
+}
+
+function formatBenchmarkMetric(value,suffix=""){
+    return Number.isFinite(value)&&value>0?value.toFixed(1)+suffix:"—";
+}
+
+function renderBenchmarkResults(results,total,deviceLabel){
+    const wrap=document.getElementById("performance-benchmark-results");
+    const body=document.getElementById("performance-benchmark-body");
+    const summary=document.getElementById("performance-benchmark-summary");
+    if(!wrap||!body)return;
+    if(!results.length){wrap.classList.add("hidden");return;}
+    const winner=findBenchmarkWinner(results);
+    body.innerHTML=results.map(row=>{
+        const actual=benchmarkActualMode(row);
+        return "<tr"+(winner===row?' class="is-best"':"")+"><td><strong>"+row.rendererLabel.toUpperCase()+"</strong>"+
+            (actual?"<small>"+actual+"</small>":"")+(winner===row?"<em>BEST</em>":"")+
+            "</td><td>"+row.scaleLabel+"%</td><td>"+formatBenchmarkMetric(row.fps)+"</td><td>"+formatBenchmarkMetric(row.drawMs," ms")+"</td></tr>";
+    }).join("");
+    if(summary)summary.textContent=(results.length===total?"COMPLETE":"PARTIAL")+" · "+deviceLabel;
+    wrap.classList.remove("hidden");
+}
+
+function waitForBenchmarkWarmup(durationMs){
+    return new Promise(resolve=>{
+        let settled=false;
+        const started=performance.now();
+        const startFrames=Number(state.renderedFrames)||0;
+        const finish=()=>{
+            if(settled)return;
+            settled=true;clearTimeout(fallback);resolve();
+        };
+        const fallback=setTimeout(finish,durationMs+3000);
+        const step=()=>{
+            if(settled)return;
+            const elapsed=performance.now()-started;
+            const frames=(Number(state.renderedFrames)||0)-startFrames;
+            if(benchmarkCancelRequested||(elapsed>=durationMs&&frames>=3)||elapsed>=durationMs+2500)finish();
+            else requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    });
+}
+
+function sampleBenchmarkFrames(durationMs){
+    return new Promise(resolve=>{
+        const frameTimes=[];
+        const drawTimes=[];
+        let firstFrameAt=0,lastFrameAt=0,settled=false;
+        let lastRenderedFrames=Number(state.renderedFrames)||0;
+        const startedWall=performance.now();
+        const finish=()=>{
+            if(settled)return;
+            settled=true;clearTimeout(fallback);
+            resolve(summarizeBenchmarkSamples(frameTimes,drawTimes));
+        };
+        const fallback=setTimeout(finish,durationMs+20000);
+        const step=timestamp=>{
+            if(settled)return;
+            if(benchmarkCancelRequested){finish();return;}
+            const rendered=Number(state.renderedFrames)||0;
+            if(rendered!==lastRenderedFrames){
+                lastRenderedFrames=rendered;
+                if(firstFrameAt)frameTimes.push(Math.max(0,timestamp-lastFrameAt));
+                else firstFrameAt=timestamp;
+                lastFrameAt=timestamp;
+                const drawMs=Number(state.lastDrawMs);
+                if(Number.isFinite(drawMs)&&drawMs>=0)drawTimes.push(drawMs);
+            }
+            if(firstFrameAt&&timestamp-firstFrameAt>=durationMs&&frameTimes.length>=BENCHMARK_MIN_FRAMES){finish();return;}
+            if(performance.now()-startedWall>=durationMs+19500){finish();return;}
+            requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    });
+}
+
+async function runPerformanceBenchmark(){
+    const button=document.getElementById("run-performance-benchmark");
+    if(!button)return;
+    if(benchmarkRunning){
+        benchmarkCancelRequested=true;
+        button.textContent="STOPPING…";
+        setBenchmarkStatus("Stopping after the current sample…");
+        setBenchmarkLiveStatus("Stopping after the current sample…");
+        return;
+    }
+    if(!benchmarkReady()){
+        setBenchmarkStatus("Found a realm to benchmark the live scene.");
+        refreshBenchmarkAvailability();
+        return;
+    }
+
+    const originalSettings={...settings};
+    const wasPaused=state.isPaused===true;
+    const plan=buildBenchmarkPlan();
+    const deviceLabel=benchmarkDeviceSummary();
+    const results=[];
+    const progress=document.getElementById("performance-benchmark-progress");
+    const meta=document.getElementById("performance-benchmark-meta");
+    let cancelled=false,failed=false;
+
+    benchmarkRunning=true;benchmarkCancelRequested=false;
+    setBenchmarkControlsDisabled(true);
+    button.disabled=false;button.textContent="CANCEL BENCHMARK";
+    document.getElementById("performance-benchmark-results")?.classList.add("hidden");
+    if(meta){meta.textContent=deviceLabel;meta.classList.remove("hidden");}
+    updateBenchmarkProgress(0,plan.length);
+    document.getElementById("settings-modal")?.classList.add("hidden");
+    setBenchmarkLiveVisible(true);
+    const cancelButton=document.getElementById("performance-benchmark-cancel");
+    if(cancelButton){cancelButton.disabled=false;cancelButton.textContent="CANCEL";cancelButton.focus({preventScroll:true});}
+    setBenchmarkStatus("Preparing the live scene…");
+    setBenchmarkLiveStatus("Preparing the live scene…");
+    state.isPaused=true;
+
+    try{
+        // Prime the 100% surface once before scoring. Building the largest
+        // terrain cache inside the first measured row made that row look slower.
+        settings.terrainRenderer="auto";
+        settings.renderScale=1;
+        settings.frameLimit=60;
+        settings.adaptiveQuality=false;
+        applyPerformanceSettings();
+        setBenchmarkStatus("PRIMING LIVE SCENE");
+        setBenchmarkLiveStatus("PRIMING LIVE SCENE");
+        await waitForBenchmarkWarmup(BENCHMARK_WARMUP_MS);
+        if(benchmarkCancelRequested){cancelled=true;throw new Error("BENCHMARK CANCELLED");}
+
+        for(let index=0;index<plan.length;index++){
+            if(benchmarkCancelRequested){cancelled=true;break;}
+            const config=plan[index];
+            settings.terrainRenderer=config.renderer;
+            settings.renderScale=config.scale;
+            settings.frameLimit=60;
+            settings.adaptiveQuality=false;
+            applyPerformanceSettings();
+            const benchmarkMessage="WARMING "+(index+1)+"/"+plan.length+" · "+config.rendererLabel.toUpperCase()+" · "+config.scaleLabel+"%";
+            setBenchmarkStatus(benchmarkMessage);setBenchmarkLiveStatus(benchmarkMessage);
+            await waitForBenchmarkWarmup(BENCHMARK_WARMUP_MS);
+            if(benchmarkCancelRequested){cancelled=true;break;}
+            const samplingMessage="SAMPLING "+(index+1)+"/"+plan.length+" · "+config.rendererLabel.toUpperCase()+" · "+config.scaleLabel+"%";
+            setBenchmarkStatus(samplingMessage);setBenchmarkLiveStatus(samplingMessage);
+            const sample=await sampleBenchmarkFrames(BENCHMARK_SAMPLE_MS);
+            if(benchmarkCancelRequested){cancelled=true;break;}
+            if(sample.samples<3)throw new Error("No rendered frames were captured. Keep this tab visible and try again.");
+            results.push({...config,mode:state.terrainMode,...sample});
+            updateBenchmarkProgress(index+1,plan.length);
+            renderBenchmarkResults(results,plan.length,deviceLabel);
+        }
+    }catch(error){
+        if(cancelled){
+            setBenchmarkStatus("BENCHMARK CANCELLED · SETTINGS RESTORED");
+        }else{
+            failed=true;
+            console.error("Performance benchmark failed:",error);
+            setBenchmarkStatus("BENCHMARK FAILED · "+error.message,"error");
+        }
+    }finally{
+        Object.assign(settings,originalSettings);
+        applyPerformanceSettings();
+        state.isPaused=wasPaused;
+        benchmarkRunning=false;benchmarkCancelRequested=false;
+        setBenchmarkControlsDisabled(false);
+        setBenchmarkLiveVisible(false);
+        if(progress)progress.classList.add("hidden");
+        button.textContent="RUN BENCHMARK";
+        button.disabled=!benchmarkReady();
+        document.getElementById("settings-modal")?.classList.remove("hidden");
+        if(cancelButton){cancelButton.disabled=false;cancelButton.textContent="CANCEL";}
+        if(results.length)renderBenchmarkResults(results,plan.length,deviceLabel);
+        if(!failed){
+            setBenchmarkStatus(cancelled
+                ?"BENCHMARK CANCELLED · SETTINGS RESTORED"
+                :"BENCHMARK COMPLETE · SETTINGS RESTORED");
+        }
+        setBenchmarkLiveStatus("");
+    }
 }
 
 function bindCanvas(){
@@ -627,9 +870,22 @@ function bindMenu(){
 
     document.getElementById("save-btn")?.addEventListener("click",saveCurrentGame);
     document.getElementById("load-btn")?.addEventListener("click",loadCurrentGame);
-    const openSettings=()=>{renderSaveSlots();document.getElementById("settings-modal").classList.remove("hidden");};
+    const openSettings=()=>{
+        if(benchmarkRunning)return;
+        renderSaveSlots();
+        refreshBenchmarkAvailability();
+        document.getElementById("settings-modal").classList.remove("hidden");
+    };
     document.getElementById("settings-btn")?.addEventListener("click",openSettings);
     document.getElementById("start-settings-btn")?.addEventListener("click",openSettings);
+    document.getElementById("run-performance-benchmark")?.addEventListener("click",runPerformanceBenchmark);
+    document.getElementById("performance-benchmark-cancel")?.addEventListener("click",()=>{
+        if(!benchmarkRunning)return;
+        benchmarkCancelRequested=true;
+        const cancelButton=document.getElementById("performance-benchmark-cancel");
+        if(cancelButton){cancelButton.disabled=true;cancelButton.textContent="STOPPING…";}
+        setBenchmarkLiveStatus("Stopping after the current sample…");
+    });
     document.getElementById("export-save-btn")?.addEventListener("click",exportRealm);
     const importInput=document.getElementById("import-save-input");
     importInput?.addEventListener("change",async event=>{
@@ -637,7 +893,10 @@ function bindMenu(){
         await importRealm(file);
         event.target.value="";
     });
-    document.getElementById("settings-close")?.addEventListener("click",()=>document.getElementById("settings-modal").classList.add("hidden"));
+    document.getElementById("settings-close")?.addEventListener("click",()=>{
+        if(benchmarkRunning)benchmarkCancelRequested=true;
+        document.getElementById("settings-modal").classList.add("hidden");
+    });
     document.getElementById("settings-music-toggle")?.addEventListener("change",event=>{
         settings.musicEnabled=event.target.checked;setMusicEnabled(settings.musicEnabled);saveSettings(settings);
     });

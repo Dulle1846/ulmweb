@@ -158,6 +158,22 @@ test("settings expose local save slots, import/export and version/credits metada
   }
 });
 
+test("settings expose a live device benchmark with visible results and safe restoration",()=>{
+  for(const id of ["run-performance-benchmark","performance-benchmark-status","performance-benchmark-progress","performance-benchmark-results","performance-benchmark-body","performance-benchmark-live","performance-benchmark-live-status","performance-benchmark-live-progress","performance-benchmark-cancel"]){
+    assert.ok(html.includes('id="'+id+'"'),"benchmark UI is missing "+id);
+  }
+  assert.ok(html.includes('aria-label="Benchmark progress"'));
+  assert.ok(html.includes('id="settings-modal" class="screen-overlay hidden"'));
+  assert.ok(main.includes("async function runPerformanceBenchmark()"));
+  assert.ok(main.includes("summarizeBenchmarkSamples"));
+  assert.ok(main.includes("Object.assign(settings,originalSettings)"),"benchmark must restore the player's settings");
+  assert.ok(main.includes("BENCHMARK_MIN_FRAMES"));
+  assert.ok(main.includes("setBenchmarkLiveVisible(true)"));
+  assert.ok(main.includes("setBenchmarkLiveVisible(false)"));
+  assert.ok(hud.includes(".performance-benchmark__table"));
+  assert.ok(hud.includes(".benchmark-live__panel"));
+});
+
 test("realm issue presentation exposes real participants and the chronicle record",()=>{
   assert.ok(html.includes('id="realm-event-participants"'));
   assert.ok(html.includes('id="realm-event-chronicle"'));
