@@ -79,7 +79,7 @@ export function terrainPaletteFor(climate, seasonIndex = 0) {
     return {
         ...palette,
         season,
-        snowBias: season === 3 ? 0.28 : 0,
+        snowBias: 0.28 * seasonalState(season * 100 + 50, climate).snowCover,
         autumn: season === 2 ? 1 : 0,
         winter: season === 3 ? 1 : 0,
     };
@@ -145,7 +145,7 @@ export function terrainPaletteForPhase(climate, phase) {
     // Effects follow their own asymmetric curves: snow starts in late autumn and
     // melts in early spring, leaves turn before the first frost and are gone by
     // midwinter. They are not tied to the palette anchors.
-    const seasonal = seasonalState(wrapped * 100);
+    const seasonal = seasonalState(wrapped * 100, climate);
     return {
         ...palette,
         season: lower,

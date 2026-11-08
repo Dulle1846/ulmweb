@@ -71,6 +71,12 @@ jobs:
         env:
           TERRAIN_REFERENCE_OUT: ${{ runner.temp }}/terrain-reference
         run: npm run test:terrain-reference
+      - name: Simulate a full seasonal year
+        if: always()
+        working-directory: game
+        env:
+          SEASON_YEAR_OUT: ${{ runner.temp }}/terrain-reference/season-year.json
+        run: npm run test:season-year
       - name: Upload terrain visual reference
         if: always()
         uses: actions/upload-artifact@v4
@@ -78,7 +84,10 @@ jobs:
           name: kings-and-cards-terrain-reference
           path: |
             ${{ runner.temp }}/terrain-reference/contact-sheet.png
+            ${{ runner.temp }}/terrain-reference/season-transition.png
+            ${{ runner.temp }}/terrain-reference/tree-seasons.png
             ${{ runner.temp }}/terrain-reference/reference.json
+            ${{ runner.temp }}/terrain-reference/season-year.json
           if-no-files-found: warn
           retention-days: 7
       - name: Upload browser E2E log

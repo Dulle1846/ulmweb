@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { flowerBloom, foliageState, treeTiming } from "../../js/presentation/rendering/seasonal-foliage.js";
+import { seasonalState } from "../../js/world/season.js";
 
 test("deciduous trees are leafy in summer and bare in midwinter", () => {
     const summer = foliageState(150, { seed: 0.5, species: "broadleaf" });
@@ -53,6 +54,44 @@ test("leaf loss is gradual instead of a one-day switch", () => {
         assert.ok(Math.abs(current - previous) < 0.12, "leaf changed too fast on day " + day);
         previous = current;
     }
+});
+
+test("climate zones shift leaf fall, snow and spring green-up", () => {
+    assert.ok(seasonalState(50, "northern").snowCover > seasonalState(50, "temperate").snowCover);
+    assert.equal(seasonalState(150, "arid").snowCover, 0);
+    assert.ok(seasonalState(350, "northern").snowCover >= seasonalState(350, "temperate").snowCover);
+    assert.ok(seasonalState(350, "arid").snowCover < seasonalState(350, "temperate").snowCover);
+    assert.ok(seasonalState(0, "northern").greenUp < seasonalState(0, "temperate").greenUp);
+
+    const temperate = foliageState(300, { seed: 0.5, species: "broadleaf", climate: "temperate" });
+    const northern = foliageState(300, { seed: 0.5, species: "broadleaf", climate: "northern" });
+    const arid = foliageState(300, { seed: 0.5, species: "broadleaf", climate: "arid" });
+    assert.ok(northern.leaf < temperate.leaf, "northern trees drop earlier");
+    assert.ok(arid.turn < temperate.turn, "arid canopies turn less");
+
+    const oakTemperate = foliageState(350, { seed: 0.5, species: "oak", climate: "temperate" });
+    const oakArid = foliageState(350, { seed: 0.5, species: "oak", climate: "arid" });
+    assert.ok(oakArid.leaf < oakTemperate.leaf, "arid oaks hold fewer leaves");
+});
+
+test("species and climates change how long leaf fall takes", () => {
+    const broadleaf = treeTiming(0.5, "broadleaf", "temperate");
+    const oak = treeTiming(0.5, "oak", "temperate");
+    const birch = treeTiming(0.5, "birch", "temperate");
+    assert.ok(oak.dropEnd - oak.dropStart > broadleaf.dropEnd - broadleaf.dropStart, "oaks drop slowly");
+    assert.ok(birch.dropEnd - birch.dropStart < broadleaf.dropEnd - broadleaf.dropStart, "birches drop quickly");
+
+    const northern = treeTiming(0.5, "broadleaf", "northern");
+    const arid = treeTiming(0.5, "broadleaf", "arid");
+    assert.ok(northern.dropEnd - northern.dropStart > arid.dropEnd - arid.dropStart, "northern leaf fall lasts longer");
+});
+
+test("conifers hold snow longer than birches during the melt", () => {
+    const conifer = foliageState(30, { seed: 0.5, species: "conifer" });
+    const birch = foliageState(30, { seed: 0.5, species: "birch" });
+    const broadleaf = foliageState(30, { seed: 0.5, species: "broadleaf" });
+    assert.ok(conifer.snow > broadleaf.snow, "conifers keep their snow");
+    assert.ok(birch.snow < broadleaf.snow, "birches shed it early");
 });
 
 test("flowers fade with the leaves and disappear under snow", () => {

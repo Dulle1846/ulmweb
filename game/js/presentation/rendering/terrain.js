@@ -131,7 +131,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
     const dayOfYear = Number.isFinite(Number(state.dayOfYear))
         ? Number(state.dayOfYear)
         : (Number(state.seasonIndex) || 0) * 100;
-    const climate = seasonalState(dayOfYear);
+    const climateKey = state.worldOptions?.climate || "temperate";
+    const climate = seasonalState(dayOfYear, climateKey);
 
     const startX = Math.max(0, Math.floor(cam.x / cellPx) - 1);
     const startY = Math.max(0, Math.floor(cam.y / cellPx) - 1);
@@ -197,11 +198,11 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                 (m - 0.4) / 0.42 + (state.worldOptions?.forests ?? 52) * 0.001 - 0.05));
             const treeChance = (0.08 + forestDensity * 0.72) * (0.5 + cluster * 0.95);
             if (forestDensity > 0.08 && s1 < treeChance) {
-                drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, m, dayOfYear, shoreDir);
+                drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, m, dayOfYear, climateKey, shoreDir);
                 continue;
             }
             if (cluster > 0.6 && m > 0.34 && s1 > 0.8) {
-                drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear);
+                drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey);
                 continue;
             }
 
@@ -214,8 +215,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
 
             // Meadows: flower drifts, tufts and the occasional boulder.
             if (h >= sea && h < 0.62 && zoom >= 0.34) {
-                if (s1 > 0.9) drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear);
-                else if (s1 > 0.76) drawFlower(ctx, px, py, cellPx, s1, dayOfYear);
+                if (s1 > 0.9) drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey);
+                else if (s1 > 0.76) drawFlower(ctx, px, py, cellPx, s1, dayOfYear, climateKey);
                 else if (s1 > 0.64) drawGrassTufts(ctx, px, py, cellPx, s1, s2, false, climate.foliageTurn, climate.snowCover);
                 else if (s1 > 0.625) drawRock(ctx, px, py, cellPx, zoom, false);
             }
@@ -366,7 +367,7 @@ function drawBareCrown(ctx, px, py, s, sway, seed, foliage, ink = "#6b5138") {
     }
 }
 
-function drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, moisture, dayOfYear, shore = null) {
+function drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, moisture, dayOfYear, climateKey = "temperate", shore = null) {
     const s = cellPx / 48;
     const sway = Math.sin(tick * 0.045 + s1 * 10 + s2 * 7) * 1.6 * s;
 
@@ -387,18 +388,18 @@ function drawTree(ctx, px, py, cellPx, tick, s1, s2, zoom, temp, moisture, dayOf
     const variant = Math.min(3, Math.floor(Math.abs(s2) * 4));
     const seed = s2;
 
-    if (temp < 0.4 || (temp < 0.54 && variant === 3)) { drawConifer(ctx, px, py, s, sway, seed, dayOfYear); return; }
+    if (temp < 0.4 || (temp < 0.54 && variant === 3)) { drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey); return; }
     if (temp > 0.68 && moisture < 0.45) { drawPalm(ctx, px, py, s, sway, seed); return; }
     if (moisture > 0.76 && temp > 0.5 && s1 > 0.9) { drawDeadTree(ctx, px, py, s, sway); return; }
-    if (moisture > 0.52 && variant === 2) { drawBirch(ctx, px, py, s, sway, seed, dayOfYear); return; }
+    if (moisture > 0.52 && variant === 2) { drawBirch(ctx, px, py, s, sway, seed, dayOfYear, climateKey); return; }
     // Two crown types: marcescent oaks keep some leaves through winter, plain
     // broadleaf trees go bare. Both turn on their own schedule from `seed`.
     const species = variant === 1 || variant === 3 ? "oak" : "broadleaf";
-    drawBroadleaf(ctx, px, py, s, sway, seed, dayOfYear, variant, species);
+    drawBroadleaf(ctx, px, py, s, sway, seed, dayOfYear, variant, species, climateKey);
 }
 
-function drawBroadleaf(ctx, px, py, s, sway, seed, dayOfYear, variant = 0, species = "broadleaf") {
-    const foliage = foliageState(dayOfYear, { seed, species });
+function drawBroadleaf(ctx, px, py, s, sway, seed, dayOfYear, variant = 0, species = "broadleaf", climateKey = "temperate") {
+    const foliage = foliageState(dayOfYear, { seed, species, climate: climateKey });
     ctx.fillStyle = "#5d4028";
     ctx.fillRect(px - 2.4 * s, py + 2 * s, 4.8 * s, 13 * s);
 
@@ -459,8 +460,8 @@ function drawBroadleaf(ctx, px, py, s, sway, seed, dayOfYear, variant = 0, speci
     drawSnowCaps(ctx, px, py, s, sway, seed, foliage.snow, py - 11 * s, 12);
 }
 
-function drawBirch(ctx, px, py, s, sway, seed, dayOfYear) {
-    const foliage = foliageState(dayOfYear, { seed, species: "birch" });
+function drawBirch(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate") {
+    const foliage = foliageState(dayOfYear, { seed, species: "birch", climate: climateKey });
     ctx.fillStyle = "#e9e3d4";
     ctx.fillRect(px - 1.8 * s, py + 1 * s, 3.6 * s, 13 * s);
     ctx.fillStyle = "#4a4136";
@@ -486,12 +487,12 @@ function drawBirch(ctx, px, py, s, sway, seed, dayOfYear) {
     drawSnowCaps(ctx, px, py, s, sway, seed, foliage.snow, py - 10 * s, 9);
 }
 
-function drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear) {
+function drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey = "temperate") {
     const s = cellPx / 48;
     // Roughly a quarter of the shrubs are evergreen; the rest lose their
     // leaves on the same continuous schedule as the broadleaf trees.
     const evergreen = s1 > 0.72;
-    const foliage = foliageState(dayOfYear, { seed: s2, species: evergreen ? "conifer" : "shrub" });
+    const foliage = foliageState(dayOfYear, { seed: s2, species: evergreen ? "conifer" : "shrub", climate: climateKey });
     if (!evergreen && foliage.bare) {
         ctx.strokeStyle = "rgba(120,112,96,0.8)";
         ctx.lineWidth = Math.max(0.8, 1.1 * s);
@@ -528,14 +529,14 @@ function drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear) {
     drawSnowCaps(ctx, px, py, s, 1, s2, foliage.snow * 0.7, py - 4 * s, 6);
 }
 
-function drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear) {
-    drawFlower(ctx, px, py, cellPx, s1, dayOfYear);
-    drawFlower(ctx, px + (s2 - 0.5) * 7 * (cellPx / 48), py + 3 * (cellPx / 48), cellPx, 1 - s1, dayOfYear);
-    drawFlower(ctx, px - 4 * (cellPx / 48), py + (s1 - 0.5) * 5 * (cellPx / 48), cellPx, s2, dayOfYear);
+function drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey = "temperate") {
+    drawFlower(ctx, px, py, cellPx, s1, dayOfYear, climateKey);
+    drawFlower(ctx, px + (s2 - 0.5) * 7 * (cellPx / 48), py + 3 * (cellPx / 48), cellPx, 1 - s1, dayOfYear, climateKey);
+    drawFlower(ctx, px - 4 * (cellPx / 48), py + (s1 - 0.5) * 5 * (cellPx / 48), cellPx, s2, dayOfYear, climateKey);
 }
 
-function drawConifer(ctx, px, py, s, sway, seed, dayOfYear) {
-    const foliage = foliageState(dayOfYear, { seed, species: "conifer" });
+function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate") {
+    const foliage = foliageState(dayOfYear, { seed, species: "conifer", climate: climateKey });
     ctx.fillStyle = "#4c3724";
     ctx.fillRect(px - 2 * s, py + 4 * s, 4 * s, 11 * s);
     const height = (20 + seed * 8) * s;
@@ -750,10 +751,10 @@ function drawReeds(ctx, px, py, cellPx, s1, s2, temp, shore = null, turn = 0, sn
     }
 }
 
-function drawFlower(ctx, px, py, cellPx, s1, dayOfYear) {
-    const bloom = flowerBloom(dayOfYear);
+function drawFlower(ctx, px, py, cellPx, s1, dayOfYear, climateKey = "temperate") {
+    const bloom = flowerBloom(dayOfYear, climateKey);
     if (bloom < 0.08) return;
-    const climate = seasonalState(dayOfYear);
+    const climate = seasonalState(dayOfYear, climateKey);
     const r = cellPx * 0.045;
     const color = climate.foliageTurn > 0.35
         ? "rgba(196,132,64,0.8)"

@@ -14,6 +14,18 @@ npm run test:e2e:setup
 npm run test:e2e
 ```
 
+The visual reference and the full-year audit are separate, explicit runs:
+
+```sh
+npm run test:terrain-reference
+npm run test:season-year
+```
+
+`test:terrain-reference` writes the four-season, transition and grove sheets.
+`test:season-year` writes `docs/terrain-reference/season-year.json` with a daily
+weather and foliage log for a complete 400-day year plus a five-climate
+comparison. Neither command is part of `npm test`.
+
 `test:e2e:setup` installs Chromium for the pinned Playwright version. It then
 opens a page containing a native text input, fills it, and verifies the value.
 That preflight matters: Chromium can launch without fontconfig or fonts and
@@ -89,7 +101,9 @@ with `--with-deps`, and then runs `npm run test:e2e`. Screenshots from the
 responsive review are uploaded even when the test fails.
 
 After the E2E step, the same job generates the four-season, four-zoom terrain
-reference into `$RUNNER_TEMP/terrain-reference` and uploads the labelled contact
-sheet and `reference.json` as the `kings-and-cards-terrain-reference` artifact.
-The reference step also runs when the E2E step fails, so a failed gameplay run
-still produces the visual surface report.
+reference and the 400-day season audit into `$RUNNER_TEMP/terrain-reference`.
+It uploads `contact-sheet.png`, `season-transition.png`, `tree-seasons.png`,
+`reference.json` and `season-year.json` as the
+`kings-and-cards-terrain-reference` artifact. Both steps also run when the E2E
+step fails, so a failed gameplay run still produces the visual surface report
+and the daily weather/foliage record.

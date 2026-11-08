@@ -62,6 +62,13 @@ test("a full simulated year never leaves snow in summer", () => {
     }
 });
 
+test("climate zones gate snow differently", () => {
+    assert.equal(weatherAllowed("snow", 150, "northern"), false);
+    assert.ok(weatherWeights(350, "arid").snow < weatherWeights(350, "temperate").snow);
+    assert.ok(weatherWeights(350, "northern").snow >= weatherWeights(350, "temperate").snow);
+    assert.ok(weatherWeights(0, "northern").snow > weatherWeights(0, "temperate").snow);
+});
+
 test("weather spells are short enough to change with the season", () => {
     for (const day of [0, 50, 150, 250, 300, 350]) {
         for (const roll of [0, 0.25, 0.5, 0.75, 0.99, 1]) {
