@@ -570,7 +570,11 @@ function trimJobs() {
     const logistics = ensureCityState().logistics;
     const active = logistics.jobs.filter(isActive);
     const finished = logistics.jobs.filter(job => !isActive(job));
-    const room = Math.max(0, MAX_LOGISTICS_JOBS - active.length);
+    // Keep a bounded completed-history window and always leave room for new
+    // work. Without both, a long game fills all 72 slots with finished jobs,
+    // and every new construction/supply request is rejected as "queue is
+    // full" even though nothing is active.
+    const room = Math.max(0, Math.min(24, MAX_LOGISTICS_JOBS - active.length - 1));
     logistics.jobs = [...active, ...finished.slice(-room)];
 }
 function makeJob(kind, good, quantity, from, to, extra = {}) {
@@ -621,7 +625,10 @@ export function requestHaul(building, good, quantity) {
         rejectOrder("No reachable store can accept " + good, "haul", good);
         return null;
     }
-    const load = isBread ? amount : Math.min(amount, getWarehouseSpace(warehouse));
+    // A job must never reserve more than one cart can pick up. If it did, the
+    // unpicked remainder stayed reserved on the producer forever and the whole
+    // grain -> flour -> bread chain dead-ended behind a full output store.
+    const load = isBread ? Math.min(amount, CARRIER_CAPACITY) : Math.min(amount, CARRIER_CAPACITY, getWarehouseSpace(warehouse));
     if (load <= 0) {
         rejectOrder("No reachable store can accept " + good, "haul", good);
         return null;
@@ -722,29 +729,38 @@ function releaseTargetReservation(job, amount = job.quantity) {
     if (quantity >= job.quantity) job.targetReserved = false;
 }
 function takeFromSource(job) {
+    const planned = cleanQuantity(job.quantity);
     let moved = 0;
     if (job.from.kind === "warehouse") {
         const warehouse = entityFromRef(job.from);
         if (!isWarehouse(warehouse)) return 0;
-        const load = Math.min(job.quantity, CARRIER_CAPACITY);
+        const reservedBefore = cleanQuantity(warehouse.warehouse.reservedOut[job.good]);
+        const load = Math.min(planned, CARRIER_CAPACITY);
         moved = job.sourceReserved
             ? withdrawReservedFromWarehouse(warehouse, job.good, load)
             : withdrawUnreservedFromWarehouse(warehouse, job.good, load);
+        // Release both the picked and the unpicked part of this job's
+        // reservation; the pick itself must not leave the remainder behind.
+        if (moved > 0 && job.sourceReserved) {
+            warehouse.warehouse.reservedOut[job.good] = Math.max(0, reservedBefore - planned);
+            job.sourceReserved = false;
+        }
     } else {
         const building = entityFromRef(job.from);
         if (!building?.inventory) return 0;
         const output = cleanQuantity(building.inventory.output[job.good]);
         const reserved = cleanQuantity(building.inventory.reservedOut[job.good]);
-        const limit = job.sourceReserved ? Math.min(output, reserved, job.quantity) : Math.min(output, job.quantity);
-        moved = Math.min(limit, cleanQuantity(job.quantity), CARRIER_CAPACITY);
+        const limit = job.sourceReserved ? Math.min(output, reserved, planned) : Math.min(output, planned);
+        moved = Math.min(limit, planned, CARRIER_CAPACITY);
         if (moved > 0) {
             building.inventory.output[job.good] -= moved;
-            if (job.sourceReserved) building.inventory.reservedOut[job.good] = Math.max(0, reserved - moved);
+            if (job.sourceReserved) {
+                building.inventory.reservedOut[job.good] = Math.max(0, reserved - planned);
+                job.sourceReserved = false;
+            }
         }
     }
     if (moved <= 0) return 0;
-    const planned = job.quantity;
-    job.sourceReserved = false;
     if (moved < planned && job.targetReserved) releaseTargetReservation(job, planned - moved);
     job.quantity = moved;
     job.picked = moved;

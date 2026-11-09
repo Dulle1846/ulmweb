@@ -7,7 +7,7 @@ import {
     initializeCityForRealm, ensureInventory, requestHaul, requestSupply, requestConstructionDelivery, getInputCapacity, getInputCapacityUsage, inputSpace, reserveInputCapacity, releaseInputCapacity, cancelJobsForEntity,
     updateLogistics, updateLogisticsMovement, serializeCity, restoreCity, validateCitySnapshot,
     evacuateBuildingInventory, setWarehouseProfile, getWarehouseProfile, depositGood, withdrawGood,
-    addLocalOutput, consumeFromWarehouse, getLocalWarehouseStock, getGoodsAudit, getPhysicalStock,
+    addLocalOutput, consumeFromWarehouse, getLocalWarehouseStock, getGoodsAudit, getPhysicalStock, getAvailableOutput,
     getPhysicalStockMap, openGoodsBookForNewRealm,
     normalizeLegacyWarehouseCapacity, recordResourceMovement, MAX_LOGISTICS_JOBS, MAX_CARRIERS, JOB_PRIORITIES
 } from "../../js/systems/logistics.js";
@@ -15,6 +15,7 @@ import { payForCard } from "../../js/systems/resources.js";
 import { executeTrade, getTradePartners } from "../../js/systems/market.js";
 import { setAuditOpening } from "../../js/systems/goods-book.js";
 import { GOOD_KEYS } from "../../js/systems/city-config.js";
+import { GOODS_LEDGER_LIMIT } from "../../js/systems/goods-book.js";
 import { updateFields } from "../../js/systems/fields.js";
 import { updateBuildingIncome } from "../../js/simulation/buildings.js";
 import { updateSettlementNeeds, updateServices } from "../../js/systems/settlement.js";
@@ -136,6 +137,23 @@ test("02 a partly filled destination still receives the exact reserved remainder
     assert.equal(warehouseStock(warehouse, "logs"), 10);
     assert.equal(source.inventory.output.logs, 0);
     assert.equal(warehouse.warehouse.reservedIn.logs, 0);
+    assertPhysicalBooks();
+});
+
+test("02b a harvest larger than one cart reserves only what the cart can pick", () => {
+    setup();
+    const source = place(TYPE.LUMBER, 20, 20);
+    const warehouse = place(TYPE.WAREHOUSE, 30, 20);
+    source.inventory.output.logs = 27;
+    const job = requestHaul(source, "logs", 27);
+    assert.ok(job);
+    assert.equal(job.quantity, 12, "one haul must not reserve more than a cartload");
+    assert.equal(source.inventory.reservedOut.logs, 12);
+    advance(60);
+    assert.equal(job.status, "done");
+    assert.equal(warehouseStock(warehouse, "logs"), 12);
+    assert.equal(source.inventory.reservedOut.logs, 0, "the picked trip must leave no reservation behind");
+    assert.equal(getAvailableOutput(source, "logs"), 15, "the rest of the harvest must remain haulable");
     assertPhysicalBooks();
 });
 
@@ -450,7 +468,7 @@ test("20 a multi-year production and logistics loop keeps every stock finite and
     const ledger = state.city.logistics.ledger;
     assert.ok(ledger.some(entry => entry.type === "produced"));
     assert.ok(ledger.some(entry => entry.type === "consumed"));
-    assert.ok(ledger.length <= 160);
+    assert.ok(ledger.length <= GOODS_LEDGER_LIMIT);
 });
 
 test("22 empty houses do not consume heating while an occupied house does", () => {
@@ -528,7 +546,7 @@ test("24 the bounded movement ledger records reservations, pickups and deliverie
     assert.ok(ledger.some(entry => entry.type === "reserved" && entry.jobId === job.id));
     assert.ok(ledger.some(entry => entry.type === "picked" && entry.jobId === job.id));
     assert.ok(ledger.some(entry => entry.type === "delivered" && entry.jobId === job.id && entry.quantity === 5));
-    assert.ok(ledger.length <= 160);
+    assert.ok(ledger.length <= GOODS_LEDGER_LIMIT);
     assertPhysicalBooks();
 });
 

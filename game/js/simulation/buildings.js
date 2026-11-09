@@ -194,6 +194,15 @@ export function updateBuildingIncome() {
             if (!building.dead && building.isBuilding() && RECIPES[building.type]) {
                 produceRecipe(building, workforce, production);
                 requestStoredHauls(building);
+                // Construction is paid from the royal wood and stone stores,
+                // not from the physical log/block chain. Without this income,
+                // a direct-build campaign spends its opening stock and then
+                // permanently dead-ends, no matter how much timber is sawn.
+                const constructionYield = getBuildingEfficiency(building, workforce);
+                if (constructionYield > 0) {
+                    if (building.type === TYPE.LUMBER) addResource("wood", constructionYield);
+                    else if (building.type === TYPE.QUARRY) addResource("stone", constructionYield);
+                }
             }
         }
         for (const temple of getEntitiesOfType(TYPE.TEMPLE)) {

@@ -28,7 +28,7 @@ test("housing capacity follows four residents per living house",()=>{
     assert.equal(canAccommodateVillagers(NaN),false);
 });
 
-test("a supported settlement gains one resident at most once per year",()=>{
+test("a supported settlement fills available housing without exceeding it",()=>{
     const house=spawnEntity(40,40,TYPE.HOUSE);
     for(let index=0;index<3;index++)spawnEntity(41+index,40,TYPE.VILLAGER);
     const newcomer=updatePopulation();
@@ -40,6 +40,19 @@ test("a supported settlement gains one resident at most once per year",()=>{
     assert.equal(state.economy.lastGrowthYear,2);
     assert.equal(updatePopulation(),null);
     assert.equal(getHousingSnapshot().population,4);
+});
+
+test("a supported settlement can welcome two residents in one year",()=>{
+    const first=spawnEntity(40,40,TYPE.HOUSE);
+    const second=spawnEntity(50,40,TYPE.HOUSE);
+    spawnEntity(41,40,TYPE.VILLAGER).home={x:first.x,y:first.y};
+    spawnEntity(51,40,TYPE.VILLAGER).home={x:second.x,y:second.y};
+    const newcomer=updatePopulation();
+    assert.ok(newcomer);
+    assert.equal(getHousingSnapshot().population,4);
+    assert.equal(state.economy.populationGrowth,2);
+    assert.equal(state.economy.growthThisYear,2);
+    assert.equal(updatePopulation(),null);
 });
 
 test("overcrowding prevents yearly growth without exceeding housing capacity",()=>{
@@ -96,6 +109,10 @@ test("new residents join the least occupied household with available capacity",(
     }
     const newcomer=updatePopulation();
     assert.ok(newcomer);
+    // The yearly allowance is two residents. The first fills the second
+    // cottage to three; the second newcomer also prefers it over the full
+    // first cottage, so the least-occupied house ends the year at capacity.
     assert.deepEqual(newcomer.home,{x:second.x,y:second.y});
-    assert.equal(getHouseholdSnapshot().homes.find(home=>home.x===second.x&&home.y===second.y).residents,3);
+    assert.equal(getHouseholdSnapshot().homes.find(home=>home.x===second.x&&home.y===second.y).residents,4);
+    assert.equal(state.economy.populationGrowth,2);
 });

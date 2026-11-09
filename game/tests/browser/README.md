@@ -29,6 +29,25 @@ npm run test:device-benchmark
 npm run test:atmosphere-reference
 ```
 
+## Long campaign audit
+
+The 25-year scripted campaign is separate from the legacy E2E suite:
+
+```sh
+cd game
+npm run test:campaign                 # headless, real simulation + player APIs
+python3 -m http.server 3000 --bind 127.0.0.1   # in another shell, from game/
+E2E_BASE_URL=http://127.0.0.1:3000 npm run test:campaign:browser
+```
+
+Both use seed `20261108` and 25 years by default. Set `CAMPAIGN_YEARS` to
+shorten a run and `CAMPAIGN_SEED` to change the realm. The browser audit starts
+through the real start screen, verifies all 13 ambitions and the mature-realm
+frame sample, and writes `artifacts/long-campaign-audit.json` plus three
+responsive screenshots. It fails on a missed requirement, a stalled site, a
+page/console error, horizontal overflow, a missing 13 / 13 ambition panel, FPS
+below 50 or frame time above 20 ms.
+
 `test:terrain-reference` writes the four-season, transition and grove sheets.
 `test:season-year` writes `docs/terrain-reference/season-year.json` with a daily
 weather and foliage log for a complete 400-day year plus a five-climate

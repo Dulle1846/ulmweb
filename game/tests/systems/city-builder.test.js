@@ -6,6 +6,7 @@ import { spawnEntity } from "../../js/world/entities.js";
 import { initializeCityForRealm, serializeCity, restoreCity, validateCitySnapshot } from "../../js/systems/logistics.js";
 import { placeDirectBuilding, constructionSnapshot, cancelConstruction } from "../../js/systems/construction.js";
 import { updateFields } from "../../js/systems/fields.js";
+import { updateBuildingIncome } from "../../js/simulation/buildings.js";
 import { initializeSettlementForRealm, getSettlementSnapshot } from "../../js/systems/settlement.js";
 
 function foundedFixture() {
@@ -21,6 +22,49 @@ function foundedFixture() {
     state.explored = Array.from({length:160},()=>Array(160).fill(false));
     initializeCityForRealm({ seedWarehouse: false });
 }
+
+function seedResourceGeography() {
+    const size = 160 * 160;
+    const geography = {
+        version: 1,
+        forestStock: new Uint16Array(size), forestCapacity: new Uint16Array(size),
+        forestKind: new Uint8Array(size), forestAge: new Uint8Array(size),
+        stoneStock: new Uint16Array(size), stoneCapacity: new Uint16Array(size),
+        fertility: new Uint8Array(size), waterAccess: new Uint8Array(size)
+    };
+    const forestIndex = 20 * 160 + 20;
+    geography.forestStock[forestIndex] = 200;
+    geography.forestCapacity[forestIndex] = 200;
+    geography.forestKind[forestIndex] = 1;
+    geography.forestAge[forestIndex] = 2;
+    const stoneIndex = 30 * 160 + 30;
+    geography.stoneStock[stoneIndex] = 200;
+    geography.stoneCapacity[stoneIndex] = 200;
+    state.resourceGeography = geography;
+}
+
+test("staffed lumber and quarry add royal construction materials", () => {
+    foundedFixture();
+    seedResourceGeography();
+    const lumber = spawnEntity(20, 20, TYPE.LUMBER);
+    const quarry = spawnEntity(30, 30, TYPE.QUARRY);
+    for (let index = 0; index < 2; index++) {
+        const worker = spawnEntity(20 + index, 22, TYPE.VILLAGER);
+        worker.workplace = lumber;
+        worker.jobRefreshTimer = 1_000_000;
+    }
+    for (let index = 0; index < 2; index++) {
+        const worker = spawnEntity(30 + index, 32, TYPE.VILLAGER);
+        worker.workplace = quarry;
+        worker.jobRefreshTimer = 1_000_000;
+    }
+    const wood = state.resources.wood;
+    const stone = state.resources.stone;
+    state.tick = 6;
+    updateBuildingIncome();
+    assert.ok(state.resources.wood > wood, "staffed lumber must replenish royal timber");
+    assert.ok(state.resources.stone > stone, "staffed quarry must replenish royal stone");
+});
 
 test("direct construction opens a site, charges only the opening share and remains non-operational", () => {
     foundedFixture();

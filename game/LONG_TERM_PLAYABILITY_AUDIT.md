@@ -29,7 +29,40 @@ This pass played the shipped start screen and the real starting kingdom instead 
 
 **Known limitation**
 - The automated browser audit does not build new structures. It verifies the opening economy and the first ambition, not the construction-driven ambitions (housing, roads, a fourth farm, civic buildings, the heir, year 25). Those need a human strategy playtest for pacing.
-- The ten-year pass covers the opening settlement without player construction, so it proves stability, not the full 25-year ambition ladder.
+- The ten-year pass covers the opening settlement without player construction, so it proves stability, not the full 25-year ambition ladder. This limitation is superseded by the full campaign pass below.
+
+## 0a. Full 25-year campaign pass — 2026-11-09
+
+The scripted-player audit now runs the complete Royal Ambition ladder in both Node and Chromium. It starts the shipped realm, then uses the real fixed-step simulation, `placeDirectBuilding`, `placeRoad`, construction deliveries, royal-dynasty functions and 1× carrier movement (`updateLogisticsMovement(0.1875)` four times per tick). Events are resolved through `resolveEventChoice`.
+
+**Reproduction**
+```sh
+cd game
+node scripts/long-campaign.mjs                 # headless 25-year run
+python3 -m http.server 3000 --bind 127.0.0.1    # serve game/ in another shell
+E2E_BASE_URL=http://127.0.0.1:3000 node tests/browser/long-campaign.mjs
+```
+`CAMPAIGN_YEARS=10` shortens either run; `CAMPAIGN_SEED` changes the world. The browser run writes `artifacts/long-campaign-audit.json` plus 1600×1000, 1024×768 and 864×1000 screenshots.
+
+**Headless result (seed 20261108, 10,040 ticks)**
+- All 13 ambitions completed; final ambition `eternal-realm` at year 26: 65 residents in 16 cottages (70 capacity), 46 operational buildings, 3 mills, 3 bakeries, 4 farms, 2 towers, 2 wells, 2 sawmills, 12 road tiles, 23 buildings built, 33 events resolved.
+- Final resources: food 2,814.8, wood 1,495.1, stone 1,645.8, gold 5,804.9, firewood 50, morale 100, satisfaction 0.908. No stalled site and no game over.
+- Runtime 34.7 s for the whole campaign; mature-realm simulation cost 3.53 ms per tick.
+
+**Browser result (same seed and ladder)**
+- All 18 campaign requirements pass; the ambition panel reads 13 / 13 and “Every royal ambition fulfilled”.
+- 10,040 ticks in 32.2 s (311 ticks/s), mature-realm `updateSimulation` + four logistics steps 2.729 ms/tick.
+- Mature 65-resident realm at 1600×1000: 58 FPS, 17.3 ms frame time, canvas renderer, no horizontal overflow, no page errors and no console errors.
+
+**Bugs fixed to make the ladder flow**
+- A haul job reserved a whole 27-grain harvest but a carrier can only pick 12. The unpicked 15 stayed reserved forever, so farms, mills and bakeries dead-ended in sequence. Hauls now reserve at most one cartload, and `takeFromSource` releases the unpicked remainder for both building and warehouse sources.
+- The starting lumber yard had no assigned woodcutter; the generic nearest-job scan sent them to the forester. Royal construction then ran out of wood. The starting woodcutter now works the lumber yard.
+- Service coverage counted empty cottages, so every new house lowered safety on paper; the 0.35 immigration gate could never pass while housing expanded. Coverage now averages occupied homes, matching household needs.
+- The scripted player now expands tower coverage with the housing district, so safety remains above the immigration gate as the population grows.
+- Regression tests cover the cartload reservation and the mature campaign; the suite is 578/578 plus syntax/import checks for 88 source files.
+
+**Remaining limit**
+- The audit proves one deterministic, build-order-driven route through the ladder, not every possible strategy. A live 1× campaign is 10,040 days × 0.75 s ≈ 125 minutes; the browser audit accelerates simulation while preserving 1× carrier speed, then samples the live frame loop at the mature realm.
 
 ## 1. Purpose and acceptance standard
 

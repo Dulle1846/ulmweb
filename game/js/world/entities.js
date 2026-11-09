@@ -240,7 +240,12 @@ export function initStartingKingdom() {
         { x: cx - 2, y: cy + 6,  home: h3 },
         { x: cx + 7, y: cy + 3,  home: farm1 },
         { x: cx + 10, y: cy + 6, home: farm2 },
-        { x: cx - 9, y: cy - 7,  home: lumber },
+        // The woodcutter starts at the lumber yard. Leaving this to the generic
+        // nearest-job scan put them in the nearby forester instead, so the only
+        // lumber yard stayed empty and royal construction ran out of wood.
+        lumber
+            ? { x: cx - 9, y: cy - 7, home: lumber, workplace: lumber, job: "woodcutter" }
+            : { x: cx - 9, y: cy - 7, home: h1 },
         { x: cx + 1, y: cy + 9,  home: quarry },
         { x: cx + 11, y: cy - 9, home: goldmine },
         { x: cx - 11, y: cy + 3, home: temple },

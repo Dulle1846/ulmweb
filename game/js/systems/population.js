@@ -13,6 +13,11 @@ const capacityOf=house=>housingCapacityFor(house.type);
 export const RESIDENTS_PER_HOUSE = HOUSING_TIERS[TYPE.HOUSE].capacity;
 export const POPULATION_GROWTH_FOOD_RESERVE = 0.75;
 export const POPULATION_GROWTH_MORALE = 55;
+// One growth event per year made the final ambition mathematically
+// unreachable: a 20-resident opening could reach at most 44 residents by year
+// 25. A settlement that has food, housing and services can now welcome two
+// residents a year, with births counting toward that same allowance.
+export const POPULATION_GROWTH_PER_YEAR = 2;
 
 export function getPopulationGrowthMoraleThreshold() {
     const growth = Math.max(0, Number(getRoomBonusSnapshot().totals.growth) || 0);
@@ -102,39 +107,59 @@ export function canAccommodateVillagers(count = 1) {
     return getHousingSnapshot().available >= numericCount;
 }
 
+function ensureGrowthYear(economy) {
+    if (Number(economy.growthYear) !== state.year) {
+        economy.growthYear = state.year;
+        economy.growthThisYear = 0;
+    }
+}
+
+// Births and immigration share one yearly allowance. Births are a natural
+// increase, not a second free slot, so a large family cannot outrun housing.
+export function recordPopulationGrowth({ immigration = true } = {}) {
+    const economy = state.economy || (state.economy = {});
+    ensureGrowthYear(economy);
+    economy.growthThisYear = Math.max(0, Number(economy.growthThisYear) || 0) + 1;
+    if (immigration) economy.populationGrowth = Math.max(0, Number(economy.populationGrowth) || 0) + 1;
+    economy.lastGrowthYear = state.year;
+}
+
 // A new resident may join at the start of a new year when food, morale and
-// housing all support it. The year marker prevents duplicate growth on reload.
+// housing all support it. Two residents may join each year, which keeps the
+// 25-year population ambition reachable without weakening the household gate.
 export function updatePopulation() {
     if (state.tick <= 0 || state.year <= 1) return null;
     const economy = state.economy || (state.economy = {});
-    const lastGrowthYear = Number.isFinite(economy.lastGrowthYear) ? economy.lastGrowthYear : 1;
-    if (state.year <= lastGrowthYear) return null;
+    ensureGrowthYear(economy);
+    let newest = null;
 
-    economy.lastGrowthYear = state.year;
-    const housing = getHousingSnapshot();
-    if (housing.available < 1 || state.morale < getPopulationGrowthMoraleThreshold()) return null;
-    if ((state.resources.food || 0) < housing.population * POPULATION_GROWTH_FOOD_RESERVE) return null;
-    if (state.city?.enabled) {
-        const gate=canSettleNewcomer();
-        if(!gate.ok)return null;
+    while ((Number(economy.growthThisYear) || 0) < POPULATION_GROWTH_PER_YEAR) {
+        const housing = getHousingSnapshot();
+        if (housing.available < 1 || state.morale < getPopulationGrowthMoraleThreshold()) break;
+        if ((state.resources.food || 0) < housing.population * POPULATION_GROWTH_FOOD_RESERVE) break;
+        if (state.city?.enabled) {
+            const gate = canSettleNewcomer();
+            if (!gate.ok) break;
+        }
+        if (!canSpawnEntity(TYPE.VILLAGER)) break;
+
+        normalizeHouseholdAssignments();
+        const home = chooseAvailableHouse();
+        if (!home) break;
+
+        const villager = spawnEntity(
+            home.x + randInt(-2, 3),
+            home.y + randInt(-2, 3),
+            TYPE.VILLAGER
+        );
+        if (!villager) break;
+        villager.home = { x: home.x, y: home.y };
+        villager.anchor = { x: home.x, y: home.y };
+        villager.householdId = `house:${home.x}:${home.y}`;
+        villager.lastAgedYear = state.year;
+        villager.jobRefreshTimer = 0;
+        recordPopulationGrowth();
+        newest = villager;
     }
-    if (!canSpawnEntity(TYPE.VILLAGER)) return null;
-
-    normalizeHouseholdAssignments();
-    const home = chooseAvailableHouse();
-    if (!home) return null;
-
-    const villager = spawnEntity(
-        home.x + randInt(-2, 3),
-        home.y + randInt(-2, 3),
-        TYPE.VILLAGER
-    );
-    if (!villager) return null;
-    villager.home = { x: home.x, y: home.y };
-    villager.anchor = { x: home.x, y: home.y };
-    villager.householdId = `house:${home.x}:${home.y}`;
-    villager.lastAgedYear = state.year;
-    villager.jobRefreshTimer = 0;
-    economy.populationGrowth = Math.max(0, Number(economy.populationGrowth) || 0) + 1;
-    return villager;
+    return newest;
 }

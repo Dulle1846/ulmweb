@@ -139,11 +139,25 @@ function assignBuilder(site) {
     const workforce = getWorkforceSnapshot();
     const existing = workforce.workersByBuilding.get(site) || 0;
     if (existing > 0) return existing;
+    // Construction cannot wait for an unemployed resident: a mature realm
+    // fills every production job, so the old filter left the first tower at
+    // "WAITING FOR BUILDERS" forever. Prefer idle residents, then borrow from
+    // the largest crew, and never strip another construction site.
     const candidates = state.entities
-        .filter(entity => !entity.dead && entity.type === TYPE.VILLAGER && !entity.workplace && (entity.illnessUntilTick || 0) <= state.tick)
-        .sort((a, b) => distanceTo(a, site) - distanceTo(b, site) || String(a.id).localeCompare(String(b.id)));
+        .filter(entity => !entity.dead && entity.type === TYPE.VILLAGER &&
+            entity.workplace !== site && (entity.illnessUntilTick || 0) <= state.tick &&
+            !(entity.workplace?.construction && entity.workplace.construction.stage < 3))
+        .sort((a, b) => {
+            const idleA = a.workplace ? 0 : 1;
+            const idleB = b.workplace ? 0 : 1;
+            if (idleA !== idleB) return idleB - idleA;
+            const crewA = a.workplace ? (workforce.workersByBuilding.get(a.workplace) || 0) : 0;
+            const crewB = b.workplace ? (workforce.workersByBuilding.get(b.workplace) || 0) : 0;
+            if (crewA !== crewB) return crewB - crewA;
+            return distanceTo(a, site) - distanceTo(b, site) || String(a.id).localeCompare(String(b.id));
+        });
     for (const villager of candidates) {
-        if (distanceTo(villager, site) > 24) continue;
+        if (distanceTo(villager, site) > 40) continue;
         villager.workplace = site;
         villager.job = "builder";
         villager.anchor = { x: site.x, y: site.y };

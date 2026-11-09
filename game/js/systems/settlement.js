@@ -86,19 +86,25 @@ export function updateServices() {
     const byBuilding = {};
     for (const category of Object.keys(SERVICE_DEFINITIONS)) byBuilding[category] = { active: 0, coverage: 0 };
     const summary = { water: 0, social: 0, safety: 0, health: 0 };
+    let occupiedHomes = 0;
     for (const house of houseRows) {
-        const row = { id: house.id, type: house.type, capacity: HOUSING_TIERS[house.type]?.capacity || 0 };
+        const occupied = houseIsOccupied(house);
+        if (occupied) occupiedHomes++;
+        const row = { id: house.id, type: house.type, occupied, capacity: HOUSING_TIERS[house.type]?.capacity || 0 };
         for (const category of Object.keys(SERVICE_DEFINITIONS)) {
             const provider = serviceForHouse(house, category, buildings);
             row[category] = Boolean(provider);
             row[category + "Source"] = provider?.id || null;
             if (provider) byBuilding[category].coverage++;
+            // Empty cottages have no residents to protect or serve. Counting
+            // them made every new house lower safety coverage on paper, which
+            // silently closed the immigration gate just as housing expanded.
+            if (provider && occupied) summary[category]++;
         }
         byHouse[house.id] = row;
-        for (const category of Object.keys(summary)) if (row[category]) summary[category]++;
     }
     for (const category of Object.keys(byBuilding)) byBuilding[category].active = countOperational(category, buildings);
-    for (const category of Object.keys(summary)) summary[category] = houseRows.length ? summary[category] / houseRows.length : 0;
+    for (const category of Object.keys(summary)) summary[category] = occupiedHomes ? summary[category] / occupiedHomes : 0;
     city.services.byHouse = byHouse;
     city.services.byBuilding = byBuilding;
     city.services.summary = summary;

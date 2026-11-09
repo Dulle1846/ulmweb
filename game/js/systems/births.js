@@ -3,7 +3,7 @@ import { random, randInt } from "../core/random.js";
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { spawnEntity, canSpawnEntity } from "../world/entities.js";
-import { getHousingSnapshot, getHouseholdSnapshot } from "./population.js";
+import { getHousingSnapshot, getHouseholdSnapshot, recordPopulationGrowth } from "./population.js";
 import { linkParentChild } from "./families.js";
 import { ensurePersonProfile, addPersonMemory, PERSON_SPECIES } from "./people.js";
 
@@ -148,9 +148,9 @@ export function createChildFromParents(firstId, secondId) {
 
     const economy = state.economy || (state.economy = {});
     economy.births = Math.max(0, Number(economy.births) || 0) + 1;
-    // A family birth consumes this year's single population-growth opportunity;
-    // otherwise the migration scheduler would add another resident next tick.
-    economy.lastGrowthYear = Math.max(1, Math.floor(Number(state.year) || 1));
+    // A family birth consumes one of this year's population-growth slots;
+    // otherwise the migration scheduler would add a full extra resident.
+    recordPopulationGrowth({ immigration: false });
     return { ok: true, child };
 }
 
