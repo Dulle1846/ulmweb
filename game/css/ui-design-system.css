@@ -445,3 +445,7 @@ html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
 .settings-accessibility .setting-row{padding:8px 0;border-top:1px solid #b69a68}
 .settings-accessibility .setting-row strong{color:#3d2d20}
 .settings-accessibility .setting-row small{color:#725c40}
+
+/* WCAG 2.2 AA target size: keep the two smallest controls at least 24x24. */
+#help-btn{min-width:28px;min-height:28px}
+#skip-card-btn{min-height:28px}

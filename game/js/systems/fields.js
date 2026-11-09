@@ -14,20 +14,43 @@ export const FIELD_LABELS = Object.freeze({
 // Farmers stop sowing a new field when the granary already holds a year of
 // grain. Without this the annual harvest buried the food chain in overflow.
 const GRAIN_RESERVE = 120;
+// Soil is a slow resource. A harvest removes fertility; fallow time and stable
+// manure restore it; an exhausted field rests for a year instead of sowing.
+const MIN_FERTILITY = 12;
+const REST_THRESHOLD_RATIO = 0.35;
+const REST_RECOVERY = 0.22;
+const FALLOW_RECOVERY = 0.08;
+const MANURE_RECOVERY = 0.05;
+const MANURE_RADIUS = 6;
+const BASE_DEPLETION = 6.5;
+const DEPLETION_PER_YIELD = 0.16;
 
 function number(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
 function ensureField(farm) {
+    let terrainFertility = 50;
+    try { terrainFertility = Number(getResourceNodeAt(farm.x, farm.y)?.fertility) || 50; } catch { /* legacy test fixture */ }
     if (!farm.field || typeof farm.field !== "object") {
-        let fertility = 50;
-        try { fertility = Number(getResourceNodeAt(farm.x, farm.y)?.fertility) || 50; } catch { /* legacy test fixture */ }
-        farm.field = { stage: "fallow", growth: 0, fertility, harvests: 0, lastHarvestYear: 0, sownYear: 0, pendingHarvest: 0, harvestTotal: 0 };
+        farm.field = {
+            stage: "fallow", growth: 0, fertility: terrainFertility, harvests: 0,
+            lastHarvestYear: 0, sownYear: 0, pendingHarvest: 0, harvestTotal: 0,
+            maxFertility: terrainFertility, resting: false, lastDepletion: 0, lastReason: "Fallow"
+        };
     }
     farm.field.stage = FIELD_STAGES.includes(farm.field.stage) ? farm.field.stage : "fallow";
     farm.field.growth = Math.max(0, Math.min(100, number(farm.field.growth)));
-    farm.field.fertility = Math.max(0, Math.min(100, number(farm.field.fertility, 50)));
+    const maxFertility = Math.max(
+        number(farm.field.fertility, terrainFertility),
+        number(farm.field.maxFertility, terrainFertility),
+        terrainFertility
+    );
+    farm.field.maxFertility = Math.max(1, Math.min(100, maxFertility));
+    farm.field.fertility = Math.max(0, Math.min(farm.field.maxFertility, number(farm.field.fertility, terrainFertility)));
     farm.field.harvests = Math.max(0, Math.floor(number(farm.field.harvests)));
     farm.field.pendingHarvest = Math.max(0, Math.floor(number(farm.field.pendingHarvest)));
     farm.field.harvestTotal = Math.max(0, Math.floor(number(farm.field.harvestTotal)));
+    farm.field.resting = Boolean(farm.field.resting);
+    farm.field.lastDepletion = Math.max(0, number(farm.field.lastDepletion));
+    farm.field.lastReason = typeof farm.field.lastReason === "string" ? farm.field.lastReason : "Fallow";
     return farm.field;
 }
 
@@ -52,15 +75,20 @@ export function restoreFields(snapshot) {
         if (!row || typeof row !== "object" || typeof row.id !== "string" || !row.field || typeof row.field !== "object") continue;
         const farm = state.entities.find(entity => entity.id === row.id && !entity.dead && entity.type === TYPE.FARM);
         if (!farm) continue;
+        const fertility = Math.max(0, Math.min(100, number(row.field.fertility, 50)));
         farm.field = {
             stage: FIELD_STAGES.includes(row.field.stage) ? row.field.stage : "fallow",
             growth: Math.max(0, Math.min(100, number(row.field.growth))),
-            fertility: Math.max(0, Math.min(100, number(row.field.fertility, 50))),
+            fertility,
             harvests: Math.max(0, Math.floor(number(row.field.harvests))),
             lastHarvestYear: Math.max(0, Math.floor(number(row.field.lastHarvestYear))),
             sownYear: Math.max(0, Math.floor(number(row.field.sownYear))),
             pendingHarvest: Math.max(0, Math.floor(number(row.field.pendingHarvest))),
-            harvestTotal: Math.max(0, Math.floor(number(row.field.harvestTotal)))
+            harvestTotal: Math.max(0, Math.floor(number(row.field.harvestTotal))),
+            maxFertility: Math.max(1, Math.min(100, Math.max(fertility, number(row.field.maxFertility, fertility)))),
+            resting: Boolean(row.field.resting),
+            lastDepletion: Math.max(0, number(row.field.lastDepletion)),
+            lastReason: typeof row.field.lastReason === "string" ? row.field.lastReason : "Fallow"
         };
         restored++;
     }
@@ -85,8 +113,32 @@ function continueHarvest(farm, field) {
     field.growth = 0;
     field.harvests++;
     field.lastHarvestYear = state.year;
-    field.lastReason = FIELD_LABELS.harvested;
+    const harvested = Math.max(1, number(field.harvestTotal, 1));
+    const depletion = BASE_DEPLETION + harvested * DEPLETION_PER_YIELD;
+    field.fertility = Math.max(MIN_FERTILITY, field.fertility - depletion);
+    field.lastDepletion = depletion;
+    const restThreshold = Math.max(15, field.maxFertility * REST_THRESHOLD_RATIO);
+    if (field.fertility <= restThreshold) {
+        field.resting = true;
+        field.lastReason = "Soil exhausted — resting";
+    } else {
+        field.lastReason = FIELD_LABELS.harvested;
+    }
     state.statistics.totalHarvests = (state.statistics.totalHarvests || 0) + 1;
+}
+
+function stableManureNear(farm) {
+    const x = Number(farm.x), y = Number(farm.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    return state.entities.some(entity => {
+        if (!entity || entity.dead || entity.type !== TYPE.STABLE) return false;
+        if (entity.construction && entity.construction.stage < 3) return false;
+        return Math.hypot(Number(entity.x) - x, Number(entity.y) - y) <= MANURE_RADIUS;
+    });
+}
+
+function recoverSoil(field, amount) {
+    field.fertility = Math.min(field.maxFertility, field.fertility + amount);
 }
 
 function seasonalFieldUpdate(farm) {
@@ -105,6 +157,22 @@ function seasonalFieldUpdate(farm) {
     if (field.pendingHarvest > 0) {
         continueHarvest(farm, field);
         return;
+    }
+    const manure = stableManureNear(farm);
+    if (field.resting) {
+        // A resting field is fallow ground, not a standing harvested crop. The
+        // status must be visible before the next winter boundary.
+        field.stage = "fallow";
+        recoverSoil(field, REST_RECOVERY + (manure ? MANURE_RECOVERY : 0));
+        if (field.fertility >= field.maxFertility * 0.65) {
+            field.resting = false;
+            field.lastReason = "Soil recovered — ready to sow";
+        } else {
+            field.lastReason = "Resting — soil recovering";
+            return;
+        }
+    } else if (field.stage === "fallow" || field.stage === "harvested") {
+        recoverSoil(field, FALLOW_RECOVERY + (manure ? MANURE_RECOVERY : 0));
     }
     if (season === 0) {
         if ((field.stage === "fallow" || field.stage === "harvested") && getPhysicalStock("grain") >= GRAIN_RESERVE) {
@@ -216,5 +284,11 @@ export function updateFields() {
 export function getFieldSnapshot() {
     return state.entities
         .filter(entity => !entity.dead && entity.type === TYPE.FARM)
-        .map(farm => ({ id: farm.id, x: farm.x, y: farm.y, ...ensureField(farm) }));
+        .map(farm => {
+            const field = ensureField(farm);
+            return {
+                id: farm.id, x: farm.x, y: farm.y, ...field,
+                status: field.resting ? "Resting" : (FIELD_LABELS[field.stage] || "Fallow")
+            };
+        });
 }

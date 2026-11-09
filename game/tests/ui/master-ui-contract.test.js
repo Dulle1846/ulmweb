@@ -22,6 +22,11 @@ test("master UI stylesheet is loaded after the legacy visual layers",()=>{
   assert.ok(legacy>=0&&design>legacy,"design-system overrides must load after legacy styles");
 });
 
+test("the smallest icon controls meet the WCAG 2.2 AA target size",()=>{
+  assert.ok(css.includes("#help-btn{min-width:28px;min-height:28px}"));
+  assert.ok(css.includes("#skip-card-btn{min-height:28px}"));
+});
+
 test("the approved royal palette is represented by central design tokens",()=>{
   for(const token of [
     "--color-royal-dark:#24221f",
