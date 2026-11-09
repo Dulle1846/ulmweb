@@ -4,21 +4,37 @@ import {mkdir,readFile,writeFile} from "node:fs/promises";
 import {extname,resolve,sep} from "node:path";
 import {chromium} from "playwright";
 
-// Five game years on one real Forester range. Each year starts with a fresh
-// cut of three stands, is thinned every twenty days and receives one annual
-// clear-cut. The audit reads the rendered stewardship block, counts the real
-// map markers on the canvas and hashes the terrain raster before and after
-// each yearly recovery. It is deliberately separate from the short
-// stewardship audit: a Forester can look healthy for 200 ticks and still lose
-// a multi-year race against repeated harvest.
-const YEARS = 5;
+// Ten game years on the same real Forester range, repeated for two seeds. Each
+// year starts with a fresh cut, is thinned every twenty days and receives one
+// variable annual clear-cut. The audit reads the rendered stewardship block,
+// counts the real map markers on the canvas and hashes the terrain raster
+// before and after each yearly recovery. It is deliberately separate from the
+// short stewardship audit: a Forester can look healthy for 200 ticks and still
+// lose a multi-year race against repeated harvest.
+const YEARS = 10;
 const DAYS_PER_YEAR = 400;
-const SEED = "20261108";
+const ALL_SEEDS = [20261108, 7];
+const requestedSeed = process.env.FORESTER_SEED ? Number(process.env.FORESTER_SEED) : null;
+const SEEDS = requestedSeed ? ALL_SEEDS.filter(seed => seed === requestedSeed) : ALL_SEEDS;
+if (!SEEDS.length) throw new Error("FORESTER_SEED must be one of " + ALL_SEEDS.join(", "));
+const reportFile = process.env.FORESTER_REPORT || "forester-stewardship-longrun.json";
+const CLEAR_PATTERN = [3, 1, 2, 2, 3, 1, 3, 2, 1, 3];
+const THINNING_PATTERN = [4, 2, 3, 4, 2, 4, 3, 2, 4, 3];
+const CLEAR_DAY_PATTERN = [120, 100, 140, 80, 120, 140, 100, 80, 140, 120];
 const root = process.cwd();
 const port = Number(process.env.E2E_PORT) || 4176;
 const remoteOrigin = process.env.E2E_BASE_URL ? new URL(process.env.E2E_BASE_URL).origin : null;
 const outDir = resolve(root, process.env.FORESTER_LONGTERM_OUT || "docs/forester-stewardship-longrun");
 await mkdir(outDir, {recursive: true});
+
+function scheduleFor(seedIndex, year) {
+    const offset = (year - 1 + seedIndex) % YEARS;
+    return {
+        clearCount: CLEAR_PATTERN[offset],
+        thinningCount: THINNING_PATTERN[offset],
+        clearDay: CLEAR_DAY_PATTERN[offset],
+    };
+}
 
 const mime = {
     ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -45,11 +61,16 @@ const browser = await chromium.launch({
     executablePath: process.env.E2E_CHROMIUM_EXECUTABLE || undefined,
     args: ["--no-sandbox", "--disable-dev-shm-usage"]
 });
-const page = await browser.newPage({viewport: {width: 1600, height: 1000}, reducedMotion: "reduce"});
+
+let page = null;
 const pageErrors = [];
 const consoleErrors = [];
-page.on("pageerror", error => pageErrors.push(error.message));
-page.on("console", message => { if (message.type() === "error") consoleErrors.push(message.text()); });
+
+async function openPage() {
+    page = await browser.newPage({viewport: {width: 1600, height: 1000}, reducedMotion: "reduce"});
+    page.on("pageerror", error => pageErrors.push(error.message));
+    page.on("console", message => { if (message.type() === "error") consoleErrors.push(message.text()); });
+}
 
 async function dismissBlockingMessage() {
     const eventDismiss = page.locator("#realm-event-dismiss");
@@ -61,8 +82,25 @@ async function dismissBlockingMessage() {
     if (await button.isVisible().catch(() => false)) await button.click();
 }
 
+async function startRealm(seed) {
+    await page.goto(baseUrl + "/", {waitUntil: "networkidle", timeout: 60000});
+    assert.equal(await page.title(), "KINGS & CARDS • Eternal Realm");
+    await page.locator("#start-screen").waitFor({state: "visible", timeout: 30000});
+    await page.locator("#world-seed-input").fill(String(seed));
+    await page.waitForFunction(value => document.querySelector("#world-preview-status")?.textContent.includes("SEED " + value), String(seed), {timeout: 20000}).catch(() => {});
+    await page.locator("#player-name-input").fill("Forester Long-Term Audit");
+    await page.locator("#start-new-game-btn").click();
+    await page.locator("#start-screen").waitFor({state: "hidden", timeout: 30000});
+    await page.waitForTimeout(1600);
+    await dismissBlockingMessage();
+    await page.evaluate(async () => {
+        const {state} = await import("./js/core/state.js");
+        state.isPaused = true;
+    });
+}
+
 async function advanceForestDays(days, options = {}) {
-    const result = await page.evaluate(async ({days, startDay, thinning, clearCut, foresterId}) => {
+    const result = await page.evaluate(async ({days, startDay, thinning, clearCut, clearDay, foresterId}) => {
         const [{state}, {updateFields}, {harvestForest, regrowForests}, {updateBuildingIncome}, {foresterRangeSummary}] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/systems/fields.js"),
@@ -90,10 +128,10 @@ async function advanceForestDays(days, options = {}) {
             updateFields();
             regrowForests(400, {slice: state.tick % 400, slices: 400});
             if (state.tick % 6 === 0) updateBuildingIncome();
-            if (thinning && day % 20 === 0) {
+            if (thinning && day % 20 === 0 && day <= 360) {
                 for (const tile of thinning) harvested += harvestForest(tile.x, tile.y, 2);
             }
-            if (clearCut && day === 180) {
+            if (clearCut && Number.isFinite(clearDay) && day === clearDay) {
                 for (const tile of clearCut) harvested += harvestForest(tile.x, tile.y, tile.capacity);
             }
             const range = foresterRangeSummary(forester);
@@ -116,7 +154,7 @@ async function advanceForestDays(days, options = {}) {
             visualRevision: Number(state.forestVisualRevision) || 0,
             cacheMisses: Number(state.terrainCacheMisses) || 0
         };
-    }, {days, startDay: options.startDay ?? 0, thinning: options.thinning || null, clearCut: options.clearCut || null, foresterId: options.foresterId});
+    }, {days, startDay: options.startDay ?? 0, thinning: options.thinning || null, clearCut: options.clearCut || null, clearDay: options.clearDay ?? null, foresterId: options.foresterId});
     await page.waitForTimeout(80);
     await dismissBlockingMessage();
     return result;
@@ -303,8 +341,8 @@ async function captureMapCloseup(path, site) {
             y: (coords.y + 0.5) * CELL * state.zoom - state.camera.y
         };
     }, {site, coords: site});
-    const width = Math.min(720, box.width - 30);
-    const height = Math.min(570, box.height - 30);
+    const width = Math.min(900, box.width - 30);
+    const height = Math.min(700, box.height - 30);
     const x = Math.min(Math.max(box.x + point.x - width / 2, box.x), box.x + box.width - width);
     const y = Math.min(Math.max(box.y + point.y - height / 2, box.y), box.y + box.height - height);
     await page.screenshot({path, clip: {x, y, width, height}});
@@ -363,22 +401,7 @@ function assertRenderedState(record, sample, label) {
     }, `${label}: the rendered stewardship block must match the live simulation`);
 }
 
-try {
-    await page.goto(baseUrl + "/", {waitUntil: "networkidle", timeout: 60000});
-    assert.equal(await page.title(), "KINGS & CARDS • Eternal Realm");
-    await page.locator("#start-screen").waitFor({state: "visible", timeout: 30000});
-    await page.locator("#world-seed-input").fill(SEED);
-    await page.waitForFunction(seed => document.querySelector("#world-preview-status")?.textContent.includes("SEED " + seed), SEED, {timeout: 20000}).catch(() => {});
-    await page.locator("#player-name-input").fill("Forester Long-Term Audit");
-    await page.locator("#start-new-game-btn").click();
-    await page.locator("#start-screen").waitFor({state: "hidden", timeout: 30000});
-    await page.waitForTimeout(1600);
-    await dismissBlockingMessage();
-    await page.evaluate(async () => {
-        const {state} = await import("./js/core/state.js");
-        state.isPaused = true;
-    });
-
+async function setupFixture() {
     const setup = await page.evaluate(async ({year}) => {
         const [{state}, {TYPE}, {CELL}, {spawnEntity, buildingAt}, {getResourceNodeAt, plantForestAt}, {foresterRangeSummary}, {updateFields}] = await Promise.all([
             import("./js/core/state.js"), import("./js/core/types.js"), import("./js/core/config.js"),
@@ -406,42 +429,39 @@ try {
                 const distance = Math.hypot(x - centerX, y - centerY);
                 if (distance < 5 || distance > 20) continue;
                 const forest = [];
-                const low = [];
+                const targetPool = [];
                 for (let oy = -5; oy <= 5; oy++) {
                     for (let ox = -5; ox <= 5; ox++) {
-                        if (Math.max(Math.abs(ox), Math.abs(oy)) > 5) continue;
                         const tx = x + ox, ty = y + oy;
                         const node = getResourceNodeAt(tx, ty);
                         if (!node || node.forestCapacity <= 0 || occupied(tx, ty) || !state.explored?.[tx]?.[ty]) continue;
                         forest.push({x: tx, y: ty, capacity: node.forestCapacity, stock: node.forestStock});
-                        if (Math.max(Math.abs(ox), Math.abs(oy)) <= 2 && node.forestCapacity <= 110 && clearOfBuildings(tx, ty, 1)) {
-                            low.push({x: tx, y: ty, capacity: node.forestCapacity});
+                        const ring = Math.max(Math.abs(ox), Math.abs(oy));
+                        if (ring <= 3 && ring > 0 && clearOfBuildings(tx, ty, 1)) {
+                            targetPool.push({x: tx, y: ty, capacity: node.forestCapacity});
                         }
                     }
                 }
-                if (forest.length < 16 || low.length < 4) continue;
-                candidates.push({x, y, distance, forest, lowCount: low.length});
+                targetPool.sort((a, b) => a.capacity - b.capacity
+                    || Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
+                if (forest.length < 16 || targetPool.length < 4) continue;
+                candidates.push({x, y, distance, forest, targetPool});
             }
         }
-        const siteScore = site => site.forest.length + site.lowCount * 3 - site.distance * 0.2;
+        const siteScore = site => site.forest.length + site.targetPool.length * 3 - site.distance * 0.2;
         candidates.sort((a, b) => siteScore(b) - siteScore(a));
         const site = candidates[0];
-        if (!site) throw new Error("Could not find an explored forest site with sixteen stands near the camera");
+        if (!site) throw new Error("Could not find an explored forest site with sixteen stands and four nearby targets");
         const range = [];
         for (let oy = -5; oy <= 5; oy++) {
             for (let ox = -5; ox <= 5; ox++) {
-                if (Math.max(Math.abs(ox), Math.abs(oy)) > 5) continue;
                 const node = getResourceNodeAt(site.x + ox, site.y + oy);
                 if (!node || node.forestCapacity <= 0 || occupied(site.x + ox, site.y + oy)) continue;
                 range.push({x: site.x + ox, y: site.y + oy, capacity: node.forestCapacity});
             }
         }
-        const targetCandidates = range
-            .filter(tile => Math.max(Math.abs(tile.x - site.x), Math.abs(tile.y - site.y)) <= 2 && (tile.x !== site.x || tile.y !== site.y) && clearOfBuildings(tile.x, tile.y, 1))
-            .sort((a, b) => a.capacity - b.capacity || Math.hypot(a.x - site.x, a.y - site.y) - Math.hypot(b.x - site.x, b.y - site.y));
-        if (targetCandidates.length < 4) throw new Error("The forest site needs four low-capacity neighbour stands");
-        const targets = targetCandidates.slice(0, 4);
-        const clearCut = targets.slice(0, 3);
+        const targets = site.targetPool.slice(0, 4);
+        if (targets.length < 4) throw new Error("The forest site needs four nearby stands for thinning and clear-cuts");
         // Start from a complete woodland so every later gap is harvest damage.
         for (const tile of range) plantForestAt(tile.x, tile.y, tile.capacity);
         const forester = spawnEntity(site.x, site.y, TYPE.FORESTER);
@@ -455,7 +475,7 @@ try {
             worker.anchor = {x: site.x, y: site.y};
             worker.jobRefreshTimer = 1_000_000;
         }
-        // A clean year boundary makes the five yearly rows comparable.
+        // A clean year boundary makes the ten yearly rows comparable.
         state.year = year;
         state.dayOfYear = 0;
         state.seasonIndex = 0;
@@ -475,7 +495,6 @@ try {
             site: {x: site.x, y: site.y},
             foresterId: forester.id,
             targets,
-            clearCut,
             range,
             rangeStart: foresterRangeSummary(forester),
             camera: {...state.camera},
@@ -484,95 +503,133 @@ try {
     }, {year: 1});
     assert.equal(setup.rangeStart.restorable, 0, "the fixture range must start fully grown");
     assert.equal(setup.rangeStart.stock, setup.rangeStart.capacity);
-    const initialSample = await stateSample(setup.foresterId, setup.clearCut);
+    return setup;
+}
+
+async function runSeed(seed, seedIndex) {
+    const seedStarted = Date.now();
+    console.log(`[seed ${seed}] starting ten-year audit`);
+    await openPage();
+    const errorStart = pageErrors.length;
+    const consoleStart = consoleErrors.length;
+    await startRealm(seed);
+    const setup = await setupFixture();
+    assert.equal(String(setup.seed), String(seed), `the realm must use the requested seed ${seed}`);
+    const initialSample = await stateSample(setup.foresterId, setup.targets);
 
     const rows = [];
     let harvestedTotal = 0;
     let plantedAtStart = 0;
     let lastVisualRevision = initialSample.visualRevision;
     const screenshots = [];
+    const captureYears = new Set([1, 5, YEARS]);
+    const prefix = `seed-${seed}`;
 
     for (let year = 1; year <= YEARS; year++) {
+        const schedule = scheduleFor(seedIndex, year);
+        const thinning = setup.targets.slice(0, schedule.thinningCount);
+        const clearCut = setup.targets.slice(0, schedule.clearCount);
+        assert.equal(clearCut.length, schedule.clearCount);
+        assert.equal(thinning.length, schedule.thinningCount);
+        const captureYear = captureYears.has(year);
+
         // A fresh yearly cut gives the player an unmistakable marker frame
-        // before the Forester starts repairing it.
-        const cut = await cutStands(setup.clearCut);
+        // before the Forester starts repairing it. Its size follows the year's
+        // rotating schedule, so heavy and light years are visibly different.
+        const cut = await cutStands(clearCut);
         harvestedTotal += cut.taken;
-        assert.equal(cut.taken > 0, true, `year ${year}: the yearly cut must remove real stock`);
+        assert.equal(cut.taken > 0, true, `seed ${seed} year ${year}: the yearly cut must remove real stock`);
 
         const cutStage = await stageForCapture();
         const cutDigest = await canvasDigests();
-        const cutMarkers = await markerAudit(setup.foresterId, setup.clearCut);
-        await captureMapCloseup(resolve(outDir, `map-year-${year}-cut.png`), setup.site);
-        screenshots.push(`map-year-${year}-cut.png`);
-        assert.equal(cutMarkers.counts.matched, 3, `year ${year}: every freshly cut stand must carry a visible marker`);
-        assert.equal(cutMarkers.counts.red, 3, `year ${year}: freshly cut stands must be marked red`);
+        const cutMarkers = await markerAudit(setup.foresterId, clearCut);
+        if (captureYear) {
+            const name = `${prefix}-map-year-${year}-cut.png`;
+            await captureMapCloseup(resolve(outDir, name), setup.site);
+            screenshots.push(name);
+        }
+        assert.equal(cutMarkers.counts.matched, clearCut.length,
+            `seed ${seed} year ${year}: every freshly cut stand must carry a visible marker`);
+        assert.equal(cutMarkers.counts.red, clearCut.length,
+            `seed ${seed} year ${year}: freshly cut stands must be marked red`);
         await restoreAfterCapture(cutStage);
 
         // One real day lets the Forester answer the cut before the panel is read.
         await advanceForestDays(1, {foresterId: setup.foresterId});
-        const planting = await stateSample(setup.foresterId, setup.clearCut);
-        assert.equal(planting.reason, "Planting saplings", `year ${year}: the cut must start replanting`);
-        assert.ok(planting.range.restorable >= 2, `year ${year}: the cut must leave restorable stands`);
+        const planting = await stateSample(setup.foresterId, clearCut);
+        assert.equal(planting.reason, "Planting saplings", `seed ${seed} year ${year}: the cut must start replanting`);
+        assert.ok(planting.range.restorable >= 1, `seed ${seed} year ${year}: the cut must leave restorable stands`);
         const plantingRecord = await readForesterRecord(setup.foresterId);
-        assertRenderedState(plantingRecord, planting, `year ${year} planting`);
-        if (year === 1 || year === YEARS) {
-            await plantingRecord.block.screenshot({path: resolve(outDir, `stewardship-year-${year}-planting.png`)});
-            screenshots.push(`stewardship-year-${year}-planting.png`);
+        assertRenderedState(plantingRecord, planting, `seed ${seed} year ${year} planting`);
+        if (captureYear) {
+            const name = `${prefix}-stewardship-year-${year}-planting.png`;
+            await plantingRecord.block.screenshot({path: resolve(outDir, name)});
+            screenshots.push(name);
         }
         await page.locator("#command-close").click();
 
         // The remaining 399 days carry the repeated harvest schedule. The last
-        // thinning is on day 380, leaving nineteen days to refill before the
-        // yearly measurement.
+        // thinning is on day 360, leaving thirty-nine days to refill before the
+        // yearly measurement; the latest clear-cut is on day 140.
         const season = await advanceForestDays(DAYS_PER_YEAR - 1, {
             startDay: 1,
-            thinning: setup.targets,
-            clearCut: setup.clearCut,
+            thinning,
+            clearCut,
+            clearDay: schedule.clearDay,
             foresterId: setup.foresterId
         });
         assert.deepEqual(season.badReasons, [],
-            `year ${year}: the range must never report depletion or wait for space`);
-        assert.ok(season.harvested > 0, `year ${year}: the repeated harvest must remove stock`);
+            `seed ${seed} year ${year}: the range must never report depletion or wait for space`);
+        assert.ok(season.harvested > 0, `seed ${seed} year ${year}: the repeated harvest must remove stock`);
         harvestedTotal += season.harvested;
 
-        const grown = await stateSample(setup.foresterId, setup.clearCut);
-        assert.equal(grown.reason, "Forest is fully grown", `year ${year}: the range must end fully grown`);
-        assert.equal(grown.range.restorable, 0, `year ${year}: every stand must be restored at year end`);
-        assert.equal(grown.range.stock, grown.range.capacity, `year ${year}: the range must end at full stock`);
-        assert.equal(grown.workerCount, 2, `year ${year}: both Foresters must remain employed`);
-        assert.ok(grown.planted - plantedAtStart > 0, `year ${year}: the Forester must have planted stock`);
+        const grown = await stateSample(setup.foresterId, clearCut);
+        assert.equal(grown.reason, "Forest is fully grown", `seed ${seed} year ${year}: the range must end fully grown`);
+        assert.equal(grown.range.restorable, 0, `seed ${seed} year ${year}: every stand must be restored at year end`);
+        assert.equal(grown.range.stock, grown.range.capacity, `seed ${seed} year ${year}: the range must end at full stock`);
+        assert.equal(grown.workerCount, 2, `seed ${seed} year ${year}: both Foresters must remain employed`);
+        assert.ok(grown.planted - plantedAtStart > 0, `seed ${seed} year ${year}: the Forester must have planted stock`);
         assert.ok(grown.visualRevision > lastVisualRevision,
-            `year ${year}: harvest and regrowth must invalidate the cached woodland`);
+            `seed ${seed} year ${year}: harvest and regrowth must invalidate the cached woodland`);
         const grownRecord = await readForesterRecord(setup.foresterId);
-        assertRenderedState(grownRecord, grown, `year ${year} grown`);
-        if (year === 1 || year === YEARS) {
-            await grownRecord.block.screenshot({path: resolve(outDir, `stewardship-year-${year}-grown.png`)});
-            screenshots.push(`stewardship-year-${year}-grown.png`);
+        assertRenderedState(grownRecord, grown, `seed ${seed} year ${year} grown`);
+        if (captureYear) {
+            const name = `${prefix}-stewardship-year-${year}-grown.png`;
+            await grownRecord.block.screenshot({path: resolve(outDir, name)});
+            screenshots.push(name);
         }
         if (year === YEARS) {
-            await page.screenshot({path: resolve(outDir, "panel-year-5-grown.png")});
-            screenshots.push("panel-year-5-grown.png");
+            const name = `${prefix}-panel-year-${YEARS}-grown.png`;
+            await page.screenshot({path: resolve(outDir, name)});
+            screenshots.push(name);
         }
         await page.locator("#command-close").click();
 
         const grownStage = await stageForCapture();
         const grownDigest = await canvasDigests();
-        const grownMarkers = await markerAudit(setup.foresterId, setup.clearCut);
-        await captureMapCloseup(resolve(outDir, `map-year-${year}-grown.png`), setup.site);
-        screenshots.push(`map-year-${year}-grown.png`);
+        const grownMarkers = await markerAudit(setup.foresterId, clearCut);
+        if (captureYear) {
+            const name = `${prefix}-map-year-${year}-grown.png`;
+            await captureMapCloseup(resolve(outDir, name), setup.site);
+            screenshots.push(name);
+        }
         await restoreAfterCapture(grownStage);
 
         assert.equal(grownMarkers.counts.matched, 0,
-            `year ${year}: a fully grown range must not leave stale markers on the map`);
+            `seed ${seed} year ${year}: a fully grown range must not leave stale markers on the map`);
         assert.notEqual(cutDigest.terrain?.hash, grownDigest.terrain?.hash,
-            `year ${year}: the terrain raster must change between the cut and the recovered wood`);
+            `seed ${seed} year ${year}: the terrain raster must change between the cut and the recovered wood`);
         assert.notEqual(cutDigest.interactive?.hash, grownDigest.interactive?.hash,
-            `year ${year}: the visible map must change between the cut and the recovered wood`);
+            `seed ${seed} year ${year}: the visible map must change between the cut and the recovered wood`);
 
         rows.push({
+            seed,
             year,
             tick: grown.tick,
             dayOfYear: grown.dayOfYear,
+            clearCount: clearCut.length,
+            thinningCount: thinning.length,
+            clearDay: schedule.clearDay,
             cutStockRemoved: cut.taken,
             seasonHarvested: season.harvested,
             planted: grown.planted - plantedAtStart,
@@ -595,37 +652,42 @@ try {
         });
         plantedAtStart = grown.planted;
         lastVisualRevision = grown.visualRevision;
+        console.log(`[seed ${seed}] year ${year}: ${cut.taken + season.harvested} stock removed, ${season.plantingDays} planting days, ${((Date.now() - seedStarted) / 1000).toFixed(1)}s elapsed`);
     }
 
     const final = rows[rows.length - 1];
     assert.equal(rows.length, YEARS);
     assert.ok(rows.every(row => row.lowestFill > 0.6),
-        "repeated yearly cuts must not collapse the range below 60%");
+        `seed ${seed}: repeated yearly cuts must not collapse the range below 60%`);
     assert.ok(rows.every(row => row.planted > 0 && row.plantingDays > 0),
-        "the Forester must answer every yearly cut with real planting days");
-    // A yearly clear-cut of three stands plus the starting Lumber Yard's
-    // recurring harvest occupies most of the planting season. Seventy-one
-    // fully grown days per year are still a substantial, repeated window.
+        `seed ${seed}: the Forester must answer every yearly cut with real planting days`);
     assert.ok(rows.every(row => row.grownDays > 40),
-        "every year must contain a substantial fully grown window");
+        `seed ${seed}: every year must contain a substantial fully grown window`);
     assert.ok(rows.every(row => row.visualDelta > 0),
-        "every year must invalidate the cached woodland at least once");
+        `seed ${seed}: every year must invalidate the cached woodland at least once`);
+    assert.ok(rows.every(row => row.cutMarkers.matched === row.clearCount && row.cutMarkers.red === row.clearCount),
+        `seed ${seed}: every cut frame must carry exactly one red marker per cut stand`);
+    assert.ok(rows.every(row => row.grownMarkers.matched === 0),
+        `seed ${seed}: every recovered frame must be marker-free`);
     assert.ok(final.visualRevision > initialSample.visualRevision,
-        "the five-year run must advance the forest visual revision");
-    assert.ok(harvestedTotal > 3000, `the audit harvested only ${harvestedTotal} stock`);
+        `seed ${seed}: the ten-year run must advance the forest visual revision`);
+    assert.ok(harvestedTotal > 4000, `seed ${seed}: the audit harvested only ${harvestedTotal} stock`);
     assert.ok(!rows.some(row => row.status.includes("depleted")));
+    const harvests = rows.map(row => row.harvested ?? (row.cutStockRemoved + row.seasonHarvested));
+    assert.ok(Math.max(...harvests) - Math.min(...harvests) > 100,
+        `seed ${seed}: the annual harvest did not vary enough (${Math.min(...harvests)}..${Math.max(...harvests)})`);
+    assert.ok(new Set(rows.map(row => `${row.clearCount}:${row.thinningCount}:${row.clearDay}`)).size >= 4,
+        `seed ${seed}: the annual harvest schedule must actually rotate`);
+    assert.deepEqual(pageErrors.slice(errorStart), [], `seed ${seed}: the browser run must not raise page errors`);
 
-    const report = {
-        generatedAt: new Date().toISOString(),
-        baseUrl,
-        seed: setup.seed,
+    return {
+        seed,
         world: setup.world,
-        years: YEARS,
-        daysPerYear: DAYS_PER_YEAR,
         site: setup.site,
         foresterId: setup.foresterId,
         targets: setup.targets,
-        clearCut: setup.clearCut,
+        years: YEARS,
+        daysPerYear: DAYS_PER_YEAR,
         initial: {
             range: initialSample.range,
             visualRevision: initialSample.visualRevision,
@@ -645,26 +707,67 @@ try {
         },
         renderer: initialSample.mode,
         screenshots,
+        pageErrors: pageErrors.slice(errorStart),
+        consoleErrors: consoleErrors.slice(consoleStart)
+    };
+}
+
+try {
+    const results = [];
+    for (const seed of SEEDS) {
+        results.push(await runSeed(seed, ALL_SEEDS.indexOf(seed)));
+        if (page) await page.close();
+        page = null;
+    }
+    if (results.length > 1) {
+        const harvestTotals = results.map(result => Math.round(result.harvestedTotal / 100));
+        assert.ok(new Set(harvestTotals).size >= 2,
+            "the two seeds must not produce one identical harvest total");
+    }
+    const totalHarvested = results.reduce((sum, result) => sum + result.harvestedTotal, 0);
+    const final = results[results.length - 1].final;
+    const screenshots = results.flatMap(result => result.screenshots);
+    const report = {
+        generatedAt: new Date().toISOString(),
+        baseUrl,
+        years: YEARS,
+        daysPerYear: DAYS_PER_YEAR,
+        schedule: {clearPattern: CLEAR_PATTERN, thinningPattern: THINNING_PATTERN, clearDayPattern: CLEAR_DAY_PATTERN},
+        seeds: results,
+        harvestedTotal: totalHarvested,
+        final,
+        renderer: results[0].renderer,
+        screenshots,
         pageErrors,
         consoleErrors
     };
-    await writeFile(resolve(outDir, "forester-stewardship-longrun.json"), JSON.stringify(report, null, 2));
+    await writeFile(resolve(outDir, reportFile), JSON.stringify(report, null, 2));
     assert.deepEqual(pageErrors, [], "the browser run must not raise page errors");
     console.log(JSON.stringify({
         ok: true,
         url: baseUrl,
         years: YEARS,
-        harvestedTotal,
-        final: report.final,
-        rows: rows.map(row => ({
-            year: row.year, lowestFill: Number(row.lowestFill.toFixed(3)),
-            planted: row.planted, visualDelta: row.visualDelta,
-            cutMarkers: row.cutMarkers.matched, grownMarkers: row.grownMarkers.matched
+        seeds: results.map(result => ({
+            seed: result.seed,
+            harvestedTotal: result.harvestedTotal,
+            final: result.final,
+            rows: result.rows.map(row => ({
+                year: row.year,
+                clearCount: row.clearCount,
+                thinningCount: row.thinningCount,
+                clearDay: row.clearDay,
+                lowestFill: Number(row.lowestFill.toFixed(3)),
+                planted: row.planted,
+                visualDelta: row.visualDelta,
+                cutMarkers: row.cutMarkers.matched,
+                grownMarkers: row.grownMarkers.matched
+            }))
         })),
         screenshots,
         outDir
     }, null, 2));
 } finally {
+    if (page) await page.close().catch(() => {});
     await browser.close();
     if (server) await new Promise(resolveClose => server.close(resolveClose));
 }
