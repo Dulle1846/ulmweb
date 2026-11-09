@@ -86,7 +86,7 @@ Performed against the production page in the Cloud Chromium tab.
 | Canvas names | "Interactive kingdom map", "Minimap", "Exact terrain preview of the chosen world" |
 | Progress semantics | `progressbar` named "Royal ambition progress" with a value |
 | Focusable count | 74 visible controls on the loaded start/main view |
-| Target size (WCAG 2.2 AA) | 55 visible buttons measured; 40 are below the 44 px advisory size, but only two were below the 24 px AA minimum. `#help-btn` (22 px) and `#skip-card-btn` (23.5 px) were raised to explicit 28 px minimums in the design system. |
+| Target size (WCAG 2.2 AA) | 55 visible buttons measured; 40 are below the 44 px advisory size, but only two were below the 24 px AA minimum. `#help-btn` (22 px) and `#skip-card-btn` (23.5 px) were raised to explicit 28 px minimums. Live production re-measures both at 28 px and finds 0 controls below 24 px. |
 
 ### Findings that remain open
 
@@ -126,7 +126,7 @@ dependencies, or add a Firefox/WebKit CI job with the required libraries.
 ## 5. Release acceptance
 
 The production page serves the verified renderer commit, the current Node suite is
-609/609, and the 25-year deterministic campaign completes. The manual gates above are
+610/610, and the 25-year deterministic campaign completes. The manual gates above are
 recorded honestly: keyboard/focus pass in Chromium, cross-browser and human
 screen-reader passes still open. **Owner visual acceptance is still required before
 calling the next release fully accepted.**

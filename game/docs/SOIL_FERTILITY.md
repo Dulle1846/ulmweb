@@ -2,7 +2,7 @@
 
 **Status:** implemented on the `3.10.0-dev` development line
 **Scope:** farm fields, settlement food chain, stable integration, save compatibility
-**Tests:** 4 focused soil tests; full Node suite 609/609; deterministic 25-year campaign green
+**Tests:** 4 focused soil tests; full Node suite 610/610; deterministic 25-year campaign green
 
 ## Why this slice
 
@@ -106,6 +106,11 @@ event listeners or rendering work were added.
 
 ## Limits / next steps
 
+- Some legacy starter layouts place farms on high ground outside the fertility band.
+  Their raw terrain fertility is 0, while `ensureField()` keeps a 50-point safety
+  ceiling so existing campaigns do not starve. The building register now shows the raw
+  site value and the effective soil separately. A future starter-layout pass should
+  choose genuinely fertile ground instead of relying on the safety ceiling.
 - Crop choice and explicit rotation are not player-controlled yet; the rest year is
   automatic.
 - Manure is a proximity bonus, not a transported good.
