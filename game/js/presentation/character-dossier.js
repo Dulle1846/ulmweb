@@ -117,15 +117,25 @@ function renderLinks(title, entries, labelFor) {
         '</section>';
 }
 
+function royalCrestId(name) {
+    let hash = 2166136261;
+    for (const character of String(name || "Royal house")) {
+        hash ^= character.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+    }
+    return "crest-" + String((hash >>> 0) % 8 + 1).padStart(2, "0");
+}
+
 function renderSovereignDossier(entity, family) {
     if (!entity?.isKing) return "";
     const currentHouse = !entity.isArchived ? getRoyalHouse() : null;
     const isReigningSovereign = Boolean(currentHouse?.king &&
         String(currentHouse.king.personId || currentHouse.king.id || "") === String(entity.personId));
     const dynastyName = String(state.royal?.dynastyName || state.kingdomName || "Royal house");
+    const crestMarkup = '<svg class="royal-dossier__crest" viewBox="0 0 128 144" role="img" aria-label="Heraldic emblem of ' + esc(dynastyName) + '"><use href="assets/royal-heraldry.svg#' + royalCrestId(dynastyName) + '"></use></svg>';
     if (!isReigningSovereign) {
         return '<section class="royal-dossier" data-royal-dossier="former">' +
-            '<div class="royal-dossier__masthead"><img src="assets/royal-crest.svg" alt="" aria-hidden="true">' +
+            '<div class="royal-dossier__masthead">' + crestMarkup +
             '<div><span class="royal-dossier__eyebrow">ROYAL ARCHIVE</span><h3>Former sovereign</h3>' +
             '<p>This person is recorded as a monarch. Current succession details are shown only on the living sovereign\'s dossier.</p></div></div>' +
             '<div class="royal-dossier__facts"><div><span>ROYAL HOUSE</span><strong>' + esc(dynastyName) + '</strong></div>' +
@@ -141,7 +151,7 @@ function renderSovereignDossier(entity, family) {
         esc(entry.detail || "A royal event was recorded.") + '</p></article>'
     ).join("");
     return '<section class="royal-dossier" data-royal-dossier="current" aria-labelledby="royal-dossier-title">' +
-        '<div class="royal-dossier__masthead"><img src="assets/royal-crest.svg" alt="" aria-hidden="true">' +
+        '<div class="royal-dossier__masthead">' + crestMarkup +
         '<div><span class="royal-dossier__eyebrow">THE CROWN &amp; THE ROYAL HOUSE</span><h3 id="royal-dossier-title">SOVEREIGN DOSSIER</h3>' +
         '<p>' + esc(state.kingdomName || "The realm") + ' · House ' + esc(dynastyName) + ' · Reigning sovereign</p></div></div>' +
         '<div class="royal-dossier__facts"><div><span>ROYAL CHILDREN</span><strong>' + children.length + '</strong></div>' +

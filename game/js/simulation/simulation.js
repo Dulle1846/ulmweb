@@ -4,6 +4,7 @@ import { resetIncome } from "../systems/resources.js";
 import { updateMorale } from "../systems/morale.js";
 import { checkRandomEvents,addLog } from "../systems/events.js";
 import { updateMarket } from "../systems/market.js";
+import { updateDiplomacy } from "../systems/diplomacy.js";
 import { updateEconomy } from "../systems/economy.js";
 import { updateEdicts } from "../systems/edicts.js";
 import { updateHealth } from "../systems/health.js";
@@ -50,6 +51,7 @@ export function updateSimulation(){
         socialResult=updateSocialLife();
         updatePersonalAgency();
         newborn=updateBirths();
+        updateDiplomacy();
     }
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
     resetIncome();

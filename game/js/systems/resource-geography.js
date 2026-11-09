@@ -194,6 +194,8 @@ export function getResourceNodeAt(x,y){
     const forestAgeIndex=Number(geo.forestAge?.[i]||0);
     const succession=forestSuccessionAt(point.x,point.y);
     let snowDepth=0,snowDepthCm=0,exposure=0,fireRisk=0,pestRisk=0,monoculture=0;
+    let visibility=0,workFactor=0,browsingPressure=0,predatorPressure=0,structure=null;
+    let diversity=0,sightRadius=0,windExposure=0,wetness=0,deadwood=0,treeline=false;
     if(forestDefinition){
         const terrain=sampleTerrain(point.x,point.y);
         const climate=state.worldOptions?.climate||"temperate";
@@ -207,6 +209,14 @@ export function getResourceNodeAt(x,y){
         snowDepth=snow.depth;snowDepthCm=snow.cm;
         exposure=Number(stand.exposure)||0;fireRisk=Number(stand.fireRisk)||0;
         pestRisk=Number(stand.pestRisk)||0;monoculture=Number(stand.monoculture)||0;
+        visibility=Number(stand.visibility)||0;browsingPressure=Number(stand.browsingPressure)||0;
+        predatorPressure=Number(stand.predatorPressure)||0;structure=stand.structure||null;
+        diversity=Number(stand.speciesDiversity)||0;sightRadius=Number(stand.sightRadius)||0;
+        windExposure=Number(stand.windExposure)||0;wetness=Number(stand.wetness)||0;
+        deadwood=Number(stand.deadwood)||0;treeline=Boolean(stand.treeline);
+        // Snow and dense cover slow actual forest work: the same derived value
+        // is used by gathering and shown in the forester/lumber survey.
+        workFactor=clamp(1-snow.depth*0.38-(1-visibility)*0.12,0.45,1);
     }
     return {
         x:point.x,y:point.y,
@@ -220,6 +230,11 @@ export function getResourceNodeAt(x,y){
         forestFauna:forestDefinition?[...forestDefinition.fauna]:[],
         forestSnowDepth:snowDepth,forestSnowDepthCm:snowDepthCm,
         forestExposure:exposure,forestFireRisk:fireRisk,forestPestRisk:pestRisk,forestMonoculture:monoculture,
+        forestVisibility:visibility,forestWorkFactor:workFactor,
+        forestSpeciesDiversity:diversity,forestSightRadius:sightRadius,
+        forestWindExposure:windExposure,forestWetness:wetness,forestDeadwood:deadwood,forestTreeline:treeline,
+        forestBrowsingPressure:browsingPressure,forestPredatorPressure:predatorPressure,
+        forestStructure:structure,
         stoneStock:geo.stoneStock[i],stoneCapacity:geo.stoneCapacity[i],
         waterAccess:Boolean(geo.waterAccess[i]),fertility:geo.fertility[i]
     };

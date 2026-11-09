@@ -1,4 +1,4 @@
-// Persistent disturbance succession for broadleaf woodland.
+// Persistent disturbance succession for woodland.
 //
 // The seeded world supplies the initial burn scars, windthrow gaps and disease
 // patches. This module gives those states a life: every disturbance records its
@@ -22,6 +22,7 @@ const MAX_SPREAD_PER_PASS = 4;
 const CONTROL_DAYS = 90;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const clamp01 = value => clamp(value, 0, 1);
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 
 function hash32(seed, a, b, salt = 0) {
@@ -166,17 +167,91 @@ export function forestSuccessionSummary(limit = 3) {
     return rows.map(row => row.stage.label + " · " + row.kind).join(" · ");
 }
 
+// Seasonal envelopes keep the existing disturbance rhythm. The stand's derived
+// fire, pest, monoculture and snow values decide which kind wins the next real
+// event; they are not stored and add no per-tick work.
+const CONIFER_SEASON = Object.freeze({
+    burned: Object.freeze([0.8, 1.35, 1.05, 0.5]),
+    "bark-beetle": Object.freeze([1, 1.25, 0.95, 0.45]),
+    snowbreak: Object.freeze([0.65, 0.12, 0.3, 1.45]),
+    "drought-stressed": Object.freeze([0.65, 1.15, 0.95, 0.35]),
+});
+
+// Exposed for tests and for any future survey/event UI. A high fire risk opens
+// the burned path even in a conifer stand, while pest pressure and a pure stand
+// both raise the bark-beetle weight. Monoculture deliberately stays a separate
+// multiplier: it is a vulnerability, not a disturbance in its own right.
+export function coniferDisturbanceWeights(stand = {}, season = state.seasonIndex, weather = state.weather) {
+    const seasonIndex = ((Math.floor(number(season, 0)) % 4) + 4) % 4;
+    const fireRisk = clamp01(number(stand.fireRisk));
+    const pestRisk = clamp01(number(stand.pestRisk));
+    const monoculture = clamp01(number(stand.monoculture));
+    const snowPotential = clamp01(number(stand.snowPotential));
+    const windExposure = clamp01(number(stand.windExposure ?? stand.exposure));
+    const weatherName = String(weather || "clear").toLowerCase();
+    const wet = weatherName === "rain" || weatherName === "storm" || weatherName === "snow";
+    const storm = weatherName === "storm";
+    const drySpell = weatherName === "clear" || weatherName === "heat" || weatherName === "drought";
+    const weatherFire = wet ? 0.55 : drySpell ? 1.18 : 1;
+    const weatherPest = wet ? 0.9 : drySpell ? 1.12 : 1;
+    const weatherSnow = weatherName === "snow" ? 1.35 : wet ? 1.08 : 1;
+    const weatherDrought = wet ? 0.45 : drySpell ? 1.2 : 1;
+    return {
+        burned: (0.02 + fireRisk * 0.98) * CONIFER_SEASON.burned[seasonIndex] * weatherFire,
+        "bark-beetle": (0.03 + pestRisk * 0.72 + monoculture * 0.45) * CONIFER_SEASON["bark-beetle"][seasonIndex] * weatherPest,
+        snowbreak: (0.03 + snowPotential * 0.97) * CONIFER_SEASON.snowbreak[seasonIndex] * weatherSnow,
+        "drought-stressed": (0.03 + fireRisk * 0.5) * CONIFER_SEASON["drought-stressed"][seasonIndex] * weatherDrought,
+        // Conifer windthrow was previously only a seeded base state. Exposure
+        // and storms now make it a live event, with root-plate and salvage
+        // consequences handled by the shared windthrow succession profile.
+        windthrow: (0.012 + windExposure * 0.55 + (stand.disturbance === "windthrow" ? 0.08 : 0))
+            * (storm ? 2.4 : seasonIndex === 3 ? 1.25 : 0.72),
+    };
+}
+
+function weightedDisturbance(weights, roll) {
+    const entries = Object.entries(weights).filter(([, weight]) => Number.isFinite(weight) && weight > 0);
+    if (!entries.length) return "burned";
+    const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+    let cursor = clamp01(roll) * total;
+    for (const [kind, weight] of entries) {
+        cursor -= weight;
+        if (cursor < 0) return kind;
+    }
+    return entries[entries.length - 1][0];
+}
+
+export function coniferDisturbanceKind(stand = {}, season = state.seasonIndex, roll = 0.5) {
+    return weightedDisturbance(coniferDisturbanceWeights(stand, season, state.weather), roll);
+}
+
+// A disturbance entering a neighbouring stand is more likely when that stand
+// is itself dry, pest-ridden, pure or snow-loaded. Returning 1 for broadleaf
+// disturbances keeps their existing spread curve untouched.
+export function spreadRiskFactor(kind, stand = {}) {
+    const fire = clamp01(number(stand.fireRisk));
+    const pest = clamp01(number(stand.pestRisk));
+    const monoculture = clamp01(number(stand.monoculture));
+    const snow = clamp01(number(stand.snowPotential));
+    if (kind === "burned") return clamp(0.55 + fire * 0.9, 0.45, 1.45);
+    if (kind === "bark-beetle") return clamp(0.5 + pest * 0.8 + monoculture * 0.45, 0.4, 1.5);
+    if (kind === "snowbreak") return clamp(0.5 + snow * 0.9, 0.45, 1.5);
+    if (kind === "drought-stressed") return clamp(0.55 + fire * 0.7, 0.45, 1.4);
+    if (kind === "windthrow") {
+        if (!stand?.conifer) return 1;
+        return clamp(0.55 + clamp01(number(stand.windExposure ?? stand.exposure)) * 0.9, 0.45, 1.45);
+    }
+    return 1;
+}
+
 function chooseKind(model, day, stand = null) {
     const season = Math.floor(number(state.seasonIndex, 0)) % 4;
     const roll = unitHash(model.seed, model.events + 1, day, 0x4b494e44);
-    // Conifer stands have their own disturbance regime. Bark beetle follows
-    // summer heat, snowbreak follows winter loading, and drought stress opens
-    // the door to both. Broadleaf woodland keeps the fire/wind/disease cycle.
-    if (stand?.coniferShare > 0.4) {
-        if (season === 1) return roll < 0.58 ? "bark-beetle" : "drought-stressed";
-        if (season === 2) return roll < 0.5 ? "bark-beetle" : "snowbreak";
-        if (season === 3) return roll < 0.68 ? "snowbreak" : "bark-beetle";
-        return roll < 0.52 ? "drought-stressed" : "snowbreak";
+    // Conifer stands use the derived fire/pest/monoculture/snow pressure to
+    // choose among real disturbances. Broadleaf woodland keeps its existing
+    // fire/wind/disease cycle.
+    if (stand?.conifer === true || number(stand?.coniferShare) > 0.4) {
+        return coniferDisturbanceKind(stand, season, roll);
     }
     if (season === 1) return roll < 0.62 ? "burned" : "diseased";
     if (season === 2 || season === 3) return roll < 0.64 ? "windthrow" : "diseased";
@@ -294,7 +369,11 @@ function spreadDisturbances(model) {
         if (record.kind === "windthrow") chance *= state.weather === "storm" ? 1.5 : season === 2 ? 1.15 : 0.8;
         if (record.kind === "diseased") chance *= stage.id === "fresh" ? 1.1 : 0.75;
         const roll = unitHash(model.seed, x * 37 + model.day, y * 53 + model.events, 0x53505244);
-        if (roll > chance) continue;
+        // Risk-aware kinds may spread into a nearby stand up to the highest
+        // possible factor. The target's own pressure then decides whether the
+        // crossing actually happens; broadleaf kinds keep the old threshold.
+        const riskAware = ["burned", "bark-beetle", "snowbreak", "drought-stressed", "windthrow"].includes(record.kind);
+        if (roll > chance * (riskAware ? 1.5 : 1)) continue;
         const start = hash32(model.seed, x, y, model.day + 0x53505244) % neighbourOrder.length;
         for (let offset = 0; offset < neighbourOrder.length; offset++) {
             const [dx, dy] = neighbourOrder[(start + offset) % neighbourOrder.length];
@@ -310,6 +389,7 @@ function spreadDisturbances(model) {
             if (!geo.forestCapacity?.[index] || before < 12) continue;
             const stand = standAtTile(geo, nx, ny);
             if (!stand?.forest || stand.type === "cutover") continue;
+            if (roll > chance * spreadRiskFactor(record.kind, stand)) continue;
             const after = Math.max(1, Math.floor(before * 0.72));
             geo.forestStock[index] = after;
             model.tiles[nkey] = { kind: record.kind, age: 0, containedUntil: 0 };

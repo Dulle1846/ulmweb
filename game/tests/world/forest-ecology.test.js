@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {
     FOREST_GOODS, FOREST_SPECIES, FOREST_TYPES, FOREST_TYPE_IDS,
     forestFaunaFor, forestGoodsFor, forestMicrofaunaAt, forestMixLabel, forestPotentialAt, forestStandAt, forestTreeCopies,
-    forestSnowDepthAt, forestSurveyAt, forestTypeFromIndex, forestTypeIndex, pickAgeClass, pickSpecies,
+    forestSnowDepthAt, forestSurveyAt, forestTypeFromIndex, forestTypeIndex,
+    forestAgeScale, forestTreeForm, pickAgeClass, pickSpecies,
 } from "../../js/world/forest-ecology.js";
 import { foliageState, treeTiming } from "../../js/presentation/rendering/seasonal-foliage.js";
 
@@ -119,6 +120,48 @@ test("age structure includes young, mature and ancient trees", () => {
     const young = pickAgeClass({ ...ancient, ageClass: "young" }, 0.1);
     assert.equal(young, "young");
     assert.ok(forestStandAt(3.5, 3.5, standContext()).ageScale > 0);
+});
+
+test("per-tree form varies inside one age class without becoming saved state", () => {
+    const stand = forestStandAt(23.5, 17.5, standContext({ moisture: 0.55 }));
+    assert.equal(stand.forest, true);
+    const first = forestTreeForm(stand, 0.17);
+    const second = forestTreeForm(stand, 0.83);
+    assert.equal(first.ageScale, forestAgeScale(first.ageClass));
+    assert.notEqual(first.heightScale, second.heightScale);
+    assert.notEqual(first.trunkScale, second.trunkScale);
+    assert.notEqual(first.lean, second.lean);
+    assert.ok(first.heightScale >= 0.82 && first.heightScale <= 1.16);
+    assert.ok(first.lean >= -1.3 && first.lean <= 1.3);
+    assert.deepEqual(forestTreeForm(stand, 0.17), first, "the same tree roll must replay exactly");
+    assert.equal(forestTreeForm({ forest: false }, 0.5).ageScale, 1);
+    assert.equal(forestAgeScale("ancient"), 1.26);
+});
+
+test("diversity, sight, wetness and wind exposure are derived stand properties", () => {
+    const stands = [];
+    for (const moisture of [0.4, 0.58, 0.8]) {
+        for (const temperature of [0.3, 0.55, 0.75]) {
+            for (const height of [0.45, 0.7, 0.9]) {
+                for (let x = 0; x < 40; x += 8) {
+                    const stand = forestStandAt(x + 0.5, 7.5, standContext({ moisture, temperature, height }));
+                    if (stand.forest) stands.push(stand);
+                }
+            }
+        }
+    }
+    assert.ok(stands.length > 10);
+    for (const stand of stands) {
+        assert.ok(stand.speciesDiversity >= 0 && stand.speciesDiversity <= 1);
+        assert.ok(stand.monoculture >= 0 && stand.monoculture <= 1);
+        assert.ok(stand.sightRadius >= 2 && stand.sightRadius <= 10);
+        assert.ok(stand.wetness >= 0 && stand.wetness <= 1);
+        assert.ok(stand.windExposure >= 0 && stand.windExposure <= 1);
+        assert.ok(stand.deadwood >= 0 && stand.deadwood <= 1);
+        assert.equal(Number.isFinite(stand.structure.sapling), true);
+    }
+    assert.ok(stands.some(stand => stand.speciesDiversity > 0.55), "mixed stands need visible diversity");
+    assert.ok(stands.some(stand => stand.windExposure > 0.35), "exposed high stands need wind exposure");
 });
 
 test("disturbance history produces fire, windthrow, disease and cutting", () => {
@@ -301,6 +344,16 @@ test("forest survey exposes a complete tile profile and rejects open ground", ()
     assert.ok(survey.exposure >= 0 && survey.exposure <= 1);
     assert.ok(survey.fireRisk >= 0 && survey.fireRisk <= 1);
     assert.ok(survey.pestRisk >= 0 && survey.pestRisk <= 1);
+    assert.ok(survey.structure.herb >= 0 && survey.structure.herb <= 1);
+    assert.ok(survey.structure.deadwood >= 0 && survey.structure.deadwood <= 1);
+    assert.ok(survey.browsingPressure >= 0 && survey.browsingPressure <= 1);
+    assert.ok(survey.predatorPressure >= 0 && survey.predatorPressure <= 1);
+    assert.ok(survey.speciesDiversity >= 0 && survey.speciesDiversity <= 1);
+    assert.ok(survey.sightRadius >= 2 && survey.sightRadius <= 10);
+    assert.ok(survey.windExposure >= 0 && survey.windExposure <= 1);
+    assert.ok(survey.wetness >= 0 && survey.wetness <= 1);
+    assert.ok(survey.deadwood >= 0 && survey.deadwood <= 1);
+    assert.ok([true, false].includes(survey.treeline));
     const deep = forestSnowDepthAt({ forest: true, snowPotential: 0.9 }, 350);
     const shallow = forestSnowDepthAt({ forest: true, snowPotential: 0.2 }, 350);
     assert.ok(deep.cm > shallow.cm, "exposed high ground holds a deeper snow pack");

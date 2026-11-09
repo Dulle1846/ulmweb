@@ -411,3 +411,37 @@ body.ui-modal-open{overflow:hidden}
  .side-panel>.resource-section,.side-panel>.card-section,.side-panel>.tabs,.side-panel>.panel-footer{flex:0 0 auto}
  .side-panel>.tab-content{flex:1 0 100px}
 }
+
+
+/* User-selectable accessibility preferences. These affect presentation only. */
+html.ui-hide-tooltips [data-tooltip]::after,
+html.ui-hide-tooltips [data-ui-tooltip]::after{display:none!important}
+html.ui-reduced-motion *,
+html.ui-reduced-motion *::before,
+html.ui-reduced-motion *::after{
+ animation-duration:.01ms!important;
+ animation-iteration-count:1!important;
+ scroll-behavior:auto!important;
+ transition-duration:.01ms!important;
+}
+html.ui-high-contrast{
+ --ui-line:rgba(239,227,200,.62);
+ --ui-line-strong:rgba(239,227,200,.9);
+ --ui-paper-muted:#5a432c;
+}
+html.ui-high-contrast .ruler-status,
+html.ui-high-contrast .realm-nav-button,
+html.ui-high-contrast .control-button,
+html.ui-high-contrast .speed-button,
+html.ui-high-contrast .realm-resource-chip,
+html.ui-high-contrast .player-chip{border-color:#e4c98e}
+html.ui-high-contrast .date-label,
+html.ui-high-contrast .morale-topline,
+html.ui-high-contrast .realm-resource-chip small,
+html.ui-high-contrast .panel-footer{color:#f2dfb6}
+html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
+.settings-accessibility{margin:12px 0;padding:10px 12px;border:1px solid #b69a68;border-radius:3px;background:#e5d4b4}
+.settings-accessibility>h3{margin:0 0 7px;color:#5b422a;font:700 10px var(--ui-title-font);letter-spacing:.12em}
+.settings-accessibility .setting-row{padding:8px 0;border-top:1px solid #b69a68}
+.settings-accessibility .setting-row strong{color:#3d2d20}
+.settings-accessibility .setting-row small{color:#725c40}

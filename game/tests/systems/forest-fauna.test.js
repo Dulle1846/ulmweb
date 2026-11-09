@@ -5,7 +5,7 @@ import { generateResourceGeography } from "../../js/systems/resource-geography.j
 import {
     ensureForestFauna, forestFaunaAt, forestFaunaSignAt, forestFaunaSummaryAt, resetForestFauna,
     restoreForestFauna, serializeForestFauna, updateForestFauna,
-    validateForestFaunaSnapshot, FOREST_FAUNA_LIMITS,
+    validateForestFaunaSnapshot, FOREST_FAUNA_LIMITS, SIMULATED_FAUNA_IDS,
 } from "../../js/systems/forest-fauna.js";
 
 function setup(seed = 20261108) {
@@ -98,6 +98,35 @@ test("fauna signs expose tracks, browse, carcasses and nests per herd", () => {
         }
     }
     assert.ok(empty, "some tile must have no herd and therefore no signs");
+});
+
+test("conifer food web includes real predators, small mammals and forest birds", () => {
+    for (const species of ["wolf", "lynx", "crossbill", "capercaillie", "mouse", "songbird"]) {
+        assert.ok(SIMULATED_FAUNA_IDS.includes(species), species + " must be a simulated population");
+    }
+    const model = setup();
+    const wolfTile = model.herds[0];
+    const deerTile = model.herds.find(herd => Math.abs(herd.x - wolfTile.x) + Math.abs(herd.y - wolfTile.y) <= 4 && herd !== wolfTile);
+    assert.ok(wolfTile && deerTile, "the test wood needs two nearby real forest tiles");
+    wolfTile.species = "wolf";
+    wolfTile.population = 2.2;
+    wolfTile.capacity = 3;
+    wolfTile.huntingPressure = 0;
+    wolfTile.lastHuntedDay = 0;
+    wolfTile.lastMoved = 0;
+    deerTile.species = "deer";
+    deerTile.population = 12;
+    deerTile.capacity = 20;
+    deerTile.huntingPressure = 0;
+    deerTile.lastHuntedDay = 0;
+    deerTile.lastMoved = 0;
+    model.herds = [wolfTile, deerTile];
+    updateForestFauna(1);
+    assert.ok(model.herds.some(herd => herd.species === "wolf"), "a wolf herd must survive one daily step");
+    assert.ok(model.herds.every(herd => Number.isFinite(herd.population) && herd.population >= 0));
+    const wolf = forestFaunaAt(wolfTile.x, wolfTile.y);
+    assert.ok(wolf.some(animal => animal.id === "wolf"));
+    assert.match(forestFaunaSummaryAt(wolfTile.x, wolfTile.y), /wolf/i);
 });
 
 test("forest fauna serializes and restores deterministic herd state", () => {

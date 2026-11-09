@@ -321,3 +321,20 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Added hard limits of 80 nodes and 120 connector edges, alongside the existing four-generation/24-person descendant limits, to prevent runaway DOM growth.
 - Added deterministic Chromium coverage for royal consort/child links, connector paths and heir dossier navigation; reduced-motion and narrow-screen styling included.
 - No simulation or save-schema changes. Missing kinship links are never inferred.
+
+
+## Phase 4 — original royal heraldry atlas
+
+- Added eight original, locally bundled SVG shield emblems with distinct field colours and motifs (lion, dragon, tower, stag, moon, crossed blades, crown and phoenix).
+- The living sovereign dossier selects a stable emblem from the royal-house name with a deterministic hash; the same house keeps the same crest across reloads.
+- Former sovereign memorials reuse the same house emblem without implying current succession data.
+- SVG symbols are vector-based and shared from one atlas; no raster payloads or external image requests are introduced.
+
+
+## Phase 5 — player-controlled accessibility preferences
+
+- Added persistent settings for contextual tooltips, reduced interface motion and high-contrast presentation.
+- Preferences are loaded from the existing local settings store and applied as document-level presentation modes; they do not alter simulation state or saved realms.
+- Reduced motion suppresses non-essential CSS animation and transitions. High contrast strengthens key borders, text and keyboard focus. The tooltip preference controls both shared tooltip layers.
+- The settings window keeps its existing scroll ownership so every option remains reachable on short screens.
+- Static UI contracts and Chromium E2E cover toggling and applying all three preferences. This is a targeted accessibility increment, not a complete WCAG or screen-reader audit.

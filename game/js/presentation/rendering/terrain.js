@@ -10,7 +10,7 @@ import { flowerBloom, foliageState } from './seasonal-foliage.js';
 import { seasonalState } from '../../world/season.js';
 import {
     FOREST_SPECIES, forestFaunaFor, forestMicrofaunaAt, forestPotentialAt, forestStandAt, forestTreeCopies,
-    pickAgeClass, pickSpecies,
+    forestTreeForm, pickAgeClass, pickSpecies,
 } from '../../world/forest-ecology.js';
 import {
     DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
@@ -22,6 +22,16 @@ import { forestMistFactor, solarVector } from './daylight.js';
 
 const worldW = () => Number(state.worldW) || WORLD_W;
 const worldH = () => Number(state.worldH) || WORLD_H;
+
+// Wind is a weather state, not a permanent sine wave. Storms visibly bend the
+// canopy; calm weather leaves only the tree's own slow breathing motion.
+function windMultiplier() {
+    const weather = String(state.weather || "clear").toLowerCase();
+    if (weather === "storm") return 2.35;
+    if (weather === "rain") return 1.28;
+    if (weather === "fog") return 0.72;
+    return 1;
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  GROUND
@@ -437,12 +447,17 @@ function drawDetailLayerGaps(ctx, zoom, cam, canvas, transform) {
 function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayOfYear, sun = null) {
     const s = Math.max(0.35, cellPx / 48);
     const definition = FOREST_SPECIES[stand?.forest ? pickSpecies(stand, s3) : 'oak'] || FOREST_SPECIES.oak;
-    const ageScale = stand?.forest ? Math.max(0.55, Number(stand.ageScale) || 1) : 1;
-    const sway = Math.sin(tick * 0.045 + s2 * 13) * Math.min(1.2, s * 0.9);
-    const trunkH = (10 + definition.height * 3) * s * ageScale;
+    const treeForm = stand?.forest ? forestTreeForm(stand, s2) : null;
+    const ageScale = treeForm?.ageScale ?? (stand?.forest ? Math.max(0.55, Number(stand.ageScale) || 1) : 1);
+    const heightScale = treeForm?.heightScale || 1;
+    const crownScale = treeForm?.crownScale || 1;
+    const trunkScale = treeForm?.trunkScale || 1;
+    const sway = Math.sin(tick * 0.045 + s2 * 13) * Math.min(1.2, s * 0.9) * windMultiplier()
+        + (treeForm?.lean || 0) * s * 0.6;
+    const trunkH = (10 + definition.height * 3) * s * ageScale * heightScale;
     const baseY = py + 5.5 * s;
     const crownY = baseY - trunkH * 0.78;
-    const radius = Math.max(0.9, (8.4 + s2 * 2.5) * s * definition.crown * ageScale);
+    const radius = Math.max(0.9, (8.4 + s2 * 2.5) * s * definition.crown * ageScale * crownScale);
     const bare = !definition.conifer && climate.snowCover > 0.55 && !['oak', 'beech', 'linden'].includes(definition.id);
     const turn = Math.max(0, Math.min(1, climate.foliageTurn + (definition.id === 'birch' ? 0.12 : 0)));
 
@@ -458,8 +473,8 @@ function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayO
             snow: climate.snowCover * (definition.snowRetention || 1),
             bare: Boolean(definition.deciduousNeedles && climate.snowCover > 0.45),
         };
-        const height = (11 + definition.height * 16) * s * ageScale;
-        const trunkW = Math.max(0.65, definition.trunk * 1.7 * s);
+        const height = (11 + definition.height * 16) * s * ageScale * heightScale * (stand?.treeline ? 0.62 : 1);
+        const trunkW = Math.max(0.65, definition.trunk * 1.7 * s * trunkScale);
         ctx.fillStyle = definition.bark;
         ctx.fillRect(px - trunkW * 0.5, py + 2 * s, trunkW, height * 0.9);
         if (foliage.bare) {
@@ -482,7 +497,7 @@ function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayO
             for (let tier = 0; tier < tiers; tier++) {
                 const base = py + 2 * s - height * (0.12 + tier * 0.19);
                 const top = base - height * 0.36;
-                const width = (8.4 - tier * 1.18) * s * definition.crown * ageScale;
+                const width = (8.4 - tier * 1.18) * s * definition.crown * ageScale * crownScale;
                 ctx.fillStyle = tier % 2 ? light : needle;
                 ctx.beginPath();
                 ctx.moveTo(px + sway, top);
@@ -703,6 +718,9 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                         else drawTree(ctx, px + ox, py + oy, cellPx, tick, r1, r2, r3, zoom, temp, m, dayOfYear, climateKey, shoreDir, stand, sun);
                     }
                     if (detail && zoom >= 0.9 && s3 > 0.7) drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s2, zoom, x, y, tick);
+                    // A shaft belongs between trunks too, not only in an empty
+                    // clearing. Dense stands still lose most of it to the canopy.
+                    if (detail && zoom >= 0.8 && s2 > 0.62) drawCanopyLight(ctx, px, py, cellPx, stand, s1, tick, sun);
                     continue;
                 }
                 if (!detail) continue;
@@ -967,8 +985,10 @@ function drawBareCrown(ctx, px, py, s, sway, seed, foliage, ink = "#6b5138", sca
 
 function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, dayOfYear, climateKey = "temperate", shore = null, stand = null, sun = null) {
     const s = cellPx / 48;
-    const sway = Math.sin(tick * 0.045 + s1 * 10 + s2 * 7) * 1.6 * s;
-    const ageScale = stand?.forest ? Math.max(0.52, Number(stand.ageScale) || 1) : 1;
+    const treeForm = stand?.forest ? forestTreeForm(stand, s2) : null;
+    const sway = Math.sin(tick * 0.045 + s1 * 10 + s2 * 7) * 1.6 * s * windMultiplier()
+        + (treeForm?.lean || 0) * s * 0.35;
+    const ageScale = treeForm?.ageScale ?? (stand?.forest ? Math.max(0.52, Number(stand.ageScale) || 1) : 1);
     const species = stand?.forest ? pickSpecies(stand, s3 ?? s2) : "oak";
     const speciesDefinition = FOREST_SPECIES[species] || FOREST_SPECIES.oak;
 
@@ -993,38 +1013,41 @@ function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, d
     // dominant tree, not a decorative substitute. Its species controls the
     // silhouette, needle colour, autumn behaviour and timber identity.
     if (speciesDefinition.conifer) {
-        drawConifer(ctx, px, py, s, sway, s2, dayOfYear, climateKey, ageScale, species, stand);
+        drawConifer(ctx, px, py, s, sway, s2, dayOfYear, climateKey, ageScale, species, stand, treeForm);
         return;
     }
     // Outside closed woodland, a cold or rocky edge may still carry a stray
     // spruce or pine. This remains a landscape accent, never an intrusion into
     // a mapped oakwood or beechwood.
     const coniferChance = stand?.forest ? 0 : (temp < 0.4 ? 0.85 : temp < 0.54 ? 0.24 : 0);
-    if (s3 < coniferChance) { drawConifer(ctx, px, py, s, sway, s2, dayOfYear, climateKey, ageScale, "spruce", null); return; }
+    if (s3 < coniferChance) { drawConifer(ctx, px, py, s, sway, s2, dayOfYear, climateKey, ageScale, "spruce", null, treeForm); return; }
     if (!stand?.forest && temp > 0.68 && moisture < 0.45) { drawPalm(ctx, px, py, s, sway, s2); return; }
     if (stand?.disturbance === 'burned' && s3 < 0.3) { drawSnag(ctx, px, py, s, sway, s2, true); return; }
     if (!stand?.forest && moisture > 0.76 && temp > 0.5 && s1 > 0.9) { drawDeadTree(ctx, px, py, s, sway); return; }
     if (stand?.disturbance === 'diseased' && s3 > 0.78) { drawSnag(ctx, px, py, s, sway, s2, false); return; }
 
     if (species === 'birch') {
-        drawBirch(ctx, px, py, s, sway, s2, dayOfYear, climateKey, ageScale);
+        drawBirch(ctx, px, py, s, sway, s2, dayOfYear, climateKey, ageScale, treeForm);
         return;
     }
-    drawBroadleaf(ctx, px, py, s, sway, tick, s2, dayOfYear, Math.floor(s3 * 4) % 4, species, climateKey, ageScale, stand);
+    drawBroadleaf(ctx, px, py, s, sway, tick, s2, dayOfYear, Math.floor(s3 * 4) % 4, species, climateKey, ageScale, stand, treeForm);
 }
 
-function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0, species = "oak", climateKey = "temperate", ageScale = 1, stand = null) {
+function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0, species = "oak", climateKey = "temperate", ageScale = 1, stand = null, treeForm = null) {
     const definition = FOREST_SPECIES[species] || FOREST_SPECIES.oak;
+    const heightScale = treeForm?.heightScale || 1;
+    const trunkScale = treeForm?.trunkScale || 1;
+    const crownScale = treeForm?.crownScale || 1;
     const foliage = foliageState(dayOfYear, { seed, species, climate: climateKey });
     const seasonal = seasonalState(dayOfYear, climateKey);
     // Give the whole stand a gentle autumn pull even where an individual
     // marcescent tree is late. The per-tree timing still wins, but the canopy
     // no longer looks like isolated green trees floating in a brown wood.
     const turn = Math.min(1, foliage.turn + seasonal.foliageTurn * 0.12);
-    const trunkH = (10 + definition.height * 3) * s * ageScale;
-    const trunkW = Math.max(1.3, 4.2 * definition.trunk * s * (0.72 + ageScale * 0.28));
+    const trunkH = (10 + definition.height * 3) * s * ageScale * heightScale;
+    const trunkW = Math.max(1.3, 4.2 * definition.trunk * s * (0.72 + ageScale * 0.28) * trunkScale);
     const baseY = py + 8 * s;
-    const crownY = py - (7 + definition.height * 4.6) * s * ageScale;
+    const crownY = py - (7 + definition.height * 4.6) * s * ageScale * heightScale;
     const lean = sway * 0.35;
 
     // Exposed roots anchor old trees to the humus instead of leaving a stick on
@@ -1105,7 +1128,7 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
     }
 
     const cover = Math.max(0.18, foliage.leaf) * (stand?.disturbance === 'diseased' ? 0.78 : 1);
-    const radius = (9 + seed * 4) * s * definition.crown * ageScale * (0.62 + 0.38 * cover);
+    const radius = (9 + seed * 4) * s * definition.crown * ageScale * crownScale * (0.62 + 0.38 * cover);
     // Crown aspect is species-readable at a glance: oak and chestnut spread,
     // elm and linden rise, birch is airy, and maple fills a rounded dome.
     const aspect = definition.form === 'spreading' ? 0.76 : definition.form === 'vase' ? 1.18
@@ -1200,10 +1223,13 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
     drawSnowCaps(ctx, px, py, s * ageScale, sway, seed, foliage.snow, crownY + radius * 0.25, 9 * ageScale);
 }
 
-function drawBirch(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate", ageScale = 1) {
+function drawBirch(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate", ageScale = 1, treeForm = null) {
     const foliage = foliageState(dayOfYear, { seed, species: "birch", climate: climateKey });
-    const trunkW = Math.max(1.1, 3.6 * s * (0.72 + ageScale * 0.28));
-    const trunkH = 13 * s * ageScale;
+    const heightScale = treeForm?.heightScale || 1;
+    const trunkScale = treeForm?.trunkScale || 1;
+    const crownScale = treeForm?.crownScale || 1;
+    const trunkW = Math.max(1.1, 3.6 * s * (0.72 + ageScale * 0.28) * trunkScale);
+    const trunkH = 13 * s * ageScale * heightScale;
     ctx.fillStyle = "#e9e3d4";
     ctx.fillRect(px - trunkW * 0.5, py + 1 * s, trunkW, trunkH);
     ctx.fillStyle = "#4a4136";
@@ -1217,8 +1243,8 @@ function drawBirch(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperat
     }
     ctx.save();
     ctx.globalAlpha = 0.35 + 0.65 * foliage.leaf;
-    const crownY = py - (5 + 2 * ageScale) * s;
-    const radius = (8.5 + seed * 3) * s * (0.68 + 0.32 * foliage.leaf) * Math.max(0.7, ageScale);
+    const crownY = py - (5 + 2 * ageScale) * s * heightScale;
+    const radius = (8.5 + seed * 3) * s * (0.68 + 0.32 * foliage.leaf) * Math.max(0.7, ageScale) * crownScale;
     ctx.fillStyle = mixHex("#6a9e3e", "#c9a83a", foliage.turn);
     ctx.beginPath();
     ctx.ellipse(px + sway, crownY, radius * 0.82, radius, 0, 0, Math.PI * 2);
@@ -1691,13 +1717,17 @@ function drawForestMist(ctx, px, py, cellPx, stand, seed, tick, strength = 1) {
     if (strength <= 0.02) return;
     const drift = Math.sin(tick * 0.006 + seed * 9) * 4 * s;
     const close = cellPx > 68;
+    // Dense stands trap more vapour. Visibility is a derived stand property,
+    // so mist and the canopy-light pass agree about which woods are closed.
+    const visibility = Math.max(0.15, Math.min(1, Number(stand.visibility) || 0.7));
+    const veil = 1 + (1 - visibility) * 0.7;
     ctx.save();
     if (close) {
         // Three overlapping puffs form a soft bank below the canopy. A single
         // large pool either left a pale ring around the crown or, when
         // feathered with a transform, read as a rectangular wash. Small
         // overlapping radial puffs have no hard edge in either axis.
-        const alpha = (0.05 + stand.canopy * 0.022) * strength;
+        const alpha = (0.05 + stand.canopy * 0.022) * strength * veil;
         for (let i = 0; i < 3; i++) {
             const ox = (i - 1) * cellPx * 0.34 + drift + (seed - 0.5) * cellPx * 0.12;
             const oy = py + (11 + i * 2) * s;
@@ -1716,7 +1746,7 @@ function drawForestMist(ctx, px, py, cellPx, stand, seed, tick, strength = 1) {
             ctx.restore();
         }
     } else {
-        ctx.globalAlpha = (0.035 + stand.canopy * 0.025) * strength;
+        ctx.globalAlpha = (0.035 + stand.canopy * 0.025) * strength * veil;
         ctx.fillStyle = "#dce6df";
         ctx.beginPath();
         ctx.ellipse(px + drift, py + 3 * s, (8 + seed * 5) * s, (2.2 + seed * 1.5) * s, 0, 0, Math.PI * 2);
@@ -1763,6 +1793,64 @@ function drawSoilWash(ctx, px, py, cellPx, stand, seed) {
     ctx.restore();
 }
 
+function drawLocalSnowDrifts(ctx, px, py, cellPx, stand, s1, s2) {
+    const s = cellPx / 48;
+    const depth = Math.max(0, Math.min(1, Number(stand?.snowPotential) || 0));
+    if (depth <= 0.05) return;
+    ctx.save();
+    // Drifts gather on the lee side of trunks and in shallow hollows. Their
+    // low, overlapping alpha is deliberate: a single opaque stamp would read
+    // as the same white dot on every tile.
+    ctx.fillStyle = "#9db6c1";
+    ctx.globalAlpha = 0.06 + depth * 0.1;
+    for (let i = 0; i < 2; i++) {
+        const ox = ((s1 - 0.5) * 18 + (i === 0 ? -9 : 8)) * s;
+        const oy = ((s2 - 0.5) * 9 + i * 4) * s;
+        ctx.beginPath();
+        ctx.ellipse(px + ox, py + 5 * s + oy, (9 - i * 2.2) * s, (2.1 + i * 0.5) * s, 0.06 + i * 0.08, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = "#eef6fa";
+    ctx.globalAlpha = 0.14 + depth * 0.3;
+    for (let i = 0; i < 2; i++) {
+        const ox = ((s1 - 0.5) * 15 + (i === 0 ? -6 : 7)) * s;
+        const oy = ((s2 - 0.5) * 6 + i * 4) * s;
+        ctx.beginPath();
+        ctx.ellipse(px + ox, py + 3.5 * s + oy, (6.5 - i * 1.4) * s, (1.2 + i * 0.35) * s, 0.02, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawBogPool(ctx, px, py, cellPx, stand, s1, s2) {
+    const s = cellPx / 48;
+    const wet = Math.max(0, Math.min(1, Number(stand?.wetness) || 0));
+    const ox = (s1 - 0.5) * 8 * s;
+    const oy = (s2 - 0.5) * 5 * s;
+    ctx.save();
+    ctx.fillStyle = "#283f3b";
+    ctx.globalAlpha = 0.34 + wet * 0.28;
+    ctx.beginPath();
+    ctx.ellipse(px + ox, py + 4 * s + oy, 7.4 * s, 2.8 * s, 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#78958b";
+    ctx.globalAlpha = 0.16 + wet * 0.22;
+    ctx.beginPath();
+    ctx.ellipse(px + ox - 1 * s, py + 3 * s + oy, 4.8 * s, 1.1 * s, 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#607846";
+    ctx.globalAlpha = 0.42;
+    ctx.lineWidth = Math.max(0.55, 0.65 * s);
+    for (let i = 0; i < 3; i++) {
+        const rx = px + ox + (i - 1) * 2.4 * s;
+        ctx.beginPath();
+        ctx.moveTo(rx, py + 3.2 * s + oy);
+        ctx.lineTo(rx - 0.7 * s, py - 1.1 * s + oy);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
 function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey) {
     const s = cellPx / 48;
     const season = seasonalState(dayOfYear, climateKey);
@@ -1773,6 +1861,7 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climate
     // circle read as a hole under every tree; a smaller, layered patch lets the
     // shader's litter texture and the scattered leaves do the work.
     if (snow >= 0.45) {
+        drawLocalSnowDrifts(ctx, px, py, cellPx, stand, s1, s2);
         ctx.restore();
         return;
     }
@@ -1783,11 +1872,17 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climate
     // blend across tile borders.
     ctx.globalAlpha = 0.4 + stand.ground.litter * 0.22;
     const coniferFloor = stand.coniferShare > 0.45;
-    const palette = coniferFloor
+    const rawPalette = coniferFloor
         ? (turn > 0.5 ? ["#59402a", "#75512f", "#8b6538", "#4d3826", "#6d5a3b"]
             : ["#4a3e2c", "#665033", "#7a5a37", "#3f4c35", "#8b7447"])
         : turn > 0.42 ? ["#704b2b", "#986130", "#8c7138", "#5d472b", "#a8793a"]
             : ["#4c6538", "#70733a", "#57462d", "#7a5b36", "#617b40"];
+    // Dense interiors are genuinely darker. This is a palette shift, not a
+    // translucent disc per tile, so it cannot expose the ground lattice.
+    const gloom = Math.max(0, Math.min(0.42, (0.58 - (Number(stand.visibility) || 0.7)) * 0.8));
+    const palette = gloom > 0.01
+        ? rawPalette.map(color => mixHex(color, "#17251b", gloom))
+        : rawPalette;
     // Fifteen, not nineteen, litter marks: the removed four were always covered
     // by neighbours at normal zoom and cost a path fill per tile.
     for (let i = 0; i < 15; i++) {
@@ -1815,9 +1910,22 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climate
 
 function drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom) {
     const season = seasonalState(dayOfYear, climateKey);
+    // Deep winter hides the needle/leaf carpet under the baked snow ground.
+    // Do not stamp a snow shape here: ground detail is drawn on a coarse world
+    // lattice, so a per-tile stamp can only produce visible dots or a grid.
+    // Skipping the summer floor also costs less than drawing an overlay.
+    if (season.snowCover >= 0.55) return;
     const roll = s1;
     if (stand.coniferShare > 0.45) {
         if (stand.ground.trail && s2 > 0.54) { drawDeerTrail(ctx, px, py, cellPx, stand, s2); return; }
+        // Saturated hollows hold standing water. The chance is highest in the
+        // wet-conifer formation but also follows site moisture, so a damp
+        // spruce wood gets the occasional bog pool without becoming a swamp.
+        if ((Number(stand.wetness) || 0) > 0.48
+            && roll < (stand.type === 'wet-conifer' ? 0.42 : 0.14)) {
+            drawBogPool(ctx, px, py, cellPx, stand, s2, s3);
+            return;
+        }
         let cursor = (stand.ground.needles || 0) * 0.7;
         if (roll < cursor) { drawNeedleCarpet(ctx, px, py, cellPx, stand, s2, s3); return; }
         cursor += (stand.understory.lichen || 0) * 0.4;
@@ -1834,6 +1942,10 @@ function drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clim
         if (roll < cursor) { drawRock(ctx, px, py, cellPx, zoom, season.snowCover > 0.5); return; }
         cursor += stand.ground.logs * 0.22;
         if (roll < cursor) { drawFallenLog(ctx, px, py, cellPx, stand, s2, s3, dayOfYear, climateKey); return; }
+        cursor += stand.ground.roots * 0.16;
+        if (roll < cursor) { drawRoots(ctx, px, py, cellPx / 48, s3); return; }
+        cursor += stand.understory.shrub * 0.18;
+        if (roll < cursor) { drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey); return; }
         if (stand.ground.stumps > 0.2 && s3 > 0.58) { drawStump(ctx, px, py, cellPx / 48, s2, false); return; }
         drawNeedleCarpet(ctx, px, py, cellPx, stand, s2, s3);
         return;
@@ -1862,6 +1974,7 @@ function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clima
         const coniferOptions = [
             ['fern', stand.understory.fern], ['berry', stand.understory.berry],
             ['lichen', stand.understory.lichen], ['heather', stand.understory.heather],
+            ['shrub', stand.understory.shrub],
             ['sapling', 0.26 + (stand.type === 'regenerating' ? 0.3 : 0)],
         ];
         const total = coniferOptions.reduce((sum, [, weight]) => sum + Math.max(0, weight), 0) || 1;
@@ -1875,6 +1988,7 @@ function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clima
         else if (chosen === 'berry') drawBerryShrub(ctx, px, py, s, s2, season.foliageTurn, season.snowCover);
         else if (chosen === 'lichen') drawLichen(ctx, px, py, s, s3, season.snowCover);
         else if (chosen === 'heather') drawGrassTufts(ctx, px, py, cellPx, s1, s2, true, season.foliageTurn, season.snowCover);
+        else if (chosen === 'shrub') drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey);
         else drawConiferSapling(ctx, px, py, s, s2, season.snowCover);
         return;
     }
@@ -1917,7 +2031,9 @@ function drawCanopyLight(ctx, px, py, cellPx, stand, seed, tick, sun = null) {
     const beam = sun || { shadowX: -0.35, shadowY: 0.2 };
     ctx.save();
     ctx.globalCompositeOperation = "screen";
-    ctx.globalAlpha = 0.05 + stand.light * 0.08;
+    const beamLight = Number(stand.lightShaft ?? stand.light) || 0;
+    const visibility = Math.max(0, Math.min(1, Number(stand.visibility) || 0.7));
+    ctx.globalAlpha = (0.045 + beamLight * 0.075) * (0.55 + visibility * 0.45);
     ctx.fillStyle = "#f2e7aa";
     ctx.beginPath();
     ctx.moveTo(px + (seed - 0.5) * 4 * s, py - 18 * s);
@@ -2381,8 +2497,12 @@ function drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey = 
 // fir is a dense broad tier stack; pine lifts a crown above a long bare trunk;
 // larch is airy and drops its needles; juniper is a low, many-stemmed scrub.
 // Age, wind exposure, snow load and damage all change the same species form.
-function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate", ageScale = 1, species = "spruce", stand = null) {
+function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate", ageScale = 1, species = "spruce", stand = null, treeForm = null) {
     const definition = FOREST_SPECIES[species] || FOREST_SPECIES.spruce;
+    const heightScale = treeForm?.heightScale || 1;
+    const trunkScale = treeForm?.trunkScale || 1;
+    const crownScale = treeForm?.crownScale || 1;
+    const krummholz = Boolean(stand?.treeline);
     const foliage = foliageState(dayOfYear, { seed, species, climate: climateKey });
     // Local snow depth is derived from elevation and exposure, so a high, open
     // ridge holds visibly more snow than a sheltered lowland stand on the same
@@ -2390,10 +2510,11 @@ function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temper
     const snowPotential = Number(stand?.snowPotential);
     if (Number.isFinite(snowPotential)) foliage.snow = Math.min(1, foliage.snow * (0.78 + snowPotential * 0.38));
     const shape = definition.crownShape || "spire";
-    const height = (17 + definition.height * 13) * s * ageScale;
+    const height = (17 + definition.height * 13) * s * ageScale * heightScale * (krummholz ? 0.62 : 1);
     const baseY = py + 8 * s;
-    const lean = sway + (seed - 0.5) * 1.8 * s + (stand?.disturbance === 'windthrow' ? 3.8 * s : 0);
-    const trunkW = Math.max(1.1, definition.trunk * 3.3 * s * (0.7 + ageScale * 0.3));
+    const lean = sway + (seed - 0.5) * 1.8 * s + (treeForm?.lean || 0) * s
+        + (krummholz ? 2.2 * s : 0) + (stand?.disturbance === 'windthrow' ? 3.8 * s : 0);
+    const trunkW = Math.max(1.1, definition.trunk * 3.3 * s * (0.7 + ageScale * 0.3) * trunkScale);
     let crown = mixHex(definition.summer[0], definition.autumn[0], foliage.turn * 0.88);
     let light = mixHex(definition.summer[1], definition.autumn[1], foliage.turn * 0.88);
     if (stand?.disturbance === 'bark-beetle') {
@@ -2418,6 +2539,25 @@ function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temper
     ctx.fillStyle = definition.barkLight;
     ctx.globalAlpha = 0.48;
     ctx.fillRect(px - trunkW * 0.3 + lean * 0.25, py - height * 0.58, Math.max(0.7, trunkW * 0.18), height * 0.55);
+    // Wet bark catches a narrow cool specular edge. Resin beads only appear on
+    // the warmer, drier side, so a wet conifer does not become a painted gloss.
+    const wetness = Math.max(0, Math.min(1, Number(stand?.wetness) || 0));
+    if (wetness > 0.1) {
+        ctx.fillStyle = "#d6e7e1";
+        ctx.globalAlpha = 0.08 + wetness * 0.28;
+        ctx.fillRect(px + trunkW * 0.08 + lean * 0.18, py - height * 0.5,
+            Math.max(0.45, trunkW * 0.1), height * 0.4);
+        if (wetness > 0.42) {
+            ctx.fillStyle = "#c89a52";
+            ctx.globalAlpha = 0.38 + wetness * 0.25;
+            for (let i = 0; i < 2; i++) {
+                ctx.beginPath();
+                ctx.ellipse(px + trunkW * 0.26 + lean * 0.2, py - height * (0.24 + i * 0.13),
+                    Math.max(0.45, 0.55 * s), Math.max(0.75, 1.1 * s), 0.18, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
     ctx.globalAlpha = 1;
     if (ageScale > 1.02) {
         ctx.strokeStyle = mixHex(definition.bark, "#1e1610", 0.35);
@@ -2464,7 +2604,7 @@ function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temper
         const t = tiers === 1 ? 0 : tier / (tiers - 1);
         const layerBase = py + 2 * s - height * (crownBase + t * tierSpan);
         const top = layerBase - height * (0.3 - t * 0.055);
-        const width = (11.4 - t * (shape === 'crown' ? 4 : 7.2)) * s * widthScale * definition.crown * ageScale;
+        const width = (11.4 - t * (shape === 'crown' ? 4 : 7.2)) * s * widthScale * definition.crown * ageScale * crownScale;
         const droop = (definition.branchDrop || 0.1) * s * (1 - t * 0.55);
         ctx.fillStyle = tier % 2 === 0 ? crown : light;
         ctx.globalAlpha = 0.58 + cover * 0.42;
@@ -2499,6 +2639,24 @@ function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temper
         }
     }
     ctx.globalAlpha = 1;
+
+    // Evergreens do shoot new needles in spring; the seasonal sampler already
+    // computes `fresh`, so show it as a pale fringe on the upper branch tips.
+    const fresh = Math.max(0, Math.min(1, Number(foliage.fresh) || 0));
+    if (fresh > 0.12 && !foliage.bare) {
+        ctx.save();
+        ctx.fillStyle = mixHex(light, "#b9d47a", 0.62);
+        ctx.globalAlpha = 0.2 + fresh * 0.55;
+        for (let i = 0; i < 4; i++) {
+            const t = 0.44 + i * 0.12;
+            const y = py - height * t;
+            const x = px + lean * 0.38 + (i % 2 === 0 ? -1 : 1) * (5.2 - i * 0.6) * s;
+            ctx.beginPath();
+            ctx.ellipse(x, y, Math.max(0.7, 1.6 * s), Math.max(0.45, 0.7 * s), 0.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
 
     // Cones, snow clumps and broken leaders are small but species-readable at
     // close zoom. Only a handful of marks are drawn per tree to keep the tile

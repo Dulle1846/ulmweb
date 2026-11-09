@@ -454,7 +454,7 @@ try{
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
-    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),11,"all eleven management tabs must live inside the dialog");
+    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),12,"all twelve management tabs must live inside the dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Kingdom overview","management must open on the live kingdom overview");
     await page.locator('[data-command-tab="kingdom"]').click();
     assert.equal(await page.locator("body > .command-deck").count(),0,"there must be no obscured duplicate navigation outside the dialog");
@@ -464,6 +464,8 @@ try{
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Crowned council"));
     await page.locator('[data-command-tab="politics"]').click();
     await page.locator('[data-command="policy"][data-value="bread"]').click();
+    await page.locator('[data-command-tab="diplomacy"]').click();
+    assert.equal(await page.locator("#command-panel-content [data-diplomacy-realm]").count(),4,"the diplomatic court must render all four neighbouring realms");
     await page.locator('[data-command-tab="decisions"]').click();
     await page.locator("#royal-consort-select").selectOption({index:1});
     await page.locator('[data-command="consort"]').click();
@@ -925,6 +927,10 @@ try{
     assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),1);
     assert.ok((await sovereignDossier.innerText()).includes("SOVEREIGN DOSSIER"));
     assert.ok((await sovereignDossier.innerText()).includes("DESIGNATED SUCCESSOR"));
+    const royalCrest=sovereignDossier.locator('[data-royal-dossier="current"] .royal-dossier__crest');
+    assert.equal(await royalCrest.count(),1);
+    assert.match(await royalCrest.locator("use").getAttribute("href"),/^assets\/royal-heraldry\.svg#crest-0[1-8]$/);
+    assert.ok((await royalCrest.getAttribute("aria-label")).includes("Heraldic emblem"));
     await sovereignDossier.locator('[data-royal-dossier="current"] [data-person-id="'+royalFixture.heirId+'"]').first().click();
     assert.ok((await sovereignDossier.innerText()).includes(royalFixture.heirName));
     assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),0,"the heir dossier must not be mislabeled as the reigning sovereign");
@@ -1055,6 +1061,32 @@ try{
 
     await page.locator("#settings-btn").click();
     assert.equal(await page.locator("#settings-modal").isVisible(),true);
+    const htmlRoot=page.locator("html");
+    const tooltipToggle=page.locator("#settings-tooltips-toggle");
+    const tooltipLabel=page.locator("label.toggle").filter({has:tooltipToggle});
+    assert.equal(await tooltipLabel.count(),1);
+    await tooltipLabel.click();
+    assert.equal(await tooltipToggle.isChecked(),false);
+    assert.ok(await htmlRoot.evaluate(node=>node.classList.contains("ui-hide-tooltips")));
+    await tooltipLabel.click();
+    assert.equal(await tooltipToggle.isChecked(),true);
+    assert.ok(!(await htmlRoot.evaluate(node=>node.classList.contains("ui-hide-tooltips"))));
+    const motionToggle=page.locator("#settings-motion-toggle");
+    const motionLabel=page.locator("label.toggle").filter({has:motionToggle});
+    await motionLabel.click();
+    assert.equal(await motionToggle.isChecked(),true);
+    assert.ok(await htmlRoot.evaluate(node=>node.classList.contains("ui-reduced-motion")));
+    await motionLabel.click();
+    assert.equal(await motionToggle.isChecked(),false);
+    assert.ok(!(await htmlRoot.evaluate(node=>node.classList.contains("ui-reduced-motion"))));
+    const contrastToggle=page.locator("#settings-high-contrast-toggle");
+    const contrastLabel=page.locator("label.toggle").filter({has:contrastToggle});
+    await contrastLabel.click();
+    assert.equal(await contrastToggle.isChecked(),true);
+    assert.ok(await htmlRoot.evaluate(node=>node.classList.contains("ui-high-contrast")));
+    await contrastLabel.click();
+    assert.equal(await contrastToggle.isChecked(),false);
+    assert.ok(!(await htmlRoot.evaluate(node=>node.classList.contains("ui-high-contrast"))));
     await page.locator("#settings-close").click();
     assert.equal(await page.locator("#settings-modal").isVisible(),false);
 
@@ -1663,10 +1695,10 @@ try{
             }
         };
 
-        // Inspect all eleven management screens, not only the shell of the shared dialog.
+        // Inspect all twelve management screens, not only the shell of the shared dialog.
         await page.locator("#command-open-btn").click();
         await assertOverlayFits("#command-modal","management shell","management-shell");
-        for(const tab of ["kingdom","government","politics","decisions","cards","economy","resources","buildings","dynasty","creatures","chronicle"]){
+        for(const tab of ["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","dynasty","creatures","chronicle"]){
             await page.locator('[data-command-tab="'+tab+'"]').click();
             await page.waitForTimeout(25);
             if(tab==="dynasty"&&width<=420){

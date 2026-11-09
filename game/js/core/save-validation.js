@@ -173,6 +173,12 @@ export function validateSaveSnapshot(snapshot) {
     if (snapshot.forestGathering !== undefined) validateDomainSnapshot(snapshot.forestGathering, "forestGathering", validateForestGatheringSnapshot);
     if (snapshot.forestSuccession !== undefined) validateDomainSnapshot(snapshot.forestSuccession, "forestSuccession", validateForestSuccessionSnapshot);
     if (snapshot.city !== undefined) validateDomainSnapshot(snapshot.city, "city", validateCitySnapshot);
+    if (snapshot.diplomacy !== undefined) {
+        const diplomacy = snapshot.diplomacy;
+        if (!diplomacy || typeof diplomacy !== "object" || Array.isArray(diplomacy) || !Array.isArray(diplomacy.realms) || diplomacy.realms.length > 8) {
+            fail("Save data contains an invalid diplomacy state.", { code:"INVALID_DIPLOMACY", field:"diplomacy", valueType:typeOf(diplomacy), phase:"diplomacy" });
+        }
+    }
 
     for (const [index, dto] of snapshot.entities.entries()) {
         if (dto.construction !== undefined && dto.construction !== null) {

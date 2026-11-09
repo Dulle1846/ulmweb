@@ -18,6 +18,7 @@
     "test:atmosphere-reference": "node tests/browser/daylight-reference.mjs",
     "test:forester-stewardship": "node tests/browser/forester-stewardship.mjs",
     "test:forester-stewardship-longrun": "node tests/browser/forester-stewardship-longrun.mjs",
+    "test:forest-stewardship-ui": "node tests/browser/forest-stewardship-ui.mjs",
     "test:playability": "node tests/browser/playability-audit.mjs",
     "test:campaign": "node scripts/long-campaign.mjs",
     "test:campaign:browser": "node tests/browser/long-campaign.mjs"

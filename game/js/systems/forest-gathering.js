@@ -5,12 +5,16 @@
 // ledger: mushrooms, berries, mast, herbs, honey, game and small amounts of
 // wood can be collected without inventing a second city-wide currency.
 import { state } from "../core/state.js";
+import { TYPE } from "../core/types.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
-import { FOREST_GOODS, forestGoodsFor, forestStandAt } from "../world/forest-ecology.js";
+import { FOREST_GOODS, forestGoodsFor, forestSnowDepthAt, forestStandAt } from "../world/forest-ecology.js";
 import {
     findNearestResourceNode, getResourceNodeAt, harvestForest,
 } from "./resource-geography.js";
 import { harvestForestGameAt } from "./forest-fauna.js";
+import { addLocalOutput, outputSpace, requestHaul } from "./logistics.js";
+import { addResource } from "./resources.js";
+import { recordResourceMovement } from "./goods-book.js";
 
 const VERSION = 1;
 const MAX_HISTORY = 32;
@@ -20,6 +24,18 @@ const GATHER_RADIUS = 7;
 const QUALITY_TIERS = Object.freeze(["prime", "good", "lean"]);
 const HUNT_GOODS = Object.freeze(new Set(["game", "fur", "hides", "cured-game", "tanned-fur", "cured-hides"]));
 const PROCESSED_FROM = Object.freeze({ game: "cured-game", fur: "tanned-fur", hides: "cured-hides" });
+// Deliveries use the existing physical city goods instead of inventing a new
+// warehouse taxonomy. Timber becomes logs, firewood stays firewood, food and
+// medicine enter the royal stores, and fur/resin are sold for gold.
+const FOOD_DELIVERY = Object.freeze(new Set([
+    "mushrooms", "chanterelle", "porcini", "wild-garlic", "wood-sorrel", "wild-strawberry",
+    "sloes", "crab-apples", "berries", "truffles", "honey", "maple-syrup", "birch-sap",
+    "game", "cured-game", "blueberries", "lingonberries",
+]));
+const GOLD_DELIVERY = Object.freeze(new Set([
+    "fur", "hides", "tanned-fur", "cured-hides", "resin", "beeswax", "herbs", "lichen",
+    "bark", "linden-flower", "elm-seeds", "alder-cones",
+]));
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -75,9 +91,16 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
         succession: node.forestSuccession,
     });
     if (!stand.forest) return null;
+    const day = number(dayOfYear, 150);
+    const climate = state.worldOptions?.climate || "temperate";
+    const snow = forestSnowDepthAt(stand, day, climate);
+    const workFactor = clamp(1 - snow.depth * 0.38 - (1 - (Number(stand.visibility) || 0)) * 0.12, 0.45, 1);
     return {
         x: Math.floor(x), y: Math.floor(y), node, stand,
-        goods: forestGoodsFor(stand, number(dayOfYear, 150), state.worldOptions?.climate || "temperate"),
+        snowDepthCm: snow.cm,
+        visibility: Number(stand.visibility) || 0,
+        workFactor,
+        goods: forestGoodsFor(stand, day, climate),
     };
 }
 
@@ -149,8 +172,9 @@ export function gatherForestProducts(x, y, options = {}) {
     }
     if (!candidates.length) return { ok: false, reason: "No seasonal product is available" };
     const gathered = [];
+    const workFactor = clamp(number(products.workFactor, 1), 0.45, 1);
     for (const good of candidates) {
-        let amount = Math.max(1, Math.round(1 + good.abundance * 3));
+        let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor));
         let quality = null;
         if (good.category === "wood") {
             const taken = harvestForest(products.x, products.y, Math.max(1, Math.ceil(amount / 2)));
@@ -180,7 +204,100 @@ export function gatherForestProducts(x, y, options = {}) {
         tile: { x: products.x, y: products.y, type: products.stand.type, label: products.stand.label },
         goods: gathered,
         hunt: hunt ? { species: hunt.species, label: hunt.label, taken: hunt.taken, quality: hunt.quality } : null,
+        workFactor,
         total: gathered.reduce((sum, good) => sum + good.amount, 0),
+    };
+}
+
+// UI and action share the same gate: a building is only offered the delivery
+// action when at least one held forest good can actually reach a store or the
+// royal resources. This keeps an empty ledger from looking actionable.
+export function forestDeliveryAvailability(building) {
+    if (!building || building.dead || building.isBuilding?.() !== true
+        || ![TYPE.LUMBER, TYPE.FORESTER].includes(building.type)) {
+        return { available: 0, reason: "A lumber yard or forester is required" };
+    }
+    if (building.construction && Number(building.construction.stage) < 3) {
+        return { available: 0, reason: "The forest building is still under construction" };
+    }
+    const ledger = activeLedger();
+    if (!ledger) return { available: 0, reason: "No forest products have been gathered" };
+    const canUseLocalStore = building.type === TYPE.LUMBER;
+    let available = 0;
+    for (const [id, raw] of Object.entries(ledger.stock)) {
+        const amount = Math.max(0, Math.floor(number(raw)));
+        if (!amount || !FOREST_GOODS[id]) continue;
+        const localGood = FOREST_GOODS[id].category === "wood" || id === "firewood" || id === "charcoal";
+        if (localGood ? !canUseLocalStore : !(FOOD_DELIVERY.has(id) || GOLD_DELIVERY.has(id))) continue;
+        available += amount;
+    }
+    return {
+        available,
+        reason: available > 0 ? "" : (canUseLocalStore
+            ? "No deliverable forest products"
+            : "This forester has no food or market goods to deliver"),
+    };
+}
+
+// Move the separate forest ledger into the real settlement supply chain. The
+// action is explicit so gathering does not silently create free city stock;
+// only goods actually accepted by a local store or royal resource are removed.
+export function deliverForestGoods(building) {
+    const availability = forestDeliveryAvailability(building);
+    if (availability.available <= 0) return { ok: false, reason: availability.reason };
+    const ledger = activeLedger();
+    if (!ledger) return { ok: false, reason: "No forest products have been gathered" };
+    const delivered = { logs: 0, firewood: 0, food: 0, gold: 0 };
+    const goods = [];
+    const canUseLocalStore = building.type === TYPE.LUMBER;
+    for (const [id, raw] of Object.entries(ledger.stock)) {
+        const amount = Math.max(0, Math.floor(number(raw)));
+        if (!amount || !FOREST_GOODS[id]) continue;
+        const category = FOREST_GOODS[id].category;
+        const isTimber = category === "wood" && id !== "firewood" && id !== "charcoal";
+        if (isTimber) {
+            if (!canUseLocalStore) continue;
+            const accepted = addLocalOutput(building, "logs", amount, { cause: "forest-delivery" });
+            if (accepted <= 0) continue;
+            ledger.stock[id] -= accepted;
+            delivered.logs += accepted;
+            goods.push({ id, to: "logs", amount: accepted });
+            requestHaul(building, "logs", accepted);
+            continue;
+        }
+        if (id === "firewood" || id === "charcoal") {
+            if (!canUseLocalStore) continue;
+            const accepted = addLocalOutput(building, "firewood", amount, { cause: "forest-delivery" });
+            if (accepted <= 0) continue;
+            ledger.stock[id] -= accepted;
+            delivered.firewood += accepted;
+            goods.push({ id, to: "firewood", amount: accepted });
+            requestHaul(building, "firewood", accepted);
+            continue;
+        }
+        if (FOOD_DELIVERY.has(id)) {
+            addResource("food", amount);
+            recordResourceMovement("food", amount, "forest-delivery", {
+                from: { kind: "building", id: building.id }, to: { kind: "realm", id: "royal-stores" },
+            });
+            ledger.stock[id] -= amount;
+            delivered.food += amount;
+            goods.push({ id, to: "food", amount });
+            continue;
+        }
+        if (GOLD_DELIVERY.has(id)) {
+            const value = Math.max(1, Math.round(amount * 0.5));
+            addResource("gold", value);
+            ledger.stock[id] -= amount;
+            delivered.gold += value;
+            goods.push({ id, to: "gold", amount, value });
+        }
+    }
+    if (!goods.length) return { ok: false, reason: canUseLocalStore ? "No deliverable forest products" : "This forester has no food or market goods to deliver" };
+    return {
+        ok: true, delivered, goods,
+        total: goods.reduce((sum, good) => sum + good.amount, 0),
+        buildingId: building.id,
     };
 }
 
@@ -213,6 +330,46 @@ export function gatherNearestForestProducts(x, y, radius = GATHER_RADIUS) {
     const node = findNearestResourceNode("forest", x, y, radius);
     if (!node) return { ok: false, reason: "No forest in working range" };
     return gatherForestProducts(node.x, node.y);
+}
+
+// Player-directed thinning removes crowded stems and sends the usable logs to
+// the yard. It complements the Forester's automatic planting instead of
+// introducing a second forest-stock model.
+// Availability deliberately ignores output-store space. A full yard must still
+// expose the action so a click can report the refusal; removing stock first
+// would silently destroy timber. The action checks capacity before harvesting.
+export function forestThinningAvailability(building, radius = 6) {
+    if (!building || building.dead || building.isBuilding?.() !== true || building.type !== TYPE.LUMBER) {
+        return { ok: false, reason: "A completed lumber yard is required" };
+    }
+    if (building.construction && Number(building.construction.stage) < 3) {
+        return { ok: false, reason: "The lumber yard is still under construction" };
+    }
+    const node = findNearestResourceNode("forest", building.x, building.y, radius);
+    if (!node) return { ok: false, reason: "No forest in thinning range" };
+    const point = getResourceNodeAt(node.x, node.y);
+    if (!point?.forestCapacity) return { ok: false, reason: "No forest in thinning range" };
+    const stockBefore = Math.max(0, Math.floor(number(point.forestStock)));
+    const capacity = Math.max(1, Math.floor(number(point.forestCapacity)));
+    if (stockBefore < capacity * 0.55) return { ok: false, reason: "The nearest stand is too depleted to thin" };
+    return { ok: true, node, point, stockBefore, capacity };
+}
+
+export function thinNearestForest(building, radius = 6) {
+    const availability = forestThinningAvailability(building, radius);
+    if (!availability.ok) return availability;
+    const { node, point, stockBefore } = availability;
+    const space = outputSpace(building);
+    if (space <= 0) return { ok: false, reason: "The lumber yard's output store is full" };
+    const wanted = Math.max(1, Math.min(12, Math.floor(stockBefore * 0.12), space));
+    const taken = harvestForest(node.x, node.y, wanted);
+    if (taken <= 0) return { ok: false, reason: "The nearest stand could not be thinned" };
+    const accepted = addLocalOutput(building, "logs", taken, { cause: "forest-thinning" });
+    if (accepted > 0) requestHaul(building, "logs", accepted);
+    return {
+        ok: true, taken, accepted, x: node.x, y: node.y,
+        stockBefore, stockAfter: Math.max(0, stockBefore - taken),
+    };
 }
 
 export function forestGatheringSummary(limit = 4) {

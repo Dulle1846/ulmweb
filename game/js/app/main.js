@@ -7,6 +7,7 @@ import { renderWorldPreview,normalizeWorldOptions,resolveWorldDimensions,TERRAIN
 import { initStartingKingdom,spawnEntity,canSpawnEntity } from "../world/entities.js";
 import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
+import { createDiplomacyState, normalizeDiplomacySnapshot } from "../systems/diplomacy.js";
 import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeHouseholdAssignments } from "../systems/population.js";
 import { invalidateRoomBonusCache } from "../systems/rooms.js";
@@ -60,6 +61,10 @@ let settings=loadSettings();
 function applyInterfaceSettings(){
     document.body.classList.toggle("hide-resource-deltas",settings.showDeltas===false);
     document.body.classList.toggle("reduce-interface-motion",settings.reduceMotion===true);
+    const root=document.documentElement;
+    root.classList.toggle("ui-hide-tooltips",settings.showTooltips===false);
+    root.classList.toggle("ui-reduced-motion",settings.reduceMotion===true);
+    root.classList.toggle("ui-high-contrast",settings.highContrast===true);
 }
 
 function replaceTerrainCanvas(){
@@ -373,6 +378,7 @@ function resetForRun(profile){
     state.activeProfileId=profile.id;
     state.playerName=profile.displayName;
     state.market=createMarketState();
+    state.diplomacy=createDiplomacyState();
     state.hasStarted=true;
     state.gameSpeed=1;
     state.isPaused=false;
@@ -521,7 +527,7 @@ function createSaveSnapshot(){
         availableCards:state.availableCards.map(card=>({...card,cost:{...card.cost}})),
         activeEvent:state.activeEvent,
         eventLog:state.eventLog.slice(0,100),eventSequence:state.eventSequence,
-        statistics:{...state.statistics},ambitions:JSON.parse(JSON.stringify(state.ambitions||{})),economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),government:JSON.parse(JSON.stringify(state.government||{})),royal:JSON.parse(JSON.stringify(state.royal||{})),market:JSON.parse(JSON.stringify(state.market)),
+        statistics:{...state.statistics},ambitions:JSON.parse(JSON.stringify(state.ambitions||{})),economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),government:JSON.parse(JSON.stringify(state.government||{})),royal:JSON.parse(JSON.stringify(state.royal||{})),market:JSON.parse(JSON.stringify(state.market)),diplomacy:JSON.parse(JSON.stringify(state.diplomacy||createDiplomacyState())),
         totalPopulation:state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length
     };
 }
@@ -660,6 +666,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     initializeSettlementForRealm();
     state.morale=restoredMorale;
     state.market=snapshot.market||createMarketState();
+    state.diplomacy=normalizeDiplomacySnapshot(snapshot.diplomacy);
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===(Number(state.worldW)||WORLD_W))state.explored=snapshot.explored;
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
     const savedScale=Number(state.renderScale)||1;
@@ -925,8 +932,12 @@ function bindMenu(){
     if(musicToggle)musicToggle.checked=settings.musicEnabled;
     if(volume)volume.value=String(Math.round(settings.musicVolume*100));
     const deltasToggle=document.getElementById("settings-deltas-toggle");
+    const tooltipsToggle=document.getElementById("settings-tooltips-toggle");
+    if(tooltipsToggle){tooltipsToggle.checked=settings.showTooltips!==false;tooltipsToggle.addEventListener("change",event=>{settings.showTooltips=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
     const motionToggle=document.getElementById("settings-motion-toggle");
     if(motionToggle){motionToggle.checked=settings.reduceMotion===true;motionToggle.addEventListener("change",event=>{settings.reduceMotion=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    const highContrastToggle=document.getElementById("settings-high-contrast-toggle");
+    if(highContrastToggle){highContrastToggle.checked=settings.highContrast===true;highContrastToggle.addEventListener("change",event=>{settings.highContrast=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
     const timeOfDayControl=document.getElementById("settings-time-of-day");
     const timeOfDayValue=document.getElementById("settings-time-of-day-value");
     if(timeOfDayControl){

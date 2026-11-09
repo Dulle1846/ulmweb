@@ -12,6 +12,7 @@ All assets in this directory are bundled with the game and loaded from the same 
 | `royal-card-atlas.svg` | Hand cards, card inspector and management card list | SVG sprite atlas | Original category art with aliases for the existing catalogue |
 | `royal-card-frame.svg` | Card hand frame | SVG | Original parchment / antique-gold frame |
 | `royal-crest.svg` | Brand and command-panel crest | SVG | Project crest |
+| `royal-heraldry.svg` | Sovereign dossier house emblem | SVG sprite atlas | Eight original shields, deterministically selected from the dynasty name |
 | `royal-court-art.svg` | Royal decisions panel | SVG | Existing court illustration; retained pending a restrained-art revision |
 | `royal-dragon-atlas.svg` | Living dragon dossiers and memorials | SVG sprite atlas | Five stage-specific portraits mapped to persisted dragon life stage |
 | `dragon-companion.svg` | Creature panel hero art | SVG | Existing dragon companion illustration |

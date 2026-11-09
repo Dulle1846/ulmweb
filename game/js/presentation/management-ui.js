@@ -2,6 +2,7 @@
 import { state } from "../core/state.js";
 import { getGovernmentSnapshot, GOVERNMENT_FORMS, GOVERNMENT_POLICIES, setGovernmentForm, enactPolicy } from "../systems/government.js";
 import { getPoliticalSnapshot } from "../systems/politics.js";
+import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, declareWar, sueForPeace } from "../systems/diplomacy.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { getFamilySnapshot } from "../systems/families.js";
 import { BUILDING_WORKFORCE, getBuildingEfficiency, getWorkforceSnapshot } from "../systems/economy.js";
@@ -10,7 +11,7 @@ import { TYPE } from "../core/types.js";
 import { CARD_DECK, drawPlayerCard, selectCard } from "../systems/cards.js";
 import { getResourceNodeAt } from "../systems/resource-geography.js";
 import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
-import { forestGatheringSummary, gatherNearestForestProducts, processForestHunt } from "../systems/forest-gathering.js";
+import { deliverForestGoods, forestDeliveryAvailability, forestGatheringSummary, forestThinningAvailability, gatherNearestForestProducts, processForestHunt, thinNearestForest } from "../systems/forest-gathering.js";
 import { feedStableFromMast, pannageSummary } from "../systems/forest-pannage.js";
 import { suppressNearestForestDisturbance } from "../systems/forest-succession.js";
 import { renderUI, cardSprite } from "./rendering/ui.js";
@@ -117,6 +118,38 @@ function politics(){
  const p=getPoliticalSnapshot(),f=Object.entries(p.factions).map(([k,v])=>meter(k,v)).join(""),policies=Object.entries(GOVERNMENT_POLICIES).map(([id,x])=>'<article class="command-policy"><div><strong>'+esc(x.label)+'</strong><p>'+esc(x.description)+'</p></div><button data-command="policy" data-value="'+id+'">ENACT</button></article>').join("");
  return intro("FACTIONS & PUBLIC ORDER","Politics","Legitimacy and faction support respond to decrees and the realm's material conditions.")+'<div class="command-summary"><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div><div><small>AVERAGE SUPPORT</small><strong>'+Math.round(p.averageSupport)+'/100</strong></div><div><small>DECISIONS</small><strong>'+p.settlements+'</strong></div></div><div class="command-section-title">FACTION SUPPORT</div><div class="command-meter-list">'+f+'</div><div class="command-section-title">ROYAL DECREES · ONE PER YEAR</div><div class="command-policy-list">'+policies+'</div>';
 }
+function diplomacy(){
+ const d=getDiplomacySnapshot(),c=d.costs,gold=Number(state.resources?.gold)||0,food=Number(state.resources?.food)||0;
+ const rows=d.realms.map(r=>{
+  const actions=[];
+  if(r.treaty==="war"){
+   actions.push('<button data-command="diplomacy-peace" data-value="'+esc(r.id)+'"'+((gold<c.peaceGold||food<c.peaceFood)?" disabled":"")+'>SUE FOR PEACE · '+c.peaceGold+'G / '+c.peaceFood+'F</button>');
+  }else{
+   actions.push('<button data-command="diplomacy-gift" data-value="'+esc(r.id)+'"'+(gold<c.gift?" disabled":"")+'>SEND GIFT · '+c.gift+'G</button>');
+   if(r.treaty==="none"&&r.relation>=d.thresholds.tradePact)actions.push('<button data-command="diplomacy-pact" data-value="'+esc(r.id)+'"'+(gold<c.tradePact?" disabled":"")+'>TRADE PACT · '+c.tradePact+'G</button>');
+   if(r.treaty==="trade"&&r.relation>=d.thresholds.alliance)actions.push('<button data-command="diplomacy-alliance" data-value="'+esc(r.id)+'"'+(gold<c.alliance?" disabled":"")+'>ALLIANCE · '+c.alliance+'G</button>');
+   actions.push('<button class="diplomacy-button--war" data-command="diplomacy-war" data-value="'+esc(r.id)+'">DECLARE WAR</button>');
+  }
+  let hint="";
+  if(r.treaty==="war")hint="Trade is closed. Border incidents become more likely while the war endures.";
+  else if(r.treaty==="alliance")hint="The alliance sends 3 gold and 4 food each year.";
+  else if(r.treaty==="trade")hint="The pact improves buy and sell terms. Reach 70 relation to propose an alliance.";
+  else if(r.relation<d.thresholds.tradePact)hint="A trade pact requires 45 relation. Gifts and trade raise it.";
+  else hint="A trade pact is available. An alliance requires 70 relation.";
+  const latest=Array.isArray(r.history)&&r.history[0];
+  return '<article class="diplomacy-realm diplomacy-realm--'+esc(r.treatyTone)+'" data-diplomacy-realm="'+esc(r.id)+'">'+
+   '<div class="diplomacy-realm__head"><div><span class="diplomacy-realm__region">'+esc(r.region)+' · '+esc(r.specialty)+'</span><h4>'+esc(r.name)+'</h4><p>'+esc(r.ruler)+' · '+esc(r.trait)+'</p></div><span class="diplomacy-treaty diplomacy-treaty--'+esc(r.treatyTone)+'">'+esc(r.treatyLabel)+'</span></div>'+
+   meter("RELATION",r.relation)+
+   '<div class="diplomacy-realm__stats"><span>TRUST<b>'+Math.round(r.trust)+'</b></span><span>FEAR<b>'+Math.round(r.fear)+'</b></span><span>GOODS TRADED<b>'+number(r.tradeVolume)+'</b></span></div>'+
+   '<p class="diplomacy-realm__hint">'+esc(r.relationLabel+" · "+hint)+'</p>'+
+   (latest?'<p class="diplomacy-realm__record">'+esc(latest.summary)+' · year '+latest.year+'</p>':'')+
+   '<div class="diplomacy-actions">'+actions.join("")+'</div></article>';
+ }).join("");
+ return intro("THE NEIGHBOURING COURTS","Diplomacy","Relationships persist between years and connect trade, faction politics, war pressure and royal prestige.")+
+  '<div class="command-summary"><div><small>NEIGHBOURS</small><strong>'+d.realms.length+'</strong></div><div><small>AVG RELATION</small><strong>'+Math.round(d.averageRelation)+'</strong></div><div><small>TRADE PACTS</small><strong>'+d.counts.trade+'</strong></div><div><small>ALLIANCES</small><strong>'+d.counts.alliance+'</strong></div><div><small>AT WAR</small><strong>'+d.counts.war+'</strong></div></div>'+
+  '<div class="command-section-title">'+d.realms.length+' NEIGHBOURING REALMS · LAST REVIEW YEAR '+d.lastUpdateYear+'</div><div class="diplomacy-grid">'+rows+'</div>'+
+  '<p class="command-note">Gifts improve trust. Trade raises relation and improves prices through the market. Trade pacts deepen that advantage; alliances send annual aid. War closes trade and makes border incidents more likely. Diplomacy resolves once per year, so its cost stays bounded to four realms.</p>';
+}
 function decisions(){
  const h=getRoyalHouse(),children=h.children.map(p=>'<article class="command-policy"><div><strong>'+esc(p.person.name)+'</strong><p>'+esc(p.person.role)+' · age '+Math.floor(p.person.ageYears)+' · born '+(p.person.bornAtYear||"?")+'</p></div><button data-command="heir" data-value="'+esc(p.personId)+'">'+(h.heir?.personId===p.personId?"CURRENT HEIR":"DESIGNATE")+'</button></article>').join("");
  const options=h.candidates.map(p=>'<option value="'+esc(p.personId)+'">'+esc(p.person.name)+' · '+Math.floor(p.person.ageYears)+' · '+esc(p.person.species)+'</option>').join("");
@@ -193,13 +226,21 @@ function buildings(){
   let siteNote="No dedicated resource-site indicator is defined for this building type.";
   try{
    const node=getResourceNodeAt(building.x,building.y);
-   if([TYPE.LUMBER,TYPE.FORESTER].includes(building.type))siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity)+(node.forestTypeLabel?" · "+node.forestTypeLabel+" · "+(node.forestAge||"age unknown")+" · "+(node.forestSpecies||[]).slice(0,4).join(", ")+" · Snow depth: "+number(node.forestSnowDepthCm)+" cm · Exposure: "+Math.round((node.forestExposure||0)*100)+"% · Fire risk: "+Math.round((node.forestFireRisk||0)*100)+"% · Pest risk: "+Math.round((node.forestPestRisk||0)*100)+"% · Monoculture: "+Math.round((node.forestMonoculture||0)*100)+"%":"")+(node.forestSuccession?(node.forestSuccession.label?" · Succession: "+esc(node.forestSuccession.label)+" · "+number(node.forestSuccession.age)+" days":" · Recovered woodland")+(node.forestSuccession?.contained?" · Control party until day "+number(node.forestSuccession.containedUntil):""):"")+" · Wildlife: "+(forestFaunaSummaryAt(building.x,building.y,node.forestFauna)||"none recorded at this tile")+" · Forest products: "+(forestGatheringSummary()||"none gathered yet");
+   if([TYPE.LUMBER,TYPE.FORESTER].includes(building.type))siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity)+(node.forestTypeLabel?" · "+node.forestTypeLabel+" · "+(node.forestAge||"age unknown")+" · "+(node.forestSpecies||[]).slice(0,4).join(", ")+" · Snow depth: "+number(node.forestSnowDepthCm)+" cm · Exposure: "+Math.round((node.forestExposure||0)*100)+"% · Fire risk: "+Math.round((node.forestFireRisk||0)*100)+"% · Pest risk: "+Math.round((node.forestPestRisk||0)*100)+"% · Monoculture: "+Math.round((node.forestMonoculture||0)*100)+"% · Work: "+Math.round((node.forestWorkFactor||0)*100)+"% · Visibility: "+Math.round((node.forestVisibility||0)*100)+"% · Sight: "+number(node.forestSightRadius)+" tiles · Diversity: "+Math.round((node.forestSpeciesDiversity||0)*100)+"% · Wind exposure: "+Math.round((node.forestWindExposure||0)*100)+"% · Wetness: "+Math.round((node.forestWetness||0)*100)+"% · Deadwood: "+Math.round((node.forestDeadwood||0)*100)+"%"+(node.forestTreeline?" · Treeline":"")+" · Browse: "+Math.round((node.forestBrowsingPressure||0)*100)+"% · Predators: "+Math.round((node.forestPredatorPressure||0)*100)+"%":"")+(node.forestSuccession?(node.forestSuccession.label?" · Succession: "+esc(node.forestSuccession.label)+" · "+number(node.forestSuccession.age)+" days":" · Recovered woodland")+(node.forestSuccession?.contained?" · Control party until day "+number(node.forestSuccession.containedUntil):""):"")+" · Wildlife: "+(forestFaunaSummaryAt(building.x,building.y,node.forestFauna)||"none recorded at this tile")+" · Forest products: "+(forestGatheringSummary()||"none gathered yet");
    else if([TYPE.QUARRY,TYPE.MASON].includes(building.type))siteNote="Stone stock at site tile: "+number(node.stoneStock)+" / "+number(node.stoneCapacity);
    else if(building.type===TYPE.FARM)siteNote="Site fertility: "+number(node.fertility)+" / 100 · water access: "+(node.waterAccess?"yes":"no");
    else if(building.type===TYPE.WELL)siteNote="Water access at site tile: "+(node.waterAccess?"yes":"no");
    else if(building.type===TYPE.STABLE)siteNote="Pannage reserve: "+esc(pannageSummary(building))+" · feed comes from acorns, beechnuts and chestnuts gathered in the forest ledger.";
   }catch{}
-  const forestGather=[TYPE.LUMBER,TYPE.FORESTER].includes(building.type)?'<button type="button" class="command-choice" data-gather-forest="'+esc(building.id)+'">GATHER FOREST PRODUCTS</button><button type="button" class="command-choice" data-process-hunt="'+esc(building.id)+'">PROCESS FOREST HUNT</button><button type="button" class="command-choice" data-suppress-forest="'+esc(building.id)+'">SUPPRESS FOREST DISTURBANCE</button>':"";
+  const deliveryAvailability=forestDeliveryAvailability(building);
+  const thinningAvailability=building.type===TYPE.LUMBER?forestThinningAvailability(building,6):null;
+  const forestGather=[TYPE.LUMBER,TYPE.FORESTER].includes(building.type)?[
+   '<button type="button" class="command-choice" data-gather-forest="'+esc(building.id)+'">GATHER FOREST PRODUCTS</button>',
+   '<button type="button" class="command-choice" data-deliver-forest="'+esc(building.id)+'"'+(deliveryAvailability.available>0?'':' disabled title="'+esc(deliveryAvailability.reason)+'"')+'>DELIVER FOREST GOODS</button>',
+   '<button type="button" class="command-choice" data-process-hunt="'+esc(building.id)+'">PROCESS FOREST HUNT</button>',
+   '<button type="button" class="command-choice" data-suppress-forest="'+esc(building.id)+'">SUPPRESS FOREST DISTURBANCE</button>',
+   ...(building.type===TYPE.LUMBER?['<button type="button" class="command-choice" data-thin-forest="'+esc(building.id)+'"'+(thinningAvailability.ok?'':' disabled title="'+esc(thinningAvailability.reason)+'"')+'>THIN NEAREST STAND</button>']:[]),
+  ].join(""):"";
   const forestPannage=building.type===TYPE.STABLE?'<button type="button" class="command-choice" data-feed-stable="'+esc(building.id)+'">FEED STABLE FROM MAST</button>':"";
   const detail=card?.desc||BUILDING_LABELS[building.type]||"No additional building description is recorded.";
   const site=constructionSnapshot(building);
@@ -459,7 +500,7 @@ function chronicle(){
 }
 function render(){
  const panel=$("command-panel-content");if(!panel)return;
- panel.innerHTML=({kingdom,government,politics,decisions,cards,economy,resources,buildings,dynasty,creatures,chronicle}[activePanel]||kingdom)();
+ panel.innerHTML=({kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,dynasty,creatures,chronicle}[activePanel]||kingdom)();
  if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
  document.querySelectorAll("[data-command-tab]").forEach(b=>{
   const active=b.dataset.commandTab===activePanel;
@@ -470,10 +511,11 @@ function render(){
 }
 function act(b){
  const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
- if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="draw-card")r=drawPlayerCard();else if(a==="select-card"){r=selectCard(v)?{ok:true}:{ok:false,reason:"card not found"};if(r.ok)$("command-modal")?.classList.add("hidden");}else if(a==="show-active-event"&&state.activeEvent){state.activeEvent.dismissed=false;renderUI();r={ok:true};}
+ if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="draw-card")r=drawPlayerCard();else if(a==="select-card"){r=selectCard(v)?{ok:true}:{ok:false,reason:"card not found"};if(r.ok)$("command-modal")?.classList.add("hidden");}else if(a==="show-active-event"&&state.activeEvent){state.activeEvent.dismissed=false;renderUI();r={ok:true};}else if(a==="diplomacy-gift")r=sendGift(v);else if(a==="diplomacy-pact")r=proposeTradePact(v);else if(a==="diplomacy-alliance")r=proposeAlliance(v);else if(a==="diplomacy-war")r=declareWar(v);else if(a==="diplomacy-peace")r=sueForPeace(v);
  if(r.ok){
   if(a==="draw-card")toast(r.card.name+" DRAWN · SELECT IT TO PLACE IT");
   else if(a==="select-card")toast("CARD SELECTED — DRAG IT ONTO THE MAP");
+  else if(a.startsWith("diplomacy-"))toast(String(r.message||"DIPLOMACY UPDATED").toUpperCase());
   else toast("DECISION RECORDED");
   renderUI();render();
  }else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
@@ -487,7 +529,7 @@ export function setupManagementUI(){
   if(target==="people"){$("people-btn")?.click();return;}
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
-  if(["kingdom","government","politics","decisions","cards","economy","resources","buildings","dynasty","creatures","chronicle"].includes(target)){
+  if(["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","dynasty","creatures","chronicle"].includes(target)){
    activePanel=target;$("command-modal")?.classList.remove("hidden");render();
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));
   }
@@ -530,6 +572,22 @@ export function setupManagementUI(){
    const result=entity?feedStableFromMast(entity):{ok:false,reason:"Building not found"};
    if(result.ok){toast("PANNAGE "+result.fed+" MAST · "+result.days+" DAYS RESERVED");renderUI();render();}
    else toast(String(result.reason||"PANNAGE FAILED").toUpperCase());
+   return;
+  }
+  const thin=e.target.closest("[data-thin-forest]");
+  if(thin){
+   const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(thin.dataset.thinForest));
+   const result=entity?thinNearestForest(entity,6):{ok:false,reason:"Building not found"};
+   if(result.ok){toast("THINNED "+result.taken+" LOGS AT "+result.x+", "+result.y);renderUI();render();}
+   else toast(String(result.reason||"THINNING FAILED").toUpperCase());
+   return;
+  }
+  const deliver=e.target.closest("[data-deliver-forest]");
+  if(deliver){
+   const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(deliver.dataset.deliverForest));
+   const result=entity?deliverForestGoods(entity):{ok:false,reason:"Building not found"};
+   if(result.ok){toast("DELIVERED "+result.goods.map(good=>good.amount+" "+good.to).join(" · "));renderUI();render();}
+   else toast(String(result.reason||"DELIVERY FAILED").toUpperCase());
    return;
   }
   const suppress=e.target.closest("[data-suppress-forest]");

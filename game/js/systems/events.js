@@ -77,6 +77,7 @@ export const EVENT_VARIANT_COUNT=FAMILIES.length*PLACES.length*STAGES.length*DET
 const pick=items=>items[randInt(0,items.length)];
 function chooseFamily(){
  const hidden=state.hiddenRealm||{},workforce=getWorkforceSnapshot(),politics=getPoliticalSnapshot();
+ const warCount=Array.isArray(state.diplomacy?.realms)?state.diplomacy.realms.filter(realm=>realm?.treaty==="war").length:0;
  const food=Math.max(0,state.resources.food||0);
  const foodShortage=Math.max(0,state.economy?.lastLedger?.foodShortage||0);
  const unpaidCosts=Math.max(0,(state.economy?.lastLedger?.unpaidWages||0)+(state.economy?.lastLedger?.unpaidUpkeep||0));
@@ -87,7 +88,9 @@ function chooseFamily(){
   if(f.id==="migration")situational+=Math.min(3,workforce.unemployed*0.35);
   if(f.id==="rebellion")situational+=Math.min(5,unpaidCosts*1.5+Math.max(0,hidden.tension||0)*0.08);
   if(f.id==="illness")situational+=workforce.population>25?1.2:0;
-  if(f.id==="caravan")situational+=Math.max(0,hidden.prosperity||0)*0.025;
+  if(f.id==="caravan")situational+=Math.max(0,hidden.prosperity||0)*0.025-warCount*1.5;
+  if(f.id==="border")situational+=warCount*2.5;
+  if(f.id==="bandits")situational+=warCount*1.5;
   if(f.id==="rebellion")situational+=Math.max(0,50-politics.factions.commons)*0.1;
   if(f.id==="guild")situational+=Math.max(0,50-politics.factions.guilds)*0.1;
   if(f.id==="faith")situational+=Math.max(0,50-politics.factions.clergy)*0.08;

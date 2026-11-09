@@ -36,6 +36,16 @@ const SIMULATED_SPECIES = Object.freeze({
     squirrel: { base: 10, reproduction: 0.1, mortality: 0.04, mobility: 1, period: 75 },
     owl: { base: 3, reproduction: 0.06, mortality: 0.035, mobility: 2, period: 95, winterReproduction: 0.9 },
     woodpecker: { base: 4, reproduction: 0.065, mortality: 0.03, mobility: 2, period: 85, winterReproduction: 0.9 },
+    // Conifer specialists and the predators that depend on the herbivore base.
+    // These are real herds: they breed, move, can be hunted and are saved. A
+    // wolf without local prey loses condition instead of being a decorative
+    // habitat marker.
+    crossbill: { base: 6, reproduction: 0.1, mortality: 0.05, mobility: 3, period: 55, winterReproduction: 0.95 },
+    capercaillie: { base: 3, reproduction: 0.06, mortality: 0.045, mobility: 1, period: 90 },
+    mouse: { base: 12, reproduction: 0.18, mortality: 0.095, mobility: 1, period: 35 },
+    songbird: { base: 9, reproduction: 0.13, mortality: 0.07, mobility: 3, period: 45 },
+    wolf: { base: 2.2, reproduction: 0.05, mortality: 0.045, mobility: 4, period: 60, predator: true, prey: ["deer", "roe-deer"] },
+    lynx: { base: 1.8, reproduction: 0.05, mortality: 0.04, mobility: 4, period: 65, predator: true, prey: ["roe-deer", "hare", "squirrel"] },
 });
 
 export const SIMULATED_FAUNA_IDS = Object.freeze(Object.keys(SIMULATED_SPECIES));
@@ -137,6 +147,27 @@ function preferenceScore(stand, species, day) {
         score += stand.ageClass === "ancient" ? 0.22 : 0;
         score += stand.ground?.logs || 0;
         score += stand.disturbance === "diseased" ? 0.08 : 0;
+    }
+    if (species === "wolf" || species === "lynx") {
+        score += Math.max(0, stand.coniferShare || 0) * 0.16;
+        score += stand.ageClass === "ancient" ? 0.12 : 0;
+        score += (stand.fauna || []).includes("deer") || (stand.fauna || []).includes("roe-deer") ? 0.14 : 0;
+        score -= stand.edge ? 0.06 : 0;
+    }
+    if (species === "crossbill") {
+        score += Math.max(0, stand.coniferShare || 0) * 0.24;
+        score += (stand.goods || []).some(id => ["spruce-cones", "fir-cones", "pine-cones"].includes(id)) ? 0.1 : 0;
+    }
+    if (species === "capercaillie") {
+        score += stand.ageClass === "ancient" ? 0.2 : 0.04;
+        score += (stand.understory?.berry || 0) * 0.18;
+    }
+    if (species === "mouse") {
+        score += (stand.ground?.litter || 0) * 0.18 + (stand.ground?.logs || 0) * 0.12;
+    }
+    if (species === "songbird") {
+        score += stand.edge ? 0.14 : 0;
+        score += (stand.ground?.flowers || 0) * 0.12 + (stand.clearing || 0) * 0.08;
     }
     if (season === "winter") score *= 0.82;
     if (season === "spring") score *= 1.04;
@@ -317,10 +348,23 @@ function maybeMigrate(model, herd, current, day, additions = []) {
 // The daily population step is pure so the over-hunting model can be tested
 // without advancing a whole realm. `mortality` is the already season-adjusted
 // rate; hunting pressure adds a loss proportional to the herd.
-export function forestHerdGrowth({ population, capacity, reproduction, mortality, huntingPressure = 0 }) {
+export function forestHerdGrowth({ population, capacity, reproduction, mortality, huntingPressure = 0, predationPressure = 0 }) {
     const crowding = population / Math.max(1, capacity);
     const gain = reproduction * population * Math.max(-0.2, 1 - crowding);
-    const loss = mortality * population + Math.max(0, Number(huntingPressure) || 0) * population * 0.025;
+    // Hunting pressure has diminishing returns: the first hunters take the
+    // easiest animals, while a whole village in the same wood cannot keep
+    // removing the same share forever. Without this curve sustained heavy
+    // pressure pushed small resident species below a viable fill even though
+    // the forest still had habitat capacity.
+    const pressure = Math.max(0, Number(huntingPressure) || 0);
+    const effectiveHunting = pressure / (1 + pressure * 0.35);
+    const loss = mortality * population
+        + effectiveHunting * population * 0.025
+        // Predation is a real loss term, but it must not double-count hunting
+        // or turn a heavily hunted wood into an empty one. The bounded 0.008
+        // coefficient keeps wolf/lynx pressure visible without collapsing the
+        // herbivore base that feeds them.
+        + clamp(number(predationPressure), 0, 1) * population * 0.008;
     return gain - loss;
 }
 
@@ -362,6 +406,56 @@ export function harvestForestGameAt(x, y, requested = 1) {
     };
 }
 
+// A bounded trophic pass. Prey biomass and predator pressure are aggregated by
+// tile once per update, so adding wolves does not turn every prey herd into a
+// full scan of all 240 herds on every day.
+function buildFaunaPressureMaps(model) {
+    const preyTiles = new Map();
+    const predatorTiles = new Map();
+    for (const herd of model.herds) {
+        const spec = SIMULATED_SPECIES[herd.species];
+        if (!spec) continue;
+        const key = herd.x + ":" + herd.y;
+        if (spec.predator) {
+            predatorTiles.set(key, (predatorTiles.get(key) || 0) + Math.max(0, herd.population));
+            continue;
+        }
+        const row = preyTiles.get(key) || { total: 0, bySpecies: {} };
+        row.total += Math.max(0, herd.population);
+        row.bySpecies[herd.species] = (row.bySpecies[herd.species] || 0) + Math.max(0, herd.population);
+        preyTiles.set(key, row);
+    }
+    const predatorPressure = new Map();
+    for (const [key, population] of predatorTiles) {
+        const [x, y] = key.split(":").map(Number);
+        for (let dy = -3; dy <= 3; dy++) {
+            for (let dx = -3; dx <= 3; dx++) {
+                const distance = Math.hypot(dx, dy);
+                if (distance > 3.4) continue;
+                const target = (x + dx) + ":" + (y + dy);
+                const weight = Math.max(0, 1 - distance / 4);
+                predatorPressure.set(target, (predatorPressure.get(target) || 0) + population * weight * 0.035);
+            }
+        }
+    }
+    return { preyTiles, predatorPressure };
+}
+
+function preyBiomassAt(preyTiles, x, y, species, radius = 4) {
+    const wanted = new Set(species || []);
+    if (!wanted.size) return 0;
+    let total = 0;
+    for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+            if (Math.abs(dx) + Math.abs(dy) > radius + 1) continue;
+            const row = preyTiles.get((x + dx) + ":" + (y + dy));
+            if (!row) continue;
+            for (const id of wanted) total += row.bySpecies[id] || 0;
+        }
+    }
+    return total;
+}
+
 export function updateForestFauna(days = 1) {
     const model = ensureForestFauna();
     if (!model) return null;
@@ -370,6 +464,7 @@ export function updateForestFauna(days = 1) {
         model.day = (model.day + 1) % DAYS_PER_YEAR;
         const season = seasonFor(model.day);
         const additions = [];
+        const pressureMaps = buildFaunaPressureMaps(model);
         for (const herd of model.herds) {
             const resolved = resolveHerd(herd, model.day);
             if (!resolved) {
@@ -385,11 +480,18 @@ export function updateForestFauna(days = 1) {
             const hunting = clamp(number(herd.huntingPressure), 0, 2);
             // Winter is a lean season, not a population reset. The old 1.55
             // multiplier removed roughly seven eighths of every herd by spring.
-            const mortality = spec.mortality * (season === "winter" ? 0.95 : 0.9);
+            const preyBiomass = spec.predator
+                ? preyBiomassAt(pressureMaps.preyTiles, herd.x, herd.y, spec.prey || [], 4) : 0;
+            const predatorCondition = spec.predator ? clamp(0.42 + preyBiomass / 24, 0.42, 1.3) : 1;
+            const mortality = spec.mortality * (season === "winter" ? 0.95 : 0.9)
+                * (spec.predator && preyBiomass < 2 ? 1.7 : 1);
+            const effectiveCapacity = Math.max(1, capacity * predatorCondition);
             const before = herd.population;
             const next = clamp(before + forestHerdGrowth({
-                population: before, capacity, reproduction, mortality, huntingPressure: hunting,
-            }), 0, capacity * 1.35);
+                population: before, capacity: effectiveCapacity,
+                reproduction: reproduction * predatorCondition, mortality, huntingPressure: hunting,
+                predationPressure: spec.predator ? 0 : (pressureMaps.predatorPressure.get(herd.x + ":" + herd.y) || 0),
+            }), 0, effectiveCapacity * 1.35);
             if (next > before + 0.05) model.stats.births++;
             if (next < before - 0.05) model.stats.deaths++;
             herd.population = Math.round(next * 10) / 10;

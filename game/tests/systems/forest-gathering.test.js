@@ -1,11 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
+import { TYPE } from "../../js/core/types.js";
 import { generateResourceGeography, getResourceNodeAt } from "../../js/systems/resource-geography.js";
 import {
-    ensureForestGathering, forestGatheringSummary, forestProductsAt, gatherForestProducts,
-    gatherNearestForestProducts, processForestHunt, restoreForestGathering, serializeForestGathering,
-    validateForestGatheringSnapshot, FOREST_GATHERING_LIMITS,
+    deliverForestGoods, ensureForestGathering, forestDeliveryAvailability, forestGatheringSummary,
+    forestProductsAt, forestThinningAvailability, gatherForestProducts, gatherNearestForestProducts,
+    processForestHunt, restoreForestGathering, serializeForestGathering,
+    validateForestGatheringSnapshot, thinNearestForest, FOREST_GATHERING_LIMITS,
 } from "../../js/systems/forest-gathering.js";
 import { ensureForestFauna } from "../../js/systems/forest-fauna.js";
 
@@ -65,6 +67,10 @@ test("forest products are read from the same real stand as the renderer", () => 
         "a stand should expose the timber of its species, not only generic timber");
     assert.ok(tile.products.goods.some(good => ["mushrooms", "berries", "acorns", "beechnuts", "chestnuts", "herbs"].includes(good.id)));
     assert.ok(tile.products.stand.ground.compaction >= 0 && tile.products.stand.ground.compaction <= 1);
+    assert.ok(tile.products.stand.structure.deadwood >= 0);
+    assert.ok(tile.products.workFactor >= 0.45 && tile.products.workFactor <= 1);
+    const winter = forestProductsAt(tile.x, tile.y, 350);
+    assert.ok(winter.workFactor < tile.products.workFactor, "winter snow and low visibility must slow forest work");
 });
 
 test("gathering is seasonal, bounded and cannot repeat on the same day", () => {
@@ -155,4 +161,84 @@ test("a lumber yard can gather from the nearest real forest node", () => {
     const result = gatherNearestForestProducts(tile.x + 3, tile.y + 3, 7);
     assert.equal(result.ok, true);
     assert.ok(result.goods.length > 0);
+});
+
+test("forest goods can be delivered into the physical city economy", () => {
+    setup();
+    const tile = findForestWithGoods();
+    assert.ok(tile);
+    ensureForestGathering().stock = {
+        timber: 12, firewood: 4, mushrooms: 3, blueberries: 2, "tanned-fur": 2,
+    };
+    const foodBefore = state.resources.food;
+    const goldBefore = state.resources.gold;
+    const building = {
+        id: "lumber-test", type: TYPE.LUMBER, x: tile.x, y: tile.y, dead: false,
+        construction: { stage: 3, progress: 100 }, isBuilding: () => true,
+    };
+    state.entities = [building];
+    const result = deliverForestGoods(building);
+    assert.equal(result.ok, true);
+    assert.ok(result.delivered.logs > 0);
+    assert.ok(result.delivered.firewood > 0);
+    assert.ok(result.delivered.food >= 5);
+    assert.ok(result.delivered.gold > 0);
+    assert.ok(building.inventory.output.logs > 0);
+    assert.ok(state.resources.food > foodBefore);
+    assert.ok(state.resources.gold > goldBefore);
+    assert.equal(state.forestGathering.stock.timber, 0);
+    assert.equal(state.forestGathering.stock.mushrooms, 0);
+});
+
+test("a lumber yard can thin a real crowded stand", () => {
+    setup();
+    const tile = findForestWithGoods();
+    assert.ok(tile);
+    const building = {
+        id: "lumber-thin", type: TYPE.LUMBER, x: tile.x, y: tile.y, dead: false,
+        construction: { stage: 3, progress: 100 }, isBuilding: () => true,
+    };
+    state.entities = [building];
+    const result = thinNearestForest(building, 6);
+    assert.equal(result.ok, true);
+    assert.ok(result.taken > 0);
+    assert.ok(result.stockAfter < result.stockBefore);
+    assert.equal(getResourceNodeAt(result.x, result.y).forestStock, result.stockAfter);
+    assert.ok(building.inventory.output.logs > 0);
+});
+
+test("thinning refuses a full lumber yard without taking forest stock", () => {
+    setup();
+    const tile = findForestWithGoods();
+    assert.ok(tile);
+    const building = {
+        id: "lumber-full", type: TYPE.LUMBER, x: tile.x, y: tile.y, dead: false,
+        construction: { stage: 3, progress: 100 }, isBuilding: () => true,
+        inventory: { output: { logs: 9999 } },
+    };
+    state.entities = [building];
+    const stockBefore = getResourceNodeAt(tile.x, tile.y).forestStock;
+    const result = thinNearestForest(building, 6);
+    assert.equal(result.ok, false);
+    assert.match(result.reason, /full/i);
+    assert.equal(getResourceNodeAt(tile.x, tile.y).forestStock, stockBefore);
+});
+
+test("delivery and thinning availability mirror the player-facing gates", () => {
+    setup();
+    const tile = findForestWithGoods();
+    assert.ok(tile);
+    const building = {
+        id: "lumber-gate", type: TYPE.LUMBER, x: tile.x, y: tile.y, dead: false,
+        construction: { stage: 3, progress: 100 }, isBuilding: () => true,
+    };
+    state.entities = [building];
+    ensureForestGathering().stock = {};
+    assert.equal(forestDeliveryAvailability(building).available, 0);
+    assert.match(forestDeliveryAvailability(building).reason, /no deliverable/i);
+    ensureForestGathering().stock = { timber: 2, mushrooms: 1 };
+    assert.equal(forestDeliveryAvailability(building).available, 3);
+    assert.equal(forestThinningAvailability(building, 6).ok, true);
+    const far = { ...building, x: -999, y: -999 };
+    assert.equal(forestThinningAvailability(far, 6).ok, false);
 });

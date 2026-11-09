@@ -48,6 +48,8 @@ test("compaction is a measurable regeneration brake", () => {
     assert.ok(compacted < 0.65);
     assert.ok(severe < compacted);
     assert.ok(severe >= 0.35);
+    const browsed = forestRegrowthFactor({ ground: { compaction: 0 }, browsingPressure: 0.8 });
+    assert.ok(browsed < 1, "browsing must slow regeneration without new saved state");
 });
 
 test("hunting pressure measurably slows herd growth", () => {
@@ -62,6 +64,8 @@ test("hunting pressure measurably slows herd growth", () => {
     assert.ok(forestHerdGrowth({
         population: 1, capacity: 20, reproduction: 0.07, mortality: 0.05, huntingPressure: 1,
     }) < 0);
+    const predated = forestHerdGrowth({ ...base, predationPressure: 0.7 });
+    assert.ok(predated < calm, "predator pressure must reduce herd growth");
 });
 
 test("a compacted cut-over stand regrows slower than a normal stand", () => {

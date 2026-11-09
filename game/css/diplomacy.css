@@ -1,0 +1,28 @@
+/* Diplomatic court: four bounded neighbour cards in the management deck. */
+.diplomacy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:10px;margin-top:12px}
+.diplomacy-realm{padding:12px;border:2px solid #ad8750;border-left-width:5px;border-radius:9px;background:#fff5d8;color:#243a50;box-shadow:inset 0 1px #fff8}
+.diplomacy-realm--trade{border-left-color:#4e8a61}
+.diplomacy-realm--alliance{border-left-color:#2f6f88;background:#eff6ec}
+.diplomacy-realm--war{border-left-color:#a33d33;background:#f5dfd5}
+.diplomacy-realm__head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.diplomacy-realm__region{color:#9b4a2a;font-size:7px;font-weight:1000;letter-spacing:.16em;text-transform:uppercase}
+.diplomacy-realm__head h4{margin:3px 0 2px;color:#263b52;font:bold 15px Georgia,serif}
+.diplomacy-realm__head p{margin:0;color:#675b49;font-size:9px;line-height:1.4}
+.diplomacy-treaty{flex:0 0 auto;padding:4px 7px;border:1px solid #a57c43;border-radius:999px;background:#f1d99f;color:#5d4528;font:1000 7px/1.2 Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.diplomacy-treaty--trade{border-color:#4e8a61;background:#d8ead7;color:#315c3d}
+.diplomacy-treaty--alliance{border-color:#2f6f88;background:#d5e9ee;color:#24556a}
+.diplomacy-treaty--war{border-color:#a33d33;background:#e8b9ab;color:#68251e}
+.diplomacy-realm .command-meter{grid-template-columns:72px 1fr 30px;margin:12px 0 9px;color:#5d4528}
+.diplomacy-realm__stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.diplomacy-realm__stats span{padding:6px 7px;border:1px solid #c6ae7c;border-radius:5px;background:#f8ebcd;color:#806d52;font:1000 7px/1.3 Arial,sans-serif;letter-spacing:.06em}
+.diplomacy-realm__stats b{display:block;margin-top:3px;color:#263b52;font:bold 12px Georgia,serif;letter-spacing:0}
+.diplomacy-realm__hint{margin:9px 0 0;color:#675b49;font-size:8px;line-height:1.45}
+.diplomacy-realm__record{margin:8px 0 0;padding-top:7px;border-top:1px dashed #c6ae7c;color:#806d52;font-size:8px;line-height:1.4}
+.diplomacy-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.diplomacy-actions button{flex:1 1 auto;min-height:30px;padding:5px 8px;border:2px solid #20374d;border-radius:7px;background:linear-gradient(#f7d67f,#d69a37);color:#24384d;font:1000 7px/1.25 Arial,sans-serif;letter-spacing:.03em;cursor:pointer;box-shadow:0 2px 0 #20374d}
+.diplomacy-actions button:hover:not(:disabled){background:linear-gradient(#ffe9a5,#e2ad4e);border-color:#0f2639}
+.diplomacy-actions button:active:not(:disabled){transform:translateY(1px);box-shadow:0 1px 0 #20374d}
+.diplomacy-actions button:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}
+.diplomacy-actions .diplomacy-button--war{border-color:#792d28;background:linear-gradient(#d58c76,#a94f43);color:#fff0e4;box-shadow:0 2px 0 #792d28}
+.diplomacy-actions .diplomacy-button--war:hover:not(:disabled){background:linear-gradient(#e5a28c,#bd5d50);border-color:#5f201c}
+@media(max-width:560px){.diplomacy-grid{grid-template-columns:1fr}.diplomacy-realm__stats{grid-template-columns:repeat(3,1fr)}}

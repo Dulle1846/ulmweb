@@ -51,14 +51,20 @@ canopy values. Broadleaf leaf litter is not reused on a conifer floor.
 Conifer goods include per-species timber, spruce/fir/pine cones, resin,
 juniper berries, blueberries, lingonberries and lichen. The existing seasonal
 gathering ledger decides availability, so berries disappear in winter while
-timber and firewood remain workable. Conifer habitats add crossbill,
-capercaillie, wolf, lynx and bark-beetle observations to the existing deer,
-roe-deer, boar, fox, owl, woodpecker and insect fauna.
+timber and firewood remain workable. Crossbill, capercaillie, wolf, lynx, mouse
+and songbird are now real simulated populations alongside deer, roe-deer, boar,
+fox, squirrel, owl and woodpecker. They breed, move, can be hunted and are
+saved; wolves and lynx read local prey biomass, so a predator population without
+prey loses condition instead of remaining a decorative habitat marker.
 
-Bark-beetle, snowbreak and drought-stressed have their own succession profiles
-in `FOREST_SUCCESSION_PROFILES`. Live conifer outbreaks choose their hazard by
-season, spread through the existing bounded neighbour scan, lower real forest
-stock and recover through the same save-compatible succession model.
+Bark-beetle, snowbreak, windthrow and drought-stressed have their own succession
+profiles in `FOREST_SUCCESSION_PROFILES`. Live conifer disturbances are
+risk- and weather-weighted: fire risk opens the real burned path, pest risk and
+monoculture weight bark beetle, snow potential and snowfall weight snowbreak,
+and exposed stands in a storm can now open the real windthrow path. Drought
+remains a dry-season stressor. The event cadence stays fixed and bounded; risk
+and weather change which real disturbance occurs, while the existing neighbour
+scan, stock loss and save-compatible recovery handle the consequences.
 
 ## 1.2.2 coverage
 
@@ -102,8 +108,8 @@ stock and recover through the same save-compatible succession model.
 | 1.2.2.36 Seasonal larch change | Implemented | larch turn/drop/leaf-out |
 | 1.2.2.37 Snow depth by elevation/exposure | Implemented | `stand.snowPotential`, `forestSnowDepthAt()`, `snowDepthCm` in the survey; exposed high ground holds a deeper pack |
 | 1.2.2.38 Deer, roe deer, boar and fox | Implemented | conifer formation fauna |
-| 1.2.2.39 Wolves, lynx and larger predators | Implemented as habitat observations | `wolf`, `lynx` |
-| 1.2.2.40 Squirrels and forest mice | Implemented | existing `squirrel`, `mouse` |
+| 1.2.2.39 Wolves, lynx and larger predators | Implemented | real `wolf`/`lynx` herds with local prey biomass and predation |
+| 1.2.2.40 Squirrels and forest mice | Implemented | `squirrel` and real `mouse` populations |
 | 1.2.2.41 Woodpeckers, owls, crossbills and forest birds | Implemented | `woodpecker`, `owl`, `crossbill`, `capercaillie`, `songbird` |
 | 1.2.2.42 Insects, bark beetles and ants | Implemented | `bark-beetle`, `beetle`, `ant` |
 | 1.2.2.43 Conifer timber for building and craft | Implemented | per-species timber goods |
@@ -112,12 +118,12 @@ stock and recover through the same save-compatible succession model.
 | 1.2.2.46 Mushrooms and forest berries | Implemented | mushrooms, blueberries, lingonberries |
 | 1.2.2.47 Medicinal plants and herbs | Implemented | conifer formation herbs and lichen |
 | 1.2.2.48 Hunting products and furs | Implemented | existing game/fur/hides ledger |
-| 1.2.2.49 Bark-beetle infestation | Implemented | `bark-beetle`, live succession |
-| 1.2.2.50 Drought and drought stress | Implemented | `drought-stressed`, live succession |
-| 1.2.2.51 Forest fire risk | Implemented | existing burned profile; conifer bait/stock pressure |
-| 1.2.2.52 Windthrow and storm damage | Implemented | existing windthrow plus conifer lean/damage |
-| 1.2.2.53 Monocultures and pest vulnerability | Implemented | dense spruce/fir formations and beetle outbreaks |
-| 1.2.2.54 Snowbreak | Implemented | `snowbreak`, live succession |
+| 1.2.2.49 Bark-beetle infestation | Implemented | `bark-beetle`; `pestRisk` weights live events |
+| 1.2.2.50 Drought and drought stress | Implemented | `drought-stressed`; dry-season weight and live succession |
+| 1.2.2.51 Forest fire risk | Implemented | `fireRisk` weights live burned events, including conifer stands |
+| 1.2.2.52 Windthrow and storm damage | Implemented | live weather/exposure-weighted windthrow, per-tree lean and root-plate floor |
+| 1.2.2.53 Monocultures and pest vulnerability | Implemented | Simpson-derived `monoculture` raises the live bark-beetle weight |
+| 1.2.2.54 Snowbreak | Implemented | `snowPotential` and snowfall weight live snowbreak events |
 
 ## Survey and local snow
 
@@ -130,9 +136,48 @@ snow load with the same local potential. The underlying values are derived from
 height, canopy, moisture, temperature and stocking; they add no per-tick state
 and no save fields.
 
-The same derived diagnostic layer exposes `fireRisk`, `pestRisk` and
-`monoculture` for the forest survey and future events. These are not a second
-simulation: they are deterministic properties of the existing stand.
+The same derived diagnostic layer exposes `fireRisk`, `pestRisk`,
+`speciesDiversity`, `monoculture`, `sightRadius`, `windExposure`, `wetness`,
+`deadwood` and `treeline` in the forest survey and feeds conifer disturbance
+selection. Diversity is measured from the actual species weights with a
+Simpson dominance term, not from a broad conifer share; a five-species mixed
+conifer wood is therefore not labelled a monoculture.
+These are not a second simulation: they are deterministic properties of the
+existing stand and choose among the existing real succession events. The same
+risk values now weight the bounded neighbour spread: a fire crossing into a dry
+stand is more likely than one entering damp, mixed wood, and beetle pressure
+raises the chance of a beetle-killed neighbour.
+
+## Integrated stewardship and pressures
+
+The forest ledger is no longer a dead-end inventory. A completed Lumber Yard or
+Forester can **deliver forest goods** into the physical settlement economy:
+
+- species and generic timber become physical `logs` in the yard's local store;
+- firewood and charcoal become physical `firewood`;
+- berries, mushrooms, game and other food goods enter the royal food stores;
+- fur, hides, resin and minor forest materials are sold for gold.
+
+Only goods actually accepted by the local store or royal stores leave the
+forest ledger. The delivery button is available in the building panel next to
+gathering, hunting processing and disturbance control. A Lumber Yard can also
+**thin the nearest crowded stand** for a bounded batch of logs; the Forester
+continues to plant depleted stands through its existing staffed stewardship
+loop.
+
+Snow and visibility now affect work rather than only the survey. Every forest
+node exposes `forestWorkFactor`, derived from local snow depth and stand
+visibility; gathering uses it to reduce the yield of a winter visit. The same
+value is shown with the snow depth, fire/pest risk, browsing pressure and
+predator pressure in the Lumber Yard/Forester site report. A deep winter pack
+now also covers the forest floor instead of leaving a needle or leaf carpet
+visible through the snow.
+
+The stand exposes a derived `structure` layer (`herb`, `shrub`, `sapling`,
+`canopy`, `deadwood`). Deadwood and the sapling layer feed habitat reads and
+forest-floor art; browsing pressure slows real regrowth, and predator pressure
+slows herd growth, without introducing separate saved populations or a second
+trophic solver.
 
 ## Visual reference
 
@@ -165,7 +210,12 @@ in `terrain.js`; without that order, `mountain-conifer`, `mixed-conifer` and
 
 - `tests/world/conifer-forest.test.js` covers species, formations, reachability,
   needle floor, podzol, fauna, seasonal products, larch timing and succession.
-- `tests/world/forest-ecology.test.js` keeps the shared vegetation contract and
-  the 27 formation indices stable.
+- `tests/world/forest-ecology.test.js` keeps the shared vegetation contract,
+  the 27 formation indices, per-tree form and derived survey fields stable.
+- `tests/systems/forest-fauna.test.js` covers real predator/prey herds and the
+  new conifer specialists; `tests/systems/forest-fauna-longrun.test.js` keeps
+  four years of migration, hunting pressure and population fill bounded.
+- `tests/systems/forest-succession.test.js` covers weather-weighted windthrow
+  and neighbour spread.
 - `tests/rendering/seasonal-foliage.test.js` protects the evergreen/snow curves.
 - Full suite: `cd game && npm test`.

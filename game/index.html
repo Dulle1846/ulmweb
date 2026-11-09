@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="css/comic-strategy.css">
     <link rel="stylesheet" href="css/ui-design-system.css">
     <link rel="stylesheet" href="css/ui-components.css">
+    <link rel="stylesheet" href="css/diplomacy.css">
     <link rel="stylesheet" href="css/hud-v3.css">
     <link rel="stylesheet" href="css/world-workshop.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
@@ -77,6 +78,9 @@
             <div class="realm-nav-divider" role="presentation">DOMAIN</div>
             <button class="realm-nav-button" type="button" data-kac-panel="politics" title="Factions and political order">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 6h14M7 6l-4 8h8L7 6Zm10 0-4 8h8l-4-8ZM7 21h10"/></svg><span>Politics</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="diplomacy" title="Neighbouring realms and treaties">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5v15M20 5v15M4 8h16M4 8l-2 5h6L6 8m12 0-2 5h6l-2-5M8 20v-5m8 5v-5"/></svg><span>Diplomacy</span>
             </button>
             <button class="realm-nav-button" type="button" data-kac-panel="economy" title="Treasury and economy">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M8 15h3"/><circle cx="16" cy="14" r="2"/></svg><span>Economy</span>
@@ -278,7 +282,12 @@
         <div class="setting-row"><div><strong>Original soundtrack</strong><small>One original instrumental theme, composed for a continuous loop.</small></div><label class="toggle"><input id="settings-music-toggle" type="checkbox" aria-label="Original soundtrack enabled" checked><span></span></label></div>
         <div class="setting-row volume-setting"><div><strong>Music volume</strong><small>Adjust the soundtrack level.</small></div><input id="settings-music-volume" type="range" min="0" max="100" value="22" aria-label="Music volume"></div>
         <div class="setting-row"><div><strong>Resource change badges</strong><small>Show the per-tick change beside each resource in the royal ledger.</small></div><label class="toggle"><input id="settings-deltas-toggle" type="checkbox" aria-label="Show resource change badges" checked><span></span></label></div>
-        <div class="setting-row"><div><strong>Reduce interface motion</strong><small>Turn off card and navigation transitions for calmer play.</small></div><label class="toggle"><input id="settings-motion-toggle" type="checkbox" aria-label="Reduce interface motion"><span></span></label></div>
+        <section class="settings-accessibility" aria-labelledby="settings-accessibility-title">
+            <h3 id="settings-accessibility-title">ACCESSIBILITY &amp; INTERFACE</h3>
+            <div class="setting-row"><div><strong>Contextual tooltips</strong><small>Show short hints when hovering or focusing interface controls.</small></div><label class="toggle"><input id="settings-tooltips-toggle" type="checkbox" aria-label="Show contextual tooltips" checked><span></span></label></div>
+            <div class="setting-row"><div><strong>Reduce interface motion</strong><small>Turn off card and navigation transitions for calmer play.</small></div><label class="toggle"><input id="settings-motion-toggle" type="checkbox" aria-label="Reduce interface motion"><span></span></label></div>
+            <div class="setting-row"><div><strong>High contrast</strong><small>Strengthen text, borders and selected-state contrast.</small></div><label class="toggle"><input id="settings-high-contrast-toggle" type="checkbox" aria-label="Use high contrast"><span></span></label></div>
+        </section>
         <div class="settings-section-heading">ATMOSPHERE</div>
         <div class="setting-row volume-setting time-of-day-setting"><div><strong>Time of day</strong><small>Dawn warmth, neutral daylight, dusk colour and a cool night veil over the realm map. 12:00 is the full-quality default.</small></div><div class="time-of-day-control"><input id="settings-time-of-day" type="range" min="0" max="23" step="1" value="12" aria-label="Time of day"><output id="settings-time-of-day-value" for="settings-time-of-day">12:00</output></div></div>
         <div class="settings-section-heading">PERFORMANCE</div>
@@ -365,6 +374,7 @@
 <button type="button" class="ui-button ui-button--tab" data-command-tab="kingdom"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>REALM</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="government"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>GOVERNMENT</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="politics"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>POLITICS</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="diplomacy"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>DIPLOMACY</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="decisions"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>DECISIONS</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="cards"><svg aria-hidden="true"><use href="assets/command-emblems.svg#cards"></use></svg><span>CARDS</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="economy"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>ECONOMY</span></button>

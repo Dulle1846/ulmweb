@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import {
+    coniferDisturbanceKind, coniferDisturbanceWeights, spreadRiskFactor,
     ensureForestSuccession, forestSuccessionAt, resetForestSuccession,
     restoreForestSuccession, serializeForestSuccession, suppressForestDisturbance,
     suppressNearestForestDisturbance, updateForestSuccession,
@@ -42,6 +43,50 @@ function standContext(overrides = {}) {
         ...overrides,
     };
 }
+
+test("conifer disturbance selection follows fire, pest, monoculture and snow pressure", () => {
+    const base = {
+        coniferShare: 0.7, fireRisk: 0.18, pestRisk: 0.16,
+        monoculture: 0, snowPotential: 0.25,
+    };
+    const summer = coniferDisturbanceWeights(base, 1);
+    const winter = coniferDisturbanceWeights(base, 3);
+    const dry = coniferDisturbanceWeights({ ...base, fireRisk: 0.92 }, 1);
+    const infested = coniferDisturbanceWeights({ ...base, pestRisk: 0.9 }, 1);
+    const pure = coniferDisturbanceWeights({ ...base, monoculture: 1 }, 1);
+
+    assert.ok(dry.burned > summer.burned, "fire risk must raise the burned weight");
+    assert.ok(infested["bark-beetle"] > summer["bark-beetle"], "pest risk must raise the bark-beetle weight");
+    assert.ok(pure["bark-beetle"] > summer["bark-beetle"], "monoculture must raise the bark-beetle weight");
+    assert.ok(winter.snowbreak > summer.snowbreak, "snow potential must matter most in winter");
+    assert.ok(winter.burned < summer.burned, "winter must damp the fire path");
+    const exposed = coniferDisturbanceWeights({ ...base, windExposure: 0.9 }, 1, "storm");
+    const calm = coniferDisturbanceWeights({ ...base, windExposure: 0.1 }, 1, "clear");
+    assert.ok(exposed.windthrow > calm.windthrow, "storms and exposure must raise windthrow");
+    assert.ok(coniferDisturbanceWeights({ ...base, windExposure: 0.9 }, 1, "rain").burned
+        < coniferDisturbanceWeights({ ...base, windExposure: 0.9 }, 1, "clear").burned,
+    "wet weather must damp the fire path");
+    for (const weight of Object.values(summer)) assert.ok(Number.isFinite(weight) && weight > 0);
+
+    assert.equal(coniferDisturbanceKind({ ...base, fireRisk: 0.92 }, 1, 0), "burned");
+    assert.equal(coniferDisturbanceKind({ ...base, pestRisk: 0.9 }, 1, 0.6), "bark-beetle");
+    assert.equal(coniferDisturbanceKind({
+        ...base, fireRisk: 0, pestRisk: 0, monoculture: 0, snowPotential: 1,
+    }, 3, 0.5), "snowbreak");
+});
+
+test("disturbance spread follows the receiving stand's pressure", () => {
+    const quiet = { fireRisk: 0.1, pestRisk: 0.1, monoculture: 0, snowPotential: 0.15 };
+    const dry = { fireRisk: 0.9, pestRisk: 0.1, monoculture: 0, snowPotential: 0.15 };
+    const infested = { fireRisk: 0.1, pestRisk: 0.9, monoculture: 0.9, snowPotential: 0.15 };
+    const snowy = { fireRisk: 0.1, pestRisk: 0.1, monoculture: 0, snowPotential: 0.9 };
+    assert.ok(spreadRiskFactor("burned", dry) > spreadRiskFactor("burned", quiet));
+    assert.ok(spreadRiskFactor("bark-beetle", infested) > spreadRiskFactor("bark-beetle", quiet));
+    assert.ok(spreadRiskFactor("snowbreak", snowy) > spreadRiskFactor("snowbreak", quiet));
+    assert.equal(spreadRiskFactor("windthrow", quiet), 1);
+    assert.ok(spreadRiskFactor("windthrow", { conifer: true, windExposure: 0.9 })
+        > spreadRiskFactor("windthrow", { conifer: true, windExposure: 0.1 }));
+});
 
 test("stage thresholds preserve fresh, regrowth, young and recovered states", () => {
     assert.equal(forestSuccessionStage("burned", 0).id, "fresh");

@@ -38,7 +38,7 @@ test("the approved royal palette is represented by central design tokens",()=>{
 test("every visible royal navigation action has a real handler",()=>{
   const targets=[...html.matchAll(/data-kac-panel="([^"]+)"/g)].map(match=>match[1]);
   assert.ok(targets.length>=10,"expected the administration rail and resource shortcuts");
-  const supported=new Set(["kingdom","government","people","dynasty","chronicle","politics","economy","resources","buildings","cards","creatures","build","settings"]);
+  const supported=new Set(["kingdom","government","people","dynasty","chronicle","politics","diplomacy","economy","resources","buildings","cards","creatures","build","settings"]);
   for(const target of targets)assert.ok(supported.has(target),"unwired navigation target: "+target);
   for(const target of supported)assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing visible navigation target: "+target);
   assert.ok(management.includes('addEventListener("click"'),"navigation must use real click handlers");
@@ -129,6 +129,20 @@ test("resource details expose real stocks, flows, related buildings and bounded 
   assert.ok(management.includes("Latest settlement:"));
   assert.ok(hud.includes(".resource-detail-grid"));
   assert.ok(hud.includes(".command-trend"));
+});
+
+test("diplomacy exposes persistent neighbours, treaties and trade consequences",()=>{
+  assert.ok(html.includes('data-command-tab="diplomacy"'));
+  assert.ok(html.includes('data-kac-panel="diplomacy"'));
+  assert.ok(management.includes("function diplomacy()"));
+  assert.ok(management.includes("data-diplomacy-realm"));
+  assert.ok(management.includes('data-command="diplomacy-gift"'));
+  assert.ok(management.includes('data-command="diplomacy-pact"'));
+  assert.ok(management.includes('data-command="diplomacy-alliance"'));
+  assert.ok(management.includes('data-command="diplomacy-war"'));
+  assert.ok(management.includes('data-command="diplomacy-peace"'));
+  assert.ok(main.includes("normalizeDiplomacySnapshot(snapshot.diplomacy)"));
+  assert.ok(main.includes("diplomacy:JSON.parse(JSON.stringify(state.diplomacy"));
 });
 
 test("map layer selector and legend are wired to real geography overlays",()=>{
@@ -351,4 +365,25 @@ test("royal administration navigation exposes current-page semantics, not toggle
   for(const target of ["kingdom","government","people","dynasty","chronicle","politics","economy","resources","buildings","cards","creatures","build","settings"]){
     assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing navigation target "+target);
   }
+});
+
+
+test("accessibility preferences are visible, persistent and applied as document modes",async()=>{
+  const persistence=await readFile(new URL("js/core/persistence.js",root),"utf8");
+  for(const id of ["settings-tooltips-toggle","settings-motion-toggle","settings-high-contrast-toggle"]){
+    assert.ok(html.includes('id="'+id+'"'),"missing accessibility control "+id);
+  }
+  for(const key of ["showTooltips","reduceMotion","highContrast"]){
+    assert.ok(persistence.includes(key),"settings persistence must retain "+key);
+  }
+  for(const id of ["settings-tooltips-toggle","settings-motion-toggle","settings-high-contrast-toggle"]){
+    assert.ok(main.includes('getElementById("'+id+'")'),"settings binding missing "+id);
+  }
+  assert.ok(main.includes("applyInterfaceSettings()"));
+  for(const mode of ["ui-hide-tooltips","ui-reduced-motion","ui-high-contrast"]){
+    assert.ok(css.includes("html."+mode),"missing document mode "+mode);
+  }
+  assert.ok(css.includes("html.ui-hide-tooltips [data-tooltip]::after"));
+  assert.ok(css.includes("html.ui-hide-tooltips [data-ui-tooltip]::after"));
+  assert.ok(css.includes(".settings-accessibility"));
 });

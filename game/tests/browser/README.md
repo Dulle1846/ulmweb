@@ -14,6 +14,7 @@ npm run test:e2e:setup
 npm run test:e2e
 npm run test:forester-stewardship
 npm run test:forester-stewardship-longrun
+npm run test:forest-stewardship-ui
 ```
 
 The visual reference and the full-year audit are separate, explicit runs:

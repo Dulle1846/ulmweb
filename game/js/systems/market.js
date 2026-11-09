@@ -4,16 +4,12 @@ import { addLog } from "./events.js";
 import { random } from "../core/random.js";
 import { recordResourceMovement } from "./goods-book.js";
 import { addResource } from "./resources.js";
+import { TRADE_PARTNERS } from "./diplomacy-config.js";
+import { getDiplomaticTradeTerms, recordTradeInfluence } from "./diplomacy-trade.js";
 
 export const MARKET_RESOURCES = Object.freeze(["wood","stone","food"]);
 export const BASE_PRICES = Object.freeze({ wood:2, stone:3, food:2 });
-
-export const TRADE_PARTNERS = Object.freeze([
-    { id:"northmere", name:"Northmere Guild", region:"Northern Marches", specialty:"WOOD", treasury:420, stock:{wood:90,stone:35,food:60} },
-    { id:"ironvale", name:"Ironvale Caravans", region:"Eastern Highlands", specialty:"STONE", treasury:520, stock:{wood:25,stone:110,food:35} },
-    { id:"goldcoast", name:"Goldcoast League", region:"Southern Coast", specialty:"FOOD", treasury:760, stock:{wood:45,stone:30,food:125} },
-    { id:"redpass", name:"Redpass Companies", region:"Western Frontier", specialty:"SUPPLIES", treasury:300, stock:{wood:60,stone:55,food:25} }
-]);
+export { TRADE_PARTNERS };
 
 export function createMarketState() {
     return {
@@ -115,8 +111,10 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     }
     const amount = Math.max(1,Math.min(25,Math.floor(Number(quantity)||1)));
     const price = state.market.prices[resource];
+    const terms = getDiplomaticTradeTerms(state.diplomacy, partnerId);
+    if (terms.blocked) return {ok:false,reason:"AT WAR — THE TRADE ROAD IS CLOSED"};
     if (direction === "buy") {
-        const cost = Math.ceil(price*amount);
+        const cost = Math.ceil(price*amount*terms.buyFactor);
         if ((partner.stock[resource]||0)<amount) return {ok:false,reason:"PARTNER OUT OF STOCK"};
         if (state.resources.gold<cost) return {ok:false,reason:"NOT ENOUGH GOLD"};
         addResource("gold",-cost);
@@ -126,11 +124,12 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
         partner.treasury+=cost;
         state.market.totalGoldTraded+=cost;
         state.statistics.totalTrades++;
+        recordTradeInfluence(state.diplomacy,partnerId,{year:state.year,tick:state.tick,direction,resource,amount,gold:cost});
         addLog("TRADE: BOUGHT "+amount+" "+resource.toUpperCase()+" FROM "+partner.name,"#e3bd71");
         state.market.totalTrades++;
         return {ok:true,amount,gold:cost};
     }
-    const payout = Math.floor(price*amount*0.82);
+    const payout = Math.floor(price*amount*0.82*terms.sellFactor);
     if ((state.resources[resource]||0)<amount) return {ok:false,reason:"NOT ENOUGH "+resource.toUpperCase()};
     if (partner.treasury<payout) return {ok:false,reason:"PARTNER TREASURY TOO LOW"};
     addResource(resource,-amount);
@@ -141,6 +140,7 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     state.market.totalGoldTraded+=payout;
     state.market.totalTrades++;
     state.statistics.totalTrades++;
+    recordTradeInfluence(state.diplomacy,partnerId,{year:state.year,tick:state.tick,direction,resource,amount,gold:payout});
     addLog("TRADE: SOLD "+amount+" "+resource.toUpperCase()+" TO "+partner.name,"#e3bd71");
     return {ok:true,amount,gold:payout};
 }
