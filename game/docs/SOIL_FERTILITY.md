@@ -2,7 +2,7 @@
 
 **Status:** implemented on the `3.10.0-dev` development line
 **Scope:** farm fields, settlement food chain, stable integration, save compatibility
-**Tests:** 4 focused soil tests; full Node suite 610/610; deterministic 25-year campaign green
+**Tests:** 4 focused soil tests; full Node suite 612/612; deterministic 25-year campaign green
 
 ## Why this slice
 

@@ -4,6 +4,7 @@
 **Production branch:** `ulmweb-branch`
 **Production URL:** https://kings-and-cards.pages.dev/
 **Audit browser:** Chrome 156 (Cloud Chromium), macOS UA, 432 × 719 CSS px, DPR 2
+**Verified release code:** `dc4cead` (skip link + inert dialog background)
 
 This record covers the manual gates requested after the backlog close, the Workers
 build alert, and the remote-branch cleanup. It distinguishes verified facts from
@@ -89,17 +90,30 @@ Performed against the production page in the Cloud Chromium tab.
 | Focusable count | 74 visible controls on the loaded start/main view |
 | Target size (WCAG 2.2 AA) | 55 visible buttons measured; 40 are below the 44 px advisory size, but only two were below the 24 px AA minimum. `#help-btn` (22 px) and `#skip-card-btn` (23.5 px) were raised to explicit 28 px minimums. Live production re-measures both at 28 px and finds 0 controls below 24 px. |
 
+### Skip link and modal inerting — production verification
+
+Verified on production code `dc4cead` in the same Chrome 156 / 432 × 719 / DPR 2 session.
+
+| Check | Measured state |
+|---|---|
+| Skip link placement | `#skip-to-game` is the first focusable element, before `.game-shell`; unfocused it sits at `top: -58px` |
+| Keyboard reachability | With focus reset to the document origin (the way a keyboard user enters from browser chrome), `Tab` focused `#skip-to-game` |
+| Visible focus | Focused link: `top: 8px`, 37 px high, `3px solid rgb(240, 217, 159)` outline |
+| Activation | `Enter` moved focus to `#main-container`; the link returned off-screen at `top: -58px` |
+| Start dialog isolation | `.game-shell` and `#skip-to-game` both had `inert` + `aria-hidden="true"`; only `#start-screen` was exposed |
+| Nested settings | Opening settings made `#start-screen` `inert` + `aria-hidden="true"`; `#settings-modal` stayed non-inert and focused `#settings-close` |
+| Escape restore | Settings closed; `#start-screen` returned to non-inert/no `aria-hidden`; focus returned to `#player-name-input` |
+| Final restore | After founding the realm, shell/start/settings/skip had no `inert` or `aria-hidden`; `document.querySelectorAll("[inert]").length === 0`; focus on `#main-container` |
+| Existing gates | Focus trap still wraps `Shift+Tab` to `#start-settings-btn` and `Tab` back to `#player-name-input`; 51 visible controls, 0 below 24 px; no horizontal overflow |
+| Console | 0 errors; four WebGL performance warnings only |
+
 ### Findings that remain open
 
-- **No skip link** was found. A keyboard user entering the main game must traverse the
-  header controls before the map. This is a minor accessibility gap, not a release
-  blocker for the current scope.
 - **40 of 55** visible buttons remain below the 44 px advisory touch size (most are
   31–38 px high). They meet the 24 px WCAG 2.2 AA minimum; the 44 px target is a
   comfort recommendation, not an AA failure.
-- The background is **not `inert`** while a modal is open. The dialog manager traps Tab
-  and redirects `focusin`, and `aria-modal="true"` tells assistive technology to treat
-  the dialog as modal, but `inert` would be a stronger guarantee.
+- The former skip-link and modal-background gaps are closed and re-measured in the
+  production table above. A human screen-reader pass is still required.
 - A **human screen-reader pass** (VoiceOver/NVDA) was not possible in this Linux VM.
   The accessibility tree and keyboard behavior were inspected, but that is not a
   substitute for a real screen-reader session.
@@ -126,8 +140,8 @@ dependencies, or add a Firefox/WebKit CI job with the required libraries.
 
 ## 5. Release acceptance
 
-The production page serves the verified renderer commit, the current Node suite is
-610/610, and the 25-year deterministic campaign completes. The manual gates above are
+The production page serves the verified release code `dc4cead`, the current Node suite
+is 612/612, and the 25-year deterministic campaign completes. The manual gates above are
 recorded honestly: keyboard/focus pass in Chromium, cross-browser and human
 screen-reader passes still open. **Owner visual acceptance is still required before
 calling the next release fully accepted.**
