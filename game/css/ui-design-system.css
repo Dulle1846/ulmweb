@@ -449,3 +449,9 @@ html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
 /* WCAG 2.2 AA target size: keep the two smallest controls at least 24x24. */
 #help-btn{min-width:28px;min-height:28px}
 #skip-card-btn{min-height:28px}
+
+/* Keyboard-first skip link. It stays off-screen until focused and then
+   becomes a visible, high-contrast first tab stop. */
+.skip-to-game{position:fixed;top:8px;left:8px;z-index:10000;transform:translateY(-180%);padding:10px 16px;border:2px solid #e1c47e;border-radius:3px;background:#24221f;color:#f0e3c7;font:700 11px var(--ui-title-font);letter-spacing:.08em;text-decoration:none;box-shadow:0 6px 18px #000a;transition:transform .14s ease}
+.skip-to-game:focus,.skip-to-game:focus-visible{transform:translateY(0);outline:3px solid #f0d99f;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.skip-to-game{transition:none}}
