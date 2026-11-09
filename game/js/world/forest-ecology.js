@@ -408,7 +408,7 @@ function formationFor(x, y, ctx) {
     // Forest resources begin at the grass/forest transition, so "hillside"
     // must mean the upper woodland belt, not every tile above the old 0.78
     // resource line. Otherwise every resource-bearing wood becomes hillside.
-    const high = height > 0.82;
+    const high = height > 0.8;
     const coniferPatch = coarseUnit(seed, x, y, 7, 0x434f4e49);
     const pinePatch = coarseUnit(seed, x, y, 8, 0x50494e45);
     const larchPatch = coarseUnit(seed, x, y, 9, 0x4c4152);
@@ -422,7 +422,10 @@ function formationFor(x, y, ctx) {
         return coniferPatch > 0.24 ? 'subalpine-scrub' : 'mountain-conifer';
     }
     if (high) {
-        if (temperature > 0.52 && relief > 0.55) return 'hillside';
+        // Cool high ground is not automatically conifer: a sheltered slope
+        // above the lowland woods still carries beech and maple. Exposed or
+        // genuinely cold high ground remains part of the conifer belt.
+        if (!cold && relief > 0.55) return 'hillside';
         if (cold) {
             // Sheltered cold slopes still carry a layered spruce/fir/pine/larch
             // canopy. Without this transition belt, a northern realm's entire

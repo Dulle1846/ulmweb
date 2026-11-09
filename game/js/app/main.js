@@ -653,7 +653,12 @@ function loadSnapshotIntoGame(profile,snapshot){
     normalizeGovernment(snapshot.government);
     normalizeRoyalState(snapshot.royal);
     normalizeHouseholdAssignments();
+    // The settlement pass applies its daily morale delta. A restored realm must
+    // keep the morale value that was persisted; the next tick can recalculate
+    // the derived morale effect from its restored households.
+    const restoredMorale=state.morale;
     initializeSettlementForRealm();
+    state.morale=restoredMorale;
     state.market=snapshot.market||createMarketState();
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===(Number(state.worldW)||WORLD_W))state.explored=snapshot.explored;
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
