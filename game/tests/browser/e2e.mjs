@@ -1472,9 +1472,9 @@ try{
             issues
         };
     });
-    assert.equal(largeOrder.huge.quantity,1000000000,"a very large haul order must retain its requested quantity");
-    assert.equal(largeOrder.huge.sourceReserved,1000000000,"a very large haul order must reserve the real source stock");
-    assert.equal(largeOrder.huge.targetReserved,1000000000,"a very large haul order must reserve the real destination space");
+    assert.equal(largeOrder.huge.quantity,12,"a very large haul order must reserve only one cartload");
+    assert.equal(largeOrder.huge.sourceReserved,12,"a very large haul order must reserve only one cartload of source stock");
+    assert.equal(largeOrder.huge.targetReserved,12,"a very large haul order must reserve only one cartload of destination space");
     assert.equal(largeOrder.huge.targetReservedFlag,true,"a very large haul order must be marked as destination-reserved");
     assert.equal(largeOrder.afterCancel.status,"cancelled","cancelling a huge order must mark it cancelled");
     assert.equal(largeOrder.afterCancel.sourceReserved,0,"cancelling a huge order must release the source reservation");
