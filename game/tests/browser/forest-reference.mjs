@@ -232,6 +232,9 @@ try {
                 clearing: Number((tile.stand.clearing || 0).toFixed(3)),
                 exposure: Number((tile.stand.exposure || 0).toFixed(3)),
                 snowPotential: Number((tile.stand.snowPotential || 0).toFixed(3)),
+                groundShade: Number((tile.stand.groundShade || 0).toFixed(3)),
+                visibility: Number((tile.stand.visibility || 0).toFixed(3)),
+                sightRadius: tile.stand.sightRadius,
                 winterSnowDepthCm: tile.snow.cm,
             }])),
         };
@@ -261,6 +264,10 @@ try {
             const { CELL } = await import("./js/core/config.js");
             state.isPaused = true;
             state.weather = "clear";
+            // Midday removes the morning mist layer from the evidence frame so
+            // the canopy shade and the reduced sight wall can be judged apart
+            // from weather haze. It also makes the comparison deterministic.
+            state.timeOfDay = 12;
             state.dayOfYear = day;
             state.seasonIndex = 1;
             setZoomLevel(3);
@@ -296,6 +303,7 @@ try {
             const { CELL } = await import("./js/core/config.js");
             state.isPaused = true;
             state.weather = "clear";
+            state.timeOfDay = 12;
             state.dayOfYear = day;
             state.seasonIndex = Math.floor(day / 100) % 4;
             setZoomLevel(3);
@@ -330,6 +338,7 @@ try {
     const metadata = {
         seed,
         viewport,
+        timeOfDay: 12,
         canvas: { width: webgl.width, height: webgl.height },
         renderer: webgl.renderer,
         maxTextureSize: webgl.maxTextureSize,
@@ -344,7 +353,7 @@ try {
         seasonalDays: seasonDays,
         seasonalFrames: seasonDays.map(day => ({ day })),
         note: coniferMode
-            ? "Northern realm, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level. All twelve conifer formations are real generated tiles, not hand-placed demo props. The seasonal strip follows a larch stand through needle-out, summer, golden autumn and bare winter. winterSnowDepthCm is the derived local snow depth on day 350. Not a GPU performance benchmark."
+            ? "Northern realm, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level at midday, so morning mist does not obscure the canopy shade or the sight wall. All twelve conifer formations are real generated tiles, not hand-placed demo props. The seasonal strip follows a larch stand through needle-out, summer, golden autumn and bare winter. groundShade, visibility and sightRadius record the local canopy shade and stand-dependent sight profile; winterSnowDepthCm is the derived local snow depth on day 350. Not a GPU performance benchmark."
             : "HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level. Forest formations are real generated tiles, not hand-placed demo props. The cutover frame uses a wooded tile with stock set to zero. Not a GPU performance benchmark.",
     };
     await fs.writeFile(path.join(outputDir, outputNames.metadata), JSON.stringify(metadata, null, 2) + "\n");
@@ -372,7 +381,7 @@ async function renderFormationSheet(browserContext, frames, meta) {
                 <strong>${escapeHtml(frame.tile.label)}</strong>
                 <small>${escapeHtml(frame.tile.age)} · ${escapeHtml(frame.tile.species.slice(0, 3).join(" · ") || "mixed")}</small>
                 <em>${escapeHtml(frame.tile.goods.slice(0, 4).join(" · ") || "woodland produce")}</em>
-                <span>TILE ${frame.tile.x}, ${frame.tile.y} · STOCK ${Math.round(frame.tile.stockRatio * 100)}%</span>
+                <span>TILE ${frame.tile.x}, ${frame.tile.y} · STOCK ${Math.round(frame.tile.stockRatio * 100)}% · SHADE ${Math.round((frame.tile.groundShade || 0) * 100)}% · SIGHT ${frame.tile.sightRadius}</span>
             </figcaption>
         </figure>`).join("");
     const html = `<!doctype html>
@@ -398,7 +407,7 @@ async function renderFormationSheet(browserContext, frames, meta) {
 <div class="sheet">
     <div class="eyebrow">KINGS &amp; CARDS · ${meta.conifer ? "CONIFER" : "LAUBWALD"} ECOLOGY</div>
     <h1>${meta.conifer ? "Twelve conifer formations, one deterministic model" : "Fifteen woodland formations, one deterministic model"}</h1>
-    <p class="deck">Seed ${seed} · ${meta.world.width} × ${meta.world.height} world · ${escapeHtml(meta.world.climate)} climate · ${meta.world.forests}% forest slider · 0.95× rooftop view · HUD, entities, fog and weather hidden · simulation paused</p>
+    <p class="deck">Seed ${seed} · ${meta.world.width} × ${meta.world.height} world · ${escapeHtml(meta.world.climate)} climate · ${meta.world.forests}% forest slider · 0.95× rooftop view · midday · HUD, entities, fog and weather hidden · simulation paused</p>
     <div class="grid">${cells}</div>
     <footer>
         <span><strong>Generated</strong> ${meta.generatedAt} · <strong>Renderer</strong> ${escapeHtml(meta.renderer || "unknown")}</span>

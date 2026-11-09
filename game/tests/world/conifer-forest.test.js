@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
     FOREST_GOODS, FOREST_SPECIES, FOREST_SUCCESSION_PROFILES, FOREST_TYPES,
-    forestFaunaFor, forestGoodsFor, forestMicrofaunaAt, forestStandAt, forestSuccessionStage,
+    forestCanopyShade, forestFaunaFor, forestGoodsFor, forestMicrofaunaAt, forestSightProfile,
+    forestStandAt, forestSuccessionStage,
 } from "../../js/world/forest-ecology.js";
 import { foliageState } from "../../js/presentation/rendering/seasonal-foliage.js";
 
@@ -113,6 +114,54 @@ test("a conifer stand exposes needle litter, podzol, conifer products and specia
     assert.ok(summerFauna.length > 0);
     const micro = forestMicrofaunaAt(stand, 160, "temperate", 0.5);
     assert.ok(micro.some(entry => entry.id === "bark-beetle"));
+});
+
+test("dense conifer stands cast real floor shade and contract sight while open pine does not", () => {
+    const dense = findConiferStand(stand => stand.type === "sprucewood" && stand.density >= 0.6);
+    const open = findConiferStand(stand => stand.type === "pinewood" && stand.density <= 0.5);
+    assert.ok(dense, "a dense sprucewood is required for the shade test");
+    assert.ok(open, "an open pinewood is required for the contrast test");
+    assert.ok(dense.groundShade > open.groundShade + 0.2,
+        "the ground shade must follow density, not only canopy cover");
+    assert.ok(dense.visibility < open.visibility,
+        "a closed stand must expose less sight than an open pine wood");
+
+    const sun = { elevation: 0.8, shadowX: -0.55, shadowY: 0.18 };
+    const denseShade = forestCanopyShade(dense, { sun, snowCover: 0 });
+    const openShade = forestCanopyShade(open, { sun, snowCover: 0 });
+    assert.ok(denseShade.alpha > 0.08, "the dense floor pass must be visible, not a zero-alpha no-op");
+    assert.equal(openShade.alpha, 0, "the open pine wood must keep its bright floor");
+    assert.ok(denseShade.reach > 0 && denseShade.offsetX !== 0,
+        "the shade must have a soft footprint and follow the sun direction");
+
+    const denseSight = forestSightProfile(dense, { tileSize: 48, viewportWidth: 800, viewportHeight: 800 });
+    const openSight = forestSightProfile(open, { tileSize: 48, viewportWidth: 800, viewportHeight: 800 });
+    assert.equal(denseSight.limited, true);
+    assert.equal(openSight.limited, false);
+    assert.ok(denseSight.strength > 0.15 && denseSight.radiusPx > 0);
+    assert.equal(openSight.strength, 0);
+    assert.equal(openSight.radiusPx, 0);
+    assert.ok(denseSight.radiusPx < 800,
+        "the sight wall must leave a readable centre instead of blanketing the whole view");
+});
+
+test("canopy shade follows sun elevation and lightens under snow", () => {
+    const dense = findConiferStand(stand => stand.type === "sprucewood" && stand.density >= 0.6);
+    assert.ok(dense);
+    const noon = forestCanopyShade(dense, {
+        sun: { elevation: 1.05, shadowX: 0, shadowY: 0 }, snowCover: 0,
+    });
+    const dusk = forestCanopyShade(dense, {
+        sun: { elevation: 0.12, shadowX: 0.8, shadowY: 0.2 }, snowCover: 0,
+    });
+    const snow = forestCanopyShade(dense, {
+        sun: { elevation: 0.12, shadowX: 0.8, shadowY: 0.2 }, snowCover: 0.9,
+    });
+    assert.ok(dusk.alpha > noon.alpha + 0.03, "low sun must deepen the floor shade");
+    assert.ok(dusk.reach > noon.reach, "low sun must stretch the shade footprint");
+    assert.ok(Math.abs(dusk.offsetX) > 0, "the footprint must follow the shadow vector");
+    assert.ok(snow.alpha < dusk.alpha, "snow reflection must lighten the floor shade");
+    assert.notEqual(snow.color, dusk.color, "snow shade must use a cooler colour");
 });
 
 test("larch loses its needles while spruce, fir, pine and juniper stay evergreen", () => {

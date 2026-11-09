@@ -5,7 +5,7 @@
 import { CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
 import { TYPE } from '../../core/types.js';
-import { drawTerrain } from './terrain.js';
+import { drawTerrain, drawForestVisibility, updateForestSightOrigin, isForestSightVisible } from './terrain.js';
 import { drawEntity } from './entities.js';
 import { drawPlacementPreview } from './placement-preview.js';
 import { getRoadTiles,getRoadAt,ROAD_TYPES } from '../../systems/roads.js';
@@ -19,6 +19,12 @@ import { drawDaylightOverlay } from './daylight.js';
 let visibleEntitiesCache=[];
 let visibleEntitiesUntil=0;
 let visibleEntitiesKey="";
+let visibleCarrierIdsCache=new Set();
+let visibleCarrierIdsUntil=0;
+
+// Read-only diagnostics for the real-browser occlusion audit.
+export function visibleEntityIdsForTest(){return visibleEntitiesCache.map(entity=>entity.id);}
+export function visibleCarrierIdsForTest(){return [...visibleCarrierIdsCache];}
 
 // ═══════════════════════════════════════════════════════════════
 //  WELT ZEICHNEN
@@ -26,6 +32,9 @@ let visibleEntitiesKey="";
 
 export function drawWorld() {
     const { ctx, canvas, camera, zoom, tick } = state;
+    // Sight is anchored to the camera centre. This is the world point the
+    // player is actually looking from; panning the camera moves the anchor.
+    updateForestSightOrigin(canvas, camera, zoom);
 
     // ── Terrain ──────────────────────────────────────────────
     drawTerrain(ctx);
@@ -42,14 +51,18 @@ export function drawWorld() {
     const top = camera.y - margin;
     const right = camera.x + canvas.width + margin;
     const bottom = camera.y + canvas.height + margin;
-    const cacheKey=[state.entities.length,Math.floor(camera.x/(cellPx*2)),Math.floor(camera.y/(cellPx*2)),canvas.width,canvas.height,Math.round(zoom*100)].join(":");
+    const cacheKey=[state.entities.length,state.forestVisualRevision||0,state.terrainVersion||0,Math.floor(camera.x/(cellPx*2)),Math.floor(camera.y/(cellPx*2)),canvas.width,canvas.height,Math.round(zoom*100)].join(":");
     const now=performance.now();
     if(now>=visibleEntitiesUntil||cacheKey!==visibleEntitiesKey){
         visibleEntitiesKey=cacheKey;visibleEntitiesUntil=now+100;
         visibleEntitiesCache=state.entities.filter(e=>{
             if(e.dead)return false;
             const x=e.x*cellPx,y=e.y*cellPx;
-            return x>=left&&x<=right&&y>=top&&y<=bottom;
+            if(!(x>=left&&x<=right&&y>=top&&y<=bottom))return false;
+            // A dense stand between the camera anchor and the entity hides the
+            // entity (and its selection ring) completely. Open ground at the
+            // same distance returns true and keeps the old draw path.
+            return isForestSightVisible(e.x,e.y);
         }).sort((a,b)=>a.y-b.y);
     }
     visibleEntitiesCache.forEach(entity => {
@@ -95,6 +108,11 @@ export function drawWorld() {
 
     ctx.globalAlpha = 1;
     ctx.textAlign = "left";
+
+    // This screen-space wall is atmosphere only. Entities behind a dense stand
+    // were already removed from visibleEntitiesCache above; the wall still
+    // tints the reduced sight below daily light and weather.
+    drawForestVisibility(ctx, canvas, camera, zoom);
 
     // Daily light sits above the terrain and units, but below the weather and
     // vignette. At noon its alpha is zero, so the 100% default look is intact.
@@ -256,6 +274,7 @@ function fieldColor(stage){
 function drawForesterStewardshipOverlay(ctx,zoom,camera,canvas){
     const selected=state.entities.find(entity=>!entity.dead&&entity.type===TYPE.FORESTER&&String(entity.id)===String(state.selectedBuildingId));
     if(!selected)return;
+    if(!isForestSightVisible(selected.x,selected.y))return;
     const cellPx=CELL*zoom;
     if(cellPx<10)return;
     const x=Math.floor(selected.x),y=Math.floor(selected.y),radius=5;
@@ -319,6 +338,7 @@ function drawConstructionSites(ctx,zoom,camera,canvas){
     for(const entity of state.entities){
         const construction=entity.construction;
         if(entity.dead||!construction||construction.stage>=3)continue;
+        if(!isForestSightVisible(entity.x,entity.y))continue;
         const px=entity.x*tile-camera.x,py=entity.y*tile-camera.y;
         if(px< -tile*4||py< -tile*4||px>canvas.width+tile*4||py>canvas.height+tile*4)continue;
         const width=tile*1.65,height=tile*1.65;
@@ -361,9 +381,17 @@ function drawCarriers(ctx,zoom,camera,canvas){
     if(zoom<.45)return;
     let snapshot;
     try{snapshot=getLogisticsSnapshot();}catch{return;}
+    const now=performance.now();
+    if(now>=visibleCarrierIdsUntil){
+        visibleCarrierIdsUntil=now+100;
+        visibleCarrierIdsCache=new Set((snapshot.carriers||[])
+            .filter(carrier=>isForestSightVisible(carrier.x,carrier.y))
+            .map(carrier=>carrier.id));
+    }
     const tile=CELL*zoom;
     ctx.save();
     for(const carrier of snapshot.carriers||[]){
+        if(!visibleCarrierIdsCache.has(carrier.id))continue;
         const x=carrier.x*tile-camera.x,y=carrier.y*tile-camera.y;
         if(x< -tile||y< -tile||x>canvas.width+tile||y>canvas.height+tile)continue;
         ctx.fillStyle="rgba(228,189,114,.95)";ctx.strokeStyle="#4a3425";ctx.lineWidth=Math.max(1,tile*.05);

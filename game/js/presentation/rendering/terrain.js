@@ -9,8 +9,9 @@ import { drawTerrainGL } from './terrain-webgl.js';
 import { flowerBloom, foliageState } from './seasonal-foliage.js';
 import { seasonalState } from '../../world/season.js';
 import {
-    FOREST_SPECIES, forestFaunaFor, forestMicrofaunaAt, forestPotentialAt, forestStandAt, forestTreeCopies,
-    forestTreeForm, pickAgeClass, pickSpecies,
+    FOREST_SPECIES, forestCanopyShade, forestFaunaFor, forestLineOfSightBlocked, forestMicrofaunaAt,
+    forestPotentialAt, forestSightProfile, forestStandAt, forestTreeCopies, forestTreeForm,
+    pickAgeClass, pickSpecies,
 } from '../../world/forest-ecology.js';
 import {
     DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
@@ -183,6 +184,24 @@ let overlayCtx = null;
 let overlayState = null;
 let overlayView = "";
 let overlayLastChangeAt = 0;
+let canopyShadeSprite = null;
+let canopyShadeSpriteColor = "";
+let forestVisibilityCache = { key: "", profile: null };
+let forestVisibilitySprite = null;
+let forestVisibilitySpriteKey = "";
+let forestOcclusionField = null;
+let forestOcclusionFieldW = 0;
+let forestOcclusionFieldH = 0;
+let forestOcclusionFieldSeed = -1;
+let forestOcclusionFieldTerrain = -1;
+let forestOcclusionFieldVisual = -1;
+let forestOcclusionFieldEpoch = -1;
+let forestOcclusionFieldClimate = "";
+let forestOcclusionFieldForests = -1;
+let forestSightOriginActive = false;
+let forestSightOriginX = 0;
+let forestSightOriginY = 0;
+const FOREST_SIGHT_MIN_DISTANCE = 2.1;
 
 function detailWorldKey() {
     return [
@@ -203,9 +222,14 @@ function detailContentKey() {
     // Snow and foliage turn slowly. A multi-day bucket avoids a complete
     // re-rasterisation at every day boundary while still following seasons.
     const dayBucket = state.terrainMode === "canvas" ? 12 : 4;
+    const hour = Number.isFinite(Number(state.timeOfDay)) ? Number(state.timeOfDay) : 12;
     return [
         detailWorldKey(),
         Math.floor(day / dayBucket),
+        // The time-of-day control is manual, not a running clock. A two-hour
+        // bucket keeps the canopy shade honest when the player moves the sun
+        // without forcing a terrain rebuild on every frame.
+        Math.floor(hour / 2),
         Number(state.exploredRevision) || 0,
         Number(state.terrainCacheRevision) || 0,
         Number(state.forestVisualRevision) || 0,
@@ -355,6 +379,187 @@ function drawOverlayDecorations(ctx, zoom, cam, canvas) {
         overlayCanvas.height * transform.backingScale
     );
     state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
+}
+
+// One screen-space fog/occlusion wall for a closed conifer stand. The profile
+// is sampled once per centre tile and day bucket, never per pixel or per tile.
+function forestVisibilityProfile(canvas, camera, zoom) {
+    if (!state.heightMap) return null;
+    const cellPx = CELL * zoom;
+    if (!(cellPx > 0)) return null;
+    const tx = Math.max(0, Math.min(worldW() - 1, Math.floor((camera.x + canvas.width * 0.5) / cellPx)));
+    const ty = Math.max(0, Math.min(worldH() - 1, Math.floor((camera.y + canvas.height * 0.5) / cellPx)));
+    const day = Number.isFinite(Number(state.dayOfYear))
+        ? Number(state.dayOfYear)
+        : (Number(state.seasonIndex) || 0) * 100;
+    const key = [
+        state.worldSeed, state.terrainVersion, tx, ty, Math.floor(day / 4),
+        state.worldOptions?.climate || "temperate", state.worldOptions?.forests ?? 52,
+        state.weather || "clear", Math.floor((Number(state.timeOfDay) || 12) * 2),
+        Math.round(zoom * 100), canvas.width, canvas.height,
+    ].join("|");
+    if (forestVisibilityCache.key === key) return forestVisibilityCache.profile;
+
+    const wx = tx + 0.5, wy = ty + 0.5;
+    const h = getHeightAt(wx, wy);
+    const m = getMoistureAt(wx, wy);
+    const temp = getTemperatureAt(wx, wy);
+    const forests = state.worldOptions?.forests ?? 52;
+    const climate = state.worldOptions?.climate || "temperate";
+    let profile = null;
+    if (forestPotentialAt({ moisture: m, temperature: temp, height: h, forests, rockLine: 0.92 })) {
+        let stockRatio = 1;
+        let succession = null;
+        try {
+            const node = getResourceNodeAt(tx, ty);
+            if (node?.forestCapacity > 0) stockRatio = node.forestStock / node.forestCapacity;
+            succession = node?.forestSuccession || null;
+        } catch { /* a preview can render before resource geography exists */ }
+        const stand = forestStandAt(wx, wy, {
+            seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
+            height: h, climate, forests, stockRatio, rockLine: 0.92, succession,
+        });
+        profile = forestSightProfile(stand, { tileSize: cellPx, viewportWidth: canvas.width, viewportHeight: canvas.height });
+    }
+    forestVisibilityCache = { key, profile };
+    return profile;
+}
+
+// A compact Uint8Array is the only allocation in this pass. 0 is unknown, 1 is
+// open, and 2..255 stores the quantised sight block. It is rebuilt only when
+// the world or the forest stock changes, never per frame or per entity.
+function prepareForestOcclusionField() {
+    const W = worldW();
+    const H = worldH();
+    if (!(W > 0 && H > 0)) return false;
+    const seed = Number(state.worldSeed) || 0;
+    const terrain = Number(state.terrainVersion) || 0;
+    const visual = Number(state.forestVisualRevision) || 0;
+    const epoch = Number(state.worldEpoch) || 0;
+    const climate = String(state.worldOptions?.climate || "temperate");
+    const forests = Number(state.worldOptions?.forests ?? 52);
+    if (!forestOcclusionField || W !== forestOcclusionFieldW || H !== forestOcclusionFieldH
+        || seed !== forestOcclusionFieldSeed || terrain !== forestOcclusionFieldTerrain
+        || visual !== forestOcclusionFieldVisual || epoch !== forestOcclusionFieldEpoch
+        || climate !== forestOcclusionFieldClimate || forests !== forestOcclusionFieldForests) {
+        forestOcclusionField = new Uint8Array(W * H);
+        forestOcclusionFieldW = W;
+        forestOcclusionFieldH = H;
+        forestOcclusionFieldSeed = seed;
+        forestOcclusionFieldTerrain = terrain;
+        forestOcclusionFieldVisual = visual;
+        forestOcclusionFieldEpoch = epoch;
+        forestOcclusionFieldClimate = climate;
+        forestOcclusionFieldForests = forests;
+    }
+    return Boolean(state.resourceGeography);
+}
+
+function forestOcclusionAt(tx, ty) {
+    const W = worldW();
+    const H = worldH();
+    if (!Number.isInteger(tx) || !Number.isInteger(ty) || tx < 0 || ty < 0 || tx >= W || ty >= H) return 0;
+    if (!prepareForestOcclusionField()) return 0;
+    const index = ty * W + tx;
+    const cached = forestOcclusionField[index];
+    if (cached) return cached === 1 ? 0 : (cached - 1) / 254;
+    let strength = 0;
+    const geo = state.resourceGeography;
+    if (geo?.forestCapacity && geo.forestCapacity[index] > 0) {
+        try {
+            const node = getResourceNodeAt(tx, ty);
+            strength = Number(node?.forestSightStrength) || 0;
+        } catch { strength = 0; }
+    }
+    if (strength <= 0.01) forestOcclusionField[index] = 1;
+    else forestOcclusionField[index] = Math.min(255, 2 + Math.round(Math.min(1, strength) * 252));
+    return strength;
+}
+
+// The camera centre is the sight anchor because this game has no separate
+// avatar entity. The origin is mutable and updated once per rendered frame, so
+// the per-entity DDA below allocates nothing.
+export function updateForestSightOrigin(canvas, camera, zoom) {
+    const cellPx = CELL * zoom;
+    if (!canvas || !camera || !(cellPx > 0) || !state.heightMap || !prepareForestOcclusionField()) {
+        forestSightOriginActive = false;
+        return false;
+    }
+    const x = (camera.x + canvas.width * 0.5) / cellPx;
+    const y = (camera.y + canvas.height * 0.5) / cellPx;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        forestSightOriginActive = false;
+        return false;
+    }
+    forestSightOriginX = Math.max(0, Math.min(worldW(), x));
+    forestSightOriginY = Math.max(0, Math.min(worldH(), y));
+    forestSightOriginActive = true;
+    return true;
+}
+
+// True when the target is visible from the camera anchor. Dense conifer tiles
+// between the two points block it; the same distance through open ground does
+// not. The renderer caches the resulting entity list for 100 ms, so this scan
+// never runs once per frame for a moving crowd.
+export function isForestSightVisible(x, y) {
+    if (!forestSightOriginActive) return true;
+    return !forestLineOfSightBlocked(
+        forestSightOriginX, forestSightOriginY, Number(x), Number(y),
+        forestOcclusionAt, FOREST_SIGHT_MIN_DISTANCE
+    );
+}
+
+function forestVisibilitySpriteFor(color, strength) {
+    const key = color + "|" + strength.toFixed(3);
+    if (forestVisibilitySprite && forestVisibilitySpriteKey === key) return forestVisibilitySprite;
+    const sprite = document.createElement("canvas");
+    sprite.width = 256;
+    sprite.height = 256;
+    const sctx = sprite.getContext("2d");
+    if (!sctx) return sprite;
+    const gradient = sctx.createRadialGradient(128, 128, 4, 128, 128, 126);
+    gradient.addColorStop(0, `rgba(${color},0)`);
+    gradient.addColorStop(0.52, `rgba(${color},0)`);
+    gradient.addColorStop(0.78, `rgba(${color},${strength * 0.4})`);
+    gradient.addColorStop(1, `rgba(${color},${strength})`);
+    sctx.fillStyle = gradient;
+    sctx.fillRect(0, 0, 256, 256);
+    forestVisibilitySprite = sprite;
+    forestVisibilitySpriteKey = key;
+    return sprite;
+}
+
+// Draw after entities so the atmospheric wall sits over the world, while the
+// real per-entity occlusion happens before drawing. It is a single cached
+// radial sprite plus four solid edge rectangles: cheap on a low-end GPU and
+// independent of how many trees are in the stand. Open stands return
+// `limited: false` and cost only the profile lookup.
+export function drawForestVisibility(ctx, canvas, camera, zoom) {
+    if (!ctx || !canvas || !camera) return;
+    const profile = forestVisibilityProfile(canvas, camera, zoom);
+    if (!profile?.limited || profile.strength <= 0.01) return;
+    const width = canvas.width;
+    const height = canvas.height;
+    const cx = width * 0.5;
+    const cy = height * 0.5;
+    const radius = Math.max(1, profile.radiusPx);
+    const left = cx - radius;
+    const top = cy - radius;
+    const size = radius * 2;
+    const right = left + size;
+    const bottom = top + size;
+    ctx.save();
+    ctx.fillStyle = `rgba(${profile.color},${profile.strength})`;
+    // Fill only outside the sprite. Filling the whole screen and drawing a
+    // transparent centre over it would not clear the haze again.
+    if (left > 0) ctx.fillRect(0, 0, left, height);
+    if (right < width) ctx.fillRect(right, 0, width - right, height);
+    const bandLeft = Math.max(0, left);
+    const bandWidth = Math.max(0, Math.min(width, right) - bandLeft);
+    if (top > 0 && bandWidth > 0) ctx.fillRect(bandLeft, 0, bandWidth, top);
+    if (bottom < height && bandWidth > 0) ctx.fillRect(bandLeft, bottom, bandWidth, height - bottom);
+    ctx.drawImage(forestVisibilitySpriteFor(profile.color, profile.strength), left, top, size, size);
+    ctx.restore();
 }
 
 function drawCachedDecorations(ctx, zoom, cam, canvas) {
@@ -696,6 +901,11 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                 if (detail && zoom >= 0.55) {
                     drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
                     drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom);
+                    // The canopy shade belongs on the floor, below trunks and
+                    // understorey. One cached soft sprite per tile is far cheaper
+                    // than a per-pixel screen pass and follows the same world
+                    // lattice as the floor it darkens.
+                    drawCanopyShade(ctx, px, py, cellPx, stand, sun, climate.snowCover);
                     if (zoom >= 0.8) drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey);
                     const mist = forestMistFactor(Number.isFinite(hour) ? hour : 12, m, seasonName, state.weather);
                     if (zoom >= 0.85 && mist > 0.04) drawForestMist(ctx, px, py, cellPx, stand, s2, tick, mist);
@@ -1870,6 +2080,44 @@ function drawBogPool(ctx, px, py, cellPx, stand, s1, s2) {
         ctx.lineTo(rx - 0.9 * s, base - 3.2 * s);
         ctx.stroke();
     }
+    ctx.restore();
+}
+
+function canopyShadeSpriteFor(color) {
+    if (canopyShadeSprite && canopyShadeSpriteColor === color) return canopyShadeSprite;
+    const sprite = document.createElement("canvas");
+    sprite.width = 128;
+    sprite.height = 128;
+    const sctx = sprite.getContext("2d");
+    if (!sctx) return sprite;
+    const [r, g, b] = rgbTriplet(color);
+    const gradient = sctx.createRadialGradient(64, 64, 3, 64, 64, 62);
+    gradient.addColorStop(0, `rgba(${r},${g},${b},0.94)`);
+    gradient.addColorStop(0.46, `rgba(${r},${g},${b},0.76)`);
+    gradient.addColorStop(0.78, `rgba(${r},${g},${b},0.34)`);
+    gradient.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    sctx.fillStyle = gradient;
+    sctx.fillRect(0, 0, 128, 128);
+    canopyShadeSprite = sprite;
+    canopyShadeSpriteColor = color;
+    return sprite;
+}
+
+// A soft local ambient-occlusion stamp under a closed conifer canopy. The
+// profile follows crown cover, stem density, sun elevation and snow cover; the
+// art is a single cached sprite so a dense forest does not turn into a
+// per-pixel full-screen shader on low-end devices.
+function drawCanopyShade(ctx, px, py, cellPx, stand, sun, snowCover) {
+    const shade = forestCanopyShade(stand, { sun, snowCover });
+    if (shade.alpha <= 0.004) return;
+    const sprite = canopyShadeSpriteFor(shade.color);
+    const size = cellPx * (1.7 + shade.reach * 1.25);
+    ctx.save();
+    ctx.globalAlpha = shade.alpha;
+    ctx.drawImage(sprite,
+        px + shade.offsetX * cellPx - size * 0.5,
+        py + shade.offsetY * cellPx - size * 0.5,
+        size, size);
     ctx.restore();
 }
 

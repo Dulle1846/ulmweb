@@ -785,6 +785,19 @@ export function forestStandAt(x, y, context = {}) {
         canopy,
         deadwood,
     };
+    // Ground shade is the share of direct sky blocked by the stand. It combines
+    // the three physical inputs the renderer needs (crown cover, stem density
+    // and conifer share) instead of reusing one canopy number for every wood.
+    // Clearings and edges are real gaps, so they subtract from the shade.
+    const groundShade = clamp01(canopy * 0.56 + density * 0.34 + coniferShare * 0.24
+        - clearing * 0.62 - (edge ? 0.2 : 0));
+    // Visibility is a sight-line property, not an arbitrary fog switch. Dense
+    // crowns and tightly packed conifer stems close the view; an edge or a
+    // clearing opens it again. The radius is derived from the same value so the
+    // renderer and the gathering work factor cannot drift apart.
+    const visibility = clamp01(1 - canopy * 0.62 - coniferShare * 0.2 - density * 0.16
+        + (edge ? 0.18 : 0) + clearing * 0.15);
+    const sightRadius = 2 + Math.round(visibility * 8);
 
     return {
         x: tx, y: ty, seed,
@@ -820,13 +833,14 @@ export function forestStandAt(x, y, context = {}) {
         treeline,
         conifer: coniferShare >= 0.4,
         coniferLabel: [...speciesList].filter(entry => FOREST_SPECIES[entry.id]?.conifer).map(entry => entry.label).join(' · '),
-        visibility: clamp01(1 - canopy * 0.58 - coniferShare * 0.14 + (edge ? 0.16 : 0)),
+        visibility,
+        groundShade,
         lightShaft: clamp01(light * (1 - canopy * 0.46)),
         exposure,
         snowPotential,
         fireRisk,
         pestRisk,
-        sightRadius: 2 + Math.round(clamp01(1 - canopy * 0.58 - coniferShare * 0.14 + (edge ? 0.16 : 0)) * 8),
+        sightRadius,
         deadwood,
         structure,
         browsingPressure,
@@ -834,6 +848,115 @@ export function forestStandAt(x, y, context = {}) {
         productivity: formation.productivity * (ageClass === 'ancient' ? 1.18 : ageClass === 'young' ? 0.72 : 1) * (0.68 + stockRatio * 0.32),
         formation: formation.id,
     };
+}
+
+// Ambient shade cast by the local canopy. This is a pure render profile: the
+// renderer supplies the current sun and snow, so no shadow state enters the
+// save and the same stand always yields the same result at the same hour.
+// Only closed, conifer-dominated stands earn a visible floor pass; open pine
+// and heath keep their bright ground.
+export function forestCanopyShade(stand, { sun = null, snowCover = 0 } = {}) {
+    if (!stand?.forest) return { alpha: 0, shade: 0, reach: 0, offsetX: 0, offsetY: 0, color: '#07110b' };
+    const density = clamp01(Number(stand.density) || 0);
+    const conifer = clamp01(Number(stand.coniferShare) || 0);
+    const shade = clamp01(Number(stand.groundShade) || 0);
+    if (conifer < 0.4 || density < 0.55 || shade < 0.75) {
+        return { alpha: 0, shade, reach: 0, offsetX: 0, offsetY: 0, color: '#07110b' };
+    }
+    const snow = clamp01(snowCover);
+    const elevation = clamp01(Number(sun?.elevation ?? 0.75));
+    const lowSun = 1 - elevation;
+    // Low sun reaches further into the stand and makes the cool floor shade
+    // stronger. Snow reflects light back up, so the same canopy casts a lighter
+    // blue-grey shade instead of a soot-black patch.
+    const alpha = clamp01(shade * (0.2 + lowSun * 0.16) * (1 - snow * 0.32));
+    const reach = (0.7 + shade * 0.65) * (1 + lowSun * 0.9);
+    return {
+        alpha,
+        shade,
+        reach,
+        offsetX: (Number(sun?.shadowX) || 0) * reach * 0.55,
+        offsetY: (Number(sun?.shadowY) || 0) * reach * 0.4,
+        color: snow > 0.45 ? '#13232a' : '#07110b',
+    };
+}
+
+// A single data-driven sight block shared by the atmospheric wall and the
+// per-entity line-of-sight test. It deliberately uses the same closed-canopy
+// gate as `forestCanopyShade`: open pine and larch stay below the threshold and
+// remain transparent, while dense spruce/fir/mixed stands close the view.
+export function forestSightBlock(stand) {
+    if (!stand?.forest) return 0;
+    const density = clamp01(Number(stand.density) || 0);
+    const canopy = clamp01(Number(stand.canopy) || 0);
+    const conifer = clamp01(Number(stand.coniferShare) || 0);
+    const clearing = clamp01(Number(stand.clearing) || 0);
+    const shade = clamp01(Number(stand.groundShade) || 0);
+    // `groundShade` is the shared closed-canopy gate. Open pine (around .69)
+    // and larch (around .73) stay below it, so their view is never cut off even
+    // though both are conifer-dominated. Spruce, fir, wet and mixed closed
+    // stands clear the threshold and receive the block.
+    if (conifer < 0.45 || density < 0.55 || canopy < 0.55 || shade < 0.74 || clearing > 0.24) return 0;
+    const visibility = clamp01(Number(stand.visibility) || 0);
+    return Math.min(0.48, clamp01(0.1 + (1 - visibility) * 0.5
+        + (density - 0.55) * 0.4 + (canopy - 0.5) * 0.2));
+}
+
+// Stand-dependent sight profile used by the screen-space forest wall. The
+// renderer still draws one cached overlay, never a per-tile gradient. Actual
+// per-entity occlusion is handled by `forestLineOfSightBlocked()`; this profile
+// only describes how dark the atmospheric wall should be.
+export function forestSightProfile(stand, { tileSize = 48, viewportWidth = 800, viewportHeight = 800 } = {}) {
+    const none = {
+        limited: false, strength: 0, radiusPx: 0, innerPx: 0, radiusTiles: 0,
+        visibility: clamp01(Number(stand?.visibility) || 0), sightRadius: Number(stand?.sightRadius) || 0,
+        color: '9,18,15',
+    };
+    const strength = forestSightBlock(stand);
+    if (strength <= 0) return none;
+    const visibility = clamp01(Number(stand.visibility) || 0);
+    const radiusTiles = Math.max(2.2, (Number(stand.sightRadius) || 3) * (0.9 + strength * 0.8));
+    const cell = Math.max(8, Number(tileSize) || 48);
+    const radiusPx = Math.min(Math.max(2.4 * cell, radiusTiles * cell),
+        Math.hypot(Number(viewportWidth) || 800, Number(viewportHeight) || 800) * 0.72);
+    return {
+        limited: true,
+        strength,
+        radiusPx,
+        innerPx: radiusPx * 0.52,
+        radiusTiles,
+        visibility,
+        sightRadius: Number(stand.sightRadius) || 0,
+        color: '9,18,15',
+    };
+}
+
+// Scalar DDA from a viewer to a target tile. It walks tile boundaries without
+// allocating an array, skips the viewer's and target's own tiles, and reports
+// the first sufficiently dense stand on the line. The renderer calls this only
+// when its visible-entity cache is rebuilt, never once per pixel.
+export function forestLineOfSightBlocked(ax, ay, bx, by, blockAt, minDistance = 2.1, sampleStep = 0.55) {
+    if (typeof blockAt !== 'function') return false;
+    const dx = Number(bx) - Number(ax);
+    const dy = Number(by) - Number(ay);
+    const distance = Math.hypot(dx, dy);
+    if (!Number.isFinite(distance) || distance <= minDistance) return false;
+    const targetTx = Math.floor(Number(bx));
+    const targetTy = Math.floor(Number(by));
+    let lastTx = Math.floor(Number(ax));
+    let lastTy = Math.floor(Number(ay));
+    const steps = Math.max(1, Math.ceil(distance / Math.max(0.2, Number(sampleStep) || 0.55)));
+    for (let i = 1; i < steps; i++) {
+        const t = i / steps;
+        const tx = Math.floor(Number(ax) + dx * t);
+        const ty = Math.floor(Number(ay) + dy * t);
+        if (tx === lastTx && ty === lastTy) continue;
+        lastTx = tx;
+        lastTy = ty;
+        if (tx === targetTx && ty === targetTy) continue;
+        if (blockAt(tx, ty) > 0) return true;
+    }
+    return false;
 }
 
 // A dense wood is drawn as overlapping crowns, not as one lonely tree per

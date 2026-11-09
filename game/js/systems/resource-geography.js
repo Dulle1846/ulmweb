@@ -3,7 +3,7 @@
 import { state } from "../core/state.js";
 import { WORLD_W,WORLD_H,BIOME } from "../core/config.js";
 import {
-    FOREST_TYPES, forestRegrowthFactor, forestSnowDepthAt, forestStandAt, forestTypeFromIndex, forestTypeIndex,
+    FOREST_TYPES, forestRegrowthFactor, forestSightProfile, forestSnowDepthAt, forestStandAt, forestTypeFromIndex, forestTypeIndex,
 } from "../world/forest-ecology.js";
 import { forestSuccessionAt } from "./forest-succession.js";
 
@@ -194,7 +194,7 @@ export function getResourceNodeAt(x,y){
     const forestAgeIndex=Number(geo.forestAge?.[i]||0);
     const succession=forestSuccessionAt(point.x,point.y);
     let snowDepth=0,snowDepthCm=0,exposure=0,fireRisk=0,pestRisk=0,monoculture=0;
-    let visibility=0,workFactor=0,browsingPressure=0,predatorPressure=0,structure=null;
+    let visibility=0,sightStrength=0,workFactor=0,browsingPressure=0,predatorPressure=0,structure=null;
     let diversity=0,sightRadius=0,windExposure=0,wetness=0,deadwood=0,treeline=false;
     if(forestDefinition){
         const terrain=sampleTerrain(point.x,point.y);
@@ -206,6 +206,8 @@ export function getResourceNodeAt(x,y){
             rockLine:BIOME.ROCK,succession,
         });
         const snow=forestSnowDepthAt(stand,Number(state.dayOfYear)||0,climate);
+        const sight=forestSightProfile(stand);
+        sightStrength=sight.strength;
         snowDepth=snow.depth;snowDepthCm=snow.cm;
         exposure=Number(stand.exposure)||0;fireRisk=Number(stand.fireRisk)||0;
         pestRisk=Number(stand.pestRisk)||0;monoculture=Number(stand.monoculture)||0;
@@ -230,7 +232,7 @@ export function getResourceNodeAt(x,y){
         forestFauna:forestDefinition?[...forestDefinition.fauna]:[],
         forestSnowDepth:snowDepth,forestSnowDepthCm:snowDepthCm,
         forestExposure:exposure,forestFireRisk:fireRisk,forestPestRisk:pestRisk,forestMonoculture:monoculture,
-        forestVisibility:visibility,forestWorkFactor:workFactor,
+        forestVisibility:visibility,forestSightStrength:sightStrength,forestWorkFactor:workFactor,
         forestSpeciesDiversity:diversity,forestSightRadius:sightRadius,
         forestWindExposure:windExposure,forestWetness:wetness,forestDeadwood:deadwood,forestTreeline:treeline,
         forestBrowsingPressure:browsingPressure,forestPredatorPressure:predatorPressure,

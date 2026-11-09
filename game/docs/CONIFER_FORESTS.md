@@ -40,11 +40,32 @@ of switching biome at a hard line.
 ## Forest floor and microclimate
 
 Conifer stands expose `ground.needles`, `ground.lichen`, `ground.berry`,
-`ground.sourSoil`, `visibility` and `lightShaft`. The renderer paints a
-rust-brown needle carpet, lichen, blueberry/lingonberry shrubs, moss, ferns,
-rock, roots, stumps and fallen logs. Dense stands reduce light and visibility;
-the existing canopy-shaft and mist passes continue to use the stand's light and
-canopy values. Broadleaf leaf litter is not reused on a conifer floor.
+`ground.sourSoil`, `groundShade`, `visibility`, `sightRadius` and `lightShaft`.
+The renderer paints a rust-brown needle carpet, lichen, blueberry/lingonberry
+shrubs, moss, ferns, rock, roots, stumps and fallen logs. Broadleaf leaf litter
+is not reused on a conifer floor.
+
+Dense stands now have a real ambient-occlusion pass. `groundShade` combines
+crown cover, stem density and conifer share, then subtracts real clearings and
+edges. The renderer stamps a cached soft canopy-shade sprite under the trees,
+offset along the current `solarVector`; low sun deepens and stretches it, and
+snow switches it to a lighter blue-grey. Only closed conifer stands qualify, so
+open pine and pine-heath keep their bright floor. The pass is part of the
+existing cached detail layer, not a second full-screen shader.
+
+`visibility` is now a sight-line property rather than a decorative number.
+`forestSightBlock()` applies the same closed-canopy gate as
+`forestCanopyShade()` and derives its strength from density, crown cover,
+conifer share, clearing and `visibility`. `forestLineOfSightBlocked()` walks a
+scalar DDA from the camera-centre sight anchor to each entity, skipping the
+viewer and target tiles. A dense tile between the two blocks the entity (and
+its selection ring) and each logistics carrier before they are drawn; the same
+distance through open ground remains visible. The renderer caches the resulting
+entity, carrier and per-tile sight sets, so the scan is not per-pixel and not
+per-frame. The
+screen-space radial wall and edge bands remain an atmospheric cue; they are not
+the occlusion mechanism. Open, thinned and broadleaf stands return a block of
+zero and are never artificially cut off.
 
 ## Products, fauna and disturbance
 
@@ -95,10 +116,10 @@ scan, stock loss and save-compatible recovery handle the consequences.
 | 1.2.2.23 Roots and weathered trunks | Implemented | roots, stumps, logs in floor renderer |
 | 1.2.2.24 Acidic nutrient-poor soils | Implemented | `podzol`, `sourSoil` |
 | 1.2.2.25 Exposed stones and rocky sections | Implemented | `ground.stones`, rock floor branch |
-| 1.2.2.26 Dark forest interiors | Implemented | canopy/light values |
+| 1.2.2.26 Dark forest interiors | Implemented | `groundShade` ambient-occlusion pass with sun and snow response |
 | 1.2.2.27 Light shafts between trunks | Implemented | existing `drawCanopyLight` driven by `lightShaft` |
 | 1.2.2.28 Mist between tall conifers | Implemented | existing mist pass uses canopy/light |
-| 1.2.2.29 Visibility varying with density | Derived | `stand.visibility`; not a separate fog simulation |
+| 1.2.2.29 Visibility varying with density | Implemented | `visibility`/`sightRadius`, `forestSightBlock()`, cached per-tile line-of-sight and the browser occlusion proof |
 | 1.2.2.30 Wind in crowns | Implemented | per-tree sway and lean |
 | 1.2.2.31 Snow loads on branches | Implemented | tier snow polygons and clumps |
 | 1.2.2.32 Resin gloss and wet bark | Implemented | bark light edge and resin goods |
@@ -124,6 +145,18 @@ scan, stock loss and save-compatible recovery handle the consequences.
 | 1.2.2.52 Windthrow and storm damage | Implemented | live weather/exposure-weighted windthrow, per-tree lean and root-plate floor |
 | 1.2.2.53 Monocultures and pest vulnerability | Implemented | Simpson-derived `monoculture` raises the live bark-beetle weight |
 | 1.2.2.54 Snowbreak | Implemented | `snowPotential` and snowfall weight live snowbreak events |
+
+The two previously partial points are now backed by observable behaviour.
+`forestCanopyShade()` returns `alpha`, `reach` and a shadow offset; tests check
+that a dense sprucewood produces a visible shade while an open pinewood returns
+zero, that low sun is darker and longer than noon, and that snow lightens it.
+`forestSightBlock()` is tested to block a dense sprucewood but not an open
+pinewood, with a finite radius that still leaves a readable centre. The
+`forestLineOfSightBlocked()` DDA is covered separately, and
+`tests/browser/forest-occlusion.mjs` proves the real draw set excludes a behind
+entity while it includes an open control at the same distance.
+The checked formation sheet records `groundShade`, `visibility` and
+`sightRadius` for every captured tile.
 
 ## Survey and local snow
 
@@ -212,10 +245,13 @@ in `terrain.js`; without that order, `mountain-conifer`, `mixed-conifer` and
   needle floor, podzol, fauna, seasonal products, larch timing and succession.
 - `tests/world/forest-ecology.test.js` keeps the shared vegetation contract,
   the 27 formation indices, per-tree form and derived survey fields stable.
+- `tests/world/forest-sight.test.js` covers the shared sight block and the
+  bounded line-of-sight DDA.
 - `tests/systems/forest-fauna.test.js` covers real predator/prey herds and the
   new conifer specialists; `tests/systems/forest-fauna-longrun.test.js` keeps
   four years of migration, hunting pressure and population fill bounded.
 - `tests/systems/forest-succession.test.js` covers weather-weighted windthrow
   and neighbour spread.
 - `tests/rendering/seasonal-foliage.test.js` protects the evergreen/snow curves.
+- Browser occlusion proof: `cd game && npm run test:forest-occlusion`.
 - Full suite: `cd game && npm test`.

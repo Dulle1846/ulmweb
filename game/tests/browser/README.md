@@ -17,13 +17,15 @@ npm run test:forester-stewardship-longrun
 npm run test:forest-stewardship-ui
 ```
 
-The visual reference and the full-year audit are separate, explicit runs:
+The visual reference, dense-forest occlusion proof and full-year audit are separate, explicit runs:
 
 ```sh
 npm run test:terrain-reference
 npm run test:season-year
 npm run test:climate-reference
 npm run test:forest-reference
+npm run test:conifer-reference
+npm run test:forest-occlusion
 npm run test:forest-detail
 npm run test:terrain-stability
 npm run test:device-benchmark
@@ -78,6 +80,9 @@ formation, captures each at the same 0.95× camera, and fails on a missing
 formation, a runtime page error or a fatal terrain/WebGL diagnostic. It also
 captures an ancient wood through all four seasons. Set `FOREST_REFERENCE_OUT`
 to write the forest artifacts somewhere other than `docs/terrain-reference/`.
+`test:forest-occlusion` drives a real dense conifer wall and verifies that a
+selected building behind it is absent from the `drawWorld()` entity set while
+the same building at the same distance in open ground is present.
 
 The climate run starts five separate realms and drives 400 real
 `updateWeather()` days in each. It writes `climate-reference.png`,
