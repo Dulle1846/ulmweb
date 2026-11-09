@@ -42,11 +42,13 @@ test("a save envelope is linked to its local profile and version",()=>{
 });
 test("settings are clamped and persisted with safe defaults",()=>{
     installStorage();
-    saveSettings({musicEnabled:true,musicVolume:2,showTooltips:false});
+    saveSettings({musicEnabled:true,musicVolume:2,showTooltips:false,reduceMotion:true,highContrast:true});
     const settings=loadSettings();
     assert.equal(settings.musicEnabled,true);
     assert.equal(settings.musicVolume,1);
     assert.equal(settings.showTooltips,false);
+    assert.equal(settings.reduceMotion,true);
+    assert.equal(settings.highContrast,true);
     assert.equal(settings.terrainRenderer,"auto");
     assert.equal(settings.frameLimit,60);
     assert.equal(settings.renderScale,1);
@@ -60,6 +62,7 @@ test("settings are clamped and persisted with safe defaults",()=>{
     assert.equal(performanceSettings.renderScale,0.7);
     assert.equal(performanceSettings.adaptiveQuality,false);
     assert.equal(performanceSettings.showFps,true);
+    assert.equal(performanceSettings.highContrast,false);
 
     saveSettings({terrainRenderer:"not-a-renderer",frameLimit:120,renderScale:0.33});
     const sanitized=loadSettings();

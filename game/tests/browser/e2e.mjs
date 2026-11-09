@@ -925,6 +925,10 @@ try{
     assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),1);
     assert.ok((await sovereignDossier.innerText()).includes("SOVEREIGN DOSSIER"));
     assert.ok((await sovereignDossier.innerText()).includes("DESIGNATED SUCCESSOR"));
+    const royalCrest=sovereignDossier.locator('[data-royal-dossier="current"] .royal-dossier__crest');
+    assert.equal(await royalCrest.count(),1);
+    assert.match(await royalCrest.locator("use").getAttribute("href"),/^assets\/royal-heraldry\.svg#crest-0[1-8]$/);
+    assert.ok((await royalCrest.getAttribute("aria-label")).includes("Heraldic emblem"));
     await sovereignDossier.locator('[data-royal-dossier="current"] [data-person-id="'+royalFixture.heirId+'"]').first().click();
     assert.ok((await sovereignDossier.innerText()).includes(royalFixture.heirName));
     assert.equal(await sovereignDossier.locator('[data-royal-dossier="current"]').count(),0,"the heir dossier must not be mislabeled as the reigning sovereign");
@@ -1055,6 +1059,32 @@ try{
 
     await page.locator("#settings-btn").click();
     assert.equal(await page.locator("#settings-modal").isVisible(),true);
+    const htmlRoot=page.locator("html");
+    const tooltipToggle=page.locator("#settings-tooltips-toggle");
+    const tooltipLabel=page.locator("label.toggle").filter({has:tooltipToggle});
+    assert.equal(await tooltipLabel.count(),1);
+    await tooltipLabel.click();
+    assert.equal(await tooltipToggle.isChecked(),false);
+    assert.ok(await htmlRoot.evaluate(node=>node.classList.contains("ui-hide-tooltips")));
+    await tooltipLabel.click();
+    assert.equal(await tooltipToggle.isChecked(),true);
+    assert.ok(!(await htmlRoot.evaluate(node=>node.classList.contains("ui-hide-tooltips"))));
+    const motionToggle=page.locator("#settings-motion-toggle");
+    const motionLabel=page.locator("label.toggle").filter({has:motionToggle});
+    await motionLabel.click();
+    assert.equal(await motionToggle.isChecked(),true);
+    assert.ok(await htmlRoot.evaluate(node=>node.classList.contains("ui-reduced-motion")));
+    await motionLabel.click();
+    assert.equal(await motionToggle.isChecked(),false);
+    assert.ok(!(await htmlRoot.evaluate(node=>node.classList.contains("ui-reduced-motion"))));
+    const contrastToggle=page.locator("#settings-high-contrast-toggle");
+    const contrastLabel=page.locator("label.toggle").filter({has:contrastToggle});
+    await contrastLabel.click();
+    assert.equal(await contrastToggle.isChecked(),true);
+    assert.ok(await htmlRoot.evaluate(node=>node.classList.contains("ui-high-contrast")));
+    await contrastLabel.click();
+    assert.equal(await contrastToggle.isChecked(),false);
+    assert.ok(!(await htmlRoot.evaluate(node=>node.classList.contains("ui-high-contrast"))));
     await page.locator("#settings-close").click();
     assert.equal(await page.locator("#settings-modal").isVisible(),false);
 

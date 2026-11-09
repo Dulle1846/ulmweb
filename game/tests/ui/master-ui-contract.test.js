@@ -352,3 +352,24 @@ test("royal administration navigation exposes current-page semantics, not toggle
     assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing navigation target "+target);
   }
 });
+
+
+test("accessibility preferences are visible, persistent and applied as document modes",async()=>{
+  const persistence=await readFile(new URL("js/core/persistence.js",root),"utf8");
+  for(const id of ["settings-tooltips-toggle","settings-motion-toggle","settings-high-contrast-toggle"]){
+    assert.ok(html.includes('id="'+id+'"'),"missing accessibility control "+id);
+  }
+  for(const key of ["showTooltips","reduceMotion","highContrast"]){
+    assert.ok(persistence.includes(key),"settings persistence must retain "+key);
+  }
+  for(const id of ["settings-tooltips-toggle","settings-motion-toggle","settings-high-contrast-toggle"]){
+    assert.ok(main.includes('getElementById("'+id+'")'),"settings binding missing "+id);
+  }
+  assert.ok(main.includes("applyInterfaceSettings()"));
+  for(const mode of ["ui-hide-tooltips","ui-reduced-motion","ui-high-contrast"]){
+    assert.ok(css.includes("html."+mode),"missing document mode "+mode);
+  }
+  assert.ok(css.includes("html.ui-hide-tooltips [data-tooltip]::after"));
+  assert.ok(css.includes("html.ui-hide-tooltips [data-ui-tooltip]::after"));
+  assert.ok(css.includes(".settings-accessibility"));
+});

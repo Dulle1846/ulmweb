@@ -60,6 +60,10 @@ let settings=loadSettings();
 function applyInterfaceSettings(){
     document.body.classList.toggle("hide-resource-deltas",settings.showDeltas===false);
     document.body.classList.toggle("reduce-interface-motion",settings.reduceMotion===true);
+    const root=document.documentElement;
+    root.classList.toggle("ui-hide-tooltips",settings.showTooltips===false);
+    root.classList.toggle("ui-reduced-motion",settings.reduceMotion===true);
+    root.classList.toggle("ui-high-contrast",settings.highContrast===true);
 }
 
 function replaceTerrainCanvas(){
@@ -925,8 +929,12 @@ function bindMenu(){
     if(musicToggle)musicToggle.checked=settings.musicEnabled;
     if(volume)volume.value=String(Math.round(settings.musicVolume*100));
     const deltasToggle=document.getElementById("settings-deltas-toggle");
+    const tooltipsToggle=document.getElementById("settings-tooltips-toggle");
+    if(tooltipsToggle){tooltipsToggle.checked=settings.showTooltips!==false;tooltipsToggle.addEventListener("change",event=>{settings.showTooltips=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
     const motionToggle=document.getElementById("settings-motion-toggle");
     if(motionToggle){motionToggle.checked=settings.reduceMotion===true;motionToggle.addEventListener("change",event=>{settings.reduceMotion=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    const highContrastToggle=document.getElementById("settings-high-contrast-toggle");
+    if(highContrastToggle){highContrastToggle.checked=settings.highContrast===true;highContrastToggle.addEventListener("change",event=>{settings.highContrast=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
     const timeOfDayControl=document.getElementById("settings-time-of-day");
     const timeOfDayValue=document.getElementById("settings-time-of-day-value");
     if(timeOfDayControl){
