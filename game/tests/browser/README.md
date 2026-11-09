@@ -96,11 +96,12 @@ The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
   `docs/forester-stewardship`. The audit writes `forester-stewardship.json`
   plus cut-over/progress/grown map and management screenshots.
 - `FORESTER_LONGTERM_OUT` - directory for the ten-year Forester evidence,
-  default `docs/forester-stewardship-longrun`. Two seeds write one
+  default `docs/forester-stewardship-longrun`. Three seeds write one
   `forester-stewardship-longrun.json` with a `seeds` array plus cut/grown map
   pairs for years 1, 5 and 10 and the stewardship panel captures. Set
-  `FORESTER_SEED` to `20261108` or `7` to run one seed separately, and
-  `FORESTER_REPORT` to change the report filename.
+  `FORESTER_SEED` to `20261108`, `7` or `99` to run one seed separately,
+  `FORESTER_REPORT` to change the report filename, and
+  `FORESTER_TIME_BUDGET_MS` to override the 240,000 ms runtime budget.
 - `CLIMATE_REFERENCE_OUT` - climate artifact directory, default
   `docs/terrain-reference`.
 - `FOREST_DETAIL_OUT` - detail-sheet artifact directory, default
@@ -122,14 +123,15 @@ The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
   red/amber/green map markers, the 6,512 → 6,866 stock rise, and the
   `Planting saplings` → `Forest is fully grown` transition without a false
   depletion status.
-- Ten-year Forester stewardship across two seeds: 20 real years and 8,000 days,
-  with a rotating one-to-three freshly cut stands at the start of every year,
-  two-to-four stands thinned every twenty days and one annual clear-cut on a
-  variable day. The audit removed 9,295 stock against 8,765 saplings planted,
-  with a 95.8 % low point and a 100 % end point in all 20 years. It samples the
-  canvas to count the real red markers (one to three per cut, none after
-  recovery), hashes the terrain raster on every cut/grown pair, and reads the
-  stewardship DOM every year. Images and JSON are written under
+- Ten-year Forester stewardship across three seeds: 30 real years and 12,000
+  days, with a rotating one-to-three freshly cut stands at the start of every
+  year, two-to-four stands thinned every twenty days and one annual clear-cut
+  on a variable day. The audit removed 14,256 stock against 13,473 saplings
+  planted, with a 95.8 % low point and a 100 % end point in all 30 years. It
+  samples the canvas to count the real red markers (one to three per cut, none
+  after recovery), hashes the terrain raster on every cut/grown pair, and reads
+  the stewardship DOM every year. The three-seed run completes in 162.7 s under
+  its explicit 240 s budget. Images and JSON are written under
   `docs/forester-stewardship-longrun/`.
 - Legacy saves with missing logistics fields, legacy warehouse filters,
   fractional/negative stock, stale reservations and an oversized legacy job.

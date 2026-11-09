@@ -4,7 +4,7 @@ import {mkdir,readFile,writeFile} from "node:fs/promises";
 import {extname,resolve,sep} from "node:path";
 import {chromium} from "playwright";
 
-// Ten game years on the same real Forester range, repeated for two seeds. Each
+// Ten game years on the same real Forester range, repeated for three seeds. Each
 // year starts with a fresh cut, is thinned every twenty days and receives one
 // variable annual clear-cut. The audit reads the rendered stewardship block,
 // counts the real map markers on the canvas and hashes the terrain raster
@@ -13,11 +13,13 @@ import {chromium} from "playwright";
 // lose a multi-year race against repeated harvest.
 const YEARS = 10;
 const DAYS_PER_YEAR = 400;
-const ALL_SEEDS = [20261108, 7];
+const ALL_SEEDS = [20261108, 7, 99];
 const requestedSeed = process.env.FORESTER_SEED ? Number(process.env.FORESTER_SEED) : null;
 const SEEDS = requestedSeed ? ALL_SEEDS.filter(seed => seed === requestedSeed) : ALL_SEEDS;
 if (!SEEDS.length) throw new Error("FORESTER_SEED must be one of " + ALL_SEEDS.join(", "));
 const reportFile = process.env.FORESTER_REPORT || "forester-stewardship-longrun.json";
+const runStartedAt = Date.now();
+const TIME_BUDGET_MS = Number(process.env.FORESTER_TIME_BUDGET_MS) || 240_000;
 const CLEAR_PATTERN = [3, 1, 2, 2, 3, 1, 3, 2, 1, 3];
 const THINNING_PATTERN = [4, 2, 3, 4, 2, 4, 3, 2, 4, 3];
 const CLEAR_DAY_PATTERN = [120, 100, 140, 80, 120, 140, 100, 80, 140, 120];
@@ -722,16 +724,21 @@ try {
     if (results.length > 1) {
         const harvestTotals = results.map(result => Math.round(result.harvestedTotal / 100));
         assert.ok(new Set(harvestTotals).size >= 2,
-            "the two seeds must not produce one identical harvest total");
+            "the seeds must not produce one identical harvest total");
     }
     const totalHarvested = results.reduce((sum, result) => sum + result.harvestedTotal, 0);
     const final = results[results.length - 1].final;
     const screenshots = results.flatMap(result => result.screenshots);
+    const durationMs = Date.now() - runStartedAt;
+    assert.ok(durationMs <= TIME_BUDGET_MS,
+        `the browser audit took ${durationMs} ms, over its ${TIME_BUDGET_MS} ms CI budget`);
     const report = {
         generatedAt: new Date().toISOString(),
         baseUrl,
         years: YEARS,
         daysPerYear: DAYS_PER_YEAR,
+        durationMs,
+        timeBudgetMs: TIME_BUDGET_MS,
         schedule: {clearPattern: CLEAR_PATTERN, thinningPattern: THINNING_PATTERN, clearDayPattern: CLEAR_DAY_PATTERN},
         seeds: results,
         harvestedTotal: totalHarvested,
@@ -747,6 +754,8 @@ try {
         ok: true,
         url: baseUrl,
         years: YEARS,
+        durationMs,
+        timeBudgetMs: TIME_BUDGET_MS,
         seeds: results.map(result => ({
             seed: result.seed,
             harvestedTotal: result.harvestedTotal,

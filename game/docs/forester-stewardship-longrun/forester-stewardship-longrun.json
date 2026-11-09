@@ -1,8 +1,10 @@
 {
-  "generatedAt": "2026-11-09T05:51:45.966Z",
-  "baseUrl": "https://kings-and-cards.pages.dev",
+  "generatedAt": "2026-11-09T06:12:49.813Z",
+  "baseUrl": "http://127.0.0.1:4176",
   "years": 10,
   "daysPerYear": 400,
+  "durationMs": 162718,
+  "timeBudgetMs": 240000,
   "schedule": {
     "clearPattern": [
       3,
@@ -1361,7 +1363,7 @@
           "lowestFill": 0.9694633255554428,
           "visualRevision": 291,
           "visualDelta": 60,
-          "cacheMisses": 36,
+          "cacheMisses": 37,
           "cutMarkers": {
             "total": 3,
             "matched": 3,
@@ -1438,7 +1440,7 @@
           "lowestFill": 0.9803185553413818,
           "visualRevision": 338,
           "visualDelta": 47,
-          "cacheMisses": 42,
+          "cacheMisses": 43,
           "cutMarkers": {
             "total": 2,
             "matched": 2,
@@ -1515,7 +1517,7 @@
           "lowestFill": 0.9898549254337019,
           "visualRevision": 369,
           "visualDelta": 31,
-          "cacheMisses": 48,
+          "cacheMisses": 49,
           "cutMarkers": {
             "total": 1,
             "matched": 1,
@@ -1592,7 +1594,7 @@
           "lowestFill": 0.9694633255554428,
           "visualRevision": 438,
           "visualDelta": 69,
-          "cacheMisses": 54,
+          "cacheMisses": 55,
           "cutMarkers": {
             "total": 3,
             "matched": 3,
@@ -1669,7 +1671,7 @@
           "lowestFill": 0.968245916607487,
           "visualRevision": 510,
           "visualDelta": 72,
-          "cacheMisses": 60,
+          "cacheMisses": 61,
           "cutMarkers": {
             "total": 3,
             "matched": 3,
@@ -1767,14 +1769,877 @@
       ],
       "pageErrors": [],
       "consoleErrors": []
+    },
+    {
+      "seed": 99,
+      "world": [
+        176,
+        176
+      ],
+      "site": {
+        "x": 90,
+        "y": 104
+      },
+      "foresterId": "e2r-11",
+      "targets": [
+        {
+          "x": 93,
+          "y": 107,
+          "capacity": 104
+        },
+        {
+          "x": 92,
+          "y": 105,
+          "capacity": 107
+        },
+        {
+          "x": 89,
+          "y": 105,
+          "capacity": 115
+        },
+        {
+          "x": 90,
+          "y": 106,
+          "capacity": 117
+        }
+      ],
+      "years": 10,
+      "daysPerYear": 400,
+      "initial": {
+        "range": {
+          "radius": 5,
+          "tiles": 81,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "depleted": 0
+        },
+        "visualRevision": 0,
+        "cacheMisses": 2
+      },
+      "rows": [
+        {
+          "seed": 99,
+          "year": 1,
+          "tick": 402,
+          "dayOfYear": 0,
+          "clearCount": 2,
+          "thinningCount": 3,
+          "clearDay": 140,
+          "cutStockRemoved": 211,
+          "seasonHarvested": 315,
+          "planted": 488,
+          "workers": 2,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "status": "Forest is fully grown",
+          "plantingDays": 244,
+          "grownDays": 155,
+          "lowestFill": 0.9822040270699307,
+          "visualRevision": 49,
+          "visualDelta": 49,
+          "cacheMisses": 6,
+          "cutMarkers": {
+            "total": 2,
+            "matched": 2,
+            "red": 2,
+            "yellow": 0,
+            "green": 0,
+            "visible": 2
+          },
+          "grownMarkers": {
+            "total": 0,
+            "matched": 0,
+            "red": 0,
+            "yellow": 0,
+            "green": 0,
+            "visible": 0
+          },
+          "hashes": {
+            "cut": {
+              "terrain": {
+                "hash": "af682f3c",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "3bf8a8fc",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            },
+            "grown": {
+              "terrain": {
+                "hash": "c5641fd5",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "11df5018",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            }
+          },
+          "dom": {
+            "stock": 11969,
+            "capacity": 11969,
+            "percent": 100,
+            "restorable": 0,
+            "status": "Forest is fully grown"
+          }
+        },
+        {
+          "seed": 99,
+          "year": 2,
+          "tick": 802,
+          "dayOfYear": 0,
+          "clearCount": 2,
+          "thinningCount": 4,
+          "clearDay": 80,
+          "cutStockRemoved": 211,
+          "seasonHarvested": 290,
+          "planted": 500,
+          "workers": 2,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "status": "Forest is fully grown",
+          "plantingDays": 250,
+          "grownDays": 149,
+          "lowestFill": 0.9810343387083299,
+          "visualRevision": 98,
+          "visualDelta": 49,
+          "cacheMisses": 12,
+          "cutMarkers": {
+            "total": 2,
+            "matched": 2,
+            "red": 2,
+            "yellow": 0,
+            "green": 0,
+            "visible": 2
+          },
+          "grownMarkers": {
+            "total": 0,
+            "matched": 0,
+            "red": 0,
+            "yellow": 0,
+            "green": 0,
+            "visible": 0
+          },
+          "hashes": {
+            "cut": {
+              "terrain": {
+                "hash": "1a73e211",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "65317a2d",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            },
+            "grown": {
+              "terrain": {
+                "hash": "67f0ec66",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "129594fc",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            }
+          },
+          "dom": {
+            "stock": 11969,
+            "capacity": 11969,
+            "percent": 100,
+            "restorable": 0,
+            "status": "Forest is fully grown"
+          }
+        },
+        {
+          "seed": 99,
+          "year": 3,
+          "tick": 1202,
+          "dayOfYear": 0,
+          "clearCount": 3,
+          "thinningCount": 2,
+          "clearDay": 120,
+          "cutStockRemoved": 326,
+          "seasonHarvested": 290,
+          "planted": 574,
+          "workers": 2,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "status": "Forest is fully grown",
+          "plantingDays": 286,
+          "grownDays": 113,
+          "lowestFill": 0.9727629710084384,
+          "visualRevision": 155,
+          "visualDelta": 57,
+          "cacheMisses": 19,
+          "cutMarkers": {
+            "total": 3,
+            "matched": 3,
+            "red": 3,
+            "yellow": 0,
+            "green": 0,
+            "visible": 3
+          },
+          "grownMarkers": {
+            "total": 0,
+            "matched": 0,
+            "red": 0,
+            "yellow": 0,
+            "green": 0,
+            "visible": 0
+          },
+          "hashes": {
+            "cut": {
+              "terrain": {
+                "hash": "39322e75",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "28a941ff",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            },
+            "grown": {
+              "terrain": {
+                "hash": "6e6fc5d3",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "8af3ff03",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            }
+          },
+          "dom": {
+            "stock": 11969,
+            "capacity": 11969,
+            "percent": 100,
+            "restorable": 0,
+            "status": "Forest is fully grown"
+          }
+        },
+        {
+          "seed": 99,
+          "year": 4,
+          "tick": 1602,
+          "dayOfYear": 0,
+          "clearCount": 1,
+          "thinningCount": 4,
+          "clearDay": 140,
+          "cutStockRemoved": 104,
+          "seasonHarvested": 246,
+          "planted": 337,
+          "workers": 2,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "status": "Forest is fully grown",
+          "plantingDays": 245,
+          "grownDays": 154,
+          "lowestFill": 0.9908095914445652,
+          "visualRevision": 180,
+          "visualDelta": 25,
+          "cacheMisses": 25,
+          "cutMarkers": {
+            "total": 1,
+            "matched": 1,
+            "red": 1,
+            "yellow": 0,
+            "green": 0,
+            "visible": 1
+          },
+          "grownMarkers": {
+            "total": 0,
+            "matched": 0,
+            "red": 0,
+            "yellow": 0,
+            "green": 0,
+            "visible": 0
+          },
+          "hashes": {
+            "cut": {
+              "terrain": {
+                "hash": "666a9167",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "69adf681",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            },
+            "grown": {
+              "terrain": {
+                "hash": "a60537c2",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "d616b3ce",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            }
+          },
+          "dom": {
+            "stock": 11969,
+            "capacity": 11969,
+            "percent": 100,
+            "restorable": 0,
+            "status": "Forest is fully grown"
+          }
+        },
+        {
+          "seed": 99,
+          "year": 5,
+          "tick": 2002,
+          "dayOfYear": 0,
+          "clearCount": 3,
+          "thinningCount": 3,
+          "clearDay": 100,
+          "cutStockRemoved": 326,
+          "seasonHarvested": 280,
+          "planted": 561,
+          "workers": 2,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "status": "Forest is fully grown",
+          "plantingDays": 280,
+          "grownDays": 119,
+          "lowestFill": 0.9727629710084384,
+          "visualRevision": 231,
+          "visualDelta": 51,
+          "cacheMisses": 31,
+          "cutMarkers": {
+            "total": 3,
+            "matched": 3,
+            "red": 3,
+            "yellow": 0,
+            "green": 0,
+            "visible": 3
+          },
+          "grownMarkers": {
+            "total": 0,
+            "matched": 0,
+            "red": 0,
+            "yellow": 0,
+            "green": 0,
+            "visible": 0
+          },
+          "hashes": {
+            "cut": {
+              "terrain": {
+                "hash": "119bcd6a",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "4a3cfbc1",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            },
+            "grown": {
+              "terrain": {
+                "hash": "ca6b2320",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "3255cd28",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            }
+          },
+          "dom": {
+            "stock": 11969,
+            "capacity": 11969,
+            "percent": 100,
+            "restorable": 0,
+            "status": "Forest is fully grown"
+          }
+        },
+        {
+          "seed": 99,
+          "year": 6,
+          "tick": 2402,
+          "dayOfYear": 0,
+          "clearCount": 2,
+          "thinningCount": 2,
+          "clearDay": 80,
+          "cutStockRemoved": 211,
+          "seasonHarvested": 218,
+          "planted": 428,
+          "workers": 2,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "status": "Forest is fully grown",
+          "plantingDays": 215,
+          "grownDays": 184,
+          "lowestFill": 0.9823711254073022,
+          "visualRevision": 276,
+          "visualDelta": 45,
+          "cacheMisses": 37,
+          "cutMarkers": {
+            "total": 2,
+            "matched": 2,
+            "red": 2,
+            "yellow": 0,
+            "green": 0,
+            "visible": 2
+          },
+          "grownMarkers": {
+            "total": 0,
+            "matched": 0,
+            "red": 0,
+            "yellow": 0,
+            "green": 0,
+            "visible": 0
+          },
+          "hashes": {
+            "cut": {
+              "terrain": {
+                "hash": "ba65ef1c",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "903a29dd",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            },
+            "grown": {
+              "terrain": {
+                "hash": "281ff728",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "0628011f",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            }
+          },
+          "dom": {
+            "stock": 11969,
+            "capacity": 11969,
+            "percent": 100,
+            "restorable": 0,
+            "status": "Forest is fully grown"
+          }
+        },
+        {
+          "seed": 99,
+          "year": 7,
+          "tick": 2802,
+          "dayOfYear": 0,
+          "clearCount": 1,
+          "thinningCount": 4,
+          "clearDay": 140,
+          "cutStockRemoved": 104,
+          "seasonHarvested": 246,
+          "planted": 337,
+          "workers": 2,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "status": "Forest is fully grown",
+          "plantingDays": 245,
+          "grownDays": 154,
+          "lowestFill": 0.9908095914445652,
+          "visualRevision": 301,
+          "visualDelta": 25,
+          "cacheMisses": 43,
+          "cutMarkers": {
+            "total": 1,
+            "matched": 1,
+            "red": 1,
+            "yellow": 0,
+            "green": 0,
+            "visible": 1
+          },
+          "grownMarkers": {
+            "total": 0,
+            "matched": 0,
+            "red": 0,
+            "yellow": 0,
+            "green": 0,
+            "visible": 0
+          },
+          "hashes": {
+            "cut": {
+              "terrain": {
+                "hash": "5be954f0",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "6df63b9d",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            },
+            "grown": {
+              "terrain": {
+                "hash": "5188de28",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "036f2985",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            }
+          },
+          "dom": {
+            "stock": 11969,
+            "capacity": 11969,
+            "percent": 100,
+            "restorable": 0,
+            "status": "Forest is fully grown"
+          }
+        },
+        {
+          "seed": 99,
+          "year": 8,
+          "tick": 3202,
+          "dayOfYear": 0,
+          "clearCount": 3,
+          "thinningCount": 3,
+          "clearDay": 120,
+          "cutStockRemoved": 326,
+          "seasonHarvested": 314,
+          "planted": 598,
+          "workers": 2,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "status": "Forest is fully grown",
+          "plantingDays": 298,
+          "grownDays": 101,
+          "lowestFill": 0.9727629710084384,
+          "visualRevision": 355,
+          "visualDelta": 54,
+          "cacheMisses": 49,
+          "cutMarkers": {
+            "total": 3,
+            "matched": 3,
+            "red": 3,
+            "yellow": 0,
+            "green": 0,
+            "visible": 3
+          },
+          "grownMarkers": {
+            "total": 0,
+            "matched": 0,
+            "red": 0,
+            "yellow": 0,
+            "green": 0,
+            "visible": 0
+          },
+          "hashes": {
+            "cut": {
+              "terrain": {
+                "hash": "00b97893",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "e8d1ede6",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            },
+            "grown": {
+              "terrain": {
+                "hash": "b89dc9a8",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "388ef4cf",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            }
+          },
+          "dom": {
+            "stock": 11969,
+            "capacity": 11969,
+            "percent": 100,
+            "restorable": 0,
+            "status": "Forest is fully grown"
+          }
+        },
+        {
+          "seed": 99,
+          "year": 9,
+          "tick": 3602,
+          "dayOfYear": 0,
+          "clearCount": 3,
+          "thinningCount": 4,
+          "clearDay": 120,
+          "cutStockRemoved": 326,
+          "seasonHarvested": 350,
+          "planted": 619,
+          "workers": 2,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "status": "Forest is fully grown",
+          "plantingDays": 309,
+          "grownDays": 90,
+          "lowestFill": 0.9717603809842092,
+          "visualRevision": 410,
+          "visualDelta": 55,
+          "cacheMisses": 55,
+          "cutMarkers": {
+            "total": 3,
+            "matched": 3,
+            "red": 3,
+            "yellow": 0,
+            "green": 0,
+            "visible": 3
+          },
+          "grownMarkers": {
+            "total": 0,
+            "matched": 0,
+            "red": 0,
+            "yellow": 0,
+            "green": 0,
+            "visible": 0
+          },
+          "hashes": {
+            "cut": {
+              "terrain": {
+                "hash": "72a86261",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "561a82d0",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            },
+            "grown": {
+              "terrain": {
+                "hash": "a54b6834",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "a834b3ed",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            }
+          },
+          "dom": {
+            "stock": 11969,
+            "capacity": 11969,
+            "percent": 100,
+            "restorable": 0,
+            "status": "Forest is fully grown"
+          }
+        },
+        {
+          "seed": 99,
+          "year": 10,
+          "tick": 4002,
+          "dayOfYear": 0,
+          "clearCount": 1,
+          "thinningCount": 2,
+          "clearDay": 100,
+          "cutStockRemoved": 104,
+          "seasonHarvested": 163,
+          "planted": 266,
+          "workers": 2,
+          "stock": 11969,
+          "capacity": 11969,
+          "fill": 1,
+          "restorable": 0,
+          "status": "Forest is fully grown",
+          "plantingDays": 230,
+          "grownDays": 169,
+          "lowestFill": 0.9911437881193083,
+          "visualRevision": 435,
+          "visualDelta": 25,
+          "cacheMisses": 61,
+          "cutMarkers": {
+            "total": 1,
+            "matched": 1,
+            "red": 1,
+            "yellow": 0,
+            "green": 0,
+            "visible": 1
+          },
+          "grownMarkers": {
+            "total": 0,
+            "matched": 0,
+            "red": 0,
+            "yellow": 0,
+            "green": 0,
+            "visible": 0
+          },
+          "hashes": {
+            "cut": {
+              "terrain": {
+                "hash": "14154b25",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "3531d417",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            },
+            "grown": {
+              "terrain": {
+                "hash": "282d277e",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              },
+              "interactive": {
+                "hash": "8c3cf4d1",
+                "samples": 18041,
+                "width": 1152,
+                "height": 830
+              }
+            }
+          },
+          "dom": {
+            "stock": 11969,
+            "capacity": 11969,
+            "percent": 100,
+            "restorable": 0,
+            "status": "Forest is fully grown"
+          }
+        }
+      ],
+      "harvestedTotal": 4961,
+      "final": {
+        "year": 10,
+        "tick": 4002,
+        "stock": 11969,
+        "capacity": 11969,
+        "fill": 1,
+        "status": "Forest is fully grown",
+        "markers": {
+          "total": 0,
+          "matched": 0,
+          "red": 0,
+          "yellow": 0,
+          "green": 0,
+          "visible": 0
+        },
+        "dom": {
+          "stock": 11969,
+          "capacity": 11969,
+          "percent": 100,
+          "restorable": 0,
+          "status": "Forest is fully grown"
+        }
+      },
+      "renderer": "canvas",
+      "screenshots": [
+        "seed-99-map-year-1-cut.png",
+        "seed-99-stewardship-year-1-planting.png",
+        "seed-99-stewardship-year-1-grown.png",
+        "seed-99-map-year-1-grown.png",
+        "seed-99-map-year-5-cut.png",
+        "seed-99-stewardship-year-5-planting.png",
+        "seed-99-stewardship-year-5-grown.png",
+        "seed-99-map-year-5-grown.png",
+        "seed-99-map-year-10-cut.png",
+        "seed-99-stewardship-year-10-planting.png",
+        "seed-99-stewardship-year-10-grown.png",
+        "seed-99-panel-year-10-grown.png",
+        "seed-99-map-year-10-grown.png"
+      ],
+      "pageErrors": [],
+      "consoleErrors": []
     }
   ],
-  "harvestedTotal": 9295,
+  "harvestedTotal": 14256,
   "final": {
     "year": 10,
     "tick": 4002,
-    "stock": 9857,
-    "capacity": 9857,
+    "stock": 11969,
+    "capacity": 11969,
     "fill": 1,
     "status": "Forest is fully grown",
     "markers": {
@@ -1786,8 +2651,8 @@
       "visible": 0
     },
     "dom": {
-      "stock": 9857,
-      "capacity": 9857,
+      "stock": 11969,
+      "capacity": 11969,
       "percent": 100,
       "restorable": 0,
       "status": "Forest is fully grown"
@@ -1820,7 +2685,20 @@
     "seed-7-stewardship-year-10-planting.png",
     "seed-7-stewardship-year-10-grown.png",
     "seed-7-panel-year-10-grown.png",
-    "seed-7-map-year-10-grown.png"
+    "seed-7-map-year-10-grown.png",
+    "seed-99-map-year-1-cut.png",
+    "seed-99-stewardship-year-1-planting.png",
+    "seed-99-stewardship-year-1-grown.png",
+    "seed-99-map-year-1-grown.png",
+    "seed-99-map-year-5-cut.png",
+    "seed-99-stewardship-year-5-planting.png",
+    "seed-99-stewardship-year-5-grown.png",
+    "seed-99-map-year-5-grown.png",
+    "seed-99-map-year-10-cut.png",
+    "seed-99-stewardship-year-10-planting.png",
+    "seed-99-stewardship-year-10-grown.png",
+    "seed-99-panel-year-10-grown.png",
+    "seed-99-map-year-10-grown.png"
   ],
   "pageErrors": [],
   "consoleErrors": []
