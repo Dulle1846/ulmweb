@@ -182,6 +182,13 @@ configured directory for review.
 with `--with-deps`, and then runs `npm run test:e2e`. Screenshots from the
 responsive review are uploaded even when the test fails.
 
+After a successful E2E run, the job runs the three-seed Forester stewardship
+audit with an explicit `FORESTER_TIME_BUDGET_MS=240000`. The audit writes its
+JSON report and PNG captures into
+`$RUNNER_TEMP/forester-stewardship-longrun`, and the job uploads them with the
+run log as `kings-and-cards-forester-stewardship-longrun`. Exceeding the budget
+fails the audit and therefore the job.
+
 After the E2E step, the same job generates the four-season, four-zoom terrain
 reference, the 400-day season audit, the climate matrix/live check and the
 forest formation/season reference into `$RUNNER_TEMP/terrain-reference`. It

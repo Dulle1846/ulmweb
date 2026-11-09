@@ -34,6 +34,7 @@ jobs:
       started_at: ${{ steps.timing.outputs.started_at }}
       finished_at: ${{ steps.finish.outputs.finished_at }}
       e2e_exit_code: ${{ steps.browser-e2e.outputs.exit_code }}
+      forester_exit_code: ${{ steps.forester_longrun.outputs.exit_code }}
     steps:
       - name: Record test start time
         id: timing
@@ -62,6 +63,20 @@ jobs:
           set +e
           set -o pipefail
           npm run test:e2e 2>&1 | tee "$RUNNER_TEMP/browser-e2e.log"
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit "$code"
+      - name: Run three-seed Forester stewardship audit
+        id: forester_longrun
+        working-directory: game
+        timeout-minutes: 6
+        env:
+          FORESTER_LONGTERM_OUT: ${{ runner.temp }}/forester-stewardship-longrun
+          FORESTER_TIME_BUDGET_MS: 240000
+        run: |
+          set +e
+          set -o pipefail
+          npm run test:forester-stewardship-longrun 2>&1 | tee "$RUNNER_TEMP/forester-stewardship-longrun.log"
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit "$code"
@@ -118,6 +133,17 @@ jobs:
           path: ${{ runner.temp }}/browser-e2e.log
           if-no-files-found: warn
           retention-days: 7
+      - name: Upload Forester stewardship audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-forester-stewardship-longrun
+          path: |
+            ${{ runner.temp }}/forester-stewardship-longrun/forester-stewardship-longrun.json
+            ${{ runner.temp }}/forester-stewardship-longrun/*.png
+            ${{ runner.temp }}/forester-stewardship-longrun.log
+          if-no-files-found: warn
+          retention-days: 7
       - name: Upload responsive UI review screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -157,10 +183,12 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           JOB_RESULT: ${{ needs.browser-e2e.result }}
           E2E_EXIT_CODE: ${{ needs.browser-e2e.outputs.e2e_exit_code }}
+          FORESTER_EXIT_CODE: ${{ needs.browser-e2e.outputs.forester_exit_code }}
           STARTED_AT: ${{ needs.browser-e2e.outputs.started_at }}
           FINISHED_AT: ${{ needs.browser-e2e.outputs.finished_at }}
         run: |
           e2e_exit="${E2E_EXIT_CODE:-not-run}"
+          forester_exit="${FORESTER_EXIT_CODE:-not-run}"
           started_at="${STARTED_AT:-unknown}"
           finished_at="${FINISHED_AT:-unknown}"
           if [ "${JOB_RESULT:-unknown}" = "success" ]; then
@@ -180,7 +208,8 @@ jobs:
             "finished_at": "${finished_at}",
             "job_status": "${JOB_RESULT:-unknown}",
             "workflow_result": "${overall_result}",
-            "browser_e2e_exit_code": "${e2e_exit}"
+            "browser_e2e_exit_code": "${e2e_exit}",
+            "forester_longrun_exit_code": "${forester_exit}"
           }
           JSON
       - name: Publish run receipt branch
