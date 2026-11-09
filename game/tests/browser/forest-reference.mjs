@@ -2,7 +2,7 @@
 //
 // This is a human-review artifact, not a pixel-diff test. It finds one real
 // tile for each of the fifteen forest formations in a fixed realm, captures the
-// same 2.4x view for every formation, and then follows one woodland through the
+// same 0.95x rooftop view for every formation, and then follows one woodland through the
 // four seasons. The camera, seed and renderer are recorded in the JSON file.
 //
 // Usage: npm run test:forest-reference
@@ -21,13 +21,23 @@ process.chdir(gameRoot);
 
 const outputDir = path.resolve(process.env.FOREST_REFERENCE_OUT || path.join(gameRoot, "docs/terrain-reference"));
 const seed = 20261104;
+const coniferMode = process.env.FOREST_REFERENCE_PROFILE === "conifer";
 const viewport = { width: 800, height: 800 };
-const targetTypes = Object.freeze([
+const broadleafTargets = Object.freeze([
     "oakwood", "beechwood", "birchwood", "maplewood", "chestnut-grove",
     "linden-elm", "mixed", "alluvial", "hillside", "ancient",
     "regenerating", "burned", "windthrow", "diseased", "cutover",
 ]);
+const coniferTargets = Object.freeze([
+    "sprucewood", "firwood", "pinewood", "larchwood",
+    "pine-heath", "wet-conifer", "mountain-conifer", "subalpine-scrub",
+    "mixed-conifer", "bark-beetle", "snowbreak", "drought-stressed",
+]);
+const targetTypes = Object.freeze(coniferMode ? coniferTargets : broadleafTargets);
 const seasonDays = Object.freeze([50, 150, 250, 350]);
+const outputNames = coniferMode
+    ? { formation: "conifer-reference.png", seasonal: "conifer-seasons.png", metadata: "conifer-reference.json" }
+    : { formation: "forest-reference.png", seasonal: "forest-seasons.png", metadata: "forest-reference.json" };
 
 const mimeTypes = {
     ".js": "text/javascript", ".html": "text/html", ".css": "text/css",
@@ -82,7 +92,15 @@ page.on("pageerror", error => diagnostics.push("pageerror: " + error.message));
 try {
     await page.goto("http://127.0.0.1:" + port + "/", { waitUntil: "networkidle" });
     await page.locator("#world-seed-input").fill(String(seed));
-    await page.locator("#player-name-input").fill("Forest Reference");
+    await page.locator("#player-name-input").fill(coniferMode ? "Conifer Reference" : "Forest Reference");
+    if (coniferMode) {
+        await page.locator("#world-climate").selectOption("northern");
+        await page.locator("#world-forests").evaluate(element => {
+            element.value = "82";
+            element.dispatchEvent(new Event("input", { bubbles: true }));
+            element.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+    }
     await page.locator("#start-new-game-btn").click();
     await page.locator("#start-screen").waitFor({ state: "hidden", timeout: 30000 });
     await page.waitForTimeout(1200);
@@ -157,13 +175,13 @@ try {
     const scan = await page.evaluate(async ({ targets }) => {
         const { state } = await import("./js/core/state.js");
         const { getHeightAt, getMoistureAt, getTemperatureAt } = await import("./js/world/world.js");
-        const { forestStandAt } = await import("./js/world/forest-ecology.js");
+        const { forestSnowDepthAt, forestStandAt } = await import("./js/world/forest-ecology.js");
         const { getResourceNodeAt } = await import("./js/systems/resource-geography.js");
         const width = Number(state.worldW) || 160;
         const height = Number(state.worldH) || 160;
         const climate = state.worldOptions?.climate || "temperate";
         const forests = state.worldOptions?.forests ?? 52;
-        const found = {};
+        const found = {}, scores = {};
         const note = (tile, stockOverride = null) => {
             const node = getResourceNodeAt(tile.x, tile.y);
             const moisture = getMoistureAt(tile.x + 0.5, tile.y + 0.5);
@@ -176,13 +194,22 @@ try {
                 seed: Number(state.worldSeed) || 1, moisture, temperature, height: h,
                 climate, forests, stockRatio, rockLine: 0.92,
             });
-            return { ...tile, node, stand, moisture, temperature, height: h, stockRatio };
+            const snow = forestSnowDepthAt(stand, 350, climate);
+            return { ...tile, node, stand, moisture, temperature, height: h, stockRatio, snow };
         };
         for (let y = 4; y < height - 4; y += 2) {
             for (let x = 4; x < width - 4; x += 2) {
                 const tile = note({ x, y });
-                if (!tile.stand.forest || !tile.node?.forestCapacity || found[tile.stand.type]) continue;
-                if (targets.includes(tile.stand.type)) found[tile.stand.type] = tile;
+                if (!tile.stand.forest || !tile.node?.forestCapacity) continue;
+                if (!targets.includes(tile.stand.type)) continue;
+                // Capture the most wooded tile of a formation rather than the
+                // first one. The first hit was often a clearing, which made a
+                // larchwood sheet look like open snow with a few caps.
+                const score = Number(tile.stand.treeChance) + (1 - Number(tile.stand.clearing)) * 0.25;
+                if (!found[tile.stand.type] || score > (scores[tile.stand.type] ?? -Infinity)) {
+                    found[tile.stand.type] = tile;
+                    scores[tile.stand.type] = score;
+                }
             }
         }
         // Cutover is a management state rather than a weather event. Reuse a
@@ -201,6 +228,11 @@ try {
                 goods: tile.stand.goods, fauna: tile.stand.fauna,
                 moisture: Number(tile.moisture.toFixed(3)), temperature: Number(tile.temperature.toFixed(3)),
                 height: Number(tile.height.toFixed(3)), stockRatio: Number(tile.stockRatio.toFixed(3)),
+                treeChance: Number((tile.stand.treeChance || 0).toFixed(3)),
+                clearing: Number((tile.stand.clearing || 0).toFixed(3)),
+                exposure: Number((tile.stand.exposure || 0).toFixed(3)),
+                snowPotential: Number((tile.stand.snowPotential || 0).toFixed(3)),
+                winterSnowDepthCm: tile.snow.cm,
             }])),
         };
     }, { targets: targetTypes });
@@ -231,9 +263,9 @@ try {
             state.weather = "clear";
             state.dayOfYear = day;
             state.seasonIndex = 1;
-            setZoomLevel(4);
+            setZoomLevel(3);
             state.zoom = state.zoomTarget;
-            state.zoomLevel = 4;
+            state.zoomLevel = 3;
             state.zoomAnchor = null;
             state.camera.x = (x + 0.5) * CELL * state.zoom - state.canvas.width / 2;
             state.camera.y = (y + 0.5) * CELL * state.zoom - state.canvas.height / 2;
@@ -253,7 +285,9 @@ try {
         }
     }
 
-    const seasonalTile = scan.found.ancient || scan.found.oakwood || scan.found.beechwood;
+    const seasonalTile = coniferMode
+        ? (scan.found.larchwood || scan.found.sprucewood)
+        : (scan.found.ancient || scan.found.oakwood || scan.found.beechwood);
     const seasonal = [];
     for (const day of seasonDays) {
         await page.evaluate(async ({ x, y, day }) => {
@@ -264,9 +298,9 @@ try {
             state.weather = "clear";
             state.dayOfYear = day;
             state.seasonIndex = Math.floor(day / 100) % 4;
-            setZoomLevel(4);
+            setZoomLevel(3);
             state.zoom = state.zoomTarget;
-            state.zoomLevel = 4;
+            state.zoomLevel = 3;
             state.zoomAnchor = null;
             state.camera.x = (x + 0.5) * CELL * state.zoom - state.canvas.width / 2;
             state.camera.y = (y + 0.5) * CELL * state.zoom - state.canvas.height / 2;
@@ -280,16 +314,17 @@ try {
 
     const formationSheet = await renderFormationSheet(context, frames, {
         seed, renderer: webgl.renderer, world: scan.world,
+        conifer: coniferMode, columns: coniferMode ? 4 : 5,
         generatedAt: new Date().toISOString(),
     });
-    const formationPath = path.join(outputDir, "forest-reference.png");
+    const formationPath = path.join(outputDir, outputNames.formation);
     await fs.writeFile(formationPath, formationSheet);
 
     const seasonSheet = await renderSeasonSheet(context, seasonal, {
-        seed, renderer: webgl.renderer, tile: seasonalTile,
+        seed, renderer: webgl.renderer, tile: seasonalTile, conifer: coniferMode,
         generatedAt: new Date().toISOString(),
     });
-    const seasonPath = path.join(outputDir, "forest-seasons.png");
+    const seasonPath = path.join(outputDir, outputNames.seasonal);
     await fs.writeFile(seasonPath, seasonSheet);
 
     const metadata = {
@@ -303,19 +338,21 @@ try {
         formations: frames.map(frame => ({
             type: frame.type,
             ...scan.found[frame.type],
-            frame: "forest-reference.png",
+            frame: outputNames.formation,
         })),
         seasonalFocus: scan.found[seasonalTile.type],
         seasonalDays: seasonDays,
         seasonalFrames: seasonDays.map(day => ({ day })),
-        note: "HUD, entities, fog and weather hidden; paused simulation; camera centred at 2.40x. Forest formations are real generated tiles, not hand-placed demo props. The cutover frame uses a wooded tile with stock set to zero. Not a GPU performance benchmark.",
+        note: coniferMode
+            ? "Northern realm, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level. All twelve conifer formations are real generated tiles, not hand-placed demo props. The seasonal strip follows a larch stand through needle-out, summer, golden autumn and bare winter. winterSnowDepthCm is the derived local snow depth on day 350. Not a GPU performance benchmark."
+            : "HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level. Forest formations are real generated tiles, not hand-placed demo props. The cutover frame uses a wooded tile with stock set to zero. Not a GPU performance benchmark.",
     };
-    await fs.writeFile(path.join(outputDir, "forest-reference.json"), JSON.stringify(metadata, null, 2) + "\n");
+    await fs.writeFile(path.join(outputDir, outputNames.metadata), JSON.stringify(metadata, null, 2) + "\n");
 
     const fatal = diagnostics.filter(text => /Terrain WebGL|atlas upload|shader compilation|runtime paused|pageerror/i.test(text));
     console.log("Formation sheet: " + path.relative(gameRoot, formationPath));
     console.log("Seasonal forest: " + path.relative(gameRoot, seasonPath));
-    console.log("Forest metadata: " + path.relative(gameRoot, path.join(outputDir, "forest-reference.json")));
+    console.log("Forest metadata: " + path.relative(gameRoot, path.join(outputDir, outputNames.metadata)));
     console.log("Renderer: " + (webgl.renderer || "unknown") + " · canvas " + webgl.width + "×" + webgl.height);
     if (diagnostics.length) console.log("Diagnostics: " + JSON.stringify(diagnostics, null, 2));
     if (fatal.length) throw new Error("Forest rendering diagnostics were emitted:\n" + fatal.join("\n"));
@@ -347,7 +384,7 @@ async function renderFormationSheet(browserContext, frames, meta) {
     .eyebrow { color: #b6935b; font: 700 11px/1.2 Arial, sans-serif; letter-spacing: .24em; }
     h1 { margin: 10px 0 8px; color: #f3e7ce; font-size: 34px; font-weight: 400; }
     .deck { margin: 0; color: #a8b4a8; font: 14px/1.5 Arial, sans-serif; max-width: 1480px; }
-    .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(${meta.columns || 5}, 1fr); gap: 14px; margin-top: 24px; }
     figure { margin: 0; padding: 6px; border: 1px solid #4d3e29; border-radius: 4px; background: #101b1d; box-shadow: 0 8px 20px rgba(0, 0, 0, .28); }
     figure img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid #263330; }
     figcaption { display: flex; flex-direction: column; gap: 4px; padding: 8px 3px 2px; min-height: 76px; }
@@ -359,13 +396,13 @@ async function renderFormationSheet(browserContext, frames, meta) {
     footer strong { color: #c9ab73; }
 </style></head><body>
 <div class="sheet">
-    <div class="eyebrow">KINGS &amp; CARDS · LAUBWALD ECOLOGY</div>
-    <h1>Fifteen woodland formations, one deterministic model</h1>
-    <p class="deck">Seed ${seed} · ${meta.world.width} × ${meta.world.height} world · ${escapeHtml(meta.world.climate)} climate · ${meta.world.forests}% forest slider · 2.40× rooftop view · HUD, entities, fog and weather hidden · simulation paused</p>
+    <div class="eyebrow">KINGS &amp; CARDS · ${meta.conifer ? "CONIFER" : "LAUBWALD"} ECOLOGY</div>
+    <h1>${meta.conifer ? "Twelve conifer formations, one deterministic model" : "Fifteen woodland formations, one deterministic model"}</h1>
+    <p class="deck">Seed ${seed} · ${meta.world.width} × ${meta.world.height} world · ${escapeHtml(meta.world.climate)} climate · ${meta.world.forests}% forest slider · 0.95× rooftop view · HUD, entities, fog and weather hidden · simulation paused</p>
     <div class="grid">${cells}</div>
     <footer>
         <span><strong>Generated</strong> ${meta.generatedAt} · <strong>Renderer</strong> ${escapeHtml(meta.renderer || "unknown")}</span>
-        <span>Human-review reference, not a pixel-diff test. Real generated tiles, not hand-placed demo props.</span>
+        <span>${meta.conifer ? "Twelve conifer formations; winter local snow depth is recorded per tile." : "Human-review reference, not a pixel-diff test. Real generated tiles, not hand-placed demo props."}</span>
     </footer>
 </div>
 </body></html>`;
@@ -405,13 +442,13 @@ async function renderSeasonSheet(browserContext, frames, meta) {
     footer strong { color: #c9ab73; }
 </style></head><body>
 <div class="sheet">
-    <div class="eyebrow">KINGS &amp; CARDS · FOREST SEASONS</div>
-    <h1>One ancient wood through the year</h1>
-    <p class="deck">Seed ${seed} · tile ${meta.tile.x}, ${meta.tile.y} · ${escapeHtml(meta.tile.label)} · ${escapeHtml(meta.tile.species.slice(0, 4).join(" · "))} · 2.40× rooftop view · weather and entities hidden</p>
+    <div class="eyebrow">KINGS &amp; CARDS · ${meta.conifer ? "LARCH SEASONS" : "FOREST SEASONS"}</div>
+    <h1>${meta.conifer ? "One larch stand through the year" : "One ancient wood through the year"}</h1>
+    <p class="deck">Seed ${seed} · tile ${meta.tile.x}, ${meta.tile.y} · ${escapeHtml(meta.tile.label)} · ${escapeHtml(meta.tile.species.slice(0, 4).join(" · "))} · 0.95× rooftop view · weather and entities hidden</p>
     <div class="strip">${cells}</div>
     <footer>
         <span><strong>Generated</strong> ${meta.generatedAt} · <strong>Renderer</strong> ${escapeHtml(meta.renderer || "unknown")}</span>
-        <span>Fresh leaf-out, closed summer canopy, autumn turn, bare winter crowns and leaf carpet.</span>
+        <span>${meta.conifer ? "Fresh needles, closed summer tiers, golden autumn and the bare larch winter skeleton." : "Fresh leaf-out, closed summer canopy, autumn turn, bare winter crowns and leaf carpet."}</span>
     </footer>
 </div>
 </body></html>`;

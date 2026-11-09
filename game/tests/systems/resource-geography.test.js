@@ -126,6 +126,9 @@ test("forest resource nodes carry their formation and standing value",()=>{
     assert.ok(forest.node.forestGoods.includes("timber"));
     assert.ok(forest.node.forestGoods.includes("firewood"));
     assert.ok(forest.node.forestFauna.length>0);
+    assert.ok(forest.node.forestSnowDepthCm>=0&&forest.node.forestSnowDepthCm<=140);
+    assert.ok(forest.node.forestExposure>=0&&forest.node.forestExposure<=1);
+    assert.ok(forest.node.forestFireRisk>=0&&forest.node.forestFireRisk<=1);
     assert.equal(forest.node.forestStock,forest.node.forestCapacity);
 });
 

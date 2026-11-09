@@ -423,7 +423,14 @@ function formationFor(x, y, ctx) {
     }
     if (high) {
         if (temperature > 0.52 && relief > 0.55) return 'hillside';
-        if (cold) return coniferPatch > 0.55 ? 'subalpine-scrub' : 'mountain-conifer';
+        if (cold) {
+            // Sheltered cold slopes still carry a layered spruce/fir/pine/larch
+            // canopy. Without this transition belt, a northern realm's entire
+            // high country collapsed into mountain-conifer or subalpine-scrub.
+            if (coniferPatch > 0.62) return 'subalpine-scrub';
+            if (coniferPatch < 0.38) return 'mixed-conifer';
+            return 'mountain-conifer';
+        }
         return coniferPatch > 0.5 ? 'mountain-conifer' : 'mixed-conifer';
     }
     if (wet && cold && coniferPatch > 0.3) return 'wet-conifer';
@@ -726,6 +733,24 @@ export function forestStandAt(x, y, context = {}) {
     const compaction = clamp01((1 - stockRatio) * 0.5 + (trail ? 0.12 : 0) + (formation.id === 'cutover' ? 0.25 : 0));
     const huntingPressure = clamp01((1 - stockRatio) * 0.38 + (edge ? 0.1 : 0) + (formation.id === 'cutover' ? 0.14 : 0));
 
+    // Snow settles deeper on high, exposed ground and persists under a dense
+    // conifer canopy. This is a compact derived property, not a second snow
+    // simulation: the renderer still uses the weather-driven snow cover, while
+    // the survey exposes the resulting local depth in centimetres.
+    const exposure = clamp01((edge ? 0.28 : 0) + (1 - canopy) * 0.34 + Math.max(0, height - 0.52) * 0.9);
+    const snowPotential = clamp01(0.08 + height * 0.46 + exposure * 0.24 + coniferShare * 0.08 - Math.max(0, temperature - 0.5) * 0.3);
+    // Fire and pest pressure are likewise diagnostics derived from the same
+    // moisture, heat, litter and stocking inputs. They add no per-tick state.
+    const fireRisk = clamp01((1 - moisture) * 0.46 + Math.max(0, temperature - 0.48) * 0.48
+        + coniferShare * 0.14 + needles * 0.12
+        + (disturbance === 'drought-stressed' ? 0.18 : 0)
+        + (disturbance === 'bark-beetle' ? 0.1 : 0));
+    const pestRisk = clamp01(coniferShare * 0.34 + (1 - stockRatio) * 0.2
+        + Math.max(0, temperature - 0.58) * 0.38
+        + (disturbance === 'bark-beetle' ? 0.38 : 0)
+        + (disturbance === 'drought-stressed' ? 0.12 : 0));
+    const monoculture = clamp01((coniferShare - 0.72) * 3.2);
+
     return {
         x: tx, y: ty, seed,
         forest,
@@ -754,6 +779,11 @@ export function forestStandAt(x, y, context = {}) {
         coniferLabel: [...speciesList].filter(entry => FOREST_SPECIES[entry.id]?.conifer).map(entry => entry.label).join(' · '),
         visibility: clamp01(1 - canopy * 0.58 - coniferShare * 0.14 + (edge ? 0.16 : 0)),
         lightShaft: clamp01(light * (1 - canopy * 0.46)),
+        exposure,
+        snowPotential,
+        fireRisk,
+        pestRisk,
+        monoculture,
         productivity: formation.productivity * (ageClass === 'ancient' ? 1.18 : ageClass === 'young' ? 0.72 : 1) * (0.68 + stockRatio * 0.32),
         formation: formation.id,
     };
@@ -885,14 +915,28 @@ export function forestMicrofaunaAt(stand, dayOfYear = 150, climate = 'temperate'
         .map(([id, label, count]) => ({ id, label, group: id === 'mouse' ? 'small' : 'insect', count: Math.min(6, count) }));
 }
 
+export function forestSnowDepthAt(stand, dayOfYear = 150, climate = 'temperate') {
+    if (!stand?.forest) return { depth: 0, cm: 0 };
+    const cover = seasonalState(dayOfYear, climate).snowCover;
+    // No snow on the ground means no local snow depth, regardless of how
+    // exposed the site is. During accumulation, exposure and elevation decide
+    // how much of the stand's potential is realised.
+    const depth = cover > 0 ? clamp01((Number(stand.snowPotential) || 0) * (0.45 + cover * 0.55)) : 0;
+    return { depth, cm: Math.round(depth * 140) };
+}
+
 export function forestSurveyAt(x, y, context = {}) {
     const stand = forestStandAt(x, y, context);
     if (!stand.forest) return null;
     const day = Number.isFinite(Number(context.dayOfYear)) ? Number(context.dayOfYear) : 150;
+    const climate = context.climate || 'temperate';
+    const snow = forestSnowDepthAt(stand, day, climate);
     return {
         ...stand,
-        goods: forestGoodsFor(stand, day, context.climate || 'temperate'),
-        fauna: forestFaunaFor(stand, day, context.climate || 'temperate', Number(context.roll ?? 0.5)),
+        snowDepth: snow.depth,
+        snowDepthCm: snow.cm,
+        goods: forestGoodsFor(stand, day, climate),
+        fauna: forestFaunaFor(stand, day, climate, Number(context.roll ?? 0.5)),
     };
 }
 

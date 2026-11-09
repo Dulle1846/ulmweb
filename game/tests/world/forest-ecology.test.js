@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
     FOREST_GOODS, FOREST_SPECIES, FOREST_TYPES, FOREST_TYPE_IDS,
     forestFaunaFor, forestGoodsFor, forestMicrofaunaAt, forestMixLabel, forestPotentialAt, forestStandAt, forestTreeCopies,
-    forestSurveyAt, forestTypeFromIndex, forestTypeIndex, pickAgeClass, pickSpecies,
+    forestSnowDepthAt, forestSurveyAt, forestTypeFromIndex, forestTypeIndex, pickAgeClass, pickSpecies,
 } from "../../js/world/forest-ecology.js";
 import { foliageState, treeTiming } from "../../js/presentation/rendering/seasonal-foliage.js";
 
@@ -296,5 +296,13 @@ test("forest survey exposes a complete tile profile and rejects open ground", ()
     assert.ok(survey.goods.some(good => good.id === "timber"));
     assert.ok(survey.fauna.length > 0);
     assert.equal(survey.goods[0].abundance >= survey.goods[survey.goods.length - 1].abundance, true);
+    assert.ok(survey.snowDepth >= 0 && survey.snowDepth <= 1);
+    assert.ok(survey.snowDepthCm >= 0 && survey.snowDepthCm <= 140);
+    assert.ok(survey.exposure >= 0 && survey.exposure <= 1);
+    assert.ok(survey.fireRisk >= 0 && survey.fireRisk <= 1);
+    assert.ok(survey.pestRisk >= 0 && survey.pestRisk <= 1);
+    const deep = forestSnowDepthAt({ forest: true, snowPotential: 0.9 }, 350);
+    const shallow = forestSnowDepthAt({ forest: true, snowPotential: 0.2 }, 350);
+    assert.ok(deep.cm > shallow.cm, "exposed high ground holds a deeper snow pack");
     assert.equal(forestSurveyAt(4.5, 4.5, { ...standContext(), moisture: 0.1 }), null);
 });

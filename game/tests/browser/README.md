@@ -73,7 +73,7 @@ references and an explicit status for every point. None of these commands is par
 `npm test`.
 
 The forest run scans the fixed realm for a real forest resource node of every
-formation, captures each at the same 2.40× camera, and fails on a missing
+formation, captures each at the same 0.95× camera, and fails on a missing
 formation, a runtime page error or a fatal terrain/WebGL diagnostic. It also
 captures an ancient wood through all four seasons. Set `FOREST_REFERENCE_OUT`
 to write the forest artifacts somewhere other than `docs/terrain-reference/`.

@@ -626,19 +626,27 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                 continue;
             }
 
+            // A stand can reach above the summer snow line. Test the forest
+            // potential before the snow/rock exits below: otherwise the early
+            // `continue` erased mountain-conifer, mixed-conifer and snowbreak
+            // crowns from the high-altitude formations entirely.
+            const potentialForest = forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 });
+
             // Snowfields get sparse rocks and drifts, not grass. The alpine
             // line rises in summer and sinks in winter, so peaks do not stay
             // painted white through July while the lowlands are green.
             if (temp < 0.22 || h > 0.92 - climate.snowCover * 0.05) {
-                if (detail) {
-                    if (s1 > 0.72) drawSnowTuft(ctx, px, py, cellPx, s1);
-                    else if (s1 > 0.62) drawRock(ctx, px, py, cellPx, zoom, true);
+                if (!potentialForest) {
+                    if (detail) {
+                        if (s1 > 0.72) drawSnowTuft(ctx, px, py, cellPx, s1);
+                        else if (s1 > 0.62) drawRock(ctx, px, py, cellPx, zoom, true);
+                    }
+                    continue;
                 }
-                continue;
             }
 
             // Mountain rock and scree sit above the woodland belt.
-            if (h > 0.88 && s1 > 0.4) {
+            if (h > 0.88 && s1 > 0.4 && !potentialForest) {
                 if (detail) drawRock(ctx, px, py, cellPx, zoom, false);
                 continue;
             }
@@ -646,9 +654,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             // Most of the landscape is bare ground. Skip the ecosystem work
             // entirely unless this tile is on either the ground-detail or the
             // tree lattice. This keeps a full-world landscape rebuild cheap.
-            if (!detail && !treeSample) continue;
             const cluster = 0.5 + 0.5 * Math.sin(x * 0.19 + y * 0.13) * Math.sin(x * 0.06 - y * 0.11);
-            const potentialForest = forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 });
             const loneTree = treeSample && !potentialForest && cluster > 0.74 && m > 0.3 && temp > 0.28 && s1 > 0.925;
             if (!potentialForest && !loneTree && !detail) continue;
 
@@ -2378,6 +2384,11 @@ function drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey = 
 function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate", ageScale = 1, species = "spruce", stand = null) {
     const definition = FOREST_SPECIES[species] || FOREST_SPECIES.spruce;
     const foliage = foliageState(dayOfYear, { seed, species, climate: climateKey });
+    // Local snow depth is derived from elevation and exposure, so a high, open
+    // ridge holds visibly more snow than a sheltered lowland stand on the same
+    // winter day. The weather-driven cover remains the outer bound.
+    const snowPotential = Number(stand?.snowPotential);
+    if (Number.isFinite(snowPotential)) foliage.snow = Math.min(1, foliage.snow * (0.78 + snowPotential * 0.38));
     const shape = definition.crownShape || "spire";
     const height = (17 + definition.height * 13) * s * ageScale;
     const baseY = py + 8 * s;

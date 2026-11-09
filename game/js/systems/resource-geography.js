@@ -3,7 +3,7 @@
 import { state } from "../core/state.js";
 import { WORLD_W,WORLD_H,BIOME } from "../core/config.js";
 import {
-    FOREST_TYPES, forestRegrowthFactor, forestStandAt, forestTypeFromIndex, forestTypeIndex,
+    FOREST_TYPES, forestRegrowthFactor, forestSnowDepthAt, forestStandAt, forestTypeFromIndex, forestTypeIndex,
 } from "../world/forest-ecology.js";
 import { forestSuccessionAt } from "./forest-succession.js";
 
@@ -26,6 +26,21 @@ function readTile(x,y){
     const tx=Math.floor(Number(x)),ty=Math.floor(Number(y));
     if(!Number.isInteger(tx)||!Number.isInteger(ty)||tx<0||ty<0||tx>=worldW()||ty>=worldH())return null;
     return {x:tx,y:ty,index:tileIndex(tx,ty)};
+}
+// Sample the same terrain maps used by the renderer without importing world.js:
+// world.js already owns resource generation, so a reverse import would create a
+// needless module cycle just to read three scalar fields.
+function sampleTerrain(tx,ty){
+    const res=Number(state.terrainResolution)||1;
+    const width=Number(state.terrainPixW)||0,height=Number(state.terrainPixH)||0;
+    const px=Math.floor((tx+0.5)*res),py=Math.floor((ty+0.5)*res);
+    if(!width||!height||px<0||py<0||px>=width||py>=height)return {height:0,moisture:0.5,temperature:0.55};
+    const index=py*width+px;
+    return {
+        height:Number(state.heightMap?.[index])||0,
+        moisture:clamp(Number(state.moistureMap?.[index])||0,0,1),
+        temperature:clamp(Number(state.temperatureMap?.[index] ?? 0.55)||0,0,1),
+    };
 }
 function ensureGeography(){
     const geo=state.resourceGeography;
@@ -178,6 +193,21 @@ export function getResourceNodeAt(x,y){
     const forestDefinition=forestType?FOREST_TYPES[forestType]:null;
     const forestAgeIndex=Number(geo.forestAge?.[i]||0);
     const succession=forestSuccessionAt(point.x,point.y);
+    let snowDepth=0,snowDepthCm=0,exposure=0,fireRisk=0,pestRisk=0,monoculture=0;
+    if(forestDefinition){
+        const terrain=sampleTerrain(point.x,point.y);
+        const climate=state.worldOptions?.climate||"temperate";
+        const stand=forestStandAt(point.x+0.5,point.y+0.5,{
+            seed:geo.seed,moisture:terrain.moisture,temperature:terrain.temperature,height:terrain.height,
+            climate,forests:state.worldOptions?.forests??52,
+            stockRatio:geo.forestCapacity[i]?geo.forestStock[i]/geo.forestCapacity[i]:0,
+            rockLine:BIOME.ROCK,succession,
+        });
+        const snow=forestSnowDepthAt(stand,Number(state.dayOfYear)||0,climate);
+        snowDepth=snow.depth;snowDepthCm=snow.cm;
+        exposure=Number(stand.exposure)||0;fireRisk=Number(stand.fireRisk)||0;
+        pestRisk=Number(stand.pestRisk)||0;monoculture=Number(stand.monoculture)||0;
+    }
     return {
         x:point.x,y:point.y,
         forestStock:geo.forestStock[i],forestCapacity:geo.forestCapacity[i],
@@ -188,6 +218,8 @@ export function getResourceNodeAt(x,y){
         forestSpecies:forestDefinition?Object.keys(forestDefinition.species):[],
         forestGoods:forestDefinition?[...new Set([...forestDefinition.goods,"timber","firewood"])]:[],
         forestFauna:forestDefinition?[...forestDefinition.fauna]:[],
+        forestSnowDepth:snowDepth,forestSnowDepthCm:snowDepthCm,
+        forestExposure:exposure,forestFireRisk:fireRisk,forestPestRisk:pestRisk,forestMonoculture:monoculture,
         stoneStock:geo.stoneStock[i],stoneCapacity:geo.stoneCapacity[i],
         waterAccess:Boolean(geo.waterAccess[i]),fertility:geo.fertility[i]
     };

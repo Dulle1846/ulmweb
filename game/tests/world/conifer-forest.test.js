@@ -75,6 +75,25 @@ test("every conifer formation is reachable from cold, high or dry site condition
     }
 });
 
+test("cold highland transition belts keep mixed conifer stands reachable", () => {
+    let mixed = null;
+    for (let y = 0; y < 64 && !mixed; y += 3) {
+        for (let x = 0; x < 64; x += 3) {
+            const stand = forestStandAt(x + 0.5, y + 0.5, context({
+                temperature: 0.38, moisture: 0.5, height: 0.84,
+            }));
+            if (stand.forest && stand.type === "mixed-conifer") {
+                mixed = stand;
+                break;
+            }
+        }
+    }
+    assert.ok(mixed, "a cold highland transition belt must generate mixed-conifer");
+    assert.equal(mixed.conifer, true);
+    assert.ok(mixed.coniferShare > 0.9);
+    assert.ok(mixed.species.length >= 4);
+});
+
 test("a conifer stand exposes needle litter, podzol, conifer products and specialist fauna", () => {
     const stand = findConiferStand(entry => entry.type === "sprucewood");
     assert.ok(stand, "a sprucewood must be reachable");

@@ -100,7 +100,7 @@ stock and recover through the same save-compatible succession model.
 | 1.2.2.34 Snow-covered winter crowns | Implemented | `foliageState` snow, tier caps |
 | 1.2.2.35 Spring shoot growth | Implemented | existing `greenUp` and `fresh` foliage |
 | 1.2.2.36 Seasonal larch change | Implemented | larch turn/drop/leaf-out |
-| 1.2.2.37 Snow depth by elevation/exposure | Partial | higher stands retain more snow via existing elevation/exposure inputs; no per-tile snow-depth field |
+| 1.2.2.37 Snow depth by elevation/exposure | Implemented | `stand.snowPotential`, `forestSnowDepthAt()`, `snowDepthCm` in the survey; exposed high ground holds a deeper pack |
 | 1.2.2.38 Deer, roe deer, boar and fox | Implemented | conifer formation fauna |
 | 1.2.2.39 Wolves, lynx and larger predators | Implemented as habitat observations | `wolf`, `lynx` |
 | 1.2.2.40 Squirrels and forest mice | Implemented | existing `squirrel`, `mouse` |
@@ -118,6 +118,48 @@ stock and recover through the same save-compatible succession model.
 | 1.2.2.52 Windthrow and storm damage | Implemented | existing windthrow plus conifer lean/damage |
 | 1.2.2.53 Monocultures and pest vulnerability | Implemented | dense spruce/fir formations and beetle outbreaks |
 | 1.2.2.54 Snowbreak | Implemented | `snowbreak`, live succession |
+
+## Survey and local snow
+
+The forester/lumber survey now reports the site's **snow depth in centimetres**
+and its **exposure percentage**. `forestSnowDepthAt()` combines the stand's
+`exposure` and `snowPotential` with the seasonal snow cover; it returns zero in
+summer and a deeper value on high, open ground in winter. Dense conifer canopies
+hold more of that snow on their branches, so the renderer scales the weather
+snow load with the same local potential. The underlying values are derived from
+height, canopy, moisture, temperature and stocking; they add no per-tick state
+and no save fields.
+
+The same derived diagnostic layer exposes `fireRisk`, `pestRisk` and
+`monoculture` for the forest survey and future events. These are not a second
+simulation: they are deterministic properties of the existing stand.
+
+## Visual reference
+
+The dedicated conifer sheet is generated with:
+
+```sh
+cd game
+npm run test:conifer-reference
+```
+
+It starts the fixed northern realm, captures every conifer formation at the same
+0.95× rooftop camera, and follows a larchwood through days 50, 150, 250 and 350.
+The outputs are `docs/terrain-reference/conifer-reference.png`,
+`conifer-seasons.png` and `conifer-reference.json`; the JSON records the exact
+tile, species, exposure, snow potential and winter snow depth behind every
+frame.
+
+The checked-in formation sheet is a 3×4 grid at summer day 150. The larch strip
+uses the same tile (41, 75) and camera for days 50, 150, 250 and 350, so the
+fresh-needle, closed-canopy, golden-turn and bare-skeleton stages are directly
+comparable. High-altitude crowns are evaluated before the snow/rock early exits
+in `terrain.js`; without that order, `mountain-conifer`, `mixed-conifer` and
+`snowbreak` render as empty snowfields.
+
+![All twelve conifer formations](terrain-reference/conifer-reference.png)
+
+![One larch stand through the year](terrain-reference/conifer-seasons.png)
 
 ## Verification
 
