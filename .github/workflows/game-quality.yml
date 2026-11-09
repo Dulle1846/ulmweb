@@ -16,6 +16,9 @@ on:
       - "game/**"
       - ".github/workflows/game-quality.yml"
 
+permissions:
+  contents: read
+
 # Keep only the newest quality run for a branch; stale queued runs are superseded.
 concurrency:
   group: game-quality-${{ github.ref }}
