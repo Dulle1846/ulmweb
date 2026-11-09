@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-09T05:47:31.137Z",
-  "baseUrl": "http://127.0.0.1:4176",
+  "generatedAt": "2026-11-09T05:51:45.966Z",
+  "baseUrl": "https://kings-and-cards.pages.dev",
   "years": 10,
   "daysPerYear": 400,
   "schedule": {
@@ -113,7 +113,7 @@
           "lowestFill": 0.9578494623655914,
           "visualRevision": 66,
           "visualDelta": 66,
-          "cacheMisses": 7,
+          "cacheMisses": 6,
           "cutMarkers": {
             "total": 3,
             "matched": 3,
@@ -190,7 +190,7 @@
           "lowestFill": 0.9876702508960573,
           "visualRevision": 87,
           "visualDelta": 21,
-          "cacheMisses": 13,
+          "cacheMisses": 12,
           "cutMarkers": {
             "total": 1,
             "matched": 1,
@@ -267,7 +267,7 @@
           "lowestFill": 0.9739068100358423,
           "visualRevision": 139,
           "visualDelta": 52,
-          "cacheMisses": 19,
+          "cacheMisses": 18,
           "cutMarkers": {
             "total": 2,
             "matched": 2,
@@ -344,7 +344,7 @@
           "lowestFill": 0.9718996415770609,
           "visualRevision": 189,
           "visualDelta": 50,
-          "cacheMisses": 25,
+          "cacheMisses": 24,
           "cutMarkers": {
             "total": 2,
             "matched": 2,
@@ -421,7 +421,7 @@
           "lowestFill": 0.9595698924731183,
           "visualRevision": 254,
           "visualDelta": 65,
-          "cacheMisses": 31,
+          "cacheMisses": 30,
           "cutMarkers": {
             "total": 3,
             "matched": 3,
@@ -498,7 +498,7 @@
           "lowestFill": 0.9870967741935484,
           "visualRevision": 277,
           "visualDelta": 23,
-          "cacheMisses": 37,
+          "cacheMisses": 36,
           "cutMarkers": {
             "total": 1,
             "matched": 1,
@@ -575,7 +575,7 @@
           "lowestFill": 0.9595698924731183,
           "visualRevision": 337,
           "visualDelta": 60,
-          "cacheMisses": 43,
+          "cacheMisses": 42,
           "cutMarkers": {
             "total": 3,
             "matched": 3,
@@ -652,7 +652,7 @@
           "lowestFill": 0.9741935483870968,
           "visualRevision": 384,
           "visualDelta": 47,
-          "cacheMisses": 49,
+          "cacheMisses": 48,
           "cutMarkers": {
             "total": 2,
             "matched": 2,
@@ -729,7 +729,7 @@
           "lowestFill": 0.9870967741935484,
           "visualRevision": 407,
           "visualDelta": 23,
-          "cacheMisses": 55,
+          "cacheMisses": 54,
           "cutMarkers": {
             "total": 1,
             "matched": 1,
@@ -806,7 +806,7 @@
           "lowestFill": 0.9595698924731183,
           "visualRevision": 472,
           "visualDelta": 65,
-          "cacheMisses": 61,
+          "cacheMisses": 60,
           "cutMarkers": {
             "total": 3,
             "matched": 3,
@@ -1592,7 +1592,7 @@
           "lowestFill": 0.9694633255554428,
           "visualRevision": 438,
           "visualDelta": 69,
-          "cacheMisses": 55,
+          "cacheMisses": 54,
           "cutMarkers": {
             "total": 3,
             "matched": 3,
@@ -1669,7 +1669,7 @@
           "lowestFill": 0.968245916607487,
           "visualRevision": 510,
           "visualDelta": 72,
-          "cacheMisses": 61,
+          "cacheMisses": 60,
           "cutMarkers": {
             "total": 3,
             "matched": 3,
