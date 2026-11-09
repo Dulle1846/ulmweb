@@ -166,9 +166,18 @@ export function forestSuccessionSummary(limit = 3) {
     return rows.map(row => row.stage.label + " · " + row.kind).join(" · ");
 }
 
-function chooseKind(model, day) {
+function chooseKind(model, day, stand = null) {
     const season = Math.floor(number(state.seasonIndex, 0)) % 4;
     const roll = unitHash(model.seed, model.events + 1, day, 0x4b494e44);
+    // Conifer stands have their own disturbance regime. Bark beetle follows
+    // summer heat, snowbreak follows winter loading, and drought stress opens
+    // the door to both. Broadleaf woodland keeps the fire/wind/disease cycle.
+    if (stand?.coniferShare > 0.4) {
+        if (season === 1) return roll < 0.58 ? "bark-beetle" : "drought-stressed";
+        if (season === 2) return roll < 0.5 ? "bark-beetle" : "snowbreak";
+        if (season === 3) return roll < 0.68 ? "snowbreak" : "bark-beetle";
+        return roll < 0.52 ? "drought-stressed" : "snowbreak";
+    }
     if (season === 1) return roll < 0.62 ? "burned" : "diseased";
     if (season === 2 || season === 3) return roll < 0.64 ? "windthrow" : "diseased";
     return roll < 0.45 ? "windthrow" : "diseased";
@@ -193,7 +202,7 @@ function spawnDisturbance(model) {
         if (!geo.forestCapacity?.[index] || Number(geo.forestStock?.[index] || 0) < 18) continue;
         const stand = standAtTile(geo, x, y);
         if (!stand?.forest || stand.type === "cutover") continue;
-        const kind = chooseKind(model, model.day);
+        const kind = chooseKind(model, model.day, stand);
         const profile = forestSuccessionProfile(kind);
         if (!profile) continue;
         const before = Math.max(1, Math.floor(number(geo.forestStock[index], 1)));

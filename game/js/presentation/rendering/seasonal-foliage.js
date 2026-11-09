@@ -57,6 +57,26 @@ export const TREE_SPECIES = Object.freeze({
         turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
         evergreen: true, snowRetention: 1.18, snowMeltShift: 8,
     }),
+    spruce: Object.freeze({
+        turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
+        evergreen: true, snowRetention: 1.28, snowMeltShift: 9,
+    }),
+    fir: Object.freeze({
+        turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
+        evergreen: true, snowRetention: 1.32, snowMeltShift: 10,
+    }),
+    pine: Object.freeze({
+        turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
+        evergreen: true, snowRetention: 1.04, snowMeltShift: 5,
+    }),
+    larch: Object.freeze({
+        turnOffset: -5, dropOffset: 8, leafOutOffset: 5, turnSpan: 50, dropSpan: 42, marcescent: 0.02,
+        evergreen: false, snowRetention: 0.92, snowMeltShift: -3,
+    }),
+    juniper: Object.freeze({
+        turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
+        evergreen: true, snowRetention: 0.8, snowMeltShift: 3,
+    }),
     palm: Object.freeze({
         turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
         evergreen: true, snowRetention: 0.18, snowMeltShift: -8,

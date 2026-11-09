@@ -121,6 +121,55 @@ export const FOREST_SPECIES = Object.freeze({
         timber: 0.7, firewood: 0.9, charcoal: 0.82, wood: 'alder-timber',
         goods: ['alder-cones', 'herbs', 'sloes'], understory: ['moss', 'heather'],
     }),
+    // Conifers are not a single cosmetic cone. Each species has its own
+    // silhouette, timber, forest-floor litter and useful products. Larch is
+    // the exception that proves the rule: it is a conifer that sheds its
+    // needles every autumn, while spruce, fir, pine and juniper stay green.
+    spruce: Object.freeze({
+        id: 'spruce', label: 'Spruce', latin: 'Picea',
+        bark: '#4b3828', barkLight: '#70543a',
+        summer: ['#1f4232', '#356348'], autumn: ['#1b392c', '#2e5740'],
+        form: 'conifer', leafShape: 'needle', height: 1.28, crown: 0.78, trunk: 0.78, lobes: 3,
+        conifer: true, crownShape: 'spire', tiers: 7, branchDrop: 0.16, snowRetention: 1.25,
+        timber: 0.9, firewood: 1.35, charcoal: 1.2, wood: 'spruce-timber',
+        goods: ['spruce-cones', 'resin', 'mushrooms', 'lichen'], understory: ['moss', 'fern'],
+    }),
+    fir: Object.freeze({
+        id: 'fir', label: 'Fir', latin: 'Abies',
+        bark: '#4a4036', barkLight: '#6b5a48',
+        summer: ['#1c3a2e', '#2e5540'], autumn: ['#19342a', '#294c39'],
+        form: 'conifer', leafShape: 'needle', height: 1.35, crown: 0.94, trunk: 0.9, lobes: 3,
+        conifer: true, crownShape: 'dense', tiers: 6, branchDrop: 0.08, snowRetention: 1.3,
+        timber: 1.02, firewood: 1.2, charcoal: 1.12, wood: 'fir-timber',
+        goods: ['fir-cones', 'resin', 'mushrooms', 'lichen'], understory: ['moss', 'fern'],
+    }),
+    pine: Object.freeze({
+        id: 'pine', label: 'Pine', latin: 'Pinus',
+        bark: '#775230', barkLight: '#a06d42',
+        summer: ['#315b3b', '#537d4b'], autumn: ['#2b5138', '#4a7247'],
+        form: 'conifer', leafShape: 'needle', height: 1.22, crown: 0.86, trunk: 1.02, lobes: 3,
+        conifer: true, crownShape: 'crown', tiers: 4, branchDrop: 0.04, snowRetention: 1.05,
+        timber: 1.0, firewood: 1.12, charcoal: 1.05, wood: 'pine-timber',
+        goods: ['pine-cones', 'resin', 'blueberries', 'lingonberries', 'mushrooms'], understory: ['heather', 'lichen', 'moss'],
+    }),
+    larch: Object.freeze({
+        id: 'larch', label: 'Larch', latin: 'Larix',
+        bark: '#6b4d38', barkLight: '#946b4a',
+        summer: ['#4c7a3d', '#79a24f'], autumn: ['#b8842b', '#d6ad45'],
+        form: 'conifer', leafShape: 'needle', height: 1.2, crown: 0.74, trunk: 0.82, lobes: 3,
+        conifer: true, deciduousNeedles: true, crownShape: 'airy', tiers: 5, branchDrop: 0.12, snowRetention: 0.9,
+        timber: 0.88, firewood: 1.04, charcoal: 0.94, wood: 'larch-timber',
+        goods: ['larch-timber', 'resin', 'mushrooms', 'blueberries', 'herbs'], understory: ['heather', 'fern'],
+    }),
+    juniper: Object.freeze({
+        id: 'juniper', label: 'Juniper', latin: 'Juniperus',
+        bark: '#5c4a39', barkLight: '#80674e',
+        summer: ['#365d3d', '#547747'], autumn: ['#31543a', '#4b6d45'],
+        form: 'scrub', leafShape: 'needle', height: 0.46, crown: 0.55, trunk: 0.35, lobes: 2,
+        conifer: true, crownShape: 'scrub', tiers: 3, branchDrop: 0.02, snowRetention: 0.82,
+        timber: 0.38, firewood: 0.58, charcoal: 0.5, wood: 'juniper-timber',
+        goods: ['juniper-berries', 'resin', 'lichen'], understory: ['heather', 'moss'],
+    }),
 });
 
 export const FOREST_SPECIES_IDS = Object.freeze(Object.keys(FOREST_SPECIES));
@@ -129,12 +178,18 @@ const type = (id, label, note, species, options = {}) => Object.freeze({
     id, label, note, species: Object.freeze(species),
     density: options.density ?? 0.66,
     openness: options.openness ?? 0.24,
-    understory: Object.freeze(options.understory || { fern: 0.2, bramble: 0.1, shrub: 0.1, moss: 0.2 }),
+    understory: Object.freeze({
+        fern: 0.2, bramble: 0.1, shrub: 0.1, moss: 0.2,
+        heather: 0, lichen: 0, berry: 0,
+        ...(options.understory || {}),
+    }),
     goods: Object.freeze(options.goods || []),
     fauna: Object.freeze(options.fauna || []),
     ageBias: options.ageBias ?? 'mature',
     disturbance: options.disturbance || null,
     productivity: options.productivity ?? 1,
+    conifer: Boolean(options.conifer),
+    needleLitter: Math.max(0, Math.min(1, Number(options.needleLitter) || 0)),
 });
 
 // Formations are the ecological vocabulary; individual tiles then vary the
@@ -185,6 +240,45 @@ export const FOREST_TYPES = Object.freeze({
     cutover: type('cutover', 'Cut-over Wood', 'Stumps, brush piles and a bright flush of regrowth',
         { birch: 0.34, maple: 0.22, oak: 0.14, beech: 0.16, linden: 0.14 },
         { density: 0.24, openness: 0.62, understory: { fern: 0.08, bramble: 0.28, shrub: 0.2, moss: 0.08, heather: 0.2 }, goods: ['berries', 'mushrooms', 'firewood'], fauna: ['hare', 'fox', 'ant', 'butterfly'], ageBias: 'young', disturbance: 'cutover', productivity: 0.4 }),
+
+    // Conifer formations are appended so every existing numeric type index in
+    // old resource saves keeps pointing at the same broadleaf formation.
+    sprucewood: type('sprucewood', 'Sprucewood', 'Dense, dark spires with a deep needle floor and little sky',
+        { spruce: 0.6, fir: 0.18, pine: 0.1, birch: 0.07, alder: 0.05 },
+        { density: 0.88, openness: 0.13, conifer: true, needleLitter: 0.95, understory: { fern: 0.12, bramble: 0, shrub: 0.08, moss: 0.38, heather: 0, lichen: 0.22, berry: 0.12 }, goods: ['spruce-cones', 'resin', 'mushrooms', 'lichen', 'game'], fauna: ['deer', 'roe-deer', 'fox', 'squirrel', 'crossbill', 'woodpecker', 'bark-beetle', 'owl'], ageBias: 'mature' }),
+    firwood: type('firwood', 'Firwood', 'Tall, shadowed firs with tiered branches and mossy trunks',
+        { fir: 0.58, spruce: 0.2, beech: 0.1, pine: 0.07, birch: 0.05 },
+        { density: 0.9, openness: 0.12, conifer: true, needleLitter: 0.95, understory: { fern: 0.16, bramble: 0, shrub: 0.04, moss: 0.44, heather: 0, lichen: 0.26, berry: 0.08 }, goods: ['fir-cones', 'resin', 'mushrooms', 'herbs', 'game'], fauna: ['deer', 'boar', 'fox', 'owl', 'crossbill', 'woodpecker', 'bark-beetle'], ageBias: 'mature' }),
+    pinewood: type('pinewood', 'Pinewood', 'Open, sunlit pines over heather, lichen and berry bushes',
+        { pine: 0.62, spruce: 0.12, larch: 0.1, birch: 0.1, juniper: 0.06 },
+        { density: 0.58, openness: 0.38, conifer: true, needleLitter: 0.8, understory: { fern: 0.06, bramble: 0, shrub: 0.08, moss: 0.22, heather: 0.3, lichen: 0.42, berry: 0.26 }, goods: ['pine-cones', 'resin', 'blueberries', 'lingonberries', 'mushrooms', 'game'], fauna: ['deer', 'roe-deer', 'hare', 'fox', 'crossbill', 'woodpecker', 'ant', 'bark-beetle'], ageBias: 'mature' }),
+    larchwood: type('larchwood', 'Larchwood', 'Bright larches that turn gold and drop their needles in autumn',
+        { larch: 0.56, pine: 0.18, spruce: 0.1, birch: 0.1, juniper: 0.06 },
+        { density: 0.62, openness: 0.34, conifer: true, needleLitter: 0.7, understory: { fern: 0.12, bramble: 0, shrub: 0.16, moss: 0.2, heather: 0.16, lichen: 0.2, berry: 0.22 }, goods: ['larch-timber', 'resin', 'mushrooms', 'blueberries', 'herbs'], fauna: ['roe-deer', 'deer', 'hare', 'fox', 'crossbill', 'songbird'], ageBias: 'mature' }),
+    'pine-heath': type('pine-heath', 'Pine Heath', 'Dry, nutrient-poor pine and juniper over open heather',
+        { pine: 0.54, juniper: 0.18, larch: 0.1, birch: 0.1, spruce: 0.08 },
+        { density: 0.4, openness: 0.5, conifer: true, needleLitter: 0.55, understory: { fern: 0.04, bramble: 0, shrub: 0.12, moss: 0.12, heather: 0.65, lichen: 0.46, berry: 0.3 }, goods: ['pine-cones', 'juniper-berries', 'lingonberries', 'lichen', 'resin'], fauna: ['roe-deer', 'hare', 'ant', 'bark-beetle', 'crossbill'], ageBias: 'mature' }),
+    'wet-conifer': type('wet-conifer', 'Wet Conifer Wood', 'Damp spruce, fir and alder with moss, ferns and standing water',
+        { spruce: 0.5, alder: 0.22, fir: 0.16, birch: 0.07, pine: 0.05 },
+        { density: 0.8, openness: 0.2, conifer: true, needleLitter: 0.8, understory: { fern: 0.28, bramble: 0.04, shrub: 0.2, moss: 0.52, heather: 0, lichen: 0.2, berry: 0.3 }, goods: ['spruce-cones', 'resin', 'mushrooms', 'herbs', 'game'], fauna: ['deer', 'boar', 'fox', 'owl', 'crossbill', 'mouse'], ageBias: 'mature' }),
+    'mountain-conifer': type('mountain-conifer', 'Mountain Conifer Wood', 'High-elevation spruce and fir, bent by wind and deep snow',
+        { spruce: 0.42, fir: 0.28, pine: 0.16, larch: 0.1, juniper: 0.04 },
+        { density: 0.68, openness: 0.22, conifer: true, needleLitter: 0.9, understory: { fern: 0.18, bramble: 0, shrub: 0.08, moss: 0.36, heather: 0.2, lichen: 0.4, berry: 0.18 }, goods: ['spruce-cones', 'fir-cones', 'resin', 'lichen', 'mushrooms', 'game'], fauna: ['deer', 'roe-deer', 'fox', 'owl', 'raptor', 'crossbill', 'capercaillie', 'lynx'], ageBias: 'ancient' }),
+    'subalpine-scrub': type('subalpine-scrub', 'Subalpine Scrub', 'Gnarled juniper and young conifers at the wind-bent tree line',
+        { juniper: 0.38, pine: 0.24, larch: 0.16, spruce: 0.12, birch: 0.1 },
+        { density: 0.36, openness: 0.52, conifer: true, needleLitter: 0.5, understory: { fern: 0.04, bramble: 0, shrub: 0.28, moss: 0.2, heather: 0.44, lichen: 0.4, berry: 0.26 }, goods: ['juniper-berries', 'pine-cones', 'lichen', 'herbs', 'resin'], fauna: ['roe-deer', 'hare', 'fox', 'raptor', 'crossbill'], ageBias: 'young' }),
+    'mixed-conifer': type('mixed-conifer', 'Mixed Conifer Wood', 'Spruce, fir, pine and larch sharing a layered canopy',
+        { spruce: 0.3, fir: 0.24, pine: 0.22, larch: 0.16, juniper: 0.08 },
+        { density: 0.72, openness: 0.26, conifer: true, needleLitter: 0.85, understory: { fern: 0.16, bramble: 0, shrub: 0.12, moss: 0.3, heather: 0.12, lichen: 0.28, berry: 0.2 }, goods: ['spruce-cones', 'fir-cones', 'pine-cones', 'resin', 'blueberries', 'mushrooms', 'game'], fauna: ['deer', 'roe-deer', 'fox', 'owl', 'crossbill', 'woodpecker', 'capercaillie', 'songbird'], ageBias: 'mature' }),
+    'bark-beetle': type('bark-beetle', 'Bark-beetle Wood', 'Grey dead spires, red needles and woodpecker holes in a beetle outbreak',
+        { spruce: 0.55, pine: 0.18, fir: 0.12, birch: 0.1, larch: 0.05 },
+        { density: 0.5, openness: 0.42, conifer: true, needleLitter: 0.8, understory: { fern: 0.06, bramble: 0, shrub: 0.04, moss: 0.18, heather: 0, lichen: 0.12, berry: 0.04 }, goods: ['spruce-timber', 'firewood', 'charcoal', 'mushrooms', 'resin'], fauna: ['woodpecker', 'bark-beetle', 'beetle', 'owl', 'fox'], ageBias: 'mature', disturbance: 'bark-beetle', productivity: 0.46 }),
+    snowbreak: type('snowbreak', 'Snowbreak Wood', 'Broken leaders and bent crowns under heavy winter snow',
+        { spruce: 0.44, fir: 0.2, pine: 0.18, larch: 0.1, birch: 0.08 },
+        { density: 0.54, openness: 0.38, conifer: true, needleLitter: 0.85, understory: { fern: 0.1, bramble: 0, shrub: 0.06, moss: 0.3, heather: 0.08, lichen: 0.2, berry: 0.08 }, goods: ['firewood', 'timber', 'resin', 'mushrooms'], fauna: ['deer', 'hare', 'fox', 'owl', 'woodpecker'], ageBias: 'mature', disturbance: 'snowbreak', productivity: 0.6 }),
+    'drought-stressed': type('drought-stressed', 'Drought-stressed Pine', 'Thin, resinous pines on parched ground with bark-beetle pressure',
+        { pine: 0.58, larch: 0.14, juniper: 0.12, spruce: 0.1, birch: 0.06 },
+        { density: 0.44, openness: 0.46, conifer: true, needleLitter: 0.65, understory: { fern: 0.03, bramble: 0, shrub: 0.1, moss: 0.1, heather: 0.34, lichen: 0.3, berry: 0.1 }, goods: ['resin', 'pine-cones', 'firewood', 'lichen'], fauna: ['bark-beetle', 'woodpecker', 'fox', 'hare', 'ant'], ageBias: 'mature', disturbance: 'drought-stressed', productivity: 0.52 }),
 });
 
 export const FOREST_TYPE_IDS = Object.freeze(Object.keys(FOREST_TYPES));
@@ -213,6 +307,11 @@ export const FOREST_GOODS = Object.freeze({
     'linden-timber': Object.freeze({ id: 'linden-timber', label: 'Linden timber', category: 'wood' }),
     'elm-timber': Object.freeze({ id: 'elm-timber', label: 'Elm timber', category: 'wood' }),
     'alder-timber': Object.freeze({ id: 'alder-timber', label: 'Alder timber', category: 'wood' }),
+    'spruce-timber': Object.freeze({ id: 'spruce-timber', label: 'Spruce timber', category: 'wood' }),
+    'fir-timber': Object.freeze({ id: 'fir-timber', label: 'Fir timber', category: 'wood' }),
+    'pine-timber': Object.freeze({ id: 'pine-timber', label: 'Pine timber', category: 'wood' }),
+    'larch-timber': Object.freeze({ id: 'larch-timber', label: 'Larch timber', category: 'wood' }),
+    'juniper-timber': Object.freeze({ id: 'juniper-timber', label: 'Juniper wood', category: 'wood' }),
     firewood: Object.freeze({ id: 'firewood', label: 'Firewood', category: 'wood' }),
     charcoal: Object.freeze({ id: 'charcoal', label: 'Charcoal', category: 'wood' }),
     mushrooms: Object.freeze({ id: 'mushrooms', label: 'Mushrooms', category: 'gather' }),
@@ -236,6 +335,14 @@ export const FOREST_GOODS = Object.freeze({
     'maple-syrup': Object.freeze({ id: 'maple-syrup', label: 'Maple syrup', category: 'gather' }),
     'elm-seeds': Object.freeze({ id: 'elm-seeds', label: 'Elm seeds', category: 'gather' }),
     'alder-cones': Object.freeze({ id: 'alder-cones', label: 'Alder cones', category: 'gather' }),
+    'spruce-cones': Object.freeze({ id: 'spruce-cones', label: 'Spruce cones', category: 'mast' }),
+    'fir-cones': Object.freeze({ id: 'fir-cones', label: 'Fir cones', category: 'mast' }),
+    'pine-cones': Object.freeze({ id: 'pine-cones', label: 'Pine cones', category: 'mast' }),
+    resin: Object.freeze({ id: 'resin', label: 'Resin', category: 'gather' }),
+    'juniper-berries': Object.freeze({ id: 'juniper-berries', label: 'Juniper berries', category: 'gather' }),
+    blueberries: Object.freeze({ id: 'blueberries', label: 'Blueberries', category: 'gather' }),
+    lingonberries: Object.freeze({ id: 'lingonberries', label: 'Lingonberries', category: 'gather' }),
+    lichen: Object.freeze({ id: 'lichen', label: 'Lichen', category: 'gather' }),
     bark: Object.freeze({ id: 'bark', label: 'Bark', category: 'gather' }),
     game: Object.freeze({ id: 'game', label: 'Wild game', category: 'hunt' }),
     fur: Object.freeze({ id: 'fur', label: 'Furs', category: 'hunt' }),
@@ -246,10 +353,10 @@ export const FOREST_GOODS = Object.freeze({
 });
 
 const SEASON_GOODS = Object.freeze({
-    spring: { herbs: 0.9, 'wild-garlic': 0.88, 'wood-sorrel': 0.72, 'wild-strawberry': 0.3, 'birch-sap': 0.9, 'maple-syrup': 0.75, 'linden-flower': 0.45, honey: 0.55, beeswax: 0.25, mushrooms: 0.18, berries: 0.12, game: 0.3, fur: 0.25, hides: 0.2 },
-    summer: { herbs: 0.65, 'wild-garlic': 0.38, 'wood-sorrel': 0.55, 'wild-strawberry': 0.9, chanterelle: 0.18, 'linden-flower': 0.95, honey: 0.95, beeswax: 0.55, berries: 0.9, mushrooms: 0.3, game: 0.35, fur: 0.2, hides: 0.16, 'maple-syrup': 0.3 },
-    autumn: { mushrooms: 0.95, chanterelle: 0.9, porcini: 0.82, sloes: 0.76, 'crab-apples': 0.7, 'wood-sorrel': 0.3, 'wild-strawberry': 0.15, berries: 0.55, acorns: 0.95, beechnuts: 0.9, chestnuts: 0.95, truffles: 0.7, game: 0.9, fur: 0.5, hides: 0.45, herbs: 0.25, honey: 0.2, beeswax: 0.18 },
-    winter: { game: 0.55, fur: 0.85, hides: 0.65, mushrooms: 0.08, berries: 0.04, charcoal: 0.5 },
+    spring: { herbs: 0.9, 'wild-garlic': 0.88, 'wood-sorrel': 0.72, 'wild-strawberry': 0.3, 'birch-sap': 0.9, 'maple-syrup': 0.75, 'linden-flower': 0.45, honey: 0.55, beeswax: 0.25, mushrooms: 0.18, berries: 0.12, game: 0.3, fur: 0.25, hides: 0.2, resin: 0.22, lichen: 0.2 },
+    summer: { herbs: 0.65, 'wild-garlic': 0.38, 'wood-sorrel': 0.55, 'wild-strawberry': 0.9, chanterelle: 0.18, 'linden-flower': 0.95, honey: 0.95, beeswax: 0.55, berries: 0.9, mushrooms: 0.3, game: 0.35, fur: 0.2, hides: 0.16, 'maple-syrup': 0.3, resin: 0.75, blueberries: 0.9, lingonberries: 0.45, lichen: 0.25 },
+    autumn: { mushrooms: 0.95, chanterelle: 0.9, porcini: 0.82, sloes: 0.76, 'crab-apples': 0.7, 'wood-sorrel': 0.3, 'wild-strawberry': 0.15, berries: 0.55, acorns: 0.95, beechnuts: 0.9, chestnuts: 0.95, truffles: 0.7, game: 0.9, fur: 0.5, hides: 0.45, herbs: 0.25, honey: 0.2, beeswax: 0.18, resin: 0.5, 'spruce-cones': 0.8, 'fir-cones': 0.8, 'pine-cones': 0.9, 'juniper-berries': 0.85, blueberries: 0.35, lingonberries: 0.9 },
+    winter: { game: 0.55, fur: 0.85, hides: 0.65, mushrooms: 0.08, berries: 0.04, charcoal: 0.5, resin: 0.05, 'spruce-cones': 0.35, 'fir-cones': 0.32, 'pine-cones': 0.45, 'juniper-berries': 0.5, lichen: 0.3 },
 });
 
 const FAUNA = Object.freeze({
@@ -268,6 +375,11 @@ const FAUNA = Object.freeze({
     butterfly: Object.freeze({ label: 'Woodland butterfly', group: 'insect', note: 'drifting through the light' }),
     ant: Object.freeze({ label: 'Wood ant', group: 'insect', note: 'following a foraging column' }),
     bee: Object.freeze({ label: 'Wild bee', group: 'insect', note: 'visiting the flowering edge' }),
+    crossbill: Object.freeze({ label: 'Crossbill', group: 'bird', note: 'working a cone crop in the crown' }),
+    capercaillie: Object.freeze({ label: 'Capercaillie', group: 'bird', note: 'moving heavily through the conifer understorey' }),
+    wolf: Object.freeze({ label: 'Wolf', group: 'predator', note: 'following the deer trails' }),
+    lynx: Object.freeze({ label: 'Lynx', group: 'predator', note: 'watching from a windthrow thicket' }),
+    'bark-beetle': Object.freeze({ label: 'Bark beetle', group: 'insect', note: 'boring beneath the bark' }),
 });
 
 export const FOREST_FAUNA = Object.freeze(FAUNA);
@@ -285,7 +397,7 @@ export function seasonGoods(dayOfYear, climate = 'temperate') {
 }
 
 function formationFor(x, y, ctx) {
-    const { moisture, temperature, height, seed, climate } = ctx;
+    const { moisture, temperature, height, seed } = ctx;
     // Chestnut groves belong to the warm, sheltered lowlands. The generated
     // temperate map rarely exceeds .62 on land, so .58 is the playable warm
     // band rather than an unreachable threshold.
@@ -297,18 +409,50 @@ function formationFor(x, y, ctx) {
     // must mean the upper woodland belt, not every tile above the old 0.78
     // resource line. Otherwise every resource-bearing wood becomes hillside.
     const high = height > 0.82;
+    const coniferPatch = coarseUnit(seed, x, y, 7, 0x434f4e49);
+    const pinePatch = coarseUnit(seed, x, y, 8, 0x50494e45);
+    const larchPatch = coarseUnit(seed, x, y, 9, 0x4c4152);
+    const relief = coarseUnit(seed, x, y, 6, 0x52454c49);
 
-    if (wet && height < 0.76) return 'alluvial';
-    if (high) return 'hillside';
-    if (cold) return 'birchwood';
+    // The high country is a mosaic: warm, sheltered slopes keep broadleaf
+    // hillside woods; exposed and cold slopes turn to spruce, fir and finally
+    // wind-bent subalpine scrub.
+    if (height > 0.9) {
+        if (temperature > 0.5 && relief > 0.45) return 'hillside';
+        return coniferPatch > 0.24 ? 'subalpine-scrub' : 'mountain-conifer';
+    }
+    if (high) {
+        if (temperature > 0.52 && relief > 0.55) return 'hillside';
+        if (cold) return coniferPatch > 0.55 ? 'subalpine-scrub' : 'mountain-conifer';
+        return coniferPatch > 0.5 ? 'mountain-conifer' : 'mixed-conifer';
+    }
+    if (wet && cold && coniferPatch > 0.3) return 'wet-conifer';
+    if (wet) return 'alluvial';
+    if (cold) {
+        // A minority of cold, low sites remain open birch; the rest become the
+        // dark spruce/fir core, with larch on the drier margins and pine on
+        // thin, dry ground.
+        if (coniferPatch < 0.26) return 'birchwood';
+        if (moisture > 0.62 && pinePatch < 0.55) return 'wet-conifer';
+        if (moisture < 0.46) return pinePatch > 0.45 ? 'pine-heath' : 'pinewood';
+        if (larchPatch > 0.72) return 'larchwood';
+        if (pinePatch > 0.68) return 'pinewood';
+        return coniferPatch > 0.58 ? 'firwood' : 'sprucewood';
+    }
     if (warm && moisture > 0.48) return 'chestnut-grove';
-    if (dry) return 'oakwood';
+    if (dry) {
+        if (temperature < 0.5 && coniferPatch > 0.45) return pinePatch > 0.55 ? 'pine-heath' : 'pinewood';
+        return 'oakwood';
+    }
     if (moisture > 0.62) return 'beechwood';
     if (moisture > 0.54) return 'maplewood';
     if (moisture > 0.48) return 'linden-elm';
 
-    // The remaining mid-range is a real mixture, varied by a coarse patch so a
-    // realm contains several woodland characters rather than one default.
+    // Temperate transition woods carry conifer patches rather than one
+    // repeated spruce stamp. The old broadleaf patch logic remains underneath.
+    if (temperature < 0.55 && coniferPatch > 0.84) return 'mixed-conifer';
+    if (temperature < 0.53 && larchPatch > 0.82) return 'larchwood';
+    if (coniferPatch > 0.94) return 'pinewood';
     const patch = coarseUnit(seed, x, y, 9, 0x4d495853);
     if (patch > 0.82) return 'oakwood';
     if (patch > 0.64) return 'beechwood';
@@ -333,8 +477,8 @@ function ageClassFor(formation, x, y, seed) {
 const AGE_SCALE = Object.freeze({ young: 0.6, mature: 0.92, ancient: 1.26 });
 
 // Succession is deliberately expressed as ages, not as a second formation
-// taxonomy. The renderer and the resource layer keep using the fifteen
-// existing formations; a disturbance progresses from its fresh formation to
+// taxonomy. The renderer and the resource layer keep using the shared
+// formations; a disturbance progresses from its fresh formation to
 // regenerating regrowth and finally back to the site's original woodland.
 export const FOREST_SUCCESSION_PROFILES = Object.freeze({
     burned: Object.freeze({
@@ -351,6 +495,21 @@ export const FOREST_SUCCESSION_PROFILES = Object.freeze({
         freshDays: 100, regrowthDays: 220, youngDays: 420, recoveredDays: 600,
         freshLabel: 'Diseased Stand', regrowthLabel: 'Disease Recovery', youngLabel: 'Young Recovery Wood',
         recoveryLabel: 'Recovering Diseased Stand', severity: 0.7, spreadChance: 0.09,
+    }),
+    'bark-beetle': Object.freeze({
+        freshDays: 80, regrowthDays: 190, youngDays: 380, recoveredDays: 540,
+        freshLabel: 'Bark-beetle Outbreak', regrowthLabel: 'Beetle-killed Snags', youngLabel: 'Young Beetle Gap Wood',
+        recoveryLabel: 'Recovering Beetle Wood', severity: 0.48, spreadChance: 0.12,
+    }),
+    snowbreak: Object.freeze({
+        freshDays: 60, regrowthDays: 150, youngDays: 320, recoveredDays: 460,
+        freshLabel: 'Snowbreak', regrowthLabel: 'Snow-bent Regrowth', youngLabel: 'Young Snow Gap Wood',
+        recoveryLabel: 'Recovering Snowbreak', severity: 0.66, spreadChance: 0.04,
+    }),
+    'drought-stressed': Object.freeze({
+        freshDays: 90, regrowthDays: 210, youngDays: 400, recoveredDays: 580,
+        freshLabel: 'Drought-stressed Pine', regrowthLabel: 'Drought Recovery', youngLabel: 'Young Dry Wood',
+        recoveryLabel: 'Recovering Drought Wood', severity: 0.72, spreadChance: 0.06,
     }),
 });
 
@@ -422,12 +581,28 @@ export function forestStandAt(x, y, context = {}) {
     let disturbance = formation.disturbance;
 
     const damage = coarseUnit(seed, tx, ty, 7, 0x44414d47);
+    // Distinct hazards use independent patches. One shared damage hash made
+    // bark beetle, snowbreak and drought overlap in the same narrow tail, so a
+    // whole conifer type could be unreachable even though the pressure existed.
+    const barkDamage = coarseUnit(seed, tx, ty, 7, 0x42454154);
+    const snowDamage = coarseUnit(seed, tx, ty, 7, 0x534e4f57);
+    const droughtDamage = coarseUnit(seed, tx, ty, 7, 0x44524f55);
+    const coniferBase = Boolean(baseFormation.conifer);
     if (stockRatio < 0.18 && forest) {
         formation = FOREST_TYPES.cutover;
         disturbance = 'cutover';
     } else if (forest && damage > 0.982) {
         formation = FOREST_TYPES.burned;
         disturbance = 'burned';
+    } else if (forest && coniferBase && barkDamage > 0.93) {
+        formation = FOREST_TYPES['bark-beetle'];
+        disturbance = 'bark-beetle';
+    } else if (forest && coniferBase && snowDamage > 0.93) {
+        formation = FOREST_TYPES.snowbreak;
+        disturbance = 'snowbreak';
+    } else if (forest && coniferBase && moisture < 0.58 && droughtDamage > 0.9) {
+        formation = FOREST_TYPES['drought-stressed'];
+        disturbance = 'drought-stressed';
     } else if (forest && damage > 0.96) {
         formation = FOREST_TYPES.windthrow;
         disturbance = 'windthrow';
@@ -474,6 +649,9 @@ export function forestStandAt(x, y, context = {}) {
     const density = clamp01(formation.density * (0.58 + forestPressure * 0.42) * (0.72 + stockRatio * 0.28));
     const canopy = clamp01(density * (1 - clearing * 0.74) * (ageClass === 'young' ? 0.82 : 1));
     const light = clamp01(0.22 + (1 - canopy) * 0.78 + (edge ? 0.12 : 0));
+    const speciesWeightTotal = Object.values(formation.species).reduce((sum, weight) => sum + Math.max(0, Number(weight) || 0), 0) || 1;
+    const coniferShare = clamp01(Object.entries(formation.species).reduce((sum, [id, weight]) =>
+        sum + (FOREST_SPECIES[id]?.conifer ? Math.max(0, Number(weight) || 0) : 0), 0) / speciesWeightTotal);
     let treeChance = clamp01(0.08 + density * 0.78 + (edge ? 0.06 : 0) - clearing * 0.56);
     if (formation.id === 'regenerating') treeChance = clamp01(0.32 + density * 0.4);
     if (formation.id === 'cutover') treeChance = clamp01(0.12 + density * 0.62);
@@ -484,7 +662,13 @@ export function forestStandAt(x, y, context = {}) {
     const shrub = clamp01(0.08 + formation.understory.shrub * 0.8 + (edge ? 0.2 : 0));
     const moss = clamp01(0.08 + moisture * 0.34 + formation.understory.moss * 0.9 + (ageClass === 'ancient' ? 0.16 : 0));
     const heather = clamp01((formation.understory.heather || 0) * 0.9 + (temperature < 0.48 ? 0.12 : 0));
+    const lichen = clamp01((formation.understory.lichen || 0) * 0.9 + (coniferShare * 0.18) + (height > 0.66 ? 0.06 : 0) + (temperature < 0.5 ? 0.1 : 0));
+    const berry = clamp01((formation.understory.berry || 0) * 0.9 + (coniferShare * 0.12) + (moisture > 0.55 ? 0.08 : 0));
     const litter = clamp01(0.16 + (1 - canopy) * 0.34 + moisture * 0.12 + (ageClass === 'ancient' ? 0.18 : 0));
+    // Needle litter is a separate material from broadleaf litter: it is slower
+    // to break down, acidifies the topsoil and gives the conifer floor its
+    // characteristic rust-brown carpet. It is derived, never saved separately.
+    const needles = clamp01(coniferShare * (0.55 + litter * 0.22) + (formation.needleLitter || 0) * 0.3);
 
     const dominantSpecies = weightedPick(formation.species, unitHash(seed, tx, ty, 0x53504543));
     // Linden and elm share one ecological formation but the survey names the
@@ -534,7 +718,8 @@ export function forestStandAt(x, y, context = {}) {
     const roots = clamp01((ageClass === 'ancient' ? 0.3 : 0.08) + (height > 0.56 ? 0.1 : 0));
     const flowers = clamp01((edge ? 0.35 : 0.06) + (clearing > 0.2 ? 0.3 : 0) + (formation.id === 'regenerating' ? 0.12 : 0));
     const humus = clamp01(litter * 0.62 + moss * 0.24 + (ageClass === 'ancient' ? 0.16 : 0));
-    const soil = moisture > 0.72 ? 'alluvial' : moisture < 0.4 ? 'dry' : humus > 0.52 ? 'humus' : 'loam';
+    const sourSoil = clamp01((coniferShare - 0.25) * 1.4 + (moisture < 0.5 ? 0.18 : 0));
+    const soil = coniferShare > 0.45 ? (moisture > 0.72 ? 'alluvial' : 'podzol') : moisture > 0.72 ? 'alluvial' : moisture < 0.4 ? 'dry' : humus > 0.52 ? 'humus' : 'loam';
     // These are deterministic pressure proxies, not a second population or soil
     // simulation: harvest lowers the stand, trails compact the ground, and
     // repeated extraction reduces the available game cover.
@@ -561,9 +746,14 @@ export function forestStandAt(x, y, context = {}) {
         disturbance,
         treeChance,
         understory: { fern, bramble, shrub, moss, heather },
-        ground: { litter, moss, roots, stones, mushrooms, stumps, logs, trail, flowers, humus, soil, compaction, huntingPressure },
+        ground: { litter, needles, lichen, berry, moss, roots, stones, mushrooms, stumps, logs, trail, flowers, humus, soil, sourSoil, compaction, huntingPressure },
         goods: [...baseGoods].sort(),
         fauna: [...formation.fauna],
+        coniferShare,
+        conifer: coniferShare >= 0.4,
+        coniferLabel: [...speciesList].filter(entry => FOREST_SPECIES[entry.id]?.conifer).map(entry => entry.label).join(' · '),
+        visibility: clamp01(1 - canopy * 0.58 - coniferShare * 0.14 + (edge ? 0.16 : 0)),
+        lightShaft: clamp01(light * (1 - canopy * 0.46)),
         productivity: formation.productivity * (ageClass === 'ancient' ? 1.18 : ageClass === 'young' ? 0.72 : 1) * (0.68 + stockRatio * 0.32),
         formation: formation.id,
     };
@@ -649,6 +839,14 @@ export function forestFaunaFor(stand, dayOfYear, climate = 'temperate', roll = 0
     if (stand.edge && season !== 'winter') extra.push('butterfly', 'songbird');
     if (stand.clearing > 0.35) extra.push('roe-deer', 'hare');
     if (stand.ground.mushrooms > 0.35 && season !== 'winter') extra.push('boar', 'mouse');
+    // Conifer woods carry a different observed community: crossbills work the
+    // cones, capercaillie shelter in the understorey, and lynx/wolf sign appears
+    // in the deeper stands. These are habitat observations, not extra herds.
+    if (stand.coniferShare > 0.35) extra.push('crossbill');
+    if (stand.coniferShare > 0.5 && stand.ageClass === 'ancient') extra.push('capercaillie');
+    if (stand.coniferShare > 0.5 && season === 'winter') extra.push('wolf');
+    if (stand.coniferShare > 0.58 && stand.ageClass === 'ancient') extra.push('lynx');
+    if (stand.disturbance === 'bark-beetle') extra.push('bark-beetle');
     const unique = [...new Set([...active, ...extra])]
         .filter(id => FAUNA[id])
         .filter(id => !(season === 'winter' && ['songbird', 'butterfly', 'ant', 'bee'].includes(id)));
@@ -675,6 +873,7 @@ export function forestMicrofaunaAt(stand, dayOfYear = 150, climate = 'temperate'
     const shade = clamp01(1 - (stand.light || 0.4));
     const counts = [
         ['beetle', 'Stag beetle', Math.max(0, Math.round((stand.ground?.logs || 0) * 5 + (stand.ageClass === 'ancient' ? 2 : 0) + roll * 1.4))],
+        ['bark-beetle', 'Bark beetle', Math.max(0, Math.round((stand.coniferShare || 0) * 4 + (stand.disturbance === 'bark-beetle' ? 4 : 0)))],
         ['ant', 'Wood ant', winter ? 0 : Math.max(0, Math.round((stand.ground?.litter || 0) * 4 + (stand.edge ? 1 : 0) + roll))],
         ['butterfly', 'Woodland butterfly', winter ? 0 : Math.max(0, Math.round((stand.ground?.flowers || 0) * 5 + (stand.clearing || 0) * 3 + roll * 0.8))],
         ['bee', 'Wild bee', winter ? 0 : Math.max(0, Math.round((stand.ground?.flowers || 0) * 3 + (stand.edge ? 1 : 0)))],

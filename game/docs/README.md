@@ -20,6 +20,7 @@ For the current development stage, these documents focus on making the existing 
 - [Zoom and Building Placement](ZOOM_AND_BUILDING_PLACEMENT.md) — four detail levels, camera behaviour and drag-and-drop validation.
 - [Terrain Visual Reference](TERRAIN_VISUAL_REFERENCE.md) — committed four-season, four-zoom contact sheet and reproduction script.
 - [Laubwälder 1.2.1](FOREST_ECOLOGY.md) — shared forest ecology, all eight broadleaf species, fifteen formations, the 60-point audit and the forest visual references.
+- [Nadelwälder 1.2.2](CONIFER_FORESTS.md) — five conifer species, twelve conifer formations, seasonal larch needles, needle-floor ecology, conifer products and disturbance succession.
 - [Terrain Art Checklist](TERRAIN_ART_CHECKLIST.md) — item-by-item audit of checklist 1.1.1–1.1.10 with code and verification evidence.
 - [Kings & Cards Foundation](V2_FOUNDATION.md) — current playable systems, exact limits and verified checks.
 - [Next AI Work Package](NEXT_AI_WORK_PACKAGE.md) — ready-to-use handoff brief for contributors and AI sessions.

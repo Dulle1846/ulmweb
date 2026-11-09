@@ -12,7 +12,8 @@
 3. [Technical documentation index](docs/README.md) — architecture and engineering documentation.
 4. [Roadmap 3.3–4.0](docs/ROADMAP_3.3-4.0.md) — shipped and planned feature phases.
 5. [AI review playbook](docs/AI_REVIEW_PLAYBOOK.md) — safe external review and delegation instructions.
-6. [Laubwälder 1.2.1](docs/FOREST_ECOLOGY.md) — shared forest ecology, species, fifteen formations and the 60-point audit.
+6. [Laubwälder 1.2.1](docs/FOREST_ECOLOGY.md) — shared forest ecology, species, fifteen broadleaf formations and the 60-point audit.
+7. [Nadelwälder 1.2.2](docs/CONIFER_FORESTS.md) — five conifer species, twelve conifer formations, seasonal larch needles, conifer products, fauna and disturbance ecology.
 
 ## Development rules
 

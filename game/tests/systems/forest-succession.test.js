@@ -64,7 +64,7 @@ test("a seeded world exposes initial disturbances and a live succession lookup",
     const lookup = forestSuccessionAt(x, y);
     assert.ok(lookup);
     assert.equal(lookup.stage, "fresh");
-    assert.match(lookup.label, /Burn|Wind|Disease/);
+    assert.match(lookup.label, /Burn|Wind|Disease|Beetle|Snow|Drought/);
     const node = getResourceNodeAt(x, y);
     assert.equal(node.forestSuccession.kind, record.kind);
     assert.equal(node.forestDisturbance, record.kind);
@@ -139,7 +139,7 @@ test("fire, storm and disease spread to neighbouring stands and stay bounded", (
     assert.ok(model.spreadHistory.length > 0);
     assert.ok(model.spreadHistory.length <= 24);
     for (const entry of model.spreadHistory) {
-        assert.ok(["burned", "windthrow", "diseased"].includes(entry.kind));
+        assert.ok(["burned", "windthrow", "diseased", "bark-beetle", "snowbreak", "drought-stressed"].includes(entry.kind));
         assert.notEqual(entry.to.join(":"), entry.from.join(":"));
         assert.ok(entry.stockAfter < entry.stockBefore);
         assert.equal(Math.max(Math.abs(entry.to[0] - entry.from[0]), Math.abs(entry.to[1] - entry.from[1])), 1);

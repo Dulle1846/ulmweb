@@ -443,11 +443,65 @@ function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayO
     const baseY = py + 5.5 * s;
     const crownY = baseY - trunkH * 0.78;
     const radius = Math.max(0.9, (8.4 + s2 * 2.5) * s * definition.crown * ageScale);
-    const bare = climate.snowCover > 0.55 && !['oak', 'beech', 'linden'].includes(definition.id);
+    const bare = !definition.conifer && climate.snowCover > 0.55 && !['oak', 'beech', 'linden'].includes(definition.id);
     const turn = Math.max(0, Math.min(1, climate.foliageTurn + (definition.id === 'birch' ? 0.12 : 0)));
 
     ctx.save();
     ctx.lineCap = 'round';
+    if (definition.conifer) {
+        // At impostor distance the full seasonal sampler is unnecessary; the
+        // climate state already carries the same turn and snow values. Larch is
+        // the only conifer that drops its silhouette in winter.
+        const foliage = {
+            turn: climate.foliageTurn,
+            leaf: definition.deciduousNeedles ? Math.max(0, 1 - climate.foliageTurn * 1.15) : 1,
+            snow: climate.snowCover * (definition.snowRetention || 1),
+            bare: Boolean(definition.deciduousNeedles && climate.snowCover > 0.45),
+        };
+        const height = (11 + definition.height * 16) * s * ageScale;
+        const trunkW = Math.max(0.65, definition.trunk * 1.7 * s);
+        ctx.fillStyle = definition.bark;
+        ctx.fillRect(px - trunkW * 0.5, py + 2 * s, trunkW, height * 0.9);
+        if (foliage.bare) {
+            ctx.strokeStyle = definition.barkLight;
+            ctx.lineWidth = Math.max(0.55, s * 0.8);
+            for (let tier = 0; tier < 4; tier++) {
+                const y = py + 2 * s - height * (0.18 + tier * 0.19);
+                const reach = (8 - tier * 1.1) * s * ageScale;
+                ctx.beginPath();
+                ctx.moveTo(px, y);
+                ctx.lineTo(px - reach, y + reach * 0.34);
+                ctx.moveTo(px, y);
+                ctx.lineTo(px + reach, y + reach * 0.34);
+                ctx.stroke();
+            }
+        } else {
+            const needle = mixHex(definition.summer[0], definition.autumn[0], foliage.turn);
+            const light = mixHex(definition.summer[1], definition.autumn[1], foliage.turn);
+            const tiers = definition.crownShape === 'crown' ? 3 : 5;
+            for (let tier = 0; tier < tiers; tier++) {
+                const base = py + 2 * s - height * (0.12 + tier * 0.19);
+                const top = base - height * 0.36;
+                const width = (8.4 - tier * 1.18) * s * definition.crown * ageScale;
+                ctx.fillStyle = tier % 2 ? light : needle;
+                ctx.beginPath();
+                ctx.moveTo(px + sway, top);
+                ctx.lineTo(px - width, base);
+                ctx.lineTo(px + width, base);
+                ctx.closePath();
+                ctx.fill();
+            }
+            if (foliage.snow > 0.22) {
+                ctx.globalAlpha = Math.min(0.85, foliage.snow);
+                ctx.fillStyle = '#eef6fb';
+                ctx.beginPath();
+                ctx.ellipse(px + sway, py + 2 * s - height * 0.76, 3.4 * s * definition.crown, 1.2 * s, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        ctx.restore();
+        return;
+    }
     if (bare) {
         ctx.strokeStyle = definition.bark;
         ctx.lineWidth = Math.max(0.65, s * (definition.trunk + 0.4));
@@ -910,6 +964,7 @@ function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, d
     const sway = Math.sin(tick * 0.045 + s1 * 10 + s2 * 7) * 1.6 * s;
     const ageScale = stand?.forest ? Math.max(0.52, Number(stand.ageScale) || 1) : 1;
     const species = stand?.forest ? pickSpecies(stand, s3 ?? s2) : "oak";
+    const speciesDefinition = FOREST_SPECIES[species] || FOREST_SPECIES.oak;
 
     // A soft grounded shadow is enough to lift trees off the surface without
     // baking hard directional shadows into the seasonal ground. Ancient trees
@@ -928,13 +983,18 @@ function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, d
     );
     ctx.fill();
 
-    // Conifers are an open-landscape and rocky-edge accent, never a substitute
-    // inside a defined broadleaf formation. The Laubwald palette must stay
-    // broadleaf all year; otherwise an oakwood read as a spruce plantation and
-    // the seasonal sheet showed evergreen cones where autumn and bare crowns
-    // belong.
+    // A conifer inside a defined conifer formation is the stand's real
+    // dominant tree, not a decorative substitute. Its species controls the
+    // silhouette, needle colour, autumn behaviour and timber identity.
+    if (speciesDefinition.conifer) {
+        drawConifer(ctx, px, py, s, sway, s2, dayOfYear, climateKey, ageScale, species, stand);
+        return;
+    }
+    // Outside closed woodland, a cold or rocky edge may still carry a stray
+    // spruce or pine. This remains a landscape accent, never an intrusion into
+    // a mapped oakwood or beechwood.
     const coniferChance = stand?.forest ? 0 : (temp < 0.4 ? 0.85 : temp < 0.54 ? 0.24 : 0);
-    if (s3 < coniferChance) { drawConifer(ctx, px, py, s, sway, s2, dayOfYear, climateKey, ageScale); return; }
+    if (s3 < coniferChance) { drawConifer(ctx, px, py, s, sway, s2, dayOfYear, climateKey, ageScale, "spruce", null); return; }
     if (!stand?.forest && temp > 0.68 && moisture < 0.45) { drawPalm(ctx, px, py, s, sway, s2); return; }
     if (stand?.disturbance === 'burned' && s3 < 0.3) { drawSnag(ctx, px, py, s, sway, s2, true); return; }
     if (!stand?.forest && moisture > 0.76 && temp > 0.5 && s1 > 0.9) { drawDeadTree(ctx, px, py, s, sway); return; }
@@ -1281,6 +1341,90 @@ function drawMossPatch(ctx, px, py, cellPx, stand, seed, climateKey, dayOfYear) 
     ctx.restore();
 }
 
+function drawNeedleCarpet(ctx, px, py, cellPx, stand, roll, seed) {
+    const s = cellPx / 48;
+    ctx.save();
+    ctx.globalAlpha = 0.34 + (stand.ground.needles || 0) * 0.32;
+    const colors = ["#6d4d2e", "#8a633a", "#9a7443", "#5b422b", "#7d6744"];
+    for (let i = 0; i < 15; i++) {
+        const angle = i * 2.37 + seed * 5 + roll;
+        const radius = (1.4 + ((i * 13) % 11)) * s;
+        const ox = Math.cos(angle) * radius;
+        const oy = Math.sin(angle) * radius * 0.66 + 3 * s;
+        ctx.fillStyle = colors[(i + Math.floor(roll * 4)) % colors.length];
+        ctx.beginPath();
+        ctx.ellipse(px + ox, py + oy, (2.4 + (i % 3) * 0.45) * s, 0.5 * s, angle + 0.8, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    // A few needles still attached to a fallen twig read as conifer litter,
+    // not as the broadleaf carpet used elsewhere in the wood.
+    ctx.strokeStyle = "rgba(85, 61, 38, 0.56)";
+    ctx.lineWidth = Math.max(0.45, 0.55 * s);
+    ctx.beginPath();
+    ctx.moveTo(px - 7 * s, py + 1 * s);
+    ctx.quadraticCurveTo(px, py + 4.5 * s, px + 8 * s, py + 1.8 * s);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawLichen(ctx, px, py, s, seed, snow) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0.12, 0.55 - snow * 0.34);
+    ctx.fillStyle = seed > 0.5 ? "#9ba585" : "#b3b48f";
+    for (let i = 0; i < 4; i++) {
+        const ox = ((i * 17) % 13 - 6) * s;
+        const oy = ((i * 11) % 9 - 4) * s;
+        ctx.beginPath();
+        ctx.ellipse(px + ox, py + 3 * s + oy, (1.7 + (i % 2) * 0.5) * s, 0.7 * s, i * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawBerryShrub(ctx, px, py, s, seed, autumn, snow) {
+    if (snow > 0.55) return;
+    ctx.save();
+    ctx.globalAlpha = 0.78;
+    ctx.strokeStyle = "#4e633d";
+    ctx.lineWidth = Math.max(0.55, 0.7 * s);
+    for (let i = 0; i < 3; i++) {
+        const side = i % 2 === 0 ? -1 : 1;
+        ctx.beginPath();
+        ctx.moveTo(px, py + 4 * s);
+        ctx.quadraticCurveTo(px + side * 3 * s, py, px + side * (5 + seed * 3) * s, py - 3 * s);
+        ctx.stroke();
+    }
+    if (autumn > 0.35 || seed > 0.58) {
+        ctx.fillStyle = seed > 0.5 ? "#5b476f" : "#943f42";
+        for (let i = 0; i < 5; i++) {
+            ctx.beginPath();
+            ctx.arc(px + ((i * 13) % 11 - 5) * s, py - 1 * s + ((i * 7) % 7 - 3) * s, 0.65 * s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+function drawConiferSapling(ctx, px, py, s, seed, snow) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0.24, 1 - snow * 0.5);
+    const height = (7 + seed * 5) * s;
+    ctx.fillStyle = "#57442d";
+    ctx.fillRect(px - 0.7 * s, py + 2 * s, 1.4 * s, height * 0.55);
+    for (let tier = 0; tier < 3; tier++) {
+        const base = py + 2 * s - tier * height * 0.22;
+        const width = (4.6 - tier * 1.1) * s;
+        ctx.fillStyle = tier % 2 ? "#356345" : "#264f39";
+        ctx.beginPath();
+        ctx.moveTo(px, base - height * 0.3);
+        ctx.lineTo(px - width, base);
+        ctx.lineTo(px + width, base);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
 function drawFern(ctx, px, py, s, seed, turn, snow) {
     ctx.save();
     ctx.globalAlpha = Math.max(0.2, 1 - snow * 0.72);
@@ -1335,10 +1479,10 @@ function drawBramble(ctx, px, py, s, seed, turn, snow) {
 function drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey) {
     const season = seasonalState(dayOfYear, climateKey);
     if (season.snowCover > 0.4 || season.foliageTurn < 0.35) return;
-    const fruits = (stand.goods || []).filter(id => ["acorns", "beechnuts", "chestnuts", "berries"].includes(id));
+    const fruits = (stand.goods || []).filter(id => ["acorns", "beechnuts", "chestnuts", "berries", "spruce-cones", "fir-cones", "pine-cones", "juniper-berries", "blueberries", "lingonberries"].includes(id));
     if (!fruits.length) return;
     const s = cellPx / 48;
-    const colors = { acorns: "#9b6a32", beechnuts: "#8b5c34", chestnuts: "#7d432b", berries: "#8f3e4a" };
+    const colors = { acorns: "#9b6a32", beechnuts: "#8b5c34", chestnuts: "#7d432b", berries: "#8f3e4a", "spruce-cones": "#6b4e34", "fir-cones": "#76543b", "pine-cones": "#9b6a32", "juniper-berries": "#5b476f", blueberries: "#4f527e", lingonberries: "#9a3e46" };
     ctx.save();
     for (let i = 0; i < 9; i++) {
         const id = fruits[i % fruits.length];
@@ -1632,8 +1776,12 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climate
     // leaf litter and humus specks, letting the baked ground and the leaf carpet
     // blend across tile borders.
     ctx.globalAlpha = 0.4 + stand.ground.litter * 0.22;
-    const palette = turn > 0.42 ? ["#704b2b", "#986130", "#8c7138", "#5d472b", "#a8793a"]
-        : ["#4c6538", "#70733a", "#57462d", "#7a5b36", "#617b40"];
+    const coniferFloor = stand.coniferShare > 0.45;
+    const palette = coniferFloor
+        ? (turn > 0.5 ? ["#59402a", "#75512f", "#8b6538", "#4d3826", "#6d5a3b"]
+            : ["#4a3e2c", "#665033", "#7a5a37", "#3f4c35", "#8b7447"])
+        : turn > 0.42 ? ["#704b2b", "#986130", "#8c7138", "#5d472b", "#a8793a"]
+            : ["#4c6538", "#70733a", "#57462d", "#7a5b36", "#617b40"];
     // Fifteen, not nineteen, litter marks: the removed four were always covered
     // by neighbours at normal zoom and cost a path fill per tile.
     for (let i = 0; i < 15; i++) {
@@ -1662,6 +1810,28 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climate
 function drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom) {
     const season = seasonalState(dayOfYear, climateKey);
     const roll = s1;
+    if (stand.coniferShare > 0.45) {
+        if (stand.ground.trail && s2 > 0.54) { drawDeerTrail(ctx, px, py, cellPx, stand, s2); return; }
+        let cursor = (stand.ground.needles || 0) * 0.7;
+        if (roll < cursor) { drawNeedleCarpet(ctx, px, py, cellPx, stand, s2, s3); return; }
+        cursor += (stand.understory.lichen || 0) * 0.4;
+        if (roll < cursor) { drawLichen(ctx, px, py, cellPx / 48, s2, season.snowCover); return; }
+        cursor += (stand.understory.berry || 0) * 0.34;
+        if (roll < cursor) { drawBerryShrub(ctx, px, py, cellPx / 48, s2, season.foliageTurn, season.snowCover); return; }
+        cursor += stand.understory.fern * 0.28;
+        if (roll < cursor) { drawFern(ctx, px, py, cellPx / 48, s3, season.foliageTurn, season.snowCover); return; }
+        cursor += stand.ground.moss * 0.24;
+        if (roll < cursor) { drawMossPatch(ctx, px, py, cellPx, stand, s3, climateKey, dayOfYear); return; }
+        cursor += stand.ground.mushrooms * 0.2;
+        if (roll < cursor) { drawMushroomCluster(ctx, px, py, cellPx / 48, s2, season.snowCover); return; }
+        cursor += stand.ground.stones * 0.18;
+        if (roll < cursor) { drawRock(ctx, px, py, cellPx, zoom, season.snowCover > 0.5); return; }
+        cursor += stand.ground.logs * 0.22;
+        if (roll < cursor) { drawFallenLog(ctx, px, py, cellPx, stand, s2, s3, dayOfYear, climateKey); return; }
+        if (stand.ground.stumps > 0.2 && s3 > 0.58) { drawStump(ctx, px, py, cellPx / 48, s2, false); return; }
+        drawNeedleCarpet(ctx, px, py, cellPx, stand, s2, s3);
+        return;
+    }
     if (stand.ground.trail && s2 > 0.54) { drawDeerTrail(ctx, px, py, cellPx, stand, s2); return; }
     if (roll < stand.ground.litter * 0.62) { drawLeafCarpet(ctx, px, py, cellPx, stand, s2, s3, dayOfYear, climateKey); return; }
     if (roll < stand.ground.litter * 0.62 + stand.ground.moss * 0.5) { drawMossPatch(ctx, px, py, cellPx, stand, s3, climateKey, dayOfYear); return; }
@@ -1682,6 +1852,26 @@ function drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clim
 function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey) {
     const season = seasonalState(dayOfYear, climateKey);
     const s = cellPx / 48;
+    if (stand.coniferShare > 0.45) {
+        const coniferOptions = [
+            ['fern', stand.understory.fern], ['berry', stand.understory.berry],
+            ['lichen', stand.understory.lichen], ['heather', stand.understory.heather],
+            ['sapling', 0.26 + (stand.type === 'regenerating' ? 0.3 : 0)],
+        ];
+        const total = coniferOptions.reduce((sum, [, weight]) => sum + Math.max(0, weight), 0) || 1;
+        let cursor = s1 * total;
+        let chosen = 'sapling';
+        for (const [id, weight] of coniferOptions) {
+            cursor -= Math.max(0, weight);
+            if (cursor <= 0) { chosen = id; break; }
+        }
+        if (chosen === 'fern') drawFern(ctx, px, py, s, s2, season.foliageTurn, season.snowCover);
+        else if (chosen === 'berry') drawBerryShrub(ctx, px, py, s, s2, season.foliageTurn, season.snowCover);
+        else if (chosen === 'lichen') drawLichen(ctx, px, py, s, s3, season.snowCover);
+        else if (chosen === 'heather') drawGrassTufts(ctx, px, py, cellPx, s1, s2, true, season.foliageTurn, season.snowCover);
+        else drawConiferSapling(ctx, px, py, s, s2, season.snowCover);
+        return;
+    }
     const options = [
         ['fern', stand.understory.fern], ['bramble', stand.understory.bramble],
         ['shrub', stand.understory.shrub], ['heather', stand.understory.heather],
@@ -1773,9 +1963,10 @@ function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed
             ctx.stroke();
         }
     } else if (animal.group === 'predator') {
-        ctx.fillStyle = "#a85b2f";
+        const pelt = animal.id === 'wolf' ? "#59605c" : animal.id === 'lynx' ? "#b68a5a" : "#a85b2f";
+        ctx.fillStyle = pelt;
         ctx.beginPath();
-        ctx.ellipse(x, y - 2.5 * s, 3.6 * s, 1.6 * s, 0, 0, Math.PI * 2);
+        ctx.ellipse(x, y - 2.5 * s, (animal.id === 'wolf' ? 4.2 : 3.6) * s, 1.6 * s, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
         ctx.ellipse(x + 3.3 * s, y - 3.5 * s, 1.2 * s, 1 * s, 0.2, 0, Math.PI * 2);
@@ -1783,7 +1974,7 @@ function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed
         ctx.beginPath();
         ctx.moveTo(x - 3.2 * s, y - 2.5 * s);
         ctx.quadraticCurveTo(x - 8 * s, y - 4 * s, x - 8 * s, y - 1 * s);
-        ctx.strokeStyle = "#a85b2f";
+        ctx.strokeStyle = pelt;
         ctx.lineWidth = 1.5 * s;
         ctx.stroke();
     } else if (animal.group === 'small') {
@@ -1811,13 +2002,21 @@ function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed
             ctx.quadraticCurveTo(x, y - 15 * s, x + 5 * s, y - 12 * s);
             ctx.stroke();
         } else {
-            ctx.fillStyle = animal.id === 'owl' ? "#8d7a5e" : "#655946";
+            ctx.fillStyle = animal.id === 'owl' ? "#8d7a5e" : animal.id === 'crossbill' ? "#a6533f" : animal.id === 'capercaillie' ? "#3f3a31" : "#655946";
             ctx.beginPath();
-            ctx.ellipse(x, y - 4 * s, 1.5 * s, 2.1 * s, 0.1, 0, Math.PI * 2);
+            ctx.ellipse(x, y - 4 * s, (animal.id === 'capercaillie' ? 2.2 : 1.5) * s, (animal.id === 'capercaillie' ? 2.8 : 2.1) * s, 0.1, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
-            ctx.arc(x + (animal.id === 'woodpecker' ? 1.4 : 0.8) * s, y - 5.6 * s, 0.9 * s, 0, Math.PI * 2);
+            ctx.arc(x + (animal.id === 'woodpecker' ? 1.4 : animal.id === 'crossbill' ? 1.6 : 0.8) * s, y - 5.6 * s, 0.9 * s, 0, Math.PI * 2);
             ctx.fill();
+            if (animal.id === 'crossbill') {
+                ctx.strokeStyle = "#d8c18a";
+                ctx.lineWidth = 0.55 * s;
+                ctx.beginPath();
+                ctx.moveTo(x + 1.8 * s, y - 5.8 * s);
+                ctx.lineTo(x + 3.2 * s, y - 5.2 * s);
+                ctx.stroke();
+            }
         }
     } else {
         ctx.fillStyle = animal.id === 'butterfly' ? "#d9b24d" : animal.id === 'bee' ? "#c9a33e" : "#554637";
@@ -2172,74 +2371,157 @@ function drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey = 
     drawFlower(ctx, px - 4 * (cellPx / 48), py + (s1 - 0.5) * 5 * (cellPx / 48), cellPx, s2, dayOfYear, climateKey);
 }
 
-function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate") {
-    const foliage = foliageState(dayOfYear, { seed, species: "conifer", climate: climateKey });
-    ctx.fillStyle = "#4c3724";
-    ctx.fillRect(px - 2 * s, py + 4 * s, 4 * s, 11 * s);
-    const height = (20 + seed * 8) * s;
-    // Needles stay on the tree all year; only their tone cools and the snow
-    // load grows, so a conifer never turns into the old grey blob.
-    const needle = mixHex("#1f4a34", "#31504a", foliage.snowCover * 0.5);
-    const needleLight = mixHex("#2b6041", "#3c6a4c", foliage.snowCover * 0.32);
+// A conifer is not one repeated triangle. Spruce is a narrow, drooping spire;
+// fir is a dense broad tier stack; pine lifts a crown above a long bare trunk;
+// larch is airy and drops its needles; juniper is a low, many-stemmed scrub.
+// Age, wind exposure, snow load and damage all change the same species form.
+function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate", ageScale = 1, species = "spruce", stand = null) {
+    const definition = FOREST_SPECIES[species] || FOREST_SPECIES.spruce;
+    const foliage = foliageState(dayOfYear, { seed, species, climate: climateKey });
+    const shape = definition.crownShape || "spire";
+    const height = (17 + definition.height * 13) * s * ageScale;
+    const baseY = py + 8 * s;
+    const lean = sway + (seed - 0.5) * 1.8 * s + (stand?.disturbance === 'windthrow' ? 3.8 * s : 0);
+    const trunkW = Math.max(1.1, definition.trunk * 3.3 * s * (0.7 + ageScale * 0.3));
+    let crown = mixHex(definition.summer[0], definition.autumn[0], foliage.turn * 0.88);
+    let light = mixHex(definition.summer[1], definition.autumn[1], foliage.turn * 0.88);
+    if (stand?.disturbance === 'bark-beetle') {
+        crown = mixHex(crown, "#81543a", 0.78);
+        light = mixHex(light, "#a06a43", 0.7);
+    } else if (stand?.disturbance === 'drought-stressed') {
+        crown = mixHex(crown, "#8f803f", 0.48);
+        light = mixHex(light, "#b39b55", 0.36);
+    }
+    const cover = foliage.evergreen ? 1 : Math.max(0.06, foliage.leaf);
 
-    // Four tiers give the tree a layered spruce silhouette instead of three
-    // flat triangles. Snow is accumulated and shed per tier, so a light dusting
-    // sits on the upper branches while a deep winter buries every layer.
-    for (let layer = 0; layer < 4; layer++) {
-        const baseY = py + 2 * s - layer * height * 0.235;
-        const topY = baseY - height * (0.47 - layer * 0.025);
-        const width = (12.5 - layer * 2.3) * s;
-        ctx.fillStyle = layer % 2 === 0 ? needle : needleLight;
+    // The trunk is visible between the lower tiers and through the deep shade.
+    // A subtle light edge and a few resin glints make wet bark readable.
+    ctx.fillStyle = definition.bark;
+    ctx.beginPath();
+    ctx.moveTo(px - trunkW * 0.5, baseY);
+    ctx.quadraticCurveTo(px - trunkW * 0.4 + lean * 0.3, py, px - trunkW * 0.22 + lean, py - height * 0.74);
+    ctx.lineTo(px + trunkW * 0.22 + lean, py - height * 0.74);
+    ctx.quadraticCurveTo(px + trunkW * 0.44 + lean * 0.3, py, px + trunkW * 0.5, baseY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = definition.barkLight;
+    ctx.globalAlpha = 0.48;
+    ctx.fillRect(px - trunkW * 0.3 + lean * 0.25, py - height * 0.58, Math.max(0.7, trunkW * 0.18), height * 0.55);
+    ctx.globalAlpha = 1;
+    if (ageScale > 1.02) {
+        ctx.strokeStyle = mixHex(definition.bark, "#1e1610", 0.35);
+        ctx.lineWidth = Math.max(0.55, 0.72 * s);
         ctx.beginPath();
-        ctx.moveTo(px + sway, topY);
-        ctx.lineTo(px - width, baseY);
-        ctx.lineTo(px + width, baseY);
+        ctx.moveTo(px - trunkW * 0.18, baseY - height * 0.12);
+        ctx.lineTo(px + trunkW * 0.2, baseY - height * 0.3);
+        ctx.stroke();
+    }
+
+    // Larch is the deciduous conifer: in winter only its fine branch skeleton
+    // remains. The other four keep their needles and only carry more snow.
+    if (foliage.bare) {
+        ctx.save();
+        ctx.strokeStyle = definition.barkLight;
+        ctx.lineCap = "round";
+        const branches = shape === 'scrub' ? 4 : 6;
+        for (let i = 0; i < branches; i++) {
+            const t = i / Math.max(1, branches - 1);
+            const y = py - height * (0.18 + t * 0.65);
+            const reach = (10 - t * 5.5) * s * ageScale;
+            ctx.lineWidth = Math.max(0.55, (1.15 - t * 0.45) * s);
+            ctx.beginPath();
+            ctx.moveTo(px + lean * t, y + 1.2 * s);
+            ctx.lineTo(px + lean * t - reach, y + 3.2 * s - t * 1.4 * s);
+            ctx.moveTo(px + lean * t, y + 1.2 * s);
+            ctx.lineTo(px + lean * t + reach, y + 3.2 * s - t * 1.4 * s);
+            ctx.stroke();
+        }
+        ctx.restore();
+        if (foliage.snow > 0.18) drawSnowCaps(ctx, px, py, s * ageScale * 0.72, sway, seed, foliage.snow, py - height * 0.65, 7);
+        return;
+    }
+
+    // Tier geometry: from a full lower skirt to a narrow leader. A pine keeps a
+    // long bare trunk before its crown; juniper starts at the ground and fans
+    // out from several stems.
+    const tierCount = Math.max(3, Math.min(9, Number(definition.tiers) || 5));
+    const crownBase = shape === 'crown' ? 0.42 : shape === 'scrub' ? 0.08 : 0.17;
+    const tierSpan = shape === 'crown' ? 0.42 : shape === 'scrub' ? 0.52 : 0.73;
+    const widthScale = shape === 'scrub' ? 1.22 : shape === 'crown' ? 0.84 : 1;
+    const tiers = shape === 'crown' ? 3 : shape === 'scrub' ? 3 : tierCount;
+    for (let tier = 0; tier < tiers; tier++) {
+        const t = tiers === 1 ? 0 : tier / (tiers - 1);
+        const layerBase = py + 2 * s - height * (crownBase + t * tierSpan);
+        const top = layerBase - height * (0.3 - t * 0.055);
+        const width = (11.4 - t * (shape === 'crown' ? 4 : 7.2)) * s * widthScale * definition.crown * ageScale;
+        const droop = (definition.branchDrop || 0.1) * s * (1 - t * 0.55);
+        ctx.fillStyle = tier % 2 === 0 ? crown : light;
+        ctx.globalAlpha = 0.58 + cover * 0.42;
+        ctx.beginPath();
+        ctx.moveTo(px + lean * (0.4 + t * 0.6), top);
+        ctx.lineTo(px + lean * 0.4 - width, layerBase + droop);
+        ctx.lineTo(px + lean * 0.4 - width * 0.55, layerBase + 2.4 * s + droop);
+        ctx.lineTo(px + lean * 0.4, layerBase - 1.4 * s);
+        ctx.lineTo(px + lean * 0.4 + width * 0.55, layerBase + 2.4 * s + droop);
+        ctx.lineTo(px + lean * 0.4 + width, layerBase + droop);
         ctx.closePath();
         ctx.fill();
 
-        const snow = Math.min(1, foliage.snow * (1.04 - layer * 0.05));
-        if (snow > 0.1) {
-            const snowLine = topY + (baseY - topY) * (0.42 + snow * 0.28);
-            const snowWidth = width * ((snowLine - topY) / (baseY - topY));
+        if (foliage.snow > 0.1) {
+            const snow = Math.min(1, foliage.snow * (1.02 - t * 0.08));
+            const snowLine = top + (layerBase - top) * (0.38 + snow * 0.3);
+            const snowWidth = width * ((snowLine - top) / Math.max(0.001, layerBase - top));
             ctx.save();
             ctx.globalAlpha = Math.min(0.94, snow);
             ctx.fillStyle = "#edf6fb";
             ctx.beginPath();
-            ctx.moveTo(px + sway, topY + 0.9 * s);
-            ctx.lineTo(px + sway - snowWidth, snowLine);
-            // Scalloped lower edge: snow hangs in small clumps along the tier.
+            ctx.moveTo(px + lean * 0.5, top + 0.8 * s);
+            ctx.lineTo(px + lean * 0.4 - snowWidth, snowLine);
             for (let i = 1; i < 5; i++) {
-                const t = i / 5;
-                const clump = i % 2 === 0 ? 0.9 : 0.2;
-                ctx.lineTo(px + sway - snowWidth + t * snowWidth * 2, snowLine + clump * s);
+                const u = i / 5;
+                ctx.lineTo(px + lean * 0.4 - snowWidth + u * snowWidth * 2, snowLine + (i % 2 === 0 ? 0.85 : 0.15) * s);
             }
-            ctx.lineTo(px + sway + snowWidth, snowLine);
+            ctx.lineTo(px + lean * 0.4 + snowWidth, snowLine);
             ctx.closePath();
             ctx.fill();
-            ctx.strokeStyle = "rgba(155, 191, 207, 0.5)";
-            ctx.lineWidth = Math.max(0.55, 0.65 * s);
-            ctx.beginPath();
-            ctx.moveTo(px + sway - snowWidth, snowLine);
-            ctx.quadraticCurveTo(px + sway, snowLine + 1.1 * s, px + sway + snowWidth, snowLine);
-            ctx.stroke();
             ctx.restore();
         }
     }
+    ctx.globalAlpha = 1;
 
-    // A few clumps on the outer branch tips keep the load from reading as a
-    // single white triangle.
+    // Cones, snow clumps and broken leaders are small but species-readable at
+    // close zoom. Only a handful of marks are drawn per tree to keep the tile
+    // budget bounded.
+    if ((definition.id === 'pine' || definition.id === 'spruce' || definition.id === 'fir') && seed > 0.45) {
+        ctx.fillStyle = definition.id === 'pine' ? "#9b6a32" : "#6b4e34";
+        for (let i = 0; i < 3; i++) {
+            const y = py - height * (0.34 + i * 0.11);
+            const x = px + lean * 0.4 + (i % 2 === 0 ? -1 : 1) * (5.2 - i * 0.7) * s;
+            ctx.beginPath();
+            ctx.ellipse(x, y, 1.05 * s, 1.7 * s, 0.25, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
     if (foliage.snow > 0.22) {
         ctx.save();
         ctx.globalAlpha = Math.min(0.9, foliage.snow);
         ctx.fillStyle = "#eef6fb";
         for (let i = 0; i < 3; i++) {
-            const y = py - height * (0.18 + i * 0.2);
-            const x = px + sway + (i % 2 === 0 ? -1 : 1) * (7 - i * 1.5) * s;
+            const y = py - height * (0.2 + i * 0.19);
+            const x = px + lean * 0.4 + (i % 2 === 0 ? -1 : 1) * (7 - i * 1.5) * s;
             ctx.beginPath();
             ctx.ellipse(x, y, (2.6 - i * 0.35) * s, 0.8 * s, 0.15, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.restore();
+    }
+    if (stand?.disturbance === 'snowbreak' && seed > 0.4) {
+        ctx.strokeStyle = definition.bark;
+        ctx.lineWidth = Math.max(0.8, 1.1 * s);
+        ctx.beginPath();
+        ctx.moveTo(px + lean * 0.7, py - height * 0.58);
+        ctx.lineTo(px + lean * 0.7 + 4.6 * s, py - height * 0.5);
+        ctx.stroke();
     }
 }
 

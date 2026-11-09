@@ -53,8 +53,9 @@ below 50 or frame time above 20 ms.
 weather and foliage log for a complete 400-day year plus a five-climate
 comparison. `test:climate-reference` writes the same-grove 5 × 4 climate
 matrix, five live 1280 × 800 climate screenshots and their JSON logs.
-`test:forest-reference` writes `forest-reference.png` with all fifteen Laubwald
-formations and `forest-seasons.png` with one ancient wood on days 50, 150, 250
+`test:forest-reference` writes `forest-reference.png` with all fifteen broadleaf
+formations (the 1.2.2 conifer formations are covered by
+`tests/world/conifer-forest.test.js` and documented in `docs/CONIFER_FORESTS.md`) and `forest-seasons.png` with one ancient wood on days 50, 150, 250
 and 350, plus `forest-reference.json`. `test:forest-detail` writes
 `forest-detail-reference.png` with the thirteen native close-ups for the
 formerly open checklist items, plus `forest-detail-reference.json`. Small
