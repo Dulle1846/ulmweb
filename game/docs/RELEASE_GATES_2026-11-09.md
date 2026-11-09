@@ -4,7 +4,7 @@
 **Production branch:** `ulmweb-branch`
 **Production URL:** https://kings-and-cards.pages.dev/
 **Audit browser:** Chrome 156 (Cloud Chromium), macOS UA, 432 × 719 CSS px, DPR 2
-**Verified release code:** `dc4cead` (skip link + inert dialog background)
+**Verified release code:** `2b743e6` (forest sight-filter audit; current production line)
 
 This record covers the manual gates requested after the backlog close, the Workers
 build alert, and the remote-branch cleanup. It distinguishes verified facts from
@@ -118,7 +118,58 @@ Verified on production code `dc4cead` in the same Chrome 156 / 432 × 719 / DPR 
   The accessibility tree and keyboard behavior were inspected, but that is not a
   substitute for a real screen-reader session.
 
-## 4. Cross-browser gates
+## 4. Forest sight-filter audit — production proof (`2b743e6`)
+
+- **Code commit:** `2b743e6c3dc5a2ffa4a48953e6eba2e2a07128de`
+- **Commit subject:** `fix(forest): gate every world marker through the sight cache`
+- **Branch:** `ulmweb-branch`; remote HEAD matched at `2026-11-09T19:37:25Z`
+- **Deployment:** Cloudflare Pages, https://kings-and-cards.pages.dev/
+- **Live verification:** `2026-11-09T19:37Z` (UTC)
+
+### Live asset proof
+
+Cloudflare Pages returned HTTP 200 for the page and byte-identical SHA-256 hashes for the deployed audit files:
+
+| Live asset | SHA-256 |
+|---|---|
+| `js/presentation/rendering/renderer.js` | `64cf483c8f63645802c106e2000ef1053c08b5d81ef8a9bbb8e95ab5e5069162` |
+| `js/presentation/rendering/terrain.js` | `10c6faf0c1a5fc34c59450c9d6c4245d9452a9807dbe810e147edc206d04b0d2` |
+| `docs/CONIFER_FORESTS.md` | `994e3f48a6a4245792dd24c54cd5f4bc6684d0929893c1a819e7bd3daa9c5f7e` |
+| `tests/browser/forest-occlusion.mjs` | `689e6c73843e5db4f430ca4d54cdf4b98e2438949e03e6c679a16e5b920b49cb` |
+
+### Automated evidence
+
+| Check | Observed result |
+|---|---|
+| `npm test` | **617/617** pass; syntax/imports for 91 source files, 185 UI ids and local HTML assets pass |
+| `npm run test:campaign` | `ok: true`, 25 years, 10,040 ticks, **13/13** ambitions, no game over |
+| `npm run test:conifer-reference` | 12 formations and four seasonal captures written; WebKit WebGL renderer |
+| `npm run test:forest-occlusion` | behind entity `[]`, open `["open"]`; behind carriers `[]`, open `["carrier-open"]`; behind effects `{particles:0,floaters:0}`, open `{particles:1,floaters:1}`; both rays 5.66 tiles |
+| Renderer mutation | forcing the renderer sight filter to always-true failed with `The behind entity entered the real draw set`; exact restore returned the browser test to green |
+
+A DDA-level mutation was rejected as proof because it prevented the test from finding its wall/control geometry; the renderer-layer mutation is the valid discriminator. The test uses the real `drawWorld()` sets, not a synthetic helper.
+
+### Audited paths
+
+| Draw path | Sight gate |
+|---|---|
+| Buildings, figures, selection rings | shared entity cache (`isForestSightVisible`) |
+| Construction sites, selected Forester stewardship overlay | explicit tile gate |
+| Field layer, map field overlay and field patches | `drawFieldTile()` tile gate |
+| Logistics carriers | 100 ms carrier cache |
+| Logistics-route endpoints | endpoint tile gate |
+| Service, resource and fertility map markers | per-marker tile gate |
+| Card placement preview | preview tile gate |
+| Particles and floating text | per-item gate |
+| Wildlife sprites and signs baked into terrain | tile gate at terrain-layer rebuild |
+
+Roads, ground, weather, daylight and the vignette are terrain or full-screen atmosphere, not entity markers. The tile cache is keyed by the camera anchor tile and world/forest revision; the terrain-fauna gate therefore settles with the cached terrain layer rather than repeating a DDA per frame. Logistics-route lines are gated by their endpoints; the line itself remains an overlay.
+
+### Live browser smoke
+
+Started a fresh realm from the live start dialog in the Cloud Chromium tab. The start dialog closed, the full HUD and statistics rendered, and the realm reported seed `1547552200`, **21/22 population**, **0/13 ambitions** and the expected treasury/stores. The console contained **0 errors**; every requested script/style/asset returned 200 or 304.
+
+## 5. Cross-browser gates
 
 **Blocked in this environment.** Chromium is the only installed Playwright browser, and
 it cannot launch because the VM is missing `libnspr4`, `libnss3`, `libatk`,
@@ -138,10 +189,11 @@ Therefore:
 Owner action: run the existing browser suite on a machine with Playwright system
 dependencies, or add a Firefox/WebKit CI job with the required libraries.
 
-## 5. Release acceptance
+## 6. Release acceptance
 
-The production page serves the verified release code `dc4cead`, the current Node suite
-is 612/612, and the 25-year deterministic campaign completes. The manual gates above are
+The production page serves the verified audit code `2b743e6` and this evidence update,
+the current Node suite is **617/617**, and the 25-year deterministic campaign completes
+with all 13 ambitions. The live browser smoke and asset hashes above are green. The manual gates above are
 recorded honestly: keyboard/focus pass in Chromium, cross-browser and human
 screen-reader passes still open. **Owner visual acceptance is still required before
 calling the next release fully accepted.**
