@@ -730,8 +730,6 @@ try {
     const final = results[results.length - 1].final;
     const screenshots = results.flatMap(result => result.screenshots);
     const durationMs = Date.now() - runStartedAt;
-    assert.ok(durationMs <= TIME_BUDGET_MS,
-        `the browser audit took ${durationMs} ms, over its ${TIME_BUDGET_MS} ms CI budget`);
     const report = {
         generatedAt: new Date().toISOString(),
         baseUrl,
@@ -749,6 +747,10 @@ try {
         consoleErrors
     };
     await writeFile(resolve(outDir, reportFile), JSON.stringify(report, null, 2));
+    // Write the measurements before failing the budget check so the CI step's
+    // always-uploaded artifact still contains the duration that overshot.
+    assert.ok(durationMs <= TIME_BUDGET_MS,
+        `the browser audit took ${durationMs} ms, over its ${TIME_BUDGET_MS} ms CI budget`);
     assert.deepEqual(pageErrors, [], "the browser run must not raise page errors");
     console.log(JSON.stringify({
         ok: true,
