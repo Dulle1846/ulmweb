@@ -80,7 +80,7 @@ try {
         const { state } = await import("./js/core/state.js");
         const { TYPE } = await import("./js/core/types.js");
         const { CELL } = await import("./js/core/config.js");
-        const { drawWorld, visibleEntityIdsForTest, visibleCarrierIdsForTest } = await import("./js/presentation/rendering/renderer.js");
+        const { drawWorld, visibleEntityIdsForTest, visibleCarrierIdsForTest, visibleParticleCountForTest, visibleFloaterCountForTest } = await import("./js/presentation/rendering/renderer.js");
         const { getResourceNodeAt } = await import("./js/systems/resource-geography.js");
         const { ensureCityState } = await import("./js/systems/logistics.js");
         const { forestLineOfSightBlocked } = await import("./js/world/forest-ecology.js");
@@ -188,6 +188,26 @@ try {
         await drawAfter(openEntity, openEntity.id);
         const openIds = visibleEntityIdsForTest();
         const openCarrierIds = visibleCarrierIdsForTest();
+
+        const drawEffectAfter = async (x, y) => {
+            state.particles = [{
+                x: x * CELL, y: y * CELL, vx: 0, vy: 0,
+                life: 20, maxLife: 20, color: "#ffffff", size: 2,
+            }];
+            state.floaters = [{
+                x: x * CELL, y: y * CELL, text: "audit", color: "#ffffff",
+                life: 10, vy: 0,
+            }];
+            await new Promise(resolve => setTimeout(resolve, 140));
+            state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+            drawWorld();
+            return {
+                particles: visibleParticleCountForTest(),
+                floaters: visibleFloaterCountForTest(),
+            };
+        };
+        const behindEffect = await drawEffectAfter(geometry.behind.x, geometry.behind.y);
+        const openEffect = await drawEffectAfter(geometry.open.x, geometry.open.y);
         const behindDistance = Math.hypot(behindEntity.x - geometry.anchor.x, behindEntity.y - geometry.anchor.y);
         const openDistance = Math.hypot(openEntity.x - geometry.anchor.x, openEntity.y - geometry.anchor.y);
 
@@ -198,6 +218,8 @@ try {
             openIds,
             behindCarrierIds,
             openCarrierIds,
+            behindEffect,
+            openEffect,
             behindDistance,
             openDistance,
             behindVisible: (await import("./js/presentation/rendering/terrain.js"))
@@ -210,6 +232,7 @@ try {
     console.log("Occlusion geometry " + JSON.stringify(result.geometry));
     console.log("Visible ids: behind " + JSON.stringify(result.behindIds) + " · open " + JSON.stringify(result.openIds));
     console.log("Visible carriers: behind " + JSON.stringify(result.behindCarrierIds) + " · open " + JSON.stringify(result.openCarrierIds));
+    console.log("Visible effects: behind " + JSON.stringify(result.behindEffect) + " · open " + JSON.stringify(result.openEffect));
     console.log("Canvas " + result.canvas.width + "×" + result.canvas.height
         + " · behind distance " + result.behindDistance.toFixed(2)
         + " · open distance " + result.openDistance.toFixed(2));
@@ -226,6 +249,12 @@ try {
     }
     if (!result.openCarrierIds.includes("carrier-open")) {
         throw new Error("The open logistics carrier did not enter the draw set.");
+    }
+    if (result.behindEffect.particles !== 0 || result.behindEffect.floaters !== 0) {
+        throw new Error("A particle or floater entered the draw set through the dense stand.");
+    }
+    if (result.openEffect.particles !== 1 || result.openEffect.floaters !== 1) {
+        throw new Error("The open particle/floater did not enter the draw set.");
     }
     if (Math.abs(result.openDistance - result.behindDistance) > 0.05) {
         throw new Error("The open control is not at the same distance as the occluded entity.");

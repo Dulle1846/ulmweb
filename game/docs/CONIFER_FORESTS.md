@@ -56,16 +56,31 @@ existing cached detail layer, not a second full-screen shader.
 `visibility` is now a sight-line property rather than a decorative number.
 `forestSightBlock()` applies the same closed-canopy gate as
 `forestCanopyShade()` and derives its strength from density, crown cover,
-conifer share, clearing and `visibility`. `forestLineOfSightBlocked()` walks a
-scalar DDA from the camera-centre sight anchor to each entity, skipping the
-viewer and target tiles. A dense tile between the two blocks the entity (and
-its selection ring) and each logistics carrier before they are drawn; the same
-distance through open ground remains visible. The renderer caches the resulting
-entity, carrier and per-tile sight sets, so the scan is not per-pixel and not
-per-frame. The
-screen-space radial wall and edge bands remain an atmospheric cue; they are not
-the occlusion mechanism. Open, thinned and broadleaf stands return a block of
-zero and are never artificially cut off.
+conifer share, clearing and `visibility`. `forestLineOfSightBlocked()` walks a scalar DDA from the camera-centre sight
+anchor to each entity, skipping the viewer and target tiles. A dense tile
+between the two blocks the entity and its selection ring, logistics carriers,
+field layers, construction and forester overlays, service/resource/fertility
+markers, logistics-route endpoint markers, the placement preview, particles,
+floaters and cached terrain fauna before they are drawn; the same distance
+through open ground remains visible. The renderer shares one generation-scoped
+tile-sight cache between those paths, plus the 100 ms entity and carrier
+caches, so the scan is not per-pixel and not per-frame. Roads, ground and
+the full-screen atmospheric layers are terrain/overlay paths rather than entity
+markers. The screen-space radial wall and edge bands remain an atmospheric cue;
+they are not the occlusion mechanism. Open, thinned and broadleaf stands return
+a block of zero and are never artificially cut off.
+
+| Audited world path | Sight gate |
+|---|---|
+| Buildings, figures, wildlife sprites and selection rings | shared entity cache in `renderer.js`; terrain fauna checks the tile cache at rebuild |
+| Construction sites and the selected Forester stewardship overlay | `drawConstructionSites()` / `drawForesterStewardshipOverlay()` |
+| Field tiles in the field layer, map overlay and field patches | `drawFieldTile()` |
+| Logistics carriers | 100 ms carrier cache in `drawCarriers()` |
+| Logistics route endpoints | `drawLogisticsRoutes()` |
+| Service, resource and fertility map markers | `drawMapLayer()` |
+| Card placement preview | `drawPlacementPreview()` gate in `drawWorld()` |
+| Particles and floating text markers | per-item gate in the `drawWorld()` loops |
+| Roads, ground, weather, daylight and vignette | terrain or full-screen atmosphere, not entity markers |
 
 ## Products, fauna and disturbance
 
@@ -154,7 +169,8 @@ zero, that low sun is darker and longer than noon, and that snow lightens it.
 pinewood, with a finite radius that still leaves a readable centre. The
 `forestLineOfSightBlocked()` DDA is covered separately, and
 `tests/browser/forest-occlusion.mjs` proves the real draw set excludes a behind
-entity while it includes an open control at the same distance.
+entity, logistics carrier, particle and floater while it includes open controls
+at the same distance.
 The checked formation sheet records `groundShade`, `visibility` and
 `sightRadius` for every captured tile.
 

@@ -82,7 +82,9 @@ captures an ancient wood through all four seasons. Set `FOREST_REFERENCE_OUT`
 to write the forest artifacts somewhere other than `docs/terrain-reference/`.
 `test:forest-occlusion` drives a real dense conifer wall and verifies that a
 selected building behind it is absent from the `drawWorld()` entity set while
-the same building at the same distance in open ground is present.
+the same building at the same distance in open ground is present. It repeats
+the contrast for a logistics carrier, a particle and a floating text marker,
+and records the wall strength, anchor and equal-distance geometry.
 
 The climate run starts five separate realms and drives 400 real
 `updateWeather()` days in each. It writes `climate-reference.png`,

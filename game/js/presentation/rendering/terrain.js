@@ -201,6 +201,19 @@ let forestOcclusionFieldForests = -1;
 let forestSightOriginActive = false;
 let forestSightOriginX = 0;
 let forestSightOriginY = 0;
+let forestSightTileVisibility = null;
+let forestSightTileGenerations = null;
+let forestSightTileGeneration = 1;
+let forestSightTileW = 0;
+let forestSightTileH = 0;
+let forestSightTileX = NaN;
+let forestSightTileY = NaN;
+let forestSightTileSeed = -1;
+let forestSightTileTerrain = -1;
+let forestSightTileVisual = -1;
+let forestSightTileEpoch = -1;
+let forestSightTileClimate = "";
+let forestSightTileForests = -1;
 const FOREST_SIGHT_MIN_DISTANCE = 2.1;
 
 function detailWorldKey() {
@@ -443,6 +456,13 @@ function prepareForestOcclusionField() {
         || visual !== forestOcclusionFieldVisual || epoch !== forestOcclusionFieldEpoch
         || climate !== forestOcclusionFieldClimate || forests !== forestOcclusionFieldForests) {
         forestOcclusionField = new Uint8Array(W * H);
+        if (!forestSightTileVisibility || W !== forestSightTileW || H !== forestSightTileH) {
+            forestSightTileVisibility = new Uint8Array(W * H);
+            forestSightTileGenerations = new Uint32Array(W * H);
+            forestSightTileGeneration = 1;
+            forestSightTileW = W;
+            forestSightTileH = H;
+        }
         forestOcclusionFieldW = W;
         forestOcclusionFieldH = H;
         forestOcclusionFieldSeed = seed;
@@ -494,6 +514,37 @@ export function updateForestSightOrigin(canvas, camera, zoom) {
     forestSightOriginX = Math.max(0, Math.min(worldW(), x));
     forestSightOriginY = Math.max(0, Math.min(worldH(), y));
     forestSightOriginActive = true;
+
+    // Cache line-of-sight per target tile. The generation changes when the
+    // camera looks from another tile or the forest changes; a query inside one
+    // generation never repeats the DDA. This is the shared cache for entities,
+    // markers, effects and cached terrain fauna.
+    const tileX = Math.floor(forestSightOriginX);
+    const tileY = Math.floor(forestSightOriginY);
+    const seed = Number(state.worldSeed) || 0;
+    const terrain = Number(state.terrainVersion) || 0;
+    const visual = Number(state.forestVisualRevision) || 0;
+    const epoch = Number(state.worldEpoch) || 0;
+    const climate = String(state.worldOptions?.climate || "temperate");
+    const forests = Number(state.worldOptions?.forests ?? 52);
+    if (tileX !== forestSightTileX || tileY !== forestSightTileY
+        || seed !== forestSightTileSeed || terrain !== forestSightTileTerrain
+        || visual !== forestSightTileVisual || epoch !== forestSightTileEpoch
+        || climate !== forestSightTileClimate || forests !== forestSightTileForests) {
+        forestSightTileX = tileX;
+        forestSightTileY = tileY;
+        forestSightTileSeed = seed;
+        forestSightTileTerrain = terrain;
+        forestSightTileVisual = visual;
+        forestSightTileEpoch = epoch;
+        forestSightTileClimate = climate;
+        forestSightTileForests = forests;
+        forestSightTileGeneration = (forestSightTileGeneration + 1) >>> 0;
+        if (forestSightTileGeneration === 0) {
+            forestSightTileGeneration = 1;
+            forestSightTileGenerations?.fill(0);
+        }
+    }
     return true;
 }
 
@@ -503,10 +554,27 @@ export function updateForestSightOrigin(canvas, camera, zoom) {
 // never runs once per frame for a moving crowd.
 export function isForestSightVisible(x, y) {
     if (!forestSightOriginActive) return true;
-    return !forestLineOfSightBlocked(
-        forestSightOriginX, forestSightOriginY, Number(x), Number(y),
-        forestOcclusionAt, FOREST_SIGHT_MIN_DISTANCE
-    );
+    const tx = Math.floor(Number(x));
+    const ty = Math.floor(Number(y));
+    const W = worldW();
+    const H = worldH();
+    if (!Number.isInteger(tx) || !Number.isInteger(ty) || tx < 0 || ty < 0 || tx >= W || ty >= H) return true;
+    if (!forestSightTileVisibility || forestSightTileW !== W || forestSightTileH !== H) {
+        return !forestLineOfSightBlocked(
+            forestSightOriginX, forestSightOriginY, Number(x), Number(y),
+            forestOcclusionAt, FOREST_SIGHT_MIN_DISTANCE
+        );
+    }
+    const index = ty * W + tx;
+    if (forestSightTileGenerations[index] !== forestSightTileGeneration) {
+        const visible = !forestLineOfSightBlocked(
+            forestSightOriginX, forestSightOriginY, Number(x), Number(y),
+            forestOcclusionAt, FOREST_SIGHT_MIN_DISTANCE
+        );
+        forestSightTileVisibility[index] = visible ? 1 : 0;
+        forestSightTileGenerations[index] = forestSightTileGeneration;
+    }
+    return forestSightTileVisibility[index] === 1;
 }
 
 function forestVisibilitySpriteFor(color, strength) {
@@ -2320,6 +2388,7 @@ function drawCanopyLight(ctx, px, py, cellPx, stand, seed, tick, sun = null) {
 }
 
 function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed, zoom, tileX = null, tileY = null) {
+    if (tileX !== null && tileY !== null && !isForestSightVisible(tileX + 0.5, tileY + 0.5)) return;
     const season = seasonalState(dayOfYear, climateKey);
     // A simulated herd owns this tile when one is present. The old habitat
     // pick remains a fallback for forest edges and fresh worlds before the
@@ -2439,6 +2508,7 @@ function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed
 // tile carries the signs a hunter or naturalist would actually see: tracks,
 // browsed shoots, a recent carcass and a hollow-nesting bird's nest.
 function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed, zoom, tileX, tileY, tick) {
+    if (tileX !== null && tileY !== null && !isForestSightVisible(tileX + 0.5, tileY + 0.5)) return;
     const season = seasonalState(dayOfYear, climateKey);
     const herds = tileX !== null && tileY !== null ? forestFaunaAt(tileX, tileY, stand, dayOfYear) : [];
     const signs = tileX !== null && tileY !== null ? forestFaunaSignAt(tileX, tileY, stand, dayOfYear, herds) : null;

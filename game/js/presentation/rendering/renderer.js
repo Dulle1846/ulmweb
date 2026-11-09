@@ -21,10 +21,14 @@ let visibleEntitiesUntil=0;
 let visibleEntitiesKey="";
 let visibleCarrierIdsCache=new Set();
 let visibleCarrierIdsUntil=0;
+let particleDrawCount=0;
+let floaterDrawCount=0;
 
 // Read-only diagnostics for the real-browser occlusion audit.
 export function visibleEntityIdsForTest(){return visibleEntitiesCache.map(entity=>entity.id);}
 export function visibleCarrierIdsForTest(){return [...visibleCarrierIdsCache];}
+export function visibleParticleCountForTest(){return particleDrawCount;}
+export function visibleFloaterCountForTest(){return floaterDrawCount;}
 
 // ═══════════════════════════════════════════════════════════════
 //  WELT ZEICHNEN
@@ -77,10 +81,15 @@ export function drawWorld() {
     drawCarriers(ctx,zoom,camera,canvas);
 
     // ── Card placement preview ───────────────────────────────
-    drawPlacementPreview(ctx);
+    if (!state.cardPreview || isForestSightVisible(state.cardPreview.tx + 0.5, state.cardPreview.ty + 0.5)) {
+        drawPlacementPreview(ctx);
+    }
 
     // ── Partikel ─────────────────────────────────────────────
+    particleDrawCount=0;
     state.particles.forEach(p => {
+        if(!isForestSightVisible(p.x / CELL, p.y / CELL))return;
+        particleDrawCount++;
         const alpha = p.life / p.maxLife;
         const px = p.x * zoom - camera.x;
         const py = p.y * zoom - camera.y;
@@ -96,7 +105,10 @@ export function drawWorld() {
     const floaterSize = Math.max(10, Math.floor(13 * Math.min(zoom, 1.5)));
     ctx.font = `600 ${floaterSize}px monospace`;
 
+    floaterDrawCount=0;
     state.floaters.forEach(f => {
+        if(!isForestSightVisible(f.x / CELL, f.y / CELL))return;
+        floaterDrawCount++;
         const alpha = Math.max(0, f.life / 44);
         const px = f.x * zoom - camera.x;
         const py = f.y * zoom - camera.y;
@@ -190,6 +202,7 @@ function drawMapLayer(ctx,zoom,camera,canvas){
         if(layer==="services"){
             for(const service of getServiceBuildingsForOverlay()){
                 if(!service.active)continue;
+                if(!isForestSightVisible(service.x,service.y))continue;
                 const x=service.x*CELL*zoom-camera.x+CELL*zoom*.5;
                 const y=service.y*CELL*zoom-camera.y+CELL*zoom*.5;
                 const radius=service.radius*CELL*zoom;
@@ -230,6 +243,7 @@ function drawMapLayer(ctx,zoom,camera,canvas){
     for(let y=minY;y<=maxY;y+=sample){
         for(let x=minX;x<=maxX;x+=sample){
             if(!state.explored?.[x]?.[y])continue;
+            if(!isForestSightVisible(x+.5,y+.5))continue;
             let node;
             try{node=getResourceNodeAt(x,y);}catch{continue;}
             if(!node)continue;
@@ -310,6 +324,7 @@ function drawForesterStewardshipOverlay(ctx,zoom,camera,canvas){
 }
 
 function drawFieldTile(ctx,entity,zoom,camera,alpha=1){
+    if(!isForestSightVisible(entity.x,entity.y))return;
     const tile=CELL*zoom,x=entity.x*tile-camera.x,y=entity.y*tile-camera.y;
     const size=tile*1.9;
     ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=fieldColor(entity.field?.stage);
@@ -368,6 +383,7 @@ function drawLogisticsRoutes(ctx,zoom,camera,canvas){
         const from=state.entities.find(entity=>!entity.dead&&entity.id===job.from?.id);
         const to=state.entities.find(entity=>!entity.dead&&entity.id===job.to?.id);
         if(!from||!to)continue;
+        if(!isForestSightVisible(from.x,from.y)||!isForestSightVisible(to.x,to.y))continue;
         const x1=from.x*tile-camera.x+tile*.5,y1=from.y*tile-camera.y+tile*.5;
         const x2=to.x*tile-camera.x+tile*.5,y2=to.y*tile-camera.y+tile*.5;
         ctx.strokeStyle=job.status==="blocked"||job.reason?"rgba(164,71,57,.8)":"rgba(93,124,137,.82)";
