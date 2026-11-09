@@ -59,9 +59,10 @@ Kept deliberately:
 
 - `ulmweb-branch` — production branch.
 - `freebuff/747ba2e7ecbd7eb66d9fab99` — this chat's working branch.
-- 54 unmerged historical branches. They are not ancestors of production and may carry
+- 67 unmerged historical branches. They are not ancestors of production and may carry
   unique commits; deleting them without a patch-by-patch review would discard history.
-  They are left in place for a future, explicit archive decision.
+  They are left in place for a future, explicit archive decision. In total 69 remote
+  heads remain: the 67 unmerged branches, `ulmweb-branch`, and this chat's working branch.
 - Local worktree branches `chore/open-issues-triage` and `chore/security-hardening` —
   they belong to active worktrees and were not touched.
 
