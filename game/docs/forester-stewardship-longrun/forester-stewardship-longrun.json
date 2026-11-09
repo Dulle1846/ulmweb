@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-09T05:18:50.925Z",
-  "baseUrl": "http://127.0.0.1:4176",
+  "generatedAt": "2026-11-09T05:22:15.432Z",
+  "baseUrl": "https://kings-and-cards.pages.dev",
   "seed": 20261108,
   "world": [
     176,
@@ -84,7 +84,7 @@
       "lowestFill": 0.9494989192375712,
       "visualRevision": 80,
       "visualDelta": 80,
-      "cacheMisses": 7,
+      "cacheMisses": 6,
       "cutMarkers": {
         "total": 3,
         "matched": 3,
