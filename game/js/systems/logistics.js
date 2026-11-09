@@ -18,8 +18,10 @@ import { GOODS_LEDGER_LIMIT, ensureGoodsBook, recordGoodsMovement, setAuditOpeni
 export { recordResourceMovement };
 
 export const WAREHOUSE_CAPACITY = Object.freeze({ [TYPE.KEEP]: 320, [TYPE.WAREHOUSE]: 180 });
-export const CARRIER_CAPACITY = 8;
-export const MAX_CARRIERS = 6;
+// One cartload. Supply jobs are sized to this so a single trip feeds several
+// production batches instead of hauling the exact two-unit deficit.
+export const CARRIER_CAPACITY = 12;
+export const MAX_CARRIERS = 10;
 export const MAX_LOGISTICS_JOBS = 72;
 export const JOB_RETRY_TICKS = 30;
 export const JOB_EXPIRE_TICKS = 900;
@@ -170,6 +172,13 @@ export function normalizeLegacyWarehouseCapacity() {
 
 export function isWarehouse(entity) {
     return Boolean(entity && !entity.dead && (entity.type === TYPE.WAREHOUSE || entity.type === TYPE.KEEP));
+}
+// The fleet grows with the settlement instead of staying at six carts forever.
+// Four carts cover the opening village; every eight further residents adds one
+// up to the save-format ceiling.
+export function getCarrierLimit() {
+    const residents = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER).length;
+    return Math.max(4, Math.min(MAX_CARRIERS, 4 + Math.floor(residents / 8)));
 }
 export function getWarehouses() {
     return state.entities.filter(entity => isWarehouse(entity)).map(entity => { ensureInventory(entity); return entity; });
@@ -605,17 +614,24 @@ export function requestHaul(building, good, quantity) {
     const amount = Math.min(available, cleanQuantity(quantity));
     if (amount <= 0 || hasActiveJob(job => job.kind === "haul" && job.from?.id === building.id && job.good === good)) return null;
     const isBread = good === "bread";
-    const warehouse = pickWarehouse(good, amount, building, { requireSpace: !isBread });
+    // A nearly full store still accepts what fits. Refusing the whole haul
+    // because one unit lacks space left every producer's output store jammed.
+    const warehouse = pickWarehouse(good, 1, building, { requireSpace: !isBread });
     if (!warehouse) {
         rejectOrder("No reachable store can accept " + good, "haul", good);
         return null;
     }
-    const job = makeJob("haul", good, amount, { kind: "building", id: building.id }, { kind: "warehouse", id: warehouse.id });
+    const load = isBread ? amount : Math.min(amount, getWarehouseSpace(warehouse));
+    if (load <= 0) {
+        rejectOrder("No reachable store can accept " + good, "haul", good);
+        return null;
+    }
+    const job = makeJob("haul", good, load, { kind: "building", id: building.id }, { kind: "warehouse", id: warehouse.id });
     if (!job) return null;
-    building.inventory.reservedOut[good] += amount;
+    building.inventory.reservedOut[good] += load;
     job.sourceReserved = true;
     if (!isBread) {
-        warehouse.warehouse.reservedIn[good] += amount;
+        warehouse.warehouse.reservedIn[good] += load;
         job.targetReserved = true;
     }
     return job;
@@ -628,18 +644,27 @@ export function requestSupply(building, good, quantity) {
     if (amount <= 0 || hasActiveJob(job => job.kind === "supply" && job.to?.id === building.id && job.good === good)) return null;
     const reserved = reserveInputCapacity(building, good, amount);
     if (reserved <= 0) return null;
-    const warehouse = pickWarehouse(good, reserved, building, { requireStock: true });
+    const warehouse = pickWarehouse(good, 1, building, { requireStock: true });
     if (!warehouse) {
         releaseInputCapacity(building, good, reserved);
         rejectOrder("No reachable store holds " + good, "supply", good);
         return null;
     }
-    const job = makeJob("supply", good, reserved, { kind: "warehouse", id: warehouse.id }, { kind: "building", id: building.id });
+    // Take whatever the store can actually spare, even when it is less than a
+    // full cart. Asking for twelve when three exist must not cancel the order.
+    const load = Math.min(reserved, availableIn(warehouse, good));
+    if (load <= 0) {
+        releaseInputCapacity(building, good, reserved);
+        rejectOrder("No reachable store holds " + good, "supply", good);
+        return null;
+    }
+    const job = makeJob("supply", good, load, { kind: "warehouse", id: warehouse.id }, { kind: "building", id: building.id });
     if (!job) {
         releaseInputCapacity(building, good, reserved);
         return null;
     }
-    warehouse.warehouse.reservedOut[good] += reserved;
+    if (load < reserved) releaseInputCapacity(building, good, reserved - load);
+    warehouse.warehouse.reservedOut[good] += load;
     job.sourceReserved = true;
     job.targetReserved = true;
     return job;
@@ -701,16 +726,17 @@ function takeFromSource(job) {
     if (job.from.kind === "warehouse") {
         const warehouse = entityFromRef(job.from);
         if (!isWarehouse(warehouse)) return 0;
+        const load = Math.min(job.quantity, CARRIER_CAPACITY);
         moved = job.sourceReserved
-            ? withdrawReservedFromWarehouse(warehouse, job.good, job.quantity)
-            : withdrawUnreservedFromWarehouse(warehouse, job.good, job.quantity);
+            ? withdrawReservedFromWarehouse(warehouse, job.good, load)
+            : withdrawUnreservedFromWarehouse(warehouse, job.good, load);
     } else {
         const building = entityFromRef(job.from);
         if (!building?.inventory) return 0;
         const output = cleanQuantity(building.inventory.output[job.good]);
         const reserved = cleanQuantity(building.inventory.reservedOut[job.good]);
         const limit = job.sourceReserved ? Math.min(output, reserved, job.quantity) : Math.min(output, job.quantity);
-        moved = Math.min(limit, cleanQuantity(job.quantity));
+        moved = Math.min(limit, cleanQuantity(job.quantity), CARRIER_CAPACITY);
         if (moved > 0) {
             building.inventory.output[job.good] -= moved;
             if (job.sourceReserved) building.inventory.reservedOut[job.good] = Math.max(0, reserved - moved);
@@ -929,9 +955,9 @@ function recoverVirtualCargo(job) {
     job.quantity = remaining;
     return remaining === 0;
 }
-function spawnCarrier(job) {
+function spawnCarrier(job, carrierLimit = getCarrierLimit()) {
     const city = ensureCityState();
-    if (city.logistics.carriers.length >= MAX_CARRIERS) {
+    if (city.logistics.carriers.length >= carrierLimit) {
         job.reason = "All carriers are busy";
         job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS;
         return null;
@@ -961,7 +987,7 @@ function spawnCarrier(job) {
         id: "c" + city.logistics.nextCarrierId++, jobId: job.id, x: start.x, y: start.y,
         home: { x: start.x, y: start.y }, path: path || [], pathIndex: 0,
         pathVersion: (state.buildingCollisionVersion || 0) + ":" + (state.roads?.revision || 0),
-        status: "to-destination", cargo: null, speed: 1.9
+        status: "to-destination", cargo: null, speed: 2.3
     };
     city.logistics.carriers.push(carrier);
     city.logistics.stats.carriers = Math.max(cleanQuantity(city.logistics.stats.carriers), city.logistics.carriers.length);
@@ -972,10 +998,11 @@ function spawnCarrier(job) {
 }
 function assignPendingJobs() {
     const city = ensureCityState();
+    const carrierLimit = getCarrierLimit();
     const pending = city.logistics.jobs.filter(job => job.status === "pending" && (job.retryAt || 0) <= (state.tick || 0))
         .sort((a, b) => (b.priority || 0) - (a.priority || 0) || a.createdTick - b.createdTick || String(a.id).localeCompare(String(b.id)));
     for (const job of pending) {
-        if (city.logistics.carriers.length >= MAX_CARRIERS) break;
+        if (city.logistics.carriers.length >= carrierLimit) break;
         if (!entityFromRef(job.from)) {
             job.attempts = (job.attempts || 0) + 1;
             cancelJob(job, "Source removed");
@@ -989,7 +1016,7 @@ function assignPendingJobs() {
                 continue;
             }
         }
-        const carrier = spawnCarrier(job);
+        const carrier = spawnCarrier(job, carrierLimit);
         if (!carrier) {
             job.attempts = (job.attempts || 0) + 1;
             job.status = "pending";

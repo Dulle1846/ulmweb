@@ -125,7 +125,7 @@ export function updateVillagers() {
 // ═══════════════════════════════════════════════════════════════
 
 export function updateFriendlyMovement(deltaSeconds) {
-    if (state.isPaused || state.gameOver || state.victory) return;
+    if (state.isPaused || state.gameOver) return;
     if (deltaSeconds <= 0 || deltaSeconds > 0.2) return;
 
     rebuildBlockedBuildingTiles();
@@ -691,6 +691,24 @@ function followCachedPath(unit,dt,speedMultiplier=1){
 function assignJob(villager,workplaces=null,workerCounts=new Map()) {
     const previousWorkplace=villager.workplace;
     if(previousWorkplace)workerCounts.set(previousWorkplace,Math.max(0,(workerCounts.get(previousWorkplace)||0)-1));
+    // Keep a healthy assignment instead of rerolling every few months. The old
+    // distance-only scan repeatedly poached the sawyer for a nearer farm, so
+    // the settlement stopped making planks and firewood after its first year.
+    if (previousWorkplace && !previousWorkplace.dead) {
+        const constructionCapacity = previousWorkplace.construction && previousWorkplace.construction.stage < 3 ? 2 : 0;
+        const capacity = BUILDING_WORKFORCE[previousWorkplace.type] || constructionCapacity;
+        const current = workerCounts.get(previousWorkplace) || 0;
+        if (capacity > 0 && current < capacity) {
+            workerCounts.set(previousWorkplace, current + 1);
+            if (!villager.job) {
+                const entry = JOB_MAP.find(row => row.building === previousWorkplace.type);
+                villager.job = entry ? entry.job : "worker";
+            }
+            villager.workplace = previousWorkplace;
+            villager.anchor = { x: previousWorkplace.x, y: previousWorkplace.y };
+            return;
+        }
+    }
     let best = null, bestDist = Infinity, bestScore = Infinity;
     const preferredBuilding = villager.person?.activeGoal?.id === "secure_food" ? TYPE.FARM : null;
     for (const m of JOB_MAP) {

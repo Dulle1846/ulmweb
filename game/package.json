@@ -16,7 +16,8 @@
     "test:device-benchmark": "node tests/browser/device-benchmark.mjs",
     "test:atmosphere-reference": "node tests/browser/daylight-reference.mjs",
     "test:forester-stewardship": "node tests/browser/forester-stewardship.mjs",
-    "test:forester-stewardship-longrun": "node tests/browser/forester-stewardship-longrun.mjs"
+    "test:forester-stewardship-longrun": "node tests/browser/forester-stewardship-longrun.mjs",
+    "test:playability": "node tests/browser/playability-audit.mjs"
   },
   "engines": {
     "node": ">=20"

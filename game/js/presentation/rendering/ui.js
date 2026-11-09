@@ -10,8 +10,9 @@ import { getPoliticalSnapshot } from "../../systems/politics.js";
 import { getHealthSnapshot } from "../../systems/health.js";
 import { getRoomBonusSnapshot, roomBonusSignature, ROOM_BONUS_CAPS } from "../../systems/rooms.js";
 import { getRoyalHouse } from "../../systems/royal-dynasty.js";
+import { getAmbitionSnapshot } from "../../systems/ambitions.js";
 
-let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastRenderedIssueId=null;
+let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastAmbitionSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);}
 function income(v){
@@ -108,6 +109,26 @@ function renderRoomBonuses(){
         if(snapshot.sealed)chips.push('<span class="room-bonus-room is-warning" title="Sealed rooms grant no bonuses until a door connects them.">⚠ '+snapshot.sealed+' SEALED</span>');
         roomsEl.innerHTML=chips.join("");
     }
+}
+
+function renderAmbition(){
+    const section=document.getElementById("ambition-section");
+    if(!section)return;
+    const snapshot=getAmbitionSnapshot();
+    const signature=[snapshot.id,snapshot.completedCount,snapshot.total,Math.round(snapshot.progress*100),snapshot.progressLabel,snapshot.allComplete].join("|");
+    if(signature===lastAmbitionSignature)return;
+    lastAmbitionSignature=signature;
+    setText("ambition-count",snapshot.completedCount+" / "+snapshot.total);
+    setText("ambition-kicker",snapshot.allComplete?"LEGEND COMPLETE":"NEXT CHAPTER · "+(snapshot.completedCount+1)+" OF "+snapshot.total);
+    setText("ambition-title",snapshot.title);
+    setText("ambition-description",snapshot.description);
+    setText("ambition-progress-label",snapshot.progressLabel);
+    setText("ambition-reward",snapshot.allComplete?"ALL AMBITIONS FULFILLED":"REWARD · "+snapshot.rewardText);
+    const bar=document.getElementById("ambition-bar");
+    if(bar)bar.style.width=Math.round(snapshot.progress*100)+"%";
+    const progress=document.querySelector("#ambition-section .ambition-progress");
+    if(progress)progress.setAttribute("aria-valuenow",String(Math.round(snapshot.progress*100)));
+    section.classList.toggle("is-complete",snapshot.allComplete);
 }
 
 function updateCost(id,amount){
@@ -305,6 +326,7 @@ export function renderUI(){
     if(bar){bar.style.width=Math.max(0,Math.min(100,state.morale))+"%";bar.classList.toggle("is-low",state.morale<30);}
     setText("morale-value",Math.floor(state.morale));
     renderRoomBonuses();
+    renderAmbition();
     setText("season",SEASONS[state.seasonIndex]||SEASONS[0]);setText("year","YEAR "+state.year);
     setText("tick-count",state.tick.toLocaleString("en-US"));setText("kingdom-name","THE REALM OF "+state.kingdomName);
     setText("player-name",state.playerName||"GUEST");

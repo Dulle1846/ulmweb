@@ -466,13 +466,15 @@ test("22 empty houses do not consume heating while an occupied house does", () =
     resident.home = { x: house.x, y: house.y };
     resident.householdId = "house:" + house.id;
     updateSettlementNeeds();
-    assert.equal(warehouseStock(warehouse, "firewood"), 8);
+    // One load now heats a house for forty days instead of burning two loads
+    // every ten days, so a sawmill can actually keep the hearths supplied.
+    assert.equal(warehouseStock(warehouse, "firewood"), 9);
     const booked = state.city.logistics.ledger.filter(entry => entry.type === "consumed" && entry.good === "firewood" && entry.houseId === house.id);
-    assert.equal(booked.reduce((sum, entry) => sum + entry.quantity, 0), 2);
+    assert.equal(booked.reduce((sum, entry) => sum + entry.quantity, 0), 1);
     assert.equal(booked[0].cause, "household-heating");
     // A repeated settlement pass in the same tick is idempotent.
     updateSettlementNeeds();
-    assert.equal(warehouseStock(warehouse, "firewood"), 8);
+    assert.equal(warehouseStock(warehouse, "firewood"), 9);
     assertPhysicalBooks();
 });
 

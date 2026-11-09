@@ -4,13 +4,16 @@
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { getResourceNodeAt, plantForestAt } from "./resource-geography.js";
-import { addLocalOutput, getAvailableOutput, requestHaul } from "./logistics.js";
+import { addLocalOutput, getAvailableOutput, getPhysicalStock, requestHaul } from "./logistics.js";
 import { getBuildingEfficiency, getWorkforceSnapshot } from "./economy.js";
 
 export const FIELD_STAGES = Object.freeze(["fallow", "sown", "growing", "ripe", "harvested"]);
 export const FIELD_LABELS = Object.freeze({
     fallow: "Fallow", sown: "Sown", growing: "Growing", ripe: "Ripe", harvested: "Harvested"
 });
+// Farmers stop sowing a new field when the granary already holds a year of
+// grain. Without this the annual harvest buried the food chain in overflow.
+const GRAIN_RESERVE = 120;
 
 function number(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
 function ensureField(farm) {
@@ -71,6 +74,8 @@ function continueHarvest(farm, field) {
     if (accepted > 0) {
         field.pendingHarvest = Math.max(0, pending - accepted);
         requestHaul(farm, "grain", accepted);
+        const production = state.economy?.productionChains;
+        if (production) production.grainHarvested = Math.max(0, number(production.grainHarvested)) + accepted;
     }
     if (field.pendingHarvest > 0) {
         field.lastReason = "Harvest waiting for storage";
@@ -102,6 +107,10 @@ function seasonalFieldUpdate(farm) {
         return;
     }
     if (season === 0) {
+        if ((field.stage === "fallow" || field.stage === "harvested") && getPhysicalStock("grain") >= GRAIN_RESERVE) {
+            field.lastReason = "Granary is full";
+            return;
+        }
         if (field.stage === "fallow" || field.stage === "harvested") {
             field.stage = "sown";
             field.growth = 0;
@@ -117,7 +126,7 @@ function seasonalFieldUpdate(farm) {
         }
     } else if (season === 2) {
         if (field.stage === "ripe") {
-            field.pendingHarvest = Math.max(3, Math.round(4 + field.fertility / 12 + Math.min(8, field.growth / 14)));
+            field.pendingHarvest = Math.max(8, Math.round(10 + field.fertility / 8 + Math.min(12, field.growth / 10)));
             field.harvestTotal = field.pendingHarvest;
             continueHarvest(farm, field);
         } else if (field.stage === "growing") {

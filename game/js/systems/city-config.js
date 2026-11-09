@@ -114,11 +114,13 @@ export const RECIPES = Object.freeze({
     [TYPE.LUMBER]: Object.freeze({ label: "Harvest timber", workers: 3, site: "forest", output: Object.freeze({ logs: 2 }), outputCapacity: 28, batch: 2 }),
     [TYPE.SAWMILL]: Object.freeze({ label: "Saw planks", workers: 2, input: Object.freeze({ logs: 2 }), output: Object.freeze({ planks: 2, firewood: 1 }), inputCapacity: 28, outputCapacity: 32, batch: 2 }),
     [TYPE.FARM]: Object.freeze({ label: "Grow grain", workers: 4, field: true, output: Object.freeze({ grain: 2 }), outputCapacity: 36, batch: 2 }),
-    [TYPE.MILL]: Object.freeze({ label: "Mill flour", workers: 2, input: Object.freeze({ grain: 2 }), output: Object.freeze({ flour: 1 }), inputCapacity: 28, outputCapacity: 28, batch: 2 }),
-    [TYPE.BAKERY]: Object.freeze({ label: "Bake bread", workers: 2, input: Object.freeze({ flour: 1 }), output: Object.freeze({ bread: 2 }), inputCapacity: 24, outputCapacity: 24, batch: 1 }),
+    [TYPE.MILL]: Object.freeze({ label: "Mill flour", workers: 2, input: Object.freeze({ grain: 2 }), output: Object.freeze({ flour: 2 }), inputCapacity: 28, outputCapacity: 28, batch: 2 }),
+    [TYPE.BAKERY]: Object.freeze({ label: "Bake bread", workers: 2, input: Object.freeze({ flour: 1 }), output: Object.freeze({ bread: 4 }), inputCapacity: 24, outputCapacity: 24, batch: 1 }),
     [TYPE.QUARRY]: Object.freeze({ label: "Cut stone blocks", workers: 4, site: "stone", output: Object.freeze({ stoneBlocks: 3 }), outputCapacity: 32, batch: 3 }),
     [TYPE.MASON]: Object.freeze({ label: "Dress cut stone", workers: 2, input: Object.freeze({ stoneBlocks: 2 }), output: Object.freeze({ cutStone: 2 }), inputCapacity: 28, outputCapacity: 28, batch: 2 }),
-    [TYPE.WELL]: Object.freeze({ label: "Draw water", workers: 1, site: "water", output: Object.freeze({ water: 3 }), outputCapacity: 24, batch: 3 }),
+    // A dug well draws groundwater and therefore works inland, unlike a
+    // river-fed works. Water access still affects household service coverage.
+    [TYPE.WELL]: Object.freeze({ label: "Draw water", workers: 1, output: Object.freeze({ water: 3 }), outputCapacity: 24, batch: 3 }),
     [TYPE.FORESTER]: Object.freeze({ label: "Plant and tend the forest", workers: 2, site: "forest", output: Object.freeze({}), outputCapacity: 0, batch: 0 })
 });
 

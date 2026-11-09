@@ -27,7 +27,10 @@ function houseIsOccupied(house) {
 }
 function serviceBuildings() { return state.entities.filter(entity => !entity.dead && entity.isBuilding() && isOperational(entity)); }
 function serviceIsStaffed(building) {
-    if (building.type === TYPE.WALL) return true;
+    // Walls, towers and barracks are manned by the crown's guard rather than
+    // the villager job pool. Treating them as unstaffed made the safety need
+    // impossible to satisfy, which silently blocked all immigration.
+    if (building.type === TYPE.WALL || building.type === TYPE.TOWER || building.type === TYPE.BARRACKS) return true;
     return getBuildingEfficiency(building) > 0;
 }
 function serviceIsSupplied(building) {
@@ -110,15 +113,28 @@ function foodSatisfaction(population) {
 // Heating draws firewood from a store in the household's own supply radius and
 // books it as consumption. Distant stock cannot warm a house.
 function warmthSatisfaction(house, season) {
-    if (season !== 3) return 1;
-    const needed = 2;
+    if (season !== 3) {
+        house.lastHeatedTick = 0;
+        return 1;
+    }
+    // One load of firewood keeps a hearth burning for forty days. Drawing two
+    // loads every ten days demanded four times what a staffed sawmill could
+    // produce, so every winter opened with cold houses and no firewood.
+    const interval = 40;
+    const lastHeated = Math.max(0, number(house.lastHeatedTick));
+    if (lastHeated > 0 && state.tick - lastHeated < interval) return 1;
+    const needed = 1;
     const warehouse = findLocalWarehouse("firewood", house.x, house.y, HOUSEHOLD_SUPPLY_RADIUS);
     if (!warehouse) return 0;
     const consumed = consumeFromWarehouse(warehouse, "firewood", needed, {
         cause: "household-heating", houseId: house.id,
-        key: "heat:" + house.id + ":" + state.year + ":" + state.seasonIndex + ":" + state.tick
+        key: "heat:" + house.id + ":" + state.year + ":" + state.seasonIndex + ":" + Math.floor(state.tick / interval)
     });
-    return clamp01(consumed / needed);
+    if (consumed >= needed) {
+        house.lastHeatedTick = state.tick;
+        return 1;
+    }
+    return 0;
 }
 function housingComfort(house) {
     return HOUSING_TIERS[house.type]?.comfort || 0.5;

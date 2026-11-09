@@ -127,6 +127,45 @@ export function generateResourceGeography(seed=state.worldSeed){
             }
         }
     }
+    // Some lowland seeds have no rocky highlands at all. Without a guaranteed
+    // starter outcrop their quarries and every stone building are dead on
+    // arrival. Seed a small deterministic outcrop on open land near the world
+    // centre only when the capital region has no stone at all; existing
+    // highland deposits keep their generated values.
+    const centerX=Math.floor(W/2),centerY=Math.floor(H/2);
+    let stoneNearCenter=false;
+    for(let radius=0;radius<=10&&!stoneNearCenter;radius++){
+        for(let oy=-radius;oy<=radius&&!stoneNearCenter;oy++){
+            for(let ox=-radius;ox<=radius&&!stoneNearCenter;ox++){
+                if(Math.max(Math.abs(ox),Math.abs(oy))!==radius)continue;
+                const x=centerX+ox,y=centerY+oy;
+                if(x<0||y<0||x>=W||y>=H)continue;
+                if(stoneCapacity[tileIndex(x,y)]>0)stoneNearCenter=true;
+            }
+        }
+    }
+    if(!stoneNearCenter){
+        let seeded=0;
+        for(let radius=4;radius<=Math.max(W,H)&&seeded<7;radius++){
+            for(let oy=-radius;oy<=radius&&seeded<7;oy++){
+                for(let ox=-radius;ox<=radius&&seeded<7;ox++){
+                    if(Math.max(Math.abs(ox),Math.abs(oy))!==radius)continue;
+                    const x=centerX+ox,y=centerY+oy;
+                    if(x<0||y<0||x>=W||y>=H)continue;
+                    const index=tileIndex(x,y);
+                    if(stoneCapacity[index]>0)continue;
+                    const px=clamp(Math.floor((x+0.5)*resolution),0,width-1);
+                    const py=clamp(Math.floor((y+0.5)*resolution),0,height-1);
+                    const h=Number(heights[py*width+px])||0;
+                    if(h<sea+0.012)continue;
+                    const capacity=140+Math.floor(unitHash(worldSeed,index,0x53544152)*120);
+                    stoneCapacity[index]=capacity;
+                    stoneStock[index]=capacity;
+                    seeded++;
+                }
+            }
+        }
+    }
     state.resourceGeography={version:VERSION,seed:worldSeed,forestCapacity,forestStock,forestKind,forestAge,stoneCapacity,stoneStock,fertility,waterAccess};
     return state.resourceGeography;
 }

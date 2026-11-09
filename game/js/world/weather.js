@@ -73,10 +73,14 @@ export function updateWeather() {
     state.weatherTimer--;
     if (state.weatherTimer > 0) return;
 
+    const previousWeather = state.weather;
     state.weather = pickWeather(state.dayOfYear, randInt(0, 999) / 999, climate);
     state.weatherTimer = weatherDurationDays(state.dayOfYear, randInt(0, 999) / 999, climate);
 
+    // Only a real transition belongs in the chronicle. Re-rolling the same
+    // weather used to fill the bounded log with duplicate frost and rain rows.
     const seasonName = SEASON_NAMES[seasonalState(state.dayOfYear, climate).season];
+    if (state.weather === previousWeather) return;
     if (state.weather === 'rain') addLog('IT BEGINS TO RAIN', '#22d3ee');
     if (state.weather === 'snow') addLog('SNOW FALLS OVER THE LAND', '#e0f2fe');
     if (state.weather === 'clear' && seasonName === 'winter') addLog('THE SKY CLEARS OVER THE FROST', '#dbeafe');

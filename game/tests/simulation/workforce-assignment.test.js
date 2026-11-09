@@ -24,9 +24,11 @@ test("villagers never overfill a workplace beyond its staffing capacity",()=>{
 
     updateVillagers();
 
+    // A farm now needs two farmers, not four, so an opening village can staff
+    // its mill, bakery and sawmill as well as its fields.
     const assigned=villagers.filter(villager=>villager.workplace===farm);
-    assert.equal(assigned.length,4);
-    assert.equal(villagers.filter(villager=>villager.workplace===null).length,1);
+    assert.equal(assigned.length,2);
+    assert.equal(villagers.filter(villager=>villager.workplace===null).length,3);
 });
 
 test("a villager is released from a destroyed workplace on reassignment",()=>{

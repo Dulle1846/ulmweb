@@ -121,12 +121,12 @@ function gameLoop(timestamp){
    state.lastFrameTime=timestamp;
    const deltaSeconds=Math.min(deltaTime,50)/1000;
    updateCamera(deltaSeconds);
-   if(!state.isPaused&&!state.gameOver&&!state.victory){
+   if(!state.isPaused&&!state.gameOver){
     const clock=consumeSimulationTime(state.tickAccumulator,deltaTime,state.gameSpeed,BASE_TICK_INTERVAL);
     state.tickAccumulator=clock.remainderMs;
     for(let step=0;step<clock.steps;step++){
      updateSimulation();updateParticles();updateFloaters();
-     if(state.gameOver||state.victory)break;
+     if(state.gameOver)break;
     }
     state.movementAccumulator+=deltaSeconds;
     const movementStep=1/30;

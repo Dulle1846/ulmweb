@@ -7,6 +7,7 @@ import { TYPE, Entity } from '../core/types.js';
 import { state } from '../core/state.js';
 import { randInt as seededRandInt } from '../core/random.js';
 import {ensurePersonProfile} from '../systems/people.js';
+import {findNearestResourceNode} from '../systems/resource-geography.js';
 const randInt=(min,max)=>seededRandInt(min,max,"entity");
 
 // ── Entity erstellen ──────────────────────────────────────────
@@ -165,8 +166,6 @@ export function initStartingKingdom() {
     // Produktionsgebäude
     const farm1 = spawnEntity(cx + 8, cy + 4, TYPE.FARM);
     const farm2 = spawnEntity(cx + 9, cy + 5, TYPE.FARM);
-    const lumber = spawnEntity(cx - 8, cy - 8, TYPE.LUMBER);
-    const quarry = spawnEntity(cx + 2, cy + 10, TYPE.QUARRY);
     const goldmine = spawnEntity(cx + 12, cy - 10, TYPE.GOLDMINE);
     const temple = spawnEntity(cx - 10, cy + 2, TYPE.TEMPLE);
 
@@ -185,10 +184,39 @@ export function initStartingKingdom() {
         }
         return null;
     }
+    function placeNearResource(type, kind, fallbackOx, fallbackOy) {
+        let node = null;
+        try { node = findNearestResourceNode(kind, cx, cy, 36); } catch { /* unit fixtures may not build geography */ }
+        return placeExtra(type, node ? node.x - cx : fallbackOx, node ? node.y - cy : fallbackOy);
+    }
+    const lumber = placeNearResource(TYPE.LUMBER, "forest", -8, -8);
+    const quarry = placeNearResource(TYPE.QUARRY, "stone", 2, 10);
+
+    // The first campaign must open with a complete food chain. A bakery
+    // without a mill cannot turn the fields' grain into bread, and a realm
+    // with two farms for fifteen residents starves before its first harvest.
+    const h4 = placeExtra(TYPE.HOUSE, -7, -6);
+    const farm3 = placeExtra(TYPE.FARM, 10, 3);
+    const mill = placeExtra(TYPE.MILL, 9, 8);
     const warehouse = placeExtra(TYPE.WAREHOUSE, -14, -3);
+    // The old royal store sits far from the fields. A second working store
+    // beside the mill keeps grain, flour and bread close to the chain instead
+    // of asking one carrier to cross the whole settlement between every batch.
+    const granary = placeExtra(TYPE.WAREHOUSE, 11, 10);
+    if (granary) {
+        granary.warehouse = granary.warehouse && typeof granary.warehouse === "object" ? granary.warehouse : {};
+        // The east store is the settlement's granary. While it accepted every
+        // good, water and stone filled it and grain had nowhere to go, which
+        // halted the mill even when the fields were ripe.
+        granary.warehouse.profile = "food";
+        granary.warehouse.filters = ["grain", "flour", "bread"];
+    }
     const sawmill = placeExtra(TYPE.SAWMILL, 13, 2);
     const bakery = placeExtra(TYPE.BAKERY, 7, 9);
-    const well = placeExtra(TYPE.WELL, -1, 4);
+    const well = placeExtra(TYPE.WELL, -4, 1);
+    // A single well cannot reach both the western cottages and the eastern
+    // stone house. Uncovered households blocked immigration on water alone.
+    const well2 = placeExtra(TYPE.WELL, 4, -3);
     const mason = placeExtra(TYPE.MASON, -6, 11);
     const forester = placeExtra(TYPE.FORESTER, -16, -7);
     const market = placeExtra(TYPE.MARKET, 15, -4);
@@ -223,6 +251,18 @@ export function initStartingKingdom() {
         { x: cx - 7, y: cy + 11, home: stoneHouse || h3, workplace: mason, job: "mason" },
         { x: cx + 14, y: cy - 4, home: stoneHouse || h2, workplace: market, job: "merchant" },
     ];
+
+    // Staff the additional farm, mill and bakery. These residents fit in the
+    // fourth cottage (22 total capacity), so the opening realm is not born
+    // homeless while still leaving room for one or two newcomers.
+    if (farm3) villagerSpawns.push({ x: cx + 10, y: cy + 3, home: farm3, workplace: farm3, job: "farmer" });
+    if (mill) {
+        villagerSpawns.push({ x: cx + 9, y: cy + 8, home: stoneHouse || h4 || h2, workplace: mill, job: "miller" });
+        villagerSpawns.push({ x: cx + 8, y: cy + 9, home: stoneHouse || h4 || h3, workplace: mill, job: "miller" });
+    }
+    if (bakery) villagerSpawns.push({ x: cx + 6, y: cy + 9, home: stoneHouse || h4 || h2, workplace: bakery, job: "baker" });
+    if (granary) villagerSpawns.push({ x: cx + 11, y: cy + 10, home: stoneHouse || h4 || h3, workplace: granary, job: "hauler" });
+    if (well2) villagerSpawns.push({ x: cx + 4, y: cy - 3, home: stoneHouse || h2, workplace: well2, job: "wellkeeper" });
 
     villagerSpawns.forEach(s => {
         const v = spawnEntity(

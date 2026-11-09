@@ -9,7 +9,7 @@ import { addResource } from "../systems/resources.js";
 import { getWorkforceSnapshot, getBuildingEfficiency } from "../systems/economy.js";
 import { RECIPES } from "../systems/city-config.js";
 import {
-    ensureInventory, addLocalOutput, getAvailableInput, getAvailableOutput,
+    ensureInventory, addLocalOutput, getAvailableInput, getAvailableOutput, getInputCapacity, getPhysicalStock,
     requestSupply, requestHaul, getBuildingSupplyReason, outputSpace, recordGoodMovement
 } from "../systems/logistics.js";
 import { findNearestResourceNode, harvestForest, extractStone } from "../systems/resource-geography.js";
@@ -18,6 +18,17 @@ import { recordResourceMovement } from "../systems/goods-book.js";
 
 const PRODUCTION_INTERVAL = 6;
 const CIVIC_INTERVAL = 55;
+// Ask for a cartload instead of only the next batch. A mill that requests two
+// grain every recipe consumes them before the carrier has walked back, which
+// starved every downstream bakery no matter how much grain sat in a store.
+const SUPPLY_BATCH = 12;
+// Production ceilings keep the settlement from mining, pumping and sawing
+// until every store is full. Each good is produced until this much exists
+// across stores and carriers; construction and consumption create room again.
+const STOCK_TARGETS = Object.freeze({
+    logs: 80, planks: 60, firewood: 50, stoneBlocks: 60, cutStone: 60,
+    water: 40, grain: 120, flour: 40
+});
 
 function ledger() {
     const economy = state.economy || (state.economy = {});
@@ -26,6 +37,19 @@ function ledger() {
         production[key] = Math.max(0, Number(production[key]) || 0);
     }
     return production;
+}
+
+// Producers ask for a haul when they finish a batch, but a producer whose
+// output store is already full never reaches that code again. Sweeping stored
+// output every production tick breaks that deadlock without creating
+// duplicate jobs (requestHaul refuses a second job for the same good).
+function requestStoredHauls(building) {
+    const recipe = RECIPES[building.type];
+    if (!recipe?.output) return;
+    for (const good of Object.keys(recipe.output)) {
+        const available = getAvailableOutput(building, good);
+        if (available > 0) requestHaul(building, good, available);
+    }
 }
 
 function canWork(building, workforce) {
@@ -40,7 +64,8 @@ function requestInputs(building) {
     const available = getAvailableInput(building);
     for (const [good, amount] of Object.entries(recipe.input)) {
         if (available[good] < amount) {
-            requestSupply(building, good, amount - available[good]);
+            const target = Math.min(SUPPLY_BATCH, getInputCapacity(building.type));
+            requestSupply(building, good, Math.max(amount, target) - available[good]);
             return false;
         }
     }
@@ -100,6 +125,19 @@ function produceRecipe(building, workforce, production) {
         building.productionReason = building.foresterReason || "Tending the forest";
         return;
     }
+    // Skip goods that are already stockpiled, but keep a secondary output
+    // flowing: a sawmill whose plank rack is full can still burn logs for
+    // firewood instead of idling through the winter.
+    const allowedOutput = {};
+    for (const [good, amount] of Object.entries(recipe.output || {})) {
+        const target = STOCK_TARGETS[good];
+        if (target && getPhysicalStock(good) >= target) continue;
+        allowedOutput[good] = amount;
+    }
+    if (Object.keys(recipe.output || {}).length && !Object.keys(allowedOutput).length) {
+        building.productionReason = "Reserve is fully stocked";
+        return;
+    }
     if (recipe.site === "forest" || recipe.site === "stone" || recipe.site === "water") {
         if (!canStoreOutput(building, recipe.site === "forest" ? { logs: recipe.batch } : recipe.site === "stone" ? { stoneBlocks: Math.max(1, Math.floor(recipe.batch * 2 / 2)) } : { water: recipe.batch })) {
             building.productionReason = "Output store is full";
@@ -134,7 +172,7 @@ function produceRecipe(building, workforce, production) {
     }
     const efficiency = Math.max(0.35, getBuildingEfficiency(building, workforce));
     const output = {};
-    for (const [good, amount] of Object.entries(recipe.output || {})) output[good] = Math.max(0, Math.round(amount * efficiency));
+    for (const [good, amount] of Object.entries(allowedOutput)) output[good] = Math.max(0, Math.round(amount * efficiency));
     if (!canStoreOutput(building, output)) {
         building.productionReason = "Output store is full";
         return;
@@ -153,7 +191,10 @@ export function updateBuildingIncome() {
     const production = ledger();
     if (productionTick) {
         for (const building of state.entities) {
-            if (!building.dead && building.isBuilding() && RECIPES[building.type]) produceRecipe(building, workforce, production);
+            if (!building.dead && building.isBuilding() && RECIPES[building.type]) {
+                produceRecipe(building, workforce, production);
+                requestStoredHauls(building);
+            }
         }
         for (const temple of getEntitiesOfType(TYPE.TEMPLE)) {
             if (temple.construction && temple.construction.stage < 3) continue;

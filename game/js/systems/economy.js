@@ -12,23 +12,27 @@ import { applyRoomBonuses, getFurnitureUpkeepTotal } from "./rooms.js";
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
 export const ECONOMY_HISTORY_LIMIT = 24;
+// A twenty-resident opening village must be able to staff its whole production
+// chain. The old capacities (four farmers per field, three per lumber camp)
+// left the mill, bakery and sawmill permanently short-handed, so planks and
+// firewood never reached the stores.
 export const BUILDING_WORKFORCE = Object.freeze({
-    [TYPE.FARM]: 4,
-    [TYPE.LUMBER]: 3,
-    [TYPE.QUARRY]: 4,
-    [TYPE.GOLDMINE]: 3,
-    [TYPE.TAVERN]: 2,
-    [TYPE.TEMPLE]: 2,
+    [TYPE.FARM]: 2,
+    [TYPE.LUMBER]: 2,
+    [TYPE.QUARRY]: 2,
+    [TYPE.GOLDMINE]: 1,
+    [TYPE.TAVERN]: 1,
+    [TYPE.TEMPLE]: 1,
     [TYPE.MILL]: 2,
-    [TYPE.STABLE]: 2,
-    [TYPE.WAREHOUSE]: 2,
-    [TYPE.SAWMILL]: 2,
+    [TYPE.STABLE]: 1,
+    [TYPE.WAREHOUSE]: 1,
+    [TYPE.SAWMILL]: 1,
     [TYPE.BAKERY]: 2,
     [TYPE.WELL]: 1,
-    [TYPE.MASON]: 2,
-    [TYPE.FORESTER]: 2,
-    [TYPE.CLINIC]: 2,
-    [TYPE.MARKET]: 2
+    [TYPE.MASON]: 1,
+    [TYPE.FORESTER]: 1,
+    [TYPE.CLINIC]: 1,
+    [TYPE.MARKET]: 1
 });
 
 const clampNonNegative = value => Math.max(0, Number.isFinite(value) ? value : 0);

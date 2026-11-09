@@ -49,7 +49,7 @@ test("workforce counts only living residents and respects workplace capacity", (
         assert.equal(workforce.population, 2);
         assert.equal(workforce.employed, 1);
         assert.equal(workforce.unemployed, 1);
-        assert.equal(getBuildingEfficiency(farm, workforce), 0.25);
+        assert.equal(getBuildingEfficiency(farm, workforce), 0.5);
     } finally {
         state.entities = [];
     }
