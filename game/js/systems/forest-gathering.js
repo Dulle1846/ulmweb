@@ -333,8 +333,11 @@ export function validateForestGatheringSnapshot(snapshot) {
 }
 
 export function restoreForestGathering(snapshot) {
-    resetForestGathering();
+    // A rejected import can reach this restore path with no forest snapshot.
+    // Do not create an otherwise absent ledger here: the active realm must stay
+    // byte-for-byte unchanged when validation rejects the incoming save.
     if (!snapshot) return 0;
+    resetForestGathering();
     validateForestGatheringSnapshot(snapshot);
     const ledger = state.forestGathering;
     for (const [id, amount] of Object.entries(snapshot.stock || {})) {

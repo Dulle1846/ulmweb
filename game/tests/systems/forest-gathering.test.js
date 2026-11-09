@@ -45,6 +45,17 @@ test("reading or serializing a fresh realm does not create a forest ledger", () 
     assert.deepEqual(snapshot, { version: 1, stock: {}, totalGathered: {}, quality: {}, history: [], lastGather: {} });
 });
 
+test("a rejected import with no forest snapshot leaves the live ledger untouched", () => {
+    setup();
+    assert.equal(state.forestGathering, null);
+    assert.equal(restoreForestGathering(undefined), 0);
+    assert.equal(state.forestGathering, null, "a missing snapshot must not create a ledger");
+    ensureForestGathering().stock.timber = 3;
+    const before = serializeForestGathering();
+    assert.equal(restoreForestGathering(null), 0);
+    assert.deepEqual(serializeForestGathering(), before, "a rejected import must not clear gathered stock");
+});
+
 test("forest products are read from the same real stand as the renderer", () => {
     setup();
     const tile = findForestWithGoods();
