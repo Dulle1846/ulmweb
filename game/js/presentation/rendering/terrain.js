@@ -1827,25 +1827,47 @@ function drawBogPool(ctx, px, py, cellPx, stand, s1, s2) {
     const wet = Math.max(0, Math.min(1, Number(stand?.wetness) || 0));
     const ox = (s1 - 0.5) * 8 * s;
     const oy = (s2 - 0.5) * 5 * s;
+    const cx = px + ox;
+    const cy = py + 4 * s + oy;
     ctx.save();
-    ctx.fillStyle = "#283f3b";
-    ctx.globalAlpha = 0.34 + wet * 0.28;
+    // A soaked mud rim first: the hollow is waterlogged before it holds open
+    // water, and the darker edge separates the pool from the mossy floor.
+    ctx.fillStyle = "#463a26";
+    ctx.globalAlpha = 0.34 + wet * 0.22;
     ctx.beginPath();
-    ctx.ellipse(px + ox, py + 4 * s + oy, 7.4 * s, 2.8 * s, 0.05, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, 11.4 * s, 4.5 * s, 0.05, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#78958b";
-    ctx.globalAlpha = 0.16 + wet * 0.22;
+    // Standing water stays opaque enough to read as a surface against moss.
+    // It is a flat fill rather than a per-tile gradient to keep the draw cheap
+    // on low-end devices where a wide view can show dozens of pools.
+    ctx.fillStyle = "#15323a";
+    ctx.globalAlpha = 0.72 + wet * 0.2;
     ctx.beginPath();
-    ctx.ellipse(px + ox - 1 * s, py + 3 * s + oy, 4.8 * s, 1.1 * s, 0.04, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, 9.6 * s, 3.5 * s, 0.04, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "#607846";
-    ctx.globalAlpha = 0.42;
-    ctx.lineWidth = Math.max(0.55, 0.65 * s);
-    for (let i = 0; i < 3; i++) {
-        const rx = px + ox + (i - 1) * 2.4 * s;
+    // A pale sky reflection and a sphagnum rim keep the pool from reading as
+    // a shadow or a hole in the ground.
+    ctx.fillStyle = "#a9c9c4";
+    ctx.globalAlpha = 0.24 + wet * 0.24;
+    ctx.beginPath();
+    ctx.ellipse(cx - 1.3 * s, cy - 1 * s, 4.4 * s, 0.9 * s, 0.03, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#7f9a5c";
+    ctx.globalAlpha = 0.28 + wet * 0.16;
+    ctx.lineWidth = Math.max(0.7, 0.85 * s);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 0.4 * s, 10.4 * s, 4 * s, 0.04, 0, Math.PI * 2);
+    ctx.stroke();
+    // Sedge and reeds break the outline where the water meets the moss.
+    ctx.strokeStyle = "#6d7f45";
+    ctx.globalAlpha = 0.52;
+    ctx.lineWidth = Math.max(0.6, 0.7 * s);
+    for (let i = 0; i < 4; i++) {
+        const rx = cx + (i - 1.5) * 2.7 * s;
+        const base = cy + (i % 2) * 0.6 * s;
         ctx.beginPath();
-        ctx.moveTo(rx, py + 3.2 * s + oy);
-        ctx.lineTo(rx - 0.7 * s, py - 1.1 * s + oy);
+        ctx.moveTo(rx, base);
+        ctx.lineTo(rx - 0.9 * s, base - 3.2 * s);
         ctx.stroke();
     }
     ctx.restore();
