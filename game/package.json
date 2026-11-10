@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.13.2",
+  "version": "3.13.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,6 +23,7 @@
     "test:forest-stewardship-ui": "node tests/browser/forest-stewardship-ui.mjs",
     "test:playability": "node tests/browser/playability-audit.mjs",
     "test:campaign": "node scripts/long-campaign.mjs",
+    "test:campaign:players": "node scripts/player-profiles.mjs",
     "test:campaign:browser": "node tests/browser/long-campaign.mjs"
   },
   "engines": {

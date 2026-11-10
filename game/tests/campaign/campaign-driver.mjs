@@ -20,7 +20,7 @@ import { initializeSettlementForRealm } from "../../js/systems/settlement.js";
 import { updateSimulation } from "../../js/simulation/simulation.js";
 import { resolveEventChoice } from "../../js/systems/events.js";
 import { AMBITIONS, getAmbitionSnapshot } from "../../js/systems/ambitions.js";
-import { placeDirectBuilding, canPlaceBuilding, isUnderConstruction } from "../../js/systems/construction.js";
+import { placeDirectBuilding, canPlaceBuilding, isUnderConstruction, cancelConstruction } from "../../js/systems/construction.js";
 import { placeRoad } from "../../js/systems/roads.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild } from "../../js/systems/royal-dynasty.js";
 
@@ -30,6 +30,7 @@ export const CAMPAIGN_YEARS = 25;
 const LOGISTICS_STEPS = 4;
 const LOGISTICS_DT = 0.1875;
 const MAX_ACTIVE_SITES = 1;
+let campaignProfile = "builder";
 
 const round = (value, digits = 2) => {
     const factor = 10 ** digits;
@@ -252,7 +253,9 @@ function nextBuilding() {
     if (countType(TYPE.BAKERY) < 3) return { type: TYPE.BAKERY, radius: 24 };
     if (countType(TYPE.MILL) < 3) return { type: TYPE.MILL, radius: 24 };
     if (countType(TYPE.SAWMILL) < 2) return { type: TYPE.SAWMILL, radius: 24 };
-    if (needs && needs.health < 0.55 && countType(TYPE.CLINIC) < 1) return { type: TYPE.CLINIC, radius: 24 };
+    // A timber-first household strategy needs its own firewood reserve. One
+    // lumber camp does not keep sixteen cottages warm through the late years.
+    if (campaignProfile === "settler" && countType(TYPE.LUMBER) < 2) return { type: TYPE.LUMBER, radius: 36 };
     return null;
 }
 
@@ -291,7 +294,7 @@ function captureSnapshot(extra = {}) {
         year: state.year,
         population: population(),
         capacity: housing.capacity,
-        houses: countType(TYPE.HOUSE),
+        houses: housing.houses,
         farms: countType(TYPE.FARM),
         mills: countType(TYPE.MILL),
         bakeries: countType(TYPE.BAKERY),
@@ -345,6 +348,7 @@ function initialiseFreshRealm(seed) {
 
 export function runCampaign({
     seed = CAMPAIGN_SEED,
+    profile = "builder",
     years = CAMPAIGN_YEARS,
     initialize = true,
     sampleTicks = 120,
@@ -355,13 +359,18 @@ export function runCampaign({
     state.gameOver = false;
     state.victory = false;
 
+    campaignProfile = ["builder", "settler", "ignorer"].includes(profile) ? profile : "builder";
     const started = performance.now();
     const totalTicks = years * CAMPAIGN_YEAR_DAYS + 40;
+    // A settler acts promptly on housing and food; an ignorer lets the realm
+    // run and reviews construction every sixteen days.
+    const buildInterval = campaignProfile === "ignorer" ? 16 : campaignProfile === "settler" ? 6 : 8;
     const yearly = [captureSnapshot()];
     const diagnostics = {
         buildAttempts: 0,
         buildFailures: {},
         stalledSites: [],
+        recoveredSites: [],
         heirAttempts: [],
         lastBuild: null,
         lastHeir: null
@@ -380,9 +389,25 @@ export function runCampaign({
         // a time, one policy review every 8 days, roads and the royal house
         // reviewed annually. This mirrors a deliberate human build order
         // rather than placing every affordable building on tick one.
-        if (state.tick - lastBuildCheck >= 8) {
+        if (state.tick - lastBuildCheck >= buildInterval) {
             lastBuildCheck = state.tick;
             layRoads();
+            // A site waiting for a stage payment or a missing material must not
+            // monopolise the campaign's one-site pipeline forever. This mirrors
+            // the shipped cancel-site action (35% of paid materials returned);
+            // the record distinguishes a recovered setback from an open stall.
+            for (const site of activeSites()) {
+                const previous = siteHistory.get(site);
+                if (!previous || previous.stage !== site.construction?.stage) continue;
+                if (state.tick - previous.since <= 420) continue;
+                const cancelled = cancelConstruction(site);
+                if (!cancelled.ok) continue;
+                diagnostics.recoveredSites.push({
+                    id: site.id, type: site.type, stage: previous.stage,
+                    since: previous.since, reason: previous.reason || null
+                });
+                siteHistory.delete(site);
+            }
             const sites = activeSites();
             if (sites.length < MAX_ACTIVE_SITES) {
                 const wanted = nextBuilding();
@@ -491,6 +516,7 @@ export function runCampaign({
     return {
         ok,
         seed: state.worldSeed,
+        profile: campaignProfile,
         years,
         totalTicks,
         elapsedMs: round(performance.now() - started, 1),

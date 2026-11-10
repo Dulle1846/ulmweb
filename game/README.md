@@ -1,6 +1,6 @@
 # Kings & Cards
 
-**Production version:** 3.13.2
+**Production version:** 3.13.3
 **Next development line:** 3.14.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
@@ -20,6 +20,7 @@
 11. [Crown Endeavours](docs/CROWN_ENDEAVOURS.md) — five post-ambition paths, fifteen multi-stage projects, funding, named overseers, permanent realm modifiers and the 100-year player journeys.
 12. [War front and white peace](docs/WAR_FRONT_AND_WHITE_PEACE.md) — bounded annual war fronts, named-garrison battles and white peace at war exhaustion 35.
 13. [Crown supply](docs/CROWN_SUPPLY.md) — grain contracts including the war granary, seasonal deliveries, commissary barter, paid waterworks, stone-house density, farm subsistence and garrison pay in kind, with the v3.13.1 journey measurements.
+14. [Deep playtest 3.13.3](docs/DEEP_PLAYTEST_3.13.3.md) — four seeds × three playstyles over 25 years, mature-realm immigration, costed crown relief, the full result matrix and the remaining performance/content limits.
 
 ## Development rules
 

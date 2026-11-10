@@ -20,6 +20,27 @@ export const POPULATION_GROWTH_MORALE = 55;
 // 25. A settlement that has food, housing and services can now welcome two
 // residents a year, with births counting toward that same allowance.
 export const POPULATION_GROWTH_PER_YEAR = 2;
+export const POPULATION_GROWTH_PER_YEAR_MATURE = 3;
+export const POPULATION_MATURE_YEAR = 10;
+export const POPULATION_MATURE_FOOD_PER_RESIDENT = 4;
+
+// A young settlement can absorb two new residents a year. Once it has survived
+// a decade with water, safety, food and household satisfaction above the
+// settlement gate, it becomes a known destination and a third household can
+// arrive. The extra slot is still bounded by beds, stores and the same yearly
+// cap; it is not a free resource yield.
+export function getPopulationGrowthAllowance() {
+    if (state.year < POPULATION_MATURE_YEAR) return POPULATION_GROWTH_PER_YEAR;
+    const housing = getHousingSnapshot();
+    const needs = state.city?.needs?.summary;
+    if (needs && (needs.water < 0.4 || needs.safety < 0.35 || needs.satisfaction < 0.45)) {
+        return POPULATION_GROWTH_PER_YEAR;
+    }
+    if ((Number(state.resources.food) || 0) < housing.population * POPULATION_MATURE_FOOD_PER_RESIDENT) {
+        return POPULATION_GROWTH_PER_YEAR;
+    }
+    return POPULATION_GROWTH_PER_YEAR_MATURE;
+}
 
 export function getPopulationGrowthMoraleThreshold() {
     const growth = Math.max(0, Number(getRoomBonusSnapshot().totals.growth) || 0);
@@ -113,6 +134,10 @@ function ensureGrowthYear(economy) {
     if (Number(economy.growthYear) !== state.year) {
         economy.growthYear = state.year;
         economy.growthThisYear = 0;
+        // Check immediately at the year boundary, then at the settlement
+        // cadence. Re-evaluating the whole household gate every tick made a
+        // blocked realm pay for a failed immigration check all year.
+        economy.lastGrowthAttemptTick = -1;
     }
 }
 
@@ -126,11 +151,10 @@ export function recordPopulationGrowth({ immigration = true } = {}) {
     economy.lastGrowthYear = state.year;
 }
 
-// A new resident may join at the start of a new year when food, morale and
-// housing all support it. Two residents may join each year, which keeps the
-// 25-year population ambition reachable without weakening the household gate.
-// The gate is exposed so the population panel can explain a stalled realm
-// instead of silently showing free beds and no growth.
+// A new resident may join when food, morale and housing support it. A mature,
+// healthy realm can welcome a third resident in a year; the gate is exposed so
+// the population panel can explain a stalled realm instead of silently showing
+// free beds and no growth.
 export function getPopulationGrowthGate() {
     const housing = getHousingSnapshot();
     const moraleGate = getPopulationGrowthMoraleThreshold();
@@ -160,9 +184,12 @@ export function updatePopulation() {
     if (state.tick <= 0 || state.year <= 1) return null;
     const economy = state.economy || (state.economy = {});
     ensureGrowthYear(economy);
+    if (state.tick - (Number(economy.lastGrowthAttemptTick) || -1) < 10) return null;
+    economy.lastGrowthAttemptTick = state.tick;
     let newest = null;
 
-    while ((Number(economy.growthThisYear) || 0) < POPULATION_GROWTH_PER_YEAR) {
+    const allowance = getPopulationGrowthAllowance();
+    while ((Number(economy.growthThisYear) || 0) < allowance) {
         const gate = getPopulationGrowthGate();
         if (!gate.ok) break;
 

@@ -27,6 +27,7 @@ For the current development stage, these documents focus on making the existing 
 - [Living population](LIVING_POPULATION.md) — persistent citizens and households, the deterministic annual census, civic/economic/military modifiers, save-schema-7 migration, the PEOPLE panel and the verified hosted builds.
 - [Eternal deeds](ETERNAL_DEEDS.md) — repeatable post-ambition goals drawn from live systems, rewards, stall protection, save compatibility and the 50-year/browser evidence.
 - [Crown supply](CROWN_SUPPLY.md) — grain contracts including the war granary, seasonal deliveries, commissary barter, paid waterworks, stone-house density, farm subsistence and garrison pay in kind, with the v3.13.1 journey measurements.
+- [Deep playtest 3.13.3](DEEP_PLAYTEST_3.13.3.md) — the 4 × 3 seed/playstyle campaign matrix, mature immigration, costed crown relief, measured browser and 100-year evidence, and remaining limits.
 - [Terrain Art Checklist](TERRAIN_ART_CHECKLIST.md) — item-by-item audit of checklist 1.1.1–1.1.10 with code and verification evidence.
 - [Kings & Cards Foundation](V2_FOUNDATION.md) — current playable systems, exact limits and verified checks.
 - [Next AI Work Package](NEXT_AI_WORK_PACKAGE.md) — ready-to-use handoff brief for contributors and AI sessions.

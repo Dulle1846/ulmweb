@@ -157,6 +157,9 @@ test("the population panel explains a stalled growth gate and its recovery hint"
   assert.ok(populationPanel.includes("Local safety is too low"));
   assert.ok(populationPanel.includes("Build a watchtower covering occupied homes."));
   assert.ok(populationPanel.includes("getPopulationGrowthGate"));
+  assert.ok(populationPanel.includes("getPopulationGrowthAllowance"));
+  assert.ok(populationPanel.includes('data-command="crown-relief"'));
+  assert.ok(management.includes("applyCrownRelief"));
 });
 
 test("map layer selector and legend are wired to real geography overlays",()=>{
@@ -175,7 +178,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.13.2</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.13.3</b>"));
   assert.ok(management.includes('data-command="crown-grain"'));
   assert.ok(management.includes('data-command="crown-water"'));
   assert.ok(management.includes('data-command="crown-housing"'));

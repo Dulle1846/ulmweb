@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.13.2`
+**Current production version:** `3.13.3`
 **Next development line:** `3.14.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -37,6 +37,24 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.13.3 — Seed-Robust Living Realm
+
+**Released:** 2026-11-10
+
+**Scope:** Makes the unchanged 25-year `eternal-realm` ambition reachable through real population, relief and trade mechanics on four seeds and three playstyles. No ambition target, housing rule, mortality rate or resource yield was weakened.
+
+**The dead end:** 3.13.2 documented seeds 7 and 99 finishing the deliberate 25-year route at 45 and 44 residents (12/13). The flat two-resident annual allowance shared by births and immigration put a hard ceiling on slower worlds. The previous clinic expansion was not a repair: clinics consumed labour and materials without producing food, starving seed 99 and stalling the reference seed.
+
+**Mature immigration:** a realm that has survived ten years and still has water coverage ≥ 0.40, safety ≥ 0.35, household satisfaction ≥ 0.45, food ≥ 4 per resident, adequate morale, a free bed and an allowed villager can welcome **three residents per year** instead of two. Births still share the allowance. The allowance is re-evaluated every ten ticks, not every tick, and cannot bypass the normal settlement gate. The mature route is an immigration incentive, not a resource grant.
+
+**Crown relief:** `crown-relief.js` turns a blocked visible growth gate into one costed action through the existing crown supply systems: the next waterworks level, a regional granary contract or emergency provision from held harvest and surplus goods, and a stone rebuild of an existing cottage for two extra places. The PEOPLE panel exposes it as `data-command="crown-relief"`. Safety and morale keep their real building/policy requirements; there is no purchased shortcut. A mature realm can sell surplus wood or stone above a 1,200 construction reserve through the real market path to cover relief costs, keeping a 2,400-gold reserve. No resources are created.
+
+**Measured 25-year matrix:** 4 seeds × 3 policies (builder, settler, ignorer), all **12/12 green**, every run **13/13 ambitions**, **63–75 residents**, **zero unresolved stalls**. Seed 99's settler recovered two blocked sites and ended with 2,405 gold / 74 food. Reference 25 years: 13/13, 75 residents, 2.363 ms/tick. The seed 99 settler previously finished at 44 residents; it now reaches 66. No clinic was added and no ambition was lowered.
+
+**Performance:** the reference 25-year route measured **2.363 ms/tick** and the deterministic 100-year route **2.423 ms/tick** over 40,040 ticks, both inside the requested 2.3–2.6 ms band. Alternate seeds measured 3.19–4.63 ms/tick; that terrain/entity-cost gap is documented, not averaged away. The 4,000-tick browser check held 60 FPS / 16.7 ms with 2.07 ms simulated work per tick, no page or console errors and no horizontal overflow.
+
+**Verification:** `npm test` **723/723**; syntax, relative imports and UI ids **105 files / 189 ids**; full 12-run matrix; 100-year campaign 13/13 with 3 Eternal Deeds and 0 stalls; browser growth gate visible. Full record: [docs/DEEP_PLAYTEST_3.13.3.md](docs/DEEP_PLAYTEST_3.13.3.md).
 
 ### 3.13.2 — Visible Growth Gate
 

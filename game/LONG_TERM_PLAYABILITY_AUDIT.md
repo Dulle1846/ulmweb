@@ -5,7 +5,7 @@
 **Baseline version:** `3.4.0`  
 **Audit branch:** `kac-3.5-long-run-audit-and-ledger`  
 **Date:** 2026-11-05  
-**Playability pass:** 2026-11-09
+**Playability pass:** 2026-11-10
 
 ## 0. Playability pass — 2026-11-09
 
@@ -260,10 +260,12 @@ External reviews do not replace automated tests or human release acceptance.
 - **Measured:** the reference 25-year campaign remains 13/13 with 59 residents
   and 2.288 ms/tick. The 100-year run reaches 13/13, 70 residents and three
   Eternal Deeds over 40,040 ticks at 2.563 ms/tick with no stalled sites.
-- **Open:** the same deliberate route fails on seeds 7 and 99 at 45 and 44
-  residents (12/13, missing `eternal-realm`). Low health and the fixed annual
-  growth cap leave too little time. An attempt to build extra clinics starved
-  seed 99 and stalled the reference seed, so it was reverted rather than shipped.
+- **Resolved in 3.13.3:** the same deliberate route failed on seeds 7 and 99 at
+  45 and 44 residents (12/13, missing `eternal-realm`). Low health and the flat
+  annual growth cap left too little time. An attempt to build extra clinics
+  starved seed 99 and stalled the reference seed, so it was reverted. The
+  3.13.3 mature-immigration and costed-relief pass closes the gap without
+  lowering the ambition.
 - **Open:** the post-campaign loop still repeats Eternal Deeds. There are no new
   world regions, eras, rival realms or strategic objectives after the 13
   ambitions. This is the main content gap before a 1,000-hour claim.
@@ -271,3 +273,33 @@ External reviews do not replace automated tests or human release acceptance.
   prove 1,000 hours of human entertainment. See
   [docs/DEEP_PLAYTEST_3.13.2.md](docs/DEEP_PLAYTEST_3.13.2.md) for the full record
   and the remaining evidence work.
+
+## 9. Deep playtest findings — 3.13.3 (2026-11-10)
+
+- **Fixed:** the flat two-resident annual allowance made `eternal-realm` (55)
+  seed-dependent. A mature realm (year 10+, water ≥ 0.40, safety ≥ 0.35,
+  satisfaction ≥ 0.45, food ≥ 4 per resident, morale, a free bed and the normal
+  settlement gate) can now welcome a third resident a year. Births share the
+  allowance and the ten-tick check adds no per-tick scan. The target stays 55.
+- **Fixed:** a blocked water, food or housing gate now has a costed crown-relief
+  action through the existing waterworks, granary and stone-house systems.
+  Safety and morale still require the named building or policy; no resource is
+  granted. Surplus timber and stone can be sold through the real market path to
+  fund relief while keeping construction reserves.
+- **Measured:** 4 seeds × 3 playstyles, 25 years each, **12/12 green**: all
+  **13/13 ambitions**, **63–75 residents**, zero unresolved construction stalls.
+  The previous 44/45-resident failures now reach 66 (seed 99 settler) and 63–64
+  (seed 7). No clinic was added and no ambition or yield was weakened.
+- **Measured:** reference 25 years **2.363 ms/tick**; 100 years **40,040 ticks,
+  13/13, 3 Eternal Deeds, 0 stalls, 2.423 ms/tick**, inside the 2.3–2.6 band.
+  Alternate seeds measured 3.19–4.63 ms/tick, a recorded terrain/entity-cost
+  limit rather than a claim of universal parity.
+- **Browser:** 4,000 ticks / 11 years, 60 FPS / 16.7 ms, 2.07 ms simulated per
+  tick, no page or console errors, no horizontal overflow; the blocked-growth
+  hint and watchtower requirement were visible.
+- **Open:** the harness recovery rule cancels a 420-day blocked site, so it does
+  not prove every human can diagnose every footprint; the post-campaign loop is
+  still repeated Eternal Deeds without new regions, eras or rival realms; and
+  low-end device soak/save-load testing remains outstanding. No 1,000-hour
+  certification is claimed. Full record:
+  [docs/DEEP_PLAYTEST_3.13.3.md](docs/DEEP_PLAYTEST_3.13.3.md).

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {resetState,state} from "../js/core/state.js";
 import {TYPE} from "../js/core/types.js";
 import {spawnEntity} from "../js/world/entities.js";
-import {canAccommodateVillagers,getHousingSnapshot,getHouseholdSnapshot,normalizeHouseholdAssignments,updatePopulation,getPopulationGrowthGate} from "../js/systems/population.js";
+import {canAccommodateVillagers,getHousingSnapshot,getHouseholdSnapshot,normalizeHouseholdAssignments,updatePopulation,getPopulationGrowthGate,getPopulationGrowthAllowance} from "../js/systems/population.js";
 
 beforeEach(()=>{
     resetState();
@@ -89,6 +89,20 @@ test("the growth gate names the blocking need instead of failing silently",()=>{
     assert.equal(getPopulationGrowthGate().reason,"No reliable water coverage");
     state.resources.food=0;
     assert.equal(getPopulationGrowthGate().reason,"The food reserve is below the growth floor");
+});
+
+test("a mature healthy settlement can absorb a third resident",()=>{
+    spawnEntity(40,40,TYPE.HOUSE);
+    spawnEntity(41,40,TYPE.VILLAGER);
+    state.year=10;
+    state.resources.food=200;
+    state.city={enabled:true,needs:{summary:{water:0.8,safety:0.8,food:1,satisfaction:0.8}}};
+    assert.equal(getPopulationGrowthAllowance(),3);
+    state.resources.food=1;
+    assert.equal(getPopulationGrowthAllowance(),2);
+    state.resources.food=200;
+    state.city.needs.summary.water=0.2;
+    assert.equal(getPopulationGrowthAllowance(),2);
 });
 
 test("the growth gate reports full housing before it reports a service shortage",()=>{

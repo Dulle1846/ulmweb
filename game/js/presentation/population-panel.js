@@ -2,7 +2,8 @@
 // filtering is local to the rendered list and never mutates simulation state.
 import { state } from "../core/state.js";
 import { getPopulationSnapshot, filterPopulationCitizens, CROWN_HOUSEHOLD_ID } from "../systems/population-register.js";
-import { getPopulationGrowthGate, POPULATION_GROWTH_PER_YEAR } from "../systems/population.js";
+import { getPopulationGrowthGate, getPopulationGrowthAllowance } from "../systems/population.js";
+import { getCrownReliefOffer } from "../systems/crown-relief.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -29,10 +30,18 @@ export function applyPopulationSearch() {
     });
 }
 
+function reliefAction() {
+    const offer = getCrownReliefOffer();
+    if (!offer) return "";
+    const cost = offer.cost > 0 ? " · " + number(offer.cost) + " GOLD" : "";
+    return '<div class="command-actions"><button type="button" class="command-choice" data-command="crown-relief"' + (offer.available ? "" : " disabled") + '>' + esc(offer.label) + cost + '</button><small class="command-note">' + esc(offer.detail) + (offer.available ? "" : " · not enough gold") + '</small></div>';
+}
+
 function growthGateNote() {
     const gate = getPopulationGrowthGate();
+    const allowance = getPopulationGrowthAllowance();
     const used = Math.max(0, Number(state.economy?.growthThisYear) || 0);
-    const remaining = Math.max(0, POPULATION_GROWTH_PER_YEAR - used);
+    const remaining = Math.max(0, allowance - used);
     const hints = {
         "No free housing": "Build a cottage or rebuild a timber house in stone.",
         "Household morale is too low": "Raise morale or furnish a household room.",
@@ -45,12 +54,12 @@ function growthGateNote() {
     };
     if (!gate.ok) {
         const hint = hints[gate.reason] || "Inspect the settlement needs, housing and workforce.";
-        return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · BLOCKED</strong> · ' + esc(gate.reason) + '. ' + esc(hint) + ' Free beds: ' + number(gate.housing.available) + '.</p>';
+        return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · BLOCKED</strong> · ' + esc(gate.reason) + '. ' + esc(hint) + ' Free beds: ' + number(gate.housing.available) + '.</p>' + reliefAction();
     }
     if (remaining <= 0) {
-        return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · THIS YEAR FILLED</strong> · ' + used + ' of ' + POPULATION_GROWTH_PER_YEAR + ' growth events already recorded. The next newcomers can arrive in the new year.</p>';
+        return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · THIS YEAR FILLED</strong> · ' + used + ' of ' + allowance + ' growth events already recorded. The next newcomers can arrive in the new year.</p>';
     }
-    return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · OPEN</strong> · ' + remaining + ' of ' + POPULATION_GROWTH_PER_YEAR + ' growth events remain this year · ' + number(gate.housing.available) + ' free beds · morale threshold ' + Math.round(gate.moraleGate) + '.</p>';
+    return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · OPEN</strong> · ' + remaining + ' of ' + allowance + ' growth events remain this year · ' + number(gate.housing.available) + ' free beds · morale threshold ' + Math.round(gate.moraleGate) + '.</p>';
 }
 
 function citizenRow(citizen) {
