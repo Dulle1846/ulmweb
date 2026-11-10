@@ -16,10 +16,11 @@ on:
       - "game/**"
       - ".github/workflows/game-quality.yml"
 
-# Keep only the newest quality run for a branch; stale queued runs are superseded.
+# Each commit gets its own quality run. Never cancel a check that belongs to a
+# commit: a later push must not turn the earlier commit's suite into a red X.
 concurrency:
-  group: game-quality-${{ github.ref }}
-  cancel-in-progress: true
+  group: game-quality-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   game-quality:

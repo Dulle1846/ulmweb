@@ -23,8 +23,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: kings-cards-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: kings-cards-${{ github.workflow }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   verify:

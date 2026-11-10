@@ -21,9 +21,12 @@ on:
 permissions:
   contents: read
 
+# Each commit gets its own E2E group. A later push must not cancel an in-flight
+# E2E run: a cancelled check is a red X on the earlier commit even when its code
+# is healthy. The job keeps its own 30-minute timeout.
 concurrency:
-  group: game-browser-e2e-${{ github.ref }}
-  cancel-in-progress: true
+  group: game-browser-e2e-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   browser-e2e:
