@@ -592,10 +592,13 @@ export function synchronizePopulationRegister(register = state.population, { adv
     const nextHouseholds = {};
     const crownMembers = Object.values(nextCitizens).filter(citizen => citizen.householdId === CROWN_HOUSEHOLD_ID).map(citizen => citizen.id);
     if (crownMembers.length) {
-        const keep = state.entities.find(entity => !entity.dead && entity.isKing) || houses[0] || null;
+        // The sovereign is a mobile entity. Anchoring the crown household to
+        // the king leaks fractional movement coordinates into the persisted
+        // save; the royal residence is the keep itself.
+        const keep = state.entities.find(entity => !entity.dead && entity.type === TYPE.KEEP) || houses[0] || null;
         const previous = normalized.households[CROWN_HOUSEHOLD_ID] || {};
         nextHouseholds[CROWN_HOUSEHOLD_ID] = {
-            id: CROWN_HOUSEHOLD_ID, x: keep?.x || 0, y: keep?.y || 0, type: keep?.type || TYPE.KEEP,
+            id: CROWN_HOUSEHOLD_ID, x: Math.max(0, Math.floor(Number(keep?.x) || 0)), y: Math.max(0, Math.floor(Number(keep?.y) || 0)), type: keep?.type || TYPE.KEEP,
             capacity: ROYAL_HOUSEHOLD_CAPACITY, memberIds: crownMembers.sort(),
             headId: crownMembers[0] || null, wealth: clamp(Number(previous.wealth) || 0, 0, HOUSEHOLD_WEALTH_CAP),
             loyalty: 0, happiness: 0, formedYear: previous.formedYear || state.identity?.foundedYear || 1,
@@ -795,7 +798,11 @@ export function validatePopulationState(input) {
         if (Object.keys(input.households).length > MAX_REGISTERED_HOUSEHOLDS) throw new Error("Population households exceed the supported limit.");
         for (const [id, record] of Object.entries(input.households)) {
             if (!asObject(record) || cleanText(id, 80) !== id) throw new Error("Population contains an invalid household record.");
-            if (!Number.isInteger(record.x) || !Number.isInteger(record.y)) throw new Error("Population household residence is invalid.");
+            // v3.10.0 could persist a fractional crown position from the moving
+            // sovereign. Accept finite coordinates here; normalization below
+            // floors them back to a valid tile. New saves are integer already.
+            const x = Number(record.x), y = Number(record.y);
+            if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0) throw new Error("Population household residence is invalid.");
             if (!Number.isFinite(Number(record.wealth)) || Number(record.wealth) < 0) throw new Error("Population household wealth is invalid.");
             if (record.memberIds !== undefined && (!Array.isArray(record.memberIds) || record.memberIds.length > 32)) throw new Error("Population household members are invalid.");
         }

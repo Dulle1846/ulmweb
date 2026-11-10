@@ -42,7 +42,9 @@ These builds are published from the current development worktree to Freebuff Sit
 **Released:** 2026-11-10
 **Scope:** Integrates the named population and households, realm founding, court and diplomacy, faith and justice, named military and public health, research and legacy, the PEOPLE panel, and the conifer/terrain reference updates.
 
-**Verification:** `npm test` 686/686; syntax/relative imports 101 source files / 189 UI ids; 25-year campaign 10,040 ticks / 13/13 ambitions / 3.053 ms per tick.
+**Fix:** The crown household now stays anchored to the keep, and pre-fix v3.10.0 saves with fractional royal coordinates normalize on load instead of being rejected.
+
+**Verification:** `npm test` 687/687; syntax/relative imports 101 source files / 189 UI ids; Chromium E2E passed; conifer reference 12 formations + 4 seasons; 25-year campaign 10,040 ticks / 13/13 ambitions / 3.142 ms per tick.
 
 ### 3.10.0-dev — Living population, households and civic effects
 **Status:** development branch only; not a production release.

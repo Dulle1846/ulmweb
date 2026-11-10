@@ -254,6 +254,45 @@ test("full households merge partners by a capacity-neutral resident swap", () =>
     assert.equal(household.formedYear, 3);
 });
 
+test("the crown household stays on the keep when the sovereign moves", () => {
+    resetState();
+    state.hasStarted = true;
+    state.worldSeed = 7713;
+    state.year = 5;
+    state.tick = 1600;
+    state.morale = 70;
+    state.resources = { wood: 100, stone: 100, gold: 100, food: 200 };
+    const keep = spawnEntity(40, 40, TYPE.KEEP);
+    const house = spawnEntity(45, 40, TYPE.HOUSE);
+    const resident = spawnEntity(46, 40, TYPE.VILLAGER);
+    resident.home = { x: house.x, y: house.y };
+    resident.anchor = { ...resident.home };
+    resident.householdId = `house:${house.x}:${house.y}`;
+    normalizeHouseholdAssignments();
+    const king = spawnEntity(41, 41, TYPE.KNIGHT);
+    king.isKing = true;
+    king.isRoyalFamily = true;
+    king.personId = king.id;
+    ensurePersonProfile(king, { role: "king" });
+    initializePopulationRegister();
+    king.x = 41.75;
+    king.y = 42.25;
+    initializePopulationRegister();
+    const crown = state.population.households[CROWN_HOUSEHOLD_ID];
+    assert.equal(crown.x, keep.x);
+    assert.equal(crown.y, keep.y);
+    assert.ok(Number.isInteger(crown.x) && Number.isInteger(crown.y));
+    // A save already written by v3.10.0 must remain loadable and normalize to
+    // the valid tile rather than being rejected.
+    const legacy = JSON.parse(JSON.stringify(state.population));
+    legacy.households[CROWN_HOUSEHOLD_ID].x = 41.75;
+    legacy.households[CROWN_HOUSEHOLD_ID].y = 42.25;
+    assert.doesNotThrow(() => validatePopulationState(legacy));
+    const normalized = normalizePopulationState(legacy);
+    assert.equal(normalized.households[CROWN_HOUSEHOLD_ID].x, 41);
+    assert.equal(normalized.households[CROWN_HOUSEHOLD_ID].y, 42);
+});
+
 test("dead residents disappear from the next civic census and from their household", () => {
     const { first } = createRealm();
     const householdId = state.population.citizens[first.personId].householdId;
