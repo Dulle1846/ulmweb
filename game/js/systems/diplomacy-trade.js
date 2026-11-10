@@ -4,7 +4,7 @@ import { normalizeTreaty } from "./diplomacy-config.js";
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : 0));
 
-export function getDiplomaticTradeTerms(diplomacy, partnerId) {
+export function getDiplomaticTradeTerms(diplomacy, partnerId, courtTradeBonus = 0) {
     const realm = Array.isArray(diplomacy?.realms)
         ? diplomacy.realms.find(item => item && item.id === partnerId)
         : null;
@@ -17,7 +17,9 @@ export function getDiplomaticTradeTerms(diplomacy, partnerId) {
     // trade pact adds a small premium; an alliance is the strongest terms.
     const relationBonus = (relation - 50) / 250;
     const treatyBonus = treaty === "alliance" ? 0.10 : treaty === "trade" ? 0.05 : 0;
-    const bonus = clamp(relationBonus + treatyBonus, -0.20, 0.30);
+    const envoyBonus = clamp((Number(realm?.envoySkill) || 0) / 100 * 0.04, 0, 0.04);
+    const courtBonus = clamp(courtTradeBonus, 0, 0.08);
+    const bonus = clamp(relationBonus + treatyBonus + envoyBonus + courtBonus, -0.20, 0.34);
     return {
         partnerId, treaty, relation, blocked:false, bonus,
         buyFactor:clamp(1 - bonus, 0.72, 1.22),

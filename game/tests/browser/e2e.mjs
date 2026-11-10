@@ -117,6 +117,53 @@ async function captureRealmState(page){
         return result;
     });
 }
+// Read the persisted ecology fields that the save schema carries directly:
+// insect colonies and the public-health herbal dose counters. The values are
+// normalised exactly as serializeForestFauna()/ensureHealth() normalise them,
+// so a restored snapshot can be compared without masking any field.
+async function captureEcology(page){
+    return page.evaluate(async()=>{
+        const [{state},{FOREST_FAUNA_LIMITS}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/forest-fauna.js")
+        ]);
+        const model=state.forestFauna;
+        const round2=value=>Math.round(Number(value)*100)/100;
+        const round3=value=>Math.round(Number(value)*1000)/1000;
+        const insects=(model?.insects||[]).slice(0,FOREST_FAUNA_LIMITS.maxInsects).map(insect=>({
+            id:String(insect.id),species:insect.species,
+            x:Math.floor(Number(insect.x)),y:Math.floor(Number(insect.y)),
+            population:round2(Math.max(0,Math.min(1000,Number(insect.population)||0))),
+            capacity:round2(Math.max(0.15,Math.min(1000,Number(insect.capacity)||0.15))),
+            density:round3(Math.max(0,Math.min(1.5,Number(insect.density)||0))),
+            droughtStress:round3(Math.max(0,Math.min(1,Number(insect.droughtStress)||0))),
+            monocultureStress:round3(Math.max(0,Math.min(1,Number(insect.monocultureStress)||0))),
+            trend:["growing","stable","declining"].includes(insect.trend)?insect.trend:"stable"
+        })).sort((a,b)=>a.id.localeCompare(b.id));
+        const health=state.health||{};
+        const military=state.military||{};
+        return {
+            insects,
+            herbalDoses:Math.max(0,Math.floor(Number(health.herbalDoses)||0)),
+            herbalTreated:Math.max(0,Math.floor(Number(health.herbalTreated)||0)),
+            disease:String(health.disease||"none"),
+            outbreakActive:Boolean(health.outbreakActive),
+            publicHealth:{
+                sanitation:Number(state.health?.sanitation?.score)||0,
+                medicineBrewed:Number(state.health?.medicineBrewed)||0,
+                healers:(state.health?.healers||[]).map(entry=>String(entry.name)).sort(),
+                mortalityTotal:Number(state.health?.mortality?.total)||0
+            },
+            military:{
+                soldiers:state.entities.filter(entity=>!entity.dead&&entity.military).map(entity=>String(entity.person?.name||entity.military?.name||entity.id)).sort(),
+                horses:Number(state.military?.horses)||0,
+                trained:Number(state.military?.recruitsTrained)||0
+            },
+            forestDay:Number(model?.day)||0,
+            forestSeed:Number(model?.seed)||0
+        };
+    });
+}
+
 const mime={
     ".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",
     ".css":"text/css; charset=utf-8",".svg":"image/svg+xml",".json":"application/json",
@@ -454,7 +501,7 @@ try{
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
-    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),12,"all twelve management tabs must live inside the dialog");
+    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),18,"all eighteen management tabs must live inside the dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Kingdom overview","management must open on the live kingdom overview");
     await page.locator('[data-command-tab="kingdom"]').click();
     assert.equal(await page.locator("body > .command-deck").count(),0,"there must be no obscured duplicate navigation outside the dialog");
@@ -462,6 +509,246 @@ try{
     assert.equal(await page.locator("#command-modal").isVisible(),true);
     await page.locator('[data-command="government-form"][data-value="council"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Crowned council"));
+
+    // The named garrison and the public-health chain are real management
+    // screens. Grant a deterministic fixture, then execute the actual actions a
+    // player uses: recruit, drill, set sanitary works, quarantine, appoint a
+    // healer and brew medicine. These assertions inspect the live state, not
+    // only rendered labels.
+    await page.evaluate(async()=>{
+        const [{state},{ensureForestGathering},{recordResourceMovement}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/forest-gathering.js"),import("./js/systems/goods-book.js")
+        ]);
+        state.resources.gold=Math.max(650,Number(state.resources.gold)||0);
+        const foodGrant=Math.max(0,650-Number(state.resources.food||0));
+        state.resources.food=650;
+        if(foodGrant>0)recordResourceMovement("food",foodGrant,"test-fixture");
+        state.resources.wood=Math.max(350,Number(state.resources.wood)||0);
+        state.resources.stone=Math.max(300,Number(state.resources.stone)||0);
+        const ledger=ensureForestGathering();
+        ledger.stock.herbs=Math.max(12,Number(ledger.stock.herbs)||0);
+        ledger.stock.lichen=Math.max(6,Number(ledger.stock.lichen)||0);
+    });
+    await page.locator('[data-command-tab="military"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Barracks & stables"));
+    const militaryBefore=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {population:state.entities.filter(entity=>!entity.dead&&entity.type===20).length,soldiers:state.entities.filter(entity=>!entity.dead&&entity.military).length};
+    });
+    await page.locator("#military-recruit-select").selectOption({index:1});
+    await page.locator('[data-command="military-recruit"]').click();
+    const militaryAfterRecruit=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        const soldiers=state.entities.filter(entity=>!entity.dead&&entity.military);
+        return {population:state.entities.filter(entity=>!entity.dead&&entity.type===20).length,soldiers:soldiers.length,recruit:soldiers.find(entity=>entity.military.origin==="levy")?.person?.name||""};
+    });
+    assert.equal(militaryAfterRecruit.soldiers,militaryBefore.soldiers+1,"recruiting must add a real soldier");
+    assert.equal(militaryAfterRecruit.population,militaryBefore.population-1,"a recruit must leave the civilian population");
+    assert.ok(militaryAfterRecruit.recruit,"the new soldier must retain a named person record");
+    await page.locator('[data-command="military-train"]').first().click();
+    const drill=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        const soldier=state.entities.find(entity=>!entity.dead&&entity.military?.trainingCompletesTick>state.tick);
+        return soldier?{name:soldier.person.name,remaining:soldier.military.trainingCompletesTick-state.tick}:null;
+    });
+    assert.ok(drill&&drill.remaining>0,"training must start a real timed drill for a named soldier");
+    await page.locator('[data-command-tab="health"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Sanitation, healers & medicine"));
+    await page.locator('[data-command="health-sanitation"]').click();
+    const sanitationAfter=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        const {getHealthSnapshot}=await import("./js/systems/health.js");
+        return {score:getHealthSnapshot().sanitation,latrines:state.health.sanitation.latrines};
+    });
+    assert.ok(sanitationAfter.score>0&&sanitationAfter.latrines>0,"sanitary works must change the real health state");
+    await page.locator('[data-command="health-quarantine"][data-value="1"]').click();
+    await page.locator("#health-healer-select").selectOption({index:1});
+    await page.locator('[data-command="health-appoint"]').click();
+    await page.locator('[data-command="health-brew"]').click();
+    const publicHealthAfter=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        const {getHealthSnapshot}=await import("./js/systems/health.js");
+        const snapshot=getHealthSnapshot();
+        return {quarantine:snapshot.quarantineLevel,healers:snapshot.healers.map(entry=>entry.name),medicine:snapshot.medicineStock,sanitation:snapshot.sanitation};
+    });
+    assert.equal(publicHealthAfter.quarantine,1,"quarantine must be ordered in the live state");
+    assert.equal(publicHealthAfter.healers.length,1,"a named healer must be appointed");
+    assert.ok(publicHealthAfter.medicine>=5,"brewing must add real medicine doses");
+    console.log("Military/public-health E2E:",JSON.stringify({militaryAfterRecruit,drill,sanitationAfter,publicHealthAfter}));
+
+    // Faith & justice: build one structure per system through the real
+    // construction menu, appoint named office holders, execute a core annual
+    // action and prove that people, records, cases and sentences survive a
+    // save/load round trip.
+    if(await page.locator("#command-modal").isVisible())await page.locator("#command-close").click();
+    const clearRealmEvent=async()=>{
+        if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-dismiss").click();
+        await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");if(state.activeEvent&&!state.activeEvent.dismissed)state.activeEvent=null;});
+    };
+    await clearRealmEvent();
+    await page.evaluate(async()=>{
+        const [{state},{recordResourceMovement}]=await Promise.all([import("./js/core/state.js"),import("./js/systems/goods-book.js")]);
+        const raise=(key,target)=>{
+            const current=Number(state.resources[key])||0;
+            if(current>=target)return;
+            state.resources[key]=target;
+            if(key==="food")recordResourceMovement("food",target-current,"test-fixture");
+        };
+        raise("gold",950);raise("wood",600);raise("stone",600);
+        state.morale=Math.max(60,Number(state.morale)||0);
+    });
+    const buildStructure=async(type,category)=>{
+        await page.locator("#build-open-btn").click();
+        await page.locator('[data-build-category="'+category+'"]').click();
+        const option=page.locator('[data-build-type="'+type+'"]');
+        assert.equal(await option.count(),1,"build menu must offer structure "+type);
+        await option.click();
+        assert.equal(await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return Number(state.directBuildType);}),type,"choosing a structure must enter real placement mode");
+        const spot=await page.evaluate(async({type})=>{
+            const [{state},{canPlaceBuilding}]=await Promise.all([import("./js/core/state.js"),import("./js/systems/construction.js")]);
+            const rect=document.querySelector("#canvas").getBoundingClientRect();
+            for(let radius=4;radius<30;radius++){
+                for(let x=80-radius;x<=80+radius;x++){
+                    for(let y=80-radius;y<=80+radius;y++){
+                        if(x<0||y<0||x>=160||y>=160||!state.explored?.[x]?.[y])continue;
+                        if(!canPlaceBuilding(type,x,y).ok)continue;
+                        const screenX=(x+.5)*48*state.zoom-state.camera.x+rect.left;
+                        const screenY=(y+.5)*48*state.zoom-state.camera.y+rect.top;
+                        if(screenX<rect.left+4||screenX>rect.right-4||screenY<rect.top+4||screenY>rect.bottom-4)continue;
+                        return {x,y,screenX,screenY};
+                    }
+                }
+            }
+            throw new Error("No visible legal site for structure "+type);
+        },{type});
+        await page.mouse.click(spot.screenX,spot.screenY);
+        const site=await page.evaluate(async({type})=>{
+            const {state}=await import("./js/core/state.js");
+            const entity=state.entities.find(item=>!item.dead&&item.type===type&&item.construction&&Number(item.construction.stage)<3);
+            return entity?{id:entity.id,stage:Number(entity.construction.stage)}:null;
+        },{type});
+        assert.ok(site,"placing structure "+type+" must create a real construction site");
+        await page.keyboard.press("Escape");
+        return {spot,site};
+    };
+    const shrineSite=await buildStructure(70,"faith");
+    const courtSite=await buildStructure(71,"justice");
+    // Freeze the realm only after placement: the canvas ignores build clicks
+    // while paused, and a running tick can pop a realm event over the deck.
+    await page.evaluate(()=>{const button=document.querySelector("#pause-btn");if(button&&!button.classList.contains("is-paused"))button.click();});
+    await clearRealmEvent();
+
+    await clearRealmEvent();
+    await page.locator("#command-open-btn").click();
+    await page.locator('[data-command-tab="faith"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Faith & culture"),"faith panel must render its own introduction");
+    await page.locator("#faith-clergy-select").selectOption({index:1});
+    await page.locator('[data-command="faith-appoint"]').click();
+    await page.locator('[data-command="faith-festival"][data-value="harvest"]').click();
+    await clearRealmEvent();
+    const faithBeforeSave=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        const {getFaithSnapshot}=await import("./js/systems/faith.js");
+        return {clergy:state.faith.clergy.map(entry=>({personId:entry.personId,name:entry.name,conviction:entry.conviction,competence:entry.competence})),history:state.faith.history.map(entry=>entry.summary),festival:state.faith.festival.lastKind,demand:getFaithSnapshot().modifiers.festivalDemand,shrineSites:state.entities.filter(entity=>!entity.dead&&entity.type===70&&entity.construction).length};
+    });
+    assert.equal(faithBeforeSave.clergy.length,1,"faith appointment must create a named cleric");
+    assert.equal(faithBeforeSave.festival,"harvest","the harvest festival must be recorded");
+    assert.ok(faithBeforeSave.demand>0,"the festival must create real market demand");
+
+    await clearRealmEvent();
+    await page.locator('[data-command-tab="justice"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Justice & order"),"justice panel must render its own introduction");
+    await page.locator("#justice-judge-select").selectOption({index:1});
+    await page.locator('[data-command="justice-appoint"]').click();
+    const caseFixture=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        const {updateJustice}=await import("./js/systems/justice.js");
+        state.year+=1;
+        state.economy.unemployed=14;
+        state.economy.lastLedger={foodDemand:30,foodShortage:24,foodConsumed:6};
+        updateJustice();
+        return {cases:state.justice.cases.length};
+    });
+    assert.ok(caseFixture.cases>=1,"the annual justice audit must open at least one real case");
+    await clearRealmEvent();
+    await page.locator('[data-command-tab="justice"]').click();
+    assert.ok(await page.locator("#command-panel-content .justice-case").count()>=1,"pending cases must render as individual records");
+    await clearRealmEvent();
+    const goldBeforeVerdict=await page.evaluate(async()=>Number((await import("./js/core/state.js")).state.resources.gold)||0);
+    await page.locator("#command-panel-content .justice-case [data-command='justice-verdict']").first().click();
+    const justiceAfterVerdict=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {fines:state.justice.sentenceTotals.fine,gold:state.resources.gold,judges:state.justice.judges.map(entry=>entry.name)};
+    });
+    assert.equal(justiceAfterVerdict.fines,1,"a fine verdict must be recorded in the sentence ledger");
+    assert.ok(justiceAfterVerdict.gold>goldBeforeVerdict,"a fine must add real gold to the treasury");
+    const justiceBeforeSave=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {judges:state.justice.judges.map(entry=>({personId:entry.personId,name:entry.name,competence:entry.competence,integrity:entry.integrity})),history:state.justice.history.map(entry=>entry.summary),cases:state.justice.cases.map(entry=>entry.id),fines:state.justice.sentenceTotals.fine,courtSites:state.entities.filter(entity=>!entity.dead&&entity.type===71&&entity.construction).length};
+    });
+    assert.equal(justiceBeforeSave.judges.length,1,"the appointed judge must hold a named seat");
+    await clearRealmEvent();
+    await page.locator('[data-command-tab="research"]').click();
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("Research & knowledge"),"research panel must render its own introduction");
+    const researchStart=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        const {startResearch,getResearchModifiers}=await import("./js/systems/research.js");
+        state.research.reserve=120;
+        const result=startResearch("written-law");
+        return {ok:result.ok,completed:result.completed?result.completed.id:null,count:getResearchModifiers().completedCount};
+    });
+    assert.equal(researchStart.ok,true,"a reserved project must start from live research state");
+    assert.equal(researchStart.completed,"written-law","a fully reserved project must complete immediately");
+    assert.ok(researchStart.count>=1,"a completed technology must feed the shared modifier block");
+    await clearRealmEvent();
+    await page.locator('[data-command-tab="research"]').click();
+    assert.equal(await page.locator("[data-research-tech]").count(),16,"all sixteen technologies must render");
+    assert.ok(await page.locator('[data-research-tech][data-research-status="complete"]').count()>=1,"the completed technology must render as complete");
+    const civilizationBeforeSave=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {completed:Object.keys(state.research.completed).sort(),legacy:state.legacy.entries.length,kingdomName:state.identity?state.identity.kingdomName:null,heraldry:state.identity?state.identity.emblem+" on "+state.identity.banner:null};
+    });
+    assert.ok(civilizationBeforeSave.completed.includes("written-law"),"research completion must live in state");
+    assert.ok(civilizationBeforeSave.legacy>=1,"the founding deed must be recorded in legacy");
+    assert.ok(civilizationBeforeSave.kingdomName,"realm identity must be present in live state");
+    if(await page.locator("#command-modal").isVisible())await page.locator("#command-close").click();
+    await clearRealmEvent();
+    await page.locator("#save-btn").click();
+    await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Realm saved"),null,{timeout:5000});
+    await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        state.faith.clergy=[];
+        state.faith.history=[];
+        state.justice.judges=[];
+        state.justice.history=[];
+        state.justice.cases=[];
+        state.justice.sentenceTotals.fine=0;
+    });
+    await page.evaluate(()=>{
+        document.querySelector("#load-btn").click();
+        const pause=document.querySelector("#pause-btn");
+        if(pause&&!pause.classList.contains("is-paused"))pause.click();
+    });
+    await page.waitForFunction(()=>{const message=document.querySelector("#status-message")?.textContent||"";return message.includes("Loaded realm")||message.includes("Load failed")||message.includes("No valid saved realm");},null,{timeout:5000});
+    assert.ok((await page.locator("#status-message").innerText()).includes("Loaded realm"));
+    const afterLoad=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {clergy:state.faith.clergy.map(entry=>({personId:entry.personId,name:entry.name,conviction:entry.conviction,competence:entry.competence})),faithHistory:state.faith.history.map(entry=>entry.summary),festival:state.faith.festival.lastKind,judges:state.justice.judges.map(entry=>({personId:entry.personId,name:entry.name,competence:entry.competence,integrity:entry.integrity})),justiceHistory:state.justice.history.map(entry=>entry.summary),cases:state.justice.cases.map(entry=>entry.id),fines:state.justice.sentenceTotals.fine,shrineSites:state.entities.filter(entity=>!entity.dead&&entity.type===70&&entity.construction).length,courtSites:state.entities.filter(entity=>!entity.dead&&entity.type===71&&entity.construction).length};
+    });
+    assert.deepEqual(afterLoad.clergy,faithBeforeSave.clergy,"save/load must restore named clergy exactly");
+    assert.deepEqual(afterLoad.faithHistory,faithBeforeSave.history,"save/load must restore the faith record exactly");
+    assert.equal(afterLoad.festival,faithBeforeSave.festival,"save/load must restore the last festival");
+    assert.deepEqual(afterLoad.judges,justiceBeforeSave.judges,"save/load must restore named judges exactly");
+    assert.deepEqual(afterLoad.justiceHistory,justiceBeforeSave.history,"save/load must restore the justice record exactly");
+    assert.deepEqual(afterLoad.cases,justiceBeforeSave.cases,"save/load must restore the pending case roll exactly");
+    assert.equal(afterLoad.fines,justiceBeforeSave.fines,"save/load must restore sentence totals");
+    assert.ok(afterLoad.shrineSites>=1&&afterLoad.courtSites>=1,"both newly built sites must survive save/load");
+    await clearRealmEvent();
+    console.log("Faith/justice E2E:",JSON.stringify({shrineSite:shrineSite.site,courtSite:courtSite.site,faith:{clergy:afterLoad.clergy.length,history:afterLoad.faithHistory.length,festival:afterLoad.festival},justice:{judges:afterLoad.judges.length,history:afterLoad.justiceHistory.length,cases:afterLoad.cases.length,fines:afterLoad.fines}}));
+    if(await page.evaluate(()=>document.querySelector("#pause-btn")?.classList.contains("is-paused")))await page.locator("#pause-btn").click();
+    await clearRealmEvent();
+    await page.locator("#command-open-btn").click();
+
     await page.locator('[data-command-tab="politics"]').click();
     await page.locator('[data-command="policy"][data-value="bread"]').click();
     await page.locator('[data-command-tab="diplomacy"]').click();
@@ -499,9 +786,9 @@ try{
             import("./js/core/state.js"),import("./js/systems/goods-book.js")
         ]);
         state.resources.gold=250;
-        const foodGrant=Math.max(0,250-Number(state.resources.food||0));
+        const foodDelta=250-Number(state.resources.food||0);
         state.resources.food=250;
-        if(foodGrant>0)recordResourceMovement("food",foodGrant,"test-fixture");
+        if(foodDelta!==0)recordResourceMovement("food",foodDelta,"test-fixture");
     });
     await page.locator('[data-command="summon-dragon"]').click();
     const creatureFixture=await page.evaluate(async()=>{
@@ -622,12 +909,87 @@ try{
     assert.ok(afterGather.history>beforeGather.history,"the gather action must append a history entry");
     assert.ok(afterGather.nodeStock<beforeGather.nodeStock,"gathering timber or firewood must reduce the real forest tile stock");
     console.log("Forest product button E2E:",JSON.stringify({...forestFixture,before:beforeGather,after:afterGather,toast:gatherToast}));
+
+    // Herbs and lichen are medicine, not only food. The real delivery action
+    // must sell them through the gold path and remove exactly what was sold.
+    if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-dismiss").click();
+    // The management dialog is open for the delivery control, so click the
+    // real pause button programmatically instead of letting the overlay
+    // intercept a pointer click. The button handler and state transition are
+    // the same; only the synthetic pointer path is bypassed.
+    await page.evaluate(()=>document.querySelector("#pause-btn").click());
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
+    const goldDeliveryBefore=await page.evaluate(async()=>{
+        const [{state},{ensureForestGathering},{renderUI}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/forest-gathering.js"),
+            import("./js/presentation/rendering/ui.js")
+        ]);
+        ensureForestGathering();
+        // Isolate the medicinal goods so the gold delta can only come from them.
+        for(const good of Object.keys(state.forestGathering.stock))state.forestGathering.stock[good]=0;
+        state.forestGathering.stock.herbs=4;
+        state.forestGathering.stock.lichen=3;
+        renderUI();
+        return {gold:Number(state.resources.gold)||0,herbs:state.forestGathering.stock.herbs,lichen:state.forestGathering.stock.lichen};
+    });
+    const forestDeliverButton=page.locator('#command-panel-content [data-deliver-forest="'+forestFixture.buildingId+'"]');
+    assert.equal(await forestDeliverButton.count(),1,"the selected forest building must expose the delivery action");
+    await forestDeliverButton.evaluate(element=>{const record=element.closest("details");if(record)record.open=true;});
+    await forestDeliverButton.scrollIntoViewIfNeeded();
+    assert.equal(await forestDeliverButton.isEnabled(),true,"the delivery action must be enabled for stored herbs and lichen");
+    await forestDeliverButton.click();
+    await page.waitForFunction(()=>document.querySelector("#action-toast")?.textContent.includes("DELIVERED"),null,{timeout:5000});
+    const goldDeliveryAfter=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {gold:Number(state.resources.gold)||0,herbs:Number(state.forestGathering.stock.herbs)||0,lichen:Number(state.forestGathering.stock.lichen)||0,toast:document.querySelector("#action-toast")?.textContent.trim()||""};
+    });
+    assert.equal(goldDeliveryAfter.gold-goldDeliveryBefore.gold,4,"4 herbs and 3 lichen must sell for 4 gold through the gold-delivery path");
+    assert.equal(goldDeliveryAfter.herbs,0,"delivered herbs must leave the forest ledger");
+    assert.equal(goldDeliveryAfter.lichen,0,"delivered lichen must leave the forest ledger");
+    console.log("Herb and lichen gold delivery E2E:",JSON.stringify({before:goldDeliveryBefore,after:goldDeliveryAfter}));
+    await page.evaluate(()=>document.querySelector("#pause-btn").click());
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="PAUSE",null,{timeout:3000});
+
     await page.evaluate(async({buildingId,original,initialDay})=>{
         const {state}=await import("./js/core/state.js");
         const building=state.entities.find(entity=>String(entity.id)===String(buildingId));
         if(building){building.x=original.x;building.y=original.y;}
         state.dayOfYear=initialDay;
     },forestFixture);
+
+    // The formation reference proves occurrence; this proves the production
+    // renderer draws each conifer onto its own pixels. Yew and dwarf pine must
+    // not collapse into spruce, fir, pine, larch or juniper.
+    const coniferSilhouettes=await page.evaluate(async()=>{
+        const [{drawConifer},{FOREST_SPECIES}]=await Promise.all([
+            import("./js/presentation/rendering/terrain.js"),
+            import("./js/world/forest-ecology.js")
+        ]);
+        const hash=data=>{
+            let value=2166136261>>>0;
+            for(let index=0;index<data.length;index++){value^=data[index];value=Math.imul(value,16777619)>>>0;}
+            return value.toString(16).padStart(8,"0");
+        };
+        const ids=Object.keys(FOREST_SPECIES).filter(id=>FOREST_SPECIES[id]?.conifer===true);
+        const hashes={};
+        for(const id of ids){
+            const canvas=document.createElement("canvas");
+            canvas.width=160;
+            canvas.height=190;
+            const ctx=canvas.getContext("2d",{willReadFrequently:true});
+            drawConifer(ctx,80,160,2.4,0,0.5,150,"northern",1,id,null,null);
+            hashes[id]=hash(ctx.getImageData(0,0,canvas.width,canvas.height).data);
+        }
+        return {ids,hashes};
+    });
+    assert.ok(coniferSilhouettes.ids.includes("yew")&&coniferSilhouettes.ids.includes("dwarf-pine"),"the production renderer must expose both new conifers");
+    assert.equal(new Set(Object.values(coniferSilhouettes.hashes)).size,coniferSilhouettes.ids.length,"every conifer species must render distinct pixels: "+JSON.stringify(coniferSilhouettes));
+    for(const id of ["yew","dwarf-pine"]){
+        for(const other of coniferSilhouettes.ids.filter(candidate=>candidate!==id)){
+            assert.notEqual(coniferSilhouettes.hashes[id],coniferSilhouettes.hashes[other],id+" must not render as "+other);
+        }
+    }
+    console.log("Conifer renderer E2E:",JSON.stringify(coniferSilhouettes));
 
     await page.locator("#building-search").fill("farm");
     assert.ok(await page.locator("#command-panel-content .building-record:not(.is-filtered)").count()>=1,"building filter must retain matching structures");
@@ -641,7 +1003,8 @@ try{
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("GOODS AUDIT"),"transport overview must expose the goods audit");
     assert.ok(await page.locator("#command-panel-content .warehouse-row").count()>=1,"the store overview must list every warehouse");
     assert.ok(await page.locator("#command-panel-content .logistics-audit").count()>=10,"the audit must expose every physical good and royal food");
-    assert.equal(await page.locator("#command-panel-content .logistics-audit.is-blocked").count(),0,"a fresh realm must reconcile every physical good and royal food");
+    const blockedAudit=await page.locator("#command-panel-content .logistics-audit.is-blocked").evaluateAll(nodes=>nodes.map(node=>node.innerText));
+    assert.equal(blockedAudit.length,0,"a fresh realm must reconcile every physical good and royal food: "+JSON.stringify(blockedAudit));
     await page.waitForFunction(()=>document.querySelectorAll("#command-panel-content .logistics-movement").length>0,null,{timeout:15000});
     const movementTypes=await page.locator("#command-panel-content .logistics-movement").evaluateAll(nodes=>nodes.map(node=>node.dataset.movementType));
     assert.ok(movementTypes.length>0&&movementTypes.length<=40,"the movement archive must stay bounded to the newest 40 records");
@@ -1114,9 +1477,30 @@ try{
     await page.locator("#pause-btn").click();
     await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
     await page.locator("#speed-2").click();
+    // Keep the realm paused while the ecology fixture and the save snapshot are
+    // captured, so a tick cannot advance insect populations between the two.
+    await page.waitForTimeout(120);
     const savedTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
     const savedHand=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.map(card=>card.instanceId);});
     const savedRoadCount=await page.evaluate(()=>(import("./js/systems/roads.js")).then(module=>module.getRoadCount()));
+    const ecologySetup=await page.evaluate(async()=>{
+        const [{state},{ensureForestFauna},{ensureForestGathering},{startOutbreak,applyHerbalRemedy}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/systems/forest-fauna.js"),
+            import("./js/systems/forest-gathering.js"),import("./js/systems/health.js")
+        ]);
+        ensureForestFauna();
+        const colony=state.forestFauna?.insects?.find(insect=>Number(insect.population)>0);
+        if(!colony)throw new Error("The realm must expose a populated insect colony before the save test");
+        ensureForestGathering();
+        for(const good of Object.keys(state.forestGathering.stock))state.forestGathering.stock[good]=0;
+        state.forestGathering.stock.herbs=4;
+        state.forestGathering.stock.lichen=2;
+        startOutbreak({severity:2,disease:"e2e-herbal-fever"});
+        const remedy=applyHerbalRemedy(2);
+        if(!remedy.ok||remedy.used.length===0)throw new Error("The herbal remedy path did not consume stored herbs: "+JSON.stringify(remedy));
+        if(!(state.health.herbalDoses>0))throw new Error("The herbal remedy did not record a dose");
+        return {colonyId:String(colony.id),colonyPopulation:Number(colony.population),used:remedy.used,treated:remedy.treated,herbalDoses:state.health.herbalDoses};
+    });
     const resourceFixture=await page.evaluate(async()=>{
         const {getResourceNodeAt,harvestForest,extractStone}=await import("./js/systems/resource-geography.js");
         for(let y=0;y<160;y++)for(let x=0;x<160;x++){
@@ -1126,6 +1510,9 @@ try{
         }
         throw new Error("No resource deposit was generated for the save/load test");
     });
+    const ecologyBeforeSave=await captureEcology(page);
+    assert.ok(ecologyBeforeSave.insects.length>0,"the save fixture must contain real insect colonies");
+    assert.ok(ecologyBeforeSave.herbalDoses>0,"the save fixture must contain a real herbal dose counter");
     await page.locator("#save-btn").click();
     await page.waitForFunction(()=>document.querySelector("#status-message")?.textContent.includes("Realm saved"),null,{timeout:5000});
     await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).removeRoad(x,y),{x:roadFixture.x,y:roadFixture.y});
@@ -1134,6 +1521,19 @@ try{
         const module=await import("./js/systems/resource-geography.js");
         if(type==="forest")module.harvestForest(x,y,1);else module.extractStone(x,y,1);
     },resourceFixture);
+    const ecologyMutation=await page.evaluate(async({colonyId})=>{
+        const {state}=await import("./js/core/state.js");
+        const colony=state.forestFauna?.insects?.find(insect=>String(insect.id)===String(colonyId));
+        if(!colony)throw new Error("The saved insect colony disappeared before the mutation step");
+        colony.population=0;
+        colony.density=0;
+        state.health.herbalDoses=0;
+        state.health.herbalTreated=0;
+        return {colonyId:String(colony.id),population:Number(colony.population),herbalDoses:Number(state.health.herbalDoses)};
+    },{colonyId:ecologySetup.colonyId});
+    const ecologyAfterMutation=await captureEcology(page);
+    assert.ok(ecologyAfterMutation.insects.some(insect=>insect.id===ecologyMutation.colonyId&&insect.population===0),"the post-save insect mutation must be visible before loading");
+    assert.equal(ecologyAfterMutation.herbalDoses,0,"the post-save herbal dose mutation must be visible before loading");
     await page.locator("#speed-4").click();
     const loadedTick=await page.evaluate(()=>{
         document.querySelector("#load-btn").click();
@@ -1155,6 +1555,25 @@ try{
     assert.ok(await page.locator("#speed-2").evaluate(el=>el.classList.contains("is-active")),"save/load must restore the saved simulation speed");
     assert.equal(await page.locator("#speed-4").evaluate(el=>el.classList.contains("is-active")),false,"load must clear the previous speed selection");
     assert.equal(loadedTick,savedTick,"save/load must restore the exact simulation tick");
+    const ecologyAfterLoad=await captureEcology(page);
+    assert.deepEqual(ecologyAfterLoad.insects,ecologyBeforeSave.insects,"save/load must restore every stored insect colony exactly");
+    assert.equal(ecologyAfterLoad.herbalDoses,ecologyBeforeSave.herbalDoses,"save/load must restore health.herbalDoses");
+    assert.equal(ecologyAfterLoad.herbalTreated,ecologyBeforeSave.herbalTreated,"save/load must restore health.herbalTreated");
+    assert.equal(ecologyAfterLoad.disease,ecologyBeforeSave.disease,"save/load must restore the treated disease");
+    assert.deepEqual(ecologyAfterLoad.military,ecologyBeforeSave.military,"save/load must restore named soldiers, horses and drill totals");
+    assert.deepEqual(ecologyAfterLoad.publicHealth,ecologyBeforeSave.publicHealth,"save/load must restore sanitation, healers, medicine history and mortality totals");
+    assert.equal(ecologyAfterLoad.forestDay,ecologyBeforeSave.forestDay,"save/load must restore the forest-fauna day");
+    console.log("Ecology save/load E2E:",JSON.stringify({
+        colonies:ecologyAfterLoad.insects.length,
+        colonyId:ecologySetup.colonyId,
+        herbalDoses:ecologyAfterLoad.herbalDoses,
+        herbalTreated:ecologyAfterLoad.herbalTreated,
+        disease:ecologyAfterLoad.disease,
+        soldiers:ecologyAfterLoad.military.soldiers.length,
+        healers:ecologyAfterLoad.publicHealth.healers.length,
+        medicineBrewed:ecologyAfterLoad.publicHealth.medicineBrewed,
+        forestDay:ecologyAfterLoad.forestDay
+    }));
     assert.deepEqual(await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.map(card=>card.instanceId);}),savedHand,"save/load must restore the card hand");
     assert.equal(await page.evaluate(async()=>(await import("./js/systems/roads.js")).getRoadCount()),savedRoadCount,"save/load must restore the road network");
     assert.equal(await page.evaluate(async({x,y})=>(await import("./js/systems/roads.js")).getRoadAt(x,y)?.type,{x:roadFixture.x,y:roadFixture.y}),"dirt","save/load must restore the placed road tile");

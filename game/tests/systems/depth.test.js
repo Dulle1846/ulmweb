@@ -103,7 +103,7 @@ test("the economy applies edict modifiers before settling the ledger", () => {
 
 test("the simulation expires edicts with the yearly cycle", () => {
     assert.ok(simulationSource.includes("updateEdicts"));
-    assert.match(simulationSource, /if\(state\.year>previousYear\)\{\s*updateEdicts\(\);/);
+    assert.match(simulationSource, /if\(state\.year>previousYear\)\{[\s\S]*?updateEdicts\(\);/);
 });
 
 test("the catalog ships the curated depth cards exactly once", () => {

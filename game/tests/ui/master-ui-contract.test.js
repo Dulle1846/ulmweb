@@ -166,7 +166,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.9.0</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.10.0</b>"));
   assert.ok(main.includes("function renderSaveSlots()"));
   assert.ok(main.includes("function exportRealm()"));
   assert.ok(main.includes("async function importRealm(file)"));

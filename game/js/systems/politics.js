@@ -1,5 +1,6 @@
 // Royal politics: legitimacy and faction support shaped by policy and settlement conditions.
 import {state} from "../core/state.js";
+import {getCitizenModifiers} from "./population-register.js";
 
 export const POLITICAL_FACTIONS=Object.freeze(["commons","nobility","guilds","clergy"]);
 export const DEFAULT_POLITICS=Object.freeze({
@@ -63,6 +64,15 @@ export function updatePolitics(ledger,workforce){
     }else if(population>0&&unemployed===0){
         pressure.commons+=0.1;
         pressure.guilds+=0.1;
+    }
+    // The named citizenry reaches politics through the same register that
+    // feeds the tax base. A loyal, healthy realm earns a small legitimacy
+    // dividend; a resentful one applies the opposite pressure.
+    const civic=getCitizenModifiers();
+    if(civic.population>0){
+        pressure.legitimacy+=civic.legitimacyPressure;
+        pressure.commons+=civic.legitimacyPressure*0.5;
+        pressure.guilds+=civic.legitimacyPressure*0.25;
     }
     applyPoliticalEffects(pressure);
     return getPoliticalSnapshot();

@@ -7,7 +7,7 @@ import {
 } from "../../js/world/forest-ecology.js";
 import { foliageState } from "../../js/presentation/rendering/seasonal-foliage.js";
 
-const CONIFERS = ["spruce", "fir", "pine", "larch", "juniper"];
+const CONIFERS = ["spruce", "fir", "pine", "larch", "juniper", "yew", "dwarf-pine"];
 const CONIFER_TYPES = [
     "sprucewood", "firwood", "pinewood", "larchwood", "pine-heath",
     "wet-conifer", "mountain-conifer", "subalpine-scrub", "mixed-conifer",
@@ -35,8 +35,8 @@ function findConiferStand(predicate = () => true) {
     return null;
 }
 
-test("five conifer species and twelve conifer formations share the ecosystem vocabulary", () => {
-    assert.equal(Object.keys(FOREST_SPECIES).length, 13);
+test("seven conifer species and twelve conifer formations share the ecosystem vocabulary", () => {
+    assert.equal(Object.keys(FOREST_SPECIES).length, 15);
     for (const id of CONIFERS) {
         const species = FOREST_SPECIES[id];
         assert.ok(species, id + " must exist");
@@ -171,7 +171,7 @@ test("larch loses its needles while spruce, fir, pine and juniper stay evergreen
     assert.equal(summer.leaf, 1);
     assert.ok(autumn.turn > 0.1);
     assert.ok(winter.leaf < 0.35);
-    for (const species of ["spruce", "fir", "pine", "juniper"]) {
+    for (const species of ["spruce", "fir", "pine", "juniper", "yew", "dwarf-pine"]) {
         for (const day of [0, 150, 275, 350]) {
             const sample = foliageState(day, { seed: 0.4, species });
             assert.equal(sample.leaf, 1, species + " must keep its needles on day " + day);
@@ -192,6 +192,33 @@ test("conifer products follow the season and keep timber available in winter", (
     assert.ok(autumn.some(good => ["spruce-cones", "fir-cones", "pine-cones", "juniper-berries"].includes(good.id)));
     assert.ok(winter.some(good => good.category === "wood"));
     assert.ok(winter.every(good => !["blueberries", "lingonberries"].includes(good.id)));
+});
+
+test("yew and dwarf pine appear in real formations and expose renderer data", () => {
+    const yew = FOREST_SPECIES.yew;
+    const dwarfPine = FOREST_SPECIES["dwarf-pine"];
+    assert.ok(yew && dwarfPine);
+    assert.equal(yew.conifer, true);
+    assert.equal(dwarfPine.conifer, true);
+    assert.equal(yew.crownShape, "yew");
+    assert.equal(dwarfPine.crownShape, "scrub");
+    assert.ok(yew.height < FOREST_SPECIES.spruce.height);
+    assert.ok(dwarfPine.height < yew.height);
+    assert.ok(yew.tiers >= 3 && dwarfPine.tiers >= 3);
+    assert.ok(yew.trunk > 0 && dwarfPine.trunk > 0);
+    assert.ok(FOREST_GOODS[yew.wood] && FOREST_GOODS[dwarfPine.wood]);
+    assert.ok(FOREST_TYPES["subalpine-scrub"].species["dwarf-pine"] > 0);
+    assert.ok(FOREST_TYPES["pine-heath"].species["dwarf-pine"] > 0);
+    assert.ok(FOREST_TYPES.sprucewood.species.yew > 0);
+    assert.ok(FOREST_TYPES["mixed-conifer"].species.yew > 0);
+
+    const findSpecies = id => findConiferStand(stand => stand.species.some(entry => entry.id === id));
+    const yewStand = findSpecies("yew");
+    const dwarfStand = findSpecies("dwarf-pine");
+    assert.ok(yewStand, "yew must occur in a generated stand, not only in the registry");
+    assert.ok(dwarfStand, "dwarf pine must occur in a generated stand, not only in the registry");
+    assert.ok(yewStand.coniferShare > 0.3);
+    assert.ok(dwarfStand.coniferShare > 0.3);
 });
 
 test("bark beetle, snowbreak and drought have durable succession profiles", () => {

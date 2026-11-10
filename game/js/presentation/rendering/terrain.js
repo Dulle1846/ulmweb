@@ -18,7 +18,7 @@ import {
     transformedLayerRect, treeStepForZoom, visibleTileBounds,
 } from './terrain-detail-grid.js';
 import { getResourceNodeAt } from '../../systems/resource-geography.js';
-import { forestFaunaAt, forestFaunaSignAt } from '../../systems/forest-fauna.js';
+import { forestFaunaAt, forestFaunaSignAt, forestInsectAt } from '../../systems/forest-fauna.js';
 import { forestMistFactor, solarVector } from './daylight.js';
 
 const worldW = () => Number(state.worldW) || WORLD_W;
@@ -2512,10 +2512,19 @@ function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey,
     const season = seasonalState(dayOfYear, climateKey);
     const herds = tileX !== null && tileY !== null ? forestFaunaAt(tileX, tileY, stand, dayOfYear) : [];
     const signs = tileX !== null && tileY !== null ? forestFaunaSignAt(tileX, tileY, stand, dayOfYear, herds) : null;
-    // Microfauna is only legible at close zoom and is capped at three groups
-    // of at most three marks, so a dense wood cannot spend hundreds of path
-    // operations per frame on insects the player cannot resolve.
-    const micro = zoom >= 1.05 ? forestMicrofaunaAt(stand, dayOfYear, climateKey, seed).slice(0, 3) : [];
+    // Saved ant/beetle colonies drive the close-up marks. The old habitat
+    // fallback remains for butterflies, bees and fresh worlds where the fauna
+    // update has not run yet; simulated species are not drawn twice.
+    const savedInsects = tileX !== null && tileY !== null ? forestInsectAt(tileX, tileY) : [];
+    const simulatedInsectIds = new Set(savedInsects.map(entry => entry.id));
+    const fallbackMicro = forestMicrofaunaAt(stand, dayOfYear, climateKey, seed)
+        .filter(entry => !simulatedInsectIds.has(entry.id));
+    const micro = zoom >= 1.05
+        ? [...savedInsects.map(entry => ({
+            ...entry,
+            count: Math.max(1, Math.min(3, Math.round(Number(entry.population) * 2))),
+        })), ...fallbackMicro].slice(0, 3)
+        : [];
     if (!herds.length && !micro.length) return;
     const s = cellPx / 56;
     const jitter = (hashA, hashB) => ((hashA * 37 + hashB * 17 + Math.floor(seed * 997)) % 100) / 100 - 0.5;
@@ -2837,7 +2846,7 @@ function drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey = 
 // fir is a dense broad tier stack; pine lifts a crown above a long bare trunk;
 // larch is airy and drops its needles; juniper is a low, many-stemmed scrub.
 // Age, wind exposure, snow load and damage all change the same species form.
-function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate", ageScale = 1, species = "spruce", stand = null, treeForm = null) {
+export function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperate", ageScale = 1, species = "spruce", stand = null, treeForm = null) {
     const definition = FOREST_SPECIES[species] || FOREST_SPECIES.spruce;
     const heightScale = treeForm?.heightScale || 1;
     const trunkScale = treeForm?.trunkScale || 1;
@@ -2936,15 +2945,15 @@ function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temper
     // long bare trunk before its crown; juniper starts at the ground and fans
     // out from several stems.
     const tierCount = Math.max(3, Math.min(9, Number(definition.tiers) || 5));
-    const crownBase = shape === 'crown' ? 0.42 : shape === 'scrub' ? 0.08 : 0.17;
-    const tierSpan = shape === 'crown' ? 0.42 : shape === 'scrub' ? 0.52 : 0.73;
-    const widthScale = shape === 'scrub' ? 1.22 : shape === 'crown' ? 0.84 : 1;
-    const tiers = shape === 'crown' ? 3 : shape === 'scrub' ? 3 : tierCount;
+    const crownBase = shape === 'crown' ? 0.42 : shape === 'scrub' ? 0.08 : shape === 'yew' ? 0.2 : 0.17;
+    const tierSpan = shape === 'crown' ? 0.42 : shape === 'scrub' ? 0.52 : shape === 'yew' ? 0.58 : 0.73;
+    const widthScale = shape === 'scrub' ? 1.22 : shape === 'yew' ? 0.96 : shape === 'crown' ? 0.84 : 1;
+    const tiers = shape === 'crown' || shape === 'scrub' || shape === 'yew' ? 3 : tierCount;
     for (let tier = 0; tier < tiers; tier++) {
         const t = tiers === 1 ? 0 : tier / (tiers - 1);
         const layerBase = py + 2 * s - height * (crownBase + t * tierSpan);
         const top = layerBase - height * (0.3 - t * 0.055);
-        const width = (11.4 - t * (shape === 'crown' ? 4 : 7.2)) * s * widthScale * definition.crown * ageScale * crownScale;
+        const width = (11.4 - t * (shape === 'crown' ? 4 : shape === 'yew' ? 5.5 : 7.2)) * s * widthScale * definition.crown * ageScale * crownScale;
         const droop = (definition.branchDrop || 0.1) * s * (1 - t * 0.55);
         ctx.fillStyle = tier % 2 === 0 ? crown : light;
         ctx.globalAlpha = 0.58 + cover * 0.42;

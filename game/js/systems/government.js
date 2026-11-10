@@ -2,11 +2,22 @@ import {state} from "../core/state.js";
 import {applyPoliticalEffects,getPoliticalSnapshot} from "./politics.js";
 import {recordResourceMovement} from "./goods-book.js";
 import {addResource} from "./resources.js";
+import {recordReform} from "./legacy.js";
+
+// Each form carries the old tax baseline plus explicit additive modifiers.
+// `tax` here is a yield bonus, not the assessed percentage; `taxRate` remains
+// the player-facing baseline used by the existing ledger.
 export const GOVERNMENT_FORMS=Object.freeze({
- feudal:{label:"Feudal monarchy",tax:10,legitimacy:1.2,factions:{commons:-.2,nobility:.8,guilds:0,clergy:.2}},
- royal:{label:"Royal centralism",tax:12,legitimacy:.4,factions:{commons:-.5,nobility:-.6,guilds:.3,clergy:0}},
- council:{label:"Crowned council",tax:9,legitimacy:.8,factions:{commons:.6,nobility:.2,guilds:.5,clergy:-.1}},
- elective:{label:"Elective crown",tax:8,legitimacy:-.2,factions:{commons:.3,nobility:.7,guilds:.1,clergy:-.2}}
+ feudal:{label:"Feudal monarchy",description:"Crown, nobles and local obligation.",tax:10,taxBonus:.01,legitimacy:.04,research:0,trade:0,military:.02,factions:{commons:-.2,nobility:.8,guilds:0,clergy:.2}},
+ royal:{label:"Royal centralism",description:"A strong crown and a professional administration.",tax:12,taxBonus:.03,legitimacy:-.02,research:.02,trade:0,military:.02,factions:{commons:-.5,nobility:-.6,guilds:.3,clergy:0}},
+ oligarchy:{label:"Oligarchy",description:"A chartered elite governs through wealth and connection.",tax:9,taxBonus:.02,legitimacy:-.03,research:.01,trade:.03,military:0,factions:{commons:-1,nobility:1.1,guilds:.4,clergy:-.1}},
+ mixed:{label:"Mixed constitution",description:"Crown, council and charter balance one another.",tax:10,taxBonus:.01,legitimacy:.04,research:.02,trade:.02,military:0,factions:{commons:.4,nobility:.4,guilds:.4,clergy:.4}},
+ council:{label:"Crowned council",description:"The crown governs with a standing council.",tax:9,taxBonus:0,legitimacy:.02,research:.03,trade:.02,military:0,factions:{commons:.6,nobility:.2,guilds:.5,clergy:-.1}},
+ elective:{label:"Elective crown",description:"The great houses choose the sovereign.",tax:8,taxBonus:0,legitimacy:.05,research:.02,trade:.01,military:0,factions:{commons:.3,nobility:.7,guilds:.1,clergy:-.2}},
+ republic:{label:"Republic",description:"Chartered citizens and a paid magistracy.",tax:9,taxBonus:.02,legitimacy:.03,research:.02,trade:.04,military:0,factions:{commons:1.1,nobility:-.9,guilds:.8,clergy:-.2}},
+ theocracy:{label:"Theocracy",description:"The sacred law is the law of the realm.",tax:8,taxBonus:0,legitimacy:.08,research:-.01,trade:-.01,military:0,factions:{commons:.2,nobility:-.2,guilds:-.3,clergy:1.4}},
+ tribal:{label:"Tribal confederation",description:"Kinship, muster and a remembered oath.",tax:7,taxBonus:-.01,legitimacy:.01,research:-.02,trade:0,military:.06,factions:{commons:.7,nobility:.5,guilds:-.4,clergy:0}},
+ military:{label:"Military command",description:"The garrison is the constitution.",tax:10,taxBonus:.01,legitimacy:-.03,research:0,trade:-.02,military:.10,factions:{commons:-.6,nobility:.6,guilds:-.2,clergy:-.3}}
 });
 export const GOVERNMENT_POLICIES=Object.freeze({
  bread:{label:"Bread for the people",description:"Spend 12 gold and 18 food to ease hardship.",cost:{gold:12,food:18},effects:{legitimacy:1.2,commons:2.4,clergy:.3},morale:2},
@@ -21,6 +32,15 @@ export function normalizeGovernment(input=state.government){
  state.government={form,taxRate:clamp(s.taxRate??GOVERNMENT_FORMS[form].tax,0,35),councilSeats:Math.max(1,Math.min(12,Math.floor(Number(s.councilSeats)||3))),succession:["primogeniture","elective","designated"].includes(s.succession)?s.succession:"primogeniture",decrees:Math.max(0,Math.min(100000,Math.floor(Number(s.decrees)||0))),lastDecisionYear:Math.max(0,Math.floor(Number(s.lastDecisionYear)||0)),history:Array.isArray(s.history)?s.history.filter(x=>x&&typeof x==="object").slice(-40):[]};
  return state.government;
 }
+export function getGovernmentModifiers(){
+ const g=normalizeGovernment(),form=GOVERNMENT_FORMS[g.form];
+ return {
+  id:g.form,label:form.label,taxRate:g.taxRate,
+  tax:Number(form.taxBonus)||0,trade:Number(form.trade)||0,
+  military:Number(form.military)||0,research:Number(form.research)||0,
+  legitimacy:Number(form.legitimacy)||0
+ };
+}
 export function setGovernmentForm(form){
  if(!Object.hasOwn(GOVERNMENT_FORMS,form))return {ok:false,reason:"unknown-government"};
  const g=normalizeGovernment();if(g.form===form)return {ok:false,reason:"already-in-force"};
@@ -28,6 +48,7 @@ export function setGovernmentForm(form){
  addResource("gold",-20);const previous=g.form;g.form=form;g.taxRate=GOVERNMENT_FORMS[form].tax;
  g.history.push({year:state.year||1,kind:"government-form",from:previous,to:form});g.history=g.history.slice(-40);
  applyPoliticalEffects(GOVERNMENT_FORMS[form].factions);state.politics.legitimacy=clamp(state.politics.legitimacy+GOVERNMENT_FORMS[form].legitimacy);g.decrees++;
+ recordReform(GOVERNMENT_FORMS[form].label);
  return {ok:true,government:g,politics:getPoliticalSnapshot()};
 }
 export function enactPolicy(id){
@@ -41,4 +62,4 @@ export function enactPolicy(id){
  g.lastDecisionYear=Math.max(1,Math.floor(Number(state.year)||1));g.decrees++;g.history.push({year:state.year||1,kind:"policy",id,label:p.label});g.history=g.history.slice(-40);
  return {ok:true,policy:p,government:g,politics:getPoliticalSnapshot()};
 }
-export function getGovernmentSnapshot(){const g=normalizeGovernment();return {...g,formDetails:GOVERNMENT_FORMS[g.form],politics:getPoliticalSnapshot()};}
+export function getGovernmentSnapshot(){const g=normalizeGovernment();return {...g,formDetails:GOVERNMENT_FORMS[g.form],modifiers:getGovernmentModifiers(),politics:getPoliticalSnapshot()};}

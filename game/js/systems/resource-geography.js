@@ -196,10 +196,14 @@ export function getResourceNodeAt(x,y){
     let snowDepth=0,snowDepthCm=0,exposure=0,fireRisk=0,pestRisk=0,monoculture=0;
     let visibility=0,sightStrength=0,workFactor=0,browsingPressure=0,predatorPressure=0,structure=null;
     let diversity=0,sightRadius=0,windExposure=0,wetness=0,deadwood=0,treeline=false;
+    // Keep the full stand on the node. Fauna, gathering and surveys all ask for
+    // the same tile immediately afterwards; without this reference every call
+    // rebuilt the identical deterministic stand a second time.
+    let forestStand=null;
     if(forestDefinition){
         const terrain=sampleTerrain(point.x,point.y);
         const climate=state.worldOptions?.climate||"temperate";
-        const stand=forestStandAt(point.x+0.5,point.y+0.5,{
+        const stand=forestStand=forestStandAt(point.x+0.5,point.y+0.5,{
             seed:geo.seed,moisture:terrain.moisture,temperature:terrain.temperature,height:terrain.height,
             climate,forests:state.worldOptions?.forests??52,
             stockRatio:geo.forestCapacity[i]?geo.forestStock[i]/geo.forestCapacity[i]:0,
@@ -223,6 +227,7 @@ export function getResourceNodeAt(x,y){
     return {
         x:point.x,y:point.y,
         forestStock:geo.forestStock[i],forestCapacity:geo.forestCapacity[i],
+        forestStand,forestStandSeed:geo.seed,
         forestType,forestTypeLabel:succession?.label||forestDefinition?.label||null,
         forestSuccession:succession,forestDisturbance:succession&&!succession.recovered?succession.kind:null,
         forestSuccessionStage:succession?.stage||null,forestSuccessionAge:succession?.age??null,

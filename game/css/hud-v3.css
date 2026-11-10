@@ -854,3 +854,44 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
   .ruler-copy{overflow:hidden}
   .ruler-trend{max-width:100%;overflow:hidden;text-overflow:ellipsis}
 }
+
+/* Living population register */
+.population-effects{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:6px;margin:10px 0}
+.population-effects span{display:flex;flex-direction:column;gap:2px;padding:7px 8px;border:1px solid #6f5938;background:linear-gradient(180deg,#2d251b,#1b1611);font:700 7px var(--ui-body-font);letter-spacing:.08em;color:#bda987}
+.population-effects b{font:700 13px var(--ui-number-font);color:#e8c77b;letter-spacing:.02em}
+.population-filter-bar{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 9px}
+.population-filter{border:1px solid #755d39;background:#211a13;color:#cdb387;padding:5px 8px;font:700 7px var(--ui-body-font);letter-spacing:.08em;cursor:pointer}
+.population-filter:hover,.population-filter.is-active{border-color:#c4a35e;background:#4a3823;color:#f3e2ba}
+.population-citizen-list{display:grid;gap:6px;max-height:520px;overflow:auto;padding-right:4px}
+.population-citizen{display:grid;grid-template-columns:1.25fr .9fr 1.35fr .75fr;gap:8px;align-items:center;width:100%;text-align:left;border:1px solid #5f4c32;background:linear-gradient(120deg,#2b231a,#211a13);color:#e8d7b2;padding:8px 9px;cursor:pointer;font:inherit}
+.population-citizen:hover,.population-citizen:focus-visible{border-color:#c4a35e;background:#3a2d1f;outline:none}
+.population-citizen.is-filtered{display:none}
+.population-citizen>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.population-citizen strong{font:700 10px var(--ui-title-font);letter-spacing:.03em;color:#f1dfb7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.population-citizen small,.population-citizen em{font:700 6.5px var(--ui-body-font);letter-spacing:.05em;color:#bda987;font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.population-citizen__identity strong{font-size:12px}
+.population-citizen__health{text-align:right;align-items:flex-end}
+.population-household-list{display:grid;gap:6px;max-height:460px;overflow:auto;padding-right:4px}
+.population-household{border:1px solid #5f4c32;background:linear-gradient(180deg,#2a2219,#1b1611)}
+.population-household>summary{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 10px;cursor:pointer;list-style:none}
+.population-household>summary::-webkit-details-marker{display:none}
+.population-household>summary>span:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.population-household>summary strong{font:700 10px var(--ui-title-font);letter-spacing:.05em;color:#eed9ab}
+.population-household>summary small{font:700 6.5px var(--ui-body-font);letter-spacing:.05em;color:#a99470}
+.population-household__stats{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font:700 7px var(--ui-number-font);color:#bda987;white-space:nowrap}
+.population-household__stats b{font-size:14px;color:#e8c77b}
+.population-household__stats em{font:700 6.5px var(--ui-body-font);color:#a99470;font-style:normal}
+.population-household__body{display:grid;grid-template-columns:1.4fr 1fr;gap:10px;border-top:1px solid #5f4c32;padding:8px 10px 10px}
+.population-household__members{display:grid;gap:4px}
+.population-household__member{display:flex;justify-content:space-between;gap:8px;border:1px solid #4d3e2b;background:#211a13;color:#e8d7b2;padding:5px 7px;cursor:pointer;text-align:left;font:inherit}
+.population-household__member:hover{border-color:#c4a35e;background:#3a2d1f}
+.population-household__member span{font:700 9px var(--ui-body-font);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.population-household__member small{font:700 6.5px var(--ui-body-font);color:#a99470;white-space:nowrap}
+.population-household__relations{display:flex;flex-direction:column;gap:4px;min-width:0}
+.population-household__relations>small{font:700 6.5px var(--ui-body-font);letter-spacing:.08em;color:#bda987}
+.population-household__relations span{font:700 7px var(--ui-body-font);color:#cdb387;line-height:1.35}
+@media(max-width:760px){
+  .population-citizen{grid-template-columns:1fr 1fr;gap:6px}
+  .population-household__body{grid-template-columns:1fr}
+  .population-citizen__health{text-align:left;align-items:flex-start}
+}

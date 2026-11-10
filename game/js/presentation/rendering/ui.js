@@ -329,6 +329,7 @@ export function renderUI(){
     renderAmbition();
     setText("season",SEASONS[state.seasonIndex]||SEASONS[0]);setText("year","YEAR "+state.year);
     setText("tick-count",state.tick.toLocaleString("en-US"));setText("kingdom-name","THE REALM OF "+state.kingdomName);
+    setText("stage-realm",state.kingdomName||"ELDRIA");setText("minimap-realm",state.kingdomName||"ELDRIA");
     setText("player-name",state.playerName||"GUEST");
     renderTopStatus();
     const housing=getHousingSnapshot();

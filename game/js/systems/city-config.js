@@ -7,7 +7,8 @@ export const CITY_VERSION = 1;
 
 export const NEW_BUILDING_TYPES = Object.freeze([
     TYPE.TENT, TYPE.STONE_HOUSE, TYPE.WAREHOUSE, TYPE.SAWMILL, TYPE.BAKERY,
-    TYPE.WELL, TYPE.MASON, TYPE.FORESTER, TYPE.CLINIC, TYPE.MARKET
+    TYPE.WELL, TYPE.MASON, TYPE.FORESTER, TYPE.CLINIC, TYPE.MARKET,
+    TYPE.SHRINE, TYPE.COURT, TYPE.PRISON
 ]);
 
 export const BUILDING_LABELS = Object.freeze({
@@ -35,7 +36,10 @@ export const BUILDING_LABELS = Object.freeze({
     [TYPE.MASON]: "Mason's Yard",
     [TYPE.FORESTER]: "Forester's Lodge",
     [TYPE.CLINIC]: "Clinic",
-    [TYPE.MARKET]: "Market"
+    [TYPE.MARKET]: "Market",
+    [TYPE.SHRINE]: "Shrine",
+    [TYPE.COURT]: "Court of Law",
+    [TYPE.PRISON]: "Prison"
 });
 
 // Direct construction uses the same material language as the card catalogue.
@@ -65,7 +69,10 @@ export const BUILDING_COSTS = Object.freeze({
     [TYPE.MASON]: Object.freeze({ wood: 20, stone: 22 }),
     [TYPE.FORESTER]: Object.freeze({ wood: 16, stone: 4 }),
     [TYPE.CLINIC]: Object.freeze({ wood: 24, stone: 18, gold: 6 }),
-    [TYPE.MARKET]: Object.freeze({ wood: 26, stone: 8, gold: 5 })
+    [TYPE.MARKET]: Object.freeze({ wood: 26, stone: 8, gold: 5 }),
+    [TYPE.SHRINE]: Object.freeze({ wood: 6, stone: 18, gold: 4 }),
+    [TYPE.COURT]: Object.freeze({ wood: 30, stone: 24, gold: 10 }),
+    [TYPE.PRISON]: Object.freeze({ wood: 22, stone: 30, gold: 8 })
 });
 
 export const BUILD_MENU = Object.freeze([
@@ -74,6 +81,8 @@ export const BUILD_MENU = Object.freeze([
     Object.freeze({ id: "production", label: "PRODUCTION", types: Object.freeze([TYPE.LUMBER, TYPE.SAWMILL, TYPE.FARM, TYPE.MILL, TYPE.BAKERY, TYPE.QUARRY, TYPE.MASON, TYPE.GOLDMINE, TYPE.STABLE]) }),
     Object.freeze({ id: "storage", label: "STORAGE", types: Object.freeze([TYPE.WAREHOUSE]) }),
     Object.freeze({ id: "services", label: "SERVICES", types: Object.freeze([TYPE.WELL, TYPE.TAVERN, TYPE.TEMPLE, TYPE.MARKET, TYPE.CLINIC]) }),
+    Object.freeze({ id: "faith", label: "FAITH", types: Object.freeze([TYPE.SHRINE]) }),
+    Object.freeze({ id: "justice", label: "JUSTICE", types: Object.freeze([TYPE.COURT, TYPE.PRISON]) }),
     Object.freeze({ id: "military", label: "MILITARY", types: Object.freeze([TYPE.TOWER, TYPE.WALL, TYPE.BARRACKS]) }),
     Object.freeze({ id: "nature", label: "NATURE", types: Object.freeze([TYPE.FORESTER]) })
 ]);
@@ -140,9 +149,10 @@ export const CONSTRUCTION_SHARE = 0.25;
 
 export const SERVICE_DEFINITIONS = Object.freeze({
     water: Object.freeze({ label: "Water", types: Object.freeze([TYPE.WELL]), radius: 8, color: "#548ca8" }),
-    social: Object.freeze({ label: "Social life", types: Object.freeze([TYPE.TAVERN, TYPE.TEMPLE, TYPE.MARKET]), radius: 7, color: "#b57942" }),
-    safety: Object.freeze({ label: "Safety", types: Object.freeze([TYPE.TOWER, TYPE.WALL, TYPE.BARRACKS]), radius: 7, color: "#7b8b57" }),
-    health: Object.freeze({ label: "Health", types: Object.freeze([TYPE.CLINIC, TYPE.TEMPLE]), radius: 6, color: "#9a6d7e" })
+    social: Object.freeze({ label: "Social life", types: Object.freeze([TYPE.TAVERN, TYPE.TEMPLE, TYPE.SHRINE, TYPE.MARKET]), radius: 7, color: "#b57942" }),
+    safety: Object.freeze({ label: "Safety", types: Object.freeze([TYPE.TOWER, TYPE.WALL, TYPE.BARRACKS, TYPE.COURT, TYPE.PRISON]), radius: 7, color: "#7b8b57" }),
+    justice: Object.freeze({ label: "Justice", types: Object.freeze([TYPE.COURT, TYPE.PRISON]), radius: 8, color: "#8c7f6a" }),
+    health: Object.freeze({ label: "Health", types: Object.freeze([TYPE.CLINIC, TYPE.TEMPLE, TYPE.SHRINE]), radius: 6, color: "#9a6d7e" })
 });
 
 export function isHousingType(type) {

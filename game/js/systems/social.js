@@ -27,6 +27,11 @@ function collectCandidatePairs(residents) {
             addGroup(groups, "work:" + String(entity.workplace.id || entity.workplace.type), entity);
         }
     }
+    // The settlement itself is a meeting place: market, temple and tavern are
+    // shared civic spaces. Without this group, a small opening village can
+    // contain reproductively compatible adults who never meet because their
+    // homes and workplaces do not overlap.
+    for (const entity of residents) addGroup(groups, "settlement:commons", entity);
     const pairs = new Map();
     outer: for (const [, group] of [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))) {
         if (group.length < 2) continue;
@@ -87,8 +92,14 @@ function interact(first, second) {
     const compatibilityB = (
         b.traits.sociability + b.traits.compassion + b.traits.patience + (100 - b.traits.distrust)
     ) / 4;
-    const deltaA = Math.max(-3, Math.min(5, Math.round((compatibilityA - 50) / 12) + randInt(-1, 2, "social")));
-    const deltaB = Math.max(-3, Math.min(5, Math.round((compatibilityB - 50) / 12) + randInt(-1, 2, "social")));
+    // An encounter is shared. Basing each side entirely on its own traits made
+    // one highly sociable resident like everyone while nobody warmed to them,
+    // so a small settlement could never produce a mutual friendship. Keep the
+    // individual difference, but grow both sides from the same encounter.
+    const sharedDelta = Math.max(-3, Math.min(5,
+        Math.round(((compatibilityA + compatibilityB) / 2 - 50) / 12) + randInt(-1, 2, "social")));
+    const deltaA = sharedDelta;
+    const deltaB = sharedDelta;
     const tick = Math.max(0, Math.floor(Number(state.tick) || 0));
     const relationA = getOrCreateRelationship(a, second);
     const relationB = getOrCreateRelationship(b, first);
@@ -122,8 +133,17 @@ function hasActivePartner(person) {
     return person.kinship.partners.some(link => ["partner", "married"].includes(link.status));
 }
 
+function reproductivePair(first, second) {
+    const a = first.person, b = second.person;
+    if (!a || !b || a.species !== b.species) return false;
+    if (a.lifeStage !== "adult" || b.lifeStage !== "adult") return false;
+    if (!["female", "male"].includes(a.sex) || !["female", "male"].includes(b.sex) || a.sex === b.sex) return false;
+    return true;
+}
+
 function maybeFormPartnership(first, second) {
     const a = ensurePersonProfile(first), b = ensurePersonProfile(second);
+    if (!reproductivePair(first, second)) return false;
     if (a.lifeStage !== "adult" || b.lifeStage !== "adult" || hasCloseKin(first, second)) return false;
     if (hasActivePartner(a) || hasActivePartner(b)) return false;
     const relationA = a.relationships.find(item => item.targetId === second.personId);
@@ -165,9 +185,16 @@ export function updateSocialLife() {
         .filter(entity => !entity.dead && entity.type === TYPE.VILLAGER && entity.personId)
         .sort((a, b) => String(a.personId).localeCompare(String(b.personId)));
     const pairs = collectCandidatePairs(residents);
+    // Prefer a pairing that can found a family when both adults are compatible.
+    // The affinity, trust and probability gates below are unchanged; this only
+    // keeps an incidental non-reproductive pairing from taking the sole
+    // available partner before a reproductively compatible match is considered.
+    const orderedPairs = [...pairs].sort((a, b) =>
+        Number(reproductivePair(b[0], b[1])) - Number(reproductivePair(a[0], a[1]))
+    );
     let interactions = 0;
     const partnerships = [];
-    for (const [first, second] of pairs) {
+    for (const [first, second] of orderedPairs) {
         const outcome = interact(first, second);
         interactions++;
         if (outcome.changed) {

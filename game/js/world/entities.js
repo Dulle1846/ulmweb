@@ -168,6 +168,12 @@ export function initStartingKingdom() {
     const farm2 = spawnEntity(cx + 9, cy + 5, TYPE.FARM);
     const goldmine = spawnEntity(cx + 12, cy - 10, TYPE.GOLDMINE);
     const temple = spawnEntity(cx - 10, cy + 2, TYPE.TEMPLE);
+    // The opening realm already keeps a wayside shrine and a court of law. They
+    // are complete structures, but clergy and judges remain paid appointments
+    // the crown must make; the shrine is a real branch of the temple, not a
+    // second free temple.
+    const shrine = placeExtra(TYPE.SHRINE, -12, 3);
+    const court = placeExtra(TYPE.COURT, -10, -6);
 
     // The starting settlement already owns the physical infrastructure its
     // first production chains need. These are complete buildings, not free
@@ -221,6 +227,12 @@ export function initStartingKingdom() {
     const forester = placeExtra(TYPE.FORESTER, -16, -7);
     const market = placeExtra(TYPE.MARKET, 15, -4);
     const stoneHouse = placeExtra(TYPE.STONE_HOUSE, 7, -10);
+    // A functioning barracks and stable make the opening realm's military
+    // system playable from year one instead of asking the crown to build the
+    // very structures the new garrison system depends on. The buildings are
+    // empty of recruits and horses; those remain real, paid decisions.
+    const barracks = placeExtra(TYPE.BARRACKS, -12, -4);
+    const stable = placeExtra(TYPE.STABLE, 4, 10);
 
     // König – markiert als König, bleibt nah an der Burg
     const king = spawnEntity(cx + 1, cy - 2, TYPE.KNIGHT);

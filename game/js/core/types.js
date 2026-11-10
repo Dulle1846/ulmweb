@@ -33,6 +33,9 @@ export const TYPE = {
     FORESTER: 67,
     CLINIC: 68,
     MARKET: 69,
+    SHRINE: 70,
+    COURT: 71,
+    PRISON: 72,
 
     VILLAGER: 20,
     GUARD: 21,
@@ -77,6 +80,9 @@ const MAX_HP = {
     [TYPE.FORESTER]:  105,
     [TYPE.CLINIC]:    200,
     [TYPE.MARKET]:    155,
+    [TYPE.SHRINE]:    120,
+    [TYPE.COURT]:     280,
+    [TYPE.PRISON]:    300,
     [TYPE.VILLAGER]: 35,
     [TYPE.GUARD]:    160,
     [TYPE.ARCHER]:   95,
@@ -165,7 +171,7 @@ export class Entity {
     }
 
     isBuilding() {
-        return this.type < 20 || (this.type >= 60 && this.type < 70);
+        return this.type < 20 || (this.type >= 60 && this.type < 73);
     }
 
     isUnit() {

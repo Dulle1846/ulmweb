@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.9.0
-**Next development line:** 3.10.0-dev
+**Production version:** 3.10.0
+**Next development line:** 3.11.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -14,6 +14,8 @@
 5. [AI review playbook](docs/AI_REVIEW_PLAYBOOK.md) — safe external review and delegation instructions.
 6. [Laubwälder 1.2.1](docs/FOREST_ECOLOGY.md) — shared forest ecology, species, fifteen broadleaf formations and the 60-point audit.
 7. [Nadelwälder 1.2.2](docs/CONIFER_FORESTS.md) — five conifer species, twelve conifer formations, seasonal larch needles, conifer products, fauna and disturbance ecology.
+8. [Named garrison and public health](docs/MILITARY_AND_PUBLIC_HEALTH.md) — named recruits, timed drill, warhorses and payroll, sanitation, outbreaks, healers, medicine and mortality.
+9. [Faith, culture and justice](docs/FAITH_AND_JUSTICE.md) — named clergy and judges, shrines, courts and prisons, festivals, pilgrimages, heresy, emergent crime, trials, legal codes and corruption.
 
 ## Development rules
 

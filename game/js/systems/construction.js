@@ -10,6 +10,7 @@ import { spawnEntity, canSpawnEntity, buildingOverlaps } from "../world/entities
 import { isWaterAt, worldWidth, worldHeight, revealArea } from "../world/world.js";
 import { getResourceNodeAt } from "./resource-geography.js";
 import { getWorkforceSnapshot } from "./economy.js";
+import { getResearchModifiers } from "./research.js";
 import {
     BUILDING_COSTS, CONSTRUCTION_STAGES, CONSTRUCTION_SHARE, buildingLabel,
     constructionMaterialNeed, costShare, isHousingType
@@ -49,7 +50,19 @@ function entityById(id) { return state.entities.find(entity => !entity.dead && e
 function distanceTo(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
 export function getBuildingCost(type) {
-    return { ...(BUILDING_COSTS[type] || {}) };
+    const base = BUILDING_COSTS[type] || {};
+    // Completed craft technologies lower the material bill of every new site.
+    // The discount is read from the same modifier block the rest of the realm
+    // uses, so a displayed price is exactly what the treasury is charged.
+    const discount = Math.min(0.25, Math.max(0, Number(getResearchModifiers().buildDiscount) || 0));
+    if (discount <= 0) return { ...base };
+    const cost = {};
+    for (const [key, value] of Object.entries(base)) {
+        const amount = Number(value);
+        if (!Number.isFinite(amount) || amount <= 0) { cost[key] = value; continue; }
+        cost[key] = Math.max(1, Math.round(amount * (1 - discount)));
+    }
+    return cost;
 }
 
 export function siteSuitability(type, tx, ty) {

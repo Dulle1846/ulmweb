@@ -14,11 +14,9 @@ import { addResource } from "./resources.js";
 import { applyHealthEffects } from "./health.js";
 import { createEventParticipants,recordPersonEventOutcome } from "./people.js";
 import { recordResourceMovement } from "./goods-book.js";
+import { addLog } from "../core/event-log.js";
 
-export function addLog(text,color="#a3a3a3",kind="realm"){
- const entry={id:++state.eventSequence,text:String(text),color,tick:state.tick,kind};
- state.eventLog.unshift(entry);if(state.eventLog.length>100)state.eventLog.length=100;return entry;
-}
+export { addLog };
 const PLACES=["the lower fields","the eastern orchards","the old river road","the northern watch","the abbey lands","the market square","the western marshes","the old quarry road","the royal granaries","the border villages"];
 const STAGES=["At dawn","Before the evening bell","Beyond the old stone bridge","Under a pale sky","Near the forest edge","At the king's own table","As the harvest moon rises","During the first winter frost","After the midnight watch","At the opening of the spring fair"];
 const DETAILS=["a sealed letter has arrived","the village elders have sent a petition","workers report an unusual discovery","a trusted steward has raised a concern","travellers bring an unsettling rumour","the matter has reached the royal household","a long-forgotten record has resurfaced","a guild has refused its customary duty","an unfamiliar banner has been sighted","a strange pattern has appeared in the old accounts"];

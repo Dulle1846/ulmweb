@@ -93,6 +93,21 @@ fox, squirrel, owl and woodpecker. They breed, move, can be hunted and are
 saved; wolves and lynx read local prey biomass, so a predator population without
 prey loses condition instead of remaining a decorative habitat marker.
 
+Ants, bark beetles and deadwood beetles are also saved colonies in the same
+model. Their density changes every simulation day from stand density, litter,
+deadwood, drought and monoculture. Ant colonies grow on a good floor and decline
+under drought or a species-poor stand; bark-beetle colonies grow on conifer
+hosts, especially after drought, and their pressure is an input to the existing
+bark-beetle disturbance weights and neighbour spread. The renderer uses the
+saved colonies at close zoom instead of drawing a second decorative ant icon.
+
+Herbs and lichen are no longer only saleable forest goods. The health pass
+consumes a bounded number of stored medicinal units when residents are ill:
+two units shorten the illness and lower its severity, and the dose counters are
+part of the public-health snapshot. The forest ledger remains the source of the
+stock; the population model receives the measured recovery effect. See
+`applyHerbalRemedy()` in `js/systems/health.js`.
+
 Bark-beetle, snowbreak, windthrow and drought-stressed have their own succession
 profiles in `FOREST_SUCCESSION_PROFILES`. Live conifer disturbances are
 risk- and weather-weighted: fire risk opens the real burned path, pest risk and
@@ -106,60 +121,62 @@ scan, stock loss and save-compatible recovery handle the consequences.
 
 | Requirement | Status | Where |
 | --- | --- | --- |
-| 1.2.2.1 Different conifer species and forms | Implemented | five species, species-specific tier forms |
-| 1.2.2.2 Spruce forests | Implemented | `sprucewood` |
-| 1.2.2.3 Fir forests | Implemented | `firwood` |
-| 1.2.2.4 Pine forests | Implemented | `pinewood` |
-| 1.2.2.5 Larch forests | Implemented | `larchwood` |
-| 1.2.2.6 Juniper and smaller conifers | Implemented | `juniper`, `subalpine-scrub` |
-| 1.2.2.7 Different trunk heights and diameters | Implemented | species height/trunk ratios and age scale |
-| 1.2.2.8 Young stands and ancient giants | Implemented | age classes, `ageScale`, ancient age bias |
-| 1.2.2.9 Wind-shaped, leaning and damaged trees | Implemented | per-tree lean, windthrow/snowbreak geometry |
-| 1.2.2.10 Different crown densities and spacings | Implemented | formation density/openness and crown scale |
-| 1.2.2.11 Dense spruce forests | Implemented | `sprucewood` density |
-| 1.2.2.12 Dark fir forests | Implemented | `firwood` palette and density |
-| 1.2.2.13 Light pine forests | Implemented | `pinewood` palette and openness |
-| 1.2.2.14 Larch with seasonal needle loss | Implemented | `larch` deciduous-needle foliage profile |
-| 1.2.2.15 Dry pine heath | Implemented | `pine-heath` |
-| 1.2.2.16 Wet conifer forests | Implemented | `wet-conifer` |
-| 1.2.2.17 Mountain conifer forests | Implemented | `mountain-conifer` |
-| 1.2.2.18 Subalpine tree line | Implemented | `subalpine-scrub` |
-| 1.2.2.19 Needle layers on the floor | Implemented | `ground.needles`, needle carpet |
-| 1.2.2.20 Moss, lichen and low shrubs | Implemented | understorey values and floor renderer |
-| 1.2.2.21 Blueberry and lingonberry patches | Implemented | `ground.berry`, berry shrub marks |
-| 1.2.2.22 Small fern patches | Implemented | conifer floor fern branch |
-| 1.2.2.23 Roots and weathered trunks | Implemented | roots, stumps, logs in floor renderer |
-| 1.2.2.24 Acidic nutrient-poor soils | Implemented | `podzol`, `sourSoil` |
-| 1.2.2.25 Exposed stones and rocky sections | Implemented | `ground.stones`, rock floor branch |
-| 1.2.2.26 Dark forest interiors | Implemented | `groundShade` ambient-occlusion pass with sun and snow response |
-| 1.2.2.27 Light shafts between trunks | Implemented | existing `drawCanopyLight` driven by `lightShaft` |
-| 1.2.2.28 Mist between tall conifers | Implemented | existing mist pass uses canopy/light |
-| 1.2.2.29 Visibility varying with density | Implemented | `visibility`/`sightRadius`, `forestSightBlock()`, cached per-tile line-of-sight and the browser occlusion proof |
-| 1.2.2.30 Wind in crowns | Implemented | per-tree sway and lean |
-| 1.2.2.31 Snow loads on branches | Implemented | tier snow polygons and clumps |
-| 1.2.2.32 Resin gloss and wet bark | Implemented | bark light edge and resin goods |
-| 1.2.2.33 Predominantly evergreen structure | Implemented | four evergreen conifers |
-| 1.2.2.34 Snow-covered winter crowns | Implemented | `foliageState` snow, tier caps |
-| 1.2.2.35 Spring shoot growth | Implemented | existing `greenUp` and `fresh` foliage |
-| 1.2.2.36 Seasonal larch change | Implemented | larch turn/drop/leaf-out |
-| 1.2.2.37 Snow depth by elevation/exposure | Implemented | `stand.snowPotential`, `forestSnowDepthAt()`, `snowDepthCm` in the survey; exposed high ground holds a deeper pack |
-| 1.2.2.38 Deer, roe deer, boar and fox | Implemented | conifer formation fauna |
-| 1.2.2.39 Wolves, lynx and larger predators | Implemented | real `wolf`/`lynx` herds with local prey biomass and predation |
-| 1.2.2.40 Squirrels and forest mice | Implemented | `squirrel` and real `mouse` populations |
-| 1.2.2.41 Woodpeckers, owls, crossbills and forest birds | Implemented | `woodpecker`, `owl`, `crossbill`, `capercaillie`, `songbird` |
-| 1.2.2.42 Insects, bark beetles and ants | Implemented | `bark-beetle`, `beetle`, `ant` |
-| 1.2.2.43 Conifer timber for building and craft | Implemented | per-species timber goods |
-| 1.2.2.44 Resin and other tree products | Implemented | `resin`, cones, juniper berries |
-| 1.2.2.45 Firewood and charcoal | Implemented | existing wood goods plus conifer firewood |
-| 1.2.2.46 Mushrooms and forest berries | Implemented | mushrooms, blueberries, lingonberries |
-| 1.2.2.47 Medicinal plants and herbs | Implemented | conifer formation herbs and lichen |
-| 1.2.2.48 Hunting products and furs | Implemented | existing game/fur/hides ledger |
-| 1.2.2.49 Bark-beetle infestation | Implemented | `bark-beetle`; `pestRisk` weights live events |
-| 1.2.2.50 Drought and drought stress | Implemented | `drought-stressed`; dry-season weight and live succession |
-| 1.2.2.51 Forest fire risk | Implemented | `fireRisk` weights live burned events, including conifer stands |
-| 1.2.2.52 Windthrow and storm damage | Implemented | live weather/exposure-weighted windthrow, per-tree lean and root-plate floor |
-| 1.2.2.53 Monocultures and pest vulnerability | Implemented | Simpson-derived `monoculture` raises the live bark-beetle weight |
-| 1.2.2.54 Snowbreak | Implemented | `snowPotential` and snowfall weight live snowbreak events |
+| 1.2.2.1 Different conifer species and forms | visuell/abgeleitet | `js/world/forest-ecology.js` species registry; `drawConifer()`; `tests/world/conifer-forest.test.js` |
+| 1.2.2.2 Spruce forests | simuliert | `sprucewood` formation in `forest-ecology.js`; `tests/world/conifer-forest.test.js` |
+| 1.2.2.3 Fir forests | simuliert | `firwood` formation and dark palette; `tests/world/conifer-forest.test.js` |
+| 1.2.2.4 Pine forests | simuliert | `pinewood` formation and light palette; `tests/world/conifer-forest.test.js` |
+| 1.2.2.5 Larch forests | simuliert | `larchwood` formation and deciduous-needle profile; `tests/world/conifer-forest.test.js` |
+| 1.2.2.6 Juniper and smaller conifers | simuliert | `yew` + `dwarf-pine` in `FOREST_SPECIES` and formations; render data and stand test in `tests/world/conifer-forest.test.js` |
+| 1.2.2.7 Different trunk heights and diameters | visuell/abgeleitet | species `height`/`trunk`/`crown`, age and `forestTreeForm()`; `drawConifer()` |
+| 1.2.2.8 Young stands and ancient giants | visuell/abgeleitet | `ageClass`, `ageScale`, ancient age bias; `drawConifer()` |
+| 1.2.2.9 Wind-shaped, leaning and damaged trees | visuell/abgeleitet | per-tree lean, windthrow and snowbreak geometry in `terrain.js` |
+| 1.2.2.10 Different crown densities and spacings | visuell/abgeleitet | formation `density`/`openness`, crown scale and spacing; conifer test |
+| 1.2.2.11 Dense spruce forests | simuliert | `sprucewood` density/openness; conifer reachability test |
+| 1.2.2.12 Dark fir forests | simuliert | `firwood` palette/density; conifer reachability test |
+| 1.2.2.13 Light pine forests | simuliert | `pinewood` palette/openness; conifer reachability test |
+| 1.2.2.14 Larch with seasonal needle loss | simuliert | `foliageState()` larch turn/drop/leaf-out; `tests/world/conifer-forest.test.js` |
+| 1.2.2.15 Dry pine heath | simuliert | `pine-heath` formation; conifer reachability test |
+| 1.2.2.16 Wet conifer forests | simuliert | `wet-conifer` formation; conifer reachability test |
+| 1.2.2.17 Mountain conifer forests | simuliert | `mountain-conifer` formation; conifer reachability test |
+| 1.2.2.18 Subalpine tree line | simuliert | `subalpine-scrub`, treeline/krummholz; conifer reachability test |
+| 1.2.2.19 Needle layers on the floor | visuell/abgeleitet | `ground.needles`, needle carpet in `terrain.js` |
+| 1.2.2.20 Moss, lichen and low shrubs | visuell/abgeleitet | understorey moss/lichen/heather values and floor renderer |
+| 1.2.2.21 Blueberry and lingonberry patches | visuell/abgeleitet | `ground.berry` and berry shrub marks in `terrain.js` |
+| 1.2.2.22 Small fern patches | visuell/abgeleitet | conifer floor fern branch in `terrain.js` |
+| 1.2.2.23 Roots and weathered trunks | visuell/abgeleitet | roots, stumps and logs in the floor renderer |
+| 1.2.2.24 Acidic nutrient-poor soils | visuell/abgeleitet | `podzol`/`sourSoil` derived in `forestStandAt()` |
+| 1.2.2.25 Exposed stones and rocky sections | visuell/abgeleitet | `ground.stones` and rock floor branch |
+| 1.2.2.26 Dark forest interiors | visuell/abgeleitet | `groundShade` ambient-occlusion pass; shade tests in `conifer-forest.test.js` |
+| 1.2.2.27 Light shafts between trunks | visuell/abgeleitet | `lightShaft`/`drawCanopyLight()` in `terrain.js` |
+| 1.2.2.28 Mist between tall conifers | visuell/abgeleitet | canopy/light-driven mist pass in `terrain.js` |
+| 1.2.2.29 Visibility varying with density | visuell/abgeleitet | `visibility`/`sightRadius`, cached line of sight; `forestSightProfile()` and browser proof |
+| 1.2.2.30 Wind in crowns | visuell/abgeleitet | per-tree sway and lean in `drawConifer()` |
+| 1.2.2.31 Snow loads on branches | visuell/abgeleitet | tier snow polygons and snow clumps in `drawConifer()` |
+| 1.2.2.32 Resin gloss and wet bark | visuell/abgeleitet | bark light edge, wetness and resin glints in `drawConifer()` |
+| 1.2.2.33 Predominantly evergreen structure | visuell/abgeleitet | evergreen foliage profiles; larch/evergreen test in `conifer-forest.test.js` |
+| 1.2.2.34 Snow-covered winter crowns | visuell/abgeleitet | `foliageState().snow` and tier caps; snow tests |
+| 1.2.2.35 Spring shoot growth | visuell/abgeleitet | `greenUp`/`fresh` spring foliage in `seasonal-foliage.js` |
+| 1.2.2.36 Seasonal larch change | simuliert | larch turn/drop/leaf-out in `seasonal-foliage.js`; conifer test |
+| 1.2.2.37 Snow depth by elevation/exposure | visuell/abgeleitet | `snowPotential`, `forestSnowDepthAt()`, survey `snowDepthCm`; conifer test |
+| 1.2.2.38 Deer, roe deer, boar and fox | simuliert | real herds in `forest-fauna.js`; `tests/systems/forest-fauna.test.js` |
+| 1.2.2.39 Wolves, lynx and larger predators | simuliert | real `wolf`/`lynx` herds, prey biomass and predation; `forest-fauna.test.js` |
+| 1.2.2.40 Squirrels and forest mice | simuliert | real `squirrel`/`mouse` populations; `forest-fauna.test.js` |
+| 1.2.2.41 Woodpeckers, owls, crossbills and forest birds | simuliert | real `woodpecker`/`owl`/`crossbill`/`capercaillie`/`songbird` populations; `forest-fauna.test.js` |
+| 1.2.2.42 Insects, bark beetles and ants | simuliert | saved `ant`, `bark-beetle`, `beetle` colonies with growth and habitat stress; `tests/systems/forest-insects.test.js` |
+| 1.2.2.43 Conifer timber for building and craft | simuliert | per-species timber and delivery ledger; `forest-gathering.test.js` |
+| 1.2.2.44 Resin and other tree products | simuliert | resin, cones and `yew-berries`/`dwarf-pine-cones`; `forest-gathering.test.js` |
+| 1.2.2.45 Firewood and charcoal | simuliert | firewood/charcoal goods and delivery; `forest-gathering.test.js` |
+| 1.2.2.46 Mushrooms and forest berries | simuliert | mushrooms/blueberries/lingonberries seasonal goods; `forest-gathering.test.js` |
+| 1.2.2.47 Medicinal plants and herbs | simuliert | `applyHerbalRemedy()` in `health.js`, herb/lichen stock; `tests/systems/health-herbs.test.js` |
+| 1.2.2.48 Hunting products and furs | simuliert | game/fur/hides hunting ledger and processing; `forest-gathering.test.js` |
+| 1.2.2.49 Bark-beetle infestation | simuliert | `bark-beetle` profile, live weights and colony pressure; `forest-succession.test.js` + `forest-insects.test.js` |
+| 1.2.2.50 Drought and drought stress | simuliert | `drought-stressed` profile and live weights; `forest-succession.test.js` |
+| 1.2.2.51 Forest fire risk | simuliert | `fireRisk` weights live burned events; `forest-succession.test.js` |
+| 1.2.2.52 Windthrow and storm damage | simuliert | weather/exposure-weighted windthrow and follower geometry; `forest-succession.test.js` |
+| 1.2.2.53 Monocultures and pest vulnerability | simuliert | Simpson-derived `monoculture` raises beetle weight and ant stress; `forest-succession.test.js` + `forest-insects.test.js` |
+| 1.2.2.54 Snowbreak | simuliert | `snowPotential` and snowfall weight snowbreak; `forest-succession.test.js` |
+
+Status legend: `simuliert` means a real state change or economy/fauna branch is exercised; `visuell/abgeleitet` means the feature is deterministic renderer or derived stand data without separate saved state. No row is labelled “Implemented” without a concrete owner.
 
 The two previously partial points are now backed by observable behaviour.
 `forestCanopyShade()` returns `alpha`, `reach` and a shadow offset; tests check

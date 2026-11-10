@@ -9,8 +9,16 @@ import { validateForestFaunaSnapshot } from "../systems/forest-fauna.js";
 import { validateForestGatheringSnapshot } from "../systems/forest-gathering.js";
 import { validateForestSuccessionSnapshot } from "../systems/forest-succession.js";
 import { validatePannage } from "../systems/forest-pannage.js";
+import { validateMilitaryState } from "../systems/military.js";
+import { validateHealthState } from "../systems/health.js";
+import { validateFaithState } from "../systems/faith.js";
+import { validateJusticeState } from "../systems/justice.js";
+import { validateIdentity } from "../systems/identity.js";
+import { validateResearchState } from "../systems/research.js";
+import { validateLegacyState } from "../systems/legacy.js";
+import { validatePopulationState } from "../systems/population-register.js";
 
-export const SAVE_SCHEMA_VERSION = 4;
+export const SAVE_SCHEMA_VERSION = 7;
 
 const RESOURCE_KEYS = Object.freeze(["wood", "stone", "gold", "food"]);
 const RESOURCE_KEY_SET = new Set(RESOURCE_KEYS);
@@ -179,6 +187,42 @@ export function validateSaveSnapshot(snapshot) {
             fail("Save data contains an invalid diplomacy state.", { code:"INVALID_DIPLOMACY", field:"diplomacy", valueType:typeOf(diplomacy), phase:"diplomacy" });
         }
     }
+    if (snapshot.military !== undefined && snapshot.military !== null) {
+        validateDomainSnapshot(snapshot.military, "military", validateMilitaryState);
+    }
+    if (snapshot.health !== undefined && snapshot.health !== null) {
+        validateDomainSnapshot(snapshot.health, "health", validateHealthState);
+    }
+    if (snapshot.faith !== undefined && snapshot.faith !== null) {
+        validateDomainSnapshot(snapshot.faith, "faith", validateFaithState);
+    }
+    if (snapshot.justice !== undefined && snapshot.justice !== null) {
+        validateDomainSnapshot(snapshot.justice, "justice", validateJusticeState);
+    }
+    if (snapshot.identity !== undefined && snapshot.identity !== null) {
+        validateDomainSnapshot(snapshot.identity, "identity", validateIdentity);
+    }
+    if (snapshot.research !== undefined && snapshot.research !== null) {
+        validateDomainSnapshot(snapshot.research, "research", validateResearchState);
+    }
+    if (snapshot.legacy !== undefined && snapshot.legacy !== null) {
+        validateDomainSnapshot(snapshot.legacy, "legacy", validateLegacyState);
+    }
+    if (snapshot.population !== undefined && snapshot.population !== null) {
+        validateDomainSnapshot(snapshot.population, "population", validatePopulationState);
+    }
+    if (snapshot.court !== undefined && snapshot.court !== null) {
+        const court = snapshot.court;
+        if (!court || typeof court !== "object" || Array.isArray(court) || !court.offices || typeof court.offices !== "object" || Array.isArray(court.offices) || Object.keys(court.offices).length > 12) {
+            fail("Save data contains an invalid court state.", { code:"INVALID_COURT", field:"court", valueType:typeOf(court), phase:"court" });
+        }
+        if (court.history !== undefined && (!Array.isArray(court.history) || court.history.length > 40)) {
+            fail("Save data contains an invalid court history.", { code:"INVALID_COURT_HISTORY", field:"court.history", valueType:typeOf(court.history), phase:"court" });
+        }
+        if (court.demand !== undefined && court.demand !== null && (typeof court.demand !== "object" || Array.isArray(court.demand))) {
+            fail("Save data contains an invalid court petition.", { code:"INVALID_COURT_DEMAND", field:"court.demand", valueType:typeOf(court.demand), phase:"court" });
+        }
+    }
 
     for (const [index, dto] of snapshot.entities.entries()) {
         if (dto.construction !== undefined && dto.construction !== null) {
@@ -195,6 +239,12 @@ export function validateSaveSnapshot(snapshot) {
         }
         if (dto.field !== undefined && dto.field !== null && (typeof dto.field !== "object" || Array.isArray(dto.field))) {
             fail("Save data contains an invalid field at position " + index + ".", { code: "INVALID_FIELD", field: "entities[" + index + "].field", valueType: typeOf(dto.field), phase: "entities" });
+        }
+        if (dto.military !== undefined && dto.military !== null && (typeof dto.military !== "object" || Array.isArray(dto.military))) {
+            fail("Save data contains invalid military service at position " + index + ".", { code: "INVALID_MILITARY_SERVICE", field: "entities[" + index + "].military", valueType: typeOf(dto.military), phase: "entities" });
+        }
+        if (dto.immunity !== undefined && (!Number.isFinite(Number(dto.immunity)) || Number(dto.immunity) < 0 || Number(dto.immunity) > 100)) {
+            fail("Save data contains invalid immunity at position " + index + ".", { code: "INVALID_IMMUNITY", field: "entities[" + index + "].immunity", valueType: typeOf(dto.immunity), phase: "entities" });
         }
         if (dto.pannage !== undefined && dto.pannage !== null) {
             try {

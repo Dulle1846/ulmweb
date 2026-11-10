@@ -6,6 +6,11 @@ import { recordResourceMovement } from "./goods-book.js";
 import { addResource } from "./resources.js";
 import { TRADE_PARTNERS } from "./diplomacy-config.js";
 import { getDiplomaticTradeTerms, recordTradeInfluence } from "./diplomacy-trade.js";
+import { getCourtModifiers } from "./court.js";
+import { getHealthEconomicEffects } from "./health.js";
+import { getFaithModifiers } from "./faith.js";
+import { getJusticeModifiers } from "./justice.js";
+import { getResearchModifiers } from "./research.js";
 
 export const MARKET_RESOURCES = Object.freeze(["wood","stone","food"]);
 export const BASE_PRICES = Object.freeze({ wood:2, stone:3, food:2 });
@@ -111,10 +116,21 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     }
     const amount = Math.max(1,Math.min(25,Math.floor(Number(quantity)||1)));
     const price = state.market.prices[resource];
-    const terms = getDiplomaticTradeTerms(state.diplomacy, partnerId);
+    const terms = getDiplomaticTradeTerms(state.diplomacy, partnerId, getCourtModifiers().tradeBonus);
     if (terms.blocked) return {ok:false,reason:"AT WAR — THE TRADE ROAD IS CLOSED"};
+    // Quarantine and an active outbreak make every caravan more expensive and
+    // every sale less valuable. Food is still traded, but not exempt from the
+    // public-health surcharge: isolation has a real commercial cost.
+    const healthTerms = getHealthEconomicEffects();
+    const faithTerms = getFaithModifiers();
+    const justiceTerms = getJusticeModifiers();
+    const researchTerms = getResearchModifiers();
+    const tradeFactor = Math.max(0.55, faithTerms.tradeFactor * justiceTerms.tradeFactor * researchTerms.tradeFactor);
+    const demandFactor = 1 + Math.max(0, Number(faithTerms.festivalDemand) || 0);
+    const buyFactor = terms.buyFactor * (1 + healthTerms.tradePenalty) / tradeFactor;
+    const sellFactor = terms.sellFactor * (1 - healthTerms.tradePenalty) * tradeFactor * demandFactor;
     if (direction === "buy") {
-        const cost = Math.ceil(price*amount*terms.buyFactor);
+        const cost = Math.ceil(price*amount*buyFactor);
         if ((partner.stock[resource]||0)<amount) return {ok:false,reason:"PARTNER OUT OF STOCK"};
         if (state.resources.gold<cost) return {ok:false,reason:"NOT ENOUGH GOLD"};
         addResource("gold",-cost);
@@ -129,7 +145,7 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
         state.market.totalTrades++;
         return {ok:true,amount,gold:cost};
     }
-    const payout = Math.floor(price*amount*0.82*terms.sellFactor);
+    const payout = Math.floor(price*amount*0.82*sellFactor);
     if ((state.resources[resource]||0)<amount) return {ok:false,reason:"NOT ENOUGH "+resource.toUpperCase()};
     if (partner.treasury<payout) return {ok:false,reason:"PARTNER TREASURY TOO LOW"};
     addResource(resource,-amount);

@@ -11,6 +11,7 @@
 //         docs/terrain-reference/forest-reference.json
 
 import http from "node:http";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,7 +37,7 @@ const coniferTargets = Object.freeze([
 const targetTypes = Object.freeze(coniferMode ? coniferTargets : broadleafTargets);
 const seasonDays = Object.freeze([50, 150, 250, 350]);
 const outputNames = coniferMode
-    ? { formation: "conifer-reference.png", seasonal: "conifer-seasons.png", metadata: "conifer-reference.json" }
+    ? { formation: "conifer-reference.png", seasonal: "conifer-seasons.png", species: "conifer-species.png", metadata: "conifer-reference.json" }
     : { formation: "forest-reference.png", seasonal: "forest-seasons.png", metadata: "forest-reference.json" };
 
 const mimeTypes = {
@@ -320,6 +321,13 @@ try {
         console.log("Captured seasonal forest day " + day);
     }
 
+    // The formation sheets prove that the new species occur in real stands,
+    // but a stand mixes several trees. This plate draws every conifer through
+    // the production drawConifer() path with identical seed, day and scale, so
+    // the pixel hashes can prove that yew and dwarf pine have their own
+    // silhouette and palette instead of a relabelled spruce.
+    const speciesPlate = coniferMode ? await captureConiferSpecies(page) : null;
+
     const formationSheet = await renderFormationSheet(context, frames, {
         seed, renderer: webgl.renderer, world: scan.world,
         conifer: coniferMode, columns: coniferMode ? 4 : 5,
@@ -334,6 +342,17 @@ try {
     });
     const seasonPath = path.join(outputDir, outputNames.seasonal);
     await fs.writeFile(seasonPath, seasonSheet);
+
+    let speciesPath = null;
+    let speciesSheet = null;
+    if (speciesPlate) {
+        speciesPath = path.join(outputDir, outputNames.species);
+        speciesSheet = await renderSpeciesSheet(context, speciesPlate, {
+            seed, renderer: webgl.renderer, generatedAt: new Date().toISOString(),
+        });
+        await fs.writeFile(speciesPath, speciesSheet);
+    }
+    const hashArtifact = buffer => createHash("sha256").update(buffer).digest("hex");
 
     const metadata = {
         seed,
@@ -352,6 +371,20 @@ try {
         seasonalFocus: scan.found[seasonalTile.type],
         seasonalDays: seasonDays,
         seasonalFrames: seasonDays.map(day => ({ day })),
+        artifactHashes: {
+            formation: hashArtifact(formationSheet),
+            seasonal: hashArtifact(seasonSheet),
+            ...(speciesSheet ? { species: hashArtifact(speciesSheet) } : {}),
+        },
+        speciesPlate: speciesPlate ? {
+            image: outputNames.species,
+            day: 150,
+            climate: "northern",
+            scale: 3.4,
+            canvas: { width: 220, height: 260 },
+            species: speciesPlate.map(({ dataUrl, ...entry }) => entry),
+            note: "Every conifer is drawn by the production drawConifer() path with the same seed, day, scale and climate. Distinct pixel hashes prove yew and dwarf pine carry their own rendered form and palette, not a relabelled spruce.",
+        } : undefined,
         note: coniferMode
             ? "Northern realm, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level at midday, so morning mist does not obscure the canopy shade or the sight wall. All twelve conifer formations are real generated tiles, not hand-placed demo props. The seasonal strip follows a larch stand through needle-out, summer, golden autumn and bare winter. groundShade, visibility and sightRadius record the local canopy shade and stand-dependent sight profile; winterSnowDepthCm is the derived local snow depth on day 350. Not a GPU performance benchmark."
             : "HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level. Forest formations are real generated tiles, not hand-placed demo props. The cutover frame uses a wooded tile with stock set to zero. Not a GPU performance benchmark.",
@@ -361,6 +394,7 @@ try {
     const fatal = diagnostics.filter(text => /Terrain WebGL|atlas upload|shader compilation|runtime paused|pageerror/i.test(text));
     console.log("Formation sheet: " + path.relative(gameRoot, formationPath));
     console.log("Seasonal forest: " + path.relative(gameRoot, seasonPath));
+    if (speciesPath) console.log("Conifer species plate: " + path.relative(gameRoot, speciesPath));
     console.log("Forest metadata: " + path.relative(gameRoot, path.join(outputDir, outputNames.metadata)));
     console.log("Renderer: " + (webgl.renderer || "unknown") + " · canvas " + webgl.width + "×" + webgl.height);
     if (diagnostics.length) console.log("Diagnostics: " + JSON.stringify(diagnostics, null, 2));
@@ -368,6 +402,64 @@ try {
 } finally {
     await browser.close().catch(() => {});
     await new Promise(resolve => server.close(resolve));
+}
+
+async function captureConiferSpecies(page) {
+    const entries = await page.evaluate(async () => {
+        const { drawConifer } = await import("./js/presentation/rendering/terrain.js");
+        const { FOREST_SPECIES } = await import("./js/world/forest-ecology.js");
+        const width = 220, height = 260, scale = 3.4, baseline = height - 32;
+        const ids = Object.keys(FOREST_SPECIES).filter(id => FOREST_SPECIES[id]?.conifer === true);
+        const hashPixels = data => {
+            let hash = 2166136261 >>> 0;
+            for (let index = 0; index < data.length; index++) {
+                hash ^= data[index];
+                hash = Math.imul(hash, 16777619) >>> 0;
+            }
+            return hash.toString(16).padStart(8, "0");
+        };
+        return ids.map(id => {
+            const definition = FOREST_SPECIES[id];
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext("2d", { willReadFrequently: true });
+            drawConifer(context, width / 2, baseline, scale, 0, 0.5, 150, "northern", 1, id, null, null);
+            const pixels = context.getImageData(0, 0, width, height).data;
+            let ink = 0, minX = width, minY = height, maxX = -1, maxY = -1;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    if (pixels[(y * width + x) * 4 + 3] <= 8) continue;
+                    ink++;
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+            if (ink === 0) throw new Error("Conifer species " + id + " rendered no visible pixels.");
+            return {
+                id,
+                label: definition.label,
+                crownShape: definition.crownShape,
+                summer: definition.summer[0],
+                autumn: definition.autumn[0],
+                hash: hashPixels(pixels),
+                ink,
+                bbox: { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 },
+                dataUrl: canvas.toDataURL("image/png"),
+            };
+        });
+    });
+    const hashes = new Set(entries.map(entry => entry.hash));
+    if (hashes.size !== entries.length) {
+        throw new Error("The conifer species plate must render a distinct silhouette per species: "
+            + JSON.stringify(entries.map(entry => [entry.id, entry.hash])));
+    }
+    for (const required of ["spruce", "fir", "pine", "larch", "juniper", "yew", "dwarf-pine"]) {
+        if (!entries.some(entry => entry.id === required)) throw new Error("The conifer species plate is missing " + required + ".");
+    }
+    return entries;
 }
 
 async function renderFormationSheet(browserContext, frames, meta) {
@@ -458,6 +550,55 @@ async function renderSeasonSheet(browserContext, frames, meta) {
     <footer>
         <span><strong>Generated</strong> ${meta.generatedAt} · <strong>Renderer</strong> ${escapeHtml(meta.renderer || "unknown")}</span>
         <span>${meta.conifer ? "Fresh needles, closed summer tiers, golden autumn and the bare larch winter skeleton." : "Fresh leaf-out, closed summer canopy, autumn turn, bare winter crowns and leaf carpet."}</span>
+    </footer>
+</div>
+</body></html>`;
+    await sheet.setContent(html, { waitUntil: "load" });
+    await waitForImages(sheet);
+    const png = await sheet.locator(".sheet").screenshot({ animations: "disabled" });
+    await sheet.close();
+    return png;
+}
+
+async function renderSpeciesSheet(browserContext, entries, meta) {
+    const sheet = await browserContext.newPage();
+    await sheet.setViewportSize({ width: 1500, height: 900 });
+    const cells = entries.map(entry => `
+        <figure>
+            <img src="${entry.dataUrl}" alt="${escapeHtml(entry.label)} silhouette">
+            <figcaption>
+                <strong>${escapeHtml(entry.label)}</strong>
+                <small>${escapeHtml(entry.id)} · ${escapeHtml(entry.crownShape)} · hash ${entry.hash}</small>
+                <span>INK ${entry.ink} PX · BBOX ${entry.bbox.width}×${entry.bbox.height}</span>
+            </figcaption>
+        </figure>`).join("");
+    const html = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #080e10; color: #eadfc7; font-family: Georgia, "Times New Roman", serif; }
+    .sheet { width: 1440px; padding: 34px 42px 30px; background: radial-gradient(circle at 50% 0%, rgba(170, 137, 79, .13), transparent 48%), linear-gradient(180deg, #0d1719, #081012); }
+    .eyebrow { color: #b6935b; font: 700 11px/1.2 Arial, sans-serif; letter-spacing: .24em; }
+    h1 { margin: 10px 0 8px; color: #f3e7ce; font-size: 34px; font-weight: 400; }
+    .deck { margin: 0; color: #a8b4a8; font: 14px/1.5 Arial, sans-serif; max-width: 1320px; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 24px; }
+    figure { margin: 0; padding: 6px; border: 1px solid #4d3e29; border-radius: 4px; background: #101b1d; box-shadow: 0 8px 20px rgba(0, 0, 0, .28); }
+    figure img { display: block; width: 100%; aspect-ratio: 220 / 260; object-fit: contain; background: #d9dfcc; border: 1px solid #263330; }
+    figcaption { display: flex; flex-direction: column; gap: 4px; padding: 8px 3px 2px; min-height: 58px; }
+    figcaption strong { color: #e3c88f; font: 800 11px/1.2 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+    figcaption small { color: #b9c5b3; font: 10px/1.25 Arial, sans-serif; }
+    figcaption span { color: #7f8d83; font: 9px/1.2 Arial, sans-serif; letter-spacing: .08em; margin-top: auto; }
+    footer { display: flex; justify-content: space-between; gap: 24px; margin-top: 22px; padding-top: 14px; border-top: 1px solid #4d3e29; color: #87958b; font: 11px/1.5 Arial, sans-serif; letter-spacing: .04em; }
+    footer strong { color: #c9ab73; }
+</style></head><body>
+<div class="sheet">
+    <div class="eyebrow">KINGS &amp; CARDS · CONIFER SPECIES RENDER</div>
+    <h1>Seven conifers, seven production silhouettes</h1>
+    <p class="deck">Seed ${seed} · production drawConifer() path · day 150 · northern climate · scale 3.4 · identical seed and origin · transparent plate shown on a light ground so the crown is readable</p>
+    <div class="grid">${cells}</div>
+    <footer>
+        <span><strong>Generated</strong> ${meta.generatedAt} · <strong>Renderer</strong> ${escapeHtml(meta.renderer || "unknown")}</span>
+        <span>Distinct FNV pixel hashes prove a distinct rendered form and palette. Yew and dwarf pine are not relabelled spruce.</span>
     </footer>
 </div>
 </body></html>`;

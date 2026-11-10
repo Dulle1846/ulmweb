@@ -6,6 +6,8 @@ import { randInt as seededRandInt } from "../core/random.js";
 import { getRoomBonusSnapshot } from "./rooms.js";
 import { HOUSING_TIERS, housingCapacityFor, isHousingType } from "./city-config.js";
 import { canSettleNewcomer } from "./settlement.js";
+import { getFaithModifiers } from "./faith.js";
+import { getJusticeModifiers } from "./justice.js";
 const randInt=(min,max)=>seededRandInt(min,max,"population");
 const housingEntities=()=>state.entities.filter(entity=>!entity.dead&&isHousingType(entity.type));
 const capacityOf=house=>housingCapacityFor(house.type);
@@ -137,6 +139,12 @@ export function updatePopulation() {
         const housing = getHousingSnapshot();
         if (housing.available < 1 || state.morale < getPopulationGrowthMoraleThreshold()) break;
         if ((state.resources.food || 0) < housing.population * POPULATION_GROWTH_FOOD_RESERVE) break;
+        // Heresy and high crime make the realm a less attractive destination.
+        // The threshold shift is deterministic and does not consume a random
+        // stream, so the twenty-five-year campaign stays reproducible.
+        const migration = getFaithModifiers().migrationFactor * getJusticeModifiers().migrationFactor;
+        const moraleGate = getPopulationGrowthMoraleThreshold() + Math.round(Math.max(0, 1 - migration) * 28);
+        if (state.morale < moraleGate) break;
         if (state.city?.enabled) {
             const gate = canSettleNewcomer();
             if (!gate.ok) break;
@@ -158,6 +166,7 @@ export function updatePopulation() {
         villager.householdId = `house:${home.x}:${home.y}`;
         villager.lastAgedYear = state.year;
         villager.jobRefreshTimer = 0;
+        villager.civicOrigin = "settler";
         recordPopulationGrowth();
         newest = villager;
     }

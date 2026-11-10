@@ -5,8 +5,11 @@ import { DIPLOMATIC_REALMS, DIPLOMATIC_TREATIES, normalizeTreaty } from "./diplo
 import { addLog } from "./events.js";
 import { addResource } from "./resources.js";
 import { applyPoliticalEffects, normalizePoliticalState, POLITICAL_FACTIONS } from "./politics.js";
+import { getCourtModifiers } from "./court.js";
+import { addPersonMemory, ensurePersonProfile, PERSON_SPECIES } from "./people.js";
+import { TYPE } from "../core/types.js";
 
-export const DIPLOMACY_COSTS = Object.freeze({ gift:12, tradePact:15, alliance:25, peaceGold:20, peaceFood:15 });
+export const DIPLOMACY_COSTS = Object.freeze({ gift:12, tradePact:15, alliance:25, peaceGold:20, peaceFood:15, envoy:8 });
 export const TRADE_PACT_RELATION = 45;
 export const ALLIANCE_RELATION = 70;
 
@@ -47,6 +50,12 @@ export function createDiplomacyState() {
             trust:realm.baseTrust,
             fear:realm.baseFear,
             treaty:"none",
+            treatySinceYear:0,
+            envoyId:null,
+            envoyName:"",
+            envoySkill:0,
+            envoySinceYear:0,
+            warExhaustion:0,
             tradeVolume:0,
             lastTradeYear:0,
             lastContactYear:0,
@@ -76,6 +85,12 @@ export function normalizeDiplomacySnapshot(input) {
             trust:clamp(saved.trust ?? definition.baseTrust),
             fear:clamp(saved.fear ?? definition.baseFear),
             treaty:normalizeTreaty(saved.treaty),
+            treatySinceYear:integer(saved.treatySinceYear, 0),
+            envoyId:saved.envoyId ? String(saved.envoyId).slice(0, 100) : null,
+            envoyName:String(saved.envoyName || "").slice(0, 90),
+            envoySkill:clamp(saved.envoySkill ?? 0),
+            envoySinceYear:integer(saved.envoySinceYear, 0),
+            warExhaustion:clamp(saved.warExhaustion ?? 0),
             tradeVolume:integer(saved.tradeVolume, 0),
             lastTradeYear:integer(saved.lastTradeYear, 0),
             lastContactYear:integer(saved.lastContactYear, 0),
@@ -107,7 +122,10 @@ function realmSnapshot(realm) {
         ...realm,
         treatyLabel:DIPLOMATIC_TREATIES[realm.treaty]?.label || "Neutral",
         treatyTone:DIPLOMATIC_TREATIES[realm.treaty]?.tone || "neutral",
-        relationLabel:relationLabel(realm.relation)
+        relationLabel:relationLabel(realm.relation),
+        envoyLabel:realm.envoyId ? (realm.envoyName || "Envoy appointed") : "No envoy",
+        envoyActive:Boolean(realm.envoyId),
+        warExhaustionLabel:realm.warExhaustion >= 70 ? "Breaking" : realm.warExhaustion >= 35 ? "Wearing" : "Manageable"
     };
 }
 
@@ -116,13 +134,16 @@ export function getDiplomacySnapshot() {
     const realms = diplomacy.realms.map(realmSnapshot);
     const counts = { none:0, trade:0, alliance:0, war:0 };
     let relationTotal = 0;
+    let envoys = 0;
     for (const realm of realms) {
         counts[realm.treaty] = (counts[realm.treaty] || 0) + 1;
         relationTotal += realm.relation;
+        if (realm.envoyId) envoys++;
     }
     return {
         realms,
         counts,
+        envoys,
         averageRelation:realms.length ? Math.round((relationTotal / realms.length) * 10) / 10 : 0,
         lastUpdateYear:diplomacy.lastUpdateYear,
         history:diplomacy.history.slice(0, 12),
@@ -165,7 +186,8 @@ export function sendGift(id) {
     if (realm.treaty === "war") return { ok:false, reason:"war-closes-the-court" };
     if ((Number(state.resources?.gold) || 0) < DIPLOMACY_COSTS.gift) return { ok:false, reason:"not-enough-gold" };
     addResource("gold", -DIPLOMACY_COSTS.gift);
-    realm.relation = clamp(realm.relation + 5);
+    const court = getCourtModifiers();
+    realm.relation = clamp(realm.relation + 5 * court.diplomacyGain);
     realm.trust = clamp(realm.trust + 4);
     realm.fear = clamp(realm.fear - 1);
     record(diplomacy, realm, "gift", "Royal gift sent to " + definition.name);
@@ -183,8 +205,10 @@ export function proposeTradePact(id) {
     if (realm.relation < TRADE_PACT_RELATION) return { ok:false, reason:"relation-below-45" };
     if ((Number(state.resources?.gold) || 0) < DIPLOMACY_COSTS.tradePact) return { ok:false, reason:"not-enough-gold" };
     addResource("gold", -DIPLOMACY_COSTS.tradePact);
+    const court = getCourtModifiers();
     realm.treaty = "trade";
-    realm.relation = clamp(realm.relation + 4);
+    realm.treatySinceYear = currentYear();
+    realm.relation = clamp(realm.relation + 4 * court.diplomacyGain);
     realm.trust = clamp(realm.trust + 4);
     record(diplomacy, realm, "treaty", "Trade pact ratified with " + definition.name);
     applyPoliticalEffects({ legitimacy:0.3, guilds:1.1 });
@@ -200,8 +224,10 @@ export function proposeAlliance(id) {
     if (realm.relation < ALLIANCE_RELATION) return { ok:false, reason:"relation-below-70" };
     if ((Number(state.resources?.gold) || 0) < DIPLOMACY_COSTS.alliance) return { ok:false, reason:"not-enough-gold" };
     addResource("gold", -DIPLOMACY_COSTS.alliance);
+    const court = getCourtModifiers();
     realm.treaty = "alliance";
-    realm.relation = clamp(realm.relation + 6);
+    realm.treatySinceYear = currentYear();
+    realm.relation = clamp(realm.relation + 6 * court.diplomacyGain);
     realm.trust = clamp(realm.trust + 5);
     realm.fear = clamp(realm.fear - 2);
     record(diplomacy, realm, "treaty", "Alliance sworn with " + definition.name);
@@ -216,6 +242,12 @@ export function declareWar(id) {
     if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
     if (realm.treaty === "war") return { ok:false, reason:"already-at-war" };
     realm.treaty = "war";
+    realm.treatySinceYear = currentYear();
+    realm.warExhaustion = 0;
+    realm.envoyId = null;
+    realm.envoyName = "";
+    realm.envoySkill = 0;
+    realm.envoySinceYear = 0;
     realm.relation = clamp(Math.min(25, realm.relation - 30));
     realm.trust = clamp(realm.trust - 30);
     realm.fear = clamp(realm.fear + 18);
@@ -236,6 +268,8 @@ export function sueForPeace(id) {
     addResource("gold", -DIPLOMACY_COSTS.peaceGold);
     addResource("food", -DIPLOMACY_COSTS.peaceFood);
     realm.treaty = "none";
+    realm.treatySinceYear = currentYear();
+    realm.warExhaustion = 0;
     realm.relation = clamp(Math.max(28, realm.relation + 12));
     realm.trust = clamp(realm.trust + 2);
     realm.fear = clamp(realm.fear - 6);
@@ -247,26 +281,111 @@ export function sueForPeace(id) {
     return { ok:true, message:"Peace concluded with " + definition.name, realm:realmSnapshot(realm) };
 }
 
+function envoySkillFor(person) {
+    return clamp(
+        (person?.traits?.sociability ?? 50) * 0.40 +
+        (person?.traits?.patience ?? 50) * 0.30 +
+        (person?.traits?.curiosity ?? 50) * 0.20 +
+        (100 - (person?.traits?.distrust ?? 50)) * 0.10,
+        5,
+        100
+    );
+}
+
+function livingEnvoy(realm) {
+    if (!realm?.envoyId) return null;
+    const entity = state.entities.find(item => !item.dead && String(item.personId || item.id) === String(realm.envoyId)) || null;
+    if (!entity) {
+        realm.envoyId = null;
+        realm.envoyName = "";
+        realm.envoySkill = 0;
+        realm.envoySinceYear = 0;
+        return null;
+    }
+    return entity;
+}
+
+export function appointEnvoy(id, personId) {
+    const { diplomacy, realm, definition } = locate(id);
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    if (realm.treaty === "war") return { ok:false, reason:"war-closes-the-court" };
+    if (realm.envoyId) return { ok:false, reason:"an-envoy-is-already-appointed" };
+    const entity = state.entities.find(item => !item.dead && String(item.personId || item.id) === String(personId)) || null;
+    if (!entity) return { ok:false, reason:"eligible-envoy-not-found" };
+    if (entity.isKing) return { ok:false, reason:"the-sovereign-cannot-serve-as-envoy" };
+    if (entity.type !== TYPE.VILLAGER) return { ok:false, reason:"eligible-envoy-not-found" };
+    const person = ensurePersonProfile(entity);
+    const maturity = PERSON_SPECIES[person.species]?.maturation ?? 16;
+    if (person.ageYears < maturity) return { ok:false, reason:"envoy-not-adult" };
+    if (Object.values(state.court?.offices || {}).some(office => office && String(office.personId) === String(person.id))) {
+        return { ok:false, reason:"court-minister-cannot-serve-as-envoy" };
+    }
+    if (diplomacy.realms.some(item => item.id !== id && String(item.envoyId || "") === String(person.id))) {
+        return { ok:false, reason:"resident-already-serves-another-court" };
+    }
+    if ((Number(state.resources?.gold) || 0) < DIPLOMACY_COSTS.envoy) return { ok:false, reason:"not-enough-gold" };
+    addResource("gold", -DIPLOMACY_COSTS.envoy);
+    realm.envoyId = String(person.id);
+    realm.envoyName = person.name;
+    realm.envoySkill = Math.round(envoySkillFor(person));
+    realm.envoySinceYear = currentYear();
+    record(diplomacy, realm, "envoy", "Envoy appointed to " + definition.name + ": " + person.name);
+    applyPoliticalEffects({ guilds:0.4, legitimacy:0.1 });
+    addPersonMemory(entity, {
+        id:"diplomatic-envoy:" + definition.id + ":" + currentYear(),
+        type:"diplomacy",
+        text:"I was appointed envoy to " + definition.name + " in year " + currentYear() + ".",
+        tick:state.tick,
+        importance:72
+    });
+    return { ok:true, message:"Envoy appointed to " + definition.name, realm:realmSnapshot(realm) };
+}
+
+export function recallEnvoy(id) {
+    const { diplomacy, realm, definition } = locate(id);
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    if (!realm.envoyId) return { ok:false, reason:"no-envoy-is-appointed" };
+    const entity = state.entities.find(item => !item.dead && String(item.personId || item.id) === String(realm.envoyId)) || null;
+    if (entity) {
+        addPersonMemory(entity, {
+            id:"diplomatic-recall:" + definition.id + ":" + currentYear(),
+            type:"diplomacy",
+            text:"I was recalled from my post as envoy to " + definition.name + " in year " + currentYear() + ".",
+            tick:state.tick,
+            importance:48
+        });
+    }
+    record(diplomacy, realm, "envoy", "Envoy recalled from " + definition.name);
+    realm.envoyId = null;
+    realm.envoyName = "";
+    realm.envoySkill = 0;
+    realm.envoySinceYear = 0;
+    return { ok:true, message:"Envoy recalled from " + definition.name, realm:realmSnapshot(realm) };
+}
+
 export function updateDiplomacy() {
     const diplomacy = ensureDiplomacy();
     const year = currentYear();
     if (diplomacy.lastUpdateYear >= year) return getDiplomacySnapshot();
+    const court = getCourtModifiers();
     const effects = { legitimacy:0, commons:0, nobility:0, guilds:0, clergy:0 };
     let moraleDelta = 0;
 
     for (const realm of diplomacy.realms) {
         const definition = REALM_BY_ID.get(realm.id);
         if (!definition) continue;
+        const envoy = livingEnvoy(realm);
         if (realm.treaty === "war") {
-            realm.relation = clamp(realm.relation - 1.2);
+            realm.warExhaustion = clamp(realm.warExhaustion + 2);
+            realm.relation = clamp(realm.relation - 1.2 - realm.warExhaustion * 0.01);
             realm.trust = clamp(realm.trust - 0.2);
             realm.fear = clamp(realm.fear + 0.8);
-            effects.guilds -= 0.08;
-            effects.legitimacy -= 0.05;
+            effects.guilds -= 0.08 + realm.warExhaustion * 0.002;
+            effects.legitimacy -= 0.05 + realm.warExhaustion * 0.001;
             effects.nobility += 0.04;
-            moraleDelta -= 0.08;
+            moraleDelta -= 0.08 + realm.warExhaustion * 0.002;
         } else if (realm.treaty === "alliance") {
-            realm.relation = clamp(realm.relation + 1);
+            realm.relation = clamp(realm.relation + 1 + (envoy ? 0.6 : 0));
             realm.trust = clamp(realm.trust + 0.6);
             realm.fear = clamp(realm.fear - 0.4);
             effects.legitimacy += 0.08;
@@ -274,12 +393,12 @@ export function updateDiplomacy() {
             addResource("gold", 3);
             addResource("food", 4);
         } else if (realm.treaty === "trade") {
-            realm.relation = clamp(realm.relation + 0.7);
+            realm.relation = clamp(realm.relation + 0.7 + (envoy ? 0.5 : 0));
             realm.trust = clamp(realm.trust + 0.4);
             realm.fear = clamp(realm.fear - 0.2);
             effects.guilds += 0.1;
         } else {
-            realm.relation = clamp(realm.relation + (50 - realm.relation) * 0.04);
+            realm.relation = clamp(realm.relation + (50 - realm.relation) * 0.04 + (envoy ? 0.4 : 0));
             realm.trust = clamp(realm.trust + (realm.relation - realm.trust) * 0.03);
             realm.fear = clamp(realm.fear - 0.3);
         }
@@ -288,11 +407,12 @@ export function updateDiplomacy() {
             realm.relation = clamp(realm.relation + 0.35);
         }
         if (realm.treaty !== "war" && realm.relation < 20 && year - realm.lastIncidentYear >= 3) {
+            const incidentScale = Math.max(0.2, 1 - court.incidentReduction);
             realm.lastIncidentYear = year;
-            realm.relation = clamp(realm.relation - 2);
-            realm.fear = clamp(realm.fear + 3);
-            moraleDelta -= 0.5;
-            adjustHiddenTension(2);
+            realm.relation = clamp(realm.relation - 2 * incidentScale);
+            realm.fear = clamp(realm.fear + 3 * incidentScale);
+            moraleDelta -= 0.5 * incidentScale;
+            adjustHiddenTension(2 * incidentScale);
             record(diplomacy, realm, "incident", "Border incident with " + definition.name);
             addLog("BORDER TENSION WITH " + definition.name.toUpperCase(), "#d8a38a", "diplomacy");
         }

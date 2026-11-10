@@ -8,8 +8,14 @@ import { initStartingKingdom,spawnEntity,canSpawnEntity } from "../world/entitie
 import { drawStartingHand,restoreHand } from "../systems/cards.js";
 import { createMarketState } from "../systems/market.js";
 import { createDiplomacyState, normalizeDiplomacySnapshot } from "../systems/diplomacy.js";
+import { createCourtState, normalizeCourtState } from "../systems/court.js";
+import { createFaithState, normalizeFaithState } from "../systems/faith.js";
+import { createJusticeState, normalizeJusticeState } from "../systems/justice.js";
+import { normalizeMilitaryState } from "../systems/military.js";
+import { normalizeHealthState } from "../systems/health.js";
 import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeHouseholdAssignments } from "../systems/population.js";
+import { initializePopulationRegister,normalizePopulationState,serializePopulationState } from "../systems/population-register.js";
 import { invalidateRoomBonusCache } from "../systems/rooms.js";
 import { normalizeRoomFurniture } from "../systems/furniture.js";
 import { addLog } from "../systems/events.js";
@@ -25,7 +31,10 @@ import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
 import {ensurePersonProfile,normalizePersonProfile,normalizePersonMemorial,MAX_PERSON_ARCHIVE} from "../systems/people.js";
 import {setupCharacterDossier} from "../presentation/character-dossier.js";
 import {normalizeFamilyLinks} from "../systems/families.js";
-import {normalizeGovernment} from "../systems/government.js";
+import {normalizeGovernment,GOVERNMENT_FORMS} from "../systems/government.js";
+import {createIdentityState,normalizeIdentity,applyFoundingProfile,getFoundingModifiersFor,FOUNDING_PROFILES} from "../systems/identity.js";
+import {createResearchState,normalizeResearchState} from "../systems/research.js";
+import {createLegacyState,normalizeLegacyState,recordLegacy} from "../systems/legacy.js";
 import {normalizeRoyalState} from "../systems/royal-dynasty.js";
 import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
@@ -44,7 +53,18 @@ const SAVE_SCHEMA_MIGRATIONS=Object.freeze({
     0:snapshot=>{snapshot.hiddenRealm=snapshot.hiddenRealm&&typeof snapshot.hiddenRealm==="object"?snapshot.hiddenRealm:{};snapshot.health=snapshot.health&&typeof snapshot.health==="object"?snapshot.health:{};snapshot.economy=snapshot.economy&&typeof snapshot.economy==="object"?snapshot.economy:{};},
     1:snapshot=>{snapshot.statistics=snapshot.statistics&&typeof snapshot.statistics==="object"?snapshot.statistics:{};snapshot.personArchive=Array.isArray(snapshot.personArchive)?snapshot.personArchive:[];snapshot.creatureArchive=Array.isArray(snapshot.creatureArchive)?snapshot.creatureArchive:[];},
     2:snapshot=>{snapshot.randomStreams=snapshot.randomStreams&&typeof snapshot.randomStreams==="object"?snapshot.randomStreams:null;snapshot.availableCards=Array.isArray(snapshot.availableCards)?snapshot.availableCards:[];snapshot.issueSequence=Number.isFinite(Number(snapshot.issueSequence))?Math.max(0,Math.floor(Number(snapshot.issueSequence))):0;},
-    3:snapshot=>{if(snapshot.city===undefined)snapshot.city=null;if(snapshot.market===undefined)snapshot.market=null;}
+    3:snapshot=>{if(snapshot.city===undefined)snapshot.city=null;if(snapshot.market===undefined)snapshot.market=null;},
+    4:snapshot=>{if(snapshot.faith===undefined)snapshot.faith=null;if(snapshot.justice===undefined)snapshot.justice=null;},
+    5:snapshot=>{if(snapshot.faith===undefined)snapshot.faith=null;if(snapshot.justice===undefined)snapshot.justice=null;if(!snapshot.health||typeof snapshot.health!=="object")snapshot.health={};},
+    6:snapshot=>{
+        // Schema 7 adds realm identity, research and the legacy record. Older
+        // saves keep their existing realm name instead of being renamed.
+        if(!snapshot.identity||typeof snapshot.identity!=="object"||Array.isArray(snapshot.identity)){
+            snapshot.identity={kingdomName:snapshot.kingdomName||"ELDRIA",dynastyName:snapshot.royal?.dynastyName||snapshot.kingdomName||"Eldria",rulerTitle:"Sovereign",culture:"frontier",banner:"gold",emblem:"crown",motto:"We keep what we build.",foundedYear:1};
+        }
+        if(snapshot.research===undefined)snapshot.research=null;
+        if(snapshot.legacy===undefined)snapshot.legacy=null;
+    }
 });
 function migrateSaveSnapshot(snapshot){
     if(!snapshot||typeof snapshot!=="object"||Array.isArray(snapshot))return snapshot;
@@ -378,6 +398,12 @@ function resetForRun(profile){
     state.activeProfileId=profile.id;
     state.playerName=profile.displayName;
     state.market=createMarketState();
+    state.court=createCourtState();
+    state.faith=createFaithState();
+    state.justice=createJusticeState();
+    state.identity=createIdentityState({kingdomName:"New Realm",dynastyName:"Royal House"});
+    state.research=createResearchState();
+    state.legacy=createLegacyState({foundedYear:1});
     state.diplomacy=createDiplomacyState();
     state.hasStarted=true;
     state.gameSpeed=1;
@@ -459,16 +485,57 @@ function scheduleForgePreview(){
     forgePreviewTimer=window.setTimeout(drawForgePreview,180);
 }
 
+function readIdentityOptions(){
+    const value=id=>document.getElementById(id)?.value;
+    return {
+        kingdomName:value("realm-name-input"),dynastyName:value("realm-dynasty-input"),
+        rulerTitle:value("realm-title-input"),culture:value("realm-culture"),
+        religion:value("realm-religion"),tradition:value("realm-tradition"),
+        law:value("realm-law"),legitimacy:value("realm-legitimacy"),
+        startProfile:value("realm-founding"),background:value("realm-background"),
+        banner:value("realm-banner"),emblem:value("realm-emblem")
+    };
+}
+
+function applyIdentityForNewRealm(){
+    const identity=createIdentityState({...readIdentityOptions(),foundedYear:1});
+    state.identity=identity;
+    state.kingdomName=identity.kingdomName;
+    state.royal.dynastyName=identity.dynastyName;
+    const form=document.getElementById("realm-government")?.value;
+    if(form&&Object.hasOwn(GOVERNMENT_FORMS,form)){
+        state.government.form=form;
+        state.government.taxRate=GOVERNMENT_FORMS[form].tax;
+    }
+    state.legacy=createLegacyState({foundedYear:1});
+    recordLegacy("realm","The realm is founded",identity.kingdomName+" is founded under "+identity.dynastyName+" with the "+identity.religion+" rite, "+identity.tradition+" custom and "+identity.law+" law.",{importance:4,year:1,tick:0});
+    if(identity.background)recordLegacy("realm","Founding chronicle",identity.background,{importance:3,year:1,tick:0});
+}
+
+function refreshFoundingSummary(){
+    const summary=document.getElementById("founding-summary");
+    if(!summary)return;
+    const identity=createIdentityState({...readIdentityOptions(),foundedYear:1});
+    const modifiers=getFoundingModifiersFor(identity);
+    const profile=FOUNDING_PROFILES[identity.startProfile];
+    const pct=value=>{const n=Math.round(Number(value||0)*100);return (n>=0?"+":"")+n+"%";};
+    summary.textContent=profile.label+" · "+profile.description+"  |  Tax "+pct(modifiers.tax)+" · Trade "+pct(modifiers.trade)+" · Research "+pct(modifiers.research)+" · Food demand "+pct(modifiers.foodDemand)+" · Legitimacy "+pct(modifiers.legitimacy)+" · Mortality "+pct(modifiers.mortality);
+}
+
 function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     resetForRun(profile);
+    applyIdentityForNewRealm();
     state.worldSeed=seed;
     state.worldOptions={...worldOptions};
     state.terrainVersion=TERRAIN_GENERATION_VERSION;
     initWorld(seed,state.worldOptions,state.terrainVersion);
     initStartingKingdom();
+    const foundingGrant=applyFoundingProfile(state.identity?.startProfile);
+    if(foundingGrant.id!=="balanced")addLog("FOUNDING CHARTER — "+foundingGrant.profile.label.toUpperCase(),"#d6b56d","milestone");
     initializeCityForRealm();
     normalizeHouseholdAssignments();
     initializeSettlementForRealm();
+    initializePopulationRegister();
     openGoodsBookForNewRealm();
     drawStartingHand();
     state.camera.x=0;state.camera.y=0;
@@ -490,11 +557,11 @@ function serializeEntity(entity,indexByEntity){
         rotation:entity.rotation||0,footprintScale:entity.footprintScale||1,interior:entity.interior?{...entity.interior}:null,roomFurniture:entity.roomFurniture&&typeof entity.roomFurniture==="object"?JSON.parse(JSON.stringify(entity.roomFurniture)):null,layout:entity.layout?serializeLayout(entity.type,entity.layout,1,1):null,
         construction:entity.construction?JSON.parse(JSON.stringify(entity.construction)):null,inventory:entity.inventory?JSON.parse(JSON.stringify(entity.inventory)):null,warehouse:entity.warehouse?JSON.parse(JSON.stringify(entity.warehouse)):null,field:entity.field?{...entity.field}:null,pannage:entity.pannage&&typeof entity.pannage==="object"?JSON.parse(JSON.stringify(entity.pannage)):null,
         anim:entity.anim,facing:entity.facing,visualState:entity.visualState,anchor:entity.anchor,home:entity.home,
-        illnessUntilTick:entity.illnessUntilTick,illnessStartedTick:entity.illnessStartedTick,illnessSeverity:entity.illnessSeverity,
+        illnessUntilTick:entity.illnessUntilTick,illnessStartedTick:entity.illnessStartedTick,illnessSeverity:entity.illnessSeverity,immunity:entity.immunity,isHealer:Boolean(entity.isHealer),healthRole:entity.healthRole||null,military:entity.military&&typeof entity.military==="object"?JSON.parse(JSON.stringify(entity.military)):null,
         targetX:entity.targetX,targetY:entity.targetY,velocityX:entity.velocityX,velocityY:entity.velocityY,
         routinePhase:entity.routinePhase,routineTimer:entity.routineTimer,movePause:entity.movePause,
         job:entity.job,jobRefreshTimer:entity.jobRefreshTimer,workplaceIndex:entity.workplace?indexByEntity.get(entity.workplace)??null:null,
-        isKing:entity.isKing,isRoyalFamily:Boolean(entity.isRoyalFamily),isDragon:Boolean(entity.isDragon),creature:entity.creature?JSON.parse(JSON.stringify(entity.creature)):null,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,lastAgedYear:entity.lastAgedYear??null
+        isKing:entity.isKing,isRoyalFamily:Boolean(entity.isRoyalFamily),isDragon:Boolean(entity.isDragon),creature:entity.creature?JSON.parse(JSON.stringify(entity.creature)):null,moraleMod:entity.moraleMod,tint:entity.tint,householdId:entity.householdId||null,civicOrigin:entity.civicOrigin||null,lastAgedYear:entity.lastAgedYear??null
     };
 }
 
@@ -504,7 +571,7 @@ function createSaveSnapshot(){
         playerName:state.playerName,kingdomName:state.kingdomName,worldSeed:state.worldSeed,
         worldOptions:{...state.worldOptions},terrainVersion:state.terrainVersion||1,randomStreams:getRandomStreamSnapshot(),nextEntityId:state.nextEntityId,saveSchemaVersion:SAVE_SCHEMA_VERSION,nextCardDrawTick:state.nextCardDrawTick,
         nextIssueAtTick:state.nextIssueAtTick,issueSequence:state.issueSequence,
-        hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),health:JSON.parse(JSON.stringify(state.health||{})),
+        hiddenRealm:JSON.parse(JSON.stringify(state.hiddenRealm||{})),health:JSON.parse(JSON.stringify(state.health||{})),military:JSON.parse(JSON.stringify(state.military||{})),faith:JSON.parse(JSON.stringify(state.faith||createFaithState())),justice:JSON.parse(JSON.stringify(state.justice||createJusticeState())),
         camera:{x:state.camera.x/(Number(state.renderScale)||1),y:state.camera.y/(Number(state.renderScale)||1)},zoom:state.zoom/(Number(state.renderScale)||1),
         explored:state.explored.map(column=>column.map(Boolean)),
         roads:serializeRoads(),
@@ -527,7 +594,8 @@ function createSaveSnapshot(){
         availableCards:state.availableCards.map(card=>({...card,cost:{...card.cost}})),
         activeEvent:state.activeEvent,
         eventLog:state.eventLog.slice(0,100),eventSequence:state.eventSequence,
-        statistics:{...state.statistics},ambitions:JSON.parse(JSON.stringify(state.ambitions||{})),economy:JSON.parse(JSON.stringify(state.economy||{})),politics:JSON.parse(JSON.stringify(state.politics||{})),government:JSON.parse(JSON.stringify(state.government||{})),royal:JSON.parse(JSON.stringify(state.royal||{})),market:JSON.parse(JSON.stringify(state.market)),diplomacy:JSON.parse(JSON.stringify(state.diplomacy||createDiplomacyState())),
+        statistics:{...state.statistics},ambitions:JSON.parse(JSON.stringify(state.ambitions||{})),economy:JSON.parse(JSON.stringify(state.economy||{})),population:serializePopulationState(),politics:JSON.parse(JSON.stringify(state.politics||{})),government:JSON.parse(JSON.stringify(state.government||{})),royal:JSON.parse(JSON.stringify(state.royal||{})),market:JSON.parse(JSON.stringify(state.market)),court:JSON.parse(JSON.stringify(state.court||createCourtState())),diplomacy:JSON.parse(JSON.stringify(state.diplomacy||createDiplomacyState())),
+        identity:JSON.parse(JSON.stringify(state.identity||{})),research:JSON.parse(JSON.stringify(state.research||{})),legacy:JSON.parse(JSON.stringify(state.legacy||{})),
         totalPopulation:state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length
     };
 }
@@ -585,9 +653,9 @@ function loadSnapshotIntoGame(profile,snapshot){
             id:typeof dto.id==="string"?dto.id:null,personId:typeof dto.personId==="string"?dto.personId:null,person:dto.person&&typeof dto.person==="object"?dto.person:null,
             hp:dto.hp,maxHp:dto.maxHp,dead:dto.dead,age:dto.age,anim:dto.anim,facing:dto.facing,
             rotation:Number.isFinite(dto.rotation)?dto.rotation:0,footprintScale:Number.isFinite(dto.footprintScale)?dto.footprintScale:1,interior:dto.interior&&typeof dto.interior==="object"?{...dto.interior}:null,roomFurniture:dto.roomFurniture&&typeof dto.roomFurniture==="object"&&!Array.isArray(dto.roomFurniture)?normalizeRoomFurniture(dto.roomFurniture):null,layout:dto.layout&&typeof dto.layout==="object"?normalizeLayout(dto.type,dto.layout,1,1):null,
-            construction:dto.construction&&typeof dto.construction==="object"?JSON.parse(JSON.stringify(dto.construction)):null,inventory:dto.inventory&&typeof dto.inventory==="object"?JSON.parse(JSON.stringify(dto.inventory)):null,warehouse:dto.warehouse&&typeof dto.warehouse==="object"?JSON.parse(JSON.stringify(dto.warehouse)):null,field:dto.field&&typeof dto.field==="object"?{...dto.field}:null,pannage:dto.pannage&&typeof dto.pannage==="object"?JSON.parse(JSON.stringify(dto.pannage)):null,
+            construction:dto.construction&&typeof dto.construction==="object"?JSON.parse(JSON.stringify(dto.construction)):null,inventory:dto.inventory&&typeof dto.inventory==="object"?JSON.parse(JSON.stringify(dto.inventory)):null,warehouse:dto.warehouse&&typeof dto.warehouse==="object"?JSON.parse(JSON.stringify(dto.warehouse)):null,field:dto.field&&typeof dto.field==="object"?{...dto.field}:null,pannage:dto.pannage&&typeof dto.pannage==="object"?JSON.parse(JSON.stringify(dto.pannage)):null,civicOrigin:dto.civicOrigin||null,
             visualState:dto.visualState,anchor:dto.anchor||{x:dto.x,y:dto.y},home:dto.home||{x:dto.x,y:dto.y},
-            illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,
+            illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,immunity:Number.isFinite(Number(dto.immunity))?Math.max(0,Math.min(100,Number(dto.immunity))):0,isHealer:Boolean(dto.isHealer),healthRole:dto.healthRole?String(dto.healthRole).slice(0,24):null,military:dto.military&&typeof dto.military==="object"&&!Array.isArray(dto.military)?JSON.parse(JSON.stringify(dto.military)):null,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
             routinePhase:dto.routinePhase??4,routineTimer:dto.routineTimer??30,movePause:dto.movePause||0,
             job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),isRoyalFamily:Boolean(dto.isRoyalFamily),isDragon:Boolean(dto.isDragon),creature:dto.creature&&typeof dto.creature==="object"?dto.creature:null,moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
@@ -619,12 +687,18 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.raidActive=Boolean(snapshot.raidActive);state.gameOver=Boolean(snapshot.gameOver);state.victory=Boolean(snapshot.victory);
     state.lastRandomEvent=snapshot.lastRandomEvent||0;state.weather=snapshot.weather||"clear";state.weatherTimer=Math.min(12,Math.max(0,Number(snapshot.weatherTimer)||0));
     state.kingdomName=snapshot.kingdomName||"ELDRIA";state.eventLog=Array.isArray(snapshot.eventLog)?snapshot.eventLog:[];
+    state.identity=normalizeIdentity(snapshot.identity||{});
+    state.research=normalizeResearchState(snapshot.research||{});
+    state.legacy=normalizeLegacyState(snapshot.legacy||{});
     state.eventSequence=snapshot.eventSequence||state.eventLog.reduce((max,e)=>Math.max(max,e.id||0),0);
     state.activeEvent=snapshot.activeEvent||null;
     state.issueSequence=snapshot.issueSequence||0;
     state.nextIssueAtTick=snapshot.nextIssueAtTick||0;
     state.hiddenRealm={tension:0,prosperity:0,mystery:0,memories:[],activeThreads:[],completedThreads:[],...(snapshot.hiddenRealm||{})};
-    state.health={outbreakActive:false,disease:"none",severity:0,containment:0,cases:0,recovered:0,outbreaks:0,lastUpdateTick:0,startedAtTick:0,...(snapshot.health||{})};
+    state.health=normalizeHealthState(snapshot.health||{});
+    state.military=normalizeMilitaryState(snapshot.military||{});
+    state.faith=normalizeFaithState(snapshot.faith||{});
+    state.justice=normalizeJusticeState(snapshot.justice||{});
     state.hiddenRealm.memories=Array.isArray(state.hiddenRealm.memories)?state.hiddenRealm.memories:[];
     state.hiddenRealm.activeThreads=Array.isArray(state.hiddenRealm.activeThreads)?state.hiddenRealm.activeThreads:[];
     state.hiddenRealm.completedThreads=Array.isArray(state.hiddenRealm.completedThreads)?state.hiddenRealm.completedThreads:[];
@@ -658,6 +732,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     normalizePoliticalState(snapshot.politics);
     normalizeGovernment(snapshot.government);
     normalizeRoyalState(snapshot.royal);
+    state.royal.dynastyName=state.identity.dynastyName;
     normalizeHouseholdAssignments();
     // The settlement pass applies its daily morale delta. A restored realm must
     // keep the morale value that was persisted; the next tick can recalculate
@@ -665,7 +740,12 @@ function loadSnapshotIntoGame(profile,snapshot){
     const restoredMorale=state.morale;
     initializeSettlementForRealm();
     state.morale=restoredMorale;
+    // Older saves have no register: derive one from the restored households
+    // and person profiles. New saves keep their origins, wealth and histories.
+    state.population=normalizePopulationState(snapshot.population);
+    initializePopulationRegister();
     state.market=snapshot.market||createMarketState();
+    state.court=normalizeCourtState(snapshot.court);
     state.diplomacy=normalizeDiplomacySnapshot(snapshot.diplomacy);
     if(Array.isArray(snapshot.explored)&&snapshot.explored.length===(Number(state.worldW)||WORLD_W))state.explored=snapshot.explored;
     const hasSavedCamera=snapshot.camera&&Number.isFinite(snapshot.camera.x)&&Number.isFinite(snapshot.camera.y);
@@ -862,6 +942,13 @@ function bindMenu(){
     if(seedInput)seedInput.value=String(randomSeed());
     const forgeDefaults=normalizeWorldOptions({});
     syncWorldForge(forgeDefaults);
+    const identityControls=["realm-name-input","realm-dynasty-input","realm-title-input","realm-culture","realm-religion","realm-tradition","realm-law","realm-legitimacy","realm-founding","realm-background","realm-banner","realm-emblem"];
+    identityControls.forEach(id=>{
+        const control=document.getElementById(id);
+        control?.addEventListener("input",refreshFoundingSummary);
+        control?.addEventListener("change",refreshFoundingSummary);
+    });
+    refreshFoundingSummary();
     const forgeControls=["world-size","world-shape","world-climate","world-landmass","world-ruggedness","world-forests","world-water","world-fertility","world-resources","world-mountains","world-rivers","world-lakes","world-coastline","world-snow","world-wetlands","world-aridity"];
     forgeControls.forEach(id=>document.getElementById(id)?.addEventListener("input",()=>syncWorldForge(readWorldOptions())));
     seedInput?.addEventListener("input",scheduleForgePreview);
@@ -1030,7 +1117,7 @@ setupBuildUI();
     const ctx=state.ctx;
     ctx.fillStyle="#0a120a";ctx.fillRect(0,0,state.canvas.width,state.canvas.height);
     ctx.fillStyle="#e6cc91";ctx.font="600 16px monospace";ctx.textAlign="center";
-    ctx.fillText("WELCOME TO ELDRIA",state.canvas.width/2,state.canvas.height/2);
+    ctx.fillText("WELCOME TO YOUR REALM",state.canvas.width/2,state.canvas.height/2);
     const profile=getActiveProfile();
     if(profile)state.playerName=profile.displayName;
 }

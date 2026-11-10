@@ -139,6 +139,9 @@ export const BUILDING_SIZE = {
     67: { w: 1.4, h: 1.2 }, // FORESTER
     68: { w: 2, h: 1.5 },   // CLINIC
     69: { w: 1.8, h: 1.4 }, // MARKET
+    70: { w: 1.3, h: 1.2 }, // SHRINE
+    71: { w: 2.2, h: 1.8 }, // COURT
+    72: { w: 2.2, h: 1.8 }, // PRISON
 };
 
 // Gebäude-Dachfarben (für Level-1-Icons und Level-2-Top-Down)
@@ -168,6 +171,9 @@ export const BUILDING_ROOF_COLOR = {
     67: "#3f6639",  // FORESTER — green
     68: "#8d6b55",  // CLINIC — clay
     69: "#9a6b3f",  // MARKET — awning
+    70: "#cfc6ae",  // SHRINE — pale stone
+    71: "#6b7078",  // COURT — slate
+    72: "#54504a",  // PRISON — iron-grey
 };
 
 // Gebäude-Icons für Level 1
@@ -179,6 +185,7 @@ export const BUILDING_ICON = {
     60: "⛺", 61: "🏛️", 62: "🏚️", 63: "🪚",
     64: "🥖", 65: "💧", 66: "🧱", 67: "🌱",
     68: "🩺", 69: "⚖️",
+    70: "🕯️", 71: "🏛️", 72: "🔒",
 };
 
 // ═══════════════════════════════════════════════════════════════

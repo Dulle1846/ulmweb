@@ -6,6 +6,9 @@ import {
     ensurePersonProfile, addPersonMemory, createPersonMemorial,
     PERSON_SPECIES, MAX_PERSON_ARCHIVE
 } from "./people.js";
+import { getMortalityContext, recordHealthMortality } from "./health.js";
+import { getFaithModifiers } from "./faith.js";
+import { getResearchModifiers } from "./research.js";
 
 export const MAX_NATURAL_DEATHS_PER_YEAR = 8;
 export const MORTALITY_START_LIFESPAN_RATIO = 0.72;
@@ -13,16 +16,29 @@ export const MORTALITY_START_LIFESPAN_RATIO = 0.72;
 function deathRisk(entity, person) {
     const species = PERSON_SPECIES[person.species];
     if (!species || species.lifespan <= 0) return 0;
+    const context = getMortalityContext();
     const ratio = Math.max(0, Number(person.ageYears) || 0) / species.lifespan;
-    if (ratio < MORTALITY_START_LIFESPAN_RATIO) return 0;
-    const ageProgress = Math.min(1.5, (ratio - MORTALITY_START_LIFESPAN_RATIO) /
+    const ageProgress = Math.max(0, (ratio - MORTALITY_START_LIFESPAN_RATIO) /
         (1 - MORTALITY_START_LIFESPAN_RATIO));
-    const ageRisk = 0.02 + Math.pow(ageProgress, 2) * 0.48;
+    const ageRisk = ratio < MORTALITY_START_LIFESPAN_RATIO ? 0 : Math.min(0.5, 0.02 + Math.pow(ageProgress, 2) * 0.48);
     const maxHp = Math.max(1, Number(entity.maxHp) || 1);
     const hpRatio = Math.max(0, Math.min(1, (Number.isFinite(Number(entity.hp)) ? Number(entity.hp) : maxHp) / maxHp));
     const healthRisk = (1 - hpRatio) * 0.2;
-    const illnessRisk = Number(entity.illnessSeverity) > 0 ? Math.min(0.2, Number(entity.illnessSeverity) / 500) : 0;
-    return Math.max(0, Math.min(0.92, ageRisk + healthRisk + illnessRisk));
+    const immunity = Math.max(0, Math.min(100, Number(entity.immunity) || 0)) / 100;
+    const illnessRisk = Number(entity.illnessSeverity) > 0
+        ? Math.min(0.32, (0.018 + Number(entity.illnessSeverity) * 0.016 + context.severity * 0.008) *
+            (1 - immunity * 0.55) * (1 - context.healerCoverage * 0.22))
+        : 0;
+    const sanitationRisk = Math.max(0, 55 - context.sanitation) / 100 * 0.018;
+    const occupation = String(person.role || entity.job || "resident").toLowerCase();
+    const occupationRisk = ["miner", "mason", "woodcutter", "stablehand", "soldier"].includes(occupation) ? 0.005 : 0;
+    const risk = ageRisk + healthRisk + illnessRisk + sanitationRisk + occupationRisk;
+    const healerMitigation = 1 - context.healerCoverage * 0.12;
+    // The congregation's comfort reaches every household: mystics, the culture
+    // budget and a crowded temple lower the yearly risk of death.
+    const faithComfort = getFaithModifiers().mortalityRelief;
+    const researchComfort = getResearchModifiers().mortalityRelief;
+    return Math.max(0, Math.min(0.92, risk * healerMitigation * faithComfort * researchComfort));
 }
 
 function hasFamilyTie(person, personId) {
@@ -117,7 +133,10 @@ export function updateMortality() {
             ? "illness"
             : hpRatio < 0.3 ? "injury" : "old age";
         const death = recordNaturalDeath(entity, cause);
-        if (death) deaths.push(death);
+        if (death) {
+            recordHealthMortality(entity, person, cause);
+            deaths.push(death);
+        }
     }
     return deaths;
 }

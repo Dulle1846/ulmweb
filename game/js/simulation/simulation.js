@@ -5,10 +5,16 @@ import { updateMorale } from "../systems/morale.js";
 import { checkRandomEvents,addLog } from "../systems/events.js";
 import { updateMarket } from "../systems/market.js";
 import { updateDiplomacy } from "../systems/diplomacy.js";
+import { updateCourt } from "../systems/court.js";
 import { updateEconomy } from "../systems/economy.js";
 import { updateEdicts } from "../systems/edicts.js";
 import { updateHealth } from "../systems/health.js";
+import { updateMilitary } from "../systems/military.js";
+import { updateFaith } from "../systems/faith.js";
+import { updateJustice } from "../systems/justice.js";
+import { updateResearch } from "../systems/research.js";
 import { updatePopulation } from "../systems/population.js";
+import { updateCitizenRegister } from "../systems/population-register.js";
 import { updateWeather } from "../world/weather.js";
 import { updateBuildingIncome } from "./buildings.js";
 import { updateVillagers } from "./villagers.js";
@@ -41,6 +47,9 @@ export function updateSimulation(){
     let deaths=[];
     let guardianships=[];
     if(state.year>previousYear){
+        updateFaith();
+        updateJustice();
+        updateResearch();
         updateEdicts();
         updatePeople();
         deaths=updateMortality();
@@ -52,11 +61,13 @@ export function updateSimulation(){
         updatePersonalAgency();
         newborn=updateBirths();
         updateDiplomacy();
+        updateCourt();
     }
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
     resetIncome();
     updateSettlement();
     const newcomer=newborn?null:updatePopulation();
+    updateCitizenRegister();
     for(const death of deaths){
         addLog("A RESIDENT DIED: "+death.name+" · "+death.cause,"#b99a9a","death");
     }
@@ -70,7 +81,7 @@ export function updateSimulation(){
     }
     if(newborn)addLog("A CHILD WAS BORN: "+newborn.person.name,"#e8c77b","family");
     else if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
-    updateFields();updateForestSuccession();if(state.resourceGeography)regrowForests(400,{slice:state.tick%400,slices:400});updateForestFauna();updateForestPannage();updateBuildingIncome();updateLogistics();updateConstruction();updateVillagers();updateCombat();checkRandomEvents();
+    updateFields();updateForestSuccession();if(state.resourceGeography)regrowForests(400,{slice:state.tick%400,slices:400});updateForestFauna();updateForestPannage();updateBuildingIncome();updateLogistics();updateConstruction();updateVillagers();updateMilitary();updateCombat();checkRandomEvents();
     updateWeather();updateMorale();updateMarket();updateEconomy();updateHealth();updateAmbitions();
     state.entities=state.entities.filter(entity=>!entity.dead);
     if(state.raidActive&&!state.entities.some(entity=>entity.isEnemy())){

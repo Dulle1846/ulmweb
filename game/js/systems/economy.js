@@ -8,6 +8,11 @@ import { updatePolitics } from "./politics.js";
 import { getRoadUpkeepTotal } from "./roads.js";
 import { getEdictModifiers } from "./edicts.js";
 import { applyRoomBonuses, getFurnitureUpkeepTotal } from "./rooms.js";
+import { getCourtModifiers } from "./court.js";
+import { getFaithModifiers } from "./faith.js";
+import { getJusticeModifiers } from "./justice.js";
+import { getResearchModifiers } from "./research.js";
+import { getCitizenModifiers } from "./population-register.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -105,7 +110,7 @@ export function getBuildingEfficiency(building, workforce = null) {
     if (!capacity) return 0;
     const workers = (workforce || getWorkforceSnapshot()).workersByBuilding.get(building) || 0;
     const productivity = state.city?.enabled ? Math.max(0.7, Math.min(1.05, Number(state.city?.needs?.productivity) || 1)) : 1;
-    return Math.max(0, Math.min(1, workers / capacity)) * productivity;
+    return Math.max(0, Math.min(1, workers / capacity)) * productivity * getCitizenModifiers().productivity;
 }
 
 export function updateEconomy() {
@@ -125,10 +130,33 @@ export function updateEconomy() {
     // household demand, a mint raises what the tax collectors bring in, and a
     // standing edict nudges morale every settlement period.
     const edicts = getEdictModifiers();
-    ledger.foodDemand *= edicts.food;
+    const court = getCourtModifiers();
+    const faith = getFaithModifiers();
+    const justice = getJusticeModifiers();
+    // Research reaches the household directly: crop rotation and granaries
+    // lower what a family needs, while the census and written law raise the
+    // share the collectors actually bring in.
+    const research = getResearchModifiers();
+    ledger.foodDemand *= edicts.food * research.foodDemandFactor;
     ledger.foodConsumed = Math.min(state.resources.food, ledger.foodDemand);
     ledger.foodShortage = Math.max(0, ledger.foodDemand - ledger.foodConsumed);
     ledger.taxesCollected *= edicts.tax;
+    ledger.faithTaxBonus = ledger.taxesCollected * (faith.taxEfficiency - 1);
+    ledger.taxesCollected *= faith.taxEfficiency;
+    ledger.justiceTaxBonus = ledger.taxesCollected * (justice.taxEfficiency - 1);
+    ledger.taxesCollected *= justice.taxEfficiency;
+    ledger.researchTaxBonus = ledger.taxesCollected * (research.taxEfficiency - 1);
+    ledger.taxesCollected *= research.taxEfficiency;
+    const courtTaxBefore = ledger.taxesCollected;
+    ledger.taxesCollected *= court.taxEfficiency;
+    ledger.courtTaxBonus = ledger.taxesCollected - courtTaxBefore;
+    // Named citizens are the tax base. Their loyalty and employment reach the
+    // ledger through one bounded civic modifier, not a second tax calculation.
+    const civic = getCitizenModifiers();
+    const citizenTaxBefore = ledger.taxesCollected;
+    ledger.taxesCollected *= civic.taxEfficiency;
+    ledger.citizenTaxBonus = ledger.taxesCollected - citizenTaxBefore;
+    ledger.civicTaxEfficiency = civic.taxEfficiency;
     ledger.netGold = ledger.taxesCollected - ledger.wagesPaid - ledger.upkeepPaid - ledger.furnitureUpkeepPaid;
 
     recordResourceMovement("food", -ledger.foodConsumed, "population-food", {

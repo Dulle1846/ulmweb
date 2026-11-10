@@ -21,6 +21,10 @@ For the current development stage, these documents focus on making the existing 
 - [Terrain Visual Reference](TERRAIN_VISUAL_REFERENCE.md) — committed four-season, four-zoom contact sheet and reproduction script.
 - [Laubwälder 1.2.1](FOREST_ECOLOGY.md) — shared forest ecology, all eight broadleaf species, fifteen formations, the 60-point audit and the forest visual references.
 - [Nadelwälder 1.2.2](CONIFER_FORESTS.md) — five conifer species, twelve conifer formations, seasonal larch needles, needle-floor ecology, conifer products and disturbance succession.
+- [Named garrison and public health](MILITARY_AND_PUBLIC_HEALTH.md) — barracks/stables, named recruits and timed drill, warhorses and annual payroll, sanitation, outbreaks, healers, medicine, quarantine, mortality and the schema-5 save contract.
+- [Faith, culture and justice](FAITH_AND_JUSTICE.md) — named clergy and judges, shrines, courts and prisons, festivals, pilgrimages, heresy, emergent crime, trials, legal codes, charters, corruption, schema-6 saves and the verified hosted build.
+- [Realm founding](REALM_FOUNDING.md) — cultures, religions, traditions, legal orders, legitimacy doctrines, starting charters, oligarchy and mixed constitution, save-compatible identity modifiers and the verified hosted build.
+- [Living population](LIVING_POPULATION.md) — persistent citizens and households, the deterministic annual census, civic/economic/military modifiers, save-schema-7 migration, the PEOPLE panel and the verified hosted builds.
 - [Terrain Art Checklist](TERRAIN_ART_CHECKLIST.md) — item-by-item audit of checklist 1.1.1–1.1.10 with code and verification evidence.
 - [Kings & Cards Foundation](V2_FOUNDATION.md) — current playable systems, exact limits and verified checks.
 - [Next AI Work Package](NEXT_AI_WORK_PACKAGE.md) — ready-to-use handoff brief for contributors and AI sessions.

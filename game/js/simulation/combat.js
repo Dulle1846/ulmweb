@@ -4,6 +4,8 @@ import { state } from "../core/state.js";
 import { queueParticle,queueFloater,queueMessage } from "../core/presentation-effects.js";
 import { rand as seededRand } from "../core/random.js";
 import { getRaidDamageMultiplier } from "../systems/rooms.js";
+import { getCourtModifiers } from "../systems/court.js";
+import { getSoldierPower,getSoldierArmor,recordMilitaryVictory,recordMilitaryWound,recordMilitaryCasualty } from "../systems/military.js";
 const rand=(min,max)=>seededRand(min,max,"combat");
 
 const CELL=8;
@@ -36,6 +38,7 @@ export function updateCombat(){
  const enemies=state.entities.filter(e=>!e.dead&&e.isEnemy());
  if(!enemies.length)return;
  const raidDamageMultiplier=getRaidDamageMultiplier();
+ const readiness=Math.max(1,Math.min(1.25,Number(getCourtModifiers().militaryReadiness)||1));
  const defenders=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER,TYPE.TOWER].includes(e.type));
  const enemyBuckets=indexEntities(enemies),defenderBuckets=indexEntities(defenders);
  const keep=state.entities.find(e=>!e.dead&&e.type===TYPE.KEEP)||null;
@@ -49,11 +52,15 @@ export function updateCombat(){
   if(dist>1.8){enemy.x+=Math.sign(dx)*0.065;enemy.y+=Math.sign(dy)*0.065;}
   else if(tick%13===0){
    const baseDamage=enemy.type===TYPE.TROLL?32:13;
-   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier));
+   const armor=getSoldierArmor(target);
+   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/readiness*(1-armor)));
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
    if(target.hp<=0){
+    if(!target.isKing&&!target.isBuilding?.())recordMilitaryCasualty(target,"raid");
     target.dead=true;
     if(target.type===TYPE.KEEP){state.gameOver=true;queueMessage("THE REALM FELL","THE KEEP WAS DESTROYED",5000);}
+   }else if(!target.isKing&&getSoldierPower(target)>0&&target.hp/target.maxHp<0.55&&rand(0,1)<0.22){
+    recordMilitaryWound(target);
    }
   }
   if(rand(0,1)<0.02){enemy.hp-=22;if(enemy.hp<=0)enemy.dead=true;}
@@ -63,8 +70,10 @@ export function updateCombat(){
   const enemy=nearestFromBuckets(defender.x,defender.y,enemyBuckets,7);
   if(!enemy)continue;
   if(tick%(defender.type===TYPE.ARCHER?22:14)!==0)continue;
-  enemy.hp-=defender.type===TYPE.KNIGHT?34:18;
+  const namedPower=getSoldierPower(defender);
+  const basePower=namedPower>0?namedPower:(defender.type===TYPE.KNIGHT?34:18);
+  enemy.hp-=Math.max(1,Math.round(basePower*readiness));
   queueParticle(enemy.x*TILE_SIZE+12,enemy.y*TILE_SIZE-18,"#fde047",22,rand(-1,4),-3);
-  if(enemy.hp<=0){enemy.dead=true;queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE,"SLAIN","#eab308");}
+  if(enemy.hp<=0){enemy.dead=true;if(namedPower>0)recordMilitaryVictory(defender);queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE,"SLAIN","#eab308");}
  }
 }

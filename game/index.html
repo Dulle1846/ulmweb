@@ -112,7 +112,7 @@
             <div class="stage-grain" aria-hidden="true"></div>
             <div id="performance-hud" class="performance-hud hidden" role="status" aria-live="off">0 FPS · 0.0 MS · AUTO</div>
             <div class="stage-topline">
-                <div class="stage-chip">WORLD VIEW <strong>· ELDRIA</strong> <span id="zoom-level-name">ROOFTOPS</span> <span id="zoom-value">×1.00</span></div>
+                <div class="stage-chip">WORLD VIEW <strong>· <span id="stage-realm">ELDRIA</span></strong> <span id="zoom-level-name">ROOFTOPS</span> <span id="zoom-value">×1.00</span></div>
                 <div class="stage-chip">DRAG TO PAN</div>
                 <label class="map-layer-chip" for="map-layer-select"><span>MAP LAYER</span><select id="map-layer-select"><option value="terrain">Terrain</option><option value="resources">Resource survey</option><option value="fertility">Fertility</option><option value="roads">Road network</option><option value="services">Service coverage</option><option value="logistics">Logistics routes</option><option value="fields">Field seasons</option></select></label>
             </div>
@@ -128,7 +128,7 @@
                 <button id="zoom-in" class="zoom-button" type="button" aria-label="Zoom in">+</button>
             </div>
             <div id="placement-status" class="placement-status">DRAG THE SELECTED CARD ONTO THE MAP</div>
-            <div class="minimap-frame"><div class="minimap-heading"><span>WORLD MAP</span><span>ELDRIA</span></div><canvas id="minimap" width="140" height="140" aria-label="Minimap"></canvas></div>
+            <div class="minimap-frame"><div class="minimap-heading"><span>WORLD MAP</span><span id="minimap-realm">ELDRIA</span></div><canvas id="minimap" width="140" height="140" aria-label="Minimap"></canvas></div>
             <div class="stage-compass" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26"/><circle cx="32" cy="32" r="18"/><path d="M32 4 37 32 32 60 27 32Z"/><path d="M4 32 32 27 60 32 32 37Z" opacity=".45"/></svg><span>N</span></div>
             <div id="hint-box" class="hint-box hidden" role="button" tabindex="0" aria-label="Dismiss tip">
                 <div class="hint-title"><span>FIELD NOTE</span><span>×</span></div><div id="hint-text">Scroll to move through the realm's four levels of detail.</div>
@@ -212,6 +212,80 @@
             <label for="player-name-input">PLAYER PROFILE</label>
             <input id="player-name-input" type="text" maxlength="32" placeholder="Enter your player name" autocomplete="nickname">
             <div class="profile-note">Local profile for this browser. Online accounts and secure admin roles will be connected to a server backend in a later infrastructure step.</div>
+            <section class="realm-identity" aria-label="Realm identity and culture">
+                <div class="forge-heading"><span>THE REALM &amp; ITS HOUSE</span><span>NAME THE CROWN</span></div>
+                <div class="identity-grid">
+                    <label class="identity-field" for="realm-name-input"><span>REALM NAME</span><input id="realm-name-input" type="text" maxlength="32" value="" placeholder="Name your realm" autocomplete="off"></label>
+                    <label class="identity-field" for="realm-dynasty-input"><span>ROYAL HOUSE</span><input id="realm-dynasty-input" type="text" maxlength="32" value="" placeholder="Name your house" autocomplete="off"></label>
+                    <label class="identity-field" for="realm-title-input"><span>RULER TITLE</span><input id="realm-title-input" type="text" maxlength="24" value="Sovereign" autocomplete="off"></label>
+                    <label class="identity-field" for="realm-culture"><span>CULTURE</span><select id="realm-culture">
+                        <option value="frontier" selected>Frontier · hardy settlers</option>
+                        <option value="mercantile">Mercantile · trade and contracts</option>
+                        <option value="scholarly">Scholarly · archives and inquiry</option>
+                        <option value="martial">Martial · garrison and sword</option>
+                        <option value="devout">Devout · rites and charity</option>
+                    </select></label>
+                    <label class="identity-field" for="realm-government"><span>CONSTITUTION</span><select id="realm-government">
+                        <option value="feudal" selected>Feudal monarchy</option>
+                        <option value="royal">Royal centralism</option>
+                        <option value="council">Crowned council</option>
+                        <option value="elective">Elective crown</option>
+                        <option value="republic">Republic</option>
+                        <option value="theocracy">Theocracy</option>
+                        <option value="tribal">Tribal confederation</option>
+                        <option value="military">Military command</option>
+                        <option value="oligarchy">Oligarchy</option>
+                        <option value="mixed">Mixed constitution</option>
+                    </select></label>
+                    <label class="identity-field" for="realm-religion"><span>RELIGION</span><select id="realm-religion">
+                        <option value="ancestral" selected>Ancestral hearth · no extra modifier</option>
+                        <option value="solar">Solar covenant · legitimacy and harvest</option>
+                        <option value="harvest">Harvest rite · food and charity</option>
+                        <option value="rational">Rational inquiry · research and medicine</option>
+                        <option value="mystic">Mystic communion · comfort and pilgrimage</option>
+                    </select></label>
+                    <label class="identity-field" for="realm-tradition"><span>TRADITION</span><select id="realm-tradition">
+                        <option value="hearth" selected>Open hearth · no extra modifier</option>
+                        <option value="muster">The muster · garrison and obedience</option>
+                        <option value="guild">Guild compact · craft and trade</option>
+                        <option value="pilgrimage">Pilgrim roads · trade and legitimacy</option>
+                        <option value="isolation">Closed borders · stores and defense</option>
+                    </select></label>
+                    <label class="identity-field" for="realm-law"><span>LEGAL TRADITION</span><select id="realm-law">
+                        <option value="customary" selected>Customary law · no extra modifier</option>
+                        <option value="royal">Royal code · tax and garrison</option>
+                        <option value="common">Common law · legitimacy and trade</option>
+                        <option value="guild">Guild law · contracts and commerce</option>
+                        <option value="sacred">Sacred law · legitimacy and charity</option>
+                    </select></label>
+                    <label class="identity-field" for="realm-legitimacy"><span>LEGITIMACY</span><select id="realm-legitimacy">
+                        <option value="lineage" selected>Lineage · no extra modifier</option>
+                        <option value="divine">Divine right · sacred authority</option>
+                        <option value="consent">Consent of the governed · assembly</option>
+                        <option value="conquest">Right of conquest · military</option>
+                        <option value="prosperity">Prosperity · trade and growth</option>
+                    </select></label>
+                    <label class="identity-field" for="realm-founding"><span>STARTING CHARTER</span><select id="realm-founding">
+                        <option value="balanced" selected>Balanced founding · standard stores</option>
+                        <option value="frontier">Frontier settlement · wood and food</option>
+                        <option value="mercantile">Mercantile compact · gold and wood</option>
+                        <option value="garrison">Garrison march · stone, gold and morale</option>
+                        <option value="sanctuary">Sanctuary · food, gold and legitimacy</option>
+                        <option value="scholarly">Scholarly refuge · gold and research</option>
+                    </select></label>
+                    <label class="identity-field identity-field--wide" for="realm-background"><span>FOUNDING CHRONICLE</span><textarea id="realm-background" rows="2" maxlength="280" placeholder="Why was this realm founded? What does its first chronicle remember?"></textarea></label>
+                    <label class="identity-field" for="realm-banner"><span>BANNER</span><select id="realm-banner">
+                        <option value="gold" selected>Gold</option><option value="crimson">Crimson</option><option value="forest">Forest green</option>
+                        <option value="azure">Azure</option><option value="ivory">Ivory</option><option value="obsidian">Obsidian</option>
+                    </select></label>
+                    <label class="identity-field" for="realm-emblem"><span>EMBLEM</span><select id="realm-emblem">
+                        <option value="crown" selected>Crown</option><option value="stag">Stag</option><option value="wolf">Wolf</option>
+                        <option value="tower">Tower</option><option value="oak">Oak</option><option value="dragon">Dragon</option>
+                    </select></label>
+                </div>
+                <div id="founding-summary" class="founding-summary" role="status" aria-live="polite"></div>
+                <div class="profile-note">Culture, religion, tradition, law, legitimacy, constitution and the starting charter apply real modifiers from the first year. Heraldry and the founding are recorded in the chronicle.</div>
+            </section>
             <label for="world-seed-input">WORLD SEED</label>
             <div class="seed-row"><input id="world-seed-input" type="number" min="1" step="1"><button id="random-seed-btn" class="ui-button ui-button--secondary secondary-button" type="button">RANDOMIZE</button></div>
             <section class="world-forge" aria-label="World generation options">
@@ -332,7 +406,7 @@
             <div><span>Help / close</span><kbd>? / ESC</kbd></div>
         </div>
         <div class="profile-note">Saves are currently stored per local browser profile. Do not use this as secure multi-user authentication or cloud backup.</div>
-        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.9.0</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
+        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.10.0</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
     </div>
 </div>
 
@@ -373,6 +447,7 @@
 
 <div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="ui-panel ui-window ui-window--large modal-panel command-panel"><header class="ui-window__header ui-panel__header command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close management">×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management">
 <button type="button" class="ui-button ui-button--tab" data-command-tab="kingdom"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>REALM</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="population"><svg aria-hidden="true"><use href="assets/command-emblems.svg#people"></use></svg><span>PEOPLE</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="government"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>GOVERNMENT</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="politics"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>POLITICS</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="diplomacy"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>DIPLOMACY</span></button>
@@ -381,6 +456,11 @@
 <button type="button" class="ui-button ui-button--tab" data-command-tab="economy"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>ECONOMY</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="resources"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>STORES</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="buildings"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>BUILDINGS</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="military"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>MILITARY</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="health"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>HEALTH</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="faith"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>FAITH</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="justice"><svg aria-hidden="true"><use href="assets/command-emblems.svg#scales"></use></svg><span>JUSTICE</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="research"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>RESEARCH</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="dynasty"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>DYNASTY</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="creatures"><svg aria-hidden="true"><use href="assets/command-emblems.svg#dragon"></use></svg><span>CREATURES</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="chronicle"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>CHRONICLE</span></button>
@@ -408,6 +488,8 @@
             <button type="button" data-build-category="production">PRODUCTION</button>
             <button type="button" data-build-category="storage">STORAGE</button>
             <button type="button" data-build-category="services">SERVICES</button>
+            <button type="button" data-build-category="faith">FAITH</button>
+            <button type="button" data-build-category="justice">JUSTICE</button>
             <button type="button" data-build-category="military">MILITARY</button>
             <button type="button" data-build-category="nature">NATURE</button>
         </nav>

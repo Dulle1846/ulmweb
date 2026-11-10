@@ -77,6 +77,14 @@ export const TREE_SPECIES = Object.freeze({
         turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
         evergreen: true, snowRetention: 0.8, snowMeltShift: 3,
     }),
+    yew: Object.freeze({
+        turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
+        evergreen: true, snowRetention: 1.1, snowMeltShift: 6,
+    }),
+    'dwarf-pine': Object.freeze({
+        turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
+        evergreen: true, snowRetention: 0.72, snowMeltShift: 4,
+    }),
     palm: Object.freeze({
         turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
         evergreen: true, snowRetention: 0.18, snowMeltShift: -8,

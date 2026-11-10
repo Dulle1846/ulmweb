@@ -74,6 +74,30 @@ test("birth respects household capacity, food reserve and morale",()=>{
     assert.equal(createChildFromParents(parents[0].personId,parents[1].personId).reason,"settlement-conditions");
 });
 
+test("a birth makes room in the parents' household by relocating an unrelated resident",()=>{
+    for(let index=0;index<2;index++){
+        const extra=spawnEntity(42+index,40,TYPE.VILLAGER);
+        extra.home={x:house.x,y:house.y};
+        extra.anchor={...extra.home};
+        extra.householdId="house:"+house.x+":"+house.y;
+        ensurePersonProfile(extra);
+    }
+    const otherHouse=spawnEntity(60,60,TYPE.HOUSE);
+    const other=spawnEntity(61,60,TYPE.VILLAGER);
+    other.home={x:otherHouse.x,y:otherHouse.y};
+    other.anchor={...other.home};
+    other.householdId="house:"+otherHouse.x+":"+otherHouse.y;
+    ensurePersonProfile(other);
+    const result=createChildFromParents(parents[0].personId,parents[1].personId);
+    assert.equal(result.ok,true);
+    assert.equal(result.child.home.x,house.x);
+    assert.equal(result.child.home.y,house.y);
+    assert.equal(result.child.householdId,"house:"+house.x+":"+house.y);
+    const parentHomeCount=state.entities.filter(entity=>!entity.dead&&entity.type===TYPE.VILLAGER&&entity.home?.x===house.x&&entity.home?.y===house.y).length;
+    assert.equal(parentHomeCount,4);
+    assert.ok(state.entities.some(entity=>!entity.dead&&entity.type===TYPE.VILLAGER&&entity.home?.x===otherHouse.x&&entity.home?.y===otherHouse.y));
+});
+
 test("birth cooldown prevents repeated children in consecutive years",()=>{
     assert.equal(createChildFromParents(parents[0].personId,parents[1].personId).ok,true);
     state.year=13;

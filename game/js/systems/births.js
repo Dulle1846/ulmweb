@@ -44,14 +44,43 @@ function eligibleParents(first, second) {
 }
 
 function chooseBirthHome(first, second) {
-    const homes = getHouseholdSnapshot().homes.filter(home => home.residents < home.capacity);
-    if (!homes.length) return null;
-    const parentHomes = [first, second].map(parent => parent.home).filter(Boolean);
-    return homes.sort((a, b) => {
-        const aParent = parentHomes.some(home => home.x === a.x && home.y === a.y) ? 0 : 1;
-        const bParent = parentHomes.some(home => home.x === b.x && home.y === b.y) ? 0 : 1;
-        return aParent - bParent || a.residents - b.residents || a.y - b.y || a.x - b.x;
-    })[0];
+    const snapshot = getHouseholdSnapshot();
+    const available = snapshot.homes.filter(home => home.residents < home.capacity);
+    if (!available.length) return null;
+    const parentHomes = [first, second]
+        .map(parent => parent.home)
+        .filter(Boolean)
+        .filter((home, index, list) => list.findIndex(item => item.x === home.x && item.y === home.y) === index);
+    const preferred = available
+        .filter(home => parentHomes.some(parent => parent.x === home.x && parent.y === home.y))
+        .sort((a, b) => a.residents - b.residents || a.y - b.y || a.x - b.x)[0];
+    if (preferred) return preferred;
+
+    // Both parents' homes can be full while a bed exists elsewhere. Leaving
+    // the newborn in a stranger's house separates the family for life. Move
+    // one unrelated resident from a parent home into the free bed instead,
+    // then place the child with the parents. This consumes no extra capacity
+    // and never creates an unhoused resident.
+    const freeHome = available.sort((a, b) => a.residents - b.residents || a.y - b.y || a.x - b.x)[0];
+    if (!freeHome) return null;
+    const parentIds = new Set([String(first.personId), String(second.personId)]);
+    for (const parentHome of parentHomes) {
+        if (parentHome.x === freeHome.x && parentHome.y === freeHome.y) continue;
+        const relocated = state.entities
+            .filter(entity => !entity.dead && entity.type === TYPE.VILLAGER &&
+                !parentIds.has(String(entity.personId || entity.id)) &&
+                entity.home && entity.home.x === parentHome.x && entity.home.y === parentHome.y &&
+                entity.person?.lifeStage !== "child")
+            .sort((a, b) => String(a.personId || a.id).localeCompare(String(b.personId || b.id)))[0];
+        if (!relocated) continue;
+        relocated.home = { x: freeHome.x, y: freeHome.y };
+        relocated.anchor = { ...relocated.home };
+        relocated.householdId = "house:" + freeHome.x + ":" + freeHome.y;
+        parentHome.residents = Math.max(0, parentHome.residents - 1);
+        freeHome.residents = Math.min(freeHome.capacity, freeHome.residents + 1);
+        return parentHome;
+    }
+    return freeHome;
 }
 
 function hasResourcesForBirth() {
@@ -94,6 +123,7 @@ export function createChildFromParents(firstId, secondId) {
     child.anchor = { x: home.x, y: home.y };
     child.householdId = "house:" + home.x + ":" + home.y;
     child.jobRefreshTimer = 0;
+    child.civicOrigin = "born-in-realm";
 
     const childPerson = ensurePersonProfile(child);
     const familyName = firstPerson.familyName || secondPerson.familyName || "Resident";

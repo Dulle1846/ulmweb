@@ -36,6 +36,9 @@ export const REBUILD_COST = {
     [TYPE.FORESTER]: { wood: 16, stone: 4 },
     [TYPE.CLINIC]: { wood: 24, stone: 18, gold: 6 },
     [TYPE.MARKET]: { wood: 26, stone: 8 },
+    [TYPE.SHRINE]: { wood: 6, stone: 18, gold: 4 },
+    [TYPE.COURT]: { wood: 30, stone: 24, gold: 10 },
+    [TYPE.PRISON]: { wood: 22, stone: 30, gold: 8 },
 };
 
 export const INTERIOR_ITEM_IDS = ['bed', 'table', 'chair', 'shelf', 'hearth', 'rug', 'statue', 'candle'];

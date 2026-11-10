@@ -11,6 +11,7 @@ import {
     FOREST_DISTURBANCE_KINDS, forestStandAt, forestSuccessionProfile,
     forestSuccessionStage,
 } from "../world/forest-ecology.js";
+import { forestBarkBeetlePressureAt } from "./forest-fauna.js";
 
 const VERSION = 1;
 const MAX_TILES = 4096;
@@ -181,11 +182,16 @@ const CONIFER_SEASON = Object.freeze({
 // the burned path even in a conifer stand, while pest pressure and a pure stand
 // both raise the bark-beetle weight. Monoculture deliberately stays a separate
 // multiplier: it is a vulnerability, not a disturbance in its own right.
-export function coniferDisturbanceWeights(stand = {}, season = state.seasonIndex, weather = state.weather) {
+export function coniferDisturbanceWeights(stand = {}, season = state.seasonIndex, weather = state.weather, insectPressure = 0) {
     const seasonIndex = ((Math.floor(number(season, 0)) % 4) + 4) % 4;
     const fireRisk = clamp01(number(stand.fireRisk));
     const pestRisk = clamp01(number(stand.pestRisk));
     const monoculture = clamp01(number(stand.monoculture));
+    // A real, saved bark-beetle colony is an additional pressure on top of the
+    // stand's static pest-risk estimate. This is the feedback from the insect
+    // population into the existing disturbance event, not a second outbreak
+    // system.
+    const beetlePressure = clamp01(number(insectPressure));
     const snowPotential = clamp01(number(stand.snowPotential));
     const windExposure = clamp01(number(stand.windExposure ?? stand.exposure));
     const weatherName = String(weather || "clear").toLowerCase();
@@ -198,7 +204,8 @@ export function coniferDisturbanceWeights(stand = {}, season = state.seasonIndex
     const weatherDrought = wet ? 0.45 : drySpell ? 1.2 : 1;
     return {
         burned: (0.02 + fireRisk * 0.98) * CONIFER_SEASON.burned[seasonIndex] * weatherFire,
-        "bark-beetle": (0.03 + pestRisk * 0.72 + monoculture * 0.45) * CONIFER_SEASON["bark-beetle"][seasonIndex] * weatherPest,
+        "bark-beetle": (0.03 + pestRisk * 0.72 + monoculture * 0.45 + beetlePressure * 0.55)
+            * CONIFER_SEASON["bark-beetle"][seasonIndex] * weatherPest,
         snowbreak: (0.03 + snowPotential * 0.97) * CONIFER_SEASON.snowbreak[seasonIndex] * weatherSnow,
         "drought-stressed": (0.03 + fireRisk * 0.5) * CONIFER_SEASON["drought-stressed"][seasonIndex] * weatherDrought,
         // Conifer windthrow was previously only a seeded base state. Exposure
@@ -221,20 +228,20 @@ function weightedDisturbance(weights, roll) {
     return entries[entries.length - 1][0];
 }
 
-export function coniferDisturbanceKind(stand = {}, season = state.seasonIndex, roll = 0.5) {
-    return weightedDisturbance(coniferDisturbanceWeights(stand, season, state.weather), roll);
+export function coniferDisturbanceKind(stand = {}, season = state.seasonIndex, roll = 0.5, insectPressure = 0) {
+    return weightedDisturbance(coniferDisturbanceWeights(stand, season, state.weather, insectPressure), roll);
 }
 
 // A disturbance entering a neighbouring stand is more likely when that stand
 // is itself dry, pest-ridden, pure or snow-loaded. Returning 1 for broadleaf
 // disturbances keeps their existing spread curve untouched.
-export function spreadRiskFactor(kind, stand = {}) {
+export function spreadRiskFactor(kind, stand = {}, insectPressure = 0) {
     const fire = clamp01(number(stand.fireRisk));
     const pest = clamp01(number(stand.pestRisk));
     const monoculture = clamp01(number(stand.monoculture));
     const snow = clamp01(number(stand.snowPotential));
     if (kind === "burned") return clamp(0.55 + fire * 0.9, 0.45, 1.45);
-    if (kind === "bark-beetle") return clamp(0.5 + pest * 0.8 + monoculture * 0.45, 0.4, 1.5);
+    if (kind === "bark-beetle") return clamp(0.5 + pest * 0.8 + monoculture * 0.45 + clamp01(number(insectPressure)) * 0.35, 0.4, 1.5);
     if (kind === "snowbreak") return clamp(0.5 + snow * 0.9, 0.45, 1.5);
     if (kind === "drought-stressed") return clamp(0.55 + fire * 0.7, 0.45, 1.4);
     if (kind === "windthrow") {
@@ -244,14 +251,14 @@ export function spreadRiskFactor(kind, stand = {}) {
     return 1;
 }
 
-function chooseKind(model, day, stand = null) {
+function chooseKind(model, day, stand = null, insectPressure = 0) {
     const season = Math.floor(number(state.seasonIndex, 0)) % 4;
     const roll = unitHash(model.seed, model.events + 1, day, 0x4b494e44);
     // Conifer stands use the derived fire/pest/monoculture/snow pressure to
     // choose among real disturbances. Broadleaf woodland keeps its existing
     // fire/wind/disease cycle.
     if (stand?.conifer === true || number(stand?.coniferShare) > 0.4) {
-        return coniferDisturbanceKind(stand, season, roll);
+        return coniferDisturbanceKind(stand, season, roll, insectPressure);
     }
     if (season === 1) return roll < 0.62 ? "burned" : "diseased";
     if (season === 2 || season === 3) return roll < 0.64 ? "windthrow" : "diseased";
@@ -277,7 +284,7 @@ function spawnDisturbance(model) {
         if (!geo.forestCapacity?.[index] || Number(geo.forestStock?.[index] || 0) < 18) continue;
         const stand = standAtTile(geo, x, y);
         if (!stand?.forest || stand.type === "cutover") continue;
-        const kind = chooseKind(model, model.day, stand);
+        const kind = chooseKind(model, model.day, stand, forestBarkBeetlePressureAt(x, y));
         const profile = forestSuccessionProfile(kind);
         if (!profile) continue;
         const before = Math.max(1, Math.floor(number(geo.forestStock[index], 1)));
@@ -389,7 +396,7 @@ function spreadDisturbances(model) {
             if (!geo.forestCapacity?.[index] || before < 12) continue;
             const stand = standAtTile(geo, nx, ny);
             if (!stand?.forest || stand.type === "cutover") continue;
-            if (roll > chance * spreadRiskFactor(record.kind, stand)) continue;
+            if (roll > chance * spreadRiskFactor(record.kind, stand, forestBarkBeetlePressureAt(nx, ny))) continue;
             const after = Math.max(1, Math.floor(before * 0.72));
             geo.forestStock[index] = after;
             model.tiles[nkey] = { kind: record.kind, age: 0, containedUntil: 0 };

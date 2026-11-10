@@ -11,7 +11,7 @@
   },
   "renderer": "WebKit WebGL",
   "maxTextureSize": 8192,
-  "generatedAt": "2026-11-09T19:07:35.489Z",
+  "generatedAt": "2026-11-09T20:36:31.212Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -30,7 +30,8 @@
         "Fir",
         "Pine",
         "Birch",
-        "Alder"
+        "Alder",
+        "Yew"
       ],
       "goods": [
         "alder-cones",
@@ -55,7 +56,9 @@
         "sloes",
         "spruce-cones",
         "spruce-timber",
-        "timber"
+        "timber",
+        "yew-berries",
+        "yew-timber"
       ],
       "fauna": [
         "deer",
@@ -93,7 +96,8 @@
         "Spruce",
         "Beech",
         "Pine",
-        "Birch"
+        "Birch",
+        "Yew"
       ],
       "goods": [
         "beech-timber",
@@ -119,7 +123,9 @@
         "spruce-cones",
         "spruce-timber",
         "timber",
-        "wood-sorrel"
+        "wood-sorrel",
+        "yew-berries",
+        "yew-timber"
       ],
       "fauna": [
         "deer",
@@ -156,13 +162,16 @@
         "Spruce",
         "Larch",
         "Birch",
-        "Juniper"
+        "Juniper",
+        "Dwarf pine"
       ],
       "goods": [
         "birch-sap",
         "birch-timber",
         "blueberries",
         "chanterelle",
+        "dwarf-pine-cones",
+        "dwarf-pine-timber",
         "firewood",
         "fur",
         "game",
@@ -216,7 +225,8 @@
         "Pine",
         "Spruce",
         "Birch",
-        "Juniper"
+        "Juniper",
+        "Yew"
       ],
       "goods": [
         "birch-sap",
@@ -236,7 +246,9 @@
         "resin",
         "spruce-cones",
         "spruce-timber",
-        "timber"
+        "timber",
+        "yew-berries",
+        "yew-timber"
       ],
       "fauna": [
         "roe-deer",
@@ -269,6 +281,7 @@
       "species": [
         "Pine",
         "Juniper",
+        "Dwarf pine",
         "Larch",
         "Birch",
         "Spruce"
@@ -279,6 +292,8 @@
         "blueberries",
         "chanterelle",
         "charcoal",
+        "dwarf-pine-cones",
+        "dwarf-pine-timber",
         "firewood",
         "herbs",
         "juniper-berries",
@@ -308,9 +323,9 @@
       "treeChance": 0.356,
       "clearing": 0,
       "exposure": 0.584,
-      "snowPotential": 0.561,
-      "groundShade": 0.266,
-      "visibility": 0.784,
+      "snowPotential": 0.562,
+      "groundShade": 0.267,
+      "visibility": 0.783,
       "sightRadius": 8,
       "winterSnowDepthCm": 79,
       "frame": "conifer-reference.png"
@@ -386,10 +401,13 @@
         "Fir",
         "Pine",
         "Larch",
-        "Juniper"
+        "Juniper",
+        "Dwarf pine"
       ],
       "goods": [
         "blueberries",
+        "dwarf-pine-cones",
+        "dwarf-pine-timber",
         "fir-cones",
         "fir-timber",
         "firewood",
@@ -444,15 +462,19 @@
       "species": [
         "Juniper",
         "Pine",
+        "Dwarf pine",
         "Larch",
         "Spruce",
-        "Birch"
+        "Birch",
+        "Yew"
       ],
       "goods": [
         "birch-sap",
         "birch-timber",
         "blueberries",
         "chanterelle",
+        "dwarf-pine-cones",
+        "dwarf-pine-timber",
         "firewood",
         "herbs",
         "juniper-berries",
@@ -466,7 +488,9 @@
         "resin",
         "spruce-cones",
         "spruce-timber",
-        "timber"
+        "timber",
+        "yew-berries",
+        "yew-timber"
       ],
       "fauna": [
         "roe-deer",
@@ -484,8 +508,8 @@
       "clearing": 0,
       "exposure": 0.483,
       "snowPotential": 0.641,
-      "groundShade": 0.53,
-      "visibility": 0.548,
+      "groundShade": 0.531,
+      "visibility": 0.547,
       "sightRadius": 6,
       "winterSnowDepthCm": 90,
       "frame": "conifer-reference.png"
@@ -501,10 +525,14 @@
         "Fir",
         "Pine",
         "Larch",
-        "Juniper"
+        "Juniper",
+        "Dwarf pine",
+        "Yew"
       ],
       "goods": [
         "blueberries",
+        "dwarf-pine-cones",
+        "dwarf-pine-timber",
         "fir-cones",
         "fir-timber",
         "firewood",
@@ -523,7 +551,9 @@
         "resin",
         "spruce-cones",
         "spruce-timber",
-        "timber"
+        "timber",
+        "yew-berries",
+        "yew-timber"
       ],
       "fauna": [
         "deer",
@@ -724,7 +754,8 @@
       "Pine",
       "Spruce",
       "Birch",
-      "Juniper"
+      "Juniper",
+      "Yew"
     ],
     "goods": [
       "birch-sap",
@@ -744,7 +775,9 @@
       "resin",
       "spruce-cones",
       "spruce-timber",
-      "timber"
+      "timber",
+      "yew-berries",
+      "yew-timber"
     ],
     "fauna": [
       "roe-deer",
@@ -787,5 +820,128 @@
       "day": 350
     }
   ],
+  "artifactHashes": {
+    "formation": "437d646b33682881aacc6c2cfe9eb90c5386f5dce89caca16c57b06f6c53bfef",
+    "seasonal": "cfdbbe8edc29856abc0a194e594e09f0ed6f1b2464bd8728a401e76d1fb1fd92",
+    "species": "092105fd0203128dc35f44c8922ce7949b8559262592506bfb286dae8ddb8b39"
+  },
+  "speciesPlate": {
+    "image": "conifer-species.png",
+    "day": 150,
+    "climate": "northern",
+    "scale": 3.4,
+    "canvas": {
+      "width": 220,
+      "height": 260
+    },
+    "species": [
+      {
+        "id": "spruce",
+        "label": "Spruce",
+        "crownShape": "spire",
+        "summer": "#1f4232",
+        "autumn": "#1b392c",
+        "hash": "440eb2bc",
+        "ink": 4108,
+        "bbox": {
+          "x": 80,
+          "y": 104,
+          "width": 60,
+          "height": 152
+        }
+      },
+      {
+        "id": "fir",
+        "label": "Fir",
+        "crownShape": "dense",
+        "summer": "#1c3a2e",
+        "autumn": "#19342a",
+        "hash": "aff815c3",
+        "ink": 4903,
+        "bbox": {
+          "x": 73,
+          "y": 100,
+          "width": 74,
+          "height": 156
+        }
+      },
+      {
+        "id": "pine",
+        "label": "Pine",
+        "crownShape": "crown",
+        "summer": "#315b3b",
+        "autumn": "#2b5138",
+        "hash": "9552bc14",
+        "ink": 3237,
+        "bbox": {
+          "x": 82,
+          "y": 113,
+          "width": 56,
+          "height": 143
+        }
+      },
+      {
+        "id": "larch",
+        "label": "Larch",
+        "crownShape": "airy",
+        "summer": "#4c7a3d",
+        "autumn": "#b8842b",
+        "hash": "5bf61969",
+        "ink": 3622,
+        "bbox": {
+          "x": 81,
+          "y": 108,
+          "width": 58,
+          "height": 148
+        }
+      },
+      {
+        "id": "juniper",
+        "label": "Juniper",
+        "crownShape": "scrub",
+        "summer": "#365d3d",
+        "autumn": "#31543a",
+        "hash": "c0ff06b0",
+        "ink": 1682,
+        "bbox": {
+          "x": 84,
+          "y": 169,
+          "width": 52,
+          "height": 87
+        }
+      },
+      {
+        "id": "yew",
+        "label": "Yew",
+        "crownShape": "yew",
+        "summer": "#173c2d",
+        "autumn": "#16372a",
+        "hash": "64783dcf",
+        "ink": 2025,
+        "bbox": {
+          "x": 87,
+          "y": 145,
+          "width": 46,
+          "height": 111
+        }
+      },
+      {
+        "id": "dwarf-pine",
+        "label": "Dwarf pine",
+        "crownShape": "scrub",
+        "summer": "#31583a",
+        "autumn": "#2b5037",
+        "hash": "9e4e3eaa",
+        "ink": 1518,
+        "bbox": {
+          "x": 85,
+          "y": 173,
+          "width": 50,
+          "height": 83
+        }
+      }
+    ],
+    "note": "Every conifer is drawn by the production drawConifer() path with the same seed, day, scale and climate. Distinct pixel hashes prove yew and dwarf pine carry their own rendered form and palette, not a relabelled spruce."
+  },
   "note": "Northern realm, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level at midday, so morning mist does not obscure the canopy shade or the sight wall. All twelve conifer formations are real generated tiles, not hand-placed demo props. The seasonal strip follows a larch stand through needle-out, summer, golden autumn and bare winter. groundShade, visibility and sightRadius record the local canopy shade and stand-dependent sight profile; winterSnowDepthCm is the derived local snow depth on day 350. Not a GPU performance benchmark."
 }

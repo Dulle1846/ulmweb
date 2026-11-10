@@ -25,4 +25,42 @@
 .diplomacy-actions button:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}
 .diplomacy-actions .diplomacy-button--war{border-color:#792d28;background:linear-gradient(#d58c76,#a94f43);color:#fff0e4;box-shadow:0 2px 0 #792d28}
 .diplomacy-actions .diplomacy-button--war:hover:not(:disabled){background:linear-gradient(#e5a28c,#bd5d50);border-color:#5f201c}
+.court-office-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}
+.court-office{padding:12px;border:2px solid #ad8750;border-radius:9px;background:#fff5d8;color:#243a50;box-shadow:inset 0 1px #fff8}
+.court-office--vacant{border-style:dashed;background:#f7ead0}
+.court-office__head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.court-office__role{color:#9b4a2a;font-size:7px;font-weight:1000;letter-spacing:.16em;text-transform:uppercase}
+.court-office__head h4{margin:3px 0 2px;color:#263b52;font:bold 15px Georgia,serif}
+.court-office__head p{margin:0;color:#675b49;font-size:9px;line-height:1.4}
+.court-office__badge{flex:0 0 auto;padding:4px 7px;border:1px solid #a57c43;border-radius:999px;background:#f1d99f;color:#5d4528;font:1000 7px/1.2 Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.court-office__stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px}
+.court-office__stats span{padding:6px 7px;border:1px solid #c6ae7c;border-radius:5px;background:#f8ebcd;color:#806d52;font:1000 7px/1.3 Arial,sans-serif;letter-spacing:.06em}
+.court-office__stats b{display:block;margin-top:3px;color:#263b52;font:bold 12px Georgia,serif;letter-spacing:0}
+.court-office__effect{margin:9px 0 0;color:#806d52;font-size:8px;line-height:1.45}
+.court-actions{display:flex;gap:6px;margin-top:9px}
+.court-actions button,.court-demand button{min-height:30px;padding:5px 8px;border:2px solid #20374d;border-radius:7px;background:linear-gradient(#f7d67f,#d69a37);color:#24384d;font:1000 7px/1.25 Arial,sans-serif;letter-spacing:.03em;cursor:pointer;box-shadow:0 2px 0 #20374d}
+.court-actions button:hover,.court-demand button:hover:not(:disabled){background:linear-gradient(#ffe9a5,#e2ad4e);border-color:#0f2639}
+.court-actions button:active,.court-demand button:active:not(:disabled){transform:translateY(1px);box-shadow:0 1px 0 #20374d}
+.court-demand{display:flex;align-items:center;gap:12px;padding:12px;border:2px solid #b06a43;border-left-width:5px;border-radius:9px;background:linear-gradient(145deg,#fff1c9,#f0d29c);color:#243a50}
+.court-demand>div{flex:1;min-width:0}
+.court-demand h4{margin:4px 0;color:#263b52;font:bold 16px Georgia,serif}
+.court-demand p{margin:0;color:#675b49;font-size:9px;line-height:1.45}
+.court-demand small{display:block;margin-top:5px;color:#7a4b2c;font:1000 8px Arial,sans-serif;letter-spacing:.05em}
+.court-demand button{flex:0 0 auto}
+.court-demand button:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}
+.court-effect-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;margin-top:8px}
+.court-effect-grid span{padding:8px;border:1px solid #c6ae7c;border-radius:5px;background:#f8ebcd;color:#806d52;font:1000 7px/1.3 Arial,sans-serif;letter-spacing:.06em}
+.court-effect-grid b{display:block;margin-top:3px;color:#263b52;font:bold 13px Georgia,serif;letter-spacing:0}
+.court-history{display:flex;flex-direction:column;gap:6px}
+.court-history>div{padding:8px 10px;border-bottom:1px dashed #c6ae7c}
+.court-history span{color:#9b4a2a;font:1000 7px/1.3 Arial,sans-serif;letter-spacing:.1em}
+.court-history p{margin:3px 0 0;color:#554a3a;font-size:9px;line-height:1.4}
+.diplomacy-envoy{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding:8px;border:1px solid #8ea88a;border-radius:6px;background:#edf4e5}
+.diplomacy-envoy div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.diplomacy-envoy span{color:#4e6b43;font:1000 7px Arial,sans-serif;letter-spacing:.08em}
+.diplomacy-envoy strong{color:#263b52;font:bold 12px Georgia,serif}
+.diplomacy-envoy small{color:#675b49;font-size:8px}
+.diplomacy-envoy button{min-height:28px;padding:4px 8px;border:2px solid #20374d;border-radius:7px;background:linear-gradient(#f7d67f,#d69a37);color:#24384d;font:1000 7px Arial,sans-serif;cursor:pointer}
+.court-office .command-inline{margin-top:9px;flex-wrap:wrap}
+.court-office .command-inline select{min-width:100%;flex:1 1 100%}
 @media(max-width:560px){.diplomacy-grid{grid-template-columns:1fr}.diplomacy-realm__stats{grid-template-columns:repeat(3,1fr)}}

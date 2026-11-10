@@ -34,7 +34,7 @@ const FOOD_DELIVERY = Object.freeze(new Set([
 ]));
 const GOLD_DELIVERY = Object.freeze(new Set([
     "fur", "hides", "tanned-fur", "cured-hides", "resin", "beeswax", "herbs", "lichen",
-    "bark", "linden-flower", "elm-seeds", "alder-cones",
+    "bark", "linden-flower", "elm-seeds", "alder-cones", "yew-berries", "dwarf-pine-cones",
 ]));
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));

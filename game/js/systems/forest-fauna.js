@@ -7,10 +7,11 @@
 // use stable hashes of the world seed and herd id, so the same realm and the
 // same number of elapsed days always produce the same wildlife.
 //
-// It deliberately does not model every insect. Large mammals and resident birds
-// form populations; butterflies, beetles, ants and bees remain habitat markers
-// in the renderer. That keeps the simulation observable without turning each
-// forest tile into a separate ecosystem solver.
+// Ants, bark beetles and deadwood beetles are also real, saved colonies. They
+// use the same bounded home-tile model as the herds, grow or decline from local
+// stand density, drought and monoculture, and feed bark-beetle pressure back
+// into the existing disturbance succession. Butterflies and bees remain cheap
+// habitat markers; the simulation does not turn every insect into a solver.
 
 import { state } from "../core/state.js";
 import { WORLD_W, WORLD_H } from "../core/config.js";
@@ -21,6 +22,7 @@ import { seasonalState } from "../world/season.js";
 
 const VERSION = 1;
 const MAX_HERDS = 240;
+const MAX_INSECTS = 480;
 const MAX_DAY_STEP = 30;
 const DAYS_PER_YEAR = 400;
 
@@ -49,6 +51,29 @@ const SIMULATED_SPECIES = Object.freeze({
 });
 
 export const SIMULATED_FAUNA_IDS = Object.freeze(Object.keys(SIMULATED_SPECIES));
+
+// Insect populations use the same tile/home model as herds, but their capacity
+// and stress terms come from the stand. Ants need a litter-rich, shady floor and
+// suffer from drought and pure stands. Bark beetles need conifer hosts and do
+// better in drought-stressed or monoculture stands. Deadwood beetles follow
+// coarse woody debris. Populations are densities, not counts of individual
+// insects, so a value of 1 means a fully occupied local habitat.
+const SIMULATED_INSECTS = Object.freeze({
+    ant: Object.freeze({
+        label: "Wood ant", group: "insect",
+        basePopulation: 0.55, reproduction: 0.19, mortality: 0.045, capacity: 2.6,
+    }),
+    "bark-beetle": Object.freeze({
+        label: "Bark beetle", group: "insect",
+        basePopulation: 0.24, reproduction: 0.23, mortality: 0.06, capacity: 2.2,
+    }),
+    beetle: Object.freeze({
+        label: "Stag beetle", group: "insect",
+        basePopulation: 0.14, reproduction: 0.11, mortality: 0.04, capacity: 1.25,
+    }),
+});
+
+export const SIMULATED_INSECT_IDS = Object.freeze(Object.keys(SIMULATED_INSECTS));
 
 function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -98,6 +123,12 @@ function nodeAt(x, y) {
 function standAt(x, y, node = null) {
     const h = node ? Math.max(0, Math.min(1, Number(node.forestStock) / Math.max(1, Number(node.forestCapacity)))) : 1;
     try {
+        // getResourceNodeAt already built this tile's stand from the same map
+        // pixel and succession record. Reuse it when the ecology seed matches;
+        // otherwise fall back to a fresh deterministic calculation.
+        if (node?.forestStand && Number(node.forestStandSeed) === Number(state.forestFauna?.seed || state.worldSeed)) {
+            return node.forestStand;
+        }
         return forestStandAt(x + 0.5, y + 0.5, {
             seed: state.forestFauna?.seed || state.worldSeed,
             moisture: getMoistureAt(x + 0.5, y + 0.5),
@@ -116,6 +147,123 @@ function standAt(x, y, node = null) {
 
 function speciesMeta(id) {
     return FOREST_FAUNA[id] || { label: id, group: "small", note: "moving through the wood" };
+}
+
+function insectMeta(id) {
+    const spec = SIMULATED_INSECTS[id];
+    const fauna = FOREST_FAUNA[id] || {};
+    return spec ? { ...spec, ...fauna, id } : null;
+}
+
+// The habitat response is pure. Keeping it separate makes the drought and
+// monoculture tests exercise the same rule the daily update uses, rather than
+// a test-only approximation.
+export function forestInsectHabitat(stand = {}, species) {
+    const spec = SIMULATED_INSECTS[species];
+    if (!spec) return null;
+    const density = clamp(number(stand?.density, 0.55), 0, 1);
+    const litter = clamp(number(stand?.ground?.litter, 0.3), 0, 1);
+    const deadwood = clamp(number(stand?.ground?.deadwood ?? stand?.ground?.logs, 0), 0, 1);
+    const conifer = clamp(number(stand?.coniferShare, 0), 0, 1);
+    const wetness = clamp(number(stand?.wetness, 0.55), 0, 1);
+    const monoculture = clamp(number(stand?.monoculture, 0), 0, 1);
+    const drought = stand?.disturbance === "drought-stressed" ? 1
+        : wetness < 0.46 && Number(stand?.fireRisk) > 0.46 ? 0.65 : 0;
+    let capacity;
+    if (species === "ant") {
+        capacity = spec.capacity * (0.28 + density * 0.52 + litter * 0.5 + wetness * 0.12)
+            * (1 - drought * 0.62) * (1 - monoculture * 0.46);
+    } else if (species === "bark-beetle") {
+        capacity = spec.capacity * (0.16 + conifer * 0.82 + density * 0.24 + deadwood * 0.18)
+            * (1 + drought * 0.5) * (1 + monoculture * 0.34);
+    } else {
+        capacity = spec.capacity * (0.2 + deadwood * 0.74 + litter * 0.25 + density * 0.2)
+            * (1 - drought * 0.22);
+    }
+    return {
+        species, capacity: Math.max(0.15, Math.round(capacity * 1000) / 1000),
+        droughtStress: species === "ant" ? drought : 0,
+        monocultureStress: species === "ant" ? monoculture : 0,
+        drought, monoculture, conifer, litter, deadwood, density,
+    };
+}
+
+// A positive result is population growth per simulation day. Drought and a
+// pure stand raise mortality for ants and lower their effective capacity; bark
+// beetles instead benefit through their habitat calculation above.
+export function forestInsectGrowth({
+    population, capacity, reproduction, mortality,
+    droughtStress = 0, monocultureStress = 0,
+} = {}) {
+    const current = Math.max(0, number(population));
+    const cap = Math.max(0.15, number(capacity, 1));
+    const crowding = current / cap;
+    const gain = Math.max(0, number(reproduction)) * current * Math.max(-0.2, 1 - crowding);
+    const stress = clamp(number(droughtStress), 0, 1) * 0.14
+        + clamp(number(monocultureStress), 0, 1) * 0.08;
+    const loss = Math.max(0, number(mortality)) * current * (1 + stress * 1.5)
+        + current * stress * 0.25;
+    return gain - loss;
+}
+
+function initialInsect(species, x, y, stand, seed) {
+    const spec = SIMULATED_INSECTS[species];
+    const habitat = forestInsectHabitat(stand, species);
+    if (!spec || !habitat) return null;
+    const roll = unit(seed, x, y, 0x494e5345);
+    const population = Math.max(0.08,
+        Math.round(spec.basePopulation * (0.62 + roll * 0.7) * 10) / 10);
+    return {
+        id: "i" + x.toString(36) + "-" + y.toString(36) + "-" + species,
+        species, x, y,
+        population: Math.min(population, habitat.capacity * 0.78),
+        capacity: Math.round(habitat.capacity * 10) / 10,
+        density: Math.round((population / habitat.capacity) * 1000) / 1000,
+        droughtStress: habitat.droughtStress,
+        monocultureStress: habitat.monocultureStress,
+        trend: "stable",
+    };
+}
+
+function buildInsectIndex(colonies = []) {
+    const index = new Map();
+    for (const colony of colonies) {
+        const key = colony.x + ":" + colony.y;
+        if (!index.has(key)) index.set(key, []);
+        index.get(key).push(colony);
+    }
+    return index;
+}
+
+function buildInsects(seed = state.worldSeed) {
+    const width = worldWidth();
+    const height = worldHeight();
+    const step = Math.max(4, Math.floor(Math.sqrt((width * height) / MAX_HERDS)));
+    const colonies = [];
+    for (let y = Math.floor(step / 2); y < height && colonies.length < MAX_INSECTS; y += step) {
+        for (let x = Math.floor(step / 2); x < width && colonies.length < MAX_INSECTS; x += step) {
+            const node = nodeAt(x, y);
+            if (!node?.forestCapacity) continue;
+            const stand = standAt(x, y, node);
+            if (!stand?.forest) continue;
+            const species = new Set();
+            if ((stand.fauna || []).includes("ant") || number(stand.ground?.litter) > 0.4) species.add("ant");
+            if (number(stand.coniferShare) > 0.22 || (stand.fauna || []).includes("bark-beetle")) species.add("bark-beetle");
+            if (number(stand.ground?.deadwood ?? stand.ground?.logs) > 0.2 || (stand.fauna || []).includes("beetle")) species.add("beetle");
+            for (const id of species) {
+                if (colonies.length >= MAX_INSECTS) break;
+                const colony = initialInsect(id, x, y, stand, seed);
+                if (colony) colonies.push(colony);
+            }
+        }
+    }
+    return colonies;
+}
+
+function ensureInsectCollection(model) {
+    if (!Array.isArray(model.insects)) model.insects = buildInsects(model.seed);
+    if (!(model.insectIndex instanceof Map)) model.insectIndex = buildInsectIndex(model.insects);
+    return model.insects;
 }
 
 function preferenceScore(stand, species, day) {
@@ -243,19 +391,28 @@ function buildModel() {
             herds.push(initialHerd({ x, y, node, stand }));
         }
     }
+    const insects = buildInsects(seed);
     return {
         version: VERSION,
         seed,
         day: Number(state.dayOfYear) || 0,
         herds,
-        stats: { births: 0, deaths: 0, migrations: 0, splits: 0, hunts: 0 },
+        insects,
+        insectIndex: buildInsectIndex(insects),
+        stats: {
+            births: 0, deaths: 0, migrations: 0, splits: 0, hunts: 0,
+            insectBirths: 0, insectDeaths: 0,
+        },
         history: [],
     };
 }
 
 export function ensureForestFauna() {
     const existing = state.forestFauna;
-    if (existing?.version === VERSION && Array.isArray(existing.herds)) return existing;
+    if (existing?.version === VERSION && Array.isArray(existing.herds)) {
+        ensureInsectCollection(existing);
+        return existing;
+    }
     const model = buildModel();
     if (model) state.forestFauna = model;
     return model;
@@ -456,6 +613,48 @@ function preyBiomassAt(preyTiles, x, y, species, radius = 4) {
     return total;
 }
 
+function updateInsectPopulations(model) {
+    const colonies = ensureInsectCollection(model);
+    const survivors = [];
+    for (const insect of colonies) {
+        const spec = SIMULATED_INSECTS[insect.species];
+        if (!spec) continue;
+        const node = nodeAt(insect.x, insect.y);
+        const stand = node?.forestCapacity ? standAt(insect.x, insect.y, node) : null;
+        const habitat = forestInsectHabitat(stand, insect.species);
+        if (!stand?.forest || !habitat) {
+            insect.population = Math.round(Math.max(0, number(insect.population) - 0.12) * 100) / 100;
+            insect.trend = "declining";
+            if (insect.population <= 0.04) model.stats.insectDeaths = Math.max(0, Math.floor(number(model.stats.insectDeaths))) + 1;
+            else survivors.push(insect);
+            continue;
+        }
+        const before = Math.max(0, number(insect.population));
+        const capacity = habitat.capacity;
+        const delta = forestInsectGrowth({
+            population: before,
+            capacity,
+            reproduction: spec.reproduction,
+            mortality: spec.mortality,
+            droughtStress: habitat.droughtStress,
+            monocultureStress: habitat.monocultureStress,
+        });
+        const next = clamp(before + delta, 0, capacity * 1.25);
+        insect.capacity = Math.round(capacity * 10) / 10;
+        insect.population = Math.round(next * 100) / 100;
+        insect.density = Math.round(clamp(next / capacity, 0, 1.5) * 1000) / 1000;
+        insect.droughtStress = Math.round(habitat.droughtStress * 1000) / 1000;
+        insect.monocultureStress = Math.round(habitat.monocultureStress * 1000) / 1000;
+        insect.trend = next > before + 0.01 ? "growing" : next < before - 0.01 ? "declining" : "stable";
+        if (insect.trend === "growing") model.stats.insectBirths = Math.max(0, Math.floor(number(model.stats.insectBirths))) + 1;
+        if (insect.trend === "declining") model.stats.insectDeaths = Math.max(0, Math.floor(number(model.stats.insectDeaths))) + 1;
+        if (insect.population > 0.04) survivors.push(insect);
+    }
+    model.insects = survivors.slice(0, MAX_INSECTS);
+    model.insectIndex = buildInsectIndex(model.insects);
+    return model.insects;
+}
+
 export function updateForestFauna(days = 1) {
     const model = ensureForestFauna();
     if (!model) return null;
@@ -525,6 +724,7 @@ export function updateForestFauna(days = 1) {
         }
         if (additions.length) model.herds.push(...additions);
         model.herds = model.herds.filter(herd => herd.population >= 0.4);
+        updateInsectPopulations(model);
     }
     model.herds = model.herds.slice(0, MAX_HERDS);
     return model;
@@ -543,6 +743,49 @@ export function forestFaunaAt(x, y, stand = null, day = state.dayOfYear) {
         .map(herd => ({ ...herd, ...speciesMeta(herd.species), herdId: String(herd.id), id: herd.species, day: model.day }));
     if (herds.length || !stand) return herds;
     return [];
+}
+
+// Saved insect colonies on a tile, used by the renderer and the survey. The
+// returned object deliberately mirrors the herd shape (id names the species,
+// population is the visible density) so existing fauna drawing helpers can use
+// it without a second renderer vocabulary.
+export function forestInsectAt(x, y) {
+    const model = ensureForestFauna();
+    if (!model) return [];
+    const tx = Math.floor(number(x, -1));
+    const ty = Math.floor(number(y, -1));
+    if (tx < 0 || ty < 0) return [];
+    const indexed = model.insectIndex instanceof Map
+        ? model.insectIndex.get(tx + ":" + ty) || []
+        : (model.insects || []).filter(insect => insect.x === tx && insect.y === ty);
+    return indexed
+        .filter(insect => Number(insect.population) > 0.04)
+        .map(insect => ({
+            ...insect,
+            ...(insectMeta(insect.species) || {}),
+            insectId: String(insect.id),
+            id: insect.species,
+            population: Math.max(0.1, Number(insect.population) || 0),
+        }));
+}
+
+// The succession pass reads bark-beetle pressure as a deterministic habitat
+// input. It is read-only: asking for pressure never creates a fauna model, so
+// world generation cannot recursively build a savannah of empty colonies.
+export function forestBarkBeetlePressureAt(x, y) {
+    const model = state.forestFauna;
+    const tx = Math.floor(number(x, -1));
+    const ty = Math.floor(number(y, -1));
+    if (!Array.isArray(model?.insects) || tx < 0 || ty < 0) return 0;
+    const colonies = model.insectIndex instanceof Map
+        ? model.insectIndex.get(tx + ":" + ty) || []
+        : model.insects.filter(insect => insect.x === tx && insect.y === ty);
+    let pressure = 0;
+    for (const insect of colonies) {
+        if (insect.species !== "bark-beetle") continue;
+        pressure += clamp(number(insect.population) / Math.max(0.15, number(insect.capacity, 1)), 0, 1.5);
+    }
+    return clamp(pressure / 1.1, 0, 1);
 }
 
 // Read-only signs of the herd on this tile. Tracks and browse follow the herd's
@@ -602,6 +845,16 @@ export function serializeForestFauna() {
             huntingPressure: Math.round(clamp(number(herd.huntingPressure), 0, 2) * 1000) / 1000,
             lastHuntedDay: Math.max(0, Math.floor(number(herd.lastHuntedDay))),
         })),
+        insects: (model.insects || []).slice(0, MAX_INSECTS).map(insect => ({
+            id: String(insect.id), species: insect.species,
+            x: Math.floor(number(insect.x)), y: Math.floor(number(insect.y)),
+            population: Math.round(clamp(number(insect.population), 0, 1000) * 100) / 100,
+            capacity: Math.round(clamp(number(insect.capacity), 0.15, 1000) * 100) / 100,
+            density: Math.round(clamp(number(insect.density), 0, 1.5) * 1000) / 1000,
+            droughtStress: Math.round(clamp(number(insect.droughtStress), 0, 1) * 1000) / 1000,
+            monocultureStress: Math.round(clamp(number(insect.monocultureStress), 0, 1) * 1000) / 1000,
+            trend: ["growing", "stable", "declining"].includes(insect.trend) ? insect.trend : "stable",
+        })),
         stats: { ...model.stats },
         history: (model.history || []).slice(-16).map(entry => ({ ...entry })),
     };
@@ -622,6 +875,19 @@ export function validateForestFaunaSnapshot(snapshot) {
             || !Number.isFinite(Number(herd.capacity)) || Number(herd.capacity) < 0 || Number(herd.capacity) > 2000
             || (herd.huntingPressure !== undefined && (!Number.isFinite(Number(herd.huntingPressure)) || Number(herd.huntingPressure) < 0 || Number(herd.huntingPressure) > 5))) {
             throw new Error("Save data contains an invalid forest-fauna herd entry.");
+        }
+    }
+    if (snapshot.insects !== undefined) {
+        if (!Array.isArray(snapshot.insects) || snapshot.insects.length > MAX_INSECTS) {
+            throw new Error("Save data contains an invalid forest-insect list.");
+        }
+        for (const insect of snapshot.insects) {
+            if (!insect || typeof insect !== "object" || !SIMULATED_INSECTS[insect.species]
+                || !Number.isFinite(Number(insect.x)) || !Number.isFinite(Number(insect.y))
+                || !Number.isFinite(Number(insect.population)) || Number(insect.population) < 0 || Number(insect.population) > 1000
+                || !Number.isFinite(Number(insect.capacity)) || Number(insect.capacity) < 0 || Number(insect.capacity) > 1000) {
+                throw new Error("Save data contains an invalid forest-insect colony.");
+            }
         }
     }
     if (!Number.isFinite(Number(snapshot.day)) || Number(snapshot.day) < 0 || Number(snapshot.day) >= DAYS_PER_YEAR) {
@@ -647,10 +913,27 @@ export function restoreForestFauna(snapshot) {
             huntingPressure: Math.max(0, Math.min(2, Number(herd.huntingPressure) || 0)),
             lastHuntedDay: Math.max(0, Math.floor(Number(herd.lastHuntedDay) || 0)),
         })),
-        stats: { births: 0, deaths: 0, migrations: 0, splits: 0, hunts: 0, ...(snapshot.stats || {}) },
+        // Older snapshots predate insect colonies. Leave the field absent so
+        // ensureForestFauna() can seed the normal bounded colony set instead
+        // of mistaking an empty compatibility array for a deliberately
+        // extinct population.
+        insects: Array.isArray(snapshot.insects) ? snapshot.insects.map(insect => ({
+            ...insect,
+            x: Math.floor(Number(insect.x)), y: Math.floor(Number(insect.y)),
+            population: Math.round(Math.max(0, Number(insect.population)) * 100) / 100,
+            capacity: Math.round(Math.max(0.15, Number(insect.capacity) || 0.15) * 100) / 100,
+            density: Math.max(0, Number(insect.density) || 0),
+            droughtStress: Math.max(0, Math.min(1, Number(insect.droughtStress) || 0)),
+            monocultureStress: Math.max(0, Math.min(1, Number(insect.monocultureStress) || 0)),
+            trend: ["growing", "stable", "declining"].includes(insect.trend) ? insect.trend : "stable",
+        })) : undefined,
+        stats: { births: 0, deaths: 0, migrations: 0, splits: 0, hunts: 0, insectBirths: 0, insectDeaths: 0, ...(snapshot.stats || {}) },
         history: Array.isArray(snapshot.history) ? snapshot.history.slice(-32) : [],
     };
     return state.forestFauna.herds.length;
 }
 
-export const FOREST_FAUNA_LIMITS = Object.freeze({ maxHerds: MAX_HERDS, version: VERSION });
+export const FOREST_FAUNA_LIMITS = Object.freeze({
+    maxHerds: MAX_HERDS, maxInsects: MAX_INSECTS, version: VERSION,
+    insectSpecies: SIMULATED_INSECT_IDS,
+});
