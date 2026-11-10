@@ -17,6 +17,16 @@ Required repository secrets:
 
 Because the Pages project is Git-integrated, disable **Enable automatic production branch deployments** in Cloudflare Dashboard → Workers & Pages → `kings-and-cards` → Settings → Builds & deployments before relying on this workflow. Otherwise a push to `ulmweb-branch` can deploy before the test job finishes. The production branch remains `ulmweb-branch`; the workflow performs a Direct Upload after the test gate, and the Pages build command/output directory settings are not used by that upload.
 
+## Stale-deploy guard
+
+Immediately before the Wrangler upload, the deploy job runs `node game/scripts/assert-production-head.mjs`. The script reads the current `ulmweb-branch` head from the GitHub API and exits non-zero unless `GITHUB_SHA` is exactly that commit. A manually dispatched, re-run or queued run for an older commit therefore stops after the runtime has been verified and before any Cloudflare credentials are used to upload. The workflow's existing `kings-cards-pages-production` concurrency group serializes production deploys, so the newest run can replace an older one safely after this check.
+
+The guard is covered by `tests/ci/production-head-guard.test.js` (current head accepted, stale commit rejected, API failure rejected, missing token rejected). The workflow itself is not the only proof: run the guard locally with a current and a stale SHA to see the same decision against the real API. Historical workflow runs created before this guard use their own immutable workflow definition; do not re-run those old deploy jobs. The guard protects every deploy run from this revision onward.
+
+### Environment isolation for pre-guard runs
+
+The repository also isolates the deploy environment. The new workflow uses `production-current`, whose deployment branch rule allows only `ulmweb-branch`. The legacy `Production` environment is retained for deployment history but its branch rule now allows only the non-existent retired branch `retired-production`. Any pre-guard workflow run, including an old run whose YAML has no head check, therefore cannot enter the production environment from `ulmweb-branch`. Environment branch rules are matched against the workflow run's `GITHUB_REF` and are configured in repository settings, not in the workflow YAML, so this protection applies even to immutable historical workflow definitions.
+
 The runtime build writes `version.json` into the package root with `commit`, `branch` and `builtAt`. The workflow verifies that the artifact's `commit` equals the workflow commit before upload, and after the Wrangler upload it fetches `https://kings-and-cards.pages.dev/version.json?commit=<sha>` and fails unless the served `commit` and timestamp match. A plain HTTP 200 is not accepted as proof of the release.
 
 A workflow run is not proof of a live release by itself. After a successful Wrangler upload, also confirm the deployment in the Pages project. The marker proves that the canonical URL serves the built commit; it does not prove that Cloudflare's dashboard deployment metadata names the same deployment.
