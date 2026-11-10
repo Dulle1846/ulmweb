@@ -19,6 +19,8 @@ import { getJusticeModifiers } from "./justice.js";
 import { getEndeavourModifiers } from "./endeavours.js";
 import { getResearchModifiers } from "./research.js";
 import { getCitizenModifiers } from "./population-register.js";
+import { spawnEntity, canSpawnEntity } from "../world/entities.js";
+import { WORLD_WIDTH, WORLD_HEIGHT } from "../core/config.js";
 
 export const MILITARY_INTERVAL = 10;
 export const MILITARY_HISTORY_LIMIT = 24;
@@ -51,6 +53,7 @@ export function createMilitaryState() {
         desertions: 0,
         lastUpdateTick: 0,
         lastMusterYear: yearNow(),
+        lastWarRaidYear: 0,
         lastPayroll: null,
         history: [],
         recentCasualties: []
@@ -100,6 +103,7 @@ export function normalizeMilitaryState(value = {}) {
         desertions: round(source.desertions),
         lastUpdateTick: round(source.lastUpdateTick),
         lastMusterYear: clamp(source.lastMusterYear || yearNow(), 1, 1000000),
+        lastWarRaidYear: clamp(source.lastWarRaidYear || 0, 0, 1000000),
         lastPayroll,
         history,
         recentCasualties
@@ -527,10 +531,31 @@ function resolveMilitaryYear() {
     return payroll;
 }
 
+function maybeLaunchWarFront(military, year) {
+    const realm = (state.diplomacy?.realms || []).find(entry => entry.treaty === "war");
+    if (!realm || state.raidActive) return;
+    if (Number(military.lastWarRaidYear) === year) return;
+    military.lastWarRaidYear = year;
+    const keep = state.entities.find(entity => !entity.dead && entity.type === TYPE.KEEP);
+    if (!keep || !canSpawnEntity(TYPE.TROLL)) return;
+    const angle = random("war-front") * Math.PI * 2;
+    const distance = 12 + random("war-front") * 7;
+    const x = Math.max(2, Math.min(WORLD_WIDTH - 3, keep.x + Math.cos(angle) * distance));
+    const y = Math.max(2, Math.min(WORLD_HEIGHT - 3, keep.y + Math.sin(angle) * distance));
+    let spawned = 0;
+    for (let index = 0; index < 2; index++) {
+        if (spawnEntity(x + index * 0.7, y, TYPE.TROLL)) spawned++;
+    }
+    if (!spawned) return;
+    state.raidActive = true;
+    addLog("WAR FRONT: " + spawned + " RAIDERS CROSS THE BORDER FROM " + String(realm.name || "THE ENEMY").toUpperCase(), "#e9857b", "military");
+}
+
 export function updateMilitary() {
     const military = ensureMilitary();
     const year = yearNow();
     if (year > military.lastMusterYear) resolveMilitaryYear();
+    maybeLaunchWarFront(military, year);
     if (state.tick <= 0 || state.tick % MILITARY_INTERVAL !== 0 || military.lastUpdateTick === state.tick) return null;
     military.lastUpdateTick = state.tick;
     registerExistingGarrison();

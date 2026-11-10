@@ -157,7 +157,8 @@ function diplomacy(){
  const rows=d.realms.map(r=>{
   const actions=[];
   if(r.treaty==="war"){
-   actions.push('<button data-command="diplomacy-peace" data-value="'+esc(r.id)+'"'+((gold<c.peaceGold||food<c.peaceFood)?" disabled":"")+'>SUE FOR PEACE · '+c.peaceGold+'G / '+c.peaceFood+'F</button>');
+   const whitePeace=Number(r.warExhaustion)>=35;
+   actions.push('<button data-command="diplomacy-peace" data-value="'+esc(r.id)+'"'+((!whitePeace&&(gold<c.peaceGold||food<c.peaceFood))?" disabled":"")+'>'+(whitePeace?'SUE FOR WHITE PEACE':'SUE FOR PEACE · '+c.peaceGold+'G / '+c.peaceFood+'F')+'</button>');
   }else{
    actions.push('<button data-command="diplomacy-gift" data-value="'+esc(r.id)+'"'+(gold<c.gift?" disabled":"")+'>SEND GIFT · '+c.gift+'G</button>');
    if(r.treaty==="none"&&r.relation>=d.thresholds.tradePact)actions.push('<button data-command="diplomacy-pact" data-value="'+esc(r.id)+'"'+(gold<c.tradePact?" disabled":"")+'>TRADE PACT · '+c.tradePact+'G</button>');

@@ -264,22 +264,25 @@ export function sueForPeace(id) {
     const { diplomacy, realm, definition } = locate(id);
     if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
     if (realm.treaty !== "war") return { ok:false, reason:"not-at-war" };
-    if ((Number(state.resources?.gold) || 0) < DIPLOMACY_COSTS.peaceGold) return { ok:false, reason:"not-enough-gold" };
-    if ((Number(state.resources?.food) || 0) < DIPLOMACY_COSTS.peaceFood) return { ok:false, reason:"not-enough-food" };
-    addResource("gold", -DIPLOMACY_COSTS.peaceGold);
-    addResource("food", -DIPLOMACY_COSTS.peaceFood);
+    const whitePeace = Number(realm.warExhaustion) >= 35;
+    const goldCost = whitePeace ? 0 : DIPLOMACY_COSTS.peaceGold;
+    const foodCost = whitePeace ? 0 : DIPLOMACY_COSTS.peaceFood;
+    if ((Number(state.resources?.gold) || 0) < goldCost) return { ok:false, reason:"not-enough-gold" };
+    if ((Number(state.resources?.food) || 0) < foodCost) return { ok:false, reason:"not-enough-food" };
+    addResource("gold", -goldCost);
+    addResource("food", -foodCost);
     realm.treaty = "none";
     realm.treatySinceYear = currentYear();
     realm.warExhaustion = 0;
     realm.relation = clamp(Math.max(28, realm.relation + 12));
     realm.trust = clamp(realm.trust + 2);
     realm.fear = clamp(realm.fear - 6);
-    record(diplomacy, realm, "peace", "Peace concluded with " + definition.name);
+    record(diplomacy, realm, "peace", (whitePeace ? "White peace concluded with " : "Peace concluded with ") + definition.name);
     applyPoliticalEffects({ legitimacy:1, guilds:1, clergy:1 });
     state.morale = clamp((Number(state.morale) || 0) + 2);
     adjustHiddenTension(-5);
-    addLog("PEACE CONCLUDED WITH " + definition.name.toUpperCase(), "#a5d6a7", "diplomacy");
-    return { ok:true, message:"Peace concluded with " + definition.name, realm:realmSnapshot(realm) };
+    addLog((whitePeace ? "WHITE PEACE CONCLUDED WITH " : "PEACE CONCLUDED WITH ") + definition.name.toUpperCase(), "#a5d6a7", "diplomacy");
+    return { ok:true, message:(whitePeace ? "White peace concluded with " : "Peace concluded with ") + definition.name, realm:realmSnapshot(realm) };
 }
 
 function envoySkillFor(person) {

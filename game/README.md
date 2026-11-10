@@ -18,6 +18,7 @@
 9. [Faith, culture and justice](docs/FAITH_AND_JUSTICE.md) — named clergy and judges, shrines, courts and prisons, festivals, pilgrimages, heresy, emergent crime, trials, legal codes and corruption.
 10. [Eternal deeds](docs/ETERNAL_DEEDS.md) — the repeatable post-ambition chronicle, its goals, rewards, stall protection and save compatibility.
 11. [Crown Endeavours](docs/CROWN_ENDEAVOURS.md) — five post-ambition paths, fifteen multi-stage projects, funding, named overseers, permanent realm modifiers and the 100-year player journeys.
+12. [War front and white peace](docs/WAR_FRONT_AND_WHITE_PEACE.md) — bounded annual war fronts, named-garrison battles and white peace at war exhaustion 35.
 
 ## Development rules
 

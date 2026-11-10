@@ -72,29 +72,30 @@ The panel is keyboard-reachable, uses the existing command-modal focus handling 
 
 ## Verification
 
-- `npm test`: **704/704** passing; syntax and relative imports for 103 source files and 189 UI ids.
-- Focused `endeavours.test.js` + `research-civilization.test.js`: **16/16**.
-- Deterministic 100-year campaign: **`ok:true`**, 40,040 ticks, final year 101, 13/13 ambitions, 3 eternal deeds, **3.242 ms/tick** (v3.11.0 baseline 3.276 ms/tick), no game over.
+- `npm test`: **705/705** passing; syntax and relative imports for 103 source files and 189 UI ids.
+- Focused diplomacy/military/Endeavour/research tests: **32/32**, including the white-peace regression at 0 gold and 0 food.
+- Deterministic 100-year campaign: **`ok:true`**, 40,040 ticks, final year 101, 13/13 ambitions, 3 eternal deeds, **3.261 ms/tick** (v3.11.0 baseline 3.276 ms/tick), no game over.
 - Five browser journeys, each 100 years, using the real start screen, management tabs, build menu, roads, trade, diplomacy, military and research. Each wrote JSON and 1600/864 screenshots to `artifacts/journeys/`; all had zero page/console errors and no overflow.
 
 | Journey | Final population | Buildings | Endeavours | Signature result | ms/tick |
 | --- | ---: | ---: | ---: | --- | ---: |
-| Builder | 41 | 40 | 15 | 16 road tiles, 12 trades | 2.845 |
-| Warlord | 38 | 39 | 15 | 1 war, standing garrison | 2.826 |
-| Diplomat | 41 | 40 | 15 | 4 alliances, relation 100 | 2.845 |
-| Merchant | 20 | 32 | 15 | 52 trades, 1,555 food, 7,642 gold | 2.697 |
-| Scholar | 54 | 49 | 15 | 17 technologies | 2.844 |
+| Builder | 43 | 37 | 15 | 16 road tiles, 12 trades | 2.789 |
+| Warlord | 28 | 44 | 15 | 3 battles, 9 losses, 15 desertions, white peace year 71 | 2.909 |
+| Diplomat | 43 | 36 | 15 | 4 alliances, relation 100 | 2.802 |
+| Merchant | 20 | 34 | 15 | 52 trades, 1,543 food, 7,646 gold | 2.791 |
+| Scholar | 46 | 36 | 15 | 17 technologies | 2.763 |
 
 ### What the journeys exposed
 
 1. **No post-ambition direction.** All five paths now provide a multi-decade project queue, with tiers and later projects still available after the first century.
 2. **A hard research ceiling.** The eight late technologies keep the scholar path meaningful after the original tree.
 3. **Water and safety silently close immigration.** A realm with food and gold but no wells or garrison can lose population for decades without a clear cause. The journeys now build water, a garrison and housing before expanding; the panel's modifier summary and the existing settlement needs remain the player-facing diagnostics. This is a strategy trap, not a hidden free win.
-4. **Trade alone is not an economy.** The merchant run initially exhausted its food market and collapsed to four residents. Preserving wood for farms, buying grain before the reserve empties and building a garrison fixed the run (20 residents, 1,555 food) without removing the trade focus.
-5. **Roads and housing are real.** The builder's 16 road tiles and 40 buildings are visible in the final realm; the narrow layout still fits.
+4. **Trade alone is not an economy.** The merchant run initially exhausted its food market and collapsed to four residents. Preserving wood for farms, buying grain before the reserve empties and building water, housing and a garrison fixed the run (20 residents, 52 trades, 1,543 food, 7,646 gold) without removing the trade focus.
+5. **Roads and housing are real.** The builder's 16 road tiles and 37 buildings are visible in the final realm; the narrow layout still fits.
+6. **A war without battles is a dead end.** The warlord run could declare war but never fight it, and a food shortage made `SUE FOR PEACE` impossible, so the war ran for 70 years with 0 battles and 20 desertions. The annual war front now spawns a bounded border raid while a war is active, the existing named garrison fights it, and war exhaustion 35 unlocks a white peace that costs no gold or food. The rerun produced 3 battles, 9 losses, 15 desertions and a white peace in year 71. See [WAR_FRONT_AND_WHITE_PEACE.md](WAR_FRONT_AND_WHITE_PEACE.md).
 
 ## Known limits
 
 - The browser journeys accelerate the clock internally (400 ticks per year) but perform every realm-changing action through visible controls. They are evidence of UI reachability, not a claim that a human would make the same choices.
-- The campaign's 3.242 ms/tick is a Node measurement on this host; lower-end devices should be measured separately.
+- The campaign's 3.261 ms/tick is a Node measurement on this host; lower-end devices should be measured separately.
 - Crown Endeavours is a management layer, not a new map or a new faction. Its depth comes from the existing systems it modifies.

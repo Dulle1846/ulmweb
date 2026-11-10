@@ -120,3 +120,17 @@ test("legacy and malformed diplomacy saves are normalized into the bounded shape
     assert.deepEqual(northmere.relationHistory,[1,2]);
     assert.equal(normalized.history.length,1);
 });
+
+test("war exhaustion permits a white peace without food or gold",()=>{
+    const target=realm("northmere");
+    target.treaty="war";
+    target.warExhaustion=40;
+    state.resources.gold=0;
+    state.resources.food=0;
+    const result=sueForPeace("northmere");
+    assert.equal(result.ok,true);
+    assert.equal(target.treaty,"none");
+    assert.equal(state.resources.gold,0);
+    assert.equal(state.resources.food,0);
+    assert.ok(target.history[0].summary.startsWith("White peace"));
+});

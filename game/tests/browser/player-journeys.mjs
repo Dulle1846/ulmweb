@@ -45,6 +45,25 @@ async function pauseGame() {
     }).catch(() => {});
 }
 
+async function hardCloseEvent() {
+    await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        if (state.activeEvent) state.activeEvent.dismissed = true;
+        const { renderUI } = await import("./js/presentation/rendering/ui.js");
+        renderUI();
+    }).catch(() => {});
+    await page.waitForTimeout(100);
+    if (await page.locator("#realm-event-modal").isVisible().catch(() => false)) {
+        await page.evaluate(async () => {
+            const { state } = await import("./js/core/state.js");
+            state.activeEvent = null;
+            const { renderUI } = await import("./js/presentation/rendering/ui.js");
+            renderUI();
+        }).catch(() => {});
+        await page.waitForTimeout(80);
+    }
+}
+
 async function dismiss() {
     await pauseGame();
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -60,13 +79,7 @@ async function dismiss() {
         if (!handled) break;
         await page.waitForTimeout(160);
     }
-    if (await page.locator("#realm-event-modal").isVisible().catch(() => false)) {
-        await page.evaluate(() => {
-            const modal = document.querySelector("#realm-event-modal");
-            if (modal) { modal.classList.add("hidden"); modal.style.display = "none"; }
-        });
-        await page.waitForTimeout(80);
-    }
+    await hardCloseEvent();
     const big = page.locator("#big-message-close");
     if (await big.isVisible().catch(() => false)) await big.click().catch(() => {});
 }
@@ -74,6 +87,7 @@ async function dismiss() {
 async function openPanel(tab) {
     await pauseGame();
     await dismiss();
+    await hardCloseEvent();
     if (!(await page.locator("#command-modal").isVisible().catch(() => false))) {
         await page.locator("#command-open-btn").click();
         await page.waitForTimeout(80);
@@ -103,6 +117,13 @@ async function stateSnapshot() {
         const endeavours = getEndeavourSnapshot();
         const diplomacy = getDiplomacySnapshot();
         const research = getResearchSnapshot();
+        const military = getMilitarySnapshot();
+        const realmHistory = (state.diplomacy?.realms || []).map(realm => ({
+            name: realm.name,
+            treaty: realm.treaty,
+            history: Array.isArray(realm.history) ? realm.history.length : 0,
+            latest: Array.isArray(realm.history) && realm.history[0] ? realm.history[0] : null
+        }));
         return {
             year: state.year,
             tick: state.tick,
@@ -124,8 +145,8 @@ async function stateSnapshot() {
                 active: endeavours.active ? { project: endeavours.active.project?.label, tier: endeavours.active.tier, percent: endeavours.active.percent } : null,
                 modifiers: endeavours.modifiers
             },
-            military: { soldiers: getMilitarySnapshot().soldiers.length, atWar: getMilitarySnapshot().atWar, history: getMilitarySnapshot().history.length },
-            diplomacy: { treaties: diplomacy.counts, alliances: diplomacy.counts.alliance, tradePacts: diplomacy.counts.trade, wars: diplomacy.counts.war, averageRelation: diplomacy.averageRelation, history: diplomacy.realmCount },
+            military: { soldiers: military.soldiers.length, atWar: military.atWar, history: military.history.length, trained: military.trained, losses: military.losses, desertions: military.desertions, battles: military.soldiers.reduce((sum, soldier) => sum + (Number(soldier.battles) || 0), 0) },
+            diplomacy: { treaties: diplomacy.counts, alliances: diplomacy.counts.alliance, tradePacts: diplomacy.counts.trade, wars: diplomacy.counts.war, averageRelation: diplomacy.averageRelation, realmHistory },
             research: { completed: research.modifiers.completedCount, active: research.activeTechDetails?.label || null, scholars: research.scholars.length },
             market: { trades: state.statistics?.totalTrades || 0, goldTraded: state.market?.totalGoldTraded || 0 }
         };
@@ -264,8 +285,8 @@ async function tradeFood() {
             }
         }
     }
-    if (before.food < 200) {
-        for (let index = 0; index < 6; index++) {
+    if (before.food < 250) {
+        for (let index = 0; index < 10; index++) {
             if (await page.locator("#realm-event-modal").isVisible().catch(() => false)) {
                 await dismiss();
                 await page.evaluate(() => document.querySelector("#tab-2")?.click());
@@ -310,13 +331,15 @@ async function sustainRealm(year) {
     if (need.water < 0.55) await buildViaUI(65, "services");
     else if (need.safety < 0.4) await buildViaUI(9, "military");
     else if (need.capacity < need.population + 6) await buildViaUI(1, "housing");
-    else if (need.food < 150) await buildViaUI(2, "production");
-    else if (year % 20 === 1) {
+    else if (need.food < 250) {
+        await buildViaUI(2, "production");
+        if (JOURNEY === "warlord" && need.food < 180) await buildViaUI(2, "production");
+    } else if (year % 20 === 1) {
         await buildViaUI(10, "production");
         await buildViaUI(64, "services");
         await buildViaUI(65, "services");
     }
-    await tradeFood();
+    if (need.food < 250 || need.gold < 120) await tradeFood();
 }
 
 async function foundingWorks() {
@@ -326,6 +349,11 @@ async function foundingWorks() {
     await buildViaUI(1, "housing");
     await buildViaUI(2, "production");
     await buildViaUI(9, "military");
+    if (JOURNEY === "warlord") {
+        await buildViaUI(9, "military");
+        await buildViaUI(2, "production");
+        await buildViaUI(2, "production");
+    }
     if (JOURNEY === "merchant") {
         await buildViaUI(2, "production");
         await buildViaUI(2, "production");
@@ -389,21 +417,29 @@ async function builderTurn(year) {
 }
 
 async function warlordTurn(year) {
-    if (year === 11 || year === 31) await buildViaUI(9, "military");
-    if (year % 20 === 1) {
+    if (year === 6 || year === 21 || year === 41 || year === 61 || year === 81) await buildViaUI(9, "military");
+    if (year % 5 === 1) {
         await openPanel("military");
-        const select = page.locator("#military-recruit-select");
-        if (await select.count() && (await select.locator("option").count()) > 1) {
+        for (let index = 0; index < 4; index++) {
+            const select = page.locator("#military-recruit-select");
+            if (!(await select.count()) || (await select.locator("option").count()) <= 1) break;
             await select.selectOption({ index: 1 });
             const recruit = page.locator('[data-command="military-recruit"]');
-            if (await recruit.isEnabled().catch(() => false)) await recruit.click();
-            await page.waitForTimeout(100);
+            if (!(await recruit.isEnabled().catch(() => false))) break;
+            await recruit.click();
+            await page.waitForTimeout(90);
         }
-        for (let index = 0; index < 3; index++) {
+        for (let index = 0; index < 4; index++) {
             const train = page.locator('[data-command="military-train"]:not([disabled])').first();
             if (!(await train.count())) break;
             await train.click();
-            await page.waitForTimeout(100);
+            await page.waitForTimeout(90);
+        }
+        for (let index = 0; index < 2; index++) {
+            const equip = page.locator('[data-command="military-equip"]:not([disabled])').first();
+            if (!(await equip.count())) break;
+            await equip.click();
+            await page.waitForTimeout(90);
         }
         await closePanel();
     }
