@@ -115,20 +115,21 @@ function renderAmbition(){
     const section=document.getElementById("ambition-section");
     if(!section)return;
     const snapshot=getAmbitionSnapshot();
-    const signature=[snapshot.id,snapshot.completedCount,snapshot.total,Math.round(snapshot.progress*100),snapshot.progressLabel,snapshot.allComplete].join("|");
+    const signature=[snapshot.id,snapshot.completedCount,snapshot.total,Math.round(snapshot.progress*100),snapshot.progressLabel,snapshot.allComplete,snapshot.eternal,snapshot.eternalCount].join("|");
     if(signature===lastAmbitionSignature)return;
     lastAmbitionSignature=signature;
     setText("ambition-count",snapshot.completedCount+" / "+snapshot.total);
-    setText("ambition-kicker",snapshot.allComplete?"LEGEND COMPLETE":"NEXT CHAPTER · "+(snapshot.completedCount+1)+" OF "+snapshot.total);
+    setText("ambition-kicker",snapshot.eternal?(snapshot.eternalLabel||"ETERNAL DEED"):snapshot.allComplete?"LEGEND COMPLETE":"NEXT CHAPTER · "+(snapshot.completedCount+1)+" OF "+snapshot.total);
     setText("ambition-title",snapshot.title);
     setText("ambition-description",snapshot.description);
     setText("ambition-progress-label",snapshot.progressLabel);
-    setText("ambition-reward",snapshot.allComplete?"ALL AMBITIONS FULFILLED":"REWARD · "+snapshot.rewardText);
+    setText("ambition-reward",snapshot.eternal?"ETERNAL REWARD · "+snapshot.rewardText:snapshot.allComplete?"ALL AMBITIONS FULFILLED":"REWARD · "+snapshot.rewardText);
     const bar=document.getElementById("ambition-bar");
     if(bar)bar.style.width=Math.round(snapshot.progress*100)+"%";
     const progress=document.querySelector("#ambition-section .ambition-progress");
     if(progress)progress.setAttribute("aria-valuenow",String(Math.round(snapshot.progress*100)));
-    section.classList.toggle("is-complete",snapshot.allComplete);
+    section.classList.toggle("is-complete",snapshot.allComplete&&!snapshot.eternal);
+    section.classList.toggle("is-eternal",Boolean(snapshot.eternal));
 }
 
 function updateCost(id,amount){

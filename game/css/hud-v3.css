@@ -825,6 +825,9 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
   box-shadow:inset 0 1px #f7e6c214;
 }
 .ambition-section.is-complete .ambition-card{border-color:#c7a85f;background:linear-gradient(160deg,#4a3823,#241b12)}
+.ambition-section.is-eternal .ambition-card{border-color:#8fa9c4;background:linear-gradient(160deg,#293241,#181d24);box-shadow:inset 0 1px #dce9f514}
+.ambition-section.is-eternal .ambition-topline strong{color:#dce9f5}
+.ambition-section.is-eternal .ambition-progress i{background:linear-gradient(90deg,#5e7f9d,#a9c8e2,#d8bd82)}
 .ambition-topline{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
 .ambition-topline span{flex:0 0 auto;font:700 6.5px var(--ui-body-font);letter-spacing:.12em;color:#b9a47c}
 .ambition-topline strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 11px var(--ui-title-font);letter-spacing:.035em;color:#f2dfb5;text-align:right}

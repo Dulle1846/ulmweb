@@ -97,7 +97,9 @@ const layout = await page.evaluate(async () => {
         ambitionVisible: Boolean(document.querySelector("#ambition-section")?.offsetParent),
         ambitionTitle: document.querySelector("#ambition-title")?.textContent || null,
         ambitionCount: document.querySelector("#ambition-count")?.textContent || null,
+        ambitionKicker: document.querySelector("#ambition-kicker")?.textContent || null,
         ambitionLabel: document.querySelector("#ambition-progress-label")?.textContent || null,
+        ambitionReward: document.querySelector("#ambition-reward")?.textContent || null,
         year: state.year,
         population: state.entities.filter(entity => !entity.dead && entity.type === 20).length
     };
@@ -147,6 +149,9 @@ if (consoleErrors.length) failures.push("console errors: " + consoleErrors.join(
 if (layout.horizontalOverflow) failures.push("the layout overflows horizontally at 1600x1000");
 if (!layout.ambitionVisible) failures.push("the ambition panel is not visible");
 if (String(layout.ambitionCount).trim() !== "13 / 13") failures.push("ambition panel does not show 13 / 13: " + layout.ambitionCount);
+if (!/ETERNAL DEED/.test(String(layout.ambitionKicker))) failures.push("the eternal deed is not presented after the royal ladder: " + layout.ambitionKicker);
+if (!String(layout.ambitionLabel || "").trim()) failures.push("the eternal deed has no progress label");
+if (!/ETERNAL REWARD/.test(String(layout.ambitionReward))) failures.push("the eternal deed has no eternal reward line: " + layout.ambitionReward);
 if (Number(performanceSample.fps) < 50) failures.push("mature-realm FPS fell below 50: " + performanceSample.fps);
 if (Number(performanceSample.frameMs) > 20) failures.push("mature-realm frame time exceeded 20ms: " + performanceSample.frameMs);
 if (failures.length) {

@@ -316,7 +316,11 @@ function captureSnapshot(extra = {}) {
             completedCount: ambition.completedCount,
             total: ambition.total,
             allComplete: ambition.allComplete,
-            progressLabel: ambition.progressLabel
+            progressLabel: ambition.progressLabel,
+            eternal: Boolean(ambition.eternal),
+            eternalCount: Number(ambition.eternalCount) || 0,
+            eternalTitle: ambition.eternal ? ambition.title : null,
+            eternalProgress: ambition.eternal ? ambition.progress : 0
         },
         ...extra
     };

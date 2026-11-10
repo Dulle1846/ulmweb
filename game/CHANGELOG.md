@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.10.0`
-**Next development line:** `3.11.0-dev`
+**Current production version:** `3.11.0`
+**Next development line:** `3.12.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -37,6 +37,16 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.11.0 — The Eternal Chronicle
+**Released:** 2026-11-10
+**Scope:** Repeatable eternal deeds after the thirteen royal ambitions, drawn from the live realm.
+
+**Content:** The 50-year deterministic audit found the real long-term gap: after the thirteenth ambition the realm had no further goal and froze at 70/70 residents and 50 buildings. Fifteen eternal deed families now continue the same HUD card from live systems — population, housing, completed buildings, roads, treasury, granary, morale, household satisfaction, resolved issues, technology, alliances, prestige, garrison, places of faith and trade. Each deed fixes its target when issued, pays its resource reward and prestige exactly once, and immediately issues the next. A deed that makes no progress for three years is set aside without reward instead of blocking the chronicle, and extreme targets are withheld before the hard entity and map limits.
+
+**Compatibility:** The thirteen royal ambitions, their ids, order, rewards and `allComplete` semantics are unchanged. `state.ambitions.eternal` is additive and normalized; saves without it load with defaults, and malformed deeds are discarded. The HUD keeps `13 / 13` and shows `ETERNAL DEED · N`, existing progress and `ETERNAL REWARD`.
+
+**Verification:** focused ambitions 12/12; `npm test` 696/696; syntax/relative imports 101 source files / 189 UI ids; 50-year campaign 20,040 ticks, 13/13 ambitions, `ok:true`, 3.037 ms/tick, with two eternal deeds completed and three stalled deeds set aside across the run; browser 25-year campaign shows the eternal HUD at 1600/1024/864 px with no page or console errors. Full record: [docs/ETERNAL_DEEDS.md](docs/ETERNAL_DEEDS.md).
 
 ### 3.10.0 — The Living Realm
 **Released:** 2026-11-10
