@@ -7,6 +7,9 @@ on:
         description: Cloudflare Workers build UUID
         required: true
         type: string
+  pull_request:
+    branches:
+      - ulmweb-branch
 
 permissions:
   contents: read
@@ -30,7 +33,7 @@ jobs:
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          BUILD_ID: ${{ inputs.build_id }}
+          BUILD_ID: ${{ inputs.build_id || '67842bcb-45b3-4e01-afc8-a838bb6cd5bb' }}
         run: |
           set -euo pipefail
           curl --fail --silent --show-error \
@@ -42,7 +45,7 @@ jobs:
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          BUILD_ID: ${{ inputs.build_id }}
+          BUILD_ID: ${{ inputs.build_id || '67842bcb-45b3-4e01-afc8-a838bb6cd5bb' }}
         run: |
           set -euo pipefail
           curl --fail --silent --show-error \
