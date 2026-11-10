@@ -1,0 +1,159 @@
+name: Deploy Kings & Cards after green tests
+
+on:
+  push:
+    branches:
+      - ulmweb-branch
+    paths:
+      - "game/**"
+      - ".github/workflows/deploy-kings-cards-after-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: kings-cards-pages-production
+  cancel-in-progress: false
+
+jobs:
+  test-and-build:
+    name: Test and build runtime package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run full game tests
+        working-directory: game
+        run: npm test
+
+      - name: Build runtime-only Pages package
+        working-directory: game
+        run: npm run build:runtime
+
+      - name: Verify runtime package boundaries
+        working-directory: game
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          test -f artifacts/kings-and-cards-deploy/public/index.html
+          test -f artifacts/kings-and-cards-deploy/public/version.json
+          test ! -e artifacts/kings-and-cards-deploy/public/package.json
+          test ! -e artifacts/kings-and-cards-deploy/public/tests
+          test ! -e artifacts/kings-and-cards-deploy/public/docs
+          node -e '
+            const fs = require("node:fs");
+            const marker = JSON.parse(fs.readFileSync("artifacts/kings-and-cards-deploy/public/version.json", "utf8"));
+            if (marker.commit !== process.env.GITHUB_SHA) {
+              console.error(`Runtime marker commit ${marker.commit} does not match ${process.env.GITHUB_SHA}`);
+              process.exit(1);
+            }
+            if (!marker.builtAt || Number.isNaN(Date.parse(marker.builtAt))) {
+              console.error("Runtime marker has no valid builtAt timestamp");
+              process.exit(1);
+            }
+            console.log(`Runtime marker commit=${marker.commit} builtAt=${marker.builtAt}`);
+          '
+
+      - name: Upload runtime package
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-runtime
+          path: game/artifacts/kings-and-cards-deploy/public
+          if-no-files-found: error
+          retention-days: 3
+
+  deploy:
+    name: Deploy production to Cloudflare Pages
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://kings-and-cards.pages.dev/
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download tested runtime package
+        uses: actions/download-artifact@v4
+        with:
+          name: kings-and-cards-runtime
+          path: ${{ runner.temp }}/kings-and-cards-runtime
+
+      - name: Verify downloaded runtime
+        env:
+          RUNTIME_DIR: ${{ runner.temp }}/kings-and-cards-runtime
+        run: |
+          test -f "$RUNTIME_DIR/index.html"
+          test -f "$RUNTIME_DIR/js/app/main.js"
+          test -f "$RUNTIME_DIR/version.json"
+          test ! -e "$RUNTIME_DIR/package.json"
+
+      - name: Verify Cloudflare Pages credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Set the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID before deploying."
+            exit 1
+          fi
+
+      - name: Deploy tested runtime to Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes wrangler@3.114.17 pages deploy "${{ runner.temp }}/kings-and-cards-runtime" \
+            --project-name kings-and-cards \
+            --branch ulmweb-branch \
+            --commit-hash "$GITHUB_SHA"
+
+      - name: Verify production serves the tested commit
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          marker="$(mktemp)"
+          trap 'rm -f "$marker"' EXIT
+          verified=0
+          for attempt in $(seq 1 12); do
+            if curl --fail --silent --show-error --location --max-time 20 \
+              "https://kings-and-cards.pages.dev/version.json?commit=$GITHUB_SHA" \
+              -o "$marker" \
+              && node -e '
+                const fs = require("node:fs");
+                const expected = process.env.GITHUB_SHA;
+                const marker = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+                if (marker.commit !== expected) throw new Error(`commit ${marker.commit} != ${expected}`);
+                if (!marker.builtAt || Number.isNaN(Date.parse(marker.builtAt))) throw new Error("invalid builtAt");
+                console.log(`Production serves commit ${marker.commit}, built ${marker.builtAt}`);
+              ' "$marker" 2>/dev/null; then
+              verified=1
+              break
+            fi
+            echo "Version marker not ready (attempt $attempt/12); retrying in 5s."
+            sleep 5
+          done
+          if [ "$verified" -ne 1 ]; then
+            echo "::error::Production did not serve version.json for commit $GITHUB_SHA."
+            head -c 500 "$marker" || true
+            echo
+            exit 1
+          fi
+          cat "$marker"
+          curl --fail --silent --show-error --location \
+            --retry 6 --retry-delay 5 --retry-connrefused \
+            https://kings-and-cards.pages.dev/ \
+            -o /dev/null
+          echo "Production URL and version marker verified: https://kings-and-cards.pages.dev/"
