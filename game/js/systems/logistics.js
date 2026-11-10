@@ -392,10 +392,13 @@ export function getPhysicalStock(good) {
     let total = 0;
     for (const entity of state.entities) {
         if (entity.dead || !entity.isBuilding()) continue;
-        ensureInventory(entity);
+        // Repeatedly normalising every store for every product check dominated
+        // production ticks. A missing store is initialised once; an existing
+        // store is already maintained by the logistics mutations.
+        const inventory = entity.inventory || ensureInventory(entity);
         if (entity.warehouse) total += cleanQuantity(entity.warehouse.stored[good]);
-        total += cleanQuantity(entity.inventory?.output?.[good]);
-        total += cleanQuantity(entity.inventory?.input?.[good]);
+        total += cleanQuantity(inventory?.output?.[good]);
+        total += cleanQuantity(inventory?.input?.[good]);
     }
     for (const carrier of ensureCityState().logistics.carriers) {
         if (carrier.cargo?.good === good) total += cleanQuantity(carrier.cargo.quantity);
@@ -407,9 +410,9 @@ export function getPhysicalStockMap() {
     result.food = Math.max(0, Number(state.resources.food) || 0);
     for (const entity of state.entities) {
         if (entity.dead || !entity.isBuilding()) continue;
-        ensureInventory(entity);
+        const inventory = entity.inventory || ensureInventory(entity);
         if (entity.warehouse) for (const key of GOOD_KEYS) result[key] += cleanQuantity(entity.warehouse.stored[key]);
-        for (const key of GOOD_KEYS) result[key] += cleanQuantity(entity.inventory?.output?.[key]) + cleanQuantity(entity.inventory?.input?.[key]);
+        for (const key of GOOD_KEYS) result[key] += cleanQuantity(inventory?.output?.[key]) + cleanQuantity(inventory?.input?.[key]);
     }
     for (const carrier of ensureCityState().logistics.carriers) {
         if (carrier.cargo && GOOD_KEYS.includes(carrier.cargo.good)) result[carrier.cargo.good] += cleanQuantity(carrier.cargo.quantity);
@@ -1055,12 +1058,9 @@ function assignPendingJobs() {
         job.status = "assigned";
         job.attempts = 0;
         job.reason = null;
-        const destination = entityFromRef(job.to);
-        if (destination) {
-            const end = nearestWalkable(destination.x, destination.y);
-            carrier.path = findPath(carrier.x, carrier.y, end.x, end.y, 2400) || [];
-            carrier.pathIndex = 0;
-        }
+        // spawnCarrier() already routed to this exact destination. Taking the
+        // cargo changes inventory, not walkability, so recomputing the same
+        // full-map route here only doubled carrier pathfinding cost.
     }
 }
 function retryBlockedJobs() {

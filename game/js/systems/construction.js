@@ -8,7 +8,7 @@ import { addResource } from "./resources.js";
 import { recordResourceMovement } from "./goods-book.js";
 import { spawnEntity, canSpawnEntity, buildingOverlaps } from "../world/entities.js";
 import { isWaterAt, worldWidth, worldHeight, revealArea } from "../world/world.js";
-import { getResourceNodeAt } from "./resource-geography.js";
+import { getResourceSiteAt } from "./resource-geography.js";
 import { getWorkforceSnapshot } from "./economy.js";
 import { getResearchModifiers } from "./research.js";
 import {
@@ -70,8 +70,7 @@ export function siteSuitability(type, tx, ty) {
     if (!Number.isInteger(x) || !Number.isInteger(y)) return { ok: false, reason: "INVALID SITE" };
     let node = null;
     try {
-        const raw = getResourceNodeAt(x, y);
-        node = raw ? { forest: raw.forestStock, stone: raw.stoneStock, water: raw.waterAccess, fertility: raw.fertility } : null;
+        node = getResourceSiteAt(x, y);
     } catch {
         // Unit fixtures may build before a world geography exists. The live
         // game always has one, so this only keeps pure placement tests usable.

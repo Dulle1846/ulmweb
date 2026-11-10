@@ -3,7 +3,7 @@
 // only at harvest. Foresters plant new stock slowly and only on valid ground.
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
-import { getResourceNodeAt, plantForestAt } from "./resource-geography.js";
+import { getForestStockAt, getResourceSiteAt, plantForestAt } from "./resource-geography.js";
 import { addLocalOutput, getAvailableOutput, getPhysicalStock, requestHaul } from "./logistics.js";
 import { getBuildingEfficiency, getWorkforceSnapshot } from "./economy.js";
 
@@ -28,7 +28,7 @@ const DEPLETION_PER_YIELD = 0.16;
 function number(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
 function ensureField(farm) {
     let terrainFertility = 50;
-    try { terrainFertility = Number(getResourceNodeAt(farm.x, farm.y)?.fertility) || 50; } catch { /* legacy test fixture */ }
+    try { terrainFertility = Number(getResourceSiteAt(farm.x, farm.y)?.fertility) || 50; } catch { /* legacy test fixture */ }
     if (!farm.field || typeof farm.field !== "object") {
         farm.field = {
             stage: "fallow", growth: 0, fertility: terrainFertility, harvests: 0,
@@ -217,7 +217,7 @@ export function foresterRangeSummary(building, radius = 5) {
     for (let oy = -limit; oy <= limit; oy++) {
         for (let ox = -limit; ox <= limit; ox++) {
             if (Math.max(Math.abs(ox), Math.abs(oy)) > limit) continue;
-            const node = getResourceNodeAt(x + ox, y + oy);
+            const node = getForestStockAt(x + ox, y + oy);
             if (!node || node.forestCapacity <= 0) continue;
             tiles++;
             stock += node.forestStock;
@@ -242,7 +242,7 @@ function foresterUpdate(building, workforce) {
     for (let oy = -radius; oy <= radius; oy++) {
         for (let ox = -radius; ox <= radius; ox++) {
             if (Math.max(Math.abs(ox), Math.abs(oy)) > radius) continue;
-            const node = getResourceNodeAt(x + ox, y + oy);
+            const node = getForestStockAt(x + ox, y + oy);
             if (!node || node.forestCapacity <= 0 || node.forestStock >= node.forestCapacity) continue;
             candidates.push({
                 x: x + ox, y: y + oy,

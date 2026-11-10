@@ -178,7 +178,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.13.3</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.13.4</b>"));
   assert.ok(management.includes('data-command="crown-grain"'));
   assert.ok(management.includes('data-command="crown-water"'));
   assert.ok(management.includes('data-command="crown-housing"'));

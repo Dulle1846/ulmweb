@@ -16,7 +16,7 @@
 import { state } from "../core/state.js";
 import { WORLD_W, WORLD_H } from "../core/config.js";
 import { forestStandAt, FOREST_FAUNA } from "../world/forest-ecology.js";
-import { getResourceNodeAt } from "./resource-geography.js";
+import { getForestHabitatAt } from "./resource-geography.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { seasonalState } from "../world/season.js";
 
@@ -114,7 +114,7 @@ function herdHash(herd) {
 
 function nodeAt(x, y) {
     try {
-        return getResourceNodeAt(x, y);
+        return getForestHabitatAt(x, y);
     } catch {
         return null;
     }
@@ -430,17 +430,14 @@ function addHistory(model, entry) {
 
 function neighbourCandidates(herd, radius) {
     const candidates = [];
-    const seen = new Set();
+    const width = worldWidth(), height = worldHeight();
     for (let dy = -radius; dy <= radius; dy++) {
         for (let dx = -radius; dx <= radius; dx++) {
             if (!dx && !dy) continue;
             if (Math.abs(dx) + Math.abs(dy) > radius + 1) continue;
             const x = herd.x + dx;
             const y = herd.y + dy;
-            if (x < 0 || y < 0 || x >= worldWidth() || y >= worldHeight()) continue;
-            const key = x + ":" + y;
-            if (seen.has(key)) continue;
-            seen.add(key);
+            if (x < 0 || y < 0 || x >= width || y >= height) continue;
             const node = nodeAt(x, y);
             if (!node?.forestCapacity) continue;
             const stand = standAt(x, y, node);
@@ -455,7 +452,7 @@ function daysSince(lastMoved, day) {
     return ((Number(day) || 0) - (Number(lastMoved) || 0) + DAYS_PER_YEAR) % DAYS_PER_YEAR;
 }
 
-function maybeMigrate(model, herd, current, day, additions = []) {
+function maybeMigrate(model, herd, current, day, occupied) {
     const spec = SIMULATED_SPECIES[herd.species];
     if (!spec) return false;
     const lastMoved = Number(herd.lastMoved) || 0;
@@ -470,14 +467,8 @@ function maybeMigrate(model, herd, current, day, additions = []) {
     // This keeps ordinary herds in their home wood and reserves roaming for
     // spring dispersal and autumn range shifts.
     if (!crowded && season !== "spring" && season !== "autumn") return false;
-    const occupied = new Set(model.herds
-        .filter(other => other !== herd)
-        .map(other => other.x + ":" + other.y));
-    // Splits are appended only after the daily herd loop. Reserve their target
-    // tiles now so a later migration cannot land on the same wood today.
-    for (const addition of additions) occupied.add(addition.x + ":" + addition.y);
     const candidates = neighbourCandidates(herd, spec.mobility)
-        .filter(candidate => !occupied.has(candidate.x + ":" + candidate.y));
+        .filter(candidate => !occupied.get(candidate.x + ":" + candidate.y));
     if (!candidates.length) return false;
     const currentScore = preferenceScore(current.stand, herd.species, model.day);
     let best = null;
@@ -664,6 +655,14 @@ export function updateForestFauna(days = 1) {
         const season = seasonFor(model.day);
         const additions = [];
         const pressureMaps = buildFaunaPressureMaps(model);
+        // One occupancy map per day instead of rebuilding a Set for every
+        // migrating herd. Counts preserve the old behaviour even if a save
+        // contains two herds on one tile.
+        const occupied = new Map();
+        for (const herd of model.herds) {
+            const key = herd.x + ":" + herd.y;
+            occupied.set(key, (occupied.get(key) || 0) + 1);
+        }
         for (const herd of model.herds) {
             const resolved = resolveHerd(herd, model.day);
             if (!resolved) {
@@ -696,7 +695,15 @@ export function updateForestFauna(days = 1) {
             herd.population = Math.round(next * 10) / 10;
             herd.huntingPressure = Math.max(0, Math.round(hunting * 0.985 * 1000) / 1000);
             herd.trend = herd.population > before + 0.2 ? "growing" : herd.population < before - 0.2 ? "declining" : "stable";
-            maybeMigrate(model, herd, resolved, model.day, additions);
+            const oldX = herd.x, oldY = herd.y;
+            if (maybeMigrate(model, herd, resolved, model.day, occupied)) {
+                const oldKey = oldX + ":" + oldY;
+                const remaining = (occupied.get(oldKey) || 0) - 1;
+                if (remaining > 0) occupied.set(oldKey, remaining);
+                else occupied.delete(oldKey);
+                const newKey = herd.x + ":" + herd.y;
+                occupied.set(newKey, (occupied.get(newKey) || 0) + 1);
+            }
 
             // A crowded herd disperses a small satellite group into a
             // neighbouring wood. The cap is a hard save/performance bound.
@@ -706,6 +713,8 @@ export function updateForestFauna(days = 1) {
                     !model.herds.some(other => other.x === candidate.x && other.y === candidate.y)
                     && !additions.some(other => other.x === candidate.x && other.y === candidate.y));
                 if (target) {
+                    const targetKey = target.x + ":" + target.y;
+                    occupied.set(targetKey, (occupied.get(targetKey) || 0) + 1);
                     const split = Math.max(1, Math.round(herd.population * 0.26 * 10) / 10);
                     herd.population = Math.round((herd.population - split) * 10) / 10;
                     const splitSequence = Number(model.stats.splits) || 0;

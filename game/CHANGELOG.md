@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.13.3`
+**Current production version:** `3.13.4`
 **Next development line:** `3.14.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -37,6 +37,31 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.13.4 — Shared-Simulation Performance
+
+**Released:** 2026-11-10
+
+**Scope:** Closes the open 3.13.3 performance requirement without weakening simulation depth, ambitions, yields or save compatibility. Profiling and the measured 100-year/matrix record are in [docs/DEEP_PLAYTEST_3.13.4.md](docs/DEEP_PLAYTEST_3.13.4.md).
+
+**The measured problem:** on one 8-vCPU Node 26 host the reference seed ran at **2.745 ms/tick** and seed 7 at **9.534 ms/tick** over 40,040 ticks. The profile named forest-fauna stand reconstruction (≈44 %), carrier pathfinding including a duplicate route after pickup (≈26 %), repeated building placement work (≈16 %), succession's per-tick `Object.entries` allocation (≈8 %), service workforce rebuilds (≈7 %) and repeated inventory normalisation in stock checks (≈6 %).
+
+**Root fixes:** an exact fauna habitat cache keyed by stock, capacity, succession kind/age, climate and forest setting; one herd-occupancy map per simulated day; a route cache invalidated by world, building-collision and road revisions plus removal of the duplicate post-pickup carrier route; raw geography queries for placement/forester/survey instead of full stand construction; a cached static building list for overlap checks; allocation-free succession iteration with cached profiles and an exact live tile count; one workforce/active-service snapshot per settlement pass; and inventory checks that only initialise a missing store instead of re-normalising every store per product.
+
+**100-year evidence:** every seed is green, at 70 residents, 13/13 ambitions, 0 unresolved stalls, 0 food shortage and no game over:
+
+| Seed | Tick cost | Ticks | Eternal Deeds |
+|---|---:|---:|---:|
+| 20261108 | **0.995 ms** | 40,040 | 3 |
+| 7 | **1.780 ms** | 40,040 | 2 |
+| 99 | **0.847 ms** | 40,040 | 2 |
+| 42 | **0.798 ms** | 40,040 | 1 |
+
+Seed 7 repeated at **1.819 ms/tick**, so its observed range is 1.78–1.82 ms. The reference seed fell from 2.745 to 0.995 ms; seed 7 fell from 9.534 to 1.78–1.82 ms (5.2–5.4×). All four runs are faster than the requested 2.3–2.6 ms band; the 2.6 ms ceiling is met with margin and no artificial load was added to reach the lower bound.
+
+**25-year matrix:** 4 seeds × 3 playstyles, **12/12 green**, all **13/13 ambitions**, **63–75 residents**, **0 unresolved stalls**, no food collapse and no game over. Tick costs are **0.758–1.137 ms/tick**. Every crown-relief attempt succeeded (1–3 per run, 0 failed).
+
+**Verification:** `npm test` **724/724**; syntax, relative imports and UI ids **105 files / 189 ids**; habitat-cache regression covers immediate harvest and succession invalidation. The production URL is verified separately after Cloudflare Pages serves the exact release commit.
 
 ### 3.13.3 — Seed-Robust Living Realm
 

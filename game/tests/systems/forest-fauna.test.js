@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
-import { generateResourceGeography } from "../../js/systems/resource-geography.js";
+import { generateResourceGeography, getForestHabitatAt, harvestForest } from "../../js/systems/resource-geography.js";
+import { ensureForestSuccession } from "../../js/systems/forest-succession.js";
 import {
     ensureForestFauna, forestFaunaAt, forestFaunaSignAt, forestFaunaSummaryAt, resetForestFauna,
     restoreForestFauna, serializeForestFauna, updateForestFauna,
@@ -24,6 +25,24 @@ function setup(seed = 20261108) {
     generateResourceGeography(seed);
     return ensureForestFauna();
 }
+
+test("cached fauna habitat observes harvest and succession immediately", () => {
+    const model = setup();
+    const herd = model.herds[0];
+    const before = getForestHabitatAt(herd.x, herd.y);
+    assert.ok(before?.forestCapacity > 0);
+    const taken = harvestForest(herd.x, herd.y, 1);
+    assert.equal(taken, 1);
+    const after = getForestHabitatAt(herd.x, herd.y);
+    assert.equal(after.forestStock, before.forestStock - taken, "a harvest must invalidate the cached habitat");
+    assert.equal(after.forestCapacity, before.forestCapacity);
+
+    const succession = ensureForestSuccession();
+    assert.ok(succession);
+    succession.tiles[herd.x + ":" + herd.y] = { kind: "burned", age: 0, containedUntil: 0 };
+    const burned = getForestHabitatAt(herd.x, herd.y);
+    assert.equal(burned.forestSuccession?.kind, "burned", "a new disturbance must invalidate the cached habitat");
+});
 
 test("forest fauna seeds stable herds on real forest tiles", () => {
     const model = setup();

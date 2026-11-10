@@ -434,7 +434,10 @@ const HIERARCHICAL_TRIGGER_DISTANCE = 64;
 const HIERARCHICAL_LOCAL_CAP = 5000;
 const HIERARCHICAL_GRID_CACHE_LIMIT = 24;
 const hierarchicalGridCache = new Map();
-const pathCacheStats = { hits: 0, misses: 0, evictions: 0, invalidations: 0 };
+const pathCacheStats = { hits: 0, misses: 0, evictions: 0, invalidations: 0, routeHits: 0, routeMisses: 0 };
+const PATH_RESULT_CACHE_LIMIT = 512;
+const pathResultCache = new Map();
+let pathResultWorldKey = null;
 let reachableTileCache = null;
 let cacheWorldKey = null;
 
@@ -482,12 +485,16 @@ export function getPathCacheStats() {
 
 export function clearPathCache() {
     hierarchicalGridCache.clear();
+    pathResultCache.clear();
+    pathResultWorldKey = null;
     reachableTileCache = null;
     cacheWorldKey = null;
     pathCacheStats.hits = 0;
     pathCacheStats.misses = 0;
     pathCacheStats.evictions = 0;
     pathCacheStats.invalidations = 0;
+    pathCacheStats.routeHits = 0;
+    pathCacheStats.routeMisses = 0;
 }
 
 function getReachableTiles(startX, startY) {
@@ -656,14 +663,37 @@ function findHierarchicalPath(startX, startY, targetX, targetY) {
 export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
     // A world change invalidates old grids even when this particular search
     // never reaches the hierarchical fallback (for example, all-water terrain).
-    invalidateWorldCache(walkabilityKey());
+    const worldKey = walkabilityKey();
+    invalidateWorldCache(worldKey);
+    // Road construction changes travel costs without changing walkability, so
+    // it is part of the route-cache epoch even though it is not part of the
+    // reachability-grid key.
+    const routeWorldKey = worldKey + ":" + (state.roads?.revision || 0);
+    if (pathResultWorldKey !== routeWorldKey) {
+        pathResultCache.clear();
+        pathResultWorldKey = routeWorldKey;
+    }
+    const cacheKey = startX + "," + startY + "," + targetX + "," + targetY + "," + maxNodes;
+    if (pathResultCache.has(cacheKey)) {
+        pathCacheStats.hits++;
+        pathCacheStats.routeHits++;
+        const cached = pathResultCache.get(cacheKey);
+        return cached ? cached.slice() : cached;
+    }
+    pathCacheStats.routeMisses++;
     const direct = findPathDirect(startX,startY,targetX,targetY,maxNodes);
-    if (direct) return direct;
+    let result = direct;
     // Only a search that hit the node guard gets the hierarchical retry.
     // Genuinely unreachable targets must stay cheap and return null.
-    if (lastDirectPathResult !== "cap") return null;
-    if (Math.max(Math.abs(targetX - startX), Math.abs(targetY - startY)) < HIERARCHICAL_TRIGGER_DISTANCE) return null;
-    return findHierarchicalPath(startX,startY,targetX,targetY);
+    if (!result && lastDirectPathResult === "cap"
+        && Math.max(Math.abs(targetX - startX), Math.abs(targetY - startY)) >= HIERARCHICAL_TRIGGER_DISTANCE) {
+        result = findHierarchicalPath(startX,startY,targetX,targetY);
+    }
+    if (pathResultCache.size >= PATH_RESULT_CACHE_LIMIT) {
+        pathResultCache.delete(pathResultCache.keys().next().value);
+    }
+    pathResultCache.set(cacheKey, result ? result.slice() : null);
+    return result;
 }
 
 function followCachedPath(unit,dt,speedMultiplier=1){

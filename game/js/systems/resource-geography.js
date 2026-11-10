@@ -185,6 +185,93 @@ export function generateResourceGeography(seed=state.worldSeed){
     return state.resourceGeography;
 }
 
+// Fauna asks for the same handful of habitat fields every simulated day. The
+// full node carries snow, sight, goods and work-factor fields that wildlife
+// never reads, and rebuilding the deterministic stand per herd was the single
+// largest tick cost. This cache keeps the habitat fields only while the exact
+// inputs that produce the stand are unchanged (stock, capacity and succession
+// age), so it cannot mask a harvest, fire or regrowth event.
+const HABITAT_CACHE_LIMIT = 12000;
+let habitatCacheGeography = null;
+let habitatCacheSuccession = null;
+let habitatCacheClimate = null;
+let habitatCacheForests = null;
+const habitatCache = new Map();
+
+export function clearForestHabitatCache() {
+    habitatCache.clear();
+    habitatCacheGeography = null;
+    habitatCacheSuccession = null;
+    habitatCacheClimate = null;
+    habitatCacheForests = null;
+}
+
+export function getForestHabitatAt(x, y) {
+    const point = readTile(x, y);
+    if (!point) return null;
+    const geo = ensureGeography();
+    const i = point.index;
+    const capacity = geo.forestCapacity[i];
+    if (!capacity) return null;
+    const succession = forestSuccessionAt(point.x, point.y);
+    const climate = state.worldOptions?.climate || "temperate";
+    const forests = state.worldOptions?.forests ?? 52;
+    if (habitatCacheGeography !== geo || habitatCacheSuccession !== state.forestSuccession
+        || habitatCacheClimate !== climate || habitatCacheForests !== forests) {
+        habitatCache.clear();
+        habitatCacheGeography = geo;
+        habitatCacheSuccession = state.forestSuccession;
+        habitatCacheClimate = climate;
+        habitatCacheForests = forests;
+    }
+    const stock = geo.forestStock[i];
+    const cached = habitatCache.get(i);
+    if (cached && cached.stock === stock && cached.capacity === capacity
+        && cached.successionKind === (succession?.kind || null)
+        && cached.successionAge === (succession?.age ?? null)) {
+        return cached.habitat;
+    }
+    const node = getResourceNodeAt(point.x, point.y);
+    const habitat = node ? {
+        x: node.x, y: node.y,
+        forestStock: node.forestStock, forestCapacity: node.forestCapacity,
+        forestStand: node.forestStand, forestStandSeed: node.forestStandSeed,
+        forestSuccession: node.forestSuccession,
+    } : null;
+    if (habitatCache.size >= HABITAT_CACHE_LIMIT) habitatCache.clear();
+    habitatCache.set(i, {
+        stock, capacity,
+        successionKind: succession?.kind || null,
+        successionAge: succession?.age ?? null,
+        habitat,
+    });
+    return habitat;
+}
+
+// Placement, forester range checks and field surveys only need the raw
+// geography columns. Building a full forest stand for those callers was pure
+// waste: site checks ask for four numbers, not species, snow, sight or goods.
+export function getResourceSiteAt(x, y) {
+    const point = readTile(x, y);
+    if (!point) return null;
+    const geo = ensureGeography(), i = point.index;
+    return {
+        x: point.x, y: point.y,
+        forest: geo.forestStock[i], stone: geo.stoneStock[i],
+        water: Boolean(geo.waterAccess[i]), fertility: geo.fertility[i],
+    };
+}
+
+export function getForestStockAt(x, y) {
+    const point = readTile(x, y);
+    if (!point) return null;
+    const geo = ensureGeography(), i = point.index;
+    return {
+        x: point.x, y: point.y,
+        forestStock: geo.forestStock[i], forestCapacity: geo.forestCapacity[i],
+    };
+}
+
 export function getResourceNodeAt(x,y){
     const point=readTile(x,y);
     if(!point)return null;

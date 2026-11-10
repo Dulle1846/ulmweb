@@ -303,3 +303,26 @@ External reviews do not replace automated tests or human release acceptance.
   low-end device soak/save-load testing remains outstanding. No 1,000-hour
   certification is claimed. Full record:
   [docs/DEEP_PLAYTEST_3.13.3.md](docs/DEEP_PLAYTEST_3.13.3.md).
+
+## 10. Performance pass — 3.13.4 (2026-11-10)
+
+- **Fixed at the root:** the 3.13.3 100-year runs were seed-dependent because
+  forest fauna rebuilt the same stand per herd/day, carriers routed twice, and
+  succession/services/inventory rebuilt work on every tick. Exact habitat and
+  route caches, raw geography queries, cached building lists, allocation-free
+  succession iteration and one workforce snapshot per settlement pass reduce
+  the cost without removing simulation depth or changing ambition targets.
+- **Measured 100 years (40,040 ticks, same host/method):** seed 20261108
+  **0.995 ms/tick**; seed 7 **1.780 ms** (repeat 1.819); seed 99 **0.847 ms**;
+  seed 42 **0.798 ms**. All are 13/13, 70 residents, 0 stalls, 0 food shortage,
+  no game over. The 2.6 ms ceiling is met on every seed; the runs are faster than
+  the 2.3–2.6 band and no artificial load was added to the lower bound.
+- **Measured 25-year matrix:** 12/12 green, all 13/13, 63–75 residents, 0
+  unresolved stalls, no food collapse, no game over, **0.758–1.137 ms/tick**.
+- **Verification:** `npm test` **724/724**; syntax, relative imports and UI ids
+  **105 files / 189 ids**; habitat and path-cache regression tests cover exact
+  invalidation.
+- **Boundary:** still no 1,000-hour claim. The harness is not a human, low-end
+  device soak/save-load testing remains open, and post-campaign content still
+  repeats Eternal Deeds. Full record:
+  [docs/DEEP_PLAYTEST_3.13.4.md](docs/DEEP_PLAYTEST_3.13.4.md).

@@ -309,8 +309,18 @@ export function updateForestSuccession(days = 1) {
     const steps = Math.max(0, Math.min(MAX_STEP_DAYS, Math.floor(number(days, 1))));
     if (!steps) return model;
 
-    for (const [key, record] of Object.entries(model.tiles)) {
-        const profile = forestSuccessionProfile(record.kind);
+    // Object.entries allocated a fresh 4,000-row array every tick. This loop
+    // only advances a handful of active records; use the object keys directly
+    // and cache the profile lookup by disturbance kind.
+    const profiles = new Map();
+    for (const key in model.tiles) {
+        if (!Object.prototype.hasOwnProperty.call(model.tiles, key)) continue;
+        const record = model.tiles[key];
+        let profile = profiles.get(record.kind);
+        if (profile === undefined) {
+            profile = forestSuccessionProfile(record.kind);
+            profiles.set(record.kind, profile);
+        }
         if (!profile) {
             delete model.tiles[key];
             continue;
@@ -318,7 +328,12 @@ export function updateForestSuccession(days = 1) {
         // Keep a recovered record. Without it the renderer would fall back to
         // the seeded damage hash and the old burn scar/windthrow would reappear
         // forever. A later event may reuse this recovered slot.
-        record.age = Math.min(profile.recoveredDays, Math.max(0, Math.floor(number(record.age))) + steps);
+        const age = Math.max(0, Math.floor(number(record.age)));
+        if (age >= profile.recoveredDays) {
+            if (age !== profile.recoveredDays) record.age = profile.recoveredDays;
+            continue;
+        }
+        record.age = Math.min(profile.recoveredDays, age + steps);
     }
     model.day = Math.max(0, Math.floor(number(model.day))) + steps;
     model.daysSinceEvent = Math.max(0, Math.floor(number(model.daysSinceEvent))) + steps;
@@ -357,6 +372,7 @@ function spreadDisturbances(model) {
     const height = Number(state.worldH) || 0;
     if (!geo || !width || !height) return 0;
     const keys = Object.keys(model.tiles);
+    let tileCount = keys.length;
     const neighbourOrder = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
     let spreads = 0;
 
@@ -390,7 +406,7 @@ function spreadDisturbances(model) {
             const nkey = tileKey(nx, ny);
             const existing = model.tiles[nkey];
             if (existing && activeSuccessionRecord(existing)) continue;
-            if (!existing && Object.keys(model.tiles).length >= MAX_TILES) break;
+            if (!existing && tileCount >= MAX_TILES) break;
             const index = ny * width + nx;
             const before = Math.max(0, Math.floor(number(geo.forestStock?.[index])));
             if (!geo.forestCapacity?.[index] || before < 12) continue;
@@ -400,6 +416,7 @@ function spreadDisturbances(model) {
             const after = Math.max(1, Math.floor(before * 0.72));
             geo.forestStock[index] = after;
             model.tiles[nkey] = { kind: record.kind, age: 0, containedUntil: 0 };
+            tileCount++;
             model.spreadings = Math.max(0, Math.floor(number(model.spreadings))) + 1;
             model.spreadHistory.push({
                 day: model.day, kind: record.kind, from: [x, y], to: [nx, ny],

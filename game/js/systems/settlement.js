@@ -4,7 +4,7 @@
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { addResource } from "./resources.js";
-import { getBuildingEfficiency } from "./economy.js";
+import { getBuildingEfficiency, getWorkforceSnapshot } from "./economy.js";
 import { isOperational } from "./construction.js";
 import { getLocalWarehouseStock, findLocalWarehouse, consumeFromWarehouse, getWarehouseStock, HOUSEHOLD_SUPPLY_RADIUS } from "./logistics.js";
 import { HOUSING_TIERS, SERVICE_DEFINITIONS, isHousingType } from "./city-config.js";
@@ -27,12 +27,12 @@ function houseIsOccupied(house) {
     });
 }
 function serviceBuildings() { return state.entities.filter(entity => !entity.dead && entity.isBuilding() && isOperational(entity)); }
-function serviceIsStaffed(building) {
+function serviceIsStaffed(building, workforce = null) {
     // Walls, towers and barracks are manned by the crown's guard rather than
     // the villager job pool. Treating them as unstaffed made the safety need
     // impossible to satisfy, which silently blocked all immigration.
     if (building.type === TYPE.WALL || building.type === TYPE.TOWER || building.type === TYPE.BARRACKS) return true;
-    return getBuildingEfficiency(building) > 0;
+    return getBuildingEfficiency(building, workforce) > 0;
 }
 function serviceIsSupplied(building) {
     if (building.type === TYPE.TAVERN) return (Number(state.resources.food) || 0) > 0;
@@ -45,8 +45,8 @@ function serviceIsSupplied(building) {
     }
     return true;
 }
-function activeService(building) {
-    return serviceIsStaffed(building) && serviceIsSupplied(building);
+function activeService(building, workforce = null) {
+    return serviceIsStaffed(building, workforce) && serviceIsSupplied(building);
 }
 
 export function ensureSettlementState() {
@@ -69,19 +69,23 @@ function serviceForHouse(house, category, buildings) {
     if (!definition) return null;
     for (const building of buildings) {
         if (!definition.types.includes(building.type)) continue;
-        if (!activeService(building)) continue;
         if (distance(house, building) <= definition.radius) return building;
     }
     return null;
 }
 function countOperational(category, buildings) {
     const definition = SERVICE_DEFINITIONS[category];
-    return buildings.filter(building => definition.types.includes(building.type) && activeService(building)).length;
+    return buildings.filter(building => definition.types.includes(building.type)).length;
 }
 
 export function updateServices() {
     const city = ensureSettlementState();
     const buildings = serviceBuildings();
+    // Staffing is a property of the building, not of a house/service pair.
+    // Rebuilding the workforce for every house × category made the service
+    // pass scan the whole population dozens of times per settlement tick.
+    const workforce = getWorkforceSnapshot();
+    const activeBuildings = buildings.filter(building => activeService(building, workforce));
     const houseRows = homes();
     const byHouse = {};
     const byBuilding = {};
@@ -93,7 +97,7 @@ export function updateServices() {
         if (occupied) occupiedHomes++;
         const row = { id: house.id, type: house.type, occupied, capacity: HOUSING_TIERS[house.type]?.capacity || 0 };
         for (const category of Object.keys(SERVICE_DEFINITIONS)) {
-            const provider = serviceForHouse(house, category, buildings);
+            const provider = serviceForHouse(house, category, activeBuildings);
             row[category] = Boolean(provider);
             row[category + "Source"] = provider?.id || null;
             if (provider) byBuilding[category].coverage++;
@@ -104,7 +108,7 @@ export function updateServices() {
         }
         byHouse[house.id] = row;
     }
-    for (const category of Object.keys(byBuilding)) byBuilding[category].active = countOperational(category, buildings);
+    for (const category of Object.keys(byBuilding)) byBuilding[category].active = countOperational(category, activeBuildings);
     // Paid waterworks cover occupied homes that no staffed well reaches. This
     // is a real service with an annual payroll, not a realm-wide boolean: the
     // coverage is counted per occupied house and disappears immediately when

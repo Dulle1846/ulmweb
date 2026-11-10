@@ -59,6 +59,26 @@ export function buildingAt(tx, ty) {
 }
 
 // Check the full rectangular footprint, not only the building's centre tile.
+// Placement scans used to walk every villager and animal for every candidate
+// tile. The building list is static between collision-version bumps, so cache
+// it once and still filter dead entries in the query (deaths do not need a
+// collision bump for correctness here).
+let collisionCacheEntities = null;
+let collisionCacheVersion = null;
+let collisionCacheLength = -1;
+let collisionBuildingCache = [];
+function collisionBuildings() {
+    const version = state.buildingCollisionVersion || 0;
+    if (collisionCacheEntities !== state.entities || collisionCacheVersion !== version
+        || collisionCacheLength !== state.entities.length) {
+        collisionBuildingCache = state.entities.filter(entity => entity.isBuilding());
+        collisionCacheEntities = state.entities;
+        collisionCacheVersion = version;
+        collisionCacheLength = state.entities.length;
+    }
+    return collisionBuildingCache;
+}
+
 export function buildingOverlaps(tx, ty, type, footprintScale = 1, ignore = null) {
     const scale = Math.max(0.25, Math.min(6, Number(footprintScale) || 1));
     const baseCandidate = BUILDING_SIZE[type] || { w: 1, h: 1 };
@@ -68,8 +88,8 @@ export function buildingOverlaps(tx, ty, type, footprintScale = 1, ignore = null
     const top = ty + 0.5 - candidate.h / 2;
     const bottom = ty + 0.5 + candidate.h / 2;
 
-    return state.entities.some(e => {
-        if (e.dead || !e.isBuilding() || e === ignore) return false;
+    return collisionBuildings().some(e => {
+        if (e.dead || e === ignore) return false;
         const size = BUILDING_SIZE[e.type] || { w: 1, h: 1 };
         const otherLeft = e.x + 0.5 - size.w / 2;
         const otherRight = e.x + 0.5 + size.w / 2;
