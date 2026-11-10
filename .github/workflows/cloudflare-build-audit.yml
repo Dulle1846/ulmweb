@@ -1,0 +1,52 @@
+name: Cloudflare Build Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: Cloudflare Workers build UUID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Read Cloudflare build details and logs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify credentials are available
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ACCOUNT_ID" ]; then
+            echo "::error::Cloudflare credentials are not configured"
+            exit 1
+          fi
+          echo "Cloudflare credentials are present"
+      - name: Fetch build details
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BUILD_ID: ${{ inputs.build_id }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/builds/builds/$BUILD_ID" \
+            -o /tmp/build.json
+          jq '{result: (.result | {build_uuid,build_outcome,created_on,modified_on,build_command,deploy_command,status,stopped_on,error,source,trigger})}' /tmp/build.json
+      - name: Fetch build logs
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BUILD_ID: ${{ inputs.build_id }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/builds/builds/$BUILD_ID/logs" \
+            -o /tmp/logs.json
+          jq -r '.result.lines[]? | if type == "array" then (.[1] // "") else tostring end' /tmp/logs.json | tail -n 200
