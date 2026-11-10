@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.13.1`
+**Current production version:** `3.13.2`
 **Next development line:** `3.14.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -37,6 +37,18 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.13.2 — Visible Growth Gate
+
+**Released:** 2026-11-10
+
+**Scope:** A stalled population gate is now explained in the PEOPLE panel instead of appearing as unexplained stagnation. This is a presentation and diagnostics patch; yields, growth speed, save data and campaign balance are unchanged.
+
+**The dead end:** the reference realm opened with 21 residents and 22 beds, then reached 18 residents after ten years with a free bed. The yearly settlement check was correctly rejecting newcomers because local safety was 0.2, below the 0.35 threshold, but the panel showed no reason and no recovery action. A player could only guess why housing was not attracting anyone.
+
+**The fix:** `getPopulationGrowthGate()` is now the shared explanation path for the yearly growth update. The PEOPLE panel renders a `GROWTH GATE` block before its effects, naming housing, water, safety, food reserve or morale, with the concrete next step. The start state explains that a watchtower covering occupied homes is needed; an open realm says growth is open. The gate is read-only and uses the same settlement rules as the simulation.
+
+**Verification:** `npm test` **719/719**; syntax, relative imports and UI ids **104 files / 189 ids**; browser playability 4,000 ticks at 60 FPS with the gate visible and no page/console errors; reference 25-year campaign **13/13, 59 residents, 2.288 ms/tick**; 100-year campaign **13/13, 70 residents, 3 Eternal Deeds, 40,040 ticks, 0 stalled sites, 2.563 ms/tick**. The three-seed audit still exposes low-health seeds 7 and 99 at 45/44 residents (12/13); the attempted clinic expansion was reverted because it starved the food chain and stalled the reference seed. That balance gap is documented, not hidden. Full record: [docs/DEEP_PLAYTEST_3.13.2.md](docs/DEEP_PLAYTEST_3.13.2.md).
 
 ### 3.13.1 — War Granary
 **Released:** 2026-11-10

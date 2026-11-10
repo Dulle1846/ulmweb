@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {resetState,state} from "../js/core/state.js";
 import {TYPE} from "../js/core/types.js";
 import {spawnEntity} from "../js/world/entities.js";
-import {canAccommodateVillagers,getHousingSnapshot,getHouseholdSnapshot,normalizeHouseholdAssignments,updatePopulation} from "../js/systems/population.js";
+import {canAccommodateVillagers,getHousingSnapshot,getHouseholdSnapshot,normalizeHouseholdAssignments,updatePopulation,getPopulationGrowthGate} from "../js/systems/population.js";
 
 beforeEach(()=>{
     resetState();
@@ -74,6 +74,28 @@ test("food shortage and low morale prevent household growth",()=>{
     state.resources.food=100;
     assert.equal(updatePopulation(),null);
     assert.equal(state.economy.populationGrowth,0);
+});
+
+test("the growth gate names the blocking need instead of failing silently",()=>{
+    spawnEntity(40,40,TYPE.HOUSE);
+    spawnEntity(41,40,TYPE.VILLAGER);
+    assert.equal(getPopulationGrowthGate().ok,true);
+    state.city={enabled:true,needs:{summary:{water:1,safety:0.2,food:1,satisfaction:0.9}}};
+    const safety=getPopulationGrowthGate();
+    assert.equal(safety.ok,false);
+    assert.equal(safety.reason,"Local safety is too low");
+    state.city.needs.summary.safety=1;
+    state.city.needs.summary.water=0.1;
+    assert.equal(getPopulationGrowthGate().reason,"No reliable water coverage");
+    state.resources.food=0;
+    assert.equal(getPopulationGrowthGate().reason,"The food reserve is below the growth floor");
+});
+
+test("the growth gate reports full housing before it reports a service shortage",()=>{
+    spawnEntity(40,40,TYPE.HOUSE);
+    for(let index=0;index<4;index++)spawnEntity(41+index,40,TYPE.VILLAGER);
+    state.city={enabled:true,needs:{summary:{water:0,safety:0,food:0,satisfaction:0}}};
+    assert.equal(getPopulationGrowthGate().reason,"No free housing");
 });
 
 test("legacy workplace-based home anchors are migrated into balanced households",()=>{

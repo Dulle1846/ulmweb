@@ -113,6 +113,8 @@ It shows:
 
 The panel reads the persistent register and filters locally; it never mutates the simulation. Contract ids include `population-overview`, `population-filter-bar`, `population-search`, `population-citizen-list` and `population-household-list`.
 
+The yearly household-growth path shares `getPopulationGrowthGate()` with the panel. When growth is blocked, `#population-growth-gate` names the failing rule (housing, water, safety, food reserve or morale) and the recovery action. The gate is read-only and does not alter the settlement checks. The 3.13.2 deep playtest that added this explanation, including the remaining low-health-seed limitation, is recorded in [DEEP_PLAYTEST_3.13.2.md](DEEP_PLAYTEST_3.13.2.md).
+
 ## Verification on this head
 
 - Focused population tests: **8/8 pass** in `tests/systems/population-register.test.js`.

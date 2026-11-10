@@ -129,6 +129,33 @@ export function recordPopulationGrowth({ immigration = true } = {}) {
 // A new resident may join at the start of a new year when food, morale and
 // housing all support it. Two residents may join each year, which keeps the
 // 25-year population ambition reachable without weakening the household gate.
+// The gate is exposed so the population panel can explain a stalled realm
+// instead of silently showing free beds and no growth.
+export function getPopulationGrowthGate() {
+    const housing = getHousingSnapshot();
+    const moraleGate = getPopulationGrowthMoraleThreshold();
+    if (housing.available < 1) {
+        return { ok: false, reason: "No free housing", housing, moraleGate };
+    }
+    const migration = getFaithModifiers().migrationFactor * getJusticeModifiers().migrationFactor;
+    const effectiveMoraleGate = moraleGate + Math.round(Math.max(0, 1 - migration) * 28);
+    if (state.morale < effectiveMoraleGate) {
+        return { ok: false, reason: "Household morale is too low", housing, moraleGate: effectiveMoraleGate };
+    }
+    const foodFloor = housing.population * POPULATION_GROWTH_FOOD_RESERVE;
+    if ((state.resources.food || 0) < foodFloor) {
+        return { ok: false, reason: "The food reserve is below the growth floor", housing, moraleGate: effectiveMoraleGate, foodFloor };
+    }
+    if (state.city?.enabled) {
+        const gate = canSettleNewcomer();
+        if (!gate.ok) return { ok: false, reason: gate.reason, housing, moraleGate: effectiveMoraleGate, foodFloor };
+    }
+    if (!canSpawnEntity(TYPE.VILLAGER)) {
+        return { ok: false, reason: "The world population cap is reached", housing, moraleGate: effectiveMoraleGate, foodFloor };
+    }
+    return { ok: true, reason: null, housing, moraleGate: effectiveMoraleGate, foodFloor };
+}
+
 export function updatePopulation() {
     if (state.tick <= 0 || state.year <= 1) return null;
     const economy = state.economy || (state.economy = {});
@@ -136,20 +163,8 @@ export function updatePopulation() {
     let newest = null;
 
     while ((Number(economy.growthThisYear) || 0) < POPULATION_GROWTH_PER_YEAR) {
-        const housing = getHousingSnapshot();
-        if (housing.available < 1 || state.morale < getPopulationGrowthMoraleThreshold()) break;
-        if ((state.resources.food || 0) < housing.population * POPULATION_GROWTH_FOOD_RESERVE) break;
-        // Heresy and high crime make the realm a less attractive destination.
-        // The threshold shift is deterministic and does not consume a random
-        // stream, so the twenty-five-year campaign stays reproducible.
-        const migration = getFaithModifiers().migrationFactor * getJusticeModifiers().migrationFactor;
-        const moraleGate = getPopulationGrowthMoraleThreshold() + Math.round(Math.max(0, 1 - migration) * 28);
-        if (state.morale < moraleGate) break;
-        if (state.city?.enabled) {
-            const gate = canSettleNewcomer();
-            if (!gate.ok) break;
-        }
-        if (!canSpawnEntity(TYPE.VILLAGER)) break;
+        const gate = getPopulationGrowthGate();
+        if (!gate.ok) break;
 
         normalizeHouseholdAssignments();
         const home = chooseAvailableHouse();

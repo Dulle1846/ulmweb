@@ -247,3 +247,27 @@ Suggested review roles:
 - **Game-design reviewer:** assess 30-minute, 1-hour and 3-hour player goals and recovery pacing.
 
 External reviews do not replace automated tests or human release acceptance.
+
+## 8. Deep playtest findings — 3.13.2 (2026-11-10)
+
+- **Fixed:** the yearly household-growth path could reject newcomers because of
+  safety, water, food or morale without explaining the block. `getPopulationGrowthGate()`
+  now supplies the reason and recovery hint shown in the PEOPLE panel. The
+  opening realm reports safety 0.2, one free bed and the watchtower requirement.
+- **Measured:** 4,000 browser ticks reached year 11 with 18 residents, one free
+  bed and 60 FPS; there were no page errors, console errors or horizontal
+  overflow. The gate text was confirmed in the live panel.
+- **Measured:** the reference 25-year campaign remains 13/13 with 59 residents
+  and 2.288 ms/tick. The 100-year run reaches 13/13, 70 residents and three
+  Eternal Deeds over 40,040 ticks at 2.563 ms/tick with no stalled sites.
+- **Open:** the same deliberate route fails on seeds 7 and 99 at 45 and 44
+  residents (12/13, missing `eternal-realm`). Low health and the fixed annual
+  growth cap leave too little time. An attempt to build extra clinics starved
+  seed 99 and stalled the reference seed, so it was reverted rather than shipped.
+- **Open:** the post-campaign loop still repeats Eternal Deeds. There are no new
+  world regions, eras, rival realms or strategic objectives after the 13
+  ambitions. This is the main content gap before a 1,000-hour claim.
+- **Boundary:** 40,040 deterministic ticks and a ten-year browser session do not
+  prove 1,000 hours of human entertainment. See
+  [docs/DEEP_PLAYTEST_3.13.2.md](docs/DEEP_PLAYTEST_3.13.2.md) for the full record
+  and the remaining evidence work.

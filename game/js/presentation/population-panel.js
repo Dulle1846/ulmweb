@@ -2,6 +2,7 @@
 // filtering is local to the rendered list and never mutates simulation state.
 import { state } from "../core/state.js";
 import { getPopulationSnapshot, filterPopulationCitizens, CROWN_HOUSEHOLD_ID } from "../systems/population-register.js";
+import { getPopulationGrowthGate, POPULATION_GROWTH_PER_YEAR } from "../systems/population.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -26,6 +27,30 @@ export function applyPopulationSearch() {
     document.querySelectorAll(".population-citizen").forEach(record => {
         record.classList.toggle("is-filtered", Boolean(query) && !String(record.dataset.populationSearch || "").includes(query));
     });
+}
+
+function growthGateNote() {
+    const gate = getPopulationGrowthGate();
+    const used = Math.max(0, Number(state.economy?.growthThisYear) || 0);
+    const remaining = Math.max(0, POPULATION_GROWTH_PER_YEAR - used);
+    const hints = {
+        "No free housing": "Build a cottage or rebuild a timber house in stone.",
+        "Household morale is too low": "Raise morale or furnish a household room.",
+        "The food reserve is below the growth floor": "Secure grain or raise the crown granary reserve.",
+        "No reliable water coverage": "Build a well or fund the crown waterworks.",
+        "Local safety is too low": "Build a watchtower covering occupied homes.",
+        "Food reserves are too low": "Buy grain or expand the farms.",
+        "Household needs are not being met": "Open Settlement needs and fix the lowest service.",
+        "The world population cap is reached": "The world entity cap is full; no further resident can spawn."
+    };
+    if (!gate.ok) {
+        const hint = hints[gate.reason] || "Inspect the settlement needs, housing and workforce.";
+        return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · BLOCKED</strong> · ' + esc(gate.reason) + '. ' + esc(hint) + ' Free beds: ' + number(gate.housing.available) + '.</p>';
+    }
+    if (remaining <= 0) {
+        return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · THIS YEAR FILLED</strong> · ' + used + ' of ' + POPULATION_GROWTH_PER_YEAR + ' growth events already recorded. The next newcomers can arrive in the new year.</p>';
+    }
+    return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · OPEN</strong> · ' + remaining + ' of ' + POPULATION_GROWTH_PER_YEAR + ' growth events remain this year · ' + number(gate.housing.available) + ' free beds · morale threshold ' + Math.round(gate.moraleGate) + '.</p>';
 }
 
 function citizenRow(citizen) {
@@ -77,7 +102,7 @@ export function renderPopulationPanel() {
     const effects = snapshot.modifiers;
     return intro("THE LIVING REALM", "People, households & livelihoods", "Every named resident has a household, a profession, a faith, a talent and a civic life. Births, maturation, work, partnership, illness, ageing, death and migration are resolved once per year from these same records; the economy, politics and garrison read the result.") +
         '<div id="population-overview" class="command-summary"><div><small>CITIZENS</small><strong>' + number(snapshot.population) + '</strong></div><div><small>HOUSEHOLDS</small><strong>' + number(snapshot.households.length) + '</strong></div><div><small>AVERAGE AGE</small><strong>' + snapshot.avgAge + '</strong></div><div><small>EMPLOYED</small><strong>' + number(snapshot.employed) + ' / ' + number(snapshot.civilians) + '</strong></div><div><small>LOYALTY</small><strong>' + snapshot.avgLoyalty + '</strong></div><div><small>HAPPINESS</small><strong>' + snapshot.avgHappiness + '</strong></div><div><small>BIRTHS</small><strong>' + number(snapshot.births) + '</strong></div><div><small>DEATHS</small><strong>' + number(snapshot.deaths) + '</strong></div></div>' +
-        '<div class="population-effects"><span>TAX YIELD<b>×' + amount(effects.taxEfficiency) + '</b></span><span>BUILDING OUTPUT<b>×' + amount(effects.productivity) + '</b></span><span>LEGITIMACY PRESSURE<b>' + (effects.legitimacyPressure >= 0 ? "+" : "") + amount(effects.legitimacyPressure) + '</b></span><span>SOLDIER QUALITY<b>×' + amount(effects.militaryQuality) + '</b></span><span>HOUSEHOLD WEALTH<b>' + amount(snapshot.wealth) + ' GOLD</b></span><span>AVG TALENT<b>' + snapshot.avgTalent + '</b></span></div>' +
+        growthGateNote() + '<div class="population-effects"><span>TAX YIELD<b>×' + amount(effects.taxEfficiency) + '</b></span><span>BUILDING OUTPUT<b>×' + amount(effects.productivity) + '</b></span><span>LEGITIMACY PRESSURE<b>' + (effects.legitimacyPressure >= 0 ? "+" : "") + amount(effects.legitimacyPressure) + '</b></span><span>SOLDIER QUALITY<b>×' + amount(effects.militaryQuality) + '</b></span><span>HOUSEHOLD WEALTH<b>' + amount(snapshot.wealth) + ' GOLD</b></span><span>AVG TALENT<b>' + snapshot.avgTalent + '</b></span></div>' +
         '<p class="command-note">Annual census year ' + (snapshot.lastCensusYear || "—") + ' · ' + (snapshot.civilians || 0) + ' civilians + ' + (snapshot.soldiers || 0) + ' soldiers · ' + number(snapshot.unhoused) + ' unhoused · ' + number(snapshot.emigration) + ' departures recorded. The panel updates as the simulation advances; no value is forecast or synthesized.</p>' +
         '<div class="command-section-title">CITIZEN REGISTER · ' + number(snapshot.population) + ' RECORDED</div><div id="population-filter-bar" class="population-filter-bar">' + filterBar + '</div><div class="command-inline"><input id="population-search" type="search" value="' + esc(populationQuery) + '" placeholder="Search name, profession, household, faith…" aria-label="Search the citizen register"><span class="command-note">' + visible.length + ' matching · showing ' + shown.length + '</span></div><div id="population-citizen-list" class="population-citizen-list">' + (citizens || '<p class="command-note">No citizen matches this filter.</p>') + '</div>' +
         '<div class="command-section-title">HOUSEHOLDS · ' + number(snapshot.households.length) + ' RECORDED</div><div id="population-household-list" class="population-household-list">' + (households || '<p class="command-note">No household has been established yet. A campaign starts with its founding cottages.</p>') + '</div>' +

@@ -50,6 +50,14 @@ await page.locator("#start-screen").waitFor({state: "hidden", timeout: 30000});
 await page.waitForTimeout(1800);
 await dismissBlockingMessage();
 
+await page.locator("#command-open-btn").click();
+await page.locator('[data-command-tab="population"]').click();
+await page.waitForTimeout(150);
+const growthGate = await page.locator("#population-growth-gate").textContent();
+assert.ok(growthGate && growthGate.includes("GROWTH GATE"), "the population panel must explain the growth gate");
+await page.locator("#command-close").click();
+await page.waitForTimeout(100);
+
 const started = Date.now();
 const report = await page.evaluate(async ({ticks}) => {
     const [{state}, {updateSimulation}, {updateLogisticsMovement, getLogisticsSnapshot, getWarehouseSnapshot}, {resolveEventChoice}, {getAmbitionSnapshot}, {updateServices}, {TYPE}] = await Promise.all([
@@ -189,6 +197,7 @@ const summary = {
     gameOver: report.gameOver,
     victory: report.victory,
     performance: performanceSample,
+    growthGate,
     layout,
     shots,
     pageErrors,

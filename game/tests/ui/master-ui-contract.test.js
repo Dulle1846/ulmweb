@@ -3,12 +3,13 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const root=new URL("../../",import.meta.url);
-const [html,css,cardCss,ui,management,dossier,main,economy,renderer,hud]=await Promise.all([
+const [html,css,cardCss,ui,management,populationPanel,dossier,main,economy,renderer,hud]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/ui-design-system.css",root),"utf8"),
   readFile(new URL("css/medieval.css",root),"utf8"),
   readFile(new URL("js/presentation/rendering/ui.js",root),"utf8"),
   readFile(new URL("js/presentation/management-ui.js",root),"utf8"),
+  readFile(new URL("js/presentation/population-panel.js",root),"utf8"),
   readFile(new URL("js/presentation/character-dossier.js",root),"utf8"),
   readFile(new URL("js/app/main.js",root),"utf8"),
   readFile(new URL("js/systems/economy.js",root),"utf8"),
@@ -150,6 +151,14 @@ test("diplomacy exposes persistent neighbours, treaties and trade consequences",
   assert.ok(main.includes("diplomacy:JSON.parse(JSON.stringify(state.diplomacy"));
 });
 
+test("the population panel explains a stalled growth gate and its recovery hint",()=>{
+  assert.ok(populationPanel.includes("population-growth-gate"));
+  assert.ok(populationPanel.includes("GROWTH GATE · BLOCKED"));
+  assert.ok(populationPanel.includes("Local safety is too low"));
+  assert.ok(populationPanel.includes("Build a watchtower covering occupied homes."));
+  assert.ok(populationPanel.includes("getPopulationGrowthGate"));
+});
+
 test("map layer selector and legend are wired to real geography overlays",()=>{
   assert.ok(html.includes('id="map-layer-select"'));
   assert.ok(html.includes('id="map-layer-legend"'));
@@ -166,7 +175,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.13.1</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.13.2</b>"));
   assert.ok(management.includes('data-command="crown-grain"'));
   assert.ok(management.includes('data-command="crown-water"'));
   assert.ok(management.includes('data-command="crown-housing"'));
