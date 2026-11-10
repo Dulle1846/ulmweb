@@ -90,6 +90,20 @@ export function updateMarket() {
     if (state.tick - state.market.lastUpdateTick < 90) return;
     state.market.lastUpdateTick = state.tick;
     const seasonFactor = [0.92,1.08,1.22,1.38][state.seasonIndex] || 1;
+    // Trade partners are producers, not finite loot chests. Without a bounded
+    // restock, repeated food purchases drained every route to zero and left a
+    // rich realm unable to buy grain at any price. The replenishment is small,
+    // capped near the partner's starting stock and still subject to war.
+    for (const partner of state.market.partners) {
+        const home = TRADE_PARTNERS.find(entry => entry.id === partner.id) || {};
+        for (const resource of MARKET_RESOURCES) {
+            const base = Math.max(1, Number(home.stock?.[resource]) || Number(partner.stock?.[resource]) || 1);
+            const current = Math.max(0, Number(partner.stock[resource]) || 0);
+            const cap = Math.ceil(base * 1.25);
+            const replenish = Math.max(1, Math.round(base * 0.12));
+            partner.stock[resource] = Math.min(cap, current + replenish);
+        }
+    }
     for (const resource of MARKET_RESOURCES) {
         const drift = (random("market") - 0.5) * 0.12;
         const regionalStock = state.market.partners.reduce((total,partner)=>total+(partner.stock[resource]||0),0);

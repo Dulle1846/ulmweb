@@ -1198,7 +1198,11 @@ export function updateLogistics() {
     retryBlockedJobs();
     assignPendingJobs();
     trimJobs();
-    return getLogisticsSnapshot();
+    // The simulation only needs the side effects. Building the presentation
+    // snapshot here meant copying every job, carrier and ledger row plus ten
+    // full physical-stock scans every other tick, and nothing read it. The UI
+    // asks for the snapshot when it renders instead.
+    return null;
 }
 
 export function updateLogisticsMovement(deltaSeconds) {

@@ -476,8 +476,16 @@ function resolveMilitaryYear() {
     foodNeed += unassignedHorses * 2;
     const pannageDays = consumePannage(Math.ceil(foodNeed * 0.5));
     foodNeed = Math.max(0, foodNeed - pannageDays);
+    // A full granary is part of a soldier's pay. When the reserve can cover
+    // twice the garrison's annual provisions, part of the coin payroll is
+    // settled in kind. This keeps a well-fed army from deserting merely because
+    // the treasury is thin, without creating gold or food from nothing.
+    const foodAvailable = Math.max(0, Number(state.resources.food) || 0);
+    const kindPayment = foodAvailable >= foodNeed * 2 ? Math.floor(goldNeed * 0.4) : 0;
+    const goldNeedBeforeKind = goldNeed;
+    goldNeed = Math.max(0, goldNeed - kindPayment);
     const goldPaid = Math.min(Math.max(0, Number(state.resources.gold) || 0), goldNeed);
-    const foodPaid = Math.min(Math.max(0, Number(state.resources.food) || 0), foodNeed);
+    const foodPaid = Math.min(foodAvailable, foodNeed);
     if (goldPaid > 0) addResource("gold", -goldPaid);
     if (foodPaid > 0) {
         addResource("food", -foodPaid);
@@ -515,6 +523,8 @@ function resolveMilitaryYear() {
         soldiers: soldiers.length,
         horses: unassignedHorses + soldiers.filter(entity => entity.military?.mounted).length,
         goldNeed,
+        goldNeedBeforeKind,
+        kindPayment,
         goldPaid,
         foodNeed,
         foodPaid,
@@ -526,7 +536,7 @@ function resolveMilitaryYear() {
     military.history.unshift(payroll);
     military.history = military.history.slice(0, MILITARY_HISTORY_LIMIT);
     if (soldiers.length) {
-        addLog("GARRISON MUSTER · " + soldiers.length + " SOLDIERS · " + Math.round(goldPaid) + "/" + Math.round(goldNeed) + " GOLD PAID · " + Math.round(foodPaid) + "/" + Math.round(foodNeed) + " FOOD" + (desertions ? " · " + desertions + " DESERTED" : ""), "#d8c18a", "military");
+        addLog("GARRISON MUSTER · " + soldiers.length + " SOLDIERS · " + Math.round(goldPaid) + "/" + Math.round(goldNeed) + " GOLD PAID · " + Math.round(foodPaid) + "/" + Math.round(foodNeed) + " FOOD" + (kindPayment ? " · " + kindPayment + " GOLD IN KIND" : "") + (desertions ? " · " + desertions + " DESERTED" : ""), "#d8c18a", "military");
     }
     return payroll;
 }

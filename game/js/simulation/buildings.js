@@ -33,7 +33,7 @@ const STOCK_TARGETS = Object.freeze({
 function ledger() {
     const economy = state.economy || (state.economy = {});
     const production = economy.productionChains || (economy.productionChains = {});
-    for (const key of ["logsHarvested", "stoneExtracted", "planksProduced", "flourProduced", "breadProduced", "waterDrawn", "grainHarvested", "millWoodConsumed", "millBonusFood", "tavernFoodConsumed", "tavernGoldProduced"]) {
+    for (const key of ["logsHarvested", "stoneExtracted", "planksProduced", "flourProduced", "breadProduced", "waterDrawn", "grainHarvested", "farmFood", "farmFoodBooked", "millWoodConsumed", "millBonusFood", "tavernFoodConsumed", "tavernGoldProduced"]) {
         production[key] = Math.max(0, Number(production[key]) || 0);
     }
     return production;
@@ -179,7 +179,30 @@ function produceRecipe(building, workforce, production) {
     }
     if (!consumeInputs(building)) return;
     finishOutput(building, output, production);
+    // Grain used to exist only inside the mill -> bakery -> carrier chain. A
+    // realm with active farms and no spare carrier could starve beside a full
+    // granary. Farms now retain a measured subsistence share for their own
+    // households; it scales with the same worker efficiency as the grain crop
+    // and is booked like every other food movement.
+    if (building.type === TYPE.FARM) {
+        const subsistence = Math.max(0, (Number(output.grain) || 0) * 1.0);
+        if (subsistence > 0) production.farmFood += subsistence;
+    }
     building.productionReason = null;
+}
+
+function bookFarmSubsistence(production) {
+    const total = Math.max(0, Number(production.farmFood) || 0);
+    const booked = Math.max(0, Number(production.farmFoodBooked) || 0);
+    const delta = Math.round((total - booked) * 100) / 100;
+    if (delta <= 0) return;
+    addResource("food", delta);
+    recordResourceMovement("food", delta, "farm-subsistence", {
+        from: { kind: "realm", id: "farms" },
+        to: { kind: "realm", id: "royal-stores" },
+        key: "food:farms:" + state.tick
+    });
+    production.farmFoodBooked = total;
 }
 
 export function updateBuildingIncome() {
@@ -213,6 +236,7 @@ export function updateBuildingIncome() {
             if (mine.construction && mine.construction.stage < 3) continue;
             addResource("gold", (state.seasonIndex === 3 ? 1 : 2) * getBuildingEfficiency(mine, workforce));
         }
+        bookFarmSubsistence(production);
     }
     if (civicTick) {
         for (const tavern of getEntitiesOfType(TYPE.TAVERN)) {

@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.12.0`
-**Next development line:** `3.13.0-dev`
+**Current production version:** `3.13.0`
+**Next development line:** `3.14.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -37,6 +37,22 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.13.0 — Crown Supply
+**Released:** 2026-11-10
+**Scope:** Three player decisions that break the late-game resource dead ends, plus the supply links that make them work: standing grain contracts, paid waterworks, stone housing, farm subsistence, garrison pay in kind and bounded partner restock.
+
+**The three dead ends:** The five v3.12.0 journeys ended in the same self-reinforcing spiral from five directions. The warlord ended year 101 with 0 food and 1 soldier after white peace in year 71, because the garrison ate the granary and desertion ate the garrison. The merchant ended with 20 residents and 0 water coverage despite 7,646 gold, because wells need a staffed building and a legal tile, not coin. The builder and diplomat ended with 15–20 food. A shortage lowered immigration and morale, which lowered the labour that produced food, and a timber cottage's four places capped growth before the realm could grow out of it.
+
+**Crown supply:** The economy panel now exposes three annual commitments. A grain contract (levels I–III: 120/240/420 food, raised by population) buys from open, non-war trade partners at 1.25/1.20/1.15 gold per food and always keeps `60 + 8 × soldiers` gold back for the garrison payroll. Paid waterworks (water carts, cistern network, aqueduct service) cover 40/65/90% of occupied homes for 18/36/58 gold a year, count exactly like a well in `updateServices`, and stop immediately when the payroll fails. A completed timber cottage can be rebuilt in stone for 55 gold (42 with a mason), raising capacity from 4 to 6 without a new footprint. Farms now book a direct subsistence share of their crop, so a farmed realm is not dependent on a spare carrier; a full granary settles 40% of the coin payroll in kind; and trade partners restock a bounded share of their starting stock so repeated purchases cannot drain every route forever.
+
+**Journey results (year 101, through the real UI):** builder 43 → 60 residents and 15–20 → 140 food; warlord 28 → 46 residents, 0 → 55 food and 1 → 11 soldiers; diplomat 43 → 60 and 15–20 → 143 food, with four alliances; merchant 20 → 42, 0 → 71% water coverage, 7,646 → 6,552 gold and 200 trades; scholar 46 → 76 and 15–20 → 107 food with all 17 technologies. Every realm kept water and safety coverage above zero, finished with no game over, no page or console error and no horizontal overflow at 1600 px and 864 px. The five runs measured 2.412–2.504 ms/tick over roughly 40,000 ticks each.
+
+**Performance:** The deterministic 100-year campaign is `ok:true`: 40,040 ticks, 13/13 ambitions, 3 eternal deeds, final year 101, no game over, **2.534 ms/tick** (baseline 3.261; the pre-change tree re-measured 3.299 on this host). Two hot paths were removed rather than measured around: `updateLogistics` rebuilt the full presentation snapshot (job/carrier/ledger copies plus ten physical-stock scans) every second tick although only the UI reads it, and the goods book re-filtered and re-sliced its 600-row ledger on every single booking.
+
+**Compatibility:** `state.crownSupply` is additive and normalized on load; saves without it receive zeroed levels and keep the old well, farm and housing behaviour. Levels clamp to 0–3 and history to 24 entries. The thirteen royal ambitions, their order, rewards and `allComplete` semantics, and the eternal-deed state machine are unchanged.
+
+**Verification:** focused crown-supply 6/6 including defaults, annual purchase, payroll reserve, partner restock, waterworks suspension and stone capacity; `npm test` 711/711; syntax and relative imports for 104 source files / 189 UI ids; five independent 100-year browser journeys with desktop and narrow screenshots; campaign 40,040 ticks / 13/13 / 3 eternal deeds / 2.534 ms per tick. Full record: [docs/CROWN_SUPPLY.md](docs/CROWN_SUPPLY.md).
 
 ### 3.12.0 — Crown Endeavours
 **Released:** 2026-11-10

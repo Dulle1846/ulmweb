@@ -17,6 +17,8 @@ const root = process.cwd();
 const outDir = resolve(root, "..", "artifacts", "journeys");
 await mkdir(outDir, { recursive: true });
 
+const MIN_POPULATION = Object.freeze({ builder: 43, warlord: 28, diplomat: 43, merchant: 20, scholar: 46 });
+
 const JOURNEYS = {
     builder: { label: "The Builder", path: "builder", tab: "buildings" },
     warlord: { label: "The Warlord", path: "warlord", tab: "military" },
@@ -104,14 +106,15 @@ async function closePanel() {
 
 async function stateSnapshot() {
     return page.evaluate(async ({ pathId }) => {
-        const [{ state }, { getEndeavourSnapshot }, { getMilitarySnapshot }, { getDiplomacySnapshot }, { getResearchSnapshot }, { getHousingSnapshot }, { getSettlementSnapshot }] = await Promise.all([
+        const [{ state }, { getEndeavourSnapshot }, { getMilitarySnapshot }, { getDiplomacySnapshot }, { getResearchSnapshot }, { getHousingSnapshot }, { getSettlementSnapshot }, { getCrownSupplySnapshot }] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/systems/endeavours.js"),
             import("./js/systems/military.js"),
             import("./js/systems/diplomacy.js"),
             import("./js/systems/research.js"),
             import("./js/systems/population.js"),
-            import("./js/systems/settlement.js")
+            import("./js/systems/settlement.js"),
+            import("./js/systems/crown-supply.js")
         ]);
         const settlement = getSettlementSnapshot();
         const endeavours = getEndeavourSnapshot();
@@ -148,7 +151,8 @@ async function stateSnapshot() {
             military: { soldiers: military.soldiers.length, atWar: military.atWar, history: military.history.length, trained: military.trained, losses: military.losses, desertions: military.desertions, battles: military.soldiers.reduce((sum, soldier) => sum + (Number(soldier.battles) || 0), 0) },
             diplomacy: { treaties: diplomacy.counts, alliances: diplomacy.counts.alliance, tradePacts: diplomacy.counts.trade, wars: diplomacy.counts.war, averageRelation: diplomacy.averageRelation, realmHistory },
             research: { completed: research.modifiers.completedCount, active: research.activeTechDetails?.label || null, scholars: research.scholars.length },
-            market: { trades: state.statistics?.totalTrades || 0, goldTraded: state.market?.totalGoldTraded || 0 }
+            market: { trades: state.statistics?.totalTrades || 0, goldTraded: state.market?.totalGoldTraded || 0 },
+            crownSupply: getCrownSupplySnapshot()
         };
     }, { pathId: journey.path });
 }
@@ -342,6 +346,43 @@ async function sustainRealm(year) {
     if (need.food < 250 || need.gold < 120) await tradeFood();
 }
 
+async function crownTurn(year) {
+    await openPanel("economy");
+    const info = await page.evaluate(async () => {
+        const [{ state }, { getHousingSnapshot }, { getSettlementSnapshot }, { getCrownSupplySnapshot }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/population.js"),
+            import("./js/systems/settlement.js"),
+            import("./js/systems/crown-supply.js")
+        ]);
+        const supply = getCrownSupplySnapshot();
+        return {
+            gold: Number(state.resources.gold) || 0,
+            food: Number(state.resources.food) || 0,
+            population: getHousingSnapshot().population,
+            capacity: getHousingSnapshot().capacity,
+            water: Number(getSettlementSnapshot().needs?.water) || 0,
+            ...supply
+        };
+    });
+    const click = async selector => {
+        const button = page.locator(selector);
+        if (!(await button.count()) || !(await button.isEnabled().catch(() => false))) return false;
+        await button.click();
+        await page.waitForTimeout(80);
+        return true;
+    };
+    if (info.waterworksLevel < 2 && info.gold >= 80) await click('[data-command="crown-water"][data-value="2"]');
+    else if (info.water < 0.5 && info.waterworksLevel < 3 && info.gold >= 140) await click('[data-command="crown-water"][data-value="3"]');
+    if (info.grainLevel < 2 && info.grainRouteOpen) await click('[data-command="crown-grain"][data-value="2"]');
+    else if (info.food < 160 && info.grainLevel < 3 && info.gold >= 200) await click('[data-command="crown-grain"][data-value="3"]');
+    if (info.capacity < info.population + 8 && info.gold > 180) {
+        await click('[data-command="crown-housing"]');
+        await click('[data-command="crown-housing"]');
+    }
+    await closePanel();
+}
+
 async function foundingWorks() {
     await buildViaUI(65, "services");
     await buildViaUI(65, "services");
@@ -420,7 +461,7 @@ async function warlordTurn(year) {
     if (year === 6 || year === 21 || year === 41 || year === 61 || year === 81) await buildViaUI(9, "military");
     if (year % 5 === 1) {
         await openPanel("military");
-        for (let index = 0; index < 4; index++) {
+        for (let index = 0; index < 2; index++) {
             const select = page.locator("#military-recruit-select");
             if (!(await select.count()) || (await select.locator("option").count()) <= 1) break;
             await select.selectOption({ index: 1 });
@@ -429,7 +470,7 @@ async function warlordTurn(year) {
             await recruit.click();
             await page.waitForTimeout(90);
         }
-        for (let index = 0; index < 4; index++) {
+        for (let index = 0; index < 2; index++) {
             const train = page.locator('[data-command="military-train"]:not([disabled])').first();
             if (!(await train.count())) break;
             await train.click();
@@ -449,7 +490,10 @@ async function warlordTurn(year) {
         if (await war.count()) await war.click();
         await closePanel();
     }
-    if (year === 41 || year === 71) {
+    if (year >= 41 && year % 5 === 1) {
+        // White peace becomes available at war exhaustion 35. Trying only in
+        // year 71 left the realm fighting for forty needless years; sue every
+        // year so the warlord can actually end the war before the keep falls.
         await openPanel("diplomacy");
         for (let index = 0; index < 2; index++) {
             const peace = page.locator('[data-command="diplomacy-peace"]:not([disabled])').first();
@@ -554,6 +598,7 @@ for (let block = 0; block < Math.ceil(YEARS / 5); block++) {
     const targetYear = Math.min(YEARS + 1, 6 + block * 5);
     const advance = await advanceYears(5);
     await startEndeavour();
+    await crownTurn(advance.year);
     if (JOURNEY === "builder") await builderTurn(advance.year);
     else if (JOURNEY === "warlord") await warlordTurn(advance.year);
     else if (JOURNEY === "diplomat") await diplomatTurn(advance.year);
@@ -562,7 +607,7 @@ for (let block = 0; block < Math.ceil(YEARS / 5); block++) {
     await sustainRealm(advance.year);
     const snapshot = await stateSnapshot();
     blocks.push({ block: block + 1, targetYear, ...advance, snapshot });
-    console.log(`${JOURNEY} block ${block + 1}/${Math.ceil(YEARS / 5)} · year ${snapshot.year} · works ${snapshot.endeavours.totalCompleted} · pop ${snapshot.population} · food ${Math.round(snapshot.resources.food)} · ${Math.round(advance.elapsed / 2000 * 10) / 10} ms/tick`);
+    console.log(`${JOURNEY} block ${block + 1}/${Math.ceil(YEARS / 5)} · year ${snapshot.year} · works ${snapshot.endeavours.totalCompleted} · pop ${snapshot.population} · food ${Math.round(snapshot.resources.food)} · gold ${Math.round(snapshot.resources.gold)} · water ${Math.round((snapshot.services?.water || 0) * 100)}% · safety ${Math.round((snapshot.services?.safety || 0) * 100)}% · grain ${snapshot.crownSupply.grainLevel}/${snapshot.crownSupply.lastGrainBought} · waterworks ${snapshot.crownSupply.waterworksLevel} · soldiers ${snapshot.military.soldiers} · ${Math.round(advance.elapsed / 2000 * 10) / 10} ms/tick`);
 }
 
 await startEndeavour();
@@ -632,6 +677,13 @@ if (JOURNEY === "warlord" && final.diplomacy.wars < 0) failures.push("warlord di
 if (JOURNEY === "diplomat" && final.diplomacy.alliances < 1) failures.push("the diplomat concluded no alliance");
 if (JOURNEY === "merchant" && final.market.trades < 1) failures.push("the merchant completed no trade");
 if (JOURNEY === "scholar" && final.research.completed < 1) failures.push("the scholar completed no technology");
+if (final.population <= MIN_POPULATION[JOURNEY]) failures.push(`population ${final.population} did not exceed the v3.12.0 value ${MIN_POPULATION[JOURNEY]}`);
+if (Number(final.resources.food) <= 40) failures.push("food reserve ended in the hunger corridor: " + final.resources.food);
+if (!(Number(final.services?.water) > 0)) failures.push("water coverage ended at zero");
+if (!(Number(final.services?.safety) > 0)) failures.push("safety coverage ended at zero");
+if (!(Number(final.crownSupply?.waterworksLevel) > 0)) failures.push("no public waterworks were commissioned");
+if (!(Number(final.crownSupply?.grainLevel) > 0)) failures.push("no grain contract was opened");
+if (JOURNEY === "warlord" && final.military.soldiers <= 1) failures.push("the warlord ended with a garrison of one soldier or fewer");
 if (failures.length) {
     console.error("PLAYER JOURNEY FAILED\n" + failures.join("\n"));
     process.exitCode = 1;

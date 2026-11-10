@@ -28,6 +28,24 @@ export function cleanAmount(value, scope = "good") {
     return scope === "resource" ? Math.max(0, round2(parsed)) : Math.max(0, Math.floor(parsed));
 }
 
+// Every booking calls ensureGoodsBook(). Filtering and re-slicing the whole
+// ledger there allocated a new 600-entry array per movement and dominated the
+// mature tick. The array is sanitised once per identity instead; trimming then
+// happens in place and only when the bound is actually exceeded.
+const sanitizedLedgers = new WeakSet();
+
+function ensureLedger(logistics) {
+    if (!Array.isArray(logistics.ledger)) logistics.ledger = [];
+    let ledger = logistics.ledger;
+    if (!sanitizedLedgers.has(ledger)) {
+        const clean = ledger.filter(entry => entry && typeof entry === "object");
+        if (clean.length !== ledger.length) logistics.ledger = ledger = clean;
+        sanitizedLedgers.add(ledger);
+    }
+    if (ledger.length > GOODS_LEDGER_LIMIT) ledger.splice(0, ledger.length - GOODS_LEDGER_LIMIT);
+    return ledger;
+}
+
 export function ensureGoodsBook() {
     if (!state.city || typeof state.city !== "object") state.city = {};
     const city = state.city;
@@ -35,9 +53,7 @@ export function ensureGoodsBook() {
         city.logistics = { version: 2, nextJobId: 1, nextCarrierId: 1, jobs: [], carriers: [], lastTick: 0, stats: {} };
     }
     const logistics = city.logistics;
-    logistics.ledger = Array.isArray(logistics.ledger)
-        ? logistics.ledger.filter(entry => entry && typeof entry === "object").slice(-GOODS_LEDGER_LIMIT)
-        : [];
+    ensureLedger(logistics);
     logistics.nextLedgerId = Math.max(1, Math.floor(number(logistics.nextLedgerId, 1)));
     if (!logistics.audit || typeof logistics.audit !== "object") {
         logistics.audit = { version: 1, opening: {}, produced: {}, consumed: {}, sinceTick: Math.max(0, Math.floor(number(state.tick))), lastTick: 0 };

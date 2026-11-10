@@ -51,9 +51,14 @@ test("legacy market saves with partial partner stock are normalized safely",()=>
     state.tick=90;
     assert.doesNotThrow(()=>updateMarket());
     const partner=state.market.partners[0];
-    assert.equal(partner.stock.wood,0);
-    assert.equal(partner.stock.stone,0);
-    assert.equal(partner.stock.food,0);
+    // A legacy partner with no stock is replenished by the bounded market
+    // restock, not left as a permanently empty trade route. For an unknown
+    // partner the replenishment is one unit per resource.
+    for (const resource of ["wood", "stone", "food"]) {
+        assert.ok(partner.stock[resource] >= 0);
+        assert.ok(partner.stock[resource] <= 2);
+        assert.ok(Number.isFinite(partner.stock[resource]));
+    }
     assert.equal(partner.treasury,50);
     for(const resource of ["wood","stone","food"]){
         assert.ok(Number.isFinite(state.market.prices[resource]));

@@ -8,6 +8,7 @@ import { getBuildingEfficiency } from "./economy.js";
 import { isOperational } from "./construction.js";
 import { getLocalWarehouseStock, findLocalWarehouse, consumeFromWarehouse, getWarehouseStock, HOUSEHOLD_SUPPLY_RADIUS } from "./logistics.js";
 import { HOUSING_TIERS, SERVICE_DEFINITIONS, isHousingType } from "./city-config.js";
+import { getCrownWaterCoverage } from "./crown-supply.js";
 
 export const SETTLEMENT_INTERVAL = 10;
 export const NEED_WEIGHTS = Object.freeze({ food: 1.25, water: 1.1, warmth: 0.9, safety: 0.8, social: 0.65, health: 0.6 });
@@ -104,6 +105,25 @@ export function updateServices() {
         byHouse[house.id] = row;
     }
     for (const category of Object.keys(byBuilding)) byBuilding[category].active = countOperational(category, buildings);
+    // Paid waterworks cover occupied homes that no staffed well reaches. This
+    // is a real service with an annual payroll, not a realm-wide boolean: the
+    // coverage is counted per occupied house and disappears immediately when
+    // the crown cannot pay the watermen.
+    const reliefCoverage = getCrownWaterCoverage();
+    if (reliefCoverage > 0 && occupiedHomes > 0) {
+        const target = Math.ceil(occupiedHomes * reliefCoverage);
+        let missing = Math.max(0, target - summary.water);
+        if (missing > 0) {
+            for (const house of houseRows) {
+                const row = byHouse[house.id];
+                if (!row?.occupied || row.water) continue;
+                row.water = true;
+                row.waterSource = "crown-waterworks";
+                summary.water++;
+                if (--missing <= 0) break;
+            }
+        }
+    }
     for (const category of Object.keys(summary)) summary[category] = occupiedHomes ? summary[category] / occupiedHomes : 0;
     city.services.byHouse = byHouse;
     city.services.byBuilding = byBuilding;
