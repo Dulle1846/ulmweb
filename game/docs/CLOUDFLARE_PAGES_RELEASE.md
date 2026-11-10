@@ -39,6 +39,14 @@ A workflow run is not proof of a live release by itself. After a successful Wran
 - The repository has no root package.json, wrangler.toml or wrangler.jsonc.
 - The Pages site is static and does not need a bundler or Worker runtime.
 
+## Branch roles and the main mirror
+
+`ulmweb-branch` is the only production deploy branch: the deploy workflow's push trigger, the `production-current` environment branch rule and the Wrangler upload all target it. `main` is an additive mirror of the verified `ulmweb-branch` head for repository consumers. It is not a second deployment source and must not be force-pushed or rewritten.
+
+After a production release, fast-forward `main` to the verified `ulmweb-branch` head (or use an additive merge commit only if a fast-forward is impossible), then verify that both refs resolve to the same SHA. A push to `main` does not deploy; do not add a production deployment trigger for it.
+
+The separate `kings-and-cards` Worker is not the Pages production target. A `main`-only Workers Builds trigger must not be used for this static repository: there is no Wrangler or Worker configuration, and `npx wrangler preview` cannot deploy the Pages runtime. The obsolete main-only trigger was removed; do not recreate Workers Builds for this repository without an explicit, separate Worker deployment decision.
+
 ## Tokenless Git-integration fallback
 
 If no Cloudflare API token can be stored in GitHub, the existing Pages Git integration can run the same gate without GitHub secrets. This requires an owner with Cloudflare dashboard access:
