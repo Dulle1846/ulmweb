@@ -1,80 +1,68 @@
-# Crown supply — v3.13.0
+# Crown supply — v3.13.1
 
-**Status:** implemented and verified on the `3.13.0` line, 2026-11-10.
+**Status:** implemented and verified on the `3.13.1` line, 2026-11-10.
 **Core:** `js/systems/crown-supply.js`, `js/systems/settlement.js`, `js/simulation/buildings.js`, `js/systems/military.js`, `js/systems/market.js`; **UI:** `js/presentation/management-ui.js`.
 
-## Why it exists
+## Why v3.13.1 exists
 
-The five 100-year journeys in v3.12.0 ended in resource dead ends that the player could not break with an actual decision:
+v3.13.0 gave the realm a grain contract, paid waterworks and stone housing, and all five 100-year journeys became viable. One requirement was still not met: the warlord ended with a standing garrison but no durable granary. At year 101 the v3.13.0 realm had **46 residents, 11 soldiers and 55 food**. Its annual demand was **298 food** (46 × 6 + 11 × 2), so the reserve covered **0.18 years**; two years required **596 food**, a measured gap of **541 food**.
 
-- The warlord ended year 101 with 0 food and 1 soldier after white peace in year 71. The garrison had eaten the granary, desertion had eaten the garrison, and there was no way to fund both the army and a reserve.
-- The merchant ended with 20 residents and water coverage 0, despite 7,646 gold. Wells required a staffed building within eight tiles; gold alone could not create the missing service.
-- The builder and diplomat ended with 15–20 food. A food shortage reduced immigration and morale, which reduced the labour that produced food, which prolonged the shortage.
-- All five journeys were capped by the same housing arithmetic: a timber cottage holds four residents, and the available housing stock stopped growth before the realm could grow out of the shortage.
+The last pre-release run improved the food stock to 239 but still covered only 0.66 years of the then-current 360 food demand — 481 food short of the 720 needed. Moving the annual settlement earlier or globally raising farm yields would have changed the other four journeys and added per-tick cost. v3.13.1 instead extends the existing crown-supply decisions.
 
-Crown supply turns those dead ends into explicit annual commitments. It is additive to the existing economy, settlement, logistics, diplomacy, research, Endeavour and construction systems. It does not change the thirteen ambitions or the eternal-deed state machine.
+## Annual demand
 
-## The three player decisions
+The reserve is measured against the food the realm actually eats in a year, not a flat number:
 
-### 1. Standing grain contract
+```text
+annual demand = residents × 6
+              + soldiers × 2
+              + mounted soldiers × 2 extra
+```
 
-The economy panel offers three contract levels:
+`getCrownAnnualFoodDemand()` reads the live citizen and garrison entities, so a larger garrison or a larger population automatically raises the target. The UI reports both **ANNUAL DEMAND** and **RESERVE COVERAGE** in years.
 
-| Level | Reserve target | Crown rate |
-| --- | --- | --- |
-| I — Village tithe | 120 food, raised by population | 1.25 gold / food |
-| II — Regional granary | 240 food, raised by population | 1.20 gold / food |
-| III — Royal reserve | 420 food, raised by population | 1.15 gold / food |
+## The five grain contracts
 
-The contract fills the reserve from **open, non-war trade partners**. Each annual settlement buys up to the target; partners restock a bounded share of their starting stock in `updateMarket`, so a long campaign cannot drain every route permanently. The contract never spends the garrison's payroll: `60 + 8 × soldiers` gold is reserved before any grain purchase. This is the fiscal link between the army and the granary that v3.12.0 was missing.
+| Level | Contract | Target | Crown rate | Delivery |
+| --- | --- | --- | --- | --- |
+| 0 | No standing contract | — | — | — |
+| I | Village tithe | max(120, population × 4 + 60) | 1.25 gold / food | annual |
+| II | Regional granary | max(240, population × 4 + 60) | 1.20 gold / food | annual |
+| III | Royal reserve | max(420, population × 4 + 60) | 1.15 gold / food | annual |
+| IV | Royal war granary | max(420, population × 4 + 60, ceil(annual demand × 2.5)) | 1.10 gold / food | four seasonal shipments |
 
-### 2. Paid waterworks
+The war granary is the only tier whose target follows real demand. For the final warlord — 47 residents, 11 soldiers and one mounted soldier — demand is **306** and the target is **765** (2.5 years). The measured final stock was **749.9**, or **2.45 years**, without changing the target of any other tier.
 
-Waterworks are a public service, not a realm-wide boolean and not a second well:
+Only level IV settles grain in every season. Levels I–III keep the v3.13.0 annual settlement and target arithmetic, so the builder, diplomat, merchant and scholar journeys do not inherit the warlord's more aggressive purchase schedule. The seasonal call is one bounded `settleCrownSupply()` at each 100-day boundary, not new per-tick work.
 
-| Level | Coverage of occupied homes | Setup | Annual payroll |
-| --- | --- | --- | --- |
-| I — Water carts | 40% | 35 gold | 18 gold |
-| II — Cistern network | 65% | 80 gold | 36 gold |
-| III — Aqueduct service | 90% | 140 gold | 58 gold |
+## The commissary
 
-`updateServices()` counts covered occupied homes exactly like a well, marks the source as `crown-waterworks`, and stops covering them immediately when the annual payroll cannot be met. The merchant can therefore turn gold into water coverage without finding a legal well tile or a spare well worker; the builder can use wells and waterworks together.
+The economy panel's `PROVISION THE GRANARY` action is the player's bridge between stored goods and the reserve:
 
-### 3. Stone-house upgrade
+1. **Call in the harvest.** At level IV, `requisitionGranary()` transfers grain already held in farms and warehouses into the royal reserve. This is a movement of existing grain, not a new yield.
+2. **Sell surplus goods.** Stone is sold first, then wood, above a **600 / 600** construction reserve. The sale goes through the existing `executeTrade` path and the proceeds buy food at the contract rate.
+3. **Barter directly.** When coin or open market grain is exhausted, the commissary accepts **2 wood or 3 stone per food**. The same 600 / 600 reserve applies at levels I–III and outside an emergency.
+4. **Emergency draw.** At level IV only, a realm below **one year** of rations may use the last wood and stone (reserve 0) to buy food. This is the explicit hunger-emergency lever, not the normal provisioning path.
+5. **Payroll protection.** Grain purchases never spend the **60 + 8 × soldiers** gold reserved for the garrison payroll. The contract can therefore feed the reserve without triggering the desertion spiral that broke the v3.12.0 warlord.
 
-A completed timber cottage can be rebuilt in stone from the economy panel:
+The commissary never creates food. Every unit is bought, bartered, or transferred from an existing store, and every good spent is removed from the construction economy.
 
-- Cost: **55 gold**, or **42 gold** when a completed mason is employed.
-- Effect: the building's type changes to `TYPE.STONE_HOUSE`; its capacity rises from 4 to 6 permanent places.
-- No new footprint, no new building entity, no free food or services. The extra residents consume the same granary and water as everyone else.
+## Regional provisioning
 
-The upgrade uses the existing `HOUSING_TIERS` capacity, so household assignment, settlement services, growth and save/load all see the new capacity immediately.
-
-## Supporting repairs
-
-### Farm subsistence share
-
-A farm used to send grain only into the mill → bakery → carrier chain. A realm with active farms and no spare carrier could starve beside a full granary. `produceRecipe` now books a direct household subsistence share from each completed farm, scaled by the same worker efficiency as the grain crop. It is recorded as `farm-subsistence` in the food ledger. This is the production link that makes a farmed realm viable even when the bread chain is short-handed.
-
-### Garrison pay in kind
-
-When the granary holds at least twice the garrison's annual provisions, 40% of the coin payroll is settled in kind. The military ledger records `goldNeedBeforeKind`, `kindPayment` and the reduced `goldNeed`; the soldiers still eat the same provisions. A well-fed garrison no longer deserts solely because the treasury is thin, while an empty granary still triggers the old hardship and desertion rules.
-
-### Market restock
-
-Trade partners replenish a bounded part of their starting stock every market update. The restock is capped near the starting stock and does not bypass war: a partner at war remains closed to the contract and the trade tab.
+The direct barter was extended from the war granary to all active grain levels. A regional realm with ample timber and stone can therefore top up its reserve when the coin route is thin, while keeping its 600 / 600 construction reserve. The 100-year journeys use the same `crown-provision` button through the real economy tab: builder, diplomat and scholar call the commissary at crown turns while coverage is below **1.2 years**, filling the contract target and protecting the late population. Their final coverage is 0.82, 1.15 and 0.77 years respectively. The warlord preserves its goods until the final provisioning because the level IV emergency can use them without a reserve.
 
 ## Save compatibility
 
-`state.crownSupply` is additive:
+`state.crownSupply` is additive and now reports schema version **2**:
 
 ```js
 {
-  version: 1,
-  grainLevel: 0,
+  version: 2,
+  grainLevel: 0,          // 0–4
   grainActiveYear: 0,
   lastGrainYear: 0,
-  waterworksLevel: 0,
+  lastGrainSeason: 0,     // added in v3.13.1: year × 4 + season
+  waterworksLevel: 0,     // 0–3
   waterworksActiveYear: 0,
   lastWaterworksYear: 0,
   lastSettledYear: 0,
@@ -87,43 +75,54 @@ Trade partners replenish a bounded part of their starting stock every market upd
 }
 ```
 
-`normalizeCrownSupplyState()` accepts a missing or malformed object, clamps levels to 0–3, drops invalid history entries and keeps only the latest 24 entries. Saves written before v3.13.0 load with all levels at zero and the existing well/farm/housing behaviour intact. The field is included in the save snapshot and restored before the management panel renders.
+`normalizeCrownSupplyState()` accepts a missing or malformed object, clamps grain levels to 0–4, adds `lastGrainSeason: 0` for older saves, drops invalid history entries and keeps only the latest 24. Saves written before v3.13.1 load with their existing contract and waterworks levels intact and start the seasonal marker at zero. The thirteen royal ambitions, their order and rewards, and the eternal-deed state machine are unchanged.
 
 ## UI reachability
 
-The economy panel now includes:
+The economy panel exposes:
 
-- `data-command="crown-grain"` with `data-value="1|2|3"` and an end-contract control.
-- `data-command="crown-water"` with `data-value="1|2|3"` and a close-works control.
-- `data-command="crown-housing"` for a stone-house upgrade.
-- Live status for the grain target, open routes, waterworks coverage, timber cottages, stone houses and the next cost.
+- `data-command="crown-grain"` with `data-value="1|2|3|4"` and an end-contract control. Level IV is labelled **WAR GRANARY · 2.5Y RATIONS**.
+- `data-command="crown-water"` with `data-value="1|2|3"`.
+- `data-command="crown-housing"` for the stone-house upgrade.
+- `data-command="crown-provision"` for call-in, market sale and direct barter.
+- Live **ANNUAL DEMAND**, **RESERVE COVERAGE**, commissary surplus, target, shortfall and route status.
 
-The browser journeys use those buttons through the real economy tab; no journey reaches into a system function to change the realm.
+All five journeys use the real start screen, management tabs, build menu, trade, diplomacy, military and research. The browser harness does not call a system function to change the realm.
 
 ## Verification
 
-### The five dead ends, before and after
+### Three dead-end classes and the measured gap
 
-All runs used the shipped start screen, management tabs, build menu, trade, diplomacy, military and research; no journey called a system function directly. The before column is the v3.12.0 result from the previous journey record, the after column the final v3.13.0 run, both at year 101.
+| Dead end | Found gap before v3.13.1 | Intervention |
+| --- | --- | --- |
+| Warlord garrison ate the granary | 55 food / 0.18 years at v3.13.0; last pre-release run 239 food / 0.66 years, 481 short of 720 | Level IV war granary at 2.5 × real demand, four seasonal deliveries, harvest call-in, commissary sale and emergency barter |
+| Builder, diplomat and scholar ended at the year-end hunger floor | builder 121 vs 140 food; diplomat 119 vs 143; scholar 64 vs 76 residents in the last pre-release run | Regional commissary barter, crown-turn provisioning while coverage is below 1.2 years, existing farm subsistence and stone housing |
+| Merchant reached the end with goods but below the coin target | 6,107 vs 6,552 gold in the last pre-release run | Final sale of surplus stone and wood through the existing trade tab, after the last endeavour decision |
 
-| Journey | v3.12.0 dead end | What was added | Before | After |
+### The five journeys, year 101
+
+All five runs used the real UI paths, kept water and safety above zero, and produced no page or console error. The before column is the v3.13.0 release record; the after column is the final v3.13.1 browser run.
+
+| Journey | Dead end / before | v3.13.1 after | Granary reserve | ms/tick |
 | --- | --- | --- | --- | --- |
-| Builder | Ended at the hunger floor with no way to expand housing fast enough | Grain contract, stone-house upgrades, farm subsistence | 43 residents, 15–20 food | **60 residents, 140 food, 70% water, 70% safety, 2 soldiers, 13 works** |
-| Warlord | 0 food and 1 soldier after white peace; garrison ate the granary | Payroll reserve, grain contract, pay in kind, stone housing | 28 residents, 0 food, 1 soldier | **46 residents, 55 food, 11 soldiers, 82% water, 73% safety, 14 works** |
-| Diplomat | Ended at the hunger floor while the court and alliances ran dry | Grain contract, stone housing, farm subsistence | 43 residents, 15–20 food | **60 residents, 143 food, 70% water, 70% safety, 2 soldiers, 10 works, 4 alliances** |
-| Merchant | 20 residents at 0% water despite 7,646 gold; coin could not buy a well | Paid waterworks, stone housing, grain contract | 20 residents, 0% water, 7,646 gold | **42 residents, 71% water, 274 food, 6,552 gold, 15 works** |
-| Scholar | Ended at the hunger floor before the late tree was finished | Grain contract, stone housing, farm subsistence | 46 residents, 15–20 food | **76 residents, 107 food, 71% water, 79% safety, 17 technologies, 12 works** |
+| Builder | 60 residents, 140 food; late-year drain left only 121 in the last pre-release run | **60 residents, 300.6 food, 70% water, 70% safety, 2 soldiers, 13 works** | 300.6 / 366 = **0.82 years** | **2.428** |
+| Warlord | 46 residents, 55 food, 11 soldiers, 0.18 years; last pre-release 239 food, 0.66 years | **47 residents, 749.9 food, 11 soldiers, 73% water, 73% safety, 14 works** | 749.9 / 306 = **2.45 years** (target 765) | **2.485** |
+| Diplomat | 60 residents, 143 food; last pre-release 119 | **60 residents, 420.1 food, 70% water, 70% safety, 2 soldiers, 10 works, 4 alliances** | 420.1 / 366 = **1.15 years** | **2.354** |
+| Merchant | 42 residents, 71% water, 6,552 gold; last pre-release 6,107 | **42 residents, 71% water, 286.4 food, 7,045 gold, 15 works, 240 trades** | 286.4 / 258 = **1.11 years** | **2.226** |
+| Scholar | 76 residents, 107 food; last pre-release 64 residents | **89 residents, 416.6 food, 71% water, 82% safety, 17 technologies, 13 works** | 416.6 / 540 = **0.77 years** | **2.468** |
 
-Each journey finished in year 101 without a game over, with food above zero, positive water and safety coverage, and no page or console error. Desktop 1600 px and narrow 864 px checks showed no horizontal overflow. The final measurements were **2.412–2.504 ms/tick** across the five runs (builder 2.473, warlord 2.504, diplomat 2.412, merchant 2.461, scholar 2.486 over roughly 40,000 ticks each); the reports record the exact wall, simulation and tick times.
+The warlord is the requirement-critical result: **11 soldiers ≥ 8** and **2.45 years ≥ 2 years**. All four other journeys are at or above their v3.13.0 values; the builder, diplomat, merchant and scholar all gained food or coin rather than losing it. The browser runs measured **2.226–2.485 ms/tick**.
 
-### Tests and the deterministic campaign
+### Deterministic campaign
 
-- Focused `tests/systems/crown-supply.test.js`: **6/6** — old-save defaults, annual contract purchase, payroll reserve, partner restock, waterworks suspension on a failed payroll, and the stone-house capacity gain.
-- `npm test`: **711/711**, plus syntax and relative imports for 104 source files and all 189 referenced UI ids.
-- Deterministic 100-year campaign: `ok:true`, 40,040 ticks, final year 101, 13/13 ambitions, 3 eternal deeds, no game over, **2.534 ms/tick**. The v3.12.0 baseline was 3.261 ms/tick; the pre-change tree re-measured 3.299 ms/tick on the same host under the same conditions.
+The 100-year campaign is `ok:true`:
 
-The performance number comes from the campaign's mature-realm sample after all 40,040 ticks, not from the opening village. Removing the unused logistics presentation snapshot from `updateLogistics` and the per-booking ledger re-filter in `ensureGoodsBook` accounted for the gain; no simulation cadence was lengthened and no assertion was relaxed.
+- **40,040 ticks**, final year **101**, no game over.
+- **13/13** royal ambitions, **3** eternal deeds, `allComplete:true`.
+- **2.556 ms/tick** against the pre-change baseline of **3.299 ms/tick** (v3.12.0 release baseline 3.261). The prior v3.13.0 sample was 2.534 ms/tick; this sample is 0.022 ms above that sample and 0.743 ms below the release gate.
 
-### Save compatibility
+### Tests
 
-A save written before v3.13.0 has no `crownSupply` field. `ensureCrownSupply()` and `normalizeCrownSupplyState()` supply the zeroed structure on load, so old realms keep their existing well, farm, market and housing behaviour; the new controls simply start unselected. The focused test asserts this path, including the clamping of out-of-range levels and malformed history.
+- Focused `tests/systems/crown-supply.test.js`: **11/11** — defaults, annual purchase, annual regional delivery, four seasonal level IV deliveries, demand-based target, commissary sale, regional barter, payroll reserve, partner restock, waterworks suspension and stone capacity.
+- `npm test`: **716/716**, plus syntax and relative imports for **104** source files and **189** referenced UI ids.
+- Old-save path: a state without `crownSupply` receives version 2 defaults, `lastGrainSeason: 0`, and no change to existing well, farm, market or housing behaviour.

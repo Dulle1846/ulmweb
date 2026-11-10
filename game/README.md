@@ -1,6 +1,6 @@
 # Kings & Cards
 
-**Production version:** 3.13.0
+**Production version:** 3.13.1
 **Next development line:** 3.14.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
@@ -19,7 +19,7 @@
 10. [Eternal deeds](docs/ETERNAL_DEEDS.md) — the repeatable post-ambition chronicle, its goals, rewards, stall protection and save compatibility.
 11. [Crown Endeavours](docs/CROWN_ENDEAVOURS.md) — five post-ambition paths, fifteen multi-stage projects, funding, named overseers, permanent realm modifiers and the 100-year player journeys.
 12. [War front and white peace](docs/WAR_FRONT_AND_WHITE_PEACE.md) — bounded annual war fronts, named-garrison battles and white peace at war exhaustion 35.
-13. [Crown supply](docs/CROWN_SUPPLY.md) — grain contracts, paid waterworks, stone-house density, farm subsistence and garrison pay in kind, with the v3.13.0 journey measurements.
+13. [Crown supply](docs/CROWN_SUPPLY.md) — grain contracts including the war granary, seasonal deliveries, commissary barter, paid waterworks, stone-house density, farm subsistence and garrison pay in kind, with the v3.13.1 journey measurements.
 
 ## Development rules
 

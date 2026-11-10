@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.13.0`
+**Current production version:** `3.13.1`
 **Next development line:** `3.14.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -37,6 +37,24 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.13.1 — War Granary
+**Released:** 2026-11-10
+**Scope:** The last unmet v3.13.0 requirement: a warlord ending with a standing garrison and at least two years of food demand in reserve. A fourth grain-contract tier, four seasonal deliveries, harvest call-in, commissary barter and an emergency draw; the other four journeys keep their existing targets and improve.
+
+**The remaining dead end:** v3.13.0 ended the warlord at 46 residents, 11 soldiers and 55 food. Annual demand was 298 (46 × 6 + 11 × 2), so the reserve covered 0.18 years; two years required 596, a 541-food gap. The last pre-release run reached 239 food but only 0.66 years of its 360 demand, 481 short of 720. Raising farm yields globally or moving the annual settlement would have changed the other four journeys and added per-tick cost.
+
+**War granary:** Grain level IV targets `max(420, population × 4 + 60, ceil(annual demand × 2.5))`, where annual demand is residents × 6 + soldiers × 2 + mounted soldiers × 2 extra. It pays 1.10 gold per food and is the only tier delivered in four seasonal shipments; levels I–III keep their annual target and annual delivery. The economy panel labels level IV **WAR GRANARY · 2.5Y RATIONS** and shows annual demand and reserve coverage in years. The final warlord has 47 residents and 11 soldiers (including one mounted), demand 306, target 765, and 749.9 food — **2.45 years** — with **11 soldiers**.
+
+**Commissary:** `PROVISION THE GRANARY` calls in grain already held by farms and warehouses (a transfer, not a new harvest), sells stone then wood above a 600/600 construction reserve through `executeTrade`, buys food at the contract rate, and barters directly at 2 wood or 3 stone per food when coin or market grain is exhausted. Level IV may use the last goods when below one year of rations. Grain purchases always preserve the `60 + 8 × soldiers` garrison payroll. The direct barter is available at every active grain level, with the 600/600 reserve; levels I–III keep annual delivery.
+
+**Journey results (year 101, real UI):** builder **60 residents / 300.6 food** (0.82 years, was 140); warlord **47 / 749.9 / 11 soldiers / 2.45 years** (was 46 / 55 / 11 / 0.18); diplomat **60 / 420.1** (1.15 years, was 143); merchant **42 / 71% water / 7,045 gold** (1.11 years, was 6,552 gold); scholar **89 / 416.6** (0.77 years, was 76 / 107). All five kept water and safety above zero and produced no page or console error. The last pre-release gaps were 19 food (builder), 24 (diplomat), 445 gold (merchant), 12 residents (scholar) and 481 food (warlord); each is closed by the commissary, the final surplus sale or the war granary, not by global yield changes.
+
+**Performance:** deterministic 100-year campaign `ok:true`, 40,040 ticks, final year 101, 13/13 ambitions, 3 eternal deeds, no game over, **2.556 ms/tick** against the pre-change **3.299** baseline (v3.12.0: 3.261; v3.13.0 sample: 2.534). The five browser journeys measured **2.226–2.485 ms/tick**. The only added cadence is one bounded `settleCrownSupply()` call per 100-day boundary while level IV is active.
+
+**Compatibility:** `state.crownSupply` is now schema version 2; `lastGrainSeason` is additive and normalized to zero for older saves. Levels clamp to 0–4 and history to 24 entries. Saves without the field receive the zeroed structure and keep their existing well, farm, market and housing behaviour. The thirteen royal ambitions, their order and rewards, `allComplete` semantics and the eternal-deed state machine are unchanged.
+
+**Verification:** focused crown-supply **11/11**; `npm test` **716/716**; syntax and relative imports for **104** source files / **189** UI ids; five independent 100-year browser journeys through the real start screen, management tabs, build menu, trade, diplomacy, military and research, each with desktop and narrow screenshots; campaign 40,040 ticks / 13/13 / 3 eternal deeds / **2.556 ms per tick**. Full record: [docs/CROWN_SUPPLY.md](docs/CROWN_SUPPLY.md).
 
 ### 3.13.0 — Crown Supply
 **Released:** 2026-11-10

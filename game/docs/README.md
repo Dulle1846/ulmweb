@@ -26,7 +26,7 @@ For the current development stage, these documents focus on making the existing 
 - [Realm founding](REALM_FOUNDING.md) — cultures, religions, traditions, legal orders, legitimacy doctrines, starting charters, oligarchy and mixed constitution, save-compatible identity modifiers and the verified hosted build.
 - [Living population](LIVING_POPULATION.md) — persistent citizens and households, the deterministic annual census, civic/economic/military modifiers, save-schema-7 migration, the PEOPLE panel and the verified hosted builds.
 - [Eternal deeds](ETERNAL_DEEDS.md) — repeatable post-ambition goals drawn from live systems, rewards, stall protection, save compatibility and the 50-year/browser evidence.
-- [Crown supply](CROWN_SUPPLY.md) — grain contracts, paid waterworks, stone-house density, farm subsistence and garrison pay in kind, with the v3.13.0 journey measurements.
+- [Crown supply](CROWN_SUPPLY.md) — grain contracts including the war granary, seasonal deliveries, commissary barter, paid waterworks, stone-house density, farm subsistence and garrison pay in kind, with the v3.13.1 journey measurements.
 - [Terrain Art Checklist](TERRAIN_ART_CHECKLIST.md) — item-by-item audit of checklist 1.1.1–1.1.10 with code and verification evidence.
 - [Kings & Cards Foundation](V2_FOUNDATION.md) — current playable systems, exact limits and verified checks.
 - [Next AI Work Package](NEXT_AI_WORK_PACKAGE.md) — ready-to-use handoff brief for contributors and AI sessions.

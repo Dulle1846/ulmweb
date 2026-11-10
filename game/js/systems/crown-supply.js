@@ -7,16 +7,28 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { addResource } from "./resources.js";
 import { addLog } from "./events.js";
-import { recordResourceMovement } from "./goods-book.js";
-import { getTradePartners } from "./market.js";
+import { recordResourceMovement } from "./goods-book.js";import { ensureInventory, getPhysicalStock, recordGoodMovement } from "./logistics.js";
+import { getTradePartners, executeTrade } from "./market.js";
 
-export const CROWN_SUPPLY_VERSION = 1;
+export const CROWN_SUPPLY_VERSION = 2;
 export const CROWN_SUPPLY_HISTORY_LIMIT = 24;
+// A resident eats 0.015 food per day in the 20-day ledger, and a year is
+// twenty ledgers: six food per resident per year. A soldier eats two food per
+// year. The reserve target is expressed in these real annual rations, not in
+// an arbitrary flat number, so "two years" means the same thing at any size.
+export const POPULATION_FOOD_PER_YEAR = 6;
+export const GARRISON_FOOD_PER_SOLDIER = 2;
+export const COMMISSARY_KEEP = Object.freeze({ wood: 600, stone: 600 });
+export const COMMISSARY_BARTER = Object.freeze({ wood: 2, stone: 3 });
 export const GRAIN_CONTRACTS = Object.freeze([
-    Object.freeze({ level: 0, label: "No standing contract", target: 0, price: 0 }),
-    Object.freeze({ level: 1, label: "Village tithe", target: 120, price: 1.25 }),
-    Object.freeze({ level: 2, label: "Regional granary", target: 240, price: 1.2 }),
-    Object.freeze({ level: 3, label: "Royal reserve", target: 420, price: 1.15 })
+   Object.freeze({ level: 0, label: "No standing contract", target: 0, reserveYears: 0, price: 0 }),
+   Object.freeze({ level: 1, label: "Village tithe", target: 120, reserveYears: 1.5, price: 1.25 }),
+   Object.freeze({ level: 2, label: "Regional granary", target: 240, reserveYears: 2.5, price: 1.2 }),
+   Object.freeze({ level: 3, label: "Royal reserve", target: 420, reserveYears: 3.5, price: 1.15 }),
+   // The war granary is the only tier whose target follows the realm's actual
+   // annual demand. It exists for a standing army that must keep two years of
+   // rations in hand while still paying its soldiers.
+   Object.freeze({ level: 4, label: "Royal war granary", target: 420, reserveYears: 2.5, price: 1.1 })
 ]);
 export const WATERWORKS_LEVELS = Object.freeze([
     Object.freeze({ level: 0, label: "No public works", coverage: 0, setup: 0, upkeep: 0 }),
@@ -38,6 +50,7 @@ export function createCrownSupplyState() {
         grainLevel: 0,
         grainActiveYear: 0,
         lastGrainYear: 0,
+        lastGrainSeason: 0,
         waterworksLevel: 0,
         waterworksActiveYear: 0,
         lastWaterworksYear: 0,
@@ -55,7 +68,7 @@ function normalizeHistoryEntry(entry) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
     return {
         year: integer(entry.year, 0),
-        grainLevel: integer(entry.grainLevel, 0, 3),
+        grainLevel: integer(entry.grainLevel, 0, 4),
         grainBought: integer(entry.grainBought, 0, 100000),
         grainCost: integer(entry.grainCost, 0, 100000),
         waterworksLevel: integer(entry.waterworksLevel, 0, 3),
@@ -69,9 +82,10 @@ export function normalizeCrownSupplyState(input = state.crownSupply) {
     const fresh = createCrownSupplyState();
     state.crownSupply = {
         ...fresh,
-        grainLevel: integer(source.grainLevel, 0, 3),
+        grainLevel: integer(source.grainLevel, 0, 4),
         grainActiveYear: integer(source.grainActiveYear, 0),
         lastGrainYear: integer(source.lastGrainYear, 0),
+        lastGrainSeason: integer(source.lastGrainSeason, 0),
         waterworksLevel: integer(source.waterworksLevel, 0, 3),
         waterworksActiveYear: integer(source.waterworksActiveYear, 0),
         lastWaterworksYear: integer(source.lastWaterworksYear, 0),
@@ -92,7 +106,7 @@ export function ensureCrownSupply() {
 }
 
 function grainContract(level) {
-    return GRAIN_CONTRACTS[integer(level, 0, 3)] || GRAIN_CONTRACTS[0];
+    return GRAIN_CONTRACTS[integer(level, 0, 4)] || GRAIN_CONTRACTS[0];
 }
 function waterworks(level) {
     return WATERWORKS_LEVELS[integer(level, 0, 3)] || WATERWORKS_LEVELS[0];
@@ -102,11 +116,24 @@ function nonWarPartners() {
     return getTradePartners().filter(partner => partner && !warRealms.has(String(partner.id)) && Number(partner.stock?.food) > 0);
 }
 
+export function getCrownAnnualFoodDemand() {
+    const population = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER).length;
+    const soldiers = state.entities.filter(entity => !entity.dead && [TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT].includes(entity.type));
+    const mounted = soldiers.filter(entity => entity.military?.mounted).length;
+    return Math.max(1, Math.round((population * POPULATION_FOOD_PER_YEAR + soldiers.length * GARRISON_FOOD_PER_SOLDIER + mounted * GARRISON_FOOD_PER_SOLDIER) * 100) / 100);
+}
+
+export function getCrownReserveYears(food = state.resources.food) {
+    return Math.max(0, Number(food) || 0) / getCrownAnnualFoodDemand();
+}
+
 export function getCrownGrainTarget(level = ensureCrownSupply().grainLevel) {
     const contract = grainContract(level);
     if (!contract.level) return 0;
     const population = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER).length;
-    return Math.max(contract.target, Math.round(population * 4 + 60));
+    const base = Math.max(contract.target, Math.round(population * 4 + 60));
+    if (contract.level < 4) return base;
+    return Math.max(base, Math.ceil(getCrownAnnualFoodDemand() * contract.reserveYears));
 }
 
 export function getCrownWaterCoverage() {
@@ -115,9 +142,128 @@ export function getCrownWaterCoverage() {
     return waterworks(supply.waterworksLevel).coverage;
 }
 
+function openTradePartners() {
+    const warRealms = new Set((state.diplomacy?.realms || []).filter(realm => realm?.treaty === "war").map(realm => String(realm.id)));
+    return getTradePartners().filter(partner => partner && !warRealms.has(String(partner.id)));
+}
+
+// The crown calls in grain already held by farms and warehouses before it
+// spends coin or goods. This is a transfer of the harvest, not a new yield.
+export function requisitionGranary() {
+    const supply = ensureCrownSupply();
+    if (supply.grainLevel < 4) return { requisitioned: 0 };
+    const target = getCrownGrainTarget(4);
+    let remaining = Math.max(0, Math.ceil(target - (Number(state.resources.food) || 0)));
+    if (remaining <= 0) return { requisitioned: 0 };
+    let requisitioned = 0;
+    for (const entity of state.entities) {
+        if (remaining <= 0) break;
+        if (entity.dead || !entity.isBuilding?.()) continue;
+        const inventory = ensureInventory(entity);
+        if (!inventory) continue;
+        const stored = Math.min(remaining, Math.max(0, Math.floor(Number(inventory.output?.grain) || 0) - Math.floor(Number(inventory.reservedOut?.grain) || 0)));
+        if (stored > 0) {
+            inventory.output.grain -= stored;
+            addResource("food", stored);
+            recordGoodMovement({ type: "consumed", good: "grain", quantity: stored, from: { kind: "building", id: entity.id }, cause: "war-granary-requisition", key: "grain:requisition:" + currentTick() });
+            requisitioned += stored;
+            remaining -= stored;
+        }
+    }
+    if (requisitioned > 0) addLog("THE WAR GRANARY CALLED IN " + requisitioned + " GRAIN FROM THE HARVEST", "#d8c18a", "economy");
+    return { requisitioned };
+}
+
+// The commissary is the player's answer to a rich-in-goods, poor-in-coin
+// military realm: surplus timber and stone above the construction reserve are
+// sold through the existing market, and the proceeds buy grain. It costs real
+// building material, never creates food, and runs only when the player asks.
+export function provisionGranary() {
+    const supply = ensureCrownSupply();
+    if (!supply.grainLevel) return { ok: false, reason: "no-grain-contract" };
+    const target = getCrownGrainTarget(supply.grainLevel);
+    const shortfall = Math.ceil(target - (Number(state.resources.food) || 0));
+    if (shortfall <= 0) return { ok: false, reason: "granary-already-full" };
+    const requisition = requisitionGranary();
+    const remainingAfterHarvest = Math.max(0, Math.ceil(target - (Number(state.resources.food) || 0)));
+    if (remainingAfterHarvest <= 0) {
+        return { ok: true, requisitioned: requisition.requisitioned, bought: 0, cost: 0, bartered: 0, soldWood: 0, soldStone: 0, goldRaised: 0, snapshot: getCrownSupplySnapshot() };
+    }
+    const contract = grainContract(supply.grainLevel);
+    const soldiers = state.entities.filter(entity => !entity.dead && [TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT].includes(entity.type)).length;
+    const payrollReserve = 60 + soldiers * 8;
+    const availableFood = nonWarPartners().reduce((total, partner) => total + Math.max(0, Math.floor(Number(partner.stock?.food) || 0)), 0);
+    // An emergency draw may use the last building material: a realm below one
+    // year of rations trades its construction reserve for grain.
+    const emergency = supply.grainLevel >= 4 && getCrownReserveYears() < 1;
+    const keep = emergency ? { wood: 0, stone: 0 } : COMMISSARY_KEEP;
+    let soldWood = 0, soldStone = 0, goldRaised = 0;
+    let bought = { bought: 0, cost: 0 };
+    if (availableFood > 0) {
+        const neededGold = Math.max(0, Math.ceil(remainingAfterHarvest * contract.price) + payrollReserve - (Number(state.resources.gold) || 0));
+        if (neededGold > 0) {
+            const partners = openTradePartners();
+            const surplus = {
+                wood: Math.max(0, Math.floor(Number(state.resources.wood) || 0) - keep.wood),
+                stone: Math.max(0, Math.floor(Number(state.resources.stone) || 0) - keep.stone)
+            };
+            // Stone sells for more, so it is liquidated first; the construction
+            // reserve keeps enough of both for the next building project.
+            for (let trade = 0; trade < 80 && goldRaised < neededGold; trade++) {
+                const resource = surplus.stone >= 25 ? "stone" : surplus.wood >= 25 ? "wood" : null;
+                if (!resource) break;
+                let sale = null;
+                for (const partner of partners) {
+                    const result = executeTrade(partner.id, resource, "sell", 25);
+                    if (result.ok) { sale = result; break; }
+                }
+                if (!sale) break;
+                surplus[resource] -= 25;
+                if (resource === "stone") soldStone += 25; else soldWood += 25;
+                goldRaised += sale.gold;
+            }
+        }
+        bought = buyFoodToTarget(target);
+    }
+    // The war granary also accepts goods in kind when the coin treasury is
+    // empty and the trade roads have no grain left. This is a barter against
+    // real building material above the construction reserve, not a yield
+    // increase: the realm trades goods for grain and keeps its reserve.
+    let bartered = 0, barteredStone = 0, barteredWood = 0;
+    if (supply.grainLevel > 0) {
+        let remaining = Math.max(0, Math.ceil(target - (Number(state.resources.food) || 0)));
+        for (const resource of ["stone", "wood"]) {
+            if (remaining <= 0) break;
+            const rate = COMMISSARY_BARTER[resource];
+            const surplus = Math.max(0, Math.floor(Number(state.resources[resource]) || 0) - keep[resource]);
+            const amount = Math.min(remaining, Math.floor(surplus / rate));
+            if (amount <= 0) continue;
+            addResource(resource, -amount * rate);
+            addResource("food", amount);
+            if (resource === "stone") barteredStone += amount * rate; else barteredWood += amount * rate;
+            bartered += amount;
+            remaining -= amount;
+        }
+    }
+    const totalBought = bought.bought + bartered;
+    if (goldRaised > 0 || totalBought > 0) {
+        record({ year: currentYear(), tick: currentTick(), grainLevel: supply.grainLevel, grainBought: totalBought, grainCost: bought.cost, waterworksLevel: supply.waterworksLevel, waterworksCost: 0, housingUpgrades: 0 });
+        addLog("GRANARY PROVISIONED · SOLD " + soldWood + " WOOD + " + soldStone + " STONE · " + totalBought + " FOOD SECURED" + (bartered ? " · " + bartered + " BARTERED" : ""), "#d8c18a", "economy");
+    }
+    return {
+        ok: totalBought > 0 || goldRaised > 0,
+        reason: totalBought > 0 || goldRaised > 0 ? undefined : "no-grain-available",
+        soldWood, soldStone, goldRaised, bought: bought.bought, cost: bought.cost,
+        requisitioned: requisition.requisitioned, bartered, barteredStone, barteredWood, emergency,
+        snapshot: getCrownSupplySnapshot()
+    };
+}
+
 export function getCrownSupplySnapshot() {
     const supply = ensureCrownSupply();
     const grain = grainContract(supply.grainLevel);
+    const emergency = getCrownReserveYears() < 1 && supply.grainLevel >= 4;
+    const keep = emergency ? { wood: 0, stone: 0 } : COMMISSARY_KEEP;
     const water = waterworks(supply.waterworksLevel);
     const partners = nonWarPartners();
     const timberCottages = state.entities.filter(entity => !entity.dead && entity.type === TYPE.HOUSE && (!entity.construction || Number(entity.construction.stage) >= 3)).length;
@@ -131,6 +277,16 @@ export function getCrownSupplySnapshot() {
         grainActive: supply.grainActiveYear >= currentYear(),
         grainRouteOpen: partners.length > 0,
         grainPartners: partners.length,
+        annualDemand: getCrownAnnualFoodDemand(),
+        reserveYears: getCrownReserveYears(),
+        commissary: {
+            keep,
+            emergency,
+            grain: getPhysicalStock("grain"),
+            wood: Math.max(0, Math.floor(Number(state.resources.wood) || 0) - keep.wood),
+            stone: Math.max(0, Math.floor(Number(state.resources.stone) || 0) - keep.stone),
+            shortfall: Math.max(0, Math.ceil(getCrownGrainTarget(supply.grainLevel) - (Number(state.resources.food) || 0)))
+        },
         waterworksLevel: supply.waterworksLevel,
         waterworksLabel: water.label,
         waterworksCoverage: getCrownWaterCoverage(),
@@ -207,7 +363,7 @@ function buyFoodToTarget(target) {
 
 export function setGrainContract(level) {
     const supply = ensureCrownSupply();
-    const next = integer(level, 0, 3);
+    const next = integer(level, 0, 4);
     if (next === 0) {
         supply.grainLevel = 0;
         supply.grainActiveYear = 0;
@@ -268,10 +424,20 @@ export function upgradeHousingStock() {
     return { ok: true, message: "Timber cottage rebuilt in stone", cost, capacity: 2, snapshot: getCrownSupplySnapshot() };
 }
 
+// A standing contract delivers grain in four seasonal shipments. Settling only
+// once at the year boundary let the granary drain for a full year before the
+// next purchase, so a reserve that was filled in spring was nearly empty by
+// winter even though the treasury could have bought grain in summer.
 export function settleCrownSupply() {
     const supply = ensureCrownSupply();
     const year = currentYear();
-    if (supply.lastSettledYear >= year) return null;
+    const seasonKey = year * 4 + Math.max(0, Math.min(3, Math.floor(Number(state.seasonIndex) || 0)));
+    const waterworksDue = supply.lastSettledYear < year;
+    // The regional tiers keep their annual delivery; the war granary is the
+    // only tier that receives four seasonal shipments.
+    const quarterly = supply.grainLevel >= 4;
+    const grainDue = supply.grainLevel > 0 && (quarterly ? supply.lastGrainSeason < seasonKey : supply.lastGrainYear < year);
+    if (!waterworksDue && !grainDue) return null;
     supply.lastSettledYear = year;
     let waterworksCost = 0;
     if (supply.waterworksLevel > 0) {
@@ -290,7 +456,7 @@ export function settleCrownSupply() {
     }
     let grainBought = 0;
     let grainCost = 0;
-    if (supply.grainLevel > 0 && supply.lastGrainYear < year) {
+    if (grainDue) {
         // The contract remains active across years. Keeping grainActiveYear at
         // the signing year made the first shipment the only one ever bought.
         supply.grainActiveYear = year;
@@ -298,6 +464,7 @@ export function settleCrownSupply() {
         grainBought = result.bought;
         grainCost = result.cost;
         supply.lastGrainYear = year;
+        supply.lastGrainSeason = seasonKey;
         supply.lastGrainBought = grainBought;
         supply.lastGrainCost = grainCost;
     }

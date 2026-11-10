@@ -70,6 +70,9 @@ export function updateSimulation(){
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
     resetIncome();
     updateSettlement();
+    // The standing grain contract delivers once per season. This is a single
+    // bounded call four times a year, not a new per-tick system.
+    if(state.tick%100===0&&(state.crownSupply?.grainLevel||0)>=4)settleCrownSupply();
     const newcomer=newborn?null:updatePopulation();
     updateCitizenRegister();
     for(const death of deaths){

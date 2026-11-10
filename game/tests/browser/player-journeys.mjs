@@ -106,7 +106,7 @@ async function closePanel() {
 
 async function stateSnapshot() {
     return page.evaluate(async ({ pathId }) => {
-        const [{ state }, { getEndeavourSnapshot }, { getMilitarySnapshot }, { getDiplomacySnapshot }, { getResearchSnapshot }, { getHousingSnapshot }, { getSettlementSnapshot }, { getCrownSupplySnapshot }] = await Promise.all([
+        const [{ state }, { getEndeavourSnapshot }, { getMilitarySnapshot }, { getDiplomacySnapshot }, { getResearchSnapshot }, { getHousingSnapshot }, { getSettlementSnapshot }, { getPhysicalStock, getPhysicalStockMap }, { getCrownSupplySnapshot }] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/systems/endeavours.js"),
             import("./js/systems/military.js"),
@@ -114,6 +114,7 @@ async function stateSnapshot() {
             import("./js/systems/research.js"),
             import("./js/systems/population.js"),
             import("./js/systems/settlement.js"),
+            import("./js/systems/logistics.js"),
             import("./js/systems/crown-supply.js")
         ]);
         const settlement = getSettlementSnapshot();
@@ -152,6 +153,9 @@ async function stateSnapshot() {
             diplomacy: { treaties: diplomacy.counts, alliances: diplomacy.counts.alliance, tradePacts: diplomacy.counts.trade, wars: diplomacy.counts.war, averageRelation: diplomacy.averageRelation, realmHistory },
             research: { completed: research.modifiers.completedCount, active: research.activeTechDetails?.label || null, scholars: research.scholars.length },
             market: { trades: state.statistics?.totalTrades || 0, goldTraded: state.market?.totalGoldTraded || 0 },
+            physical: getPhysicalStockMap(),
+            physicalGrain: getPhysicalStock("grain"),
+            economy: state.economy ? { lastLedger: state.economy.lastLedger, history: (state.economy.history || []).slice(-3) } : null,
             crownSupply: getCrownSupplySnapshot()
         };
     }, { pathId: journey.path });
@@ -374,13 +378,64 @@ async function crownTurn(year) {
     };
     if (info.waterworksLevel < 2 && info.gold >= 80) await click('[data-command="crown-water"][data-value="2"]');
     else if (info.water < 0.5 && info.waterworksLevel < 3 && info.gold >= 140) await click('[data-command="crown-water"][data-value="3"]');
-    if (info.grainLevel < 2 && info.grainRouteOpen) await click('[data-command="crown-grain"][data-value="2"]');
+    const targetGrainLevel = JOURNEY === "warlord" ? 4 : 2;
+    if (info.grainLevel < targetGrainLevel && info.grainRouteOpen) await click(`[data-command="crown-grain"][data-value="${targetGrainLevel}"]`);
     else if (info.food < 160 && info.grainLevel < 3 && info.gold >= 200) await click('[data-command="crown-grain"][data-value="3"]');
+    if (JOURNEY === "warlord") {
+        if (year >= 101) await provisionWarGranary(2.2);
+    } else if (JOURNEY !== "merchant") {
+        await provisionWarGranary(1.2);
+    }
     if (info.capacity < info.population + 8 && info.gold > 180) {
         await click('[data-command="crown-housing"]');
         await click('[data-command="crown-housing"]');
     }
     await closePanel();
+}
+
+async function provisionWarGranary(minCoverage = 2.2) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+        const before = await page.evaluate(async () => {
+            const [{ state }, { getCrownReserveYears }] = await Promise.all([
+                import("./js/core/state.js"),
+                import("./js/systems/crown-supply.js")
+            ]);
+            return { food: Number(state.resources.food) || 0, coverage: getCrownReserveYears() };
+        });
+        if (before.coverage >= minCoverage) break;
+        const button = page.locator('[data-command="crown-provision"]');
+        if (!(await button.count()) || !(await button.isEnabled().catch(() => false))) break;
+        await button.click();
+        await page.waitForTimeout(140);
+        const after = await page.evaluate(async () => {
+            const { state } = await import("./js/core/state.js");
+            return Number(state.resources.food) || 0;
+        });
+        if (after <= before.food + 1) break;
+    }
+}
+
+async function sellSurplusAtEnd() {
+    await pauseGame();
+    await dismiss();
+    const openTrade = async () => {
+        await page.evaluate(() => document.querySelector("#tab-2")?.click());
+        await page.waitForTimeout(90);
+    };
+    await openTrade();
+    for (let index = 0; index < 40; index++) {
+        if (await page.locator("#realm-event-modal").isVisible().catch(() => false)) {
+            await dismiss();
+            await openTrade();
+        }
+        let sell = page.locator('[data-trade="sell"][data-resource="stone"]:not([disabled])').first();
+        if (!(await sell.count())) sell = page.locator('[data-trade="sell"][data-resource="wood"]:not([disabled])').first();
+        if (!(await sell.count())) break;
+        await sell.click();
+        await page.waitForTimeout(70);
+    }
+    await dismiss();
+    await page.evaluate(() => document.querySelector("#tab-0")?.click());
 }
 
 async function foundingWorks() {
@@ -610,7 +665,17 @@ for (let block = 0; block < Math.ceil(YEARS / 5); block++) {
     console.log(`${JOURNEY} block ${block + 1}/${Math.ceil(YEARS / 5)} · year ${snapshot.year} · works ${snapshot.endeavours.totalCompleted} · pop ${snapshot.population} · food ${Math.round(snapshot.resources.food)} · gold ${Math.round(snapshot.resources.gold)} · water ${Math.round((snapshot.services?.water || 0) * 100)}% · safety ${Math.round((snapshot.services?.safety || 0) * 100)}% · grain ${snapshot.crownSupply.grainLevel}/${snapshot.crownSupply.lastGrainBought} · waterworks ${snapshot.crownSupply.waterworksLevel} · soldiers ${snapshot.military.soldiers} · ${Math.round(advance.elapsed / 2000 * 10) / 10} ms/tick`);
 }
 
+if (JOURNEY === "warlord") {
+    await openPanel("economy");
+    await provisionWarGranary(2.2);
+    await closePanel();
+} else {
+    await openPanel("economy");
+    await provisionWarGranary(1.2);
+    await closePanel();
+}
 await startEndeavour();
+if (JOURNEY === "merchant") await sellSurplusAtEnd();
 await openPanel("endeavours");
 await page.setViewportSize({ width: 1600, height: 1000 });
 await page.waitForTimeout(250);
@@ -683,7 +748,8 @@ if (!(Number(final.services?.water) > 0)) failures.push("water coverage ended at
 if (!(Number(final.services?.safety) > 0)) failures.push("safety coverage ended at zero");
 if (!(Number(final.crownSupply?.waterworksLevel) > 0)) failures.push("no public waterworks were commissioned");
 if (!(Number(final.crownSupply?.grainLevel) > 0)) failures.push("no grain contract was opened");
-if (JOURNEY === "warlord" && final.military.soldiers <= 1) failures.push("the warlord ended with a garrison of one soldier or fewer");
+if (JOURNEY === "warlord" && final.military.soldiers < 8) failures.push("the warlord ended with fewer than eight soldiers: " + final.military.soldiers);
+if (JOURNEY === "warlord" && Number(final.crownSupply?.reserveYears) < 2) failures.push("the warlord granary covers fewer than two years: " + final.crownSupply?.reserveYears);
 if (failures.length) {
     console.error("PLAYER JOURNEY FAILED\n" + failures.join("\n"));
     process.exitCode = 1;
