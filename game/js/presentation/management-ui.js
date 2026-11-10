@@ -666,9 +666,12 @@ function researchPanel(){
  (r.lastAudit?'<div class="command-section-title">LAST ANNUAL AUDIT</div><p class="command-note">Year '+r.lastAudit.year+' · '+r.lastAudit.points+' points · speed ×'+r.lastAudit.speed+' · '+r.lastAudit.scholars+' scholars · '+r.lastAudit.salariesPaid+' gold salaries · '+r.lastAudit.fundingPaid+' gold funding'+(r.lastAudit.completed?' · completed '+esc(r.lastAudit.completed):"")+'.</p>':'<p class="command-note">No annual research audit has been completed yet.</p>');
 }
 const CRIME_CAUSE_LABELS=Object.freeze({inequality:"inequality",hunger:"hunger",war:"war",quarantine:"quarantine",unemployment:"unemployment"});
-function render(){
+function render(resetScroll=false){
  const panel=$("command-panel-content");if(!panel)return;
  panel.innerHTML=({kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle}[activePanel]||kingdom)();
+ // A new tab starts at its title, not at the scroll offset of the previous
+ // panel. Re-renders caused by an action keep their current position.
+ if(resetScroll)panel.scrollTop=0;
  if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
  document.querySelectorAll("[data-command-tab]").forEach(b=>{
   const active=b.dataset.commandTab===activePanel;
@@ -713,13 +716,13 @@ export function setupManagementUI(){
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
   if(["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle"].includes(target)){
-   activePanel=target;$("command-modal")?.classList.remove("hidden");render();
+   activePanel=target;$("command-modal")?.classList.remove("hidden");render(true);
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));
   }
  }));
- $("command-open-btn")?.addEventListener("click",()=>{$("command-modal")?.classList.remove("hidden");render();});
+ $("command-open-btn")?.addEventListener("click",()=>{$("command-modal")?.classList.remove("hidden");render(true);});
 
- document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{activePanel=b.dataset.commandTab||"government";$("command-modal")?.classList.remove("hidden");render();}));
+ document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{activePanel=b.dataset.commandTab||"government";$("command-modal")?.classList.remove("hidden");render(true);}));
  $("command-close")?.addEventListener("click",()=>$("command-modal")?.classList.add("hidden"));
  $("command-modal")?.addEventListener("click",e=>{if(e.target===$("command-modal"))$("command-modal").classList.add("hidden");});
  $("command-panel-content")?.addEventListener("input",e=>{

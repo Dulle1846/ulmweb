@@ -1,6 +1,6 @@
-# Crown Endeavours — v3.12.0
+# Crown Endeavours — v3.14.0
 
-**Status:** implemented on the `3.12.0` line and verified on 2026-11-10.
+**Status:** implemented on the `3.14.0` line and verified on 2026-11-10.
 **Entry point:** `ENDEAVOURS`, the nineteenth management tab.
 **Core:** `js/systems/endeavours.js`; **panel:** `js/presentation/endeavours-panel.js`.
 
@@ -12,29 +12,51 @@ It is deliberately additive. It does not replace ambitions, eternal deeds, resea
 
 ## The five paths
 
-| Path | Fantasy | Projects (in unlock order) | Main realm effects |
-| --- | --- | --- | --- |
-| Builder | Leave a city that outlives the crown | Aqueduct, Bathhouse, Garden | Housing, health, morale, food demand |
-| Warlord | Make the realm feared and secure | Arsenal, Drill Yard, Victory Column | Military power, legitimacy, morale |
-| Diplomat | Bind the world with words | Chancery, Embassy, Concordat | Diplomacy, trade, legitimacy |
-| Merchant | Turn every road into a ledger | Exchange, Caravan Road, Treasury | Taxes, trade, gold, food demand |
-| Scholar | Carry the light past the old tree | University, Observatory, Archive | Research, health, legitimacy |
+| Path | Fantasy | Works (in unlock order) | Crown Legacy | Main realm effects |
+| --- | --- | --- | --- | --- |
+| Builder | Leave a city that outlives the crown | Grand Aqueduct, Public Baths, Royal Garden | **The Living City** | Housing, sanitation, food demand, morale, legitimacy |
+| Warlord | Make the realm feared and secure | Royal Arsenal, Border Citadel, Campaign Road | **The Unbroken Watch** | Military power, diplomacy, legitimacy |
+| Diplomat | Bind the world with words | Royal Chancery, Hall of Summits, Archive of Alliances | **The Concord of Crowns** | Diplomacy, trade, legitimacy |
+| Merchant | Turn every road into a ledger | Merchants' Exchange, Caravan Road, Royal Mint | **The Crown Treasury** | Taxes, trade |
+| Scholar | Carry the light past the old tree | Royal University, Observatory, Great Archive | **The Eternal Library** | Research, diplomacy, legitimacy |
 
-Each project has five tiers. A tier can be repeated only after the previous tier completes, and a path's later projects unlock when the earlier project reaches its first tier. In total there are fifteen projects and seventy-five possible completions, enough to keep a century busy without turning the panel into a counter.
+Each of the three works has five tiers. A tier can be repeated only after the previous tier completes, and a path's later works unlock when the earlier work reaches its first tier. In total there are fifteen repeatable works and seventy-five possible work completions.
 
-## How a project works
+## Crown Legacies
 
-- **Real cost.** Starting a project spends wood, stone, gold and sometimes food. The cost scales with the tier.
-- **Named overseer.** A living resident must be appointed. The panel lists candidates with competence and conviction; the chosen resident is recorded in the project and in the realm chronicle.
-- **Funding.** Thrifty, Steady or Grand changes the annual gold cost and the yearly progress. Funding can be changed while a project is active, but the cost is charged at the next annual audit.
-- **Annual progress.** Progress is applied once per year from the simulation, not per frame. A project therefore has a real duration measured in years.
-- **Completion.** The project pays its completion reward, applies a permanent modifier, records a chronicle entry and unlocks the next tier or project.
-- **Abandonment.** A project can be abandoned; the invested resources are not refunded. The overseer returns to the civilian pool.
-- **Reassignment.** An active project can swap overseer without losing progress, at the cost of a small morale hit.
+Every path ends in exactly one Crown Legacy. A legacy is not a sixth repeatable tier:
+
+- It unlocks only when **all three works in its path are at tier 5** (fifteen completions in that path).
+- It costs a large one-time reserve and requires several annual work cycles, using the same named overseer and Thrifty/Steady/Grand funding as the rest of the panel.
+- It can be completed once. After completion the card reads **MASTERED** and cannot be started again.
+- Its completion adds its permanent modifier, records a **Crown Legacy Complete** chronicle entry, raises morale by 8 and legitimacy by 1.2.
+- Completing all five legacies records **The Eternal Crown**, raises morale by 10 and legitimacy by 2, and shows the milestone in the panel summary.
+
+The one-time legacy effects are:
+
+| Legacy | Cost | Work | Permanent effects |
+| --- | --- | ---: | --- |
+| The Living City | 260 wood · 240 stone · 180 gold | 170 | +8 housing, +5 sanitation, −2% household food demand |
+| The Unbroken Watch | 220 wood · 260 stone · 200 gold | 180 | +5% soldier power, +2.2 annual relation, +0.03 legitimacy/year |
+| The Concord of Crowns | 180 wood · 160 stone · 300 gold | 180 | +2.5 annual relation, +4% trade terms, +0.03 legitimacy/year |
+| The Crown Treasury | 200 stone · 340 gold | 170 | +5% tax yield, +5% trade terms |
+| The Eternal Library | 240 wood · 220 stone · 220 gold | 190 | +8% research rate, +0.03 legitimacy/year, +0.8 annual relation |
+
+The existing modifier caps still apply. A capstone can therefore be a meaningful completion goal without allowing a long run to produce runaway values.
+
+## How a work works
+
+- **Real cost.** Starting a work spends wood, stone, gold and sometimes food. The cost scales with the tier.
+- **Named overseer.** A living resident must be appointed. The panel lists candidates with competence and conviction; the chosen resident is recorded in the work and in the realm chronicle.
+- **Funding.** Thrifty, Steady or Grand changes the annual gold cost and the yearly progress. Funding can be changed while a work is active, but the cost is charged at the next annual audit.
+- **Annual progress.** Progress is applied once per year from the simulation, not per frame. A work therefore has a real duration measured in years.
+- **Completion.** The work applies a permanent modifier, records a chronicle entry and unlocks the next tier, work or legacy. Legacy completion additionally grants the morale and legitimacy award above.
+- **Abandonment.** A work can be abandoned; the invested resources are not refunded. The overseer returns to the civilian pool.
+- **Reassignment.** An active work can swap overseer without losing progress, at the cost of a small morale hit.
 
 ## Permanent modifiers
 
-Every completed project contributes to a cached modifier snapshot consumed by the existing systems:
+Every completed work and legacy contributes to a cached modifier snapshot consumed by the existing systems:
 
 - `health.js` — sanitation and health pressure
 - `morale.js` — realm morale
@@ -45,7 +67,7 @@ Every completed project contributes to a cached modifier snapshot consumed by th
 - `market.js` — trade factor
 - `simulation.js` — annual `updateEndeavours()` cadence
 
-Modifiers are capped so a long run cannot produce runaway values. The panel shows the live totals, including the source project for each effect.
+Modifiers are capped so a long run cannot produce runaway values. The panel shows the live totals, including the source work for each effect.
 
 ## Late research
 
@@ -53,49 +75,37 @@ The original sixteen technologies were exhausted before the end of a scholar jou
 
 `deep-plough`, `seed-banks`, `blast-furnace`, `printing-press`, `hospitals`, `vaccination`, `standing-bureaucracy`, `great-charter`.
 
-They use the existing research points, scholar appointments, funding and save schema. The total is now twenty-four technologies. The scholar journey completed seventeen of them in 100 years while also finishing fifteen Endeavours, which leaves the rest of the tree as a real long-term target.
+They use the existing research points, scholar appointments, funding and save schema. The total is now twenty-four technologies. The scholar journey completed seventeen of them in 100 years while also finishing fifteen works, which leaves the rest of the tree as a real long-term target.
 
 ## Interface
 
 The nineteenth management tab renders:
 
-- the active project card with progress, years remaining, overseer, funding and abandon/reassign controls;
-- five path cards with the next available project and its cost;
+- the active work card with progress, years remaining, overseer, funding and abandon/reassign controls;
+- five path cards with their works and one legacy each;
+- the Crown Legacies count and the Eternal Crown milestone;
 - the modifier summary;
 - the completion history.
 
-The panel is keyboard-reachable, uses the existing command-modal focus handling and has narrow-width rules. Browser checks at 1600×1000 and 864×1000 reported no horizontal overflow, five path cards, fifteen project cards and no console or page errors.
+The panel is keyboard-reachable, uses the existing command-modal focus handling and has narrow-width rules. A v3.14.0 browser screenshot exposed that switching from a scrolled management panel to the Endeavours tab preserved the old scroll offset, hiding the panel title and the first paragraph under the tab deck. `render(true)` now resets the content scroll position only when a tab is selected; an action re-render keeps the player's current position.
+
+Browser checks at 1600×1000 and 864×1000 reported no horizontal overflow, five path cards, twenty project cards, one legacy card per path and no console or page errors.
 
 ## Save compatibility
 
-`state.endeavours` stores `paths`, `active`, `history` and `modifiers`. On load, `normalizeEndeavours()` accepts saves without the block, fills defaults, rejects unknown paths/projects/funding/overseer ids and rebuilds the modifier cache. Old v3.11.0 saves load with empty Endeavours; the thirteen ambitions and eternal deeds are untouched.
+`state.endeavours` keeps the same shape: `active`, `completed`, `history` and `lastUpdateYear`. The five legacy ids live in `completed` with a limit of one. On load, `createEndeavoursState()` clamps a legacy completion to one and an active legacy to tier 1; `validateEndeavoursState()` rejects a count above the project's own limit. Unknown projects and malformed active works are still discarded. Saves from before 3.14.0 load with empty legacy entries, and the thirteen ambitions and eternal deeds are untouched. No save-schema bump was required.
 
 ## Verification
 
-- `npm test`: **705/705** passing; syntax and relative imports for 103 source files and 189 UI ids.
-- Focused diplomacy/military/Endeavour/research tests: **32/32**, including the white-peace regression at 0 gold and 0 food.
-- Deterministic 100-year campaign: **`ok:true`**, 40,040 ticks, final year 101, 13/13 ambitions, 3 eternal deeds, **3.261 ms/tick** (v3.11.0 baseline 3.276 ms/tick), no game over.
-- Five browser journeys, each 100 years, using the real start screen, management tabs, build menu, roads, trade, diplomacy, military and research. Each wrote JSON and 1600/864 screenshots to `artifacts/journeys/`; all had zero page/console errors and no overflow.
-
-| Journey | Final population | Buildings | Endeavours | Signature result | ms/tick |
-| --- | ---: | ---: | ---: | --- | ---: |
-| Builder | 43 | 37 | 15 | 16 road tiles, 12 trades | 2.789 |
-| Warlord | 28 | 44 | 15 | 3 battles, 9 losses, 15 desertions, white peace year 71 | 2.909 |
-| Diplomat | 43 | 36 | 15 | 4 alliances, relation 100 | 2.802 |
-| Merchant | 20 | 34 | 15 | 52 trades, 1,543 food, 7,646 gold | 2.791 |
-| Scholar | 46 | 36 | 15 | 17 technologies | 2.763 |
-
-### What the journeys exposed
-
-1. **No post-ambition direction.** All five paths now provide a multi-decade project queue, with tiers and later projects still available after the first century.
-2. **A hard research ceiling.** The eight late technologies keep the scholar path meaningful after the original tree.
-3. **Water and safety silently close immigration.** A realm with food and gold but no wells or garrison can lose population for decades without a clear cause. The journeys now build water, a garrison and housing before expanding; the panel's modifier summary and the existing settlement needs remain the player-facing diagnostics. This is a strategy trap, not a hidden free win.
-4. **Trade alone is not an economy.** The merchant run initially exhausted its food market and collapsed to four residents. Preserving wood for farms, buying grain before the reserve empties and building water, housing and a garrison fixed the run (20 residents, 52 trades, 1,543 food, 7,646 gold) without removing the trade focus.
-5. **Roads and housing are real.** The builder's 16 road tiles and 37 buildings are visible in the final realm; the narrow layout still fits.
-6. **A war without battles is a dead end.** The warlord run could declare war but never fight it, and a food shortage made `SUE FOR PEACE` impossible, so the war ran for 70 years with 0 battles and 20 desertions. The annual war front now spawns a bounded border raid while a war is active, the existing named garrison fights it, and war exhaustion 35 unlocks a white peace that costs no gold or food. The rerun produced 3 battles, 9 losses, 15 desertions and a white peace in year 71. See [WAR_FRONT_AND_WHITE_PEACE.md](WAR_FRONT_AND_WHITE_PEACE.md).
+- Focused Endeavour tests: **10/10**, including legacy unlock, one-time completion, legacy clamping, all-five Eternal Crown and the existing funding/overseer/abandonment paths.
+- Full Node suite: **734/734**; syntax and relative imports for **105 source files** and **189 referenced UI ids**.
+- Before this additive change, all five 100-year player journeys were green: builder 40,013 ticks / 66 residents / 13 works; warlord 40,011 / 50 / 14 works / 2 battles; diplomat 40,007 / 54 / 14 works / 4 alliances; merchant 40,007 / 42 / 15 works / 240 trades; scholar 40,007 / 86 / 10 works / 17 technologies. Every run had zero page or console errors and no overflow.
+- Deterministic 25-year campaign: **`ok:true`**, 10,040 ticks, **0.728 ms/tick**, 13/13 ambitions, no game over.
+- Post-change browser journey: **Merchant, 120 years**, 48,008 ticks, **0.622 ms/tick**, 181.8 s wall time, 42 residents, **16/16 works including The Crown Treasury**, **1/5 Crown Legacies**, 288 trades, no game over and no page/console errors. The 1600 px and 864 px layouts each rendered five paths, twenty project cards and their legacy without horizontal overflow; both opened at the panel title with `panelScrollTop: 0`.
+- The 120-year run is an extended path test, not a claim that a 1,000-hour human campaign has been completed.
 
 ## Known limits
 
 - The browser journeys accelerate the clock internally (400 ticks per year) but perform every realm-changing action through visible controls. They are evidence of UI reachability, not a claim that a human would make the same choices.
-- The campaign's 3.261 ms/tick is a Node measurement on this host; lower-end devices should be measured separately.
-- Crown Endeavours is a management layer, not a new map or a new faction. Its depth comes from the existing systems it modifies.
+- The measured tick costs are host measurements; lower-end devices should be measured separately.
+- Crown Endeavours is a management layer, not a new map or a new faction. Its depth comes from the existing systems it modifies. The five legacies close the "no conclusion after mastering a path" gap; they do not by themselves establish a 1,000-hour content guarantee.

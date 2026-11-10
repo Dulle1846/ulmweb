@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.13.4`
-**Next development line:** `3.14.0-dev`
+**Current production version:** `3.14.0`
+**Next development line:** `3.15.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -37,6 +37,18 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.14.0 — Crown Legacies
+
+**Released:** 2026-11-10
+
+**Scope:** Closes the first post-100-year completion gap in Crown Endeavours. Each of the five paths now ends in one large, one-time Crown Legacy after its three works reach tier 5; completing all five records the Eternal Crown. The release also fixes a management-panel scroll bug found in the final browser screenshots.
+
+**Content:** The builder's **The Living City**, warlord's **The Unbroken Watch**, diplomat's **The Concord of Crowns**, merchant's **The Crown Treasury** and scholar's **The Eternal Library** join the existing fifteen repeatable works. A legacy has its own reserve cost, annual work requirement and permanent modifier, uses the existing named overseer and funding controls, can be completed only once, and adds a legacy chronicle entry plus morale and legitimacy. The five legacies take the panel from 75 to 80 possible completions. Completing all five records **The Eternal Crown**, with an additional morale and legitimacy award and a visible panel banner. Old saves receive no legacy progress and remain loadable; no save-schema bump was needed.
+
+**Interface fix:** the v3.14.0 screenshots showed the Endeavours intro clipped under the tab deck when the previous management panel had been scrolled. Selecting a tab now resets the command-content scroll to the top; action re-renders deliberately keep the player's position.
+
+**Verification:** focused Endeavour tests **10/10**; full `npm test` **734/734**; deterministic 25-year campaign **`ok:true`**, 10,040 ticks, **0.728 ms/tick**, 13/13 ambitions; syntax and relative imports for **105 source files** / **189 UI ids**. The post-change browser run is the Merchant over 120 years: **48,008 ticks**, **0.622 ms/tick**, 42 residents, **16/16 works**, **1/5 Crown Legacies**, 288 trades, no game over, no page or console errors, and no overflow at 1600 px or 864 px. Five 100-year journeys were already green before this additive change (builder 13 works / 66 residents; warlord 14 / 50 / 2 battles; diplomat 14 / 54 / 4 alliances; merchant 15 / 42 / 240 trades; scholar 10 / 86 / 17 technologies). The legacies are a completion layer, not a claim that the game has been proven for 1,000 hours.
 
 ### 3.13.4 — Shared-Simulation Performance
 

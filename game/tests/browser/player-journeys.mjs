@@ -686,7 +686,9 @@ const desktopLayout = await page.evaluate(() => ({
     modalVisible: (() => { const element = document.querySelector("#command-modal"); if (!element) return false; const style = getComputedStyle(element); const rect = element.getBoundingClientRect(); return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0; })(),
     panelTitle: document.querySelector("#command-panel-content .command-panel-intro h3")?.textContent || null,
     paths: document.querySelectorAll("[data-endeavour-path]").length,
-    projects: document.querySelectorAll("[data-endeavour-project]").length
+    projects: document.querySelectorAll("[data-endeavour-project]").length,
+    legacies: document.querySelectorAll('[data-endeavour-project="living-city"]').length,
+    panelScrollTop: document.querySelector("#command-panel-content")?.scrollTop ?? 0
 }));
 await page.setViewportSize({ width: 864, height: 1000 });
 await page.waitForTimeout(250);
@@ -696,7 +698,9 @@ const narrowLayout = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth > innerWidth + 1,
     modalVisible: (() => { const element = document.querySelector("#command-modal"); if (!element) return false; const style = getComputedStyle(element); const rect = element.getBoundingClientRect(); return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0; })(),
     paths: document.querySelectorAll("[data-endeavour-path]").length,
-    projects: document.querySelectorAll("[data-endeavour-project]").length
+    projects: document.querySelectorAll("[data-endeavour-project]").length,
+    legacies: document.querySelectorAll('[data-endeavour-project="living-city"]').length,
+    panelScrollTop: document.querySelector("#command-panel-content")?.scrollTop ?? 0
 }));
 await page.setViewportSize({ width: 1600, height: 1000 });
 
@@ -735,7 +739,9 @@ if (desktopLayout.overflow) failures.push("desktop layout overflows horizontally
 if (narrowLayout.overflow) failures.push("narrow layout overflows horizontally");
 if (!desktopLayout.modalVisible || !narrowLayout.modalVisible) failures.push("the Crown Endeavours panel is not visible");
 if (desktopLayout.paths !== 5 || narrowLayout.paths !== 5) failures.push("the Crown Endeavours panel does not render five paths");
-if (desktopLayout.projects !== 15 || narrowLayout.projects !== 15) failures.push("the Crown Endeavours panel does not render fifteen projects");
+if (desktopLayout.projects !== 20 || narrowLayout.projects !== 20) failures.push("the Crown Endeavours panel does not render twenty projects");
+if (desktopLayout.legacies !== 1 || narrowLayout.legacies !== 1) failures.push("the Crown Endeavours panel does not render each path's legacy");
+if (desktopLayout.panelScrollTop !== 0 || narrowLayout.panelScrollTop !== 0) failures.push("the Crown Endeavours panel did not open at its title");
 if (JOURNEY === "builder" && final.buildings <= initial.buildings) failures.push("the builder completed no new building");
 if (JOURNEY === "warlord" && final.military.soldiers < 1) failures.push("the warlord never raised a soldier");
 if (JOURNEY === "warlord" && final.diplomacy.wars < 0) failures.push("warlord diplomacy is invalid");

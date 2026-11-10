@@ -4,6 +4,7 @@ import { resetState, state } from "../../js/core/state.js";
 import { TYPE } from "../../js/core/types.js";
 import { ensurePersonProfile } from "../../js/systems/people.js";
 import {
+    ENDEAVOUR_LEGACY_TIER_LIMIT,
     ENDEAVOUR_PATHS,
     ENDEAVOUR_TIER_LIMIT,
     abandonEndeavour,
@@ -152,12 +153,26 @@ test("endeavour save state is bounded and older saves load with no works", () =>
     assert.equal(clamped.completed.bathhouse, undefined);
     assert.equal(clamped.history.length, 1);
     assert.equal(clamped.history[0].tier, ENDEAVOUR_TIER_LIMIT);
+
+    const legacyClamped = createEndeavoursState({
+        completed: { "living-city": 99 },
+        active: { projectId: "living-city", tier: 99, required: 1 }
+    });
+    assert.equal(legacyClamped.completed["living-city"], ENDEAVOUR_LEGACY_TIER_LIMIT);
+    assert.equal(legacyClamped.active.tier, ENDEAVOUR_LEGACY_TIER_LIMIT);
 });
 
-test("all five paths expose three projects and permanent effects stay capped", () => {
+test("all five paths expose three works and a one-time legacy", () => {
     assert.equal(ENDEAVOUR_PATHS.length, 5);
+    const totalTiers = ENDEAVOUR_PATHS.flatMap(path => path.projects)
+        .reduce((sum, project) => sum + (project.tierLimit || ENDEAVOUR_TIER_LIMIT), 0);
+    assert.equal(totalTiers, 80);
     for (const path of ENDEAVOUR_PATHS) {
-        assert.equal(path.projects.length, 3);
+        assert.equal(path.projects.length, 4);
+        const legacies = path.projects.filter(project => project.legacy);
+        assert.equal(legacies.length, 1);
+        assert.equal(legacies[0].tierLimit, ENDEAVOUR_LEGACY_TIER_LIMIT);
+        assert.equal(legacies[0].requiresMastery, true);
         for (const project of path.projects) {
             assert.ok(project.label && project.description);
             assert.ok(Object.keys(project.effects).length >= 1);
@@ -165,7 +180,7 @@ test("all five paths expose three projects and permanent effects stay capped", (
     }
     const endeavours = fixture();
     for (const project of ENDEAVOUR_PATHS.flatMap(path => path.projects)) {
-        endeavours.completed[project.id] = ENDEAVOUR_TIER_LIMIT;
+        endeavours.completed[project.id] = project.tierLimit || ENDEAVOUR_TIER_LIMIT;
     }
     const modifiers = getEndeavourModifiers();
     assert.ok(modifiers.tax <= 0.3 + 1e-9);
@@ -174,7 +189,48 @@ test("all five paths expose three projects and permanent effects stay capped", (
     assert.ok(modifiers.military <= 0.35 + 1e-9);
     assert.ok(modifiers.health <= 25 + 1e-9);
     assert.ok(modifiers.diplomacy <= 8 + 1e-9);
-    assert.equal(modifiers.completed, 75);
+    assert.equal(modifiers.completed, totalTiers);
+});
+
+test("a path legacy unlocks only after all three works are mastered and can be completed once", () => {
+    const endeavours = fixture();
+    const builder = ENDEAVOUR_PATHS.find(path => path.id === "builder");
+    const legacy = builder.projects.find(project => project.legacy);
+    let snapshot = getEndeavourSnapshot();
+    let legacySnapshot = snapshot.paths.find(path => path.id === "builder").projects.find(project => project.id === legacy.id);
+    assert.equal(legacySnapshot.locked, true);
+    assert.equal(startEndeavour(legacy.id).ok, false);
+
+    for (const project of builder.projects.filter(project => !project.legacy)) {
+        endeavours.completed[project.id] = ENDEAVOUR_TIER_LIMIT;
+    }
+    snapshot = getEndeavourSnapshot();
+    legacySnapshot = snapshot.paths.find(path => path.id === "builder").projects.find(project => project.id === legacy.id);
+    assert.equal(legacySnapshot.locked, false);
+    assert.equal(legacySnapshot.startable, true);
+    assert.equal(legacySnapshot.tierLimit, ENDEAVOUR_LEGACY_TIER_LIMIT);
+    assert.equal(startEndeavour(legacy.id, { funding: 2 }).ok, true);
+    assert.equal(endeavours.active.tier, 1);
+    while (endeavours.active) advanceYear();
+    assert.equal(endeavours.completed[legacy.id], 1);
+    assert.equal(getEndeavourSnapshot().legaciesCompleted, 1);
+    assert.equal(getEndeavourSnapshot().paths.find(path => path.id === "builder").completed, 16);
+    assert.equal(startEndeavour(legacy.id).ok, false);
+    assert.match(getEndeavourSnapshot().history[0].effectsText, /housing/);
+    assert.equal(getEndeavourSnapshot().allLegacies, false);
+});
+
+test("all five legacies expose the completed Eternal Crown milestone", () => {
+    const endeavours = fixture();
+    for (const path of ENDEAVOUR_PATHS) {
+        const legacy = path.projects.find(project => project.legacy);
+        endeavours.completed[legacy.id] = ENDEAVOUR_LEGACY_TIER_LIMIT;
+    }
+    const snapshot = getEndeavourSnapshot();
+    assert.equal(snapshot.legaciesCompleted, 5);
+    assert.equal(snapshot.legaciesTotal, 5);
+    assert.equal(snapshot.allLegacies, true);
+    assert.equal(snapshot.totalCompleted, 5);
 });
 
 test("a vacant overseer slows but does not stop the work", () => {

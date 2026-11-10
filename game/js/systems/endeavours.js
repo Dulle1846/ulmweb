@@ -5,7 +5,9 @@
 // and scholarship — a repeatable late-game decision that spends real resources,
 // names a real resident as overseer, and changes live systems rather than a
 // counter. Every path is a short chain of three projects, and each project can
-// be renewed up to five times with rising cost and work.
+// be renewed up to five times with rising cost and work. Mastering all three
+// projects unlocks one Crown Legacy: a one-time capstone with its own effect
+// and chronicle entry. Completing all five legacies binds the Eternal Crown.
 import { state } from "../core/state.js";
 import { addResource } from "./resources.js";
 import { ensurePersonProfile } from "./people.js";
@@ -13,6 +15,7 @@ import { recordLegacy } from "./legacy.js";
 
 export const ENDEAVOUR_VERSION = 1;
 export const ENDEAVOUR_TIER_LIMIT = 5;
+export const ENDEAVOUR_LEGACY_TIER_LIMIT = 1;
 const HISTORY_LIMIT = 24;
 
 export const ENDEAVOUR_FUNDING = Object.freeze([
@@ -68,6 +71,12 @@ export const ENDEAVOUR_PATHS = Object.freeze([
                 id: "pleasure-garden", label: "Royal Garden", description: "A walled garden, orchard and promenade that outlives its gardener.",
                 cost: Object.freeze({ wood: 80, stone: 40, gold: 45 }), work: 64,
                 effects: Object.freeze({ morale: 0.5, legitimacy: 0.02, food: 0.01 }), requires: "bathhouse"
+            }),
+            Object.freeze({
+                id: "living-city", label: "The Living City", description: "A city of clean water, green courts and stone that still stands when the crown changes hands.",
+                cost: Object.freeze({ wood: 260, stone: 240, gold: 180 }), work: 170,
+                effects: Object.freeze({ housing: 8, health: 5, food: 0.02 }),
+                requires: null, requiresMastery: true, tierLimit: ENDEAVOUR_LEGACY_TIER_LIMIT, legacy: true
             })
         ])
     }),
@@ -91,6 +100,12 @@ export const ENDEAVOUR_PATHS = Object.freeze([
                 id: "campaign-road", label: "Campaign Road", description: "A military road that moves grain, horses and reinforcements in the same season.",
                 cost: Object.freeze({ wood: 120, stone: 40, gold: 35 }), work: 64,
                 effects: Object.freeze({ military: 0.02, legitimacy: 0.01, food: 0.01 }), requires: "border-citadel"
+            }),
+            Object.freeze({
+                id: "unbroken-watch", label: "The Unbroken Watch", description: "A standing watch, a fortified road and a garrison whose names are carved into the gate.",
+                cost: Object.freeze({ wood: 220, stone: 260, gold: 200 }), work: 180,
+                effects: Object.freeze({ military: 0.05, diplomacy: 2.2, legitimacy: 0.03 }),
+                requires: null, requiresMastery: true, tierLimit: ENDEAVOUR_LEGACY_TIER_LIMIT, legacy: true
             })
         ])
     }),
@@ -114,6 +129,12 @@ export const ENDEAVOUR_PATHS = Object.freeze([
                 id: "alliance-archive", label: "Archive of Alliances", description: "Every treaty, sealed letter and secret clause kept where no successor can lose it.",
                 cost: Object.freeze({ wood: 70, stone: 80, gold: 60 }), work: 64,
                 effects: Object.freeze({ diplomacy: 0.5, trade: 0.02 }), requires: "summit-hall"
+            }),
+            Object.freeze({
+                id: "concord-of-crowns", label: "The Concord of Crowns", description: "A permanent concord that binds old enemies to the same table and the same road.",
+                cost: Object.freeze({ wood: 180, stone: 160, gold: 300 }), work: 180,
+                effects: Object.freeze({ diplomacy: 2.5, trade: 0.04, legitimacy: 0.03 }),
+                requires: null, requiresMastery: true, tierLimit: ENDEAVOUR_LEGACY_TIER_LIMIT, legacy: true
             })
         ])
     }),
@@ -137,6 +158,12 @@ export const ENDEAVOUR_PATHS = Object.freeze([
                 id: "royal-mint", label: "Royal Mint", description: "One coin, one weight, one crown. The mint makes the realm's money trustworthy abroad.",
                 cost: Object.freeze({ stone: 90, gold: 80 }), work: 64,
                 effects: Object.freeze({ tax: 0.025, trade: 0.01 }), requires: "caravan-road"
+            }),
+            Object.freeze({
+                id: "crown-treasury", label: "The Crown Treasury", description: "A treasury, a mint and a public ledger that make the realm's word as good as its coin.",
+                cost: Object.freeze({ stone: 200, gold: 340 }), work: 170,
+                effects: Object.freeze({ tax: 0.05, trade: 0.05 }),
+                requires: null, requiresMastery: true, tierLimit: ENDEAVOUR_LEGACY_TIER_LIMIT, legacy: true
             })
         ])
     }),
@@ -160,6 +187,12 @@ export const ENDEAVOUR_PATHS = Object.freeze([
                 id: "archive", label: "Great Archive", description: "A fireproof archive where every discovery and every failure is kept for the next generation.",
                 cost: Object.freeze({ wood: 80, stone: 60, gold: 50 }), work: 64,
                 effects: Object.freeze({ research: 0.03, diplomacy: 0.4, legitimacy: 0.015 }), requires: "observatory"
+            }),
+            Object.freeze({
+                id: "eternal-library", label: "The Eternal Library", description: "A library and observatory where every generation can begin where the last one stopped.",
+                cost: Object.freeze({ wood: 240, stone: 220, gold: 220 }), work: 190,
+                effects: Object.freeze({ research: 0.08, legitimacy: 0.03, diplomacy: 0.8 }),
+                requires: null, requiresMastery: true, tierLimit: ENDEAVOUR_LEGACY_TIER_LIMIT, legacy: true
             })
         ])
     })
@@ -168,6 +201,15 @@ export const ENDEAVOUR_PATHS = Object.freeze([
 const PATH_BY_ID = new Map(ENDEAVOUR_PATHS.map(path => [path.id, path]));
 const PROJECTS = ENDEAVOUR_PATHS.flatMap(path => path.projects.map(project => ({ ...project, path: path.id })));
 const PROJECT_BY_ID = new Map(PROJECTS.map(project => [project.id, project]));
+const LEGACY_PROJECTS = Object.freeze(PROJECTS.filter(project => project.legacy));
+
+export function projectTierLimit(project) {
+    return Math.max(1, Math.floor(Number(project?.tierLimit) || ENDEAVOUR_TIER_LIMIT));
+}
+
+function areAllLegaciesComplete(endeavours = ensureEndeavours()) {
+    return LEGACY_PROJECTS.every(project => (Number(endeavours.completed?.[project.id]) || 0) >= projectTierLimit(project));
+}
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
 const clean = (value, max) => String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
@@ -179,14 +221,14 @@ export function createEndeavoursState(input = {}) {
     const rawCompleted = source.completed && typeof source.completed === "object" && !Array.isArray(source.completed) ? source.completed : {};
     for (const project of PROJECTS) {
         const count = Math.floor(Number(rawCompleted[project.id]) || 0);
-        if (count > 0) completed[project.id] = Math.min(ENDEAVOUR_TIER_LIMIT, count);
+        if (count > 0) completed[project.id] = Math.min(projectTierLimit(project), count);
     }
     let active = null;
     const rawActive = source.active && typeof source.active === "object" && !Array.isArray(source.active) ? source.active : null;
     if (rawActive) {
         const project = PROJECT_BY_ID.get(String(rawActive.projectId || ""));
         if (project) {
-            const tier = clamp(Math.floor(Number(rawActive.tier) || (completed[project.id] || 0) + 1), 1, ENDEAVOUR_TIER_LIMIT);
+            const tier = clamp(Math.floor(Number(rawActive.tier) || (completed[project.id] || 0) + 1), 1, projectTierLimit(project));
             const required = Math.max(1, Number(rawActive.required) || requiredWork(project, tier));
             active = {
                 projectId: project.id,
@@ -243,8 +285,9 @@ export function validateEndeavoursState(input) {
     if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Endeavours must be an object.");
     if (!input.completed || typeof input.completed !== "object" || Array.isArray(input.completed)) throw new Error("Endeavour completions are invalid.");
     for (const [id, count] of Object.entries(input.completed)) {
-        if (!PROJECT_BY_ID.has(id)) throw new Error("Unknown endeavour project in save: " + id);
-        if (!Number.isFinite(Number(count)) || Number(count) < 0 || Number(count) > ENDEAVOUR_TIER_LIMIT) throw new Error("Endeavour tier is invalid.");
+        const project = PROJECT_BY_ID.get(id);
+        if (!project) throw new Error("Unknown endeavour project in save: " + id);
+        if (!Number.isFinite(Number(count)) || Number(count) < 0 || Number(count) > projectTierLimit(project)) throw new Error("Endeavour tier is invalid.");
     }
     if (input.active != null) {
         if (typeof input.active !== "object" || Array.isArray(input.active)) throw new Error("Active endeavour is invalid.");
@@ -255,7 +298,8 @@ export function validateEndeavoursState(input) {
 }
 
 export function projectTier(projectId, completed = ensureEndeavours().completed) {
-    return Math.min(ENDEAVOUR_TIER_LIMIT, Math.floor(Number(completed?.[projectId]) || 0) + 1);
+    const project = PROJECT_BY_ID.get(String(projectId));
+    return Math.min(project ? projectTierLimit(project) : ENDEAVOUR_TIER_LIMIT, Math.floor(Number(completed?.[projectId]) || 0) + 1);
 }
 
 export function requiredWork(project, tier = projectTier(project.id)) {
@@ -276,13 +320,21 @@ export function effectsText(effects) {
     }).join(" · ");
 }
 
-function projectStatus(project) {
+function projectStatus(project, pathId = project.path) {
     const completed = ensureEndeavours().completed;
+    const tierLimit = projectTierLimit(project);
     const tier = projectTier(project.id, completed);
-    const previous = project.requires ? (completed[project.requires] || 0) : 1;
-    const maxed = (completed[project.id] || 0) >= ENDEAVOUR_TIER_LIMIT;
-    const locked = Boolean(project.requires && previous < 1);
-    return { tier, maxed, locked, completed: completed[project.id] || 0 };
+    const maxed = (completed[project.id] || 0) >= tierLimit;
+    let locked = false;
+    if (project.requiresMastery) {
+        const path = PATH_BY_ID.get(pathId);
+        locked = Boolean(path && path.projects.some(entry =>
+            entry.id !== project.id && (completed[entry.id] || 0) < projectTierLimit(entry)
+        ));
+    } else if (project.requires) {
+        locked = (completed[project.requires] || 0) < 1;
+    }
+    return { tier, tierLimit, maxed, locked, legacy: Boolean(project.legacy), completed: completed[project.id] || 0 };
 }
 
 export function canAfford(cost) {
@@ -395,7 +447,8 @@ export function updateEndeavours() {
     if (active.progress < active.required) return { completed: null, work: active.lastWork, progress: active.progress, required: active.required };
 
     const completedTier = active.tier;
-    endeavours.completed[project.id] = Math.min(ENDEAVOUR_TIER_LIMIT, (endeavours.completed[project.id] || 0) + 1);
+    const isLegacy = Boolean(project.legacy);
+    endeavours.completed[project.id] = Math.min(projectTierLimit(project), (endeavours.completed[project.id] || 0) + 1);
     const summary = effectsText(project.effects);
     endeavours.history.unshift({
         projectId: project.id,
@@ -408,17 +461,32 @@ export function updateEndeavours() {
     });
     if (endeavours.history.length > HISTORY_LIMIT) endeavours.history.length = HISTORY_LIMIT;
     endeavours.active = null;
-    state.morale = clamp(Number(state.morale) + 2, 0, 100);
+    state.morale = clamp(Number(state.morale) + (isLegacy ? 8 : 2), 0, 100);
     if (state.politics && Number.isFinite(Number(state.politics.legitimacy))) {
-        state.politics.legitimacy = clamp(Number(state.politics.legitimacy) + 0.4, 0, 100);
+        state.politics.legitimacy = clamp(Number(state.politics.legitimacy) + (isLegacy ? 1.2 : 0.4), 0, 100);
     }
     try {
-        recordLegacy("endeavour", "Crown Endeavour Complete — " + project.label,
-            "Tier " + completedTier + " finished in year " + year + ". " + summary + ".", { importance: 2 });
+        recordLegacy(isLegacy ? "legacy" : "endeavour",
+            (isLegacy ? "Crown Legacy Complete — " : "Crown Endeavour Complete — ") + project.label,
+            (isLegacy ? "The path is mastered. " : "Tier " + completedTier + " finished in year " + year + ". ") + summary + ".",
+            { importance: isLegacy ? 4 : 2 });
     } catch {
         // A chronicle failure must not undo a completed project.
     }
-    return { completed: project, tier: completedTier, effectsText: summary, work: active.lastWork };
+    if (isLegacy && areAllLegaciesComplete(endeavours)) {
+        state.morale = clamp(Number(state.morale) + 10, 0, 100);
+        if (state.politics && Number.isFinite(Number(state.politics.legitimacy))) {
+            state.politics.legitimacy = clamp(Number(state.politics.legitimacy) + 2, 0, 100);
+        }
+        try {
+            recordLegacy("legacy", "The Eternal Crown",
+                "All five Crown Legacies stand complete. The realm has become a story that outlives its sovereign.",
+                { importance: 5 });
+        } catch {
+            // The milestone is recorded once and must not block the completion.
+        }
+    }
+    return { completed: project, tier: completedTier, effectsText: summary, work: active.lastWork, legacy: isLegacy };
 }
 
 export function abandonEndeavour() {
@@ -489,7 +557,7 @@ export function getEndeavourSnapshot() {
     const paths = ENDEAVOUR_PATHS.map(path => {
         const completedInPath = path.projects.reduce((sum, project) => sum + (endeavours.completed[project.id] || 0), 0);
         const projects = path.projects.map(project => {
-            const status = projectStatus(project);
+            const status = projectStatus(project, path.id);
             const cost = projectCost(project, status.tier);
             const affordable = canAfford(cost);
             return {
@@ -509,10 +577,12 @@ export function getEndeavourSnapshot() {
             focus: path.focus,
             accent: path.accent,
             completed: completedInPath,
-            maximum: path.projects.length * ENDEAVOUR_TIER_LIMIT,
+            maximum: path.projects.reduce((sum, project) => sum + projectTierLimit(project), 0),
             projects
         };
     });
+    const legaciesCompleted = LEGACY_PROJECTS.reduce((sum, project) =>
+        sum + ((Number(endeavours.completed[project.id]) || 0) >= projectTierLimit(project) ? 1 : 0), 0);
     const funding = ENDEAVOUR_FUNDING[endeavours.active?.funding || 0];
     return {
         active: endeavours.active ? {
@@ -529,6 +599,9 @@ export function getEndeavourSnapshot() {
         modifiers,
         history: endeavours.history.slice(0, 12),
         totalCompleted: modifiers.completed,
-        tierLimit: ENDEAVOUR_TIER_LIMIT
+        tierLimit: ENDEAVOUR_TIER_LIMIT,
+        legaciesCompleted,
+        legaciesTotal: LEGACY_PROJECTS.length,
+        allLegacies: legaciesCompleted === LEGACY_PROJECTS.length
     };
 }

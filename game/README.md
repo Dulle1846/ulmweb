@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.13.4
-**Next development line:** 3.14.0-dev
+**Production version:** 3.14.0
+**Next development line:** 3.15.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -17,7 +17,7 @@
 8. [Named garrison and public health](docs/MILITARY_AND_PUBLIC_HEALTH.md) — named recruits, timed drill, warhorses and payroll, sanitation, outbreaks, healers, medicine and mortality.
 9. [Faith, culture and justice](docs/FAITH_AND_JUSTICE.md) — named clergy and judges, shrines, courts and prisons, festivals, pilgrimages, heresy, emergent crime, trials, legal codes and corruption.
 10. [Eternal deeds](docs/ETERNAL_DEEDS.md) — the repeatable post-ambition chronicle, its goals, rewards, stall protection and save compatibility.
-11. [Crown Endeavours](docs/CROWN_ENDEAVOURS.md) — five post-ambition paths, fifteen multi-stage projects, funding, named overseers, permanent realm modifiers and the 100-year player journeys.
+11. [Crown Endeavours](docs/CROWN_ENDEAVOURS.md) — five post-ambition paths, fifteen repeatable works, five one-time Crown Legacies, the Eternal Crown, funding, named overseers, permanent realm modifiers and the 100-year player journeys.
 12. [War front and white peace](docs/WAR_FRONT_AND_WHITE_PEACE.md) — bounded annual war fronts, named-garrison battles and white peace at war exhaustion 35.
 13. [Crown supply](docs/CROWN_SUPPLY.md) — grain contracts including the war granary, seasonal deliveries, commissary barter, paid waterworks, stone-house density, farm subsistence and garrison pay in kind, with the v3.13.1 journey measurements.
 14. [Deep playtest 3.13.4](docs/DEEP_PLAYTEST_3.13.4.md) — shared-simulation performance: four 100-year seeds, the full 4 × 3 matrix, exact caches, measured tick costs and remaining limits.

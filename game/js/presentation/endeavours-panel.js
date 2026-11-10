@@ -32,10 +32,14 @@ function activeCard(e) {
     const funding = e.fundingLevels.map(level =>
         `<button class="command-choice${level.id === e.active.funding ? " is-current" : ""}" data-command="endeavour-active-funding" data-value="${level.id}"><strong>${esc(level.label.toUpperCase())}</strong><small>${level.gold} gold / year · ×${level.multiplier}</small></button>`
     ).join("");
+    const activeLimit = e.active.project?.tierLimit || e.tierLimit;
+    const activeRibbon = e.active.project?.legacy
+        ? "CROWN LEGACY UNDERWAY"
+        : "CROWN WORK UNDERWAY · TIER " + e.active.tier + " / " + activeLimit;
     const reassign = e.active.overseerPresent ? "" :
         `<div class="command-inline"><select id="endeavour-active-overseer" aria-label="Appoint a replacement overseer"><option value="">The post is vacant…</option>${e.candidates.map(c => `<option value="${esc(c.personId)}">${esc(c.name)} · skill ${c.skill}</option>`).join("")}</select><button data-command="endeavour-reassign">APPOINT OVERSEER</button></div>`;
     return `<div class="endeavour-active">
-        <div class="command-ribbon">CROWN WORK UNDERWAY · TIER ${e.active.tier} / ${e.tierLimit}</div>
+        <div class="command-ribbon">${esc(activeRibbon)}</div>
         <h3>${esc(e.active.project?.label || "Crown work")}</h3>
         <p>${esc(e.active.project?.description || "")}</p>
         <div class="command-summary">
@@ -54,12 +58,18 @@ function activeCard(e) {
 function pathCards(e) {
     return e.paths.map(path => {
         const projects = path.projects.map(project => {
-            const status = project.maxed ? "MASTERED" : project.locked ? "LOCKED" : e.active ? "WORK UNDERWAY" : !project.affordable ? "STORES TOO LOW" : "READY";
+            const status = project.maxed ? "MASTERED" : project.locked
+                ? (project.legacy ? "PATH MASTERY REQUIRED" : "LOCKED")
+                : e.active ? "WORK UNDERWAY" : !project.affordable ? "STORES TOO LOW" : project.legacy ? "LEGACY READY" : "READY";
+            const tierLabel = project.legacy ? "LEGACY" : "TIER";
+            const requirement = project.legacy
+                ? " · requires all three works at tier 5"
+                : project.requires ? " · requires " + esc(project.requires) : "";
             return `<article class="command-policy endeavour-project" data-endeavour-project="${esc(project.id)}" data-endeavour-status="${esc(status.toLowerCase())}">
-                <div><span class="command-ribbon">${esc(status)} · TIER ${project.tier} / ${e.tierLimit} · ${project.completed} COMPLETE</span>
+                <div><span class="command-ribbon">${esc(status)} · ${tierLabel} ${project.tier} / ${project.tierLimit} · ${project.completed} COMPLETE</span>
                 <strong>${esc(project.label)}</strong><p>${esc(project.description)}</p>
-                <small>${costLabel(project.cost)} · ${project.required} work · ${esc(project.effectsText)}${project.requires ? " · requires " + esc(project.requires) : ""}</small></div>
-                <button data-command="endeavour-start" data-value="${esc(project.id)}"${project.startable ? "" : " disabled"}>BEGIN · TIER ${project.tier}</button>
+                <small>${costLabel(project.cost)} · ${project.required} work · ${esc(project.effectsText)}${requirement}</small></div>
+                <button data-command="endeavour-start" data-value="${esc(project.id)}"${project.startable ? "" : " disabled"}>${project.legacy ? "BEGIN LEGACY" : "BEGIN · TIER " + project.tier}</button>
             </article>`;
         }).join("");
         return `<section class="endeavour-path" style="--endeavour-accent:${esc(path.accent)}" data-endeavour-path="${esc(path.id)}">
@@ -79,8 +89,9 @@ export function renderEndeavoursPanel(funding = 1) {
     const history = e.history.length ? e.history.map(entry =>
         `<article class="command-history"><strong>YEAR ${entry.year} · ${esc(entry.kind.toUpperCase())} · ${esc(entry.label)}</strong><p>Tier ${entry.tier} · ${esc(entry.overseerName)}${entry.effectsText ? " · " + esc(entry.effectsText) : ""}</p></article>`
     ).join("") : '<p class="command-note">The crown has not yet completed a work. The first stone is still uncut.</p>';
-    return intro("THE LONG WORK OF THE CROWN", "Crown endeavours", "The thirteen ambitions are told; this is what a mature realm does next. Choose a path, name a resident as overseer and commit real stores. Every completed tier permanently changes a live system, and every project can be renewed up to five times at rising cost.") +
-        '<div class="command-summary"><div><small>WORKS COMPLETE</small><strong>' + e.totalCompleted + '</strong></div><div><small>ACTIVE WORK</small><strong>' + esc(e.active?.project?.label || "NONE") + '</strong></div><div><small>PATHS</small><strong>' + e.paths.length + '</strong></div><div><small>TREASURY</small><strong>' + number(gold) + 'G</strong></div></div>' +
+    return intro("THE LONG WORK OF THE CROWN", "Crown endeavours", "The thirteen ambitions are told; this is what a mature realm does next. Choose a path, name a resident as overseer and commit real stores. Every completed tier permanently changes a live system, and every project can be renewed up to five times at rising cost. Each path ends in a one-time Crown Legacy, unlocked only when all three of its works reach tier 5. Complete all five legacies to claim the Eternal Crown.") +
+        '<div class="command-summary"><div><small>WORKS COMPLETE</small><strong>' + e.totalCompleted + '</strong></div><div><small>CROWN LEGACIES</small><strong>' + e.legaciesCompleted + ' / ' + e.legaciesTotal + '</strong></div><div><small>ACTIVE WORK</small><strong>' + esc(e.active?.project?.label || "NONE") + '</strong></div><div><small>TREASURY</small><strong>' + number(gold) + 'G</strong></div></div>' +
+        (e.allLegacies ? '<div class="command-ribbon">THE ETERNAL CROWN · ALL FIVE LEGACIES COMPLETE</div>' : '') +
         '<div class="command-section-title">LIVE CROWN EFFECTS</div>' + effectGrid(e.modifiers) +
         '<div class="command-section-title">THE WORK IN HAND</div>' + activeCard(e) +
         '<div class="command-section-title">APPOINT AN OVERSEER &amp; SET THE BUDGET</div><div class="command-inline"><select id="endeavour-overseer-select" aria-label="Choose an overseer for the next crown work"><option value="">Let the crown choose the best available resident…</option>' + overseerOptions + '</select></div><div class="command-choice-grid">' + fundingButtons + '</div><p class="command-note">The overseer adds their skill to the annual work. The budget is paid from the treasury each year; if the treasury cannot pay, progress slows but does not stop. A vacant post also slows the work.</p>' +
