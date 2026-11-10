@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.14.0`
+**Current production version:** `3.14.1`
 **Next development line:** `3.15.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -37,6 +37,16 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.14.1 — Save/Load Fidelity
+
+**Released:** 2026-11-10
+
+**Scope:** Closes the first full save/load roundtrip audit after 120 years, including the Crown Legacies. The audit found and fixed three persistence defects without a save-schema bump.
+
+**Fixes:** Crown Supply history now preserves each settlement tick. Loading a realm preserves saved civic happiness, loyalty, health, immunity and census ticks instead of recalculating them from a partially rebuilt settlement. Entity restoration preserves a saved `null` aged-year and a missing immunity value instead of inventing year 1 or zero. Trade-history records now carry their realm id, and legacy null justice/optional history fields normalize without synthetic values.
+
+**Verification:** `npm test` **736/736**; focused Crown Supply, Diplomacy, Justice and Population tests **47/47**. The Merchant journey over 120 years reached **48,008 ticks**, 42 residents, **16/16 Crown works**, **1/5 Crown Legacies** including The Crown Treasury, and 33 legacy entries. A UI save, full page reload and Continue load restored an exact semantic save snapshot: all 65 compared top-level fields, every live entity, homes and the authoritative population register matched, with no page or console errors. The loaded Endeavours panel showed 5 paths, 20 projects, 1 legacy per path, and scroll position 0. The comparison canonicalizes only documented derived caches (carrier paths, needs history/timestamps, visual anchors and warehouse stock summaries).
 
 ### 3.14.0 — Crown Legacies
 

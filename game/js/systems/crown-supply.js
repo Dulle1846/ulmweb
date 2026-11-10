@@ -68,6 +68,7 @@ function normalizeHistoryEntry(entry) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
     return {
         year: integer(entry.year, 0),
+        tick: integer(entry.tick, 0),
         grainLevel: integer(entry.grainLevel, 0, 4),
         grainBought: integer(entry.grainBought, 0, 100000),
         grainCost: integer(entry.grainCost, 0, 100000),

@@ -511,9 +511,11 @@ function recomputeTotals(register, year) {
 // Synchronizes the civic register with the authoritative entities. This is the
 // only place that scans all citizens; callers invoke it at founding, on load,
 // and once per realm year.
-export function synchronizePopulationRegister(register = state.population, { advance = false, formHouseholds = false, emigrate = false } = {}) {
+export function synchronizePopulationRegister(register = state.population, { advance = false, formHouseholds = false, emigrate = false, preserveCivicScores = false } = {}) {
     const year = Math.max(1, Math.floor(Number(state.year) || 1));
     const normalized = normalizePopulationState(register);
+    const preservedTotalsTick = preserveCivicScores ? Math.max(0, Math.floor(Number(normalized.totals?.tick) || 0)) : null;
+    const preservedCivicIds = new Set();
     const houses = completedHouses();
     const houseByKey = new Map(houses.map(house => [`house:${house.x}:${house.y}`, housingCapacityFor(house.type)]));
     const citizenship = state.entities
@@ -547,7 +549,22 @@ export function synchronizePopulationRegister(register = state.population, { adv
         const talent = talentFor(person, profession.label);
         const faith = identityFaith();
         const tradition = identityTradition();
-        const scores = baseCivicScores(entity, person, profession, health);
+        // Loading a save must not recalculate civic scores from a partially
+        // rebuilt world. Keep the persisted values until the next annual census;
+        // the security bonus is already included in those saved values.
+        const preservedCivic = preserveCivicScores && previous && Number.isFinite(Number(previous.happiness)) && Number.isFinite(Number(previous.loyalty))
+            ? { happiness: clamp(Math.round(Number(previous.happiness)), 0, 100), loyalty: clamp(Math.round(Number(previous.loyalty)), 0, 100) }
+            : null;
+        const preservedHealth = preserveCivicScores && previous && Number.isFinite(Number(previous.healthScore)) && Number.isFinite(Number(previous.immunity))
+            ? {
+                healthStatus: ["healthy", "wounded", "ill"].includes(previous.healthStatus) ? previous.healthStatus : health.status,
+                healthScore: clamp(Math.round(Number(previous.healthScore)), 0, 100),
+                immunity: clamp(Math.round(Number(previous.immunity)), 0, 100)
+            }
+            : null;
+        if (preservedCivic) preservedCivicIds.add(id);
+        const scores = preservedCivic || baseCivicScores(entity, person, profession, health);
+        const restoredHealth = preservedHealth || { healthStatus: health.status, healthScore: health.score, immunity: health.immunity };
         const professionHistory = [...(previous?.professionHistory || [])];
         if (previous?.profession && previous.profession !== profession.label && professionHistory.length < CITIZEN_HISTORY_LIMIT) {
             professionHistory.push({ year, from: previous.profession, to: profession.label });
@@ -570,7 +587,7 @@ export function synchronizePopulationRegister(register = state.population, { adv
             role: person.role, origin: originFor(entity, person, previous), householdId: entity.householdId || null,
             profession: profession.label, status: profession.status,
             faithId: faith.id, faith: faith.label, traditionId: tradition.id, tradition: tradition.label,
-            healthStatus: health.status, healthScore: health.score, immunity: health.immunity,
+            healthStatus: restoredHealth.healthStatus, healthScore: restoredHealth.healthScore, immunity: restoredHealth.immunity,
             happiness: scores.happiness, loyalty: scores.loyalty, talent,
             wealthShare: 0, householdWealth: 0,
             joinedYear: previous?.joinedYear || Math.max(1, Math.min(year, Number(person.bornAtYear) || year)),
@@ -649,8 +666,10 @@ export function synchronizePopulationRegister(register = state.population, { adv
         for (const citizen of members) {
             citizen.householdWealth = household.wealth;
             citizen.wealthShare = Math.round(share * 100) / 100;
-            citizen.happiness = clamp(citizen.happiness + Math.round(security * 0.6), 0, 100);
-            citizen.loyalty = clamp(citizen.loyalty + Math.round(security * 0.5), 0, 100);
+            if (!preservedCivicIds.has(citizen.id)) {
+                citizen.happiness = clamp(citizen.happiness + Math.round(security * 0.6), 0, 100);
+                citizen.loyalty = clamp(citizen.loyalty + Math.round(security * 0.5), 0, 100);
+            }
         }
         household.loyalty = members.length ? Math.round(members.reduce((sum, citizen) => sum + citizen.loyalty, 0) / members.length) : 0;
         household.happiness = members.length ? Math.round(members.reduce((sum, citizen) => sum + citizen.happiness, 0) / members.length) : 0;
@@ -662,6 +681,7 @@ export function synchronizePopulationRegister(register = state.population, { adv
         }
     }
     normalized.totals = recomputeTotals(normalized, year);
+    if (preservedTotalsTick !== null) normalized.totals.tick = preservedTotalsTick;
     if (advance) {
         normalized.history = [...(normalized.history || []), {
             year, population: normalized.totals.population, households: normalized.totals.households,
@@ -674,14 +694,14 @@ export function synchronizePopulationRegister(register = state.population, { adv
     return normalized;
 }
 
-export function initializePopulationRegister({ advance = false } = {}) {
+export function initializePopulationRegister({ advance = false, preserveCivicScores = false } = {}) {
     const year = Math.max(1, Math.floor(Number(state.year) || 1));
     const register = normalizePopulationState(state.population);
     state.population = register;
-    const synchronized = synchronizePopulationRegister(register, { advance, formHouseholds: false, emigrate: false });
+    const synchronized = synchronizePopulationRegister(register, { advance, preserveCivicScores, formHouseholds: false, emigrate: false });
     state.population = synchronized;
     synchronized.lastCensusYear = Math.max(synchronized.lastCensusYear, year);
-    synchronized.lastCensusTick = Math.max(0, Math.floor(Number(state.tick) || 0));
+    if (!preserveCivicScores) synchronized.lastCensusTick = Math.max(0, Math.floor(Number(state.tick) || 0));
     return synchronized;
 }
 

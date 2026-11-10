@@ -658,10 +658,10 @@ function loadSnapshotIntoGame(profile,snapshot){
             rotation:Number.isFinite(dto.rotation)?dto.rotation:0,footprintScale:Number.isFinite(dto.footprintScale)?dto.footprintScale:1,interior:dto.interior&&typeof dto.interior==="object"?{...dto.interior}:null,roomFurniture:dto.roomFurniture&&typeof dto.roomFurniture==="object"&&!Array.isArray(dto.roomFurniture)?normalizeRoomFurniture(dto.roomFurniture):null,layout:dto.layout&&typeof dto.layout==="object"?normalizeLayout(dto.type,dto.layout,1,1):null,
             construction:dto.construction&&typeof dto.construction==="object"?JSON.parse(JSON.stringify(dto.construction)):null,inventory:dto.inventory&&typeof dto.inventory==="object"?JSON.parse(JSON.stringify(dto.inventory)):null,warehouse:dto.warehouse&&typeof dto.warehouse==="object"?JSON.parse(JSON.stringify(dto.warehouse)):null,field:dto.field&&typeof dto.field==="object"?{...dto.field}:null,pannage:dto.pannage&&typeof dto.pannage==="object"?JSON.parse(JSON.stringify(dto.pannage)):null,civicOrigin:dto.civicOrigin||null,
             visualState:dto.visualState,anchor:dto.anchor||{x:dto.x,y:dto.y},home:dto.home||{x:dto.x,y:dto.y},
-            illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,immunity:Number.isFinite(Number(dto.immunity))?Math.max(0,Math.min(100,Number(dto.immunity))):0,isHealer:Boolean(dto.isHealer),healthRole:dto.healthRole?String(dto.healthRole).slice(0,24):null,military:dto.military&&typeof dto.military==="object"&&!Array.isArray(dto.military)?JSON.parse(JSON.stringify(dto.military)):null,
+            illnessUntilTick:dto.illnessUntilTick,illnessStartedTick:dto.illnessStartedTick,illnessSeverity:dto.illnessSeverity,immunity:dto.immunity===undefined?undefined:(Number.isFinite(Number(dto.immunity))?Math.max(0,Math.min(100,Number(dto.immunity))):0),isHealer:Boolean(dto.isHealer),healthRole:dto.healthRole?String(dto.healthRole).slice(0,24):null,military:dto.military&&typeof dto.military==="object"&&!Array.isArray(dto.military)?JSON.parse(JSON.stringify(dto.military)):null,
             targetX:dto.targetX??dto.x,targetY:dto.targetY??dto.y,velocityX:dto.velocityX||0,velocityY:dto.velocityY||0,
             routinePhase:dto.routinePhase??4,routineTimer:dto.routineTimer??30,movePause:dto.movePause||0,
-            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),isRoyalFamily:Boolean(dto.isRoyalFamily),isDragon:Boolean(dto.isDragon),creature:dto.creature&&typeof dto.creature==="object"?dto.creature:null,moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:state.year
+            job:dto.job,jobRefreshTimer:dto.jobRefreshTimer??30,isKing:Boolean(dto.isKing),isRoyalFamily:Boolean(dto.isRoyalFamily),isDragon:Boolean(dto.isDragon),creature:dto.creature&&typeof dto.creature==="object"?dto.creature:null,moraleMod:dto.moraleMod||0,tint:dto.tint||0,householdId:dto.householdId||null,lastAgedYear:dto.lastAgedYear===null?null:(Number.isFinite(dto.lastAgedYear)?dto.lastAgedYear:Math.max(1,Math.floor(Number(snapshot.year)||1)))
         });
         restored.push(entity);
     }
@@ -748,7 +748,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     // Older saves have no register: derive one from the restored households
     // and person profiles. New saves keep their origins, wealth and histories.
     state.population=normalizePopulationState(snapshot.population);
-    initializePopulationRegister();
+    initializePopulationRegister({preserveCivicScores:true});
     state.market=snapshot.market||createMarketState();
     state.court=normalizeCourtState(snapshot.court);
     state.diplomacy=normalizeDiplomacySnapshot(snapshot.diplomacy);

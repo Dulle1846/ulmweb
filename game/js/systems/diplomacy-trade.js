@@ -52,7 +52,7 @@ export function recordTradeInfluence(diplomacy, partnerId, trade = {}) {
 
     const history = Array.isArray(realm.history) ? realm.history : [];
     history.unshift({
-        year, tick, kind:"trade",
+        year, tick, kind:"trade", realmId:realm.id,
         summary:(direction === "buy" ? "Bought " : "Sold ") + amount + " " + resource + " (" + Math.round(gold) + " gold)"
     });
     if (history.length > 16) history.length = 16;

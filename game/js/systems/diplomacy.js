@@ -32,11 +32,12 @@ function normalizeHistoryEntry(entry) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
     const summary = String(entry.summary || "").trim().slice(0, 160);
     if (!summary) return null;
+    const realmId=entry.realmId ? String(entry.realmId).slice(0, 40) : null;
     return {
         year:integer(entry.year, 0),
         tick:integer(entry.tick, 0),
         kind:String(entry.kind || "realm").slice(0, 24),
-        realmId:entry.realmId ? String(entry.realmId).slice(0, 40) : null,
+        ...(realmId ? {realmId} : {}),
         summary
     };
 }

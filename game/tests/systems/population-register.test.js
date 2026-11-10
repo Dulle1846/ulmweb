@@ -293,6 +293,31 @@ test("the crown household stays on the keep when the sovereign moves", () => {
     assert.equal(normalized.households[CROWN_HOUSEHOLD_ID].y, 42);
 });
 
+test("loading a saved register preserves civic scores and its census tick", () => {
+    const { first } = createRealm();
+    const householdId = state.population.citizens[first.personId].householdId;
+    const members = [...state.population.households[householdId].memberIds];
+    for (const id of members) {
+        state.population.citizens[id].happiness = 23;
+        state.population.citizens[id].loyalty = 67;
+        state.population.citizens[id].healthScore = 42;
+        state.population.citizens[id].immunity = 13;
+    }
+    state.population.households[householdId].happiness = 23;
+    state.population.households[householdId].loyalty = 67;
+    state.population.lastCensusTick = 777;
+    state.population.totals.tick = 555;
+    const reloaded = initializePopulationRegister({ preserveCivicScores: true });
+    assert.equal(reloaded.citizens[first.personId].happiness, 23);
+    assert.equal(reloaded.citizens[first.personId].loyalty, 67);
+    assert.equal(reloaded.citizens[first.personId].healthScore, 42);
+    assert.equal(reloaded.citizens[first.personId].immunity, 13);
+    assert.equal(reloaded.households[householdId].happiness, 23);
+    assert.equal(reloaded.households[householdId].loyalty, 67);
+    assert.equal(reloaded.lastCensusTick, 777);
+    assert.equal(reloaded.totals.tick, 555);
+});
+
 test("dead residents disappear from the next civic census and from their household", () => {
     const { first } = createRealm();
     const householdId = state.population.citizens[first.personId].householdId;

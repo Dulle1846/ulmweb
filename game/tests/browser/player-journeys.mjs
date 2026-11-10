@@ -7,12 +7,14 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { chromium } from "playwright";
 
 const BASE = process.env.E2E_BASE_URL || "http://127.0.0.1:3100";
 const JOURNEY = String(process.env.JOURNEY || "").toLowerCase();
 const YEARS = Math.max(100, Number(process.env.JOURNEY_YEARS || 100));
 const SEED = Number(process.env.JOURNEY_SEED || 20261108);
+const SAVE_LOAD = /^(1|true|yes)$/i.test(String(process.env.JOURNEY_SAVE_LOAD || ""));
 const root = process.cwd();
 const outDir = resolve(root, "..", "artifacts", "journeys");
 await mkdir(outDir, { recursive: true });
@@ -146,6 +148,7 @@ async function stateSnapshot() {
             endeavours: {
                 totalCompleted: endeavours.totalCompleted,
                 pathCompleted: endeavours.paths.find(path => path.id === pathId)?.completed || 0,
+                legaciesCompleted: endeavours.legaciesCompleted,
                 active: endeavours.active ? { project: endeavours.active.project?.label, tier: endeavours.active.tier, percent: endeavours.active.percent } : null,
                 modifiers: endeavours.modifiers
             },
@@ -159,6 +162,178 @@ async function stateSnapshot() {
             crownSupply: getCrownSupplySnapshot()
         };
     }, { pathId: journey.path });
+}
+
+async function readLocalSaveSnapshot() {
+    return page.evaluate(async () => {
+        const [{ state }, { readLocalSave }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/core/persistence.js")
+        ]);
+        const save = readLocalSave(state.activeProfileId);
+        if (!save) return null;
+        return {
+            version: save.version,
+            savedAt: save.savedAt,
+            migratedFrom: save.migratedFrom ?? null,
+            restoredFromBackup: Boolean(save.restoredFromBackup),
+            snapshot: save.snapshot
+        };
+    });
+}
+
+const LEGACY_PROJECT_IDS = Object.freeze(["living-city", "unbroken-watch", "concord-of-crowns", "crown-treasury", "eternal-library"]);
+
+function countCompletedWorks(snapshot) {
+    return Object.values(snapshot?.endeavours?.completed || {}).reduce((sum, value) => sum + Math.max(0, Math.floor(Number(value) || 0)), 0);
+}
+
+function countCompletedLegacies(snapshot) {
+    return LEGACY_PROJECT_IDS.filter(id => (Number(snapshot?.endeavours?.completed?.[id]) || 0) >= 1).length;
+}
+
+function summarizeSavedRealm(save) {
+    const snapshot = save?.snapshot || {};
+    const entities = Array.isArray(snapshot.entities) ? snapshot.entities : [];
+    return {
+        version: save?.version ?? null,
+        savedAt: save?.savedAt ?? null,
+        migratedFrom: save?.migratedFrom ?? null,
+        restoredFromBackup: Boolean(save?.restoredFromBackup),
+        tick: Number(snapshot.tick) || 0,
+        year: Number(snapshot.year) || 0,
+        population: Number(snapshot.totalPopulation) || 0,
+        entityCount: entities.length,
+        aliveEntities: entities.filter(entity => entity && !entity.dead).length,
+        completedWorks: countCompletedWorks(snapshot),
+        completedLegacies: countCompletedLegacies(snapshot),
+        crownTreasury: Number(snapshot.endeavours?.completed?.["crown-treasury"] || 0),
+        legacyEntries: Array.isArray(snapshot.legacy?.entries) ? snapshot.legacy.entries.length : null,
+        resources: snapshot.resources ? { ...snapshot.resources } : null
+    };
+}
+
+function registerHomes(snapshot) {
+    const homes = new Map();
+    for (const [id, citizen] of Object.entries(snapshot?.population?.citizens || {})) {
+        const match = /^house:(\d+):(\d+)$/.exec(String(citizen?.householdId || ""));
+        if (!match) continue;
+        homes.set(id, { x: Number(match[1]), y: Number(match[2]), householdId: citizen.householdId });
+    }
+    return homes;
+}
+
+function countHomeMismatches(snapshot) {
+    const homes = registerHomes(snapshot);
+    return (snapshot?.entities || []).filter(entity => {
+        if (!entity || entity.dead) return false;
+        const home = homes.get(String(entity.personId || entity.id));
+        if (!home) return false;
+        return entity.householdId !== home.householdId ||
+            entity.home?.x !== home.x || entity.home?.y !== home.y;
+    }).length;
+}
+
+function countAnchorMismatches(snapshot) {
+    const homes = registerHomes(snapshot);
+    return (snapshot?.entities || []).filter(entity => {
+        if (!entity || entity.dead) return false;
+        const home = homes.get(String(entity.personId || entity.id));
+        if (!home) return false;
+        return entity.anchor?.x !== home.x || entity.anchor?.y !== home.y;
+    }).length;
+}
+
+function comparableSaveSnapshot(snapshot) {
+    const sourceEntities = Array.isArray(snapshot?.entities) ? snapshot.entities : [];
+    const { eventLog, eventSequence, entities, city, ...rest } = snapshot || {};
+    const comparableCity = city && typeof city === "object" ? JSON.parse(JSON.stringify(city)) : city;
+    // Carrier paths, the needs chart and warehouse stock summaries are rebuilt
+    // from live entities; they are deliberately not part of the durable save
+    // contract. The underlying stock remains compared through inventories.
+    if (comparableCity?.needs) {
+        delete comparableCity.needs.history;
+        delete comparableCity.needs.lastTick;
+        delete comparableCity.needs.summary?.population;
+        delete comparableCity.needs.summary?.firewoodStock;
+        delete comparableCity.needs.summary?.waterStock;
+    }
+    if (comparableCity?.services) delete comparableCity.services.lastTick;
+    for (const carrier of comparableCity?.logistics?.carriers || []) delete carrier.pathVersion;
+    const homes = registerHomes(snapshot);
+    return {
+        ...rest,
+        city: comparableCity,
+        entities: sourceEntities
+            .filter(entity => entity && !entity.dead)
+            .map(entity => {
+                const { workplaceIndex, ...copy } = entity;
+                const workplace = Number.isInteger(workplaceIndex) ? sourceEntities[workplaceIndex] : null;
+                const home = homes.get(String(entity.personId || entity.id));
+                return {
+                    ...copy,
+                    workplaceId: workplace?.id ?? null,
+                    // The anchor is a visual/occupancy hint. The citizen's
+                    // household is authoritative and is compared separately.
+                    ...(home ? { householdId: home.householdId, home: { x: home.x, y: home.y }, anchor: { x: home.x, y: home.y } } : {})
+                };
+            })
+    };
+}
+
+function snapshotDifferenceSnippet(beforeValue, afterValue) {
+    let beforeText;
+    let afterText;
+    try {
+        beforeText = JSON.stringify(beforeValue);
+        afterText = JSON.stringify(afterValue);
+    } catch {
+        return null;
+    }
+    if (typeof beforeText !== "string" || typeof afterText !== "string") return null;
+    let index = 0;
+    const limit = Math.min(beforeText.length, afterText.length);
+    while (index < limit && beforeText[index] === afterText[index]) index++;
+    return {
+        at: index,
+        before: beforeText.slice(Math.max(0, index - 80), index + 220),
+        after: afterText.slice(Math.max(0, index - 80), index + 220)
+    };
+}
+
+function compareSavedSnapshots(before, after) {
+    const left = comparableSaveSnapshot(before);
+    const right = comparableSaveSnapshot(after);
+    const keys = [...new Set([...Object.keys(left), ...Object.keys(right)])].sort();
+    const changedKeys = keys.filter(key => !isDeepStrictEqual(left[key], right[key]));
+    return {
+        exactMatch: changedKeys.length === 0,
+        keysCompared: keys.length,
+        changedKeys,
+        differences: changedKeys.slice(0, 8).map(key => ({
+            key,
+            ...snapshotDifferenceSnippet(left[key], right[key])
+        }))
+    };
+}
+
+function comparableEventLog(snapshot) {
+    return (snapshot?.eventLog || []).filter(entry => entry && entry.kind !== "system");
+}
+
+function compareEventLogs(before, after) {
+    const left = comparableEventLog(before);
+    const right = comparableEventLog(after);
+    const exact = isDeepStrictEqual(left, right);
+    // Saving and loading append system entries. The 100-entry chronicle then
+    // evicts exactly one oldest entry; no player-visible record may be lost.
+    const boundedEviction = !exact && left.length === right.length + 1 && isDeepStrictEqual(left.slice(0, -1), right);
+    return {
+        before: left.length,
+        after: right.length,
+        preserved: exact || boundedEviction,
+        boundedEviction: boundedEviction ? 1 : 0
+    };
 }
 
 async function advanceYears(years) {
@@ -704,7 +879,100 @@ const narrowLayout = await page.evaluate(() => ({
 }));
 await page.setViewportSize({ width: 1600, height: 1000 });
 
-const final = await stateSnapshot();
+let final = await stateSnapshot();
+let preSaveFinal = final;
+let saveLoad = null;
+let loadedFile = null;
+if (SAVE_LOAD) {
+    // Save through the shipped HUD, reload the page so the in-memory realm is
+    // gone, then load through the start screen. Pause inside the same task as
+    // the load click so no simulation tick can slip between load and compare.
+    await closePanel();
+    await pauseGame();
+    await dismiss();
+    await page.evaluate(() => {
+        const status = document.querySelector("#status-message");
+        if (status) status.textContent = "";
+    });
+    await page.locator("#save-btn").click();
+    await page.waitForFunction(() => document.querySelector("#status-message")?.textContent.includes("Realm saved"), null, { timeout: 10000 });
+    const beforeSave = await readLocalSaveSnapshot();
+    assert.ok(beforeSave, "the save button must write a readable local save");
+    preSaveFinal = final;
+    const beforeSummary = summarizeSavedRealm(beforeSave);
+
+    await page.reload({ waitUntil: "networkidle", timeout: 60000 });
+    await page.locator("#start-screen").waitFor({ state: "visible", timeout: 30000 });
+    await page.waitForFunction(() => {
+        const button = document.querySelector("#continue-game-btn");
+        return Boolean(button && !button.disabled && (button.textContent || "").includes("CONTINUE"));
+    }, null, { timeout: 15000 });
+    await page.evaluate(() => {
+        const status = document.querySelector("#status-message");
+        if (status) status.textContent = "";
+        document.querySelector("#continue-game-btn").click();
+        const pause = document.querySelector("#pause-btn");
+        if (pause && !pause.classList.contains("is-paused")) pause.click();
+    });
+    await page.waitForFunction(() => {
+        const message = document.querySelector("#status-message")?.textContent || "";
+        return message.includes("Loaded realm") || message.includes("Load failed") || message.includes("No valid saved realm");
+    }, null, { timeout: 15000 });
+    const loadStatus = (await page.locator("#status-message").textContent() || "").trim();
+    assert.ok(loadStatus.includes("Loaded realm"), "the continue button must load the save; actual status: " + loadStatus);
+    const pausedAfterLoad = await page.evaluate(async () => (await import("./js/core/state.js")).state.isPaused);
+    assert.equal(pausedAfterLoad, true, "the load pause guard must stop the simulation before comparison");
+    const loadedState = await stateSnapshot();
+
+    // A second save turns the live loaded state back into the game's own
+    // canonical DTO. It is captured before the save's own chronicle entry is
+    // added, just like the pre-save snapshot.
+    await page.locator("#save-btn").click();
+    await page.waitForFunction(() => document.querySelector("#status-message")?.textContent.includes("Realm saved"), null, { timeout: 10000 });
+    const afterSave = await readLocalSaveSnapshot();
+    assert.ok(afterSave, "the loaded realm must save again into a readable local save");
+    const afterSummary = summarizeSavedRealm(afterSave);
+    const comparison = compareSavedSnapshots(beforeSave.snapshot, afterSave.snapshot);
+    const eventLogComparison = compareEventLogs(beforeSave.snapshot, afterSave.snapshot);
+    const eventSequenceDelta = Number(afterSave.snapshot.eventSequence || 0) - Number(beforeSave.snapshot.eventSequence || 0);
+
+    await openPanel("endeavours");
+    await page.waitForTimeout(250);
+    loadedFile = resolve(outDir, `${JOURNEY}-save-load-1600.png`);
+    await page.screenshot({ path: loadedFile });
+    const loadedLayout = await page.evaluate(({ completedWorks, completedLegacies }) => ({
+        overflow: document.documentElement.scrollWidth > innerWidth + 1,
+        modalVisible: (() => { const element = document.querySelector("#command-modal"); if (!element) return false; const style = getComputedStyle(element); const rect = element.getBoundingClientRect(); return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0; })(),
+        panelTitle: document.querySelector("#command-panel-content .command-panel-intro h3")?.textContent || null,
+        paths: document.querySelectorAll("[data-endeavour-path]").length,
+        projects: document.querySelectorAll("[data-endeavour-project]").length,
+        legacies: document.querySelectorAll('[data-endeavour-project="living-city"]').length,
+        completedWorks,
+        completedLegacies,
+        panelScrollTop: document.querySelector("#command-panel-content")?.scrollTop ?? 0
+    }), { completedWorks: loadedState.endeavours.totalCompleted, completedLegacies: loadedState.endeavours.legaciesCompleted });
+    final = await stateSnapshot();
+    saveLoad = {
+        before: beforeSummary,
+        after: afterSummary,
+        loadStatus,
+        pausedAfterLoad,
+        completedWorksBefore: loadedState.endeavours.totalCompleted,
+        eventLog: eventLogComparison,
+        eventSequenceDelta,
+        homeMismatches: {
+            before: countHomeMismatches(beforeSave.snapshot),
+            after: countHomeMismatches(afterSave.snapshot)
+        },
+        anchorMismatches: {
+            before: countAnchorMismatches(beforeSave.snapshot),
+            after: countAnchorMismatches(afterSave.snapshot)
+        },
+        comparison,
+        layout: loadedLayout,
+        screenshot: loadedFile
+    };
+}
 const report = {
     journey: JOURNEY,
     label: journey.label,
@@ -717,15 +985,17 @@ const report = {
     tickCostMs: Math.round(blocks.reduce((sum, block) => sum + block.elapsed, 0) / Math.max(1, final.tick) * 1000) / 1000,
     initial,
     final,
+    preSaveFinal,
+    saveLoad,
     blocks,
-    layouts: { desktop: desktopLayout, narrow: narrowLayout },
-    screenshots: [desktopFile, narrowFile],
+    layouts: { desktop: desktopLayout, narrow: narrowLayout, ...(saveLoad?.layout ? { loaded: saveLoad.layout } : {}) },
+    screenshots: [desktopFile, narrowFile, ...(loadedFile ? [loadedFile] : [])],
     pageErrors,
     consoleErrors,
     findings: []
 };
 await writeFile(resolve(outDir, `${JOURNEY}.json`), JSON.stringify(report, null, 2));
-console.log(JSON.stringify({ journey: JOURNEY, final, layouts: report.layouts, screenshots: report.screenshots, pageErrors, consoleErrors }, null, 2));
+console.log(JSON.stringify({ journey: JOURNEY, final, saveLoad, layouts: report.layouts, screenshots: report.screenshots, pageErrors, consoleErrors }, null, 2));
 await browser.close();
 
 const failures = [];
@@ -756,6 +1026,27 @@ if (!(Number(final.crownSupply?.waterworksLevel) > 0)) failures.push("no public 
 if (!(Number(final.crownSupply?.grainLevel) > 0)) failures.push("no grain contract was opened");
 if (JOURNEY === "warlord" && final.military.soldiers < 8) failures.push("the warlord ended with fewer than eight soldiers: " + final.military.soldiers);
 if (JOURNEY === "warlord" && Number(final.crownSupply?.reserveYears) < 2) failures.push("the warlord granary covers fewer than two years: " + final.crownSupply?.reserveYears);
+if (SAVE_LOAD) {
+    if (!saveLoad) failures.push("the save/load round trip did not finish");
+    else {
+        if (saveLoad.before.completedWorks !== 16) failures.push("the pre-save realm did not hold all sixteen Crown works: " + saveLoad.before.completedWorks);
+        if (saveLoad.before.crownTreasury !== 1) failures.push("the Crown Treasury legacy was not completed before saving");
+        if (saveLoad.before.completedLegacies !== 1) failures.push("the pre-save realm did not hold exactly one Crown Legacy: " + saveLoad.before.completedLegacies);
+        if (saveLoad.after.completedWorks !== 16) failures.push("the loaded realm lost Crown works: " + saveLoad.after.completedWorks);
+        if (saveLoad.after.crownTreasury !== 1) failures.push("the loaded realm lost the Crown Treasury legacy");
+        if (saveLoad.after.completedLegacies !== 1) failures.push("the loaded realm did not restore exactly one Crown Legacy: " + saveLoad.after.completedLegacies);
+        if (!saveLoad.comparison.exactMatch) failures.push("save/load changed snapshot fields: " + saveLoad.comparison.changedKeys.join(", "));
+        if (!saveLoad.eventLog.preserved) failures.push("save/load changed the non-system chronicle");
+        if (!(saveLoad.eventSequenceDelta >= 1)) failures.push("the loaded realm did not record its load event");
+        if (saveLoad.homeMismatches.after !== 0) failures.push("loaded entities do not agree with the restored population register on their homes");
+        if (saveLoad.anchorMismatches.after > saveLoad.anchorMismatches.before) failures.push("loading created new visual-anchor inconsistencies");
+        if (!saveLoad.layout.modalVisible) failures.push("the Crown Endeavours panel is not visible after loading");
+        if (saveLoad.layout.paths !== 5) failures.push("the loaded Crown Endeavours panel does not render five paths");
+        if (saveLoad.layout.projects !== 20) failures.push("the loaded Crown Endeavours panel does not render twenty projects");
+        if (saveLoad.layout.legacies !== 1) failures.push("the loaded Crown Endeavours panel does not render each path's legacy");
+        if (saveLoad.layout.panelScrollTop !== 0) failures.push("the loaded Crown Endeavours panel did not open at its title");
+    }
+}
 if (failures.length) {
     console.error("PLAYER JOURNEY FAILED\n" + failures.join("\n"));
     process.exitCode = 1;

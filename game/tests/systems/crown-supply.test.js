@@ -226,6 +226,13 @@ test("paid waterworks cover occupied homes and stop when the payroll fails", () 
     assert.equal(getCrownSupplySnapshot().waterworksActive, false);
 });
 
+test("crown supply history keeps the settlement tick across normalization", () => {
+    const normalized = normalizeCrownSupplyState({
+        history: [{ year: 7, tick: 2777, grainLevel: 2, grainBought: 10, grainCost: 12, waterworksLevel: 1, waterworksCost: 18, housingUpgrades: 0 }]
+    });
+    assert.equal(normalized.history[0].tick, 2777);
+});
+
 test("a timber cottage can be rebuilt in stone for two more places", () => {
     const house = fixture();
     const before = getHousingSnapshot();

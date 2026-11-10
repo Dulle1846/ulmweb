@@ -185,7 +185,7 @@ export function normalizeJusticeState(input = state.justice) {
                 hunger: clamp(causes.hunger, 0, 1),
                 war: clamp(causes.war, 0, 1),
                 quarantine: clamp(causes.quarantine, 0, 1),
-                unemployment: clamp(causes.unemployment, 0, 1)
+                unemployment: causes.unemployment == null ? null : clamp(causes.unemployment, 0, 1)
             }
         },
         corruption: {
