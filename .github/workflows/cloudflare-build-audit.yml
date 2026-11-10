@@ -53,3 +53,41 @@ jobs:
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/builds/builds/$BUILD_ID/logs" \
             -o /tmp/logs.json
           jq -r '.result.lines[]? | if type == "array" then (.[1] // "") else tostring end' /tmp/logs.json | tail -n 200
+      - name: List Worker build triggers
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/builds/workers/d63557d1941f49e79d269747438e200a/triggers" \
+            -o /tmp/triggers.json
+          jq '{result: [.result[] | {trigger_uuid,trigger_name,build_command,deploy_command,root_directory,branch_includes,branch_excludes}]}' /tmp/triggers.json
+      - name: Remove obsolete main-only Worker trigger
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          status=$(curl --silent --show-error \
+            --output /tmp/delete-trigger.json \
+            --write-out '%{http_code}' \
+            -X DELETE \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/builds/triggers/19aa3ab9-e293-4556-98de-7e0bccb5913f")
+          echo "DELETE_STATUS=$status"
+          cat /tmp/delete-trigger.json
+          test "$status" = 200 || test "$status" = 404
+      - name: Verify Worker triggers after removal
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/builds/workers/d63557d1941f49e79d269747438e200a/triggers" \
+            -o /tmp/triggers-after.json
+          jq '{result: [.result[] | {trigger_uuid,trigger_name,build_command,deploy_command,root_directory,branch_includes,branch_excludes}]}' /tmp/triggers-after.json
+          jq -e '.result | all(.trigger_uuid != "19aa3ab9-e293-4556-98de-7e0bccb5913f")' /tmp/triggers-after.json
