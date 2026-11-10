@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.11.0
-**Next development line:** 3.12.0-dev
+**Production version:** 3.12.0
+**Next development line:** 3.13.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -17,6 +17,7 @@
 8. [Named garrison and public health](docs/MILITARY_AND_PUBLIC_HEALTH.md) — named recruits, timed drill, warhorses and payroll, sanitation, outbreaks, healers, medicine and mortality.
 9. [Faith, culture and justice](docs/FAITH_AND_JUSTICE.md) — named clergy and judges, shrines, courts and prisons, festivals, pilgrimages, heresy, emergent crime, trials, legal codes and corruption.
 10. [Eternal deeds](docs/ETERNAL_DEEDS.md) — the repeatable post-ambition chronicle, its goals, rewards, stall protection and save compatibility.
+11. [Crown Endeavours](docs/CROWN_ENDEAVOURS.md) — five post-ambition paths, fifteen multi-stage projects, funding, named overseers, permanent realm modifiers and the 100-year player journeys.
 
 ## Development rules
 

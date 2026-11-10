@@ -8,6 +8,7 @@ import { getCourtModifiers } from "./court.js";
 import { addLog } from "../core/event-log.js";
 import { addResource } from "./resources.js";
 import { ensurePersonProfile, addPersonMemory } from "./people.js";
+import { getEndeavourModifiers } from "./endeavours.js";
 
 export const HEALTH_INTERVAL = 20;
 export const HEALTH_HISTORY_LIMIT = 24;
@@ -216,7 +217,8 @@ export function getWaterCoverage() {
 
 export function getSanitationScore() {
     const health = ensureHealth();
-    return clamp(Number(health.sanitation.score) + getWaterCoverage() * 35, 0, 100);
+    const civic = Number(getEndeavourModifiers().health) || 0;
+    return clamp(Number(health.sanitation.score) + getWaterCoverage() * 35 + civic, 0, 100);
 }
 
 function activeHealerEntries() {

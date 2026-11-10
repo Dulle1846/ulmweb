@@ -145,7 +145,7 @@ test("research gates prerequisites, completes technologies and changes real modi
     assert.equal(snapshot.techs.filter(tech => tech.status === "complete").length, 3);
     assert.equal(snapshot.techs.find(tech => tech.id === "guild-halls").status, "available");
     assert.equal(snapshot.techs.find(tech => tech.id === "administration").status, "locked");
-    assert.equal(TECHNOLOGIES.length, 16);
+    assert.equal(TECHNOLOGIES.length, 24);
     assert.equal(snapshot.branches.length, 4);
 });
 
@@ -226,7 +226,7 @@ test("the save, load, simulation and UI source contracts include the civilizatio
     assert.ok(main.includes("state.identity=normalizeIdentity") && main.includes("state.research=normalizeResearchState") && main.includes("state.legacy=normalizeLegacyState"), "loading must normalize all three blocks");
     assert.ok(main.includes("6:snapshot=>") && main.includes("applyIdentityForNewRealm"), "schema 6 saves must migrate and a new realm must record its identity");
     assert.ok(validation.includes("validateIdentity") && validation.includes("validateResearchState") && validation.includes("validateLegacyState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 18, "the command deck must expose eighteen tabs");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 19, "the command deck must expose nineteen tabs");
     assert.ok(html.includes('data-command-tab="research"') && html.includes('id="realm-culture"'), "the founding form and research tab must exist");
     assert.ok(ui.includes("research:researchPanel") && ui.includes("research-start") && ui.includes("research-appoint"), "the research panel and its actions must be wired");
     assert.ok(ui.includes("getLegacySnapshot()") && ui.includes("LEGACY ·"), "the chronicle must show the legacy record");

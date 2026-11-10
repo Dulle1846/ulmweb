@@ -16,6 +16,7 @@ import { ensurePersonProfile, addPersonMemory } from "./people.js";
 import { recordNaturalDeath } from "./mortality.js";
 import { getFaithModifiers } from "./faith.js";
 import { getJusticeModifiers } from "./justice.js";
+import { getEndeavourModifiers } from "./endeavours.js";
 import { getResearchModifiers } from "./research.js";
 import { getCitizenModifiers } from "./population-register.js";
 
@@ -586,8 +587,9 @@ export function getSoldierPower(entity) {
     const woundPenalty = record.woundedUntilTick > state.tick ? 0.55 : 1;
     // Better metallurgy and mechanical arts reach the drill yard as real power.
     const researchBonus = getResearchModifiers().militaryBonus;
+    const endeavourBonus = 1 + Math.max(0, Number(getEndeavourModifiers().military) || 0);
     return base * rankBonus * equipmentBonus * moraleBonus * mountBonus * woundPenalty *
-        (1 + getFaithModifiers().militaryMorale / 260) * researchBonus * getCitizenModifiers().militaryQuality;
+        (1 + getFaithModifiers().militaryMorale / 260) * researchBonus * getCitizenModifiers().militaryQuality * endeavourBonus;
 }
 
 export function getSoldierArmor(entity) {

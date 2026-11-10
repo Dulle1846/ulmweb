@@ -36,6 +36,7 @@ import {createIdentityState,normalizeIdentity,applyFoundingProfile,getFoundingMo
 import {createResearchState,normalizeResearchState} from "../systems/research.js";
 import {createLegacyState,normalizeLegacyState,recordLegacy} from "../systems/legacy.js";
 import {normalizeRoyalState} from "../systems/royal-dynasty.js";
+import {createEndeavoursState,normalizeEndeavoursState} from "../systems/endeavours.js";
 import {setupManagementUI} from "../presentation/management-ui.js";
 import {serializeRoads,restoreRoads} from "../systems/roads.js";
 import {serializeResourceGeography,restoreResourceGeography} from "../systems/resource-geography.js";import {serializeForestFauna,restoreForestFauna} from "../systems/forest-fauna.js";import {serializeForestGathering,restoreForestGathering} from "../systems/forest-gathering.js";import {serializeForestSuccession,restoreForestSuccession} from "../systems/forest-succession.js";import { setupBuildUI } from "../presentation/build-ui.js";import { normalizeLayout,serializeLayout } from "../presentation/building-layout.js";
@@ -393,6 +394,7 @@ function ensureProfile(){
 
 function resetForRun(profile){
     resetState();
+    state.endeavours=createEndeavoursState();
     invalidateRoomBonusCache();
     bindCanvas();
     state.activeProfileId=profile.id;
@@ -595,7 +597,7 @@ function createSaveSnapshot(){
         activeEvent:state.activeEvent,
         eventLog:state.eventLog.slice(0,100),eventSequence:state.eventSequence,
         statistics:{...state.statistics},ambitions:JSON.parse(JSON.stringify(state.ambitions||{})),economy:JSON.parse(JSON.stringify(state.economy||{})),population:serializePopulationState(),politics:JSON.parse(JSON.stringify(state.politics||{})),government:JSON.parse(JSON.stringify(state.government||{})),royal:JSON.parse(JSON.stringify(state.royal||{})),market:JSON.parse(JSON.stringify(state.market)),court:JSON.parse(JSON.stringify(state.court||createCourtState())),diplomacy:JSON.parse(JSON.stringify(state.diplomacy||createDiplomacyState())),
-        identity:JSON.parse(JSON.stringify(state.identity||{})),research:JSON.parse(JSON.stringify(state.research||{})),legacy:JSON.parse(JSON.stringify(state.legacy||{})),
+        identity:JSON.parse(JSON.stringify(state.identity||{})),research:JSON.parse(JSON.stringify(state.research||{})),legacy:JSON.parse(JSON.stringify(state.legacy||{})),endeavours:JSON.parse(JSON.stringify(state.endeavours||{})),
         totalPopulation:state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&!entity.dead).length
     };
 }
@@ -690,6 +692,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.identity=normalizeIdentity(snapshot.identity||{});
     state.research=normalizeResearchState(snapshot.research||{});
     state.legacy=normalizeLegacyState(snapshot.legacy||{});
+    state.endeavours=normalizeEndeavoursState(snapshot.endeavours||{});
     state.eventSequence=snapshot.eventSequence||state.eventLog.reduce((max,e)=>Math.max(max,e.id||0),0);
     state.activeEvent=snapshot.activeEvent||null;
     state.issueSequence=snapshot.issueSequence||0;

@@ -898,3 +898,23 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
   .population-household__body{grid-template-columns:1fr}
   .population-citizen__health{text-align:left;align-items:flex-start}
 }
+
+/* Crown Endeavours: the late-game works of a mature realm. */
+.endeavour-paths{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px}
+.endeavour-path{border:1px solid color-mix(in srgb,var(--endeavour-accent,#b99a59) 48%,transparent);background:linear-gradient(145deg,#2b2118,#1e1812);border-radius:3px;padding:11px;min-width:0}
+.endeavour-path-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;border-bottom:1px solid #b99a5933;padding-bottom:8px;margin-bottom:9px}
+.endeavour-path-head span{display:block;font-size:8px;letter-spacing:.14em;color:var(--endeavour-accent,#d5b76e)}
+.endeavour-path-head h4{margin:3px 0 0;font-size:11px;line-height:1.35;color:#eadcc0;font-weight:500}
+.endeavour-path-head b{font-family:var(--ui-title-font,Georgia,serif);font-size:13px;color:var(--endeavour-accent,#d5b76e);white-space:nowrap}
+.endeavour-project-list{display:grid;gap:8px}
+.endeavour-project{min-width:0}
+.endeavour-project small{display:block;line-height:1.45}
+.endeavour-project .command-ribbon{color:var(--endeavour-accent,#d5b76e)}
+.endeavour-active{border:1px solid #b99a5977;background:linear-gradient(145deg,#33271a,#211910);border-radius:3px;padding:12px;margin-bottom:12px}
+.endeavour-active h3{margin:4px 0 5px;font-family:var(--ui-title-font,Georgia,serif);color:#f0dfb8;font-size:17px}
+.endeavour-active p{margin:0 0 8px;color:#c8b896;line-height:1.5}
+.endeavour-progress{height:8px;border:1px solid #9d7d50;background:#17120d;margin:8px 0;overflow:hidden}
+.endeavour-progress i{display:block;height:100%;background:linear-gradient(90deg,#8eaa7a,#d5b76e);transition:width .3s ease}
+.endeavour-active .command-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;margin-top:8px}
+.endeavour-effect-grid span{min-width:110px}
+@media(max-width:620px){.endeavour-paths{grid-template-columns:1fr}.endeavour-path-head{flex-direction:column;gap:4px}}

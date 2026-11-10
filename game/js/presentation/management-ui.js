@@ -5,6 +5,8 @@ import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getCourtSnapshot, appointMinister, dismissMinister, addressFactionDemand } from "../systems/court.js";
 import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, declareWar, sueForPeace, appointEnvoy, recallEnvoy } from "../systems/diplomacy.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
+import { renderEndeavoursPanel } from "./endeavours-panel.js";
+import { startEndeavour, abandonEndeavour, setEndeavourFunding, setEndeavourOverseer } from "../systems/endeavours.js";
 import { getFamilySnapshot } from "../systems/families.js";
 import { BUILDING_WORKFORCE, getBuildingEfficiency, getWorkforceSnapshot } from "../systems/economy.js";
 import { BUILDING_SIZE } from "../core/config.js";
@@ -31,7 +33,7 @@ import { getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReaso
 import { WAREHOUSE_PROFILES } from "../systems/city-config.js";
 import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
 import { foresterRangeSummary } from "../systems/fields.js";
-let activePanel="kingdom",dynastyStylesRequested=false;
+let activePanel="kingdom",dynastyStylesRequested=false,endeavourFunding=1;
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
 const amount=value=>Number(value||0).toLocaleString("en-US",{maximumFractionDigits:2});
@@ -636,18 +638,18 @@ function researchPanel(){
  const candidates=r.candidates.map(p=>'<option value="'+esc(p.personId)+'">'+esc(p.name)+' · age '+Math.floor(p.ageYears)+' · fit '+Math.round(p.fit)+'</option>').join("");
  const funding=r.fundingLevels.map(level=>'<button class="command-choice'+(level.level===r.funding?' is-current':'')+'" data-command="research-funding" data-value="'+level.level+'"><strong>'+esc(level.label.toUpperCase())+'</strong><small>'+level.gold+' gold / year · output ×'+level.multiplier+'</small></button>').join("");
  return intro("THE ROYAL ACADEMY","Research & knowledge","Scholars are named residents. Funding and salaries are paid each year, points accumulate against a chosen technology, and every completed discovery changes a live value of the realm.")+
- '<div class="command-summary"><div><small>POINTS / YEAR</small><strong>'+amount(r.pointsPerYear)+'</strong></div><div><small>RESERVE</small><strong>'+amount(r.reserve)+'</strong></div><div><small>COMPLETED</small><strong>'+m.completedCount+' / 16</strong></div><div><small>SCHOLARS</small><strong>'+r.scholars.length+' / '+r.capacity+'</strong></div><div><small>FUNDING</small><strong>'+esc(r.fundingDetails.label.toUpperCase())+'</strong></div><div><small>ACTIVE PROJECT</small><strong>'+esc(r.activeTechDetails?r.activeTechDetails.label:"NONE")+'</strong></div></div>'+
+ '<div class="command-summary"><div><small>POINTS / YEAR</small><strong>'+amount(r.pointsPerYear)+'</strong></div><div><small>RESERVE</small><strong>'+amount(r.reserve)+'</strong></div><div><small>COMPLETED</small><strong>'+m.completedCount+' / 24</strong></div><div><small>SCHOLARS</small><strong>'+r.scholars.length+' / '+r.capacity+'</strong></div><div><small>FUNDING</small><strong>'+esc(r.fundingDetails.label.toUpperCase())+'</strong></div><div><small>ACTIVE PROJECT</small><strong>'+esc(r.activeTechDetails?r.activeTechDetails.label:"NONE")+'</strong></div></div>'+
  '<div class="command-section-title">ACTIVE PROJECT</div>'+(r.activeTechDetails?'<div class="command-summary"><div><small>PROJECT</small><strong>'+esc(r.activeTechDetails.label)+'</strong></div><div><small>PROGRESS</small><strong>'+amount(r.progress)+' / '+r.activeTechDetails.cost+'</strong></div><div><small>REMAINING</small><strong>'+amount(Math.max(0,r.activeTechDetails.cost-r.progress))+'</strong></div></div>':'<p class="command-note">No project is active. An unspent reserve carries forward; choose a technology below to begin.</p>')+
  '<div class="command-section-title">LIVE EFFECTS</div><div class="court-effect-grid"><span>TAX YIELD<b>×'+amount(m.taxEfficiency)+'</b></span><span>TRADE TERMS<b>×'+amount(m.tradeFactor)+'</b></span><span>HOUSEHOLD FOOD DEMAND<b>×'+amount(m.foodDemandFactor)+'</b></span><span>MORTALITY RELIEF<b>×'+amount(m.mortalityRelief)+'</b></span><span>CONSTRUCTION DISCOUNT<b>'+Math.round(m.buildDiscount*100)+'%</b></span><span>SOLDIER POWER<b>×'+amount(m.militaryBonus)+'</b></span><span>RESEARCH RATE<b>×'+amount(m.researchSpeed)+'</b></span><span>ANNUAL LEGITIMACY<b>'+amount(m.legitimacyYear)+'</b></span></div>'+
  '<div class="command-section-title">NAMED SCHOLARS · '+r.scholars.length+' / '+r.capacity+'</div><div class="court-office-grid">'+scholars+'</div><div class="command-inline"><select id="research-scholar-select" aria-label="Choose a resident to appoint as scholar"><option value="">Choose an adult resident…</option>'+candidates+'</select><button data-command="research-appoint"'+((r.scholars.length>=r.capacity||gold<12||!candidates)?" disabled":"")+'>APPOINT · 12G</button></div><p class="command-note">A scholar leaves any other office before taking a research post. Salaries of 5 gold per scholar are paid at the annual audit; unpaid salaries reduce that year\'s output.</p>'+
  '<div class="command-section-title">ANNUAL FUNDING</div><div class="command-choice-grid">'+funding+'</div>'+
- '<div class="command-section-title">TECHNOLOGY TREE · '+m.completedCount+' / 16 COMPLETE</div>'+techs+
+ '<div class="command-section-title">TECHNOLOGY TREE · '+m.completedCount+' / 24 COMPLETE</div>'+techs+
  (r.lastAudit?'<div class="command-section-title">LAST ANNUAL AUDIT</div><p class="command-note">Year '+r.lastAudit.year+' · '+r.lastAudit.points+' points · speed ×'+r.lastAudit.speed+' · '+r.lastAudit.scholars+' scholars · '+r.lastAudit.salariesPaid+' gold salaries · '+r.lastAudit.fundingPaid+' gold funding'+(r.lastAudit.completed?' · completed '+esc(r.lastAudit.completed):"")+'.</p>':'<p class="command-note">No annual research audit has been completed yet.</p>');
 }
 const CRIME_CAUSE_LABELS=Object.freeze({inequality:"inequality",hunger:"hunger",war:"war",quarantine:"quarantine",unemployment:"unemployment"});
 function render(){
  const panel=$("command-panel-content");if(!panel)return;
- panel.innerHTML=({kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,population:renderPopulationPanel,dynasty,creatures,chronicle}[activePanel]||kingdom)();
+ panel.innerHTML=({kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle}[activePanel]||kingdom)();
  if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
  document.querySelectorAll("[data-command-tab]").forEach(b=>{
   const active=b.dataset.commandTab===activePanel;
@@ -658,7 +660,12 @@ function render(){
 }
 function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
 
- if(a==="research-start")r=startResearch(v);
+ if(a==="endeavour-start")r=startEndeavour(v,{overseerId:$("endeavour-overseer-select")?.value||null,funding:endeavourFunding});
+ else if(a==="endeavour-funding"){endeavourFunding=Math.max(0,Math.min(2,Number(v)||0));r={ok:true};}
+ else if(a==="endeavour-active-funding")r=setEndeavourFunding(Number(v));
+ else if(a==="endeavour-abandon")r=abandonEndeavour();
+ else if(a==="endeavour-reassign")r=setEndeavourOverseer($("endeavour-active-overseer")?.value);
+ else if(a==="research-start")r=startResearch(v);
  else if(a==="research-funding")r=setResearchFunding(Number(v));
  else if(a==="research-appoint")r=appointScholar($("research-scholar-select")?.value);
  else if(a==="research-dismiss")r=dismissScholar(v);
@@ -673,6 +680,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a.startsWith("faith-"))toast(String(r.message||"CONGREGATION UPDATED").toUpperCase());
   else if(a.startsWith("justice-"))toast(String(r.message||"COURT DECISION RECORDED").toUpperCase());
   else if(a.startsWith("research-"))toast(String(r.message||"RESEARCH UPDATED").toUpperCase());
+  else if(a.startsWith("endeavour-"))toast(String(r.message||"CROWN WORK UPDATED").toUpperCase());
   else toast("DECISION RECORDED");
   renderUI();render();
  }else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
@@ -686,7 +694,7 @@ export function setupManagementUI(){
   if(target==="people"){$("people-btn")?.click();return;}
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
-  if(["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","military","health","faith","justice","research","population","dynasty","creatures","chronicle"].includes(target)){
+  if(["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle"].includes(target)){
    activePanel=target;$("command-modal")?.classList.remove("hidden");render();
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));
   }

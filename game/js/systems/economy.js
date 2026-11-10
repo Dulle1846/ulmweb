@@ -13,6 +13,7 @@ import { getFaithModifiers } from "./faith.js";
 import { getJusticeModifiers } from "./justice.js";
 import { getResearchModifiers } from "./research.js";
 import { getCitizenModifiers } from "./population-register.js";
+import { getEndeavourModifiers } from "./endeavours.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -137,7 +138,8 @@ export function updateEconomy() {
     // lower what a family needs, while the census and written law raise the
     // share the collectors actually bring in.
     const research = getResearchModifiers();
-    ledger.foodDemand *= edicts.food * research.foodDemandFactor;
+    const endeavours = getEndeavourModifiers();
+    ledger.foodDemand *= edicts.food * research.foodDemandFactor * (1 - endeavours.food);
     ledger.foodConsumed = Math.min(state.resources.food, ledger.foodDemand);
     ledger.foodShortage = Math.max(0, ledger.foodDemand - ledger.foodConsumed);
     ledger.taxesCollected *= edicts.tax;
@@ -157,6 +159,9 @@ export function updateEconomy() {
     ledger.taxesCollected *= civic.taxEfficiency;
     ledger.citizenTaxBonus = ledger.taxesCollected - citizenTaxBefore;
     ledger.civicTaxEfficiency = civic.taxEfficiency;
+    const endeavourTaxBefore = ledger.taxesCollected;
+    ledger.taxesCollected *= 1 + endeavours.tax;
+    ledger.endeavourTaxBonus = ledger.taxesCollected - endeavourTaxBefore;
     ledger.netGold = ledger.taxesCollected - ledger.wagesPaid - ledger.upkeepPaid - ledger.furnitureUpkeepPaid;
 
     recordResourceMovement("food", -ledger.foodConsumed, "population-food", {

@@ -501,7 +501,7 @@ try{
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
-    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),18,"all eighteen management tabs must live inside the dialog");
+    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),19,"all nineteen management tabs must live inside the dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Kingdom overview","management must open on the live kingdom overview");
     await page.locator('[data-command-tab="kingdom"]').click();
     assert.equal(await page.locator("body > .command-deck").count(),0,"there must be no obscured duplicate navigation outside the dialog");
@@ -702,7 +702,7 @@ try{
     assert.ok(researchStart.count>=1,"a completed technology must feed the shared modifier block");
     await clearRealmEvent();
     await page.locator('[data-command-tab="research"]').click();
-    assert.equal(await page.locator("[data-research-tech]").count(),16,"all sixteen technologies must render");
+    assert.equal(await page.locator("[data-research-tech]").count(),24,"all twenty-four technologies must render");
     assert.ok(await page.locator('[data-research-tech][data-research-status="complete"]').count()>=1,"the completed technology must render as complete");
     const civilizationBeforeSave=await page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");

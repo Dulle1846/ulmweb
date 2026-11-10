@@ -10,6 +10,7 @@ import { ensurePersonProfile, PERSON_SPECIES } from "./people.js";
 import { getGovernmentModifiers } from "./government.js";
 import { getCultureModifiers } from "./identity.js";
 import { getLegacyModifiers, recordDiscovery } from "./legacy.js";
+import { getEndeavourModifiers } from "./endeavours.js";
 
 export const RESEARCH_VERSION = 1;
 export const RESEARCH_HISTORY_LIMIT = 24;
@@ -46,7 +47,15 @@ export const TECHNOLOGIES = Object.freeze([
     { id: "written-law", branch: "statecraft", label: "Written law", cost: 20, requires: [], effects: { legitimacy: 0.03, tax: 0.02 }, description: "A published code makes the crown's judgment predictable." },
     { id: "census", branch: "statecraft", label: "Census", cost: 34, requires: ["written-law"], effects: { tax: 0.04 }, description: "Names, households and fields are counted, not guessed." },
     { id: "diplomacy", branch: "statecraft", label: "Diplomatic correspondence", cost: 50, requires: ["census"], effects: { trade: 0.04, legitimacy: 0.02 }, description: "A permanent chancery remembers every promise across a reign." },
-    { id: "administration", branch: "statecraft", label: "Administration", cost: 70, requires: ["diplomacy"], effects: { research: 0.15, tax: 0.02, legitimacy: 0.02 }, description: "Departments, archives and procedure let the realm learn faster than one ruler can." }
+    { id: "administration", branch: "statecraft", label: "Administration", cost: 70, requires: ["diplomacy"], effects: { research: 0.15, tax: 0.02, legitimacy: 0.02 }, description: "Departments, archives and procedure let the realm learn faster than one ruler can." },
+    { id: "deep-plough", branch: "agriculture", label: "Deep plough", cost: 120, requires: ["granaries"], effects: { foodDemand: -0.04, tax: 0.02 }, description: "Heavier shares and drained furrows open the deeper soils to grain." },
+    { id: "seed-banks", branch: "agriculture", label: "Seed banks", cost: 180, requires: ["deep-plough"], effects: { foodDemand: -0.05, mortality: 0.02 }, description: "Every district stores tested seed against a failed harvest, not only a bad week." },
+    { id: "blast-furnace", branch: "craft", label: "Blast furnace", cost: 140, requires: ["mechanical-arts"], effects: { military: 0.08, buildCost: 0.03 }, description: "A hotter charge makes stronger iron for tools, hinges and armour." },
+    { id: "printing-press", branch: "craft", label: "Printing press", cost: 200, requires: ["blast-furnace"], effects: { research: 0.08, trade: 0.04 }, description: "Movable type multiplies every written discovery and price list." },
+    { id: "hospitals", branch: "medicine", label: "Hospitals", cost: 150, requires: ["epidemiology"], effects: { mortality: 0.05, legitimacy: 0.02 }, description: "Wards, trained nurses and a common casebook keep the sick out of the household." },
+    { id: "vaccination", branch: "medicine", label: "Vaccination", cost: 220, requires: ["hospitals"], effects: { mortality: 0.08, foodDemand: -0.02 }, description: "A deliberate, recorded exposure turns a lethal season into a mild one." },
+    { id: "standing-bureaucracy", branch: "statecraft", label: "Standing bureaucracy", cost: 160, requires: ["administration"], effects: { tax: 0.03, research: 0.05 }, description: "Salaried clerks outlive the minister who appointed them." },
+    { id: "great-charter", branch: "statecraft", label: "Great charter", cost: 240, requires: ["standing-bureaucracy"], effects: { legitimacy: 0.04, trade: 0.04, tax: 0.02 }, description: "A sealed charter binds the crown's successor, the guilds and the towns in one law." }
 ]);
 
 export const RESEARCH_BRANCHES = Object.freeze([
@@ -277,7 +286,8 @@ function researchSignature(research) {
         state.identity?.tradition || "hearth",
         state.identity?.law || "customary",
         state.identity?.legitimacy || "lineage",
-        state.legacy?.prestige || 0
+        state.legacy?.prestige || 0,
+        JSON.stringify(state.endeavours?.completed || {})
     ].join(":");
 }
 
@@ -322,7 +332,7 @@ export function getResearchModifiers() {
         taxEfficiency: Math.max(0.6, 1 + tax),
         tradeFactor: Math.max(0.6, 1 + trade),
         militaryBonus: Math.max(0.65, 1 + military),
-        researchSpeed: Math.max(0.4, 1 + researchBonus),
+        researchSpeed: Math.max(0.4, (1 + researchBonus) * (1 + getEndeavourModifiers().research)),
         legitimacyYear: legitimacy,
         foodDemandFactor: Math.max(0.65, 1 + foodDemand),
         mortalityRelief: Math.max(0.65, 1 - mortality),

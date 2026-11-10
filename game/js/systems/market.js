@@ -11,6 +11,7 @@ import { getHealthEconomicEffects } from "./health.js";
 import { getFaithModifiers } from "./faith.js";
 import { getJusticeModifiers } from "./justice.js";
 import { getResearchModifiers } from "./research.js";
+import { getEndeavourModifiers } from "./endeavours.js";
 
 export const MARKET_RESOURCES = Object.freeze(["wood","stone","food"]);
 export const BASE_PRICES = Object.freeze({ wood:2, stone:3, food:2 });
@@ -125,7 +126,7 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     const faithTerms = getFaithModifiers();
     const justiceTerms = getJusticeModifiers();
     const researchTerms = getResearchModifiers();
-    const tradeFactor = Math.max(0.55, faithTerms.tradeFactor * justiceTerms.tradeFactor * researchTerms.tradeFactor);
+    const tradeFactor = Math.max(0.55, faithTerms.tradeFactor * justiceTerms.tradeFactor * researchTerms.tradeFactor * (1 + getEndeavourModifiers().trade));
     const demandFactor = 1 + Math.max(0, Number(faithTerms.festivalDemand) || 0);
     const buyFactor = terms.buyFactor * (1 + healthTerms.tradePenalty) / tradeFactor;
     const sellFactor = terms.sellFactor * (1 - healthTerms.tradePenalty) * tradeFactor * demandFactor;

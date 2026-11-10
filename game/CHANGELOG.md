@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.11.0`
-**Next development line:** `3.12.0-dev`
+**Current production version:** `3.12.0`
+**Next development line:** `3.13.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -37,6 +37,18 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.12.0 — Crown Endeavours
+**Released:** 2026-11-10
+**Scope:** Five replayable post-ambition player paths, fifteen projects, twenty-four technologies and a new management tab.
+
+**Content:** The five 100-year player journeys exposed the same late-game dead end from five directions: after the thirteenth ambition the realm had eternal deeds but no long-term project that joined the court, economy, army, diplomacy and research. Crown Endeavours adds the builder, warlord, diplomat, merchant and scholar paths. Each path has three named projects and five repeatable tiers (seventy-five completions in total), real resource costs, a named resident as overseer, Thrifty/Steady/Grand funding, annual progress and permanent modifiers to housing, health, morale, taxes, trade, research, military power, diplomacy, legitimacy and food demand. Projects unlock in sequence; a higher tier never invalidates an earlier one.
+
+**Late research:** Eight late technologies (deep plough, seed banks, blast furnace, printing press, hospitals, vaccination, standing bureaucracy, great charter) extend the research tree from sixteen to twenty-four entries, so the scholar path still has discoveries after the old tree is complete. The late tree feeds the same research modifiers and save schema.
+
+**Compatibility:** `state.endeavours` is additive and normalized on load; saves without it receive empty paths, and malformed projects, funding or overseer ids are discarded. The thirteen royal ambitions, their ids, order, rewards and `allComplete` semantics are unchanged, as is the eternal-deed state machine. The management deck gains a nineteenth tab; the old eighteen tabs and all build, trade, faith, justice, military and diplomacy controls remain.
+
+**Verification:** `npm test` 704/704; focused Endeavour/research 16/16; syntax and relative imports for 103 source files / 189 UI ids; five independent 100-year browser journeys through the real start screen, management tabs, build menu, roads, trade, diplomacy, military and research, each with desktop 1600 px and narrow 864 px screenshots, no page or console errors and no horizontal overflow. Final realms: builder 41 residents / 40 buildings / 16 roads / 15 works; warlord 38 / 39 / 15 works / 1 war; diplomat 41 / 40 / 15 works / 4 alliances at relation 100; merchant 20 / 15 works / 52 trades / 1,555 food / 7,642 gold; scholar 54 / 49 / 15 works / 17 technologies. Browser journeys measured 2.697–2.845 ms/tick. The deterministic 100-year campaign is `ok:true`, 40,040 ticks, 13/13 ambitions, 3.242 ms/tick (baseline 3.276), final year 101, 3 eternal deeds, no game over. Full record: [docs/CROWN_ENDEAVOURS.md](docs/CROWN_ENDEAVOURS.md).
 
 ### 3.11.0 — The Eternal Chronicle
 **Released:** 2026-11-10

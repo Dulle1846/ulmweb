@@ -37,6 +37,7 @@ import { updateGuardianships } from "../systems/guardianship.js";
 import { updateRoyalSuccession } from "../systems/royal-dynasty.js";
 import { updateCreatures } from "../systems/creatures.js";
 import { updateAmbitions } from "../systems/ambitions.js";
+import { updateEndeavours } from "../systems/endeavours.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
@@ -62,6 +63,7 @@ export function updateSimulation(){
         newborn=updateBirths();
         updateDiplomacy();
         updateCourt();
+        updateEndeavours();
     }
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
     resetIncome();

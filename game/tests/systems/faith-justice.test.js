@@ -407,7 +407,7 @@ test("the save, load and UI source contracts include both annual systems", async
     assert.ok(main.includes("state.justice=normalizeJusticeState"), "loading must normalize justice");
     assert.ok(main.includes("4:snapshot=>") && main.includes("5:snapshot=>"), "schema 4 and 5 saves must migrate into schema 6");
     assert.ok(validation.includes("validateFaithState") && validation.includes("validateJusticeState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 18, "the command deck must expose eighteen tabs");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 19, "the command deck must expose nineteen tabs");
     assert.ok(ui.includes("faith:faithPanel") && ui.includes("justice:justicePanel"));
     assert.ok(ui.includes("faith-festival") && ui.includes("justice-verdict"));
     const faith = await readFile(new URL("../../js/systems/faith.js", import.meta.url), "utf8");

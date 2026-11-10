@@ -8,6 +8,7 @@ import { applyPoliticalEffects, normalizePoliticalState, POLITICAL_FACTIONS } fr
 import { getCourtModifiers } from "./court.js";
 import { addPersonMemory, ensurePersonProfile, PERSON_SPECIES } from "./people.js";
 import { TYPE } from "../core/types.js";
+import { getEndeavourModifiers } from "./endeavours.js";
 
 export const DIPLOMACY_COSTS = Object.freeze({ gift:12, tradePact:15, alliance:25, peaceGold:20, peaceFood:15, envoy:8 });
 export const TRADE_PACT_RELATION = 45;
@@ -406,6 +407,8 @@ export function updateDiplomacy() {
         if (realm.lastTradeYear >= year - 1 && realm.treaty !== "war") {
             realm.relation = clamp(realm.relation + 0.35);
         }
+        const chancery = Math.max(0, Number(getEndeavourModifiers().diplomacy) || 0);
+        if (chancery && realm.treaty !== "war") realm.relation = clamp(realm.relation + chancery);
         if (realm.treaty !== "war" && realm.relation < 20 && year - realm.lastIncidentYear >= 3) {
             const incidentScale = Math.max(0.2, 1 - court.incidentReduction);
             realm.lastIncidentYear = year;
