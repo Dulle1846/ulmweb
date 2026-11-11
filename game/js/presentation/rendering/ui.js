@@ -1,18 +1,14 @@
 // UI presentation: player hand, realm events, trade market and statistics.
 import { SEASONS } from "../../core/config.js";
-import { TYPE } from "../../core/types.js";
 import { state } from "../../core/state.js";
 import { getTradePartners,MARKET_RESOURCES } from "../../systems/market.js";
-import { getWorkforceSnapshot } from "../../systems/economy.js";
-import { EVENT_CHAINS } from "../../systems/event-chains.js";
-import { getHousingSnapshot,getHouseholdSnapshot } from "../../systems/population.js";
-import { getPoliticalSnapshot } from "../../systems/politics.js";
-import { getHealthSnapshot } from "../../systems/health.js";
-import { getRoomBonusSnapshot, roomBonusSignature, ROOM_BONUS_CAPS } from "../../systems/rooms.js";
+import { getHousingSnapshot } from "../../systems/population.js";
+import { getRoomBonusSnapshot, roomBonusSignature } from "../../systems/rooms.js";
 import { getRoyalHouse } from "../../systems/royal-dynasty.js";
 import { getAmbitionSnapshot } from "../../systems/ambitions.js";
 import { getCoreCounsel } from "../core-counsel.js";
 import { getFirstSessionSnapshot } from "../first-session.js";
+import { renderStatisticsExplorer } from "../statistics-panel.js";
 
 let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastAmbitionSignature="",lastFirstSessionSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
@@ -218,67 +214,7 @@ function renderEvents(container){
 }
 
 function renderStatistics(container){
-    const buildings=state.entities.filter(e=>!e.dead&&e.isBuilding()).length;
-    const military=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER].includes(e.type)).length;
-    const workforce=getWorkforceSnapshot(),housing=getHousingSnapshot(),households=getHouseholdSnapshot(),economy=state.economy||{},politics=getPoliticalSnapshot(),health=getHealthSnapshot();
-    const roomSnapshot=getRoomBonusSnapshot();
-    const stats=[
-        ["POPULATION",workforce.population],["EMPLOYED",workforce.employed],
-        ["UNEMPLOYED",workforce.unemployed],["HOUSING",housing.population+" / "+housing.capacity],
-        ["NATURAL GROWTH",Math.max(0,Number(economy.populationGrowth)||0)],
-        ["HOUSEHOLDS",households.households],["UNHOUSED",households.unhoused],
-        ["VACANT HOMES",housing.available],["BUILDINGS",buildings],
-        ["MILITARY",military],["SICK RESIDENTS",health.sick],["HEALTH STATUS",health.active?"OUTBREAK · "+health.severity:"STABLE"],["RECOVERED",health.recovered],["MORALE",Math.floor(state.morale)],
-        ["RAIDS SURVIVED",state.totalRaidsSurvived],["TRADES",state.statistics.totalTrades],
-        ["BUILDINGS BUILT",state.statistics.totalBuildingsBuilt],["UNITS RECRUITED",state.statistics.totalUnitsRecruited],
-        ["ISSUES RESOLVED",state.statistics.totalEventsResolved]
-    ];
-    const cells=stats.map(([label,value])=>'<div class="stat-cell"><div class="stat-label">'+label+'</div><div class="stat-value">'+esc(value)+'</div></div>').join("");
-    const resources=["wood","stone","gold","food"].map(key=>
-        '<div class="stat-cell"><div class="stat-label">'+key.toUpperCase()+'</div><div class="stat-value">'+Math.floor(state.resources[key]||0).toLocaleString("en-US")+'</div></div>'
-    ).join("");
-    const ledger=economy.lastLedger||{},production=economy.productionChains||{};
-    const economyCells=[
-        ["DAYS SIMULATED",economy.daysElapsed||0],
-        ["FOOD CONSUMED",Number(ledger.foodConsumed||0).toFixed(1)],
-        ["TAXES COLLECTED",Number(ledger.taxesCollected||0).toFixed(2)+" gold"],
-        ["WAGES PAID",Number(ledger.wagesPaid||0).toFixed(2)+" gold"],
-        ["BUILDING UPKEEP",Number(ledger.upkeepPaid||0).toFixed(2)+" gold"],
-        ["FURNITURE UPKEEP",Number(ledger.furnitureUpkeepPaid||0).toFixed(2)+" gold"],
-        ["UNPAID COSTS",(Number(ledger.unpaidWages||0)+Number(ledger.unpaidUpkeep||0)+Number(ledger.unpaidFurniture||0)).toFixed(2)+" gold"],
-        ["MILL TIMBER USED",Number(production.millWoodConsumed||0).toFixed(1)+" wood"],
-        ["MILL BONUS FOOD",Number(production.millBonusFood||0).toFixed(1)+" food"],
-        ["TAVERN PROVISIONS",Number(production.tavernFoodConsumed||0).toFixed(1)+" food"],
-        ["TAVERN GOLD EARNED",Number(production.tavernGoldProduced||0).toFixed(1)+" gold"]
-    ].map(([label,value])=>'<div class="stat-cell"><div class="stat-label">'+label+'</div><div class="stat-value">'+esc(value)+'</div></div>').join("");
-    const politicalRows=[["ROYAL LEGITIMACY",politics.legitimacy],["COMMONERS",politics.factions.commons],["NOBILITY",politics.factions.nobility],["GUILDS",politics.factions.guilds],["CLERGY",politics.factions.clergy]];
-    const politicalMarkup='<div class="stat-heading" style="margin-top:14px">THE ROYAL COUNCIL</div><div class="stat-grid">'+politicalRows.map(([label,value])=>'<div class="stat-cell political-stat"><div class="stat-label">'+label+'</div><div class="stat-value">'+Number(value).toFixed(0)+'%</div><div class="faction-meter"><i style="width:'+Math.max(0,Math.min(100,Number(value)))+'%"></i></div></div>').join("")+'</div>';
-    const roomCells=roomSnapshot.roles.filter(role=>role.roomCount>0).map(role=>{
-        const effects=Object.entries(role.effects)
-            .filter(([,value])=>value>0.0001)
-            .map(([key,value])=>key==="defense"
-                ?Math.round(value*100)+"% defense"
-                :key==="growth"
-                    ?roomEffectValue(value)+" growth"
-                    :roomEffectValue(value)+" "+key);
-        return '<div class="stat-cell room-bonus-stat-cell"><div class="stat-label">'+role.icon+' '+role.label+' · '+role.roomCount+' ROOM'+(role.roomCount===1?'':'S')+'</div><div class="stat-value">'+esc(effects.join(' · ')||'—')+'</div></div>';
-    }).join('');
-    const roomSealed=roomSnapshot.sealed
-        ?'<div class="stat-cell room-bonus-stat-cell"><div class="stat-label">SEALED ROOMS</div><div class="stat-value" style="color:#b23b2e">'+roomSnapshot.sealed+' · NO BONUS</div></div>'
-        :'';
-    const roomCapNote='<div class="room-bonus-cap-note">Role values include furnishings and are contributions before realm caps: '+ROOM_BONUS_CAPS.gold+' gold · '+ROOM_BONUS_CAPS.legitimacy+' legitimacy · '+ROOM_BONUS_CAPS.morale+' morale per 20 days; growth '+ROOM_BONUS_CAPS.growth+', defense '+Math.round(ROOM_BONUS_CAPS.defense*100)+'%. Furnishings add their own bounded bonus on top and cost upkeep every settlement. Growth lowers the yearly morale threshold; defense is passive.</div>';
-    const roomMarkup='<div class="stat-heading" style="margin-top:14px">ROOM BONUSES · EVERY 20 DAYS</div><div class="stat-grid">'+
-        (roomCells||'<div class="empty-state">No reachable rooms yet. Add doors and interior rooms.</div>')+roomSealed+roomCapNote+'</div>';
-    const activeThreads=state.hiddenRealm?.activeThreads||[];
-    const chronicles=activeThreads.length?activeThreads.map(thread=>{
-        const stages=EVENT_CHAINS[thread.id]||[],stage=stages[thread.stage];
-        return '<div class="stat-cell"><div class="stat-label">'+esc(thread.id.toUpperCase())+' · '+(thread.stage+1)+' / '+stages.length+'</div><div class="stat-value">'+esc(stage?.title||"Unrecorded chronicle")+'</div></div>';
-    }).join(""):'<div class="empty-state">No long-running stories are unfolding. The realm is quiet — for now.</div>';
-    container.innerHTML='<div class="stat-heading">KINGDOM OVERVIEW</div><div class="stat-grid">'+cells+'</div>'+
-        '<div class="stat-heading" style="margin-top:14px">ROYAL STORES</div><div class="stat-grid">'+resources+'</div>'+
-        roomMarkup+
-        '<div class="stat-heading" style="margin-top:14px">THE ROYAL LEDGER</div><div class="stat-grid">'+economyCells+'</div>'+
-        politicalMarkup+'<div class="stat-heading" style="margin-top:14px">THE CHRONICLES</div><div class="stat-grid">'+chronicles+'</div>';
+    renderStatisticsExplorer(container);
 }
 
 function renderTrade(container){
