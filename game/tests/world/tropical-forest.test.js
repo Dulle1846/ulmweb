@@ -120,6 +120,8 @@ test("tropical structure exposes strata, plants, soil, water and land use", () =
     assert.ok(t.plants.some(plant => plant.id === "pitcher"));
     assert.ok(t.soil.weathered > 0 && t.soil.dark > 0 && t.soil.surfaceRoots > 0);
     assert.ok(t.water.heavyRain > 0.5 && t.water.humidity > 0.5);
+    assert.ok(t.water.streams > 0 && t.water.largeRivers > 0 && t.water.waterfallsPools > 0);
+    assert.equal(typeof t.water.waterfalls, "boolean");
     assert.ok(Object.keys(t.hazard).length >= 8);
     assert.ok(t.hazard.disease > 0 && t.hazard.spoilage > 0 && t.hazard.movement > 0);
     assert.ok("settlement" in t.landUse && "agriculture" in t.landUse && "riverTrade" in t.landUse);
@@ -145,6 +147,8 @@ test("tropical goods, fauna, hazards and snow respect the shared contracts", () 
     const fauna = forestFaunaFor(stand, 150, "tropical", 0.2);
     assert.ok(fauna.length >= 2);
     assert.ok(fauna.every(entry => entry.label && entry.group));
+    assert.ok(fauna.some(entry => entry.group === "primate"), "monkeys need a real canvas group");
+    assert.ok(fauna.some(entry => ["reptile", "fish", "amphibian"].includes(entry.group)), "tropical water fauna must be visible");
     assert.equal(forestSnowDepthAt(stand, 350, "tropical").cm, 0);
     const survey = forestSurveyAt(18.5, 22.5, context());
     assert.ok(survey.tropical);

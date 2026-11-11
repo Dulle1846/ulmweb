@@ -600,6 +600,7 @@ export function tropicalProfileFor(input = {}) {
         humidity: round(humidity),
         streams: round(values.streams),
         largeRivers: round(values.largeRivers),
+        waterfallsPools: round(values.waterfallsPools),
         temporaryFloods: round(values.temporaryFloods),
         waterfalls: Boolean(waterfall),
         mist: round(values.canopyMist),

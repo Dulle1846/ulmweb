@@ -2420,6 +2420,102 @@ function drawCanopyLight(ctx, px, py, cellPx, stand, seed, tick, sun = null) {
     ctx.restore();
 }
 
+
+function drawTropicalFaunaShape(ctx, animal, x, y, s) {
+    const group = animal?.group;
+    if (!['primate', 'reptile', 'fish', 'amphibian'].includes(group)) return false;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha = 0.8;
+    if (group === 'primate') {
+        const fur = animal.id === 'howler-monkey' ? '#4a3627' : '#2c2822';
+        ctx.fillStyle = fur;
+        ctx.beginPath();
+        ctx.ellipse(0, -4.2 * s, 2.4 * s, 1.5 * s, -0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(2.2 * s, -5.3 * s, 1.05 * s, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = fur;
+        ctx.lineWidth = Math.max(0.55, 0.65 * s);
+        ctx.beginPath();
+        ctx.moveTo(-1.8 * s, -3.8 * s);
+        ctx.quadraticCurveTo(-5.2 * s, -2.2 * s, -4.5 * s, 0.4 * s);
+        ctx.moveTo(0, -3.6 * s);
+        ctx.lineTo(-1.2 * s, -0.6 * s);
+        ctx.moveTo(1.3 * s, -3.6 * s);
+        ctx.lineTo(2.2 * s, -0.8 * s);
+        ctx.stroke();
+        if (animal.id === 'spider-monkey') {
+            ctx.beginPath();
+            ctx.moveTo(-2.4 * s, -4.6 * s);
+            ctx.quadraticCurveTo(-6 * s, -6 * s, -8 * s, -3.2 * s);
+            ctx.stroke();
+        }
+    } else if (group === 'reptile') {
+        if (animal.id === 'caiman') {
+            ctx.fillStyle = '#3f5142';
+            ctx.beginPath();
+            ctx.ellipse(0, -1.4 * s, 4.2 * s, 1.2 * s, 0.05, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(3.4 * s, -1.6 * s);
+            ctx.lineTo(6.4 * s, -2.1 * s);
+            ctx.lineTo(6.1 * s, -0.8 * s);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#b49a58';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(-1.4 * s + i * 1.6 * s, -2.2 * s, 0.35 * s, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else {
+            ctx.strokeStyle = '#4e6b38';
+            ctx.lineWidth = Math.max(0.8, 1.2 * s);
+            ctx.beginPath();
+            ctx.moveTo(-5 * s, 0.2 * s);
+            ctx.bezierCurveTo(-2 * s, -2.8 * s, 2 * s, 1.2 * s, 5 * s, -1.2 * s);
+            ctx.stroke();
+            ctx.strokeStyle = '#71834a';
+            ctx.lineWidth = Math.max(0.35, 0.45 * s);
+            ctx.beginPath();
+            ctx.moveTo(-4.2 * s, 0.1 * s);
+            ctx.bezierCurveTo(-1 * s, -2 * s, 2.2 * s, 1 * s, 4.4 * s, -1 * s);
+            ctx.stroke();
+        }
+    } else if (group === 'fish') {
+        const bright = animal.id === 'piranha' ? '#b85b43' : '#9eb9ac';
+        ctx.fillStyle = bright;
+        ctx.beginPath();
+        ctx.ellipse(0, -1 * s, 2.8 * s, 1.15 * s, 0.08, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-2.3 * s, -1 * s);
+        ctx.lineTo(-4.3 * s, -2.4 * s);
+        ctx.lineTo(-4.3 * s, 0.4 * s);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#d7e2c7';
+        ctx.beginPath();
+        ctx.arc(1.8 * s, -1.2 * s, 0.32 * s, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        ctx.fillStyle = animal.id === 'poison-dart-frog' ? '#ce5c3f' : '#6f8f4e';
+        ctx.beginPath();
+        ctx.ellipse(0, -0.8 * s, 1.5 * s, 0.95 * s, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#e8d46d';
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(-0.8 * s + i * 0.8 * s, -1.3 * s, 0.22 * s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+    return true;
+}
+
 function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed, zoom, tileX = null, tileY = null) {
     if (tileX !== null && tileY !== null && !isForestSightVisible(tileX + 0.5, tileY + 0.5)) return;
     const season = seasonalState(dayOfYear, climateKey);
@@ -2457,7 +2553,7 @@ function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed
             ctx.stroke();
         }
     } else if (animal.group === 'predator') {
-        const pelt = animal.id === 'wolf' ? "#59605c" : animal.id === 'lynx' ? "#b68a5a" : "#a85b2f";
+        const pelt = animal.id === 'wolf' ? "#59605c" : animal.id === 'lynx' ? "#b68a5a" : animal.id === 'jaguar' ? "#c39a55" : "#b18454";
         ctx.fillStyle = pelt;
         ctx.beginPath();
         ctx.ellipse(x, y - 2.5 * s, (animal.id === 'wolf' ? 4.2 : 3.6) * s, 1.6 * s, 0, 0, Math.PI * 2);
@@ -2471,6 +2567,15 @@ function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed
         ctx.strokeStyle = pelt;
         ctx.lineWidth = 1.5 * s;
         ctx.stroke();
+        if (animal.id === 'jaguar' || animal.id === 'ocelot') {
+            ctx.fillStyle = 'rgba(40, 31, 20, 0.75)';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(x - 1 * s + i * 2.1 * s, y - 3.1 * s + (i % 2) * 0.8 * s, 0.28 * s, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    } else if (drawTropicalFaunaShape(ctx, animal, x, y, s)) {
     } else if (animal.group === 'small') {
         ctx.fillStyle = animal.id === 'hare' ? "#a38b68" : animal.id === 'squirrel' ? "#9a633a" : "#76604d";
         ctx.beginPath();
@@ -2496,20 +2601,26 @@ function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed
             ctx.quadraticCurveTo(x, y - 15 * s, x + 5 * s, y - 12 * s);
             ctx.stroke();
         } else {
-            ctx.fillStyle = animal.id === 'owl' ? "#8d7a5e" : animal.id === 'crossbill' ? "#a6533f" : animal.id === 'capercaillie' ? "#3f3a31" : "#655946";
+            ctx.fillStyle = animal.id === 'owl' ? "#8d7a5e" : animal.id === 'crossbill' ? "#a6533f" : animal.id === 'capercaillie' ? "#3f3a31" : animal.id === 'toucan' ? "#1f2422" : animal.id === 'macaw' ? "#c84436" : animal.id === 'harpy-eagle' ? "#6b6252" : "#655946";
             ctx.beginPath();
             ctx.ellipse(x, y - 4 * s, (animal.id === 'capercaillie' ? 2.2 : 1.5) * s, (animal.id === 'capercaillie' ? 2.8 : 2.1) * s, 0.1, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
             ctx.arc(x + (animal.id === 'woodpecker' ? 1.4 : animal.id === 'crossbill' ? 1.6 : 0.8) * s, y - 5.6 * s, 0.9 * s, 0, Math.PI * 2);
             ctx.fill();
-            if (animal.id === 'crossbill') {
-                ctx.strokeStyle = "#d8c18a";
-                ctx.lineWidth = 0.55 * s;
+            if (animal.id === 'toucan' || animal.id === 'macaw' || animal.id === 'crossbill') {
+                ctx.strokeStyle = animal.id === 'toucan' ? "#e9a33f" : animal.id === 'macaw' ? "#e2c26a" : "#d8c18a";
+                ctx.lineWidth = Math.max(0.55, 0.7 * s);
                 ctx.beginPath();
                 ctx.moveTo(x + 1.8 * s, y - 5.8 * s);
-                ctx.lineTo(x + 3.2 * s, y - 5.2 * s);
+                ctx.lineTo(x + (animal.id === 'toucan' ? 5 : 3.2) * s, y - (animal.id === 'toucan' ? 5.1 : 5.2) * s);
                 ctx.stroke();
+            }
+            if (animal.id === 'macaw') {
+                ctx.fillStyle = "#2e5f9a";
+                ctx.beginPath();
+                ctx.ellipse(x - 1.5 * s, y - 4.2 * s, 1.2 * s, 0.7 * s, -0.4, 0, Math.PI * 2);
+                ctx.fill();
             }
         }
     } else {
@@ -2574,7 +2685,8 @@ function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey,
         const population = Math.max(1, Number(animal.population) || 4);
         const count = animal.group === 'large' ? Math.max(1, Math.min(4, Math.round(population / 3)))
             : animal.group === 'bird' ? Math.max(1, Math.min(3, Math.round(population / 2)))
-                : Math.max(1, Math.min(3, Math.round(population / 4)));
+                : animal.group === 'fish' ? Math.max(2, Math.min(5, Math.round(population / 2)))
+                    : Math.max(1, Math.min(3, Math.round(population / 4)));
         for (let i = 0; i < count; i++) {
             const phase = seed * 11 + herdIndex * 7 + i * 2.7;
             const spread = cellPx * (animal.group === 'large' ? 0.19 : 0.14);
@@ -2625,7 +2737,7 @@ function drawFaunaShape(ctx, animal, x, y, s, rotation, season, zoom) {
             ctx.stroke();
         }
     } else if (animal.group === 'predator') {
-        ctx.fillStyle = "#a85b2f";
+        ctx.fillStyle = animal.id === 'jaguar' ? "#c39a55" : animal.id === 'ocelot' ? "#b18454" : "#a85b2f";
         ctx.beginPath();
         ctx.ellipse(0, -2.5 * s, 3.6 * s, 1.6 * s, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -2638,6 +2750,15 @@ function drawFaunaShape(ctx, animal, x, y, s, rotation, season, zoom) {
         ctx.moveTo(-3.2 * s, -2.5 * s);
         ctx.quadraticCurveTo(-8 * s, -4 * s, -8 * s, -1 * s);
         ctx.stroke();
+        if (animal.id === 'jaguar' || animal.id === 'ocelot') {
+            ctx.fillStyle = 'rgba(40, 31, 20, 0.75)';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(-1 * s + i * 2.1 * s, -3.1 * s + (i % 2) * 0.8 * s, 0.28 * s, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    } else if (drawTropicalFaunaShape(ctx, animal, 0, 0, s)) {
     } else if (animal.group === 'small') {
         ctx.fillStyle = animal.id === 'hare' ? "#a38b68" : animal.id === 'squirrel' ? "#9a633a" : "#76604d";
         ctx.beginPath();
@@ -2663,7 +2784,7 @@ function drawFaunaShape(ctx, animal, x, y, s, rotation, season, zoom) {
             ctx.quadraticCurveTo(0, -15 * s, 5 * s, -12 * s);
             ctx.stroke();
         } else {
-            ctx.fillStyle = animal.id === 'owl' ? "#8d7a5e" : "#655946";
+            ctx.fillStyle = animal.id === 'owl' ? "#8d7a5e" : animal.id === 'toucan' ? "#1f2422" : animal.id === 'macaw' ? "#c84436" : "#655946";
             ctx.beginPath();
             ctx.ellipse(0, -4 * s, 1.5 * s, 2.1 * s, 0.1, 0, Math.PI * 2);
             ctx.fill();

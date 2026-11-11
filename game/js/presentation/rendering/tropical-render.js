@@ -49,7 +49,7 @@ function drawTropicalTree(ctx, px, py, s, sway, seed, ageScale, definition, stan
     const bark = definition.bark || '#6c5138';
     const barkLight = definition.barkLight || '#9b7957';
     const crown = mixHex(definition.summer[0], definition.summer[1], 0.74);
-    const sunlit = mixHex(definition.summer[1], '#d7e7a5', 0.46);
+    const sunlit = mixHex(definition.summer[1], '#cfe0a0', 0.34);
     const buttress = Math.max(0, Number(definition.buttress) || 0);
     const tropical = stand?.tropical;
 
@@ -72,6 +72,24 @@ function drawTropicalTree(ctx, px, py, s, sway, seed, ageScale, definition, stan
             ctx.quadraticCurveTo(px + side * trunkW * 0.15, baseY + 0.4 * s, px + trunkW * 0.32, top);
             ctx.closePath();
             ctx.fill();
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    if (stand?.ageClass === 'ancient' || ageScale > 1.1) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(26, 20, 13, 0.82)';
+        ctx.beginPath();
+        ctx.ellipse(px + trunkW * 0.08, baseY - 2.2 * s, trunkW * 0.32, 2.8 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(151, 164, 111, 0.58)';
+        ctx.lineWidth = Math.max(0.45, 0.55 * s);
+        for (let i = 0; i < 4; i++) {
+            const ox = (i - 1.5) * radius * 0.34;
+            ctx.beginPath();
+            ctx.moveTo(px + ox + sway, crownY + radius * 0.2);
+            ctx.quadraticCurveTo(px + ox + 1.6 * s, crownY + radius * 0.55, px + ox - 1.2 * s, crownY + radius * 0.9);
             ctx.stroke();
         }
         ctx.restore();
@@ -153,8 +171,8 @@ function drawTropicalTree(ctx, px, py, s, sway, seed, ageScale, definition, stan
     // Dark undercrown first: a wide, soft layer gives the canopy depth and
     // stops overlapping trees from reading as isolated lollipops.
     ctx.save();
-    ctx.globalAlpha = 0.78;
-    ctx.fillStyle = mixHex(crown, '#1b3a24', 0.36);
+    ctx.globalAlpha = 0.68;
+    ctx.fillStyle = mixHex(crown, '#2f5a38', 0.28);
     ctx.beginPath();
     ctx.ellipse(px + sway, crownY + radius * 0.16, radius * 1.18, radius * 0.62, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -523,12 +541,337 @@ function drawTropicalStump(ctx, px, py, s, seed) {
     ctx.restore();
 }
 
+
+// ── mid-storey, rare and useful floor plants ──────────────────
+function drawTropicalLowerTree(ctx, px, py, s, seed) {
+    const height = (12 + seed * 5) * s;
+    const topX = px + (seed - 0.5) * 2 * s;
+    ctx.save();
+    ctx.strokeStyle = '#6d5439';
+    ctx.lineWidth = Math.max(0.7, 1.1 * s);
+    ctx.beginPath();
+    ctx.moveTo(px, py + 6 * s);
+    ctx.quadraticCurveTo(px + (seed - 0.5) * 2 * s, py - height * 0.5, topX, py - height);
+    ctx.stroke();
+    ctx.strokeStyle = '#876a47';
+    ctx.lineWidth = Math.max(0.4, 0.45 * s);
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(topX, py - height * 0.72);
+        ctx.lineTo(topX + (i - 1) * 4.5 * s, py - height * (0.9 + i * 0.04));
+        ctx.stroke();
+    }
+    ctx.fillStyle = '#3c7a43';
+    for (let i = 0; i < 5; i++) {
+        const a = i * 2.1 + seed * 4;
+        ctx.beginPath();
+        ctx.ellipse(topX + Math.cos(a) * 3.6 * s, py - height + Math.sin(a) * 1.7 * s,
+            3.4 * s, 1.8 * s, a * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = '#74a955';
+    ctx.beginPath();
+    ctx.ellipse(topX - 1.4 * s, py - height - 1.5 * s, 2.4 * s, 1.2 * s, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawTropicalMedicinalPlant(ctx, px, py, s, seed) {
+    ctx.save();
+    ctx.strokeStyle = '#4f6f3c';
+    ctx.lineWidth = Math.max(0.6, 0.8 * s);
+    for (let i = 0; i < 3; i++) {
+        const ox = (i - 1) * 2.2 * s;
+        ctx.beginPath();
+        ctx.moveTo(px + ox, py + 4 * s);
+        ctx.quadraticCurveTo(px + ox + (seed - 0.5) * 2 * s, py - 5 * s, px + ox * 1.4, py - 9 * s);
+        ctx.stroke();
+        drawLeaf(ctx, px + ox * 1.4, py - 7.5 * s, 2.1 * s, 0.8 * s, i * 0.8, i % 2 ? '#5d8c45' : '#7ca958');
+    }
+    ctx.fillStyle = '#e9dfb4';
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(px + (i - 1) * 1.8 * s, py - (9 + (i % 2)) * s, 0.75 * s, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawTropicalRareOrchid(ctx, px, py, s, seed) {
+    ctx.save();
+    ctx.strokeStyle = '#698b4f';
+    ctx.lineWidth = Math.max(0.45, 0.55 * s);
+    ctx.beginPath();
+    ctx.moveTo(px, py + 4 * s);
+    ctx.quadraticCurveTo(px + 1.5 * s, py - 8 * s, px + (seed - 0.5) * 3 * s, py - 14 * s);
+    ctx.stroke();
+    const cx = px + (seed - 0.5) * 3 * s;
+    const cy = py - 14 * s;
+    ctx.fillStyle = '#f3f0dc';
+    for (let i = 0; i < 5; i++) {
+        const a = i * (Math.PI * 2 / 5) - Math.PI / 2;
+        ctx.beginPath();
+        ctx.ellipse(cx + Math.cos(a) * 2.2 * s, cy + Math.sin(a) * 1.5 * s,
+            2.2 * s, 0.9 * s, a, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = '#d8c46c';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 0.85 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawTropicalToxicPlant(ctx, px, py, s, seed) {
+    ctx.save();
+    ctx.strokeStyle = '#4d5d36';
+    ctx.lineWidth = Math.max(0.55, 0.7 * s);
+    ctx.beginPath();
+    ctx.moveTo(px, py + 4 * s);
+    ctx.quadraticCurveTo(px - 1.5 * s, py - 5 * s, px + (seed - 0.5) * 3 * s, py - 10 * s);
+    ctx.stroke();
+    drawLeaf(ctx, px - 1.7 * s, py - 6 * s, 2.4 * s, 0.85 * s, -0.5, '#416b3b');
+    drawLeaf(ctx, px + 1.9 * s, py - 7 * s, 2.2 * s, 0.8 * s, 0.55, '#557d43');
+    ctx.fillStyle = '#7c3a56';
+    for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.arc(px + (i - 1.5) * 1.5 * s, py - (9 + (i % 2) * 1.4) * s, 0.75 * s, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawTropicalVectors(ctx, px, py, s, seed) {
+    ctx.save();
+    ctx.globalAlpha = 0.38;
+    ctx.fillStyle = '#2c3128';
+    for (let i = 0; i < 5; i++) {
+        const a = i * 1.9 + seed * 5;
+        ctx.beginPath();
+        ctx.arc(px + Math.cos(a) * 5 * s, py - 4 * s + Math.sin(a) * 2 * s, 0.28 * s, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawTropicalSurfaceRoots(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(92, 71, 46, 0.82)';
+    ctx.lineWidth = Math.max(0.75, 1.05 * s);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+        const y = py + (2 + i * 1.3) * s;
+        ctx.beginPath();
+        ctx.moveTo(px - cellPx * 0.34, y + (s1 - 0.5) * 2 * s);
+        ctx.bezierCurveTo(px - cellPx * 0.1, y - 2 * s, px + cellPx * 0.12, y + 1.6 * s,
+            px + cellPx * (0.23 + (i % 2) * 0.08), y - (s2 - 0.5) * 2 * s);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawTropicalRottingLog(ctx, px, py, s, seed) {
+    ctx.save();
+    ctx.fillStyle = '#4d3b28';
+    ctx.beginPath();
+    ctx.ellipse(px, py + 3 * s, 9 * s, 2.2 * s, 0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#6a5235';
+    ctx.beginPath();
+    ctx.ellipse(px - 1.5 * s, py + 2.1 * s, 7.2 * s, 1.2 * s, 0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#9a8a5e';
+    ctx.beginPath();
+    ctx.arc(px + 5.8 * s, py + 2.5 * s, 1.2 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#c5a05c';
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(px - 4 * s + i * 2.4 * s, py + 0.8 * s, 1.3 * s, 0.55 * s, 0.1, Math.PI, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = '#5f8c4c';
+    ctx.beginPath();
+    ctx.ellipse(px + (seed - 0.5) * 8 * s, py + 3.6 * s, 2.4 * s, 0.8 * s, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawTropicalFishTrap(ctx, px, py, s) {
+    ctx.save();
+    ctx.strokeStyle = '#8a704b';
+    ctx.lineWidth = Math.max(0.5, 0.6 * s);
+    ctx.beginPath();
+    ctx.moveTo(px - 3 * s, py + 4 * s);
+    ctx.lineTo(px - 1.5 * s, py - 4 * s);
+    ctx.moveTo(px + 3 * s, py + 4 * s);
+    ctx.lineTo(px + 1.5 * s, py - 4 * s);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(157, 134, 84, 0.7)';
+    ctx.beginPath();
+    ctx.moveTo(px - 2.4 * s, py - 1 * s);
+    ctx.lineTo(px + 2.4 * s, py - 1 * s);
+    ctx.lineTo(px + 3.2 * s, py + 2.5 * s);
+    ctx.lineTo(px - 3.2 * s, py + 2.5 * s);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(74, 57, 35, 0.6)';
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(px - 2 * s + i * 2 * s, py - 0.7 * s);
+        ctx.lineTo(px - 2.4 * s + i * 2 * s, py + 2.3 * s);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// ── water: streams, rivers, falls, floods ────────────────────
+function drawTropicalStream(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    const y = py + (s1 - 0.5) * cellPx * 0.42;
+    ctx.save();
+    ctx.fillStyle = '#163b3d';
+    ctx.globalAlpha = 0.82;
+    ctx.beginPath();
+    ctx.moveTo(px - cellPx * 0.44, y - 2.6 * s);
+    ctx.bezierCurveTo(px - cellPx * 0.18, y - 4.5 * s, px + cellPx * 0.1, y + 3.2 * s, px + cellPx * 0.42, y - 1.2 * s);
+    ctx.lineTo(px + cellPx * 0.42, y + 1.4 * s);
+    ctx.bezierCurveTo(px + cellPx * 0.1, y + 4.8 * s, px - cellPx * 0.18, y - 2.2 * s, px - cellPx * 0.44, y + 0.7 * s);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(181, 214, 198, 0.45)';
+    ctx.lineWidth = Math.max(0.45, 0.55 * s);
+    ctx.beginPath();
+    ctx.moveTo(px - cellPx * 0.35, y - 0.4 * s);
+    ctx.quadraticCurveTo(px, y + 1.5 * s, px + cellPx * 0.34, y - 0.2 * s);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(82, 90, 68, 0.8)';
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(px + (i - 1) * 5 * s, y + (i % 2 ? 2.4 : -2.2) * s, 1.2 * s, 0.55 * s, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawTropicalRiver(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    const edge = py + cellPx * (0.22 + s2 * 0.08);
+    ctx.save();
+    ctx.fillStyle = '#10343a';
+    ctx.globalAlpha = 0.86;
+    ctx.beginPath();
+    ctx.moveTo(px - cellPx * 0.5, edge + 5 * s);
+    ctx.bezierCurveTo(px - cellPx * 0.2, edge - 2 * s, px + cellPx * 0.12, edge + 3 * s, px + cellPx * 0.5, edge - 3 * s);
+    ctx.lineTo(px + cellPx * 0.5, py + cellPx * 0.5);
+    ctx.lineTo(px - cellPx * 0.5, py + cellPx * 0.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(185, 216, 202, 0.36)';
+    ctx.lineWidth = Math.max(0.5, 0.65 * s);
+    ctx.beginPath();
+    ctx.moveTo(px - cellPx * 0.4, edge + 2.5 * s);
+    ctx.quadraticCurveTo(px, edge + 5 * s, px + cellPx * 0.42, edge + 1.2 * s);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(107, 121, 82, 0.7)';
+    ctx.setLineDash([2.5 * s, 3 * s]);
+    ctx.beginPath();
+    ctx.moveTo(px - cellPx * 0.45, edge - 2 * s);
+    ctx.quadraticCurveTo(px, edge + 0.5 * s, px + cellPx * 0.45, edge - 4 * s);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawTropicalWaterfall(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    const cx = px + (s1 - 0.5) * cellPx * 0.35;
+    const top = py - cellPx * 0.34;
+    const bottom = py + cellPx * 0.18;
+    ctx.save();
+    ctx.fillStyle = '#33483d';
+    ctx.beginPath();
+    ctx.ellipse(cx, top + 2 * s, 7.5 * s, 3 * s, 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(206, 230, 220, 0.58)';
+    ctx.beginPath();
+    ctx.moveTo(cx - 3.4 * s, top);
+    ctx.quadraticCurveTo(cx - 4.8 * s, py, cx - 2.8 * s, bottom);
+    ctx.lineTo(cx + 2.8 * s, bottom);
+    ctx.quadraticCurveTo(cx + 4.4 * s, py, cx + 3.4 * s, top);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(240, 252, 246, 0.7)';
+    ctx.lineWidth = Math.max(0.5, 0.55 * s);
+    for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(cx + (i - 1.5) * 1.5 * s, top + 1 * s);
+        ctx.quadraticCurveTo(cx + (i - 1.5) * 2.2 * s, py, cx + (i - 1.5) * 1.8 * s, bottom - 1 * s);
+        ctx.stroke();
+    }
+    ctx.fillStyle = '#1a4550';
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    ctx.ellipse(cx, bottom, 7.5 * s, 2.6 * s, 0.03, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(225, 244, 236, 0.42)';
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(cx + (i - 1) * 2.4 * s, bottom - 1.2 * s, 0.8 * s, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawTropicalFlood(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    const y = py + cellPx * 0.32;
+    ctx.save();
+    ctx.fillStyle = 'rgba(24, 66, 65, 0.32)';
+    ctx.beginPath();
+    ctx.ellipse(px + (s1 - 0.5) * cellPx * 0.2, y, cellPx * 0.42, 6 * s, 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(181, 211, 194, 0.22)';
+    ctx.lineWidth = Math.max(0.4, 0.5 * s);
+    ctx.beginPath();
+    ctx.moveTo(px - cellPx * 0.32, y - 1.2 * s);
+    ctx.quadraticCurveTo(px, y + 1.4 * s, px + cellPx * 0.3, y - 0.7 * s);
+    ctx.stroke();
+    ctx.fillStyle = '#7f6f43';
+    for (let i = 0; i < 2; i++) {
+        ctx.beginPath();
+        ctx.ellipse(px + (i ? 3 : -4) * s + (s2 - 0.5) * 4 * s, y + 0.8 * s, 1.4 * s, 0.45 * s, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawTropicalWater(ctx, px, py, cellPx, stand, s1, s2) {
+    const t = stand?.tropical;
+    if (!t) return;
+    const water = t.water;
+    const streamFormation = t.formation === 'tropical-floodplain'
+        || t.formation === 'tropical-riverbank'
+        || t.formation === 'tropical-montane';
+    if (water.largeRivers > 0.58 && s1 > 0.7) drawTropicalRiver(ctx, px, py, cellPx, s1, s2);
+    else if (streamFormation && water.streams > 0.55 && s1 > 0.82) drawTropicalStream(ctx, px, py, cellPx, s1, s2);
+    if (water.waterfalls && s1 > 0.34) drawTropicalWaterfall(ctx, px, py, cellPx, s1, s2);
+    if (water.temporaryFloods > 0.62 && s2 > 0.62 && water.largeRivers <= 0.58) {
+        drawTropicalFlood(ctx, px, py, cellPx, s1, s2);
+    }
+}
+
 export function drawTropicalUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey) {
     const s = cellPx / 48;
     const t = stand?.tropical;
     if (!t) return false;
     const f = t.features;
     const roll = s1;
+    if (f['1.2.4.22'] > 0.4 && s3 > 0.82) { drawTropicalRareOrchid(ctx, px, py, s, s2); return true; }
+    if (f['1.2.4.21'] > 0.5 && s3 > 0.68) { drawTropicalMedicinalPlant(ctx, px, py, s, s2); return true; }
+    if (f['1.2.4.51'] > 0.55 && s2 > 0.84) { drawTropicalToxicPlant(ctx, px, py, s, s1); return true; }
+    if (f['1.2.4.5'] > 0.5 && s3 < 0.38) { drawTropicalLowerTree(ctx, px, py, s, s2); return true; }
+    if (f['1.2.4.53'] > 0.55 && s3 > 0.9) { drawTropicalVectors(ctx, px, py, s, s2); return true; }
     if (f['1.2.4.20'] > 0.18 && s2 > 0.76) { drawPitcherPlant(ctx, px, py, s, s2); return true; }
     if (f['1.2.4.15'] > 0.35 && roll < 0.22) { drawGiantFern(ctx, px, py, s, s2); return true; }
     if (f['1.2.4.16'] > 0.4 && s3 > 0.7) { drawOrchidSpray(ctx, px, py, s, s2); return true; }
@@ -550,6 +893,10 @@ export function drawTropicalFloor(ctx, px, py, cellPx, stand, s1, s2, dayOfYear,
     const s = cellPx / 48;
     const t = stand?.tropical;
     if (!t) return;
+    drawTropicalWater(ctx, px, py, cellPx, stand, s1, s2);
+    if (t.soil.surfaceRoots > 0.48 && s1 > 0.45) drawTropicalSurfaceRoots(ctx, px, py, cellPx, s1, s2);
+    if (t.soil.decayingMatter > 0.52 && s2 > 0.72) drawTropicalRottingLog(ctx, px, py, s, s1);
+    if (t.landUse.fishing && t.water.largeRivers > 0.45 && s1 > 0.84) drawTropicalFishTrap(ctx, px, py, s);
     if (t.water.pools > 0.32 && s1 < 0.16 + t.water.pools * 0.2) {
         drawTropicalPool(ctx, px + (s2 - 0.5) * cellPx * 0.2, py + 2 * s, cellPx, stand, s1, s2);
     }

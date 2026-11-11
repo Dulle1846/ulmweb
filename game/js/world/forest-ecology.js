@@ -1613,14 +1613,20 @@ export function forestFaunaFor(stand, dayOfYear, climate = 'temperate', roll = 0
         if (stand.tropical.features['1.2.4.38'] > 0.45) extra.push('jaguar');
         if (stand.tropical.water.floodplain || stand.tropical.water.pools > 0.4) extra.push('anaconda', 'river-fish');
         if (stand.tropical.landUse.riverTrade) extra.push('macaw', 'capybara');
+        if (stand.tropical.features['1.2.4.51'] > 0.55) extra.push('poison-dart-frog', 'bullet-ant');
+        if (stand.tropical.features['1.2.4.53'] > 0.55) extra.push('mosquito');
         if (stand.ageClass === 'ancient') extra.push('harpy-eagle', 'spider-monkey');
     }
-    const unique = [...new Set([...active, ...extra])]
+    // Tropical observations put the signature monkeys, birds and water fauna
+    // first. Otherwise the fixed picker could spend all three slots on
+    // temperate edge species and the rainforest canvas would look empty.
+    const ordered = tropicalStand ? [...extra, ...active] : [...active, ...extra];
+    const unique = [...new Set(ordered)]
         .filter(id => FAUNA[id])
         .filter(id => !(season === 'winter' && ['songbird', 'butterfly', 'ant', 'bee'].includes(id)));
     if (!unique.length) return [];
     const first = Math.floor(clamp01(roll) * unique.length) % unique.length;
-    const count = tropicalStand ? 3 : season === 'winter' ? 1 : 2;
+    const count = tropicalStand ? 4 : season === 'winter' ? 1 : 2;
     const picked = [];
     for (let index = 0; index < count && index < unique.length; index++) {
         const id = unique[(first + index * 2) % unique.length];

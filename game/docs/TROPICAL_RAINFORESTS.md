@@ -132,6 +132,48 @@ Die Tests prüfen zusätzlich, dass jede der zwölf Formationen wirklich generie
 
 Flußnahe Auen und Uferwälder können kleine Siedlungen, Bootsanleger, Ackerflächen und Flusshandel tragen. Aufgegebene Plantagen und Sekundärwälder führen zu Rodungsdruck und Wiederbewuchs. Der Renderer zeichnet dafür kleine Pfahlbauten, Feldzeilen, Plantagenreihen, Kanus, Stümpfe und junge Triebe; die Werte bleiben aus dem Stand abgeleitet und werden nicht als neue Karte gespeichert.
 
+## Audit 1.2.4 — Status (11.11.2026)
+
+**Pflichtpunkte: 65/65 vorhanden.** Die Daten, Güter, Fauna, Gefahren und
+Landnutzung sind vollständig; in diesem Durchgang wurden die noch fehlenden
+sichtbaren Pfade nachgezogen.
+
+### In diesem Audit nachgezogen
+
+| Punkte | Ergänzung |
+| --- | --- |
+| 1.2.4.5, 1.2.4.11 | Eigene mittlere Baumschicht mit kleinen Kronen zwischen Unterwuchs und Kronendach |
+| 1.2.4.8 | Alte Bäume erhalten Baumhöhlen und hängendes Bartmoos |
+| 1.2.4.21 | Medizinpflanzen mit Blüten und eigenem Blattbild |
+| 1.2.4.22 | Seltene Geisterorchidee als eigene, helle Epiphytensilhouette |
+| 1.2.4.25 | Freiliegende Oberflächenwurzeln auf dem Waldboden |
+| 1.2.4.26 | Verrottende Stämme mit Pilzen und Moos |
+| 1.2.4.32–35 | Bäche, breite Flüsse, Wasserfälle und temporäre Flutwasserflächen als eigene Wassergrafik |
+| 1.2.4.37–43 | Primaten, Reptilien, Fische und Amphibien haben eigene Canvas-Gruppen; Jaguar/Ozelot erhalten Fellzeichnung, Tukane, Macaws und Harpyien Farben |
+| 1.2.4.51, 1.2.4.53 | Giftpflanzen und Stechmücken-/Parasitenhinweise im Unterwuchs |
+| 1.2.4.62–63 | Fischfalle am Flussufer und Kanu-/Handelsspuren |
+
+### Vollständig vorhanden
+
+- **1.2.4.1–20:** Baumriesen, Brettwurzeln, Stamm-/Rindenvielfalt, Kronenschichten, Blattgrößen, Blüten/Früchte, Urwaldbäume, Bodenfarne/Moose, Strauch-/Jungbaumschicht, Lianen, Epiphyten, Riesenfarn, Orchideen/Bromelien, Großblattpflanzen, Palmen, Fruchtsträucher und Kannenpflanzen.
+- **1.2.4.23–29:** verwitterte Latosole, dunkle Feuchthumusböden, Oberflächenwurzeln, Totholz/Streu, Tümpel, Feuchtevielfalt und Auenböden.
+- **1.2.4.37–50:** alle tropischen Faunengruppen und die Güterpfade für Edelhölzer, Früchte/Nüsse, Gewürze, Medizin, Fasern/Harze, Honig/Tierprodukte und seltene Materialien.
+- **1.2.4.55, 1.2.4.57, 1.2.4.59–63, 1.2.4.65:** Bewegungs-/Sichtdruck, Raubtiergefahr, Siedlungen, Ackerbau, Plantagen, Jagd/Fischfang, Flusshandel und Wiederbewuchs.
+
+### Risiko- und Systempfad statt separater Grafik
+
+- **1.2.4.30, 1.2.4.31, 1.2.4.56:** Regen, Feuchte, Sturm und Flut laufen über die bestehende Wetter-, Wasser- und Sichtpipeline.
+- **1.2.4.52–54:** Krankheit, Parasiten und Verderbnis sind abgeleitete Risiken und fließen in `workFactor`, Sichtprofil und Sammelertrag ein; die tropischen Medizingüter sind über die bestehende Medizinlogik verbrauchbar. Eine separate Malaria-/Parasiten-Epidemie ist bewusst nicht modelliert.
+- **1.2.4.58:** schlechte Sicht ist ein echtes Sichtprofil (`sightRadius`, `visibility`), kein separater Bildfilter.
+- **1.2.4.64:** Rodung ist als `clearance`, Stumpf, Bestandsrückgang und langfristige Sukzession modelliert; die unmittelbare Folge ist sichtbar, die Jahrzehntfolge bewusst simulationsseitig.
+
+### Offene Restpunkte
+
+**Keine offenen Pflichtpunkte.** Die verbleibende Grenze ist die Darstellungsform:
+Das Spiel ist eine deterministische 2D-Canvas-Welt, keine 3D-Mesh-Welt. Krankheiten
+und Parasiten bleiben Risiko-/Gesundheitswerte statt eigener Krankheits-Sprites;
+Wasserfälle erscheinen an montanen Kacheln, nicht als neue Hydrologie-Simulation.
+
 ## Reproduktion
 
 ```bash
@@ -150,4 +192,4 @@ Die Browser-Referenz liegt unter `docs/terrain-reference/tropical-reference.png`
 - `npm test`: 759/759 pass; syntax and relative imports clean for 107 source files and 189 UI ids.
 - Focused tropical suite: 8/8, including all 65 point ids, all 12 formations, deterministic stand generation and the complete tropical shader palette.
 - `npm run test:tropical-reference`: 12/12 formations and four seasonal frames captured on WebKit WebGL at 800 × 800. The metadata records all 65 features for every formation.
-- `npm run test:campaign`: 10,040 ticks, 25 years, 13/13 ambitions, no game over, 0.877 ms per tick.
+- `npm run test:campaign`: 10,040 ticks, 25 years, 13/13 ambitions, no game over, 0.823 ms per tick.

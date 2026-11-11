@@ -66,7 +66,17 @@ all flow through the existing simulation, survey and economy paths.
 **Verification:** `npm test` 759/759; syntax and relative imports clean for 107
 source files / 189 UI ids; focused tropical suite 8/8; browser reference 12/12
 formations and four seasonal frames on WebKit WebGL at 800 × 800; 25-year
-campaign 10,040 ticks / 13/13 ambitions / no game over / 0.877 ms per tick.
+campaign 10,040 ticks / 13/13 ambitions / no game over / 0.823 ms per tick.
+
+**Audit pass:** The 65-point audit closed the remaining presentation gaps:
+native primate, reptile, fish and amphibian silhouettes; jaguar/ocelot rosettes
+and toucan/macaw colour; mid-storey trees; ancient hollows and beard moss;
+medicinal, rare and toxic understorey plants; exposed roots, rotting logs and
+rotting logs with fungus; streams, broad rivers, waterfalls, temporary flood water,
+fish traps and mosquito vectors. Watercourses are limited to floodplain,
+riverbank and montane formations so ordinary rainforest tiles never acquire
+artificial blue stripes. Full status and the explicit non-visual risk paths are
+documented in `docs/TROPICAL_RAINFORESTS.md`.
 
 ### 3.15.0-dev — Mischwälder (1.2.3)
 
