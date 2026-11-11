@@ -157,3 +157,16 @@ test("units follow cached routes instead of repeatedly pushing into a building",
     assert.ok(isWalkable(villager.x,villager.y),"villager must not enter blocked building tiles");
     assert.ok(Number.isFinite(villager.x)&&Number.isFinite(villager.y));
 });
+
+test("nearby walkers keep personal space while heading for the same target",()=>{
+    prepare();
+    const first=spawnEntity(40.5,40.5,TYPE.VILLAGER);
+    const second=spawnEntity(40.51,40.5,TYPE.VILLAGER);
+    for(const unit of [first,second]){
+        unit.routinePhase=0;unit.routineTimer=1000;unit.targetX=45.5;unit.targetY=40.5;
+        unit.anchor={x:40.5,y:40.5};unit.home={x:40.5,y:40.5};unit.movePause=0;unit.path=null;
+    }
+    for(let step=0;step<90;step++)updateFriendlyMovement(1/30);
+    assert.ok(Math.hypot(first.x-second.x,first.y-second.y)>0.25,"walkers must not occupy the same spot");
+    assert.ok(isWalkable(first.x,first.y)&&isWalkable(second.x,second.y),"separation must stay on walkable ground");
+});

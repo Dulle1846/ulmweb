@@ -18,10 +18,12 @@ const rand=(min,max)=>seededRand(min,max,"villagers");
 import { BUILDING_WORKFORCE } from '../systems/economy.js';
 import { getRoadSpeedMultiplier,getRoadTravelCost } from '../systems/roads.js';
 import { getForestMovementFactorAt } from '../systems/resource-geography.js';
+import { skillForJob } from '../systems/skills.js';
 
 const MOVING_TYPES = new Set([
     TYPE.VILLAGER, TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT, TYPE.PRIEST,
 ]);
+const LEISURE_TYPES = new Set([TYPE.TAVERN, TYPE.MARKET, TYPE.TEMPLE, TYPE.WELL, TYPE.SHRINE]);
 
 const blockedBuildingTiles=new Set();
 let blockedEntityCount=-1,blockedWorldSeed=-1,blockedWorldEpoch=-1,blockedBuildingVersion=-1;
@@ -146,13 +148,24 @@ export function updateFriendlyMovement(deltaSeconds) {
         buckets.get(key).push(enemy);
     }
 
+    // Residents need personal space even when their route targets coincide.
+    // A tiny spatial hash keeps this local instead of comparing every pair.
+    const unitBuckets = new Map();
+    const unitBucketSize = 1.7;
+    for (const unit of units) {
+        const key = Math.floor(unit.x / unitBucketSize) + ":" + Math.floor(unit.y / unitBucketSize);
+        if (!unitBuckets.has(key)) unitBuckets.set(key, []);
+        unitBuckets.get(key).push(unit);
+    }
+
     units.forEach(unit => {
         const threat = findThreat(unit, buckets, bucketSize);
         if (threat) {
             handleFlee(unit, threat, deltaSeconds, keep);
             return;
         }
-        handleRoutineMovement(unit, deltaSeconds);
+        const avoid = separationSteer(unit, unitBuckets, unitBucketSize);
+        handleRoutineMovement(unit, deltaSeconds, avoid);
     });
 }
 
@@ -208,29 +221,43 @@ function handleFlee(unit, threat, dt, keep=null) {
 
 function advancePhase(unit) {
     unit.routinePhase = (unit.routinePhase + 1) % 5;
+    unit.leisureType = null;
     switch (unit.routinePhase) {
         case ROUTINE.GO_TO_WORK:
+            unit.routineActivity = "commute";
             if (unit.workplace && !unit.workplace.dead) setTargetNear(unit, unit.workplace.x, unit.workplace.y, 1.5);
             unit.routineTimer = 80 + Math.floor(rand(0, 60));
             break;
         case ROUTINE.WORKING:
+            unit.routineActivity = "work";
             unit.targetX = unit.x; unit.targetY = unit.y;
             unit.velocityX = 0; unit.velocityY = 0;
             unit.visualState = "work";
             unit.routineTimer = ROUTINE.WORK_DURATION + Math.floor(rand(0, 80));
             break;
-        case ROUTINE.ON_BREAK:
-            unit.visualState = "idle";
+        case ROUTINE.ON_BREAK: {
             const safety = Number(unit.person?.needs?.safety ?? 50);
-            const radius = safety < 35 ? 2 : (WANDER_RADIUS[unit.type] || 15);
-            setTargetNear(unit, unit.anchor.x, unit.anchor.y, radius);
+            const leisure = safety < 35 ? null : nearestLeisureSpot(unit);
+            if (leisure) {
+                unit.routineActivity = "social";
+                unit.leisureType = leisure.type;
+                setTargetNear(unit, leisure.x, leisure.y, 2.5);
+            } else {
+                unit.routineActivity = "leisure";
+                const radius = safety < 35 ? 2 : (WANDER_RADIUS[unit.type] || 15);
+                setTargetNear(unit, unit.anchor.x, unit.anchor.y, radius);
+            }
+            unit.visualState = "idle";
             unit.routineTimer = ROUTINE.BREAK_DURATION + Math.floor(rand(0, 40));
             break;
+        }
         case ROUTINE.GO_HOME:
+            unit.routineActivity = "homeward";
             setTargetNear(unit, unit.home.x, unit.home.y, 2);
             unit.routineTimer = 60 + Math.floor(rand(0, 40));
             break;
         case ROUTINE.RESTING:
+            unit.routineActivity = "rest";
             unit.targetX = unit.x; unit.targetY = unit.y;
             unit.velocityX = 0; unit.velocityY = 0;
             unit.visualState = "idle";
@@ -241,20 +268,20 @@ function advancePhase(unit) {
     }
 }
 
-function handleRoutineMovement(unit, dt) {
+function handleRoutineMovement(unit, dt, avoid = { x: 0, y: 0 }) {
     if (unit.routinePhase === ROUTINE.WORKING || unit.routinePhase === ROUTINE.RESTING) {
         unit.velocityX *= 0.9;
         unit.velocityY *= 0.9;
         return;
     }
-    moveToward(unit, dt);
+    moveToward(unit, dt, avoid);
 }
 
 // ═══════════════════════════════════════════════════════════════
 //  BEWEGUNGSMOTOR
 // ═══════════════════════════════════════════════════════════════
 
-function moveToward(unit, dt) {
+function moveToward(unit, dt, avoid = { x: 0, y: 0 }) {
     if (unit.movePause > 0) {
         unit.movePause -= dt;
         unit.velocityX += (0 - unit.velocityX) * Math.min(1, dt * 6);
@@ -265,7 +292,8 @@ function moveToward(unit, dt) {
 
     const targetTileX=Math.floor(unit.targetX),targetTileY=Math.floor(unit.targetY);
     if(unit.path&&(unit.pathTargetX!==targetTileX||unit.pathTargetY!==targetTileY||unit.pathVersion!==((state.buildingCollisionVersion||0)+':'+(state.roads?.revision||0))))unit.path=null;
-    if(unit.path&&followCachedPath(unit,dt,getRoadSpeedMultiplier(unit.x,unit.y)*getForestMovementFactorAt(unit.x,unit.y)))return;
+    const travelSpeed = (UNIT_SPEED[unit.type] || 1)*getRoadSpeedMultiplier(unit.x,unit.y)*getForestMovementFactorAt(unit.x,unit.y);
+    if(unit.path&&followCachedPath(unit,dt,travelSpeed,avoid))return;
 
     const dx = unit.targetX - unit.x;
     const dy = unit.targetY - unit.y;
@@ -279,10 +307,14 @@ function moveToward(unit, dt) {
         return;
     }
 
-    const speed = (UNIT_SPEED[unit.type] || 1.0)*getRoadSpeedMultiplier(unit.x,unit.y)*getForestMovementFactorAt(unit.x,unit.y);
+    // Steer around neighbours, but keep the target vector dominant so a crowd
+    // cannot trap a resident in a permanent orbit around a doorway.
+    const steerX = dx / dist + (avoid.x || 0) * 1.15;
+    const steerY = dy / dist + (avoid.y || 0) * 1.15;
+    const steerLength = Math.hypot(steerX, steerY) || 1;
     const s = Math.min(1, dt * 4);
-    unit.velocityX += ((dx / dist) * speed - unit.velocityX) * s;
-    unit.velocityY += ((dy / dist) * speed - unit.velocityY) * s;
+    unit.velocityX += ((steerX / steerLength) * travelSpeed - unit.velocityX) * s;
+    unit.velocityY += ((steerY / steerLength) * travelSpeed - unit.velocityY) * s;
 
     const nx = unit.x + unit.velocityX * dt;
     const ny = unit.y + unit.velocityY * dt;
@@ -302,7 +334,7 @@ function moveToward(unit, dt) {
         if(route?.length){
             unit.path=route;unit.pathIndex=0;unit.pathTargetX=targetTileX;unit.pathTargetY=targetTileY;
             unit.pathVersion=(state.buildingCollisionVersion||0)+':'+(state.roads?.revision||0);
-            if(followCachedPath(unit,dt,getRoadSpeedMultiplier(unit.x,unit.y)*getForestMovementFactorAt(unit.x,unit.y)))return;
+            if(followCachedPath(unit,dt,travelSpeed,avoid))return;
         }
     }
     if (moved) {
@@ -697,7 +729,7 @@ export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
     return result;
 }
 
-function followCachedPath(unit,dt,speedMultiplier=1){
+function followCachedPath(unit,dt,speedMultiplier=1,avoid={x:0,y:0}){
     const path=unit.path;
     if(!Array.isArray(path)||!path.length)return false;
     while(unit.pathIndex<path.length){
@@ -706,17 +738,81 @@ function followCachedPath(unit,dt,speedMultiplier=1){
         unit.pathIndex++;
     }
     if(unit.pathIndex>=path.length){unit.path=null;return false;}
-    const node=path[unit.pathIndex],dx=node.x-unit.x,dy=node.y-unit.y,dist=Math.hypot(dx,dy);
+    // If the next few nodes form a clear line, aim at the furthest one. This
+    // removes the grid-node zigzag without cutting through a wall or shoreline.
+    const ahead=lookAheadPathNode(unit,path);
+    unit.pathIndex=ahead.index;
+    const node=ahead.node,dx=node.x-unit.x,dy=node.y-unit.y,dist=Math.hypot(dx,dy);
     if(dist<0.001){unit.pathIndex++;return true;}
     const speed=(UNIT_SPEED[unit.type]||1)*speedMultiplier,s=Math.min(1,dt*4);
-    unit.velocityX+=(dx/dist*speed-unit.velocityX)*s;
-    unit.velocityY+=(dy/dist*speed-unit.velocityY)*s;
+    const steerX=dx/dist+(avoid.x||0)*1.15,steerY=dy/dist+(avoid.y||0)*1.15;
+    const steerLength=Math.hypot(steerX,steerY)||1;
+    unit.velocityX+=((steerX/steerLength)*speed-unit.velocityX)*s;
+    unit.velocityY+=((steerY/steerLength)*speed-unit.velocityY)*s;
     let nx=unit.x+unit.velocityX*dt,ny=unit.y+unit.velocityY*dt;
     if(Math.hypot(node.x-nx,node.y-ny)<0.22){nx=node.x;ny=node.y;unit.velocityX=0;unit.velocityY=0;}
     if(!isWalkable(nx,ny,unit)){unit.path=null;unit.velocityX=0;unit.velocityY=0;return false;}
     unit.x=nx;unit.y=ny;unit.state="walk";unit.visualState="walk";
     if(Math.abs(unit.velocityX)>0.02)unit.facing=unit.velocityX>0?1:-1;
     return true;
+}
+
+function lineWalkable(unit, x, y) {
+    const dx = x - unit.x, dy = y - unit.y;
+    const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.35));
+    for (let step = 1; step <= steps; step++) {
+        const t = step / steps;
+        if (!isWalkable(unit.x + dx * t, unit.y + dy * t, unit)) return false;
+    }
+    return true;
+}
+
+function lookAheadPathNode(unit, path) {
+    const limit = Math.min(path.length - 1, unit.pathIndex + 4);
+    for (let index = limit; index > unit.pathIndex; index--) {
+        const candidate = path[index];
+        if (lineWalkable(unit, candidate.x, candidate.y)) return { index, node: candidate };
+    }
+    return { index: unit.pathIndex, node: path[unit.pathIndex] };
+}
+
+function separationSteer(unit, buckets, bucketSize) {
+    let ax = 0, ay = 0;
+    const cx = Math.floor(unit.x / bucketSize), cy = Math.floor(unit.y / bucketSize);
+    for (let bx = cx - 1; bx <= cx + 1; bx++) {
+        for (let by = cy - 1; by <= cy + 1; by++) {
+            const local = buckets.get(bx + ":" + by) || [];
+            for (const other of local) {
+                if (other === unit || other.dead) continue;
+                const ox = unit.x - other.x, oy = unit.y - other.y;
+                const d = Math.hypot(ox, oy);
+                if (d < 0.0001) {
+                    const direction = String(unit.id || "").localeCompare(String(other.id || "")) <= 0 ? 1 : -1;
+                    ax += 0.55 * direction;
+                    ay += 0.3;
+                    continue;
+                }
+                if (d >= 1.45) continue;
+                const weight = (1.45 - d) / 1.45;
+                ax += (ox / d) * weight;
+                ay += (oy / d) * weight;
+            }
+        }
+    }
+    const length = Math.hypot(ax, ay);
+    if (length > 1) { ax /= length; ay /= length; }
+    return { x: ax, y: ay };
+}
+
+function nearestLeisureSpot(unit) {
+    let best = null, bestDistance = 24;
+    for (const entity of state.entities) {
+        if (entity.dead || !LEISURE_TYPES.has(entity.type)) continue;
+        if (entity.construction && entity.construction.stage < 3) continue;
+        const d = Math.hypot(unit.x - entity.x, unit.y - entity.y);
+        if (d < bestDistance) { bestDistance = d; best = entity; }
+    }
+    return best;
 }
 
 function assignJob(villager,workplaces=null,workerCounts=new Map()) {
@@ -747,7 +843,8 @@ function assignJob(villager,workplaces=null,workerCounts=new Map()) {
         for (const b of (workplaces?.get(m)||getEntitiesOfType(m.building))) {
             if((workerCounts.get(b)||0)>=capacity)continue;
             const d = Math.hypot(villager.x - b.x, villager.y - b.y);
-            const score = d + (preferredBuilding ? (m.building === preferredBuilding ? -12 : 8) : 0);
+            const fit = skillForJob(villager.person, m.job);
+            const score = d + (preferredBuilding ? (m.building === preferredBuilding ? -12 : 8) : 0) - (fit - 50) * 0.12;
             if (score < bestScore) { bestScore = score; bestDist = d; best = { workplace: b, job: m.job }; }
         }
     }

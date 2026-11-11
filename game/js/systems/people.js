@@ -1,6 +1,8 @@
 // Persistent person records for named residents and the independently acting king.
 import { random, randInt } from "../core/random.js";
 import {state} from "../core/state.js";
+import { createAppearance, normalizeAppearance } from "./appearance.js";
+import { createSkills, normalizeSkills, advanceJobExperience } from "./skills.js";
 
 export const PERSON_SPECIES = Object.freeze({
     human: { label:"Human", lifespan:82, maturation:16, reproduction:"paired" },
@@ -30,13 +32,18 @@ export function createPersonProfile(entity,{role="resident",species=null}={}){
     const ageYears=randInt(PERSON_SPECIES[chosenSpecies].maturation,Math.max(PERSON_SPECIES[chosenSpecies].maturation+1,Math.min(90,PERSON_SPECIES[chosenSpecies].lifespan)),"people");
     const firstName=pick(FIRST_NAMES,"people"),familyName=pick(FAMILY_NAMES,"people");
     const id=entity.personId||entity.id;
+    const sex=pick(["female","male"],"people");
+    const roleValue=String(role).slice(0,32);
+    const traits=createTraits();
     return {
         id:String(id||entity.id||"person-unknown"),
         name:firstName+" "+familyName,
-        firstName,familyName,species:chosenSpecies,sex:pick(["female","male"],"people"),
-        role:String(role).slice(0,32),
+        firstName,familyName,species:chosenSpecies,sex,
+        role:roleValue,
         ageYears,lifeStage:lifeStage(ageYears,chosenSpecies),
-        traits:createTraits(),needs:createNeeds(),
+        traits,needs:createNeeds(),
+        appearance:createAppearance(String(id||entity.id||"person-unknown"),{species:chosenSpecies,sex,role:roleValue}),
+        skills:createSkills(String(id||entity.id||"person-unknown"),traits),jobExperience:0,
         goals:[pick(["security","prosperity","family","recognition","knowledge","faith","adventure","power"],"people")],
         memories:[],relationships:[],kinship:{parents:[],children:[],partners:[],guardians:[],wards:[]},secrets:[],
         activeGoal:null,goalHistory:[],lastNeedsYear:Math.max(1,Number(state.year)||1),
@@ -52,14 +59,20 @@ export function normalizePersonProfile(saved,entity,{role="resident"}={}){
     const ageYears=Number.isFinite(ageValue)?Math.max(0,Math.min(1000,Math.floor(ageValue))):20;
     const traits=Object.fromEntries(TRAITS.map(key=>[key,clamp(saved.traits?.[key])]));
     const needs=Object.fromEntries(NEEDS.map(key=>[key,clamp(saved.needs?.[key])]));
+    const id=String(entity.personId||saved.id||entity.id||"person-unknown");
+    const roleValue=typeof saved.role==="string"?saved.role.slice(0,32):role;
+    const sex=legacySex(saved.sex,id);
+    const appearance=normalizeAppearance(saved.appearance,id,{species,sex,role:roleValue});
+    const skills=normalizeSkills(saved.skills,id,traits);
+    const jobExperience=Math.max(0,Math.min(100,Math.floor(Number(saved.jobExperience)||0)));
     const list=(value,max)=>Array.isArray(value)?value.filter(item=>item&&typeof item==="object").slice(0,max):[];
     const name=typeof saved.name==="string"&&saved.name.length<=90?saved.name:firstName+" "+familyName;
     return {
-        id:String(entity.personId||saved.id||entity.id||"person-unknown"),
-        name,firstName,familyName,species,sex:legacySex(saved.sex,entity.personId||saved.id||entity.id),
-        role:typeof saved.role==="string"?saved.role.slice(0,32):role,
+        id,
+        name,firstName,familyName,species,sex,
+        role:roleValue,
         ageYears,lifeStage:lifeStage(ageYears,species),
-        traits,needs,
+        traits,needs,appearance,skills,jobExperience,
         goals:Array.isArray(saved.goals)?saved.goals.filter(x=>typeof x==="string").slice(0,8):[],
         memories:list(saved.memories,24).map((item,index)=>({
             id:String(item.id||("legacy-memory-"+index)).slice(0,120),
@@ -127,7 +140,7 @@ export function addPersonMemory(entity,memory){
 export function getPersonSnapshot(entity){
     if(!entity)return null;
     const person=ensurePersonProfile(entity);
-    return {id:person.id,name:person.name,species:person.species,sex:person.sex,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,bornAtYear:person.bornAtYear,lastAgedYear:person.lastAgedYear,traits:{...person.traits},needs:{...person.needs},goals:[...person.goals],activeGoal:person.activeGoal?{...person.activeGoal}:null,goalHistory:person.goalHistory.map(item=>({...item})),lastNeedsYear:person.lastNeedsYear,memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item})),kinship:{parents:person.kinship.parents.map(item=>({...item})),children:person.kinship.children.map(item=>({...item})),partners:person.kinship.partners.map(item=>({...item})),guardians:person.kinship.guardians.map(item=>({...item})),wards:person.kinship.wards.map(item=>({...item}))}};
+    return {id:person.id,name:person.name,species:person.species,sex:person.sex,role:person.role,ageYears:person.ageYears,lifeStage:person.lifeStage,bornAtYear:person.bornAtYear,lastAgedYear:person.lastAgedYear,traits:{...person.traits},appearance:{...person.appearance},skills:{...person.skills},jobExperience:person.jobExperience,needs:{...person.needs},goals:[...person.goals],activeGoal:person.activeGoal?{...person.activeGoal}:null,goalHistory:person.goalHistory.map(item=>({...item})),lastNeedsYear:person.lastNeedsYear,memories:person.memories.map(item=>({...item})),relationships:person.relationships.map(item=>({...item})),kinship:{parents:person.kinship.parents.map(item=>({...item})),children:person.kinship.children.map(item=>({...item})),partners:person.kinship.partners.map(item=>({...item})),guardians:person.kinship.guardians.map(item=>({...item})),wards:person.kinship.wards.map(item=>({...item}))}};
 }
 
 
@@ -237,6 +250,7 @@ export function updatePeople(){
         person.ageYears=Math.max(0,Math.min(1000,person.ageYears+elapsed));
         person.lifeStage=lifeStage(person.ageYears,person.species);
         person.lastAgedYear=currentYear;
+        advanceJobExperience(person, entity.workplace && !entity.workplace.dead ? (entity.job || "labour") : "", elapsed);
         aged++;
         if(person.lifeStage!==previousStage){
             const stageLabel=person.lifeStage==="adult"?"adulthood":person.lifeStage==="elder"?"old age":"youth";

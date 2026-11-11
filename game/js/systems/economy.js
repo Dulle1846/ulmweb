@@ -15,6 +15,7 @@ import { getResearchModifiers } from "./research.js";
 import { getCitizenModifiers } from "./population-register.js";
 import { getEndeavourModifiers } from "./endeavours.js";
 import { getCivicModifiers } from "./civic.js";
+import { getJobSkill } from "./skills.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -91,6 +92,8 @@ export function calculateDailyLedger({ population, employed, buildings, foodAvai
 export function getWorkforceSnapshot() {
     const villagers = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER);
     const workersByBuilding = new Map();
+    const skillByBuilding = new Map();
+    const experienceByBuilding = new Map();
     let employed = 0;
     for (const villager of villagers) {
         if ((villager.illnessUntilTick || 0) > state.tick) continue;
@@ -98,6 +101,8 @@ export function getWorkforceSnapshot() {
         const constructionCapacity = workplace?.construction && workplace.construction.stage < 3 ? 2 : 0;
         if (!workplace || workplace.dead || (!BUILDING_WORKFORCE[workplace.type] && !constructionCapacity)) continue;
         workersByBuilding.set(workplace, (workersByBuilding.get(workplace) || 0) + 1);
+        skillByBuilding.set(workplace, (skillByBuilding.get(workplace) || 0) + getJobSkill(villager));
+        experienceByBuilding.set(workplace, (experienceByBuilding.get(workplace) || 0) + Math.max(0, Number(villager.person?.jobExperience) || 0));
         employed++;
     }
     const buildings = state.entities.filter(entity => !entity.dead && entity.isBuilding()).length;
@@ -106,6 +111,8 @@ export function getWorkforceSnapshot() {
         employed,
         unemployed: Math.max(0, villagers.length - employed),
         workersByBuilding,
+        skillByBuilding,
+        experienceByBuilding,
         buildings
     };
 }
@@ -119,7 +126,12 @@ export function getBuildingEfficiency(building, workforce = null) {
     const workers = (workforce || getWorkforceSnapshot()).workersByBuilding.get(building) || 0;
     const productivity = state.city?.enabled ? Math.max(0.7, Math.min(1.05, Number(state.city?.needs?.productivity) || 1)) : 1;
     const civicModifiers = getCivicModifiers();
-    return Math.max(0, Math.min(1, workers / capacity)) * productivity * getCitizenModifiers().productivity *
+    const averageSkill = workers > 0 ? (workforce?.skillByBuilding?.get(building) || 0) / workers : 50;
+    const averageExperience = workers > 0 ? (workforce?.experienceByBuilding?.get(building) || 0) / workers : 0;
+    // A newly assigned resident has potential but not yet a career. Experience
+    // unlocks the skill contribution, so existing balance remains stable on day one.
+    const skillFactor = 1 + (Math.max(0, Math.min(100, averageSkill)) - 50) * 0.0028 * Math.min(1, averageExperience / 25);
+    return Math.max(0, Math.min(1, workers / capacity)) * productivity * getCitizenModifiers().productivity * skillFactor *
         Math.max(0.7, Math.min(1.30, 1 + Number(civicModifiers.production || 0)));
 }
 

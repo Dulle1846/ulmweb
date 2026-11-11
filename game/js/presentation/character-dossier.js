@@ -2,6 +2,8 @@
 import { state } from "../core/state.js";
 import { getFamilySnapshot } from "../systems/families.js";
 import { getRoyalHouse } from "../systems/royal-dynasty.js";
+import { appearanceBustSvg, appearanceSwatches, describeAppearance } from "../systems/appearance.js";
+import { getJobSkill, SKILL_KEYS, SKILL_LABELS } from "../systems/skills.js";
 
 let selectedPersonId = null;
 let dossierStylesRequested = false;
@@ -36,6 +38,14 @@ function portraitSymbol(entity) {
     if (/knight|guard|soldier|marshal|captain|archer/.test(role)) return "portrait-knight";
     if (/noble|lord|lady|court|consort/.test(role)) return female ? "portrait-noblewoman" : "portrait-nobleman";
     return female ? "portrait-noblewoman" : "portrait-villager";
+}
+
+function portraitMarkup(entity, className = "dossier-portrait") {
+    const person = entity?.person || {};
+    if (entity?.isKing || entity?.isRoyalFamily) {
+        return '<svg class="' + className + '" viewBox="0 0 256 320" role="img" aria-label="Portrait of ' + esc(person.name || "person") + '"><use href="assets/royal-portraits.svg#' + portraitSymbol(entity) + '"></use></svg>';
+    }
+    return appearanceBustSvg(person, { className, label: "Portrait of " + (person.name || "resident") });
 }
 
 function personName(personId) {
@@ -100,7 +110,7 @@ function renderPeopleList(query = "") {
             '" data-person-id="' + esc(entity.personId) + '" data-person-role="' + esc(person.role || '') +
             '" data-person-species="' + esc(person.species || '') + '" data-person-status="' + (entity.isArchived ? 'deceased' : 'living') +
             '" aria-pressed="' + String(entity.personId === selectedPersonId) + '">' +
-            '<svg class="person-list-portrait" viewBox="0 0 256 320" aria-hidden="true"><use href="assets/royal-portraits.svg#' + portraitSymbol(entity) + '"></use></svg>' +
+            portraitMarkup(entity, "person-list-portrait") +
             '<span class="person-list-copy"><span class="person-list-name">' + esc(person.name) + (entity.isKing ? ' <b>♛</b>' : '') + '</span>' +
             '<span class="person-list-meta">' + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) + ' · ' +
             Math.floor(Number(person.ageYears) || 0) + (entity.isArchived ? ' · DECEASED' : '') + '</span></span></button>';
@@ -198,6 +208,17 @@ function renderDossier(personId) {
         Math.round(Number(relation.trust) || 0) + ' · RESPECT ' +
         Math.round(Number(relation.respect) || 0) + ' · AFFINITY ' +
         Math.round(Number(relation.affinity) || 0) + '</span></li>').join("");
+    const swatches = appearanceSwatches(person.appearance).map(swatch =>
+        '<span title="' + esc(swatch.label) + '" style="display:inline-block;width:18px;height:18px;border:1px solid #7f6140;border-radius:50%;background:' + esc(swatch.color) + '"></span>').join("");
+    const appearanceMarkup = '<section class="dossier-section"><h3>APPEARANCE</h3>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 4px">' + swatches + '</div>' +
+        '<p>' + esc(describeAppearance(person.appearance)) + '</p></section>';
+    const skillMarkup = SKILL_KEYS.map(key => {
+        const value = Math.max(0, Math.min(100, Number(person.skills?.[key]) || 0));
+        return '<div class="dossier-meter"><span>' + esc(SKILL_LABELS[key] || key) + '</span><i><b style="width:' + value + '%"></b></i><strong>' + Math.round(value) + '</strong></div>';
+    }).join("");
+    const careerMarkup = '<p>' + (entity.isArchived ? 'Recorded' : 'Current role') + ' skill: <strong>' + getJobSkill(entity) + '</strong> · experience ' +
+        Math.max(0, Math.min(100, Math.round(Number(person.jobExperience) || 0))) + '/100</p>' + skillMarkup;
     const activeGoal = person.activeGoal
         ? '<p><strong>' + esc(person.activeGoal.id.replaceAll("_", " ")) + '</strong> · priority ' + Math.round(Number(person.activeGoal.priority) || 0) + ' · since year ' + Math.max(1, Number(person.activeGoal.sinceYear) || 1) + '</p><p>' + esc(person.activeGoal.reason || "") + '</p>'
         : '<p class="dossier-empty">No active personal goal recorded yet.</p>';
@@ -218,7 +239,7 @@ function renderDossier(personId) {
           '</div>'
         : '';
     detail.innerHTML =
-        '<header class="dossier-identity"><svg class="dossier-portrait" viewBox="0 0 256 320" role="img" aria-label="Portrait of ' + esc(person.name) + '"><use href="assets/royal-portraits.svg#' + portraitSymbol(entity) + '"></use></svg>' +
+        '<header class="dossier-identity">' + portraitMarkup(entity) +
         '<div class="dossier-identity-copy"><div class="dossier-kicker">' + (entity.isArchived ? "DECEASED · " : "") + esc(person.species) + ' · ' + esc(person.sex || 'unknown') + ' · ' + esc(person.role) +
         '</div><h2>' + esc(person.name) + '</h2><p>Age ' + Math.floor(Number(person.ageYears) || 0) +
         ' · ' + esc(person.lifeStage) + ' · Born in year ' + Math.max(1, Number(person.bornAtYear) || 1) +
@@ -228,6 +249,7 @@ function renderDossier(personId) {
         '<div class="dossier-columns">' +
         '<div class="dossier-column">' +
         '<section class="dossier-section"><h3>PERSONALITY</h3>' + (traits || '<p class="dossier-empty">No traits recorded.</p>') + '</section>' +
+        appearanceMarkup +
         '<section class="dossier-section"><h3>NEEDS</h3>' + (needs || '<p class="dossier-empty">No needs recorded.</p>') + '</section>' +
         '<section class="dossier-section"><h3>ACTIVE PERSONAL GOAL</h3>' + activeGoal + '</section>' +
         '<section class="dossier-section"><h3>LONG-TERM ASPIRATIONS</h3><p>' + esc((person.goals || []).join(" · ") || "No long-term goals recorded.") + '</p></section>' +
@@ -239,6 +261,7 @@ function renderDossier(personId) {
         renderLinks("GUARDIANS", family.guardians || [], entry => "guardian since year " + entry.sinceYear) +
         renderLinks("WARDS", family.wards || [], entry => "ward since year " + entry.sinceYear) +
         '</div><div class="dossier-column">' +
+        '<section class="dossier-section"><h3>SKILLS &amp; CAREER</h3>' + careerMarkup + '</section>' +
         '<section class="dossier-section"><h3>PERSONAL CHRONICLE</h3>' +
         (memories ? '<div class="dossier-memories">' + memories + '</div>' : '<p class="dossier-empty">No notable memories have been recorded yet.</p>') +
         '</section><section class="dossier-section"><h3>RELATIONSHIPS</h3>' +

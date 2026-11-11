@@ -9,6 +9,7 @@ import {
 import { TYPE, JOB_ICONS } from '../../core/types.js';
 import { state } from '../../core/state.js';
 import { drawAuthoredBuilding } from './building-art.js';
+import { appearanceForEntity, appearanceColors } from '../../systems/appearance.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  HAUPT-EINSTIEG
@@ -774,7 +775,9 @@ function drawPersonMiniature(ctx, entity, sx, sy, cellPx, overrideColor) {
     const scale = cellPx / CELL;
     const px = sx + cellPx / 2;
     const py = sy + cellPx / 2;
-    const color = overrideColor || ROLE_COLORS[entity.type] || "#91a58f";
+    const appearance = entity.person ? appearanceForEntity(entity) : null;
+    const palette = appearance ? appearanceColors(appearance) : null;
+    const color = overrideColor || (palette ? palette.outfit : ROLE_COLORS[entity.type] || "#91a58f");
     const radius = Math.max(1.1, 2.2 * scale);
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.35)";
@@ -785,9 +788,13 @@ function drawPersonMiniature(ctx, entity, sx, sy, cellPx, overrideColor) {
     ctx.beginPath();
     ctx.ellipse(px, py + 1.2 * scale, radius * 0.8, radius * 1.35, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#e1c9a0";
+    ctx.fillStyle = palette ? palette.skin : "#e1c9a0";
     ctx.beginPath();
     ctx.arc(px, py - radius * 0.9, Math.max(0.9, radius * 0.42), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = palette ? palette.hair : "#513c2c";
+    ctx.beginPath();
+    ctx.arc(px, py - radius * 1.08, Math.max(0.8, radius * 0.34), Math.PI, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 }
@@ -796,11 +803,18 @@ function drawPersonRoleIcon(ctx, e, sx, sy, cellPx) {
     const px = sx + cellPx / 2;
     const py = sy + cellPx / 2;
     const radius = Math.max(5, Math.min(10, cellPx * 0.34));
+    const palette = e.person ? appearanceColors(appearanceForEntity(e)) : null;
     ctx.save();
     ctx.fillStyle = "rgba(9,15,17,0.92)";
     ctx.beginPath(); ctx.arc(px, py, radius + 2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = ROLE_COLORS[e.type] || "#65756b";
+    ctx.fillStyle = palette ? palette.outfit : ROLE_COLORS[e.type] || "#65756b";
     ctx.beginPath(); ctx.arc(px, py, radius, 0, Math.PI * 2); ctx.fill();
+    if (palette) {
+        ctx.fillStyle = palette.accent;
+        ctx.beginPath(); ctx.arc(px, py, radius - 2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = palette.outfit;
+        ctx.beginPath(); ctx.arc(px, py, radius - 4, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.font = Math.max(8, Math.min(13, cellPx * 0.54)) + "px \"Apple Color Emoji\",\"Segoe UI Emoji\",sans-serif";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(getEmoji(e), px, py + 0.5);
@@ -821,7 +835,8 @@ function drawPersonIcon(ctx, e, sx, sy, cellPx, tick) {
     const isFleeing = e.visualState === "flee";
 
     const baseRadius = (ICON_RADIUS[e.type] || 13) * scale;
-    const badgeColor = ROLE_COLORS[e.type] || "#52525b";
+    const palette = e.person ? appearanceColors(appearanceForEntity(e)) : null;
+    const badgeColor = palette ? palette.outfit : ROLE_COLORS[e.type] || "#52525b";
     const emoji = getEmoji(e);
 
     const walkCycle = Math.sin(now * 10 + e.anim);
@@ -844,7 +859,7 @@ function drawPersonIcon(ctx, e, sx, sy, cellPx, tick) {
     ctx.globalAlpha = 1;
 
     // Ring
-    const statusColor = isFleeing ? "#ef4444" : isWorking ? "#f59e0b" : badgeColor;
+    const statusColor = isFleeing ? "#ef4444" : isWorking ? (palette ? palette.accent : "#f59e0b") : badgeColor;
     ctx.fillStyle = "#111";
     ctx.beginPath();
     ctx.arc(0, 0, baseRadius + 2 * scale, 0, Math.PI * 2);
@@ -905,13 +920,74 @@ function drawPersonIcon(ctx, e, sx, sy, cellPx, tick) {
     ctx.textBaseline = "alphabetic";
 }
 
+function drawHeldTool(ctx, entity, palette, scale) {
+    const job = String(entity.job || "").toLowerCase();
+    const isFarm = /farmer|forester/.test(job);
+    const isAxe = /woodcutter|sawyer/.test(job);
+    const isPick = /miner|mason/.test(job);
+    const isHammer = /builder|miller|baker/.test(job);
+    const isBow = job === "archer";
+    const isSpear = /guard|soldier|knight/.test(job);
+    const isStaff = /healer|acolyte|scholar|priest/.test(job);
+    const isPouch = /merchant|innkeeper|hauler/.test(job);
+    if (!isFarm && !isAxe && !isPick && !isHammer && !isBow && !isSpear && !isStaff && !isPouch) return;
+    ctx.save();
+    ctx.translate(5.1 * scale, 0.8 * scale);
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#5b3d24";
+    ctx.fillStyle = "#b9a88a";
+    ctx.lineWidth = Math.max(1, 1.15 * scale);
+    if (isFarm) {
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -9 * scale); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-2.4 * scale, -8 * scale); ctx.lineTo(2.8 * scale, -8.6 * scale); ctx.stroke();
+    } else if (isAxe) {
+        ctx.beginPath(); ctx.moveTo(0, 1 * scale); ctx.lineTo(0, -8 * scale); ctx.stroke();
+        ctx.fillStyle = "#aeb5b0";
+        ctx.beginPath(); ctx.moveTo(0, -8 * scale); ctx.lineTo(4.2 * scale, -7 * scale); ctx.lineTo(1 * scale, -4.5 * scale); ctx.closePath(); ctx.fill();
+    } else if (isPick) {
+        ctx.beginPath(); ctx.moveTo(0, 1 * scale); ctx.lineTo(0, -9 * scale); ctx.stroke();
+        ctx.strokeStyle = "#aeb5b0";
+        ctx.beginPath(); ctx.moveTo(-3.5 * scale, -8.2 * scale); ctx.lineTo(3.5 * scale, -9.4 * scale); ctx.stroke();
+    } else if (isHammer) {
+        ctx.beginPath(); ctx.moveTo(0, 1 * scale); ctx.lineTo(0, -7.5 * scale); ctx.stroke();
+        ctx.fillStyle = "#9a9b91";
+        ctx.fillRect(-2.4 * scale, -9.2 * scale, 4.8 * scale, 2.4 * scale);
+    } else if (isBow) {
+        ctx.strokeStyle = "#7b522d";
+        ctx.beginPath(); ctx.arc(-1 * scale, -2 * scale, 6 * scale, -1.2, 1.2); ctx.stroke();
+        ctx.strokeStyle = "#d8c9a1";
+        ctx.beginPath(); ctx.moveTo(1.2 * scale, -7.7 * scale); ctx.lineTo(1.2 * scale, 3.7 * scale); ctx.stroke();
+    } else if (isSpear) {
+        ctx.beginPath(); ctx.moveTo(0, 1 * scale); ctx.lineTo(0, -11 * scale); ctx.stroke();
+        ctx.fillStyle = "#aeb5b0";
+        ctx.beginPath(); ctx.moveTo(0, -13 * scale); ctx.lineTo(2 * scale, -9.5 * scale); ctx.lineTo(-2 * scale, -9.5 * scale); ctx.closePath(); ctx.fill();
+    } else if (isStaff) {
+        ctx.beginPath(); ctx.moveTo(0, 1 * scale); ctx.lineTo(0, -9.5 * scale); ctx.stroke();
+        ctx.fillStyle = palette.accent;
+        ctx.beginPath(); ctx.arc(0, -10.2 * scale, 2 * scale, 0, Math.PI * 2); ctx.fill();
+    } else {
+        ctx.fillStyle = palette.accent;
+        ctx.fillRect(-2 * scale, -2 * scale, 4.2 * scale, 5 * scale);
+        ctx.strokeStyle = "#6b4a2d";
+        ctx.strokeRect(-2 * scale, -2 * scale, 4.2 * scale, 5 * scale);
+    }
+    ctx.restore();
+}
+
 function drawPersonTopDown(ctx, entity, sx, sy, cellPx) {
     const scale = cellPx / CELL;
     const speed = Math.hypot(entity.velocityX || 0, entity.velocityY || 0);
     const moving = speed > 0.05;
     const now = performance.now() / 1000;
     const gait = moving ? Math.sin(now * 13 + entity.anim) : 0;
-    const bodyColor = ROLE_COLORS[entity.type] || "#647b68";
+    const appearance = entity.person ? appearanceForEntity(entity) : null;
+    const palette = appearance ? appearanceColors(appearance) : {
+        skin: "#e4c7a1", skinShade: "#c9a47d", hair: "#513c2c",
+        outfit: ROLE_COLORS[entity.type] || "#647b68", outfitShade: "#394a35",
+        accent: "#c5a35d", accessory: "#8d7754"
+    };
+    const build = appearance ? [0.9, 1, 1.1][appearance.build] : 1;
+    const working = entity.visualState === "work" || entity.routinePhase === 1;
     const rotation = moving ? Math.atan2(entity.velocityY, entity.velocityX) + Math.PI / 2 : 0;
     const px = sx + cellPx / 2;
     const py = sy + cellPx / 2;
@@ -919,61 +995,191 @@ function drawPersonTopDown(ctx, entity, sx, sy, cellPx) {
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(rotation);
+    ctx.lineCap = "round";
 
-    // Ground shadow.
+    // Separate silhouette on the ground.
     ctx.fillStyle = "rgba(0, 0, 0, 0.32)";
     ctx.beginPath();
-    ctx.ellipse(1 * scale, 2 * scale, 5.8 * scale, 9 * scale, 0, 0, Math.PI * 2);
+    ctx.ellipse(1 * scale, 2 * scale, 6.1 * scale, 8.8 * scale, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Torso.
-    ctx.fillStyle = "#171d1b";
+    // Boots and legs remain visible around the tunic.
+    ctx.strokeStyle = "#2b2119";
+    ctx.lineWidth = Math.max(1.4, 2.2 * scale);
     ctx.beginPath();
-    ctx.ellipse(0, 0.6 * scale, 5.2 * scale, 7.2 * scale, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = bodyColor;
+    ctx.moveTo(-2.1 * scale, 2.8 * scale);
+    ctx.lineTo(-2.4 * scale, 6.2 * scale + gait * 0.9 * scale);
+    ctx.moveTo(2.1 * scale, 2.8 * scale);
+    ctx.lineTo(2.4 * scale, 6.2 * scale - gait * 0.9 * scale);
+    ctx.stroke();
+    ctx.strokeStyle = "#6b4c30";
+    ctx.lineWidth = Math.max(1, 1.5 * scale);
     ctx.beginPath();
-    ctx.ellipse(0, 0, 4.1 * scale, 6.1 * scale, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Arms.
-    ctx.strokeStyle = entity.visualState === "work" ? "#d4aa68" : "#cdbb9d";
-    ctx.lineWidth = Math.max(1.2, 1.8 * scale);
-    ctx.beginPath();
-    ctx.moveTo(-3.4 * scale, -1.4 * scale);
-    ctx.lineTo(-6.1 * scale, 1.2 * scale - gait * 0.24);
-    ctx.moveTo(3.4 * scale, -1.4 * scale);
-    ctx.lineTo(6.1 * scale, 1.2 * scale + gait * 0.24);
+    ctx.moveTo(-3.4 * scale, 6.2 * scale + gait * 0.9 * scale);
+    ctx.lineTo(-1.7 * scale, 6.2 * scale + gait * 0.9 * scale);
+    ctx.moveTo(1.7 * scale, 6.2 * scale - gait * 0.9 * scale);
+    ctx.lineTo(3.4 * scale, 6.2 * scale - gait * 0.9 * scale);
     ctx.stroke();
 
-    // Head and hair.
-    ctx.fillStyle = "#e4c7a1";
+    // Cloak, torso and a bright belt read as tailored clothing rather than a dot.
+    ctx.fillStyle = palette.outfitShade;
     ctx.beginPath();
-    ctx.arc(0, -5.8 * scale, 3.5 * scale, 0, Math.PI * 2);
+    ctx.ellipse(0, 0.9 * scale, 5.1 * build * scale, 6.8 * scale, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#513c2c";
+    ctx.fillStyle = palette.outfit;
     ctx.beginPath();
-    ctx.arc(0, -7.1 * scale, 3.3 * scale, Math.PI, Math.PI * 2);
+    ctx.ellipse(0, 0, 4.15 * build * scale, 6.05 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = lightenColor(palette.outfit, 0.16);
+    ctx.beginPath();
+    ctx.ellipse(-1.2 * scale, -1.4 * scale, 1.5 * scale, 2.7 * scale, -0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = palette.accent;
+    ctx.lineWidth = Math.max(1, 1.25 * scale);
+    ctx.beginPath();
+    ctx.moveTo(-3.1 * scale, 2.1 * scale);
+    ctx.lineTo(3.1 * scale, 2.1 * scale);
+    ctx.stroke();
+    ctx.fillStyle = palette.accent;
+    ctx.beginPath();
+    ctx.arc(0, 2.1 * scale, 1.1 * scale, 0, Math.PI * 2);
     ctx.fill();
 
-    // Small profession marker.
-    ctx.fillStyle = "rgba(13, 20, 20, 0.92)";
+    // Arms and hands: the working pose reaches forward toward the tool.
+    ctx.strokeStyle = palette.outfit;
+    ctx.lineWidth = Math.max(1.2, 1.8 * scale);
+    const armY = working ? -3.2 * scale : 1.3 * scale;
     ctx.beginPath();
-    ctx.arc(7.1 * scale, -7.5 * scale, 4.6 * scale, 0, Math.PI * 2);
+    ctx.moveTo(-3.4 * scale, -1.3 * scale);
+    ctx.lineTo(-5.8 * scale, armY + gait * 0.25 * scale);
+    ctx.moveTo(3.4 * scale, -1.3 * scale);
+    ctx.lineTo(5.8 * scale, armY - gait * 0.25 * scale);
+    ctx.stroke();
+    ctx.fillStyle = palette.skin;
+    ctx.beginPath();
+    ctx.arc(-5.9 * scale, armY + gait * 0.25 * scale, 1.25 * scale, 0, Math.PI * 2);
+    ctx.arc(5.9 * scale, armY - gait * 0.25 * scale, 1.25 * scale, 0, Math.PI * 2);
     ctx.fill();
-    ctx.font = `${Math.max(7, 8 * scale)}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`;
+
+    // Neck, head and species/sex-specific hair.
+    ctx.fillStyle = palette.skinShade;
+    ctx.fillRect(-1.5 * scale, -4.6 * scale, 3 * scale, 2.2 * scale);
+    ctx.fillStyle = palette.skin;
+    ctx.beginPath();
+    ctx.arc(0, -6.2 * scale, 3.55 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    if (appearance && entity.person?.species === "elf") {
+        ctx.fillStyle = palette.skin;
+        ctx.beginPath();
+        ctx.moveTo(-3.2 * scale, -6.4 * scale);
+        ctx.lineTo(-5.1 * scale, -8.1 * scale);
+        ctx.lineTo(-3.1 * scale, -7.4 * scale);
+        ctx.moveTo(3.2 * scale, -6.4 * scale);
+        ctx.lineTo(5.1 * scale, -8.1 * scale);
+        ctx.lineTo(3.1 * scale, -7.4 * scale);
+        ctx.fill();
+    }
+    ctx.fillStyle = palette.hair;
+    ctx.beginPath();
+    ctx.arc(0, -6.5 * scale, 3.45 * scale, Math.PI, Math.PI * 2);
+    ctx.fill();
+    if (appearance?.hair === 2) {
+        ctx.beginPath();
+        ctx.ellipse(2.5 * scale, -5.3 * scale, 1.1 * scale, 3.1 * scale, 0.18, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (appearance?.hair === 3) {
+        ctx.beginPath();
+        ctx.ellipse(-2.7 * scale, -5 * scale, 1.1 * scale, 2.9 * scale, -0.18, 0, Math.PI * 2);
+        ctx.ellipse(2.7 * scale, -5 * scale, 1.1 * scale, 2.9 * scale, 0.18, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (appearance?.hair === 4) {
+        ctx.beginPath();
+        ctx.arc(-2.5 * scale, -8.5 * scale, 1.15 * scale, 0, Math.PI * 2);
+        ctx.arc(0, -9.1 * scale, 1.2 * scale, 0, Math.PI * 2);
+        ctx.arc(2.5 * scale, -8.5 * scale, 1.15 * scale, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    if (appearance?.beard === 2) {
+        ctx.fillStyle = palette.hair;
+        ctx.beginPath();
+        ctx.ellipse(0, -4.4 * scale, 2.5 * scale, 2.1 * scale, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (appearance?.beard === 1) {
+        ctx.strokeStyle = palette.hair;
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 1.2 * scale;
+        ctx.beginPath();
+        ctx.arc(0, -5.2 * scale, 2.1 * scale, 0.25, Math.PI - 0.25);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+    } else if (appearance?.beard === 3) {
+        ctx.strokeStyle = palette.hair;
+        ctx.lineWidth = 1.3 * scale;
+        ctx.beginPath();
+        ctx.moveTo(-1.3 * scale, -5.1 * scale);
+        ctx.lineTo(1.3 * scale, -5.1 * scale);
+        ctx.stroke();
+    }
+    ctx.fillStyle = palette.skinShade;
+    ctx.beginPath();
+    ctx.arc(0, -7.8 * scale, 0.8 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(27, 21, 16, 0.82)";
+    ctx.beginPath();
+    ctx.arc(-1.15 * scale, -7.2 * scale, 0.45 * scale, 0, Math.PI * 2);
+    ctx.arc(1.15 * scale, -7.2 * scale, 0.45 * scale, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Accessories are the final visual distinction between two similar outfits.
+    if (appearance?.accessory === 1) {
+        ctx.fillStyle = palette.accessory;
+        ctx.fillRect(3.4 * scale, 0.3 * scale, 3.1 * scale, 4.6 * scale);
+        ctx.strokeStyle = darkenColor(palette.accessory, 0.35);
+        ctx.lineWidth = 1.1 * scale;
+        ctx.beginPath();
+        ctx.moveTo(-2.2 * scale, -3.7 * scale);
+        ctx.lineTo(4.2 * scale, 2.1 * scale);
+        ctx.stroke();
+    } else if (appearance?.accessory === 2) {
+        ctx.strokeStyle = palette.accessory;
+        ctx.lineWidth = 1.5 * scale;
+        ctx.beginPath();
+        ctx.arc(0, -3.7 * scale, 2.4 * scale, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+    } else if (appearance?.accessory === 3) {
+        ctx.fillStyle = palette.accessory;
+        ctx.beginPath();
+        ctx.arc(0, -2.3 * scale, 1.1 * scale, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (appearance?.accessory === 4) {
+        ctx.strokeStyle = palette.accessory;
+        ctx.lineWidth = 1.2 * scale;
+        ctx.beginPath();
+        ctx.moveTo(-2.2 * scale, -8.1 * scale);
+        ctx.lineTo(-5 * scale, -11 * scale);
+        ctx.stroke();
+    }
+
+    if (working) drawHeldTool(ctx, entity, palette, scale);
+
+    // A small profession badge keeps jobs legible without covering the portrait.
+    ctx.fillStyle = "rgba(13, 20, 20, 0.82)";
+    ctx.beginPath();
+    ctx.arc(7.3 * scale, -8.2 * scale, 3.3 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = `${Math.max(6, 7 * scale)}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(getEmoji(entity), 7.1 * scale, -7.5 * scale);
+    ctx.fillText(getEmoji(entity), 7.3 * scale, -8.2 * scale);
 
     if (entity.isKing) {
         ctx.fillStyle = "#f2c744";
         ctx.beginPath();
-        ctx.moveTo(-3 * scale, -10.2 * scale);
-        ctx.lineTo(-2.5 * scale, -14 * scale);
-        ctx.lineTo(0, -11.4 * scale);
-        ctx.lineTo(2.5 * scale, -14 * scale);
-        ctx.lineTo(3 * scale, -10.2 * scale);
+        ctx.moveTo(-3.2 * scale, -10.1 * scale);
+        ctx.lineTo(-2.6 * scale, -13.6 * scale);
+        ctx.lineTo(0, -11.2 * scale);
+        ctx.lineTo(2.6 * scale, -13.6 * scale);
+        ctx.lineTo(3.2 * scale, -10.1 * scale);
         ctx.closePath();
         ctx.fill();
     }
