@@ -1419,7 +1419,8 @@ export function serializeCity() {
         },
         fields: city.fields ? JSON.parse(JSON.stringify(city.fields)) : null,
         services: city.services ? JSON.parse(JSON.stringify(city.services)) : null,
-        needs: city.needs ? JSON.parse(JSON.stringify(city.needs)) : null
+        needs: city.needs ? JSON.parse(JSON.stringify(city.needs)) : null,
+        civic: city.civic ? JSON.parse(JSON.stringify(city.civic)) : null
     };
 }
 
@@ -1466,6 +1467,7 @@ export function validateCitySnapshot(snapshot) {
             if (carrier.cargo && (!GOOD_KEYS.includes(carrier.cargo.good) || !Number.isFinite(Number(carrier.cargo.quantity)) || Number(carrier.cargo.quantity) < 0)) throw new Error("Save data contains invalid carrier cargo.");
         }
     }
+    if (snapshot.civic !== undefined && snapshot.civic !== null && (typeof snapshot.civic !== "object" || Array.isArray(snapshot.civic) || (snapshot.civic.active !== undefined && !Array.isArray(snapshot.civic.active)))) throw new Error("Save data contains invalid civic state.");
     for (const key of ["fields", "services", "needs"]) {
         if (snapshot[key] !== undefined && snapshot[key] !== null && (typeof snapshot[key] !== "object" || Array.isArray(snapshot[key]))) throw new Error("Save data contains invalid " + key + " state.");
     }
@@ -1477,7 +1479,7 @@ export function restoreCity(snapshot) {
     validateCitySnapshot(snapshot);
     const city = state.city;
     if (!snapshot) {
-        city.fields = null; city.services = null; city.needs = null;
+        city.fields = null; city.services = null; city.needs = null; city.civic = null;
         city.logistics = { version: LOGISTICS_VERSION, nextJobId: 1, nextCarrierId: 1, jobs: [], carriers: [], lastTick: 0, stats: {} };
         ensureAllInventories();
         return city;
@@ -1514,6 +1516,7 @@ export function restoreCity(snapshot) {
     city.fields = snapshot.fields && typeof snapshot.fields === "object" ? JSON.parse(JSON.stringify(snapshot.fields)) : null;
     city.services = snapshot.services && typeof snapshot.services === "object" ? JSON.parse(JSON.stringify(snapshot.services)) : null;
     city.needs = snapshot.needs && typeof snapshot.needs === "object" ? JSON.parse(JSON.stringify(snapshot.needs)) : null;
+    city.civic = snapshot.civic && typeof snapshot.civic === "object" ? JSON.parse(JSON.stringify(snapshot.civic)) : null;
     ensureAllInventories();
     // Capture this before rebuilding reservations: ensuring the book during
     // the rebuild would create an empty audit and hide the missing one.

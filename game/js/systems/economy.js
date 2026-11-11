@@ -14,6 +14,7 @@ import { getJusticeModifiers } from "./justice.js";
 import { getResearchModifiers } from "./research.js";
 import { getCitizenModifiers } from "./population-register.js";
 import { getEndeavourModifiers } from "./endeavours.js";
+import { getCivicModifiers } from "./civic.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -38,7 +39,13 @@ export const BUILDING_WORKFORCE = Object.freeze({
     [TYPE.MASON]: 1,
     [TYPE.FORESTER]: 1,
     [TYPE.CLINIC]: 1,
-    [TYPE.MARKET]: 1
+    [TYPE.MARKET]: 1,
+    [TYPE.TOWN_HALL]: 2,
+    [TYPE.SCHOOL]: 2,
+    [TYPE.BATHHOUSE]: 1,
+    [TYPE.BREWERY]: 2,
+    [TYPE.GUILDHALL]: 2,
+    [TYPE.WATCHHOUSE]: 1
 });
 
 const clampNonNegative = value => Math.max(0, Number.isFinite(value) ? value : 0);
@@ -111,7 +118,9 @@ export function getBuildingEfficiency(building, workforce = null) {
     if (!capacity) return 0;
     const workers = (workforce || getWorkforceSnapshot()).workersByBuilding.get(building) || 0;
     const productivity = state.city?.enabled ? Math.max(0.7, Math.min(1.05, Number(state.city?.needs?.productivity) || 1)) : 1;
-    return Math.max(0, Math.min(1, workers / capacity)) * productivity * getCitizenModifiers().productivity;
+    const civicModifiers = getCivicModifiers();
+    return Math.max(0, Math.min(1, workers / capacity)) * productivity * getCitizenModifiers().productivity *
+        Math.max(0.7, Math.min(1.30, 1 + Number(civicModifiers.production || 0)));
 }
 
 export function updateEconomy() {
@@ -142,7 +151,8 @@ export function updateEconomy() {
     const eraModifiers = state.ambitions?.era?.agenda?.modifiers || {};
     const eraFoodDemandFactor = Math.max(0.70, Math.min(1.10, Number(eraModifiers.foodDemandFactor) || 1));
     const eraTaxEfficiency = Math.max(1, Math.min(1.15, Number(eraModifiers.taxEfficiency) || 1));
-    ledger.foodDemand *= edicts.food * research.foodDemandFactor * (1 - endeavours.food) * eraFoodDemandFactor;
+    const civicModifiers = getCivicModifiers();
+    ledger.foodDemand *= edicts.food * research.foodDemandFactor * (1 - endeavours.food) * eraFoodDemandFactor * (1 + civicModifiers.foodDemand);
     ledger.eraFoodDemandFactor = eraFoodDemandFactor;
     ledger.eraTaxEfficiency = eraTaxEfficiency;
     ledger.foodConsumed = Math.min(state.resources.food, ledger.foodDemand);
@@ -170,6 +180,9 @@ export function updateEconomy() {
     const eraTaxBefore = ledger.taxesCollected;
     ledger.taxesCollected *= eraTaxEfficiency;
     ledger.eraTaxBonus = ledger.taxesCollected - eraTaxBefore;
+    const civicTaxBefore = ledger.taxesCollected;
+    ledger.taxesCollected *= Math.max(0.7, Math.min(1.35, 1 + Number(civicModifiers.tax || 0)));
+    ledger.civicTaxBonus = ledger.taxesCollected - civicTaxBefore;
     ledger.netGold = ledger.taxesCollected - ledger.wagesPaid - ledger.upkeepPaid - ledger.furnitureUpkeepPaid;
 
     recordResourceMovement("food", -ledger.foodConsumed, "population-food", {

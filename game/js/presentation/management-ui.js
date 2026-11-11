@@ -35,6 +35,7 @@ import { getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReaso
 import { WAREHOUSE_PROFILES } from "../systems/city-config.js";
 import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
 import { foresterRangeSummary } from "../systems/fields.js";
+import { renderCityPanel, handleCityPanelClick } from "./city-panel.js";
 let activePanel="kingdom",dynastyStylesRequested=false,endeavourFunding=1;
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
@@ -47,7 +48,9 @@ const BUILDING_LABELS=Object.freeze({
  [TYPE.WONDER]:"Wonder",[TYPE.GOLDMINE]:"Gold Mine",[TYPE.BARREL]:"Storage Barrel",
  [TYPE.TENT]:"Tent",[TYPE.STONE_HOUSE]:"Stone House",[TYPE.WAREHOUSE]:"Warehouse",[TYPE.SAWMILL]:"Sawmill",
  [TYPE.BAKERY]:"Bakery",[TYPE.WELL]:"Well",[TYPE.MASON]:"Mason's Yard",[TYPE.FORESTER]:"Forester's Lodge",
- [TYPE.CLINIC]:"Clinic",[TYPE.MARKET]:"Market"
+ [TYPE.CLINIC]:"Clinic",[TYPE.MARKET]:"Market",[TYPE.SHRINE]:"Shrine",[TYPE.COURT]:"Court of Law",
+ [TYPE.PRISON]:"Prison",[TYPE.TOWN_HALL]:"Town Hall",[TYPE.SCHOOL]:"School",[TYPE.BATHHOUSE]:"Bathhouse",
+ [TYPE.BREWERY]:"Brewery",[TYPE.GUILDHALL]:"Guildhall",[TYPE.WATCHHOUSE]:"Watchhouse"
 });
 function setNavigationActive(target){
  document.querySelectorAll(".realm-nav-button").forEach(button=>{
@@ -666,9 +669,10 @@ function researchPanel(){
  (r.lastAudit?'<div class="command-section-title">LAST ANNUAL AUDIT</div><p class="command-note">Year '+r.lastAudit.year+' · '+r.lastAudit.points+' points · speed ×'+r.lastAudit.speed+' · '+r.lastAudit.scholars+' scholars · '+r.lastAudit.salariesPaid+' gold salaries · '+r.lastAudit.fundingPaid+' gold funding'+(r.lastAudit.completed?' · completed '+esc(r.lastAudit.completed):"")+'.</p>':'<p class="command-note">No annual research audit has been completed yet.</p>');
 }
 const CRIME_CAUSE_LABELS=Object.freeze({inequality:"inequality",hunger:"hunger",war:"war",quarantine:"quarantine",unemployment:"unemployment"});
+function city(){return renderCityPanel();}
 function render(resetScroll=false){
  const panel=$("command-panel-content");if(!panel)return;
- panel.innerHTML=({kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle}[activePanel]||kingdom)();
+ panel.innerHTML=({kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle}[activePanel]||kingdom)();
  // A new tab starts at its title, not at the scroll offset of the previous
  // panel. Re-renders caused by an action keep their current position.
  if(resetScroll)panel.scrollTop=0;
@@ -716,7 +720,7 @@ export function setupManagementUI(){
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
   if(target==="market"){$("tab-2")?.click();return;}
-  if(["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle"].includes(target)){
+  if(["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle"].includes(target)){
    activePanel=target;$("command-modal")?.classList.remove("hidden");render(true);
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));
   }
@@ -805,6 +809,7 @@ export function setupManagementUI(){
   }
   const person=e.target.closest("[data-open-person]");
   if(person){window.dispatchEvent(new CustomEvent("kac:open-person",{detail:{personId:person.dataset.openPerson}}));$("command-modal")?.classList.add("hidden");return;}
+  if(handleCityPanelClick(e,{onChanged:()=>{renderUI();render();},toast}))return;
   const b=e.target.closest("[data-command]");if(b&&!b.disabled)act(b);
  });
  document.querySelectorAll("[data-kac-dock-action]").forEach(button=>button.addEventListener("click",()=>{

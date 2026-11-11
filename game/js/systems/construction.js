@@ -11,6 +11,7 @@ import { isWaterAt, worldWidth, worldHeight, revealArea } from "../world/world.j
 import { getResourceSiteAt } from "./resource-geography.js";
 import { getWorkforceSnapshot } from "./economy.js";
 import { getResearchModifiers } from "./research.js";
+import { getCivicModifiers } from "./civic.js";
 import {
     BUILDING_COSTS, CONSTRUCTION_STAGES, CONSTRUCTION_SHARE, buildingLabel,
     constructionMaterialNeed, costShare, isHousingType
@@ -54,7 +55,7 @@ export function getBuildingCost(type) {
     // Completed craft technologies lower the material bill of every new site.
     // The discount is read from the same modifier block the rest of the realm
     // uses, so a displayed price is exactly what the treasury is charged.
-    const discount = Math.min(0.25, Math.max(0, Number(getResearchModifiers().buildDiscount) || 0));
+    const discount = Math.min(0.30, Math.max(0, Number(getResearchModifiers().buildDiscount) || 0) + Math.max(0, Number(getCivicModifiers().buildDiscount) || 0));
     if (discount <= 0) return { ...base };
     const cost = {};
     for (const [key, value] of Object.entries(base)) {
@@ -83,6 +84,8 @@ export function siteSuitability(type, tx, ty) {
         if (!node.stone || node.stone <= 0) return { ok: false, reason: "NO STONE DEPOSIT WITHIN WORKING RANGE" };
     } else if (type === TYPE.WELL) {
         if (!node.water) return { ok: false, reason: "NO WATER WITHIN WELL RANGE" };
+    } else if (type === TYPE.BREWERY || type === TYPE.BATHHOUSE) {
+        if (!node.water) return { ok: false, reason: "THIS TRADE NEEDS WATER WITHIN WORKING RANGE" };
     } else if (type === TYPE.FARM) {
         if (node.fertility < 30) return { ok: false, reason: "SOIL TOO POOR FOR A FIELD" };
     }

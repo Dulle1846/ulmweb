@@ -9,6 +9,7 @@ import { isOperational } from "./construction.js";
 import { getLocalWarehouseStock, findLocalWarehouse, consumeFromWarehouse, getWarehouseStock, HOUSEHOLD_SUPPLY_RADIUS } from "./logistics.js";
 import { HOUSING_TIERS, SERVICE_DEFINITIONS, isHousingType } from "./city-config.js";
 import { getCrownWaterCoverage } from "./crown-supply.js";
+import { getCivicModifiers } from "./civic.js";
 
 export const SETTLEMENT_INTERVAL = 10;
 export const NEED_WEIGHTS = Object.freeze({ food: 1.25, water: 1.1, warmth: 0.9, safety: 0.8, social: 0.65, health: 0.6 });
@@ -36,6 +37,11 @@ function serviceIsStaffed(building, workforce = null) {
 }
 function serviceIsSupplied(building) {
     if (building.type === TYPE.TAVERN) return (Number(state.resources.food) || 0) > 0;
+    if (building.type === TYPE.BATHHOUSE) {
+        if ((Number(building.inventory?.output?.water) || 0) > 0) return true;
+        const radius = SERVICE_DEFINITIONS.sanitation?.radius || 7;
+        return getLocalWarehouseStock("water", building.x, building.y, radius) > 0;
+    }
     if (building.type === TYPE.WELL) {
         // A well is supplied by its own output or by a store inside the water
         // service radius. A remote warehouse no longer counts on paper.
@@ -64,12 +70,12 @@ export function ensureSettlementState() {
 }
 
 function distance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
-function serviceForHouse(house, category, buildings) {
+function serviceForHouse(house, category, buildings, radiusMultiplier = 1) {
     const definition = SERVICE_DEFINITIONS[category];
     if (!definition) return null;
     for (const building of buildings) {
         if (!definition.types.includes(building.type)) continue;
-        if (distance(house, building) <= definition.radius) return building;
+        if (distance(house, building) <= definition.radius * radiusMultiplier) return building;
     }
     return null;
 }
@@ -86,18 +92,20 @@ export function updateServices() {
     // pass scan the whole population dozens of times per settlement tick.
     const workforce = getWorkforceSnapshot();
     const activeBuildings = buildings.filter(building => activeService(building, workforce));
+    const civic = getCivicModifiers();
+    const radiusMultiplier = Math.max(0.75, Math.min(1.35, 1 + Number(civic.serviceRadius || 0)));
     const houseRows = homes();
     const byHouse = {};
     const byBuilding = {};
     for (const category of Object.keys(SERVICE_DEFINITIONS)) byBuilding[category] = { active: 0, coverage: 0 };
-    const summary = { water: 0, social: 0, safety: 0, health: 0 };
+    const summary = Object.fromEntries(Object.keys(SERVICE_DEFINITIONS).map(category => [category, 0]));
     let occupiedHomes = 0;
     for (const house of houseRows) {
         const occupied = houseIsOccupied(house);
         if (occupied) occupiedHomes++;
         const row = { id: house.id, type: house.type, occupied, capacity: HOUSING_TIERS[house.type]?.capacity || 0 };
         for (const category of Object.keys(SERVICE_DEFINITIONS)) {
-            const provider = serviceForHouse(house, category, activeBuildings);
+            const provider = serviceForHouse(house, category, activeBuildings, radiusMultiplier);
             row[category] = Boolean(provider);
             row[category + "Source"] = provider?.id || null;
             if (provider) byBuilding[category].coverage++;
@@ -209,16 +217,20 @@ export function updateSettlementNeeds() {
     const previousLow = Number(city.needs.lowChecks) || 0;
     const lowChecks = average < 0.45 ? Math.min(5, previousLow + 1) : Math.max(0, previousLow - 1);
     city.needs.lowChecks = lowChecks;
-    city.needs.productivity = Math.max(0.72, Math.min(1.05, 0.72 + average * 0.33));
+    city.needs.productivity = Math.max(0.72, Math.min(1.12, 0.72 + average * 0.33 +
+        Math.max(0, (Number(services.education) || 0) - 0.35) * 0.05 +
+        Math.max(0, (Number(services.sanitation) || 0) - 0.35) * 0.03));
     const warmth = firewood;
     const summary = {
         population, households: occupiedHomes.length,
         food: foodSatisfaction(population), water: services.water || 0,
         warmth, safety: services.safety || 0, social: services.social || 0,
-        health: services.health || 0, satisfaction: average,
+        health: services.health || 0, education: services.education || 0,
+        sanitation: services.sanitation || 0, civic: services.civic || 0,
+        trade: services.trade || 0, satisfaction: average,
         productivity: city.needs.productivity,
         lowChecks, firewoodStock: getWarehouseStock("firewood"),
-        waterStock: getWarehouseStock("water")
+        waterStock: getWarehouseStock("water"), aleStock: getWarehouseStock("ale")
     };
     city.needs.households = householdRows;
     city.needs.summary = summary;
@@ -271,7 +283,10 @@ export function canSettleNewcomer() {
 export function getSettlementSnapshot() {
     const city = ensureSettlementState();
     return {
-        services: city.services.summary ? { ...city.services.summary } : { water: 0, social: 0, safety: 0, health: 0 },
+        services: city.services.summary ? { ...city.services.summary } : {
+            water: 0, social: 0, safety: 0, health: 0,
+            civic: 0, education: 0, sanitation: 0, trade: 0
+        },
         needs: city.needs.summary ? { ...city.needs.summary } : null,
         households: { ...(city.needs.households || {}) },
         history: Array.isArray(city.needs.history) ? city.needs.history.slice(-24) : [],

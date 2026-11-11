@@ -44,7 +44,7 @@ test("the approved royal palette is represented by central design tokens",()=>{
 test("every visible royal navigation action has a real handler",()=>{
   const targets=[...html.matchAll(/data-kac-panel="([^"]+)"/g)].map(match=>match[1]);
   assert.ok(targets.length>=10,"expected the administration rail and resource shortcuts");
-  const supported=new Set(["kingdom","government","people","dynasty","chronicle","politics","diplomacy","economy","resources","buildings","cards","creatures","build","settings"]);
+  const supported=new Set(["kingdom","government","people","dynasty","chronicle","politics","diplomacy","economy","resources","buildings","city","cards","creatures","build","settings"]);
   for(const target of targets)assert.ok(supported.has(target),"unwired navigation target: "+target);
   for(const target of supported)assert.ok(html.includes('data-kac-panel="'+target+'"'),"missing visible navigation target: "+target);
   assert.ok(management.includes('addEventListener("click"'),"navigation must use real click handlers");

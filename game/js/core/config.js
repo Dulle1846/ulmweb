@@ -142,6 +142,12 @@ export const BUILDING_SIZE = {
     70: { w: 1.3, h: 1.2 }, // SHRINE
     71: { w: 2.2, h: 1.8 }, // COURT
     72: { w: 2.2, h: 1.8 }, // PRISON
+    73: { w: 2.6, h: 2.2 }, // TOWN HALL
+    74: { w: 2.2, h: 1.8 }, // SCHOOL
+    75: { w: 2.2, h: 1.8 }, // BATHHOUSE
+    76: { w: 2, h: 1.7 },   // BREWERY
+    77: { w: 2.4, h: 2 },   // GUILDHALL
+    78: { w: 1.8, h: 1.5 }, // WATCHHOUSE
 };
 
 // Gebäude-Dachfarben (für Level-1-Icons und Level-2-Top-Down)
@@ -174,6 +180,12 @@ export const BUILDING_ROOF_COLOR = {
     70: "#cfc6ae",  // SHRINE — pale stone
     71: "#6b7078",  // COURT — slate
     72: "#54504a",  // PRISON — iron-grey
+    73: "#7b6650",  // TOWN HALL — civic stone
+    74: "#9c7547",  // SCHOOL — slate and timber
+    75: "#6e8a8d",  // BATHHOUSE — steam blue
+    76: "#a9753f",  // BREWERY — copper
+    77: "#7d5a3d",  // GUILDHALL — guild timber
+    78: "#5e6b61",  // WATCHHOUSE — guard green
 };
 
 // Gebäude-Icons für Level 1
@@ -186,6 +198,7 @@ export const BUILDING_ICON = {
     64: "🥖", 65: "💧", 66: "🧱", 67: "🌱",
     68: "🩺", 69: "⚖️",
     70: "🕯️", 71: "🏛️", 72: "🔒",
+    73: "🏛️", 74: "📚", 75: "🛁", 76: "🍺", 77: "⚖️", 78: "🛡️",
 };
 
 // ═══════════════════════════════════════════════════════════════

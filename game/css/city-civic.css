@@ -1,0 +1,42 @@
+/* City charter, civic event and codex: a bounded ledger, not a second HUD. */
+.city-event{margin-top:10px;padding:14px;border:2px solid #a57c43;border-left-width:6px;border-radius:9px;background:linear-gradient(135deg,#fff4d2,#f3e0b4);color:#243a50;box-shadow:inset 0 1px #fff9}
+.city-event--quiet{border-left-color:#8ca184;background:#f0f1de}
+.city-event h4{margin:5px 0 4px;font:bold 17px Georgia,serif;color:#432f21}
+.city-event p{margin:0;color:#5d5142;font-size:10px;line-height:1.55;max-width:80ch}
+.city-event-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin-top:11px}
+.city-event-choice{display:flex;flex-direction:column;gap:3px;padding:9px;text-align:left;border:2px solid #4e6c55;border-radius:7px;background:#f8f0d4;color:#263b52;cursor:pointer;box-shadow:0 2px 0 #29483a}
+.city-event-choice:hover:not(:disabled){background:#fff8df;transform:translateY(-1px)}
+.city-event-choice:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.city-event-choice strong{font:1000 9px/1.2 Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+.city-event-choice small{font-size:9px;line-height:1.4;color:#5d5142}
+.city-service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:7px;margin-top:9px}
+.city-service-card{padding:9px;border:1px solid #c6ae7c;border-radius:6px;background:#f8ebcd;color:#806d52;font:1000 7px/1.2 Arial,sans-serif;letter-spacing:.06em}
+.city-service-card strong{display:block;margin:3px 0 5px;color:#263b52;font:bold 15px Georgia,serif}
+.city-service-card i{display:block;height:5px;border-radius:999px;background:#dfcda7;overflow:hidden}
+.city-service-card i b{display:block;height:100%;background:linear-gradient(90deg,#7e9c69,#4f7b73)}
+.city-service-card small{display:block;margin-top:5px;font:400 8px/1.35 Arial,sans-serif;letter-spacing:0;color:#756348}
+.city-policy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:9px;margin-top:10px}
+.city-policy{padding:11px;border:2px solid #ad8750;border-left-width:5px;border-radius:8px;background:#fff5d8;color:#263b52;box-shadow:inset 0 1px #fff8}
+.city-policy.is-active{border-left-color:#5b8a61;background:#f0f4e2}
+.city-policy__head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.city-policy__head h4{margin:2px 0 3px;font:bold 13px Georgia,serif;color:#432f21}
+.city-policy__category{font:1000 7px Arial,sans-serif;letter-spacing:.12em;color:#9b4a2a}
+.city-policy__head p{margin:0;color:#675b49;font-size:9px;line-height:1.45}
+.city-policy__state{flex:0 0 auto;padding:3px 6px;border:1px solid #a57c43;border-radius:999px;background:#f1d99f;color:#5d4528;font:1000 7px Arial,sans-serif;white-space:nowrap}
+.city-policy.is-active .city-policy__state{border-color:#4e8a61;background:#d8ead7;color:#315c3d}
+.city-policy__meta{display:grid;gap:2px;margin:8px 0;color:#806d52;font:1000 7px/1.35 Arial,sans-serif;letter-spacing:.03em}
+.city-policy__button{width:100%;min-height:27px;padding:5px;border:2px solid #20374d;border-radius:6px;background:linear-gradient(#f7d67f,#d69a37);color:#24384d;font:1000 7px Arial,sans-serif;cursor:pointer;box-shadow:0 2px 0 #20374d}
+.city-policy__button.is-repeal{border-color:#7d4b3a;background:linear-gradient(#dfb49d,#bd815f);box-shadow:0 2px 0 #6d3728}
+.city-policy__button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.city-codex-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px}
+.city-codex-card{overflow:hidden;border:2px solid #ad8750;border-radius:9px;background:#fff5d8;color:#263b52;box-shadow:inset 0 1px #fff8}
+.city-codex-card img{display:block;width:100%;height:auto;aspect-ratio:16/11;object-fit:cover;background:#d9c59b}
+.city-codex-card div{padding:9px 10px 11px}
+.city-codex-card span{color:#9b4a2a;font:1000 7px Arial,sans-serif;letter-spacing:.12em}
+.city-codex-card h4{margin:2px 0 4px;font:bold 13px Georgia,serif;color:#432f21}
+.city-codex-card p{margin:0 0 5px;color:#675b49;font-size:9px;line-height:1.45}
+.city-codex-card small{display:block;padding-top:5px;border-top:1px dashed #c6ae7c;color:#4d654f;font-size:8px;line-height:1.4}
+@media(max-width:560px){
+  .city-policy-grid,.city-codex-grid{grid-template-columns:1fr}
+  .city-event-choices{grid-template-columns:1fr}
+}

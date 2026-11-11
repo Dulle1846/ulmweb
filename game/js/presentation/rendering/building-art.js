@@ -39,6 +39,12 @@ export const REBUILD_COST = {
     [TYPE.SHRINE]: { wood: 6, stone: 18, gold: 4 },
     [TYPE.COURT]: { wood: 30, stone: 24, gold: 10 },
     [TYPE.PRISON]: { wood: 22, stone: 30, gold: 8 },
+    [TYPE.TOWN_HALL]: { wood: 34, stone: 36, gold: 14 },
+    [TYPE.SCHOOL]: { wood: 26, stone: 20, gold: 8 },
+    [TYPE.BATHHOUSE]: { wood: 24, stone: 28, gold: 10 },
+    [TYPE.BREWERY]: { wood: 26, stone: 12, gold: 6 },
+    [TYPE.GUILDHALL]: { wood: 32, stone: 22, gold: 12 },
+    [TYPE.WATCHHOUSE]: { wood: 22, stone: 24, gold: 5 },
 };
 
 export const INTERIOR_ITEM_IDS = ['bed', 'table', 'chair', 'shelf', 'hearth', 'rug', 'statue', 'candle'];
@@ -80,6 +86,12 @@ const DEFAULT_INTERIOR = {
     [TYPE.FORESTER]: { bed: 1, table: 1, chair: 1, shelf: 2, hearth: 1, rug: 0, statue: 0, candle: 1 },
     [TYPE.CLINIC]:   { bed: 4, table: 1, chair: 2, shelf: 3, hearth: 1, rug: 1, statue: 0, candle: 3 },
     [TYPE.MARKET]:   { bed: 0, table: 1, chair: 2, shelf: 3, hearth: 0, rug: 0, statue: 1, candle: 2 },
+    [TYPE.TOWN_HALL]: { bed: 0, table: 3, chair: 6, shelf: 4, hearth: 1, rug: 2, statue: 2, candle: 5 },
+    [TYPE.SCHOOL]:   { bed: 0, table: 4, chair: 8, shelf: 5, hearth: 1, rug: 1, statue: 0, candle: 3 },
+    [TYPE.BATHHOUSE]:{ bed: 0, table: 1, chair: 2, shelf: 3, hearth: 2, rug: 0, statue: 1, candle: 3 },
+    [TYPE.BREWERY]:  { bed: 0, table: 1, chair: 2, shelf: 4, hearth: 2, rug: 0, statue: 0, candle: 2 },
+    [TYPE.GUILDHALL]:{ bed: 0, table: 3, chair: 6, shelf: 4, hearth: 1, rug: 2, statue: 1, candle: 4 },
+    [TYPE.WATCHHOUSE]: { bed: 2, table: 1, chair: 2, shelf: 2, hearth: 1, rug: 0, statue: 0, candle: 2 },
 };
 
 export function defaultInterior(type) {
@@ -125,6 +137,15 @@ const TYPE_NAMES = {
     [TYPE.FORESTER]: "FORESTER'S LODGE",
     [TYPE.CLINIC]: 'CLINIC',
     [TYPE.MARKET]: 'MARKET',
+    [TYPE.SHRINE]: 'SHRINE',
+    [TYPE.COURT]: 'COURT OF LAW',
+    [TYPE.PRISON]: 'PRISON',
+    [TYPE.TOWN_HALL]: 'TOWN HALL',
+    [TYPE.SCHOOL]: 'SCHOOL',
+    [TYPE.BATHHOUSE]: 'BATHHOUSE',
+    [TYPE.BREWERY]: 'BREWERY',
+    [TYPE.GUILDHALL]: 'GUILDHALL',
+    [TYPE.WATCHHOUSE]: 'WATCHHOUSE',
 };
 
 const ROOF_STYLES = {
@@ -153,6 +174,15 @@ const ROOF_STYLES = {
     [TYPE.FORESTER]: { roof: '#3f5637', wall: '#b7a781', trim: '#5c4630' },
     [TYPE.CLINIC]:   { roof: '#856c73', wall: '#ddd2c3', trim: '#9a6d7e' },
     [TYPE.MARKET]:   { roof: '#8a5638', wall: '#d3bd94', trim: '#b99a59' },
+    [TYPE.SHRINE]:   { roof: '#cfc6ae', wall: '#e2d8c0', trim: '#b99a59' },
+    [TYPE.COURT]:    { roof: '#6b7078', wall: '#c3bca8', trim: '#596571' },
+    [TYPE.PRISON]:   { roof: '#54504a', wall: '#aaa397', trim: '#3f3b37' },
+    [TYPE.TOWN_HALL]:{ roof: '#7b6650', wall: '#d4c6aa', trim: '#b99a59' },
+    [TYPE.SCHOOL]:   { roof: '#9c7547', wall: '#ddcbaa', trim: '#6f4c30' },
+    [TYPE.BATHHOUSE]:{ roof: '#6e8a8d', wall: '#d2d8d0', trim: '#55747a' },
+    [TYPE.BREWERY]:  { roof: '#a9753f', wall: '#d7bd91', trim: '#704525' },
+    [TYPE.GUILDHALL]:{ roof: '#7d5a3d', wall: '#d5c29c', trim: '#9b733f' },
+    [TYPE.WATCHHOUSE]: { roof: '#5e6b61', wall: '#c2c1ad', trim: '#4c5b50' },
 };
 
 function sizeOf(e) {
@@ -242,6 +272,12 @@ function drawRooftopPlan(ctx, box) {
         case TYPE.BAKERY: drawBakery(ctx, box); break;
         case TYPE.MASON: drawMason(ctx, box); break;
         case TYPE.FORESTER: drawForester(ctx, box); break;
+        case TYPE.TOWN_HALL: drawKeep(ctx, box); break;
+        case TYPE.SCHOOL: drawTemple(ctx, box); break;
+        case TYPE.BATHHOUSE: drawClinic(ctx, box); break;
+        case TYPE.BREWERY: drawSawmill(ctx, box); break;
+        case TYPE.GUILDHALL: drawKeep(ctx, box); break;
+        case TYPE.WATCHHOUSE: drawTower(ctx, box); break;
         default: drawCottage(ctx, box); break;
     }
     drawDoor(ctx, box);

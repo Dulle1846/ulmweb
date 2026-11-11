@@ -16,7 +16,8 @@ const BUILDING_SYMBOLS={
     8:"tavern",9:"temple",10:"barracks",11:"windmill",12:"stable",13:"wonder",14:"goldmine",
     15:"storehouse",60:"cottage",61:"cottage",62:"storehouse",63:"lumber-yard",64:"windmill",
     65:"windmill",66:"quarry",67:"lumber-yard",68:"temple",69:"tavern",
-    70:"temple",71:"keep",72:"storehouse"
+    70:"temple",71:"keep",72:"storehouse",
+    73:"keep",74:"temple",75:"temple",76:"tavern",77:"keep",78:"watchtower"
 };
 function formatCost(cost){
     return Object.entries(cost||{}).filter(([,amount])=>amount>0).map(([resource,amount])=>amount+" "+resource).join(" · ")||"No material cost";

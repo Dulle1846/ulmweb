@@ -10,7 +10,8 @@ import { getWorkforceSnapshot, getBuildingEfficiency } from "../systems/economy.
 import { RECIPES } from "../systems/city-config.js";
 import {
     ensureInventory, addLocalOutput, getAvailableInput, getAvailableOutput, getInputCapacity, getPhysicalStock,
-    requestSupply, requestHaul, getBuildingSupplyReason, outputSpace, recordGoodMovement
+    requestSupply, requestHaul, getBuildingSupplyReason, outputSpace, recordGoodMovement,
+    findLocalWarehouse, consumeFromWarehouse
 } from "../systems/logistics.js";
 import { findNearestResourceNode, harvestForest, extractStone } from "../systems/resource-geography.js";
 
@@ -27,13 +28,13 @@ const SUPPLY_BATCH = 12;
 // across stores and carriers; construction and consumption create room again.
 const STOCK_TARGETS = Object.freeze({
     logs: 80, planks: 60, firewood: 50, stoneBlocks: 60, cutStone: 60,
-    water: 40, grain: 120, flour: 40
+    water: 40, grain: 120, flour: 40, ale: 40
 });
 
 function ledger() {
     const economy = state.economy || (state.economy = {});
     const production = economy.productionChains || (economy.productionChains = {});
-    for (const key of ["logsHarvested", "stoneExtracted", "planksProduced", "flourProduced", "breadProduced", "waterDrawn", "grainHarvested", "farmFood", "farmFoodBooked", "millWoodConsumed", "millBonusFood", "tavernFoodConsumed", "tavernGoldProduced"]) {
+    for (const key of ["logsHarvested", "stoneExtracted", "planksProduced", "flourProduced", "breadProduced", "waterDrawn", "grainHarvested", "farmFood", "farmFoodBooked", "millWoodConsumed", "millBonusFood", "tavernFoodConsumed", "tavernGoldProduced", "aleBrewed", "aleConsumed"]) {
         production[key] = Math.max(0, Number(production[key]) || 0);
     }
     return production;
@@ -100,6 +101,7 @@ function finishOutput(building, output, production) {
             else if (good === "bread") production.breadProduced += accepted;
             else if (good === "water") production.waterDrawn += accepted;
             else if (good === "grain") production.grainHarvested += accepted;
+            else if (good === "ale") production.aleBrewed += accepted;
             requestHaul(building, good, getAvailableOutput(building, good));
         }
     }
@@ -243,6 +245,19 @@ export function updateBuildingIncome() {
             if (tavern.construction && tavern.construction.stage < 3) continue;
             const efficiency = getBuildingEfficiency(tavern, workforce);
             if (efficiency <= 0) continue;
+            // A brewery is a real producer, not decoration. A nearby cellar
+            // turns one cask into a premium night of trade and lifts morale;
+            // the book keeps the movement idempotent across settlement passes.
+            const aleCellar = findLocalWarehouse("ale", tavern.x, tavern.y, 12);
+            const ale = aleCellar ? consumeFromWarehouse(aleCellar, "ale", 1, {
+                cause: "tavern-ale", houseId: "tavern:" + tavern.id,
+                key: "ale:tavern:" + tavern.id + ":" + state.tick
+            }) : 0;
+            if (ale > 0) {
+                production.aleConsumed += ale;
+                addResource("gold", 2 * efficiency);
+                state.morale = Math.min(100, state.morale + 0.8 * efficiency);
+            }
             const provisions = Math.min(Number(state.resources.food) || 0, efficiency);
             if (provisions <= 0) continue;
             recordResourceMovement("food", -provisions, "tavern-provisions", {

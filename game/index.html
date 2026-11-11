@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/ui-design-system.css">
     <link rel="stylesheet" href="css/ui-components.css">
     <link rel="stylesheet" href="css/diplomacy.css">
+    <link rel="stylesheet" href="css/city-civic.css">
     <link rel="stylesheet" href="css/hud-v3.css">
     <link rel="stylesheet" href="css/world-workshop.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
@@ -91,6 +92,9 @@
             </button>
             <button class="realm-nav-button" type="button" data-kac-panel="buildings" title="Building register and structure details">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20V9l5-4 4 3 4-4 5 5v11H3Z"/><path d="M8 20v-6h4v6m4-7h2m-2 3h2"/></svg><span>Buildings</span>
+            </button>
+            <button class="realm-nav-button" type="button" data-kac-panel="city" title="City charter, civic services and the building codex">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V8l8-5 8 5v12H4Z"/><path d="M8 20v-6h3v6m2-8h3v3h-3zM4 20h16"/></svg><span>City</span>
             </button>
             <button class="realm-nav-button" type="button" data-kac-panel="cards" title="Card hand and deck">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="12" height="16" rx="1"/><path d="m9 8 2-2 2 2m-4 7h4M17 7l3 2v11H9"/></svg><span>Cards</span>
@@ -468,6 +472,7 @@
 <button type="button" class="ui-button ui-button--tab" data-command-tab="economy"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>ECONOMY</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="resources"><svg aria-hidden="true"><use href="assets/command-emblems.svg#coins"></use></svg><span>STORES</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="buildings"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>BUILDINGS</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="city"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>CITY</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="military"><svg aria-hidden="true"><use href="assets/command-emblems.svg#seal"></use></svg><span>MILITARY</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="health"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>HEALTH</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="faith"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>FAITH</span></button>
@@ -501,6 +506,7 @@
             <button type="button" data-build-category="production">PRODUCTION</button>
             <button type="button" data-build-category="storage">STORAGE</button>
             <button type="button" data-build-category="services">SERVICES</button>
+            <button type="button" data-build-category="civic">CIVIC</button>
             <button type="button" data-build-category="faith">FAITH</button>
             <button type="button" data-build-category="justice">JUSTICE</button>
             <button type="button" data-build-category="military">MILITARY</button>

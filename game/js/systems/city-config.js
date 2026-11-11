@@ -8,7 +8,8 @@ export const CITY_VERSION = 1;
 export const NEW_BUILDING_TYPES = Object.freeze([
     TYPE.TENT, TYPE.STONE_HOUSE, TYPE.WAREHOUSE, TYPE.SAWMILL, TYPE.BAKERY,
     TYPE.WELL, TYPE.MASON, TYPE.FORESTER, TYPE.CLINIC, TYPE.MARKET,
-    TYPE.SHRINE, TYPE.COURT, TYPE.PRISON
+    TYPE.SHRINE, TYPE.COURT, TYPE.PRISON,
+    TYPE.TOWN_HALL, TYPE.SCHOOL, TYPE.BATHHOUSE, TYPE.BREWERY, TYPE.GUILDHALL, TYPE.WATCHHOUSE
 ]);
 
 export const BUILDING_LABELS = Object.freeze({
@@ -39,7 +40,13 @@ export const BUILDING_LABELS = Object.freeze({
     [TYPE.MARKET]: "Market",
     [TYPE.SHRINE]: "Shrine",
     [TYPE.COURT]: "Court of Law",
-    [TYPE.PRISON]: "Prison"
+    [TYPE.PRISON]: "Prison",
+    [TYPE.TOWN_HALL]: "Town Hall",
+    [TYPE.SCHOOL]: "School",
+    [TYPE.BATHHOUSE]: "Bathhouse",
+    [TYPE.BREWERY]: "Brewery",
+    [TYPE.GUILDHALL]: "Guildhall",
+    [TYPE.WATCHHOUSE]: "Watchhouse"
 });
 
 // Direct construction uses the same material language as the card catalogue.
@@ -72,15 +79,22 @@ export const BUILDING_COSTS = Object.freeze({
     [TYPE.MARKET]: Object.freeze({ wood: 26, stone: 8, gold: 5 }),
     [TYPE.SHRINE]: Object.freeze({ wood: 6, stone: 18, gold: 4 }),
     [TYPE.COURT]: Object.freeze({ wood: 30, stone: 24, gold: 10 }),
-    [TYPE.PRISON]: Object.freeze({ wood: 22, stone: 30, gold: 8 })
+    [TYPE.PRISON]: Object.freeze({ wood: 22, stone: 30, gold: 8 }),
+    [TYPE.TOWN_HALL]: Object.freeze({ wood: 34, stone: 36, gold: 14 }),
+    [TYPE.SCHOOL]: Object.freeze({ wood: 26, stone: 20, gold: 8 }),
+    [TYPE.BATHHOUSE]: Object.freeze({ wood: 24, stone: 28, gold: 10 }),
+    [TYPE.BREWERY]: Object.freeze({ wood: 26, stone: 12, gold: 6 }),
+    [TYPE.GUILDHALL]: Object.freeze({ wood: 32, stone: 22, gold: 12 }),
+    [TYPE.WATCHHOUSE]: Object.freeze({ wood: 22, stone: 24, gold: 5 })
 });
 
 export const BUILD_MENU = Object.freeze([
     Object.freeze({ id: "roads", label: "ROADS", note: "Dirt, gravel and paved routes. Roads change real travel speed and upkeep." }),
     Object.freeze({ id: "housing", label: "HOUSING", types: Object.freeze([TYPE.TENT, TYPE.HOUSE, TYPE.STONE_HOUSE]) }),
-    Object.freeze({ id: "production", label: "PRODUCTION", types: Object.freeze([TYPE.LUMBER, TYPE.SAWMILL, TYPE.FARM, TYPE.MILL, TYPE.BAKERY, TYPE.QUARRY, TYPE.MASON, TYPE.GOLDMINE, TYPE.STABLE]) }),
+    Object.freeze({ id: "production", label: "PRODUCTION", types: Object.freeze([TYPE.LUMBER, TYPE.SAWMILL, TYPE.FARM, TYPE.MILL, TYPE.BAKERY, TYPE.BREWERY, TYPE.QUARRY, TYPE.MASON, TYPE.GOLDMINE, TYPE.STABLE]) }),
     Object.freeze({ id: "storage", label: "STORAGE", types: Object.freeze([TYPE.WAREHOUSE]) }),
     Object.freeze({ id: "services", label: "SERVICES", types: Object.freeze([TYPE.WELL, TYPE.TAVERN, TYPE.TEMPLE, TYPE.MARKET, TYPE.CLINIC]) }),
+    Object.freeze({ id: "civic", label: "CIVIC", types: Object.freeze([TYPE.TOWN_HALL, TYPE.SCHOOL, TYPE.BATHHOUSE, TYPE.GUILDHALL, TYPE.WATCHHOUSE]) }),
     Object.freeze({ id: "faith", label: "FAITH", types: Object.freeze([TYPE.SHRINE]) }),
     Object.freeze({ id: "justice", label: "JUSTICE", types: Object.freeze([TYPE.COURT, TYPE.PRISON]) }),
     Object.freeze({ id: "military", label: "MILITARY", types: Object.freeze([TYPE.TOWER, TYPE.WALL, TYPE.BARRACKS]) }),
@@ -96,7 +110,8 @@ export const GOODS = Object.freeze({
     flour: Object.freeze({ label: "Flour", plural: "flour" }),
     bread: Object.freeze({ label: "Bread", plural: "bread" }),
     water: Object.freeze({ label: "Water", plural: "water" }),
-    firewood: Object.freeze({ label: "Firewood", plural: "firewood" })
+    firewood: Object.freeze({ label: "Firewood", plural: "firewood" }),
+    ale: Object.freeze({ label: "Ale", plural: "ale" })
 });
 
 export const GOOD_KEYS = Object.freeze(Object.keys(GOODS));
@@ -109,7 +124,8 @@ export const WAREHOUSE_PROFILES = Object.freeze({
     timber: Object.freeze({ id: "timber", label: "Timber yard", capacity: 220, filters: Object.freeze(["logs", "planks", "firewood"]), description: "Logs, planks and firewood only." }),
     stone: Object.freeze({ id: "stone", label: "Stone depot", capacity: 220, filters: Object.freeze(["stoneBlocks", "cutStone"]), description: "Rough and dressed stone only." }),
     food: Object.freeze({ id: "food", label: "Granary", capacity: 210, filters: Object.freeze(["grain", "flour", "bread"]), description: "Grain, flour and bread only." }),
-    water: Object.freeze({ id: "water", label: "Cistern", capacity: 160, filters: Object.freeze(["water"]), description: "Drawn water only." })
+    water: Object.freeze({ id: "water", label: "Cistern", capacity: 160, filters: Object.freeze(["water"]), description: "Drawn water only." }),
+    cellar: Object.freeze({ id: "cellar", label: "Ale cellar", capacity: 140, filters: Object.freeze(["ale"]), description: "Casks of ale only." })
 });
 export const WAREHOUSE_PROFILE_IDS = Object.freeze(Object.keys(WAREHOUSE_PROFILES));
 
@@ -125,6 +141,7 @@ export const RECIPES = Object.freeze({
     [TYPE.FARM]: Object.freeze({ label: "Grow grain", workers: 4, field: true, output: Object.freeze({ grain: 2 }), outputCapacity: 36, batch: 2 }),
     [TYPE.MILL]: Object.freeze({ label: "Mill flour", workers: 2, input: Object.freeze({ grain: 2 }), output: Object.freeze({ flour: 2 }), inputCapacity: 28, outputCapacity: 28, batch: 2 }),
     [TYPE.BAKERY]: Object.freeze({ label: "Bake bread", workers: 2, input: Object.freeze({ flour: 1 }), output: Object.freeze({ bread: 4 }), inputCapacity: 24, outputCapacity: 24, batch: 1 }),
+    [TYPE.BREWERY]: Object.freeze({ label: "Brew ale", workers: 2, input: Object.freeze({ grain: 2 }), output: Object.freeze({ ale: 2 }), inputCapacity: 24, outputCapacity: 24, batch: 2 }),
     [TYPE.QUARRY]: Object.freeze({ label: "Cut stone blocks", workers: 4, site: "stone", output: Object.freeze({ stoneBlocks: 3 }), outputCapacity: 32, batch: 3 }),
     [TYPE.MASON]: Object.freeze({ label: "Dress cut stone", workers: 2, input: Object.freeze({ stoneBlocks: 2 }), output: Object.freeze({ cutStone: 2 }), inputCapacity: 28, outputCapacity: 28, batch: 2 }),
     // A dug well draws groundwater and therefore works inland, unlike a
@@ -152,7 +169,11 @@ export const SERVICE_DEFINITIONS = Object.freeze({
     social: Object.freeze({ label: "Social life", types: Object.freeze([TYPE.TAVERN, TYPE.TEMPLE, TYPE.SHRINE, TYPE.MARKET]), radius: 7, color: "#b57942" }),
     safety: Object.freeze({ label: "Safety", types: Object.freeze([TYPE.TOWER, TYPE.WALL, TYPE.BARRACKS, TYPE.COURT, TYPE.PRISON]), radius: 7, color: "#7b8b57" }),
     justice: Object.freeze({ label: "Justice", types: Object.freeze([TYPE.COURT, TYPE.PRISON]), radius: 8, color: "#8c7f6a" }),
-    health: Object.freeze({ label: "Health", types: Object.freeze([TYPE.CLINIC, TYPE.TEMPLE, TYPE.SHRINE]), radius: 6, color: "#9a6d7e" })
+    health: Object.freeze({ label: "Health", types: Object.freeze([TYPE.CLINIC, TYPE.TEMPLE, TYPE.SHRINE, TYPE.BATHHOUSE]), radius: 6, color: "#9a6d7e" }),
+    civic: Object.freeze({ label: "Civic order", types: Object.freeze([TYPE.TOWN_HALL, TYPE.COURT, TYPE.PRISON]), radius: 10, color: "#8b7757" }),
+    education: Object.freeze({ label: "Education", types: Object.freeze([TYPE.SCHOOL]), radius: 8, color: "#6f7f9a" }),
+    sanitation: Object.freeze({ label: "Sanitation", types: Object.freeze([TYPE.BATHHOUSE, TYPE.WELL, TYPE.CLINIC]), radius: 7, color: "#5b8a87" }),
+    trade: Object.freeze({ label: "Trade", types: Object.freeze([TYPE.MARKET, TYPE.GUILDHALL]), radius: 9, color: "#a4773e" })
 });
 
 export function isHousingType(type) {

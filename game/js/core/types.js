@@ -36,6 +36,12 @@ export const TYPE = {
     SHRINE: 70,
     COURT: 71,
     PRISON: 72,
+    TOWN_HALL: 73,
+    SCHOOL: 74,
+    BATHHOUSE: 75,
+    BREWERY: 76,
+    GUILDHALL: 77,
+    WATCHHOUSE: 78,
 
     VILLAGER: 20,
     GUARD: 21,
@@ -83,6 +89,12 @@ const MAX_HP = {
     [TYPE.SHRINE]:    120,
     [TYPE.COURT]:     280,
     [TYPE.PRISON]:    300,
+    [TYPE.TOWN_HALL]: 330,
+    [TYPE.SCHOOL]:    220,
+    [TYPE.BATHHOUSE]: 260,
+    [TYPE.BREWERY]:   190,
+    [TYPE.GUILDHALL]: 300,
+    [TYPE.WATCHHOUSE]: 240,
     [TYPE.VILLAGER]: 35,
     [TYPE.GUARD]:    160,
     [TYPE.ARCHER]:   95,
@@ -171,7 +183,7 @@ export class Entity {
     }
 
     isBuilding() {
-        return this.type < 20 || (this.type >= 60 && this.type < 73);
+        return this.type < 20 || (this.type >= 60 && this.type < 79);
     }
 
     isUnit() {

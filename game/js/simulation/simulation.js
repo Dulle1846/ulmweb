@@ -6,6 +6,7 @@ import { checkRandomEvents,addLog } from "../systems/events.js";
 import { updateMarket } from "../systems/market.js";
 import { updateDiplomacy } from "../systems/diplomacy.js";
 import { updateCourt } from "../systems/court.js";
+import { updateCivic } from "../systems/civic.js";
 import { updateEconomy } from "../systems/economy.js";
 import { updateEdicts } from "../systems/edicts.js";
 import { updateHealth } from "../systems/health.js";
@@ -65,6 +66,7 @@ export function updateSimulation(){
         newborn=updateBirths();
         updateDiplomacy();
         updateCourt();
+        updateCivic();
         updateEndeavours();
         settleCrownSupply();
     }
