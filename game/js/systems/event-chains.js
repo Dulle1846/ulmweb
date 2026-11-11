@@ -153,5 +153,34 @@ export const EVENT_CHAINS = Object.freeze({
             {label:"Create a permanent fire watch",description:"Spend gold and stone to prepare the town for future emergencies.",effects:{resources:{gold:-10,stone:-8},morale:4,hidden:{prosperity:5,tension:-3},politics:{commons:2,legitimacy:2},cardReward:"watchtowers"}},
             {label:"Return to the old customs",description:"Avoid new expense, but leave the town vulnerable.",effects:{morale:-1,hidden:{tension:3,prosperity:-1},politics:{commons:-2,legitimacy:-1}}}
         ]}
+    ]),
+
+    wildlife: Object.freeze([
+        {title:"Tracks at the Boundary",description:"Deer, boar and smaller game have gathered where the fields meet the old wood. The reeves ask whether the crown will protect the herd or the harvest.",choices:[
+            {label:"Set aside a winter grove",description:"Spend wood to leave cover and browse for the herd; the village gains a lasting hunting ground.",effects:{resources:{wood:-10},morale:2,hidden:{prosperity:3,tension:-2},politics:{commons:2},cardReward:"deer"}},
+            {label:"Drive the herd from the fields",description:"Gain food now, but the forest edge loses its quiet and the villagers remain wary.",effects:{resources:{food:15},morale:-2,hidden:{tension:3,prosperity:-1},politics:{commons:-2}}}
+        ]},
+        {title:"The Herd Returns",description:"The animals have come back in greater numbers. Hunters want a share, while herders fear the crops will be trampled again.",choices:[
+            {label:"Open a salt lick and a guarded path",description:"Spend food and wood to keep the herd away from the fields without breaking its route.",effects:{resources:{food:-8,wood:-6},morale:3,hidden:{prosperity:4,tension:-3},politics:{commons:2,clergy:1}}},
+            {label:"Sell hunting rights to the guilds",description:"Gain coin from a managed hunt, but the commons lose a familiar part of the wood.",effects:{resources:{gold:14},morale:-1,hidden:{prosperity:2,tension:2},politics:{guilds:3,commons:-2}}}
+        ]},
+        {title:"The Warden's Charter",description:"The herd has become part of the realm's seasonal rhythm. The crown must decide who will keep watch over the forest edge.",choices:[
+            {label:"Appoint a royal warden",description:"Spend gold to establish a permanent warden and secure a deer card for the next draw.",effects:{resources:{gold:-12},morale:4,hidden:{prosperity:5,tension:-3},politics:{commons:2,legitimacy:2},cardReward:"deer"}},
+            {label:"Leave the hunt to the villages",description:"Save the treasury and trust old custom, though the next hard winter will test it.",effects:{resources:{gold:5},morale:1,hidden:{prosperity:-1,tension:2},politics:{commons:1,nobility:-1}}}
+        ]}
+    ]),
+    fishing: Object.freeze([
+        {title:"The Silver Run",description:"The river has filled with a silver run of fish. The fishing families ask for help landing the catch before the water turns.",choices:[
+            {label:"Repair the common weirs",description:"Spend wood and food to bring in a shared catch and strengthen the river villages.",effects:{resources:{wood:-8,food:18},morale:3,hidden:{prosperity:3,tension:-2},politics:{commons:2,guilds:1},cardReward:"river-weirs"}},
+            {label:"Sell the run to the fishmongers",description:"Gain gold from a single great catch, but the fishing families receive little.",effects:{resources:{gold:12,food:6},morale:-2,hidden:{prosperity:1,tension:3},politics:{guilds:3,commons:-2}}}
+        ]},
+        {title:"Nets in the Shallows",description:"Upstream and downstream families accuse one another of blocking the channel. The catch is falling while the argument grows.",choices:[
+            {label:"Set a joint river watch",description:"Spend gold to pay watchers from both banks and keep the channel open.",effects:{resources:{gold:-8},morale:2,hidden:{prosperity:3,tension:-4},politics:{commons:2,legitimacy:1}}},
+            {label:"Award the water to the highest bidder",description:"Gain gold from a private lease, but the losing families remember the insult.",effects:{resources:{gold:16},morale:-3,hidden:{tension:5,prosperity:2},politics:{guilds:3,commons:-3}}}
+        ]},
+        {title:"The River Compact",description:"The run has passed, leaving the river villages to decide how the water will be shared next year.",choices:[
+            {label:"Renew the common fishery",description:"Spend stone and gold on a lasting compact; the crown secures a river-weir card.",effects:{resources:{stone:-10,gold:-8,food:20},morale:4,hidden:{prosperity:5,tension:-4},politics:{commons:3,guilds:1,legitimacy:2},cardReward:"river-weirs"}},
+            {label:"Close the river to common nets",description:"Gain a lease payment, but end the old shared fishery.",effects:{resources:{gold:18},morale:-4,hidden:{tension:5,prosperity:1},politics:{guilds:3,commons:-3,legitimacy:-1}}}
+        ]}
     ])
 });

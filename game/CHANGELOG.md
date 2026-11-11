@@ -40,7 +40,7 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ### 3.15.0-dev — Tropische Regenwälder (1.2.4)
 
-**Status:** released on `ulmweb-branch`; production https://kings-and-cards.pages.dev/ reported commit `6024ebb` (built 2026-11-11T12:42:08.437Z).
+**Status:** released on `ulmweb-branch`; production https://kings-and-cards.pages.dev/ is verified after each release build.
 
 **Scope:** The tropical rainforest extends the one shared forest model instead
 of adding a second ecosystem. A sixth climate profile carries humid heat, a
@@ -67,12 +67,23 @@ fruiting, dry-season peak and the warm rainy season under an evergreen canopy.
 Fauna, gathered goods, spoilage, work penalties and quinine/fever-bark medicine
 all flow through the existing simulation, survey and economy paths.
 
-**Verification:** `npm test` 766/766; syntax and relative imports clean for 107
-source files / 189 UI ids; focused tropical suite 8/8 and tropical integration
-suite 7/7; browser reference 12/12 formations and four seasonal frames on WebKit
-WebGL at 800 × 800; 25-year campaign 10,040 ticks / 13/13 ambitions / no game
-over / 0.838 ms per tick. The refreshed reference was checked visually for the
-twelve formation silhouettes, dense canopy and readable understorey.
+**Chronicles:** two new three-stage authored arcs extend the event library:
+**wildlife** follows a herd from the field boundary to a royal warden charter,
+and **fishing** follows a silver run through a shared-weir dispute to a river
+compact. Both link choices to resources, morale, hidden prosperity/tension and
+political factions, and can award `deer` or `river-weirs` cards. They reuse the
+existing chronicle queue, participant memories and save format.
+
+**Verification:** `npm test` 767/767; syntax and relative imports clean for 107
+source files / 189 UI ids; focused tropical suite 8/8, tropical integration
+7/7 and event-chain suite 5/5; browser reference 12/12 formations and four
+seasonal frames on WebKit WebGL at 800 × 800; playability audit 1,200 ticks at
+60 FPS with no page/console errors; full browser E2E passed (world forge, cards,
+drag placement, save/load, military, health, faith/justice and forestry);
+25-year campaign 10,040 ticks / 13/13 / 0.821 ms per tick; 100-year campaign
+40,040 ticks / 13/13 / 0.823 ms per tick. The refreshed reference was checked
+visually for the twelve formation silhouettes, dense canopy and readable
+understorey.
 
 **Audit pass:** The 65-point audit closed the remaining presentation gaps:
 native primate, reptile, fish and amphibian silhouettes; jaguar/ocelot rosettes

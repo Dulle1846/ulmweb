@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { EVENT_CHAINS } from "../js/systems/event-chains.js";
 
 test("authored story arcs have multiple stages and meaningful choices", () => {
-    assert.ok(Object.keys(EVENT_CHAINS).length >= 8);
+    assert.ok(Object.keys(EVENT_CHAINS).length >= 13);
     for (const [id, stages] of Object.entries(EVENT_CHAINS)) {
         assert.ok(id.length > 0);
         assert.ok(stages.length >= 3);
@@ -23,7 +23,7 @@ test("authored story arcs have multiple stages and meaningful choices", () => {
 });
 
 test("the long-form chronicle library covers civic, health and succession crises",()=>{
-    for(const id of ["migration","crime","ruins","diplomacy","plague","rebellion","guild","succession","shortage","flood","fire"]){
+    for(const id of ["migration","crime","ruins","diplomacy","plague","rebellion","guild","succession","shortage","flood","fire","wildlife","fishing"]){
         assert.equal(EVENT_CHAINS[id].length,3,id+" should have three stages");
     }
 });
@@ -54,4 +54,17 @@ test("new shortage, flood and fire arcs link their decisions to cards and system
             }
         }
     }
+});
+
+test("wildlife and fishing chronicles connect choices to resources, politics and cards",()=>{
+    for(const id of ["wildlife","fishing"]){
+        assert.equal(EVENT_CHAINS[id].length,3,id+" should have three stages");
+        for(const stage of EVENT_CHAINS[id]){
+            assert.ok(stage.choices.every(choice=>choice.effects.resources&&choice.effects.politics));
+        }
+    }
+    assert.equal(EVENT_CHAINS.wildlife[0].choices[0].effects.cardReward,"deer");
+    assert.equal(EVENT_CHAINS.wildlife[2].choices[0].effects.cardReward,"deer");
+    assert.equal(EVENT_CHAINS.fishing[0].choices[0].effects.cardReward,"river-weirs");
+    assert.equal(EVENT_CHAINS.fishing[2].choices[0].effects.cardReward,"river-weirs");
 });

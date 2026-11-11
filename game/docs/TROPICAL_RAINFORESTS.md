@@ -196,8 +196,9 @@ Die Browser-Referenz liegt unter `docs/terrain-reference/tropical-reference.png`
 
 ## Verification on this head
 
-- `npm test`: 766/766 pass; syntax and relative imports clean for 107 source files and 189 UI ids.
+- `npm test`: 767/767 pass; syntax and relative imports clean for 107 source files and 189 UI ids.
 - Focused tropical suite: 8/8, including all 65 point ids, all 12 formations, deterministic stand generation and the complete tropical shader palette.
 - Tropical integration suite: 7/7, covering delivery channels, medicine/food/gold delivery, spoilage, land-use goods, movement, succession and health exposure.
 - `npm run test:tropical-reference`: 12/12 formations and four seasonal frames captured on WebKit WebGL at 800 × 800. The metadata records all 65 features for every formation.
-- `npm run test:campaign`: 10,040 ticks, 25 years, 13/13 ambitions, no game over, 0.838 ms per tick.
+- `npm run test:campaign`: 10,040 ticks, 25 years, 13/13 ambitions, no game over, 0.821 ms per tick.
+- Extended playtest: 100-year campaign 40,040 ticks / 13/13 / 0.823 ms per tick; browser playability 1,200 ticks at 60 FPS with no page or console errors; full Chromium E2E suite passed.
