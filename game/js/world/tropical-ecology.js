@@ -169,6 +169,18 @@ export const TROPICAL_SPECIES = Object.freeze({
 
 export const TROPICAL_SPECIES_IDS = Object.freeze(Object.keys(TROPICAL_SPECIES));
 
+// Species with genuinely narrow ranges. The fauna chooser uses this table so a
+// harpy eagle cannot appear in a young secondary patch and a caiman cannot be
+// painted on a dry emergent crown. This is a deterministic habitat range, not
+// a second population map.
+export const TROPICAL_RESTRICTED_SPECIES = Object.freeze({
+    'harpy-eagle': Object.freeze(['tropical-ancient']),
+    'poison-dart-frog': Object.freeze(['tropical-swamp', 'tropical-montane', 'tropical-floodplain', 'tropical-riverbank']),
+    caiman: Object.freeze(['tropical-floodplain', 'tropical-swamp', 'tropical-riverbank']),
+    piranha: Object.freeze(['tropical-floodplain', 'tropical-swamp', 'tropical-riverbank']),
+    anaconda: Object.freeze(['tropical-floodplain', 'tropical-swamp', 'tropical-riverbank']),
+});
+
 // ── forest products ───────────────────────────────────────────
 export const TROPICAL_GOODS = Object.freeze({
     'kapok-timber': good('kapok-timber', 'Kapok timber', 'wood'),
@@ -221,6 +233,15 @@ export const TROPICAL_GOODS = Object.freeze({
     'palm-oil': good('palm-oil', 'Palm oil', 'gather'),
     palmito: good('palmito', 'Heart of palm', 'gather'),
     'bamboo-shoots': good('bamboo-shoots', 'Bamboo shoots', 'gather'),
+    // Swidden fields and house gardens are real tropical land use, not only a
+    // painted field stripe. These foods enter the same gathering ledger as the
+    // wild fruits and can be delivered to the royal stores.
+    cassava: good('cassava', 'Cassava', 'gather'),
+    maize: good('maize', 'Maize', 'gather'),
+    beans: good('beans', 'Beans', 'gather'),
+    squash: good('squash', 'Squash', 'gather'),
+    'sweet-potato': good('sweet-potato', 'Sweet potato', 'gather'),
+    rice: good('rice', 'Rice', 'gather'),
     orchids: good('orchids', 'Orchids', 'luxury'),
     bromeliads: good('bromeliads', 'Bromeliads', 'luxury'),
     agarwood: good('agarwood', 'Agarwood', 'luxury'),
@@ -591,6 +612,8 @@ export function tropicalProfileFor(input = {}) {
         movement: round(movement),
         flood: round(flood),
         predators: round(predators),
+        poison: round(values.poisonousOrganisms),
+        storm: round(values.floodStormHazard),
         visibility: round(visibility),
         workPenalty: round(0.18 + movement * 0.38 + flood * 0.12 + predators * 0.05),
         diseaseLabel: settlement || wet > 0.7 ? 'malaria and waterborne fever' : 'forest fever',
@@ -616,6 +639,12 @@ export function tropicalProfileFor(input = {}) {
         fishing: Boolean(water || floodplainFormation),
         gathering: true,
         riverTrade: Boolean(floodplainFormation || formationId === 'tropical-riverbank'),
+        crops: agriculture ? Object.freeze(['cassava', 'maize', 'beans', 'squash', 'sweet-potato']) : Object.freeze([]),
+        plantationGoods: plantation ? Object.freeze(['cacao-pods', 'natural-rubber', 'palm-oil', 'bananas', 'vanilla']) : Object.freeze([]),
+        settlementGoods: settlement ? Object.freeze(['honey', 'herbs', 'stingless-bee-honey']) : Object.freeze([]),
+        tradeBonus: floodplainFormation || formationId === 'tropical-riverbank' ? 1.5 : 1,
+        successionStage: clearance > 0.55 && regrowth < 0.5 ? 'cleared'
+            : regrowth > 0.55 ? 'regrowing' : 'closed',
         clearance: round(clearance),
         regrowth: round(regrowth),
         kind: settlement ? 'riverside hamlet' : plantation ? 'plantation' : agriculture ? 'swidden plot'

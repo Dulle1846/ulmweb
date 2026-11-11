@@ -63,10 +63,11 @@ fruiting, dry-season peak and the warm rainy season under an evergreen canopy.
 Fauna, gathered goods, spoilage, work penalties and quinine/fever-bark medicine
 all flow through the existing simulation, survey and economy paths.
 
-**Verification:** `npm test` 759/759; syntax and relative imports clean for 107
-source files / 189 UI ids; focused tropical suite 8/8; browser reference 12/12
-formations and four seasonal frames on WebKit WebGL at 800 × 800; 25-year
-campaign 10,040 ticks / 13/13 ambitions / no game over / 0.823 ms per tick.
+**Verification:** `npm test` 766/766; syntax and relative imports clean for 107
+source files / 189 UI ids; focused tropical suite 8/8 and tropical integration
+suite 7/7; browser reference 12/12 formations and four seasonal frames on WebKit
+WebGL at 800 × 800; 25-year campaign 10,040 ticks / 13/13 ambitions / no game
+over / 0.821 ms per tick.
 
 **Audit pass:** The 65-point audit closed the remaining presentation gaps:
 native primate, reptile, fish and amphibian silhouettes; jaguar/ocelot rosettes
@@ -75,7 +76,13 @@ medicinal, rare and toxic understorey plants; exposed roots, rotting logs and
 rotting logs with fungus; streams, broad rivers, waterfalls, temporary flood water,
 fish traps and mosquito vectors. Watercourses are limited to floodplain,
 riverbank and montane formations so ordinary rainforest tiles never acquire
-artificial blue stripes. Full status and the explicit non-visual risk paths are
+artificial blue stripes. The simulation pass then connected the remaining audit
+paths: tropical goods deliver through real food, medicine, gold and timber
+channels; gathered food spoils daily and on delivery; disease, parasites, poison,
+predators and storms feed the existing health system; undergrowth slows villagers
+and carriers through a cached movement factor; land-use crops and plantation goods
+enter the economy with a river-trade bonus; and clearance/regrowth now modulate
+forest succession. Full status and the explicit non-visual risk paths are
 documented in `docs/TROPICAL_RAINFORESTS.md`.
 
 ### 3.15.0-dev — Mischwälder (1.2.3)

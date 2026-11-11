@@ -125,12 +125,12 @@ Die Tests prüfen zusätzlich, dass jede der zwölf Formationen wirklich generie
 
 - **Böden:** tief verwitterte Latosole und ausgelaugte Upland-Oxisole, dunkle Feuchthumusauflagen, flächige Wurzeln, Falllaub und Totholz. Auenformationen wechseln auf jungen Alluviumboden.
 - **Wasser:** ganzjährig hohe Feuchte, Bäche, Flüsse, temporäre Überschwemmungen, Tümpel, Wasserfälle und Nebel. Die bestehende Hydrology- und Wetterpipeline bleibt die einzige Quelle.
-- **Gefahren:** Krankheits- und Parasitenrisiko, schnelle Verderbnis, dichter Unterwuchs, Überschwemmung, Raubtiere und reduzierte Sicht. Sie fließen in `workFactor`, Sichtprofil, Sammelertrag und die bestehende Gesundheits-/Medizinlogik ein.
-- **Medizin:** `quinine-bark`, `fever-bark`, `cat-claw`, `copaiba-oil` und `ipecac` sind echte Sammelgüter und werden von `applyHerbalRemedy()` verbraucht.
+- **Gefahren:** Krankheits-, Parasiten-, Gift- und Raubtierrisiko, Sturm/Flut, schnelle Verderbnis, dichter Unterwuchs und reduzierte Sicht. Beim Sammeln ruft `tropicalExposure()` die bestehende Gesundheitslogik auf: Krankheit startet einen normalen Ausbruch, Parasiten/Gift/Raubtiere verursachen Genesungszeiten, Sturm kostet Nahrung und Moral. `spoilForestGoods()` lässt verderbliche Sammelgüter täglich altern; `getForestMovementFactorAt()` macht den Unterwuchs zu einem echten Bewegungskostenfaktor für Siedler und Träger.
+- **Medizin:** `quinine-bark`, `fever-bark`, `cat-claw`, `copaiba-oil` und `ipecac` sind echte Sammelgüter. Sie gelangen über `forestDeliveryChannel()` und `addMedicineStock()` in den öffentlichen Medizinvoorrat und werden von `applyHerbalRemedy()` verbraucht.
 
 ## Landnutzung
 
-Flußnahe Auen und Uferwälder können kleine Siedlungen, Bootsanleger, Ackerflächen und Flusshandel tragen. Aufgegebene Plantagen und Sekundärwälder führen zu Rodungsdruck und Wiederbewuchs. Der Renderer zeichnet dafür kleine Pfahlbauten, Feldzeilen, Plantagenreihen, Kanus, Stümpfe und junge Triebe; die Werte bleiben aus dem Stand abgeleitet und werden nicht als neue Karte gespeichert.
+Flußnahe Auen und Uferwälder können kleine Siedlungen, Bootsanleger, Ackerflächen und Flusshandel tragen. Aufgegebene Plantagen und Sekundärwälder führen zu Rodungsdruck und Wiederbewuchs. Die Landnutzung erzeugt echte Waren: Ackerfrüchte und Siedlungsgüter werden Nahrung bzw. Medizin, Plantagengüter und Naturmaterialien werden Handelsgut, und `forestDeliveryChannel()` leitet sie in die bestehenden Stadtspeicher. Ein Fluss- oder Uferstand gibt beim Verkauf den `riverTrade`-Bonus. `forestRegrowthFactor()` verrechnet `clearance` und `regrowth` der Sukzession, sodass gerodete Flächen langsamer nachwachsen. Der Renderer zeichnet dafür kleine Pfahlbauten, Feldzeilen, Plantagenreihen, Kanus, Stümpfe und junge Triebe; die Werte bleiben aus dem Stand abgeleitet und werden nicht als neue Karte gespeichert.
 
 ## Audit 1.2.4 — Status (11.11.2026)
 
@@ -151,6 +151,9 @@ sichtbaren Pfade nachgezogen.
 | 1.2.4.32–35 | Bäche, breite Flüsse, Wasserfälle und temporäre Flutwasserflächen als eigene Wassergrafik |
 | 1.2.4.37–43 | Primaten, Reptilien, Fische und Amphibien haben eigene Canvas-Gruppen; Jaguar/Ozelot erhalten Fellzeichnung, Tukane, Macaws und Harpyien Farben |
 | 1.2.4.51, 1.2.4.53 | Giftpflanzen und Stechmücken-/Parasitenhinweise im Unterwuchs |
+| 1.2.4.51–54 | Gift, Krankheit, Parasiten und Verderbnis lösen über `tropicalExposure()` echte Gesundheitsereignisse aus; Medizin wird als Vorrat eingelagert und verbraucht |
+| 1.2.4.55 | Dichtes Unterholz bremst Siedler und Träger über einen gecachten Bewegungsfaktor |
+| 1.2.4.59–65 | Siedlungs-, Acker- und Plantagengüter, Flusshandelsbonus sowie Sukzession mit `clearance`/`regrowth` |
 | 1.2.4.62–63 | Fischfalle am Flussufer und Kanu-/Handelsspuren |
 
 ### Vollständig vorhanden
@@ -163,16 +166,17 @@ sichtbaren Pfade nachgezogen.
 ### Risiko- und Systempfad statt separater Grafik
 
 - **1.2.4.30, 1.2.4.31, 1.2.4.56:** Regen, Feuchte, Sturm und Flut laufen über die bestehende Wetter-, Wasser- und Sichtpipeline.
-- **1.2.4.52–54:** Krankheit, Parasiten und Verderbnis sind abgeleitete Risiken und fließen in `workFactor`, Sichtprofil und Sammelertrag ein; die tropischen Medizingüter sind über die bestehende Medizinlogik verbrauchbar. Eine separate Malaria-/Parasiten-Epidemie ist bewusst nicht modelliert.
+- **1.2.4.52–54:** Krankheit und Parasiten starten über `tropicalExposure()` einen Ausbruch im bestehenden Gesundheitssystem; Gift und Raubtiere erzeugen Genesungszeiten, Sturm kostet Nahrung, und Verderbnis läuft über `spoilForestGoods()`. Die tropischen Medizingüter füllen den normalen Medizinvoorrat. Es gibt keine separaten Malaria-/Parasiten-Sprites oder einen zweiten Epidemie-Zähler.
 - **1.2.4.58:** schlechte Sicht ist ein echtes Sichtprofil (`sightRadius`, `visibility`), kein separater Bildfilter.
-- **1.2.4.64:** Rodung ist als `clearance`, Stumpf, Bestandsrückgang und langfristige Sukzession modelliert; die unmittelbare Folge ist sichtbar, die Jahrzehntfolge bewusst simulationsseitig.
+- **1.2.4.64:** Rodung ist als `clearance`, Stumpf, Bestandsrückgang und langfristige Sukzession modelliert; `forestRegrowthFactor()` verrechnet `clearance` und `regrowth`, sodass die Jahrzehntfolge auch das Nachwachsen real bremst. Die unmittelbare Folge ist sichtbar, die Langzeitfolge simulationsseitig.
 
 ### Offene Restpunkte
 
 **Keine offenen Pflichtpunkte.** Die verbleibende Grenze ist die Darstellungsform:
-Das Spiel ist eine deterministische 2D-Canvas-Welt, keine 3D-Mesh-Welt. Krankheiten
-und Parasiten bleiben Risiko-/Gesundheitswerte statt eigener Krankheits-Sprites;
-Wasserfälle erscheinen an montanen Kacheln, nicht als neue Hydrologie-Simulation.
+Das Spiel ist eine deterministische 2D-Canvas-Welt, keine 3D-Mesh-Welt. Krankheiten,
+Verletzungen und Parasiten laufen über bestehende Gesundheitszustände statt eigener
+Krankheits-Sprites; Wasserfälle erscheinen an montanen Kacheln, nicht als neue
+Hydrologie-Simulation.
 
 ## Reproduktion
 
@@ -189,7 +193,8 @@ Die Browser-Referenz liegt unter `docs/terrain-reference/tropical-reference.png`
 
 ## Verification on this head
 
-- `npm test`: 759/759 pass; syntax and relative imports clean for 107 source files and 189 UI ids.
+- `npm test`: 766/766 pass; syntax and relative imports clean for 107 source files and 189 UI ids.
 - Focused tropical suite: 8/8, including all 65 point ids, all 12 formations, deterministic stand generation and the complete tropical shader palette.
+- Tropical integration suite: 7/7, covering delivery channels, medicine/food/gold delivery, spoilage, land-use goods, movement, succession and health exposure.
 - `npm run test:tropical-reference`: 12/12 formations and four seasonal frames captured on WebKit WebGL at 800 × 800. The metadata records all 65 features for every formation.
-- `npm run test:campaign`: 10,040 ticks, 25 years, 13/13 ambitions, no game over, 0.823 ms per tick.
+- `npm run test:campaign`: 10,040 ticks, 25 years, 13/13 ambitions, no game over, 0.821 ms per tick.

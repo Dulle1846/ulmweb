@@ -39,6 +39,7 @@ import { updateCreatures } from "../systems/creatures.js";
 import { updateAmbitions } from "../systems/ambitions.js";
 import { updateEndeavours } from "../systems/endeavours.js";
 import { settleCrownSupply } from "../systems/crown-supply.js";
+import { spoilForestGoods } from "../systems/forest-gathering.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
@@ -68,6 +69,7 @@ export function updateSimulation(){
         settleCrownSupply();
     }
     state.seasonIndex=Math.floor(state.dayOfYear/100)%4;
+    if((state.worldOptions?.climate||"temperate")==="tropical")spoilForestGoods(1);
     resetIncome();
     updateSettlement();
     // The standing grain contract delivers once per season. This is a single

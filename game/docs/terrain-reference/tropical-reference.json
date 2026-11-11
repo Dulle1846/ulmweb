@@ -11,7 +11,7 @@
   },
   "renderer": "WebKit WebGL",
   "maxTextureSize": 8192,
-  "generatedAt": "2026-11-11T11:37:23.440Z",
+  "generatedAt": "2026-11-11T12:00:18.966Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -149,6 +149,8 @@
           "movement": 0.798,
           "flood": 0.333,
           "predators": 0.391,
+          "poison": 0.681,
+          "storm": 0.333,
           "visibility": 0.638,
           "workPenalty": 0.543,
           "diseaseLabel": "malaria and waterborne fever"
@@ -162,6 +164,11 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": false,
+          "crops": [],
+          "plantationGoods": [],
+          "settlementGoods": [],
+          "tradeBonus": 1,
+          "successionStage": "closed",
           "clearance": 0,
           "regrowth": 0,
           "kind": "managed forest"
@@ -366,6 +373,8 @@
           "movement": 0.769,
           "flood": 0.232,
           "predators": 0.379,
+          "poison": 0.609,
+          "storm": 0.232,
           "visibility": 0.614,
           "workPenalty": 0.519,
           "diseaseLabel": "forest fever"
@@ -379,6 +388,11 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": false,
+          "crops": [],
+          "plantationGoods": [],
+          "settlementGoods": [],
+          "tradeBonus": 1,
+          "successionStage": "closed",
           "clearance": 0,
           "regrowth": 0,
           "kind": "managed forest"
@@ -571,6 +585,8 @@
           "movement": 0.787,
           "flood": 0.893,
           "predators": 0.386,
+          "poison": 0.695,
+          "storm": 0.893,
           "visibility": 0.628,
           "workPenalty": 0.606,
           "diseaseLabel": "malaria and waterborne fever"
@@ -584,6 +600,11 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": true,
+          "crops": [],
+          "plantationGoods": [],
+          "settlementGoods": [],
+          "tradeBonus": 1.5,
+          "successionStage": "closed",
           "clearance": 0,
           "regrowth": 0,
           "kind": "managed forest"
@@ -771,6 +792,8 @@
           "movement": 0.747,
           "flood": 0.237,
           "predators": 0.369,
+          "poison": 0.612,
+          "storm": 0.237,
           "visibility": 0.601,
           "workPenalty": 0.511,
           "diseaseLabel": "forest fever"
@@ -784,6 +807,11 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": false,
+          "crops": [],
+          "plantationGoods": [],
+          "settlementGoods": [],
+          "tradeBonus": 1,
+          "successionStage": "closed",
           "clearance": 0,
           "regrowth": 0,
           "kind": "managed forest"
@@ -974,6 +1002,8 @@
           "movement": 0.795,
           "flood": 0.9,
           "predators": 0.509,
+          "poison": 0.86,
+          "storm": 0.9,
           "visibility": 0.636,
           "workPenalty": 0.616,
           "diseaseLabel": "malaria and waterborne fever"
@@ -987,6 +1017,11 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": true,
+          "crops": [],
+          "plantationGoods": [],
+          "settlementGoods": [],
+          "tradeBonus": 1.5,
+          "successionStage": "closed",
           "clearance": 0,
           "regrowth": 0,
           "kind": "managed forest"
@@ -1183,6 +1218,8 @@
           "movement": 0.797,
           "flood": 0.48,
           "predators": 0.39,
+          "poison": 0.7,
+          "storm": 0.48,
           "visibility": 0.647,
           "workPenalty": 0.56,
           "diseaseLabel": "malaria and waterborne fever"
@@ -1196,6 +1233,11 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": false,
+          "crops": [],
+          "plantationGoods": [],
+          "settlementGoods": [],
+          "tradeBonus": 1,
+          "successionStage": "closed",
           "clearance": 0,
           "regrowth": 0,
           "kind": "managed forest"
@@ -1384,6 +1426,8 @@
           "movement": 0.943,
           "flood": 0.237,
           "predators": 0.368,
+          "poison": 0.612,
+          "storm": 0.237,
           "visibility": 0.759,
           "workPenalty": 0.585,
           "diseaseLabel": "forest fever"
@@ -1397,6 +1441,11 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": false,
+          "crops": [],
+          "plantationGoods": [],
+          "settlementGoods": [],
+          "tradeBonus": 1,
+          "successionStage": "closed",
           "clearance": 0.4,
           "regrowth": 0.2,
           "kind": "managed forest"
@@ -1585,6 +1634,8 @@
           "movement": 0.726,
           "flood": 0.236,
           "predators": 0.36,
+          "poison": 0.611,
+          "storm": 0.236,
           "visibility": 0.589,
           "workPenalty": 0.502,
           "diseaseLabel": "forest fever"
@@ -1598,6 +1649,11 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": false,
+          "crops": [],
+          "plantationGoods": [],
+          "settlementGoods": [],
+          "tradeBonus": 1,
+          "successionStage": "closed",
           "clearance": 0.4,
           "regrowth": 0.2,
           "kind": "managed forest"
@@ -1785,6 +1841,8 @@
           "movement": 0.626,
           "flood": 0.219,
           "predators": 0.361,
+          "poison": 0.599,
+          "storm": 0.219,
           "visibility": 0.588,
           "workPenalty": 0.462,
           "diseaseLabel": "forest fever"
@@ -1798,6 +1856,23 @@
           "fishing": false,
           "gathering": true,
           "riverTrade": false,
+          "crops": [
+            "cassava",
+            "maize",
+            "beans",
+            "squash",
+            "sweet-potato"
+          ],
+          "plantationGoods": [
+            "cacao-pods",
+            "natural-rubber",
+            "palm-oil",
+            "bananas",
+            "vanilla"
+          ],
+          "settlementGoods": [],
+          "tradeBonus": 1,
+          "successionStage": "regrowing",
           "clearance": 0.4,
           "regrowth": 1,
           "kind": "plantation"
@@ -1989,6 +2064,8 @@
           "movement": 0.782,
           "flood": 0.252,
           "predators": 0.604,
+          "poison": 0.623,
+          "storm": 0.252,
           "visibility": 0.623,
           "workPenalty": 0.538,
           "diseaseLabel": "forest fever"
@@ -2002,6 +2079,11 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": false,
+          "crops": [],
+          "plantationGoods": [],
+          "settlementGoods": [],
+          "tradeBonus": 1,
+          "successionStage": "closed",
           "clearance": 0,
           "regrowth": 0,
           "kind": "managed forest"
@@ -2194,6 +2276,8 @@
           "movement": 0.783,
           "flood": 0.9,
           "predators": 0.385,
+          "poison": 0.7,
+          "storm": 0.9,
           "visibility": 0.632,
           "workPenalty": 0.605,
           "diseaseLabel": "malaria and waterborne fever"
@@ -2207,6 +2291,11 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": true,
+          "crops": [],
+          "plantationGoods": [],
+          "settlementGoods": [],
+          "tradeBonus": 1.5,
+          "successionStage": "closed",
           "clearance": 0,
           "regrowth": 0,
           "kind": "managed forest"
@@ -2395,6 +2484,8 @@
           "movement": 0.743,
           "flood": 0.259,
           "predators": 0.368,
+          "poison": 0.628,
+          "storm": 0.259,
           "visibility": 0.601,
           "workPenalty": 0.512,
           "diseaseLabel": "forest fever"
@@ -2408,6 +2499,17 @@
           "fishing": true,
           "gathering": true,
           "riverTrade": false,
+          "crops": [],
+          "plantationGoods": [
+            "cacao-pods",
+            "natural-rubber",
+            "palm-oil",
+            "bananas",
+            "vanilla"
+          ],
+          "settlementGoods": [],
+          "tradeBonus": 1,
+          "successionStage": "regrowing",
           "clearance": 0.4,
           "regrowth": 1,
           "kind": "plantation"
@@ -2601,6 +2703,8 @@
         "movement": 0.798,
         "flood": 0.333,
         "predators": 0.391,
+        "poison": 0.681,
+        "storm": 0.333,
         "visibility": 0.638,
         "workPenalty": 0.543,
         "diseaseLabel": "malaria and waterborne fever"
@@ -2614,6 +2718,11 @@
         "fishing": true,
         "gathering": true,
         "riverTrade": false,
+        "crops": [],
+        "plantationGoods": [],
+        "settlementGoods": [],
+        "tradeBonus": 1,
+        "successionStage": "closed",
         "clearance": 0,
         "regrowth": 0,
         "kind": "managed forest"
@@ -2698,8 +2807,8 @@
     }
   ],
   "artifactHashes": {
-    "formation": "46e07194b6fe240bf2bd7731898c86c7579a3c051a27ca3128f835f4dbb53279",
-    "seasonal": "af19ca0852e5e578dfef7eebdd69c38875341550a5ef1d064b8eaf5476c173ad"
+    "formation": "72ef64ecb46fcbe1b0345d763398aaa462b8930820a539a0ea379190885abe33",
+    "seasonal": "589203cddc84530ae27d2c618f8d10cd2baf09bd91976bc843a4f6d49a99edf9"
   },
   "note": "Tropical realm at 78% forest cover, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level at midday. All twelve rainforest formations are real generated tiles, not hand-placed demo props. The seasonal strip follows an emergent stand through the wet-season flush, main fruiting pulse, dry-season peak and warm rainy season. Each tile records all 65 rainforest requirements, the three canopy strata, water, hazards, land use, goods and fauna. Not a GPU performance benchmark."
 }

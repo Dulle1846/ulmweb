@@ -10,7 +10,7 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { BUILDING_SIZE } from "../core/config.js";
 import { addResource } from "./resources.js";
-import { getResourceNodeAt } from "./resource-geography.js";
+import { getForestMovementFactorAt, getResourceNodeAt } from "./resource-geography.js";
 import { findPath, isWalkable, rebuildBlockedBuildingTiles } from "../simulation/villagers.js";
 import { getRoadSpeedMultiplier } from "./roads.js";
 import { GOOD_KEYS, GOODS, CITY_VERSION, NEW_BUILDING_TYPES, RECIPES, WAREHOUSE_PROFILES, WAREHOUSE_PROFILE_IDS } from "./city-config.js";
@@ -1256,7 +1256,8 @@ export function updateLogisticsMovement(deltaSeconds) {
                 continue;
             }
         }
-        let remaining = carrier.speed * getRoadSpeedMultiplier(carrier.x, carrier.y) * deltaSeconds;
+        let remaining = carrier.speed * getRoadSpeedMultiplier(carrier.x, carrier.y)
+            * getForestMovementFactorAt(carrier.x, carrier.y) * deltaSeconds;
         while (remaining > 0 && carrier.pathIndex < carrier.path.length) {
             const node = carrier.path[carrier.pathIndex];
             const dx = node.x - carrier.x, dy = node.y - carrier.y, distance = Math.hypot(dx, dy);

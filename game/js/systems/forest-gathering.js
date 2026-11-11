@@ -8,9 +8,11 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { FOREST_GOODS, forestGoodsFor, forestSnowDepthAt, forestStandAt } from "../world/forest-ecology.js";
+import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import {
-    findNearestResourceNode, getResourceNodeAt, harvestForest,
+    findNearestResourceNode, getResourceNodeAt, getResourceSiteAt, harvestForest,
 } from "./resource-geography.js";
+import { addMedicineStock, tropicalExposure } from "./health.js";
 import { harvestForestGameAt } from "./forest-fauna.js";
 import { addLocalOutput, outputSpace, requestHaul } from "./logistics.js";
 import { addResource } from "./resources.js";
@@ -37,6 +39,23 @@ const GOLD_DELIVERY = Object.freeze(new Set([
     "bark", "linden-flower", "elm-seeds", "alder-cones", "yew-berries", "dwarf-pine-cones",
     "ash-keys", "hornbeam-seeds", "willow-withies", "woodruff", "valerian", "tinder-fungus",
 ]));
+const TROPICAL_GOLD_HUNT = Object.freeze(new Set(["hides", "feathers"]));
+
+export function forestDeliveryChannel(id) {
+    const good = FOREST_GOODS[id];
+    if (!good) return null;
+    if (good.category === "wood") return "wood";
+    if (good.category === "medicine") return "medicine";
+    if (FOOD_DELIVERY.has(id)) return "food";
+    if (GOLD_DELIVERY.has(id)) return "gold";
+    const tropical = TROPICAL_GOODS[id];
+    if (!tropical) return null;
+    if (tropical.category === "gather" || tropical.category === "hunt") {
+        return TROPICAL_GOLD_HUNT.has(id) ? "gold" : "food";
+    }
+    if (["fibre", "resin", "luxury", "poison"].includes(tropical.category)) return "gold";
+    return null;
+}
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -178,9 +197,15 @@ export function gatherForestProducts(x, y, options = {}) {
     }
     if (!candidates.length) return { ok: false, reason: "No seasonal product is available" };
     const gathered = [];
+    const spoilage = clamp(number(products.spoilageRisk, 0), 0, 1);
+    let spoiledTotal = 0;
     const workFactor = clamp(number(products.workFactor, 1), 0.45, 1);
     for (const good of candidates) {
         let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor));
+        const perishable = good.category === "gather" || good.category === "hunt";
+        const spoiled = perishable ? Math.min(amount, Math.floor(amount * spoilage * 0.35)) : 0;
+        if (spoiled > 0) { amount -= spoiled; spoiledTotal += spoiled; }
+        if (amount <= 0) continue;
         let quality = null;
         if (good.category === "wood") {
             const taken = harvestForest(products.x, products.y, Math.max(1, Math.ceil(amount / 2)));
@@ -195,6 +220,9 @@ export function gatherForestProducts(x, y, options = {}) {
         if (accepted > 0) gathered.push({ ...good, amount: accepted, ...(quality ? { quality } : {}) });
     }
     if (!gathered.length) return { ok: false, reason: huntGoods.length && !hunt ? "No huntable herd at this tile" : "The selected products could not be gathered" };
+    const exposure = tropicalExposure(products.hazard, {
+        source: "gather", x: products.x, y: products.y, diseaseLabel: products.hazard?.diseaseLabel,
+    });
     ledger.lastGather[products.x + ":" + products.y] = { day, year };
     const keys = Object.keys(ledger.lastGather);
     if (keys.length > MAX_LAST_GATHER) {
@@ -211,6 +239,9 @@ export function gatherForestProducts(x, y, options = {}) {
         goods: gathered,
         hunt: hunt ? { species: hunt.species, label: hunt.label, taken: hunt.taken, quality: hunt.quality } : null,
         workFactor,
+        spoilage,
+        spoiled: spoiledTotal,
+        exposure,
         total: gathered.reduce((sum, good) => sum + good.amount, 0),
     };
 }
@@ -233,75 +264,85 @@ export function forestDeliveryAvailability(building) {
     for (const [id, raw] of Object.entries(ledger.stock)) {
         const amount = Math.max(0, Math.floor(number(raw)));
         if (!amount || !FOREST_GOODS[id]) continue;
-        const localGood = FOREST_GOODS[id].category === "wood" || id === "firewood" || id === "charcoal";
-        if (localGood ? !canUseLocalStore : !(FOOD_DELIVERY.has(id) || GOLD_DELIVERY.has(id))) continue;
+        const channel = forestDeliveryChannel(id);
+        if (!channel) continue;
+        if (channel === "wood" && !canUseLocalStore) continue;
         available += amount;
     }
     return {
         available,
         reason: available > 0 ? "" : (canUseLocalStore
             ? "No deliverable forest products"
-            : "This forester has no food or market goods to deliver"),
+            : "This forester has no food, medicine or market goods to deliver"),
     };
 }
 
-// Move the separate forest ledger into the real settlement supply chain. The
-// action is explicit so gathering does not silently create free city stock;
-// only goods actually accepted by a local store or royal resource are removed.
 export function deliverForestGoods(building) {
     const availability = forestDeliveryAvailability(building);
     if (availability.available <= 0) return { ok: false, reason: availability.reason };
     const ledger = activeLedger();
     if (!ledger) return { ok: false, reason: "No forest products have been gathered" };
-    const delivered = { logs: 0, firewood: 0, food: 0, gold: 0 };
+    const delivered = { logs: 0, firewood: 0, food: 0, gold: 0, medicine: 0, spoiled: 0 };
     const goods = [];
     const canUseLocalStore = building.type === TYPE.LUMBER;
+    const bx = Math.floor(Number(building.x) || 0), by = Math.floor(Number(building.y) || 0);
+    const site = getResourceSiteAt(bx, by);
+    const node = getResourceNodeAt(bx, by);
+    const riverTrade = Boolean(node?.forestLandUse?.riverTrade || site?.water);
+    const spoilage = Math.max(0, Math.min(1, number(node?.forestHazard?.spoilage)));
     for (const [id, raw] of Object.entries(ledger.stock)) {
         const amount = Math.max(0, Math.floor(number(raw)));
         if (!amount || !FOREST_GOODS[id]) continue;
-        const category = FOREST_GOODS[id].category;
-        const isTimber = category === "wood" && id !== "firewood" && id !== "charcoal";
-        if (isTimber) {
+        const channel = forestDeliveryChannel(id);
+        if (!channel) continue;
+        if (channel === "wood") {
             if (!canUseLocalStore) continue;
-            const accepted = addLocalOutput(building, "logs", amount, { cause: "forest-delivery" });
+            const isTimber = id !== "firewood" && id !== "charcoal";
+            const accepted = addLocalOutput(building, isTimber ? "logs" : "firewood", amount,
+                { cause: "forest-delivery" });
             if (accepted <= 0) continue;
             ledger.stock[id] -= accepted;
-            delivered.logs += accepted;
-            goods.push({ id, to: "logs", amount: accepted });
-            requestHaul(building, "logs", accepted);
+            if (isTimber) { delivered.logs += accepted; requestHaul(building, "logs", accepted); }
+            else { delivered.firewood += accepted; requestHaul(building, "firewood", accepted); }
+            goods.push({ id, to: isTimber ? "logs" : "firewood", amount: accepted });
             continue;
         }
-        if (id === "firewood" || id === "charcoal") {
-            if (!canUseLocalStore) continue;
-            const accepted = addLocalOutput(building, "firewood", amount, { cause: "forest-delivery" });
+        if (channel === "medicine") {
+            const accepted = addMedicineStock(amount);
             if (accepted <= 0) continue;
             ledger.stock[id] -= accepted;
-            delivered.firewood += accepted;
-            goods.push({ id, to: "firewood", amount: accepted });
-            requestHaul(building, "firewood", accepted);
+            delivered.medicine += accepted;
+            goods.push({ id, to: "medicine", amount: accepted });
             continue;
         }
-        if (FOOD_DELIVERY.has(id)) {
-            addResource("food", amount);
-            recordResourceMovement("food", amount, "forest-delivery", {
-                from: { kind: "building", id: building.id }, to: { kind: "realm", id: "royal-stores" },
-            });
+        if (channel === "food") {
+            const spoiled = Math.min(amount, Math.floor(amount * spoilage * 0.2));
+            const accepted = amount - spoiled;
             ledger.stock[id] -= amount;
-            delivered.food += amount;
-            goods.push({ id, to: "food", amount });
+            delivered.spoiled += spoiled;
+            if (accepted > 0) {
+                addResource("food", accepted);
+                recordResourceMovement("food", accepted, "forest-delivery", {
+                    from: { kind: "building", id: building.id }, to: { kind: "realm", id: "royal-stores" },
+                });
+                delivered.food += accepted;
+            }
+            if (accepted > 0 || spoiled > 0) goods.push({
+                id, to: "food", amount: accepted, ...(spoiled > 0 ? { spoiled } : {}),
+            });
             continue;
         }
-        if (GOLD_DELIVERY.has(id)) {
-            const value = Math.max(1, Math.round(amount * 0.5));
+        if (channel === "gold") {
+            const value = Math.max(1, Math.round(amount * 0.5 * (riverTrade ? 1.5 : 1)));
             addResource("gold", value);
             ledger.stock[id] -= amount;
             delivered.gold += value;
-            goods.push({ id, to: "gold", amount, value });
+            goods.push({ id, to: "gold", amount, value, ...(riverTrade ? { riverTrade: true } : {}) });
         }
     }
-    if (!goods.length) return { ok: false, reason: canUseLocalStore ? "No deliverable forest products" : "This forester has no food or market goods to deliver" };
+    if (!goods.length) return { ok: false, reason: canUseLocalStore ? "No deliverable forest products" : "This forester has no food, medicine or market goods to deliver" };
     return {
-        ok: true, delivered, goods,
+        ok: true, delivered, goods, riverTrade,
         total: goods.reduce((sum, good) => sum + good.amount, 0),
         buildingId: building.id,
     };
@@ -396,6 +437,28 @@ export function forestGatheringSummary(limit = 4) {
             return detail ? base + " (" + detail + ")" : base;
         })
         .join(" · ");
+}
+
+export function spoilForestGoods(days = 1) {
+    const ledger = activeLedger();
+    if (!ledger) return 0;
+    if ((state.worldOptions?.climate || "temperate") !== "tropical") return 0;
+    const elapsed = Math.max(0, Math.min(30, number(days, 0)));
+    if (!elapsed) return 0;
+    const risk = Math.min(0.22, (0.035 + (state.weather === "rain" ? 0.025 : 0)
+        + (state.seasonIndex === 1 ? 0.01 : 0)) * elapsed);
+    const durable = new Set(["hides", "feathers"]);
+    let lost = 0;
+    for (const [id, raw] of Object.entries(ledger.stock)) {
+        const entry = FOREST_GOODS[id];
+        if (!entry || !["gather", "hunt"].includes(entry.category) || durable.has(id)) continue;
+        const amount = Math.max(0, Math.floor(number(raw)));
+        const spoil = Math.min(amount, Math.floor(amount * risk));
+        if (spoil <= 0) continue;
+        ledger.stock[id] = amount - spoil;
+        lost += spoil;
+    }
+    return lost;
 }
 
 export function serializeForestGathering() {

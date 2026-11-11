@@ -182,6 +182,15 @@ function ensureHealth() {
     return current;
 }
 
+export function addMedicineStock(amount = 0) {
+    const health = ensureHealth();
+    const wanted = Math.max(0, Math.floor(Number(amount) || 0));
+    const accepted = Math.min(wanted, MEDICINE_MAX_STOCK - health.medicineStock);
+    if (accepted <= 0) return 0;
+    health.medicineStock += accepted;
+    return accepted;
+}
+
 function householdKey(villager) {
     if (typeof villager.householdId === "string" && villager.householdId) return villager.householdId;
     const home = villager.home || { x: villager.x, y: villager.y };
@@ -400,6 +409,62 @@ export function startOutbreak({ severity = 1, containment = 0, disease = "common
         addLog("OUTBREAK DECLARED: " + health.disease.toUpperCase() + " · SEVERITY " + health.severity, "#c48a8a", "health");
     }
     return getHealthSnapshot();
+}
+
+function injureResident(source, severity = 1) {
+    const people = residents().filter(person => !isSick(person));
+    if (!people.length) return null;
+    const patient = people[Math.floor(random("health") * people.length)];
+    patient.illnessStartedTick = state.tick;
+    patient.illnessUntilTick = state.tick + 40 + severity * 20;
+    patient.illnessSeverity = clamp(severity, 1, 3);
+    patient.infectionSource = String(source).slice(0, 32);
+    addLog("FOREST INJURY · " + (patient.person?.name || "A resident")
+        + " · " + String(source).toUpperCase(), "#c48a8a", "health");
+    return patient;
+}
+
+export function tropicalExposure(hazard = {}, context = {}) {
+    const people = residents();
+    if (!people.length || !hazard || typeof hazard !== "object") {
+        return { outbreak: false, injury: false, foodLost: 0 };
+    }
+    const health = ensureHealth();
+    const h = {
+        disease: clamp(Number(hazard.disease) || 0, 0, 1),
+        parasites: clamp(Number(hazard.parasites) || 0, 0, 1),
+        poison: clamp(Number(hazard.poison) || 0, 0, 1),
+        predators: clamp(Number(hazard.predators) || 0, 0, 1),
+        storm: clamp(Number(hazard.storm) || 0, 0, 1),
+    };
+    const result = { outbreak: false, injury: false, foodLost: 0 };
+    const diseaseChance = clamp(h.disease * 0.18 + h.parasites * 0.12, 0, 0.3);
+    if (!health.outbreakActive && diseaseChance > 0 && random("health") < diseaseChance) {
+        startOutbreak({
+            severity: h.disease > 0.78 ? 2 : 1,
+            disease: String(hazard.diseaseLabel || context.diseaseLabel || "tropical forest fever").slice(0, 48),
+        });
+        result.outbreak = true;
+    } else if (h.parasites > 0.6 && random("health") < 0.1) {
+        result.injury = Boolean(injureResident("parasites", 1));
+    }
+    if (h.poison > 0.55 && random("health") < 0.08 + h.poison * 0.1) {
+        result.injury = Boolean(injureResident("poison", 1)) || result.injury;
+    }
+    if (h.predators > 0.55 && random("health") < 0.03 + h.predators * 0.08) {
+        result.injury = Boolean(injureResident("predator", 2)) || result.injury;
+    }
+    if (h.storm > 0.6 && random("health") < 0.12) {
+        const food = Math.max(0, Math.floor(Number(state.resources?.food) || 0));
+        const loss = Math.min(food, Math.max(0, Math.round(food * 0.02)));
+        if (loss > 0) {
+            addResource("food", -loss);
+            state.morale = Math.max(0, (Number(state.morale) || 0) - 1);
+            result.foodLost = loss;
+            addLog("STORM AND FLOOD DAMAGE · " + loss + " FOOD LOST", "#c48a8a", "health");
+        }
+    }
+    return result;
 }
 
 export function applyHealthEffects(effects = {}) {
@@ -678,12 +743,6 @@ export function updateHealth() {
         health.containment = 0;
         addLog("QUARANTINE EXPIRED · TRADE RESUMES", "#a3b18a", "health");
     }
-    if (!health.outbreakActive) return null;
-    health.lastUpdateTick = state.tick;
-    // A real remedy is used before recovery and transmission are resolved. One
-    // or two stored units shorten illness and lower severity; an empty store
-    // changes nothing and leaves the existing care-building path in charge.
-    applyHerbalRemedy(2);
     const people = residents();
     let recoveredNow = 0;
     for (const person of people) {
@@ -697,6 +756,9 @@ export function updateHealth() {
         }
     }
     health.recovered += recoveredNow;
+    if (!health.outbreakActive) return recoveredNow ? getHealthSnapshot() : null;
+    health.lastUpdateTick = state.tick;
+    applyHerbalRemedy(2);
     const groups = new Map();
     for (const person of people) {
         const key = householdKey(person);

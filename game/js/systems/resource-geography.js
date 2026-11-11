@@ -197,6 +197,8 @@ let habitatCacheSuccession = null;
 let habitatCacheClimate = null;
 let habitatCacheForests = null;
 const habitatCache = new Map();
+const MOVEMENT_CACHE_LIMIT = 2048;
+const forestMovementCache = new Map();
 
 export function clearForestHabitatCache() {
     habitatCache.clear();
@@ -246,6 +248,30 @@ export function getForestHabitatAt(x, y) {
         habitat,
     });
     return habitat;
+}
+
+// Movement is a real forest cost, not only a gathering work factor. The cache
+// keeps the 30 Hz villager/carrier loop cheap: the key changes only when the
+// tile, stock or world changes, so repeated steps over the same ground are a
+// Map lookup rather than a stand rebuild.
+export function getForestMovementFactorAt(x, y) {
+    if ((state.worldOptions?.climate || "temperate") !== "tropical") return 1;
+    const point = readTile(x, y);
+    if (!point) return 1;
+    const geo = ensureGeography();
+    if (!geo.forestCapacity[point.index]) return 1;
+    const key = (Number(state.worldSeed) || 0) + ":" + point.x + ":" + point.y
+        + ":" + geo.forestStock[point.index] + ":" + geo.forestCapacity[point.index];
+    const cached = forestMovementCache.get(key);
+    if (cached !== undefined) return cached;
+    const node = getResourceNodeAt(point.x, point.y);
+    const hazard = node?.forestHazard;
+    const factor = hazard
+        ? clamp(1 - (Number(hazard.movement) || 0) * 0.26 - (Number(hazard.flood) || 0) * 0.1, 0.55, 1)
+        : 1;
+    if (forestMovementCache.size >= MOVEMENT_CACHE_LIMIT) forestMovementCache.clear();
+    forestMovementCache.set(key, factor);
+    return factor;
 }
 
 // Placement, forester range checks and field surveys only need the raw

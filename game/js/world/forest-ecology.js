@@ -11,8 +11,8 @@
 
 import { seasonalState } from './season.js';
 import {
-    TROPICAL_FORMATIONS, TROPICAL_GOODS, TROPICAL_PHENOLOGY, TROPICAL_SEASON_GOODS,
-    TROPICAL_SPECIES, isTropicalClimate, tropicalFormationFor, tropicalProfileFor,
+    TROPICAL_FORMATIONS, TROPICAL_GOODS, TROPICAL_PHENOLOGY, TROPICAL_RESTRICTED_SPECIES,
+    TROPICAL_SEASON_GOODS, TROPICAL_SPECIES, isTropicalClimate, tropicalFormationFor, tropicalProfileFor,
 } from './tropical-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
@@ -588,6 +588,7 @@ const FAUNA = Object.freeze({
     piranha: Object.freeze({ label: 'Piranha', group: 'fish', note: 'shoaling under the fig roots' }),
     'river-fish': Object.freeze({ label: 'River fish', group: 'fish', note: 'rising in the current' }),
     'poison-dart-frog': Object.freeze({ label: 'Poison-dart frog', group: 'amphibian', note: 'calling from a bromeliad' }),
+    'tree-frog': Object.freeze({ label: 'Tree frog', group: 'amphibian', note: 'clinging to a wet leaf' }),
     'morpho-butterfly': Object.freeze({ label: 'Morpho butterfly', group: 'insect', note: 'glinting blue through the shade' }),
     'bullet-ant': Object.freeze({ label: 'Bullet ant', group: 'insect', note: 'patrolling a buttress root' }),
     mosquito: Object.freeze({ label: 'Mosquito', group: 'insect', note: 'hovering over standing water' }),
@@ -1487,7 +1488,14 @@ export function forestRegrowthFactor(stand) {
     // Browsing removes young shoots before they can close the canopy. It is a
     // derived habitat pressure, so no new per-tile state or save field is
     // needed; a stand without a browser remains at the old compaction curve.
-    return Math.max(0.3, (1 - compaction * 0.65) * (1 - browsing * 0.22));
+    const base = Math.max(0.3, (1 - compaction * 0.65) * (1 - browsing * 0.22));
+    if (stand.tropical) {
+        const tropical = stand.tropical;
+        return Math.max(0.3, Math.min(1.25, base
+            * (0.82 + (Number(tropical.regrowth) || 0) * 0.24
+                - (Number(tropical.clearance) || 0) * 0.18)));
+    }
+    return base;
 }
 
 function pickWeightedSpecies(entries, roll) {
@@ -1578,6 +1586,15 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
         const abundance = clamp01((seasonal[id] ?? base) * (0.7 + stand.productivity * 0.3));
         if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
     }
+    const land = stand.tropical?.landUse;
+    if (land) {
+        const landGoods = [...(land.crops || []), ...(land.plantationGoods || []), ...(land.settlementGoods || [])];
+        for (const id of landGoods) {
+            if (!FOREST_GOODS[id] || goods.some(good => good.id === id)) continue;
+            const abundance = clamp01((seasonal[id] ?? 0.55) * (0.72 + stand.productivity * 0.28));
+            if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
+        }
+    }
     return goods.sort((a, b) => b.abundance - a.abundance);
 }
 
@@ -1609,7 +1626,7 @@ export function forestFaunaFor(stand, dayOfYear, climate = 'temperate', roll = 0
     if (stand.coniferShare > 0.58 && stand.ageClass === 'ancient') extra.push('lynx');
     if (stand.disturbance === 'bark-beetle') extra.push('bark-beetle');
     if (tropicalStand) {
-        extra.push('toucan', 'morpho-butterfly', 'howler-monkey');
+        extra.push('toucan', 'morpho-butterfly', 'howler-monkey', 'tree-frog');
         if (stand.tropical.features['1.2.4.38'] > 0.45) extra.push('jaguar');
         if (stand.tropical.water.floodplain || stand.tropical.water.pools > 0.4) extra.push('anaconda', 'river-fish');
         if (stand.tropical.landUse.riverTrade) extra.push('macaw', 'capybara');
@@ -1623,6 +1640,8 @@ export function forestFaunaFor(stand, dayOfYear, climate = 'temperate', roll = 0
     const ordered = tropicalStand ? [...extra, ...active] : [...active, ...extra];
     const unique = [...new Set(ordered)]
         .filter(id => FAUNA[id])
+        .filter(id => !tropicalStand || !TROPICAL_RESTRICTED_SPECIES[id]
+            || TROPICAL_RESTRICTED_SPECIES[id].includes(stand.tropical.formation))
         .filter(id => !(season === 'winter' && ['songbird', 'butterfly', 'ant', 'bee'].includes(id)));
     if (!unique.length) return [];
     const first = Math.floor(clamp01(roll) * unique.length) % unique.length;
