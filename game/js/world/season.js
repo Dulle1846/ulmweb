@@ -36,6 +36,10 @@ export const CLIMATE_SEASONS = Object.freeze({
         snowStart: 248, snowFull: 305, meltStart: 365, meltEnd: 438,
         snowScale: 1.05, foliageShift: -3, foliageScale: 1, greenShift: 3, warmthShift: 0,
     }),
+    tropical: Object.freeze({
+        snowStart: 400, snowFull: 401, meltStart: 401, meltEnd: 402,
+        snowScale: 0, foliageShift: 0, foliageScale: 0, greenShift: -60, warmthShift: -20,
+    }),
 });
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
@@ -124,5 +128,9 @@ export function seasonalState(dayOfYear, climate = 'temperate') {
         foliageTurn,
         greenUp,
         warmth,
+        // Tropical broadleaves stay leafed and flowering all year. Keeping this
+        // explicit prevents the temperate leaf-fall curve from thinning a
+        // rainforest in the middle of the wet season.
+        evergreenCanopy: climate === 'tropical',
     };
 }

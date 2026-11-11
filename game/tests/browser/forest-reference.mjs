@@ -25,6 +25,7 @@ const outputDir = path.resolve(process.env.FOREST_REFERENCE_OUT || path.join(gam
 const seed = 20261104;
 const coniferMode = process.env.FOREST_REFERENCE_PROFILE === "conifer";
 const mixedMode = process.env.FOREST_REFERENCE_PROFILE === "mixed";
+const tropicalMode = process.env.FOREST_REFERENCE_PROFILE === "tropical";
 const viewport = { width: 800, height: 800 };
 const broadleafTargets = Object.freeze([
     "oakwood", "beechwood", "birchwood", "maplewood", "chestnut-grove",
@@ -42,13 +43,20 @@ const mixedTargets = Object.freeze([
     "mixed-ancient", "mixed-young", "mixed-ecotone",
     "coppice-with-standards", "selection-forest",
 ]);
-const targetTypes = Object.freeze(coniferMode ? coniferTargets : mixedMode ? mixedTargets : broadleafTargets);
+const tropicalTargets = Object.freeze([
+    "tropical-emergent", "tropical-canopy", "tropical-floodplain", "tropical-palm-grove",
+    "tropical-swamp", "tropical-montane", "tropical-bamboo", "tropical-gap",
+    "tropical-secondary", "tropical-ancient", "tropical-riverbank", "tropical-plantation",
+]);
+const targetTypes = Object.freeze(coniferMode ? coniferTargets : mixedMode ? mixedTargets : tropicalMode ? tropicalTargets : broadleafTargets);
 const seasonDays = Object.freeze([50, 150, 250, 350]);
 const outputNames = coniferMode
     ? { formation: "conifer-reference.png", seasonal: "conifer-seasons.png", species: "conifer-species.png", metadata: "conifer-reference.json" }
     : mixedMode
         ? { formation: "mixed-reference.png", seasonal: "mixed-seasons.png", metadata: "mixed-reference.json" }
-        : { formation: "forest-reference.png", seasonal: "forest-seasons.png", metadata: "forest-reference.json" };
+        : tropicalMode
+            ? { formation: "tropical-reference.png", seasonal: "tropical-seasons.png", metadata: "tropical-reference.json" }
+            : { formation: "forest-reference.png", seasonal: "forest-seasons.png", metadata: "forest-reference.json" };
 
 const mimeTypes = {
     ".js": "text/javascript", ".html": "text/html", ".css": "text/css",
@@ -98,12 +106,15 @@ const diagnostics = [];
 page.on("console", message => {
     if (message.type() === "error" || message.type() === "warning") diagnostics.push(message.type() + ": " + message.text());
 });
-page.on("pageerror", error => diagnostics.push("pageerror: " + error.message));
+page.on("pageerror", error => {
+    diagnostics.push("pageerror: " + error.message);
+    page.evaluate(message => { window.__forestReferenceLastError = message; }, error.message).catch(() => {});
+});
 
 try {
     await page.goto("http://127.0.0.1:" + port + "/", { waitUntil: "networkidle" });
     await page.locator("#world-seed-input").fill(String(seed));
-    await page.locator("#player-name-input").fill(coniferMode ? "Conifer Reference" : mixedMode ? "Mixed Forest Reference" : "Forest Reference");
+    await page.locator("#player-name-input").fill(coniferMode ? "Conifer Reference" : mixedMode ? "Mixed Forest Reference" : tropicalMode ? "Tropical Rainforest Reference" : "Forest Reference");
     if (coniferMode) {
         await page.locator("#world-climate").selectOption("northern");
         await page.locator("#world-forests").evaluate(element => {
@@ -112,12 +123,13 @@ try {
             element.dispatchEvent(new Event("change", { bubbles: true }));
         });
     }
-    if (mixedMode) {
-        await page.locator("#world-forests").evaluate(element => {
-            element.value = "64";
+    if (mixedMode || tropicalMode) {
+        if (tropicalMode) await page.locator("#world-climate").selectOption("tropical");
+        await page.locator("#world-forests").evaluate((element, tropical) => {
+            element.value = tropical ? "78" : "64";
             element.dispatchEvent(new Event("input", { bubbles: true }));
             element.dispatchEvent(new Event("change", { bubbles: true }));
-        });
+        }, tropicalMode);
     }
     await page.locator("#start-new-game-btn").click();
     await page.locator("#start-screen").waitFor({ state: "hidden", timeout: 30000 });
@@ -245,6 +257,14 @@ try {
                 age: tile.stand.ageClass, species: tile.stand.species.map(entry => entry.label),
                 goods: tile.stand.goods, fauna: tile.stand.fauna,
                 mixed: Boolean(tile.stand.mixed),
+                tropical: tile.stand.tropical ? {
+                    summary: tile.stand.tropical.summary,
+                    features: tile.stand.tropical.features,
+                    hazard: tile.stand.tropical.hazard,
+                    landUse: tile.stand.tropical.landUse,
+                    water: tile.stand.tropical.water,
+                    canopyStrata: tile.stand.tropical.canopyStrata,
+                } : null,
                 mixtureLabel: tile.stand.mixture?.label || null,
                 mixturePattern: tile.stand.mixture?.pattern || null,
                 broadleafShare: Number((tile.stand.mixture?.broadleafShare || 0).toFixed(3)),
@@ -325,7 +345,9 @@ try {
         ? (scan.found.larchwood || scan.found.sprucewood)
         : mixedMode
             ? (scan.found["mixed-oak-beech-spruce"] || scan.found["mixed-fir-beech-maple"] || scan.found["mixed-ancient"])
-            : (scan.found.ancient || scan.found.oakwood || scan.found.beechwood);
+            : tropicalMode
+                ? (scan.found["tropical-emergent"] || scan.found["tropical-ancient"] || scan.found["tropical-canopy"])
+                : (scan.found.ancient || scan.found.oakwood || scan.found.beechwood);
     const seasonal = [];
     for (const day of seasonDays) {
         const missesBeforeMove = await terrainCacheMisses(page);
@@ -361,14 +383,14 @@ try {
 
     const formationSheet = await renderFormationSheet(context, frames, {
         seed, renderer: webgl.renderer, world: scan.world,
-        conifer: coniferMode, mixed: mixedMode, columns: coniferMode || mixedMode ? 4 : 5,
+        conifer: coniferMode, mixed: mixedMode, tropical: tropicalMode, columns: coniferMode || mixedMode || tropicalMode ? 4 : 5,
         generatedAt: new Date().toISOString(),
     });
     const formationPath = path.join(outputDir, outputNames.formation);
     await fs.writeFile(formationPath, formationSheet);
 
     const seasonSheet = await renderSeasonSheet(context, seasonal, {
-        seed, renderer: webgl.renderer, tile: seasonalTile, conifer: coniferMode, mixed: mixedMode,
+        seed, renderer: webgl.renderer, tile: seasonalTile, conifer: coniferMode, mixed: mixedMode, tropical: tropicalMode,
         generatedAt: new Date().toISOString(),
     });
     const seasonPath = path.join(outputDir, outputNames.seasonal);
@@ -420,7 +442,9 @@ try {
             ? "Northern realm, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level at midday, so morning mist does not obscure the canopy shade or the sight wall. All twelve conifer formations are real generated tiles, not hand-placed demo props. The seasonal strip follows a larch stand through needle-out, summer, golden autumn and bare winter. groundShade, visibility and sightRadius record the local canopy shade and stand-dependent sight profile; winterSnowDepthCm is the derived local snow depth on day 350. Not a GPU performance benchmark."
             : mixedMode
                 ? "Temperate realm at 64% forest cover, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level at midday. All twelve mixed formations are real generated tiles, not hand-placed demo props. The seasonal strip follows one mixed stand through spring, high summer, autumn colour and winter. Each tile records the actual mixture ratio, distribution pattern, dominant species, canopy layers, understorey, silviculture and winter goods. Not a GPU performance benchmark."
-                : "HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level. Forest formations are real generated tiles, not hand-placed demo props. The cutover frame uses a wooded tile with stock set to zero. Not a GPU performance benchmark.",
+                : tropicalMode
+                    ? "Tropical realm at 78% forest cover, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level at midday. All twelve rainforest formations are real generated tiles, not hand-placed demo props. The seasonal strip follows an emergent stand through the wet-season flush, main fruiting pulse, dry-season peak and warm rainy season. Each tile records all 65 rainforest requirements, the three canopy strata, water, hazards, land use, goods and fauna. Not a GPU performance benchmark."
+                    : "HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level. Forest formations are real generated tiles, not hand-placed demo props. The cutover frame uses a wooded tile with stock set to zero. Not a GPU performance benchmark.",
     };
     await fs.writeFile(path.join(outputDir, outputNames.metadata), JSON.stringify(metadata, null, 2) + "\n");
 
@@ -454,7 +478,11 @@ async function waitForDecorationOverlay(page, baselineMisses) {
         const deadline = performance.now() + 10000;
         while ((Number(state.terrainCacheMisses) || 0) <= baseline) {
             if (performance.now() > deadline) {
-                throw new Error("The terrain decoration overlay did not rebuild after the camera move.");
+                throw new Error("The terrain decoration overlay did not rebuild after the camera move. misses="
+                    + (Number(state.terrainCacheMisses) || 0)
+                    + " treeDraws=" + (Number(state.terrainTreeDraws) || 0)
+                    + " lastBuildMs=" + (Number(state.terrainDecorationBuildMs) || 0)
+                    + " lastPageError=" + (window.__forestReferenceLastError || "none"));
             }
             await new Promise(resolve => requestAnimationFrame(resolve));
         }
@@ -555,13 +583,13 @@ async function renderFormationSheet(browserContext, frames, meta) {
     footer strong { color: #c9ab73; }
 </style></head><body>
 <div class="sheet">
-    <div class="eyebrow">KINGS &amp; CARDS · ${meta.conifer ? "CONIFER" : meta.mixed ? "MISCHWALD" : "LAUBWALD"} ECOLOGY</div>
-    <h1>${meta.conifer ? "Twelve conifer formations, one deterministic model" : meta.mixed ? "Twelve mixed formations, one deterministic model" : "Fifteen woodland formations, one deterministic model"}</h1>
+    <div class="eyebrow">KINGS &amp; CARDS · ${meta.conifer ? "CONIFER" : meta.tropical ? "TROPENREGENWALD" : meta.mixed ? "MISCHWALD" : "LAUBWALD"} ECOLOGY</div>
+    <h1>${meta.conifer ? "Twelve conifer formations, one deterministic model" : meta.tropical ? "Twelve rainforest formations, one deterministic model" : meta.mixed ? "Twelve mixed formations, one deterministic model" : "Fifteen woodland formations, one deterministic model"}</h1>
     <p class="deck">Seed ${seed} · ${meta.world.width} × ${meta.world.height} world · ${escapeHtml(meta.world.climate)} climate · ${meta.world.forests}% forest slider · 0.95× rooftop view · midday · HUD, entities, fog and weather hidden · simulation paused</p>
     <div class="grid">${cells}</div>
     <footer>
         <span><strong>Generated</strong> ${meta.generatedAt} · <strong>Renderer</strong> ${escapeHtml(meta.renderer || "unknown")}</span>
-        <span>${meta.conifer ? "Twelve conifer formations; winter local snow depth is recorded per tile." : meta.mixed ? "Twelve mixed formations; each tile records its real mixture, canopy layers, understorey and silviculture." : "Human-review reference, not a pixel-diff test. Real generated tiles, not hand-placed demo props."}</span>
+        <span>${meta.conifer ? "Twelve conifer formations; winter local snow depth is recorded per tile." : meta.tropical ? "Twelve rainforest formations; each tile records the 65-point profile, water, hazards and land use." : meta.mixed ? "Twelve mixed formations; each tile records its real mixture, canopy layers, understorey and silviculture." : "Human-review reference, not a pixel-diff test. Real generated tiles, not hand-placed demo props."}</span>
     </footer>
 </div>
 </body></html>`;
@@ -601,13 +629,13 @@ async function renderSeasonSheet(browserContext, frames, meta) {
     footer strong { color: #c9ab73; }
 </style></head><body>
 <div class="sheet">
-    <div class="eyebrow">KINGS &amp; CARDS · ${meta.conifer ? "LARCH SEASONS" : meta.mixed ? "MIXED FOREST SEASONS" : "FOREST SEASONS"}</div>
-    <h1>${meta.conifer ? "One larch stand through the year" : meta.mixed ? "One mixed wood through the year" : "One ancient wood through the year"}</h1>
+    <div class="eyebrow">KINGS &amp; CARDS · ${meta.conifer ? "LARCH SEASONS" : meta.mixed ? "MIXED FOREST SEASONS" : meta.tropical ? "RAINFOREST SEASONS" : "FOREST SEASONS"}</div>
+    <h1>${meta.conifer ? "One larch stand through the year" : meta.mixed ? "One mixed wood through the year" : meta.tropical ? "One emergent rainforest through the year" : "One ancient wood through the year"}</h1>
     <p class="deck">Seed ${seed} · tile ${meta.tile.x}, ${meta.tile.y} · ${escapeHtml(meta.tile.label)} · ${escapeHtml(meta.tile.species.slice(0, 4).join(" · "))} · 0.95× rooftop view · weather and entities hidden</p>
     <div class="strip">${cells}</div>
     <footer>
         <span><strong>Generated</strong> ${meta.generatedAt} · <strong>Renderer</strong> ${escapeHtml(meta.renderer || "unknown")}</span>
-        <span>${meta.conifer ? "Fresh needles, closed summer tiers, golden autumn and the bare larch winter skeleton." : meta.mixed ? "Spring leaf-out, a layered summer canopy, the mixed autumn palette and the winter crown structure." : "Fresh leaf-out, closed summer canopy, autumn turn, bare winter crowns and leaf carpet."}</span>
+        <span>${meta.conifer ? "Fresh needles, closed summer tiers, golden autumn and the bare larch winter skeleton." : meta.tropical ? "Wet-season flush, main fruiting pulse, dry-season peak and the warm rainy season, with an evergreen canopy throughout." : meta.mixed ? "Spring leaf-out, a layered summer canopy, the mixed autumn palette and the winter crown structure." : "Fresh leaf-out, closed summer canopy, autumn turn, bare winter crowns and leaf carpet."}</span>
     </footer>
 </div>
 </body></html>`;

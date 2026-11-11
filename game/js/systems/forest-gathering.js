@@ -95,12 +95,17 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
     const day = number(dayOfYear, 150);
     const climate = state.worldOptions?.climate || "temperate";
     const snow = forestSnowDepthAt(stand, day, climate);
-    const workFactor = clamp(1 - snow.depth * 0.38 - (1 - (Number(stand.visibility) || 0)) * 0.12, 0.45, 1);
+    const tropicalPenalty = Number(stand.tropical?.hazard?.workPenalty) || 0;
+    const workFactor = clamp(1 - snow.depth * 0.38 - (1 - (Number(stand.visibility) || 0)) * 0.12
+        - tropicalPenalty * 0.55, 0.32, 1);
     return {
         x: Math.floor(x), y: Math.floor(y), node, stand,
         snowDepthCm: snow.cm,
         visibility: Number(stand.visibility) || 0,
         workFactor,
+        hazard: stand.tropical?.hazard || null,
+        landUse: stand.tropical?.landUse || null,
+        spoilageRisk: stand.tropical?.hazard?.spoilage || 0,
         goods: forestGoodsFor(stand, day, climate),
     };
 }

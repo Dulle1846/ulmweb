@@ -19,6 +19,11 @@ const SEASON_NAMES = ['spring', 'summer', 'autumn', 'winter'];
 // early spring cannot.
 export function weatherWeights(dayOfYear, climate = 'temperate') {
     const { season, snowCover } = seasonalState(dayOfYear, climate);
+    // Frequent convective rain is the defining weather of the tropical realm.
+    // There is no snow weight at all, even in the calendar winter.
+    if (climate === 'tropical') {
+        return { clear: 0.28, rain: 0.72, snow: 0 };
+    }
     const clear = season === 1 ? 0.58 : season === 3 ? 0.26 : 0.40;
     const rain = season === 1 ? 0.42 : season === 3 ? 0.12 : season === 2 ? 0.48 : 0.52;
     // Snow follows the climate's actual cover; arid and mediterranean winters

@@ -20,6 +20,7 @@ import {
 import { getResourceNodeAt } from '../../systems/resource-geography.js';
 import { forestFaunaAt, forestFaunaSignAt, forestInsectAt } from '../../systems/forest-fauna.js';
 import { forestMistFactor, solarVector } from './daylight.js';
+import { drawTropicalBamboo, drawTropicalFloor, drawTropicalPalm, drawTropicalTree, drawTropicalUnderstory } from './tropical-render.js';
 
 const worldW = () => Number(state.worldW) || WORLD_W;
 const worldH = () => Number(state.worldH) || WORLD_H;
@@ -348,7 +349,9 @@ function drawOverlayDecorations(ctx, zoom, cam, canvas) {
         if (overlayState && !settled) return;
         overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
         state.terrainTreeDraws = 0;
+        const buildStart = performance.now();
         drawTerrainDecorations(overlayCtx, zoom, cam, canvas);
+        state.terrainDecorationBuildMs = Math.round(performance.now() - buildStart);
         overlayState = {
             key, worldKey, zoom, camX: cam.x, camY: cam.y, renderScale,
             width: canvas.width, height: canvas.height,
@@ -365,7 +368,9 @@ function drawOverlayDecorations(ctx, zoom, cam, canvas) {
     if (settled && (contentStale || viewMoved)) {
         overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
         state.terrainTreeDraws = 0;
+        const buildStart = performance.now();
         drawTerrainDecorations(overlayCtx, zoom, cam, canvas);
+        state.terrainDecorationBuildMs = Math.round(performance.now() - buildStart);
         overlayState = {
             key, worldKey, zoom, camX: cam.x, camY: cam.y, renderScale,
             width: canvas.width, height: canvas.height,
@@ -1287,6 +1292,19 @@ function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, d
     );
     ctx.fill();
 
+    // Tropical crowns are not temperate oaks with a different palette. Each
+    // species carries buttresses, emergent height, leaf size, lianas and
+    // epiphytes into a dedicated silhouette.
+    if (speciesDefinition.tropical) {
+        if (speciesDefinition.palm) {
+            drawTropicalPalm(ctx, px, py, s, sway, s2, ageScale, speciesDefinition);
+        } else if (speciesDefinition.grass) {
+            drawTropicalBamboo(ctx, px, py, s, sway, s2, ageScale);
+        } else {
+            drawTropicalTree(ctx, px, py, s, sway, s2, ageScale, speciesDefinition, stand, treeForm);
+        }
+        return;
+    }
     // A conifer inside a defined conifer formation is the stand's real
     // dominant tree, not a decorative substitute. Its species controls the
     // silhouette, needle colour, autumn behaviour and timber identity.
@@ -2041,6 +2059,7 @@ function drawSoilWash(ctx, px, py, cellPx, stand, seed) {
         alluvial: ["#53613f", "#6e7148", "#3f4b35"],
         humus: ["#4c3827", "#6b4d34", "#3b2d20"],
         loam: ["#6b5438", "#8a6c46", "#55422d"],
+        latosol: ["#3e3824", "#54452b", "#2d2d1e"],
     };
     const palette = palettes[soil] || palettes.loam;
     ctx.save();
@@ -2192,6 +2211,7 @@ function drawCanopyShade(ctx, px, py, cellPx, stand, sun, snowCover) {
 function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey) {
     const s = cellPx / 48;
     const season = seasonalState(dayOfYear, climateKey);
+    if (stand.tropical) drawTropicalFloor(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
     const snow = season.snowCover;
     const turn = season.foliageTurn;
     ctx.save();
@@ -2210,7 +2230,9 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climate
     // blend across tile borders.
     ctx.globalAlpha = 0.4 + stand.ground.litter * 0.22;
     const coniferFloor = stand.coniferShare > 0.45;
-    const rawPalette = coniferFloor
+    const rawPalette = stand.tropical
+        ? ["#2f4c2d", "#3b5d32", "#4c4a2a", "#2a3d26", "#5a5632"]
+        : coniferFloor
         ? (turn > 0.5 ? ["#59402a", "#75512f", "#8b6538", "#4d3826", "#6d5a3b"]
             : ["#4a3e2c", "#665033", "#7a5a37", "#3f4c35", "#8b7447"])
         : turn > 0.42 ? ["#704b2b", "#986130", "#8c7138", "#5d472b", "#a8793a"]
@@ -2308,6 +2330,14 @@ function drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clim
 function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey) {
     const season = seasonalState(dayOfYear, climateKey);
     const s = cellPx / 48;
+    if (stand.tropical) {
+        // A third of the floor stays low herb and leaf litter. Without the
+        // gaps the dense understorey competed with the giant crowns and the
+        // stand read as a field of saplings instead of a closed rainforest.
+        if (s3 < 0.3) return;
+        drawTropicalUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey);
+        return;
+    }
     if (stand.coniferShare > 0.45) {
         const coniferOptions = [
             ['fern', stand.understory.fern], ['berry', stand.understory.berry],

@@ -38,6 +38,36 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ## Production release history
 
+### 3.15.0-dev — Tropische Regenwälder (1.2.4)
+
+**Status:** development branch only; not a production release.
+
+**Scope:** The tropical rainforest extends the one shared forest model instead
+of adding a second ecosystem. A sixth climate profile carries humid heat, a
+wet/dry rhythm, an evergreen canopy and only rare highland snow. Thirteen tree
+species and twelve formations are appended after the existing thirty-nine, so
+every numeric save index stays stable; the vocabulary now holds thirty-three
+species and fifty-one formations. The derived stand exposes all sixty-five
+required rainforest points individually through `TROPICAL_POINTS` and
+`stand.tropical.features`: giant emergents, buttresses, lianas, epiphytes,
+palms, bamboo, giant ferns, big-leaf plants, orchids, bromeliads, pitcher
+plants, pools, flood pulses, swidden plots, plantations, river trade, hazards
+and medicinal bark.
+
+**Presentation:** The renderer draws layered giant crowns, real buttress fins,
+aerial roots, vines, bark fissures, flowers, fruit, palms, bamboo, forest
+pools, huts, crop rows, plantation lines, canoes and stumps. Tropical ground
+keeps its green wet/dry palette through the calendar year instead of turning
+autumn copper or winter grey; the seasonal sheet shows wet-season flush, main
+fruiting, dry-season peak and the warm rainy season under an evergreen canopy.
+Fauna, gathered goods, spoilage, work penalties and quinine/fever-bark medicine
+all flow through the existing simulation, survey and economy paths.
+
+**Verification:** `npm test` 759/759; syntax and relative imports clean for 107
+source files / 189 UI ids; focused tropical suite 8/8; browser reference 12/12
+formations and four seasonal frames on WebKit WebGL at 800 × 800; 25-year
+campaign 10,040 ticks / 13/13 ambitions / no game over / 0.877 ms per tick.
+
 ### 3.15.0-dev — Mischwälder (1.2.3)
 
 **Status:** development branch only; not a production release.

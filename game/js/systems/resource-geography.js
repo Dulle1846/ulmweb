@@ -309,7 +309,7 @@ export function getResourceNodeAt(x,y){
         deadwood=Number(stand.deadwood)||0;treeline=Boolean(stand.treeline);
         // Snow and dense cover slow actual forest work: the same derived value
         // is used by gathering and shown in the forester/lumber survey.
-        workFactor=clamp(1-snow.depth*0.38-(1-visibility)*0.12,0.45,1);
+        workFactor=clamp(1-snow.depth*0.38-(1-visibility)*0.12-(Number(stand.tropical?.hazard?.workPenalty)||0)*0.55,0.32,1);
     }
     return {
         x:point.x,y:point.y,
@@ -320,7 +320,7 @@ export function getResourceNodeAt(x,y){
         forestSuccessionStage:succession?.stage||null,forestSuccessionAge:succession?.age??null,
         forestAge:forestAgeIndex?["young","mature","ancient"][forestAgeIndex-1]||null:null,
         forestSpecies:forestDefinition?Object.keys(forestDefinition.species):[],
-        forestGoods:forestDefinition?[...new Set([...forestDefinition.goods,"timber","firewood"])]:[],
+        forestGoods:forestStand?[...forestStand.goods]:forestDefinition?[...new Set([...forestDefinition.goods,"timber","firewood"])]:[],
         forestFauna:forestDefinition?[...forestDefinition.fauna]:[],
         forestSnowDepth:snowDepth,forestSnowDepthCm:snowDepthCm,
         forestExposure:exposure,forestFireRisk:fireRisk,forestPestRisk:pestRisk,forestMonoculture:monoculture,
@@ -330,6 +330,11 @@ export function getResourceNodeAt(x,y){
         forestBrowsingPressure:browsingPressure,forestPredatorPressure:predatorPressure,
         forestStructure:structure,
         forestMixed:Boolean(forestStand?.mixed),forestMixture:forestStand?.mixture||null,
+        forestTropical:Boolean(forestStand?.tropical),forestTropicalSummary:forestStand?.tropical?.summary||null,
+        forestTropicalFeatures:forestStand?.tropical?.features||null,
+        forestHazard:forestStand?.tropical?.hazard||null,
+        forestLandUse:forestStand?.tropical?.landUse||null,
+        forestWater:forestStand?.tropical?.water||null,
         stoneStock:geo.stoneStock[i],stoneCapacity:geo.stoneCapacity[i],
         waterAccess:Boolean(geo.waterAccess[i]),fertility:geo.fertility[i]
     };

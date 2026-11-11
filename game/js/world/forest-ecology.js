@@ -10,6 +10,10 @@
 // trees from sharing one silhouette.
 
 import { seasonalState } from './season.js';
+import {
+    TROPICAL_FORMATIONS, TROPICAL_GOODS, TROPICAL_PHENOLOGY, TROPICAL_SEASON_GOODS,
+    TROPICAL_SPECIES, isTropicalClimate, tropicalFormationFor, tropicalProfileFor,
+} from './tropical-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -235,6 +239,9 @@ export const FOREST_SPECIES = Object.freeze({
         timber: 0.3, firewood: 0.48, charcoal: 0.42, wood: 'dwarf-pine-timber',
         goods: ['dwarf-pine-cones', 'resin', 'lichen', 'blueberries'], understory: ['heather', 'moss', 'lichen'],
     }),
+    // Tropical species (1.2.4) are appended after the 20 temperate species so
+    // every existing species lookup and saved formation index keeps its meaning.
+    ...TROPICAL_SPECIES,
 });
 
 export const FOREST_SPECIES_IDS = Object.freeze(Object.keys(FOREST_SPECIES));
@@ -263,6 +270,7 @@ export const FOREST_PHENOLOGY = Object.freeze({
     juniper: Object.freeze({ flowering: [70, 95], fruiting: [240, 320] }),
     yew: Object.freeze({ flowering: [60, 90], fruiting: [230, 300] }),
     'dwarf-pine': Object.freeze({ flowering: [90, 120], fruiting: [240, 300] }),
+    ...TROPICAL_PHENOLOGY,
 });
 
 // Silvicultural uses are a shared vocabulary. A mixed stand lists the real
@@ -440,6 +448,10 @@ export const FOREST_TYPES = Object.freeze({
     'selection-forest': type('selection-forest', 'Selection Forest', 'Uneven-aged fir, beech and spruce, worked stem by stem',
         { fir: 0.24, beech: 0.22, spruce: 0.18, maple: 0.14, oak: 0.12, hornbeam: 0.1 },
         { density: 0.74, openness: 0.22, conifer: true, needleLitter: 0.34, mixed: true, canopyLayers: 3, mixturePattern: 'grouped', understory: { fern: 0.2, bramble: 0.08, shrub: 0.14, moss: 0.3, heather: 0.04, lichen: 0.16, berry: 0.12, grass: 0.12, herb: 0.14 }, goods: ['mushrooms', 'timber', 'resin', 'beechnuts', 'game'], fauna: ['deer', 'roe-deer', 'fox', 'owl', 'woodpecker', 'crossbill', 'songbird'], ageBias: 'mature', productivity: 1.1, silviculture: ['selection-felling', 'timber', 'firewood', 'hunting', 'mushrooms'] }),
+    // Tropical formations (1.2.4) are appended after all 39 earlier types. A
+    // numeric forestTypeIndex stored in an old save still resolves exactly as
+    // before; only new tropical indices are added at the end.
+    ...TROPICAL_FORMATIONS,
 });
 
 export const FOREST_TYPE_IDS = Object.freeze(Object.keys(FOREST_TYPES));
@@ -529,6 +541,7 @@ export const FOREST_GOODS = Object.freeze({
     'cured-game': Object.freeze({ id: 'cured-game', label: 'Cured game', category: 'hunt', processed: true }),
     'tanned-fur': Object.freeze({ id: 'tanned-fur', label: 'Tanned furs', category: 'hunt', processed: true }),
     'cured-hides': Object.freeze({ id: 'cured-hides', label: 'Cured hides', category: 'hunt', processed: true }),
+    ...TROPICAL_GOODS,
 });
 
 const SEASON_GOODS = Object.freeze({
@@ -559,6 +572,25 @@ const FAUNA = Object.freeze({
     wolf: Object.freeze({ label: 'Wolf', group: 'predator', note: 'following the deer trails' }),
     lynx: Object.freeze({ label: 'Lynx', group: 'predator', note: 'watching from a windthrow thicket' }),
     'bark-beetle': Object.freeze({ label: 'Bark beetle', group: 'insect', note: 'boring beneath the bark' }),
+    'howler-monkey': Object.freeze({ label: 'Howler monkey', group: 'primate', note: 'calling across the upper canopy' }),
+    'spider-monkey': Object.freeze({ label: 'Spider monkey', group: 'primate', note: 'swinging through the lianas' }),
+    jaguar: Object.freeze({ label: 'Jaguar', group: 'predator', note: 'moving silently along the riverbank' }),
+    ocelot: Object.freeze({ label: 'Ocelot', group: 'predator', note: 'stalking through the understorey' }),
+    tapir: Object.freeze({ label: 'Tapir', group: 'large', note: 'following a muddy game trail' }),
+    agouti: Object.freeze({ label: 'Agouti', group: 'small', note: 'caching Brazil nuts in the litter' }),
+    paca: Object.freeze({ label: 'Paca', group: 'small', note: 'browsing beside a treefall gap' }),
+    capybara: Object.freeze({ label: 'Capybara', group: 'large', note: 'grazing at the water’s edge' }),
+    toucan: Object.freeze({ label: 'Toucan', group: 'bird', note: 'calling from a fruiting crown' }),
+    macaw: Object.freeze({ label: 'Macaw', group: 'bird', note: 'flashing scarlet through the gap' }),
+    'harpy-eagle': Object.freeze({ label: 'Harpy eagle', group: 'bird', note: 'watching from an emergent crown' }),
+    anaconda: Object.freeze({ label: 'Anaconda', group: 'reptile', note: 'coiled beside a black-water pool' }),
+    caiman: Object.freeze({ label: 'Caiman', group: 'reptile', note: 'waiting in the shallows' }),
+    piranha: Object.freeze({ label: 'Piranha', group: 'fish', note: 'shoaling under the fig roots' }),
+    'river-fish': Object.freeze({ label: 'River fish', group: 'fish', note: 'rising in the current' }),
+    'poison-dart-frog': Object.freeze({ label: 'Poison-dart frog', group: 'amphibian', note: 'calling from a bromeliad' }),
+    'morpho-butterfly': Object.freeze({ label: 'Morpho butterfly', group: 'insect', note: 'glinting blue through the shade' }),
+    'bullet-ant': Object.freeze({ label: 'Bullet ant', group: 'insect', note: 'patrolling a buttress root' }),
+    mosquito: Object.freeze({ label: 'Mosquito', group: 'insect', note: 'hovering over standing water' }),
 });
 
 export const FOREST_FAUNA = Object.freeze(FAUNA);
@@ -572,6 +604,9 @@ function seasonKeyFor(dayOfYear, climate) {
 }
 
 export function seasonGoods(dayOfYear, climate = 'temperate') {
+    if (isTropicalClimate(climate)) {
+        return TROPICAL_SEASON_GOODS[seasonKeyFor(dayOfYear, climate)] || TROPICAL_SEASON_GOODS.spring;
+    }
     return SEASON_GOODS[seasonKeyFor(dayOfYear, climate)] || SEASON_GOODS.spring;
 }
 
@@ -592,7 +627,12 @@ function mixedFormationFor(temperature, moisture, height, variant) {
 }
 
 function formationFor(x, y, ctx) {
-    const { moisture, temperature, height, seed } = ctx;
+    const { moisture, temperature, height, seed, climate } = ctx;
+    // Tropical climate has its own formation vocabulary, but still uses the
+    // shared stand, resource, succession and rendering pipeline.
+    if (isTropicalClimate(climate)) {
+        return tropicalFormationFor(x, y, seed, moisture, temperature, height);
+    }
     // Chestnut groves belong to the warm, sheltered lowlands. The generated
     // temperate map rarely exceeds .62 on land, so .58 is the playable warm
     // band rather than an unreachable threshold.
@@ -685,6 +725,8 @@ function formationFor(x, y, ctx) {
 }
 
 function ageClassFor(formation, x, y, seed) {
+    if (formation.id === 'tropical-ancient') return 'ancient';
+    if (formation.id === 'tropical-secondary' || formation.id === 'tropical-gap' || formation.id === 'tropical-plantation') return 'young';
     if (formation.id === 'ancient' || formation.id === 'mixed-ancient') return 'ancient';
     if (formation.id === 'regenerating' || formation.id === 'cutover' || formation.id === 'mixed-young') return 'young';
     const roll = unitHash(seed, x, y, 0x41474531);
@@ -950,6 +992,17 @@ export function forestStandAt(x, y, context = {}) {
     if (baseGoods.has('honey')) baseGoods.add('beeswax');
     if (baseGoods.has('game')) { baseGoods.add('fur'); baseGoods.add('hides'); }
 
+    // Tropical ecology is a derived view over the same stand. It supplies the
+    // stratification, plant guilds, water, hazards, land use and all 65
+    // requirement values without a second saved forest model.
+    const tropical = isTropicalClimate(climate)
+        ? tropicalProfileFor({
+            x: tx, y: ty, seed, moisture, temperature, height, formationId: formation.id,
+            ageClass, canopy, density, clearing, edge, stockRatio,
+            species: speciesList.map(entry => entry.id), goods: [...baseGoods],
+        })
+        : null;
+
     const trail = coarseUnit(seed, tx, ty, 6, 0x54524149) > 0.78 || edge;
     const successionProfile = succession ? forestSuccessionProfile(succession.kind) : null;
     const successionProgress = succession && successionProfile
@@ -986,7 +1039,9 @@ export function forestStandAt(x, y, context = {}) {
     // Wet stands hold standing water in hollows and show glossy bark after
     // rain. This is derived from site moisture and formation, not a second
     // hydrology grid.
-    const wetness = clamp01((moisture - 0.48) * 1.35 + (formation.id === 'wet-conifer' ? 0.2 : 0) + (formation.id === 'alluvial' ? 0.12 : 0));
+    const wetness = clamp01((moisture - 0.48) * 1.35 + (formation.id === 'wet-conifer' ? 0.2 : 0)
+        + (formation.id === 'alluvial' ? 0.12 : 0)
+        + (tropical ? tropical.water.pools * 0.24 + tropical.water.temporaryFloods * 0.18 : 0));
     const windExposure = clamp01(exposure * 0.72 + (height > 0.76 ? 0.16 : 0) + (formation.id === 'subalpine-scrub' ? 0.12 : 0));
     const treeline = formation.id === 'subalpine-scrub' || (height > 0.88 && temperature < 0.48);
     // Fire and pest pressure are likewise diagnostics derived from the same
@@ -1006,10 +1061,15 @@ export function forestStandAt(x, y, context = {}) {
     const browsingPressure = clamp01(
         (formation.fauna.includes('deer') ? 0.34 : 0)
         + (formation.fauna.includes('roe-deer') ? 0.24 : 0)
+        + (formation.fauna.includes('tapir') ? 0.18 : 0)
+        + (formation.fauna.includes('agouti') ? 0.08 : 0)
         + (ageClass === 'young' ? 0.1 : 0) + (edge ? 0.08 : 0));
     const predatorPressure = clamp01(
         (formation.fauna.includes('wolf') ? 0.48 : 0)
         + (formation.fauna.includes('lynx') ? 0.3 : 0)
+        + (formation.fauna.includes('jaguar') ? 0.44 : 0)
+        + (formation.fauna.includes('ocelot') ? 0.16 : 0)
+        + (formation.fauna.includes('harpy-eagle') ? 0.12 : 0)
         + (formation.fauna.includes('fox') ? 0.08 : 0));
     const deadwood = clamp01(logs * 0.72 + stumps * 0.32
         + (ageClass === 'ancient' ? 0.12 : 0) + (disturbance === 'diseased' ? 0.12 : 0));
@@ -1031,6 +1091,7 @@ export function forestStandAt(x, y, context = {}) {
     // clearing opens it again. The radius is derived from the same value so the
     // renderer and the gathering work factor cannot drift apart.
     const visibility = clamp01(1 - canopy * 0.62 - coniferShare * 0.2 - density * 0.16
+        - (tropical?.hazard.visibility || 0) * 0.34
         + (edge ? 0.18 : 0) + clearing * 0.15);
     const sightRadius = 2 + Math.round(visibility * 8);
 
@@ -1226,7 +1287,12 @@ export function forestStandAt(x, y, context = {}) {
         disturbance,
         treeChance,
         understory: { fern, bramble, shrub, moss, heather, grass, herb },
-        ground: { litter, needles, lichen, berry, moss, roots, stones, mushrooms, stumps, logs, trail, flowers, humus, soil, sourSoil, compaction, huntingPressure, grass, herb },
+        ground: {
+            litter, needles, lichen, berry, moss, roots: clamp01(roots + (tropical?.soil.surfaceRoots || 0) * 0.2),
+            stones, mushrooms, stumps, logs, trail, flowers, humus, soil, sourSoil, compaction, huntingPressure, grass, herb,
+            pools: tropical?.water.pools ?? 0, decay: tropical?.soil.decayingMatter ?? 0,
+            surfaceRoots: tropical?.soil.surfaceRoots ?? roots, weathered: tropical?.soil.weathered ?? 0,
+        },
         goods: [...baseGoods].sort(),
         fauna: [...formation.fauna],
         coniferShare,
@@ -1275,6 +1341,9 @@ export function forestStandAt(x, y, context = {}) {
         woodQuality,
         phenology,
         mastCrop,
+        // Tropical rainforest view (1.2.4). Null outside the tropical climate;
+        // the shared formation/species/resource contracts are still used above.
+        tropical,
     };
 }
 
@@ -1395,6 +1464,13 @@ export function forestTreeCopies(stand) {
     if (!stand?.forest) return 0;
     const clearing = Number(stand.clearing) || 0;
     const canopy = Number(stand.canopy) || 0;
+    if (stand.tropical) {
+        // The enlarged tropical crowns already overlap their neighbours; a
+        // second copy per tile roughly doubles overlay rasterisation cost on a
+        // software renderer without adding a visible canopy layer.
+        if (stand.ageClass === 'ancient' && canopy > 0.62 && clearing <= 0.28) return 2;
+        return 1;
+    }
     if (clearing > 0.28) return 1;
     if (stand.ageClass === 'ancient' && canopy > 0.62) return 3;
     if (canopy > 0.52) return 2;
@@ -1508,9 +1584,10 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
 export function forestFaunaFor(stand, dayOfYear, climate = 'temperate', roll = 0.5) {
     if (!stand?.forest) return [];
     const season = seasonKeyFor(dayOfYear, climate);
+    const tropicalStand = Boolean(stand.tropical);
     const base = stand.fauna.length ? stand.fauna : ['deer', 'squirrel', 'songbird'];
     const active = base.filter(id => {
-        if (season === 'winter' && (id === 'songbird' || id === 'butterfly' || id === 'ant' || id === 'bee')) return false;
+        if (season === 'winter' && !tropicalStand && (id === 'songbird' || id === 'butterfly' || id === 'ant' || id === 'bee')) return false;
         if (season === 'winter' && id === 'beetle' && stand.ageClass !== 'ancient') return false;
         if (season === 'spring' && id === 'boar' && stand.type !== 'chestnut-grove') return roll > 0.65;
         if (season === 'summer' && id === 'owl') return roll > 0.72;
@@ -1531,12 +1608,19 @@ export function forestFaunaFor(stand, dayOfYear, climate = 'temperate', roll = 0
     if (stand.coniferShare > 0.5 && season === 'winter') extra.push('wolf');
     if (stand.coniferShare > 0.58 && stand.ageClass === 'ancient') extra.push('lynx');
     if (stand.disturbance === 'bark-beetle') extra.push('bark-beetle');
+    if (tropicalStand) {
+        extra.push('toucan', 'morpho-butterfly', 'howler-monkey');
+        if (stand.tropical.features['1.2.4.38'] > 0.45) extra.push('jaguar');
+        if (stand.tropical.water.floodplain || stand.tropical.water.pools > 0.4) extra.push('anaconda', 'river-fish');
+        if (stand.tropical.landUse.riverTrade) extra.push('macaw', 'capybara');
+        if (stand.ageClass === 'ancient') extra.push('harpy-eagle', 'spider-monkey');
+    }
     const unique = [...new Set([...active, ...extra])]
         .filter(id => FAUNA[id])
         .filter(id => !(season === 'winter' && ['songbird', 'butterfly', 'ant', 'bee'].includes(id)));
     if (!unique.length) return [];
     const first = Math.floor(clamp01(roll) * unique.length) % unique.length;
-    const count = season === 'winter' ? 1 : 2;
+    const count = tropicalStand ? 3 : season === 'winter' ? 1 : 2;
     const picked = [];
     for (let index = 0; index < count && index < unique.length; index++) {
         const id = unique[(first + index * 2) % unique.length];
@@ -1555,6 +1639,15 @@ export function forestMicrofaunaAt(stand, dayOfYear = 150, climate = 'temperate'
     const season = seasonKeyFor(dayOfYear, climate);
     const winter = season === 'winter';
     const shade = clamp01(1 - (stand.light || 0.4));
+    if (stand.tropical) {
+        const bugs = stand.tropical.features['1.2.4.41'] || 0.7;
+        return [
+            ['morpho-butterfly', 'Morpho butterfly', Math.max(1, Math.round(2 + bugs * 4 + (stand.ground?.flowers || 0) * 2))],
+            ['bullet-ant', 'Bullet ant', Math.max(1, Math.round(1 + bugs * 3 + (stand.ground?.litter || 0) * 2))],
+            ['mosquito', 'Mosquito', Math.max(1, Math.round(1 + (stand.tropical.water.pools || 0) * 4 + (stand.tropical.water.humidity || 0) * 2))],
+            ['beetle', 'Jewel beetle', Math.max(0, Math.round((stand.ground?.logs || 0) * 4 + (stand.ageClass === 'ancient' ? 2 : 0)))],
+        ].filter(([, , count]) => count > 0).map(([id, label, count]) => ({ id, label, group: 'insect', count: Math.min(8, count) }));
+    }
     const counts = [
         ['beetle', 'Stag beetle', Math.max(0, Math.round((stand.ground?.logs || 0) * 5 + (stand.ageClass === 'ancient' ? 2 : 0) + roll * 1.4))],
         ['bark-beetle', 'Bark beetle', Math.max(0, Math.round((stand.coniferShare || 0) * 4 + (stand.disturbance === 'bark-beetle' ? 4 : 0)))],
@@ -1571,6 +1664,7 @@ export function forestMicrofaunaAt(stand, dayOfYear = 150, climate = 'temperate'
 
 export function forestSnowDepthAt(stand, dayOfYear = 150, climate = 'temperate') {
     if (!stand?.forest) return { depth: 0, cm: 0 };
+    if (isTropicalClimate(climate) || stand.tropical) return { depth: 0, cm: 0 };
     const cover = seasonalState(dayOfYear, climate).snowCover;
     // No snow on the ground means no local snow depth, regardless of how
     // exposed the site is. During accumulation, exposure and elevation decide

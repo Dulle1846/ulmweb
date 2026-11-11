@@ -72,9 +72,30 @@ function seasonalPalette(base, season) {
     return p;
 }
 
+function tropicalPalette(base, season, phase = season) {
+    const seasonal = seasonalState(phase * 100, 'tropical');
+    // The rainforest has a wet/dry rhythm, not a temperate autumn/winter
+    // ground palette. Keep the tropical base green through all four calendar
+    // seasons and leave the seasonal signal to rain, mist and light. `earth`
+    // and the four effect scalars are part of the shader contract; omitting
+    // them made the WebGL palette path throw before decorations could rebuild.
+    return {
+        ...base,
+        earth: mix(base.dry, base.rock, 0.52),
+        season,
+        seasonPhase: phase,
+        snowBias: 0,
+        spring: seasonal.greenUp,
+        summer: seasonal.warmth,
+        autumn: 0,
+        winter: 0,
+    };
+}
+
 export function terrainPaletteFor(climate, seasonIndex = 0) {
     const season = ((Math.trunc(Number(seasonIndex) || 0) % 4) + 4) % 4;
     const base = TERRAIN_PALETTES[climate] || TERRAIN_PALETTES.temperate;
+    if (climate === 'tropical') return tropicalPalette(base, season);
     const palette = seasonalPalette(base, season);
     return {
         ...palette,
@@ -139,6 +160,7 @@ export function terrainPaletteForPhase(climate, phase) {
     const raw = anchored - Math.floor(anchored);
     const fraction = raw * raw * (3 - 2 * raw);
     const base = TERRAIN_PALETTES[climate] || TERRAIN_PALETTES.temperate;
+    if (climate === 'tropical') return tropicalPalette(base, lower, wrapped);
     const from = seasonalPalette(base, lower);
     const to = seasonalPalette(base, (lower + 1) % 4);
     const palette = fraction < 1e-4 ? from : mixPalette(from, to, fraction);

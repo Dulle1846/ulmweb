@@ -48,6 +48,17 @@ const SIMULATED_SPECIES = Object.freeze({
     songbird: { base: 9, reproduction: 0.13, mortality: 0.07, mobility: 3, period: 45 },
     wolf: { base: 2.2, reproduction: 0.05, mortality: 0.045, mobility: 4, period: 60, predator: true, prey: ["deer", "roe-deer"] },
     lynx: { base: 1.8, reproduction: 0.05, mortality: 0.04, mobility: 4, period: 65, predator: true, prey: ["roe-deer", "hare", "squirrel"] },
+    // Tropical rainforest (1.2.4.37–43). These are simulated populations like
+    // the temperate herds: they breed, move, use habitat and can be hunted.
+    "howler-monkey": { base: 7, reproduction: 0.075, mortality: 0.045, mobility: 2, period: 70 },
+    "spider-monkey": { base: 6, reproduction: 0.07, mortality: 0.05, mobility: 3, period: 62 },
+    tapir: { base: 3.2, reproduction: 0.05, mortality: 0.03, mobility: 2, period: 85 },
+    agouti: { base: 10, reproduction: 0.13, mortality: 0.075, mobility: 1, period: 48 },
+    paca: { base: 7, reproduction: 0.1, mortality: 0.06, mobility: 1, period: 55 },
+    toucan: { base: 5, reproduction: 0.09, mortality: 0.055, mobility: 2, period: 50 },
+    macaw: { base: 4, reproduction: 0.07, mortality: 0.05, mobility: 3, period: 58 },
+    jaguar: { base: 1.2, reproduction: 0.035, mortality: 0.035, mobility: 4, period: 78, predator: true, prey: ["tapir", "agouti", "paca", "capybara"] },
+    ocelot: { base: 1.8, reproduction: 0.045, mortality: 0.04, mobility: 3, period: 66, predator: true, prey: ["agouti", "paca"] },
 });
 
 export const SIMULATED_FAUNA_IDS = Object.freeze(Object.keys(SIMULATED_SPECIES));
@@ -312,6 +323,20 @@ function preferenceScore(stand, species, day) {
     }
     if (species === "mouse") {
         score += (stand.ground?.litter || 0) * 0.18 + (stand.ground?.logs || 0) * 0.12;
+    }
+    if (["howler-monkey", "spider-monkey", "toucan", "macaw"].includes(species)) {
+        score += (stand.tropical?.features?.["1.2.4.12"] || 0) * 0.2;
+        score += (stand.tropical?.features?.["1.2.4.7"] || 0) * 0.16;
+        score += (stand.understory?.shrub || 0) * 0.08;
+    }
+    if (["tapir", "agouti", "paca"].includes(species)) {
+        score += (stand.ground?.litter || 0) * 0.18;
+        score += (stand.tropical?.features?.["1.2.4.45"] || 0) * 0.12;
+        score += (stand.tropical?.water?.pools || 0) * 0.08;
+    }
+    if (species === "jaguar" || species === "ocelot") {
+        score += (stand.tropical?.features?.["1.2.4.55"] || 0) * 0.15;
+        score += (stand.fauna || []).filter(id => ["tapir", "agouti", "paca"].includes(id)).length * 0.07;
     }
     if (species === "songbird") {
         score += stand.edge ? 0.14 : 0;

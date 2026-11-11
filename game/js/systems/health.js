@@ -322,6 +322,13 @@ export function getHealthSnapshot() {
 const MEDICINAL_GOODS = Object.freeze([
     Object.freeze({ id: "herbs", potency: 1 }),
     Object.freeze({ id: "lichen", potency: 0.6 }),
+    // Tropical forest medicine (1.2.4.47). These are real gathered goods, so a
+    // rainforest realm can treat fevers with its own pharmacopoeia instead of
+    // depending on temperate herbs.
+    Object.freeze({ id: "quinine-bark", potency: 1.25 }),
+    Object.freeze({ id: "fever-bark", potency: 1.2 }),
+    Object.freeze({ id: "cat-claw", potency: 1.05 }),
+    Object.freeze({ id: "copaiba-oil", potency: 1.1 }),
 ]);
 
 export function applyHerbalRemedy(maxDoses = 2) {

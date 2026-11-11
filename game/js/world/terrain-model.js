@@ -111,6 +111,7 @@ export const CLIMATES = [
     { id: 'mediterranean',label: 'Mediterranean',note: 'Warm dry summers and olive hills' },
     { id: 'arid',         label: 'Arid',         note: 'Steppe, desert plateaus and oases' },
     { id: 'enchanted',    label: 'Enchanted',    note: 'A milder climate with uncanny colours' },
+    { id: 'tropical',     label: 'Tropical',     note: 'Hot, humid rainforest, giant trees and heavy rain' },
 ];
 
 export const DEFAULT_WORLD_OPTIONS = {
@@ -229,8 +230,11 @@ export function sampleHeight(wx, wy, W, H, rawOptions = {}) {
 export function sampleMoisture(wx, wy, rawOptions = {}) {
     const options = rawOptions.__normalized ? rawOptions : normalizeWorldOptions(rawOptions);
     const noise = fbm((wx + 512) * NOISE_SCALE * 1.28, (wy + 512) * NOISE_SCALE * 1.28, 4, 0.55, 2.0);
+    // The tropical profile is humid even away from a river; the wetlands and
+    // fertility sliders still move the local water table inside that envelope.
+    const tropical = options.climate === 'tropical' ? 0.2 : 0;
     return clamp(
-        noise + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
+        noise + tropical + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
         + (options.wetlands - 50) * 0.0016 - (options.aridity - 50) * 0.0012,
         0, 1
     );
@@ -238,7 +242,7 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
 
 export function sampleTemperature(wx, wy, W, H, height, sea, rawOptions = {}) {
     const options = rawOptions.__normalized ? rawOptions : normalizeWorldOptions(rawOptions);
-    const base = { temperate: 0.58, northern: 0.33, mediterranean: 0.69, arid: 0.79, enchanted: 0.52 }[options.climate] ?? 0.58;
+    const base = { temperate: 0.58, northern: 0.33, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
     const latitude = 1 - Math.abs(wy / H - 0.5) * 2;   // 1 at the equator, 0 at the poles
     let t = base + (latitude - 0.62) * 0.26 - Math.max(0, height - sea) * 0.30;
     t += (fbm(wx * 0.0085 + 91.3, wy * 0.0085 + 17.9, 3, 0.5, 2.1) - 0.5) * 0.07;
@@ -611,6 +615,12 @@ const PALETTES = {
         cold: [126, 128, 140], hot: [160, 136, 116], sand: [196, 182, 158], swamp: [74, 84, 74],
         rock: [112, 106, 118], snow: [228, 232, 240],
     },
+    tropical: {
+        waterDeep: [14, 54, 66], waterShallow: [34, 112, 118], foam: [206, 230, 218],
+        dry: [142, 134, 82], meadow: [74, 128, 66], lush: [42, 104, 50], forest: [24, 74, 42],
+        cold: [116, 128, 112], hot: [160, 142, 82], sand: [204, 184, 136], swamp: [54, 78, 52],
+        rock: [106, 108, 96], snow: [224, 232, 230],
+    },
 };
 
 function mix(a, b, t) {
@@ -666,7 +676,9 @@ export function terrainColor(height, moisture, temperature, px, py, climate, sea
     // Rock breaks through on steep, high ground; snow caps the peaks.
     const rock = smoothstep(0.55, 0.82, e);
     color = mix(color, P.rock, rock * 0.94);
-    const snow = Math.max(smoothstep(0.78, 0.93, e), smoothstep(0.26, 0.12, temperature));
+    const snow = climate === 'tropical'
+        ? smoothstep(0.88, 0.98, e)
+        : Math.max(smoothstep(0.78, 0.93, e), smoothstep(0.26, 0.12, temperature));
     color = mix(color, P.snow, snow);
 
     // Sand ribbon with a ragged edge and pebble flecks where land meets water.

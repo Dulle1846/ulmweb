@@ -126,6 +126,7 @@ export const CLIMATE_FOLIAGE = Object.freeze({
     mediterranean: Object.freeze({ turnShift: 5, dropShift: 4, leafOutShift: -6, spanScale: 0.9, marcescentScale: 0.6, snowLoad: 0.7, turnScale: 0.9 }),
     arid: Object.freeze({ turnShift: 9, dropShift: 6, leafOutShift: -8, spanScale: 0.78, marcescentScale: 0.25, snowLoad: 0.35, turnScale: 0.55 }),
     enchanted: Object.freeze({ turnShift: -3, dropShift: -4, leafOutShift: 3, spanScale: 1.04, marcescentScale: 1, snowLoad: 1.08, turnScale: 1 }),
+    tropical: Object.freeze({ turnShift: 0, dropShift: 0, leafOutShift: 0, spanScale: 1, marcescentScale: 0, snowLoad: 0, turnScale: 0 }),
 });
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
@@ -159,6 +160,16 @@ export function foliageState(dayOfYear, { seed = 0.5, species = 'broadleaf', cli
     const climateState = seasonalState(dayOfYear, climateKey);
     const profile = climateFoliageProfile(climateKey);
     const timing = treeTiming(seed, species, climateKey);
+    // Tropical crowns are evergreen. Without this early return the shared
+    // temperate leaf-fall window would thin the canopy and paint autumn colours
+    // in a rainforest. Deciduous behaviour remains available in other climates.
+    if (climateKey === 'tropical') {
+        return {
+            day: wrapDay(dayOfYear), leaf: 1, turn: 0, fresh: 0.08, snow: 0,
+            snowCover: 0, bare: false, holding: false, evergreen: true,
+            species, climate: climateKey,
+        };
+    }
     const def = timing.def;
     const day = wrapDay(dayOfYear);
     // Leaf-out crosses New Year, so spring days are measured on the extended
@@ -217,5 +228,6 @@ export function foliageState(dayOfYear, { seed = 0.5, species = 'broadleaf', cli
 // disappear under snow instead of vanishing on day 300.
 export function flowerBloom(dayOfYear, climate = 'temperate') {
     const state = seasonalState(dayOfYear, climate);
+    if (climate === 'tropical') return 0.88;
     return clamp01((1 - state.snowCover) * (1 - state.foliageTurn) * (0.35 + 0.65 * (state.greenUp + state.warmth)));
 }

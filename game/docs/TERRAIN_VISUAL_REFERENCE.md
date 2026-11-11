@@ -14,6 +14,10 @@
 
 ![One ancient wood through spring, summer, autumn and winter](terrain-reference/forest-seasons.png)
 
+![Twelve tropical rainforest formations from real generated tiles](terrain-reference/tropical-reference.png)
+
+![One emergent rainforest through the year](terrain-reference/tropical-seasons.png)
+
 These sheets are the committed visual baseline for the terrain surface. They complement the numerical atlas tests, the full-year audit and the terrain benchmark: the tests protect determinism, seams and detail data, the sheets make the seasonal, zoom-dependent and per-tree appearance reviewable at a glance, and [`season-year.json`](terrain-reference/season-year.json) records the actual weather and foliage sequence behind them. [`climate-reference.json`](terrain-reference/climate-reference.json) and [`climate-live.json`](terrain-reference/climate-live.json) hold the measured climate comparison behind the two climate sheets. [`forest-reference.json`](terrain-reference/forest-reference.json) records the exact tile, species mix, age, goods and fauna behind each of the fifteen forest formations.
 
 ## What it shows
@@ -26,6 +30,7 @@ These sheets are the committed visual baseline for the terrain surface. They com
 - **Live climate check:** `climate-live.png` and `climate-live/<climate>.png` are five real 1280 × 800 game views on day 330, each after its own 400-day weather audit and captured with clear skies. `climate-live.json` records the measured snow days, weather changes, maximum snow cover, and day-30/day-330 foliage samples.
 - **Fifteen Laubwald formations:** `forest-reference.png` shows oakwood, beechwood, birch grove, maplewood, chestnut grove, linden/elm stand, mixed wood, alluvial wood, hillside wood, ancient wood, regenerating wood, burn scar, windthrow, diseased stand and cut-over wood. Every frame is a real generated tile at 2.40×, with the stand's age, species mix, goods and stock ratio recorded in `forest-reference.json`.
 - **Twelve Nadelwald and twelve Mischwald formations:** `conifer-reference.png` shows the twelve 1.2.2 formations and `mixed-reference.png` the twelve 1.2.3 formations. Every mixed frame records its actual species ratio, group/mosaic pattern, canopy layers, understorey and silviculture in `mixed-reference.json`; `mixed-seasons.png` follows one oak–beech–spruce stand through days 50, 150, 250 and 350.
+- **Twelve tropical rainforest formations:** `tropical-reference.png` shows emergent, lowland, floodplain, palm grove, swamp, cloud, bamboo brake, treefall gap, secondary regrowth, old-growth, riverbank and abandoned plantation. Every frame is a real generated tropical tile with its sixty-five-point profile in `tropical-reference.json`; `tropical-seasons.png` follows the same emergent stand through four seasons under an evergreen canopy.
 - **One wood through the year:** `forest-seasons.png` follows the same ancient woodland at days 50, 150, 250 and 350: fresh leaf-out, closed summer canopy, autumn turn and bare winter crowns with snow and leaf carpet.
 - **Bare crowns and conifers:** the grove strip shows tapered bare branches, twigs and snow resting on branch tips; conifers keep four needle tiers with snow accumulated and shed per tier, plus clumps on the outer tips.
 - **The full-year log:** `season-year.json` covers days 0–399 with the real seeded weather stream. It records every day's weather and remaining spell length, ground snow cover, and the leaf, turn, snow, bare and holding state of broadleaf, birch, oak, beech, conifer and shrub samples across seven tree seeds. A climate comparison block places all five profiles on the same timeline.
@@ -74,6 +79,14 @@ npm run test:forest-reference
 ```
 
 It starts the fixed realm, finds one real tile for every one of the fifteen formations, captures all fifteen at the same 2.40× roof view, then captures one ancient wood on days 50, 150, 250 and 350. It writes `forest-reference.png`, `forest-seasons.png` and `forest-reference.json`. The run fails if a formation cannot be found, if the page reports a runtime error, or if a fatal terrain/WebGL diagnostic occurs. The cut-over frame uses a wooded tile with stock set to zero; the other formation frames are untouched generated sites. Set `FOREST_REFERENCE_OUT` to redirect these artifacts.
+
+The tropical forest reference is a separate command:
+
+```sh
+npm run test:tropical-reference
+```
+
+It starts the fixed realm with the tropical climate and the 78% forest slider, finds one real tile for each of the twelve rainforest formations, captures them at 0.95× rooftop view, then captures one emergent stand on days 50, 150, 250 and 350. It writes `tropical-reference.png`, `tropical-seasons.png` and `tropical-reference.json`. The run fails if a formation is missing, a page/runtime error occurs, or any recorded stand lacks the sixty-five-point contract. Set `FOREST_REFERENCE_OUT` to redirect the artifacts.
 
 The GitHub browser workflow runs the terrain, season-year, climate and forest commands with their output directories pointing at `$RUNNER_TEMP/terrain-reference` and uploads the contact sheet, transition sheet, grove sheet, reference and year metadata, both climate sheets, both climate logs, the five individual live screenshots, the forest formation sheet, the forest season sheet and the forest metadata as the `kings-and-cards-terrain-reference` artifact. All four generation steps run even when the gameplay E2E step fails, so the surface report remains available for review.
 
