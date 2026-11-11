@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const root=new URL("../../",import.meta.url);
-const [html,css,cardCss,ui,management,populationPanel,dossier,main,economy,renderer,hud]=await Promise.all([
+const [html,css,cardCss,ui,management,populationPanel,dossier,main,economy,renderer,hud,gameCss]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/ui-design-system.css",root),"utf8"),
   readFile(new URL("css/medieval.css",root),"utf8"),
@@ -14,7 +14,8 @@ const [html,css,cardCss,ui,management,populationPanel,dossier,main,economy,rende
   readFile(new URL("js/app/main.js",root),"utf8"),
   readFile(new URL("js/systems/economy.js",root),"utf8"),
   readFile(new URL("js/presentation/rendering/renderer.js",root),"utf8"),
-  readFile(new URL("css/hud-v3.css",root),"utf8")
+  readFile(new URL("css/hud-v3.css",root),"utf8"),
+  readFile(new URL("css/game.css",root),"utf8")
 ]);
 
 test("master UI stylesheet is loaded after the legacy visual layers",()=>{
@@ -135,6 +136,15 @@ test("resource details expose real stocks, flows, related buildings and bounded 
   assert.ok(management.includes("Latest settlement:"));
   assert.ok(hud.includes(".resource-detail-grid"));
   assert.ok(hud.includes(".command-trend"));
+});
+
+test("the item lexicon exposes base definitions and player-made records",()=>{
+  assert.ok(html.includes('data-command-tab="items"'));
+  assert.ok(management.includes("renderItemLexicon"));
+  assert.ok(management.includes('if(activePanel==="items")renderItemLexicon(panel)'));
+  assert.ok(gameCss.includes(".item-lexicon"));
+  assert.ok(gameCss.includes(".item-lexicon__total{") && gameCss.includes("color:#3a2b1d"), "lexicon headings must use the dark parchment palette");
+  assert.ok(gameCss.includes(".item-lexicon__search input{") && gameCss.includes("color:#33261a"), "lexicon search text must remain legible");
 });
 
 test("diplomacy exposes persistent neighbours, treaties and trade consequences",()=>{

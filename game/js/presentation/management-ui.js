@@ -36,6 +36,7 @@ import { WAREHOUSE_PROFILES } from "../systems/city-config.js";
 import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
 import { foresterRangeSummary } from "../systems/fields.js";
 import { renderCityPanel, handleCityPanelClick } from "./city-panel.js";
+import { renderItemLexicon } from "./item-lexicon-panel.js";
 let activePanel="kingdom",dynastyStylesRequested=false,endeavourFunding=1;
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
@@ -672,7 +673,8 @@ const CRIME_CAUSE_LABELS=Object.freeze({inequality:"inequality",hunger:"hunger",
 function city(){return renderCityPanel();}
 function render(resetScroll=false){
  const panel=$("command-panel-content");if(!panel)return;
- panel.innerHTML=({kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle}[activePanel]||kingdom)();
+ const renderers={kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle};
+ if(activePanel==="items")renderItemLexicon(panel);else panel.innerHTML=(renderers[activePanel]||kingdom)();
  // A new tab starts at its title, not at the scroll offset of the previous
  // panel. Re-renders caused by an action keep their current position.
  if(resetScroll)panel.scrollTop=0;

@@ -12,6 +12,7 @@ import { createCourtState, normalizeCourtState } from "../systems/court.js";
 import { createFaithState, normalizeFaithState } from "../systems/faith.js";
 import { createJusticeState, normalizeJusticeState } from "../systems/justice.js";
 import { normalizeMilitaryState } from "../systems/military.js";
+import { normalizeCraftedItems } from "../systems/item-lexicon.js";
 import { normalizeHealthState } from "../systems/health.js";
 import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeHouseholdAssignments } from "../systems/population.js";
@@ -57,6 +58,7 @@ const SAVE_SCHEMA_MIGRATIONS=Object.freeze({
     3:snapshot=>{if(snapshot.city===undefined)snapshot.city=null;if(snapshot.market===undefined)snapshot.market=null;},
     4:snapshot=>{if(snapshot.faith===undefined)snapshot.faith=null;if(snapshot.justice===undefined)snapshot.justice=null;},
     5:snapshot=>{if(snapshot.faith===undefined)snapshot.faith=null;if(snapshot.justice===undefined)snapshot.justice=null;if(!snapshot.health||typeof snapshot.health!=="object")snapshot.health={};},
+    7:snapshot=>{snapshot.craftedItems=Array.isArray(snapshot.craftedItems)?snapshot.craftedItems:[];},
     6:snapshot=>{
         // Schema 7 adds realm identity, research and the legacy record. Older
         // saves keep their existing realm name instead of being renamed.
@@ -595,6 +597,7 @@ function createSaveSnapshot(){
         entities:state.entities.map((entity,index)=>serializeEntity(entity,indexes)),
         personArchive:(state.personArchive||[]).map(entry=>JSON.parse(JSON.stringify(entry))).slice(-MAX_PERSON_ARCHIVE),
         creatureArchive:(state.creatureArchive||[]).map(entry=>JSON.parse(JSON.stringify(entry))).slice(-100),
+        craftedItems:normalizeCraftedItems(state.craftedItems||[]),
         hand:state.hand.map(card=>({...card,cost:{...card.cost}})),
         cardRewardQueue:(state.cardRewardQueue||[]).map(card=>({...card,cost:{...card.cost}})),
         selectedCardInstanceId:state.selectedCardInstanceId,
@@ -679,6 +682,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.gameSpeed=[0.5,1,2,4].includes(savedSpeed)?savedSpeed:1;
     document.querySelectorAll(".speed-button").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.speed)===state.gameSpeed));
     state.creatureArchive=Array.isArray(snapshot.creatureArchive)?snapshot.creatureArchive.filter(entry=>entry&&typeof entry==="object").slice(-100):[];
+    state.craftedItems=normalizeCraftedItems(snapshot.craftedItems);
     state.personArchive=Array.isArray(snapshot.personArchive)
         ? snapshot.personArchive.map(normalizePersonMemorial).filter(Boolean).slice(-MAX_PERSON_ARCHIVE)
         : [];

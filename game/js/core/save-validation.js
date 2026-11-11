@@ -17,8 +17,9 @@ import { validateIdentity } from "../systems/identity.js";
 import { validateResearchState } from "../systems/research.js";
 import { validateLegacyState } from "../systems/legacy.js";
 import { validatePopulationState } from "../systems/population-register.js";
+import { validateCraftedItems } from "../systems/item-lexicon.js";
 
-export const SAVE_SCHEMA_VERSION = 7;
+export const SAVE_SCHEMA_VERSION = 8;
 
 const RESOURCE_KEYS = Object.freeze(["wood", "stone", "gold", "food"]);
 const RESOURCE_KEY_SET = new Set(RESOURCE_KEYS);
@@ -210,6 +211,14 @@ export function validateSaveSnapshot(snapshot) {
     }
     if (snapshot.population !== undefined && snapshot.population !== null) {
         validateDomainSnapshot(snapshot.population, "population", validatePopulationState);
+    }
+    if (snapshot.craftedItems !== undefined) {
+        try {
+            validateCraftedItems(snapshot.craftedItems);
+        } catch (error) {
+            fail("Save data contains an invalid crafted item archive: " + error.message,
+                { code: "INVALID_CRAFTED_ITEMS", field: "craftedItems", valueType: typeOf(snapshot.craftedItems), phase: "items" });
+        }
     }
     if (snapshot.court !== undefined && snapshot.court !== null) {
         const court = snapshot.court;

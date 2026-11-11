@@ -199,7 +199,7 @@ test("schema 7 saves identity, research and legacy and validates each block", ()
     state.research.reserve = 100;
     startResearch("masonry");
     recordLegacy("realm", "A recorded deed");
-    assert.equal(SAVE_SCHEMA_VERSION, 7, "schema 7 is the civilization-layer save contract");
+    assert.equal(SAVE_SCHEMA_VERSION, 8, "schema 8 keeps the civilization layer and adds the crafted item archive");
 
     const snapshot = {
         worldSeed: 9917,
@@ -226,7 +226,7 @@ test("the save, load, simulation and UI source contracts include the civilizatio
     assert.ok(main.includes("state.identity=normalizeIdentity") && main.includes("state.research=normalizeResearchState") && main.includes("state.legacy=normalizeLegacyState"), "loading must normalize all three blocks");
     assert.ok(main.includes("6:snapshot=>") && main.includes("applyIdentityForNewRealm"), "schema 6 saves must migrate and a new realm must record its identity");
     assert.ok(validation.includes("validateIdentity") && validation.includes("validateResearchState") && validation.includes("validateLegacyState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 20, "the command deck must expose twenty tabs, including the city charter");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 21, "the command deck must expose twenty-one tabs, including the city charter and item lexicon");
     assert.ok(html.includes('data-command-tab="research"') && html.includes('id="realm-culture"'), "the founding form and research tab must exist");
     assert.ok(ui.includes("research:researchPanel") && ui.includes("research-start") && ui.includes("research-appoint"), "the research panel and its actions must be wired");
     assert.ok(ui.includes("getLegacySnapshot()") && ui.includes("LEGACY ·"), "the chronicle must show the legacy record");

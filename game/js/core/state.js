@@ -24,7 +24,7 @@ function createInitialState() {
         hiddenRealm:{tension:0,prosperity:0,mystery:0,memories:[],activeThreads:[],completedThreads:[]},
         frameFaulted:false,frameErrorCount:0,worldEpoch:0,buildingCollisionVersion:0,
         selectedTab:0,eventLog:[],activeEvent:null,eventSequence:0,
-        entities:[],personArchive:[],creatureArchive:[],population:null,particles:[],floaters:[],pendingPresentationEffects:[],
+        entities:[],personArchive:[],creatureArchive:[],craftedItems:[],population:null,particles:[],floaters:[],pendingPresentationEffects:[],
         heightMap:null,moistureMap:null,terrainCanvas:null,terrainDirty:true,explored:[],
         fogCanvas:null,fogDirty:true,fogExploredRef:null,
         terrainResolution:0,terrainPixW:0,terrainPixH:0,

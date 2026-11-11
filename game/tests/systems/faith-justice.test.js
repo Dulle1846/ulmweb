@@ -380,7 +380,7 @@ test("faith and justice normalize, validate and survive a JSON save/load round t
     assert.equal(restored.justice.lawCode, justiceBefore.lawCode);
     assert.equal(restored.faith.festival.lastKind, "harvest");
 
-    assert.equal(SAVE_SCHEMA_VERSION, 7, "schema 7 adds identity, research and legacy on top of the annual systems");
+    assert.equal(SAVE_SCHEMA_VERSION, 8, "schema 8 adds the crafted item archive on top of the civilization layer");
     const snapshot = normalizeSaveSnapshot({
         worldSeed: 9917,
         entities: [],
@@ -407,7 +407,7 @@ test("the save, load and UI source contracts include both annual systems", async
     assert.ok(main.includes("state.justice=normalizeJusticeState"), "loading must normalize justice");
     assert.ok(main.includes("4:snapshot=>") && main.includes("5:snapshot=>"), "schema 4 and 5 saves must migrate into schema 6");
     assert.ok(validation.includes("validateFaithState") && validation.includes("validateJusticeState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 20, "the command deck must expose twenty tabs, including the city charter");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 21, "the command deck must expose twenty-one tabs, including the city charter and item lexicon");
     assert.ok(ui.includes("faith:faithPanel") && ui.includes("justice:justicePanel"));
     assert.ok(ui.includes("faith-festival") && ui.includes("justice-verdict"));
     const faith = await readFile(new URL("../../js/systems/faith.js", import.meta.url), "utf8");
