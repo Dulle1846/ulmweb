@@ -148,6 +148,8 @@ test("small pure broadleaf and conifer islands interrupt grouped mixed stands", 
     for (const stand of [broadleaf, conifer]) {
         const island = stand.mixture.pureIsland;
         assert.ok(island.active);
+        assert.notEqual(stand.mixture.pattern, "even",
+            "pure islands belong to grouped or mosaic stands, not even mixtures");
         assert.ok(FOREST_SPECIES[island.species], "the island must name a real species");
         assert.ok(stand.species.some(entry => entry.id === island.species));
         assert.equal(pickSpecies(stand, 0.01), island.species);
@@ -155,8 +157,12 @@ test("small pure broadleaf and conifer islands interrupt grouped mixed stands", 
         assert.equal(island.broadleaf, !FOREST_SPECIES[island.species].conifer);
         assert.match(forestMixedSummary(stand), /pure .* island/);
     }
-    const even = sample("mixed-open");
-    assert.equal(even.mixture.pureIsland, null, "an even mixture keeps its even distribution");
+    const evenStands = [...mixed.values()].filter(candidate => candidate.mixture.pattern === "even");
+    assert.ok(evenStands.length >= 2, "the audit needs more than one evenly mixed formation");
+    for (const even of evenStands) {
+        assert.equal(even.mixture.pureIsland, null,
+            "an even mixture keeps its even distribution instead of receiving a pure island");
+    }
 });
 
 test("age structure, crown heights and canopy layers differ between old and young mixed woods", () => {
@@ -233,6 +239,10 @@ test("mixed woods expose food plants, habitat value, wood grades and silvicultur
     assert.ok(stand.foodPlants.length >= 2, "an old mixed wood must list wildlife food plants");
     assert.ok(stand.habitat.score > 0.3 && stand.habitat.layers >= 3);
     assert.ok(stand.habitat.fauna >= 6);
+    assert.equal(stand.habitat.fauna, stand.fauna.length,
+        "habitat fauna is derived from the stand, not a separate per-species AI roster");
+    assert.ok(["loam", "humus", "alluvial", "dry", "podzol"].includes(stand.ground.soil),
+        "the ground soil profile is derived from the stand and site conditions");
     assert.ok(stand.mastCrop > 0.3, "oak/beech/hazel mast must be visible");
     assert.ok(stand.woodQuality.length >= 4);
     assert.ok(stand.woodQuality.every(entry => FOREST_SPECIES[entry.id] && entry.timber > 0));

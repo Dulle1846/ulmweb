@@ -286,6 +286,7 @@ try {
                 if (state.resourceGeography?.forestStock) state.resourceGeography.forestStock[index] = 0;
             }, { x: tile.x, y: tile.y });
         }
+        const missesBeforeMove = await terrainCacheMisses(page);
         await page.evaluate(async ({ x, y, day }) => {
             const { state } = await import("./js/core/state.js");
             const { setZoomLevel, clampCamera } = await import("./js/presentation/camera.js");
@@ -306,7 +307,7 @@ try {
             state.camera.y = (y + 0.5) * CELL * state.zoom - state.canvas.height / 2;
             clampCamera();
         }, { x: tile.x, y: tile.y, day: 150 });
-        await page.waitForTimeout(220);
+        await waitForDecorationOverlay(page, missesBeforeMove);
         const buffer = await page.locator("#canvas-wrapper").screenshot({ type: "png", animations: "disabled" });
         frames.push({ type, tile, buffer });
         console.log("Captured " + tile.label + " at " + tile.x + ", " + tile.y);
@@ -327,6 +328,7 @@ try {
             : (scan.found.ancient || scan.found.oakwood || scan.found.beechwood);
     const seasonal = [];
     for (const day of seasonDays) {
+        const missesBeforeMove = await terrainCacheMisses(page);
         await page.evaluate(async ({ x, y, day }) => {
             const { state } = await import("./js/core/state.js");
             const { setZoomLevel, clampCamera } = await import("./js/presentation/camera.js");
@@ -344,7 +346,7 @@ try {
             state.camera.y = (y + 0.5) * CELL * state.zoom - state.canvas.height / 2;
             clampCamera();
         }, { x: seasonalTile.x, y: seasonalTile.y, day });
-        await page.waitForTimeout(220);
+        await waitForDecorationOverlay(page, missesBeforeMove);
         const buffer = await page.locator("#canvas-wrapper").screenshot({ type: "png", animations: "disabled" });
         seasonal.push({ day, buffer });
         console.log("Captured seasonal forest day " + day);
@@ -433,6 +435,31 @@ try {
 } finally {
     await browser.close().catch(() => {});
     await new Promise(resolve => server.close(resolve));
+}
+
+async function terrainCacheMisses(page) {
+    return page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return Number(state.terrainCacheMisses) || 0;
+    });
+}
+
+// A camera jump leaves the old decoration overlay on screen for the 140 ms
+// settle window, then rebuilds it. On a software renderer a fixed 220 ms wait
+// can still catch the frame before that rebuild and save a ground-only panel.
+// Wait for the actual cache miss and two composited frames instead.
+async function waitForDecorationOverlay(page, baselineMisses) {
+    await page.evaluate(async (baseline) => {
+        const { state } = await import("./js/core/state.js");
+        const deadline = performance.now() + 10000;
+        while ((Number(state.terrainCacheMisses) || 0) <= baseline) {
+            if (performance.now() > deadline) {
+                throw new Error("The terrain decoration overlay did not rebuild after the camera move.");
+            }
+            await new Promise(resolve => requestAnimationFrame(resolve));
+        }
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }, baselineMisses);
 }
 
 async function captureConiferSpecies(page) {

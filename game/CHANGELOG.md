@@ -69,12 +69,22 @@ forester survey exposes the mixture; the terrain renderer draws grass and herb
 understorey; seasonal foliage covers the new species. The mixed visual
 reference captures all twelve formations plus one stand through four seasons.
 
-**Verification:** focused mixed/forest suite 41/41; full `npm test` 750/750;
+**Long-term gate:** A new century test runs 100 years / 40,000 daily
+succession and regrowth steps with a real resource + succession save/reload
+every ten years. It starts with 65 pure islands (49 broadleaf, 16 conifer),
+keeps 63 through the century and reports 0 stand or succession fingerprint
+mismatches across all ten reloads. Pure islands are derived from the saved
+world and stock ratio; even stands still receive none.
+
+**Verification:** focused mixed/forest suite 42/42; full `npm test` 751/751;
 syntax and relative imports clean for 105 files / 189 UI ids; deterministic
 25-year campaign `ok:true`, 10,040 ticks, 13/13 ambitions, no game over, 0.807
 ms/tick; mixed reference 12/12 formations and four seasons on WebKit WebGL with
-artifact hashes. No save schema bump; old saves keep every numeric formation
-index.
+artifact hashes. A fresh Chromium/Playwright browser rerun matched the tracked
+mixed reference 12/12 with 0 mismatches across 372 field comparisons (31 per
+formation). The browser harness now waits for the decoration overlay to rebuild
+before capturing, so a slow software renderer cannot save a ground-only panel.
+No save schema bump; old saves keep every numeric formation index.
 
 **Full record:** [docs/MIXED_FORESTS.md](docs/MIXED_FORESTS.md).
 

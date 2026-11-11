@@ -219,13 +219,49 @@ silviculture and winter goods; the artifact hashes are in the JSON.
 
 ![One mixed wood through the year](terrain-reference/mixed-seasons.png)
 
+## Browser verification (2026-11-11)
+
+The mixed profile was re-run through the real browser renderer on the fixed
+reference world (seed `20261104`, temperate, 176 × 176, 64 % forest cover) with:
+
+```bash
+cd game
+FOREST_REFERENCE_PROFILE=mixed FOREST_REFERENCE_OUT="$PWD/artifacts/mixed-browser-verify" npm run test:mixed-reference
+```
+
+The Chromium/Playwright harness captured all twelve formations at the same
+0.95× rooftop view and one oak–beech–spruce stand on days 50, 150, 250 and 350.
+The renderer reported `WebKit WebGL` at 800 × 800. The fresh metadata was
+compared field-by-field with the tracked
+[`mixed-reference.json`](terrain-reference/mixed-reference.json): **12/12
+formations matched, with 0 mismatches across 372 field comparisons (31 per
+formation)**; seed, world, renderer, seasonal focus and seasonal days also
+matched exactly.
+
+The contact sheet and seasonal strip were inspected visually. Every formation
+panel and all four seasons were present and rendered through the production
+terrain path; there was no missing tile, Canvas2D fallback, ground-only
+formation panel or blank seasonal frame. Each capture waits for the decoration
+overlay cache to rebuild after the camera move instead of relying on a fixed
+timeout, so a slow software renderer cannot save the frame before its trees are
+composited. The lighter `pine-broadleaf` and `mixed-open` frames reflect their real
+open canopy (`treeChance` 0.444 and 0.318), not missing formation art. The
+fresh outputs are review artifacts under `artifacts/mixed-browser-verify/` and
+are not committed; the tracked reference remains the canonical evidence.
+
 ## Verification
 
-- Full `npm test`: **750/750** including the new
-  `tests/world/mixed-render-identity.test.js` guard.
-- Focused mixed/forest suite: **41/41**
-  (`mixed-forest`, `forest-ecology`, `conifer-forest`,
+- Full `npm test`: **751/751** including the new
+  `tests/world/mixed-render-identity.test.js` guard and the century pure-island
+  save/reload test.
+- Focused mixed/forest suite: **42/42**
+  (`mixed-forest`, `mixed-forest-longrun`, `forest-ecology`, `conifer-forest`,
   `forest-succession-longrun`).
+- Century pure-island gate: 100 simulated years / 40,000 daily succession and
+  regrowth steps with a real resource + succession save/reload every ten years;
+  65 islands (49 broadleaf, 16 conifer) on day zero, 63 still present after the
+  century, and **0** stand or succession fingerprint mismatches across all ten
+  reloads. `tests/world/mixed-forest-longrun.test.js`.
 - Deterministic 25-year campaign: **`ok:true`**, **10,040 ticks**,
   **13/13 ambitions**, no game over, **0.807 ms/tick** on this head.
 - Syntax and relative imports: **105 source files**, **189 UI ids**.
@@ -236,6 +272,12 @@ silviculture and winter goods; the artifact hashes are in the JSON.
 
 ## Deliberate limits
 
+- Pure islands are deliberately limited to grouped and mosaic stands; evenly
+  mixed stands remain even, so 1.2.3.8 is not undone by 1.2.3.10.
+- Habitat value and fauna are derived from the stand/formation data and the
+  existing fauna model; there is no separate AI for every animal species.
+- Soil is derived from site moisture, formation and stand structure into
+  `ground.soil`; there is no separate soil-type raster.
 - A mixed stand is a deterministic tile model, not a per-stem forest
   inventory. Group membership is a coarse tile-scale pattern, not a spatial
   tessellation of individual crowns.
