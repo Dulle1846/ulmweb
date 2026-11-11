@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-    createLocalProfile,getActiveProfile,selectLocalProfile,
+    createLocalProfile,getActiveProfile,selectLocalProfile,listLocalProfiles,
     writeLocalSave,readLocalSave,loadSettings,saveSettings,
     migrateSaveEnvelope,SAVE_VERSION
 } from "../../js/core/persistence.js";
@@ -28,6 +28,20 @@ test("local profiles are separate and the active profile is selected",()=>{
     assert.equal(getActiveProfile().id,second.id);
     assert.equal(selectLocalProfile(first.id).displayName,"Realm Keeper");
     assert.equal(getActiveProfile().id,first.id);
+});
+test("a restored save recreates or selects the exact profile id it carries",()=>{
+    installStorage();
+    const importedId="11111111-1111-4111-8111-111111111111";
+    const restored=createLocalProfile("Restored Keeper",importedId);
+    assert.equal(restored.id,importedId);
+    assert.equal(getActiveProfile().id,importedId);
+    createLocalProfile("Other Keeper");
+    assert.notEqual(getActiveProfile().id,importedId);
+    assert.equal(createLocalProfile("Ignored",importedId).displayName,"Restored Keeper");
+    assert.equal(getActiveProfile().id,importedId);
+    assert.equal(listLocalProfiles().length,2);
+    assert.throws(()=>createLocalProfile("Bad","bad:id"),/invalid local profile id/);
+    assert.equal(getActiveProfile().id,importedId,"an invalid id must not replace the active profile");
 });
 test("a save envelope is linked to its local profile and version",()=>{
     installStorage();

@@ -4,6 +4,7 @@ import {resetState,state} from "../../js/core/state.js";
 import {TYPE} from "../../js/core/types.js";
 import {spawnEntity,initStartingKingdom} from "../../js/world/entities.js";
 import {triggerRandomEvent,resolveEventChoice,checkRandomEvents,addLog,EVENT_VARIANT_COUNT} from "../../js/systems/events.js";
+import {AMBITIONS,getCrownEraSnapshot,normalizeAmbitions} from "../../js/systems/ambitions.js";
 
 beforeEach(()=>{
     resetState();
@@ -126,4 +127,30 @@ test("resolving a realm issue writes memories for its named participants",()=>{
     const participantEntities=state.entities.filter(entity=>participantIds.includes(entity.personId));
     assert.equal(resolveEventChoice(0),true);
     assert.ok(participantEntities.every(entity=>entity.person.memories.some(memory=>memory.id.startsWith("event:"+issue.id+":"))));
+});
+
+test("the second crown is offered after the royal ladder and resolves into a permanent era",()=>{
+    state.ambitions=normalizeAmbitions({
+        completed:Object.fromEntries(AMBITIONS.map(ambition=>[ambition.id,10])),
+        lastEvaluatedTick:0
+    });
+    state.tick=200;
+    state.activeEvent=null;
+    state.hiddenRealm.activeThreads=[];
+    state.hiddenRealm.completedThreads=[];
+    state.hiddenRealm.memories=[];
+    state.nextIssueAtTick=Number.MAX_SAFE_INTEGER;
+
+    checkRandomEvents();
+    assert.equal(state.activeEvent?.family,"crown-era");
+    assert.equal(state.activeEvent?.title,"The Second Crown");
+    assert.equal(state.activeEvent?.choices.length,3);
+    assert.equal(resolveEventChoice(0),true);
+    assert.equal(getCrownEraSnapshot()?.id,"common-weal");
+    assert.equal(state.ambitions.era.id,"common-weal");
+    assert.equal(state.activeEvent,null);
+
+    state.tick=220;
+    checkRandomEvents();
+    assert.equal(state.activeEvent,null,"a chosen era must not be offered again");
 });

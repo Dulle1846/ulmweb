@@ -5,9 +5,9 @@
 
 ## Why this exists
 
-The deterministic 50-year audit exposed the real long-term gap. After the thirteenth royal ambition completed in year 25, the realm had no further goal: it stayed at 70/70 residents, 50 buildings and 67 resolved events with no game over, but there was nothing left to play toward. The authored ladder was finished, not the game.
+The deterministic 50-year audit exposed the real long-term gap. After the thirteenth royal ambition completed in year 20, the realm had no further goal: it stayed at 70/70 residents, 50 buildings and 67 resolved events with no game over, but there was nothing left to play toward. The authored ladder was finished, not the game.
 
-The thirteen royal ambitions are a finite story and stay exactly as they are. Eternal deeds are an additive layer that begins only after all thirteen are complete and then continues for as long as the realm exists.
+The thirteen royal ambitions are a finite story; the final year gate now opens at year 20 so the Second Crown era has playable time in the 25-year audit. Eternal deeds are an additive layer that begins only after all thirteen are complete and then continues for as long as the realm exists.
 
 ## Goal families
 

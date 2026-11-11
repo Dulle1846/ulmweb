@@ -11,7 +11,7 @@
   },
   "renderer": "WebKit WebGL",
   "maxTextureSize": 8192,
-  "generatedAt": "2026-11-11T12:37:39.537Z",
+  "generatedAt": "2026-11-11T16:10:22.958Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -2807,8 +2807,8 @@
     }
   ],
   "artifactHashes": {
-    "formation": "fc1e13413e196657a1890df0a10b48f33c9d51abdcb340cf96c5b5df5ec32eb1",
-    "seasonal": "ff5e3c425292b6491fee134f8e3efee652b207b5bbbfb92d11ac8d53b9a3c794"
+    "formation": "da24899b8ee1e85a78b36873ec32b21abc8be11e74d4aa800ab07a31fbbd45fa",
+    "seasonal": "6f49f049924e520de7ba85ad807834fb2f048cf8acc9fb1c02443cb2bf248c78"
   },
   "note": "Tropical realm at 78% forest cover, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level at midday. All twelve rainforest formations are real generated tiles, not hand-placed demo props. The seasonal strip follows an emergent stand through the wet-season flush, main fruiting pulse, dry-season peak and warm rainy season. Each tile records all 65 rainforest requirements, the three canopy strata, water, hazards, land use, goods and fauna. Not a GPU performance benchmark."
 }

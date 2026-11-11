@@ -74,6 +74,10 @@ export function updatePolitics(ledger,workforce){
         pressure.commons+=civic.legitimacyPressure*0.5;
         pressure.guilds+=civic.legitimacyPressure*0.25;
     }
+    // The Second Crown agenda leaves a lasting institutional mark. This is a
+    // bounded annual drift, not an instant reward: later settlements inherit it.
+    const eraLegitimacy=Number(state.ambitions?.era?.agenda?.modifiers?.legitimacyYear)||0;
+    pressure.legitimacy+=Math.max(-0.02,Math.min(0.05,eraLegitimacy));
     applyPoliticalEffects(pressure);
     return getPoliticalSnapshot();
 }

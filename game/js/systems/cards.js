@@ -40,6 +40,7 @@ export function drawNewCard(){
     const context=CARD_VARIANT_DIMENSIONS.contexts[randInt(0,CARD_VARIANT_DIMENSIONS.contexts.length)];
     const card=createCardVariant(prototype,{scale,rarity,context});
     const handCard=makeHandCard(card);state.hand.push(handCard);
+    state.statistics.totalCardsDrawn=(state.statistics.totalCardsDrawn||0)+1;
     return handCard;
 }
 // The player draws explicitly from the Cards panel. Nothing is dealt on a

@@ -139,7 +139,12 @@ export function updateEconomy() {
     // share the collectors actually bring in.
     const research = getResearchModifiers();
     const endeavours = getEndeavourModifiers();
-    ledger.foodDemand *= edicts.food * research.foodDemandFactor * (1 - endeavours.food);
+    const eraModifiers = state.ambitions?.era?.agenda?.modifiers || {};
+    const eraFoodDemandFactor = Math.max(0.70, Math.min(1.10, Number(eraModifiers.foodDemandFactor) || 1));
+    const eraTaxEfficiency = Math.max(1, Math.min(1.15, Number(eraModifiers.taxEfficiency) || 1));
+    ledger.foodDemand *= edicts.food * research.foodDemandFactor * (1 - endeavours.food) * eraFoodDemandFactor;
+    ledger.eraFoodDemandFactor = eraFoodDemandFactor;
+    ledger.eraTaxEfficiency = eraTaxEfficiency;
     ledger.foodConsumed = Math.min(state.resources.food, ledger.foodDemand);
     ledger.foodShortage = Math.max(0, ledger.foodDemand - ledger.foodConsumed);
     ledger.taxesCollected *= edicts.tax;
@@ -162,6 +167,9 @@ export function updateEconomy() {
     const endeavourTaxBefore = ledger.taxesCollected;
     ledger.taxesCollected *= 1 + endeavours.tax;
     ledger.endeavourTaxBonus = ledger.taxesCollected - endeavourTaxBefore;
+    const eraTaxBefore = ledger.taxesCollected;
+    ledger.taxesCollected *= eraTaxEfficiency;
+    ledger.eraTaxBonus = ledger.taxesCollected - eraTaxBefore;
     ledger.netGold = ledger.taxesCollected - ledger.wagesPaid - ledger.upkeepPaid - ledger.furnitureUpkeepPaid;
 
     recordResourceMovement("food", -ledger.foodConsumed, "population-food", {

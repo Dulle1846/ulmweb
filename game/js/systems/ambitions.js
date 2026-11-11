@@ -8,6 +8,7 @@ import { addResource } from "./resources.js";
 import { TECHNOLOGIES } from "./research.js";
 import { createLegacyState, PRESTIGE_LIMIT, recordLegacy } from "./legacy.js";
 import { DIPLOMATIC_REALMS } from "./diplomacy-config.js";
+import { applyPoliticalEffects } from "./politics.js";
 
 const RESOURCE_ORDER = ["wood", "stone", "gold", "food"];
 const RESOURCE_LABELS = Object.freeze({ wood: "wood", stone: "stone", gold: "gold", food: "food" });
@@ -71,6 +72,15 @@ function alliances() {
 }
 function prestige() {
     return Math.max(0, number(state.legacy?.prestige));
+}
+function legitimacy() {
+    return number(state.politics?.legitimacy);
+}
+function faction(name) {
+    return number(state.politics?.factions?.[name]);
+}
+function taxes() {
+    return Math.max(0, number(state.economy?.taxesCollected));
 }
 
 export const AMBITIONS = Object.freeze([
@@ -185,15 +195,433 @@ export const AMBITIONS = Object.freeze([
     Object.freeze({
         id: "eternal-realm",
         title: "The Eternal Realm",
-        description: "Reach year 25 with 55 residents, 2,000 gold and 80 morale.",
+        description: "Reach year 20 with 55 residents, 2,000 gold and 80 morale.",
         reward: Object.freeze({ gold: 250, food: 150 }),
-        check: () => year() >= 25 && population() >= 55 && gold() >= 2000 && morale() >= 80,
-        progress: () => Math.min(1, year() / 25, population() / 55, gold() / 2000, morale() / 80),
-        progressLabel: () => "Year " + year() + " / 25 · " + population() + " / 55 residents · " + Math.floor(gold()) + " / 2,000 gold"
+        check: () => year() >= 20 && population() >= 55 && gold() >= 2000 && morale() >= 80,
+        progress: () => Math.min(1, year() / 20, population() / 55, gold() / 2000, morale() / 80),
+        progressLabel: () => "Year " + year() + " / 20 · " + population() + " / 55 residents · " + Math.floor(gold()) + " / 2,000 gold"
     })
 ]);
 
 const AMBITION_IDS = new Set(AMBITIONS.map(ambition => ambition.id));
+
+// ── The Second Crown ──────────────────────────────────────────────────────
+// The royal ladder ends with a deliberate fork instead of another generated
+// reward. The chosen era is permanent for the realm, changes the long-run
+// event mix through the existing event family weights, and uses the same
+// completed-thread/event UI rather than a parallel story system.
+
+export const CROWN_ERAS = Object.freeze([
+    Object.freeze({
+        id: "common-weal",
+        title: "The Common Weal",
+        description: "The commons take the lead. Harvests and festivals become more common; shortages lose their hold on the realm.",
+        rewardText: "+120 food · +40 gold · commons +6 · guilds +2 · legitimacy +2 · morale +4",
+        effects: Object.freeze({
+            resources: Object.freeze({ food: 120, gold: 40 }),
+            morale: 4,
+            politics: Object.freeze({ commons: 6, guilds: 2, legitimacy: 2 }),
+            hidden: Object.freeze({ prosperity: 4, tension: -3 })
+        }),
+        eventBias: Object.freeze({ harvest: 1.6, shortage: 0.55, festival: 1.3, migration: 1.2 }),
+        agenda: Object.freeze([
+            Object.freeze({
+                id: "common-granary",
+                title: "The Common Granary",
+                description: "Hold 180 more food than when the age began, so no household faces an empty shelf.",
+                value: food,
+                target: current => current + 180,
+                progressLabel: (value, target) => Math.floor(value) + " / " + Math.floor(target) + " food",
+                rewardText: "+2 morale · commons +3 · legitimacy +1 · food demand -3%",
+                effects: Object.freeze({
+                    morale: 2,
+                    politics: Object.freeze({ commons: 3, legitimacy: 1 }),
+                    hidden: Object.freeze({ tension: -2 }),
+                    modifiers: Object.freeze({ foodDemandFactor: 0.97 })
+                })
+            }),
+            Object.freeze({
+                id: "common-hearths",
+                title: "A Hearth for Every Hand",
+                description: "Raise housing capacity by four so new households have a hearth.",
+                value: housingCapacity,
+                target: current => current + 4,
+                progressLabel: (value, target) => value + " / " + target + " housing",
+                rewardText: "+3 morale · commons +4 · guilds +1 · migration +12%",
+                effects: Object.freeze({
+                    morale: 3,
+                    politics: Object.freeze({ commons: 4, guilds: 1 }),
+                    hidden: Object.freeze({ prosperity: 2 }),
+                    modifiers: Object.freeze({ migrationFactor: 1.12 })
+                })
+            }),
+            Object.freeze({
+                id: "common-hearths-filled",
+                title: "Every Hearth Filled",
+                description: "Grow the population by four now that the new hearths stand.",
+                value: population,
+                target: current => current + 4,
+                progressLabel: (value, target) => value + " / " + target + " residents",
+                rewardText: "+4 legitimacy · +3 morale · guilds +2 · food demand -2%",
+                effects: Object.freeze({
+                    morale: 3,
+                    politics: Object.freeze({ commons: 4, guilds: 2, legitimacy: 4 }),
+                    hidden: Object.freeze({ tension: -2 }),
+                    modifiers: Object.freeze({ foodDemandFactor: 0.98, legitimacyYear: 0.005 })
+                })
+            })
+        ])
+    }),
+    Object.freeze({
+        id: "guild-compact",
+        title: "The Guild Compact",
+        description: "The guilds set the tempo. Caravans, craft and negotiated charters shape the years; the old tax quarrels fade.",
+        rewardText: "+120 gold · +30 stone · guilds +6 · nobility +2 · legitimacy +1 · morale +2",
+        effects: Object.freeze({
+            resources: Object.freeze({ gold: 120, stone: 30 }),
+            morale: 2,
+            politics: Object.freeze({ guilds: 6, nobility: 2, legitimacy: 1 }),
+            hidden: Object.freeze({ prosperity: 5, tension: -1 })
+        }),
+        eventBias: Object.freeze({ caravan: 1.55, guild: 1.45, craft: 1.35, taxation: 0.7 }),
+        agenda: Object.freeze([
+            Object.freeze({
+                id: "guild-treasury",
+                title: "A Treasury of Contracts",
+                description: "Hold 350 more gold than when the age began, underwritten by chartered trade.",
+                value: gold,
+                target: current => current + 350,
+                progressLabel: (value, target) => Math.floor(value) + " / " + Math.floor(target) + " gold",
+                rewardText: "+1 legitimacy · guilds +3 · tax yield +3%",
+                effects: Object.freeze({
+                    politics: Object.freeze({ guilds: 3, legitimacy: 1 }),
+                    hidden: Object.freeze({ prosperity: 2 }),
+                    modifiers: Object.freeze({ taxEfficiency: 1.03 })
+                })
+            }),
+            Object.freeze({
+                id: "guild-ledger",
+                title: "The Long Ledger",
+                description: "Collect 300 more gold in taxes for the chartered towns.",
+                value: taxes,
+                target: current => current + 300,
+                progressLabel: (value, target) => Math.floor(value) + " / " + Math.floor(target) + " taxes",
+                rewardText: "+2 prosperity · guilds +3 · trade terms +5%",
+                effects: Object.freeze({
+                    politics: Object.freeze({ guilds: 3, nobility: 1 }),
+                    hidden: Object.freeze({ prosperity: 3 }),
+                    modifiers: Object.freeze({ tradeFactor: 1.05 })
+                })
+            }),
+            Object.freeze({
+                id: "guild-charter",
+                title: "The Guildhall Compact",
+                description: "Hold 500 more gold and bind the guildhall to the crown's accounts.",
+                value: gold,
+                target: current => current + 500,
+                progressLabel: (value, target) => Math.floor(value) + " / " + Math.floor(target) + " gold",
+                rewardText: "+4 guilds · +1 nobility · tax yield +3% · trade terms +3%",
+                effects: Object.freeze({
+                    politics: Object.freeze({ guilds: 4, nobility: 1 }),
+                    hidden: Object.freeze({ prosperity: 3 }),
+                    modifiers: Object.freeze({ taxEfficiency: 1.03, tradeFactor: 1.03 })
+                })
+            })
+        ])
+    }),
+    Object.freeze({
+        id: "royal-ascendancy",
+        title: "The Royal Ascendancy",
+        description: "The crown gathers the offices of state. Succession, taxation and the border dominate the chronicle, at the cost of a more watchful nobility.",
+        rewardText: "+150 gold · +40 stone · nobility +6 · clergy +2 · legitimacy +4 · tension +1",
+        effects: Object.freeze({
+            resources: Object.freeze({ gold: 150, stone: 40 }),
+            morale: 2,
+            politics: Object.freeze({ nobility: 6, clergy: 2, legitimacy: 4 }),
+            hidden: Object.freeze({ prosperity: 2, tension: 1 })
+        }),
+        eventBias: Object.freeze({ succession: 1.4, taxation: 1.25, border: 1.3, rebellion: 0.8 }),
+        agenda: Object.freeze([
+            Object.freeze({
+                id: "crown-peace",
+                title: "The Crown's Peace",
+                description: "Raise legitimacy to at least 80 and make the crown's justice ordinary.",
+                value: legitimacy,
+                target: current => Math.min(100, Math.max(current + 8, 80)),
+                progressLabel: (value, target) => Math.round(value) + " / " + Math.round(target) + " legitimacy",
+                rewardText: "+4 legitimacy · nobility +3 · clergy +1 · annual legitimacy +0.01",
+                effects: Object.freeze({
+                    politics: Object.freeze({ nobility: 3, clergy: 1, legitimacy: 4 }),
+                    hidden: Object.freeze({ tension: -1 }),
+                    modifiers: Object.freeze({ legitimacyYear: 0.01 })
+                })
+            }),
+            Object.freeze({
+                id: "crown-watch",
+                title: "The Watch on the Border",
+                description: "Hold 400 more gold for the frontier watch and its war chest.",
+                value: gold,
+                target: current => current + 400,
+                progressLabel: (value, target) => Math.floor(value) + " / " + Math.floor(target) + " gold",
+                rewardText: "+3 legitimacy · nobility +3 · rebellion pressure -10%",
+                effects: Object.freeze({
+                    politics: Object.freeze({ nobility: 3, legitimacy: 3 }),
+                    hidden: Object.freeze({ tension: -2 }),
+                    modifiers: Object.freeze({ unrestFactor: 0.9 })
+                })
+            }),
+            Object.freeze({
+                id: "crown-succession",
+                title: "The Second Succession",
+                description: "Collect 400 more gold in taxes to settle the next succession.",
+                value: taxes,
+                target: current => current + 400,
+                progressLabel: (value, target) => Math.floor(value) + " / " + Math.floor(target) + " taxes",
+                rewardText: "+4 legitimacy · nobility +2 · clergy +2 · trade terms +2%",
+                effects: Object.freeze({
+                    politics: Object.freeze({ nobility: 2, clergy: 2, legitimacy: 4 }),
+                    hidden: Object.freeze({ prosperity: 2 }),
+                    modifiers: Object.freeze({ tradeFactor: 1.02, legitimacyYear: 0.005 })
+                })
+            })
+        ])
+    })
+]);
+const CROWN_ERA_BY_ID = new Map(CROWN_ERAS.map(era => [era.id, era]));
+
+const AGENDA_MODIFIER_LIMITS = Object.freeze({
+    foodDemandFactor: [0.70, 1.10],
+    taxEfficiency: [1.00, 1.15],
+    tradeFactor: [1.00, 1.20],
+    migrationFactor: [1.00, 1.30],
+    unrestFactor: [0.75, 1.20],
+    legitimacyYear: [-0.02, 0.05]
+});
+const DEFAULT_AGENDA_MODIFIERS = Object.freeze({
+    foodDemandFactor: 1,
+    taxEfficiency: 1,
+    tradeFactor: 1,
+    migrationFactor: 1,
+    unrestFactor: 1,
+    legitimacyYear: 0
+});
+const clampAgendaModifier = (key, value) => {
+    const [min, max] = AGENDA_MODIFIER_LIMITS[key] || [-Infinity, Infinity];
+    return Math.max(min, Math.min(max, value));
+};
+
+function normalizeAgendaModifiers(input) {
+    const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
+    return Object.fromEntries(Object.entries(DEFAULT_AGENDA_MODIFIERS).map(([key, fallback]) => [
+        key,
+        clampAgendaModifier(key, number(source[key], fallback))
+    ]));
+}
+
+function normalizeCrownAgenda(input, definition) {
+    if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+    const baseline = number(input.baseline, NaN);
+    const target = number(input.target, NaN);
+    if (!Number.isFinite(baseline) || !Number.isFinite(target)) return null;
+    const stage = Math.max(0, Math.min(definition.agenda.length, Math.floor(number(input.stage))));
+    const completed = Array.isArray(input.completed)
+        ? input.completed.map(entry => {
+            if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+            const id = String(entry.id || "");
+            if (!definition.agenda.some(item => item.id === id)) return null;
+            return {
+                id,
+                title: String(entry.title || definition.agenda.find(item => item.id === id)?.title || id).slice(0, 96),
+                tick: Math.max(0, Math.floor(number(entry.tick))),
+                year: Math.max(1, Math.floor(number(entry.year, 1)))
+            };
+        }).filter(Boolean).slice(0, definition.agenda.length)
+        : [];
+    return {
+        stage,
+        baseline,
+        target,
+        bestValue: Math.max(baseline, number(input.bestValue, baseline)),
+        startedTick: Math.max(0, Math.floor(number(input.startedTick))),
+        startedYear: Math.max(1, Math.floor(number(input.startedYear, state.year))),
+        completed,
+        modifiers: normalizeAgendaModifiers(input.modifiers),
+        complete: Boolean(input.complete) || stage >= definition.agenda.length
+    };
+}
+
+function createCrownAgenda(definition) {
+    const stage = definition.agenda[0];
+    const baseline = number(stage.value());
+    return {
+        stage: 0,
+        baseline,
+        target: number(stage.target(baseline)),
+        bestValue: baseline,
+        startedTick: state.tick,
+        startedYear: year(),
+        completed: [],
+        modifiers: { ...DEFAULT_AGENDA_MODIFIERS },
+        complete: false
+    };
+}
+
+function ensureCrownAgenda(era) {
+    const definition = CROWN_ERA_BY_ID.get(era.id);
+    if (!definition) return null;
+    const normalized = normalizeCrownAgenda(era.agenda, definition);
+    if (normalized) {
+        era.agenda = normalized;
+        return normalized;
+    }
+    era.agenda = createCrownAgenda(definition);
+    return era.agenda;
+}
+
+function normalizeCrownEra(era) {
+    if (!era || typeof era !== "object" || Array.isArray(era)) return null;
+    const id = String(era.id || "");
+    const definition = CROWN_ERA_BY_ID.get(id);
+    if (!definition) return null;
+    return {
+        id,
+        chosenTick: Math.max(0, Math.floor(number(era.chosenTick, state.tick))),
+        chosenYear: Math.max(1, Math.floor(number(era.chosenYear, state.year))),
+        agenda: normalizeCrownAgenda(era.agenda, definition) || createCrownAgenda(definition)
+    };
+}
+
+export function getCrownEraSnapshot() {
+    const data = ensureAmbitions();
+    const era = normalizeCrownEra(data.era);
+    if (!era) return null;
+    data.era = era;
+    const definition = CROWN_ERA_BY_ID.get(era.id);
+    const agenda = ensureCrownAgenda(era);
+    const stageIndex = Math.min(agenda.stage, definition.agenda.length - 1);
+    const stage = definition.agenda[stageIndex] || null;
+    const value = stage ? number(stage.value()) : 0;
+    const span = number(agenda.target) - number(agenda.baseline);
+    const progress = agenda.complete ? 1 : span > 0 ? Math.max(0, Math.min(1, (value - agenda.baseline) / span)) : 1;
+    return {
+        ...era,
+        title: definition.title,
+        description: definition.description,
+        rewardText: definition.rewardText,
+        eventBias: { ...definition.eventBias },
+        agenda: {
+            id: agenda.complete ? null : stage?.id || null,
+            stage: agenda.stage,
+            stageNumber: Math.min(definition.agenda.length, agenda.stage + 1),
+            total: definition.agenda.length,
+            complete: agenda.complete,
+            title: agenda.complete ? "Agenda Complete" : stage?.title || "Agenda Complete",
+            description: agenda.complete ? definition.description : stage?.description || "",
+            rewardText: agenda.complete ? "" : stage?.rewardText || "",
+            progress: agenda.complete ? 1 : progress,
+            progressLabel: agenda.complete ? "All three era objectives are complete" : stage?.progressLabel(value, agenda.target) || "",
+            value,
+            target: agenda.target,
+            completed: agenda.completed.map(entry => ({ ...entry })),
+            modifiers: { ...agenda.modifiers }
+        }
+    };
+}
+
+export function canChooseCrownEra(id) {
+    const data = ensureAmbitions();
+    if (data.era) return false;
+    if (Object.keys(data.completed).length < AMBITIONS.length) return false;
+    return CROWN_ERA_BY_ID.has(String(id));
+}
+
+export function chooseCrownEra(id) {
+    if (!canChooseCrownEra(id)) return null;
+    const definition = CROWN_ERA_BY_ID.get(String(id));
+    const data = ensureAmbitions();
+    const effects = definition.effects || {};
+    for (const [key, value] of Object.entries(effects.resources || {})) {
+        if (Number(value) > 0) addResource(key, Number(value));
+    }
+    if (Number.isFinite(effects.morale)) {
+        state.morale = Math.max(0, Math.min(100, number(state.morale) + Number(effects.morale)));
+    }
+    if (effects.politics && typeof effects.politics === "object") applyPoliticalEffects(effects.politics);
+    const hidden = state.hiddenRealm || (state.hiddenRealm = { tension: 0, prosperity: 0, mystery: 0, memories: [] });
+    for (const key of ["tension", "prosperity", "mystery"]) {
+        hidden[key] = Math.max(-30, Math.min(100, number(hidden[key]) + number(effects.hidden?.[key])));
+    }
+    data.era = { id: definition.id, chosenTick: state.tick, chosenYear: year(), agenda: createCrownAgenda(definition) };
+    try {
+        recordLegacy("crown-era", "The Second Crown — " + definition.title, definition.description, { importance: 4 });
+    } catch {
+        // The choice remains valid even if a bounded chronicle write fails.
+    }
+    return getCrownEraSnapshot();
+}
+
+function applyCrownAgendaEffects(agenda, stage) {
+    const effects = stage.effects || {};
+    for (const [key, value] of Object.entries(effects.resources || {})) {
+        if (Number.isFinite(Number(value)) && Number(value) !== 0) addResource(key, Number(value));
+    }
+    if (Number.isFinite(effects.morale)) {
+        state.morale = Math.max(0, Math.min(100, number(state.morale) + Number(effects.morale)));
+    }
+    if (effects.politics && typeof effects.politics === "object") applyPoliticalEffects(effects.politics);
+    const hidden = state.hiddenRealm || (state.hiddenRealm = { tension: 0, prosperity: 0, mystery: 0, memories: [] });
+    for (const key of ["tension", "prosperity", "mystery"]) {
+        hidden[key] = Math.max(-30, Math.min(100, number(hidden[key]) + number(effects.hidden?.[key])));
+    }
+    for (const [key, value] of Object.entries(effects.modifiers || {})) {
+        if (!Number.isFinite(Number(value))) continue;
+        if (key === "legitimacyYear") agenda.modifiers[key] = clampAgendaModifier(key, number(agenda.modifiers[key]) + Number(value));
+        else agenda.modifiers[key] = clampAgendaModifier(key, number(agenda.modifiers[key], 1) * Number(value));
+    }
+}
+
+function updateCrownAgenda(data) {
+    const era = data.era;
+    if (!era) return [];
+    const definition = CROWN_ERA_BY_ID.get(era.id);
+    if (!definition) return [];
+    const agenda = ensureCrownAgenda(era);
+    if (!agenda || agenda.complete) return [];
+    const stage = definition.agenda[agenda.stage];
+    if (!stage) {
+        agenda.complete = true;
+        return [];
+    }
+    const value = number(stage.value());
+    agenda.bestValue = Math.max(agenda.bestValue, value);
+    if (value < agenda.target) return [];
+    applyCrownAgendaEffects(agenda, stage);
+    agenda.completed.unshift({ id: stage.id, title: stage.title, tick: state.tick, year: year() });
+    if (agenda.completed.length > definition.agenda.length) agenda.completed.length = definition.agenda.length;
+    agenda.stage++;
+    try {
+        recordLegacy("crown-agenda", "Era Agenda Fulfilled — " + stage.title, stage.description, { importance: 3 });
+    } catch {
+        // Stage completion remains valid even if a bounded chronicle write fails.
+    }
+    if (agenda.stage >= definition.agenda.length) {
+        agenda.complete = true;
+        try {
+            recordLegacy("crown-agenda", "The " + definition.title + " Agenda Complete", "All three era objectives are fulfilled.", { importance: 5 });
+        } catch {
+            // The agenda is already complete; a failed legacy write must not throw.
+        }
+    } else {
+        const next = definition.agenda[agenda.stage];
+        const nextBaseline = number(next.value());
+        agenda.baseline = nextBaseline;
+        agenda.target = number(next.target(nextBaseline));
+        agenda.bestValue = nextBaseline;
+        agenda.startedTick = state.tick;
+        agenda.startedYear = year();
+    }
+    return ["era-agenda:" + stage.id];
+}
 
 // ── Eternal deeds ────────────────────────────────────────────────────────
 // The thirteen royal ambitions are a finished story. Eternal deeds continue
@@ -578,6 +1006,7 @@ function eternalSnapshot(data) {
     const active = eternal.active;
     const deed = active ? ETERNAL_DEED_BY_ID.get(active.deedId) : null;
     if (!active || !deed) return null;
+    const era = getCrownEraSnapshot();
     const value = deedValue(deed);
     const span = Number(active.target) - Number(active.baseline);
     const progress = span > 0 ? Math.max(0, Math.min(1, (value - Number(active.baseline)) / span)) : 0;
@@ -586,7 +1015,9 @@ function eternalSnapshot(data) {
         eternal: true,
         id: "eternal:" + deed.id,
         title: deed.title,
-        description: "The royal ambitions are fulfilled; the chronicle continues. " + deed.description,
+        description: (era ? era.title + " endures. " : "") + (era?.agenda?.complete ? "Its agenda is complete. " : "") + "The royal ambitions are fulfilled; the chronicle continues. " + deed.description,
+        era: era ? era.id : null,
+        eraTitle: era ? era.title : null,
         rewardText: rewardText(eternalReward(deed, eternal.count)) + " · +" + eternalPrestige(eternal.count) + " prestige",
         progress,
         progressLabel: String(deed.progressLabel(value, Number(active.target)) || ""),
@@ -596,6 +1027,34 @@ function eternalSnapshot(data) {
         eternalLabel: "ETERNAL DEED · " + (eternal.count + 1),
         eternalValue: value,
         eternalTarget: Number(active.target)
+    };
+}
+
+function crownAgendaSnapshot(era) {
+    const agenda = era.agenda;
+    const definition = CROWN_ERA_BY_ID.get(era.id);
+    if (!agenda || !definition || agenda.complete) return null;
+    const stage = definition.agenda[agenda.stage];
+    if (!stage) return null;
+    return {
+        allComplete: true,
+        eternal: false,
+        agenda: true,
+        id: "agenda:" + stage.id,
+        title: stage.title,
+        description: era.title + " · Era Agenda " + (agenda.stage + 1) + " of " + definition.agenda.length + ". " + stage.description,
+        rewardText: stage.rewardText,
+        progress: agenda.progress,
+        progressLabel: stage.progressLabel(agenda.value, agenda.target),
+        completedCount: AMBITIONS.length,
+        total: AMBITIONS.length,
+        era: era.id,
+        eraTitle: era.title,
+        stageIndex: agenda.stage,
+        stageTotal: definition.agenda.length,
+        stageLabel: "ERA AGENDA · " + (agenda.stage + 1) + " OF " + definition.agenda.length,
+        agendaValue: agenda.value,
+        agendaTarget: agenda.target
     };
 }
 
@@ -612,6 +1071,7 @@ export function normalizeAmbitions(snapshot) {
     return {
         completed,
         lastEvaluatedTick: Math.max(0, Math.floor(number(source.lastEvaluatedTick))),
+        era: normalizeCrownEra(source.era),
         eternal: normalizeEternal(source.eternal)
     };
 }
@@ -625,6 +1085,11 @@ function ensureAmbitions() {
         state.ambitions = normalizeAmbitions(current);
     } else {
         current.lastEvaluatedTick = Math.max(0, Math.floor(number(current.lastEvaluatedTick)));
+        if (!Object.prototype.hasOwnProperty.call(current, "era")) current.era = null;
+        else if (current.era !== null && current.era !== undefined &&
+            (typeof current.era !== "object" || Array.isArray(current.era) || !CROWN_ERA_BY_ID.has(String(current.era.id)))) {
+            current.era = normalizeCrownEra(current.era);
+        }
     }
     return state.ambitions;
 }
@@ -682,6 +1147,7 @@ export function updateAmbitions() {
         completedNow.push(ambition.id);
     }
     if (Object.keys(data.completed).length >= AMBITIONS.length) {
+        for (const tag of updateCrownAgenda(data)) completedNow.push(tag);
         for (const tag of updateEternal(data)) completedNow.push(tag);
     }
     return completedNow;
@@ -692,6 +1158,11 @@ export function getAmbitionSnapshot() {
     const current = AMBITIONS.find(ambition => !Object.prototype.hasOwnProperty.call(data.completed, ambition.id)) || null;
     const completedCount = Object.keys(data.completed).length;
     if (!current) {
+        const era = getCrownEraSnapshot();
+        if (era?.agenda && !era.agenda.complete) {
+            const agenda = crownAgendaSnapshot(era);
+            if (agenda) return agenda;
+        }
         const eternal = eternalSnapshot(data);
         if (eternal) return eternal;
         return {
@@ -700,7 +1171,9 @@ export function getAmbitionSnapshot() {
             eternalCount: ensureEternal(data).count,
             id: "eternal-realm",
             title: "The Eternal Realm",
-            description: "Every royal ambition has been fulfilled. The chronicle is yours to continue.",
+            description: (era ? era.title + " endures. " : "") + "Every royal ambition has been fulfilled. The chronicle is yours to continue.",
+            era: era ? era.id : null,
+            eraTitle: era ? era.title : null,
             rewardText: "",
             progress: 1,
             progressLabel: "Every royal ambition fulfilled",

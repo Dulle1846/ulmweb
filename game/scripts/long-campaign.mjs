@@ -9,6 +9,8 @@ import { runCampaign } from "../tests/campaign/campaign-driver.mjs";
 
 const SEED = Number(process.env.CAMPAIGN_SEED || 20261108);
 const YEARS = Math.max(1, Number(process.env.CAMPAIGN_YEARS || 25));
+const ERA = process.env.CAMPAIGN_ERA || "common-weal";
+const MIN_AGENDA_STAGES = Math.max(1, Math.min(3, Number(process.env.CAMPAIGN_MIN_AGENDA_STAGES || 1)));
 
 function makeCanvasStub() {
     return {
@@ -35,7 +37,7 @@ globalThis.document = {
 
 let result;
 try {
-    result = runCampaign({ seed: SEED, years: YEARS });
+    result = runCampaign({ seed: SEED, years: YEARS, era: ERA, minAgendaStages: MIN_AGENDA_STAGES });
 } finally {
     globalThis.document = previousDocument;
 }
@@ -54,7 +56,10 @@ const summary = {
     yearly: result.yearly,
     diagnostics: result.diagnostics,
     gameOver: result.gameOver,
-    ambition: result.ambition
+    ambition: result.ambition,
+    era: result.era,
+    agendaStages: result.agendaStages,
+    campaignEra: result.campaignEra
 };
 console.log("LONG CAMPAIGN", JSON.stringify(summary, null, 2));
 

@@ -161,7 +161,8 @@ export function getPopulationGrowthGate() {
     if (housing.available < 1) {
         return { ok: false, reason: "No free housing", housing, moraleGate };
     }
-    const migration = getFaithModifiers().migrationFactor * getJusticeModifiers().migrationFactor;
+    const eraMigration = Math.max(1, Math.min(1.30, Number(state.ambitions?.era?.agenda?.modifiers?.migrationFactor) || 1));
+    const migration = getFaithModifiers().migrationFactor * getJusticeModifiers().migrationFactor * eraMigration;
     const effectiveMoraleGate = moraleGate + Math.round(Math.max(0, 1 - migration) * 28);
     if (state.morale < effectiveMoraleGate) {
         return { ok: false, reason: "Household morale is too low", housing, moraleGate: effectiveMoraleGate };
@@ -177,7 +178,7 @@ export function getPopulationGrowthGate() {
     if (!canSpawnEntity(TYPE.VILLAGER)) {
         return { ok: false, reason: "The world population cap is reached", housing, moraleGate: effectiveMoraleGate, foodFloor };
     }
-    return { ok: true, reason: null, housing, moraleGate: effectiveMoraleGate, foodFloor };
+    return { ok: true, reason: null, housing, moraleGate: effectiveMoraleGate, foodFloor, migrationFactor: migration };
 }
 
 export function updatePopulation() {

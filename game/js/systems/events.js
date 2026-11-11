@@ -15,6 +15,7 @@ import { applyHealthEffects } from "./health.js";
 import { createEventParticipants,recordPersonEventOutcome } from "./people.js";
 import { recordResourceMovement } from "./goods-book.js";
 import { addLog } from "../core/event-log.js";
+import { CROWN_ERAS, canChooseCrownEra, chooseCrownEra, getAmbitionSnapshot, getCrownEraSnapshot } from "./ambitions.js";
 
 export { addLog };
 const PLACES=["the lower fields","the eastern orchards","the old river road","the northern watch","the abbey lands","the market square","the western marshes","the old quarry road","the royal granaries","the border villages"];
@@ -75,6 +76,9 @@ export const EVENT_VARIANT_COUNT=FAMILIES.length*PLACES.length*STAGES.length*DET
 const pick=items=>items[randInt(0,items.length)];
 function chooseFamily(){
  const hidden=state.hiddenRealm||{},workforce=getWorkforceSnapshot(),politics=getPoliticalSnapshot();
+ const eraBias=getCrownEraSnapshot()?.eventBias||null;
+ const agendaMods=state.ambitions?.era?.agenda?.modifiers||null;
+ const unrestFactor=Math.max(0.75,Math.min(1.20,Number(agendaMods?.unrestFactor)||1));
  const warCount=Array.isArray(state.diplomacy?.realms)?state.diplomacy.realms.filter(realm=>realm?.treaty==="war").length:0;
  const food=Math.max(0,state.resources.food||0);
  const foodShortage=Math.max(0,state.economy?.lastLedger?.foodShortage||0);
@@ -94,10 +98,10 @@ function chooseFamily(){
   if(f.id==="faith")situational+=Math.max(0,50-politics.factions.clergy)*0.08;
   if(f.id==="succession")situational+=Math.max(0,50-politics.factions.nobility)*0.08;
   if(f.id==="taxation")situational+=Math.max(0,55-politics.legitimacy)*0.06;
-  const baseWeight=1+
+  const baseWeight=(1+
    (f.tension>0?Math.max(0,hidden.tension||0)*f.tension/80:0)+
    (f.prosperity>0?Math.max(0,hidden.prosperity||0)*f.prosperity/90:0)+
-   (f.mystery>0?Math.max(0,hidden.mystery||0)*f.mystery/100:0)+situational;
+   (f.mystery>0?Math.max(0,hidden.mystery||0)*f.mystery/100:0)+situational)*(eraBias?.[f.id]||1)*(f.id==="rebellion"?unrestFactor:1);
   const recentCount=(Array.isArray(hidden.memories)?hidden.memories.slice(0,8):[])
    .filter(memory=>memory.family===f.id).length;
   // The realm remembers what just happened: repeated families become less likely,
@@ -141,6 +145,23 @@ export function triggerRandomEvent(){
  state.activeEvent={id:"issue-"+(++state.issueSequence),family:family.id,title,description,icon:family.id,createdAtTick:state.tick,threadStart:EVENT_CHAINS[family.id]?family.id:null,participants:createEventParticipants(family.id),choices};
  addLog("ISSUE: "+title,"#e4bd72","issue");return state.activeEvent;
 }
+function triggerCrownEraEvent(){
+ if(state.activeEvent)return null;
+ if(!getAmbitionSnapshot().allComplete||getCrownEraSnapshot())return null;
+ const choices=CROWN_ERAS.map(era=>({
+  label:era.title,
+  description:era.description+" "+era.rewardText,
+  effects:{crownEra:era.id}
+ }));
+ state.activeEvent={
+  id:"crown-era-"+(++state.issueSequence),
+  family:"crown-era",title:"The Second Crown",
+  description:"Every royal ambition is fulfilled. The realm must now decide which tradition will shape the next age.",
+  icon:"chronicle",createdAtTick:state.tick,choices
+ };
+ addLog("THE SECOND CROWN AWAITS","#e4bd72","milestone");
+ return state.activeEvent;
+}
 function triggerThreadEvent(thread){
  const stages=EVENT_CHAINS[thread.id],stage=stages?.[thread.stage];
  if(!stage)return false;
@@ -159,6 +180,7 @@ export function resolveEventChoice(index){
  const issue=state.activeEvent;if(!issue)return false;
  const choice=issue.choices[index];if(!choice)return false;
  const effects=choice.effects||{},resources=effects.resources||{};
+ if(typeof effects.crownEra==="string"&&!canChooseCrownEra(effects.crownEra))return false;
  const arrivals=Math.min(10,Math.max(0,Math.floor(Number(effects.villagers)||0)));
  let rewardCard=null;
  if(typeof effects.cardReward==="string"){
@@ -180,6 +202,7 @@ export function resolveEventChoice(index){
   }else addLog("THE CARD ARCHIVE IS FULL — THE REWARD WAS NOT STORED","#e9857b","card");
  }
  if(effects.politics&&typeof effects.politics==="object")applyPoliticalEffects(effects.politics);
+ if(typeof effects.crownEra==="string"&&!chooseCrownEra(effects.crownEra))return false;
  if(effects.health&&typeof effects.health==="object"){
   const health=applyHealthEffects(effects.health);
   if(effects.health.outbreak)addLog("HEALTH CRISIS: "+health.disease.toUpperCase()+" · "+health.sick+" RESIDENT(S) ILL","#e9857b","health");
@@ -230,6 +253,7 @@ export function checkRandomEvents(){
  const readyThread=hidden.activeThreads.filter(thread=>state.tick>=thread.nextAtTick)
   .sort((a,b)=>a.nextAtTick-b.nextAtTick)[0];
  if(readyThread){if(!triggerThreadEvent(readyThread))hidden.activeThreads=hidden.activeThreads.filter(thread=>thread!==readyThread);return;}
+ if(triggerCrownEraEvent())return;
  if(!Number.isFinite(state.nextIssueAtTick)||state.nextIssueAtTick<=0)state.nextIssueAtTick=state.tick+145+randInt(0,95);
  if(state.tick<state.nextIssueAtTick)return;
  state.nextIssueAtTick=state.tick+220+randInt(0,520);

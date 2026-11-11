@@ -153,7 +153,18 @@
                     <p id="ambition-description">Keep 220 food in the royal stores while the settlement grows.</p>
                     <div class="ambition-progress" role="progressbar" aria-label="Royal ambition progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="ambition-bar"></i></div>
                     <div class="ambition-footer"><span id="ambition-progress-label">0 / 220 food</span><span id="ambition-reward">REWARD · +25 gold</span></div>
+                    <div class="ambition-counsel">
+                        <span class="ambition-counsel__label">NEXT MOVE</span>
+                        <p id="ambition-counsel-text">Choose a world and found your first realm.</p>
+                        <button id="ambition-counsel-action" class="ambition-counsel__action" type="button" data-kac-panel="build" hidden>BUILD</button>
+                    </div>
                 </div>
+            </section>
+
+            <section id="first-session-section" class="first-session-section" aria-labelledby="first-session-heading">
+                <div class="section-heading"><span id="first-session-heading">FIRST SESSION</span><span id="first-session-count" class="subtle">0 / 5</span></div>
+                <ol id="first-session-list" class="first-session-list" aria-label="First session goals" aria-live="polite"></ol>
+                <p id="first-session-complete" class="first-session-complete" role="status" hidden>All five first steps are complete. The realm is ready for its next chapter.</p>
             </section>
 
             <section id="room-bonus-section" class="room-bonus-section" aria-labelledby="room-bonus-heading">

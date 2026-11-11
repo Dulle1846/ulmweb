@@ -1,3 +1,7 @@
 /freebuff-sites-build/
 /artifacts/
 /game/node_modules/
+/.worktrees/
+/game/.browser-cache/
+/game/.browser-libs/
+/game/artifacts/

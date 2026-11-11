@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
-import { AMBITIONS, getAmbitionSnapshot, normalizeAmbitions, updateAmbitions } from "../../js/systems/ambitions.js";
+import { TYPE } from "../../js/core/types.js";
+import { AMBITIONS, canChooseCrownEra, chooseCrownEra, getAmbitionSnapshot, getCrownEraSnapshot, normalizeAmbitions, updateAmbitions } from "../../js/systems/ambitions.js";
 
 function foundedFixture() {
     resetState();
@@ -215,4 +216,192 @@ test("old saves gain eternal defaults and malformed deeds are discarded", () => 
     assert.equal(normalized.eternal.serial, 4, "the serial can never fall below the completed count");
     assert.equal(normalized.eternal.history.length, 1);
     assert.equal(normalized.eternal.history[0].deedId, "crown-chest");
+});
+
+test("the second crown is unavailable until all royal ambitions are complete", () => {
+    foundedFixture();
+    assert.equal(getCrownEraSnapshot(), null);
+    assert.equal(canChooseCrownEra("common-weal"), false);
+    assert.equal(chooseCrownEra("common-weal"), null);
+    assert.equal(state.ambitions.era, null);
+
+    allAmbitionsFixture();
+    assert.equal(canChooseCrownEra("common-weal"), true);
+    assert.equal(canChooseCrownEra("not-an-era"), false);
+});
+
+test("choosing an era applies its reward once and persists the era", () => {
+    allAmbitionsFixture();
+    state.tick = 80;
+    const before = {
+        food: state.resources.food,
+        gold: state.resources.gold,
+        morale: state.morale,
+        politics: { ...state.politics.factions },
+        legitimacy: state.politics.legitimacy
+    };
+    const era = chooseCrownEra("common-weal");
+    assert.equal(era.id, "common-weal");
+    assert.equal(era.title, "The Common Weal");
+    assert.equal(state.ambitions.era.id, "common-weal");
+    assert.equal(state.ambitions.era.chosenTick, 80);
+    assert.equal(state.resources.food, before.food + 120);
+    assert.equal(state.resources.gold, before.gold + 40);
+    assert.equal(state.morale, before.morale + 4);
+    assert.equal(state.politics.factions.commons, before.politics.commons + 6);
+    assert.equal(state.politics.factions.guilds, before.politics.guilds + 2);
+    assert.equal(state.politics.legitimacy, before.legitimacy + 2);
+    assert.equal(state.hiddenRealm.prosperity, 4);
+    assert.equal(state.hiddenRealm.tension, -3);
+    assert.ok(era.eventBias.harvest > 1);
+
+    const snapshot = getAmbitionSnapshot();
+    assert.equal(snapshot.era, "common-weal");
+    assert.match(snapshot.description, /Common Weal/);
+    assert.equal(chooseCrownEra("guild-compact"), null, "a second era choice must be rejected");
+});
+
+test("crown era state migrates safely and unknown eras are discarded", () => {
+    allAmbitionsFixture();
+    state.tick = 80;
+    chooseCrownEra("guild-compact");
+    const restored = normalizeAmbitions(JSON.parse(JSON.stringify(state.ambitions)));
+    assert.equal(restored.era.id, "guild-compact");
+    assert.equal(restored.era.chosenTick, 80);
+    assert.equal(restored.era.chosenYear, 1);
+    assert.equal(restored.era.agenda.stage, 0);
+    assert.equal(restored.era.agenda.total, undefined, "the stored agenda stays compact; the snapshot adds presentation fields");
+    assert.equal(normalizeAmbitions({ era: { id: "ghost-era" } }).era, null);
+    assert.equal(normalizeAmbitions({}).era, null);
+});
+
+test("old saves without an era agenda gain a clean first stage", () => {
+    allAmbitionsFixture();
+    const oldEra = { id: "common-weal", chosenTick: 60, chosenYear: 4 };
+    const normalized = normalizeAmbitions({ completed: state.ambitions.completed, era: oldEra });
+    assert.equal(normalized.era.agenda.stage, 0);
+    assert.equal(normalized.era.agenda.complete, false);
+    assert.equal(normalized.era.agenda.modifiers.foodDemandFactor, 1);
+    assert.ok(Number.isFinite(normalized.era.agenda.baseline));
+    assert.ok(Number.isFinite(normalized.era.agenda.target));
+});
+
+test("an era agenda stage completes once and feeds persistent modifiers forward", () => {
+    allAmbitionsFixture();
+    state.tick = 80;
+    chooseCrownEra("common-weal");
+    const first = getCrownEraSnapshot();
+    assert.equal(first.agenda.stage, 0);
+    assert.equal(first.agenda.total, 3);
+    assert.equal(getAmbitionSnapshot().agenda, true);
+    assert.equal(getAmbitionSnapshot().stageIndex, 0);
+
+    state.resources.food = first.agenda.target + 10;
+    state.tick = 100;
+    const completed = updateAmbitions();
+    assert.ok(completed.includes("era-agenda:common-granary"));
+
+    const after = getCrownEraSnapshot();
+    assert.equal(after.agenda.stage, 1);
+    assert.equal(after.agenda.modifiers.foodDemandFactor, 0.97);
+    assert.ok(after.agenda.target - after.agenda.value <= 5, "the second stage must use its own housing baseline, not the food value");
+    assert.match(after.agenda.progressLabel, /housing$/);
+    assert.equal(after.agenda.completed.length, 1);
+    assert.equal(after.agenda.completed[0].id, "common-granary");
+    assert.equal(getAmbitionSnapshot().stageIndex, 1);
+
+    const restored = normalizeAmbitions(JSON.parse(JSON.stringify(state.ambitions)));
+    assert.equal(restored.era.agenda.stage, 1);
+    assert.equal(restored.era.agenda.modifiers.foodDemandFactor, 0.97);
+    assert.equal(restored.era.agenda.completed[0].id, "common-granary");
+});
+
+test("common weal progresses through housing and population to agenda completion", () => {
+    allAmbitionsFixture();
+    state.tick = 80;
+    chooseCrownEra("common-weal");
+    let snapshot = getCrownEraSnapshot();
+    state.resources.food = snapshot.agenda.target + 1;
+    state.tick = 100;
+    updateAmbitions();
+
+    snapshot = getCrownEraSnapshot();
+    assert.equal(snapshot.agenda.stage, 1);
+    assert.equal(snapshot.agenda.id, "common-hearths");
+    state.entities.push({ dead: false, type: TYPE.HOUSE, construction: { stage: 3 } });
+    state.tick = 120;
+    updateAmbitions();
+
+    snapshot = getCrownEraSnapshot();
+    assert.equal(snapshot.agenda.stage, 2);
+    assert.equal(snapshot.agenda.title, "Every Hearth Filled");
+    for (let index = 0; index < 4; index++) state.entities.push({ dead: false, type: TYPE.VILLAGER });
+    state.tick = 140;
+    updateAmbitions();
+
+    snapshot = getCrownEraSnapshot();
+    assert.equal(snapshot.agenda.complete, true);
+    assert.equal(snapshot.agenda.completed.length, 3);
+    assert.equal(snapshot.agenda.modifiers.foodDemandFactor, 0.9506);
+    assert.equal(snapshot.agenda.modifiers.migrationFactor, 1.12);
+});
+
+test("guild compact progresses through taxes and treasury to agenda completion", () => {
+    allAmbitionsFixture();
+    state.tick = 80;
+    chooseCrownEra("guild-compact");
+    let snapshot = getCrownEraSnapshot();
+    state.resources.gold = snapshot.agenda.target + 1;
+    state.tick = 100;
+    updateAmbitions();
+
+    snapshot = getCrownEraSnapshot();
+    assert.equal(snapshot.agenda.stage, 1);
+    assert.match(snapshot.agenda.progressLabel, /taxes$/);
+    state.economy.taxesCollected = snapshot.agenda.target + 1;
+    state.tick = 120;
+    updateAmbitions();
+
+    snapshot = getCrownEraSnapshot();
+    assert.equal(snapshot.agenda.stage, 2);
+    assert.equal(snapshot.agenda.modifiers.taxEfficiency, 1.03);
+    assert.equal(snapshot.agenda.modifiers.tradeFactor, 1.05);
+    assert.match(snapshot.agenda.progressLabel, /gold$/);
+    state.resources.gold = snapshot.agenda.target + 1;
+    state.tick = 140;
+    updateAmbitions();
+
+    snapshot = getCrownEraSnapshot();
+    assert.equal(snapshot.agenda.complete, true);
+    assert.equal(snapshot.agenda.modifiers.taxEfficiency, 1.0609);
+    assert.ok(Math.abs(snapshot.agenda.modifiers.tradeFactor - 1.0815) < 1e-9);
+});
+
+test("royal ascendancy changes the rebellion event modifier without a resource reward", () => {
+    allAmbitionsFixture();
+    state.tick = 80;
+    chooseCrownEra("royal-ascendancy");
+    let snapshot = getCrownEraSnapshot();
+    state.politics.legitimacy = snapshot.agenda.target;
+    state.tick = 100;
+    updateAmbitions();
+
+    snapshot = getCrownEraSnapshot();
+    assert.equal(snapshot.agenda.stage, 1);
+    state.resources.gold = snapshot.agenda.target + 1;
+    state.tick = 120;
+    updateAmbitions();
+
+    snapshot = getCrownEraSnapshot();
+    assert.equal(snapshot.agenda.stage, 2);
+    assert.equal(snapshot.agenda.modifiers.unrestFactor, 0.9);
+    assert.equal(state.politics.legitimacy, 87, "the first two stage rewards raise legitimacy");
+    state.economy.taxesCollected = snapshot.agenda.target + 1;
+    state.tick = 140;
+    updateAmbitions();
+
+    snapshot = getCrownEraSnapshot();
+    assert.equal(snapshot.agenda.complete, true);
+    assert.equal(snapshot.agenda.modifiers.unrestFactor, 0.9);
+    assert.equal(snapshot.agenda.modifiers.tradeFactor, 1.02);
 });

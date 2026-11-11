@@ -32,6 +32,7 @@ if(server)await new Promise(resolveListen=>server.listen(port,"127.0.0.1",resolv
 const baseUrl=remoteOrigin||("http://127.0.0.1:"+port);
 const browser=await chromium.launch({
     headless:true,
+    executablePath:process.env.E2E_CHROMIUM_EXECUTABLE||undefined,
     args:["--no-sandbox","--disable-dev-shm-usage"]
 });
 const page=await browser.newPage({viewport:{width:1600,height:1000},reducedMotion:"reduce"});

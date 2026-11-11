@@ -15,7 +15,7 @@ import { normalizeMilitaryState } from "../systems/military.js";
 import { normalizeHealthState } from "../systems/health.js";
 import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeHouseholdAssignments } from "../systems/population.js";
-import { initializePopulationRegister,normalizePopulationState,serializePopulationState } from "../systems/population-register.js";
+import { initializePopulationRegister,normalizePopulationState,serializePopulationState,synchronizePopulationRegister } from "../systems/population-register.js";
 import { invalidateRoomBonusCache } from "../systems/rooms.js";
 import { normalizeRoomFurniture } from "../systems/furniture.js";
 import { addLog } from "../systems/events.js";
@@ -569,6 +569,10 @@ function serializeEntity(entity,indexByEntity){
 }
 
 function createSaveSnapshot(){
+    // The civic register is derived from the authoritative entities only once
+    // per year. A soldier recruited after that census would otherwise be saved
+    // as a civilian and reclassified on load, breaking an exact round-trip.
+    state.population=synchronizePopulationRegister(state.population,{preserveCivicScores:true});
     const indexes=new Map(state.entities.map((entity,index)=>[entity,index]));
     return {
         playerName:state.playerName,kingdomName:state.kingdomName,worldSeed:state.worldSeed,
@@ -711,7 +715,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     state.availableCards=Array.isArray(snapshot.availableCards)
         ? snapshot.availableCards.map(card=>({...card,cost:{...(card.cost||{})}}))
         : [];
-    state.statistics={totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,totalRoadTilesBuilt:0,...snapshot.statistics};
+    state.statistics={totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,totalRoadTilesBuilt:0,totalHousesBuilt:0,totalCardsDrawn:0,...snapshot.statistics};
     state.economy={daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,furnitureUpkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,unpaidFurniture:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:state.year,births:0,lastBirthCheckYear:state.year,lastSocialYear:state.year,lastAgencyYear:state.year,deaths:0,lastMortalityYear:state.year,lastLedger:null,history:[],...snapshot.economy};
     // Older saves have no series; imported or hand-edited saves may contain an
     // invalid one. Keep only bounded, numeric settlement records for the charts.
@@ -907,11 +911,24 @@ async function importRealm(file){
         const payload=JSON.parse(await file.text());
         const snapshot=payload&&typeof payload==="object"&&payload.snapshot&&typeof payload.snapshot==="object"&&!Array.isArray(payload.snapshot)?payload.snapshot:payload;
         if(!snapshot||typeof snapshot!=="object"||Array.isArray(snapshot))throw new Error("The selected file does not contain a realm snapshot.");
-        const profile=getActiveProfile()||ensureProfile();
+        const payloadProfileId=payload&&typeof payload.profileId==="string"?payload.profileId:null;
+        if(state.hasStarted&&state.activeProfileId&&payloadProfileId&&payloadProfileId!==state.activeProfileId){
+            throw new Error("This save belongs to a different local profile. The current realm was not changed.");
+        }
+        // Validate before creating or selecting a profile, so a corrupt import
+        // cannot leave a new local profile behind when there is no active realm.
+        const preparedSnapshot=normalizeSaveSnapshot(migrateSaveSnapshot(snapshot));
+        validateSaveSnapshot(preparedSnapshot);
+        const activeProfile=getActiveProfile();
+        const profile=payloadProfileId
+            ?(activeProfile&&activeProfile.id===payloadProfileId
+                ?activeProfile
+                :createLocalProfile(payload.profileName||preparedSnapshot.playerName||"Realm Keeper",payloadProfileId))
+            :(activeProfile||ensureProfile());
         const rollbackProfile=state.hasStarted&&state.activeProfileId?{id:state.activeProfileId,displayName:state.playerName}:null;
         const rollbackSnapshot=rollbackProfile?createSaveSnapshot():null;
         try{
-            loadSnapshotIntoGame(profile,snapshot);
+            loadSnapshotIntoGame(profile,preparedSnapshot);
         }catch(error){
             if(rollbackProfile&&rollbackSnapshot&&!error?.preStateChange){
                 try{loadSnapshotIntoGame(rollbackProfile,rollbackSnapshot);}catch{/* keep the original error */}
@@ -921,6 +938,7 @@ async function importRealm(file){
         const savedAt=writeLocalSave(profile.id,createSaveSnapshot());
         syncWorldForge(state.worldOptions);
         document.getElementById("start-screen")?.classList.add("hidden");
+        document.getElementById("settings-modal")?.classList.add("hidden");
         setSaveStatus("IMPORTED · "+new Date(savedAt).toLocaleTimeString(),"saved");
         setArchiveStatus("Imported realm saved to "+(profile.displayName||"this profile")+".");
         showStatus("Realm imported · "+new Date(savedAt).toLocaleTimeString());

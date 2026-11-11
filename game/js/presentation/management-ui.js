@@ -715,6 +715,7 @@ export function setupManagementUI(){
   if(target==="people"){$("people-btn")?.click();return;}
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
+  if(target==="market"){$("tab-2")?.click();return;}
   if(["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle"].includes(target)){
    activePanel=target;$("command-modal")?.classList.remove("hidden");render(true);
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));

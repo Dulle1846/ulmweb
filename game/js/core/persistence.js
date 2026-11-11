@@ -37,12 +37,25 @@ export function getActiveProfile() {
     }
 }
 
-export function createLocalProfile(displayName) {
+export function createLocalProfile(displayName, requestedProfileId = null) {
     const name = String(displayName || "").trim().slice(0, 32);
     if (!name) throw new Error("Enter a player name first.");
+    const requestedId = requestedProfileId === null || requestedProfileId === undefined
+        ? null
+        : String(requestedProfileId).trim();
+    if (requestedId !== null && !/^[A-Za-z0-9_-]{1,128}$/.test(requestedId)) {
+        throw new Error("That save uses an invalid local profile id.");
+    }
     const profiles = listLocalProfiles();
+    // A restored backup keeps the identity it was exported with. Reuse an
+    // existing slot instead of creating a duplicate with the same id.
+    const existing = requestedId ? profiles.find(profile => profile.id === requestedId) : null;
+    if (existing) {
+        localStorage.setItem(ACTIVE_PROFILE_KEY, existing.id);
+        return existing;
+    }
     const profile = {
-        id: globalThis.crypto?.randomUUID?.() || "local-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        id: requestedId || globalThis.crypto?.randomUUID?.() || "local-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
         displayName: name,
         createdAt: new Date().toISOString(),
         kind: "local"

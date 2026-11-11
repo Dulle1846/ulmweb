@@ -38,6 +38,64 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ## Production release history
 
+### 3.15.0-dev — The Second Crown and its Era Agenda
+
+**Scope:** A one-time post-ambition fork. After the thirteenth royal ambition,
+the realm receives **The Second Crown**: three authored directions for the next
+age. The choice awards a bounded resource, morale, faction and hidden-realm
+package, permanently biases existing event weights, and opens a three-stage era
+agenda that reshapes ordinary simulation.
+
+**Content:** **The Common Weal** favours harvests, festivals and migration;
+**The Guild Compact** favours caravans, guilds and craft; **The Royal
+Ascendancy** favours succession, taxation and the border. Each path records a
+legacy entry and persists in `state.ambitions.era` without a save-schema bump.
+The choice is delivered through the existing realm-event modal and scheduler.
+
+**Reachable agenda:** Common Weal now asks for food, housing capacity and then
+population. Guild Compact asks for treasury, collected taxes and more treasury.
+Royal Ascendancy asks for legitimacy, a war chest and collected taxes. The
+Guild/Crown stages previously depended on manual trades, soldiers and prestige
+that the deterministic campaign never produced; they now use the already-running
+treasury and tax flows. The campaign builder responds to the Common Weal housing
+objective by building the next cottage through the normal construction and
+logistics paths. The final ambition gate now opens at year 20 instead of year 25;
+its population, treasury and morale requirements are unchanged. The 25-year
+audit therefore has five years for the post-ambition era and reaches all three
+Common Weal stages in years 21–23 without changing a target or a test check.
+The campaign player may add real farms while the granary stage is open, and the
+four-seed/three-profile audit may buy grain through the existing market; both
+are ordinary actions, not grants.
+
+**Persistent consumers:** Common Weal changes `foodDemandFactor` in the economy
+and `migrationFactor` in population growth. Guild Compact changes
+`taxEfficiency` in the economy and `tradeFactor` in the market. Royal Ascendancy
+changes annual `legitimacyYear` drift in politics and `unrestFactor` on rebellion
+event weights. Old era saves without an agenda normalize to a clean first stage.
+
+**Verification:** focused ambition tests **20/20**; full `npm test` **787/787**;
+50-year reruns after the gate are `ok:true` with **3/3 agenda stages** for Guild
+Compact (years 22, 23, 25) and Royal Ascendancy (years 20, 22, 23). The
+12-run player-profile matrix is 12/12 green, including `agendaStage` and
+`agendaFeedback`, with no stalls or game over. Pre-gate Common Weal 50-year
+reference: **0.902 ms/tick**; Guild **0.927 ms/tick**; Royal **0.904 ms/tick**. Observed transcript changes
+include Common Weal population 73 → 74, legitimacy 98.28 → 100, morale 93.35 →
+96.33, treasury 6,493.96 → 6,595.86, food demand 0.97 → 0.9506 and migration
+1.0 → 1.12; Guild treasury 5,361.44 → 5,538.20, taxes 8,969.85 → 9,321.34, tax
+efficiency 1.03 → 1.0609 and trade 1.05 → 1.0815; Royal Ascendancy legitimacy
+98.32 → 98.34, nobility 68 → 70, treasury 5,005.88 → 5,211.11, and rebellion
+weight 1.0 → 0.9. The 25-year campaign now finishes with **3/3 Common Weal stages** and all
+campaign requirements green; the 50-year Guild Compact and Royal Ascendancy
+reruns also finish 3/3. The Chromium chronicle audit still completes both
+chronicles, chooses Guild Compact, shows `ERA AGENDA · 1 OF 3` with `167 / 517
+gold`, and reports **0 page and 0 console errors**.
+
+**Not covered yet:** the three campaigns use one seed and the builder profile;
+they do not cover every build order or player strategy. The browser audit checks
+the stage-one agenda HUD but does not complete an agenda stage in the browser.
+There is no separate scalar stability statistic; legitimacy, morale and faction
+support represent stability. No deployment was performed.
+
 ### 3.15.0-dev — Tropische Regenwälder (1.2.4)
 
 **Status:** released on `ulmweb-branch`; production https://kings-and-cards.pages.dev/ is verified after each release build.
@@ -74,12 +132,14 @@ compact. Both link choices to resources, morale, hidden prosperity/tension and
 political factions, and can award `deer` or `river-weirs` cards. They reuse the
 existing chronicle queue, participant memories and save format.
 
-**Verification:** `npm test` 767/767; syntax and relative imports clean for 107
+**Verification:** `npm test` 771/771; syntax and relative imports clean for 107
 source files / 189 UI ids; focused tropical suite 8/8, tropical integration
 7/7 and event-chain suite 5/5; browser reference 12/12 formations and four
 seasonal frames on WebKit WebGL at 800 × 800; playability audit 1,200 ticks at
 60 FPS with no page/console errors; full browser E2E passed (world forge, cards,
 drag placement, save/load, military, health, faith/justice and forestry);
+chronicle browser audit completed wildlife and fishing through all six stages,
+drew all four queued rewards and verified every faction delta;
 25-year campaign 10,040 ticks / 13/13 / 0.821 ms per tick; 100-year campaign
 40,040 ticks / 13/13 / 0.823 ms per tick. The refreshed reference was checked
 visually for the twelve formation silhouettes, dense canopy and readable

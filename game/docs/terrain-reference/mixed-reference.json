@@ -11,7 +11,7 @@
   },
   "renderer": "WebKit WebGL",
   "maxTextureSize": 8192,
-  "generatedAt": "2026-11-11T09:21:49.832Z",
+  "generatedAt": "2026-11-11T16:09:04.545Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -71,6 +71,7 @@
         "crossbill"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Oak · Beech · Spruce · Birch",
       "mixturePattern": "grouped",
       "broadleafShare": 0.8,
@@ -158,6 +159,7 @@
         "woodpecker"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Fir · Beech · Maple · Birch",
       "mixturePattern": "grouped",
       "broadleafShare": 0.58,
@@ -249,6 +251,7 @@
         "songbird"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Pine · Oak · Birch · Beech",
       "mixturePattern": "mosaic",
       "broadleafShare": 0.48,
@@ -339,6 +342,7 @@
         "boar"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Alder · Ash · Elm · Willow",
       "mixturePattern": "mosaic",
       "broadleafShare": 0.88,
@@ -431,6 +435,7 @@
         "capercaillie"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Beech · Fir · Spruce · Maple",
       "mixturePattern": "grouped",
       "broadleafShare": 0.56,
@@ -528,6 +533,7 @@
         "woodpecker"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Oak · Birch · Pine · Maple",
       "mixturePattern": "even",
       "broadleafShare": 0.82,
@@ -620,6 +626,7 @@
         "lynx"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Beech · Spruce · Fir · Maple",
       "mixturePattern": "grouped",
       "broadleafShare": 0.58,
@@ -718,6 +725,7 @@
         "raptor"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Oak · Beech · Linden · Fir",
       "mixturePattern": "grouped",
       "broadleafShare": 0.86,
@@ -810,6 +818,7 @@
         "fox"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Birch · Larch · Spruce · Beech",
       "mixturePattern": "even",
       "broadleafShare": 0.66,
@@ -909,6 +918,7 @@
         "owl"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Birch · Pine · Oak · Beech",
       "mixturePattern": "mosaic",
       "broadleafShare": 0.7,
@@ -1001,6 +1011,7 @@
         "butterfly"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Oak · Hornbeam · Birch · Hazel",
       "mixturePattern": "even",
       "broadleafShare": 1,
@@ -1095,6 +1106,7 @@
         "songbird"
       ],
       "mixed": true,
+      "tropical": null,
       "mixtureLabel": "Fir · Beech · Spruce · Maple",
       "mixturePattern": "grouped",
       "broadleafShare": 0.58,
@@ -1190,6 +1202,7 @@
       "crossbill"
     ],
     "mixed": true,
+    "tropical": null,
     "mixtureLabel": "Oak · Beech · Spruce · Birch",
     "mixturePattern": "grouped",
     "broadleafShare": 0.8,
@@ -1249,8 +1262,8 @@
     }
   ],
   "artifactHashes": {
-    "formation": "00afa2b18738d50dfcfe54c8cba0c84d707e7972dcb424d5899c5b5d43e956fd",
-    "seasonal": "e88aeb8eac37580b3b34e901e79af5890711e7c4ee94cf625ae37a66bcb54541"
+    "formation": "c7b81cb22c2f1a7ea0df3d96fadb7d6a4fed35d2d24f6b40d15f87a680b6a34f",
+    "seasonal": "c830413662f8d637770b58d499bd2a39d693f613a93df3ec925b8fbb54c4a546"
   },
   "note": "Temperate realm at 64% forest cover, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level at midday. All twelve mixed formations are real generated tiles, not hand-placed demo props. The seasonal strip follows one mixed stand through spring, high summer, autumn colour and winter. Each tile records the actual mixture ratio, distribution pattern, dominant species, canopy layers, understorey, silviculture and winter goods. Not a GPU performance benchmark."
 }

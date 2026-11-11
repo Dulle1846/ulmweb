@@ -4,34 +4,34 @@
     "width": 1000,
     "height": 700
   },
-  "generatedAt": "2026-11-08T17:34:05.114Z",
+  "generatedAt": "2026-11-11T16:12:21.152Z",
   "levels": [
     {
       "level": 1,
       "zoom": 0.09,
-      "treeDraws": 1565,
-      "peakDrawMs": 73.90000009536743,
+      "treeDraws": 1497,
+      "peakDrawMs": 234.80000001192093,
       "cacheMisses": 2
     },
     {
       "level": 2,
       "zoom": 0.3,
-      "treeDraws": 1565,
-      "peakDrawMs": 0.7999999523162842,
-      "cacheMisses": 2
+      "treeDraws": 707,
+      "peakDrawMs": 64.69999998807907,
+      "cacheMisses": 3
     },
     {
       "level": 3,
       "zoom": 0.95,
-      "treeDraws": 99,
-      "peakDrawMs": 12.600000023841858,
+      "treeDraws": 98,
+      "peakDrawMs": 17.100000023841858,
       "cacheMisses": 4
     },
     {
       "level": 4,
       "zoom": 2.4,
       "treeDraws": 33,
-      "peakDrawMs": 8.600000023841858,
+      "peakDrawMs": 11.299999982118607,
       "cacheMisses": 5
     }
   ],
@@ -39,7 +39,7 @@
     "beforeMisses": 6,
     "duringMisses": 6,
     "afterMisses": 7,
-    "duringTransform": "translate(-80px, 0px) scale(1)"
+    "duringTransform": "translate(0px, 0px) scale(1)"
   },
   "zoom": {
     "beforeZoom": 0.3,

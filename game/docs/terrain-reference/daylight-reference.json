@@ -4,10 +4,10 @@
     "width": 1000,
     "height": 700
   },
-  "generatedAt": "2026-11-08T17:31:48.564Z",
+  "generatedAt": "2026-11-11T16:13:20.989Z",
   "tile": {
-    "x": 60,
-    "y": 42,
+    "x": 114,
+    "y": 46,
     "type": "oakwood",
     "label": "Oakwood",
     "age": "ancient",
@@ -32,7 +32,7 @@
         "color": "#c77b42",
         "season": "summer"
       },
-      "hash": "8980813ad58b8e53"
+      "hash": "605c94050022531d"
     },
     {
       "day": 150,
@@ -49,7 +49,7 @@
         "color": "#13233d",
         "season": "summer"
       },
-      "hash": "4625468f2cea78e8"
+      "hash": "f9fe4125a3e06279"
     },
     {
       "day": 150,
@@ -66,7 +66,7 @@
         "color": "#b75f35",
         "season": "summer"
       },
-      "hash": "32ce164cbde5d020"
+      "hash": "bc853233662aa652"
     },
     {
       "day": 150,
@@ -83,7 +83,7 @@
         "color": "#13233d",
         "season": "summer"
       },
-      "hash": "dfef870e1827576e"
+      "hash": "660c1abf1e09c81d"
     },
     {
       "day": 350,
@@ -100,7 +100,7 @@
         "color": "#c77b42",
         "season": "winter"
       },
-      "hash": "4e16cdaf8430510b"
+      "hash": "e97986a03045f479"
     },
     {
       "day": 350,
@@ -117,7 +117,7 @@
         "color": "#13233d",
         "season": "winter"
       },
-      "hash": "9b262415596ae67a"
+      "hash": "c585bede9bfa47e7"
     },
     {
       "day": 350,
@@ -134,7 +134,7 @@
         "color": "#b75f35",
         "season": "winter"
       },
-      "hash": "6cadad8d73b2ff39"
+      "hash": "4aaa50d5faf9a404"
     },
     {
       "day": 350,
@@ -151,7 +151,7 @@
         "color": "#13233d",
         "season": "winter"
       },
-      "hash": "cda74ab4c172f51f"
+      "hash": "84827998f1a0362f"
     }
   ],
   "mist": {

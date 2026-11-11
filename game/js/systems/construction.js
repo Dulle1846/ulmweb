@@ -132,6 +132,7 @@ export function beginConstruction(entity, cost, { source = "build" } = {}) {
     entity.inventory = null;
     state.city.constructionVersion = (state.city.constructionVersion || 0) + 1;
     state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
+    if (isHousingType(entity.type)) state.statistics.totalHousesBuilt = (state.statistics.totalHousesBuilt || 0) + 1;
     return { ok: true, construction: entity.construction };
 }
 

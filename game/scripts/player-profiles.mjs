@@ -15,6 +15,7 @@
 import { performance } from "node:perf_hooks";
 import { runCampaign } from "../tests/campaign/campaign-driver.mjs";
 import { getCrownReliefOffer, applyCrownRelief } from "../js/systems/crown-relief.js";
+import { getCrownEraSnapshot } from "../js/systems/ambitions.js";
 import { getPhysicalStock } from "../js/systems/logistics.js";
 import { getTradePartners, executeTrade } from "../js/systems/market.js";
 import { state } from "../js/core/state.js";
@@ -70,6 +71,30 @@ function coverGoldReserve() {
     return { sold, gold };
 }
 
+// A mature realm can buy grain on the same market the economy panel exposes.
+// This is deliberately used only while the Common Granary objective is open;
+// it spends real gold and partner stock, never creates food.
+function coverGranaryFood() {
+    const agenda = getCrownEraSnapshot()?.agenda;
+    if (!agenda || agenda.id !== "common-granary" || agenda.value >= agenda.target) {
+        return { bought: 0, gold: 0 };
+    }
+    let bought = 0;
+    let gold = 0;
+    for (let attempt = 0; attempt < 4; attempt++) {
+        const current = getCrownEraSnapshot()?.agenda;
+        if (!current || current.id !== "common-granary" || current.value >= current.target) break;
+        if ((Number(state.resources.gold) || 0) <= 2400) break;
+        const partner = getTradePartners().find(item => item && Number(item.stock?.food) >= 1);
+        if (!partner) break;
+        const result = executeTrade(partner.id, "food", "buy", 25);
+        if (!result.ok) break;
+        bought += Number(result.amount) || 0;
+        gold += Number(result.gold) || 0;
+    }
+    return { bought, gold };
+}
+
 const started = performance.now();
 const rows = [];
 let failed = false;
@@ -78,6 +103,7 @@ try {
         for (const profile of PROFILES) {
             let lastYear = 0;
             const relief = { attempts: 0, applied: 0, failed: 0, kinds: {} };
+            const market = { foodBought: 0, goldSpent: 0 };
             const result = runCampaign({
                 seed,
                 profile,
@@ -86,7 +112,12 @@ try {
                     if (snapshot.year === lastYear) return;
                     lastYear = snapshot.year;
                     const reviewEvery = profile === "ignorer" ? 2 : 1;
-                    if (snapshot.year >= 20) coverGoldReserve();
+                    if (snapshot.year >= 20) {
+                        coverGoldReserve();
+                        const trade = coverGranaryFood();
+                        market.foodBought += trade.bought;
+                        market.goldSpent += trade.gold;
+                    }
                     if (snapshot.year < 2 || snapshot.year % reviewEvery !== 0) return;
                     const offer = getCrownReliefOffer();
                     if (!offer || !offer.available) return;
@@ -108,6 +139,7 @@ try {
                 stalls: result.diagnostics.stalledSites.length,
                 gameOver: result.gameOver,
                 relief,
+                market,
                 diagnostics: result.diagnostics,
                 stock: { planks: getPhysicalStock("planks"), cutStone: getPhysicalStock("cutStone"), logs: getPhysicalStock("logs"), firewood: getPhysicalStock("firewood") },
                 yearly: result.yearly,

@@ -19,7 +19,7 @@ import { normalizeHouseholdAssignments, getHousingSnapshot } from "../../js/syst
 import { initializeSettlementForRealm } from "../../js/systems/settlement.js";
 import { updateSimulation } from "../../js/simulation/simulation.js";
 import { resolveEventChoice } from "../../js/systems/events.js";
-import { AMBITIONS, getAmbitionSnapshot } from "../../js/systems/ambitions.js";
+import { AMBITIONS, getAmbitionSnapshot, getCrownEraSnapshot } from "../../js/systems/ambitions.js";
 import { placeDirectBuilding, canPlaceBuilding, isUnderConstruction, cancelConstruction } from "../../js/systems/construction.js";
 import { placeRoad } from "../../js/systems/roads.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild } from "../../js/systems/royal-dynasty.js";
@@ -31,6 +31,8 @@ const LOGISTICS_STEPS = 4;
 const LOGISTICS_DT = 0.1875;
 const MAX_ACTIVE_SITES = 1;
 let campaignProfile = "builder";
+let campaignEra = "common-weal";
+let campaignMinAgendaStages = 1;
 
 const round = (value, digits = 2) => {
     const factor = 10 ** digits;
@@ -241,6 +243,15 @@ function nextBuilding() {
     if (countType(TYPE.BAKERY) < 2) return { type: TYPE.BAKERY, radius: 24 };
     if (countType(TYPE.MILL) < 2) return { type: TYPE.MILL, radius: 24 };
     if (countType(TYPE.HOUSE) < 16) return { type: TYPE.HOUSE, radius: 30 };
+    const agenda = getCrownEraSnapshot()?.agenda;
+    // The campaign is a deliberate player: when the era agenda asks for housing,
+    // it builds the next cottage instead of leaving the objective blocked by a
+    // full settlement. This uses the normal construction and logistic paths.
+    if (agenda?.id === "common-hearths" && agenda.value < agenda.target) return { type: TYPE.HOUSE, radius: 40 };
+    // A high-food opening can set the granary target above the output of the
+    // four farms that satisfied the earlier ambition. Add real farm capacity
+    // while the food stage is open; the target itself remains +180 food.
+    if (agenda?.id === "common-granary" && agenda.value < agenda.target && countType(TYPE.FARM) < 6) return { type: TYPE.FARM, radius: 56 };
 
     const needs = state.city?.needs?.summary;
     // Safety coverage must grow with the housing district. A single tower by
@@ -253,9 +264,6 @@ function nextBuilding() {
     if (countType(TYPE.BAKERY) < 3) return { type: TYPE.BAKERY, radius: 24 };
     if (countType(TYPE.MILL) < 3) return { type: TYPE.MILL, radius: 24 };
     if (countType(TYPE.SAWMILL) < 2) return { type: TYPE.SAWMILL, radius: 24 };
-    // A timber-first household strategy needs its own firewood reserve. One
-    // lumber camp does not keep sixteen cottages warm through the late years.
-    if (campaignProfile === "settler" && countType(TYPE.LUMBER) < 2) return { type: TYPE.LUMBER, radius: 36 };
     return null;
 }
 
@@ -277,6 +285,10 @@ function ensureHeir() {
 function resolveActiveEvent() {
     if (!state.activeEvent) return false;
     const choices = Array.isArray(state.activeEvent.choices) ? state.activeEvent.choices : [];
+    if (state.activeEvent.family === "crown-era") {
+        const eraIndex = choices.findIndex(choice => choice?.effects?.crownEra === campaignEra);
+        return eraIndex >= 0 ? resolveEventChoice(eraIndex) : false;
+    }
     for (let index = 0; index < Math.max(1, choices.length); index++) {
         if (resolveEventChoice(index)) return true;
     }
@@ -287,6 +299,7 @@ function captureSnapshot(extra = {}) {
     const housing = getHousingSnapshot();
     const warehouse = getWarehouseSnapshot();
     const ambition = getAmbitionSnapshot();
+    const era = getCrownEraSnapshot();
     const needs = state.city?.needs?.summary;
     const ledger = state.economy?.lastLedger;
     return {
@@ -307,6 +320,12 @@ function captureSnapshot(extra = {}) {
         morale: round(state.morale),
         satisfaction: round(needs?.satisfaction, 3),
         foodShortage: round(ledger?.foodShortage),
+        legitimacy: round(state.politics?.legitimacy),
+        factions: state.politics?.factions ? { ...state.politics.factions } : null,
+        taxesCollected: round(state.economy?.taxesCollected),
+        trades: Math.max(0, Number(state.statistics?.totalTrades) || 0),
+        recruited: Math.max(0, Number(state.statistics?.totalUnitsRecruited) || 0),
+        prestige: Math.max(0, Number(state.legacy?.prestige) || 0),
         firewood: round(warehouse.stock?.firewood || 0),
         grain: round(warehouse.stock?.grain || 0),
         bread: round(warehouse.stock?.bread || 0),
@@ -323,7 +342,29 @@ function captureSnapshot(extra = {}) {
             eternal: Boolean(ambition.eternal),
             eternalCount: Number(ambition.eternalCount) || 0,
             eternalTitle: ambition.eternal ? ambition.title : null,
-            eternalProgress: ambition.eternal ? ambition.progress : 0
+            eternalProgress: ambition.eternal ? ambition.progress : 0,
+            agenda: Boolean(ambition.agenda),
+            stageIndex: Number(ambition.stageIndex) || 0,
+            stageTotal: Number(ambition.stageTotal) || 0,
+            stageTitle: ambition.agenda ? ambition.title : null,
+            stageProgress: ambition.agenda ? ambition.progress : 0,
+            stageProgressLabel: ambition.agenda ? ambition.progressLabel : null
+        },
+        era: era ? era.id : null,
+        eraTitle: era ? era.title : null,
+        eraAgenda: era?.agenda ? {
+            id: era.agenda.id,
+            stageIndex: era.agenda.stage,
+            completed: era.agenda.completed.length,
+            complete: era.agenda.complete,
+            value: round(era.agenda.value),
+            target: round(era.agenda.target),
+            progressLabel: era.agenda.progressLabel,
+            modifiers: { ...era.agenda.modifiers }
+        } : null,
+        economyFeedback: {
+            foodDemandFactor: ledger?.eraFoodDemandFactor ?? null,
+            taxEfficiency: ledger?.eraTaxEfficiency ?? null
         },
         ...extra
     };
@@ -352,6 +393,8 @@ export function runCampaign({
     years = CAMPAIGN_YEARS,
     initialize = true,
     sampleTicks = 120,
+    era = "common-weal",
+    minAgendaStages = 1,
     onTick = null
 } = {}) {
     if (initialize) initialiseFreshRealm(seed);
@@ -360,6 +403,8 @@ export function runCampaign({
     state.victory = false;
 
     campaignProfile = ["builder", "settler", "ignorer"].includes(profile) ? profile : "builder";
+    campaignEra = ["common-weal", "guild-compact", "royal-ascendancy"].includes(era) ? era : "common-weal";
+    campaignMinAgendaStages = Math.max(1, Math.min(3, Math.floor(Number(minAgendaStages) || 1)));
     const started = performance.now();
     const totalTicks = years * CAMPAIGN_YEAR_DAYS + 40;
     // A settler acts promptly on housing and food; an ignorer lets the realm
@@ -489,11 +534,22 @@ export function runCampaign({
     const stableFood = lastYears.every(mark => Number(mark.resources?.food) > 0 && Number(mark.foodShortage) <= 0);
     const stableFirewood = lastYears.every(mark => Number(mark.firewood) > 0);
     const allComplete = Boolean(getAmbitionSnapshot().allComplete);
+    const eraSnapshot = getCrownEraSnapshot();
+    const agendaStages = eraSnapshot?.agenda?.completed.length || 0;
+    const agendaFeedback = Boolean(eraSnapshot?.agenda && (eraSnapshot.agenda.completed.length > 0) && (
+        Number(eraSnapshot.agenda.modifiers.foodDemandFactor) < 1 ||
+        Number(eraSnapshot.agenda.modifiers.taxEfficiency) > 1 ||
+        Number(eraSnapshot.agenda.modifiers.tradeFactor) > 1 ||
+        Number(eraSnapshot.agenda.modifiers.migrationFactor) > 1
+    ));
     const constructionComplete = measuredFinal.activeSites === 0;
     const noStalledSites = diagnostics.stalledSites.length === 0;
     const requirements = {
         allComplete,
         allIntermediate: orderedCompleted.length === AMBITIONS.length,
+        eraChosen: Boolean(eraSnapshot),
+        agendaStage: agendaStages >= campaignMinAgendaStages,
+        agendaFeedback,
         population: measuredFinal.population >= 55,
         gold: measuredFinal.resources.gold >= 2000,
         morale: measuredFinal.morale >= 80,
@@ -531,6 +587,9 @@ export function runCampaign({
         diagnostics,
         gameOver: Boolean(state.gameOver),
         ambition: getAmbitionSnapshot(),
+        era: eraSnapshot,
+        agendaStages,
+        campaignEra,
         roads: measuredFinal.roads,
         warehouse: getWarehouseSnapshot(),
         population: population()

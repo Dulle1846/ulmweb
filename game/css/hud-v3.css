@@ -837,6 +837,34 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
 .ambition-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;font:700 6.5px var(--ui-number-font);letter-spacing:.04em;color:#a99470}
 .ambition-footer span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ambition-footer span:last-child{flex:0 0 auto;color:#d8bd82;text-align:right}
+.ambition-counsel{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;margin-top:8px;padding-top:7px;border-top:1px solid #7d64412e}
+.ambition-counsel__label{font:700 6.5px var(--ui-number-font);letter-spacing:.08em;color:#d8bd82}
+.ambition-counsel p{margin:0;color:#bda987;font-size:7.5px;line-height:1.4}
+.ambition-counsel__action{grid-column:1/-1;justify-self:start;border:1px solid #7d6441;border-radius:1px;background:#21180f;color:#d8bd82;font:700 7px var(--ui-number-font);letter-spacing:.06em;padding:4px 7px;cursor:pointer}
+.ambition-counsel__action:hover,.ambition-counsel__action:focus-visible{border-color:#c7a85f;color:#f0d99d;outline:none}
+
+/* ── First-session checklist ────────────────────────────────────── */
+.first-session-section{
+  flex:0 0 auto;padding:8px 12px 9px;
+  border-bottom:1px solid #b99a5926;
+  background:linear-gradient(180deg,#2b241b,#1f1913);
+}
+.first-session-list{display:grid;gap:3px;margin:6px 0 0;padding:0;list-style:none}
+.first-session-list[hidden],.first-session-complete[hidden]{display:none!important}
+.first-session-step{display:grid;grid-template-columns:15px minmax(0,1fr) auto;gap:6px;align-items:center;min-height:17px;color:#cbb894;font:700 8px var(--ui-body-font);letter-spacing:.02em}
+.first-session-mark{display:grid;place-items:center;width:15px;height:15px;border:1px solid #70593a;border-radius:50%;color:#a99470;font:700 6px var(--ui-number-font);line-height:1}
+.first-session-step.is-done .first-session-mark{border-color:#8fa76a;background:#3e4a2c;color:#d9e8b0}
+.first-session-step.is-current{color:#f0d99d}
+.first-session-step.is-current .first-session-mark{border-color:#d8bd82;color:#f0d99d}
+.first-session-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.first-session-status{font:700 6px var(--ui-number-font);letter-spacing:.08em;color:#8f7d61;text-align:right}
+.first-session-step.is-done .first-session-status{color:#9fc48a}
+.first-session-step.is-current .first-session-status{color:#d8bd82}
+.first-session-step.is-done .first-session-label{color:#b9c49a}
+.first-session-section.is-complete{background:linear-gradient(180deg,#2f2b1d,#211b15)}
+.first-session-section.is-complete .section-heading span:first-child{color:#d8bd82}
+.first-session-complete{margin:6px 0 0;padding:6px 8px;border:1px solid #7d6441;border-radius:2px;background:linear-gradient(180deg,#3b3220,#241d14);color:#e5d3a7;font:700 8px var(--ui-body-font);line-height:1.45;letter-spacing:.03em}
+.first-session-complete::before{content:"✓ ";color:#d9e8b0}
 
 /* Keep the realm header readable when the resource ledger is still in row one. */
 @media(min-width:901px) and (max-width:1180px){

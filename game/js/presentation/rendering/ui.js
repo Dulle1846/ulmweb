@@ -11,8 +11,10 @@ import { getHealthSnapshot } from "../../systems/health.js";
 import { getRoomBonusSnapshot, roomBonusSignature, ROOM_BONUS_CAPS } from "../../systems/rooms.js";
 import { getRoyalHouse } from "../../systems/royal-dynasty.js";
 import { getAmbitionSnapshot } from "../../systems/ambitions.js";
+import { getCoreCounsel } from "../core-counsel.js";
+import { getFirstSessionSnapshot } from "../first-session.js";
 
-let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastAmbitionSignature="",lastRenderedIssueId=null;
+let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastAmbitionSignature="",lastFirstSessionSignature="",lastRenderedIssueId=null;
 function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);}
 function income(v){
@@ -115,21 +117,55 @@ function renderAmbition(){
     const section=document.getElementById("ambition-section");
     if(!section)return;
     const snapshot=getAmbitionSnapshot();
-    const signature=[snapshot.id,snapshot.completedCount,snapshot.total,Math.round(snapshot.progress*100),snapshot.progressLabel,snapshot.allComplete,snapshot.eternal,snapshot.eternalCount].join("|");
+    const counsel=getCoreCounsel(state);
+    const signature=[snapshot.id,snapshot.completedCount,snapshot.total,Math.round(snapshot.progress*100),snapshot.progressLabel,snapshot.allComplete,snapshot.eternal,snapshot.eternalCount,snapshot.era,snapshot.agenda,snapshot.stageIndex,counsel.id,counsel.text].join("|");
     if(signature===lastAmbitionSignature)return;
     lastAmbitionSignature=signature;
     setText("ambition-count",snapshot.completedCount+" / "+snapshot.total);
-    setText("ambition-kicker",snapshot.eternal?(snapshot.eternalLabel||"ETERNAL DEED"):snapshot.allComplete?"LEGEND COMPLETE":"NEXT CHAPTER · "+(snapshot.completedCount+1)+" OF "+snapshot.total);
+    setText("ambition-kicker",snapshot.agenda?"ERA AGENDA · "+(snapshot.stageIndex+1)+" OF "+snapshot.stageTotal:snapshot.eternal?(snapshot.eternalLabel||"ETERNAL DEED"):snapshot.allComplete?"LEGEND COMPLETE":"NEXT CHAPTER · "+(snapshot.completedCount+1)+" OF "+snapshot.total);
     setText("ambition-title",snapshot.title);
     setText("ambition-description",snapshot.description);
     setText("ambition-progress-label",snapshot.progressLabel);
-    setText("ambition-reward",snapshot.eternal?"ETERNAL REWARD · "+snapshot.rewardText:snapshot.allComplete?"ALL AMBITIONS FULFILLED":"REWARD · "+snapshot.rewardText);
+    setText("ambition-reward",snapshot.agenda?"STAGE REWARD · "+snapshot.rewardText:snapshot.eternal?"ETERNAL REWARD · "+snapshot.rewardText:snapshot.allComplete?"ALL AMBITIONS FULFILLED":"REWARD · "+snapshot.rewardText);
     const bar=document.getElementById("ambition-bar");
     if(bar)bar.style.width=Math.round(snapshot.progress*100)+"%";
     const progress=document.querySelector("#ambition-section .ambition-progress");
     if(progress)progress.setAttribute("aria-valuenow",String(Math.round(snapshot.progress*100)));
-    section.classList.toggle("is-complete",snapshot.allComplete&&!snapshot.eternal);
-    section.classList.toggle("is-eternal",Boolean(snapshot.eternal));
+    setText("ambition-counsel-text",counsel.text);
+    const counselAction=document.getElementById("ambition-counsel-action");
+    if(counselAction){
+        counselAction.textContent=counsel.actionLabel;
+        counselAction.hidden=!counsel.panel;
+        if(counsel.panel)counselAction.dataset.kacPanel=counsel.panel;
+    }
+    section.classList.toggle("is-complete",snapshot.allComplete&&!snapshot.eternal&&!snapshot.agenda);
+    section.classList.toggle("is-eternal",Boolean(snapshot.eternal||snapshot.agenda));
+}
+
+function renderFirstSession(){
+    const section=document.getElementById("first-session-section");
+    if(!section)return;
+    const snapshot=getFirstSessionSnapshot();
+    const signature=snapshot.items.map(item=>item.done?1:0).join("")+"|"+snapshot.completed;
+    if(signature===lastFirstSessionSignature)return;
+    lastFirstSessionSignature=signature;
+    setText("first-session-heading",snapshot.allComplete?"FIRST SESSION COMPLETE":"FIRST SESSION");
+    setText("first-session-count",snapshot.completed+" / "+snapshot.total);
+    section.classList.toggle("is-complete",snapshot.allComplete);
+    const list=document.getElementById("first-session-list");
+    const complete=document.getElementById("first-session-complete");
+    if(complete)complete.hidden=!snapshot.allComplete;
+    if(!list)return;
+    list.hidden=snapshot.allComplete;
+    if(snapshot.allComplete)return;
+    const currentIndex=snapshot.items.findIndex(item=>!item.done);
+    list.innerHTML=snapshot.items.map((item,index)=>{
+        const done=item.done,current=!done&&index===currentIndex;
+        return '<li class="first-session-step'+(done?' is-done':'')+(current?' is-current':'')+'"'+(current?' aria-current="step"':'')+'>'+
+            '<span class="first-session-mark" aria-hidden="true">'+(done?'✓':index+1)+'</span>'+
+            '<span class="first-session-label">'+esc(item.label)+'</span>'+
+            '<span class="first-session-status">'+(done?'DONE':current?'NEXT':'OPEN')+'</span></li>';
+    }).join("");
 }
 
 function updateCost(id,amount){
@@ -328,6 +364,7 @@ export function renderUI(){
     setText("morale-value",Math.floor(state.morale));
     renderRoomBonuses();
     renderAmbition();
+    renderFirstSession();
     setText("season",SEASONS[state.seasonIndex]||SEASONS[0]);setText("year","YEAR "+state.year);
     setText("tick-count",state.tick.toLocaleString("en-US"));setText("kingdom-name","THE REALM OF "+state.kingdomName);
     setText("stage-realm",state.kingdomName||"ELDRIA");setText("minimap-realm",state.kingdomName||"ELDRIA");

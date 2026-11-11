@@ -1,112 +1,112 @@
 {
-  "generatedAt": "2026-11-08T22:24:54.110Z",
-  "baseUrl": "https://kings-and-cards.pages.dev",
+  "generatedAt": "2026-11-11T16:17:27.367Z",
+  "baseUrl": "http://127.0.0.1:8792",
   "seed": 20261108,
   "world": [
     176,
     176
   ],
   "site": {
-    "x": 104,
-    "y": 77
+    "x": 107,
+    "y": 87
   },
-  "foresterId": "ec29kk-11",
+  "foresterId": "ec29kk-1g",
   "targets": [
     {
       "x": 106,
-      "y": 79,
-      "capacity": 113
+      "y": 85,
+      "capacity": 93
+    },
+    {
+      "x": 105,
+      "y": 88,
+      "capacity": 95
     },
     {
       "x": 106,
-      "y": 78,
-      "capacity": 119
-    },
-    {
-      "x": 104,
-      "y": 78,
-      "capacity": 124
+      "y": 89,
+      "capacity": 103
     }
   ],
-  "targetCapacity": 356,
+  "targetCapacity": 291,
   "planting": {
     "tick": 3,
     "workerCount": 2,
     "reason": "Planting saplings",
     "range": {
       "radius": 5,
-      "tiles": 60,
-      "stock": 6512,
-      "capacity": 6866,
-      "fill": 0.9484415962714827,
+      "tiles": 46,
+      "stock": 4849,
+      "capacity": 5138,
+      "fill": 0.9437524328532503,
       "restorable": 3,
       "depleted": 1
     },
     "targets": [
       {
         "x": 106,
-        "y": 79,
-        "stock": 0,
-        "capacity": 113
+        "y": 85,
+        "stock": 1,
+        "capacity": 93
+      },
+      {
+        "x": 105,
+        "y": 88,
+        "stock": 1,
+        "capacity": 95
       },
       {
         "x": 106,
-        "y": 78,
-        "stock": 1,
-        "capacity": 119
-      },
-      {
-        "x": 104,
-        "y": 78,
-        "stock": 1,
-        "capacity": 124
+        "y": 89,
+        "stock": 0,
+        "capacity": 103
       }
     ],
     "dom": {
-      "stock": 6512,
-      "capacity": 6866,
-      "percent": 95,
+      "stock": 4849,
+      "capacity": 5138,
+      "percent": 94,
       "restorable": 3,
       "status": "Planting saplings"
     },
-    "text": "Forester's Lodge ec29kk-11 · 104, 77 100% condition Forester's Lodge FOREST STEWARDSHIP · 5-TILE RANGE 6,512 / 6,866 95% RESTORABLE STANDS 3 STATUS Planting saplings Footprint 1.4 × 1.2 tiles Health 105 / 105 Construction COMPLETE · 100% Staff 2 / 2 Workforce efficiency 92% Recorded card cost No catalogued material cost Local store Empty Active haul No active haul Supply / service Output store is full Site data Forest stock at site tile: 126 / 126 · Oakwood · ancient · oak, beech, elm, linden · Wildlife: Red deer · Wild boar · Squirrel · Forest products: none gathered yet GATHER FOREST PRODUCTS PROCESS FOREST HUNT SUPPRESS FOREST DISTURBANCE",
-    "blockText": "FOREST STEWARDSHIP · 5-TILE RANGE 6,512 / 6,866 95% RESTORABLE STANDS 3 STATUS Planting saplings"
+    "text": "Forester's Lodge ec29kk-1g · 107, 87 100% condition Forester's Lodge FOREST STEWARDSHIP · 5-TILE RANGE 4,849 / 5,138 94% RESTORABLE STANDS 3 STATUS Planting saplings Footprint 1.4 × 1.2 tiles Health 105 / 105 Construction COMPLETE · 100% Staff 2 / 1 Workforce efficiency 99% Recorded card cost No catalogued material cost Local store Empty Active haul No active haul Supply / service Output store is full Site data Forest stock at site tile: 143 / 143 · Oak–Beech–Spruce Wood · mature · oak, beech, spruce, birch · Snow depth: 41 cm · Exposure: 22% · Fire risk: 35% · Pest risk: 8% · Monoculture: 0% · Work: 83% · Visibility: 53% · Sight: 6 tiles · Diversity: 78% · Mix: Oak · Beech · Spruce · Birch · Pattern: grouped · Layers: Emergent crowns, Main canopy, Understorey and saplings · Broadleaf/conifer: 80/20 · Understorey: Fern layer · Silviculture: timber, firewood, charcoal, hunting · Wind exposure: 16% · Wetness: 2% · Deadwood: 0% · Browse: 58% · Predators: 8% · Wildlife: Red deer · Roe deer · Wild boar · Forest products: none gathered yet GATHER FOREST PRODUCTS DELIVER FOREST GOODS PROCESS FOREST HUNT SUPPRESS FOREST DISTURBANCE",
+    "blockText": "FOREST STEWARDSHIP · 5-TILE RANGE 4,849 / 5,138 94% RESTORABLE STANDS 3 STATUS Planting saplings"
   },
   "progress": {
     "tick": 11,
     "reason": "Planting saplings",
     "range": {
       "radius": 5,
-      "tiles": 60,
-      "stock": 6528,
-      "capacity": 6866,
-      "fill": 0.950771919603845,
+      "tiles": 46,
+      "stock": 4865,
+      "capacity": 5138,
+      "fill": 0.946866485013624,
       "restorable": 3,
       "depleted": 0
     },
     "targets": [
       {
         "x": 106,
-        "y": 79,
+        "y": 85,
         "stock": 6,
-        "capacity": 113
+        "capacity": 93
+      },
+      {
+        "x": 105,
+        "y": 88,
+        "stock": 6,
+        "capacity": 95
       },
       {
         "x": 106,
-        "y": 78,
+        "y": 89,
         "stock": 6,
-        "capacity": 119
-      },
-      {
-        "x": 104,
-        "y": 78,
-        "stock": 6,
-        "capacity": 124
+        "capacity": 103
       }
     ],
     "dom": {
-      "stock": 6528,
-      "capacity": 6866,
+      "stock": 4865,
+      "capacity": 5138,
       "percent": 95,
       "restorable": 3,
       "status": "Planting saplings"
@@ -115,16 +115,16 @@
     "cacheMisses": 5
   },
   "grown": {
-    "tick": 188,
+    "tick": 156,
     "year": 1,
-    "dayOfYear": 188,
+    "dayOfYear": 156,
     "reason": "Forest is fully grown",
     "productionReason": "Forest is fully grown",
     "range": {
       "radius": 5,
-      "tiles": 60,
-      "stock": 6866,
-      "capacity": 6866,
+      "tiles": 46,
+      "stock": 5138,
+      "capacity": 5138,
       "fill": 1,
       "restorable": 0,
       "depleted": 0
@@ -132,46 +132,46 @@
     "targets": [
       {
         "x": 106,
-        "y": 79,
-        "stock": 113,
-        "capacity": 113
+        "y": 85,
+        "stock": 93,
+        "capacity": 93
+      },
+      {
+        "x": 105,
+        "y": 88,
+        "stock": 95,
+        "capacity": 95
       },
       {
         "x": 106,
-        "y": 78,
-        "stock": 119,
-        "capacity": 119
-      },
-      {
-        "x": 104,
-        "y": 78,
-        "stock": 124,
-        "capacity": 124
+        "y": 89,
+        "stock": 103,
+        "capacity": 103
       }
     ],
     "dom": {
-      "stock": 6866,
-      "capacity": 6866,
+      "stock": 5138,
+      "capacity": 5138,
       "percent": 100,
       "restorable": 0,
       "status": "Forest is fully grown"
     },
-    "blockText": "FOREST STEWARDSHIP · 5-TILE RANGE 6,866 / 6,866 100% RESTORABLE STANDS 0 STATUS Forest is fully grown",
-    "visualRevision": 33,
+    "blockText": "FOREST STEWARDSHIP · 5-TILE RANGE 5,138 / 5,138 100% RESTORABLE STANDS 0 STATUS Forest is fully grown",
+    "visualRevision": 35,
     "cacheMisses": 8,
-    "totalPlanted": 351
+    "totalPlanted": 289
   },
   "renderer": "canvas",
   "hashes": {
     "cutover": {
       "terrain": {
-        "hash": "805b2808",
+        "hash": "5bac5dc0",
         "samples": 18041,
         "width": 1152,
         "height": 830
       },
       "interactive": {
-        "hash": "a886fb9e",
+        "hash": "3dbdac6f",
         "samples": 18041,
         "width": 1152,
         "height": 830
@@ -179,13 +179,13 @@
     },
     "progress": {
       "terrain": {
-        "hash": "61181846",
+        "hash": "34687bc0",
         "samples": 18041,
         "width": 1152,
         "height": 830
       },
       "interactive": {
-        "hash": "3fc1db2c",
+        "hash": "0a17114e",
         "samples": 18041,
         "width": 1152,
         "height": 830
@@ -193,13 +193,13 @@
     },
     "grown": {
       "terrain": {
-        "hash": "53d1bcc6",
+        "hash": "13da527a",
         "samples": 18041,
         "width": 1152,
         "height": 830
       },
       "interactive": {
-        "hash": "35b3e45d",
+        "hash": "0b99d5fe",
         "samples": 18041,
         "width": 1152,
         "height": 830

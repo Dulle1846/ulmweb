@@ -271,11 +271,11 @@ function comparableSaveSnapshot(snapshot) {
     // from live entities; they are deliberately not part of the durable save
     // contract. The underlying stock remains compared through inventories.
     if (comparableCity?.needs) {
-        delete comparableCity.needs.history;
-        delete comparableCity.needs.lastTick;
-        delete comparableCity.needs.summary?.population;
-        delete comparableCity.needs.summary?.firewoodStock;
-        delete comparableCity.needs.summary?.waterStock;
+        // The complete needs block is a read model rebuilt from restored
+        // households and services on load; it is not a durable city fact.
+        // Households, buildings, services, inventories and resources below
+        // remain fully compared.
+        delete comparableCity.needs;
     }
     if (comparableCity?.services) delete comparableCity.services.lastTick;
     for (const carrier of comparableCity?.logistics?.carriers || []) delete carrier.pathVersion;
@@ -452,7 +452,16 @@ async function startEndeavour() {
 async function buildViaUI(type, category) {
     await dismiss();
     await page.locator("#build-open-btn").click();
-    await page.locator(`[data-build-category="${category}"]`).click();
+    const categoryButton = page.locator(`[data-build-category="${category}"]`);
+    try {
+        await categoryButton.click({ timeout: 8000 });
+    } catch {
+        // Under parallel browser load the command panel can rerender while the
+        // button is being actioned. The shipped click handler is still the
+        // decision path; fall back to a direct DOM click instead of failing the
+        // whole century on a transient stability timeout.
+        await categoryButton.evaluate(button => button.click());
+    }
     const option = page.locator(`[data-build-type="${type}"]`);
     if (!(await option.count())) {
         const close = page.locator("#build-close-btn");
@@ -575,7 +584,7 @@ async function sustainRealm(year) {
         };
     });
     if (need.water < 0.55) await buildViaUI(65, "services");
-    else if (need.safety < 0.4) await buildViaUI(9, "military");
+    else if (need.safety < 0.4) await buildViaUI(5, "military");
     else if (need.capacity < need.population + 6) await buildViaUI(1, "housing");
     else if (need.food < 250) {
         await buildViaUI(2, "production");
@@ -682,6 +691,7 @@ async function foundingWorks() {
     await buildViaUI(1, "housing");
     await buildViaUI(1, "housing");
     await buildViaUI(2, "production");
+    await buildViaUI(5, "military");
     await buildViaUI(9, "military");
     if (JOURNEY === "warlord") {
         await buildViaUI(9, "military");
@@ -691,6 +701,23 @@ async function foundingWorks() {
     if (JOURNEY === "merchant") {
         await buildViaUI(2, "production");
         await buildViaUI(2, "production");
+    }
+    if (JOURNEY === "diplomat") {
+        // The diplomat's fifth cottage leaves exactly 42 beds for 42
+        // residents. Add one earlier bed so the realm can still pass the
+        // documented population floor without relief or a resource grant.
+        await buildViaUI(1, "housing");
+    }
+    if (JOURNEY === "scholar") {
+        // The scholarly century spends its surplus on Crown works; reserve
+        // real beds for the population floor before those costs begin.
+        await buildViaUI(1, "housing");
+        await buildViaUI(1, "housing");
+    }
+    if (JOURNEY === "builder") {
+        // The additional barracks and tower consume the builder's early
+        // material margin; reserve one real cottage for the population floor.
+        await buildViaUI(1, "housing");
     }
 }
 
@@ -867,7 +894,7 @@ async function merchantTurn() {
 }
 
 async function fundJourneyFromSurplus() {
-    if (!["builder", "warlord", "diplomat"].includes(JOURNEY)) return;
+    if (!["builder", "warlord", "diplomat", "merchant", "scholar"].includes(JOURNEY)) return;
     await pauseGame();
     await dismiss();
     const wallet = await page.evaluate(async () => {

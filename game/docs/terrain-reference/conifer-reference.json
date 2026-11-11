@@ -11,7 +11,7 @@
   },
   "renderer": "WebKit WebGL",
   "maxTextureSize": 8192,
-  "generatedAt": "2026-11-09T20:36:31.212Z",
+  "generatedAt": "2026-11-11T16:07:48.054Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -70,6 +70,27 @@
         "bark-beetle",
         "owl",
         "wolf"
+      ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Spruce · Fir · Pine · Birch",
+      "mixturePattern": "even",
+      "broadleafShare": 0.121,
+      "coniferShare": 0.879,
+      "dominantSpecies": "spruce",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Fern layer",
+      "silviculture": [],
+      "autumnPalette": [
+        "#1b392c",
+        "#19342a",
+        "#2b5138",
+        "#c9a83a",
+        "#8d6934",
+        "#16372a"
       ],
       "moisture": 0.632,
       "temperature": 0.353,
@@ -137,6 +158,27 @@
         "bark-beetle",
         "wolf"
       ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Fir · Spruce · Beech · Pine",
+      "mixturePattern": "even",
+      "broadleafShare": 0.15,
+      "coniferShare": 0.85,
+      "dominantSpecies": "fir",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Fern layer",
+      "silviculture": [],
+      "autumnPalette": [
+        "#19342a",
+        "#1b392c",
+        "#a86f2f",
+        "#2b5138",
+        "#c9a83a",
+        "#16372a"
+      ],
       "moisture": 0.7,
       "temperature": 0.25,
       "height": 0.609,
@@ -200,6 +242,27 @@
         "ant",
         "bark-beetle"
       ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Pine · Spruce · Larch · Birch",
+      "mixturePattern": "even",
+      "broadleafShare": 0.099,
+      "coniferShare": 0.901,
+      "dominantSpecies": "pine",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Fern layer",
+      "silviculture": [],
+      "autumnPalette": [
+        "#2b5138",
+        "#1b392c",
+        "#b8842b",
+        "#c9a83a",
+        "#31543a",
+        "#2b5037"
+      ],
       "moisture": 0.696,
       "temperature": 0.305,
       "height": 0.563,
@@ -258,6 +321,27 @@
         "crossbill",
         "songbird"
       ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Larch · Pine · Spruce · Birch",
+      "mixturePattern": "even",
+      "broadleafShare": 0.099,
+      "coniferShare": 0.901,
+      "dominantSpecies": "larch",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Fern layer",
+      "silviculture": [],
+      "autumnPalette": [
+        "#b8842b",
+        "#2b5138",
+        "#1b392c",
+        "#c9a83a",
+        "#31543a",
+        "#16372a"
+      ],
       "moisture": 0.697,
       "temperature": 0.331,
       "height": 0.584,
@@ -315,6 +399,30 @@
         "ant",
         "bark-beetle",
         "crossbill"
+      ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Pine · Juniper · Dwarf pine · Larch",
+      "mixturePattern": "even",
+      "broadleafShare": 0.096,
+      "coniferShare": 0.904,
+      "dominantSpecies": "pine",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Grass and herb layer",
+      "silviculture": [
+        "protection",
+        "charcoal"
+      ],
+      "autumnPalette": [
+        "#2b5138",
+        "#31543a",
+        "#2b5037",
+        "#b8842b",
+        "#c9a83a",
+        "#1b392c"
       ],
       "moisture": 0.456,
       "temperature": 0.241,
@@ -375,6 +483,26 @@
         "owl",
         "crossbill",
         "mouse"
+      ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Spruce · Alder · Fir · Birch",
+      "mixturePattern": "even",
+      "broadleafShare": 0.29,
+      "coniferShare": 0.71,
+      "dominantSpecies": "spruce",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Fern layer",
+      "silviculture": [],
+      "autumnPalette": [
+        "#1b392c",
+        "#8d6934",
+        "#19342a",
+        "#c9a83a",
+        "#2b5138"
       ],
       "moisture": 0.796,
       "temperature": 0.163,
@@ -439,6 +567,27 @@
         "lynx",
         "wolf"
       ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Spruce · Fir · Pine · Larch",
+      "mixturePattern": "even",
+      "broadleafShare": 0,
+      "coniferShare": 1,
+      "dominantSpecies": "spruce",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Fern layer",
+      "silviculture": [],
+      "autumnPalette": [
+        "#1b392c",
+        "#19342a",
+        "#2b5138",
+        "#b8842b",
+        "#31543a",
+        "#2b5037"
+      ],
       "moisture": 0.647,
       "temperature": 0.196,
       "height": 0.826,
@@ -499,6 +648,27 @@
         "raptor",
         "crossbill",
         "capercaillie"
+      ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Juniper · Pine · Dwarf pine · Larch",
+      "mixturePattern": "even",
+      "broadleafShare": 0.095,
+      "coniferShare": 0.905,
+      "dominantSpecies": "juniper",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Shrub layer",
+      "silviculture": [],
+      "autumnPalette": [
+        "#31543a",
+        "#2b5138",
+        "#2b5037",
+        "#b8842b",
+        "#1b392c",
+        "#c9a83a"
       ],
       "moisture": 0.756,
       "temperature": 0.165,
@@ -565,6 +735,27 @@
         "capercaillie",
         "songbird"
       ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Spruce · Fir · Pine · Larch",
+      "mixturePattern": "even",
+      "broadleafShare": 0,
+      "coniferShare": 1,
+      "dominantSpecies": "spruce",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Fern layer",
+      "silviculture": [],
+      "autumnPalette": [
+        "#1b392c",
+        "#19342a",
+        "#2b5138",
+        "#b8842b",
+        "#31543a",
+        "#2b5037"
+      ],
       "moisture": 0.725,
       "temperature": 0.173,
       "height": 0.805,
@@ -620,6 +811,28 @@
         "owl",
         "fox"
       ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Spruce · Pine · Fir · Birch",
+      "mixturePattern": "even",
+      "broadleafShare": 0.1,
+      "coniferShare": 0.9,
+      "dominantSpecies": "spruce",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Fern layer",
+      "silviculture": [
+        "charcoal"
+      ],
+      "autumnPalette": [
+        "#1b392c",
+        "#2b5138",
+        "#19342a",
+        "#c9a83a",
+        "#b8842b"
+      ],
       "moisture": 0.762,
       "temperature": 0.279,
       "height": 0.539,
@@ -674,6 +887,26 @@
         "owl",
         "woodpecker"
       ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Spruce · Fir · Pine · Larch",
+      "mixturePattern": "even",
+      "broadleafShare": 0.08,
+      "coniferShare": 0.92,
+      "dominantSpecies": "spruce",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Fern layer",
+      "silviculture": [],
+      "autumnPalette": [
+        "#1b392c",
+        "#19342a",
+        "#2b5138",
+        "#b8842b",
+        "#c9a83a"
+      ],
       "moisture": 0.802,
       "temperature": 0.181,
       "height": 0.693,
@@ -727,6 +960,26 @@
         "fox",
         "hare",
         "ant"
+      ],
+      "mixed": true,
+      "tropical": null,
+      "mixtureLabel": "Pine · Larch · Juniper · Spruce",
+      "mixturePattern": "even",
+      "broadleafShare": 0.06,
+      "coniferShare": 0.94,
+      "dominantSpecies": "pine",
+      "canopyLayers": [
+        "Main canopy",
+        "Understorey and saplings"
+      ],
+      "understoryType": "Grass and herb layer",
+      "silviculture": [],
+      "autumnPalette": [
+        "#2b5138",
+        "#b8842b",
+        "#31543a",
+        "#1b392c",
+        "#c9a83a"
       ],
       "moisture": 0.46,
       "temperature": 0.275,
@@ -787,6 +1040,27 @@
       "crossbill",
       "songbird"
     ],
+    "mixed": true,
+    "tropical": null,
+    "mixtureLabel": "Larch · Pine · Spruce · Birch",
+    "mixturePattern": "even",
+    "broadleafShare": 0.099,
+    "coniferShare": 0.901,
+    "dominantSpecies": "larch",
+    "canopyLayers": [
+      "Main canopy",
+      "Understorey and saplings"
+    ],
+    "understoryType": "Fern layer",
+    "silviculture": [],
+    "autumnPalette": [
+      "#b8842b",
+      "#2b5138",
+      "#1b392c",
+      "#c9a83a",
+      "#31543a",
+      "#16372a"
+    ],
     "moisture": 0.697,
     "temperature": 0.331,
     "height": 0.584,
@@ -821,9 +1095,9 @@
     }
   ],
   "artifactHashes": {
-    "formation": "437d646b33682881aacc6c2cfe9eb90c5386f5dce89caca16c57b06f6c53bfef",
-    "seasonal": "cfdbbe8edc29856abc0a194e594e09f0ed6f1b2464bd8728a401e76d1fb1fd92",
-    "species": "092105fd0203128dc35f44c8922ce7949b8559262592506bfb286dae8ddb8b39"
+    "formation": "2b62ef27fdd3f45ccf5127dadf65526d9bc8311c3883d0b177c01185fd04e8f2",
+    "seasonal": "a9dc6a4521b16a1d4d8c9d5b60d5ff1f5a5784f680b56c6a140b3a341501b766",
+    "species": "8d1968f99d35ddd47199dcfee716d3d54b335211883f98136ad60d8e26977093"
   },
   "speciesPlate": {
     "image": "conifer-species.png",

@@ -16,6 +16,7 @@ test("a new realm begins empty and only deals when the player asks",()=>{
     assert.equal(state.hand.length,0);
     assert.equal(state.currentCard,null);
     assert.equal(state.nextCardDrawTick,0);
+    assert.equal(state.statistics.totalCardsDrawn,0);
     // Time alone must never add a card.
     state.tick=5000;
     assert.equal(state.hand.length,0);
@@ -24,6 +25,7 @@ test("a new realm begins empty and only deals when the player asks",()=>{
     assert.equal(state.hand.length,1);
     assert.equal(state.currentCard,null,"drawing must not select the new card");
     assert.equal(state.selectedCardInstanceId,null);
+    assert.equal(state.statistics.totalCardsDrawn,1,"the checklist counter must record the first draw");
 });
 test("the hand holds five cards and refuses a sixth until one leaves",()=>{
     resetState();

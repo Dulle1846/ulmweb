@@ -11,6 +11,9 @@ import { resetState, state } from "../js/core/state.js";
 import { DEFAULT_WORLD_OPTIONS } from "../js/world/terrain-model.js";
 import { initWorld } from "../js/world/world.js";
 import { initStartingKingdom } from "../js/world/entities.js";
+import { initializeCityForRealm, openGoodsBookForNewRealm, updateLogisticsMovement } from "../js/systems/logistics.js";
+import { initializeSettlementForRealm } from "../js/systems/settlement.js";
+import { canPlaceBuilding, placeDirectBuilding } from "../js/systems/construction.js";
 import { updateSimulation } from "../js/simulation/simulation.js";
 import { TYPE } from "../js/core/types.js";
 import { getHousingSnapshot } from "../js/systems/population.js";
@@ -32,7 +35,7 @@ const DECISION_INTERVAL = 200;
 const HAND_LIMIT = 5;
 const MAX_AUTO_DRAW_TICK = Number.MAX_SAFE_INTEGER;
 
-const CARD_IDS = ["farmstead", "cottage", "lumberyard", "stone-quarry", "farmstead", "cottage", "tavern", "mill"];
+const CARD_IDS = ["farmstead", "cottage", "lumberyard", "watchtower", "farmstead", "cottage", "stone-quarry", "tavern", "mill"];
 const CARD_PROTOTYPE_BY_ID = new Map(CARD_PROTOTYPES.map(card => [card.id, card]));
 const OFFER_CYCLE = CARD_IDS.map(id => {
     const prototype = CARD_PROTOTYPE_BY_ID.get(id);
@@ -153,6 +156,8 @@ function desiredBuildingType() {
     const shortage = Number(state.economy?.lastLedger?.foodShortage) || 0;
 
     if (shortage > 0 || food < Math.max(90, housing.population * 4.5)) return TYPE.FARM;
+    const needs = state.city?.needs?.summary;
+    if (needs && needs.safety < 0.35) return TYPE.TOWER;
     if (farms < houses) return TYPE.FARM;
     if (housing.available < 2) return TYPE.HOUSE;
     if (wood < 140) return TYPE.LUMBER;
@@ -235,6 +240,37 @@ function runSeed(seed) {
     const initStarted = performance.now();
     withCanvasStub(() => initWorld(seed, state.worldOptions));
     initStartingKingdom();
+    // Card buildings need the same city, settlement and logistics layers as
+    // the live game; without them every new house stays an unfinished site and
+    // the growth audit measures population decline rather than growth.
+    initializeCityForRealm();
+    initializeSettlementForRealm();
+    openGoodsBookForNewRealm();
+    // A colossal start has homes but no reliable service district. Place a
+    // small paid well/watchtower cluster as a real construction project so the
+    // normal settlement gate can open; this is infrastructure, not a resource
+    // grant. Watchtowers can also be drawn later from the real card queue.
+    const placeService = type => {
+        if (state.entities.some(entity => !entity.dead && entity.type === type)) return;
+        const centerX = Math.floor((Number(state.worldW) || 576) / 2);
+        const centerY = Math.floor((Number(state.worldH) || 576) / 2);
+        for (let radius = 0; radius <= 30; radius++) {
+            for (let ox = -radius; ox <= radius; ox++) {
+                for (let oy = -radius; oy <= radius; oy++) {
+                    if (Math.max(Math.abs(ox), Math.abs(oy)) !== radius) continue;
+                    const tx = centerX + ox, ty = centerY + oy;
+                    if (!canPlaceBuilding(type, tx, ty).ok) continue;
+                    return placeDirectBuilding(type, tx, ty);
+                }
+            }
+        }
+        return null;
+    };
+    placeService(TYPE.WELL);
+    placeService(TYPE.WELL);
+    placeService(TYPE.TOWER);
+    placeService(TYPE.TOWER);
+    initializeSettlementForRealm();
     const initMs = performance.now() - initStarted;
 
     drawStartingHand();
@@ -261,6 +297,7 @@ function runSeed(seed) {
     let completedTicks = 0;
     for (let tick = 1; tick <= TICKS; tick++) {
         updateSimulation();
+        for (let step = 0; step < 4; step++) updateLogisticsMovement(0.1875);
         disableAutoDraw();
         completedTicks = state.tick;
         minFood = Math.min(minFood, state.resources.food);

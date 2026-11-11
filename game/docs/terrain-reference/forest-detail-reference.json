@@ -10,7 +10,7 @@
   },
   "renderer": "WebKit WebGL",
   "maxTextureSize": 8192,
-  "generatedAt": "2026-11-08T18:47:15.296Z",
+  "generatedAt": "2026-11-11T16:12:02.123Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -71,16 +71,16 @@
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
               "berries",
               "birch-sap",
+              "birch-timber",
+              "chanterelle",
+              "crab-apples",
               "firewood",
-              "herbs",
-              "honey",
-              "linden-flower",
-              "maple-syrup",
-              "mushrooms"
+              "herbs"
             ],
             "species": [
               "Birch",
@@ -96,7 +96,7 @@
             "x": 87.2995,
             "y": 42.694199999999995
           },
-          "sha256": "30d900ec8b77e0156052c4f4d0b28b3fbeb9fb458834415efe57a10ad0810ff3",
+          "sha256": "0af05f2942d23bdba9ab84ae267e752238d311513ddf3de2b459b9cb0355d8f6",
           "animal": null
         }
       ]
@@ -138,16 +138,16 @@
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
               "berries",
               "birch-sap",
+              "birch-timber",
+              "chanterelle",
+              "crab-apples",
               "firewood",
-              "herbs",
-              "honey",
-              "linden-flower",
-              "maple-syrup",
-              "mushrooms"
+              "herbs"
             ],
             "species": [
               "Birch",
@@ -163,7 +163,7 @@
             "x": 86.35,
             "y": 44.6528
           },
-          "sha256": "e1ec87f0e925bb2ba3ce04d794566c59f5c9f5c62cb1dd3282fa3a1c0ea42c39",
+          "sha256": "92ac980e94dbb3b31de4fb842760070167295ef2bd39deb44a26617299b8cd14",
           "animal": null
         }
       ]
@@ -186,40 +186,40 @@
             "temperature": 0.47,
             "height": 0.385,
             "stockRatio": 1,
-            "type": "beechwood",
-            "label": "Beechwood",
-            "age": "mature",
-            "soil": "loam",
+            "type": "mixed-ancient",
+            "label": "Ancient Mixed Wood",
+            "age": "ancient",
+            "soil": "humus",
             "clearing": 0,
-            "treeChance": 0.513,
-            "light": 0.747,
+            "treeChance": 0.585,
+            "light": 0.675,
             "compaction": 0.12,
             "huntingPressure": 0.1,
             "flowers": 0.35,
-            "roots": 0.08,
+            "roots": 0.3,
             "stones": 0,
-            "mushrooms": 0.335,
+            "mushrooms": 0.215,
             "stumps": 0,
-            "logs": 0,
+            "logs": 0.14,
             "trail": true,
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
-              "birch-sap",
-              "firewood",
-              "game",
-              "hides",
-              "honey",
-              "linden-flower",
-              "maple-syrup",
-              "mushrooms"
+              "charcoal",
+              "crab-apples",
+              "elm-seeds",
+              "elm-timber",
+              "fir-cones",
+              "fir-timber",
+              "firewood"
             ],
             "species": [
-              "Beech",
               "Oak",
-              "Maple"
+              "Beech",
+              "Linden"
             ]
           },
           "day": 150,
@@ -230,7 +230,7 @@
             "x": 114.7495,
             "y": 24.5083
           },
-          "sha256": "273aa0364cf9e16ba02d22f3d92830194640d2cedc368c11978e3a9ea2960483",
+          "sha256": "43a4b3a659428ab3600dc772ff709ad5ed37b02a0298990268d151ad44945e5e",
           "animal": null
         }
       ]
@@ -243,45 +243,45 @@
         {
           "label": "ALLUVIAL · WET",
           "tile": {
-            "x": 80,
-            "y": 38,
+            "x": 85,
+            "y": 122,
             "tree": false,
-            "s1": 0.73,
-            "s2": 0.365,
-            "s3": 0.646,
-            "moisture": 0.761,
-            "temperature": 0.417,
-            "height": 0.566,
+            "s1": 0.767,
+            "s2": 0.826,
+            "s3": 0.247,
+            "moisture": 0.746,
+            "temperature": 0.495,
+            "height": 0.6,
             "stockRatio": 1,
             "type": "alluvial",
             "label": "Alluvial Woodland",
             "age": "ancient",
             "soil": "alluvial",
             "clearing": 0,
-            "treeChance": 0.628,
-            "light": 0.452,
+            "treeChance": 0.62,
+            "light": 0.46,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
             "roots": 0.4,
-            "stones": 0.008,
-            "mushrooms": 0.308,
+            "stones": 0.056,
+            "mushrooms": 0.304,
             "stumps": 0,
             "logs": 0.14,
             "trail": false,
             "goods": [
               "acorns",
               "alder-cones",
+              "alder-timber",
               "bark",
               "beeswax",
               "birch-sap",
+              "birch-timber",
+              "chanterelle",
               "charcoal",
+              "crab-apples",
               "elm-seeds",
-              "firewood",
-              "game",
-              "herbs",
-              "hides",
-              "honey"
+              "elm-timber"
             ],
             "species": [
               "Alder",
@@ -294,10 +294,10 @@
           "crop": 560,
           "mark": null,
           "focus": {
-            "x": 80.4325,
-            "y": 38.5907
+            "x": 85.663,
+            "y": 122.41114999999999
           },
-          "sha256": "0eaca3c52fa97984ff57c278a0c7fd94c8885555346005ba389bfe84e976c608",
+          "sha256": "768aa2058ab0be089c123bca878b1549b1e34cd2d13c2b5d3a98386ba188319e",
           "animal": null
         },
         {
@@ -332,16 +332,16 @@
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
               "berries",
               "birch-sap",
+              "birch-timber",
+              "chanterelle",
+              "crab-apples",
               "firewood",
-              "herbs",
-              "honey",
-              "linden-flower",
-              "maple-syrup",
-              "mushrooms"
+              "herbs"
             ],
             "species": [
               "Birch",
@@ -357,7 +357,7 @@
             "x": 65.326,
             "y": 109.7158
           },
-          "sha256": "c05fdccc959dd6d54de851d33e877f67bd6205f97509470656567410757005c9",
+          "sha256": "78a0ca432788a8f3a2db20dc80a5aca6503ce49c8048fd4732135acfeabaa4b4",
           "animal": null
         }
       ]
@@ -370,50 +370,50 @@
         {
           "label": "ROOTS",
           "tile": {
-            "x": 56,
-            "y": 139,
+            "x": 97,
+            "y": 38,
             "tree": false,
-            "s1": 0.845,
-            "s2": 0.444,
-            "s3": 0.835,
-            "moisture": 0.518,
-            "temperature": 0.427,
-            "height": 0.648,
+            "s1": 0.839,
+            "s2": 0.225,
+            "s3": 0.816,
+            "moisture": 0.649,
+            "temperature": 0.391,
+            "height": 0.806,
             "stockRatio": 1,
-            "type": "linden-elm",
-            "label": "Linden and Elm Stand",
+            "type": "mixed-conifer",
+            "label": "Mixed Conifer Wood",
             "age": "ancient",
-            "soil": "humus",
+            "soil": "podzol",
             "clearing": 0,
-            "treeChance": 0.466,
-            "light": 0.614,
-            "compaction": 0.12,
+            "treeChance": 0.556,
+            "light": 0.524,
+            "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
             "roots": 0.4,
-            "stones": 0.123,
-            "mushrooms": 0.236,
+            "stones": 0.344,
+            "mushrooms": 0.275,
             "stumps": 0,
             "logs": 0.14,
-            "trail": true,
+            "trail": false,
             "goods": [
-              "acorns",
-              "bark",
-              "beeswax",
+              "blueberries",
               "charcoal",
-              "chestnuts",
-              "elm-seeds",
+              "dwarf-pine-cones",
+              "dwarf-pine-timber",
+              "fir-cones",
+              "fir-timber",
               "firewood",
+              "fur",
               "game",
               "herbs",
               "hides",
-              "honey",
-              "linden-flower"
+              "juniper-berries"
             ],
             "species": [
-              "Linden",
-              "Elm",
-              "Oak"
+              "Spruce",
+              "Fir",
+              "Pine"
             ]
           },
           "day": 150,
@@ -421,54 +421,54 @@
           "crop": 420,
           "mark": null,
           "focus": {
-            "x": 56.472,
-            "y": 139.71575
+            "x": 97.3625,
+            "y": 38.70719999999999
           },
-          "sha256": "df85839a5a28c7bb19974f4c280be31e700f97ec08a77dcf7e80fc0671fa804f",
+          "sha256": "6765ce28cda7b25d58341d5ca9f3109be46996bdc580019c9839157fcf03ad14",
           "animal": null
         },
         {
           "label": "STONES",
           "tile": {
-            "x": 87,
-            "y": 61,
+            "x": 91,
+            "y": 55,
             "tree": false,
-            "s1": 0.888,
-            "s2": 0.756,
-            "s3": 0.027,
-            "moisture": 0.545,
-            "temperature": 0.448,
-            "height": 0.828,
+            "s1": 0.822,
+            "s2": 0.678,
+            "s3": 0.369,
+            "moisture": 0.488,
+            "temperature": 0.435,
+            "height": 0.813,
             "stockRatio": 1,
             "type": "hillside",
             "label": "Hillside Forest",
             "age": "mature",
             "soil": "loam",
             "clearing": 0,
-            "treeChance": 0.455,
-            "light": 0.625,
+            "treeChance": 0.429,
+            "light": 0.651,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
             "roots": 0.18,
-            "stones": 0.555,
-            "mushrooms": 0.243,
+            "stones": 0.535,
+            "mushrooms": 0.226,
             "stumps": 0,
             "logs": 0,
             "trail": false,
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
+              "crab-apples",
               "elm-seeds",
+              "elm-timber",
               "firewood",
+              "fur",
               "game",
-              "herbs",
-              "hides",
-              "honey",
-              "linden-flower",
-              "maple-syrup"
+              "herbs"
             ],
             "species": [
               "Beech",
@@ -481,10 +481,10 @@
           "crop": 420,
           "mark": null,
           "focus": {
-            "x": 87.628,
-            "y": 61.312149999999995
+            "x": 91.589,
+            "y": 55.466049999999996
           },
-          "sha256": "913ce626db746aa0e76453188b9a63db6b23fcc808b1dfd94ed19457061e48d6",
+          "sha256": "eb36093001fb07429f8122f7870569f80335d491711031c94a459ff04fedfd28",
           "animal": null
         },
         {
@@ -519,15 +519,16 @@
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "birch-sap",
+              "birch-timber",
+              "chanterelle",
+              "crab-apples",
               "elm-seeds",
+              "elm-timber",
               "firewood",
-              "herbs",
-              "maple-syrup",
-              "mushrooms",
-              "timber",
-              "truffles"
+              "herbs"
             ],
             "species": [
               "Beech",
@@ -543,7 +544,7 @@
             "x": 126.609,
             "y": 133.43910000000002
           },
-          "sha256": "e5f12d364c0988e33e8b8aec37e24b0d4dac45c03e8200d153dfe61091c53624",
+          "sha256": "8ae4f07f073001f82d11e9b484ffc4070951ded6b6caaa588e7b3679624fd94a",
           "animal": null
         }
       ]
@@ -585,15 +586,16 @@
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "birch-sap",
+              "birch-timber",
+              "chanterelle",
+              "crab-apples",
               "elm-seeds",
+              "elm-timber",
               "firewood",
-              "herbs",
-              "maple-syrup",
-              "mushrooms",
-              "timber",
-              "truffles"
+              "herbs"
             ],
             "species": [
               "Beech",
@@ -609,56 +611,56 @@
             "x": 128.738,
             "y": 133.48225000000002
           },
-          "sha256": "524860dfbbc6889f88dfd4d8910ebb43f554c4e3a2a0957ac6bf508e8c0f32d5",
+          "sha256": "14c516e645c9b4534aeb9703d02c706ba7cca546960e3f79a65e8ade8faff945",
           "animal": null
         },
         {
           "label": "FLOOR",
           "tile": {
-            "x": 88,
-            "y": 30,
+            "x": 90,
+            "y": 40,
             "tree": false,
-            "s1": 0.77,
-            "s2": 0.81,
-            "s3": 0.731,
-            "moisture": 0.694,
-            "temperature": 0.412,
-            "height": 0.474,
+            "s1": 0.722,
+            "s2": 0.872,
+            "s3": 0.935,
+            "moisture": 0.697,
+            "temperature": 0.409,
+            "height": 0.763,
             "stockRatio": 1,
-            "type": "birchwood",
-            "label": "Birch Grove",
-            "age": "young",
-            "soil": "loam",
+            "type": "larchwood",
+            "label": "Larchwood",
+            "age": "mature",
+            "soil": "podzol",
             "clearing": 0,
-            "treeChance": 0.413,
-            "light": 0.727,
+            "treeChance": 0.511,
+            "light": 0.569,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
-            "roots": 0.08,
-            "stones": 0,
-            "mushrooms": 0.288,
+            "roots": 0.18,
+            "stones": 0.284,
+            "mushrooms": 0.289,
             "stumps": 0,
             "logs": 0,
             "trail": false,
             "goods": [
-              "acorns",
-              "alder-cones",
-              "bark",
-              "beechnuts",
-              "berries",
               "birch-sap",
+              "birch-timber",
+              "blueberries",
+              "chanterelle",
               "firewood",
               "herbs",
-              "maple-syrup",
-              "mushrooms",
-              "timber",
-              "truffles"
+              "juniper-berries",
+              "juniper-timber",
+              "larch-timber",
+              "lichen",
+              "lingonberries",
+              "mushrooms"
             ],
             "species": [
-              "Birch",
-              "Maple",
-              "Oak"
+              "Larch",
+              "Pine",
+              "Spruce"
             ]
           },
           "day": 150,
@@ -666,10 +668,10 @@
           "crop": 340,
           "mark": "FLOOR FUNGI",
           "focus": {
-            "x": 88.655,
-            "y": 30.62895
+            "x": 90.686,
+            "y": 40.720749999999995
           },
-          "sha256": "22580ab83f4baf1c032695d4c70c8db7339ebae85d849f0f0443f270165b0e1b",
+          "sha256": "7f91e3c4721cfbe32f6d07422cc65f02612961a90d479f2000e5cde1628e9cb8",
           "animal": null
         }
       ]
@@ -711,16 +713,16 @@
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
               "berries",
               "birch-sap",
+              "birch-timber",
+              "chanterelle",
+              "crab-apples",
               "firewood",
-              "herbs",
-              "honey",
-              "linden-flower",
-              "maple-syrup",
-              "mushrooms"
+              "herbs"
             ],
             "species": [
               "Birch",
@@ -736,51 +738,51 @@
             "x": 88.7795,
             "y": 42.78615
           },
-          "sha256": "cd10bf3b23db4f239f7c620acbb6b866edb248d01d01a244707300851f494a4a",
+          "sha256": "64adb9a24c4a9bc469449329424f376418d476219951bed407bb129b9b053da2",
           "animal": null
         },
         {
           "label": "AUTUMN MAST",
           "tile": {
-            "x": 104,
-            "y": 21,
+            "x": 39,
+            "y": 37,
             "tree": false,
-            "s1": 0.347,
-            "s2": 0.385,
-            "s3": 0.912,
-            "moisture": 0.48,
-            "temperature": 0.465,
-            "height": 0.391,
+            "s1": 0.328,
+            "s2": 0.041,
+            "s3": 0.219,
+            "moisture": 0.429,
+            "temperature": 0.504,
+            "height": 0.434,
             "stockRatio": 1,
             "type": "oakwood",
             "label": "Oakwood",
             "age": "ancient",
             "soil": "humus",
-            "clearing": 0.814,
-            "treeChance": 0.105,
-            "light": 0.953,
+            "clearing": 0.738,
+            "treeChance": 0.12,
+            "light": 0.942,
             "compaction": 0.12,
             "huntingPressure": 0.1,
             "flowers": 0.65,
             "roots": 0.3,
             "stones": 0,
-            "mushrooms": 0.224,
+            "mushrooms": 0.209,
             "stumps": 0,
             "logs": 0.14,
             "trail": true,
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
               "charcoal",
+              "crab-apples",
               "elm-seeds",
+              "elm-timber",
               "firewood",
-              "game",
-              "herbs",
-              "hides",
-              "honey",
-              "linden-flower"
+              "fur",
+              "game"
             ],
             "species": [
               "Oak",
@@ -793,10 +795,10 @@
           "crop": 360,
           "mark": "MAST",
           "focus": {
-            "x": 104.4425,
-            "y": 21.7704
+            "x": 39.2705,
+            "y": 37.45855
           },
-          "sha256": "fe7bb1cf97cf6f511d8655dc81baf8f31e9690c43521d423f2d6368217f2bfd6",
+          "sha256": "aa2ec857e704a0529e3dbf3cda67e7c66c9ed02f59c5be476d928c3c500270a4",
           "animal": null
         }
       ]
@@ -809,48 +811,49 @@
         {
           "label": "TILE",
           "tile": {
-            "x": 71,
-            "y": 104,
+            "x": 93,
+            "y": 27,
             "tree": true,
-            "s1": 0.267,
-            "s2": 0.978,
-            "s3": 0.812,
-            "moisture": 0.579,
-            "temperature": 0.553,
-            "height": 0.591,
+            "s1": 0.316,
+            "s2": 0.018,
+            "s3": 0.984,
+            "moisture": 0.649,
+            "temperature": 0.418,
+            "height": 0.606,
             "stockRatio": 1,
-            "type": "maplewood",
-            "label": "Maplewood",
-            "age": "mature",
+            "type": "birchwood",
+            "label": "Birch Grove",
+            "age": "young",
             "soil": "loam",
             "clearing": 0,
-            "treeChance": 0.507,
-            "light": 0.573,
+            "treeChance": 0.397,
+            "light": 0.74,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
             "roots": 0.18,
-            "stones": 0.043,
-            "mushrooms": 0.254,
+            "stones": 0.065,
+            "mushrooms": 0.275,
             "stumps": 0,
             "logs": 0,
             "trail": false,
             "goods": [
               "acorns",
+              "alder-cones",
+              "alder-timber",
               "bark",
+              "beech-timber",
               "beechnuts",
+              "berries",
               "birch-sap",
-              "elm-seeds",
-              "firewood",
-              "herbs",
-              "maple-syrup",
-              "mushrooms",
-              "timber",
-              "truffles"
+              "birch-timber",
+              "chanterelle",
+              "crab-apples",
+              "firewood"
             ],
             "species": [
+              "Birch",
               "Maple",
-              "Beech",
               "Oak"
             ]
           },
@@ -859,81 +862,82 @@
           "crop": 700,
           "mark": null,
           "focus": {
-            "x": 71.739,
-            "y": 104.66539999999999
+            "x": 93.259,
+            "y": 27.7428
           },
-          "sha256": "877921f3b41f07eb622ab93a380d7ab9a40674adc2f8a96b6d05201414d2b314",
+          "sha256": "3cd9098e15fd05f55c08a45e3c228d75b9b81005584174423e767fea2f08074c",
           "animal": {
-            "id": "squirrel",
-            "label": "Squirrel",
+            "id": "hare",
+            "label": "Hare",
             "group": "small",
             "simulatedHerd": true,
-            "population": 8.6
+            "population": 5.3
           }
         },
         {
           "label": "CLOSE-UP",
           "tile": {
-            "x": 71,
-            "y": 104,
+            "x": 93,
+            "y": 27,
             "tree": true,
-            "s1": 0.267,
-            "s2": 0.978,
-            "s3": 0.812,
-            "moisture": 0.579,
-            "temperature": 0.553,
-            "height": 0.591,
+            "s1": 0.316,
+            "s2": 0.018,
+            "s3": 0.984,
+            "moisture": 0.649,
+            "temperature": 0.418,
+            "height": 0.606,
             "stockRatio": 1,
-            "type": "maplewood",
-            "label": "Maplewood",
-            "age": "mature",
+            "type": "birchwood",
+            "label": "Birch Grove",
+            "age": "young",
             "soil": "loam",
             "clearing": 0,
-            "treeChance": 0.507,
-            "light": 0.573,
+            "treeChance": 0.397,
+            "light": 0.74,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
             "roots": 0.18,
-            "stones": 0.043,
-            "mushrooms": 0.254,
+            "stones": 0.065,
+            "mushrooms": 0.275,
             "stumps": 0,
             "logs": 0,
             "trail": false,
             "goods": [
               "acorns",
+              "alder-cones",
+              "alder-timber",
               "bark",
+              "beech-timber",
               "beechnuts",
+              "berries",
               "birch-sap",
-              "elm-seeds",
-              "firewood",
-              "herbs",
-              "maple-syrup",
-              "mushrooms",
-              "timber",
-              "truffles"
+              "birch-timber",
+              "chanterelle",
+              "crab-apples",
+              "firewood"
             ],
             "species": [
+              "Birch",
               "Maple",
-              "Beech",
               "Oak"
             ]
           },
           "day": 150,
           "zoom": 5.2,
           "crop": 320,
-          "mark": "Squirrel",
+          "mark": "Hare",
           "focus": {
-            "x": 71.80728571428571,
-            "y": 104.66539999999999
+            "x": 93.19014285714286,
+            "y": 27.7428
           },
-          "sha256": "f5868feb0073634a0ae36f957ea38429a7565f33e8125fc9bd552378842eb088",
+          "sha256": "3f97ccb61da4e6bc1abb2570974741909b1eb44fe31dd5c5469982650be6ea26",
           "animal": {
-            "id": "squirrel",
-            "label": "Squirrel",
+            "id": "hare",
+            "label": "Hare",
             "group": "small",
             "simulatedHerd": true,
-            "population": 8.6
+            "population": 5.3
           }
         }
       ]
@@ -946,50 +950,50 @@
         {
           "label": "TILE",
           "tile": {
-            "x": 97,
-            "y": 18,
+            "x": 71,
+            "y": 104,
             "tree": true,
-            "s1": 0.355,
-            "s2": 0.112,
-            "s3": 0.704,
-            "moisture": 0.5,
-            "temperature": 0.456,
-            "height": 0.39,
+            "s1": 0.267,
+            "s2": 0.978,
+            "s3": 0.812,
+            "moisture": 0.579,
+            "temperature": 0.553,
+            "height": 0.591,
             "stockRatio": 1,
-            "type": "linden-elm",
-            "label": "Linden and Elm Stand",
-            "age": "young",
-            "soil": "loam",
+            "type": "mixed-ancient",
+            "label": "Ancient Mixed Wood",
+            "age": "ancient",
+            "soil": "humus",
             "clearing": 0,
-            "treeChance": 0.457,
-            "light": 0.691,
+            "treeChance": 0.605,
+            "light": 0.475,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
-            "roots": 0.08,
-            "stones": 0,
-            "mushrooms": 0.23,
+            "roots": 0.4,
+            "stones": 0.043,
+            "mushrooms": 0.254,
             "stumps": 0,
-            "logs": 0,
+            "logs": 0.14,
             "trail": false,
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
+              "beechnuts",
               "beeswax",
-              "chestnuts",
+              "charcoal",
+              "crab-apples",
               "elm-seeds",
-              "firewood",
-              "game",
-              "herbs",
-              "hides",
-              "honey",
-              "linden-flower",
-              "maple-syrup"
+              "elm-timber",
+              "fir-cones",
+              "fir-timber",
+              "firewood"
             ],
             "species": [
-              "Linden",
-              "Elm",
-              "Oak"
+              "Oak",
+              "Beech",
+              "Linden"
             ]
           },
           "day": 150,
@@ -997,84 +1001,82 @@
           "crop": 700,
           "mark": null,
           "focus": {
-            "x": 97.306,
-            "y": 18.6168
+            "x": 71.739,
+            "y": 104.66539999999999
           },
-          "sha256": "5b174d206b7b9b3cef46a2a3366081eae4cdfcf93db9ceee6258bf2f04f1e8aa",
+          "sha256": "bf002673bfa88ab034faaef9026ad52f500007ec028b37bb0f6c69f619fe6d66",
           "animal": {
-            "id": "songbird",
-            "label": "Songbird",
+            "id": "owl",
+            "label": "Owl",
             "group": "bird",
-            "activity": "singing in the understorey",
-            "simulatedHerd": false,
-            "population": null
+            "simulatedHerd": true,
+            "population": 3.6
           }
         },
         {
           "label": "CLOSE-UP",
           "tile": {
-            "x": 97,
-            "y": 18,
+            "x": 71,
+            "y": 104,
             "tree": true,
-            "s1": 0.355,
-            "s2": 0.112,
-            "s3": 0.704,
-            "moisture": 0.5,
-            "temperature": 0.456,
-            "height": 0.39,
+            "s1": 0.267,
+            "s2": 0.978,
+            "s3": 0.812,
+            "moisture": 0.579,
+            "temperature": 0.553,
+            "height": 0.591,
             "stockRatio": 1,
-            "type": "linden-elm",
-            "label": "Linden and Elm Stand",
-            "age": "young",
-            "soil": "loam",
+            "type": "mixed-ancient",
+            "label": "Ancient Mixed Wood",
+            "age": "ancient",
+            "soil": "humus",
             "clearing": 0,
-            "treeChance": 0.457,
-            "light": 0.691,
+            "treeChance": 0.605,
+            "light": 0.475,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
-            "roots": 0.08,
-            "stones": 0,
-            "mushrooms": 0.23,
+            "roots": 0.4,
+            "stones": 0.043,
+            "mushrooms": 0.254,
             "stumps": 0,
-            "logs": 0,
+            "logs": 0.14,
             "trail": false,
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
+              "beechnuts",
               "beeswax",
-              "chestnuts",
+              "charcoal",
+              "crab-apples",
               "elm-seeds",
-              "firewood",
-              "game",
-              "herbs",
-              "hides",
-              "honey",
-              "linden-flower",
-              "maple-syrup"
+              "elm-timber",
+              "fir-cones",
+              "fir-timber",
+              "firewood"
             ],
             "species": [
-              "Linden",
-              "Elm",
-              "Oak"
+              "Oak",
+              "Beech",
+              "Linden"
             ]
           },
           "day": 150,
           "zoom": 5.2,
           "crop": 320,
-          "mark": "Songbird",
+          "mark": "Owl",
           "focus": {
-            "x": 97.25057142857142,
-            "y": 18.6168
+            "x": 71.80728571428571,
+            "y": 104.66539999999999
           },
-          "sha256": "80171d8c0cefb06f109d86eee27c82ca36577120c6200a8d8688927b0ad2e6b7",
+          "sha256": "ac676e610bbc8fd5bea22fe669c9ee569d962f389fa4c200e7786101721669a5",
           "animal": {
-            "id": "songbird",
-            "label": "Songbird",
+            "id": "owl",
+            "label": "Owl",
             "group": "bird",
-            "activity": "singing in the understorey",
-            "simulatedHerd": false,
-            "population": null
+            "simulatedHerd": true,
+            "population": 3.6
           }
         }
       ]
@@ -1087,50 +1089,50 @@
         {
           "label": "TILE",
           "tile": {
-            "x": 89,
-            "y": 16,
-            "tree": false,
-            "s1": 0.957,
-            "s2": 0.515,
-            "s3": 0.679,
-            "moisture": 0.498,
-            "temperature": 0.465,
-            "height": 0.335,
+            "x": 93,
+            "y": 15,
+            "tree": true,
+            "s1": 0.112,
+            "s2": 0.321,
+            "s3": 0.864,
+            "moisture": 0.525,
+            "temperature": 0.463,
+            "height": 0.334,
             "stockRatio": 1,
-            "type": "linden-elm",
-            "label": "Linden and Elm Stand",
-            "age": "ancient",
-            "soil": "humus",
+            "type": "mixed-open",
+            "label": "Open Mixed Wood",
+            "age": "young",
+            "soil": "loam",
             "clearing": 0,
-            "treeChance": 0.456,
-            "light": 0.624,
+            "treeChance": 0.309,
+            "light": 0.812,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
-            "roots": 0.3,
+            "roots": 0.08,
             "stones": 0,
-            "mushrooms": 0.229,
+            "mushrooms": 0.238,
             "stumps": 0,
-            "logs": 0.14,
+            "logs": 0,
             "trail": false,
             "goods": [
               "acorns",
               "bark",
               "beeswax",
-              "charcoal",
-              "chestnuts",
-              "elm-seeds",
+              "berries",
+              "birch-sap",
+              "birch-timber",
+              "blueberries",
+              "chanterelle",
+              "crab-apples",
               "firewood",
-              "game",
-              "herbs",
-              "hides",
-              "honey",
-              "linden-flower"
+              "fur",
+              "game"
             ],
             "species": [
-              "Linden",
-              "Elm",
-              "Oak"
+              "Oak",
+              "Birch",
+              "Pine"
             ]
           },
           "day": 150,
@@ -1138,10 +1140,10 @@
           "crop": 700,
           "mark": null,
           "focus": {
-            "x": 89.5075,
-            "y": 16.60555
+            "x": 93.4105,
+            "y": 15.6888
           },
-          "sha256": "8922d9ad34ce277634739213e2bf1221989066bdaadd4abecdea3bb78a2f153f",
+          "sha256": "8a4525dc4152cc0145f15f0ef245198e12c9420056eb62a54417e4b4f252b530",
           "animal": {
             "id": "butterfly",
             "label": "Woodland butterfly",
@@ -1154,50 +1156,50 @@
         {
           "label": "CLOSE-UP",
           "tile": {
-            "x": 89,
-            "y": 16,
-            "tree": false,
-            "s1": 0.957,
-            "s2": 0.515,
-            "s3": 0.679,
-            "moisture": 0.498,
-            "temperature": 0.465,
-            "height": 0.335,
+            "x": 93,
+            "y": 15,
+            "tree": true,
+            "s1": 0.112,
+            "s2": 0.321,
+            "s3": 0.864,
+            "moisture": 0.525,
+            "temperature": 0.463,
+            "height": 0.334,
             "stockRatio": 1,
-            "type": "linden-elm",
-            "label": "Linden and Elm Stand",
-            "age": "ancient",
-            "soil": "humus",
+            "type": "mixed-open",
+            "label": "Open Mixed Wood",
+            "age": "young",
+            "soil": "loam",
             "clearing": 0,
-            "treeChance": 0.456,
-            "light": 0.624,
+            "treeChance": 0.309,
+            "light": 0.812,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
-            "roots": 0.3,
+            "roots": 0.08,
             "stones": 0,
-            "mushrooms": 0.229,
+            "mushrooms": 0.238,
             "stumps": 0,
-            "logs": 0.14,
+            "logs": 0,
             "trail": false,
             "goods": [
               "acorns",
               "bark",
               "beeswax",
-              "charcoal",
-              "chestnuts",
-              "elm-seeds",
+              "berries",
+              "birch-sap",
+              "birch-timber",
+              "blueberries",
+              "chanterelle",
+              "crab-apples",
               "firewood",
-              "game",
-              "herbs",
-              "hides",
-              "honey",
-              "linden-flower"
+              "fur",
+              "game"
             ],
             "species": [
-              "Linden",
-              "Elm",
-              "Oak"
+              "Oak",
+              "Birch",
+              "Pine"
             ]
           },
           "day": 150,
@@ -1205,10 +1207,10 @@
           "crop": 320,
           "mark": "Woodland butterfly",
           "focus": {
-            "x": 89.53307142857142,
-            "y": 16.60555
+            "x": 93.38492857142857,
+            "y": 15.6888
           },
-          "sha256": "7d1049e1fef0b3b3807614f2676141ed757cee72075925cd791717ea150d1999",
+          "sha256": "32cbd060da5896be2b8d88af2327e3bd9671cded7d481b34da12263fc2f86420",
           "animal": {
             "id": "butterfly",
             "label": "Woodland butterfly",
@@ -1238,13 +1240,13 @@
             "temperature": 0.475,
             "height": 0.607,
             "stockRatio": 1,
-            "type": "oakwood",
-            "label": "Oakwood",
+            "type": "mixed-ancient",
+            "label": "Ancient Mixed Wood",
             "age": "ancient",
             "soil": "humus",
             "clearing": 0,
-            "treeChance": 0.543,
-            "light": 0.717,
+            "treeChance": 0.585,
+            "light": 0.675,
             "compaction": 0.12,
             "huntingPressure": 0.1,
             "flowers": 0.35,
@@ -1257,21 +1259,21 @@
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
               "charcoal",
+              "crab-apples",
               "elm-seeds",
-              "firewood",
-              "game",
-              "herbs",
-              "hides",
-              "honey",
-              "linden-flower"
+              "elm-timber",
+              "fir-cones",
+              "fir-timber",
+              "firewood"
             ],
             "species": [
               "Oak",
               "Beech",
-              "Elm"
+              "Linden"
             ]
           },
           "day": 150,
@@ -1282,7 +1284,7 @@
             "x": 59.7475,
             "y": 46.3279
           },
-          "sha256": "87be52b3f17a2f71d84c105fe307c224974e4e3ef91f8fb2dd278ad59a2b9e69",
+          "sha256": "4b4f248984a267d5e43388c4c183878277b9585b8eaf777a2709d95d22b80695",
           "animal": null
         },
         {
@@ -1298,13 +1300,13 @@
             "temperature": 0.475,
             "height": 0.607,
             "stockRatio": 1,
-            "type": "oakwood",
-            "label": "Oakwood",
+            "type": "mixed-ancient",
+            "label": "Ancient Mixed Wood",
             "age": "ancient",
             "soil": "humus",
             "clearing": 0,
-            "treeChance": 0.543,
-            "light": 0.717,
+            "treeChance": 0.585,
+            "light": 0.675,
             "compaction": 0.12,
             "huntingPressure": 0.1,
             "flowers": 0.35,
@@ -1317,21 +1319,21 @@
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
               "charcoal",
+              "crab-apples",
               "elm-seeds",
-              "firewood",
-              "game",
-              "herbs",
-              "hides",
-              "honey",
-              "linden-flower"
+              "elm-timber",
+              "fir-cones",
+              "fir-timber",
+              "firewood"
             ],
             "species": [
               "Oak",
               "Beech",
-              "Elm"
+              "Linden"
             ]
           },
           "day": 150,
@@ -1342,7 +1344,7 @@
             "x": 59.7275,
             "y": 45.9979
           },
-          "sha256": "2317fa20c03a72b4e07c27ff2b8c35baee0727a4833fa97b61a005b93fcd64ce",
+          "sha256": "e1cf17b8b8c43585c136765c3062d7bd8a1bd00b656d51263c05c4253e153c06",
           "animal": null
         },
         {
@@ -1358,13 +1360,13 @@
             "temperature": 0.475,
             "height": 0.607,
             "stockRatio": 1,
-            "type": "oakwood",
-            "label": "Oakwood",
+            "type": "mixed-ancient",
+            "label": "Ancient Mixed Wood",
             "age": "ancient",
             "soil": "humus",
             "clearing": 0,
-            "treeChance": 0.543,
-            "light": 0.717,
+            "treeChance": 0.585,
+            "light": 0.675,
             "compaction": 0.12,
             "huntingPressure": 0.1,
             "flowers": 0.35,
@@ -1377,21 +1379,21 @@
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
               "charcoal",
+              "crab-apples",
               "elm-seeds",
-              "firewood",
-              "game",
-              "herbs",
-              "hides",
-              "honey",
-              "linden-flower"
+              "elm-timber",
+              "fir-cones",
+              "fir-timber",
+              "firewood"
             ],
             "species": [
               "Oak",
               "Beech",
-              "Elm"
+              "Linden"
             ]
           },
           "day": 150,
@@ -1402,7 +1404,7 @@
             "x": 59.6575,
             "y": 46.237899999999996
           },
-          "sha256": "3b80946870931cf2a3613502bff899ff188059c86458bd85004832f7ecb40d3d",
+          "sha256": "be837123d6f607dfc00baee0aebb7438acf357b4ce864e0c6885cb740a1a4548",
           "animal": null
         }
       ]
@@ -1444,16 +1446,16 @@
             "goods": [
               "acorns",
               "bark",
+              "beech-timber",
               "beechnuts",
               "beeswax",
+              "crab-apples",
               "elm-seeds",
+              "elm-timber",
               "firewood",
+              "fur",
               "game",
-              "herbs",
-              "hides",
-              "honey",
-              "linden-flower",
-              "maple-syrup"
+              "herbs"
             ],
             "species": [
               "Oak",
@@ -1469,7 +1471,7 @@
             "x": 108.6285,
             "y": 74.41745
           },
-          "sha256": "4c9003cb8a137cf9ce5654fd3593bd4fda3d2f9b6b5594ce86f03368c8f66b9b",
+          "sha256": "5369a907fc351554888dd3c912770b0dc339eef4b266a820452387f78ebdf409",
           "animal": null
         }
       ]
@@ -1492,10 +1494,10 @@
             "temperature": 0.418,
             "height": 0.732,
             "stockRatio": 1,
-            "type": "birchwood",
-            "label": "Birch Grove",
-            "age": "young",
-            "soil": "loam",
+            "type": "pinewood",
+            "label": "Pinewood",
+            "age": "mature",
+            "soil": "podzol",
             "clearing": 1,
             "treeChance": 0,
             "light": 1,
@@ -1509,23 +1511,23 @@
             "logs": 0,
             "trail": true,
             "goods": [
-              "acorns",
-              "alder-cones",
-              "bark",
-              "beechnuts",
-              "berries",
               "birch-sap",
+              "birch-timber",
+              "blueberries",
+              "chanterelle",
+              "dwarf-pine-cones",
+              "dwarf-pine-timber",
               "firewood",
+              "fur",
+              "game",
               "herbs",
-              "maple-syrup",
-              "mushrooms",
-              "timber",
-              "truffles"
+              "hides",
+              "juniper-berries"
             ],
             "species": [
-              "Birch",
-              "Maple",
-              "Oak"
+              "Pine",
+              "Spruce",
+              "Larch"
             ]
           },
           "day": 150,
@@ -1536,7 +1538,7 @@
             "x": 87.737,
             "y": 40.520799999999994
           },
-          "sha256": "c7ecfe44208b67f5a31ac56e28bdd520e3312574d3c3c53c05a287e642086ae2",
+          "sha256": "736b6a220b7cbe11d0e4d4f9b9e6d7d96bd644de197b9225409e27194fb32560",
           "animal": null
         }
       ]
