@@ -40,7 +40,7 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ### 3.15.0-dev — Tropische Regenwälder (1.2.4)
 
-**Status:** development branch only; not a production release.
+**Status:** released on `ulmweb-branch`; production https://kings-and-cards.pages.dev/ reported commit `6024ebb` (built 2026-11-11T12:42:08.437Z).
 
 **Scope:** The tropical rainforest extends the one shared forest model instead
 of adding a second ecosystem. A sixth climate profile carries humid heat, a

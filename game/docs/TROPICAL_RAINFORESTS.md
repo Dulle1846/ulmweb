@@ -136,7 +136,8 @@ Flußnahe Auen und Uferwälder können kleine Siedlungen, Bootsanleger, Ackerfl�
 
 **Pflichtpunkte: 65/65 vorhanden.** Die Daten, Güter, Fauna, Gefahren und
 Landnutzung sind vollständig; in diesem Durchgang wurden die noch fehlenden
-sichtbaren Pfade nachgezogen.
+sichtbaren Pfade nachgezogen. Die Abschlussprüfung am 11.11.2026 bestätigt
+65 eindeutige IDs ohne Lücken; Produktionsstand ist Commit `6024ebb`.
 
 ### In diesem Audit nachgezogen
 
