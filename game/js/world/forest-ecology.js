@@ -938,6 +938,11 @@ export function forestStandAt(x, y, context = {}) {
     let treeChance = clamp01(0.08 + density * 0.78 + (edge ? 0.06 : 0) - clearing * 0.56);
     if (formation.id === 'regenerating') treeChance = clamp01(0.32 + density * 0.4);
     if (formation.id === 'cutover') treeChance = clamp01(0.12 + density * 0.62);
+    // Floodplain, swamp and riverbank stands carry visible open water and
+    // alluvial gaps. Keep a little more sky/water between the crowns so the
+    // channel is not completely roofed over by the canopy.
+    if (formation.id === 'tropical-floodplain' || formation.id === 'tropical-swamp'
+        || formation.id === 'tropical-riverbank') treeChance = clamp01(treeChance * 0.8);
     if (!forest) treeChance = 0;
 
     const fern = clamp01(0.12 + moisture * 0.38 + formation.understory.fern * 0.8 + (ageClass === 'ancient' ? 0.14 : 0) + light * 0.08);
@@ -1466,10 +1471,16 @@ export function forestTreeCopies(stand) {
     const clearing = Number(stand.clearing) || 0;
     const canopy = Number(stand.canopy) || 0;
     if (stand.tropical) {
-        // The enlarged tropical crowns already overlap their neighbours; a
-        // second copy per tile roughly doubles overlay rasterisation cost on a
-        // software renderer without adding a visible canopy layer.
-        if (stand.ageClass === 'ancient' && canopy > 0.62 && clearing <= 0.28) return 2;
+        // A closed rainforest needs overlapping crowns to read as a canopy,
+        // not as a tree sprinkle. Keep the extra copy bounded and drop it on
+        // clearings and very young stands where the sky should show through.
+        if (clearing > 0.34) return 1;
+        // Water formations and riverside ribbons keep single crowns; their
+        // channel and alluvial banks need to stay visible from above.
+        if (stand.type === 'tropical-floodplain' || stand.type === 'tropical-swamp'
+            || stand.type === 'tropical-riverbank') return 1;
+        if (stand.ageClass === 'ancient' && canopy > 0.62) return 3;
+        if (canopy > 0.5) return 2;
         return 1;
     }
     if (clearing > 0.28) return 1;

@@ -124,7 +124,7 @@ Die Tests prüfen zusätzlich, dass jede der zwölf Formationen wirklich generie
 ## Wasser, Böden und Gefahren
 
 - **Böden:** tief verwitterte Latosole und ausgelaugte Upland-Oxisole, dunkle Feuchthumusauflagen, flächige Wurzeln, Falllaub und Totholz. Auenformationen wechseln auf jungen Alluviumboden.
-- **Wasser:** ganzjährig hohe Feuchte, Bäche, Flüsse, temporäre Überschwemmungen, Tümpel, Wasserfälle und Nebel. Die bestehende Hydrology- und Wetterpipeline bleibt die einzige Quelle.
+- **Wasser:** ganzjährig hohe Feuchte, Bäche, Flüsse, temporäre Überschwemmungen, Tümpel, Wasserfälle und Nebel. Die bestehende Hydrology- und Wetterpipeline bleibt die einzige Quelle. Sichtbar sind vor allem Sumpftümpel, Ufer, Nebel und die Auen-/Uferfärbung; die 2D-Kachelwelt zeichnet keine durchgehende Flußgeometrie über Kachelgrenzen.
 - **Gefahren:** Krankheits-, Parasiten-, Gift- und Raubtierrisiko, Sturm/Flut, schnelle Verderbnis, dichter Unterwuchs und reduzierte Sicht. Beim Sammeln ruft `tropicalExposure()` die bestehende Gesundheitslogik auf: Krankheit startet einen normalen Ausbruch, Parasiten/Gift/Raubtiere verursachen Genesungszeiten, Sturm kostet Nahrung und Moral. `spoilForestGoods()` lässt verderbliche Sammelgüter täglich altern; `getForestMovementFactorAt()` macht den Unterwuchs zu einem echten Bewegungskostenfaktor für Siedler und Träger.
 - **Medizin:** `quinine-bark`, `fever-bark`, `cat-claw`, `copaiba-oil` und `ipecac` sind echte Sammelgüter. Sie gelangen über `forestDeliveryChannel()` und `addMedicineStock()` in den öffentlichen Medizinvoorrat und werden von `applyHerbalRemedy()` verbraucht.
 
@@ -148,7 +148,7 @@ sichtbaren Pfade nachgezogen.
 | 1.2.4.22 | Seltene Geisterorchidee als eigene, helle Epiphytensilhouette |
 | 1.2.4.25 | Freiliegende Oberflächenwurzeln auf dem Waldboden |
 | 1.2.4.26 | Verrottende Stämme mit Pilzen und Moos |
-| 1.2.4.32–35 | Bäche, breite Flüsse, Wasserfälle und temporäre Flutwasserflächen als eigene Wassergrafik |
+| 1.2.4.32–35 | Bach-, Fluß-, Wasserfall- und Flutwerte im Standprofil; sichtbar sind Sumpftümpel, Ufer, Nebel und Auenfärbung |
 | 1.2.4.37–43 | Primaten, Reptilien, Fische und Amphibien haben eigene Canvas-Gruppen; Jaguar/Ozelot erhalten Fellzeichnung, Tukane, Macaws und Harpyien Farben |
 | 1.2.4.51, 1.2.4.53 | Giftpflanzen und Stechmücken-/Parasitenhinweise im Unterwuchs |
 | 1.2.4.51–54 | Gift, Krankheit, Parasiten und Verderbnis lösen über `tropicalExposure()` echte Gesundheitsereignisse aus; Medizin wird als Vorrat eingelagert und verbraucht |
@@ -175,8 +175,10 @@ sichtbaren Pfade nachgezogen.
 **Keine offenen Pflichtpunkte.** Die verbleibende Grenze ist die Darstellungsform:
 Das Spiel ist eine deterministische 2D-Canvas-Welt, keine 3D-Mesh-Welt. Krankheiten,
 Verletzungen und Parasiten laufen über bestehende Gesundheitszustände statt eigener
-Krankheits-Sprites; Wasserfälle erscheinen an montanen Kacheln, nicht als neue
-Hydrologie-Simulation.
+Krankheits-Sprites; Fluß- und Bachwerte sind im Standprofil vollständig, werden
+aber nicht als durchgehende Mesh-Hydrologie über Kachelgrenzen gezeichnet. Die
+visuelle Prüfung konzentriert sich deshalb auf klar lesbare Formationen, Kronen,
+Unterwuchs, Sumpf- und Uferwasser statt auf ein zweites Wassersystem.
 
 ## Reproduktion
 
@@ -197,4 +199,4 @@ Die Browser-Referenz liegt unter `docs/terrain-reference/tropical-reference.png`
 - Focused tropical suite: 8/8, including all 65 point ids, all 12 formations, deterministic stand generation and the complete tropical shader palette.
 - Tropical integration suite: 7/7, covering delivery channels, medicine/food/gold delivery, spoilage, land-use goods, movement, succession and health exposure.
 - `npm run test:tropical-reference`: 12/12 formations and four seasonal frames captured on WebKit WebGL at 800 × 800. The metadata records all 65 features for every formation.
-- `npm run test:campaign`: 10,040 ticks, 25 years, 13/13 ambitions, no game over, 0.821 ms per tick.
+- `npm run test:campaign`: 10,040 ticks, 25 years, 13/13 ambitions, no game over, 0.838 ms per tick.

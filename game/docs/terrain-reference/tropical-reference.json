@@ -11,7 +11,7 @@
   },
   "renderer": "WebKit WebGL",
   "maxTextureSize": 8192,
-  "generatedAt": "2026-11-11T12:00:18.966Z",
+  "generatedAt": "2026-11-11T12:37:39.537Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -657,7 +657,7 @@
       "temperature": 0.688,
       "height": 0.545,
       "stockRatio": 1,
-      "treeChance": 0.657,
+      "treeChance": 0.526,
       "clearing": 0,
       "exposure": 0.111,
       "snowPotential": 0.301,
@@ -1073,7 +1073,7 @@
       "temperature": 0.683,
       "height": 0.579,
       "stockRatio": 1,
-      "treeChance": 0.704,
+      "treeChance": 0.563,
       "clearing": 0,
       "exposure": 0.121,
       "snowPotential": 0.32,
@@ -2348,7 +2348,7 @@
       "temperature": 0.67,
       "height": 0.723,
       "stockRatio": 1,
-      "treeChance": 0.61,
+      "treeChance": 0.488,
       "clearing": 0,
       "exposure": 0.292,
       "snowPotential": 0.432,
@@ -2807,8 +2807,8 @@
     }
   ],
   "artifactHashes": {
-    "formation": "72ef64ecb46fcbe1b0345d763398aaa462b8930820a539a0ea379190885abe33",
-    "seasonal": "589203cddc84530ae27d2c618f8d10cd2baf09bd91976bc843a4f6d49a99edf9"
+    "formation": "fc1e13413e196657a1890df0a10b48f33c9d51abdcb340cf96c5b5df5ec32eb1",
+    "seasonal": "ff5e3c425292b6491fee134f8e3efee652b207b5bbbfb92d11ac8d53b9a3c794"
   },
   "note": "Tropical realm at 78% forest cover, HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level at midday. All twelve rainforest formations are real generated tiles, not hand-placed demo props. The seasonal strip follows an emergent stand through the wet-season flush, main fruiting pulse, dry-season peak and warm rainy season. Each tile records all 65 rainforest requirements, the three canopy strata, water, hazards, land use, goods and fauna. Not a GPU performance benchmark."
 }

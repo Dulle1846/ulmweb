@@ -972,7 +972,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
             if (stand?.forest) {
                 const tree = treeSample && s1 < stand.treeChance;
                 if (detail && zoom >= 0.55) {
-                    drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
+                    drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey);
                     drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom);
                     // The canopy shade belongs on the floor, below trunks and
                     // understorey. One cached soft sprite per tile is far cheaper
@@ -2208,10 +2208,15 @@ function drawCanopyShade(ctx, px, py, cellPx, stand, sun, snowCover) {
     ctx.restore();
 }
 
-function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey) {
+function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey) {
     const s = cellPx / 48;
     const season = seasonalState(dayOfYear, climateKey);
-    if (stand.tropical) drawTropicalFloor(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
+    if (stand.tropical) {
+        // The tropical floor owns its water, fields, huts and leaf litter. Do
+        // not let the temperate soil/leaf pass paint over those features.
+        drawTropicalFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey);
+        return;
+    }
     const snow = season.snowCover;
     const turn = season.foliageTurn;
     ctx.save();
@@ -2269,6 +2274,9 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climate
 }
 
 function drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom) {
+    // The tropical floor already carries its own understorey, water, tracks and
+    // land use. The generic leaf/moss/fern pass would cover them again.
+    if (stand.tropical) return;
     const season = seasonalState(dayOfYear, climateKey);
     // Deep winter hides the needle/leaf carpet under the baked snow ground.
     // Do not stamp a snow shape here: ground detail is drawn on a coarse world
@@ -2423,7 +2431,7 @@ function drawCanopyLight(ctx, px, py, cellPx, stand, seed, tick, sun = null) {
 
 function drawTropicalFaunaShape(ctx, animal, x, y, s) {
     const group = animal?.group;
-    if (!['primate', 'reptile', 'fish', 'amphibian'].includes(group)) return false;
+    if (!['primate', 'reptile', 'fish', 'amphibian', 'bird', 'insect'].includes(group)) return false;
     ctx.save();
     ctx.translate(x, y);
     ctx.globalAlpha = 0.8;
@@ -2499,6 +2507,85 @@ function drawTropicalFaunaShape(ctx, animal, x, y, s) {
         ctx.fillStyle = '#d7e2c7';
         ctx.beginPath();
         ctx.arc(1.8 * s, -1.2 * s, 0.32 * s, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (group === 'bird') {
+        if (!['toucan', 'macaw', 'harpy-eagle'].includes(animal.id)) { ctx.restore(); return false; }
+        if (animal.id === 'harpy-eagle') {
+            ctx.fillStyle = '#756b57';
+            ctx.beginPath();
+            ctx.ellipse(0, -4 * s, 2.4 * s, 1.4 * s, 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#d8d4c2';
+            ctx.beginPath();
+            ctx.arc(1.8 * s, -5.1 * s, 1.1 * s, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#514a3d';
+            ctx.lineWidth = Math.max(0.7, 0.9 * s);
+            ctx.beginPath();
+            ctx.moveTo(-1.2 * s, -4.6 * s);
+            ctx.quadraticCurveTo(-6 * s, -7.6 * s, -8.4 * s, -4.2 * s);
+            ctx.moveTo(0.8 * s, -4.5 * s);
+            ctx.quadraticCurveTo(5.4 * s, -7.2 * s, 7.8 * s, -4 * s);
+            ctx.stroke();
+        } else if (animal.id === 'toucan') {
+            ctx.fillStyle = '#202724';
+            ctx.beginPath();
+            ctx.ellipse(0, -3.2 * s, 1.9 * s, 1.3 * s, 0.05, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(1.5 * s, -4.1 * s, 0.9 * s, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#e9a33f';
+            ctx.beginPath();
+            ctx.moveTo(2.1 * s, -4.4 * s);
+            ctx.quadraticCurveTo(5.8 * s, -4.3 * s, 6.4 * s, -3.2 * s);
+            ctx.quadraticCurveTo(4.8 * s, -2.9 * s, 2.1 * s, -3.6 * s);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#c94a38';
+            ctx.beginPath();
+            ctx.arc(1.2 * s, -4.2 * s, 0.28 * s, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.fillStyle = '#c84436';
+            ctx.beginPath();
+            ctx.ellipse(0, -3.3 * s, 2.1 * s, 1.35 * s, 0.05, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(1.7 * s, -4.2 * s, 0.9 * s, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#2e5f9a';
+            ctx.beginPath();
+            ctx.moveTo(-1.2 * s, -3.3 * s);
+            ctx.lineTo(-5.4 * s, -2.2 * s);
+            ctx.lineTo(-1.4 * s, -2.1 * s);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#e2c26a';
+            ctx.beginPath();
+            ctx.moveTo(-0.8 * s, -2.6 * s);
+            ctx.lineTo(-4.2 * s, -1.4 * s);
+            ctx.lineTo(-0.6 * s, -1.5 * s);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#c84436';
+            ctx.lineWidth = Math.max(0.45, 0.55 * s);
+            ctx.beginPath();
+            ctx.moveTo(-2 * s, -3 * s);
+            ctx.lineTo(-6.4 * s, -1.2 * s);
+            ctx.stroke();
+        }
+    } else if (group === 'insect') {
+        if (!['morpho-butterfly', 'butterfly', 'bee'].includes(animal.id)) { ctx.restore(); return false; }
+        ctx.fillStyle = animal.id === 'bee' ? '#d6a943' : '#3f83bd';
+        ctx.globalAlpha = 0.86;
+        ctx.beginPath();
+        ctx.ellipse(-1.2 * s, -2.2 * s, 1.5 * s, 0.7 * s, -0.35, 0, Math.PI * 2);
+        ctx.ellipse(1.2 * s, -2.2 * s, 1.5 * s, 0.7 * s, 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#25352f';
+        ctx.beginPath();
+        ctx.ellipse(0, -2.2 * s, 0.4 * s, 0.9 * s, 0, 0, Math.PI * 2);
         ctx.fill();
     } else {
         ctx.fillStyle = animal.id === 'poison-dart-frog' ? '#ce5c3f' : '#6f8f4e';

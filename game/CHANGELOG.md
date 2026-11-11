@@ -54,11 +54,15 @@ palms, bamboo, giant ferns, big-leaf plants, orchids, bromeliads, pitcher
 plants, pools, flood pulses, swidden plots, plantations, river trade, hazards
 and medicinal bark.
 
-**Presentation:** The renderer draws layered giant crowns, real buttress fins,
-aerial roots, vines, bark fissures, flowers, fruit, palms, bamboo, forest
-pools, huts, crop rows, plantation lines, canoes and stumps. Tropical ground
-keeps its green wet/dry palette through the calendar year instead of turning
-autumn copper or winter grey; the seasonal sheet shows wet-season flush, main
+**Presentation:** The renderer now separates emergent, spreading, vase, banyan,
+airy and understorey silhouettes, adds a denser closed tropical canopy, hanging
+lianas, epiphytes and bromeliads, and gives each formation its own ground wash,
+understorey mix and land-use marks. Floodplain, swamp and riverbank keep a
+lighter crown cover so their wet ground and alluvial gaps stay readable. A
+separate tropical floor pass prevents the temperate leaf/moss/fern pass from
+painting over the tropical water, fields and tracks. Tropical ground keeps its
+green wet/dry palette through the calendar year instead of turning autumn
+copper or winter grey; the seasonal sheet shows wet-season flush, main
 fruiting, dry-season peak and the warm rainy season under an evergreen canopy.
 Fauna, gathered goods, spoilage, work penalties and quinine/fever-bark medicine
 all flow through the existing simulation, survey and economy paths.
@@ -67,7 +71,8 @@ all flow through the existing simulation, survey and economy paths.
 source files / 189 UI ids; focused tropical suite 8/8 and tropical integration
 suite 7/7; browser reference 12/12 formations and four seasonal frames on WebKit
 WebGL at 800 × 800; 25-year campaign 10,040 ticks / 13/13 ambitions / no game
-over / 0.821 ms per tick.
+over / 0.838 ms per tick. The refreshed reference was checked visually for the
+twelve formation silhouettes, dense canopy and readable understorey.
 
 **Audit pass:** The 65-point audit closed the remaining presentation gaps:
 native primate, reptile, fish and amphibian silhouettes; jaguar/ocelot rosettes

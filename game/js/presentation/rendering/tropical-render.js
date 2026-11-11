@@ -20,6 +20,25 @@ function mixHex(a, b, amount) {
     return '#' + [0, 1, 2].map(i => Math.round(x[i] + (y[i] - x[i]) * t).toString(16).padStart(2, '0')).join('');
 }
 
+const TROPICAL_FORMATION_LOOKS = Object.freeze({
+    'tropical-emergent': { wash: '#12351f', alpha: 0.10, accent: '#6f9a57' },
+    'tropical-canopy': { wash: '#1d4428', alpha: 0.07, accent: '#6d9b50' },
+    'tropical-floodplain': { wash: '#35543a', alpha: 0.08, accent: '#9daf67' },
+    'tropical-palm-grove': { wash: '#4a653d', alpha: 0.07, accent: '#c8ae58' },
+    'tropical-swamp': { wash: '#122c2b', alpha: 0.13, accent: '#526e50' },
+    'tropical-montane': { wash: '#29483d', alpha: 0.09, accent: '#91ad7d' },
+    'tropical-bamboo': { wash: '#3e5b2e', alpha: 0.09, accent: '#b4c35f' },
+    'tropical-gap': { wash: '#6b753f', alpha: 0.08, accent: '#dfca6b' },
+    'tropical-secondary': { wash: '#416436', alpha: 0.08, accent: '#9fbe62' },
+    'tropical-ancient': { wash: '#102d1d', alpha: 0.12, accent: '#748c5e' },
+    'tropical-riverbank': { wash: '#39553b', alpha: 0.08, accent: '#abb774' },
+    'tropical-plantation': { wash: '#5a5a36', alpha: 0.09, accent: '#cfaa5d' },
+});
+
+function tropicalFormationLook(profile) {
+    return TROPICAL_FORMATION_LOOKS[profile?.formation] || TROPICAL_FORMATION_LOOKS['tropical-canopy'];
+}
+
 function drawLeaf(ctx, x, y, rx, ry, angle, fill) {
     ctx.fillStyle = fill;
     ctx.beginPath();
@@ -41,11 +60,17 @@ function drawTropicalTree(ctx, px, py, s, sway, seed, ageScale, definition, stan
     // Rainforest giants must read as a storey above the undergrowth. The
     // previous silhouette was only a few pixels taller than a temperate tree;
     // this profile gives emergents a real skyline and broad lower crowns.
-    const sizeScale = definition.emergent ? 2.18 : 1.78;
+    const form = definition.form || 'round';
+    const sizeScale = definition.emergent ? 2.45 : form === 'understorey' ? 1.08 : 1.94;
     const height = (15 + definition.height * 6) * s * ageScale * heightScale * sizeScale;
     const trunkW = Math.max(1.8, 5.3 * definition.trunk * s * (0.72 + ageScale * 0.3) * trunkScale * (definition.emergent ? 1.12 : 1));
     const crownY = py - height * 0.9;
-    const radius = (12.5 + seed * 4.2) * s * definition.crown * ageScale * crownScale * (definition.emergent ? 1.52 : 1.34);
+    const radius = (12.5 + seed * 4.2) * s * definition.crown * ageScale * crownScale
+        * (definition.emergent ? 1.58 : form === 'spreading' ? 1.48 : 1.34);
+    const crownW = form === 'spreading' ? 1.3 : form === 'vase' ? 0.82
+        : form === 'banyan' ? 1.36 : form === 'airy' ? 1.16 : 1.04;
+    const crownH = form === 'emergent' ? 0.42 : form === 'vase' ? 0.8
+        : form === 'airy' ? 0.52 : form === 'understorey' ? 0.74 : 0.64;
     const bark = definition.bark || '#6c5138';
     const barkLight = definition.barkLight || '#9b7957';
     const crown = mixHex(definition.summer[0], definition.summer[1], 0.74);
@@ -60,7 +85,8 @@ function drawTropicalTree(ctx, px, py, s, sway, seed, ageScale, definition, stan
         ctx.fillStyle = mixHex(bark, '#2c221a', 0.18);
         ctx.strokeStyle = mixHex(bark, '#3a2b20', 0.24);
         ctx.lineWidth = Math.max(0.65, 0.75 * s);
-        const fins = 3 + Math.round(buttress * 4);
+        const fins = 3 + Math.round(buttress * 5);
+        ctx.globalAlpha = 0.94;
         for (let i = 0; i < fins; i++) {
             const side = i % 2 === 0 ? -1 : 1;
             const spread = (5 + (i % 3) * 2.2 + buttress * 5.5) * s;
@@ -138,6 +164,23 @@ function drawTropicalTree(ctx, px, py, s, sway, seed, ageScale, definition, stan
         ctx.restore();
     }
 
+    // Long lianas hang from the crown into the understorey. A few lines are
+    // enough to read as a rainforest without turning every tree into a curtain.
+    if (seed > 0.42) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(74, 105, 54, 0.62)';
+        ctx.lineWidth = Math.max(0.4, 0.48 * s);
+        for (let i = 0; i < 3; i++) {
+            const ox = (i - 1) * radius * 0.34;
+            ctx.beginPath();
+            ctx.moveTo(px + ox + sway, crownY + radius * 0.28);
+            ctx.bezierCurveTo(px + ox + 3 * s, crownY + radius * 0.8,
+                px + ox - 2 * s, py - height * 0.24, px + ox + (seed - 0.5) * 4 * s, py + 3 * s);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
     // Aerial roots of strangler figs and old kapoks.
     if (definition.aerialRoots || (definition.emergent && seed > 0.7)) {
         ctx.save();
@@ -158,12 +201,13 @@ function drawTropicalTree(ctx, px, py, s, sway, seed, ageScale, definition, stan
     ctx.strokeStyle = mixHex(bark, '#33271c', 0.35);
     ctx.lineCap = 'round';
     ctx.lineWidth = Math.max(0.9, 1.2 * s);
-    for (let i = 0; i < 4; i++) {
+    const branches = form === 'spreading' || form === 'banyan' ? 6 : 4;
+    for (let i = 0; i < branches; i++) {
         const side = i % 2 === 0 ? -1 : 1;
         ctx.beginPath();
         ctx.moveTo(px + sway * 0.5, crownY + 9 * s);
-        ctx.quadraticCurveTo(px + side * radius * 0.4, crownY + radius * 0.12,
-            px + side * radius * (0.7 + i * 0.06), crownY - radius * 0.06);
+        ctx.quadraticCurveTo(px + side * radius * 0.4 * crownW, crownY + radius * 0.12,
+            px + side * radius * (0.7 + i * 0.06) * crownW, crownY - radius * (0.06 + (i % 3) * 0.025));
         ctx.stroke();
     }
     ctx.restore();
@@ -174,21 +218,22 @@ function drawTropicalTree(ctx, px, py, s, sway, seed, ageScale, definition, stan
     ctx.globalAlpha = 0.68;
     ctx.fillStyle = mixHex(crown, '#2f5a38', 0.28);
     ctx.beginPath();
-    ctx.ellipse(px + sway, crownY + radius * 0.16, radius * 1.18, radius * 0.62, 0, 0, Math.PI * 2);
+    ctx.ellipse(px + sway, crownY + radius * 0.16, radius * 1.18 * crownW, radius * 0.62 * crownH, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 0.95;
     ctx.fillStyle = crown;
     ctx.beginPath();
-    ctx.ellipse(px + sway, crownY, radius * 1.08, radius * (definition.emergent ? 0.5 : 0.62), 0, 0, Math.PI * 2);
+    ctx.ellipse(px + sway, crownY, radius * 1.08 * crownW, radius * crownH, 0, 0, Math.PI * 2);
     ctx.fill();
-    for (let i = 0; i < 8; i++) {
+    const lobes = form === 'emergent' ? 11 : form === 'spreading' ? 12 : form === 'airy' ? 6 : 8;
+    for (let i = 0; i < lobes; i++) {
         const angle = i * 2.399 + seed * 5;
-        const ox = Math.cos(angle) * radius * 0.66;
-        const oy = Math.sin(angle) * radius * 0.3;
+        const ox = Math.cos(angle) * radius * 0.66 * crownW;
+        const oy = Math.sin(angle) * radius * 0.3 * crownH;
         ctx.fillStyle = i % 3 === 0 ? sunlit : i % 2 ? crown : mixHex(crown, definition.summer[1], 0.3);
         ctx.beginPath();
-        ctx.ellipse(px + sway + ox, crownY + oy, radius * (0.34 + (i % 4) * 0.045),
-            radius * (0.2 + (i % 3) * 0.04), angle * 0.15, 0, Math.PI * 2);
+        ctx.ellipse(px + sway + ox, crownY + oy, radius * (0.34 + (i % 4) * 0.045) * crownW,
+            radius * (0.2 + (i % 3) * 0.04) * crownH, angle * 0.15, 0, Math.PI * 2);
         ctx.fill();
     }
     if (definition.leafSize === 'large' || definition.leafSize === 'giant') {
@@ -200,10 +245,15 @@ function drawTropicalTree(ctx, px, py, s, sway, seed, ageScale, definition, stan
         }
     }
     if (definition.emergent) {
-        ctx.globalAlpha = 0.84;
+        ctx.globalAlpha = 0.88;
+        ctx.fillStyle = mixHex(crown, definition.summer[1], 0.3);
+        ctx.beginPath();
+        ctx.ellipse(px + sway * 0.7, crownY - radius * 0.42, radius * 0.78 * crownW, radius * 0.2 * crownH, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.72;
         ctx.fillStyle = mixHex(crown, definition.summer[0], 0.22);
         ctx.beginPath();
-        ctx.ellipse(px + sway * 0.7, crownY - radius * 0.38, radius * 0.62, radius * 0.22, 0, 0, Math.PI * 2);
+        ctx.ellipse(px - sway * 0.3, crownY - radius * 0.58, radius * 0.46 * crownW, radius * 0.14 * crownH, 0, 0, Math.PI * 2);
         ctx.fill();
     }
     ctx.restore();
@@ -215,8 +265,9 @@ function drawTropicalTree(ctx, px, py, s, sway, seed, ageScale, definition, stan
             const ex = px + (i === 0 ? -1 : 1) * radius * 0.4;
             const ey = crownY + radius * (0.2 + i * 0.1);
             for (let j = 0; j < 4; j++) {
-                drawLeaf(ctx, ex, ey, 1.5 * s, 0.55 * s, j * 0.7, '#557f48');
+                drawLeaf(ctx, ex, ey, 1.8 * s, 0.65 * s, j * 0.7, '#557f48');
             }
+            if (seed > 0.55) drawBromeliad(ctx, ex, ey + 1.4 * s, Math.max(0.5, s * 0.8), seed);
         }
         ctx.fillStyle = '#d56b93';
         for (let i = 0; i < 3; i++) {
@@ -450,6 +501,240 @@ function drawTropicalShrub(ctx, px, py, cellPx, s1, s2) {
             ctx.fill();
         }
     }
+    ctx.restore();
+}
+
+function drawTropicalFormationWash(ctx, px, py, cellPx, t, s1) {
+    const look = tropicalFormationLook(t);
+    const s = cellPx / 48;
+    ctx.save();
+    ctx.globalAlpha = look.alpha;
+    ctx.fillStyle = look.wash;
+    ctx.beginPath();
+    ctx.ellipse(px, py + 2 * s, cellPx * 0.54, cellPx * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (t.formation === 'tropical-swamp') {
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = '#0c2527';
+        ctx.beginPath();
+        ctx.ellipse(px + (s1 - 0.5) * cellPx * 0.24, py + cellPx * 0.2, cellPx * 0.34, cellPx * 0.15, 0.03, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (t.formation === 'tropical-montane') {
+        ctx.globalAlpha = 0.2;
+        ctx.fillStyle = '#789a6e';
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.ellipse(px + (i - 1) * cellPx * 0.2 + (s1 - 0.5) * cellPx * 0.1,
+                py + (i % 2 ? 0.15 : -0.12) * cellPx, cellPx * 0.16, cellPx * 0.06,
+                i * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (t.formation === 'tropical-gap') {
+        ctx.globalAlpha = 0.13;
+        ctx.fillStyle = '#e4d276';
+        ctx.beginPath();
+        ctx.ellipse(px + (s1 - 0.5) * cellPx * 0.2, py - cellPx * 0.04, cellPx * 0.32, cellPx * 0.22, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (t.formation === 'tropical-ancient') {
+        ctx.globalAlpha = 0.24;
+        ctx.strokeStyle = '#7e694b';
+        ctx.lineWidth = Math.max(0.8, 1.2 * s);
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(px + (i - 1) * cellPx * 0.18, py + cellPx * 0.3);
+            ctx.quadraticCurveTo(px + (i - 1) * cellPx * 0.3, py + cellPx * 0.05, px + (i - 1) * cellPx * 0.42, py - cellPx * 0.08);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+function drawTropicalGroundCover(ctx, px, py, cellPx, stand, s1, s2, s3) {
+    const t = stand?.tropical;
+    if (!t) return;
+    const s = cellPx / 48;
+    if (s1 < 0.74) drawSimpleFern(ctx, px + (s1 - 0.5) * cellPx * 0.18, py + 2 * s, s * 0.9, s2);
+    if (s2 < 0.56) drawTropicalShrub(ctx, px + (s3 - 0.5) * cellPx * 0.3, py - 1 * s, cellPx, s1, s2);
+    if (s3 < 0.2) drawBigLeafPlant(ctx, px + (s1 - 0.5) * cellPx * 0.3, py + 1 * s, s * 0.74, s2);
+    if (t.formation === 'tropical-bamboo' && s2 > 0.28) {
+        drawTropicalBamboo(ctx, px + (s3 - 0.5) * cellPx * 0.25, py + 2 * s, s * 0.34, s1, s2, 0.85);
+    } else if (t.formation === 'tropical-palm-grove' && s3 > 0.58) {
+        drawTropicalPalm(ctx, px + (s1 - 0.5) * cellPx * 0.28, py + 2 * s, s * 0.32, s2 * 2, s3, 0.7, { bark: '#806c4d', barkLight: '#ad956c' });
+    } else if (t.formation === 'tropical-swamp' && s2 > 0.42) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(115, 139, 91, 0.8)';
+        ctx.lineWidth = Math.max(0.45, 0.55 * s);
+        for (let i = 0; i < 3; i++) {
+            const rx = px + (i - 1) * 3 * s;
+            ctx.beginPath();
+            ctx.moveTo(rx, py + 4 * s);
+            ctx.quadraticCurveTo(rx + 1.5 * s, py - 1 * s, rx + (s1 - 0.5) * 2 * s, py - 5 * s);
+            ctx.stroke();
+        }
+        ctx.restore();
+    } else if (t.formation === 'tropical-gap' && s1 > 0.44) {
+        ctx.save();
+        ctx.fillStyle = '#e4c46a';
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(px + (i - 1) * 3 * s, py - 1 * s + (i % 2) * 1.5 * s, 0.8 * s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+function drawTropicalSwampWater(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    const cx = px + (s1 - 0.5) * cellPx * 0.2;
+    const cy = py + cellPx * 0.23;
+    ctx.save();
+    ctx.fillStyle = '#0d2528';
+    ctx.globalAlpha = 0.72;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, cellPx * 0.38, cellPx * 0.14, 0.03, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#416651';
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(cx + (i - 1) * 6 * s, cy + (i % 2 ? 1.5 : -1) * s, 2.2 * s, 0.8 * s, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(153, 189, 159, 0.38)';
+    ctx.lineWidth = Math.max(0.35, 0.45 * s);
+    ctx.beginPath();
+    ctx.moveTo(cx - cellPx * 0.26, cy - 1 * s);
+    ctx.quadraticCurveTo(cx, cy + 2 * s, cx + cellPx * 0.26, cy - 1.5 * s);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawTropicalCropRows(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#5b5031';
+    ctx.beginPath();
+    ctx.ellipse(px, py + 4 * s, cellPx * 0.34, cellPx * 0.16, 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    for (let row = 0; row < 4; row++) {
+        const y = py - 3 * s + row * 2.3 * s;
+        ctx.strokeStyle = row % 2 ? 'rgba(196, 176, 91, 0.75)' : 'rgba(112, 142, 69, 0.8)';
+        ctx.lineWidth = Math.max(0.4, 0.55 * s);
+        ctx.beginPath();
+        ctx.moveTo(px - cellPx * 0.3, y);
+        ctx.lineTo(px + cellPx * 0.3, y - 1.2 * s);
+        ctx.stroke();
+        if (row % 2 === 0) {
+            ctx.fillStyle = '#8cac58';
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.ellipse(px - 5 * s + i * 3.2 * s + (s1 - 0.5) * 2 * s, y - 0.6 * s,
+                    1.15 * s, 0.55 * s, 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+    ctx.restore();
+}
+
+function drawTropicalPlantationRows(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    ctx.save();
+    ctx.globalAlpha = 0.38;
+    ctx.strokeStyle = '#a99058';
+    ctx.lineWidth = Math.max(0.45, 0.55 * s);
+    for (let row = 0; row < 4; row++) {
+        const y = py - 4 * s + row * 2.8 * s;
+        ctx.beginPath();
+        ctx.moveTo(px - cellPx * 0.34, y);
+        ctx.lineTo(px + cellPx * 0.34, y - 1.2 * s);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 0.9;
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 2; col++) {
+            const x = px - 5 * s + col * 7 * s + (row % 2) * 1.5 * s;
+            const y = py - 2 * s + row * 2.4 * s;
+            ctx.strokeStyle = '#6b583a';
+            ctx.lineWidth = Math.max(0.45, 0.55 * s);
+            ctx.beginPath();
+            ctx.moveTo(x, y + 2 * s);
+            ctx.lineTo(x + (s2 - 0.5) * 1.5 * s, y - 4 * s);
+            ctx.stroke();
+            ctx.fillStyle = row === 1 ? '#d49b45' : '#6d9a50';
+            ctx.beginPath();
+            ctx.ellipse(x + 1.5 * s, y - 3.4 * s, 2 * s, 0.8 * s, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            if (row === 1) {
+                ctx.fillStyle = '#b86b36';
+                ctx.beginPath();
+                ctx.ellipse(x + 2.2 * s, y - 2.2 * s, 0.7 * s, 1.1 * s, 0.15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+    ctx.restore();
+}
+
+function drawTropicalCanoe(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    ctx.save();
+    ctx.fillStyle = '#5b4730';
+    ctx.beginPath();
+    ctx.ellipse(px + (s1 - 0.5) * cellPx * 0.2, py + 4 * s, 5.2 * s, 1.2 * s, 0.06, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#c7a76a';
+    ctx.lineWidth = Math.max(0.35, 0.45 * s);
+    ctx.beginPath();
+    ctx.moveTo(px - 3 * s, py + 3.2 * s);
+    ctx.quadraticCurveTo(px, py + 1.2 * s, px + 3.4 * s, py + 3.1 * s);
+    ctx.stroke();
+    ctx.fillStyle = '#2e3d38';
+    ctx.beginPath();
+    ctx.arc(px + 1.4 * s, py + 2.1 * s, 0.9 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(181, 214, 198, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(px - 5 * s, py + 5 * s);
+    ctx.quadraticCurveTo(px, py + 6.2 * s + (s2 - 0.5) * 2 * s, px + 7 * s, py + 4.7 * s);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawTropicalRegrowth(ctx, px, py, cellPx, s1, s2, s3) {
+    const s = cellPx / 48;
+    ctx.save();
+    for (let i = 0; i < 3; i++) {
+        const x = px + (i - 1) * 4 * s + (s1 - 0.5) * 2 * s;
+        const y = py + 3 * s;
+        const h = (4 + ((s2 * 5 + i) % 4)) * s;
+        ctx.strokeStyle = '#6c573a';
+        ctx.lineWidth = Math.max(0.35, 0.45 * s);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + (s3 - 0.5) * 1.2 * s, y - h);
+        ctx.stroke();
+        ctx.fillStyle = i % 2 ? '#6aa85a' : '#8bc36a';
+        ctx.beginPath();
+        ctx.ellipse(x + 1.2 * s, y - h, 1.8 * s, 0.75 * s, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawTropicalMist(ctx, px, py, cellPx, s1, s2) {
+    const s = cellPx / 48;
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = '#c2d9cb';
+    ctx.beginPath();
+    ctx.ellipse(px + (s1 - 0.5) * cellPx * 0.2, py - 1 * s, cellPx * 0.4, cellPx * 0.16, 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.08;
+    ctx.beginPath();
+    ctx.ellipse(px - (s2 - 0.5) * cellPx * 0.18, py - 7 * s, cellPx * 0.28, cellPx * 0.1, -0.04, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
 }
 
@@ -846,42 +1131,46 @@ function drawTropicalFlood(ctx, px, py, cellPx, s1, s2) {
     ctx.restore();
 }
 
-function drawTropicalWater(ctx, px, py, cellPx, stand, s1, s2) {
-    const t = stand?.tropical;
-    if (!t) return;
-    const water = t.water;
-    const streamFormation = t.formation === 'tropical-floodplain'
-        || t.formation === 'tropical-riverbank'
-        || t.formation === 'tropical-montane';
-    if (water.largeRivers > 0.58 && s1 > 0.7) drawTropicalRiver(ctx, px, py, cellPx, s1, s2);
-    else if (streamFormation && water.streams > 0.55 && s1 > 0.82) drawTropicalStream(ctx, px, py, cellPx, s1, s2);
-    if (water.waterfalls && s1 > 0.34) drawTropicalWaterfall(ctx, px, py, cellPx, s1, s2);
-    if (water.temporaryFloods > 0.62 && s2 > 0.62 && water.largeRivers <= 0.58) {
-        drawTropicalFlood(ctx, px, py, cellPx, s1, s2);
-    }
-}
-
 export function drawTropicalUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey) {
     const s = cellPx / 48;
     const t = stand?.tropical;
     if (!t) return false;
     const f = t.features;
     const roll = s1;
+    const formation = t.formation;
+    if (formation === 'tropical-bamboo' && s1 > 0.22) {
+        drawTropicalBamboo(ctx, px + (s3 - 0.5) * cellPx * 0.26, py + 2 * s, s * 0.38, s2, s3, 0.78);
+    } else if (formation === 'tropical-palm-grove' && s2 > 0.5) {
+        drawTropicalPalm(ctx, px + (s1 - 0.5) * cellPx * 0.24, py + 2 * s, s * 0.34, s3 * 2, s1, 0.65, { bark: '#806c4d', barkLight: '#ad956c' });
+    } else if (formation === 'tropical-secondary' && s2 > 0.44) {
+        drawTropicalRegrowth(ctx, px, py, cellPx, s1, s2, s3);
+    } else if (formation === 'tropical-plantation' && s2 > 0.4) {
+        drawTropicalShrub(ctx, px + (s3 - 0.5) * cellPx * 0.2, py - 1 * s, cellPx * 0.8, s1, s2);
+    } else if (formation === 'tropical-gap' && s3 > 0.4) {
+        ctx.save();
+        ctx.fillStyle = '#e4c46a';
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(px + (i - 1) * 3.2 * s, py - 3 * s + (i % 2) * 1.7 * s, 0.8 * s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
     if (f['1.2.4.22'] > 0.4 && s3 > 0.82) { drawTropicalRareOrchid(ctx, px, py, s, s2); return true; }
-    if (f['1.2.4.21'] > 0.5 && s3 > 0.68) { drawTropicalMedicinalPlant(ctx, px, py, s, s2); return true; }
-    if (f['1.2.4.51'] > 0.55 && s2 > 0.84) { drawTropicalToxicPlant(ctx, px, py, s, s1); return true; }
-    if (f['1.2.4.5'] > 0.5 && s3 < 0.38) { drawTropicalLowerTree(ctx, px, py, s, s2); return true; }
-    if (f['1.2.4.53'] > 0.55 && s3 > 0.9) { drawTropicalVectors(ctx, px, py, s, s2); return true; }
-    if (f['1.2.4.20'] > 0.18 && s2 > 0.76) { drawPitcherPlant(ctx, px, py, s, s2); return true; }
-    if (f['1.2.4.15'] > 0.35 && roll < 0.22) { drawGiantFern(ctx, px, py, s, s2); return true; }
-    if (f['1.2.4.16'] > 0.4 && s3 > 0.7) { drawOrchidSpray(ctx, px, py, s, s2); return true; }
-    if (f['1.2.4.16'] > 0.4 && s2 > 0.78) { drawBromeliad(ctx, px, py, s, s1); return true; }
-    if (f['1.2.4.17'] > 0.4 && roll < 0.48) { drawBigLeafPlant(ctx, px, py, s, s2); return true; }
-    if (f['1.2.4.18'] > 0.35 && s2 > 0.62) {
+    if (f['1.2.4.21'] > 0.45 && s3 > 0.55) { drawTropicalMedicinalPlant(ctx, px, py, s, s2); return true; }
+    if (f['1.2.4.51'] > 0.5 && s2 > 0.7) { drawTropicalToxicPlant(ctx, px, py, s, s1); return true; }
+    if (f['1.2.4.5'] > 0.45 && s3 < 0.5) { drawTropicalLowerTree(ctx, px, py, s, s2); return true; }
+    if (f['1.2.4.53'] > 0.5 && s3 > 0.82) { drawTropicalVectors(ctx, px, py, s, s2); return true; }
+    if (f['1.2.4.20'] > 0.18 && s2 > 0.65) { drawPitcherPlant(ctx, px, py, s, s2); return true; }
+    if (f['1.2.4.15'] > 0.3 && roll < 0.35) { drawGiantFern(ctx, px, py, s, s2); return true; }
+    if (f['1.2.4.16'] > 0.35 && s3 > 0.55) { drawOrchidSpray(ctx, px, py, s, s2); return true; }
+    if (f['1.2.4.16'] > 0.35 && s2 > 0.6) { drawBromeliad(ctx, px, py, s, s1); return true; }
+    if (f['1.2.4.17'] > 0.35 && roll < 0.55) { drawBigLeafPlant(ctx, px, py, s, s2); return true; }
+    if (f['1.2.4.18'] > 0.3 && s2 > 0.5) {
         drawTropicalPalm(ctx, px, py, s * 0.38, s1 * 2, s2, 0.42, { bark: '#806c4d', barkLight: '#ad956c' });
         return true;
     }
-    if (f['1.2.4.10'] > 0.4 && roll < 0.78) {
+    if (f['1.2.4.10'] > 0.35 && roll < 0.82) {
         drawTropicalShrub(ctx, px, py, cellPx, s1, s2);
         return true;
     }
@@ -889,58 +1178,53 @@ export function drawTropicalUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, d
     return true;
 }
 
-export function drawTropicalFloor(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey) {
+export function drawTropicalFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey) {
     const s = cellPx / 48;
     const t = stand?.tropical;
     if (!t) return;
-    drawTropicalWater(ctx, px, py, cellPx, stand, s1, s2);
-    if (t.soil.surfaceRoots > 0.48 && s1 > 0.45) drawTropicalSurfaceRoots(ctx, px, py, cellPx, s1, s2);
-    if (t.soil.decayingMatter > 0.52 && s2 > 0.72) drawTropicalRottingLog(ctx, px, py, s, s1);
-    if (t.landUse.fishing && t.water.largeRivers > 0.45 && s1 > 0.84) drawTropicalFishTrap(ctx, px, py, s);
-    if (t.water.pools > 0.32 && s1 < 0.16 + t.water.pools * 0.2) {
+    drawTropicalFormationWash(ctx, px, py, cellPx, t, s1);
+    drawTropicalGroundCover(ctx, px, py, cellPx, stand, s1, s2, s3);
+    if (t.formation === 'tropical-swamp' && s1 > 0.16) {
+        drawTropicalSwampWater(ctx, px, py, cellPx, s1, s2);
+    }
+    if (t.water.mist > 0.4 && s1 > 0.55) drawTropicalMist(ctx, px, py, cellPx, s1, s2);
+    if (t.soil.surfaceRoots > 0.42 && s1 > 0.4) drawTropicalSurfaceRoots(ctx, px, py, cellPx, s1, s2);
+    if (t.soil.decayingMatter > 0.48 && s2 > 0.62) drawTropicalRottingLog(ctx, px, py, s, s1);
+    if (t.water.pools > 0.3 && s1 < 0.16 + t.water.pools * 0.24) {
         drawTropicalPool(ctx, px + (s2 - 0.5) * cellPx * 0.2, py + 2 * s, cellPx, stand, s1, s2);
     }
-    if (t.features['1.2.4.17'] > 0.4 && s2 < 0.22) {
+    if (t.features['1.2.4.17'] > 0.35 && s2 < 0.3) {
         drawBigLeafPlant(ctx, px + (s1 - 0.5) * cellPx * 0.3, py, s * 0.8, s2);
     }
-    if (t.landUse.settlement && s1 < 0.28) {
+    if (t.landUse.settlement && s1 < 0.46) {
         drawTropicalHut(ctx, px + (s2 - 0.5) * cellPx * 0.3, py, s * 0.8, s1);
-        if (s2 > 0.42) drawTropicalHut(ctx, px + cellPx * 0.22, py, s * 0.58, s2);
-    }
-    if (t.landUse.agriculture && !t.landUse.settlement && s2 > 0.72) {
+        if (s2 > 0.32) drawTropicalHut(ctx, px + cellPx * 0.22, py, s * 0.58, s2);
+        if (s2 > 0.62) drawTropicalHut(ctx, px - cellPx * 0.2, py + 1 * s, s * 0.48, s1);
         ctx.save();
-        ctx.strokeStyle = 'rgba(190, 174, 106, 0.38)';
-        ctx.lineWidth = Math.max(0.5, 0.55 * s);
-        for (let i = 0; i < 3; i++) {
-            ctx.beginPath();
-            ctx.moveTo(px - 5 * s, py + (i - 1) * 1.2 * s);
-            ctx.lineTo(px + 5 * s, py + (i - 1) * 1.2 * s - 1.4 * s);
-            ctx.stroke();
-        }
-        ctx.restore();
-    }
-    if (t.landUse.plantation && s2 > 0.68) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(151, 125, 74, 0.5)';
-        ctx.lineWidth = Math.max(0.45, 0.5 * s);
-        for (let i = 0; i < 4; i++) {
-            ctx.beginPath();
-            ctx.moveTo(px - 5 * s, py + i * 1.4 * s);
-            ctx.lineTo(px + 5 * s, py + i * 1.4 * s);
-            ctx.stroke();
-        }
-        ctx.restore();
-    }
-    if (t.landUse.riverTrade && t.water.largeRivers > 0.55 && s1 > 0.8) {
-        ctx.save();
-        ctx.fillStyle = '#5b4730';
+        ctx.strokeStyle = 'rgba(135, 118, 77, 0.55)';
+        ctx.lineWidth = Math.max(0.45, 0.55 * s);
         ctx.beginPath();
-        ctx.ellipse(px + 3 * s, py + 3 * s, 4.2 * s, 1.1 * s, 0.05, 0, Math.PI * 2);
+        ctx.moveTo(px - cellPx * 0.3, py + 5 * s);
+        ctx.quadraticCurveTo(px, py + 2 * s, px + cellPx * 0.3, py + 4 * s);
+        ctx.stroke();
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = '#d8c7a0';
+        ctx.beginPath();
+        ctx.ellipse(px + cellPx * 0.1, py - 7 * s, 2.2 * s, 0.8 * s, 0.2, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
     }
-    if (t.clearance > 0.55 && t.regrowth < 0.5 && s2 > 0.7) {
+    if (t.landUse.plantation && s2 > 0.3) {
+        drawTropicalPlantationRows(ctx, px, py, cellPx, s1, s2);
+    } else if (t.landUse.agriculture && s2 > 0.34) {
+        drawTropicalCropRows(ctx, px, py, cellPx, s1, s2);
+    }
+    if (t.clearance > 0.35 && t.regrowth < 0.68 && s2 > 0.5) {
         drawTropicalStump(ctx, px - 2 * s, py, s, s1);
+        if (s1 > 0.6) drawTropicalStump(ctx, px + 3 * s, py + 1 * s, s * 0.72, s2);
+    }
+    if (t.regrowth > 0.5 && s2 > 0.38) {
+        drawTropicalRegrowth(ctx, px, py, cellPx, s1, s2, s3);
     }
 }
 
