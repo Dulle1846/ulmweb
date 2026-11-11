@@ -523,15 +523,28 @@ export function synchronizePopulationRegister(register = state.population, { adv
         .sort((a, b) => String(a.personId || a.id).localeCompare(String(b.personId || b.id)));
     const occupancy = new Map();
     const placed = [];
+    const deferredHomes = [];
     for (const entity of citizenship) {
         if (entity.isKing || entity.isRoyalFamily) {
             entity.householdId = CROWN_HOUSEHOLD_ID;
             placed.push(entity);
             continue;
         }
-        const key = chooseHome(entity, houses, occupancy, houseByKey);
-        if (key) placed.push(entity);
-        else placed.push(entity);
+        // The population register is authoritative for an already housed
+        // citizen. Reserve every saved home before assigning the remaining
+        // entities, otherwise a full house encountered earlier in the sorted
+        // entity list would silently move a resident during load.
+        const savedHome = preserveCivicScores ? normalized.citizens[String(entity.personId || entity.id)]?.householdId : null;
+        if (savedHome && houseByKey.has(savedHome) && moveIntoHousehold(entity, savedHome)) {
+            occupancy.set(savedHome, (occupancy.get(savedHome) || 0) + 1);
+            placed.push(entity);
+        } else {
+            deferredHomes.push(entity);
+        }
+    }
+    for (const entity of deferredHomes) {
+        chooseHome(entity, houses, occupancy, houseByKey);
+        placed.push(entity);
     }
     const householdFormation = formHouseholds
         ? formPartnerHouseholds(placed, houses, houseByKey, occupancy)
@@ -544,7 +557,14 @@ export function synchronizePopulationRegister(register = state.population, { adv
         const id = String(entity.personId || entity.id);
         entityByPersonId.set(id, entity);
         const previous = previousCitizens[id] || null;
-        const profession = professionFor(entity, person, year);
+        const computedProfession = professionFor(entity, person, year);
+        // A load must present the citizen exactly as they were saved. The next
+        // annual census may update the job and record that change, but loading
+        // must not invent a promotion, dismissal or status transition just
+        // because an entity reference was restored in a different order.
+        const profession = preserveCivicScores && previous?.profession
+            ? { ...computedProfession, label: previous.profession, status: previous.status || computedProfession.status }
+            : computedProfession;
         const health = healthFor(entity);
         const talent = talentFor(person, profession.label);
         const faith = identityFaith();
@@ -566,14 +586,14 @@ export function synchronizePopulationRegister(register = state.population, { adv
         const scores = preservedCivic || baseCivicScores(entity, person, profession, health);
         const restoredHealth = preservedHealth || { healthStatus: health.status, healthScore: health.score, immunity: health.immunity };
         const professionHistory = [...(previous?.professionHistory || [])];
-        if (previous?.profession && previous.profession !== profession.label && professionHistory.length < CITIZEN_HISTORY_LIMIT) {
+        if (!preserveCivicScores && previous?.profession && previous.profession !== profession.label && professionHistory.length < CITIZEN_HISTORY_LIMIT) {
             professionHistory.push({ year, from: previous.profession, to: profession.label });
         }
         const events = [...(previous?.events || [])];
-        if (previous?.status && previous.status !== profession.status && events.length < CITIZEN_HISTORY_LIMIT) {
+        if (!preserveCivicScores && previous?.status && previous.status !== profession.status && events.length < CITIZEN_HISTORY_LIMIT) {
             events.push({ year, kind: "status", text: "Status changed from " + (STATUS_LABELS[previous.status] || previous.status) + " to " + (STATUS_LABELS[profession.status] || profession.status) + "." });
         }
-        if (previous?.healthStatus && previous.healthStatus !== health.status && events.length < CITIZEN_HISTORY_LIMIT) {
+        if (!preserveCivicScores && previous?.healthStatus && previous.healthStatus !== health.status && events.length < CITIZEN_HISTORY_LIMIT) {
             events.push({ year, kind: "health", text: "Health changed from " + previous.healthStatus + " to " + health.status + "." });
         }
         // A royal KNIGHT is a court figure, never a garrison soldier. Counting
@@ -584,7 +604,8 @@ export function synchronizePopulationRegister(register = state.population, { adv
         const soldier = SOLDIER_TYPES.has(entity.type) && !royal;
         const citizen = {
             id, name: person.name, species: person.species, sex: person.sex, ageYears: person.ageYears,
-            role: person.role, origin: originFor(entity, person, previous), householdId: entity.householdId || null,
+            role: preserveCivicScores && previous?.role ? previous.role : person.role,
+            origin: originFor(entity, person, previous), householdId: entity.householdId || null,
             profession: profession.label, status: profession.status,
             faithId: faith.id, faith: faith.label, traditionId: tradition.id, tradition: tradition.label,
             healthStatus: restoredHealth.healthStatus, healthScore: restoredHealth.healthScore, immunity: restoredHealth.immunity,
@@ -632,7 +653,10 @@ export function synchronizePopulationRegister(register = state.population, { adv
         const capacity = housingCapacityFor(house.type);
         const employed = memberCitizens.filter(citizen => ["worker", "healer", "clergy", "scholar", "soldier", "royal"].includes(citizen.status)).length;
         const talent = memberCitizens.length ? memberCitizens.reduce((sum, citizen) => sum + citizen.talent.score, 0) / memberCitizens.length : 50;
-        let wealth = Number(previous.wealth) || (memberCitizens.length * 3 + 2);
+        const savedWealth = Number(previous.wealth);
+        let wealth = preserveCivicScores && Number.isFinite(savedWealth)
+            ? savedWealth
+            : (Number.isFinite(savedWealth) && savedWealth > 0 ? savedWealth : memberCitizens.length * 3 + 2);
         if (advance && memberCitizens.length) {
             const income = employed * (1.4 + talent / 100 * 0.8) + memberCitizens.length * 0.15;
             const upkeep = memberCitizens.length * 0.55;

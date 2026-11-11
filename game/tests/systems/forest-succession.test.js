@@ -109,7 +109,7 @@ test("a seeded world exposes initial disturbances and a live succession lookup",
     const lookup = forestSuccessionAt(x, y);
     assert.ok(lookup);
     assert.equal(lookup.stage, "fresh");
-    assert.match(lookup.label, /Burn|Wind|Disease|Beetle|Snow|Drought/);
+    assert.match(lookup.label, /Burn|Wind|Disease|Bark|Beetle|Snow|Drought/);
     const node = getResourceNodeAt(x, y);
     assert.equal(node.forestSuccession.kind, record.kind);
     assert.equal(node.forestDisturbance, record.kind);

@@ -25,6 +25,7 @@ npm run test:season-year
 npm run test:climate-reference
 npm run test:forest-reference
 npm run test:conifer-reference
+npm run test:mixed-reference
 npm run test:forest-occlusion
 npm run test:forest-detail
 npm run test:terrain-stability
@@ -57,9 +58,12 @@ weather and foliage log for a complete 400-day year plus a five-climate
 comparison. `test:climate-reference` writes the same-grove 5 × 4 climate
 matrix, five live 1280 × 800 climate screenshots and their JSON logs.
 `test:forest-reference` writes `forest-reference.png` with all fifteen broadleaf
-formations (the 1.2.2 conifer formations are covered by
-`tests/world/conifer-forest.test.js` and documented in `docs/CONIFER_FORESTS.md`) and `forest-seasons.png` with one ancient wood on days 50, 150, 250
-and 350, plus `forest-reference.json`. `test:forest-detail` writes
+formations and `forest-seasons.png` with one ancient wood on days 50, 150, 250
+and 350, plus `forest-reference.json`. `test:conifer-reference` and
+`test:mixed-reference` reuse the same harness for the twelve conifer and twelve
+mixed formations; they write `conifer-reference.png` / `conifer-seasons.png` /
+`conifer-reference.json` and `mixed-reference.png` / `mixed-seasons.png` /
+`mixed-reference.json`. `test:forest-detail` writes
 `forest-detail-reference.png` with the thirteen native close-ups for the
 formerly open checklist items, plus `forest-detail-reference.json`. Small
 motifs carry a review ring; every frame is a real terrain render, and the

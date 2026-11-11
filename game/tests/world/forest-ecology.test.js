@@ -15,7 +15,7 @@ const standContext = (overrides = {}) => ({
 });
 
 test("forest species, formations and goods form a complete shared vocabulary", () => {
-    assert.equal(FOREST_TYPE_IDS.length, 27);
+    assert.equal(FOREST_TYPE_IDS.length, 39);
     assert.deepEqual(Object.keys(FOREST_TYPES), FOREST_TYPE_IDS);
     for (const [id, species] of Object.entries(FOREST_SPECIES)) {
         assert.equal(species.id, id);
@@ -186,7 +186,7 @@ test("disturbance history produces fire, windthrow, disease and cutting", () => 
 test("species composition selects every declared species with a valid roll", () => {
     for (const id of FOREST_TYPE_IDS) {
         const species = Object.entries(FOREST_TYPES[id].species).map(([speciesId, weight]) => ({ id: speciesId, weight }));
-        const stand = { ...forestStandAt(23.5, 17.5, standContext()), species };
+        const stand = { ...forestStandAt(23.5, 17.5, standContext()), species, mixture: null };
         const total = species.reduce((sum, entry) => sum + entry.weight, 0);
         let cursor = 0;
         const picked = new Set();

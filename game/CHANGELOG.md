@@ -1,11 +1,11 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.14.1`
+**Current production version:** `3.14.2`
 **Next development line:** `3.15.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-10 (UTC)
+**Last repository verification:** 2026-11-11 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
@@ -37,6 +37,69 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.15.0-dev — Mischwälder (1.2.3)
+
+**Status:** development branch only; not a production release.
+
+**Scope:** Completes the mixed-forest phase without a second woodland model. The
+shared stand generator now returns a first-class mixture with ratios, dominant
+species, group/mosaic pattern, age structure, canopy layers, understorey,
+ecotone, seasonal light, autumn palette, food plants, habitat value, wood
+grades, phenology and silvicultural uses. The numeric indices of the fifteen
+broadleaf and twelve conifer formations are unchanged; the twelve mixed
+formations are appended after them.
+
+**Species and formations:** five new trees (ash, hornbeam, rowan, hazel,
+willow) bring the forest vocabulary to twenty species; twelve new formations
+cover oak–beech–birch–spruce, fir–beech–maple, pine with broadleaves, alluvial,
+montane, open, dense, ancient, young, ecotone, coppice-with-standards and
+selection forest. Grouped stands draw mostly from a tile's own species group;
+even stands bypass the bias. A 5×5 coarse island hash reserves a minority of
+grouped/mosaic tiles for a single broadleaf or conifer species, so small pure
+islands occur inside the mixed matrix. The mixed share now weights conifer
+pests, snowbreak and drought, so a spruce minority no longer receives a
+pure-spruce disturbance rate. Control parties are priced for every disturbance
+kind.
+
+**Products and presentation:** new timber and gathered goods (ash keys,
+hornbeam seeds, rowan berries, hazelnuts, willow withies, woodruff, valerian,
+tinder fungus, elderberries) flow through the existing delivery ledger. The
+forester survey exposes the mixture; the terrain renderer draws grass and herb
+understorey; seasonal foliage covers the new species. The mixed visual
+reference captures all twelve formations plus one stand through four seasons.
+
+**Verification:** focused mixed/forest suite 41/41; full `npm test` 750/750;
+syntax and relative imports clean for 105 files / 189 UI ids; deterministic
+25-year campaign `ok:true`, 10,040 ticks, 13/13 ambitions, no game over, 0.807
+ms/tick; mixed reference 12/12 formations and four seasons on WebKit WebGL with
+artifact hashes. No save schema bump; old saves keep every numeric formation
+index.
+
+**Full record:** [docs/MIXED_FORESTS.md](docs/MIXED_FORESTS.md).
+
+### 3.14.2 — Crown Legacy Roundtrip Fidelity
+
+**Released:** 2026-11-10
+
+**Scope:** Extends the save/load audit from the Merchant to all five Crown
+Legacy paths and fixes the state changes found by those longer runs. No save
+schema bump is required.
+
+**Fixes:** Loading a realm no longer replaces a saved household treasury of
+zero with the default starting wealth. Saved citizen roles, professions,
+statuses, profession history and household assignments are authoritative
+during load;
+the loader no longer recalculates a job, moves a resident into another house or
+writes a synthetic status/health change. Homes are reserved from the saved
+population register before any unhoused entity is assigned. The journey harness
+now selects the Grand funding tier, sells a bounded surplus through the shipped
+market for the builder, and asserts the path-specific legacy instead of the
+Merchant's Crown Treasury for every run.
+
+**Verification:** focused Population/Crown Supply/Diplomacy/Justice tests
+**49/49**; full `npm test` and the final five-path measurements are recorded
+below with the release receipt.
 
 ### 3.14.1 — Save/Load Fidelity
 

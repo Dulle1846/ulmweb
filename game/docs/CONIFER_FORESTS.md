@@ -24,8 +24,9 @@ states add broken leaders and dead/reddened crowns.
 
 ## Formations
 
-The twelve conifer formations are appended after the fifteen broadleaf
-formations, preserving all existing numeric type indices:
+The twelve conifer formations follow the fifteen broadleaf formations; the
+twelve mixed formations are appended after them. All existing numeric type
+indices stay stable:
 
 - `sprucewood`, `firwood`, `pinewood`, `larchwood`
 - `pine-heath`, `wet-conifer`, `mountain-conifer`, `subalpine-scrub`
@@ -277,7 +278,7 @@ in `terrain.js`; without that order, `mountain-conifer`, `mixed-conifer` and
 - `tests/world/conifer-forest.test.js` covers species, formations, reachability,
   needle floor, podzol, fauna, seasonal products, larch timing and succession.
 - `tests/world/forest-ecology.test.js` keeps the shared vegetation contract,
-  the 27 formation indices, per-tree form and derived survey fields stable.
+  the 39 formation indices, per-tree form and derived survey fields stable.
 - `tests/world/forest-sight.test.js` covers the shared sight block and the
   bounded line-of-sight DDA.
 - `tests/systems/forest-fauna.test.js` covers real predator/prey herds and the

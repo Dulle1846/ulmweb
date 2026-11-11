@@ -2312,7 +2312,7 @@ function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clima
         const coniferOptions = [
             ['fern', stand.understory.fern], ['berry', stand.understory.berry],
             ['lichen', stand.understory.lichen], ['heather', stand.understory.heather],
-            ['shrub', stand.understory.shrub],
+            ['shrub', stand.understory.shrub], ['grass', stand.understory.grass],
             ['sapling', 0.26 + (stand.type === 'regenerating' ? 0.3 : 0)],
         ];
         const total = coniferOptions.reduce((sum, [, weight]) => sum + Math.max(0, weight), 0) || 1;
@@ -2327,12 +2327,14 @@ function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clima
         else if (chosen === 'lichen') drawLichen(ctx, px, py, s, s3, season.snowCover);
         else if (chosen === 'heather') drawGrassTufts(ctx, px, py, cellPx, s1, s2, true, season.foliageTurn, season.snowCover);
         else if (chosen === 'shrub') drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey);
+        else if (chosen === 'grass') drawGrassTufts(ctx, px, py, cellPx, s1, s2, false, season.foliageTurn, season.snowCover);
         else drawConiferSapling(ctx, px, py, s, s2, season.snowCover);
         return;
     }
     const options = [
         ['fern', stand.understory.fern], ['bramble', stand.understory.bramble],
         ['shrub', stand.understory.shrub], ['heather', stand.understory.heather],
+        ['grass', stand.understory.grass],
         ['sapling', stand.type === 'regenerating' || stand.type === 'cutover' ? 0.65 : 0.18],
     ];
     const total = options.reduce((sum, [, weight]) => sum + Math.max(0, weight), 0);
@@ -2346,6 +2348,7 @@ function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clima
     else if (chosen === 'bramble') drawBramble(ctx, px, py, s, s2, season.foliageTurn, season.snowCover);
     else if (chosen === 'shrub') drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey);
     else if (chosen === 'heather') drawGrassTufts(ctx, px, py, cellPx, s1, s2, true, season.foliageTurn, season.snowCover);
+    else if (chosen === 'grass') drawGrassTufts(ctx, px, py, cellPx, s1, s2, false, season.foliageTurn, season.snowCover);
     else drawSapling(ctx, px, py, s, s2, season.foliageTurn, season.snowCover, 0.7 + s3 * 0.4);
 }
 

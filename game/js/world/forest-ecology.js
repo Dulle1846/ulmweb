@@ -122,6 +122,49 @@ export const FOREST_SPECIES = Object.freeze({
         timber: 0.7, firewood: 0.9, charcoal: 0.82, wood: 'alder-timber',
         goods: ['alder-cones', 'herbs', 'sloes'], understory: ['moss', 'heather'],
     }),
+    // The mixed-forest species are deliberately separate trees, not palette
+    // swaps. Ash, hornbeam, rowan, hazel and willow each carry their own form,
+    // timber, mast or berry crop and understorey preference.
+    ash: Object.freeze({
+        id: 'ash', label: 'Ash', latin: 'Fraxinus',
+        bark: '#6b6455', barkLight: '#948b76',
+        summer: ['#386b35', '#5e9a48'], autumn: ['#a67a2e', '#cfa64a'],
+        form: 'oval', leafShape: 'pinnate', height: 1.18, crown: 0.96, trunk: 1.02, lobes: 4,
+        timber: 1.06, firewood: 1.02, charcoal: 0.98, wood: 'ash-timber',
+        goods: ['ash-keys', 'herbs', 'mushrooms', 'wood-sorrel'], understory: ['fern', 'shrub'],
+    }),
+    hornbeam: Object.freeze({
+        id: 'hornbeam', label: 'Hornbeam', latin: 'Carpinus',
+        bark: '#6f6a59', barkLight: '#968f7a',
+        summer: ['#315f34', '#528b41'], autumn: ['#9c7431', '#c39c4b'],
+        form: 'dome', leafShape: 'serrated', height: 0.98, crown: 0.92, trunk: 0.8, lobes: 3,
+        timber: 1.14, firewood: 1.3, charcoal: 1.24, wood: 'hornbeam-timber',
+        goods: ['hornbeam-seeds', 'herbs', 'mushrooms'], understory: ['shrub', 'fern'],
+    }),
+    rowan: Object.freeze({
+        id: 'rowan', label: 'Rowan', latin: 'Sorbus',
+        bark: '#7a7468', barkLight: '#a39b8a',
+        summer: ['#3a6d36', '#629c4b'], autumn: ['#a8452b', '#d77a3c'],
+        form: 'airy', leafShape: 'pinnate', height: 0.82, crown: 0.72, trunk: 0.56, lobes: 3,
+        timber: 0.58, firewood: 0.82, charcoal: 0.7, wood: 'rowan-timber',
+        goods: ['rowan-berries', 'herbs', 'mushrooms'], understory: ['heather', 'shrub', 'fern'],
+    }),
+    hazel: Object.freeze({
+        id: 'hazel', label: 'Hazel', latin: 'Corylus',
+        bark: '#7d6a4f', barkLight: '#a48e6b',
+        summer: ['#4a7a3a', '#74a455'], autumn: ['#b08a2e', '#d6b84c'],
+        form: 'scrub', leafShape: 'round', height: 0.52, crown: 0.82, trunk: 0.34, lobes: 2,
+        timber: 0.34, firewood: 0.7, charcoal: 0.58, wood: 'hazel-timber',
+        goods: ['hazelnuts', 'herbs', 'mushrooms'], understory: ['shrub', 'bramble', 'fern'],
+    }),
+    willow: Object.freeze({
+        id: 'willow', label: 'Willow', latin: 'Salix',
+        bark: '#6d5f45', barkLight: '#94815f',
+        summer: ['#4d7a44', '#7aa75c'], autumn: ['#b09a35', '#d4bc55'],
+        form: 'airy', leafShape: 'lance', height: 0.88, crown: 0.84, trunk: 0.52, lobes: 3,
+        timber: 0.48, firewood: 0.76, charcoal: 0.62, wood: 'willow-timber',
+        goods: ['willow-withies', 'herbs', 'honey'], understory: ['moss', 'fern', 'shrub'],
+    }),
     // Conifers are not a single cosmetic cone. Each species has its own
     // silhouette, timber, forest-floor litter and useful products. Larch is
     // the exception that proves the rule: it is a conifer that sheds its
@@ -196,13 +239,61 @@ export const FOREST_SPECIES = Object.freeze({
 
 export const FOREST_SPECIES_IDS = Object.freeze(Object.keys(FOREST_SPECIES));
 
+// Flowering and fruiting windows are calendar days on the shared 400-day year.
+// They are descriptive ecology: the survey and the gathering ledger read the
+// same table, so blossom, berries and mast cannot contradict each other.
+export const FOREST_PHENOLOGY = Object.freeze({
+    oak: Object.freeze({ flowering: [115, 145], fruiting: [250, 320] }),
+    beech: Object.freeze({ flowering: [120, 150], fruiting: [245, 310] }),
+    birch: Object.freeze({ flowering: [95, 125], fruiting: [220, 280] }),
+    maple: Object.freeze({ flowering: [85, 115], fruiting: [230, 290] }),
+    chestnut: Object.freeze({ flowering: [140, 170], fruiting: [240, 300] }),
+    linden: Object.freeze({ flowering: [150, 180], fruiting: [230, 280] }),
+    elm: Object.freeze({ flowering: [80, 110], fruiting: [170, 220] }),
+    alder: Object.freeze({ flowering: [75, 105], fruiting: [200, 260] }),
+    ash: Object.freeze({ flowering: [100, 130], fruiting: [220, 290] }),
+    hornbeam: Object.freeze({ flowering: [110, 140], fruiting: [240, 300] }),
+    rowan: Object.freeze({ flowering: [130, 160], fruiting: [240, 320] }),
+    hazel: Object.freeze({ flowering: [40, 70], fruiting: [230, 300] }),
+    willow: Object.freeze({ flowering: [85, 115], fruiting: [150, 210] }),
+    spruce: Object.freeze({ flowering: [120, 150], fruiting: [250, 310] }),
+    fir: Object.freeze({ flowering: [130, 160], fruiting: [260, 320] }),
+    pine: Object.freeze({ flowering: [110, 140], fruiting: [240, 300] }),
+    larch: Object.freeze({ flowering: [95, 125], fruiting: [230, 290] }),
+    juniper: Object.freeze({ flowering: [70, 95], fruiting: [240, 320] }),
+    yew: Object.freeze({ flowering: [60, 90], fruiting: [230, 300] }),
+    'dwarf-pine': Object.freeze({ flowering: [90, 120], fruiting: [240, 300] }),
+});
+
+// Silvicultural uses are a shared vocabulary. A mixed stand lists the real
+// products and management options its species and age make possible, so the
+// forester survey and the wood's actual goods cannot drift apart.
+export const SILVICULTURE_USES = Object.freeze({
+    timber: Object.freeze({ label: 'Saw timber', note: 'straight boles for beams and boards' }),
+    firewood: Object.freeze({ label: 'Firewood', note: 'cordwood and branchwood' }),
+    charcoal: Object.freeze({ label: 'Charcoal', note: 'kiln wood from denser stands' }),
+    coppice: Object.freeze({ label: 'Coppice', note: 'stool regrowth cut on a short cycle' }),
+    poles: Object.freeze({ label: 'Poles and stakes', note: 'thin straight stems for fencing and tools' }),
+    veneer: Object.freeze({ label: 'Veneer and joinery', note: 'clean old-growth boles' }),
+    resin: Object.freeze({ label: 'Resin', note: 'tapped conifer stands' }),
+    mushrooms: Object.freeze({ label: 'Mushroom picking', note: 'litter and deadwood crops' }),
+    hunting: Object.freeze({ label: 'Hunting', note: 'game cover and browse' }),
+    mast: Object.freeze({ label: 'Mast and pannage', note: 'acorns, beech mast and nuts for swine' }),
+    grazing: Object.freeze({ label: 'Wood pasture', note: 'open grassy stands for grazing' }),
+    basketry: Object.freeze({ label: 'Withies and basketry', note: 'willow and hazel rods' }),
+    medicine: Object.freeze({ label: 'Herbal medicine', note: 'bark, leaves and woodland herbs' }),
+    honey: Object.freeze({ label: 'Honey and beeswax', note: 'flowering edges and lime blossom' }),
+    protection: Object.freeze({ label: 'Protection forest', note: 'old growth held for soil and shelter' }),
+    'selection-felling': Object.freeze({ label: 'Selection felling', note: 'single stems taken from an uneven stand' }),
+});
+
 const type = (id, label, note, species, options = {}) => Object.freeze({
     id, label, note, species: Object.freeze(species),
     density: options.density ?? 0.66,
     openness: options.openness ?? 0.24,
     understory: Object.freeze({
         fern: 0.2, bramble: 0.1, shrub: 0.1, moss: 0.2,
-        heather: 0, lichen: 0, berry: 0,
+        heather: 0, lichen: 0, berry: 0, grass: 0, herb: 0,
         ...(options.understory || {}),
     }),
     goods: Object.freeze(options.goods || []),
@@ -212,6 +303,12 @@ const type = (id, label, note, species, options = {}) => Object.freeze({
     productivity: options.productivity ?? 1,
     conifer: Boolean(options.conifer),
     needleLitter: Math.max(0, Math.min(1, Number(options.needleLitter) || 0)),
+    // Mixed formations carry their mixture strategy as data so the stand,
+    // survey and renderer do not each invent a different distribution rule.
+    mixed: Boolean(options.mixed),
+    canopyLayers: Math.max(1, Math.min(3, Math.floor(Number(options.canopyLayers) || 1))),
+    mixturePattern: options.mixturePattern || 'even',
+    silviculture: Object.freeze(options.silviculture || []),
 });
 
 // Formations are the ecological vocabulary; individual tiles then vary the
@@ -301,6 +398,48 @@ export const FOREST_TYPES = Object.freeze({
     'drought-stressed': type('drought-stressed', 'Drought-stressed Pine', 'Thin, resinous pines on parched ground with bark-beetle pressure',
         { pine: 0.58, larch: 0.14, juniper: 0.12, spruce: 0.1, birch: 0.06 },
         { density: 0.44, openness: 0.46, conifer: true, needleLitter: 0.65, understory: { fern: 0.03, bramble: 0, shrub: 0.1, moss: 0.1, heather: 0.34, lichen: 0.3, berry: 0.1 }, goods: ['resin', 'pine-cones', 'firewood', 'lichen'], fauna: ['bark-beetle', 'woodpecker', 'fox', 'hare', 'ant'], ageBias: 'mature', disturbance: 'drought-stressed', productivity: 0.52 }),
+
+    // Mischwälder (1.2.3) are appended after the conifer block for the same
+    // reason the conifers followed the broadleaf block: every earlier numeric
+    // formation index in an old resource save keeps its meaning. A mixed
+    // formation is not "broadleaf plus one spruce"; it has a real mixture
+    // ratio, several canopy layers and a group or mosaic distribution.
+    'mixed-oak-beech-spruce': type('mixed-oak-beech-spruce', 'Oak–Beech–Spruce Wood', 'Old oaks and beech with birch pioneers and spruce closing the shaded edge',
+        { oak: 0.3, beech: 0.24, spruce: 0.2, birch: 0.14, maple: 0.12 },
+        { density: 0.78, openness: 0.24, conifer: true, needleLitter: 0.28, mixed: true, canopyLayers: 3, mixturePattern: 'grouped', understory: { fern: 0.2, bramble: 0.1, shrub: 0.16, moss: 0.28, heather: 0.04, lichen: 0.06, berry: 0.12, grass: 0.16, herb: 0.14 }, goods: ['acorns', 'mushrooms', 'berries', 'game', 'resin'], fauna: ['deer', 'roe-deer', 'boar', 'fox', 'squirrel', 'songbird', 'woodpecker', 'owl', 'crossbill'], ageBias: 'mature', silviculture: ['timber', 'firewood', 'charcoal', 'hunting', 'mast'] }),
+    'mixed-fir-beech-maple': type('mixed-fir-beech-maple', 'Fir–Beech–Maple Wood', 'Tall shade-bearing firs over smooth beeches and brilliant autumn maples',
+        { fir: 0.32, beech: 0.28, maple: 0.18, spruce: 0.1, birch: 0.12 },
+        { density: 0.82, openness: 0.18, conifer: true, needleLitter: 0.45, mixed: true, canopyLayers: 3, mixturePattern: 'grouped', understory: { fern: 0.22, bramble: 0.06, shrub: 0.12, moss: 0.34, heather: 0.02, lichen: 0.14, berry: 0.08, grass: 0.1, herb: 0.12 }, goods: ['mushrooms', 'beechnuts', 'maple-syrup', 'herbs', 'game', 'resin'], fauna: ['deer', 'roe-deer', 'fox', 'owl', 'squirrel', 'songbird', 'crossbill', 'woodpecker'], ageBias: 'mature', silviculture: ['timber', 'firewood', 'veneer', 'hunting', 'mushrooms'] }),
+    'pine-broadleaf': type('pine-broadleaf', 'Pine–Broadleaf Wood', 'Sunlit pines with scattered oak, birch and beech in the gaps',
+        { pine: 0.4, oak: 0.2, birch: 0.16, beech: 0.12, larch: 0.12 },
+        { density: 0.56, openness: 0.4, conifer: true, needleLitter: 0.5, mixed: true, canopyLayers: 2, mixturePattern: 'mosaic', understory: { fern: 0.08, bramble: 0.06, shrub: 0.1, moss: 0.14, heather: 0.24, lichen: 0.28, berry: 0.22, grass: 0.3, herb: 0.14 }, goods: ['pine-cones', 'blueberries', 'mushrooms', 'acorns', 'game'], fauna: ['deer', 'roe-deer', 'hare', 'fox', 'squirrel', 'crossbill', 'woodpecker', 'ant', 'songbird'], ageBias: 'mature', silviculture: ['timber', 'firewood', 'resin', 'hunting', 'mast'] }),
+    'mixed-alluvial': type('mixed-alluvial', 'Alluvial Mixed Wood', 'Damp alder, ash, elm and willow with spruce on the raised banks',
+        { alder: 0.24, ash: 0.2, elm: 0.18, willow: 0.14, birch: 0.12, spruce: 0.12 },
+        { density: 0.76, openness: 0.2, conifer: true, needleLitter: 0.15, mixed: true, canopyLayers: 3, mixturePattern: 'mosaic', understory: { fern: 0.3, bramble: 0.08, shrub: 0.24, moss: 0.4, heather: 0, lichen: 0.06, berry: 0.16, grass: 0.18, herb: 0.2 }, goods: ['herbs', 'mushrooms', 'honey', 'game', 'willow-withies'], fauna: ['hare', 'fox', 'owl', 'songbird', 'butterfly', 'deer', 'boar'], ageBias: 'mature', silviculture: ['timber', 'firewood', 'basketry', 'hunting', 'medicine'] }),
+    'mixed-montane': type('mixed-montane', 'Montane Mixed Wood', 'Beech and fir on the sheltered slope, spruce and rowan above',
+        { beech: 0.24, fir: 0.24, spruce: 0.2, maple: 0.16, rowan: 0.08, birch: 0.08 },
+        { density: 0.8, openness: 0.2, conifer: true, needleLitter: 0.38, mixed: true, canopyLayers: 3, mixturePattern: 'grouped', understory: { fern: 0.22, bramble: 0.04, shrub: 0.12, moss: 0.36, heather: 0.12, lichen: 0.24, berry: 0.14, grass: 0.12, herb: 0.14 }, goods: ['mushrooms', 'herbs', 'game', 'rowan-berries', 'resin'], fauna: ['deer', 'roe-deer', 'fox', 'owl', 'raptor', 'woodpecker', 'crossbill', 'capercaillie'], ageBias: 'mature', silviculture: ['timber', 'firewood', 'hunting', 'mushrooms', 'protection'] }),
+    'mixed-open': type('mixed-open', 'Open Mixed Wood', 'Light oak, birch and pine over a tall grass and herb layer',
+        { oak: 0.26, birch: 0.22, pine: 0.18, maple: 0.14, linden: 0.12, hazel: 0.08 },
+        { density: 0.4, openness: 0.56, conifer: true, needleLitter: 0.18, mixed: true, canopyLayers: 2, mixturePattern: 'even', understory: { fern: 0.1, bramble: 0.08, shrub: 0.16, moss: 0.08, heather: 0.14, lichen: 0.08, berry: 0.18, grass: 0.5, herb: 0.3 }, goods: ['mushrooms', 'berries', 'hazelnuts', 'honey', 'game'], fauna: ['roe-deer', 'hare', 'butterfly', 'songbird', 'bee', 'fox', 'woodpecker'], ageBias: 'young', productivity: 0.95, silviculture: ['firewood', 'grazing', 'mast', 'hunting'] }),
+    'mixed-dense': type('mixed-dense', 'Dense Mixed Thicket', 'A closed beech–spruce–fir canopy over hazel, bramble and young yew',
+        { beech: 0.22, spruce: 0.2, fir: 0.14, maple: 0.14, birch: 0.12, hazel: 0.1, yew: 0.08 },
+        { density: 0.9, openness: 0.08, conifer: true, needleLitter: 0.4, mixed: true, canopyLayers: 3, mixturePattern: 'grouped', understory: { fern: 0.16, bramble: 0.24, shrub: 0.3, moss: 0.34, heather: 0, lichen: 0.16, berry: 0.16, grass: 0.04, herb: 0.08 }, goods: ['mushrooms', 'game', 'firewood', 'resin', 'herbs'], fauna: ['deer', 'boar', 'fox', 'owl', 'woodpecker', 'capercaillie', 'lynx'], ageBias: 'mature', silviculture: ['firewood', 'timber', 'hunting', 'mushrooms'] }),
+    'mixed-ancient': type('mixed-ancient', 'Ancient Mixed Wood', 'Hollow old oaks and lindens among giant firs, with a deep species-rich floor',
+        { oak: 0.22, beech: 0.2, linden: 0.16, fir: 0.14, maple: 0.12, elm: 0.1, hornbeam: 0.06 },
+        { density: 0.86, openness: 0.12, conifer: true, needleLitter: 0.25, mixed: true, canopyLayers: 3, mixturePattern: 'grouped', understory: { fern: 0.3, bramble: 0.08, shrub: 0.08, moss: 0.44, heather: 0, lichen: 0.12, berry: 0.1, grass: 0.08, herb: 0.18 }, goods: ['acorns', 'truffles', 'mushrooms', 'game', 'honey', 'herbs'], fauna: ['owl', 'woodpecker', 'beetle', 'deer', 'squirrel', 'boar', 'raptor'], ageBias: 'ancient', silviculture: ['timber', 'veneer', 'firewood', 'hunting', 'mushrooms', 'protection'] }),
+    'mixed-young': type('mixed-young', 'Young Mixed Plantation', 'Fast birch and larch over planted spruce, maple and oak in rows',
+        { birch: 0.26, beech: 0.14, larch: 0.18, spruce: 0.16, maple: 0.14, oak: 0.12 },
+        { density: 0.5, openness: 0.46, conifer: true, needleLitter: 0.35, mixed: true, canopyLayers: 2, mixturePattern: 'even', understory: { fern: 0.12, bramble: 0.22, shrub: 0.24, moss: 0.14, heather: 0.1, lichen: 0.1, berry: 0.12, grass: 0.34, herb: 0.18 }, goods: ['berries', 'mushrooms', 'firewood', 'herbs'], fauna: ['hare', 'roe-deer', 'butterfly', 'songbird', 'fox'], ageBias: 'young', productivity: 0.8, silviculture: ['poles', 'firewood', 'coppice', 'grazing'] }),
+    'mixed-ecotone': type('mixed-ecotone', 'Mixed Woodland Edge', 'A soft gradient where birch, pine, oak and beech meet open country',
+        { birch: 0.2, pine: 0.18, oak: 0.18, beech: 0.14, spruce: 0.12, maple: 0.1, rowan: 0.08 },
+        { density: 0.54, openness: 0.42, conifer: true, needleLitter: 0.3, mixed: true, canopyLayers: 2, mixturePattern: 'mosaic', understory: { fern: 0.12, bramble: 0.16, shrub: 0.2, moss: 0.12, heather: 0.12, lichen: 0.12, berry: 0.2, grass: 0.4, herb: 0.22 }, goods: ['berries', 'mushrooms', 'hazelnuts', 'game', 'herbs'], fauna: ['roe-deer', 'hare', 'fox', 'songbird', 'butterfly', 'woodpecker', 'owl'], ageBias: 'mature', silviculture: ['firewood', 'hunting', 'grazing', 'mast'] }),
+    'coppice-with-standards': type('coppice-with-standards', 'Coppice with Standards', 'Cut hazel and hornbeam stools under scattered mature oak standards',
+        { oak: 0.34, hornbeam: 0.18, birch: 0.16, hazel: 0.14, linden: 0.1, maple: 0.08 },
+        { density: 0.52, openness: 0.4, mixed: true, canopyLayers: 2, mixturePattern: 'even', understory: { fern: 0.1, bramble: 0.3, shrub: 0.34, moss: 0.16, heather: 0.04, lichen: 0.04, berry: 0.14, grass: 0.26, herb: 0.18 }, goods: ['firewood', 'charcoal', 'acorns', 'hazelnuts', 'mushrooms', 'berries'], fauna: ['deer', 'roe-deer', 'squirrel', 'boar', 'songbird', 'woodpecker', 'butterfly'], ageBias: 'young', productivity: 0.86, silviculture: ['coppice', 'firewood', 'charcoal', 'poles', 'grazing', 'mast'] }),
+    'selection-forest': type('selection-forest', 'Selection Forest', 'Uneven-aged fir, beech and spruce, worked stem by stem',
+        { fir: 0.24, beech: 0.22, spruce: 0.18, maple: 0.14, oak: 0.12, hornbeam: 0.1 },
+        { density: 0.74, openness: 0.22, conifer: true, needleLitter: 0.34, mixed: true, canopyLayers: 3, mixturePattern: 'grouped', understory: { fern: 0.2, bramble: 0.08, shrub: 0.14, moss: 0.3, heather: 0.04, lichen: 0.16, berry: 0.12, grass: 0.12, herb: 0.14 }, goods: ['mushrooms', 'timber', 'resin', 'beechnuts', 'game'], fauna: ['deer', 'roe-deer', 'fox', 'owl', 'woodpecker', 'crossbill', 'songbird'], ageBias: 'mature', productivity: 1.1, silviculture: ['selection-felling', 'timber', 'firewood', 'hunting', 'mushrooms'] }),
 });
 
 export const FOREST_TYPE_IDS = Object.freeze(Object.keys(FOREST_TYPES));
@@ -329,6 +468,11 @@ export const FOREST_GOODS = Object.freeze({
     'linden-timber': Object.freeze({ id: 'linden-timber', label: 'Linden timber', category: 'wood' }),
     'elm-timber': Object.freeze({ id: 'elm-timber', label: 'Elm timber', category: 'wood' }),
     'alder-timber': Object.freeze({ id: 'alder-timber', label: 'Alder timber', category: 'wood' }),
+    'ash-timber': Object.freeze({ id: 'ash-timber', label: 'Ash timber', category: 'wood' }),
+    'hornbeam-timber': Object.freeze({ id: 'hornbeam-timber', label: 'Hornbeam timber', category: 'wood' }),
+    'rowan-timber': Object.freeze({ id: 'rowan-timber', label: 'Rowan timber', category: 'wood' }),
+    'hazel-timber': Object.freeze({ id: 'hazel-timber', label: 'Hazel wood', category: 'wood' }),
+    'willow-timber': Object.freeze({ id: 'willow-timber', label: 'Willow wood', category: 'wood' }),
     'spruce-timber': Object.freeze({ id: 'spruce-timber', label: 'Spruce timber', category: 'wood' }),
     'fir-timber': Object.freeze({ id: 'fir-timber', label: 'Fir timber', category: 'wood' }),
     'pine-timber': Object.freeze({ id: 'pine-timber', label: 'Pine timber', category: 'wood' }),
@@ -359,6 +503,15 @@ export const FOREST_GOODS = Object.freeze({
     'maple-syrup': Object.freeze({ id: 'maple-syrup', label: 'Maple syrup', category: 'gather' }),
     'elm-seeds': Object.freeze({ id: 'elm-seeds', label: 'Elm seeds', category: 'gather' }),
     'alder-cones': Object.freeze({ id: 'alder-cones', label: 'Alder cones', category: 'gather' }),
+    'ash-keys': Object.freeze({ id: 'ash-keys', label: 'Ash keys', category: 'gather' }),
+    'hornbeam-seeds': Object.freeze({ id: 'hornbeam-seeds', label: 'Hornbeam seeds', category: 'mast' }),
+    'rowan-berries': Object.freeze({ id: 'rowan-berries', label: 'Rowan berries', category: 'gather' }),
+    hazelnuts: Object.freeze({ id: 'hazelnuts', label: 'Hazelnuts', category: 'mast' }),
+    'willow-withies': Object.freeze({ id: 'willow-withies', label: 'Willow withies', category: 'gather' }),
+    woodruff: Object.freeze({ id: 'woodruff', label: 'Woodruff', category: 'gather' }),
+    valerian: Object.freeze({ id: 'valerian', label: 'Valerian', category: 'gather' }),
+    'tinder-fungus': Object.freeze({ id: 'tinder-fungus', label: 'Tinder fungus', category: 'gather' }),
+    elderberries: Object.freeze({ id: 'elderberries', label: 'Elderberries', category: 'gather' }),
     'spruce-cones': Object.freeze({ id: 'spruce-cones', label: 'Spruce cones', category: 'mast' }),
     'fir-cones': Object.freeze({ id: 'fir-cones', label: 'Fir cones', category: 'mast' }),
     'pine-cones': Object.freeze({ id: 'pine-cones', label: 'Pine cones', category: 'mast' }),
@@ -379,10 +532,10 @@ export const FOREST_GOODS = Object.freeze({
 });
 
 const SEASON_GOODS = Object.freeze({
-    spring: { herbs: 0.9, 'wild-garlic': 0.88, 'wood-sorrel': 0.72, 'wild-strawberry': 0.3, 'birch-sap': 0.9, 'maple-syrup': 0.75, 'linden-flower': 0.45, honey: 0.55, beeswax: 0.25, mushrooms: 0.18, berries: 0.12, game: 0.3, fur: 0.25, hides: 0.2, resin: 0.22, lichen: 0.2 },
-    summer: { herbs: 0.65, 'wild-garlic': 0.38, 'wood-sorrel': 0.55, 'wild-strawberry': 0.9, chanterelle: 0.18, 'linden-flower': 0.95, honey: 0.95, beeswax: 0.55, berries: 0.9, mushrooms: 0.3, game: 0.35, fur: 0.2, hides: 0.16, 'maple-syrup': 0.3, resin: 0.75, blueberries: 0.9, lingonberries: 0.45, lichen: 0.25 },
-    autumn: { mushrooms: 0.95, chanterelle: 0.9, porcini: 0.82, sloes: 0.76, 'crab-apples': 0.7, 'wood-sorrel': 0.3, 'wild-strawberry': 0.15, berries: 0.55, acorns: 0.95, beechnuts: 0.9, chestnuts: 0.95, truffles: 0.7, game: 0.9, fur: 0.5, hides: 0.45, herbs: 0.25, honey: 0.2, beeswax: 0.18, resin: 0.5, 'spruce-cones': 0.8, 'fir-cones': 0.8, 'pine-cones': 0.9, 'juniper-berries': 0.85, 'yew-berries': 0.7, 'dwarf-pine-cones': 0.62, blueberries: 0.35, lingonberries: 0.9 },
-    winter: { game: 0.55, fur: 0.85, hides: 0.65, mushrooms: 0.08, berries: 0.04, charcoal: 0.5, resin: 0.05, 'spruce-cones': 0.35, 'fir-cones': 0.32, 'pine-cones': 0.45, 'juniper-berries': 0.5, 'yew-berries': 0.3, 'dwarf-pine-cones': 0.25, lichen: 0.3 },
+    spring: { herbs: 0.9, 'wild-garlic': 0.88, 'wood-sorrel': 0.72, 'wild-strawberry': 0.3, 'birch-sap': 0.9, 'maple-syrup': 0.75, 'linden-flower': 0.45, honey: 0.55, beeswax: 0.25, mushrooms: 0.18, berries: 0.12, game: 0.3, fur: 0.25, hides: 0.2, resin: 0.22, lichen: 0.2, woodruff: 0.7, 'willow-withies': 0.45 },
+    summer: { herbs: 0.65, 'wild-garlic': 0.38, 'wood-sorrel': 0.55, 'wild-strawberry': 0.9, chanterelle: 0.18, 'linden-flower': 0.95, honey: 0.95, beeswax: 0.55, berries: 0.9, mushrooms: 0.3, game: 0.35, fur: 0.2, hides: 0.16, 'maple-syrup': 0.3, resin: 0.75, blueberries: 0.9, lingonberries: 0.45, lichen: 0.25, woodruff: 0.45, valerian: 0.65, elderberries: 0.15 },
+    autumn: { mushrooms: 0.95, chanterelle: 0.9, porcini: 0.82, sloes: 0.76, 'crab-apples': 0.7, 'wood-sorrel': 0.3, 'wild-strawberry': 0.15, berries: 0.55, acorns: 0.95, beechnuts: 0.9, chestnuts: 0.95, truffles: 0.7, game: 0.9, fur: 0.5, hides: 0.45, herbs: 0.25, honey: 0.2, beeswax: 0.18, resin: 0.5, 'spruce-cones': 0.8, 'fir-cones': 0.8, 'pine-cones': 0.9, 'juniper-berries': 0.85, 'yew-berries': 0.7, 'dwarf-pine-cones': 0.62, blueberries: 0.35, lingonberries: 0.9, hazelnuts: 0.92, 'hornbeam-seeds': 0.6, 'rowan-berries': 0.85, elderberries: 0.8, 'ash-keys': 0.55, 'tinder-fungus': 0.5 },
+    winter: { game: 0.55, fur: 0.85, hides: 0.65, mushrooms: 0.08, berries: 0.04, charcoal: 0.5, resin: 0.05, 'spruce-cones': 0.35, 'fir-cones': 0.32, 'pine-cones': 0.45, 'juniper-berries': 0.5, 'yew-berries': 0.3, 'dwarf-pine-cones': 0.25, lichen: 0.3, 'willow-withies': 0.7, 'tinder-fungus': 0.45 },
 });
 
 const FAUNA = Object.freeze({
@@ -422,6 +575,22 @@ export function seasonGoods(dayOfYear, climate = 'temperate') {
     return SEASON_GOODS[seasonKeyFor(dayOfYear, climate)] || SEASON_GOODS.spring;
 }
 
+// The variant hash selects which mixed community establishes inside a mixed
+// patch. The thresholds are deliberately independent of the patch gate so
+// every mixture, including the managed and open woods, can occur.
+function mixedFormationFor(temperature, moisture, height, variant) {
+    if (height > 0.82 && temperature < 0.62) return 'mixed-montane';
+    if (moisture > 0.7) return 'mixed-alluvial';
+    if (variant > 0.86) return temperature < 0.6 ? 'mixed-fir-beech-maple' : 'selection-forest';
+    if (variant > 0.77) return moisture > 0.55 ? 'mixed-dense' : 'mixed-open';
+    if (variant > 0.68) return 'mixed-oak-beech-spruce';
+    if (variant > 0.58) return moisture < 0.53 ? 'pine-broadleaf' : 'mixed-ecotone';
+    if (variant > 0.47) return 'mixed-ecotone';
+    if (variant > 0.36) return 'selection-forest';
+    if (variant > 0.24) return 'coppice-with-standards';
+    return 'mixed-oak-beech-spruce';
+}
+
 function formationFor(x, y, ctx) {
     const { moisture, temperature, height, seed } = ctx;
     // Chestnut groves belong to the warm, sheltered lowlands. The generated
@@ -439,6 +608,11 @@ function formationFor(x, y, ctx) {
     const pinePatch = coarseUnit(seed, x, y, 8, 0x50494e45);
     const larchPatch = coarseUnit(seed, x, y, 9, 0x4c4152);
     const relief = coarseUnit(seed, x, y, 6, 0x52454c49);
+    // A mixed patch is a real coarse community, not a per-tile coin flip. The
+    // influence hash decides where mixed woodland replaces the surrounding
+    // pure stand; the variant hash decides which mixture establishes there.
+    const mixedPatch = coarseUnit(seed, x, y, 7, 0x4d495848);
+    const mixedVariant = coarseUnit(seed, x, y, 5, 0x4d495856);
 
     // The high country is a mosaic: warm, sheltered slopes keep broadleaf
     // hillside woods; exposed and cold slopes turn to spruce, fir and finally
@@ -448,6 +622,9 @@ function formationFor(x, y, ctx) {
         return coniferPatch > 0.24 ? 'subalpine-scrub' : 'mountain-conifer';
     }
     if (high) {
+        // The upper mixed belt: beech and fir on sheltered slopes, spruce and
+        // rowan higher up, before the pure mountain conifer and scrub zones.
+        if (height <= 0.9 && !cold && temperature > 0.44 && mixedPatch > 0.36) return mixedFormationFor(temperature, moisture, height, mixedVariant);
         // Cool high ground is not automatically conifer: a sheltered slope
         // above the lowland woods still carries beech and maple. Exposed or
         // genuinely cold high ground remains part of the conifer belt.
@@ -463,7 +640,9 @@ function formationFor(x, y, ctx) {
         return coniferPatch > 0.5 ? 'mountain-conifer' : 'mixed-conifer';
     }
     if (wet && cold && coniferPatch > 0.3) return 'wet-conifer';
-    if (wet) return 'alluvial';
+    // Wet temperate ground carries a mixed alder–ash–elm–willow community with
+    // spruce on the raised banks, not only a pure alluvial broadleaf wood.
+    if (wet) return mixedPatch > 0.58 ? 'mixed-alluvial' : 'alluvial';
     if (cold) {
         // A minority of cold, low sites remain open birch; the rest become the
         // dark spruce/fir core, with larch on the drier margins and pine on
@@ -474,6 +653,13 @@ function formationFor(x, y, ctx) {
         if (larchPatch > 0.72) return 'larchwood';
         if (pinePatch > 0.68) return 'pinewood';
         return coniferPatch > 0.58 ? 'firwood' : 'sprucewood';
+    }
+    // The broad temperate middle ground is where mixed forests belong. The
+    // patch gate keeps pure oak, beech, maple, linden and birch woods
+    // reachable; inside a mixed patch the variant chooses a real community.
+    if (!cold && !dry && temperature > 0.44 && temperature < 0.7
+        && moisture > 0.44 && moisture < 0.72 && mixedPatch > 0.55) {
+        return mixedFormationFor(temperature, moisture, height, mixedVariant);
     }
     if (warm && moisture > 0.48) return 'chestnut-grove';
     if (dry) {
@@ -499,8 +685,8 @@ function formationFor(x, y, ctx) {
 }
 
 function ageClassFor(formation, x, y, seed) {
-    if (formation.id === 'ancient') return 'ancient';
-    if (formation.id === 'regenerating' || formation.id === 'cutover') return 'young';
+    if (formation.id === 'ancient' || formation.id === 'mixed-ancient') return 'ancient';
+    if (formation.id === 'regenerating' || formation.id === 'cutover' || formation.id === 'mixed-young') return 'young';
     const roll = unitHash(seed, x, y, 0x41474531);
     if (formation.id === 'burned') return roll > 0.38 ? 'mature' : 'young';
     if (formation.ageBias === 'ancient') return roll < 0.58 ? 'ancient' : 'mature';
@@ -624,19 +810,30 @@ export function forestStandAt(x, y, context = {}) {
     const snowDamage = coarseUnit(seed, tx, ty, 7, 0x534e4f57);
     const droughtDamage = coarseUnit(seed, tx, ty, 7, 0x44524f55);
     const coniferBase = Boolean(baseFormation.conifer);
+    // A formation that merely contains a few spruce is not a pure conifer
+    // stand for disturbance purposes. Weight the seeded pest/snow/drought
+    // hazards by the actual conifer share so a 15% spruce mixed wood does not
+    // receive the same outbreak probability as a sprucewood.
+    const baseSpeciesTotal = Object.values(baseFormation.species).reduce((sum, weight) => sum + Math.max(0, weight), 0) || 1;
+    const baseConiferShare = Object.entries(baseFormation.species).reduce((sum, [id, weight]) =>
+        sum + (FOREST_SPECIES[id]?.conifer ? Math.max(0, weight) : 0), 0) / baseSpeciesTotal;
+    const coniferHazard = coniferBase && baseConiferShare > 0.3;
+    const barkThreshold = 0.93 + (1 - baseConiferShare) * 0.05;
+    const snowThreshold = 0.93 + (1 - baseConiferShare) * 0.05;
+    const droughtThreshold = 0.9 + (1 - baseConiferShare) * 0.06;
     if (stockRatio < 0.18 && forest) {
         formation = FOREST_TYPES.cutover;
         disturbance = 'cutover';
     } else if (forest && damage > 0.982) {
         formation = FOREST_TYPES.burned;
         disturbance = 'burned';
-    } else if (forest && coniferBase && barkDamage > 0.93) {
+    } else if (forest && coniferHazard && barkDamage > barkThreshold) {
         formation = FOREST_TYPES['bark-beetle'];
         disturbance = 'bark-beetle';
-    } else if (forest && coniferBase && snowDamage > 0.93) {
+    } else if (forest && coniferHazard && snowDamage > snowThreshold) {
         formation = FOREST_TYPES.snowbreak;
         disturbance = 'snowbreak';
-    } else if (forest && coniferBase && moisture < 0.58 && droughtDamage > 0.9) {
+    } else if (forest && coniferHazard && moisture < 0.58 && droughtDamage > droughtThreshold) {
         formation = FOREST_TYPES['drought-stressed'];
         disturbance = 'drought-stressed';
     } else if (forest && damage > 0.96) {
@@ -645,6 +842,13 @@ export function forestStandAt(x, y, context = {}) {
     } else if (forest && damage > 0.942) {
         formation = FOREST_TYPES.diseased;
         disturbance = 'diseased';
+    } else if (forest && baseFormation.mixed && coarseUnit(seed, tx, ty, 8, 0x4d414e43) > 0.72) {
+        // Old species-rich mixed stands and young mixed plantations are not a
+        // second taxonomy: they reuse the mixed formation vocabulary with the
+        // age structure and canopy layers that actually belong to them.
+        formation = FOREST_TYPES['mixed-ancient'];
+    } else if (forest && baseFormation.mixed && coarseUnit(seed, tx, ty, 8, 0x4d594f55) > 0.74) {
+        formation = FOREST_TYPES['mixed-young'];
     } else if (forest && coarseUnit(seed, tx, ty, 9, 0x4f4c4457) > 0.955) {
         formation = FOREST_TYPES.ancient;
     } else if (forest && coarseUnit(seed, tx, ty, 6, 0x52454745) > 0.91) {
@@ -697,6 +901,12 @@ export function forestStandAt(x, y, context = {}) {
     const bramble = clamp01(0.06 + formation.understory.bramble * 0.9 + (edge ? 0.18 : 0) + light * 0.1);
     const shrub = clamp01(0.08 + formation.understory.shrub * 0.8 + (edge ? 0.2 : 0));
     const moss = clamp01(0.08 + moisture * 0.34 + formation.understory.moss * 0.9 + (ageClass === 'ancient' ? 0.16 : 0));
+    // Grass and herbs are the light-demanding ground layer of open mixed woods,
+    // wood pasture and ecotones. They stay low under a closed canopy.
+    const grass = clamp01((formation.understory.grass || 0) * 0.9 + (edge ? 0.2 : 0)
+        + (clearing > 0.2 ? 0.24 : 0) + light * 0.18);
+    const herb = clamp01((formation.understory.herb || 0) * 0.9 + (edge ? 0.12 : 0)
+        + (clearing > 0.2 ? 0.18 : 0) + (formation.id === 'mixed-open' ? 0.2 : 0));
     const heather = clamp01((formation.understory.heather || 0) * 0.9 + (temperature < 0.48 ? 0.12 : 0));
     const lichen = clamp01((formation.understory.lichen || 0) * 0.9 + (coniferShare * 0.18) + (height > 0.66 ? 0.06 : 0) + (temperature < 0.5 ? 0.1 : 0));
     const berry = clamp01((formation.understory.berry || 0) * 0.9 + (coniferShare * 0.12) + (moisture > 0.55 ? 0.08 : 0));
@@ -824,6 +1034,178 @@ export function forestStandAt(x, y, context = {}) {
         + (edge ? 0.18 : 0) + clearing * 0.15);
     const sightRadius = 2 + Math.round(visibility * 8);
 
+    // --- Mixed-forest structure -------------------------------------------
+    // A mixed stand is not a shuffled species list. It has a real mixture
+    // ratio, a dominant species, a grouped or even distribution, an age
+    // structure, a layered canopy, an understorey character and a set of
+    // silvicultural uses. All of it is derived from the same stand inputs and
+    // stays deterministic, so renderer, survey and economy cannot disagree.
+    const coniferEntries = speciesList.filter(entry => FOREST_SPECIES[entry.id]?.conifer);
+    const broadleafEntries = speciesList.filter(entry => !FOREST_SPECIES[entry.id]?.conifer);
+    const larchEntry = speciesList.find(entry => entry.id === 'larch');
+    const broadleafShare = clamp01(broadleafEntries.reduce((sum, entry) => sum + entry.weight, 0) / speciesWeightTotal);
+    const larchShare = clamp01((larchEntry?.weight || 0) / speciesWeightTotal);
+    const deciduousShare = clamp01(broadleafShare + larchShare);
+    const dominantShare = clamp01((speciesList[0]?.weight || 0) / speciesWeightTotal);
+    const shannon = speciesList.reduce((sum, entry) => {
+        const share = clamp01(entry.weight / speciesWeightTotal);
+        return sum - (share > 0 ? share * Math.log(share) : 0);
+    }, 0);
+    const evenness = clamp01(shannon / Math.log(Math.max(2, speciesList.length)));
+    const mixed = Boolean(formation.mixed) || (speciesList.length >= 4 && speciesDiversity >= 0.42);
+    const mixturePattern = formation.mixturePattern || (dominantShare > 0.5 ? 'grouped' : 'even');
+    const groupCount = Math.max(1, Math.min(3, Number(formation.canopyLayers) || (mixed ? 2 : 1)));
+    const groups = [];
+    if (mixed) {
+        for (let group = 0; group < groupCount; group++) {
+            const members = speciesList.filter((entry, index) => index % groupCount === group);
+            if (!members.length) continue;
+            groups.push({
+                id: 'group-' + (group + 1),
+                share: clamp01(members.reduce((sum, entry) => sum + entry.weight, 0) / speciesWeightTotal),
+                species: members,
+            });
+        }
+    }
+    const tileGroupRoll = unitHash(seed, tx, ty, 0x4d495847);
+    const tileGroup = groups.length ? groups[Math.min(groups.length - 1, Math.floor(tileGroupRoll * groups.length))] : null;
+    // A mixed matrix is allowed to contain small pure islands. The 5×5 coarse
+    // cell keeps an island spatially coherent instead of flickering from tree
+    // to tree, and the pool follows the stand's actual broadleaf/conifer share.
+    // Even-aged even mixtures deliberately keep their salt-and-pepper rule.
+    const pureIslandGate = formation.mixed && mixturePattern !== 'even'
+        ? coarseUnit(seed, tx, ty, 5, 0x50555249) : 0;
+    let pureIsland = null;
+    if (pureIslandGate > 0.9) {
+        const wantBroadleaf = coarseUnit(seed, tx, ty, 5, 0x50555242) < broadleafShare;
+        const pool = (wantBroadleaf ? broadleafEntries : coniferEntries);
+        const fallback = pool.length ? pool : speciesList;
+        const islandRoll = coarseUnit(seed, tx, ty, 5, 0x50555253);
+        const member = fallback[Math.min(fallback.length - 1, Math.floor(islandRoll * fallback.length))];
+        if (member) {
+            pureIsland = {
+                active: true,
+                species: member.id,
+                label: FOREST_SPECIES[member.id]?.label || member.id,
+                broadleaf: !FOREST_SPECIES[member.id]?.conifer,
+            };
+        }
+    }
+    const speciesHeights = speciesList.map(entry => Number(FOREST_SPECIES[entry.id]?.height) || 1);
+    const crownHeightSpread = clamp01(Math.max(...speciesHeights) - Math.min(...speciesHeights));
+    const youngBias = formation.ageBias === 'young' ? 0.46 : 0.14;
+    const ancientBias = formation.ageBias === 'ancient' ? 0.48 : 0.09;
+    const ageStructure = {
+        young: clamp01(youngBias + (ageClass === 'young' ? 0.34 : 0)),
+        mature: 0,
+        ancient: clamp01(ancientBias + (ageClass === 'ancient' ? 0.34 : 0)),
+        uneven: mixed && mixturePattern !== 'even',
+        spread: clamp01(crownHeightSpread + (mixed ? 0.18 : 0) + (ageClass === 'ancient' ? 0.16 : 0)),
+    };
+    ageStructure.mature = clamp01(1 - ageStructure.young - ageStructure.ancient);
+    const layerCount = mixed ? Math.max(2, Math.min(3, groupCount)) : 1;
+    const tallest = [...speciesList].sort((a, b) =>
+        (Number(FOREST_SPECIES[b.id]?.height) || 1) - (Number(FOREST_SPECIES[a.id]?.height) || 1));
+    const lowLayerSpecies = speciesList.filter(entry => ['hornbeam', 'hazel', 'rowan', 'yew'].includes(entry.id));
+    const lowLayerEntries = lowLayerSpecies.length ? lowLayerSpecies.slice(0, 3) : speciesList.slice(-2);
+    const layerDefinitions = layerCount >= 3
+        ? [
+            { id: 'emergent', label: 'Emergent crowns', low: 0.62, high: 1, entries: tallest.slice(0, 2) },
+            { id: 'canopy', label: 'Main canopy', low: 0.38, high: 0.68, entries: tallest.slice(0, 4) },
+            { id: 'understorey', label: 'Understorey and saplings', low: 0.1, high: 0.44, entries: lowLayerEntries },
+        ]
+        : [
+            { id: 'canopy', label: 'Main canopy', low: 0.36, high: 0.72, entries: tallest.slice(0, 4) },
+            { id: 'understorey', label: 'Understorey and saplings', low: 0.1, high: 0.46, entries: lowLayerEntries },
+        ];
+    const canopyLayers = mixed ? layerDefinitions : [];
+    const understoryType = grass > 0.32 ? 'Grass and herb layer'
+        : bramble > 0.3 ? 'Bramble thicket'
+            : shrub > 0.26 ? 'Shrub layer'
+                : fern > 0.34 ? 'Fern layer'
+                    : moss > 0.42 ? 'Moss and litter floor' : 'Open woodland floor';
+    const ecotone = Boolean(edge || formation.id === 'mixed-ecotone');
+    // Light transmission is the share of open-sky light reaching the floor.
+    // Deciduous crowns transmit more in winter and less in summer; conifers
+    // stay dark all year. The renderer can read the same curve without a
+    // second seasonal model.
+    const lightTransmission = {
+        // Bare winter crowns admit the most light; the closed summer canopy the
+        // least. Spring sits after leaf-out but before the canopy closes, and
+        // autumn opens again as the leaves turn and fall.
+        spring: clamp01(0.1 + (1 - canopy) * 0.44 + deciduousShare * 0.12 + grass * 0.06),
+        summer: clamp01(0.08 + (1 - canopy) * 0.46 + deciduousShare * 0.06),
+        autumn: clamp01(0.16 + (1 - canopy) * 0.5 + deciduousShare * 0.16),
+        winter: clamp01(0.3 + (1 - canopy) * 0.38 + deciduousShare * 0.26 - coniferShare * 0.08),
+    };
+    const autumnPalette = [...new Set(speciesList
+        .map(entry => FOREST_SPECIES[entry.id]?.autumn?.[0])
+        .filter(Boolean))].slice(0, 6);
+    const wildlifeFood = new Set(['acorns', 'beechnuts', 'chestnuts', 'hazelnuts', 'berries', 'blueberries',
+        'lingonberries', 'rowan-berries', 'elderberries', 'mushrooms', 'truffles', 'honey']);
+    const foodPlants = [...baseGoods].filter(good => wildlifeFood.has(good));
+    const habitat = {
+        fauna: formation.fauna.length,
+        layers: [structure.herb, structure.shrub, structure.sapling, structure.canopy, structure.deadwood]
+            .filter(value => Number(value) > 0.18).length,
+        food: foodPlants.length,
+        deadwood,
+        edge: ecotone,
+        score: clamp01(formation.fauna.length / 10 * 0.34 + speciesDiversity * 0.24
+            + structure.deadwood * 0.16 + (ecotone ? 0.1 : 0) + foodPlants.length / 8 * 0.16),
+    };
+    const silviculture = [...new Set([
+        ...(formation.silviculture || []),
+        ...(ageClass === 'ancient' ? ['protection'] : []),
+        ...(baseGoods.has('charcoal') ? ['charcoal'] : []),
+        ...(baseGoods.has('honey') ? ['honey'] : []),
+    ])];
+    const woodQuality = speciesList.slice(0, 5).map(entry => ({
+        id: entry.id,
+        label: FOREST_SPECIES[entry.id]?.label || entry.id,
+        timber: Number(FOREST_SPECIES[entry.id]?.timber) || 1,
+        grade: ageClass === 'ancient' ? 'old-growth' : ageClass === 'young' ? 'young' : 'mature',
+    }));
+    const phenology = speciesList
+        .map(entry => {
+            const window = FOREST_PHENOLOGY[entry.id];
+            return window ? { id: entry.id, label: FOREST_SPECIES[entry.id]?.label || entry.id, ...window } : null;
+        })
+        .filter(Boolean)
+        .slice(0, 6);
+    const mastShare = speciesList
+        .filter(entry => ['oak', 'beech', 'chestnut', 'hazel', 'hornbeam'].includes(entry.id))
+        .reduce((sum, entry) => sum + entry.weight, 0) / speciesWeightTotal;
+    const mastCrop = clamp01(foodPlants.length / 6 * 0.6 + mastShare * 0.4);
+    const mixture = {
+        mixed,
+        pattern: mixturePattern,
+        label: speciesList.slice(0, 4).map(entry => entry.label).join(' · '),
+        speciesCount: speciesList.length,
+        broadleafShare,
+        coniferShare,
+        deciduousShare,
+        dominant: speciesList[0]?.id || null,
+        dominantShare,
+        evenness,
+        groups,
+        tileGroup,
+        pureIsland,
+        ageStructure,
+        canopyLayers,
+        crownHeightSpread,
+        understoryType,
+        ecotone,
+        lightTransmission,
+        autumnPalette,
+        foodPlants,
+        habitat,
+        silviculture,
+        woodQuality,
+        phenology,
+        mastCrop,
+    };
+
     return {
         x: tx, y: ty, seed,
         forest,
@@ -843,8 +1225,8 @@ export function forestStandAt(x, y, context = {}) {
         edge,
         disturbance,
         treeChance,
-        understory: { fern, bramble, shrub, moss, heather },
-        ground: { litter, needles, lichen, berry, moss, roots, stones, mushrooms, stumps, logs, trail, flowers, humus, soil, sourSoil, compaction, huntingPressure },
+        understory: { fern, bramble, shrub, moss, heather, grass, herb },
+        ground: { litter, needles, lichen, berry, moss, roots, stones, mushrooms, stumps, logs, trail, flowers, humus, soil, sourSoil, compaction, huntingPressure, grass, herb },
         goods: [...baseGoods].sort(),
         fauna: [...formation.fauna],
         coniferShare,
@@ -872,6 +1254,27 @@ export function forestStandAt(x, y, context = {}) {
         predatorPressure,
         productivity: formation.productivity * (ageClass === 'ancient' ? 1.18 : ageClass === 'young' ? 0.72 : 1) * (0.68 + stockRatio * 0.32),
         formation: formation.id,
+        // First-class mixed-forest view. `mixed` and the flat aliases keep
+        // existing consumers cheap; `mixture` carries the full structure for
+        // the survey, forester panel and tests.
+        mixed,
+        mixture,
+        pureIsland,
+        broadleafShare,
+        deciduousShare,
+        ageStructure,
+        canopyLayers,
+        crownHeightSpread,
+        understoryType,
+        ecotone,
+        lightTransmission,
+        autumnPalette,
+        foodPlants,
+        habitat,
+        silviculture,
+        woodQuality,
+        phenology,
+        mastCrop,
     };
 }
 
@@ -1011,15 +1414,35 @@ export function forestRegrowthFactor(stand) {
     return Math.max(0.3, (1 - compaction * 0.65) * (1 - browsing * 0.22));
 }
 
-export function pickSpecies(stand, roll = 0.5) {
-    if (!stand?.species?.length) return 'oak';
-    const total = stand.species.reduce((sum, entry) => sum + entry.weight, 0) || 1;
+function pickWeightedSpecies(entries, roll) {
+    const total = entries.reduce((sum, entry) => sum + Math.max(0, Number(entry.weight) || 0), 0) || 1;
     let cursor = clamp01(roll) * total;
-    for (const entry of stand.species) {
-        cursor -= entry.weight;
+    for (const entry of entries) {
+        cursor -= Math.max(0, Number(entry.weight) || 0);
         if (cursor <= 0) return entry.id;
     }
-    return stand.species[stand.species.length - 1].id;
+    return entries[entries.length - 1].id;
+}
+
+// Group-wise mixed stands read as patches of one species group rather than a
+// uniform salt-and-pepper mix. A tile keeps its own group, and every tree roll
+// mostly draws from that group; the remaining share still admits the wider
+// mixture. Evenly mixed stands bypass the group bias entirely.
+export function pickSpecies(stand, roll = 0.5) {
+    if (!stand?.species?.length) return 'oak';
+    const mixture = stand.mixture;
+    // A pure island is a deliberate single-species patch; every tree roll in
+    // that 5×5 cell must select the island species, not a group member.
+    if (mixture?.mixed && mixture.pureIsland?.active) return mixture.pureIsland.species;
+    if (mixture?.mixed && mixture.pattern !== 'even' && mixture.tileGroup?.species?.length) {
+        const prefer = mixture.pattern === 'grouped' ? 0.74 : 0.58;
+        const key = clamp01(roll);
+        const local = key < prefer;
+        const pool = local ? mixture.tileGroup.species : stand.species;
+        const localRoll = local ? key / prefer : (key - prefer) / (1 - prefer);
+        return pickWeightedSpecies(pool, localRoll);
+    }
+    return pickWeightedSpecies(stand.species, roll);
 }
 
 export function pickAgeClass(stand, roll = 0.5) {
@@ -1045,6 +1468,10 @@ export function forestTreeForm(stand, roll = 0.5) {
     const seed = clamp01(Number(roll) || 0);
     const ageClass = pickAgeClass(stand, seed);
     const ageScale = forestAgeScale(ageClass);
+    const layers = Array.isArray(stand.canopyLayers) ? stand.canopyLayers : [];
+    const layer = layers.length
+        ? layers[Math.min(layers.length - 1, Math.floor(fract(seed * 11.7) * layers.length))]
+        : null;
     return {
         ageClass,
         ageScale,
@@ -1052,6 +1479,9 @@ export function forestTreeForm(stand, roll = 0.5) {
         trunkScale: 0.84 + fract(seed * 7.73) * 0.34,
         crownScale: 0.84 + fract(seed * 9.41) * 0.34,
         lean: (fract(seed * 5.37) - 0.5) * 2.6,
+        // The data-driven layer gives every tree a readable canopy position
+        // without adding a second per-tree height model.
+        canopyLayer: layer?.id || 'canopy',
     };
 }
 
@@ -1149,6 +1579,52 @@ export function forestSnowDepthAt(stand, dayOfYear = 150, climate = 'temperate')
     return { depth, cm: Math.round(depth * 140) };
 }
 
+// Current phenology is a view of the shared windows, not a saved calendar.
+// A survey in late spring lists the species actually flowering or fruiting on
+// that day; the window table itself stays on the stand for planning.
+export function forestPhenologyAt(stand, dayOfYear = 150, climate = 'temperate') {
+    if (!stand?.forest) return { season: null, flowering: [], fruiting: [] };
+    const day = ((Math.floor(Number(dayOfYear) || 0) % 400) + 400) % 400;
+    const season = seasonKeyFor(day, climate);
+    const flowering = [];
+    const fruiting = [];
+    for (const entry of stand.phenology || []) {
+        if (Array.isArray(entry.flowering) && day >= entry.flowering[0] && day <= entry.flowering[1]) {
+            flowering.push({ id: entry.id, label: entry.label });
+        }
+        if (Array.isArray(entry.fruiting) && day >= entry.fruiting[0] && day <= entry.fruiting[1]) {
+            fruiting.push({ id: entry.id, label: entry.label });
+        }
+    }
+    return { season, flowering, fruiting };
+}
+
+// Seasonal light reaching the floor. The renderer already uses the stand's
+// light and canopy; this exposes the same curve for the survey and for any
+// future understorey thinning feedback without a second lighting model.
+export function forestLightTransmissionAt(stand, dayOfYear = 150, climate = 'temperate') {
+    const season = seasonKeyFor(dayOfYear, climate);
+    return {
+        season,
+        transmission: clamp01(Number(stand?.lightTransmission?.[season]) || 0),
+    };
+}
+
+// One human-readable mixture line shared by the Lumber Yard/Forester survey and
+// the tests. It names the actual mix, its distribution and its broadleaf /
+// conifer ratio instead of repeating the formation label.
+export function forestMixedSummary(stand) {
+    if (!stand?.forest) return '';
+    if (!stand.mixture) return forestMixLabel(stand);
+    const pattern = stand.mixture.pattern === 'grouped' ? 'grouped'
+        : stand.mixture.pattern === 'mosaic' ? 'mosaic' : 'even';
+    const layers = stand.mixture.canopyLayers?.length || 0;
+    return stand.mixture.label + ' · ' + stand.mixture.speciesCount + ' species · ' + pattern
+        + ' · ' + Math.round(stand.mixture.broadleafShare * 100) + '/' + Math.round(stand.mixture.coniferShare * 100)
+        + ' broadleaf/conifer' + (layers ? ' · ' + layers + ' canopy layers' : '')
+        + (stand.mixture.pureIsland?.active ? ' · pure ' + stand.mixture.pureIsland.label + ' island' : '');
+}
+
 export function forestSurveyAt(x, y, context = {}) {
     const stand = forestStandAt(x, y, context);
     if (!stand.forest) return null;
@@ -1161,6 +1637,9 @@ export function forestSurveyAt(x, y, context = {}) {
         snowDepthCm: snow.cm,
         goods: forestGoodsFor(stand, day, climate),
         fauna: forestFaunaFor(stand, day, climate, Number(context.roll ?? 0.5)),
+        phenologyNow: forestPhenologyAt(stand, day, climate),
+        lightNow: forestLightTransmissionAt(stand, day, climate),
+        mixSummary: forestMixedSummary(stand),
     };
 }
 

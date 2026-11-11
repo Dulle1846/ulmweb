@@ -329,6 +329,7 @@ export function getResourceNodeAt(x,y){
         forestWindExposure:windExposure,forestWetness:wetness,forestDeadwood:deadwood,forestTreeline:treeline,
         forestBrowsingPressure:browsingPressure,forestPredatorPressure:predatorPressure,
         forestStructure:structure,
+        forestMixed:Boolean(forestStand?.mixed),forestMixture:forestStand?.mixture||null,
         stoneStock:geo.stoneStock[i],stoneCapacity:geo.stoneCapacity[i],
         waterAccess:Boolean(geo.waterAccess[i]),fertility:geo.fertility[i]
     };

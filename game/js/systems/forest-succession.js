@@ -361,7 +361,12 @@ function activeSuccessionRecord(record) {
 function controlCost(kind) {
     if (kind === "burned") return { food: 6, wood: 4 };
     if (kind === "windthrow") return { wood: 8 };
-    if (kind === "diseased") return { gold: 6 };
+    // Pest, snow and drought control are paid specialists and equipment, so
+    // they use the same gold cost as disease. An empty cost made those kinds
+    // free to contain and let a control party succeed with no resources.
+    if (kind === "diseased" || kind === "bark-beetle" || kind === "snowbreak" || kind === "drought-stressed") {
+        return { gold: 6 };
+    }
     return {};
 }
 

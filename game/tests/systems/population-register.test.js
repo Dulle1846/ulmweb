@@ -293,6 +293,59 @@ test("the crown household stays on the keep when the sovereign moves", () => {
     assert.equal(normalized.households[CROWN_HOUSEHOLD_ID].y, 42);
 });
 
+test("loading a saved register preserves an empty household treasury", () => {
+    const { first } = createRealm();
+    const householdId = state.population.citizens[first.personId].householdId;
+    for (const id of state.population.households[householdId].memberIds) {
+        state.population.citizens[id].householdWealth = 0;
+        state.population.citizens[id].wealthShare = 0;
+    }
+    state.population.households[householdId].wealth = 0;
+    const reloaded = initializePopulationRegister({ preserveCivicScores: true });
+    assert.equal(reloaded.households[householdId].wealth, 0);
+    assert.equal(reloaded.citizens[first.personId].householdWealth, 0);
+});
+
+test("loading a saved register keeps the saved job instead of recalculating it", () => {
+    const { first } = createRealm();
+    first.job = "woodcutter";
+    initializePopulationRegister();
+    const householdId = state.population.citizens[first.personId].householdId;
+    state.population.citizens[first.personId].profession = "Resident";
+    state.population.citizens[first.personId].status = "unemployed";
+    state.population.citizens[first.personId].role = "resident";
+    first.person.role = "soldier";
+    state.population.citizens[first.personId].professionHistory = [];
+    state.population.citizens[first.personId].events = [];
+    state.population.households[householdId].wealth = 0;
+    const reloaded = initializePopulationRegister({ preserveCivicScores: true });
+    assert.equal(reloaded.citizens[first.personId].profession, "Resident");
+    assert.equal(reloaded.citizens[first.personId].status, "unemployed");
+    assert.equal(reloaded.citizens[first.personId].role, "resident");
+    assert.equal(reloaded.citizens[first.personId].householdId, householdId);
+    assert.equal(reloaded.citizens[first.personId].professionHistory.length, 0);
+    assert.equal(reloaded.citizens[first.personId].events.length, 0);
+});
+
+test("loading a saved register keeps the saved household instead of a stale entity home", () => {
+    const { firstHouse, first } = createRealm();
+    const savedHouse = spawnEntity(60, 40, TYPE.HOUSE);
+    const savedKey = `house:${savedHouse.x}:${savedHouse.y}`;
+    const oldKey = state.population.citizens[first.personId].householdId;
+    state.population.citizens[first.personId].householdId = savedKey;
+    // The entity's visual home can lag behind the register. Loading must trust
+    // the register and reserve the saved house for this resident.
+    first.home = { x: firstHouse.x, y: firstHouse.y };
+    first.anchor = { ...first.home };
+    first.householdId = oldKey;
+    const reloaded = initializePopulationRegister({ preserveCivicScores: true });
+    assert.equal(reloaded.citizens[first.personId].householdId, savedKey);
+    assert.equal(first.householdId, savedKey);
+    assert.deepEqual(first.home, { x: savedHouse.x, y: savedHouse.y });
+    assert.deepEqual(first.anchor, first.home);
+    assert.ok(reloaded.households[savedKey].memberIds.includes(first.personId));
+});
+
 test("loading a saved register preserves civic scores and its census tick", () => {
     const { first } = createRealm();
     const householdId = state.population.citizens[first.personId].householdId;

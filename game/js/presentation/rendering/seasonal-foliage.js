@@ -53,6 +53,26 @@ export const TREE_SPECIES = Object.freeze({
         turnOffset: -4, dropOffset: -2, leafOutOffset: -5, turnSpan: 54, dropSpan: 46, marcescent: 0.12,
         evergreen: false, snowRetention: 0.85, snowMeltShift: -2,
     }),
+    ash: Object.freeze({
+        turnOffset: 4, dropOffset: 6, leafOutOffset: 4, turnSpan: 56, dropSpan: 48, marcescent: 0.05,
+        evergreen: false, snowRetention: 0.92, snowMeltShift: 0,
+    }),
+    hornbeam: Object.freeze({
+        turnOffset: 8, dropOffset: 14, leafOutOffset: 4, turnSpan: 56, dropSpan: 46, marcescent: 0.3,
+        evergreen: false, snowRetention: 1, snowMeltShift: 2,
+    }),
+    rowan: Object.freeze({
+        turnOffset: -9, dropOffset: -6, leafOutOffset: -2, turnSpan: 50, dropSpan: 42, marcescent: 0.03,
+        evergreen: false, snowRetention: 0.84, snowMeltShift: -4,
+    }),
+    hazel: Object.freeze({
+        turnOffset: 2, dropOffset: 8, leafOutOffset: -6, turnSpan: 52, dropSpan: 44, marcescent: 0.08,
+        evergreen: false, snowRetention: 0.88, snowMeltShift: -3,
+    }),
+    willow: Object.freeze({
+        turnOffset: -11, dropOffset: -8, leafOutOffset: -7, turnSpan: 52, dropSpan: 42, marcescent: 0.02,
+        evergreen: false, snowRetention: 0.78, snowMeltShift: -6,
+    }),
     conifer: Object.freeze({
         turnOffset: 0, dropOffset: 0, leafOutOffset: 0, turnSpan: 0, dropSpan: 0, marcescent: 0,
         evergreen: true, snowRetention: 1.18, snowMeltShift: 8,

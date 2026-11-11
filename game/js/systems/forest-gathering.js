@@ -30,11 +30,12 @@ const PROCESSED_FROM = Object.freeze({ game: "cured-game", fur: "tanned-fur", hi
 const FOOD_DELIVERY = Object.freeze(new Set([
     "mushrooms", "chanterelle", "porcini", "wild-garlic", "wood-sorrel", "wild-strawberry",
     "sloes", "crab-apples", "berries", "truffles", "honey", "maple-syrup", "birch-sap",
-    "game", "cured-game", "blueberries", "lingonberries",
+    "game", "cured-game", "blueberries", "lingonberries", "rowan-berries", "elderberries", "hazelnuts",
 ]));
 const GOLD_DELIVERY = Object.freeze(new Set([
     "fur", "hides", "tanned-fur", "cured-hides", "resin", "beeswax", "herbs", "lichen",
     "bark", "linden-flower", "elm-seeds", "alder-cones", "yew-berries", "dwarf-pine-cones",
+    "ash-keys", "hornbeam-seeds", "willow-withies", "woodruff", "valerian", "tinder-fungus",
 ]));
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));

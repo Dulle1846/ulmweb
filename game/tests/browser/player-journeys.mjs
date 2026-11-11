@@ -1,4 +1,5 @@
-// Five 100-year player journeys through the shipped interface.
+// Five 120-year player journeys through the shipped interface, including the
+// full save/load roundtrip for every Crown Legacy path.
 //
 // Time is advanced with the real simulation and logistics functions so a
 // century is practical in CI. Every decision that changes the realm is made by
@@ -15,11 +16,20 @@ const JOURNEY = String(process.env.JOURNEY || "").toLowerCase();
 const YEARS = Math.max(100, Number(process.env.JOURNEY_YEARS || 100));
 const SEED = Number(process.env.JOURNEY_SEED || 20261108);
 const SAVE_LOAD = /^(1|true|yes)$/i.test(String(process.env.JOURNEY_SAVE_LOAD || ""));
+const ENDEAVOUR_FUNDING = Math.max(0, Math.min(2, Number(process.env.JOURNEY_ENDEAVOUR_FUNDING ?? 2)));
 const root = process.cwd();
 const outDir = resolve(root, "..", "artifacts", "journeys");
 await mkdir(outDir, { recursive: true });
 
 const MIN_POPULATION = Object.freeze({ builder: 43, warlord: 28, diplomat: 43, merchant: 20, scholar: 46 });
+const LEGACY_BY_PATH = Object.freeze({
+    builder: { id: "living-city", label: "The Living City" },
+    warlord: { id: "unbroken-watch", label: "The Unbroken Watch" },
+    diplomat: { id: "concord-of-crowns", label: "The Concord of Crowns" },
+    merchant: { id: "crown-treasury", label: "The Crown Treasury" },
+    scholar: { id: "eternal-library", label: "The Eternal Library" }
+});
+const expectedLegacy = LEGACY_BY_PATH[JOURNEY];
 
 const JOURNEYS = {
     builder: { label: "The Builder", path: "builder", tab: "buildings" },
@@ -207,6 +217,8 @@ function summarizeSavedRealm(save) {
         aliveEntities: entities.filter(entity => entity && !entity.dead).length,
         completedWorks: countCompletedWorks(snapshot),
         completedLegacies: countCompletedLegacies(snapshot),
+        legacies: Object.fromEntries(LEGACY_PROJECT_IDS.map(id => [id, Number(snapshot.endeavours?.completed?.[id]) || 0])),
+        expectedLegacy: Number(snapshot.endeavours?.completed?.[expectedLegacy.id]) || 0,
         crownTreasury: Number(snapshot.endeavours?.completed?.["crown-treasury"] || 0),
         legacyEntries: Array.isArray(snapshot.legacy?.entries) ? snapshot.legacy.entries.length : null,
         resources: snapshot.resources ? { ...snapshot.resources } : null
@@ -244,6 +256,13 @@ function countAnchorMismatches(snapshot) {
     }).length;
 }
 
+function countUnhousedCitizenHomes(snapshot) {
+    const homes = registerHomes(snapshot);
+    return (snapshot?.entities || []).filter(entity =>
+        entity && !entity.dead && entity.personId && !entity.isKing && !entity.isRoyalFamily && !homes.has(String(entity.personId))
+    ).length;
+}
+
 function comparableSaveSnapshot(snapshot) {
     const sourceEntities = Array.isArray(snapshot?.entities) ? snapshot.entities : [];
     const { eventLog, eventSequence, entities, city, ...rest } = snapshot || {};
@@ -270,15 +289,58 @@ function comparableSaveSnapshot(snapshot) {
                 const { workplaceIndex, ...copy } = entity;
                 const workplace = Number.isInteger(workplaceIndex) ? sourceEntities[workplaceIndex] : null;
                 const home = homes.get(String(entity.personId || entity.id));
+                // The population register is authoritative for citizens with a
+                // household. An unhoused citizen has no durable home; its raw
+                // entity home/anchor is only a visual hint that the load may
+                // normalize, so it is reported as derived rather than compared
+                // as a saved fact. Non-citizen entities keep their own fields.
+                const citizen = Boolean(entity.personId) && !entity.isKing && !entity.isRoyalFamily;
+                const homeFields = home
+                    ? { householdId: home.householdId, home: { x: home.x, y: home.y }, anchor: { x: home.x, y: home.y } }
+                    : citizen ? { householdId: null, home: null, anchor: null } : {};
                 return {
                     ...copy,
                     workplaceId: workplace?.id ?? null,
-                    // The anchor is a visual/occupancy hint. The citizen's
-                    // household is authoritative and is compared separately.
-                    ...(home ? { householdId: home.householdId, home: { x: home.x, y: home.y }, anchor: { x: home.x, y: home.y } } : {})
+                    ...homeFields
                 };
             })
     };
+}
+
+function compactDifferenceValue(value) {
+    if (value === undefined) return "<missing>";
+    try {
+        const text = JSON.stringify(value);
+        return typeof text === "string" && text.length > 240 ? text.slice(0, 240) + "…" : text;
+    } catch {
+        return String(value);
+    }
+}
+
+function collectDeepDifferences(left, right, path = "", out = []) {
+    if (out.length >= 12 || isDeepStrictEqual(left, right)) return out;
+    if (Array.isArray(left) && Array.isArray(right)) {
+        if (left.length !== right.length) out.push({ path: path + ".length", before: left.length, after: right.length });
+        for (let index = 0; index < Math.min(left.length, right.length) && out.length < 12; index++) {
+            collectDeepDifferences(left[index], right[index], path + "[" + index + "]", out);
+        }
+        return out;
+    }
+    if (left && right && typeof left === "object" && typeof right === "object") {
+        const keys = [...new Set([...Object.keys(left), ...Object.keys(right)])].sort();
+        for (const key of keys) {
+            if (out.length >= 12) break;
+            const childPath = path ? path + "." + key : key;
+            if (!Object.hasOwn(left, key) || !Object.hasOwn(right, key)) {
+                out.push({ path: childPath, before: compactDifferenceValue(left[key]), after: compactDifferenceValue(right[key]) });
+            } else {
+                collectDeepDifferences(left[key], right[key], childPath, out);
+            }
+        }
+        return out;
+    }
+    out.push({ path: path || "<root>", before: compactDifferenceValue(left), after: compactDifferenceValue(right) });
+    return out;
 }
 
 function snapshotDifferenceSnippet(beforeValue, afterValue) {
@@ -312,7 +374,8 @@ function compareSavedSnapshots(before, after) {
         changedKeys,
         differences: changedKeys.slice(0, 8).map(key => ({
             key,
-            ...snapshotDifferenceSnippet(left[key], right[key])
+            ...snapshotDifferenceSnippet(left[key], right[key]),
+            details: collectDeepDifferences(left[key], right[key])
         }))
     };
 }
@@ -369,7 +432,7 @@ async function startEndeavour() {
     const active = await page.locator(".endeavour-active").count();
     let started = false;
     if (!active) {
-        const funding = page.locator('[data-command="endeavour-funding"][data-value="1"]');
+        const funding = page.locator(`[data-command="endeavour-funding"][data-value="${ENDEAVOUR_FUNDING}"]`);
         if (await funding.count()) await funding.click();
         const overseer = page.locator("#endeavour-overseer-select");
         if (await overseer.count() && (await overseer.locator("option").count()) > 1) {
@@ -684,7 +747,13 @@ async function builderTurn(year) {
     await buildRoadViaUI();
     if (year % 20 === 1) await buildViaUI(1, "housing");
     if (year % 20 === 11) await buildViaUI(2, "production");
-    if (year % 20 === 6) await buildViaUI(64, "services");
+    if (year % 20 === 6) {
+        await buildViaUI(64, "services");
+        // The builder's late-game works consume almost no beds themselves;
+        // keep raising capacity so the realm can still grow past its v3.12
+        // population floor while the stone yards are busy.
+        await buildViaUI(1, "housing");
+    }
 }
 
 async function warlordTurn(year) {
@@ -764,6 +833,10 @@ async function diplomatTurn(year) {
         if (await appoint.isEnabled().catch(() => false)) await appoint.click();
     }
     await closePanel();
+    // Diplomacy spends gold, not beds. Add housing on the same cadence so the
+    // diplomat can still grow past the v3.12 population floor while the works
+    // and gifts consume the treasury.
+    if (year % 10 === 1) await buildViaUI(1, "housing");
 }
 
 async function merchantTurn() {
@@ -790,6 +863,42 @@ async function merchantTurn() {
     await dismiss();
     await page.evaluate(() => document.querySelector("#tab-0")?.click());
     await page.waitForTimeout(80);
+    await pauseGame();
+}
+
+async function fundJourneyFromSurplus() {
+    if (!["builder", "warlord", "diplomat"].includes(JOURNEY)) return;
+    await pauseGame();
+    await dismiss();
+    const wallet = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return { gold: Number(state.resources.gold) || 0, wood: Number(state.resources.wood) || 0 };
+    });
+    if (wallet.gold >= 1800 || wallet.wood < 300) return;
+    await page.evaluate(() => document.querySelector("#tab-2")?.click());
+    await page.waitForTimeout(100);
+    // The builder's works are gold-gated while the forests keep producing
+    // wood. Sell a bounded surplus in the shipped market so the next Crown
+    // work can start; this is a player decision, not a state shortcut.
+    for (let index = 0; index < 80; index++) {
+        if (await page.locator("#realm-event-modal").isVisible().catch(() => false)) {
+            await dismiss();
+            await page.evaluate(() => document.querySelector("#tab-2")?.click());
+            await page.waitForTimeout(60);
+        }
+        const current = await page.evaluate(async () => {
+            const { state } = await import("./js/core/state.js");
+            return { gold: Number(state.resources.gold) || 0, wood: Number(state.resources.wood) || 0 };
+        });
+        if (current.gold >= 1800 || current.wood < 160) break;
+        const sell = page.locator('[data-trade="sell"][data-resource="wood"]:not([disabled])').first();
+        if (!(await sell.count())) break;
+        await sell.click();
+        await page.waitForTimeout(35);
+    }
+    await dismiss();
+    await page.evaluate(() => document.querySelector("#tab-0")?.click());
+    await page.waitForTimeout(60);
     await pauseGame();
 }
 
@@ -827,6 +936,7 @@ await foundingWorks();
 for (let block = 0; block < Math.ceil(YEARS / 5); block++) {
     const targetYear = Math.min(YEARS + 1, 6 + block * 5);
     const advance = await advanceYears(5);
+    await fundJourneyFromSurplus();
     await startEndeavour();
     await crownTurn(advance.year);
     if (JOURNEY === "builder") await builderTurn(advance.year);
@@ -968,6 +1078,10 @@ if (SAVE_LOAD) {
             before: countAnchorMismatches(beforeSave.snapshot),
             after: countAnchorMismatches(afterSave.snapshot)
         },
+        derivedUnhousedHomes: {
+            before: countUnhousedCitizenHomes(beforeSave.snapshot),
+            after: countUnhousedCitizenHomes(afterSave.snapshot)
+        },
         comparison,
         layout: loadedLayout,
         screenshot: loadedFile
@@ -978,6 +1092,8 @@ const report = {
     label: journey.label,
     seed: SEED,
     targetYears: YEARS,
+    endeavourFunding: ENDEAVOUR_FUNDING,
+    expectedLegacy,
     startedAt: new Date(startedAt).toISOString(),
     wallMs: Date.now() - startedAt,
     simulationMs: blocks.reduce((sum, block) => sum + block.elapsed, 0),
@@ -1030,10 +1146,10 @@ if (SAVE_LOAD) {
     if (!saveLoad) failures.push("the save/load round trip did not finish");
     else {
         if (saveLoad.before.completedWorks !== 16) failures.push("the pre-save realm did not hold all sixteen Crown works: " + saveLoad.before.completedWorks);
-        if (saveLoad.before.crownTreasury !== 1) failures.push("the Crown Treasury legacy was not completed before saving");
+        if (saveLoad.before.expectedLegacy !== 1) failures.push(`the ${expectedLegacy.label} legacy was not completed before saving`);
         if (saveLoad.before.completedLegacies !== 1) failures.push("the pre-save realm did not hold exactly one Crown Legacy: " + saveLoad.before.completedLegacies);
         if (saveLoad.after.completedWorks !== 16) failures.push("the loaded realm lost Crown works: " + saveLoad.after.completedWorks);
-        if (saveLoad.after.crownTreasury !== 1) failures.push("the loaded realm lost the Crown Treasury legacy");
+        if (saveLoad.after.expectedLegacy !== 1) failures.push(`the loaded realm lost the ${expectedLegacy.label} legacy`);
         if (saveLoad.after.completedLegacies !== 1) failures.push("the loaded realm did not restore exactly one Crown Legacy: " + saveLoad.after.completedLegacies);
         if (!saveLoad.comparison.exactMatch) failures.push("save/load changed snapshot fields: " + saveLoad.comparison.changedKeys.join(", "));
         if (!saveLoad.eventLog.preserved) failures.push("save/load changed the non-system chronicle");

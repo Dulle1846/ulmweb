@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.14.1",
+  "version": "3.14.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,6 +13,7 @@
     "test:climate-reference": "node tests/browser/climate-reference.mjs",
     "test:forest-reference": "node tests/browser/forest-reference.mjs",
     "test:conifer-reference": "node tests/browser/conifer-reference.mjs",
+    "test:mixed-reference": "FOREST_REFERENCE_PROFILE=mixed node tests/browser/forest-reference.mjs",
     "test:forest-occlusion": "node tests/browser/forest-occlusion.mjs",
     "test:forest-detail": "node tests/browser/forest-detail-reference.mjs",
     "test:terrain-stability": "node tests/browser/terrain-stability.mjs",

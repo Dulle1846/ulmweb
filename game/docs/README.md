@@ -21,6 +21,7 @@ For the current development stage, these documents focus on making the existing 
 - [Terrain Visual Reference](TERRAIN_VISUAL_REFERENCE.md) — committed four-season, four-zoom contact sheet and reproduction script.
 - [Laubwälder 1.2.1](FOREST_ECOLOGY.md) — shared forest ecology, all eight broadleaf species, fifteen formations, the 60-point audit and the forest visual references.
 - [Nadelwälder 1.2.2](CONIFER_FORESTS.md) — five conifer species, twelve conifer formations, seasonal larch needles, needle-floor ecology, conifer products and disturbance succession.
+- [Mischwälder 1.2.3](MIXED_FORESTS.md) — twenty forest species, twelve mixed formations, mixture ratios, dominant species, group/mosaic patterns, age structure, canopy layers, understorey, phenology, seasonal light, habitat value, timber grades, silviculture and the 1.2.3.1–35 audit.
 - [Named garrison and public health](MILITARY_AND_PUBLIC_HEALTH.md) — barracks/stables, named recruits and timed drill, warhorses and annual payroll, sanitation, outbreaks, healers, medicine, quarantine, mortality and the schema-5 save contract.
 - [Faith, culture and justice](FAITH_AND_JUSTICE.md) — named clergy and judges, shrines, courts and prisons, festivals, pilgrimages, heresy, emergent crime, trials, legal codes, charters, corruption, schema-6 saves and the verified hosted build.
 - [Realm founding](REALM_FOUNDING.md) — cultures, religions, traditions, legal orders, legitimacy doctrines, starting charters, oligarchy and mixed constitution, save-compatible identity modifiers and the verified hosted build.
