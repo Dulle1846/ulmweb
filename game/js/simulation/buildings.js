@@ -115,6 +115,12 @@ function canStoreOutput(building, output) {
 function produceRecipe(building, workforce, production) {
     const recipe = RECIPES[building.type];
     if (!recipe || recipe.field) return;
+    // Unique workshops have no bulk output. Their inputs, workers and finished
+    // records are handled on the bounded craft cadence.
+    if (recipe.unique) {
+        building.productionReason = building.productionReason || "Awaiting workshop stock";
+        return;
+    }
     if (!canWork(building, workforce)) {
         building.productionReason = building.construction && building.construction.stage < 3 ? "Under construction" : "No staff assigned";
         return;

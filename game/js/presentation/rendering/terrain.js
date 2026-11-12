@@ -21,6 +21,7 @@ import { getResourceNodeAt } from '../../systems/resource-geography.js';
 import { forestFaunaAt, forestFaunaSignAt, forestInsectAt } from '../../systems/forest-fauna.js';
 import { forestMistFactor, solarVector } from './daylight.js';
 import { drawTropicalBamboo, drawTropicalFloor, drawTropicalPalm, drawTropicalTree, drawTropicalUnderstory } from './tropical-render.js';
+import { drawJungleUnderstory } from './jungle-render.js';
 
 const worldW = () => Number(state.worldW) || WORLD_W;
 const worldH = () => Number(state.worldH) || WORLD_H;
@@ -178,6 +179,22 @@ function drawFogOfWar(ctx, zoom, cam, canvas) {
 let detailCanvas = null;
 let detailCtx = null;
 let detailState = null;
+// A detail rebuild is staged offscreen and resumed across frames. The visible
+// layer keeps serving the compositor until the replacement is complete, so a
+// cold start or a season transition never freezes the frame for the cost of
+// the whole decoration raster.
+let detailBuild = null;
+// Reuse one staging surface. Creating a full canvas for every seasonal rebuild
+// produced avoidable graphics/GC churn on the low-end profile. The visible
+// detail surface is still separate and remains untouched until the swap.
+let detailStageCanvas = null;
+let detailStageCtx = null;
+const DETAIL_BUILD_SLICE_MS = 4;
+// One slice per frame made a rebuild take many wall-clock frames. That kept
+// the old layer visible longer and left staging work running into the next
+// seasonal window. Spend the remaining frame headroom on another slice while
+// keeping a hard per-frame build budget.
+const DETAIL_BUILD_FRAME_MS = 4;
 let observedView = "";
 let lastViewChangeAt = 0;
 let overlayCanvas = null;
@@ -250,23 +267,99 @@ function detailContentKey() {
     ].join("|");
 }
 
-function rebuildDetailLayer(surfaceCtx, canvas, zoom, cam, key, worldKey) {
-    const renderScale = Number(state.renderScale) || 1;
-    surfaceCtx.clearRect(0, 0, detailCanvas.width, detailCanvas.height);
-    drawBakedGround(surfaceCtx, zoom, cam, canvas);
-    if (state.zoomLevel >= 3) drawGroundGrain(surfaceCtx, zoom, cam, canvas);
+function beginDetailBuild(zoom, cam, canvas, key, worldKey) {
+    const width = Math.max(1, canvas.width);
+    const height = Math.max(1, canvas.height);
+    if (!detailStageCanvas || detailStageCanvas.width !== width || detailStageCanvas.height !== height) {
+        detailStageCanvas = document.createElement("canvas");
+        detailStageCanvas.width = width;
+        detailStageCanvas.height = height;
+        detailStageCtx = detailStageCanvas.getContext("2d", { alpha: false });
+    }
+    const staging = detailStageCanvas;
+    const stagingCtx = detailStageCtx;
+    if (!stagingCtx) return null;
+    const setupStart = performance.now();
+    stagingCtx.clearRect(0, 0, staging.width, staging.height);
+    drawBakedGround(stagingCtx, zoom, cam, canvas);
+    if (state.zoomLevel >= 3) drawGroundGrain(stagingCtx, zoom, cam, canvas);
     state.terrainTreeDraws = 0;
-    drawTerrainDecorations(surfaceCtx, zoom, cam, canvas);
-    drawFogOfWar(surfaceCtx, zoom, cam, canvas);
-    detailState = {
-        key, worldKey, zoom, camX: cam.x, camY: cam.y, renderScale,
+    const setupMs = performance.now() - setupStart;
+    detailBuild = {
+        staging, stagingCtx, zoom,
+        camX: cam.x, camY: cam.y,
+        key, worldKey,
+        renderScale: Number(state.renderScale) || 1,
         width: canvas.width, height: canvas.height,
+        cursor: { x: null, y: null },
+        startedAt: setupStart,
+        workMs: setupMs,
+        steps: 1,
     };
+    state.terrainDecorationBuildMs = Math.round(setupMs);
+    state.terrainBuildThisFrame = setupMs;
+    state.terrainCanvasEl.style.opacity = detailState ? "1" : "0";
+    return detailBuild;
+}
+
+function finishDetailBuild(surfaceCtx) {
+    const build = detailBuild;
+    if (!build) return false;
+    const finishStart = performance.now();
+    drawFogOfWar(build.stagingCtx, build.zoom, { x: build.camX, y: build.camY }, {
+        width: build.width, height: build.height,
+    });
+    surfaceCtx.clearRect(0, 0, detailCanvas.width, detailCanvas.height);
+    surfaceCtx.drawImage(build.staging, 0, 0);
+    const finishMs = performance.now() - finishStart;
+    build.workMs += finishMs;
+    detailState = {
+        key: build.key, worldKey: build.worldKey, zoom: build.zoom,
+        camX: build.camX, camY: build.camY, renderScale: build.renderScale,
+        width: build.width, height: build.height,
+    };
+    state.terrainDecorationBuildMs = Math.round(build.workMs);
+    state.terrainBuildThisFrame = finishMs;
     state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
     state.terrainCanvasEl.style.transformOrigin = "0 0";
     state.terrainCanvasEl.style.transform = "translate(0px, 0px) scale(1)";
     state.terrainCanvasEl.style.opacity = "1";
+    detailBuild = null;
+    return true;
 }
+
+function advanceDetailBuild(surfaceCtx, canvas) {
+    const build = detailBuild;
+    if (!build) return false;
+    const stepStart = performance.now();
+    let done = false;
+    // Process at most one hard frame budget. Each slice still stops at a tile
+    // boundary, so a single expensive tile can never split its canvas state.
+    while (!done && performance.now() - stepStart < DETAIL_BUILD_FRAME_MS) {
+        const sliceStart = performance.now();
+        const sliceDeadline = Math.min(
+            sliceStart + DETAIL_BUILD_SLICE_MS,
+            stepStart + DETAIL_BUILD_FRAME_MS
+        );
+        done = drawTerrainDecorations(
+            build.stagingCtx,
+            build.zoom,
+            { x: build.camX, y: build.camY },
+            canvas,
+            build.cursor,
+            sliceDeadline
+        );
+        build.steps += 1;
+        build.workMs += performance.now() - sliceStart;
+    }
+    const stepMs = performance.now() - stepStart;
+    if (done) return finishDetailBuild(surfaceCtx);
+    state.terrainDecorationBuildMs = Math.round(build.workMs);
+    state.terrainBuildThisFrame = stepMs;
+    state.terrainCanvasEl.style.opacity = detailState ? "1" : "0";
+    return false;
+}
+
 
 function ensureTerrainSurface(canvas) {
     let surface = state.terrainCanvasEl || document.getElementById("terrain-canvas");
@@ -277,6 +370,7 @@ function ensureTerrainSurface(canvas) {
         surface.style.transformOrigin = "0 0";
         surface.style.transform = "";
         detailState = null;
+        detailBuild = null;
         observedView = "";
     }
     let context = null;
@@ -301,6 +395,7 @@ function ensureTerrainSurface(canvas) {
         detailCanvas = surface;
         detailCtx = context;
         detailState = null;
+        detailBuild = null;
         observedView = "";
     }
     return detailCtx;
@@ -352,6 +447,7 @@ function drawOverlayDecorations(ctx, zoom, cam, canvas) {
         const buildStart = performance.now();
         drawTerrainDecorations(overlayCtx, zoom, cam, canvas);
         state.terrainDecorationBuildMs = Math.round(performance.now() - buildStart);
+        state.terrainBuildThisFrame = state.terrainDecorationBuildMs;
         overlayState = {
             key, worldKey, zoom, camX: cam.x, camY: cam.y, renderScale,
             width: canvas.width, height: canvas.height,
@@ -371,6 +467,7 @@ function drawOverlayDecorations(ctx, zoom, cam, canvas) {
         const buildStart = performance.now();
         drawTerrainDecorations(overlayCtx, zoom, cam, canvas);
         state.terrainDecorationBuildMs = Math.round(performance.now() - buildStart);
+        state.terrainBuildThisFrame = state.terrainDecorationBuildMs;
         overlayState = {
             key, worldKey, zoom, camX: cam.x, camY: cam.y, renderScale,
             width: canvas.width, height: canvas.height,
@@ -635,6 +732,29 @@ export function drawForestVisibility(ctx, canvas, camera, zoom) {
     ctx.restore();
 }
 
+function drawPreviousDetailLayer(ctx, zoom, cam, canvas) {
+    if (!detailState) return false;
+    const renderScale = Number(state.renderScale) || 1;
+    // Keep the existing raster visible while the camera or zoom is moving.
+    // Trees and ground detail are world objects, so the whole layer can be
+    // translated and scaled without losing any of them. Newly exposed strips
+    // are filled with the cheap baked surface until the settled rebuild.
+    const transform = detailLayerTransform({
+        previousZoom: detailState.zoom,
+        previousCameraX: detailState.camX,
+        previousCameraY: detailState.camY,
+        previousRenderScale: detailState.renderScale,
+        zoom, cameraX: cam.x, cameraY: cam.y, renderScale,
+    });
+    state.terrainCanvasEl.style.transformOrigin = "0 0";
+    state.terrainCanvasEl.style.transform =
+        `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
+    state.terrainCanvasEl.style.opacity = "1";
+    drawDetailLayerGaps(ctx, zoom, cam, canvas, transform);
+    state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
+    return true;
+}
+
 function drawCachedDecorations(ctx, zoom, cam, canvas) {
     const surfaceCtx = ensureTerrainSurface(canvas);
     if (!surfaceCtx) return false;
@@ -654,11 +774,35 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
     const worldKey = detailWorldKey();
     const renderScale = Number(state.renderScale) || 1;
 
-    // The first frame has no cached layer yet. Build it immediately; a resize
-    // or renderer switch can wait for the short settle window instead.
+    // Resume or abandon the staged layer before deciding whether a new one is
+    // needed. A changed camera, content key or surface can never be mixed into
+    // the raster that is currently being built.
+    if (detailBuild) {
+        const build = detailBuild;
+        const matches = build.width === canvas.width
+            && build.height === canvas.height
+            && build.renderScale === renderScale
+            && build.worldKey === worldKey
+            && build.key === key
+            && Math.abs(build.zoom - zoom) <= 0.00005
+            && Math.abs(build.camX - cam.x) <= 0.02
+            && Math.abs(build.camY - cam.y) <= 0.02;
+        if (!matches) {
+            detailBuild = null;
+        } else {
+            const finished = advanceDetailBuild(surfaceCtx, canvas);
+            if (finished) return true;
+            // Without a previous visible layer the cheap baked surface is the
+            // fallback until the staged layer is complete.
+            return detailState ? drawPreviousDetailLayer(ctx, zoom, cam, canvas) : false;
+        }
+    }
+
     if (!detailState) {
-        rebuildDetailLayer(surfaceCtx, canvas, zoom, cam, key, worldKey);
-        return true;
+        // The first layer is started immediately; later rebuilds wait for the
+        // camera to settle so a moving view does not create throwaway rasters.
+        beginDetailBuild(zoom, cam, canvas, key, worldKey);
+        return false;
     }
 
     const surfaceMatches = detailState.width === canvas.width
@@ -668,9 +812,10 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
     if (!surfaceMatches || !worldMatches) {
         state.terrainCanvasEl.style.transformOrigin = "0 0";
         state.terrainCanvasEl.style.opacity = "0";
+        detailState = null;
         if (!settled) return false;
-        rebuildDetailLayer(surfaceCtx, canvas, zoom, cam, key, worldKey);
-        return true;
+        beginDetailBuild(zoom, cam, canvas, key, worldKey);
+        return false;
     }
 
     const contentStale = detailState.key !== key;
@@ -678,28 +823,11 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
         || Math.abs(detailState.camX - cam.x) > 0.02
         || Math.abs(detailState.camY - cam.y) > 0.02;
     if (settled && (contentStale || viewMoved)) {
-        rebuildDetailLayer(surfaceCtx, canvas, zoom, cam, key, worldKey);
-        return true;
+        beginDetailBuild(zoom, cam, canvas, key, worldKey);
+        return detailState ? drawPreviousDetailLayer(ctx, zoom, cam, canvas) : false;
     }
 
-    // Keep the existing raster visible while the camera or zoom is moving.
-    // Trees and ground detail are world objects, so the whole layer can be
-    // translated and scaled without losing any of them. Newly exposed strips
-    // are filled with the cheap baked surface until the settled rebuild.
-    const transform = detailLayerTransform({
-        previousZoom: detailState.zoom,
-        previousCameraX: detailState.camX,
-        previousCameraY: detailState.camY,
-        previousRenderScale: detailState.renderScale,
-        zoom, cameraX: cam.x, cameraY: cam.y, renderScale,
-    });
-    state.terrainCanvasEl.style.transformOrigin = "0 0";
-    state.terrainCanvasEl.style.transform =
-        `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
-    state.terrainCanvasEl.style.opacity = "1";
-    drawDetailLayerGaps(ctx, zoom, cam, canvas, transform);
-    state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
-    return true;
+    return drawPreviousDetailLayer(ctx, zoom, cam, canvas);
 }
 
 function drawDetailLayerGaps(ctx, zoom, cam, canvas, transform) {
@@ -838,7 +966,7 @@ function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayO
     ctx.restore();
 }
 
-function drawTerrainDecorations(ctx, zoom, cam, canvas) {
+function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline = Infinity) {
     if (!state.heightMap) return;
     const cellPx = CELL * zoom;
     const tick = state.tick;
@@ -871,10 +999,18 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
     const treeGridY = alignToWorldGrid(bounds.startY, treeStep);
     const distant = cellPx < 19;
 
-    for (let x = bounds.startX; x < bounds.endX; x++) {
+    let x = Number.isInteger(cursor?.x) ? cursor.x : bounds.startX;
+    let y = Number.isInteger(cursor?.y) ? cursor.y : bounds.startY;
+    for (; x < bounds.endX; x++) {
         const detailColumn = x >= gridX && (x - gridX) % step === 0;
         const treeColumn = x >= treeGridX && (x - treeGridX) % treeStep === 0;
-        for (let y = bounds.startY; y < bounds.endY; y++) {
+        for (; y < bounds.endY; y++) {
+            // Resume at a tile boundary. The expensive work for one tile stays
+            // inside this frame; the next chunk starts exactly here.
+            if (deadline !== Infinity && performance.now() >= deadline) {
+                if (cursor) { cursor.x = x; cursor.y = y; }
+                return false;
+            }
             if (!state.explored[x]?.[y]) continue;
             const detail = detailColumn && y >= gridY && (y - gridY) % step === 0;
             const treeSample = treeColumn && y >= treeGridY && (y - treeGridY) % treeStep === 0;
@@ -1000,6 +1136,27 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                         if (distant) drawDistantTree(ctx, px + ox, py + oy, cellPx, tick, r2, r3, stand, climate, dayOfYear, sun);
                         else drawTree(ctx, px + ox, py + oy, cellPx, tick, r1, r2, r3, zoom, temp, m, dayOfYear, climateKey, shoreDir, stand, sun);
                     }
+                    // Jungle thickets live below and between crowns. The normal
+                    // tree branch skips understorey entirely, which would hide
+                    // walls, bamboo and thorn scrub on the densest tiles. Draw
+                    // this one bounded foreground pass after the trunks so the
+                    // interior still reads as jungle rather than lawn.
+                    if (stand.jungle && detail && zoom >= 0.5) {
+                        // Optional browser-proof timing. This is the bounded
+                        // foreground pass that runs after the crowns; it is
+                        // deliberately measured at the call site so the cost
+                        // cannot hide inside the whole-world draw timer.
+                        const jungleProbe = state.performanceProbe?.jungle;
+                        const jungleStarted = jungleProbe ? performance.now() : 0;
+                        drawJungleUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3);
+                        if (jungleStarted) {
+                            const elapsed = performance.now() - jungleStarted;
+                            jungleProbe.understoryCalls += 1;
+                            jungleProbe.understoryDirectCalls += 1;
+                            jungleProbe.understoryMs += elapsed;
+                            if (elapsed > jungleProbe.understoryMaxMs) jungleProbe.understoryMaxMs = elapsed;
+                        }
+                    }
                     if (detail && zoom >= 0.9 && s3 > 0.7) drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s2, zoom, x, y, tick);
                     // A shaft belongs between trunks too, not only in an empty
                     // clearing. Dense stands still lose most of it to the canopy.
@@ -1047,7 +1204,10 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas) {
                 else if (s1 > 0.625) drawRock(ctx, px, py, cellPx, zoom, false);
             }
         }
+        y = bounds.startY;
     }
+    if (cursor) { cursor.x = x; cursor.y = y; }
+    return true;
 }
 
 // High-frequency ground grain: the baked texture carries the broad colour
@@ -2343,7 +2503,7 @@ function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clima
         // gaps the dense understorey competed with the giant crowns and the
         // stand read as a field of saplings instead of a closed rainforest.
         if (s3 < 0.3) return;
-        drawTropicalUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey);
+        drawTropicalUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, state.performanceProbe?.jungle || null);
         return;
     }
     if (stand.coniferShare > 0.45) {

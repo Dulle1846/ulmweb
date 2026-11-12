@@ -714,7 +714,7 @@ export function updateJustice() {
         hunger: Math.round(context.hunger * 1000) / 1000,
         war: context.war,
         quarantine: Math.round(context.quarantine * 1000) / 1000,
-        unemployment: Math.round(context.unemployment * 1000) / 1000
+        unemployment: Math.round(clamp(context.unemployed / Math.max(1, context.population), 0, 1) * 1000) / 1000
     };
     justice.crime.offset = clamp(Number(justice.crime.offset) * 0.8, -0.2, 0.2);
     // Corrupt judges skim part of the year's fines and salaries. The risk is

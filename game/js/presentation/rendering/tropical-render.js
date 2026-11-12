@@ -5,6 +5,8 @@
 // drawing: it reads the derived tropical stand profile and never mutates game
 // state or caches a second ecology.
 
+import { drawJungleFloor, drawJungleUnderstory } from './jungle-render.js';
+
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 
 function rgb(hex) {
@@ -1131,10 +1133,24 @@ function drawTropicalFlood(ctx, px, py, cellPx, s1, s2) {
     ctx.restore();
 }
 
-export function drawTropicalUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey) {
+export function drawTropicalUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, jungleProbe = null) {
     const s = cellPx / 48;
     const t = stand?.tropical;
     if (!t) return false;
+    // The jungle interior pass owns dense walls, thorn scrub, bamboo brakes,
+    // game trails, ravines and hidden water before the species understory.
+    if (stand.jungle) {
+        const started = jungleProbe ? performance.now() : 0;
+        const handled = drawJungleUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3);
+        if (started) {
+            const elapsed = performance.now() - started;
+            jungleProbe.understoryCalls += 1;
+            jungleProbe.understoryTropicalCalls += 1;
+            jungleProbe.understoryMs += elapsed;
+            if (elapsed > jungleProbe.understoryMaxMs) jungleProbe.understoryMaxMs = elapsed;
+        }
+        if (handled) return true;
+    }
     const f = t.features;
     const roll = s1;
     const formation = t.formation;
@@ -1184,6 +1200,7 @@ export function drawTropicalFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfY
     if (!t) return;
     drawTropicalFormationWash(ctx, px, py, cellPx, t, s1);
     drawTropicalGroundCover(ctx, px, py, cellPx, stand, s1, s2, s3);
+    if (stand.jungle) drawJungleFloor(ctx, px, py, cellPx, stand, s1, s2, s3);
     if (t.formation === 'tropical-swamp' && s1 > 0.16) {
         drawTropicalSwampWater(ctx, px, py, cellPx, s1, s2);
     }

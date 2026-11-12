@@ -10,8 +10,10 @@ import { getCoreCounsel } from "../core-counsel.js";
 import { getFirstSessionSnapshot } from "../first-session.js";
 import { renderStatisticsExplorer } from "../statistics-panel.js";
 
-let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastAmbitionSignature="",lastFirstSessionSignature="",lastRenderedIssueId=null;
-function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value;}
+let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastAmbitionSignature="",lastFirstSessionSignature="",lastRenderedIssueId=null,lastCardSprite="",lastTickTextAt=0;
+function setText(id,value){const el=document.getElementById(id);const next=String(value);if(el&&el.textContent!==next)el.textContent=next;}
+function setAttr(el,name,value){if(el&&el.getAttribute(name)!==String(value))el.setAttribute(name,String(value));}
+function setHTML(el,markup){if(el&&el.innerHTML!==markup)el.innerHTML=markup;}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);}
 function income(v){
     const value=Number(v);
@@ -45,24 +47,28 @@ function renderTopStatus(){
     setText("ruler-name",person?.name||"THE CROWN VACANT");
     setText("ruler-title",person?String(person.role||"sovereign").toUpperCase()+" OF "+(state.kingdomName||"ELDRIA"):"AWAITING SUCCESSION");
     const portrait=document.getElementById("ruler-portrait-use");
-    if(portrait)portrait.setAttribute("href","assets/royal-portraits.svg#"+rulerPortraitSymbol(ruler));
+    if(portrait)setAttr(portrait,"href","assets/royal-portraits.svg#"+rulerPortraitSymbol(ruler));
     const button=document.getElementById("ruler-dossier-btn");
     if(button){
         button.disabled=!personId;
-        button.dataset.personId=personId;
-        button.title=person?"Open the dossier of "+person.name:"No sovereign has been recorded";
+        if(button.dataset.personId!==personId)button.dataset.personId=personId;
+        const title=person?"Open the dossier of "+person.name:"No sovereign has been recorded";
+        if(button.title!==title)button.title=title;
     }
     const history=Array.isArray(state.economy?.history)?state.economy.history:[];
     const latest=history[history.length-1],previous=history[history.length-2];
     const delta=latest&&previous?Number(latest.gold)-Number(previous.gold):null;
-    setText("treasury-trend",delta===null?"TREASURY · AWAITING LEDGER":"TREASURY "+(delta>=0?"+":"")+Math.round(delta)+" · LAST SETTLEMENT");
+    const debt=Math.max(0,Number(state.economy?.debt)||0);
+    const settlement=delta===null?"TREASURY · AWAITING LEDGER":"TREASURY "+(delta>=0?"+":"")+Math.round(delta)+" · LAST SETTLEMENT";
+    setText("treasury-trend",debt>0?settlement+" · DEBT "+Math.round(debt)+"G":settlement);
     const warnings=(state.activeEvent&&!state.activeEvent.dismissed?1:0)+(state.health?.outbreakActive?1:0)+(state.raidActive?1:0);
     setText("warning-count",String(warnings));
     const warning=document.getElementById("warning-inbox-btn");
     if(warning){
         warning.classList.toggle("has-warning",warnings>0);
-        warning.setAttribute("aria-label",warnings+" open warning"+(warnings===1?"":"s"));
-        warning.title=warnings?warnings+" realm warning"+(warnings===1?"":"s")+" need attention":"No realm warnings are open";
+        setAttr(warning,"aria-label",warnings+" open warning"+(warnings===1?"":"s"));
+        const warningTitle=warnings?warnings+" realm warning"+(warnings===1?"":"s")+" need attention":"No realm warnings are open";
+        if(warning.title!==warningTitle)warning.title=warningTitle;
     }
 }
 function roomEffectValue(value){
@@ -260,7 +266,7 @@ function renderRealmEvent(){
     if(lastRenderedIssueId===issue.id){modal.classList.remove("hidden");return;}
     lastRenderedIssueId=issue.id;
     const kind=String(issue.family||"realm");
-    modal.dataset.eventKind=kind;
+    if(modal.dataset.eventKind!==kind)modal.dataset.eventKind=kind;
     setText("realm-event-kicker","REALM ISSUE · "+kind.toUpperCase()+" · YEAR "+state.year);
     setText("realm-event-title",issue.title);
     setText("realm-event-description",issue.description);
@@ -278,58 +284,76 @@ function renderRealmEvent(){
     modal.classList.remove("hidden");
 }
 
-export function renderUI(){
-    if(!state.hasStarted)return;
+function renderResourceValues(){
     setText("res-wood",Math.floor(state.resources.wood||0).toLocaleString("en-US"));
     setText("res-stone",Math.floor(state.resources.stone||0).toLocaleString("en-US"));
     setText("res-gold",Math.floor(state.resources.gold||0).toLocaleString("en-US"));
     setText("res-food",Math.floor(state.resources.food||0).toLocaleString("en-US"));
+    document.querySelectorAll("[data-resource-value]").forEach(node=>{const key=node.dataset.resourceValue;if(key in state.resources){const next=Math.floor(state.resources[key]||0).toLocaleString("en-US");if(node.textContent!==next)node.textContent=next;}});
+}
+function renderResourceIncome(){
     setText("wood-income",income(state.incomeThisTick.wood));
     setText("stone-income",income(state.incomeThisTick.stone));
     setText("gold-income",income(state.incomeThisTick.gold));
     setText("food-income",income(state.incomeThisTick.food));
-    document.querySelectorAll("[data-resource-value]").forEach(node=>{const key=node.dataset.resourceValue;if(key in state.resources)node.textContent=Math.floor(state.resources[key]||0).toLocaleString("en-US");});
     document.querySelectorAll("[data-resource-income]").forEach(node=>{
         const value=Number(state.incomeThisTick?.[node.dataset.resourceIncome]||0);
-        node.textContent=income(value);
+        if(node.textContent!==income(value))node.textContent=income(value);
         node.classList.toggle("is-positive",value>0);
         node.classList.toggle("is-negative",value<0);
     });
+}
+let lastMoraleWidth="";
+function renderMoraleHud(){
     const bar=document.getElementById("morale-bar");
-    if(bar){bar.style.width=Math.max(0,Math.min(100,state.morale))+"%";bar.classList.toggle("is-low",state.morale<30);}
+    if(bar){
+        const width=Math.max(0,Math.min(100,state.morale))+"%";
+        if(width!==lastMoraleWidth){lastMoraleWidth=width;bar.style.width=width;}
+        bar.classList.toggle("is-low",state.morale<30);
+    }
     setText("morale-value",Math.floor(state.morale));
-    renderRoomBonuses();
-    renderAmbition();
-    renderFirstSession();
+}
+function renderWorldLabels(){
     setText("season",SEASONS[state.seasonIndex]||SEASONS[0]);setText("year","YEAR "+state.year);
-    setText("tick-count",state.tick.toLocaleString("en-US"));setText("kingdom-name","THE REALM OF "+state.kingdomName);
+    const now=performance.now();
+    if(now-lastTickTextAt>=1000){lastTickTextAt=now;setText("tick-count",state.tick.toLocaleString("en-US"));}
+    setText("kingdom-name","THE REALM OF "+state.kingdomName);
     setText("stage-realm",state.kingdomName||"ELDRIA");setText("minimap-realm",state.kingdomName||"ELDRIA");
     setText("player-name",state.playerName||"GUEST");
-    renderTopStatus();
+}
+function renderHousingHud(){
     const housing=getHousingSnapshot();
-    document.querySelectorAll("[data-population]").forEach(node=>{node.textContent=String(housing.population);});
-    const pop=document.getElementById("population");if(pop)pop.innerHTML="POP <strong>"+housing.population+"</strong> / "+housing.capacity+" · "+housing.available+" FREE";
+    document.querySelectorAll("[data-population]").forEach(node=>{const next=String(housing.population);if(node.textContent!==next)node.textContent=next;});
+    const pop=document.getElementById("population");if(pop)setHTML(pop,"POP <strong>"+housing.population+"</strong> / "+housing.capacity+" · "+housing.available+" FREE");
     setText("population-capacity",housing.capacity?" / "+housing.capacity:"");
+}
+function renderCardHud(){
     const card=state.currentCard,cardPanel=document.getElementById("card-container");
     if(card){
         cardPanel?.classList.remove("is-empty");
         const cardArt=document.getElementById("card-icon");
         if(cardArt){
             const sprite=cardSprite(card.group);
-            cardArt.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-card-atlas.svg#'+sprite+'"></use></svg>';
+            if(sprite!==lastCardSprite){
+                lastCardSprite=sprite;
+                cardArt.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-card-atlas.svg#'+sprite+'"></use></svg>';
+            }
         }
         setText("card-name",card.name);setText("card-desc",card.desc);
         ["wood","stone","gold","food"].forEach(key=>updateCost("card-cost-"+key,card.cost?.[key]||0));
         const affordable=Object.entries(card.cost||{}).every(([key,value])=>(state.resources[key]||0)>=value);
         cardPanel?.classList.toggle("is-unavailable",!affordable);
-        cardPanel?.setAttribute("aria-label","Drag "+card.name+" onto a valid map tile");
+        if(cardPanel&&cardPanel.getAttribute("aria-label")!=="Drag "+card.name+" onto a valid map tile")cardPanel.setAttribute("aria-label","Drag "+card.name+" onto a valid map tile");
     }else{
         cardPanel?.classList.add("is-empty");
         cardPanel?.classList.remove("is-unavailable");
-        cardPanel?.setAttribute("aria-label","No card selected yet");
+        if(cardPanel&&cardPanel.getAttribute("aria-label")!=="No card selected yet")cardPanel.setAttribute("aria-label","No card selected yet");
+        lastCardSprite="";
         setText("card-icon","—");setText("card-name","NO CARD SELECTED");setText("card-desc","Open the Cards tab to draw a card when you want one.");
         ["wood","stone","gold","food"].forEach(key=>updateCost("card-cost-"+key,0));
     }
+}
+function renderViewHud(){
     const labels=["","LANDSCAPE","DISTRICTS","ROOFTOPS","INTERIORS"];
     setText("zoom-level-name",labels[state.zoomLevel]||"ROOFTOPS");setText("zoom-value","×"+(state.zoom/(Number(state.renderScale)||1)).toFixed(2));
     const layerSelect=document.getElementById("map-layer-select");
@@ -339,9 +363,26 @@ export function renderUI(){
     document.querySelectorAll(".speed-button").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.speed)===state.gameSpeed));
     document.getElementById("pause-btn")?.classList.toggle("is-paused",state.isPaused);
     setText("pause-text",state.isPaused?"RESUME":"PAUSE");
-    renderTabContent();renderRealmEvent();
 }
-
+function renderDynamicPanels(){
+    renderTabContent();
+    renderRealmEvent();
+}
+const UI_HUD_CHUNKS=Object.freeze([renderResourceValues,renderResourceIncome,renderMoraleHud,renderWorldLabels,renderTopStatus,renderHousingHud,renderCardHud,renderRoomBonuses,renderAmbition,renderFirstSession,renderViewHud,renderDynamicPanels]);
+let uiHudFrame=0,uiHudIndex=0,uiHudPending=false;
+function runHudRefresh(){
+    uiHudFrame=0;
+    const chunk=UI_HUD_CHUNKS[uiHudIndex++];
+    try{chunk();}catch(error){console.error(error);}
+    if(uiHudIndex<UI_HUD_CHUNKS.length){uiHudFrame=requestAnimationFrame(runHudRefresh);return;}
+    if(uiHudPending){uiHudPending=false;uiHudIndex=0;uiHudFrame=requestAnimationFrame(runHudRefresh);}
+}
+export function renderUI(){
+    if(!state.hasStarted)return;
+    if(uiHudFrame){uiHudPending=true;return;}
+    uiHudIndex=0;
+    uiHudFrame=requestAnimationFrame(runHudRefresh);
+}
 const MAP_LAYER_LEGENDS=Object.freeze({
     resources:{
         label:"RESOURCE SURVEY",

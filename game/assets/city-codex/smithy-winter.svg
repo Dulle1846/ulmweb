@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="title desc">
+<title id="title">Smithy — WINTER</title><desc id="desc">Illustrated city codex portrait for Smithy in winter.</desc>
+<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e5edf4"/><stop offset="1" stop-color="#aebfce"/></linearGradient></defs>
+<rect width="640" height="400" fill="url(#sky)"/>
+<circle cx="510" cy="70" r="36" fill="#f7fbfd" opacity=".86"/>
+<ellipse cx="120" cy="66" rx="62" ry="12" fill="#fff" opacity=".22"/>
+<ellipse cx="292" cy="84" rx="70" ry="10" fill="#fff" opacity=".18"/>
+<ellipse cx="450" cy="58" rx="55" ry="11" fill="#fff" opacity=".2"/>
+<path d="M-30 210 Q150 150 340 188 T680 178Z" fill="#c7d3d9" opacity=".55"/>
+<rect y="262" width="640" height="138" fill="#e6ecef"/>
+<path d="M0 342 Q150 326 320 340 T640 332 L640 400 L0 400Z" fill="#e6ecef" opacity=".72"/>
+<circle cx="45" cy="50" r="1.6" fill="#fff" opacity=".8"/><circle cx="118" cy="97" r="2.4000000000000004" fill="#fff" opacity=".8"/><circle cx="191" cy="144" r="3.2" fill="#fff" opacity=".8"/><circle cx="264" cy="191" r="1.6" fill="#fff" opacity=".8"/><circle cx="337" cy="88" r="2.4000000000000004" fill="#fff" opacity=".8"/><circle cx="410" cy="135" r="3.2" fill="#fff" opacity=".8"/><circle cx="483" cy="182" r="1.6" fill="#fff" opacity=".8"/><circle cx="556" cy="79" r="2.4000000000000004" fill="#fff" opacity=".8"/><circle cx="69" cy="126" r="3.2" fill="#fff" opacity=".8"/><circle cx="142" cy="173" r="1.6" fill="#fff" opacity=".8"/><circle cx="215" cy="70" r="2.4000000000000004" fill="#fff" opacity=".8"/><circle cx="288" cy="117" r="3.2" fill="#fff" opacity=".8"/><circle cx="361" cy="164" r="1.6" fill="#fff" opacity=".8"/><circle cx="434" cy="61" r="2.4000000000000004" fill="#fff" opacity=".8"/><circle cx="507" cy="108" r="3.2" fill="#fff" opacity=".8"/><circle cx="580" cy="155" r="1.6" fill="#fff" opacity=".8"/><circle cx="93" cy="52" r="2.4000000000000004" fill="#fff" opacity=".8"/><circle cx="166" cy="99" r="3.2" fill="#fff" opacity=".8"/><path d="M0 347 Q160 330 320 344 T640 338 L640 400 L0 400Z" fill="#f4f8fa" opacity=".9"/>
+<g>
+<ellipse cx="320" cy="369" rx="185" ry="17" fill="#2c2a23" opacity=".24"/>
+<rect x="194" y="244" width="252" height="124" fill="#d5c3a2"/>
+<path d="M180 246 L320 178 L460 246Z" fill="#6a4932"/>
+<path d="M208 246 L320 195 L432 246Z" fill="#8b6143" opacity=".55"/>
+<rect x="392" y="138" width="34" height="82" fill="#8d8172"/>
+<rect x="386" y="132" width="46" height="11" fill="#4b4540"/>
+<rect x="226" y="272" width="72" height="54" fill="#4f3a2c"/>
+<rect x="236" y="281" width="52" height="45" fill="#f6a442" opacity=".55"/>
+<path d="M262 281 V326 M236 303 H288" stroke="#5c3f2a" stroke-width="3"/>
+<rect x="332" y="283" width="76" height="19" fill="#4b4540"/>
+<path d="M344 283 q26 -23 52 0" fill="#b9b4a8"/>
+<rect x="350" y="310" width="40" height="30" fill="#4b4540"/>
+<circle cx="421" cy="270" r="8" fill="#f6a442" opacity=".5"/>
+<circle cx="438" cy="255" r="4" fill="#ffd27a" opacity=".55"/>
+<path d="M170 368 H478" stroke="#544532" stroke-width="2" opacity=".35"/>
+<path d="M330 200 l24 14 -24 14" fill="none" stroke="#e3c681" stroke-width="3" opacity=".7"/>
+</g>
+<path d="M80 382 H560" stroke="#4f4333" stroke-width="2" opacity=".28"/>
+</svg>

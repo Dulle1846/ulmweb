@@ -7,6 +7,14 @@ function isVisible(element){
     return Boolean(element&&element.isConnected&&!element.closest(".hidden")&&element.getClientRects().length);
 }
 
+// Focus guards run on every focus change. A layout query there would force the
+// freshly rendered management panel to lay out inside the click task, which is
+// especially expensive on a throttled device. The dialog contract uses the
+// shared .hidden class, so the open state can be read without touching layout.
+function isOpenDialog(dialog){
+    return Boolean(dialog&&dialog.isConnected&&!dialog.classList.contains("hidden")&&!dialog.closest(".hidden"));
+}
+
 function focusableElements(dialog){
     return [...dialog.querySelectorAll(FOCUSABLE_SELECTOR)].filter(element=>
         isVisible(element)&&element.getAttribute("aria-hidden")!=="true"&&!element.closest("[inert]")
@@ -85,7 +93,7 @@ export function setupModalAccessibility(){
 
     function topDialog(){
         for(let index=stack.length-1;index>=0;index--){
-            if(isVisible(stack[index].dialog))return stack[index].dialog;
+            if(isOpenDialog(stack[index].dialog))return stack[index].dialog;
         }
         return null;
     }
@@ -98,7 +106,13 @@ export function setupModalAccessibility(){
 
     function focusInside(dialog){
         if(!dialog)return;
-        const target=dialog.querySelector("[autofocus]")||focusableElements(dialog)[0]||dialog;
+        // Pick the first usable control without measuring every button in the
+        // dialog. focusableElements() is still used by the Tab trap, where the
+        // complete list is required, but opening a panel must not force layout.
+        const target=dialog.querySelector("[autofocus]")
+            ||[...dialog.querySelectorAll(FOCUSABLE_SELECTOR)].find(element=>
+                !element.closest(".hidden")&&element.getAttribute("aria-hidden")!=="true"&&!element.closest("[inert]"))
+            ||dialog;
         if(target===dialog&&!dialog.hasAttribute("tabindex"))dialog.setAttribute("tabindex","-1");
         target.focus({preventScroll:true});
     }
@@ -148,7 +162,7 @@ export function setupModalAccessibility(){
 
     for(const dialog of dialogs){
         if(!dialog.hasAttribute("tabindex"))dialog.setAttribute("tabindex","-1");
-        const visible=isVisible(dialog);
+        const visible=isOpenDialog(dialog);
         visibility.set(dialog,visible);
         if(visible)openDialog(dialog,null);
     }
@@ -157,9 +171,9 @@ export function setupModalAccessibility(){
         for(const record of records){
             const dialog=record.target;
             const wasVisible=visibility.get(dialog)===true;
-            const nowVisible=isVisible(dialog);
+            const nowVisible=isOpenDialog(dialog);
             if(nowVisible&&!wasVisible){
-                const opener=clickedTrigger&&isVisible(clickedTrigger)&&!dialog.contains(clickedTrigger)
+                const opener=clickedTrigger&&isOpenDialog(clickedTrigger)&&!dialog.contains(clickedTrigger)
                     ?clickedTrigger:document.activeElement;
                 openDialog(dialog,opener);
             }else if(!nowVisible&&wasVisible){

@@ -54,6 +54,34 @@ function eventCard(event) {
         choices + '</div></article>';
 }
 
+function narrowViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+}
+
+function codexMarkup(seasonSlug) {
+    return CITY_CODEX.map(entry =>
+        '<article class="city-codex-card" data-codex-type="' + entry.type + '">' +
+        '<img loading="lazy" src="assets/city-codex/' + esc(entry.slug) + '-' + seasonSlug + '.svg" alt="' + esc(entry.name) + '" width="640" height="400">' +
+        '<div><span>' + esc(entry.category) + '</span><h4>' + esc(entry.name) + '</h4><p>' + esc(entry.description) + '</p>' +
+        '<small>' + esc(entry.effect) + '</small></div></article>').join("");
+}
+
+function ensureCodex(details) {
+    if (!details || details.dataset.codexReady === "1") return;
+    const body = details.querySelector("[data-city-codex-body]");
+    if (!body) return;
+    body.innerHTML = '<p class="command-note">Illustrated records of every structure in the current season. Portraits are loaded lazily, only as the codex is read.</p>' +
+        '<div class="city-codex-grid">' + codexMarkup(details.dataset.season || "spring") + '</div>';
+    details.dataset.codexReady = "1";
+}
+
+if (typeof document !== "undefined") {
+    document.addEventListener("toggle", event => {
+        const details = event.target;
+        if (details?.matches?.("[data-city-codex]") && details.open) ensureCodex(details);
+    }, true);
+}
+
 function policyCard(policy, civic, gold) {
     const active = policy.active;
     const affordable = gold >= policy.cost;
@@ -95,11 +123,11 @@ export function renderCityPanel() {
             ' ordinances · ' + civic.lastAudit.paid + '/' + civic.lastAudit.upkeep + ' gold upkeep' +
             (civic.lastAudit.unpaid ? ' · ' + civic.lastAudit.unpaid + ' gold unpaid' : '') + '.</p>'
         : '<p class="command-note">The first civic audit occurs at the next year boundary.</p>';
-    const codex = CITY_CODEX.map(entry =>
-        '<article class="city-codex-card" data-codex-type="' + entry.type + '">' +
-        '<img loading="lazy" src="assets/city-codex/' + esc(entry.slug) + '-' + seasonSlug + '.svg" alt="' + esc(entry.name) + '" width="640" height="400">' +
-        '<div><span>' + esc(entry.category) + '</span><h4>' + esc(entry.name) + '</h4><p>' + esc(entry.description) + '</p>' +
-        '<small>' + esc(entry.effect) + '</small></div></article>').join("");
+    const codexSection = narrowViewport()
+        ? '<details class="city-codex" data-city-codex data-season="' + esc(seasonSlug) + '"><summary><span>THE CITY CODEX · ' + CITY_CODEX.length + ' BUILDINGS</span><small>OPEN THE ILLUSTRATED REGISTER</small></summary><div data-city-codex-body></div></details>'
+        : '<div class="command-section-title">THE CITY CODEX · ' + CITY_CODEX.length + ' BUILDINGS</div>' +
+            '<p class="command-note">Illustrated records of every structure in the current season. Portraits are loaded lazily, only as the codex is read.</p>' +
+            '<div class="city-codex-grid">' + codexMarkup(seasonSlug) + '</div>';
     const serviceCards = [
         serviceCard("Water", services.water, "Wells and waterworks"),
         serviceCard("Food", needs.food, "Household stores"),
@@ -141,10 +169,7 @@ export function renderCityPanel() {
         '<p class="command-note">Each enactment costs gold now and upkeep every year. A town hall adds two slots. ' +
         'Unpaid upkeep does not delete a policy; it costs morale and is recorded in the next audit.</p>' +
         '<div class="city-policy-grid">' + policies + '</div>' +
-        '<div class="command-section-title">CIVIC RECORD</div>' + history +
-        '<div class="command-section-title">THE CITY CODEX · ' + CITY_CODEX.length + ' BUILDINGS</div>' +
-        '<p class="command-note">Illustrated records of every structure in the current season. Portraits are loaded lazily, only as the codex is read.</p>' +
-        '<div class="city-codex-grid">' + codex + '</div>';
+        '<div class="command-section-title">CIVIC RECORD</div>' + history + codexSection;
 }
 
 export function handleCityPanelClick(event, { onChanged, toast } = {}) {

@@ -385,7 +385,7 @@ function generatedDescription(kind, quality, band, materials, crafterName, sourc
     return cleanText(
         "Made" + maker + " at " + source + ". The work is " + band.toLowerCase()
         + " (quality " + quality + "/100) and consumed " + materialText + "."
-        + " Recorded in " + year + " as a unique player-made item. It is not interchangeable with a base catalogue entry."
+        + " Recorded in year " + year + " as a unique player-made item. It is not interchangeable with a base catalogue entry."
     );
 }
 
@@ -405,11 +405,18 @@ export function normalizeCraftedItem(value) {
     const crafterId = value.crafterId ? String(value.crafterId).trim().slice(0, 80) : null;
     const crafterName = value.crafterName ? cleanText(value.crafterName, "").slice(0, 80) : null;
     const workshop = value.workshop ? cleanText(value.workshop, "").slice(0, 100) : null;
+    const source = cleanText(value.source, craftedSource(kind, workshop, year)).slice(0, 120);
+    const storedDetail = cleanText(value.detail, "").slice(0, MAX_TEXT);
+    // Older archives stored the detail prose with "Recorded in 1". Normalise
+    // that label on read; the archived record itself stays untouched.
+    const detail = storedDetail
+        ? storedDetail.replace(/\bRecorded in (?!year\b)(\d+)\b/g, "Recorded in year $1")
+        : generatedDescription(kind, quality, qualityBand(quality), materials, crafterName, source, year);
     return Object.freeze({
         id, origin: "crafted", kind, category: definition.category, label,
-        source: cleanText(value.source, craftedSource(kind, workshop, year)).slice(0, 120),
+        source,
         summary: cleanText(value.summary, craftedSummary(kind, quality, materials.map(entry => materialDescriptor(entry.id).label))).slice(0, MAX_TEXT),
-        detail: cleanText(value.detail, "").slice(0, MAX_TEXT),
+        detail,
         quality, qualityBand: qualityBand(quality),
         materials: Object.freeze(materials.map(entry => Object.freeze({ ...entry }))),
         crafterId, crafterName, workshop, year, tick,

@@ -36,7 +36,9 @@ export const CITY_CODEX = Object.freeze([
     { type: 75, slug: "bathhouse", name: "Bathhouse", category: "HEALTH", description: "Steam, hot water and a public room for clean bodies and gossip.", effect: "Needs water and staff; extends health and sanitation coverage." },
     { type: 76, slug: "brewery", name: "Brewery", category: "FOOD", description: "Copper kettles, malt and the yeasty warmth of a working brewhouse.", effect: "Consumes grain and brews ale; a nearby cellar lets taverns sell it." },
     { type: 77, slug: "guildhall", name: "Guildhall", category: "TRADE", description: "A hall for masters, charters, apprentices and arguments about prices.", effect: "Extends trade coverage; pairs with market charters and civic trade policy." },
-    { type: 78, slug: "watchhouse", name: "Watchhouse", category: "DEFENCE", description: "A small guard post with a bell, a cell and a map of the wards.", effect: "Extends safety coverage; the night watch makes crowded streets calmer." }
+    { type: 78, slug: "watchhouse", name: "Watchhouse", category: "DEFENCE", description: "A small guard post with a bell, a cell and a map of the wards.", effect: "Extends safety coverage; the night watch makes crowded streets calmer." },
+    { type: 79, slug: "smithy", name: "Smithy", category: "CRAFT", description: "A working forge where a named smith turns fuel, timber and imported iron into a unique weapon.", effect: "Consumes planks and firewood and spends gold on imported iron; one staffed workshop records at most one player-made weapon per season." },
+    { type: 80, slug: "scriptorium", name: "Scriptorium", category: "LEARNING", description: "A writing room where a named scribe turns boards, water and imported parchment into a unique book.", effect: "Consumes planks and water and spends gold on parchment and ink; one staffed workshop records at most one player-made book per season." }
 ]);
 
 const CODEX_BY_TYPE = new Map(CITY_CODEX.map(entry => [entry.type, entry]));

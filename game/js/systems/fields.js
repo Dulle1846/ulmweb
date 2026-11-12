@@ -5,7 +5,10 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { getForestStockAt, getResourceSiteAt, plantForestAt } from "./resource-geography.js";
 import { addLocalOutput, getAvailableOutput, getPhysicalStock, requestHaul } from "./logistics.js";
+import { addResource } from "./resources.js";
+import { recordResourceMovement } from "./goods-book.js";
 import { getBuildingEfficiency, getWorkforceSnapshot } from "./economy.js";
+import { ECONOMY_TUNING, getHarvestYieldFactor } from "./economy-cycle.js";
 
 export const FIELD_STAGES = Object.freeze(["fallow", "sown", "growing", "ripe", "harvested"]);
 export const FIELD_LABELS = Object.freeze({
@@ -104,6 +107,19 @@ function continueHarvest(farm, field) {
         requestHaul(farm, "grain", accepted);
         const production = state.economy?.productionChains;
         if (production) production.grainHarvested = Math.max(0, number(production.grainHarvested)) + accepted;
+        // Farm households keep a measured share of the crop. It reaches the
+        // royal food store at the harvest, so a settlement with fields can feed
+        // itself before a mill and bakery chain exists. The rest remains grain
+        // in the physical store and still needs carriers, a mill and a bakery.
+        const subsistence = Math.min(accepted, Math.floor(accepted * ECONOMY_TUNING.farmSubsistenceShare));
+        if (subsistence > 0) {
+            recordResourceMovement("food", subsistence, "farm-subsistence", {
+                from: { kind: "building", id: farm.id },
+                to: { kind: "realm", id: "royal-stores" },
+                key: "food:farm-subsistence:" + farm.id + ":" + field.sownYear + ":" + state.year
+            });
+            addResource("food", subsistence);
+        }
     }
     if (field.pendingHarvest > 0) {
         field.lastReason = "Harvest waiting for storage";
@@ -194,7 +210,9 @@ function seasonalFieldUpdate(farm) {
         }
     } else if (season === 2) {
         if (field.stage === "ripe") {
-            field.pendingHarvest = Math.max(8, Math.round(10 + field.fertility / 8 + Math.min(12, field.growth / 10)));
+            const yieldFactor = getHarvestYieldFactor();
+            field.lastYieldFactor = yieldFactor;
+            field.pendingHarvest = Math.max(8, Math.round((10 + field.fertility / 8 + Math.min(12, field.growth / 10)) * yieldFactor));
             field.harvestTotal = field.pendingHarvest;
             continueHarvest(farm, field);
         } else if (field.stage === "growing") {

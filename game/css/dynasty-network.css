@@ -77,6 +77,7 @@
  line-height:1.45;
 }
 @media(max-width:720px){
+ .dynasty-lineage-edges{display:none}
  .dynasty-lineage-graph{gap:12px;padding:9px 7px}
  .dynasty-lineage-lane{padding:7px}
  .dynasty-lineage-lane__nodes{grid-template-columns:1fr}

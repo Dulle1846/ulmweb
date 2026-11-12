@@ -25,6 +25,13 @@ function prepareCampaign(){
     for(let i=0;i<8;i++)homes.push(spawnEntity(20+i*4,20,TYPE.HOUSE));
     const farms=[];
     for(let i=0;i<6;i++)farms.push(spawnEntity(60+i*4,60,TYPE.FARM));
+    // A controlled settlement with a five-thousand-food reserve needs stores,
+    // not open heaps. Warehouses are the new storage decision; without them
+    // the reserve legitimately spoils under the economy cycle.
+    for(let i=0;i<24;i++){
+        const store=spawnEntity(8+i*2,8,TYPE.WAREHOUSE);
+        store.construction={stage:3,progress:100};
+    }
     for(let i=0;i<24;i++){
         const home=homes[Math.floor(i/3)];
         const villager=spawnEntity(30+(i%8)*2,30+Math.floor(i/8)*2,TYPE.VILLAGER);
@@ -53,6 +60,10 @@ test("a controlled settlement survives a 25-year deterministic campaign horizon"
         assert.ok(value>=0,resource+" balance must never become negative");
     }
     assert.ok(Number.isFinite(state.morale)&&state.morale>=0&&state.morale<=100,"morale must remain in its valid range");
+    for(const [cause,value] of Object.entries(state.justice.crime.causes)){
+        assert.ok(Number.isFinite(value)&&value>=0&&value<=1,"crime cause "+cause+" must remain a finite 0-1 rate after 25 years");
+    }
+    assert.ok(Number.isFinite(state.justice.crime.rate)&&state.justice.crime.rate>=0&&state.justice.crime.rate<=1,"crime rate must remain finite and bounded");
     const ids=state.entities.map(entity=>entity.id).filter(id=>id!==undefined&&id!==null);
     assert.equal(new Set(ids).size,ids.length,"live entity IDs must remain unique");
     assert.ok(elapsed<30000,"25-year simulation exceeded the 30-second CI budget: "+elapsed.toFixed(1)+"ms");

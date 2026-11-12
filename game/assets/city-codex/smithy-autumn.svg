@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="title desc">
+<title id="title">Smithy — AUTUMN</title><desc id="desc">Illustrated city codex portrait for Smithy in autumn.</desc>
+<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1e6cf"/><stop offset="1" stop-color="#d8ad79"/></linearGradient></defs>
+<rect width="640" height="400" fill="url(#sky)"/>
+<circle cx="510" cy="70" r="36" fill="#ffe3a3" opacity=".86"/>
+<ellipse cx="120" cy="66" rx="62" ry="12" fill="#fff" opacity=".22"/>
+<ellipse cx="292" cy="84" rx="70" ry="10" fill="#fff" opacity=".18"/>
+<ellipse cx="450" cy="58" rx="55" ry="11" fill="#fff" opacity=".2"/>
+<path d="M-30 210 Q150 150 340 188 T680 178Z" fill="#b18b5b" opacity=".55"/>
+<rect y="262" width="640" height="138" fill="#8c7446"/>
+<path d="M0 342 Q150 326 320 340 T640 332 L640 400 L0 400Z" fill="#8c7446" opacity=".72"/>
+<path d="M45 90 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M106 127 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M167 164 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M228 201 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M289 98 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M350 135 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M411 172 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M472 209 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M533 106 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M594 143 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M95 180 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M156 217 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M217 114 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M278 151 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/>
+<g>
+<ellipse cx="320" cy="369" rx="185" ry="17" fill="#2c2a23" opacity=".24"/>
+<rect x="194" y="244" width="252" height="124" fill="#d5c3a2"/>
+<path d="M180 246 L320 178 L460 246Z" fill="#6a4932"/>
+<path d="M208 246 L320 195 L432 246Z" fill="#8b6143" opacity=".55"/>
+<rect x="392" y="138" width="34" height="82" fill="#8d8172"/>
+<rect x="386" y="132" width="46" height="11" fill="#4b4540"/>
+<rect x="226" y="272" width="72" height="54" fill="#4f3a2c"/>
+<rect x="236" y="281" width="52" height="45" fill="#f6a442" opacity=".55"/>
+<path d="M262 281 V326 M236 303 H288" stroke="#5c3f2a" stroke-width="3"/>
+<rect x="332" y="283" width="76" height="19" fill="#4b4540"/>
+<path d="M344 283 q26 -23 52 0" fill="#b9b4a8"/>
+<rect x="350" y="310" width="40" height="30" fill="#4b4540"/>
+<circle cx="421" cy="270" r="8" fill="#f6a442" opacity=".5"/>
+<circle cx="438" cy="255" r="4" fill="#ffd27a" opacity=".55"/>
+<path d="M170 368 H478" stroke="#544532" stroke-width="2" opacity=".35"/>
+<path d="M330 200 l24 14 -24 14" fill="none" stroke="#e3c681" stroke-width="3" opacity=".7"/>
+</g>
+<path d="M80 382 H560" stroke="#4f4333" stroke-width="2" opacity=".28"/>
+</svg>

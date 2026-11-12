@@ -16,6 +16,13 @@ import { getCitizenModifiers } from "./population-register.js";
 import { getEndeavourModifiers } from "./endeavours.js";
 import { getCivicModifiers } from "./civic.js";
 import { getJobSkill } from "./skills.js";
+import { addLog } from "../core/event-log.js";
+import {
+    ECONOMY_TUNING, ensureEconomyCycleState, calculateFoodSpoilage, getDebtPressure,
+    getDebtProductivity, getFoodCrisisProductivity, getFoodDemandInputs, getFoodStorageCapacity,
+    nextFoodCrisis, takeFoodInflow
+} from "./economy-cycle.js";
+import { recordNaturalDeath } from "./mortality.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -46,16 +53,22 @@ export const BUILDING_WORKFORCE = Object.freeze({
     [TYPE.BATHHOUSE]: 1,
     [TYPE.BREWERY]: 2,
     [TYPE.GUILDHALL]: 2,
-    [TYPE.WATCHHOUSE]: 1
+    [TYPE.WATCHHOUSE]: 1,
+    [TYPE.SMITHY]: 1,
+    [TYPE.SCRIPTORIUM]: 1
 });
 
 const clampNonNegative = value => Math.max(0, Number.isFinite(value) ? value : 0);
 
-export function calculateDailyLedger({ population, employed, buildings, foodAvailable, goldAvailable, taxRate = 10, roadUpkeep = 0, furnitureUpkeep = 0 }) {
+export function calculateDailyLedger({ population, employed, buildings, foodAvailable, goldAvailable, taxRate = 10, roadUpkeep = 0, furnitureUpkeep = 0, households = 0, livestock = 0 }) {
     const people = Math.floor(clampNonNegative(population));
     const workers = Math.min(people, Math.floor(clampNonNegative(employed)));
     const buildingCount = Math.floor(clampNonNegative(buildings));
-    const foodDemand = people * 0.015 * DAYS_PER_LEDGER;
+    // Residents, hearths and livestock all eat. The extra terms are zero by
+    // default so the pure ledger remains useful to isolated balance tests.
+    const foodDemand = people * ECONOMY_TUNING.foodPerResident +
+        clampNonNegative(households) * ECONOMY_TUNING.foodPerHousehold +
+        clampNonNegative(livestock) * ECONOMY_TUNING.foodPerLivestock;
     const foodConsumed = Math.min(clampNonNegative(foodAvailable), foodDemand);
     const foodShortage = Math.max(0, foodDemand - foodConsumed);
     const effectiveTaxRate = Math.max(0, Math.min(35, Number.isFinite(Number(taxRate)) ? Number(taxRate) : 10));
@@ -72,6 +85,8 @@ export function calculateDailyLedger({ population, employed, buildings, foodAvai
         population: people,
         employed: workers,
         unemployed: people - workers,
+        households: Math.floor(clampNonNegative(households)),
+        livestock: clampNonNegative(livestock),
         foodDemand,
         foodConsumed,
         foodShortage,
@@ -132,21 +147,32 @@ export function getBuildingEfficiency(building, workforce = null) {
     // unlocks the skill contribution, so existing balance remains stable on day one.
     const skillFactor = 1 + (Math.max(0, Math.min(100, averageSkill)) - 50) * 0.0028 * Math.min(1, averageExperience / 25);
     return Math.max(0, Math.min(1, workers / capacity)) * productivity * getCitizenModifiers().productivity * skillFactor *
-        Math.max(0.7, Math.min(1.30, 1 + Number(civicModifiers.production || 0)));
+        Math.max(0.7, Math.min(1.30, 1 + Number(civicModifiers.production || 0))) *
+        getFoodCrisisProductivity() * getDebtProductivity();
 }
 
 export function updateEconomy() {
     if (state.tick <= 0 || state.tick % ECONOMY_INTERVAL !== 0) return null;
+    const economy = ensureEconomyCycleState();
     const workforce = getWorkforceSnapshot();
+    const foodInputs = getFoodDemandInputs();
+    const foodInflow = takeFoodInflow();
+    const storageCapacity = getFoodStorageCapacity();
     const ledger = calculateDailyLedger({
         population: workforce.population,
         employed: workforce.employed,
         buildings: workforce.buildings,
         foodAvailable: state.resources.food,
         goldAvailable: state.resources.gold,
+        taxRate: Number(state.government?.taxRate ?? 10),
+        households: foodInputs.households,
+        livestock: foodInputs.livestock,
         roadUpkeep: getRoadUpkeepTotal() * DAYS_PER_LEDGER,
         furnitureUpkeep: getFurnitureUpkeepTotal()
     });
+    ledger.foodInflow = foodInflow;
+    ledger.storageCapacity = storageCapacity;
+    ledger.taxRate = Number(state.government?.taxRate ?? 10);
 
     // Royal edicts bend the ledger before it settles: a harvest law lowers
     // household demand, a mint raises what the tax collectors bring in, and a
@@ -196,29 +222,100 @@ export function updateEconomy() {
     ledger.taxesCollected *= Math.max(0.7, Math.min(1.35, 1 + Number(civicModifiers.tax || 0)));
     ledger.civicTaxBonus = ledger.taxesCollected - civicTaxBefore;
     ledger.netGold = ledger.taxesCollected - ledger.wagesPaid - ledger.upkeepPaid - ledger.furnitureUpkeepPaid;
+    ledger.deficit = Math.max(0, ledger.unpaidWages + ledger.unpaidUpkeep + ledger.unpaidFurniture);
 
     recordResourceMovement("food", -ledger.foodConsumed, "population-food", {
         from: { kind: "realm", id: "royal-stores" }, to: { kind: "population", id: "households" },
         key: "food:population:" + state.tick
     });
     addResource("food", -ledger.foodConsumed);
-    addResource("gold", ledger.netGold);
+
+    // Food left above the safe storage band spoils. The safe band is not a
+    // second stock: it is the same royal reserve, measured against real stores.
+    const foodAfterConsumption = Math.max(0, Number(state.resources.food) || 0);
+    const foodSpoiled = calculateFoodSpoilage(foodAfterConsumption, storageCapacity);
+    if (foodSpoiled > 0) {
+        recordResourceMovement("food", -foodSpoiled, "food-spoilage", {
+            from: { kind: "realm", id: "royal-stores" }, to: { kind: "spoilage", id: "open-stores" },
+            key: "food:spoilage:" + state.tick
+        });
+        addResource("food", -foodSpoiled);
+    }
+    ledger.foodSpoiled = foodSpoiled;
+    ledger.foodBalance = foodInflow - ledger.foodConsumed - foodSpoiled;
+    ledger.foodReserve = Math.max(0, Number(state.resources.food) || 0);
+    ledger.reserveLedgers = ledger.foodDemand > 0 ? ledger.foodReserve / ledger.foodDemand : null;
+
+    // Gold is a liability system, not a zero floor. Unpaid wages and upkeep
+    // become crown arrears; a positive settlement first repays the oldest debt.
+    const debtBefore = economy.debt;
+    const netGold = Number(ledger.netGold) || 0;
+    const debtPayment = netGold > 0 ? Math.min(debtBefore, netGold) : 0;
+    const retainedGold = netGold > 0 ? netGold - debtPayment : netGold;
+    if (retainedGold !== 0) addResource("gold", retainedGold);
+    economy.debt = Math.max(0, debtBefore - debtPayment);
+    ledger.debtBefore = debtBefore;
+    ledger.debtPaid = debtPayment;
+    ledger.debtAdded = ledger.deficit;
+    economy.debt = Math.min(ECONOMY_TUNING.maxDebt * 2, economy.debt + ledger.deficit);
+    const debtInterest = economy.debt * ECONOMY_TUNING.debtInterestRate;
+    economy.debt = Math.min(ECONOMY_TUNING.maxDebt * 2, economy.debt + debtInterest);
+    economy.totalDebtInterest = Math.max(0, Number(economy.totalDebtInterest) || 0) + debtInterest;
+    ledger.debtInterest = debtInterest;
+    ledger.debt = economy.debt;
+    ledger.debtBefore = debtBefore;
+    ledger.debtAfter = economy.debt;
+    ledger.goldAfter = Math.max(0, Number(state.resources.gold) || 0);
+
+    const crisis = nextFoodCrisis(economy.foodCrisis, {
+        shortage: ledger.foodShortage,
+        demand: ledger.foodDemand,
+        tick: state.tick,
+        year: state.year
+    });
+    economy.foodCrisis = crisis;
+    ledger.foodCrisis = { ...crisis, events: [...crisis.events] };
+    if (crisis.lastEvent && crisis.lastEvent.tick === state.tick) {
+        addLog("HUNGER EVENT — " + String(crisis.lastEvent.kind).toUpperCase().replaceAll("-", " ") +
+            " · " + Math.round(crisis.lastEvent.shortage * 100) / 100 + " FOOD MISSING", "#e6a15a", "famine");
+    }
+    // A sustained famine removes one resident at a time. The record goes through
+    // the normal mortality archive, so a death is inspectable and not a silent
+    // population clamp. The long gap keeps famine from deleting a village in a
+    // handful of ledgers.
+    if (crisis.severity >= 0.8 && crisis.consecutiveShortages >= 3 && state.tick - crisis.lastPopulationLossTick >= 60) {
+        const victim = state.entities
+            .filter(entity => !entity.dead && entity.type === TYPE.VILLAGER && !entity.isKing && entity.personId)
+            .sort((a, b) => String(a.personId).localeCompare(String(b.personId)))[0];
+        if (victim) {
+            recordNaturalDeath(victim, "hunger");
+            crisis.populationLoss++;
+            crisis.lastPopulationLossTick = state.tick;
+            economy.foodCrisis = crisis;
+            addLog("FAMINE TAKES A RESIDENT — " + (victim.person?.name || "A household member"), "#d98c78", "famine");
+        }
+    }
+
     if (edicts.morale !== 0) {
         state.morale = Math.max(0, Math.min(100, state.morale + edicts.morale * DAYS_PER_LEDGER));
     }
     if (ledger.foodShortage > 0) {
-        state.morale = Math.max(0, state.morale - Math.min(2.5, 0.35 + ledger.foodShortage * 0.12));
+        const hungerShock = 0.35 + ledger.foodShortage * 0.12 + crisis.severity * 0.8;
+        state.morale = Math.max(0, state.morale - Math.min(3.5, hungerShock));
     }
+    const debtPressure = getDebtPressure();
+    if (debtPressure > 0) state.morale = Math.max(0, state.morale - (0.1 + debtPressure * 0.5));
     if (ledger.unpaidWages > 0 || ledger.unpaidUpkeep > 0 || ledger.unpaidFurniture > 0) {
         state.morale = Math.max(0, state.morale - 0.2);
     }
 
     const totals = state.economy || (state.economy = {});
     totals.daysElapsed = (totals.daysElapsed || 0) + DAYS_PER_LEDGER;
-    for (const key of ["foodConsumed", "taxesCollected", "wagesPaid", "upkeepPaid", "furnitureUpkeepPaid", "roadUpkeepAssessed", "unpaidWages", "unpaidUpkeep", "unpaidFurniture"]) {
-        totals[key] = (totals[key] || 0) + ledger[key];
+    for (const key of ["foodConsumed", "foodSpoiled", "foodInflow", "taxesCollected", "wagesPaid", "upkeepPaid", "furnitureUpkeepPaid", "roadUpkeepAssessed", "unpaidWages", "unpaidUpkeep", "unpaidFurniture", "debtAdded", "debtPaid", "debtInterest"]) {
+        totals[key] = (totals[key] || 0) + Number(ledger[key] || 0);
     }
     totals.lastLedger = ledger;
+    totals.foodStorageCapacity = storageCapacity;
     totals.population = workforce.population;
     totals.employed = workforce.employed;
     totals.unemployed = workforce.unemployed;
@@ -239,6 +336,16 @@ export function updateEconomy() {
         foodDemand: Number(ledger.foodDemand) || 0,
         foodConsumed: Number(ledger.foodConsumed) || 0,
         foodShortage: Number(ledger.foodShortage) || 0,
+        foodInflow: Number(ledger.foodInflow) || 0,
+        foodSpoiled: Number(ledger.foodSpoiled) || 0,
+        foodBalance: Number(ledger.foodBalance) || 0,
+        storageCapacity: Number(ledger.storageCapacity) || 0,
+        debt: Number(ledger.debt) || 0,
+        debtInterest: Number(ledger.debtInterest) || 0,
+        crisisSeverity: Number(crisis.severity) || 0,
+        taxRate: Number(ledger.taxRate) || 0,
+        households: foodInputs.households,
+        livestock: foodInputs.livestock,
         population: workforce.population,
         employed: workforce.employed
     });

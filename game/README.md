@@ -23,6 +23,8 @@
 14. [Crown supply](docs/CROWN_SUPPLY.md) — grain contracts including the war granary, seasonal deliveries, commissary barter, paid waterworks, stone-house density, farm subsistence and garrison pay in kind, with the v3.13.1 journey measurements.
 15. [Deep playtest 3.13.4](docs/DEEP_PLAYTEST_3.13.4.md) — shared-simulation performance: four 100-year seeds, the full 4 × 3 matrix, exact caches, measured tick costs and remaining limits.
 16. [Deep playtest 3.13.3](docs/DEEP_PLAYTEST_3.13.3.md) — the previous seed-robust living-realm pass, four seeds × three playstyles over 25 years and the mature-realm immigration/relief record.
+17. [AI Living Chronicle](docs/AI_CHRONICLE.md) — optional Atelier books, artifacts, conversations and contacts; server-side Z.ai proxy, deterministic offline fallback, schema-11 saves and verification limits.
+18. [Living events and the chronicle timeline](docs/MICRO_EVENTS.md) — 50 weighted procedural micro-events, existing world-event bridge, 2,400-page time scrubber, centre notices, bounded effects and schema-11 migration.
 
 ## Development rules
 

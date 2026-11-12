@@ -4,6 +4,7 @@ import { state } from "../core/state.js";
 import { getPopulationSnapshot, filterPopulationCitizens, CROWN_HOUSEHOLD_ID } from "../systems/population-register.js";
 import { getPopulationGrowthGate, getPopulationGrowthAllowance } from "../systems/population.js";
 import { getCrownReliefOffer } from "../systems/crown-relief.js";
+import { renderAiContactSummary } from "./ai-chronicle-panel.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -96,7 +97,8 @@ export function renderPopulationPanel() {
     }
     const snapshot = getPopulationSnapshot();
     const visible = filterPopulationCitizens(snapshot.citizens, populationFilter, populationQuery);
-    const shown = visible.slice(0, 160);
+    const narrow = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+    const shown = visible.slice(0, narrow ? 3 : 160);
     const byId = new Map(snapshot.citizens.map(citizen => [citizen.id, citizen]));
     const filters = [
         ["all", "ALL"], ["children", "CHILDREN"], ["adults", "ADULTS"], ["elders", "ELDERS"],
@@ -107,13 +109,15 @@ export function renderPopulationPanel() {
         '<button type="button" class="population-filter' + (id === populationFilter ? " is-active" : "") + '" data-population-filter="' + esc(id) + '" aria-pressed="' + (id === populationFilter) + '">' + esc(label) + '</button>'
     ).join("");
     const citizens = shown.map(citizenRow).join("");
-    const households = snapshot.households.slice(0, 120).map(household => householdRow(household, byId)).join("");
+    const householdLimit = narrow ? 2 : 120;
+    const households = snapshot.households.slice(0, householdLimit).map(household => householdRow(household, byId)).join("");
     const effects = snapshot.modifiers;
     return intro("THE LIVING REALM", "People, households & livelihoods", "Every named resident has a household, a profession, a faith, a talent and a civic life. Births, maturation, work, partnership, illness, ageing, death and migration are resolved once per year from these same records; the economy, politics and garrison read the result.") +
         '<div id="population-overview" class="command-summary"><div><small>CITIZENS</small><strong>' + number(snapshot.population) + '</strong></div><div><small>HOUSEHOLDS</small><strong>' + number(snapshot.households.length) + '</strong></div><div><small>AVERAGE AGE</small><strong>' + snapshot.avgAge + '</strong></div><div><small>EMPLOYED</small><strong>' + number(snapshot.employed) + ' / ' + number(snapshot.civilians) + '</strong></div><div><small>LOYALTY</small><strong>' + snapshot.avgLoyalty + '</strong></div><div><small>HAPPINESS</small><strong>' + snapshot.avgHappiness + '</strong></div><div><small>BIRTHS</small><strong>' + number(snapshot.births) + '</strong></div><div><small>DEATHS</small><strong>' + number(snapshot.deaths) + '</strong></div></div>' +
         growthGateNote() + '<div class="population-effects"><span>TAX YIELD<b>×' + amount(effects.taxEfficiency) + '</b></span><span>BUILDING OUTPUT<b>×' + amount(effects.productivity) + '</b></span><span>LEGITIMACY PRESSURE<b>' + (effects.legitimacyPressure >= 0 ? "+" : "") + amount(effects.legitimacyPressure) + '</b></span><span>SOLDIER QUALITY<b>×' + amount(effects.militaryQuality) + '</b></span><span>HOUSEHOLD WEALTH<b>' + amount(snapshot.wealth) + ' GOLD</b></span><span>AVG TALENT<b>' + snapshot.avgTalent + '</b></span></div>' +
         '<p class="command-note">Annual census year ' + (snapshot.lastCensusYear || "—") + ' · ' + (snapshot.civilians || 0) + ' civilians + ' + (snapshot.soldiers || 0) + ' soldiers · ' + number(snapshot.unhoused) + ' unhoused · ' + number(snapshot.emigration) + ' departures recorded. The panel updates as the simulation advances; no value is forecast or synthesized.</p>' +
         '<div class="command-section-title">CITIZEN REGISTER · ' + number(snapshot.population) + ' RECORDED</div><div id="population-filter-bar" class="population-filter-bar">' + filterBar + '</div><div class="command-inline"><input id="population-search" type="search" value="' + esc(populationQuery) + '" placeholder="Search name, profession, household, faith…" aria-label="Search the citizen register"><span class="command-note">' + visible.length + ' matching · showing ' + shown.length + '</span></div><div id="population-citizen-list" class="population-citizen-list">' + (citizens || '<p class="command-note">No citizen matches this filter.</p>') + '</div>' +
-        '<div class="command-section-title">HOUSEHOLDS · ' + number(snapshot.households.length) + ' RECORDED</div><div id="population-household-list" class="population-household-list">' + (households || '<p class="command-note">No household has been established yet. A campaign starts with its founding cottages.</p>') + '</div>' +
-        '<p class="command-note">Household wealth accumulates from employed members and their vocational talent, then is shared by the household. Loyalty and happiness feed the tax yield, political legitimacy and garrison quality. Departures happen only in a collapsing, hungry realm.</p>';
+        '<div class="command-section-title">HOUSEHOLDS · ' + number(snapshot.households.length) + ' RECORDED' + (snapshot.households.length > householdLimit ? ' · SHOWING ' + householdLimit : '') + '</div><div id="population-household-list" class="population-household-list">' + (households || '<p class="command-note">No household has been established yet. A campaign starts with its founding cottages.</p>') + '</div>' +
+        '<p class="command-note">Household wealth accumulates from employed members and their vocational talent, then is shared by the household. Loyalty and happiness feed the tax yield, political legitimacy and garrison quality. Departures happen only in a collapsing, hungry realm.</p>' +
+        renderAiContactSummary();
 }

@@ -70,6 +70,8 @@ const JOB_MAP = [
     { building: TYPE.WAREHOUSE, job: "hauler" },
     { building: TYPE.CLINIC,  job: "healer" },
     { building: TYPE.MARKET,   job: "merchant" },
+    { building: TYPE.SMITHY,   job: "smith" },
+    { building: TYPE.SCRIPTORIUM, job: "scribe" },
 ];
 
 // ═══════════════════════════════════════════════════════════════

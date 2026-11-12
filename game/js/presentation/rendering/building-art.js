@@ -45,6 +45,8 @@ export const REBUILD_COST = {
     [TYPE.BREWERY]: { wood: 26, stone: 12, gold: 6 },
     [TYPE.GUILDHALL]: { wood: 32, stone: 22, gold: 12 },
     [TYPE.WATCHHOUSE]: { wood: 22, stone: 24, gold: 5 },
+    [TYPE.SMITHY]: { wood: 36, stone: 24, gold: 12 },
+    [TYPE.SCRIPTORIUM]: { wood: 30, stone: 18, gold: 10 },
 };
 
 export const INTERIOR_ITEM_IDS = ['bed', 'table', 'chair', 'shelf', 'hearth', 'rug', 'statue', 'candle'];
@@ -92,6 +94,8 @@ const DEFAULT_INTERIOR = {
     [TYPE.BREWERY]:  { bed: 0, table: 1, chair: 2, shelf: 4, hearth: 2, rug: 0, statue: 0, candle: 2 },
     [TYPE.GUILDHALL]:{ bed: 0, table: 3, chair: 6, shelf: 4, hearth: 1, rug: 2, statue: 1, candle: 4 },
     [TYPE.WATCHHOUSE]: { bed: 2, table: 1, chair: 2, shelf: 2, hearth: 1, rug: 0, statue: 0, candle: 2 },
+    [TYPE.SMITHY]: { bed: 0, table: 2, chair: 1, shelf: 3, hearth: 2, rug: 0, statue: 0, candle: 2 },
+    [TYPE.SCRIPTORIUM]: { bed: 0, table: 4, chair: 4, shelf: 6, hearth: 1, rug: 1, statue: 0, candle: 3 },
 };
 
 export function defaultInterior(type) {
@@ -146,6 +150,8 @@ const TYPE_NAMES = {
     [TYPE.BREWERY]: 'BREWERY',
     [TYPE.GUILDHALL]: 'GUILDHALL',
     [TYPE.WATCHHOUSE]: 'WATCHHOUSE',
+    [TYPE.SMITHY]: 'SMITHY',
+    [TYPE.SCRIPTORIUM]: 'SCRIPTORIUM',
 };
 
 const ROOF_STYLES = {
@@ -183,6 +189,8 @@ const ROOF_STYLES = {
     [TYPE.BREWERY]:  { roof: '#a9753f', wall: '#d7bd91', trim: '#704525' },
     [TYPE.GUILDHALL]:{ roof: '#7d5a3d', wall: '#d5c29c', trim: '#9b733f' },
     [TYPE.WATCHHOUSE]: { roof: '#5e6b61', wall: '#c2c1ad', trim: '#4c5b50' },
+    [TYPE.SMITHY]: { roof: '#6a4932', wall: '#cbb38e', trim: '#8e3a2c' },
+    [TYPE.SCRIPTORIUM]: { roof: '#7b6270', wall: '#ded0b8', trim: '#6f4c30' },
 };
 
 function sizeOf(e) {
@@ -278,6 +286,8 @@ function drawRooftopPlan(ctx, box) {
         case TYPE.BREWERY: drawSawmill(ctx, box); break;
         case TYPE.GUILDHALL: drawKeep(ctx, box); break;
         case TYPE.WATCHHOUSE: drawTower(ctx, box); break;
+        case TYPE.SMITHY: drawSmithy(ctx, box); break;
+        case TYPE.SCRIPTORIUM: drawScriptorium(ctx, box); break;
         default: drawCottage(ctx, box); break;
     }
     drawDoor(ctx, box);
@@ -382,6 +392,46 @@ const drawSawmill = (ctx, box) => drawLumber(ctx, box);
 const drawBakery = (ctx, box) => drawTavern(ctx, box);
 const drawMason = (ctx, box) => drawQuarry(ctx, box);
 const drawForester = (ctx, box) => drawLumber(ctx, box);
+
+function drawSmithy(ctx, box) {
+    const { scale, tick } = box;
+    const { rx, ry, rw, rh } = baseBuild(ctx, box, 0.16);
+    // A squat chimney and a forge glow make the workshop legible from above.
+    ctx.fillStyle = '#5a4530';
+    ctx.fillRect(rx + rw * 0.68, ry + rh * 0.04, rw * 0.12, rh * 0.34);
+    ctx.fillStyle = `rgba(246,164,66,${0.55 + Math.sin(tick * 0.12) * 0.15})`;
+    ctx.beginPath();
+    ctx.arc(rx + rw * 0.3, ry + rh * 0.58, Math.min(rw, rh) * 0.17, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#4b4540';
+    ctx.fillRect(rx + rw * 0.42, ry + rh * 0.55, rw * 0.24, rh * 0.18);
+    ctx.fillStyle = '#b9b4a8';
+    ctx.fillRect(rx + rw * 0.48, ry + rh * 0.51, rw * 0.12, rh * 0.08);
+    ctx.strokeStyle = 'rgba(50,35,22,0.65)';
+    ctx.lineWidth = Math.max(1, 1.2 * scale);
+    ctx.strokeRect(rx + rw * 0.42, ry + rh * 0.55, rw * 0.24, rh * 0.18);
+}
+
+function drawScriptorium(ctx, box) {
+    const { scale, tick } = box;
+    const { rx, ry, rw, rh } = baseBuild(ctx, box, 0.12);
+    ctx.fillStyle = '#e4d6b9';
+    ctx.fillRect(rx + rw * 0.32, ry + rh * 0.42, rw * 0.36, rh * 0.2);
+    ctx.strokeStyle = '#6f4c30';
+    ctx.lineWidth = Math.max(1, 1.1 * scale);
+    ctx.strokeRect(rx + rw * 0.32, ry + rh * 0.42, rw * 0.36, rh * 0.2);
+    ctx.beginPath();
+    ctx.moveTo(rx + rw * 0.5, ry + rh * 0.42);
+    ctx.lineTo(rx + rw * 0.5, ry + rh * 0.62);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(226,186,92,${0.6 + Math.sin(tick * 0.08) * 0.2})`;
+    ctx.beginPath();
+    ctx.arc(rx + rw * 0.78, ry + rh * 0.34, Math.min(rw, rh) * 0.07, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#6f4c30';
+    ctx.fillRect(rx + rw * 0.56, ry + rh * 0.55, rw * 0.02, rh * 0.16);
+}
+
 
 function baseBuild(ctx, box, roofInset = 0.12) {
     const { left, top, w, h, style, scale } = box;

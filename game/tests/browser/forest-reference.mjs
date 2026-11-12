@@ -265,6 +265,18 @@ try {
                     water: tile.stand.tropical.water,
                     canopyStrata: tile.stand.tropical.canopyStrata,
                 } : null,
+                jungle: tile.stand.jungle ? {
+                    summary: tile.stand.jungle.summary,
+                    type: tile.stand.jungle.type,
+                    points: tile.stand.jungle.points,
+                    features: tile.stand.jungle.features,
+                    layers: tile.stand.jungle.layers,
+                    landscape: tile.stand.jungle.landscape,
+                    navigation: tile.stand.jungle.navigation,
+                    resources: tile.stand.jungle.resources,
+                    fauna: tile.stand.jungle.fauna,
+                    hazards: tile.stand.jungle.hazards,
+                } : null,
                 mixtureLabel: tile.stand.mixture?.label || null,
                 mixturePattern: tile.stand.mixture?.pattern || null,
                 broadleafShare: Number((tile.stand.mixture?.broadleafShare || 0).toFixed(3)),
@@ -374,6 +386,47 @@ try {
         console.log("Captured seasonal forest day " + day);
     }
 
+    // Jungle interior detail. The 0.95x formation sheet is deliberately a
+    // landscape view where individual thickets are only a few pixels wide.
+    // This fourth zoom band makes the 1.2.5 understory readable: dense walls,
+    // bamboo, thorns, vines, trails, ravines and hidden water.
+    let jungleInterior = null;
+    if (tropicalMode) {
+        const jungleTiles = Object.values(scan.found).filter(tile => tile.jungle);
+        const priority = tile => (tile.jungle.landscape?.waterfall ? 40 : 0)
+            + (tile.jungle.landscape?.ravine ? 30 : 0)
+            + (tile.jungle.features?.["1.2.5.16"] || 0) * 20
+            + (tile.jungle.features?.["1.2.5.14"] || 0) * 12
+            + (tile.jungle.features?.["1.2.5.1"] || 0) * 8;
+        const tile = jungleTiles.sort((a, b) => priority(b) - priority(a))[0];
+        if (tile) {
+            const missesBeforeMove = await terrainCacheMisses(page);
+            await page.evaluate(async ({ x, y, day }) => {
+                const { state } = await import("./js/core/state.js");
+                const { setZoomLevel, clampCamera } = await import("./js/presentation/camera.js");
+                const { CELL } = await import("./js/core/config.js");
+                state.isPaused = true;
+                state.weather = "clear";
+                state.timeOfDay = 12;
+                state.dayOfYear = day;
+                state.seasonIndex = 1;
+                setZoomLevel(4);
+                state.zoom = state.zoomTarget;
+                state.zoomLevel = 4;
+                state.zoomAnchor = null;
+                state.camera.x = (x + 0.5) * CELL * state.zoom - state.canvas.width / 2;
+                state.camera.y = (y + 0.5) * CELL * state.zoom - state.canvas.height / 2;
+                clampCamera();
+            }, { x: tile.x, y: tile.y, day: 150 });
+            await waitForDecorationOverlay(page, missesBeforeMove);
+            const buffer = await page.locator("#canvas-wrapper").screenshot({ type: "png", animations: "disabled" });
+            const junglePath = path.join(outputDir, "jungle-interior.png");
+            await fs.writeFile(junglePath, buffer);
+            jungleInterior = { tile: { x: tile.x, y: tile.y, label: tile.label, type: tile.type }, path: "jungle-interior.png" };
+            console.log("Captured jungle interior at " + tile.x + ", " + tile.y);
+        }
+    }
+
     // The formation sheets prove that the new species occur in real stands,
     // but a stand mixes several trees. This plate draws every conifer through
     // the production drawConifer() path with identical seed, day and scale, so
@@ -390,7 +443,7 @@ try {
     await fs.writeFile(formationPath, formationSheet);
 
     const seasonSheet = await renderSeasonSheet(context, seasonal, {
-        seed, renderer: webgl.renderer, tile: seasonalTile, conifer: coniferMode, mixed: mixedMode, tropical: tropicalMode,
+        seed, renderer: webgl.renderer, tile: seasonalTile, jungleInterior, conifer: coniferMode, mixed: mixedMode, tropical: tropicalMode,
         generatedAt: new Date().toISOString(),
     });
     const seasonPath = path.join(outputDir, outputNames.seasonal);

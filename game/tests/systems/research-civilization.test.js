@@ -199,7 +199,7 @@ test("schema 7 saves identity, research and legacy and validates each block", ()
     state.research.reserve = 100;
     startResearch("masonry");
     recordLegacy("realm", "A recorded deed");
-    assert.equal(SAVE_SCHEMA_VERSION, 8, "schema 8 keeps the civilization layer and adds the crafted item archive");
+    assert.equal(SAVE_SCHEMA_VERSION, 11, "schema 11 keeps the civilization layer and adds the living event timeline");
 
     const snapshot = {
         worldSeed: 9917,
@@ -218,15 +218,17 @@ test("schema 7 saves identity, research and legacy and validates each block", ()
 
 test("the save, load, simulation and UI source contracts include the civilization layer", async () => {
     const main = await readFile(new URL("../../js/app/main.js", import.meta.url), "utf8");
+    const saveRuntime = (await readFile(new URL("../../js/core/save-runtime.js", import.meta.url), "utf8")).replace(/\s+/g, "");
+    const migrations = await readFile(new URL("../../js/core/save-migrations.js", import.meta.url), "utf8");
     const validation = await readFile(new URL("../../js/core/save-validation.js", import.meta.url), "utf8");
     const html = await readFile(new URL("../../index.html", import.meta.url), "utf8");
     const ui = await readFile(new URL("../../js/presentation/management-ui.js", import.meta.url), "utf8");
     const simulation = await readFile(new URL("../../js/simulation/simulation.js", import.meta.url), "utf8");
-    assert.ok(main.includes("identity:JSON.parse") && main.includes("research:JSON.parse") && main.includes("legacy:JSON.parse"), "the snapshot must persist all three blocks");
-    assert.ok(main.includes("state.identity=normalizeIdentity") && main.includes("state.research=normalizeResearchState") && main.includes("state.legacy=normalizeLegacyState"), "loading must normalize all three blocks");
-    assert.ok(main.includes("6:snapshot=>") && main.includes("applyIdentityForNewRealm"), "schema 6 saves must migrate and a new realm must record its identity");
+    assert.ok(saveRuntime.includes("identity:JSON.parse") && saveRuntime.includes("research:JSON.parse") && saveRuntime.includes("legacy:JSON.parse"), "the snapshot must persist all three blocks");
+    assert.ok(saveRuntime.includes("state.identity=normalizeIdentity") && saveRuntime.includes("state.research=normalizeResearchState") && saveRuntime.includes("state.legacy=normalizeLegacyState"), "loading must normalize all three blocks");
+    assert.ok(migrations.includes("6:snapshot=>") && main.includes("applyIdentityForNewRealm"), "schema 6 saves must migrate and a new realm must record its identity");
     assert.ok(validation.includes("validateIdentity") && validation.includes("validateResearchState") && validation.includes("validateLegacyState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 21, "the command deck must expose twenty-one tabs, including the city charter and item lexicon");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 22, "the command deck must expose twenty-two tabs, including the Atelier, city charter and item lexicon");
     assert.ok(html.includes('data-command-tab="research"') && html.includes('id="realm-culture"'), "the founding form and research tab must exist");
     assert.ok(ui.includes("research:researchPanel") && ui.includes("research-start") && ui.includes("research-appoint"), "the research panel and its actions must be wired");
     assert.ok(ui.includes("getLegacySnapshot()") && ui.includes("LEGACY ·"), "the chronicle must show the legacy record");

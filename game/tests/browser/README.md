@@ -15,9 +15,16 @@ npm run test:e2e
 npm run test:forester-stewardship
 npm run test:forester-stewardship-longrun
 npm run test:forest-stewardship-ui
+npm run test:jungle-raid
 ```
 
-The visual reference, dense-forest occlusion proof and full-year audit are separate, explicit runs:
+`test:jungle-raid` starts a real tropical realm, recruits local levies, launches the
+production war front and plays the complete raid through `updateSimulation()`. It
+verifies ambush, supply attrition, cover and the local guerrilla bonus against the
+actual browser combat values, and writes `artifacts/jungle-raid/jungle-raid.json`.
+
+`test:jungle-proof` is the broader jungle interior proof. The visual reference,
+dense-forest occlusion proof and full-year audit are separate, explicit runs:
 
 ```sh
 npm run test:terrain-reference

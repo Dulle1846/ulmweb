@@ -17,9 +17,12 @@ import { validateIdentity } from "../systems/identity.js";
 import { validateResearchState } from "../systems/research.js";
 import { validateLegacyState } from "../systems/legacy.js";
 import { validatePopulationState } from "../systems/population-register.js";
+import { validateAiChronicleState } from "./ai-chronicle-state.js";
+import { validateEventTimelineState } from "./event-timeline.js";
 import { validateCraftedItems } from "../systems/item-lexicon.js";
+import { resolveWorldDimensions } from "../world/terrain-model.js";
 
-export const SAVE_SCHEMA_VERSION = 8;
+export const SAVE_SCHEMA_VERSION = 11;
 
 const RESOURCE_KEYS = Object.freeze(["wood", "stone", "gold", "food"]);
 const RESOURCE_KEY_SET = new Set(RESOURCE_KEYS);
@@ -177,7 +180,19 @@ export function validateSaveSnapshot(snapshot) {
             }
         }
     }
-    if (snapshot.resourceGeography !== undefined) validateDomainSnapshot(snapshot.resourceGeography, "resourceGeography", validateResourceGeographySnapshot);
+    if (snapshot.resourceGeography !== undefined) {
+        // Validation runs before restoreSaveSnapshot calls initWorld. Derive the
+        // cell count from the save's world options instead of the currently
+        // loaded world, whose size can differ (or be the initial 160×160).
+        let savedCellCount = null;
+        try {
+            const dimensions = resolveWorldDimensions(snapshot.worldOptions || {});
+            const cells = Number(dimensions?.w) * Number(dimensions?.h);
+            if (Number.isSafeInteger(cells) && cells > 0) savedCellCount = cells;
+        } catch { /* fall back to the live world count */ }
+        validateDomainSnapshot(snapshot.resourceGeography, "resourceGeography",
+            value => validateResourceGeographySnapshot(value, { count: savedCellCount }));
+    }
     if (snapshot.forestFauna !== undefined) validateDomainSnapshot(snapshot.forestFauna, "forestFauna", validateForestFaunaSnapshot);
     if (snapshot.forestGathering !== undefined) validateDomainSnapshot(snapshot.forestGathering, "forestGathering", validateForestGatheringSnapshot);
     if (snapshot.forestSuccession !== undefined) validateDomainSnapshot(snapshot.forestSuccession, "forestSuccession", validateForestSuccessionSnapshot);
@@ -211,6 +226,12 @@ export function validateSaveSnapshot(snapshot) {
     }
     if (snapshot.population !== undefined && snapshot.population !== null) {
         validateDomainSnapshot(snapshot.population, "population", validatePopulationState);
+    }
+    if (snapshot.aiChronicle !== undefined && snapshot.aiChronicle !== null) {
+        validateDomainSnapshot(snapshot.aiChronicle, "aiChronicle", validateAiChronicleState);
+    }
+    if (snapshot.eventTimeline !== undefined && snapshot.eventTimeline !== null) {
+        validateDomainSnapshot(snapshot.eventTimeline, "eventTimeline", validateEventTimelineState);
     }
     if (snapshot.craftedItems !== undefined) {
         try {

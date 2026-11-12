@@ -23,7 +23,7 @@ function startRealm(){
 test("government normalization bounds malformed settings and keeps a supported constitution",()=>{
  resetState();state.government={form:"unknown",taxRate:999,councilSeats:0,history:"bad"};
  const g=normalizeGovernment();
- assert.equal(g.form,"feudal");assert.equal(g.taxRate,35);assert.equal(g.councilSeats,3);assert.deepEqual(g.history,[]);
+ assert.equal(g.form,"feudal");assert.equal(g.taxRate,30);assert.equal(g.councilSeats,3);assert.deepEqual(g.history,[]);
 });
 
 test("changing government costs treasury and changes political support",()=>{

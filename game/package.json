@@ -15,6 +15,8 @@
     "test:conifer-reference": "node tests/browser/conifer-reference.mjs",
     "test:mixed-reference": "FOREST_REFERENCE_PROFILE=mixed node tests/browser/forest-reference.mjs",
     "test:tropical-reference": "FOREST_REFERENCE_PROFILE=tropical node tests/browser/forest-reference.mjs",
+    "test:jungle-proof": "node tests/browser/jungle-proof.mjs && node scripts/sync-jungle-doc.mjs",
+    "test:jungle-raid": "node tests/browser/jungle-raid.mjs",
     "test:forest-occlusion": "node tests/browser/forest-occlusion.mjs",
     "test:forest-detail": "node tests/browser/forest-detail-reference.mjs",
     "test:terrain-stability": "node tests/browser/terrain-stability.mjs",
@@ -22,13 +24,15 @@
     "test:atmosphere-reference": "node tests/browser/daylight-reference.mjs",
     "test:forester-stewardship": "node tests/browser/forester-stewardship.mjs",
     "test:forester-stewardship-longrun": "node tests/browser/forester-stewardship-longrun.mjs",
-    "test:forest-stewardship-ui": "node tests/browser/forest-stewardship-ui.mjs",        "test:playability": "node tests/browser/playability-audit.mjs",
-        "test:core-loop": "node tests/browser/core-loop-audit.mjs",
+    "test:forest-stewardship-ui": "node tests/browser/forest-stewardship-ui.mjs",
+    "test:playability": "node tests/browser/playability-audit.mjs",
+    "test:core-loop": "node tests/browser/core-loop-audit.mjs",
     "test:chronicles": "node tests/browser/chronicle-audit.mjs",
     "test:campaign": "node scripts/long-campaign.mjs",
     "test:campaign:players": "node scripts/player-profiles.mjs",
     "test:colossal-growth": "node --expose-gc scripts/colossal-decade-growth.mjs",
-    "test:campaign:browser": "node tests/browser/long-campaign.mjs"
+    "test:campaign:browser": "node tests/browser/long-campaign.mjs",
+    "test:jungle-understory": "JUNGLE_PROOF_ZOOM=2.4 JUNGLE_PROOF_OUT=artifacts/jungle-understory-2.4 node tests/browser/jungle-proof.mjs"
   },
   "engines": {
     "node": ">=20"

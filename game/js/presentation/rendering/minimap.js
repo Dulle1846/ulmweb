@@ -6,23 +6,39 @@ import { WORLD_W, WORLD_H, CELL, BIOME } from '../../core/config.js';
 import { TYPE } from '../../core/types.js';
 import { state } from '../../core/state.js';
 
-export function updateMinimap() {
-    const mctx = state.minimapCtx;
-    if (!mctx) return;
+// The terrain half of the minimap only changes when the world or explored
+// mask changes. Redrawing ~7,700 sampled cells every 400 ms was real main-
+// thread work that sat outside the world-draw timer and could delay a frame.
+// Keep that static half in a small offscreen cache; entities and the camera
+// rectangle are still redrawn on every minimap tick.
+let minimapTerrainCanvas = null;
+let minimapTerrainCtx = null;
+let minimapTerrainKey = "";
 
+function minimapTerrain(W, H, scaleX, scaleY, sea, step) {
     const mw = 140;
     const mh = 140;
-
+    if (!minimapTerrainCanvas) {
+        minimapTerrainCanvas = document.createElement('canvas');
+        minimapTerrainCanvas.width = mw;
+        minimapTerrainCanvas.height = mh;
+        minimapTerrainCtx = minimapTerrainCanvas.getContext('2d', { alpha: false });
+        minimapTerrainKey = "";
+    }
+    const key = [
+        W, H, step, sea,
+        Number(state.terrainVersion) || 0,
+        Number(state.exploredRevision) || 0,
+        Number(state.worldSeed) || 0,
+        Number(state.terrainResolution) || 0,
+        Number(state.terrainPixW) || 0,
+        Number(state.terrainPixH) || 0,
+    ].join("|");
+    if (key === minimapTerrainKey) return minimapTerrainCanvas;
+    minimapTerrainKey = key;
+    const mctx = minimapTerrainCtx;
     mctx.fillStyle = '#052e16';
     mctx.fillRect(0, 0, mw, mh);
-
-    const W = Number(state.worldW) || WORLD_W;
-    const H = Number(state.worldH) || WORLD_H;
-    const scaleX = mw / W;
-    const scaleY = mh / H;
-    const sea = Number(state.seaLevel) || BIOME.SHALLOW_WATER;
-
-    const step = Math.max(2, Math.floor(Math.max(W, H) / 64));
     for (let x = 0; x < W; x += step) {
         for (let y = 0; y < H; y += step) {
             if (!state.explored[x]?.[y]) continue;
@@ -44,6 +60,22 @@ export function updateMinimap() {
             );
         }
     }
+    return minimapTerrainCanvas;
+}
+
+export function updateMinimap() {
+    const mctx = state.minimapCtx;
+    if (!mctx) return;
+
+    const mw = 140;
+    const mh = 140;
+    const W = Number(state.worldW) || WORLD_W;
+    const H = Number(state.worldH) || WORLD_H;
+    const scaleX = mw / W;
+    const scaleY = mh / H;
+    const sea = Number(state.seaLevel) || BIOME.SHALLOW_WATER;
+    const step = Math.max(2, Math.floor(Math.max(W, H) / 64));
+    mctx.drawImage(minimapTerrain(W, H, scaleX, scaleY, sea, step), 0, 0);
 
     state.entities.forEach(e => {
         if (e.dead) return;

@@ -27,9 +27,12 @@ export const GOVERNMENT_POLICIES=Object.freeze({
  roads:{label:"Royal road charter",description:"Spend 16 wood and 10 gold to support trade routes.",cost:{wood:16,gold:10},effects:{legitimacy:.8,guilds:1.8,commons:.6,nobility:.2},morale:0}
 });
 const clamp=(v,min=0,max=100)=>Math.max(min,Math.min(max,Number.isFinite(Number(v))?Number(v):0));
+export const TAX_RATE_MIN=5;
+export const TAX_RATE_MAX=30;
+export const TAX_RATE_STEP=5;
 export function normalizeGovernment(input=state.government){
  const s=input&&typeof input==="object"?input:{},form=Object.hasOwn(GOVERNMENT_FORMS,s.form)?s.form:"feudal";
- state.government={form,taxRate:clamp(s.taxRate??GOVERNMENT_FORMS[form].tax,0,35),councilSeats:Math.max(1,Math.min(12,Math.floor(Number(s.councilSeats)||3))),succession:["primogeniture","elective","designated"].includes(s.succession)?s.succession:"primogeniture",decrees:Math.max(0,Math.min(100000,Math.floor(Number(s.decrees)||0))),lastDecisionYear:Math.max(0,Math.floor(Number(s.lastDecisionYear)||0)),history:Array.isArray(s.history)?s.history.filter(x=>x&&typeof x==="object").slice(-40):[]};
+ state.government={form,taxRate:clamp(s.taxRate??GOVERNMENT_FORMS[form].tax,TAX_RATE_MIN,TAX_RATE_MAX),councilSeats:Math.max(1,Math.min(12,Math.floor(Number(s.councilSeats)||3))),succession:["primogeniture","elective","designated"].includes(s.succession)?s.succession:"primogeniture",decrees:Math.max(0,Math.min(100000,Math.floor(Number(s.decrees)||0))),lastDecisionYear:Math.max(0,Math.floor(Number(s.lastDecisionYear)||0)),lastTaxChangeYear:Math.max(0,Math.floor(Number(s.lastTaxChangeYear)||0)),history:Array.isArray(s.history)?s.history.filter(x=>x&&typeof x==="object").slice(-40):[]};
  return state.government;
 }
 export function getGovernmentModifiers(){
@@ -61,5 +64,29 @@ export function enactPolicy(id){
  applyPoliticalEffects(p.effects);state.morale=clamp((Number(state.morale)||0)+p.morale);
  g.lastDecisionYear=Math.max(1,Math.floor(Number(state.year)||1));g.decrees++;g.history.push({year:state.year||1,kind:"policy",id,label:p.label});g.history=g.history.slice(-40);
  return {ok:true,policy:p,government:g,politics:getPoliticalSnapshot()};
+}
+// Tax is a real player lever, not a label on the constitution. A rate change
+// is allowed once per year, shifts the burden onto households or the guilds,
+// and is written to the same bounded government history as a reform.
+export function setTaxRate(rate){
+ const g=normalizeGovernment();
+ const requested=Math.round(Number(rate)/TAX_RATE_STEP)*TAX_RATE_STEP;
+ const next=Math.max(TAX_RATE_MIN,Math.min(TAX_RATE_MAX,Number.isFinite(requested)?requested:g.taxRate));
+ if(next===g.taxRate)return {ok:false,reason:"already-at-this-rate"};
+ if(g.lastTaxChangeYear===state.year)return {ok:false,reason:"one-tax-change-per-year"};
+ const previous=g.taxRate;
+ const delta=next-previous;
+ g.taxRate=next;
+ g.lastTaxChangeYear=Math.max(1,Math.floor(Number(state.year)||1));
+ g.history.push({year:state.year||1,kind:"tax-rate",from:previous,to:next});
+ g.history=g.history.slice(-40);
+ // A heavier levy is felt by the commons and guilds first; a lighter one buys
+ // goodwill at the cost of the treasury. Magnitudes stay small and bounded.
+ applyPoliticalEffects({commons:delta>0?-Math.min(2,delta*0.10):Math.min(1.5,Math.abs(delta)*0.08),
+   guilds:delta>0?-Math.min(1.6,delta*0.08):Math.min(1.2,Math.abs(delta)*0.06),
+   nobility:delta>0?Math.min(0.7,delta*0.03):-Math.min(0.4,Math.abs(delta)*0.02)});
+ state.morale=clamp((Number(state.morale)||0)+(delta>0?-Math.min(1.8,delta*0.09):Math.min(1.2,Math.abs(delta)*0.05)));
+ recordReform("Tax rate "+previous+"% -> "+next+"%");
+ return {ok:true,government:g,politics:getPoliticalSnapshot(),previous,rate:next};
 }
 export function getGovernmentSnapshot(){const g=normalizeGovernment();return {...g,formDetails:GOVERNMENT_FORMS[g.form],modifiers:getGovernmentModifiers(),politics:getPoliticalSnapshot()};}

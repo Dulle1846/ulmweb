@@ -9,7 +9,8 @@ export const NEW_BUILDING_TYPES = Object.freeze([
     TYPE.TENT, TYPE.STONE_HOUSE, TYPE.WAREHOUSE, TYPE.SAWMILL, TYPE.BAKERY,
     TYPE.WELL, TYPE.MASON, TYPE.FORESTER, TYPE.CLINIC, TYPE.MARKET,
     TYPE.SHRINE, TYPE.COURT, TYPE.PRISON,
-    TYPE.TOWN_HALL, TYPE.SCHOOL, TYPE.BATHHOUSE, TYPE.BREWERY, TYPE.GUILDHALL, TYPE.WATCHHOUSE
+    TYPE.TOWN_HALL, TYPE.SCHOOL, TYPE.BATHHOUSE, TYPE.BREWERY, TYPE.GUILDHALL, TYPE.WATCHHOUSE,
+    TYPE.SMITHY, TYPE.SCRIPTORIUM
 ]);
 
 export const BUILDING_LABELS = Object.freeze({
@@ -46,7 +47,9 @@ export const BUILDING_LABELS = Object.freeze({
     [TYPE.BATHHOUSE]: "Bathhouse",
     [TYPE.BREWERY]: "Brewery",
     [TYPE.GUILDHALL]: "Guildhall",
-    [TYPE.WATCHHOUSE]: "Watchhouse"
+    [TYPE.WATCHHOUSE]: "Watchhouse",
+    [TYPE.SMITHY]: "Smithy",
+    [TYPE.SCRIPTORIUM]: "Scriptorium"
 });
 
 // Direct construction uses the same material language as the card catalogue.
@@ -85,13 +88,15 @@ export const BUILDING_COSTS = Object.freeze({
     [TYPE.BATHHOUSE]: Object.freeze({ wood: 24, stone: 28, gold: 10 }),
     [TYPE.BREWERY]: Object.freeze({ wood: 26, stone: 12, gold: 6 }),
     [TYPE.GUILDHALL]: Object.freeze({ wood: 32, stone: 22, gold: 12 }),
-    [TYPE.WATCHHOUSE]: Object.freeze({ wood: 22, stone: 24, gold: 5 })
+    [TYPE.WATCHHOUSE]: Object.freeze({ wood: 22, stone: 24, gold: 5 }),
+    [TYPE.SMITHY]: Object.freeze({ wood: 36, stone: 24, gold: 12 }),
+    [TYPE.SCRIPTORIUM]: Object.freeze({ wood: 30, stone: 18, gold: 10 })
 });
 
 export const BUILD_MENU = Object.freeze([
     Object.freeze({ id: "roads", label: "ROADS", note: "Dirt, gravel and paved routes. Roads change real travel speed and upkeep." }),
     Object.freeze({ id: "housing", label: "HOUSING", types: Object.freeze([TYPE.TENT, TYPE.HOUSE, TYPE.STONE_HOUSE]) }),
-    Object.freeze({ id: "production", label: "PRODUCTION", types: Object.freeze([TYPE.LUMBER, TYPE.SAWMILL, TYPE.FARM, TYPE.MILL, TYPE.BAKERY, TYPE.BREWERY, TYPE.QUARRY, TYPE.MASON, TYPE.GOLDMINE, TYPE.STABLE]) }),
+    Object.freeze({ id: "production", label: "PRODUCTION", types: Object.freeze([TYPE.LUMBER, TYPE.SAWMILL, TYPE.FARM, TYPE.MILL, TYPE.BAKERY, TYPE.BREWERY, TYPE.QUARRY, TYPE.MASON, TYPE.GOLDMINE, TYPE.STABLE, TYPE.SMITHY, TYPE.SCRIPTORIUM]) }),
     Object.freeze({ id: "storage", label: "STORAGE", types: Object.freeze([TYPE.WAREHOUSE]) }),
     Object.freeze({ id: "services", label: "SERVICES", types: Object.freeze([TYPE.WELL, TYPE.TAVERN, TYPE.TEMPLE, TYPE.MARKET, TYPE.CLINIC]) }),
     Object.freeze({ id: "civic", label: "CIVIC", types: Object.freeze([TYPE.TOWN_HALL, TYPE.SCHOOL, TYPE.BATHHOUSE, TYPE.GUILDHALL, TYPE.WATCHHOUSE]) }),
@@ -100,6 +105,37 @@ export const BUILD_MENU = Object.freeze([
     Object.freeze({ id: "military", label: "MILITARY", types: Object.freeze([TYPE.TOWER, TYPE.WALL, TYPE.BARRACKS]) }),
     Object.freeze({ id: "nature", label: "NATURE", types: Object.freeze([TYPE.FORESTER]) })
 ]);
+
+// Unique workshop commissions. The ordinary goods stay in the physical
+// warehouse ledger; imported iron, parchment and ink are paid for from the
+// treasury. Each record is still generated from the same stable seed as every
+// other item in the lexicon.
+export const CRAFT_RECIPES = Object.freeze({
+    [TYPE.SMITHY]: Object.freeze({
+        kind: "weapon",
+        label: "Forge a unique weapon",
+        workshop: "Royal Smithy",
+        goldCost: 3,
+        inputs: Object.freeze({ planks: 2, firewood: 2 }),
+        materials: Object.freeze([
+            Object.freeze({ id: "iron", amount: 2 }),
+            Object.freeze({ id: "planks", amount: 2 }),
+            Object.freeze({ id: "firewood", amount: 2 })
+        ])
+    }),
+    [TYPE.SCRIPTORIUM]: Object.freeze({
+        kind: "book",
+        label: "Write a unique book",
+        workshop: "Royal Scriptorium",
+        goldCost: 2,
+        inputs: Object.freeze({ planks: 1, water: 1 }),
+        materials: Object.freeze([
+            Object.freeze({ id: "parchment", amount: 3 }),
+            Object.freeze({ id: "planks", amount: 1 }),
+            Object.freeze({ id: "water", amount: 1 })
+        ])
+    })
+});
 
 export const GOODS = Object.freeze({
     logs: Object.freeze({ label: "Logs", plural: "logs" }),
@@ -147,7 +183,12 @@ export const RECIPES = Object.freeze({
     // A dug well draws groundwater and therefore works inland, unlike a
     // river-fed works. Water access still affects household service coverage.
     [TYPE.WELL]: Object.freeze({ label: "Draw water", workers: 1, output: Object.freeze({ water: 3 }), outputCapacity: 24, batch: 3 }),
-    [TYPE.FORESTER]: Object.freeze({ label: "Plant and tend the forest", workers: 2, site: "forest", output: Object.freeze({}), outputCapacity: 0, batch: 0 })
+    [TYPE.FORESTER]: Object.freeze({ label: "Plant and tend the forest", workers: 2, site: "forest", output: Object.freeze({}), outputCapacity: 0, batch: 0 }),
+    // The recipe entry gives the ordinary logistics system the input-store
+    // capacity and delivery rules for these workshops. Their unique output is
+    // written by craft-production.js, never as a bulk warehouse good.
+    [TYPE.SMITHY]: Object.freeze({ label: CRAFT_RECIPES[TYPE.SMITHY].label, workers: 1, input: CRAFT_RECIPES[TYPE.SMITHY].inputs, output: Object.freeze({}), inputCapacity: 18, outputCapacity: 0, batch: 0, unique: true }),
+    [TYPE.SCRIPTORIUM]: Object.freeze({ label: CRAFT_RECIPES[TYPE.SCRIPTORIUM].label, workers: 1, input: CRAFT_RECIPES[TYPE.SCRIPTORIUM].inputs, output: Object.freeze({}), inputCapacity: 18, outputCapacity: 0, batch: 0, unique: true })
 });
 
 export const HOUSING_TIERS = Object.freeze({

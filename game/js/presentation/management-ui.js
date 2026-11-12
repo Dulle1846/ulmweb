@@ -1,6 +1,6 @@
 // Strategy management command deck: government, politics, royal decisions, cards and economy.
 import { state } from "../core/state.js";
-import { getGovernmentSnapshot, GOVERNMENT_FORMS, GOVERNMENT_POLICIES, setGovernmentForm, enactPolicy } from "../systems/government.js";
+import { getGovernmentSnapshot, GOVERNMENT_FORMS, GOVERNMENT_POLICIES, setGovernmentForm, setTaxRate, enactPolicy } from "../systems/government.js";
 import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getCourtSnapshot, appointMinister, dismissMinister, addressFactionDemand } from "../systems/court.js";
 import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, declareWar, sueForPeace, appointEnvoy, recallEnvoy } from "../systems/diplomacy.js";
@@ -9,6 +9,7 @@ import { renderEndeavoursPanel } from "./endeavours-panel.js";
 import { startEndeavour, abandonEndeavour, setEndeavourFunding, setEndeavourOverseer } from "../systems/endeavours.js";
 import { getFamilySnapshot } from "../systems/families.js";
 import { BUILDING_WORKFORCE, getBuildingEfficiency, getWorkforceSnapshot } from "../systems/economy.js";
+import { getEconomyCycleSnapshot } from "../systems/economy-cycle.js";
 import { BUILDING_SIZE } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { CARD_DECK, drawPlayerCard, selectCard } from "../systems/cards.js";
@@ -20,6 +21,9 @@ import { suppressNearestForestDisturbance } from "../systems/forest-succession.j
 import { renderUI, cardSprite } from "./rendering/ui.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
 import { renderPopulationPanel, setPopulationFilter, setPopulationQuery, applyPopulationSearch } from "./population-panel.js";
+import { renderAiChroniclePanel, renderAiArchiveSection } from "./ai-chronicle-panel.js";
+import { renderLivingTimeline, renderLivingTimelineChunks, renderTimelineDetailCard, renderTimelineCardBatch, MAX_VISIBLE_TIMELINE_CARDS, TIMELINE_INITIAL_CARDS, TIMELINE_CARD_BATCH, focusTimelineEvent, resetTimelineView, setTimelineFilter, setTimelineYear, stepTimelineYear, clearTimelineSelection, getTimelineView } from "./event-timeline-panel.js";
+import { performAiAction } from "../systems/ai-chronicle.js";
 import { getCreatureSnapshot, summonDragon } from "../systems/creatures.js";
 import { getMilitarySnapshot, recruitVillager, trainSoldier, equipSoldier, buyHorse, mountSoldier, demobilizeSoldier } from "../systems/military.js";
 import { getHealthSnapshot, improveSanitation, appointHealer, dismissHealer, brewMedicine, treatSick, sellMedicine, setQuarantine } from "../systems/health.js";
@@ -37,10 +41,62 @@ import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.j
 import { foresterRangeSummary } from "../systems/fields.js";
 import { renderCityPanel, handleCityPanelClick } from "./city-panel.js";
 import { renderItemLexicon } from "./item-lexicon-panel.js";
-let activePanel="kingdom",dynastyStylesRequested=false,endeavourFunding=1;
+import { renderProgressive, cancelProgressiveRender } from "./progressive-render.js";
+let activePanel="kingdom",panelRevealToken=0,expandedBuildingId=null,expandedBuildingLogistics=false,dynastyStylesRequested=false,endeavourFunding=1,timelineRefreshFrame=0,timelineHydrationToken=0,chronicleProgressToken=0,chronicleSectionsToken=0,detailRefreshToken=0;
+const FRAME_WORK_BUDGET=7;
+let frameWorkQueue=[],frameWorkFrame=0;
+// At phone width the court and diplomacy selects contain the same long list of
+// named residents once per office/realm. Keep those option sets out of the
+// initial innerHTML and append them on first focus or pointer contact.
+const lazyOptionSets=new Map();
+const narrowViewport=()=>typeof window!=="undefined"&&window.matchMedia("(max-width: 640px)").matches;
+function hydrateLazySelect(select){
+ if(!select||!select.dataset.lazyOptions||select.dataset.lazyOptionsReady)return;
+ const options=lazyOptionSets.get(select.dataset.lazyOptions);
+ if(!options)return;
+ select.insertAdjacentHTML("beforeend",options);
+ select.dataset.lazyOptionsReady="1";
+}
+const CULLED_CARD_SELECTOR=[
+ ".command-policy",".command-card",".command-resource",".court-office",".court-history>div",
+ ".city-policy",".city-service-card",".city-codex-card",".population-citizen",
+ ".population-household",".building-record",".diplomacy-realm",".military-soldier",
+ ".health-healer",".creature-record",".dynasty-person",".endeavour-card",".item-lexicon__entry"
+].join(",");
+let lowEndCullObserver=null,lowEndCullFrame=0,lowEndRevealQueue=[],lowEndRevealFrame=0;
+function releaseCulledCards(){
+ lowEndRevealFrame=0;
+ const target=lowEndRevealQueue.shift();
+ if(target?.isConnected)target.classList.add("is-cv-ready");
+ if(lowEndRevealQueue.length)lowEndRevealFrame=requestAnimationFrame(releaseCulledCards);
+}
+function schedulePanelCulling(){
+ return;
+ if(!narrowViewport())return;
+ if(lowEndCullFrame)return;
+ lowEndCullFrame=requestAnimationFrame(()=>{
+  lowEndCullFrame=0;
+  const panel=$("command-panel-content");
+  if(!panel||!panel.isConnected)return;
+  lowEndCullObserver?.disconnect();
+  const targets=[...panel.querySelectorAll(CULLED_CARD_SELECTOR)].filter(element=>!element.classList.contains("is-cv-ready"));
+  if(!targets.length){lowEndCullObserver=null;return;}
+  const observer=new IntersectionObserver(entries=>{
+   for(const entry of entries){
+    if(!entry.isIntersecting)continue;
+    observer.unobserve(entry.target);
+    lowEndRevealQueue.push(entry.target);
+    if(!lowEndRevealFrame)lowEndRevealFrame=requestAnimationFrame(releaseCulledCards);
+   }
+  },{root:panel,rootMargin:"240px 0px"});
+  lowEndCullObserver=observer;
+  targets.forEach(element=>observer.observe(element));
+ });
+}
 const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const number=value=>Math.floor(Number(value)||0).toLocaleString("en-US");
-const amount=value=>Number(value||0).toLocaleString("en-US",{maximumFractionDigits:2});
+const groupNumber=value=>String(Math.floor(Number(value)||0)).replace(/\B(?=(\d{3})+(?!\d))/g,",");
+const number=value=>groupNumber(value);
+const amount=value=>{const rounded=Math.round((Number(value)||0)*100)/100;const [whole,fraction]=String(rounded).split(".");return whole.replace(/\B(?=(\d{3})+(?!\d))/g,",")+(fraction?"."+fraction:"");};
 const costLabel=cost=>Object.entries(cost||{}).filter(([,value])=>Number(value)>0).map(([key,value])=>Math.floor(Number(value))+" "+key.toUpperCase()).join(" · ");
 const BUILDING_LABELS=Object.freeze({
  [TYPE.KEEP]:"Royal Keep",[TYPE.HOUSE]:"House",[TYPE.FARM]:"Farm",[TYPE.LUMBER]:"Lumber Yard",
@@ -51,7 +107,8 @@ const BUILDING_LABELS=Object.freeze({
  [TYPE.BAKERY]:"Bakery",[TYPE.WELL]:"Well",[TYPE.MASON]:"Mason's Yard",[TYPE.FORESTER]:"Forester's Lodge",
  [TYPE.CLINIC]:"Clinic",[TYPE.MARKET]:"Market",[TYPE.SHRINE]:"Shrine",[TYPE.COURT]:"Court of Law",
  [TYPE.PRISON]:"Prison",[TYPE.TOWN_HALL]:"Town Hall",[TYPE.SCHOOL]:"School",[TYPE.BATHHOUSE]:"Bathhouse",
- [TYPE.BREWERY]:"Brewery",[TYPE.GUILDHALL]:"Guildhall",[TYPE.WATCHHOUSE]:"Watchhouse"
+ [TYPE.BREWERY]:"Brewery",[TYPE.GUILDHALL]:"Guildhall",[TYPE.WATCHHOUSE]:"Watchhouse",
+ [TYPE.SMITHY]:"Smithy",[TYPE.SCRIPTORIUM]:"Scriptorium"
 });
 function setNavigationActive(target){
  document.querySelectorAll(".realm-nav-button").forEach(button=>{
@@ -97,17 +154,20 @@ function resourceCard(key,history){
  for(const entity of state.entities){if(!entity.dead&&entity.isBuilding())counts.set(entity.type,(counts.get(entity.type)||0)+1);}
  const related=meta.buildings.map(type=>({name:CARD_DECK.find(card=>card.type===type)?.name||BUILDING_LABELS[type]||("Building "+type),count:counts.get(type)||0})).filter(item=>item.count>0);
  const ledger=state.economy?.lastLedger;
+ const cycle=getEconomyCycleSnapshot();
  let ledgerNote;
- if(key==="gold"&&ledger)ledgerNote="Latest settlement: "+amount(ledger.taxesCollected)+" gold taxes · "+amount((Number(ledger.wagesPaid)||0)+(Number(ledger.upkeepPaid)||0)+(Number(ledger.furnitureUpkeepPaid)||0))+" gold in wages and upkeep · net "+(Number(ledger.netGold)>=0?"+":"")+amount(ledger.netGold)+" gold.";
- else if(key==="food"&&ledger)ledgerNote="Latest settlement: "+amount(ledger.foodDemand)+" food demanded · "+amount(ledger.foodConsumed)+" consumed · "+amount(ledger.foodShortage)+" shortage.";
+ if(key==="gold"&&ledger)ledgerNote="Latest settlement: "+amount(ledger.taxesCollected)+" gold taxes · "+amount((Number(ledger.wagesPaid)||0)+(Number(ledger.upkeepPaid)||0)+(Number(ledger.furnitureUpkeepPaid)||0))+" gold in wages and upkeep · net "+(Number(ledger.netGold)>=0?"+":"")+amount(ledger.netGold)+" gold · debt "+amount(cycle.debt)+"G (interest "+amount(cycle.debtInterest)+"G).";
+ else if(key==="food"&&ledger)ledgerNote="Latest settlement: "+amount(ledger.foodInflow)+" gross food inflow · "+amount(ledger.foodDemand)+" demanded · "+amount(ledger.foodConsumed)+" consumed · "+amount(ledger.foodSpoiled)+" spoiled · "+amount(ledger.foodShortage)+" shortage · storage "+amount(cycle.storageCapacity)+".";
  else ledgerNote="The 20-day financial ledger does not settle "+esc(meta.unit)+"; this chart records stock at each completed settlement.";
  return '<article class="resource-detail-card" data-resource="'+esc(key)+'"><header><svg class="resource-detail-art" viewBox="0 0 64 64" aria-hidden="true"><use href="'+meta.art+'"></use></svg><div><small>ROYAL STORE</small><h4>'+esc(meta.label)+'</h4></div><div class="resource-detail-stock"><strong>'+number(stock)+'</strong><span>IN STORE</span></div></header><div class="resource-detail-stats"><div><small>CURRENT TICK FLOW</small><strong class="'+(flow>0?'is-positive':flow<0?'is-negative':'')+'">'+(flow>0?'+':'')+amount(flow)+'</strong></div><div><small>SETTLEMENT CHANGE</small><strong class="'+(delta!==null&&delta>=0?'is-positive':delta!==null?'is-negative':'')+'">'+(delta===null?'AWAITING DATA':(delta>=0?'+':'')+amount(delta))+'</strong></div><div><small>RELATED STRUCTURES</small><strong>'+related.reduce((sum,item)=>sum+item.count,0)+'</strong></div></div>'+trendChart(history,key,meta.label+" stock at settlement")+'<p class="command-note">'+ledgerNote+'</p><div class="resource-related"><span>RECORDED BUILDINGS</span>'+(related.length?related.map(item=>'<b class="resource-building-chip">'+esc(item.name)+' ×'+item.count+'</b>').join(""):'<em>No related structure is recorded.</em>')+'</div><p class="command-note">'+esc(meta.note)+'</p></article>';
 }
-function resources(){
+export function resources(){
  if(!state.hasStarted)return intro("ROYAL STORES","Awaiting its founding","Resource detail becomes active when a new campaign begins.")+'<div class="command-note">No campaign is running yet. Found a realm to read its stocks, flows and bounded settlement history.</div>';
  const history=Array.isArray(state.economy?.history)?state.economy.history:[];
+ const cycle=getEconomyCycleSnapshot();
  return intro("THE ROYAL STORES","Resource detail","Inspect every store together with its current-tick flow, the latest completed settlement and a real, bounded stock history. Charts use stored settlement points only.")+
  '<div class="command-summary"><div><small>WOOD</small><strong>'+number(state.resources.wood)+'</strong></div><div><small>STONE</small><strong>'+number(state.resources.stone)+'</strong></div><div><small>GOLD</small><strong>'+number(state.resources.gold)+'</strong></div><div><small>FOOD</small><strong>'+number(state.resources.food)+'</strong></div></div>'+
+ '<div class="command-summary"><div><small>FOOD BALANCE / LEDGER</small><strong>'+(cycle.balance>=0?'+':'')+amount(cycle.balance)+'</strong></div><div><small>STORAGE CAP</small><strong>'+number(cycle.storageCapacity)+'</strong></div><div><small>DEBT</small><strong>'+amount(cycle.debt)+'G</strong></div><div><small>CRISIS</small><strong>'+Math.round(cycle.crisis.severity*100)+'%</strong></div></div>'+
  '<div class="resource-detail-grid">'+RESOURCE_ORDER.map(key=>resourceCard(key,history)).join("")+'</div>'+
  '<p class="command-note">Stock history contains up to 24 completed 20-day settlements. The chart is intentionally blank until two settlements exist; no interpolated or invented points are drawn.</p>';
 }
@@ -130,13 +190,19 @@ function kingdom(){
 }
 function courtSection(){
  const c=getCourtSnapshot(),gold=Number(state.resources?.gold)||0;
- const offices=c.offices.map(office=>{
+ const courtLazy=narrowViewport();
+ const visibleOffices=courtLazy?c.offices.slice(0,1):c.offices;
+ const offices=visibleOffices.map(office=>{
   if(office.holder){
    const h=office.holder;
    return '<article class="court-office" data-court-office="'+esc(office.id)+'"><div class="court-office__head"><div><span class="court-office__role">'+esc(office.label)+'</span><h4>'+esc(h.name)+'</h4><p>'+esc(office.description)+'</p></div><span class="court-office__badge">'+esc(h.factionLabel)+'</span></div><div class="court-office__stats"><span>COMPETENCE<b>'+Math.round(h.competence)+'</b></span><span>LOYALTY<b>'+Math.round(h.loyalty)+'</b></span><span>INTEGRITY<b>'+Math.round(h.integrity)+'</b></span><span>SALARY<b>'+h.salary+'G</b></span></div><p class="court-office__effect">'+esc(office.effect)+' · appointed year '+h.appointedYear+'</p><div class="court-actions"><button data-command="court-dismiss" data-value="'+esc(office.id)+'">DISMISS</button></div></article>';
   }
   const options=c.candidates.map(p=>'<option value="'+esc(p.personId)+'">'+esc(p.name)+' · age '+Math.floor(p.ageYears)+' · '+esc(p.species)+' · fit '+Math.round(p.fits[office.id]||0)+'</option>').join("");
-  return '<article class="court-office court-office--vacant" data-court-office="'+esc(office.id)+'"><div class="court-office__head"><div><span class="court-office__role">'+esc(office.label)+'</span><h4>Office vacant</h4><p>'+esc(office.description)+'</p></div><span class="court-office__badge">VACANT</span></div><div class="command-inline"><select id="court-office-'+esc(office.id)+'" aria-label="Choose '+esc(office.label)+'"><option value="">Choose a resident…</option>'+options+'</select><button data-command="court-appoint" data-value="'+esc(office.id)+'"'+((gold<c.appointmentCost||!c.candidates.length)?" disabled":"")+'>APPOINT · '+c.appointmentCost+'G</button></div><p class="court-office__effect">'+esc(office.effect)+'</p></article>';
+  const optionKey="court:"+office.id;
+  if(courtLazy)lazyOptionSets.set(optionKey,options);
+  const selectOptions=courtLazy?"":options;
+  const selectLazy=courtLazy?' data-lazy-options="'+esc(optionKey)+'"':'';
+  return '<article class="court-office court-office--vacant" data-court-office="'+esc(office.id)+'"><div class="court-office__head"><div><span class="court-office__role">'+esc(office.label)+'</span><h4>Office vacant</h4><p>'+esc(office.description)+'</p></div><span class="court-office__badge">VACANT</span></div><div class="command-inline"><select id="court-office-'+esc(office.id)+'" aria-label="Choose '+esc(office.label)+'"'+selectLazy+'><option value="">Choose a resident…</option>'+selectOptions+'</select><button data-command="court-appoint" data-value="'+esc(office.id)+'"'+((gold<c.appointmentCost||!c.candidates.length)?" disabled":"")+'>APPOINT · '+c.appointmentCost+'G</button></div><p class="court-office__effect">'+esc(office.effect)+'</p></article>';
  }).join("");
  const affordable=c.demand&&Object.entries(c.demand.cost).every(([key,value])=>(Number(state.resources?.[key])||0)>=value);
  const demand=c.demand?'<article class="court-demand"><div><span class="command-ribbon">'+esc(c.demand.factionLabel.toUpperCase())+' PETITION · EXPIRES YEAR '+c.demand.expiresYear+'</span><h4>'+esc(c.demand.title)+'</h4><p>'+esc(c.demand.description)+'</p><small>'+esc(costLabel(c.demand.cost))+'</small></div><button data-command="court-demand" data-value="'+esc(c.demand.faction)+'"'+(affordable?"":" disabled")+'>GRANT PETITION</button></article>':'<p class="command-note">No petition is waiting. The next annual court session will raise one.</p>';
@@ -144,13 +210,14 @@ function courtSection(){
  const effects='<div class="court-effect-grid"><span>TAX EFFICIENCY<b>+'+Math.round((m.taxEfficiency-1)*100)+'%</b></span><span>DIPLOMATIC GAIN<b>+'+Math.round((m.diplomacyGain-1)*100)+'%</b></span><span>TRADE TERMS<b>+'+(m.tradeBonus*100).toFixed(1)+'%</b></span><span>INCIDENT REDUCTION<b>'+Math.round(m.incidentReduction*100)+'%</b></span><span>MILITARY READINESS<b>+'+Math.round((m.militaryReadiness-1)*100)+'%</b></span><span>DISEASE CONTAINMENT<b>-'+Math.round(m.healthContainment*100)+'%</b></span><span>ANNUAL LEGITIMACY<b>+'+m.legitimacyGain.toFixed(2)+'</b></span><span>CORRUPTION RESISTANCE<b>'+Math.round(m.corruptionResistance*100)+'%</b></span></div>';
  const audit=c.lastAudit?'<p class="command-note">Last audit · year '+c.lastAudit.year+' · '+c.lastAudit.paid+'/'+c.lastAudit.salaries+' gold salaries · '+c.lastAudit.corruption+' gold lost to corruption · '+c.lastAudit.vacancies+' vacancies · '+c.lastAudit.estateSavings+' gold estate savings.</p>':'<p class="command-note">No annual court audit has been completed yet.</p>';
  const history=c.history.length?'<div class="court-history">'+c.history.map(entry=>'<div><span>'+esc(String(entry.kind).toUpperCase())+' · YEAR '+entry.year+'</span><p>'+esc(entry.summary)+'</p></div>').join("")+'</div>':'<p class="command-note">No court record has been written yet.</p>';
- return '<div class="command-section-title">ROYAL COURT · '+m.officesFilled+' OF '+c.offices.length+' OFFICES FILLED</div><p class="command-note">Appoint named residents to six offices. Competence, loyalty and integrity come from their real traits, needs and relationship with the crown. Salaries and corruption settle once per year; every office changes a live system, not only a label.</p><div class="court-office-grid">'+offices+'</div><div class="command-section-title">THE ANNUAL PETITION</div>'+demand+'<div class="command-section-title">COURT EFFECTS</div>'+effects+'<div class="command-section-title">LAST AUDIT</div>'+audit+'<div class="command-section-title">COURT RECORD</div>'+history;
+ return '<div class="command-section-title">ROYAL COURT · '+m.officesFilled+' OF '+c.offices.length+' OFFICES FILLED</div><p class="command-note">Appoint named residents to six offices. Competence, loyalty and integrity come from their real traits, needs and relationship with the crown. Salaries and corruption settle once per year; every office changes a live system, not only a label.</p><div class="court-office-grid">'+offices+'</div>'+(courtLazy&&c.offices.length>visibleOffices.length?'<p class="command-note">Showing the first '+visibleOffices.length+' of '+c.offices.length+' crown offices on this screen. Salaries, vacancies and court effects still count every office.</p>':'')+'<div class="command-section-title">THE ANNUAL PETITION</div>'+demand+'<div class="command-section-title">COURT EFFECTS</div>'+effects+'<div class="command-section-title">LAST AUDIT</div>'+audit+'<div class="command-section-title">COURT RECORD</div>'+history;
 }
 function government(){
  const g=getGovernmentSnapshot(),f=GOVERNMENT_FORMS[g.form],identity=getIdentitySnapshot(),forms=Object.entries(GOVERNMENT_FORMS).map(([id,x])=>'<button class="command-choice'+(id===g.form?' is-current':'')+'" data-command="government-form" data-value="'+id+'"><strong>'+esc(x.label)+'</strong><small>Tax baseline '+x.tax+'% · Research ×'+((1+Number(x.research||0)).toFixed(2))+' · Trade ×'+((1+Number(x.trade||0)).toFixed(2))+' · Cost 20 gold</small></button>').join("");
+ const taxButtons='<div class="command-choice-grid">'+[5,10,15,20,25,30].map(rate=>'<button class="command-choice'+(rate===g.taxRate?' is-current':'')+'" data-command="government-tax" data-value="'+rate+'"'+(rate===g.taxRate?' disabled':'')+'><strong>'+rate+'%</strong><small>Assessed on employed households · one change per year</small></button>').join('')+'</div>';
  const identitySection='<div class="command-section-title">REALM IDENTITY</div><div class="command-summary"><div><small>REALM</small><strong>'+esc(identity.kingdomName)+'</strong></div><div><small>ROYAL HOUSE</small><strong>'+esc(identity.dynastyName)+'</strong></div><div><small>RULER TITLE</small><strong>'+esc(identity.rulerTitle)+'</strong></div><div><small>HERALDRY</small><strong>'+esc(identity.emblem.toUpperCase())+' ON '+esc(identity.banner.toUpperCase())+'</strong></div></div><div class="command-note"><strong>'+esc(identity.cultureDetails.label.toUpperCase())+' CULTURE</strong> · '+esc(identity.cultureDetails.description)+' · tax '+(identity.cultureDetails.tax>=0?"+":"")+Math.round(identity.cultureDetails.tax*100)+'% · trade '+(identity.cultureDetails.trade>=0?"+":"")+Math.round(identity.cultureDetails.trade*100)+'% · research '+(identity.cultureDetails.research>=0?"+":"")+Math.round(identity.cultureDetails.research*100)+'% · food demand '+Math.round(-identity.cultureDetails.food*100)+'% · legitimacy '+(identity.cultureDetails.legitimacy>=0?"+":"")+Math.round(identity.cultureDetails.legitimacy*100)+'%.</div>';
  const charterSection='<div class="command-section-title">FOUNDING CHARTER</div><div class="command-summary"><div><small>RELIGION</small><strong>'+esc(identity.religionDetails.label)+'</strong></div><div><small>TRADITION</small><strong>'+esc(identity.traditionDetails.label)+'</strong></div><div><small>LAW</small><strong>'+esc(identity.lawDetails.label)+'</strong></div><div><small>LEGITIMACY</small><strong>'+esc(identity.legitimacyDetails.label)+'</strong></div></div><div class="command-summary"><div><small>STARTING CHARTER</small><strong>'+esc(identity.foundingDetails.label)+'</strong></div><div><small>TAX</small><strong>'+((identity.modifiers.tax>=0?"+":"")+Math.round(identity.modifiers.tax*100))+'%</strong></div><div><small>TRADE</small><strong>'+((identity.modifiers.trade>=0?"+":"")+Math.round(identity.modifiers.trade*100))+'%</strong></div><div><small>RESEARCH</small><strong>'+((identity.modifiers.research>=0?"+":"")+Math.round(identity.modifiers.research*100))+'%</strong></div></div><p class="command-note">'+esc(identity.religionDetails.description)+' · '+esc(identity.traditionDetails.description)+' · '+esc(identity.lawDetails.description)+' · '+esc(identity.legitimacyDetails.description)+'</p>'+(identity.background?'<p class="command-note"><strong>FOUNDING CHRONICLE</strong><br>'+esc(identity.background)+'</p>':'')+'<p class="command-note">The starting charter added '+esc(identity.foundingDetails.description)+'</p>';
- return intro("THE CROWN & ITS INSTITUTIONS","Government","Choose how authority is organized. Changing the constitution costs 20 gold and shifts faction support. The royal court below turns those factions into named offices and annual petitions.")+identitySection+charterSection+'<div class="command-summary"><div><small>IN FORCE</small><strong>'+esc(f.label)+'</strong></div><div><small>TAX BASELINE</small><strong>'+g.taxRate+'%</strong></div><div><small>COUNCIL SEATS</small><strong>'+g.councilSeats+'</strong></div><div><small>DECREE COUNT</small><strong>'+g.decrees+'</strong></div></div><div class="command-section-title">CONSTITUTIONAL MODELS</div><div class="command-choice-grid">'+forms+'</div><div class="command-note">The six offices are now live. Ministries, lawmaking procedure and regional autonomy beyond this court remain future modules.</div>'+courtSection();
+ return intro("THE CROWN & ITS INSTITUTIONS","Government","Choose how authority is organized. Changing the constitution costs 20 gold and shifts faction support. The royal court below turns those factions into named offices and annual petitions.")+identitySection+charterSection+'<div class="command-summary"><div><small>IN FORCE</small><strong>'+esc(f.label)+'</strong></div><div><small>TAX BASELINE</small><strong>'+g.taxRate+'%</strong></div><div><small>COUNCIL SEATS</small><strong>'+g.councilSeats+'</strong></div><div><small>DECREE COUNT</small><strong>'+g.decrees+'</strong></div></div><div class="command-section-title">TAX RATE · CURRENT '+g.taxRate+'%</div><p class="command-note">The tax rate is charged against employed households at every 20-day settlement. Raising it lifts revenue but embitters the commons and guilds; lowering it buys goodwill and leaves less for wages. Last changed in year '+(g.lastTaxChangeYear||"—")+'.</p>'+taxButtons+'<div class="command-section-title">CONSTITUTIONAL MODELS</div><div class="command-choice-grid">'+forms+'</div><div class="command-note">The six offices are now live. Ministries, lawmaking procedure and regional autonomy beyond this court remain future modules.</div>'+courtSection();
 }
 function politics(){
  const p=getPoliticalSnapshot(),court=getCourtSnapshot(),f=Object.entries(p.factions).map(([k,v])=>meter(k,v)).join(""),policies=Object.entries(GOVERNMENT_POLICIES).map(([id,x])=>'<article class="command-policy"><div><strong>'+esc(x.label)+'</strong><p>'+esc(x.description)+'</p></div><button data-command="policy" data-value="'+id+'">ENACT</button></article>').join("");
@@ -160,6 +227,10 @@ function politics(){
 function diplomacy(){
  const d=getDiplomacySnapshot(),c=d.costs,gold=Number(state.resources?.gold)||0,food=Number(state.resources?.food)||0,court=getCourtSnapshot();
  const envoyOptions=court.candidates.map(p=>'<option value="'+esc(p.personId)+'">'+esc(p.name)+' · '+esc(p.species)+' · '+Math.round(p.fits.chancellor||0)+' fit</option>').join("");
+ const envoyLazy=narrowViewport();
+ if(envoyLazy)lazyOptionSets.set("envoy",envoyOptions);
+ const envoySelectOptions=envoyLazy?"":envoyOptions;
+ const envoySelectLazy=envoyLazy?' data-lazy-options="envoy"':'';
  const rows=d.realms.map(r=>{
   const actions=[];
   if(r.treaty==="war"){
@@ -178,7 +249,7 @@ function diplomacy(){
   else if(r.relation<d.thresholds.tradePact)hint="A trade pact requires 45 relation. Gifts and trade raise it. An envoy adds steady annual progress.";
   else hint="A trade pact is available. An alliance requires 70 relation. An envoy improves annual relation and trade terms.";
   const latest=Array.isArray(r.history)&&r.history[0];
-  const envoyBlock=r.envoyId?'<div class="diplomacy-envoy"><div><span>ENVOY · SKILL '+Math.round(r.envoySkill)+'</span><strong>'+esc(r.envoyName||"Unnamed envoy")+'</strong><small>Appointed year '+r.envoySinceYear+'</small></div><button data-command="diplomacy-recall" data-value="'+esc(r.id)+'">RECALL</button></div>':r.treaty==="war"?'<p class="command-note">War has closed the court; no envoy can be received.</p>':'<div class="command-inline"><select id="envoy-'+esc(r.id)+'" aria-label="Choose envoy for '+esc(r.name)+'"><option value="">Appoint an envoy…</option>'+envoyOptions+'</select><button data-command="diplomacy-envoy" data-value="'+esc(r.id)+'"'+((gold<c.envoy||!court.candidates.length)?" disabled":"")+'>APPOINT · '+c.envoy+'G</button></div>';
+  const envoyBlock=r.envoyId?'<div class="diplomacy-envoy"><div><span>ENVOY · SKILL '+Math.round(r.envoySkill)+'</span><strong>'+esc(r.envoyName||"Unnamed envoy")+'</strong><small>Appointed year '+r.envoySinceYear+'</small></div><button data-command="diplomacy-recall" data-value="'+esc(r.id)+'">RECALL</button></div>':r.treaty==="war"?'<p class="command-note">War has closed the court; no envoy can be received.</p>':'<div class="command-inline"><select id="envoy-'+esc(r.id)+'" aria-label="Choose envoy for '+esc(r.name)+'"'+envoySelectLazy+'><option value="">Appoint an envoy…</option>'+envoySelectOptions+'</select><button data-command="diplomacy-envoy" data-value="'+esc(r.id)+'"'+((gold<c.envoy||!court.candidates.length)?" disabled":"")+'>APPOINT · '+c.envoy+'G</button></div>';
   const warLine=r.treaty==="war"?'<p class="diplomacy-realm__hint">WAR EXHAUSTION '+Math.round(r.warExhaustion)+'/100 · '+esc(r.warExhaustionLabel)+'</p>':'';
   return '<article class="diplomacy-realm diplomacy-realm--'+esc(r.treatyTone)+'" data-diplomacy-realm="'+esc(r.id)+'">'+
    '<div class="diplomacy-realm__head"><div><span class="diplomacy-realm__region">'+esc(r.region)+' · '+esc(r.specialty)+'</span><h4>'+esc(r.name)+'</h4><p>'+esc(r.ruler)+' · '+esc(r.trait)+'</p></div><span class="diplomacy-treaty diplomacy-treaty--'+esc(r.treatyTone)+'">'+esc(r.treatyLabel)+'</span></div>'+
@@ -226,15 +297,17 @@ function economy(){
  const flow=Object.entries(state.incomeThisTick||{}).map(([k,v])=>'<div class="command-resource"><span>'+esc(k)+' · this tick</span><strong class="'+(Number(v)>0?'is-positive':Number(v)<0?'is-negative':'')+'">'+(Number(v)>0?'+':'')+amount(v)+'</strong></div>').join("");
  const ledger=state.economy?.lastLedger;
  const history=Array.isArray(state.economy?.history)?state.economy.history:[];
+ const cycle=getEconomyCycleSnapshot();
  const ledgerRows=ledger?[
-  ["Food demand",ledger.foodDemand,"food"],["Food consumed",ledger.foodConsumed,"food"],["Food shortage",ledger.foodShortage,"food"],
+  ["Food demand",ledger.foodDemand,"food"],["Food consumed",ledger.foodConsumed,"food"],["Food shortage",ledger.foodShortage,"food"],["Food balance",ledger.foodBalance,"food"],["Food spoiled",ledger.foodSpoiled,"food"],
   ["Taxes collected",ledger.taxesCollected,"gold"],["Wages paid",ledger.wagesPaid,"gold"],["Building & road upkeep",ledger.upkeepPaid,"gold"],
   ["Furniture upkeep",ledger.furnitureUpkeepPaid,"gold"],
-  ["Unpaid wages",ledger.unpaidWages,"gold"],["Unpaid upkeep",ledger.unpaidUpkeep,"gold"],["Unpaid furniture",ledger.unpaidFurniture,"gold"],["Net treasury change",ledger.netGold,"gold"]
+  ["Unpaid wages",ledger.unpaidWages,"gold"],["Unpaid upkeep",ledger.unpaidUpkeep,"gold"],["Unpaid furniture",ledger.unpaidFurniture,"gold"],["Debt after settlement",ledger.debt,"gold"],["Debt interest",ledger.debtInterest,"gold"],["Net treasury change",ledger.netGold,"gold"]
  ].map(([label,value,unit])=>'<div class="ledger-row"><span>'+esc(label)+'</span><strong>'+amount(value)+' '+unit+'</strong></div>').join(""):'<p class="command-note">No completed financial ledger yet. The simulation settles a ledger every 20 in-game days.</p>';
  const totals=state.economy||{};
  return intro("TREASURY & PRODUCTION","Realm economy","Live resource stocks, current-tick flows and the latest completed 20-day financial ledger. No forecasts are inferred.")+
  '<div class="command-summary"><div><small>POPULATION</small><strong>'+h.population+'</strong></div><div><small>HOUSING</small><strong>'+h.capacity+'</strong></div><div><small>FREE BEDS</small><strong>'+h.available+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div></div>'+
+ '<div class="command-summary"><div><small>FOOD BALANCE / LEDGER</small><strong>'+(cycle.balance>=0?'+':'')+amount(cycle.balance)+'</strong></div><div><small>STORAGE CAPACITY</small><strong>'+number(cycle.storageCapacity)+'</strong></div><div><small>CROWN DEBT</small><strong>'+amount(cycle.debt)+' G</strong></div><div><small>FOOD CRISIS</small><strong>'+Math.round(cycle.crisis.severity*100)+'%</strong></div></div>'+
  crownSupplyPanel()+'<div class="command-section-title">CURRENT ROYAL STORES · STOCK</div><div class="command-resource-grid">'+resources+'</div>'+
  '<div class="command-section-title">RESOURCE FLOW · CURRENT SIMULATION TICK</div><div class="command-resource-grid">'+flow+'</div>'+
  '<div class="command-section-title">LATEST FINANCIAL SETTLEMENT · 20 IN-GAME DAYS</div><div class="ledger-grid">'+ledgerRows+'</div>'+
@@ -254,12 +327,13 @@ function foresterStewardship(building){
 }
 function buildings(){
  const workforce=getWorkforceSnapshot();const city=getCitySummary(),settlement=getSettlementSnapshot(),logistics=getLogisticsSnapshot();
- const records=state.entities.filter(entity=>!entity.dead&&entity.isBuilding()).slice().sort((a,b)=>{
+ const allRecords=state.entities.filter(entity=>!entity.dead&&entity.isBuilding()).slice().sort((a,b)=>{
   const an=CARD_DECK.find(card=>card.type===a.type)?.name||BUILDING_LABELS[a.type]||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||BUILDING_LABELS[b.type]||String(b.type);
   return an.localeCompare(bn)||String(a.id).localeCompare(String(b.id));
  });
+ const records=narrowViewport()?allRecords.slice(0,8):allRecords;
  const counts=new Map();
- for(const building of records)counts.set(building.type,(counts.get(building.type)||0)+1);
+ for(const building of allRecords)counts.set(building.type,(counts.get(building.type)||0)+1);
  const typeSummary=[...counts.entries()].map(([type,count])=>{
   const card=CARD_DECK.find(item=>item.type===type);
   return '<span class="building-type-chip">'+esc(card?.name||BUILDING_LABELS[type]||("Building "+type))+' <strong>'+count+'</strong></span>';
@@ -271,7 +345,8 @@ function buildings(){
   [TYPE.WONDER]:"wonder",[TYPE.GOLDMINE]:"goldmine",[TYPE.BARREL]:"storehouse",
   [TYPE.TENT]:"cottage",[TYPE.STONE_HOUSE]:"cottage",[TYPE.WAREHOUSE]:"storehouse",[TYPE.SAWMILL]:"lumber-yard",
   [TYPE.BAKERY]:"windmill",[TYPE.WELL]:"windmill",[TYPE.MASON]:"quarry",[TYPE.FORESTER]:"lumber-yard",
-  [TYPE.CLINIC]:"temple",[TYPE.MARKET]:"tavern"
+  [TYPE.CLINIC]:"temple",[TYPE.MARKET]:"tavern",
+  [TYPE.SMITHY]:"windmill",[TYPE.SCRIPTORIUM]:"temple"
  }[type]||"cottage");
  const rows=records.map((building,index)=>{
   const card=CARD_DECK.find(item=>item.type===building.type);
@@ -280,13 +355,17 @@ function buildings(){
   const scale=Math.max(.25,Math.min(6,Number(building.footprintScale)||1));
   const width=footprint.w*scale,height=footprint.h*scale;
   const hp=Number(building.hp)||0,maxHp=Math.max(1,Number(building.maxHp)||hp||1),condition=Math.max(0,Math.min(100,Math.round(hp/maxHp*100)));
+  const site=constructionSnapshot(building);
+  if(narrowViewport()&&String(building.id)!==String(expandedBuildingId)){
+   return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"><summary><span class="building-record-art" aria-hidden="true">◆</span><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details" data-building-details></div></details>';
+  }
   const capacity=BUILDING_WORKFORCE[building.type]||0,staff=workforce.workersByBuilding.get(building)||0;
   const efficiency=capacity?Math.round(getBuildingEfficiency(building,workforce)*100):null;
   const costs=Object.entries(card?.cost||{}).filter(([,value])=>Number(value)>0).map(([resource,value])=>amount(value)+" "+resource).join(" · ")||"No catalogued material cost";
   let siteNote="No dedicated resource-site indicator is defined for this building type.";
   try{
    const node=getResourceNodeAt(building.x,building.y);
-   if([TYPE.LUMBER,TYPE.FORESTER].includes(building.type))siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity)+(node.forestTypeLabel?" · "+node.forestTypeLabel+" · "+(node.forestAge||"age unknown")+" · "+(node.forestSpecies||[]).slice(0,4).join(", ")+" · Snow depth: "+number(node.forestSnowDepthCm)+" cm · Exposure: "+Math.round((node.forestExposure||0)*100)+"% · Fire risk: "+Math.round((node.forestFireRisk||0)*100)+"% · Pest risk: "+Math.round((node.forestPestRisk||0)*100)+"% · Monoculture: "+Math.round((node.forestMonoculture||0)*100)+"% · Work: "+Math.round((node.forestWorkFactor||0)*100)+"% · Visibility: "+Math.round((node.forestVisibility||0)*100)+"% · Sight: "+number(node.forestSightRadius)+" tiles · Diversity: "+Math.round((node.forestSpeciesDiversity||0)*100)+"%"+(node.forestMixed?" · Mix: "+esc(node.forestMixture?.label||"mixed")+" · Pattern: "+esc(node.forestMixture?.pattern||"even")+" · Layers: "+esc((node.forestMixture?.canopyLayers||[]).map(layer=>layer.label).join(", ")||"single")+" · Broadleaf/conifer: "+Math.round((node.forestMixture?.broadleafShare||0)*100)+"/"+Math.round((node.forestMixture?.coniferShare||0)*100)+" · Understorey: "+esc(node.forestMixture?.understoryType||"woodland floor")+" · Silviculture: "+esc((node.forestMixture?.silviculture||[]).slice(0,4).join(", ")||"none"):"")+" · Wind exposure: "+Math.round((node.forestWindExposure||0)*100)+"% · Wetness: "+Math.round((node.forestWetness||0)*100)+"% · Deadwood: "+Math.round((node.forestDeadwood||0)*100)+"%"+(node.forestTreeline?" · Treeline":"")+" · Browse: "+Math.round((node.forestBrowsingPressure||0)*100)+"% · Predators: "+Math.round((node.forestPredatorPressure||0)*100)+"%":"")+(node.forestSuccession?(node.forestSuccession.label?" · Succession: "+esc(node.forestSuccession.label)+" · "+number(node.forestSuccession.age)+" days":" · Recovered woodland")+(node.forestSuccession?.contained?" · Control party until day "+number(node.forestSuccession.containedUntil):""):"")+" · Wildlife: "+(forestFaunaSummaryAt(building.x,building.y,node.forestFauna)||"none recorded at this tile")+" · Forest products: "+(forestGatheringSummary()||"none gathered yet");
+   if([TYPE.LUMBER,TYPE.FORESTER].includes(building.type))siteNote="Forest stock at site tile: "+number(node.forestStock)+" / "+number(node.forestCapacity)+(node.forestTypeLabel?" · "+node.forestTypeLabel+" · "+(node.forestAge||"age unknown")+" · "+(node.forestSpecies||[]).slice(0,4).join(", ")+" · Snow depth: "+number(node.forestSnowDepthCm)+" cm · Exposure: "+Math.round((node.forestExposure||0)*100)+"% · Fire risk: "+Math.round((node.forestFireRisk||0)*100)+"% · Pest risk: "+Math.round((node.forestPestRisk||0)*100)+"% · Monoculture: "+Math.round((node.forestMonoculture||0)*100)+"% · Work: "+Math.round((node.forestWorkFactor||0)*100)+"% · Visibility: "+Math.round((node.forestVisibility||0)*100)+"% · Sight: "+number(node.forestSightRadius)+" tiles · Diversity: "+Math.round((node.forestSpeciesDiversity||0)*100)+"%"+(node.forestMixed?" · Mix: "+esc(node.forestMixture?.label||"mixed")+" · Pattern: "+esc(node.forestMixture?.pattern||"even")+" · Layers: "+esc((node.forestMixture?.canopyLayers||[]).map(layer=>layer.label).join(", ")||"single")+" · Broadleaf/conifer: "+Math.round((node.forestMixture?.broadleafShare||0)*100)+"/"+Math.round((node.forestMixture?.coniferShare||0)*100)+" · Understorey: "+esc(node.forestMixture?.understoryType||"woodland floor")+" · Silviculture: "+esc((node.forestMixture?.silviculture||[]).slice(0,4).join(", ")||"none"):"")+" · Wind exposure: "+Math.round((node.forestWindExposure||0)*100)+"% · Wetness: "+Math.round((node.forestWetness||0)*100)+"% · Deadwood: "+Math.round((node.forestDeadwood||0)*100)+"%"+(node.forestTreeline?" · Treeline":"")+" · Browse: "+Math.round((node.forestBrowsingPressure||0)*100)+"% · Predators: "+Math.round((node.forestPredatorPressure||0)*100)+"%":"")+(node.forestSuccession?(node.forestSuccession.label?" · Succession: "+esc(node.forestSuccession.label)+" · "+number(node.forestSuccession.age)+" days":" · Recovered woodland")+(node.forestSuccession?.contained?" · Control party until day "+number(node.forestSuccession.containedUntil):""):"")+" · Wildlife: "+(forestFaunaSummaryAt(building.x,building.y,node.forestFauna)||"none recorded at this tile")+" · Forest products: "+(forestGatheringSummary()||"none gathered yet")+(node.forestJungle?" · JUNGLE INTERIOR: "+esc(node.forestJungle.summary)+" · Path: "+esc(node.forestJungle.landscape?.type||"closed")+" · Layers: "+esc((node.forestJungle.layers||[]).map(layer=>layer.label+" "+layer.heightMeters+"m").join(", "))+" · Ambush "+Math.round((node.forestJungle.navigation?.ambushChance||0)*100)+"% · Cover "+Math.round((node.forestJungle.navigation?.defenceBonus||0)*100)+"% · Supply "+Math.round((node.forestJungle.navigation?.supplyFactor||1)*100)+"% · Guerrilla "+Math.round((node.forestJungle.navigation?.guerrillaBonus||0)*100)+"% · Local "+Math.round((node.forestJungle.navigation?.localAdvantage||0)*100)+"% · Disease "+Math.round((node.forestJungle.navigation?.disease||0)*100)+"% · Parasites "+Math.round((node.forestJungle.navigation?.parasites||0)*100)+"% · Hidden resources: "+esc(Object.values(node.forestJungle.resources||{}).flat().map(entry=>entry.id).filter((id,index,list)=>list.indexOf(id)===index).slice(0,8).join(", ")||"none")+(node.forestJungle.landscape?.hiddenGlade?" · HIDDEN GLADE":node.forestJungle.landscape?.waterfall?" · HIDDEN WATERFALL":node.forestJungle.landscape?.ravine?" · RAVINE":"")+"":"");
    else if([TYPE.QUARRY,TYPE.MASON].includes(building.type))siteNote="Stone stock at site tile: "+number(node.stoneStock)+" / "+number(node.stoneCapacity);
    else if(building.type===TYPE.FARM){const effective=Number(building.field?.maxFertility);siteNote="Site fertility: "+number(node.fertility)+" / 100"+(Number.isFinite(effective)&&effective>0?" · effective soil: "+number(effective)+" / 100":"")+" · water access: "+(node.waterAccess?"yes":"no");}
    else if(building.type===TYPE.WELL)siteNote="Water access at site tile: "+(node.waterAccess?"yes":"no");
@@ -303,7 +382,6 @@ function buildings(){
   ].join(""):"";
   const forestPannage=building.type===TYPE.STABLE?'<button type="button" class="command-choice" data-feed-stable="'+esc(building.id)+'">FEED STABLE FROM MAST</button>':"";
   const detail=card?.desc||BUILDING_LABELS[building.type]||"No additional building description is recorded.";
-  const site=constructionSnapshot(building);
   const inventory=getInventorySummary(building);
   const jobs=getBuildingLogisticsStatus(building)||[];
   const supply=getBuildingSupplyReason(building)||getServiceReason(building);
@@ -323,24 +401,28 @@ function buildings(){
   const profileField=inventory?.kind==="warehouse"?'<span>Warehouse profile<strong>'+(building.type===TYPE.KEEP?esc(inventory.profileLabel||"General store")+" · fixed by the crown":'<select class="warehouse-profile-select" data-warehouse-profile="'+esc(building.id)+'" aria-label="Warehouse profile for '+esc(name)+'">'+Object.values(WAREHOUSE_PROFILES).map(profile=>'<option value="'+esc(profile.id)+'"'+(inventory.profile===profile.id?' selected':'')+'>'+esc(profile.label)+" · "+number(profile.capacity)+'</option>').join("")+'</select>')+'</strong></span>':"";
   const fieldText=building.field?" · field "+building.field.stage+" ("+Math.round(building.field.growth)+"%) · soil "+Math.round(building.field.fertility)+"%"+(building.field.resting?" · resting":""):"";
   const stewardship=foresterStewardship(building);
-  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'"><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+profileField+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+forestGather+forestPannage+'</div></div></details>';
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"'+(String(building.id)===String(expandedBuildingId)?' open':'')+'><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+profileField+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+forestGather+forestPannage+'</div></div></details>';
  }).join("");
- const rejection=logistics.lastRejection?'<p class="command-note logistics-rejection">LAST ORDER REJECTED · '+esc(logistics.lastRejection.reason)+' · '+esc(logistics.lastRejection.kind||"job")+' '+(logistics.lastRejection.good?esc(logistics.lastRejection.good):"")+' · tick '+number(logistics.lastRejection.tick)+'</p>':"";
- const jobRows=[...(logistics.jobs||[]),...(logistics.completed||[])].map(job=>'<div class="logistics-job'+(job.status==="blocked"?' is-blocked':'')+'" data-job-status="'+esc(job.status)+'"><strong>'+esc((job.id||"job")+" · "+job.quantity+" "+job.good+" · "+job.status)+'</strong><small>'+esc((job.from?.kind||"?")+" "+(job.from?.id||"?")+" → "+(job.to?.kind||"?")+" "+(job.to?.id||"?")+" · reserved "+number(job.reserved)+" · picked "+number(job.picked)+" · delivered "+number(job.delivered))+(job.carrierId?" · carrier "+esc(job.carrierId):"")+(job.attempts?" · attempts "+esc(job.attempts):"")+(job.reason?" · "+esc(job.reason):"")+'</small></div>').join("");
- const warehouseRows=(logistics.warehouses?.rows||[]).map(row=>{
+ const logisticsClosed=narrowViewport()&&!expandedBuildingLogistics;
+ const rejection=!logisticsClosed&&logistics.lastRejection?'<p class="command-note logistics-rejection">LAST ORDER REJECTED · '+esc(logistics.lastRejection.reason)+' · '+esc(logistics.lastRejection.kind||"job")+' '+(logistics.lastRejection.good?esc(logistics.lastRejection.good):"")+' · tick '+number(logistics.lastRejection.tick)+'</p>':"";
+ const jobRows=logisticsClosed?"":[...(logistics.jobs||[]),...(logistics.completed||[])].map(job=>'<div class="logistics-job'+(job.status==="blocked"?' is-blocked':'')+'" data-job-status="'+esc(job.status)+'"><strong>'+esc((job.id||"job")+" · "+job.quantity+" "+job.good+" · "+job.status)+'</strong><small>'+esc((job.from?.kind||"?")+" "+(job.from?.id||"?")+" → "+(job.to?.kind||"?")+" "+(job.to?.id||"?")+" · reserved "+number(job.reserved)+" · picked "+number(job.picked)+" · delivered "+number(job.delivered))+(job.carrierId?" · carrier "+esc(job.carrierId):"")+(job.attempts?" · attempts "+esc(job.attempts):"")+(job.reason?" · "+esc(job.reason):"")+'</small></div>').join("");
+ const warehouseRows=logisticsClosed?"":(logistics.warehouses?.rows||[]).map(row=>{
   const stored=Object.entries(row.stored||{}).filter(([,value])=>Number(value)>0).map(([good,value])=>value+" "+good).join(" · ")||"empty";
   return '<div class="logistics-job warehouse-row" data-warehouse-profile="'+esc(row.profile)+'"><strong>'+esc((row.type===TYPE.KEEP?"Royal Keep":"Warehouse")+" · "+(row.profileLabel||"General store")+" · "+row.used+" / "+row.capacity)+'</strong><small>'+esc(row.id+" · "+Math.round(row.x)+", "+Math.round(row.y)+" · "+stored+" · reserved in "+row.reservedIn+" / out "+row.reservedOut)+'</small></div>';
  }).join("");
  const ledger=(logistics.ledger||[]).slice().reverse();
- const movementRows=ledger.slice(0,40).map(entry=>'<div class="logistics-job logistics-movement" data-movement-type="'+esc(entry.type||"move")+'"><strong>'+esc(String(entry.type||"move").toUpperCase())+" · "+esc(entry.quantity+" "+(entry.good||"stock"))+(entry.scope==="resource"?" · RESOURCE":"")+'</strong><small>'+esc((entry.from||"—")+" → "+(entry.to||"—")+" · tick "+entry.tick+" · "+(entry.cause||entry.type||"move"))+(entry.jobId?" · job "+esc(entry.jobId):"")+(entry.houseId?" · household "+esc(entry.houseId):"")+(entry.key?" · key "+esc(entry.key):"")+'</small></div>').join("");
- const auditRows=(logistics.audit?.rows||[]).map(row=>'<div class="logistics-job logistics-audit'+(row.balanced?'':' is-blocked')+'" data-audit-good="'+esc(row.good)+'"><strong>'+esc(row.good.toUpperCase()+" · "+(row.balanced?"BALANCED":"DIFFERENCE "+row.difference))+'</strong><small>opening '+number(row.opening)+" + produced "+number(row.produced)+" − consumed "+number(row.consumed)+" = expected "+number(row.expected)+" · physical "+number(row.physical)+" · "+esc(row.scope)+'</small></div>').join("");
+ const movementRows=logisticsClosed?"":ledger.slice(0,40).map(entry=>'<div class="logistics-job logistics-movement" data-movement-type="'+esc(entry.type||"move")+'"><strong>'+esc(String(entry.type||"move").toUpperCase())+" · "+esc(entry.quantity+" "+(entry.good||"stock"))+(entry.scope==="resource"?" · RESOURCE":"")+'</strong><small>'+esc((entry.from||"—")+" → "+(entry.to||"—")+" · tick "+entry.tick+" · "+(entry.cause||entry.type||"move"))+(entry.jobId?" · job "+esc(entry.jobId):"")+(entry.houseId?" · household "+esc(entry.houseId):"")+(entry.key?" · key "+esc(entry.key):"")+'</small></div>').join("");
+ const auditRows=logisticsClosed?"":(logistics.audit?.rows||[]).map(row=>'<div class="logistics-job logistics-audit'+(row.balanced?'':' is-blocked')+'" data-audit-good="'+esc(row.good)+'"><strong>'+esc(row.good.toUpperCase()+" · "+(row.balanced?"BALANCED":"DIFFERENCE "+row.difference))+'</strong><small>opening '+number(row.opening)+" + produced "+number(row.produced)+" − consumed "+number(row.consumed)+" = expected "+number(row.expected)+" · physical "+number(row.physical)+" · "+esc(row.scope)+'</small></div>').join("");
+ const logisticsSections=logisticsClosed
+  ?'<div class="command-section-title">LOGISTICS ARCHIVE</div><button type="button" class="command-choice" data-building-logistics>OPEN STORES, HAULS, AUDIT &amp; MOVEMENT ARCHIVE</button><p class="command-note">The archive is measured from live simulation state. It is folded on this screen to keep the first building register frame inside the low-end budget.</p>'
+  :'<div class="command-section-title">ALL STORES</div><div class="logistics-overview">'+(warehouseRows||'<p class="command-note">No warehouse exists yet.</p>')+'</div>'+
+   '<div class="command-section-title">DELIVERY JOBS · '+number(logistics.jobCount||0)+' / '+number(logistics.jobLimit||0)+'</div>'+rejection+'<div class="logistics-overview">'+(jobRows||'<p class="command-note">No delivery jobs are recorded.</p>')+'</div>'+
+   '<div class="command-section-title">GOODS AUDIT · '+((logistics.audit?.balanced)?"ALL BOOKS BALANCED":"CHECK DIFFERENCES")+'</div><div class="logistics-overview">'+(auditRows||'<p class="command-note">No goods audit is recorded yet.</p>')+'</div>'+
+   '<div class="command-section-title">MOVEMENT ARCHIVE · '+number(logistics.ledgerSize||0)+' / '+number(logistics.ledgerLimit||0)+' ENTRIES</div><div class="logistics-overview">'+(movementRows||'<p class="command-note">No good movement is recorded yet.</p>')+'</div>';
  return intro("SETTLEMENT ARCHITECTURE","Building register","Inspect every surviving structure using its actual simulation entity, health, footprint, staffing and site data.")+
- '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+records.length+'</strong></div><div><small>CONSTRUCTION SITES</small><strong>'+city.construction+'</strong></div><div><small>CARRIERS</small><strong>'+city.carriers+'</strong></div><div><small>ACTIVE HAULS</small><strong>'+city.activeJobs+'</strong></div><div><small>BLOCKED HAULS</small><strong>'+number(city.blockedJobs||0)+'</strong></div><div><small>WAREHOUSE SPACE USED</small><strong>'+number(city.warehouses?.used||0)+' / '+number(city.warehouses?.capacity||0)+'</strong></div><div><small>WAREHOUSE RESERVED</small><strong>'+number(city.warehouses?.reservedIn||0)+' in · '+number(city.warehouses?.reservedOut||0)+' out</strong></div><div><small>WATER COVERAGE</small><strong>'+(settlement.needs?Math.round(settlement.needs.water*100)+'%':'—')+'</strong></div></div>'+
- '<div class="command-section-title">ALL STORES</div><div class="logistics-overview">'+(warehouseRows||'<p class="command-note">No warehouse exists yet.</p>')+'</div>'+
- '<div class="command-section-title">DELIVERY JOBS · '+number(logistics.jobCount||0)+' / '+number(logistics.jobLimit||0)+'</div>'+rejection+'<div class="logistics-overview">'+(jobRows||'<p class="command-note">No delivery jobs are recorded.</p>')+'</div>'+
- '<div class="command-section-title">GOODS AUDIT · '+((logistics.audit?.balanced)?"ALL BOOKS BALANCED":"CHECK DIFFERENCES")+'</div><div class="logistics-overview">'+(auditRows||'<p class="command-note">No goods audit is recorded yet.</p>')+'</div>'+
- '<div class="command-section-title">MOVEMENT ARCHIVE · '+number(logistics.ledgerSize||0)+' / '+number(logistics.ledgerLimit||0)+' ENTRIES</div><div class="logistics-overview">'+(movementRows||'<p class="command-note">No good movement is recorded yet.</p>')+'</div>'+
- '<div class="building-type-summary">'+typeSummary+'</div><label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">'+
+ '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+allRecords.length+'</strong></div><div><small>CONSTRUCTION SITES</small><strong>'+city.construction+'</strong></div><div><small>CARRIERS</small><strong>'+city.carriers+'</strong></div><div><small>ACTIVE HAULS</small><strong>'+city.activeJobs+'</strong></div><div><small>BLOCKED HAULS</small><strong>'+number(city.blockedJobs||0)+'</strong></div><div><small>WAREHOUSE SPACE USED</small><strong>'+number(city.warehouses?.used||0)+' / '+number(city.warehouses?.capacity||0)+'</strong></div><div><small>WAREHOUSE RESERVED</small><strong>'+number(city.warehouses?.reservedIn||0)+' in · '+number(city.warehouses?.reservedOut||0)+' out</strong></div><div><small>WATER COVERAGE</small><strong>'+(settlement.needs?Math.round(settlement.needs.water*100)+'%':'—')+'</strong></div></div>'+
+ logisticsSections+
+ '<div class="building-type-summary">'+typeSummary+'</div>'+(records.length<allRecords.length?'<p class="command-note">Showing the first '+records.length+' of '+allRecords.length+' structures on this screen. Counts above include every structure.</p>':'')+'<label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">'+
  '<div class="building-register">'+(rows||'<p class="command-note">No buildings are recorded in this realm yet.</p>')+'</div>'+
  '<p class="command-note">Construction, local stores, field stages and active hauls are read from live simulation state. Site resource values are taken from the structure centre tile only; they are not a production rate. Construction and demolition remain in the build interface.</p>';
 }
@@ -461,15 +543,24 @@ function drawDynastyConnectors(){
  if(!graph)return;
  const svg=graph.querySelector(".dynasty-lineage-edges");
  if(!svg)return;
+ // Connector geometry needs several rect reads and a full SVG layout pass.
+ // On a phone the lanes and their explicit relationship labels remain the
+ // authoritative view; skip the decorative overlay rather than spend a frame.
+ if(narrowViewport()){svg.replaceChildren();return;}
  const bounds=graph.getBoundingClientRect();
- const width=Math.max(1,graph.scrollWidth,graph.clientWidth),height=Math.max(1,graph.scrollHeight,graph.clientHeight);
+ // The SVG is decorative and must never widen the 360px panel. Measure the
+ // content box, not scrollWidth, and cache every node rect once: asking the
+ // browser for each endpoint on every edge forces repeated synchronous layout.
+ const width=Math.max(1,graph.clientWidth),height=Math.max(1,graph.scrollHeight,graph.clientHeight);
  svg.setAttribute("viewBox","0 0 "+width+" "+height);
- svg.setAttribute("width",String(width));svg.setAttribute("height",String(height));
+ svg.setAttribute("width","100%");svg.setAttribute("height",String(height));
  const nodes=new Map([...graph.querySelectorAll("[data-lineage-node-id]")].map(node=>[node.dataset.lineageNodeId,node]));
+ const rects=new Map([...nodes].map(([id,node])=>[id,node.getBoundingClientRect()]));
  for(const path of svg.querySelectorAll("[data-lineage-from][data-lineage-to]")){
   const from=nodes.get(path.dataset.lineageFrom),to=nodes.get(path.dataset.lineageTo);
   if(!from||!to){path.setAttribute("d","");continue;}
-  const a=from.getBoundingClientRect(),b=to.getBoundingClientRect();
+  const a=rects.get(path.dataset.lineageFrom),b=rects.get(path.dataset.lineageTo);
+  if(!a||!b){path.setAttribute("d","");continue;}
   let x1=a.left-bounds.left+a.width/2,y1=a.bottom-bounds.top;
   let x2=b.left-bounds.left+b.width/2,y2=b.top-bounds.top;
   if(["partner","sibling"].some(kind=>path.classList.contains("dynasty-lineage-edge--"+kind))){
@@ -519,8 +610,9 @@ function dynasty(){
   current=next;
  }
  const history=h.history.slice().reverse().slice(0,12).map(x=>'<article class="command-history"><strong>YEAR '+number(x.year)+' · '+esc(x.kind)+'</strong><p>'+esc(x.detail)+'</p></article>').join("");
+ const narrowDynasty=narrowViewport();
  return intro("HOUSE OF THE CROWN","Dynasty & lineage","A multi-generation view of the actual kinship graph. Select any recorded person to open their full dossier.")+
- '<div class="command-section-title">INTERACTIVE LINEAGE</div>'+lineageGraph(king,heirId)+
+ (narrowDynasty?'': '<div class="command-section-title">INTERACTIVE LINEAGE</div>'+lineageGraph(king,heirId))+
  '<div class="command-section-title">DESCENDANTS & SUCCESSION</div><div class="dynasty-tree">'+(generations.join("")||'<p class="command-note">No descendant links are recorded for the current sovereign.</p>')+'</div>'+
  '<div class="command-section-title">ROYAL SUCCESSION RECORD</div><div class="command-history-list">'+(history||'<p class="command-note">No royal event has been recorded yet.</p>')+'</div>'+
  '<p class="command-note">Only saved family relationships are drawn. Missing, unknown or unlinked relatives are intentionally not inferred.</p>';
@@ -543,7 +635,7 @@ function creatures(){
  '<div class="command-actions"><button data-command="summon-dragon" '+(c.living.length>=3?'disabled':'')+'>SUMMON A DRAGON</button></div><div class="command-section-title">LIVING CREATURE DOSSIERS</div><div class="creature-record-list">'+(rows||'<p class="command-note">No dragon has joined the realm yet.</p>')+'</div>'+
  '<div class="command-section-title">CREATURE MEMORIALS</div><div class="creature-record-list">'+(archive||'<p class="command-note">No creature memorials yet.</p>')+'</div>';
 }
-function chronicle(){
+function chronicleSectionsChunks(){
  const entries=Array.isArray(state.eventLog)?state.eventLog:[];
  const legacy=getLegacySnapshot();
  const legacyRows=legacy.entries.slice(0,24).map(entry=>'<article class="command-history" data-legacy-kind="'+esc(entry.kind)+'"><strong>YEAR '+number(entry.year)+' · '+esc(String(entry.kind).toUpperCase())+'</strong><p>'+esc(entry.title)+(entry.detail?' — '+esc(entry.detail):'')+'</p></article>').join("");
@@ -555,11 +647,18 @@ function chronicle(){
   return '<article class="chronicle-entry" data-kind="'+esc(entry.kind||"realm")+'" data-search="'+esc((text+" "+(entry.kind||"")+" "+entry.id).toLowerCase())+'"><div class="chronicle-entry-meta"><strong>'+esc(String(entry.kind||"realm").toUpperCase())+'</strong><span>RECORD '+number(entry.id)+' · TICK '+number(entry.tick)+'</span></div><p>'+esc(text)+'</p></article>';
  }).join("");
  const active=state.activeEvent?'<article class="active-issue-card"><span class="command-ribbon">CURRENTLY AWAITING THE CROWN</span><h4>'+esc(state.activeEvent.title)+'</h4><p>'+esc(state.activeEvent.description)+'</p><small>'+state.activeEvent.choices.length+' recorded choices</small><button type="button" data-command="show-active-event">OPEN ISSUE</button></article>':'<p class="command-note">No unresolved realm issue is currently awaiting a decision.</p>';
- return intro("THE ROYAL ARCHIVE","Chronicle & event inbox","Search the actual event log by text or category. Records show their stored simulation tick; calendar dates are not inferred from missing history.")+
- '<div class="command-section-title">ACTIVE REALM ISSUE</div>'+active+
- legacySection+'<div class="command-section-title">RECORDED CHRONICLE</div><div class="chronicle-filters"><label for="chronicle-search">SEARCH RECORDS</label><input id="chronicle-search" type="search" maxlength="80" placeholder="Search event text or category"><label for="chronicle-kind-filter">CATEGORY</label><select id="chronicle-kind-filter">'+options+'</select></div>'+
- '<div class="chronicle-list">'+(rows||'<p class="command-note">No chronicle entries have been recorded yet.</p>')+'</div>'+
- '<p class="command-note">The event log retains up to 100 recent records. This screen does not claim unread tracking or permanent archival beyond the simulation save.</p>';
+ return [
+  '<div class="command-section-title">ACTIVE REALM ISSUE</div>'+active,
+  legacySection,
+  renderAiArchiveSection(),
+  '<div class="command-section-title">RECORDED CHRONICLE</div><div class="chronicle-filters"><label for="chronicle-search">SEARCH RECORDS</label><input id="chronicle-search" type="search" maxlength="80" placeholder="Search event text or category"><label for="chronicle-kind-filter">CATEGORY</label><select id="chronicle-kind-filter">'+options+'</select></div>',
+  '<div class="chronicle-list">'+(rows||'<p class="command-note">No chronicle entries have been recorded yet.</p>')+'</div>',
+  '<p class="command-note">The living timeline retains up to 2,400 pages; the decision log below retains up to 100 recent records. This screen does not claim unread tracking or permanent archival beyond the simulation save; both records are restored from the save.</p>'
+ ];
+}
+function chronicle(){
+ return intro("THE ROYAL ARCHIVE","Chronicle & event inbox","Reread the living timeline of small events, then search the short decision log and legacy record. The timeline is a reading view; the realm keeps running.")+
+ '<div data-chronicle-timeline-slot></div><div data-chronicle-sections-slot></div>';
 }
 function military(){
  const m=getMilitarySnapshot();
@@ -671,20 +770,256 @@ function researchPanel(){
 }
 const CRIME_CAUSE_LABELS=Object.freeze({inequality:"inequality",hunger:"hunger",war:"war",quarantine:"quarantine",unemployment:"unemployment"});
 function city(){return renderCityPanel();}
+function cancelTimelineRefresh(){
+ if(timelineRefreshFrame){cancelAnimationFrame(timelineRefreshFrame);timelineRefreshFrame=0;}
+ timelineHydrationToken++;
+ chronicleProgressToken++;
+}
+function clearFrameWork(){
+ if(frameWorkFrame){cancelAnimationFrame(frameWorkFrame);frameWorkFrame=0;}
+ frameWorkQueue=[];
+ frameWorkPerFrame=1;
+}
+let frameWorkPerFrame=1;
+function runFrameWork(){
+ frameWorkFrame=0;
+ const started=performance.now();
+ let completed=0;
+ while(frameWorkQueue.length&&completed<frameWorkPerFrame&&performance.now()-started<FRAME_WORK_BUDGET){
+  const work=frameWorkQueue.shift();
+  try{work();}catch(error){console.error(error);}
+  completed++;
+ }
+ const elapsed=performance.now()-started;
+ if(elapsed>FRAME_WORK_BUDGET)frameWorkPerFrame=1;
+ else if(elapsed<FRAME_WORK_BUDGET/2)frameWorkPerFrame=Math.min(4,frameWorkPerFrame+1);
+ else frameWorkPerFrame=Math.max(1,frameWorkPerFrame-1);
+ if(frameWorkQueue.length)frameWorkFrame=requestAnimationFrame(runFrameWork);
+}
+function enqueueFrameWork(work){
+ frameWorkQueue.push(work);
+ if(!frameWorkFrame)frameWorkFrame=requestAnimationFrame(runFrameWork);
+}
+function enqueueShallowNode(node,parent,stillValid){
+ if(node.nodeType===3){
+  if(!node.nodeValue.trim())return;
+  const text=node.cloneNode(true);
+  enqueueFrameWork(()=>{if(stillValid()&&parent.isConnected)parent.appendChild(text);});
+  return;
+ }
+ if(node.nodeType!==1)return;
+ const shell=node.cloneNode(false);
+ enqueueFrameWork(()=>{if(stillValid()&&parent.isConnected)parent.appendChild(shell);});
+ for(const child of [...node.childNodes])enqueueShallowNode(child,shell,stillValid);
+}
+function startProgressiveTimeline(){
+ cancelTimelineRefresh();
+ const panel=$("command-panel-content");
+ const slot=panel?.querySelector("[data-chronicle-timeline-slot]");
+ if(!slot)return false;
+ const token=chronicleProgressToken;
+ enqueueFrameWork(()=>{
+  if(token!==chronicleProgressToken||!slot.isConnected)return;
+  const {attributes,chunks}=renderLivingTimelineChunks({cardLimit:TIMELINE_INITIAL_CARDS});
+  const section=document.createElement("section");
+  for(const [name,value] of attributes)section.setAttribute(name,value);
+  slot.replaceChildren(section);
+  chunks.forEach((build,index)=>{
+   enqueueFrameWork(()=>{
+    if(token!==chronicleProgressToken||!section.isConnected)return;
+    const template=document.createElement("template");
+    template.innerHTML=build();
+    for(const child of [...template.content.childNodes])enqueueShallowNode(child,section,()=>token===chronicleProgressToken);
+    if(index===chunks.length-1)enqueueFrameWork(()=>{
+     if(token!==chronicleProgressToken||!section.isConnected)return;
+     scheduleTimelineHydration();
+     startProgressiveSections();
+    });
+   });
+  });
+ });
+ return true;
+}
+function startProgressiveSections(){
+ const slot=$("command-panel-content")?.querySelector("[data-chronicle-sections-slot]");
+ if(!slot||slot.dataset.progressiveStarted)return false;
+ slot.dataset.progressiveStarted="1";
+ const token=++chronicleSectionsToken;
+ const chunks=chronicleSectionsChunks();
+ chunks.forEach((chunk,index)=>enqueueFrameWork(()=>{
+  if(token!==chronicleSectionsToken||!slot.isConnected)return;
+  const template=document.createElement("template");
+  template.innerHTML=chunk;
+  for(const child of [...template.content.childNodes])enqueueShallowNode(child,slot,()=>token===chronicleSectionsToken);
+ }));
+ return true;
+}
+function scheduleTimelineHydration(){
+ cancelTimelineRefresh();
+ const token=timelineHydrationToken;
+ let batchSize=1;
+ const step=()=>{
+  if(token!==timelineHydrationToken)return;
+  const current=$("command-panel-content")?.querySelector(".living-timeline");
+  if(!current)return;
+  const total=Math.min(MAX_VISIBLE_TIMELINE_CARDS,Number(current.dataset.timelineVisible)||0);
+  const events=current.querySelector(".timeline-events");
+  if(!events)return;
+  const rendered=events.querySelectorAll("[data-timeline-event]").length;
+  if(rendered>=total)return;
+  const started=performance.now();
+  const end=Math.min(total,rendered+batchSize);
+  const holder=document.createElement("template");
+  holder.innerHTML=renderTimelineCardBatch(rendered,end);
+  const note=events.querySelector(":scope > .command-note");
+  const loading=events.querySelector(":scope > .timeline-loading");
+  while(holder.content.firstChild)events.insertBefore(holder.content.firstChild,note||loading||null);
+  if(loading)loading.remove();
+  current.dataset.timelineRendered=String(end);
+  const elapsed=performance.now()-started;
+  if(elapsed>FRAME_WORK_BUDGET)batchSize=Math.max(1,Math.floor(batchSize/2));
+  else if(elapsed<FRAME_WORK_BUDGET/2)batchSize=Math.min(2,batchSize+1);
+  if(end<total)requestAnimationFrame(step);
+ };
+ requestAnimationFrame(step);
+}
+function timelineChunkElement(chunks,index){
+ const template=document.createElement("template");
+ template.innerHTML=chunks[index]();
+ return template.content.firstElementChild;
+}
+function applyTimelineRootAttributes(current,attributes){
+ for(const [name,value] of attributes)if(name!=="class")current.setAttribute(name,value);
+}
+function refreshTimeline(preserveScroll=false){
+ cancelTimelineRefresh();
+ chronicleProgressToken++;
+ const current=$("command-panel-content")?.querySelector(".living-timeline");
+ if(!current)return false;
+ const {attributes,chunks}=renderLivingTimelineChunks({cardLimit:0});
+ const nextSummary=timelineChunkElement(chunks,1);
+ const nextNavigation=timelineChunkElement(chunks,2);
+ const nextScrubber=timelineChunkElement(chunks,3);
+ const nextToolbar=timelineChunkElement(chunks,4);
+ const nextLayout=timelineChunkElement(chunks,5);
+ const nextNote=timelineChunkElement(chunks,6);
+ if(!nextSummary||!nextNavigation||!nextScrubber||!nextToolbar||!nextLayout||!nextNote)return false;
+ const previousEvents=current.querySelector(".timeline-events");
+ const scrollTop=preserveScroll?(previousEvents?.scrollTop||0):0;
+ current.querySelector(".timeline-summary")?.replaceWith(nextSummary);
+ current.querySelector(".timeline-navigation")?.replaceWith(nextNavigation);
+ current.querySelector(".timeline-scrubber")?.replaceWith(nextScrubber);
+ current.querySelector(".timeline-toolbar")?.replaceWith(nextToolbar);
+ current.querySelector(".timeline-layout")?.replaceWith(nextLayout);
+ current.querySelector(".timeline-note")?.replaceWith(nextNote);
+ nextLayout.querySelector(".timeline-events").scrollTop=scrollTop;
+ applyTimelineRootAttributes(current,attributes);
+ scheduleTimelineHydration();
+ return true;
+}
+function refreshTimelineResults(preserveScroll=false){
+ cancelTimelineRefresh();
+ chronicleProgressToken++;
+ const current=$("command-panel-content")?.querySelector(".living-timeline");
+ if(!current)return false;
+ const {attributes,chunks}=renderLivingTimelineChunks({cardLimit:0});
+ const nextSummary=timelineChunkElement(chunks,1);
+ const nextToolbar=timelineChunkElement(chunks,4);
+ const nextLayout=timelineChunkElement(chunks,5);
+ if(!nextSummary||!nextToolbar||!nextLayout)return false;
+ const currentEvents=current.querySelector(".timeline-events");
+ const nextEvents=nextLayout.querySelector(".timeline-events");
+ const scrollTop=preserveScroll?(currentEvents?.scrollTop||0):0;
+ if(currentEvents&&nextEvents){currentEvents.replaceChildren(...nextEvents.childNodes);currentEvents.scrollTop=scrollTop;}
+ current.querySelector(".timeline-summary")?.replaceWith(nextSummary);
+ current.querySelectorAll("[data-timeline-year]").forEach(button=>{
+  const selected=button.dataset.timelineYear===String(getTimelineView().year||"");
+  button.classList.toggle("is-current",selected);
+  if(selected)button.setAttribute("aria-current","date");else button.removeAttribute("aria-current");
+ });
+ const currentLive=current.querySelector("[data-timeline-live]");
+ const nextLive=nextToolbar.querySelector("[data-timeline-live]");
+ if(currentLive&&nextLive)currentLive.disabled=nextLive.disabled;
+ applyTimelineRootAttributes(current,attributes);
+ scheduleTimelineHydration();
+ return true;
+}
+function refreshTimelineDetail(){
+ const current=$("command-panel-content")?.querySelector(".living-timeline");
+ if(!current)return false;
+ const selectedId=getTimelineView().selectedId;
+ const currentDetail=current.querySelector(".timeline-detail");
+ const holder=document.createElement("template");
+ holder.innerHTML=renderTimelineDetailCard();
+ const incoming=holder.content.firstElementChild;
+ const token=++detailRefreshToken;
+ if(currentDetail&&incoming){
+  currentDetail.className=incoming.className;
+  for(const attribute of [...incoming.attributes])currentDetail.setAttribute(attribute.name,attribute.value);
+  currentDetail.replaceChildren();
+  for(const child of [...incoming.childNodes])enqueueShallowNode(child,currentDetail,()=>token===detailRefreshToken&&currentDetail.isConnected);
+ }else if(incoming)currentDetail?.replaceWith(incoming);
+ current.querySelector("[data-timeline-event].is-selected")?.classList.remove("is-selected");
+ if(selectedId)current.querySelector('[data-timeline-event="'+selectedId+'"]')?.classList.add("is-selected");
+ return true;
+}
+function scheduleTimelineResultsRefresh(){
+ if(timelineRefreshFrame)return;
+ timelineRefreshFrame=requestAnimationFrame(()=>{timelineRefreshFrame=0;refreshTimelineResults();});
+}
 function render(resetScroll=false){
+ clearFrameWork();
+ lowEndRevealQueue=[];
+ if(lowEndRevealFrame){cancelAnimationFrame(lowEndRevealFrame);lowEndRevealFrame=0;}
+ frameWorkPerFrame=1;
+ chronicleSectionsToken++;
+ cancelTimelineRefresh();
  const panel=$("command-panel-content");if(!panel)return;
- const renderers={kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle};
- if(activePanel==="items")renderItemLexicon(panel);else panel.innerHTML=(renderers[activePanel]||kingdom)();
+ // Split style/layout from paint when a tab changes on a narrow screen. The
+ // incoming panel is laid out while visibility:hidden, then revealed on the
+ // next task. Both halves stay well below the long-task threshold at 6x CPU,
+ // instead of one task carrying layout, paint and compositor commit together.
+ const splitPanelPaint=resetScroll&&narrowViewport();
+ const revealToken=++panelRevealToken;
+ if(splitPanelPaint)panel.style.visibility="hidden";
+ const renderers={kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle,atelier:renderAiChroniclePanel};
  // A new tab starts at its title, not at the scroll offset of the previous
- // panel. Re-renders caused by an action keep their current position.
+ // panel. Reset the old, already-laid-out view before inserting the new DOM:
+ // assigning scrollTop after innerHTML forces a synchronous layout of the
+ // entire incoming panel on the click task.
  if(resetScroll)panel.scrollTop=0;
- if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
- document.querySelectorAll("[data-command-tab]").forEach(b=>{
+ let progressiveDynasty=false;
+ if(activePanel==="items")renderItemLexicon(panel);
+ else {
+  const __t0=performance.now();
+  const markup=(renderers[activePanel]||kingdom)();
+  window.__panelTiming={panel:activePanel,renderMs:Math.round((performance.now()-__t0)*10)/10};
+  // Chronicle already has its own chunked timeline hydration; it must render
+  // its slots synchronously so that hydrator can find them.
+  if(narrowViewport()&&activePanel!=="chronicle"){
+   progressiveDynasty=false;
+   renderProgressive(panel,markup);
+  }else {cancelProgressiveRender(panel);panel.innerHTML=markup;}
+ }
+ if(activePanel==="dynasty"&&!narrowViewport())requestAnimationFrame(drawDynastyConnectors);
+ if(activePanel==="chronicle")startProgressiveTimeline();
+ if(!narrowViewport())document.querySelectorAll("[data-command-tab]").forEach(b=>{
   const active=b.dataset.commandTab===activePanel;
   b.classList.toggle("is-active",active);
-  b.setAttribute("aria-pressed",String(active));
+  if(active)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");
  });
+ const tabSelect=$("command-tab-select");
+ if(tabSelect)tabSelect.value=activePanel;
  setNavigationActive(activePanel);
+ // Compact narrow renderers already cap rows or fold heavy sections, so a
+ // second IntersectionObserver reveal pass only adds per-frame class writes.
+ if(splitPanelPaint){
+  requestAnimationFrame(()=>{
+   if(revealToken!==panelRevealToken)return;
+   panel.getBoundingClientRect();
+   setTimeout(()=>{if(revealToken===panelRevealToken)panel.style.visibility="";},0);
+  });
+ }
 }
 function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
 
@@ -695,7 +1030,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="endeavour-reassign")r=setEndeavourOverseer($("endeavour-active-overseer")?.value);
  else if(a==="research-start")r=startResearch(v);
  else if(a==="research-funding")r=setResearchFunding(Number(v));
- else if(a==="research-appoint")r=appointScholar($("research-scholar-select")?.value);else if(a==="research-dismiss")r=dismissScholar(v);else if(a==="crown-relief")r=applyCrownRelief();else if(a==="crown-grain")r=setGrainContract(Number(v));else if(a==="crown-water")r=setWaterworks(Number(v));else if(a==="crown-housing")r=upgradeHousingStock();else if(a==="crown-provision")r=provisionGranary();else if(a==="government-form")r=setGovernmentForm(v);else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="draw-card")r=drawPlayerCard();else if(a==="select-card"){r=selectCard(v)?{ok:true}:{ok:false,reason:"card not found"};if(r.ok)$("command-modal")?.classList.add("hidden");}else if(a==="show-active-event"&&state.activeEvent){state.activeEvent.dismissed=false;renderUI();r={ok:true};}else if(a==="diplomacy-gift")r=sendGift(v);else if(a==="diplomacy-pact")r=proposeTradePact(v);else if(a==="diplomacy-alliance")r=proposeAlliance(v);else if(a==="diplomacy-war")r=declareWar(v);else if(a==="diplomacy-peace")r=sueForPeace(v);else if(a==="diplomacy-envoy")r=appointEnvoy(v,$("envoy-"+v)?.value);else if(a==="diplomacy-recall")r=recallEnvoy(v);else if(a==="court-appoint")r=appointMinister(v,$("court-office-"+v)?.value);else if(a==="court-dismiss")r=dismissMinister(v);else if(a==="court-demand")r=addressFactionDemand(v);else if(a==="military-recruit")r=recruitVillager($("military-recruit-select")?.value);else if(a==="military-train")r=trainSoldier(v);else if(a==="military-equip")r=equipSoldier(v);else if(a==="military-mount")r=mountSoldier(v);else if(a==="military-horse")r=buyHorse();else if(a==="military-demobilize")r=demobilizeSoldier(v);else if(a==="health-sanitation")r=improveSanitation();else if(a==="health-appoint")r=appointHealer($("health-healer-select")?.value);else if(a==="health-dismiss")r=dismissHealer(v);else if(a==="health-brew")r=brewMedicine();else if(a==="health-treat")r=treatSick();else if(a==="health-sell")r=sellMedicine(2);else if(a==="health-quarantine")r=setQuarantine(Number(v));else if(a==="faith-appoint")r=appointClergy($("faith-clergy-select")?.value);else if(a==="faith-dismiss")r=dismissClergy(v);else if(a==="faith-festival")r=holdFestival(v);else if(a==="faith-pilgrimage")r=fundPilgrimage();else if(a==="faith-budget")r=setCultureBudget(Number(v));else if(a==="faith-heresy")r=addressHeresy(v);else if(a==="justice-appoint")r=appointJudge($("justice-judge-select")?.value);else if(a==="justice-dismiss")r=dismissJudge(v);else if(a==="justice-law")r=setLawCode(v);else if(a==="justice-charter")r=grantCharter(v);else if(a==="justice-verdict")r=tryCase(v,$("justice-sentence-"+v)?.value);else if(a==="justice-investigate")r=investigateCorruption(v);
+ else if(a==="research-appoint")r=appointScholar($("research-scholar-select")?.value);else if(a==="research-dismiss")r=dismissScholar(v);else if(a==="crown-relief")r=applyCrownRelief();else if(a==="crown-grain")r=setGrainContract(Number(v));else if(a==="crown-water")r=setWaterworks(Number(v));else if(a==="crown-housing")r=upgradeHousingStock();else if(a==="crown-provision")r=provisionGranary();else if(a==="government-form")r=setGovernmentForm(v);else if(a==="government-tax")r=setTaxRate(Number(v));else if(a==="policy")r=enactPolicy(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="draw-card")r=drawPlayerCard();else if(a==="select-card"){r=selectCard(v)?{ok:true}:{ok:false,reason:"card not found"};if(r.ok)$("command-modal")?.classList.add("hidden");}else if(a==="show-active-event"&&state.activeEvent){state.activeEvent.dismissed=false;renderUI();r={ok:true};}else if(a==="open-atelier"){activePanel="atelier";r={ok:true};}else if(a==="diplomacy-gift")r=sendGift(v);else if(a==="diplomacy-pact")r=proposeTradePact(v);else if(a==="diplomacy-alliance")r=proposeAlliance(v);else if(a==="diplomacy-war")r=declareWar(v);else if(a==="diplomacy-peace")r=sueForPeace(v);else if(a==="diplomacy-envoy")r=appointEnvoy(v,$("envoy-"+v)?.value);else if(a==="diplomacy-recall")r=recallEnvoy(v);else if(a==="court-appoint")r=appointMinister(v,$("court-office-"+v)?.value);else if(a==="court-dismiss")r=dismissMinister(v);else if(a==="court-demand")r=addressFactionDemand(v);else if(a==="military-recruit")r=recruitVillager($("military-recruit-select")?.value);else if(a==="military-train")r=trainSoldier(v);else if(a==="military-equip")r=equipSoldier(v);else if(a==="military-mount")r=mountSoldier(v);else if(a==="military-horse")r=buyHorse();else if(a==="military-demobilize")r=demobilizeSoldier(v);else if(a==="health-sanitation")r=improveSanitation();else if(a==="health-appoint")r=appointHealer($("health-healer-select")?.value);else if(a==="health-dismiss")r=dismissHealer(v);else if(a==="health-brew")r=brewMedicine();else if(a==="health-treat")r=treatSick();else if(a==="health-sell")r=sellMedicine(2);else if(a==="health-quarantine")r=setQuarantine(Number(v));else if(a==="faith-appoint")r=appointClergy($("faith-clergy-select")?.value);else if(a==="faith-dismiss")r=dismissClergy(v);else if(a==="faith-festival")r=holdFestival(v);else if(a==="faith-pilgrimage")r=fundPilgrimage();else if(a==="faith-budget")r=setCultureBudget(Number(v));else if(a==="faith-heresy")r=addressHeresy(v);else if(a==="justice-appoint")r=appointJudge($("justice-judge-select")?.value);else if(a==="justice-dismiss")r=dismissJudge(v);else if(a==="justice-law")r=setLawCode(v);else if(a==="justice-charter")r=grantCharter(v);else if(a==="justice-verdict")r=tryCase(v,$("justice-sentence-"+v)?.value);else if(a==="justice-investigate")r=investigateCorruption(v);
  if(r.ok){
   if(a==="draw-card")toast(r.card.name+" DRAWN · SELECT IT TO PLACE IT");
   else if(a==="select-card")toast("CARD SELECTED — DRAG IT ONTO THE MAP");
@@ -708,10 +1043,33 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a.startsWith("research-"))toast(String(r.message||"RESEARCH UPDATED").toUpperCase());
   else if(a.startsWith("endeavour-"))toast(String(r.message||"CROWN WORK UPDATED").toUpperCase());
   else if(a.startsWith("crown-"))toast(String(r.message||"CROWN SUPPLY UPDATED").toUpperCase());
+  else if(a==="open-atelier")toast("ATELIER OPEN");
   else toast("DECISION RECORDED");
   renderUI();render();
  }else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
 }
+async function runAiCommand(kind){
+ if(state.aiBusy)return;
+ const personId=$("ai-person-select")?.value||null;
+ state.aiBusy=true;
+ render(false);
+ let result;
+ try{
+  result=await performAiAction(kind,{personId});
+ }catch(error){
+  result={ok:false,reason:error?.message||"The chronicler could not answer."};
+ }
+ state.aiBusy=false;
+ if(result?.ok){
+  toast(String(result.message||"CHRONICLE ENTRY RECORDED").toUpperCase());
+  renderUI();
+  render(false);
+ }else{
+  toast(String(result?.reason||"CHRONICLE ACTION FAILED").replaceAll("-"," ").toUpperCase());
+  render(false);
+ }
+}
+
 export function setupManagementUI(){
  ensureDynastyNetworkStyles();
  window.addEventListener("resize",()=>{if(activePanel==="dynasty")drawDynastyConnectors();});
@@ -722,20 +1080,71 @@ export function setupManagementUI(){
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
   if(target==="market"){$("tab-2")?.click();return;}
-  if(["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle"].includes(target)){
+  if(["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
+   if(target==="chronicle")resetTimelineView(state.year);
    activePanel=target;$("command-modal")?.classList.remove("hidden");render(true);
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));
   }
  }));
  $("command-open-btn")?.addEventListener("click",()=>{$("command-modal")?.classList.remove("hidden");render(true);});
+ const commandContent=$("command-panel-content");
+ commandContent?.addEventListener("focusin",e=>hydrateLazySelect(e.target.closest("select[data-lazy-options]")));
+ commandContent?.addEventListener("pointerdown",e=>hydrateLazySelect(e.target.closest("select[data-lazy-options]")));
+ commandContent?.addEventListener("keydown",e=>{if(e.key==="ArrowDown"||e.key==="Enter"||e.key===" ")hydrateLazySelect(e.target.closest("select[data-lazy-options]"));});
+ if(commandContent)new MutationObserver(records=>{
+  if(records.some(record=>record.addedNodes.length||record.removedNodes.length))schedulePanelCulling();
+ }).observe(commandContent,{childList:true,subtree:true});
 
- document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{activePanel=b.dataset.commandTab||"government";$("command-modal")?.classList.remove("hidden");render(true);}));
+ document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{const nextPanel=b.dataset.commandTab||"government";if(nextPanel==="chronicle")resetTimelineView(state.year);activePanel=nextPanel;$("command-modal")?.classList.remove("hidden");render(true);}));
+ const commandTabSelect=$("command-tab-select");
+ if(commandTabSelect&&!commandTabSelect.options.length){
+  document.querySelectorAll("[data-command-tab]").forEach(b=>{
+   const option=document.createElement("option");
+   option.value=b.dataset.commandTab||"";
+   option.textContent=(b.textContent||option.value).trim().replace(/\s+/g," ");
+   commandTabSelect.append(option);
+  });
+  commandTabSelect.value=activePanel;
+  commandTabSelect.addEventListener("change",()=>{
+   const nextPanel=commandTabSelect.value||"government";
+   if(nextPanel==="chronicle")resetTimelineView(state.year);
+   activePanel=nextPanel;$("command-modal")?.classList.remove("hidden");render(true);
+  });
+ }
+ $("command-panel-content")?.addEventListener("click",async e=>{
+  const button=e.target.closest("[data-ai-command]");
+  if(!button)return;
+  e.preventDefault();
+  await runAiCommand(button.dataset.aiCommand);
+ });
+ $("command-panel-content")?.addEventListener("click",e=>{
+  const eventButton=e.target.closest("[data-timeline-event]");
+  if(eventButton){e.preventDefault();focusTimelineEvent(eventButton.dataset.timelineEvent);refreshTimelineDetail();return;}
+  const yearButton=e.target.closest("[data-timeline-year]");
+  if(yearButton){e.preventDefault();setTimelineYear(yearButton.dataset.timelineYear);refreshTimeline(false);return;}
+  const stepButton=e.target.closest("[data-timeline-step]");
+  if(stepButton){e.preventDefault();stepTimelineYear(Number(stepButton.dataset.timelineStep));refreshTimeline(false);return;}
+  const liveButton=e.target.closest("[data-timeline-live]");
+  if(liveButton){e.preventDefault();resetTimelineView(state.year);refreshTimeline(false);return;}
+  const clearButton=e.target.closest("[data-timeline-clear]");
+  if(clearButton){e.preventDefault();clearTimelineSelection();refreshTimelineDetail();}
+ });
+ document.addEventListener("kac:open-timeline",e=>{
+  if(!focusTimelineEvent(e.detail?.eventId))return;
+  activePanel="chronicle";$("command-modal")?.classList.remove("hidden");render(true);
+ });
  $("command-close")?.addEventListener("click",()=>$("command-modal")?.classList.add("hidden"));
  $("command-modal")?.addEventListener("click",e=>{if(e.target===$("command-modal"))$("command-modal").classList.add("hidden");});
  $("command-panel-content")?.addEventListener("input",e=>{
   if(e.target.id==="building-search"){
    const query=e.target.value.trim().toLowerCase();
    document.querySelectorAll(".building-record").forEach(record=>record.classList.toggle("is-filtered",query&&!record.dataset.buildingName.includes(query)));
+  }
+  if(e.target.id==="timeline-year-range"){
+   const previousYear=getTimelineView().year;
+   setTimelineYear(e.target.value);
+   if(getTimelineView().year!==previousYear)scheduleTimelineResultsRefresh();
+   return;
   }
   if(e.target.id==="chronicle-search"||e.target.id==="chronicle-kind-filter"){
    const query=$("chronicle-search")?.value.trim().toLowerCase()||"";
@@ -748,6 +1157,7 @@ export function setupManagementUI(){
   }
  });
  $("command-panel-content")?.addEventListener("change",e=>{
+  if(e.target.id==="timeline-filter"){setTimelineFilter(e.target.value);refreshTimeline(false);return;}
   const select=e.target.closest("[data-warehouse-profile]");
   if(!select)return;
   const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(select.dataset.warehouseProfile));
@@ -756,6 +1166,22 @@ export function setupManagementUI(){
   else toast(String(result.reason||"PROFILE CHANGE FAILED").replaceAll("-"," ").toUpperCase());
  });
  $("command-panel-content")?.addEventListener("click",e=>{
+  const logisticsButton=e.target.closest("[data-building-logistics]");
+  if(logisticsButton){
+   expandedBuildingLogistics=true;
+   const panel=$("command-panel-content");const scrollTop=panel?.scrollTop||0;
+   render();if(panel)panel.scrollTop=scrollTop;return;
+  }
+  const buildingSummary=e.target.closest(".building-record>summary");
+  if(buildingSummary&&narrowViewport()){
+   const details=buildingSummary.parentElement;
+   expandedBuildingId=details?.dataset.buildingId||null;
+   const panel=$("command-panel-content");
+   const scrollTop=panel?.scrollTop||0;
+   render();
+   if(panel)panel.scrollTop=scrollTop;
+   return;
+  }
   const populationButton=e.target.closest("[data-population-filter]");
   if(populationButton){
    setPopulationFilter(populationButton.dataset.populationFilter||"all");

@@ -1492,7 +1492,11 @@ export function restoreCity(snapshot) {
         ...carrier,
         x: number(carrier.x), y: number(carrier.y),
         home: carrier.home ? { x: number(carrier.home.x), y: number(carrier.home.y) } : { x: number(carrier.x), y: number(carrier.y) },
-        path: [], pathIndex: 0, pathVersion: "",
+        path: [], pathIndex: 0,
+        // Only the path cache itself is omitted from the save. Keeping the
+        // version lets a round-trip compare exactly; the next movement tick
+        // sees the empty path and rebuilds it from the restored position.
+        pathVersion: typeof carrier.pathVersion === "string" ? carrier.pathVersion : "",
         status: carrier.status || "to-destination",
         cargo: carrier.cargo && GOOD_KEYS.includes(carrier.cargo.good) ? { good: carrier.cargo.good, quantity: cleanQuantity(carrier.cargo.quantity) } : null,
         speed: Math.max(0.5, Math.min(4, number(carrier.speed, 1.9)))

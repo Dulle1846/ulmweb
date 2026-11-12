@@ -39,6 +39,7 @@ export function updatePolitics(ledger,workforce){
     const shortage=Math.max(0,ledger?.foodShortage||0);
     const unpaidWages=Math.max(0,ledger?.unpaidWages||0);
     const unpaidUpkeep=Math.max(0,ledger?.unpaidUpkeep||0);
+    const debtPressure=Math.max(0,Math.min(1,Number(ledger?.debt)/1200||0));
     const pressure={legitimacy:0,commons:0,nobility:0,guilds:0,clergy:0};
 
     if(shortage>0){
@@ -57,6 +58,13 @@ export function updatePolitics(ledger,workforce){
     if(unpaidUpkeep>0){
         pressure.nobility-=0.2;
         pressure.legitimacy-=0.15;
+    }
+    // Arrears are visible in every quarter. The guilds lose confidence first,
+    // then the commons; the crown's legitimacy carries the longest scar.
+    if(debtPressure>0){
+        pressure.guilds-=debtPressure*1.15;
+        pressure.commons-=debtPressure*0.55;
+        pressure.legitimacy-=debtPressure*0.5;
     }
     if(population>0&&unemployed/population>0.45){
         pressure.commons-=0.35;

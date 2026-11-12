@@ -168,6 +168,10 @@ export function getPopulationGrowthGate() {
         return { ok: false, reason: "Household morale is too low", housing, moraleGate: effectiveMoraleGate };
     }
     const foodFloor = housing.population * POPULATION_GROWTH_FOOD_RESERVE;
+    const foodCrisis = Math.max(0, Number(state.economy?.foodCrisis?.severity) || 0);
+    if (foodCrisis >= 0.25) {
+        return { ok: false, reason: "Hunger is driving families away", housing, moraleGate: effectiveMoraleGate, foodFloor, foodCrisis };
+    }
     if ((state.resources.food || 0) < foodFloor) {
         return { ok: false, reason: "The food reserve is below the growth floor", housing, moraleGate: effectiveMoraleGate, foodFloor };
     }

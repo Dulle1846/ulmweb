@@ -148,6 +148,8 @@ export const BUILDING_SIZE = {
     76: { w: 2, h: 1.7 },   // BREWERY
     77: { w: 2.4, h: 2 },   // GUILDHALL
     78: { w: 1.8, h: 1.5 }, // WATCHHOUSE
+    79: { w: 2, h: 1.7 },   // SMITHY
+    80: { w: 2.2, h: 1.8 }, // SCRIPTORIUM
 };
 
 // Gebäude-Dachfarben (für Level-1-Icons und Level-2-Top-Down)
@@ -186,6 +188,8 @@ export const BUILDING_ROOF_COLOR = {
     76: "#a9753f",  // BREWERY — copper
     77: "#7d5a3d",  // GUILDHALL — guild timber
     78: "#5e6b61",  // WATCHHOUSE — guard green
+    79: "#6a4932",  // SMITHY — forge brick
+    80: "#7b6270",  // SCRIPTORIUM — ink and slate
 };
 
 // Gebäude-Icons für Level 1
@@ -199,6 +203,7 @@ export const BUILDING_ICON = {
     68: "🩺", 69: "⚖️",
     70: "🕯️", 71: "🏛️", 72: "🔒",
     73: "🏛️", 74: "📚", 75: "🛁", 76: "🍺", 77: "⚖️", 78: "🛡️",
+    79: "⚒️", 80: "✒️",
 };
 
 // ═══════════════════════════════════════════════════════════════

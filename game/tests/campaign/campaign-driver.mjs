@@ -395,9 +395,17 @@ export function runCampaign({
     sampleTicks = 120,
     era = "common-weal",
     minAgendaStages = 1,
-    onTick = null
+    onTick = null,
+    onInitialized = null
 } = {}) {
-    if (initialize) initialiseFreshRealm(seed);
+    if (initialize) {
+        initialiseFreshRealm(seed);
+        // Long-run audits need the same identity/legacy surface as a browser
+        // realm so their saves pass the real import validation. Keep this
+        // opt-in: the deterministic campaign benchmarks intentionally use the
+        // minimal driver realm and must not change.
+        if (typeof onInitialized === "function") onInitialized(state);
+    }
     state.isPaused = false;
     state.gameOver = false;
     state.victory = false;

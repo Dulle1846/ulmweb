@@ -18,6 +18,7 @@ import { updatePopulation } from "../systems/population.js";
 import { updateCitizenRegister } from "../systems/population-register.js";
 import { updateWeather } from "../world/weather.js";
 import { updateBuildingIncome } from "./buildings.js";
+import { updateCraftProduction } from "../systems/craft-production.js";
 import { updateVillagers } from "./villagers.js";
 import { updateConstruction } from "../systems/construction.js";
 import { regrowForests } from "../systems/resource-geography.js";
@@ -41,6 +42,7 @@ import { updateAmbitions } from "../systems/ambitions.js";
 import { updateEndeavours } from "../systems/endeavours.js";
 import { settleCrownSupply } from "../systems/crown-supply.js";
 import { spoilForestGoods } from "../systems/forest-gathering.js";
+import { updateMicroEvents } from "../systems/micro-events.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
@@ -92,8 +94,12 @@ export function updateSimulation(){
     }
     if(newborn)addLog("A CHILD WAS BORN: "+newborn.person.name,"#e8c77b","family");
     else if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
-    updateFields();updateForestSuccession();if(state.resourceGeography)regrowForests(400,{slice:state.tick%400,slices:400});updateForestFauna();updateForestPannage();updateBuildingIncome();updateLogistics();updateConstruction();updateVillagers();updateMilitary();updateCombat();checkRandomEvents();
+    updateFields();updateForestSuccession();if(state.resourceGeography)regrowForests(400,{slice:state.tick%400,slices:400});updateForestFauna();updateForestPannage();updateBuildingIncome();updateCraftProduction();updateLogistics();updateConstruction();updateVillagers();updateMilitary();updateCombat();checkRandomEvents();
     updateWeather();updateMorale();updateMarket();updateEconomy();updateHealth();updateAmbitions();
+    // Procedural chronicle events are independent of the decision-bearing
+    // issue inbox. They never open a modal or wait for the player; the bounded
+    // timeline and presentation queue keep them off the simulation hot path.
+    updateMicroEvents();
     state.entities=state.entities.filter(entity=>!entity.dead);
     if(state.raidActive&&!state.entities.some(entity=>entity.isEnemy())){
         state.totalRaidsSurvived++;state.raidActive=false;addLog("RAID DEFEATED — THE REALM HOLDS","#a5d6a7","military");

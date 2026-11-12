@@ -12,6 +12,7 @@ import { getFaithModifiers } from "./faith.js";
 import { getJusticeModifiers } from "./justice.js";
 import { getResearchModifiers } from "./research.js";
 import { getEndeavourModifiers } from "./endeavours.js";
+import { getDebtMarketFactor, getDebtPressure, getFoodCrisisSnapshot } from "./economy-cycle.js";
 
 export const MARKET_RESOURCES = Object.freeze(["wood","stone","food"]);
 export const BASE_PRICES = Object.freeze({ wood:2, stone:3, food:2 });
@@ -109,8 +110,9 @@ export function updateMarket() {
         const regionalStock = state.market.partners.reduce((total,partner)=>total+(partner.stock[resource]||0),0);
         const targetStock = 90 * state.market.partners.length;
         const scarcityPressure = Math.max(-0.22,Math.min(0.38,(targetStock-regionalStock)/targetStock*0.32));
-        state.market.priceTrend[resource] = Math.max(-0.45,Math.min(0.55,(state.market.priceTrend[resource]||0)*0.68+drift+scarcityPressure*0.12));
-        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource]+scarcityPressure)*100)/100);
+        const hungerPressure = resource === "food" ? getFoodCrisisSnapshot().severity * 0.35 : 0;
+        state.market.priceTrend[resource] = Math.max(-0.45,Math.min(0.55,(state.market.priceTrend[resource]||0)*0.68+drift+scarcityPressure*0.12+hungerPressure*0.04));
+        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource]+scarcityPressure+hungerPressure)*100)/100);
         const history = state.market.priceHistory[resource] || (state.market.priceHistory[resource] = []);
         history.push(state.market.prices[resource]);
         if (history.length > 16) history.shift();
@@ -132,6 +134,7 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     const amount = Math.max(1,Math.min(25,Math.floor(Number(quantity)||1)));
     const price = state.market.prices[resource];
     const terms = getDiplomaticTradeTerms(state.diplomacy, partnerId, getCourtModifiers().tradeBonus);
+    state.market.debtPressure = getDebtPressure();
     if (terms.blocked) return {ok:false,reason:"AT WAR — THE TRADE ROAD IS CLOSED"};
     // Quarantine and an active outbreak make every caravan more expensive and
     // every sale less valuable. Food is still traded, but not exempt from the
@@ -143,8 +146,11 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     const eraTradeFactor = Math.max(1, Math.min(1.20, Number(state.ambitions?.era?.agenda?.modifiers?.tradeFactor) || 1));
     const tradeFactor = Math.max(0.55, faithTerms.tradeFactor * justiceTerms.tradeFactor * researchTerms.tradeFactor * (1 + getEndeavourModifiers().trade) * eraTradeFactor);
     const demandFactor = 1 + Math.max(0, Number(faithTerms.festivalDemand) || 0);
-    const buyFactor = terms.buyFactor * (1 + healthTerms.tradePenalty) / tradeFactor;
-    const sellFactor = terms.sellFactor * (1 - healthTerms.tradePenalty) * tradeFactor * demandFactor;
+    // A crown living on arrears pays more for grain and receives less for what
+    // it sells. The penalty is bounded by the same debt pressure the ledger uses.
+    const debtFactor = getDebtMarketFactor();
+    const buyFactor = terms.buyFactor * (1 + healthTerms.tradePenalty) * debtFactor / tradeFactor;
+    const sellFactor = terms.sellFactor * (1 - healthTerms.tradePenalty) * tradeFactor * demandFactor / debtFactor;
     if (direction === "buy") {
         const cost = Math.ceil(price*amount*buyFactor);
         if ((partner.stock[resource]||0)<amount) return {ok:false,reason:"PARTNER OUT OF STOCK"};

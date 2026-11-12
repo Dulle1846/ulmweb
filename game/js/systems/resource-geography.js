@@ -266,12 +266,48 @@ export function getForestMovementFactorAt(x, y) {
     if (cached !== undefined) return cached;
     const node = getResourceNodeAt(point.x, point.y);
     const hazard = node?.forestHazard;
-    const factor = hazard
+    const jungle = node?.forestJungleNavigation;
+    const forestFactor = hazard
         ? clamp(1 - (Number(hazard.movement) || 0) * 0.26 - (Number(hazard.flood) || 0) * 0.1, 0.55, 1)
         : 1;
+    // An animal trail, passage or clearing is a real opening through the
+    // undergrowth, not just a sight flag. It removes most of the jungle's
+    // movement penalty, while a closed wall retains it.
+    const jungleLandscape = node?.forestJungleLandscape;
+    const openJunglePath = Boolean(jungleLandscape?.clearing
+        || jungleLandscape?.animalTrail || jungleLandscape?.passage);
+    const rawJungleSpeed = Math.max(1, Number(jungle?.movementFactor) || 1);
+    const adjustedJungleSpeed = openJunglePath ? 1 + (rawJungleSpeed - 1) * 0.35 : rawJungleSpeed;
+    const jungleFactor = jungle ? clamp(1 / adjustedJungleSpeed, 0.55, 1) : 1;
+    // Keep a floor on the combined route cost: dense jungle is slow, but a
+    // carrier must still make progress and existing tropical movement
+    // contracts remain compatible.
+    const factor = clamp(forestFactor * jungleFactor, 0.55, 1);
     if (forestMovementCache.size >= MOVEMENT_CACHE_LIMIT) forestMovementCache.clear();
     forestMovementCache.set(key, factor);
     return factor;
+}
+
+// Combat and tactical travel ask for the compact jungle navigation profile.
+// The helper never builds a second stand: it reuses the cached resource node
+// and returns only scalar values, with a tiny tile cache for raid loops.
+const JUNGLE_TACTICS_CACHE_LIMIT = 2048;
+const jungleTacticsCache = new Map();
+
+export function getJungleTacticsAt(x, y) {
+    const point = readTile(x, y);
+    if (!point) return null;
+    let geo;
+    try { geo = ensureGeography(); } catch { return null; }
+    if (!geo.forestCapacity[point.index]) return null;
+    const key = (Number(state.worldSeed) || 0) + ":" + point.x + ":" + point.y
+        + ":" + geo.forestStock[point.index] + ":" + geo.forestCapacity[point.index];
+    if (jungleTacticsCache.has(key)) return jungleTacticsCache.get(key);
+    const node = getResourceNodeAt(point.x, point.y);
+    const result = node?.forestJungleNavigation || null;
+    if (jungleTacticsCache.size >= JUNGLE_TACTICS_CACHE_LIMIT) jungleTacticsCache.clear();
+    jungleTacticsCache.set(key, result);
+    return result;
 }
 
 // Placement, forester range checks and field surveys only need the raw
@@ -335,7 +371,8 @@ export function getResourceNodeAt(x,y){
         deadwood=Number(stand.deadwood)||0;treeline=Boolean(stand.treeline);
         // Snow and dense cover slow actual forest work: the same derived value
         // is used by gathering and shown in the forester/lumber survey.
-        workFactor=clamp(1-snow.depth*0.38-(1-visibility)*0.12-(Number(stand.tropical?.hazard?.workPenalty)||0)*0.55,0.32,1);
+        workFactor=clamp(1-snow.depth*0.38-(1-visibility)*0.12-(Number(stand.tropical?.hazard?.workPenalty)||0)*0.55
+            -(Number(stand.jungle?.hazards?.workPenalty)||0)*0.22,0.3,1);
     }
     return {
         x:point.x,y:point.y,
@@ -358,6 +395,13 @@ export function getResourceNodeAt(x,y){
         forestMixed:Boolean(forestStand?.mixed),forestMixture:forestStand?.mixture||null,
         forestTropical:Boolean(forestStand?.tropical),forestTropicalSummary:forestStand?.tropical?.summary||null,
         forestTropicalFeatures:forestStand?.tropical?.features||null,
+        forestJungle:forestStand?.jungle||null,
+        forestJunglePoints:forestStand?.jungle?.features||null,
+        forestJungleNavigation:forestStand?.jungle?.navigation||null,
+        forestJungleLandscape:forestStand?.jungle?.landscape||null,
+        forestJungleResources:forestStand?.jungle?.resources||null,
+        forestJungleFauna:forestStand?.jungle?.fauna||null,
+        forestJungleHazards:forestStand?.jungle?.hazards||null,
         forestHazard:forestStand?.tropical?.hazard||null,
         forestLandUse:forestStand?.tropical?.landUse||null,
         forestWater:forestStand?.tropical?.water||null,
@@ -471,10 +515,14 @@ export function serializeResourceGeography(){
     return {version:VERSION,forest,stone};
 }
 
-export function validateResourceGeographySnapshot(snapshot){
+export function validateResourceGeographySnapshot(snapshot, limits = {}){
     if(snapshot===undefined||snapshot===null)return true;
     if(!snapshot||typeof snapshot!=="object"||Array.isArray(snapshot)||snapshot.version!==VERSION)throw new Error("Save data contains an unsupported resource geography version.");
-    const count=cellCount();
+    // A browser may validate an import before initWorld has replaced the
+    // current realm's dimensions. Use the saved world's cell count when the
+    // caller can prove it; the live count remains correct after restore.
+    const declaredCount=Number(limits?.count);
+    const count=Number.isSafeInteger(declaredCount)&&declaredCount>0?declaredCount:cellCount();
     for(const key of ["forest","stone"]){
         const entries=snapshot[key];
         if(!Array.isArray(entries)||entries.length>count)throw new Error("Save data contains an invalid "+key+" resource delta.");

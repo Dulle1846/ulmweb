@@ -24,7 +24,7 @@ beforeEach(() => {
     ensureCivic();
 });
 
-test("all 136 city codex portraits exist for the four seasons", () => {
+test("all city codex portraits exist for the four seasons", () => {
     const files = new Set(fs.readdirSync("assets/city-codex"));
     for (const entry of CITY_CODEX) {
         for (const season of ["spring", "summer", "autumn", "winter"]) {

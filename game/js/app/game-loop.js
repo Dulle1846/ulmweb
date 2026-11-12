@@ -121,7 +121,9 @@ function gameLoop(timestamp){
    state.lastFrameTime=timestamp;
    const deltaSeconds=Math.min(deltaTime,50)/1000;
    updateCamera(deltaSeconds);
+   let simulationMs=0;
    if(!state.isPaused&&!state.gameOver){
+    const simulationStarted=performance.now();
     const clock=consumeSimulationTime(state.tickAccumulator,deltaTime,state.gameSpeed,BASE_TICK_INTERVAL);
     state.tickAccumulator=clock.remainderMs;
     for(let step=0;step<clock.steps;step++){
@@ -132,30 +134,87 @@ function gameLoop(timestamp){
     const movementStep=1/30;
     let movementSteps=0;
     while(state.movementAccumulator>=movementStep&&movementSteps<3){
-     updateFriendlyMovement(movementStep*state.gameSpeed*(BASE_TICK_INTERVAL/MOVEMENT_TICK_REFERENCE_MS));
-     updateLogisticsMovement(movementStep*state.gameSpeed*(BASE_TICK_INTERVAL/MOVEMENT_TICK_REFERENCE_MS));
+     // At 4x a whole movement step is ~0.30s, while both movers reject deltas
+     // above 0.20s to keep collision resolution bounded. Subdivide instead of
+     // dropping the update: otherwise retailers and carriers freeze at high
+     // speed while the simulation clock keeps advancing.
+     let movementDelta=movementStep*state.gameSpeed*(BASE_TICK_INTERVAL/MOVEMENT_TICK_REFERENCE_MS);
+     while(movementDelta>0.0001){
+      const stepDelta=Math.min(movementDelta,0.2);
+      updateFriendlyMovement(stepDelta);
+      updateLogisticsMovement(stepDelta);
+      movementDelta-=stepDelta;
+     }
      state.movementAccumulator-=movementStep;movementSteps++;
     }
     if(movementSteps===3)state.movementAccumulator=Math.min(state.movementAccumulator,movementStep);
+    simulationMs=performance.now()-simulationStarted;
    }
+   state.lastSimulationMs=simulationMs;
    flushPresentationEffects();
-   if(timestamp-state.lastMinimapRender>=400){updateMinimap();state.lastMinimapRender=timestamp;}
+   // A modal covers the world and can itself contain large progressive panels.
+   // Painting the hidden canvas on every frame competes with that DOM work on
+   // low-end devices, so suspend world/minimap drawing until the dialog closes.
+   // Simulation timing and state are untouched; the next visible frame resumes
+   // world and HUD rendering.
+   const worldOccluded=document.body.classList.contains("ui-modal-open");
+   // The minimap does not need 2.5 updates per second on a low-end device.
+   // A 1 Hz cadence keeps it useful without competing with the 30 FPS world
+   // budget; the terrain half is cached separately inside updateMinimap().
+   if(!worldOccluded&&timestamp-state.lastMinimapRender>=1000){updateMinimap();state.lastMinimapRender=timestamp;}
    // Simulation and camera updates stay smooth, while expensive world drawing
    // follows the selected 60/30 FPS cap. A sub-millisecond tolerance avoids
    // dropping every other frame on displays whose refresh interval is rounded.
    const interval=frameIntervalMs();
-   if(timestamp-lastRenderTimestamp>=interval-0.75){
+   if(!worldOccluded&&timestamp-lastRenderTimestamp>=interval-0.75){
     const {ctx,canvas}=state;
     if(ctx&&canvas){
      // The terrain now lives on its own surface behind this canvas. Keep the
      // gameplay/overlay canvas transparent so the surface shows through.
      const drawStarted=performance.now();
      ctx.clearRect(0,0,canvas.width,canvas.height);
+     state.terrainBuildThisFrame=0;
      drawWorld();
-     if(timestamp-state.lastUiRender>=160){renderUI();state.lastUiRender=timestamp;}
+     state.lastWorldDrawMs=Math.max(0,performance.now()-drawStarted);
+     if(timestamp-state.lastUiRender>=160){
+      const uiStarted=performance.now();
+      renderUI();
+      state.lastUiRenderMs=Math.max(0,performance.now()-uiStarted);
+      state.lastUiRender=timestamp;
+     }
      drawVignette();
      state.lastDrawMs=Math.max(0,performance.now()-drawStarted);
      state.renderedFrames=(Number(state.renderedFrames)||0)+1;
+     // Optional bounded probe for browser performance audits. It is disabled
+     // by default and never allocates unless the test explicitly enables it.
+     const probe=state.performanceProbe;
+     if(probe&&Array.isArray(probe.frames)&&probe.frames.length<(Number(probe.limit)||600)){
+      // Measure time between rendered frames, not the raw rAF delta: at a
+      // 30 FPS cap the browser may still call rAF at 60 Hz, which made the
+      // old probe report 16.7 ms even though a frame was only presented every
+      // 33.3 ms. Keep the raw cadence as a separate diagnostic.
+      // A presented frame is timestamped twice: with the rAF clock for the
+      // scheduler, and with performance.now() for the actual wall-clock gap.
+      // The wall gap is the budget metric; the rAF gap is kept as a diagnostic
+      // so an external browser pause can be separated from a slow draw.
+      const presentedAt=performance.now();
+      const renderedGap=probe.lastPresentedAt?Math.max(0,presentedAt-probe.lastPresentedAt):deltaTime;
+      const rafGap=probe.lastRenderedAt?Math.max(0,timestamp-probe.lastRenderedAt):deltaTime;
+      probe.lastPresentedAt=presentedAt;
+      probe.lastRenderedAt=timestamp;
+      probe.frames.push({
+       timestamp:Math.round(timestamp),presentedAt:Math.round(presentedAt*1000)/1000,
+       intervalMs:Math.round(renderedGap*1000)/1000,
+       rafIntervalMs:Math.round(rafGap*1000)/1000,
+       drawMs:Math.round((Number(state.lastDrawMs)||0)*1000)/1000,
+       worldDrawMs:Math.round((Number(state.lastWorldDrawMs)||0)*1000)/1000,
+       simMs:Math.round((Number(state.lastSimulationMs)||0)*1000)/1000,
+       uiMs:Math.round((Number(state.lastUiRenderMs)||0)*1000)/1000,
+       terrainBuildMs:Math.round((Number(state.terrainBuildThisFrame)||0)*1000)/1000,
+       day:Number(state.dayOfYear)||0,season:Number(state.seasonIndex)||0,
+       zoom:Math.round((Number(state.zoom)||0)*1000)/1000,
+      });
+     }
      samplePerformance(timestamp,deltaTime);
      considerAdaptiveFallback(deltaTime);
     }

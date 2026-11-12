@@ -253,6 +253,16 @@ export function initStartingKingdom() {
     // empty of recruits and horses; those remain real, paid decisions.
     const barracks = placeExtra(TYPE.BARRACKS, -12, -4);
     const stable = placeExtra(TYPE.STABLE, 4, 10);
+    // The opening realm keeps a working forge and a writing room. Both are
+    // complete buildings but still need named staff, physical inputs and the
+    // treasury's import money before their first unique work is recorded.
+    // Keep the artisan quarter off the reserved north housing corridor. The
+    // campaign and the city builder both rely on that three-tile street to
+    // reach new cottages; a forge placed beside it can silently cut the
+    // settlement in half even though every building is individually valid.
+    const artisanHouse = placeExtra(TYPE.HOUSE, 14, -22) || placeExtra(TYPE.TENT, 16, -22);
+    const smithy = placeExtra(TYPE.SMITHY, 18, -16);
+    const scriptorium = placeExtra(TYPE.SCRIPTORIUM, 22, -22);
 
     // König – markiert als König, bleibt nah an der Burg
     const king = spawnEntity(cx + 1, cy - 2, TYPE.KNIGHT);
@@ -300,6 +310,8 @@ export function initStartingKingdom() {
     if (bakery) villagerSpawns.push({ x: cx + 6, y: cy + 9, home: stoneHouse || h4 || h2, workplace: bakery, job: "baker" });
     if (granary) villagerSpawns.push({ x: cx + 11, y: cy + 10, home: stoneHouse || h4 || h3, workplace: granary, job: "hauler" });
     if (well2) villagerSpawns.push({ x: cx + 4, y: cy - 3, home: stoneHouse || h2, workplace: well2, job: "wellkeeper" });
+    if (smithy) villagerSpawns.push({ x: smithy.x + 1, y: smithy.y + 1, home: artisanHouse || stoneHouse || h4 || h2, workplace: smithy, job: "smith" });
+    if (scriptorium) villagerSpawns.push({ x: scriptorium.x + 1, y: scriptorium.y + 1, home: artisanHouse || stoneHouse || h4 || h3, workplace: scriptorium, job: "scribe" });
 
     villagerSpawns.forEach(s => {
         const v = spawnEntity(

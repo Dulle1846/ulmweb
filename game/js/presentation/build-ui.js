@@ -17,7 +17,8 @@ const BUILDING_SYMBOLS={
     15:"storehouse",60:"cottage",61:"cottage",62:"storehouse",63:"lumber-yard",64:"windmill",
     65:"windmill",66:"quarry",67:"lumber-yard",68:"temple",69:"tavern",
     70:"temple",71:"keep",72:"storehouse",
-    73:"keep",74:"temple",75:"temple",76:"tavern",77:"keep",78:"watchtower"
+    73:"keep",74:"temple",75:"temple",76:"tavern",77:"keep",78:"watchtower",
+    79:"windmill",80:"temple"
 };
 function formatCost(cost){
     return Object.entries(cost||{}).filter(([,amount])=>amount>0).map(([resource,amount])=>amount+" "+resource).join(" · ")||"No material cost";
@@ -40,6 +41,7 @@ function buildingDetail(type){
     const recipe=RECIPES[type];
     if(recipe){
         const input=recipe.input?Object.entries(recipe.input).map(([good,amount])=>amount+" "+good).join(" + ")+" → ":"";
+        if(recipe.unique)return recipe.workers+" worker · "+input+"unique player-made item · needs imported stock and gold";
         const output=Object.entries(recipe.output||{}).map(([good,amount])=>amount+" "+good).join(" + ")||"forest planting";
         return recipe.workers+" workers · "+input+output;
     }

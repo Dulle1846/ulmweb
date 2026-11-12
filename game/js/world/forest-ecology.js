@@ -14,6 +14,7 @@ import {
     TROPICAL_FORMATIONS, TROPICAL_GOODS, TROPICAL_PHENOLOGY, TROPICAL_RESTRICTED_SPECIES,
     TROPICAL_SEASON_GOODS, TROPICAL_SPECIES, isTropicalClimate, tropicalFormationFor, tropicalProfileFor,
 } from './tropical-ecology.js';
+import { jungleProfileFor } from './jungle-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -592,6 +593,14 @@ const FAUNA = Object.freeze({
     'morpho-butterfly': Object.freeze({ label: 'Morpho butterfly', group: 'insect', note: 'glinting blue through the shade' }),
     'bullet-ant': Object.freeze({ label: 'Bullet ant', group: 'insect', note: 'patrolling a buttress root' }),
     mosquito: Object.freeze({ label: 'Mosquito', group: 'insect', note: 'hovering over standing water' }),
+    // Jungle interior specialists (1.2.5.32–39). They are habitat observations
+    // layered on the same tropical fauna contract, not a second population map.
+    bushmaster: Object.freeze({ label: 'Bushmaster', group: 'reptile', note: 'coiled invisibly beside a game trail' }),
+    iguana: Object.freeze({ label: 'Green iguana', group: 'reptile', note: 'basking on a vine-covered rock' }),
+    'vine-snake': Object.freeze({ label: 'Vine snake', group: 'reptile', note: 'almost indistinguishable from a liana' }),
+    tarantula: Object.freeze({ label: 'Tarantula', group: 'insect', note: 'waiting at the mouth of a burrow' }),
+    'leaf-mimic-frog': Object.freeze({ label: 'Leaf-mimic frog', group: 'amphibian', note: 'motionless among dead leaves' }),
+    'giant-otter': Object.freeze({ label: 'Giant otter', group: 'large', note: 'fishing a hidden jungle stream' }),
 });
 
 export const FOREST_FAUNA = Object.freeze(FAUNA);
@@ -1009,7 +1018,19 @@ export function forestStandAt(x, y, context = {}) {
         })
         : null;
 
-    const trail = coarseUnit(seed, tx, ty, 6, 0x54524149) > 0.78 || edge;
+    // Jungle understory and operations (1.2.5) are derived from the same stand.
+    // The profile supplies thickets, walls, passages, ravines, ambush lanes and
+    // tactical values without adding a second map or saved ecology.
+    const jungle = tropical
+        ? jungleProfileFor({
+            seed, x: tx, y: ty, formationId: formation.id, ageClass,
+            moisture, temperature, height, canopy, density, clearing, edge, stockRatio,
+            species: speciesList.map(entry => entry.id),
+            tropical,
+        })
+        : null;
+    const trail = coarseUnit(seed, tx, ty, 6, 0x54524149) > 0.78
+        || Boolean(jungle?.landscape?.animalTrail) || edge;
     const successionProfile = succession ? forestSuccessionProfile(succession.kind) : null;
     const successionProgress = succession && successionProfile
         ? clamp01(succession.age / Math.max(1, successionProfile.recoveredDays)) : 0;
@@ -1096,10 +1117,17 @@ export function forestStandAt(x, y, context = {}) {
     // crowns and tightly packed conifer stems close the view; an edge or a
     // clearing opens it again. The radius is derived from the same value so the
     // renderer and the gathering work factor cannot drift apart.
+    const jungleOpenSight = Boolean(jungle?.landscape?.clearing
+        || jungle?.landscape?.animalTrail || jungle?.landscape?.passage);
     const visibility = clamp01(1 - canopy * 0.62 - coniferShare * 0.2 - density * 0.16
         - (tropical?.hazard.visibility || 0) * 0.34
-        + (edge ? 0.18 : 0) + clearing * 0.15);
-    const sightRadius = 2 + Math.round(visibility * 8);
+        - (jungle?.navigation?.visibilityPenalty || 0) * (jungleOpenSight ? 0.03 : 0.16)
+        + (edge ? 0.18 : 0) + clearing * 0.15 + (jungleOpenSight ? 0.12 : 0));
+    const sightRadius = jungle
+        ? (jungleOpenSight
+            ? 2 + Math.round(visibility * 8)
+            : Math.max(2, Math.min(2 + Math.round(visibility * 8), jungle.navigation.sightRadiusTiles)))
+        : 2 + Math.round(visibility * 8);
 
     // --- Mixed-forest structure -------------------------------------------
     // A mixed stand is not a shuffled species list. It has a real mixture
@@ -1350,6 +1378,8 @@ export function forestStandAt(x, y, context = {}) {
         // Tropical rainforest view (1.2.4). Null outside the tropical climate;
         // the shared formation/species/resource contracts are still used above.
         tropical,
+        // Jungle interior and operations view (1.2.5). Derived, save-neutral.
+        jungle,
     };
 }
 
@@ -1395,6 +1425,20 @@ export function forestSightBlock(stand) {
     const conifer = clamp01(Number(stand.coniferShare) || 0);
     const clearing = clamp01(Number(stand.clearing) || 0);
     const shade = clamp01(Number(stand.groundShade) || 0);
+    // Jungle sight is bounded by undergrowth walls, not conifer stems. A dense
+    // 1.2.5 profile gets a real atmospheric wall and line-of-sight block; a
+    // clearing or animal trail opens it again.
+    if (stand.jungle) {
+        const jungle = stand.jungle;
+        const restriction = Number(jungle.features?.['1.2.5.49'] || 0);
+        // A clearing, a game trail and a rock-plant passage are real openings:
+        // they break the undergrowth wall and restore line of sight.
+        const openTrail = Boolean(jungle.landscape?.clearing
+            || jungle.landscape?.animalTrail || jungle.landscape?.passage);
+        if (restriction < 0.52 || openTrail) return 0;
+        return Math.min(0.54, clamp01(0.14 + restriction * 0.36
+            + (Number(jungle.features?.['1.2.5.10'] || 0)) * 0.16));
+    }
     // `groundShade` is the shared closed-canopy gate. Open pine (around .69)
     // and larch (around .73) stay below it, so their view is never cut off even
     // though both are conifer-dominated. Spruce, fir, wet and mixed closed
@@ -1597,6 +1641,19 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
         const abundance = clamp01((seasonal[id] ?? base) * (0.7 + stand.productivity * 0.3));
         if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
     }
+    // Jungle resource pockets are real, but scattered. Add only the goods
+    // whose derived abundance cleared the group threshold, so a dense wall
+    // still withholds rare medicine while a hidden glade can offer it.
+    const jungleResources = stand.jungle?.resources;
+    if (jungleResources) {
+        for (const entries of Object.values(jungleResources)) {
+            for (const entry of entries) {
+                if (!FOREST_GOODS[entry.id] || goods.some(good => good.id === entry.id)) continue;
+                const abundance = clamp01(entry.abundance * (0.55 + stand.productivity * 0.35));
+                if (abundance > 0.08) goods.push({ ...FOREST_GOODS[entry.id], abundance });
+            }
+        }
+    }
     const land = stand.tropical?.landUse;
     if (land) {
         const landGoods = [...(land.crops || []), ...(land.plantationGoods || []), ...(land.settlementGoods || [])];
@@ -1636,6 +1693,18 @@ export function forestFaunaFor(stand, dayOfYear, climate = 'temperate', roll = 0
     if (stand.coniferShare > 0.5 && season === 'winter') extra.push('wolf');
     if (stand.coniferShare > 0.58 && stand.ageClass === 'ancient') extra.push('lynx');
     if (stand.disturbance === 'bark-beetle') extra.push('bark-beetle');
+    const jungle = stand.jungle;
+    if (jungle) {
+        // Thickets, trails, hidden water and old growth each add their own
+        // observable species. Camouflaged and rare animals only appear when the
+        // derived profile says the habitat actually supports them.
+        extra.push('howler-monkey', 'spider-monkey', 'iguana', 'vine-snake', 'tarantula', 'leaf-mimic-frog');
+        if ((jungle.features?.['1.2.5.32'] || 0) > 0.45) extra.push('jaguar', 'giant-otter');
+        if ((jungle.features?.['1.2.5.39'] || 0) > 0.4) extra.push('bushmaster', 'poison-dart-frog');
+        if ((jungle.features?.['1.2.5.37'] || 0) > 0.45) extra.push('tree-frog');
+        if ((jungle.features?.['1.2.5.35'] || 0) > 0.5) extra.push('macaw', 'toucan');
+        if (jungle.landscape?.hiddenStream || jungle.landscape?.waterfall) extra.push('giant-otter', 'river-fish');
+    }
     if (tropicalStand) {
         extra.push('toucan', 'morpho-butterfly', 'howler-monkey', 'tree-frog');
         if (stand.tropical.features['1.2.4.38'] > 0.45) extra.push('jaguar');

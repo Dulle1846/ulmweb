@@ -3,6 +3,7 @@
 import { drainPresentationEffects } from '../core/presentation-effects.js';
 import { createParticle, createFloater } from './rendering/particles.js';
 import { showBigMessage } from './rendering/ui.js';
+import { enqueueTimelineEvent } from './event-notifications.js';
 
 export function flushPresentationEffects() {
     const effects = drainPresentationEffects();
@@ -20,6 +21,9 @@ export function flushPresentationEffects() {
                 break;
             case "message":
                 showBigMessage(effect.title, effect.subtitle, effect.timeout);
+                break;
+            case "timeline-event":
+                enqueueTimelineEvent(effect.event);
                 break;
             default:
                 throw new Error(`Unknown presentation effect: ${effect.type}`);

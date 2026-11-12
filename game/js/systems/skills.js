@@ -11,6 +11,7 @@ export const JOB_SKILL = Object.freeze({
     farmer: "farming", forester: "farming",
     woodcutter: "labour", miner: "labour", goldminer: "labour", hauler: "labour", wellkeeper: "labour",
     builder: "crafting", miller: "crafting", sawyer: "crafting", mason: "crafting", baker: "crafting",
+    smith: "crafting", scribe: "learning",
     innkeeper: "trade", merchant: "trade",
     healer: "care", stablehand: "care",
     acolyte: "learning", scholar: "learning",
@@ -23,7 +24,8 @@ const BUILDING_SKILL = Object.freeze({
     [TYPE.TAVERN]: "trade", [TYPE.MARKET]: "trade", [TYPE.GUILDHALL]: "trade",
     [TYPE.CLINIC]: "care", [TYPE.STABLE]: "care",
     [TYPE.SCHOOL]: "learning", [TYPE.TEMPLE]: "learning", [TYPE.SHRINE]: "learning",
-    [TYPE.BARRACKS]: "command", [TYPE.TOWER]: "command", [TYPE.WATCHHOUSE]: "command"
+    [TYPE.BARRACKS]: "command", [TYPE.TOWER]: "command", [TYPE.WATCHHOUSE]: "command",
+    [TYPE.SMITHY]: "crafting", [TYPE.SCRIPTORIUM]: "learning"
 });
 const TRAIT_BIAS = Object.freeze({
     farming: { patience: 0.35, discipline: 0.15 },

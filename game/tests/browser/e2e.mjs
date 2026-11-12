@@ -501,7 +501,7 @@ try{
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
-    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),21,"all twenty-one management tabs, including the city charter and item lexicon, must live inside the dialog");
+    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),22,"all twenty-two management tabs, including the Atelier, city charter and item lexicon, must live inside the dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Kingdom overview","management must open on the live kingdom overview");
     await page.locator('[data-command-tab="kingdom"]').click();
     assert.equal(await page.locator("body > .command-deck").count(),0,"there must be no obscured duplicate navigation outside the dialog");

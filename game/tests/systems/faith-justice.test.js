@@ -228,6 +228,10 @@ test("crime emerges from real hunger, unemployment, war and quarantine and names
     state.year = 2;
     updateJustice();
     const snapshot = getJusticeSnapshot();
+    assert.ok(Number.isFinite(snapshot.crime.causes.unemployment), "the audit must persist a finite unemployment rate");
+    assert.ok(snapshot.crime.causes.unemployment > 0 && snapshot.crime.causes.unemployment <= 1,
+        "unemployment must be stored as a 0-1 rate, not a raw count or NaN");
+    assert.ok(Number.isFinite(snapshot.lastAudit.causes.unemployment), "the audit summary must echo the same finite rate");
     assert.ok(snapshot.pendingCases.length >= 1 && snapshot.pendingCases.length <= 3, "a yearly audit must open a bounded case roll");
     for (const entry of snapshot.pendingCases) {
         const defendant = state.entities.find(entity => !entity.dead && String(entity.personId || entity.id) === String(entry.defendantId));
@@ -380,7 +384,7 @@ test("faith and justice normalize, validate and survive a JSON save/load round t
     assert.equal(restored.justice.lawCode, justiceBefore.lawCode);
     assert.equal(restored.faith.festival.lastKind, "harvest");
 
-    assert.equal(SAVE_SCHEMA_VERSION, 8, "schema 8 adds the crafted item archive on top of the civilization layer");
+    assert.equal(SAVE_SCHEMA_VERSION, 11, "schema 11 adds the living event timeline on top of the AI chronicle");
     const snapshot = normalizeSaveSnapshot({
         worldSeed: 9917,
         entities: [],
@@ -398,16 +402,18 @@ test("faith and justice normalize, validate and survive a JSON save/load round t
 
 test("the save, load and UI source contracts include both annual systems", async () => {
     const main = await readFile(new URL("../../js/app/main.js", import.meta.url), "utf8");
+    const saveRuntime = (await readFile(new URL("../../js/core/save-runtime.js", import.meta.url), "utf8")).replace(/\s+/g, "");
+    const migrations = await readFile(new URL("../../js/core/save-migrations.js", import.meta.url), "utf8");
     const validation = await readFile(new URL("../../js/core/save-validation.js", import.meta.url), "utf8");
     const html = await readFile(new URL("../../index.html", import.meta.url), "utf8");
     const ui = await readFile(new URL("../../js/presentation/management-ui.js", import.meta.url), "utf8");
-    assert.ok(main.includes("faith:JSON.parse"), "the save snapshot must persist faith");
-    assert.ok(main.includes("justice:JSON.parse"), "the save snapshot must persist justice");
-    assert.ok(main.includes("state.faith=normalizeFaithState"), "loading must normalize faith");
-    assert.ok(main.includes("state.justice=normalizeJusticeState"), "loading must normalize justice");
-    assert.ok(main.includes("4:snapshot=>") && main.includes("5:snapshot=>"), "schema 4 and 5 saves must migrate into schema 6");
+    assert.ok(saveRuntime.includes("faith:JSON.parse"), "the save snapshot must persist faith");
+    assert.ok(saveRuntime.includes("justice:JSON.parse"), "the save snapshot must persist justice");
+    assert.ok(saveRuntime.includes("state.faith=normalizeFaithState"), "loading must normalize faith");
+    assert.ok(saveRuntime.includes("state.justice=normalizeJusticeState"), "loading must normalize justice");
+    assert.ok(migrations.includes("4:snapshot=>") && migrations.includes("5:snapshot=>"), "schema 4 and 5 saves must migrate into schema 6");
     assert.ok(validation.includes("validateFaithState") && validation.includes("validateJusticeState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 21, "the command deck must expose twenty-one tabs, including the city charter and item lexicon");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 22, "the command deck must expose twenty-two tabs, including the Atelier, city charter and item lexicon");
     assert.ok(ui.includes("faith:faithPanel") && ui.includes("justice:justicePanel"));
     assert.ok(ui.includes("faith-festival") && ui.includes("justice-verdict"));
     const faith = await readFile(new URL("../../js/systems/faith.js", import.meta.url), "utf8");

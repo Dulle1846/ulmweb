@@ -115,14 +115,19 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
     const climate = state.worldOptions?.climate || "temperate";
     const snow = forestSnowDepthAt(stand, day, climate);
     const tropicalPenalty = Number(stand.tropical?.hazard?.workPenalty) || 0;
+    const junglePenalty = Number(stand.jungle?.hazards?.workPenalty) || 0;
     const workFactor = clamp(1 - snow.depth * 0.38 - (1 - (Number(stand.visibility) || 0)) * 0.12
-        - tropicalPenalty * 0.55, 0.32, 1);
+        - tropicalPenalty * 0.55 - junglePenalty * 0.22, 0.3, 1);
     return {
         x: Math.floor(x), y: Math.floor(y), node, stand,
         snowDepthCm: snow.cm,
         visibility: Number(stand.visibility) || 0,
         workFactor,
-        hazard: stand.tropical?.hazard || null,
+        hazard: stand.tropical?.hazard
+            ? { ...stand.tropical.hazard, ...(stand.jungle?.hazards || {}) }
+            : stand.jungle?.hazards || null,
+        jungle: stand.jungle || null,
+        jungleNavigation: stand.jungle?.navigation || null,
         landUse: stand.tropical?.landUse || null,
         spoilageRisk: stand.tropical?.hazard?.spoilage || 0,
         goods: forestGoodsFor(stand, day, climate),
@@ -194,6 +199,28 @@ export function gatherForestProducts(x, y, options = {}) {
     // hunt goods even if the generic five-item selection would omit them.
     for (const good of huntGoods) {
         if (!candidates.some(entry => entry.id === good.id)) candidates.push(good);
+    }
+    // A jungle visit is a mixed harvest, not a generic five-slot pull. Keep
+    // one representative of every resource family this tile actually carries,
+    // plus one hidden rare find. This is what makes fibres, medicine, poison,
+    // spices and timber reach the ledger instead of only fruit.
+    let rareAdded = false;
+    for (const good of products.goods) {
+        if (!FOREST_GOODS[good.id]) continue;
+        const isRare = (products.jungle?.resources?.hiddenRareResources || [])
+            .some(entry => entry.id === good.id);
+        if (!isRare || rareAdded || candidates.some(entry => entry.id === good.id)) continue;
+        candidates.push(good);
+        rareAdded = true;
+    }
+    for (const [group, entries] of Object.entries(products.jungle?.resources || {})) {
+        if (group === "hiddenRareResources") continue;
+        const best = entries
+            .filter(entry => FOREST_GOODS[entry.id])
+            .sort((a, b) => Number(b.abundance) - Number(a.abundance))[0];
+        if (best && !candidates.some(entry => entry.id === best.id)) {
+            candidates.push({ ...FOREST_GOODS[best.id], abundance: Number(best.abundance) || 0.2 });
+        }
     }
     if (!candidates.length) return { ok: false, reason: "No seasonal product is available" };
     const gathered = [];

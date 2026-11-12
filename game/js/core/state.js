@@ -1,3 +1,6 @@
+import {createAiChronicleState} from "./ai-chronicle-state.js";
+import {createEventTimelineState} from "./event-timeline.js";
+
 // Central game state. Runtime objects stay in memory; persistence stores DTOs only.
 function createInitialState() {
     return {
@@ -14,7 +17,7 @@ function createInitialState() {
         incomeThisTick:{wood:0,stone:0,gold:0,food:0},
         morale:72,seasonIndex:0,year:1,dayOfYear:0,timeOfDay:12,
         identity:null,research:null,legacy:null,endeavours:null,crownSupply:null,
-        government:{form:"feudal",taxRate:10,councilSeats:3,succession:"primogeniture",decrees:0,lastDecisionYear:0,history:[]},
+        government:{form:"feudal",taxRate:10,councilSeats:3,succession:"primogeniture",decrees:0,lastDecisionYear:0,lastTaxChangeYear:0,history:[]},
         royal:{dynastyName:"Royal House",consortId:null,heirId:null,lastBirthYear:0,history:[]},
         currentCard:null,availableCards:[],hand:[],cardRewardQueue:[],selectedCardInstanceId:null,cardPreview:null,
         nextCardDrawTick:0,issueSequence:0,nextIssueAtTick:0,
@@ -24,7 +27,7 @@ function createInitialState() {
         hiddenRealm:{tension:0,prosperity:0,mystery:0,memories:[],activeThreads:[],completedThreads:[]},
         frameFaulted:false,frameErrorCount:0,worldEpoch:0,buildingCollisionVersion:0,
         selectedTab:0,eventLog:[],activeEvent:null,eventSequence:0,
-        entities:[],personArchive:[],creatureArchive:[],craftedItems:[],population:null,particles:[],floaters:[],pendingPresentationEffects:[],
+        entities:[],personArchive:[],creatureArchive:[],craftedItems:[],population:null,aiChronicle:createAiChronicleState(),eventTimeline:createEventTimelineState(),aiBusy:false,particles:[],floaters:[],pendingPresentationEffects:[],
         heightMap:null,moistureMap:null,terrainCanvas:null,terrainDirty:true,explored:[],
         fogCanvas:null,fogDirty:true,fogExploredRef:null,
         terrainResolution:0,terrainPixW:0,terrainPixH:0,
@@ -34,7 +37,7 @@ function createInitialState() {
         exploredRevision:0,
         lastRandomEvent:0,weather:"clear",weatherTimer:0,
         kingHp:240,totalRaidsSurvived:0,raidActive:false,
-        military:null,faith:null,justice:null,health:{outbreakActive:false,disease:"none",severity:0,containment:0,cases:0,recovered:0,outbreaks:0,herbalDoses:0,herbalTreated:0,lastUpdateTick:0,startedAtTick:0},court:null,diplomacy:null,market:null,politics:{legitimacy:65,factions:{commons:68,nobility:58,guilds:55,clergy:62},settlements:0},economy:{daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,furnitureUpkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,unpaidFurniture:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:1,growthYear:1,growthThisYear:0,births:0,lastBirthCheckYear:1,lastSocialYear:1,lastAgencyYear:1,lastGuardianshipYear:1,deaths:0,lastMortalityYear:1,lastLedger:null,history:[]},statistics:{totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,totalRoadTilesBuilt:0,totalHousesBuilt:0,totalCardsDrawn:0},ambitions:{completed:{},lastEvaluatedTick:0,eternal:{count:0,serial:0,active:null,lastCompleted:null,history:[]}}
+        military:null,faith:null,justice:null,health:{outbreakActive:false,disease:"none",severity:0,containment:0,cases:0,recovered:0,outbreaks:0,herbalDoses:0,herbalTreated:0,lastUpdateTick:0,startedAtTick:0},court:null,diplomacy:null,market:null,politics:{legitimacy:65,factions:{commons:68,nobility:58,guilds:55,clergy:62},settlements:0},economy:{daysElapsed:0,foodConsumed:0,taxesCollected:0,wagesPaid:0,upkeepPaid:0,furnitureUpkeepPaid:0,unpaidWages:0,unpaidUpkeep:0,unpaidFurniture:0,population:0,employed:0,unemployed:0,populationGrowth:0,lastGrowthYear:1,growthYear:1,growthThisYear:0,births:0,lastBirthCheckYear:1,lastSocialYear:1,lastAgencyYear:1,lastGuardianshipYear:1,deaths:0,lastMortalityYear:1,lastLedger:null,debt:0,totalDebtInterest:0,foodAccounting:{inflow:0,outflow:0,sinceTick:0},foodCrisis:{severity:0,consecutiveShortages:0,eventCount:0,lastEventTick:0,lastMilestone:0,lastEvent:null,populationLoss:0,lastPopulationLossTick:0,events:[]},history:[]},statistics:{totalTrades:0,totalBuildingsBuilt:0,totalUnitsRecruited:0,totalEventsResolved:0,totalRoadTilesBuilt:0,totalHousesBuilt:0,totalCardsDrawn:0},ambitions:{completed:{},lastEvaluatedTick:0,eternal:{count:0,serial:0,active:null,lastCompleted:null,history:[]}}
     };
 }
 export const state=createInitialState();

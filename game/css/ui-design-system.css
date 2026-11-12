@@ -328,7 +328,7 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 
 /* Phase 5 — modal semantics, focus containment and compact viewport resilience. */
 body.ui-modal-open{overflow:hidden}
-.screen-overlay[role="dialog"]{overflow-y:auto;overscroll-behavior:contain}
+.screen-overlay[role="dialog"]{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
 .start-panel,.modal-panel{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
 .screen-overlay[role="dialog"]>.modal-panel{scrollbar-gutter:stable}
 [role="dialog"][aria-modal="true"]:focus{outline:none}

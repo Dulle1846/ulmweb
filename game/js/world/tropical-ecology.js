@@ -179,6 +179,10 @@ export const TROPICAL_RESTRICTED_SPECIES = Object.freeze({
     caiman: Object.freeze(['tropical-floodplain', 'tropical-swamp', 'tropical-riverbank']),
     piranha: Object.freeze(['tropical-floodplain', 'tropical-swamp', 'tropical-riverbank']),
     anaconda: Object.freeze(['tropical-floodplain', 'tropical-swamp', 'tropical-riverbank']),
+    bushmaster: Object.freeze(['tropical-floodplain', 'tropical-swamp', 'tropical-riverbank', 'tropical-ancient']),
+    'giant-otter': Object.freeze(['tropical-floodplain', 'tropical-riverbank', 'tropical-swamp']),
+    'leaf-mimic-frog': Object.freeze(['tropical-ancient', 'tropical-canopy', 'tropical-montane', 'tropical-secondary']),
+    'vine-snake': Object.freeze(['tropical-ancient', 'tropical-canopy', 'tropical-emergent', 'tropical-secondary']),
 });
 
 // ── forest products ───────────────────────────────────────────

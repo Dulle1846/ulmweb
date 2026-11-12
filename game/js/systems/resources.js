@@ -1,12 +1,14 @@
 // Resource ledger. Every resource change is validated and recorded per simulation tick.
 import { state } from "../core/state.js";
 import { recordResourceMovement } from "./goods-book.js";
+import { noteFoodResourceChange } from "./economy-cycle.js";
 export const RESOURCE_KEYS=Object.freeze(["wood","stone","gold","food"]);
 export function resetIncome(){state.incomeThisTick={wood:0,stone:0,gold:0,food:0};}
 export function addResource(type,amount){
     if(!RESOURCE_KEYS.includes(type)||!Number.isFinite(amount))throw new TypeError("Unknown resource or non-finite amount.");
     const before=Number(state.resources[type])||0;
     state.resources[type]=Math.max(0,before+amount);
+    if(type==="food")noteFoodResourceChange(state.resources[type]-before);
     state.incomeThisTick[type]=(Number(state.incomeThisTick[type])||0)+(state.resources[type]-before);
 }
 export function canAfford(card){

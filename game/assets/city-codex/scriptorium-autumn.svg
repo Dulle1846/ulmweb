@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="title desc">
+<title id="title">Scriptorium — AUTUMN</title><desc id="desc">Illustrated city codex portrait for Scriptorium in autumn.</desc>
+<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1e6cf"/><stop offset="1" stop-color="#d8ad79"/></linearGradient></defs>
+<rect width="640" height="400" fill="url(#sky)"/>
+<circle cx="510" cy="70" r="36" fill="#ffe3a3" opacity=".86"/>
+<ellipse cx="120" cy="66" rx="62" ry="12" fill="#fff" opacity=".22"/>
+<ellipse cx="292" cy="84" rx="70" ry="10" fill="#fff" opacity=".18"/>
+<ellipse cx="450" cy="58" rx="55" ry="11" fill="#fff" opacity=".2"/>
+<path d="M-30 210 Q150 150 340 188 T680 178Z" fill="#b18b5b" opacity=".55"/>
+<rect y="262" width="640" height="138" fill="#8c7446"/>
+<path d="M0 342 Q150 326 320 340 T640 332 L640 400 L0 400Z" fill="#8c7446" opacity=".72"/>
+<path d="M45 90 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M106 127 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M167 164 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M228 201 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M289 98 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M350 135 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M411 172 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M472 209 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M533 106 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M594 143 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M95 180 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M156 217 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M217 114 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/><path d="M278 151 q9 -8 18 0 q-9 6 -18 0" fill="#b9663b" opacity=".7"/>
+<g>
+<ellipse cx="320" cy="369" rx="182" ry="17" fill="#2c2a23" opacity=".22"/>
+<rect x="190" y="248" width="260" height="120" fill="#e1d4bb"/>
+<path d="M176 250 L320 172 L464 250Z" fill="#75606e"/>
+<path d="M204 250 L320 190 L436 250Z" fill="#9d8794" opacity=".6"/>
+<rect x="302" y="128" width="36" height="120" fill="#e1d4bb"/>
+<path d="M292 132 L320 98 L348 132Z" fill="#6f4c30"/>
+<rect x="310" y="150" width="20" height="28" fill="#6f4c30"/>
+<rect x="222" y="277" width="57" height="55" fill="#f3e7d0"/>
+<path d="M250 277 V332 M222 304 H279" stroke="#8d6a44" stroke-width="3"/>
+<rect x="344" y="279" width="80" height="42" fill="#6f4c30"/>
+<path d="M356 294 h56 M356 306 h48" stroke="#e3c681" stroke-width="3" opacity=".8"/>
+<path d="M300 300 l38 -9 -5 12Z" fill="#e7c77a"/>
+<circle cx="408" cy="257" r="5" fill="#e2ba5c" opacity=".8"/>
+<path d="M170 368 H478" stroke="#544532" stroke-width="2" opacity=".35"/>
+<rect x="238" y="336" width="164" height="8" fill="#6f4c30" opacity=".3"/>
+</g>
+<path d="M80 382 H560" stroke="#4f4333" stroke-width="2" opacity=".28"/>
+</svg>

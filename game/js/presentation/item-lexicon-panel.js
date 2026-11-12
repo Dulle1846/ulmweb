@@ -3,17 +3,36 @@
 // live simulation on every frame.
 import { state } from "../core/state.js";
 import { BASE_ITEMS, buildItemCatalog, ITEM_CATEGORIES, itemCategoryLabel } from "../systems/item-lexicon.js";
+import { renderProgressive } from "./progressive-render.js";
 
 const BASE_LABELS = new Map(BASE_ITEMS.map(item => [item.id.replace(/^base:(?:resource|good|metal|furnishing|forest):/, ""), item.label]));
+// Imported workshop materials are not warehouse goods, so they do not all
+// appear in the base catalogue. Keep their provenance readable instead of
+// falling back to a generic category label.
+const MATERIAL_LABELS = new Map([["parchment", "Parchment"], ["iron", "Iron"]]);
 const PAGE_SIZE = 120;
+// The lexicon is a reference archive, not a battle screen. At phone width it
+// keeps the first screenful dense enough to browse while avoiding hundreds of
+// closed <details> nodes in one click task.
+const NARROW_PAGE_SIZE = 6;
+let narrowGroupLimit = 2;
 const CATALOG_REFRESH_TICKS = 5;
 let activeCategory = "all";
 let query = "";
-let visibleLimit = PAGE_SIZE;
 let cachedCatalog = null;
 let cachedTick = -1;
 let cachedCraftedKey = "";
 let boundContainer = null;
+const lazyGroupRows = new Map();
+let visibleLimit = 0;
+
+function isNarrowViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+}
+
+function pageSize() {
+    return isNarrowViewport() ? NARROW_PAGE_SIZE : PAGE_SIZE;
+}
 
 function esc(value) {
     return String(value).replace(/[&<>"']/g, character => ({
@@ -58,7 +77,7 @@ function materialText(item) {
     const entries = item.recipe || item.materials || [];
     if (!entries.length) return "—";
     return entries.map(entry => {
-        const label = entry.label || BASE_LABELS.get(entry.id) || itemCategoryLabel(entry.id);
+        const label = entry.label || BASE_LABELS.get(entry.id) || MATERIAL_LABELS.get(entry.id) || itemCategoryLabel(entry.id);
         return (Number(entry.amount) || 0) + " × " + label;
     }).join(" · ");
 }
@@ -92,18 +111,53 @@ function renderEntry(item) {
         details.push('<span><small>MATERIALS</small><strong>' + esc(materialText(item)) + '</strong></span>');
     }
     const tags = (item.tags || []).slice(0, 10).map(tag => '<span>' + esc(tag) + '</span>').join("");
+    // Closed archive entries used to carry their full prose and metadata in
+    // every row. Keep the row itself small; the dossier is filled only when
+    // the reader opens that entry.
     return '<details class="item-lexicon__entry' + (crafted ? " is-crafted" : "") + '" data-item-id="' + esc(item.id) + '">' +
         '<summary>' +
             '<span class="item-lexicon__entry-copy"><strong>' + esc(item.label) + '</strong><small>' + esc(item.source) + '</small></span>' +
             '<span class="item-lexicon__badges"><b>' + (crafted ? "MADE" : "BASE") + '</b><em>' + esc(item.categoryLabel.toUpperCase()) + '</em></span>' +
         '</summary>' +
-        '<div class="item-lexicon__detail">' +
-            '<p class="item-lexicon__summary">' + esc(item.summary) + '</p>' +
-            (item.detail ? '<p class="item-lexicon__prose">' + esc(item.detail) + '</p>' : "") +
-            '<div class="item-lexicon__meta">' + details.join("") + '</div>' +
-            (tags ? '<div class="item-lexicon__tags">' + tags + '</div>' : "") +
-        '</div>' +
+        '<div class="item-lexicon__detail" data-item-detail></div>' +
     '</details>';
+}
+
+function detailMarkup(item) {
+    const crafted = item.origin === "crafted";
+    const details = [
+        '<span><small>ORIGIN</small><strong>' + esc(originLabel(item)) + '</strong></span>',
+        '<span><small>CATEGORY</small><strong>' + esc(item.categoryLabel) + '</strong></span>',
+        '<span><small>AVAILABILITY</small><strong>' + esc(item.availability || "—") + '</strong></span>',
+    ];
+    if (crafted) {
+        details.push('<span><small>QUALITY</small><strong>' + esc(item.qualityBand) + ' · ' + esc(item.quality) + '/100</strong></span>');
+        details.push('<span><small>MAKER</small><strong>' + esc(item.crafterName || "Not named") + '</strong></span>');
+        details.push('<span><small>RECORDED</small><strong>YEAR ' + esc(item.year) + '</strong></span>');
+    }
+    if (item.recipe) {
+        details.push('<span><small>WORKSHOP COST</small><strong>' + esc(materialText(item)) + '</strong></span>');
+    }
+    if (item.recipe?.length && item.upkeep) {
+        details.push('<span><small>UPKEEP</small><strong>' + esc(item.upkeep) + ' gold / settlement</strong></span>');
+    }
+    if (crafted && item.materials?.length) {
+        details.push('<span><small>MATERIALS</small><strong>' + esc(materialText(item)) + '</strong></span>');
+    }
+    const tags = (item.tags || []).slice(0, 10).map(tag => '<span>' + esc(tag) + '</span>').join("");
+    return '<p class="item-lexicon__summary">' + esc(item.summary) + '</p>' +
+        (item.detail ? '<p class="item-lexicon__prose">' + esc(item.detail) + '</p>' : "") +
+        '<div class="item-lexicon__meta">' + details.join("") + '</div>' +
+        (tags ? '<div class="item-lexicon__tags">' + tags + '</div>' : "");
+}
+
+function ensureItemDetail(details) {
+    if (!details || details.dataset.itemDetailReady === "1") return;
+    const row = cachedCatalog?.rows.find(entry => entry.id === details.dataset.itemId);
+    if (!row) return;
+    const detail = details.querySelector("[data-item-detail]");
+    if (detail) detail.innerHTML = detailMarkup(row);
+    details.dataset.itemDetailReady = "1";
 }
 
 function renderGroups(rows) {
@@ -116,18 +170,32 @@ function renderGroups(rows) {
     const groups = [...grouped.entries()].sort((left, right) =>
         (order.get(left[0]) ?? 999) - (order.get(right[0]) ?? 999)
     );
-    return groups.map(([category, groupRows]) =>
-        '<details class="item-lexicon__group" open>' +
+    const narrow = isNarrowViewport();
+    const groupLimit = narrow ? narrowGroupLimit : groups.length;
+    const visibleGroups = groups.slice(0, groupLimit);
+    const hiddenGroups = groups.length - visibleGroups.length;
+    const rendered = visibleGroups.map(([category, groupRows]) => {
+        if (!narrow) {
+            return '<details class="item-lexicon__group" open>' +
+                '<summary><span>' + esc(itemCategoryLabel(category).toUpperCase()) + '</span><b>' + groupRows.length + '</b></summary>' +
+                '<div class="item-lexicon__rows">' + groupRows.map(renderEntry).join("") + '</div>' +
+            '</details>';
+        }
+        lazyGroupRows.set(category, groupRows);
+        return '<details class="item-lexicon__group" data-item-group="' + esc(category) + '">' +
             '<summary><span>' + esc(itemCategoryLabel(category).toUpperCase()) + '</span><b>' + groupRows.length + '</b></summary>' +
-            '<div class="item-lexicon__rows">' + groupRows.map(renderEntry).join("") + '</div>' +
-        '</details>'
-    ).join("");
+            '<div class="item-lexicon__rows" data-item-group-body></div>' +
+        '</details>';
+    }).join("");
+    return rendered + (hiddenGroups > 0
+        ? '<button type="button" class="item-lexicon__more" data-item-more-groups>SHOW ' + Math.min(2, hiddenGroups) + ' MORE CATEGORIES · ' + hiddenGroups + ' HIDDEN</button>'
+        : "");
 }
 
 function signature(catalog) {
     return [
         catalog.tick, catalog.total, catalog.craftedCount, craftedKey(),
-        activeCategory, query, visibleLimit,
+        activeCategory, query, visibleLimit, narrowGroupLimit,
     ].join("|");
 }
 
@@ -135,26 +203,32 @@ function paint(container, { force = false } = {}) {
     const active = document.activeElement;
     const searchFocused = active?.id === "item-lexicon-query" && container.contains(active);
     const selectionStart = searchFocused ? active.selectionStart : null;
+    const __c0 = performance.now();
     const catalog = getCatalog();
+    const __c1 = performance.now();
+    if (!visibleLimit) visibleLimit = pageSize();
     const nextSignature = signature(catalog);
     if (!force && container.dataset.itemLexiconSignature === nextSignature) return;
     const rows = matchingRows(catalog);
     const visible = rows.slice(0, visibleLimit);
     const searchActive = Boolean(query.trim());
-    const categoryButtons = [
-        '<button type="button" class="item-lexicon__category' + (!searchActive && activeCategory === "all" ? " is-active" : "") + '" data-item-category="all">ALL <b>' + catalog.total + '</b></button>',
-        '<button type="button" class="item-lexicon__category' + (!searchActive && activeCategory === "crafted" ? " is-active" : "") + '" data-item-category="crafted">PLAYER-MADE <b>' + catalog.craftedCount + '</b></button>',
-        ...catalog.categories
-            .filter(entry => entry.id !== "all" && entry.id !== "crafted" && entry.count > 0)
-            .map(entry => '<button type="button" class="item-lexicon__category' + (!searchActive && activeCategory === entry.id ? " is-active" : "") + '" data-item-category="' + esc(entry.id) + '">' + esc(entry.label.toUpperCase()) + ' <b>' + entry.count + '</b></button>')
-    ].join("");
+    const categoryEntries = [
+        { id: "all", label: "All items", count: catalog.total },
+        { id: "crafted", label: "Player-made", count: catalog.craftedCount },
+        ...catalog.categories.filter(entry => entry.id !== "all" && entry.id !== "crafted" && entry.count > 0),
+    ];
+    const categoryControl = isNarrowViewport()
+        ? ''
+        : '<div class="item-lexicon__categories" role="group" aria-label="Item categories">' +
+            categoryEntries.map(entry => '<button type="button" class="item-lexicon__category' + (!searchActive && activeCategory === entry.id ? " is-active" : "") + '" data-item-category="' + esc(entry.id) + '">' + esc(entry.label.toUpperCase()) + ' <b>' + entry.count + '</b></button>').join("") +
+            '</div>';
     const resultLabel = searchActive
         ? 'SEARCH · ' + esc(query.trim()) + ' · ' + rows.length.toLocaleString("en-US") + ' MATCHES'
         : (activeCategory === "all" ? 'ALL ITEMS' : 'CATEGORY · ' + esc(categoryLabel(activeCategory)).toUpperCase()) + ' · ' + rows.length.toLocaleString("en-US") + ' RECORDS';
     const empty = activeCategory === "crafted" && !searchActive
         ? '<div class="empty-state item-lexicon__empty"><strong>NO PLAYER-MADE ITEMS YET</strong><p>Forged weapons, armour, tools, jewellery and written books will be filed here as unique records once a workshop or scriptorium registers them.</p></div>'
         : '<div class="empty-state item-lexicon__empty"><strong>NO ITEM MATCHES</strong><p>Try a material, a forest product, a category, a maker or a workshop name.</p></div>';
-    container.innerHTML =
+    const markup =
         '<div class="item-lexicon">' +
             '<div class="item-lexicon__head">' +
                 '<div><span class="item-lexicon__kicker">REALM MATERIAL ARCHIVE · TICK ' + catalog.tick.toLocaleString("en-US") + '</span>' +
@@ -162,14 +236,17 @@ function paint(container, { force = false } = {}) {
                 '<span class="item-lexicon__coverage">' + catalog.baseCount.toLocaleString("en-US") + ' BASE · ' + catalog.craftedCount.toLocaleString("en-US") + ' CRAFTED · ' + catalog.categories.filter(entry => entry.count > 0 && entry.id !== "all" && entry.id !== "crafted").length + ' CATEGORIES</span>' +
             '</div>' +
             '<label class="item-lexicon__search"><span>SEARCH THE WHOLE LEXICON</span><input id="item-lexicon-query" type="search" inputmode="search" autocomplete="off" spellcheck="false" placeholder="Timber, physic, sword, book, maker, workshop…" value="' + esc(query) + '" aria-label="Search all items"></label>' +
-            '<div class="item-lexicon__categories" role="group" aria-label="Item categories">' + categoryButtons + '</div>' +
+            categoryControl +
             '<div class="item-lexicon__meta"><span>' + resultLabel + '</span><span>SHOWING ' + visible.length.toLocaleString("en-US") + ' / ' + rows.length.toLocaleString("en-US") + '</span></div>' +
             '<div class="item-lexicon__groups">' + (visible.length ? renderGroups(visible) : empty) + '</div>' +
             (rows.length > visible.length
-                ? '<button type="button" class="item-lexicon__more" data-item-more>SHOW ' + Math.min(PAGE_SIZE, rows.length - visible.length).toLocaleString("en-US") + ' MORE</button>'
+                ? '<button type="button" class="item-lexicon__more" data-item-more>SHOW ' + Math.min(pageSize(), rows.length - visible.length).toLocaleString("en-US") + ' MORE</button>'
                 : '') +
             '<p class="item-lexicon__footnote">Base entries describe real definitions in the simulation. Crafted entries exist only when a unique item record has actually been registered; no live stock is invented here.</p>' +
         '</div>';
+    window.__itemTiming = { catalogMs: Math.round((__c1 - __c0) * 10) / 10, buildMs: Math.round((performance.now() - __c1) * 10) / 10 };
+    if (isNarrowViewport() && !force && !searchFocused) renderProgressive(container, markup);
+    else container.innerHTML = markup;
     container.dataset.itemLexiconSignature = nextSignature;
     if (searchFocused) {
         const input = container.querySelector("#item-lexicon-query");
@@ -188,29 +265,48 @@ function bind(container) {
     if (boundContainer === container) return;
     boundContainer = container;
     container.addEventListener("click", event => {
+        const groupSummary = event.target.closest(".item-lexicon__group > summary");
+        if (groupSummary) {
+            const details = groupSummary.parentElement;
+            const body = details.querySelector("[data-item-group-body]");
+            if (body && details.dataset.itemGroupReady !== "1") {
+                const rows = lazyGroupRows.get(details.dataset.itemGroup) || [];
+                body.innerHTML = rows.map(renderEntry).join("");
+                details.dataset.itemGroupReady = "1";
+            }
+        }
+        const summary = event.target.closest(".item-lexicon__entry > summary");
+        if (summary) ensureItemDetail(summary.parentElement);
         const categoryButton = event.target.closest("[data-item-category]");
         if (categoryButton) {
             activeCategory = categoryButton.dataset.itemCategory || "all";
             query = "";
-            visibleLimit = PAGE_SIZE;
+            visibleLimit = pageSize();
             repaint(container);
             return;
         }
         if (event.target.closest("[data-item-more]")) {
-            visibleLimit += PAGE_SIZE;
+            visibleLimit += pageSize();
             repaint(container);
         }
     });
     container.addEventListener("input", event => {
         if (event.target.id !== "item-lexicon-query") return;
         query = event.target.value;
-        visibleLimit = PAGE_SIZE;
+        visibleLimit = pageSize();
         repaint(container);
     });
     container.addEventListener("change", event => {
+        if (event.target.id === "item-lexicon-category") {
+            activeCategory = event.target.value || "all";
+            query = "";
+            visibleLimit = pageSize();
+            repaint(container);
+            return;
+        }
         if (event.target.id !== "item-lexicon-query") return;
         query = event.target.value;
-        visibleLimit = PAGE_SIZE;
+        visibleLimit = pageSize();
         repaint(container);
     });
 }
@@ -228,7 +324,7 @@ export function renderItemLexicon(container) {
 export function resetItemLexicon() {
     activeCategory = "all";
     query = "";
-    visibleLimit = PAGE_SIZE;
+    visibleLimit = 0;
     cachedCatalog = null;
     cachedTick = -1;
     cachedCraftedKey = "";

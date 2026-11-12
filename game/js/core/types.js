@@ -42,6 +42,8 @@ export const TYPE = {
     BREWERY: 76,
     GUILDHALL: 77,
     WATCHHOUSE: 78,
+    SMITHY: 79,
+    SCRIPTORIUM: 80,
 
     VILLAGER: 20,
     GUARD: 21,
@@ -95,6 +97,8 @@ const MAX_HP = {
     [TYPE.BREWERY]:   190,
     [TYPE.GUILDHALL]: 300,
     [TYPE.WATCHHOUSE]: 240,
+    [TYPE.SMITHY]: 220,
+    [TYPE.SCRIPTORIUM]: 210,
     [TYPE.VILLAGER]: 35,
     [TYPE.GUARD]:    160,
     [TYPE.ARCHER]:   95,
@@ -129,6 +133,8 @@ export const JOB_ICONS = {
     healer:      "🩺",
     merchant:    "⚖️",
     hauler:      "🧺",
+    smith:       "⚒️",
+    scribe:      "✒️",
     builder:     "🔨",
     guard:       "🛡️",
     archer:      "🏹",
@@ -183,7 +189,7 @@ export class Entity {
     }
 
     isBuilding() {
-        return this.type < 20 || (this.type >= 60 && this.type < 79);
+        return this.type < 20 || (this.type >= 60 && this.type < 81);
     }
 
     isUnit() {

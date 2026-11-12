@@ -101,3 +101,100 @@
 .identity-field input:focus,.identity-field select:focus,.identity-field textarea:focus{outline:2px solid rgba(212,175,101,.65);outline-offset:1px}
 .identity-field--wide{grid-column:1/-1}
 .founding-summary{margin:.55rem 0 .2rem;padding:.62rem .7rem;border:1px solid rgba(185,154,89,.34);border-radius:6px;background:rgba(12,18,20,.5);color:#d9c9a5;font-size:.64rem;line-height:1.45;letter-spacing:.03em}
+
+/* Management panels are long archives. Only the records in and near the
+   scrollport need layout and paint; the DOM and its text stay complete, so
+   search, keyboard access and tests still see every record. This keeps a
+   360px phone from laying out hundreds of off-screen cards in one task. */
+#command-panel-content .command-summary>div,
+#command-panel-content .command-policy,
+#command-panel-content .command-card,
+#command-panel-content .command-resource,
+#command-panel-content .command-history,
+#command-panel-content .court-office,
+#command-panel-content .court-history>div,
+#command-panel-content .city-policy,
+#command-panel-content .city-service-card,
+#command-panel-content .city-codex-card,
+#command-panel-content .population-citizen,
+#command-panel-content .population-household,
+#command-panel-content .building-record,
+#command-panel-content .diplomacy-realm,
+#command-panel-content .military-soldier,
+#command-panel-content .health-healer,
+#command-panel-content .creature-record,
+#command-panel-content .dynasty-person,
+#command-panel-content .endeavour-card,
+#command-panel-content .item-lexicon__entry,
+#command-panel-content .item-lexicon__group {
+    content-visibility: auto;
+    contain: layout paint style;
+    contain-intrinsic-size: auto 64px;
+}
+
+/* On a phone the illustrated building register is intentionally folded: it is
+   reference material, not a control the player needs on every visit. Opening
+   it fills the grid once, and the same lazy images are used as on desktop. */
+.city-codex { margin: 12px 0; border: 2px solid #ad8750; border-radius: 8px; background: #f7e5bb; }
+.city-codex > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 11px; cursor: pointer; color: #8f4328; font-size: 8px; font-weight: 1000; letter-spacing: .12em; }
+.city-codex > summary small { color: #756445; font-size: 7px; font-weight: 700; letter-spacing: .06em; }
+.city-codex > summary::-webkit-details-marker { display: none; }
+.city-codex > summary::after { content: "+"; color: #8f4328; font: 1000 15px Georgia, serif; }
+.city-codex[open] > summary::after { content: "−"; }
+.city-codex > [data-city-codex-body] { padding: 0 9px 10px; }
+
+/* On a throttled phone, content-visibility:auto still lays out a whole group
+   of archive cards to discover its size. The low-end pass therefore parks
+   repeated cards in a zero-cost hidden state and lets the panel observer
+   reveal them just before they enter the scrollport. Desktop is untouched. */
+@media (max-width: 640px) {
+    #command-panel-content .command-policy,
+    #command-panel-content .command-card,
+    #command-panel-content .command-resource,
+    #command-panel-content .court-office,
+    #command-panel-content .court-history>div,
+    #command-panel-content .city-policy,
+    #command-panel-content .city-service-card,
+    #command-panel-content .city-codex-card,
+    #command-panel-content .population-citizen,
+    #command-panel-content .population-household,
+    #command-panel-content .building-record,
+    #command-panel-content .diplomacy-realm,
+    #command-panel-content .military-soldier,
+    #command-panel-content .health-healer,
+    #command-panel-content .creature-record,
+    #command-panel-content .dynasty-person,
+    #command-panel-content .endeavour-card,
+    #command-panel-content .item-lexicon__entry {
+        content-visibility: hidden;
+        contain-intrinsic-size: auto 64px;
+    }
+    #command-panel-content .item-lexicon__group {
+        content-visibility: visible;
+    }
+    #command-panel-content .is-cv-ready {
+        content-visibility: visible;
+    }
+}
+
+/* The lexicon's category rail becomes one native select on a phone. It keeps
+   every category available while avoiding a grid of two dozen buttons. */
+.item-lexicon__category-select { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 12px; color: #87613a; font-size: 8px; font-weight: 1000; letter-spacing: .12em; }
+.item-lexicon__category-select select { padding: 9px; border: 2px solid #a77b42; border-radius: 7px; background: #fff8e4; color: #26384b; font: 700 11px Arial, sans-serif; }
+
+/* A phone does not need twenty-two keycaps above a 259px content viewport.
+   One native selector replaces the deck, keeps every panel reachable and
+   removes the deck's per-switch grid layout from the low-end budget. */
+.command-tab-select { display: none; }
+@media (max-width: 640px) {
+    .command-modal-tabs { display: none !important; }
+    .command-tab-select { display: flex; flex-direction: column; gap: 4px; margin: 8px 14px 0; color: #87613a; font-size: 8px; font-weight: 1000; letter-spacing: .12em; }
+    .command-tab-select select { width: 100%; padding: 10px; border: 2px solid #a77b42; border-radius: 7px; background: #fff8e4; color: #26384b; font: 700 12px Arial, sans-serif; }
+}
+
+@media (max-width: 640px) {
+    /* Isolate the scrollport from the command header's banner and gradients.
+       Content updates then repaint their own layer instead of re-rasterising
+       the full modal. This is a compositor hint, not a layout change. */
+    #command-panel-content { will-change: transform; transform: translateZ(0); }
+}

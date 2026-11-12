@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="css/city-civic.css">
     <link rel="stylesheet" href="css/hud-v3.css">
     <link rel="stylesheet" href="css/world-workshop.css">
+    <link rel="stylesheet" href="css/event-timeline.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
 <body>
@@ -482,9 +483,24 @@
 <button type="button" class="ui-button ui-button--tab" data-command-tab="endeavours"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>ENDEAVOURS</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="dynasty"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>DYNASTY</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="creatures"><svg aria-hidden="true"><use href="assets/command-emblems.svg#dragon"></use></svg><span>CREATURES</span></button>
+<button type="button" class="ui-button ui-button--tab" data-command-tab="atelier"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>ATELIER</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="chronicle"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>CHRONICLE</span></button>
-</nav><div id="command-panel-content" class="ui-window__body command-panel-content"></div></section></div>
+</nav><label class="command-tab-select" for="command-tab-select"><span>OPEN MANAGEMENT PANEL</span><select id="command-tab-select" aria-label="Choose management panel"></select></label><div id="command-panel-content" class="ui-window__body command-panel-content"></div></section></div>
 <div id="card-drag-ghost" aria-hidden="true"><span id="drag-ghost-icon" class="drag-ghost-icon"></span><span id="drag-ghost-name" class="drag-ghost-name"></span></div>
+<aside id="event-notification" class="event-notification hidden" role="status" aria-live="polite" aria-atomic="true" aria-label="Living chronicle event">
+    <div class="event-notification-card">
+        <span id="event-notification-category" class="event-notification-kicker"></span>
+        <h3 id="event-notification-title" class="event-notification-title"></h3>
+        <p id="event-notification-text" class="event-notification-text"></p>
+        <div class="event-notification-footer">
+            <time id="event-notification-date"></time>
+            <div class="event-notification-actions">
+                <button id="event-notification-open" type="button">VIEW IN CHRONICLE</button>
+                <button id="event-notification-close" class="event-notification-close" type="button" aria-label="Dismiss event notice">×</button>
+            </div>
+        </div>
+    </div>
+</aside>
 <div id="action-toast" class="action-toast" role="status"></div>
 <div id="big-message" class="big-message hidden" role="dialog" aria-modal="true" aria-labelledby="big-title">
     <div class="big-message-card"><div id="big-title"></div><div id="big-subtitle"></div><button id="big-message-close" class="message-button" type="button">CONTINUE</button></div>

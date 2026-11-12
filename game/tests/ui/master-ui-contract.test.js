@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const root=new URL("../../",import.meta.url);
-const [html,css,cardCss,ui,management,populationPanel,dossier,main,economy,renderer,hud,gameCss]=await Promise.all([
+const [html,css,cardCss,ui,management,populationPanel,dossier,main,saveRuntime,economy,economyCycle,renderer,hud,gameCss]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/ui-design-system.css",root),"utf8"),
   readFile(new URL("css/medieval.css",root),"utf8"),
@@ -12,7 +12,9 @@ const [html,css,cardCss,ui,management,populationPanel,dossier,main,economy,rende
   readFile(new URL("js/presentation/population-panel.js",root),"utf8"),
   readFile(new URL("js/presentation/character-dossier.js",root),"utf8"),
   readFile(new URL("js/app/main.js",root),"utf8"),
+  readFile(new URL("js/core/save-runtime.js",root),"utf8"),
   readFile(new URL("js/systems/economy.js",root),"utf8"),
+  readFile(new URL("js/systems/economy-cycle.js",root),"utf8"),
   readFile(new URL("js/presentation/rendering/renderer.js",root),"utf8"),
   readFile(new URL("css/hud-v3.css",root),"utf8"),
   readFile(new URL("css/game.css",root),"utf8")
@@ -157,8 +159,9 @@ test("diplomacy exposes persistent neighbours, treaties and trade consequences",
   assert.ok(management.includes('data-command="diplomacy-alliance"'));
   assert.ok(management.includes('data-command="diplomacy-war"'));
   assert.ok(management.includes('data-command="diplomacy-peace"'));
-  assert.ok(main.includes("normalizeDiplomacySnapshot(snapshot.diplomacy)"));
-  assert.ok(main.includes("diplomacy:JSON.parse(JSON.stringify(state.diplomacy"));
+  const compactSaveRuntime = saveRuntime.replace(/\s+/g, "");
+  assert.ok(saveRuntime.includes("normalizeDiplomacySnapshot(snapshot.diplomacy)"));
+  assert.ok(compactSaveRuntime.includes("diplomacy:JSON.parse(JSON.stringify(state.diplomacy"));
 });
 
 test("the population panel explains a stalled growth gate and its recovery hint",()=>{
@@ -197,7 +200,8 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(main.includes("function renderSaveSlots()"));
   assert.ok(main.includes("function exportRealm()"));
   assert.ok(main.includes("async function importRealm(file)"));
-  assert.ok(main.includes("ECONOMY_HISTORY_LIMIT"));
+  assert.ok(main.includes("restoreEconomyCycleState"));
+  assert.ok(economyCycle.includes("ECONOMY_HISTORY_LIMIT"));
   assert.ok(hud.includes(".save-slot"));
   for(const label of ["Original soundtrack enabled","Music volume","Show resource change badges","Reduce interface motion"]){
     assert.ok(html.includes('aria-label="'+label+'"'),"settings control needs an accessible name: "+label);
@@ -258,6 +262,7 @@ test("creature dossiers use actual living and memorial records",()=>{
 test("chronicle inbox uses stored event log data and opens the existing active issue",()=>{
   assert.ok(html.includes('data-kac-panel="chronicle"'));
   assert.ok(html.includes('data-command-tab="chronicle"'));
+  assert.ok(html.includes('data-command-tab="atelier"'));
   assert.ok(management.includes("state.eventLog"));
   assert.ok(management.includes("entry.tick"));
   assert.ok(management.includes("entry.kind"));

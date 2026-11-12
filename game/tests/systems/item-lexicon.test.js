@@ -109,13 +109,16 @@ test("base item records stay frozen and do not depend on node locale formatting"
 });
 
 test("the save and management contracts actually wire the crafted archive", async () => {
-    const [main, validation, management] = await Promise.all([
+    const [main, saveRuntime, migrations, validation, management] = await Promise.all([
         readFile(new URL("../../js/app/main.js", import.meta.url), "utf8"),
+        readFile(new URL("../../js/core/save-runtime.js", import.meta.url), "utf8"),
+        readFile(new URL("../../js/core/save-migrations.js", import.meta.url), "utf8"),
         readFile(new URL("../../js/core/save-validation.js", import.meta.url), "utf8"),
         readFile(new URL("../../js/presentation/management-ui.js", import.meta.url), "utf8"),
     ]);
-    assert.ok(main.includes("7:snapshot=>") && main.includes("craftedItems:normalizeCraftedItems(state.craftedItems||[])"));
-    assert.ok(main.includes("state.craftedItems=normalizeCraftedItems(snapshot.craftedItems)"));
+    const compactSaveRuntime = saveRuntime.replace(/\s+/g, "");
+    assert.ok(migrations.includes("7:snapshot=>") && compactSaveRuntime.includes("craftedItems:normalizeCraftedItems(state.craftedItems||[])"));
+    assert.ok(compactSaveRuntime.includes("state.craftedItems=normalizeCraftedItems(snapshot.craftedItems)"));
     assert.ok(validation.includes("validateCraftedItems"));
     assert.ok(management.includes('if(activePanel==="items")renderItemLexicon(panel)'));
 });
