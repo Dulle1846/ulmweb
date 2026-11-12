@@ -445,9 +445,14 @@ try {
     const cleanOutgoing = observations.timeline
         .filter(step => step.effects.length === 0)
         .flatMap(step => step.damageToEnemies.map(hit => ({ ...hit, tick: step.tick })));
-    const guerrillaHit = cleanOutgoing.find(hit => hit.damage === boostedOutgoing);
+    // Two or more levies can strike the same raider on the same tick. The
+    // snapshot records the enemy's HP delta, so a clean 48 is two 24-damage
+    // guerrilla hits, not a different combat result. Accept exact multiples
+    // while still rejecting any hit that does not contain the boosted value.
+    const guerrillaHit = cleanOutgoing.find(hit => hit.damage === boostedOutgoing
+        || (hit.damage > boostedOutgoing && hit.damage % boostedOutgoing === 0));
     if (!(boostedOutgoing > baselineOutgoing)) fail("the jungle guerrilla multiplier does not exceed baseline damage");
-    if (!guerrillaHit) fail("no clean levy hit matched the boosted guerrilla damage " + boostedOutgoing);
+    if (!guerrillaHit) fail("no clean levy damage matched the boosted guerrilla damage " + boostedOutgoing);
 
     const summary = {
         denseTile: observations.dense,

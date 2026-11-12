@@ -134,6 +134,23 @@ test("medicine stock is capped by the public health contract", () => {
 });
 
 
+test("thorn scrub injures workers through the shared health path", () => {
+    setup();
+    state.tick = 10;
+    state.resources.food = 100;
+    state.entities = [{
+        id: "resident-thorns", type: TYPE.VILLAGER, x: 2, y: 2, dead: false,
+        householdId: "test-household",
+    }];
+    let result = null;
+    for (let attempt = 0; attempt < 200 && !result?.injury; attempt++) {
+        result = tropicalExposure({ thorns: 1 });
+    }
+    assert.equal(result.injury, true);
+    assert.equal(state.health.outbreakActive, false, "thorns must not masquerade as a fever");
+    assert.ok(state.entities[0].illnessUntilTick > state.tick);
+});
+
 test("tropical exposure starts the existing health outbreak instead of a parallel system", () => {
     setup();
     state.tick = 10;

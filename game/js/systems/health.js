@@ -435,6 +435,7 @@ export function tropicalExposure(hazard = {}, context = {}) {
         parasites: clamp(Number(hazard.parasites) || 0, 0, 1),
         poison: clamp(Number(hazard.poison) || 0, 0, 1),
         predators: clamp(Number(hazard.predators) || 0, 0, 1),
+        thorns: clamp(Number(hazard.thorns) || 0, 0, 1),
         storm: clamp(Number(hazard.storm) || 0, 0, 1),
     };
     const result = { outbreak: false, injury: false, foodLost: 0 };
@@ -453,6 +454,10 @@ export function tropicalExposure(hazard = {}, context = {}) {
     }
     if (h.predators > 0.55 && random("health") < 0.03 + h.predators * 0.08) {
         result.injury = Boolean(injureResident("predator", 2)) || result.injury;
+    }
+    // Thorn scrub is a real work hazard, not only a dark patch in the tile art.
+    if (h.thorns > 0.55 && random("health") < 0.05 + h.thorns * 0.09) {
+        result.injury = Boolean(injureResident("thorns", 1)) || result.injury;
     }
     if (h.storm > 0.6 && random("health") < 0.12) {
         const food = Math.max(0, Math.floor(Number(state.resources?.food) || 0));

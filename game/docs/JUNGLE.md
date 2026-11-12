@@ -84,7 +84,7 @@ Das Profil liefert sieben Schichten mit Meterbereich und Dichte: Bodenstreu (0�
 
 ## Landschaft und Verstecke
 
-`landscape` enthält echte, pro Kachel stabile Flags: `ravine`, `rockOutcrop`, `hiddenStream`, `waterfall`, `flooded`, `clearing`, `hiddenGlade`, `animalTrail`, `passage`, `viewpoint`, `vegetationWall`, `denseWall`, `openPatches` sowie die lokale Sichtweite in Metern. Versteckte Lichtungen, Schluchten, Felsvorsprünge und Wasserfälle sind selten und an Gelände, Alter und Feuchte gebunden. Der Renderer zeichnet sie nur, wenn das Flag und der zugehörige Punkt stark genug sind.
+`landscape` enthält echte, pro Kachel stabile Flags: `ravine`, `rockOutcrop`, `hiddenStream`, `waterfall`, `flooded`, `clearing`, `hiddenGlade`, `animalTrail`, `passage`, `openPath`, `rockPassage`, `viewpoint`, `vegetationWall`, `denseWall`, `openPatches` sowie die lokale Sichtweite in Metern. Versteckte Lichtungen, Schluchten, Felsvorsprünge und Wasserfälle sind selten und an Gelände, Alter und Feuchte gebunden. Der Renderer zeichnet sie nur, wenn das Flag und der zugehörige Punkt stark genug sind.
 
 ## Ressourcen und Fauna
 
@@ -94,19 +94,30 @@ Die Fauna umfasst Jaguar, Ozelot, Bushmaster, Anakonda, Leguan, Lianennatter, Br
 
 ## Taktische Wirkung
 
-- **Bewegung:** `getForestMovementFactorAt()` multipliziert den bisherigen tropischen Faktor mit dem Jungle-Faktor. Die Kombination bleibt auf `0,55–1` begrenzt, damit Träger nicht stehen bleiben.
-- **Sicht:** `forestSightBlock()` liefert für dichte Dschungelkacheln einen echten Sichtblock; Lichtungen und Pfade öffnen ihn. `sightRadius` kommt aus demselben Profil.
-- **Navigation:** `getJungleTacticsAt(x,y)` liefert gecachte Werte für Pfade, Hinterhalte, Versorgung, lokale Verteidigung und Guerilla.
+- **Bewegung:** `getForestMovementFactorAt()` multipliziert den bisherigen tropischen Faktor mit dem Jungle-Faktor. Die Kombination bleibt auf `0,55–1` begrenzt, damit Träger nicht stehen bleiben. `landscape.openPath` umfasst Lichtungen, verborgene Lichtungen, Tierpfade, Felsdurchgänge und Schluchten; diese Kacheln verlieren den größten Teil des Unterholzzuschlags.
+- **Sicht:** `forestSightBlock()` liefert für dichte Dschungelkacheln einen echten Sichtblock; Lichtungen, verborgene Lichtungen, Pfade und Felsdurchgänge öffnen ihn. `sightRadius` kommt aus demselben Profil; Aussichtspunkte auf Lichtungen und Felsvorsprüngen senken die Sichtbehinderung zusätzlich.
+- **Navigation:** `getJungleTacticsAt(x,y)` liefert gecachte Werte für Pfade, Hinterhalte, Versorgung, lokale Verteidigung und Guerilla. Felsvorsprünge und Vegetationswände erhöhen die Deckung, verborgene Lichtungen und Felsdurchgänge den lokalen Bonus.
 - **Kampf:** Gegner bewegen sich im Dschungel langsamer, erleiden alle 23 Ticks Ambush-Schaden und alle 37 Ticks Versorgungsattrition. Verteidiger erhalten Deckung; lokale Levies erhalten den Local-/Guerilla-Bonus. Alle Zufallsrollen laufen über den bestehenden deterministischen Kampfstrom.
-- **Krankheit:** Die Jungle-Hazards werden in `forestProductsAt()` mit den tropischen Hazards zusammengeführt. `tropicalExposure()` startet daraus die bestehende Gesundheitsausbruch-Logik; Arbeit im Dschungel wird zusätzlich langsamer.
+- **Krankheit und Verletzungen:** Die Jungle-Hazards werden in `forestProductsAt()` mit den tropischen Hazards zusammengeführt. `tropicalExposure()` startet daraus die bestehende Gesundheitsausbruch-Logik; Dornen verursachen zusätzlich eine echte Arbeitsverletzung, Arbeit im Dschungel wird langsamer.
+- **Jagd:** Getarnte Arten im gemeinsamen Herdenmodell (Jaguar, Ozelot) lassen sich pro Jagdgang schwerer erbeuten; Herde, Fortpflanzung und Jagddruck bleiben im gemeinsamen Fauna-Modell. Die übrigen Tarnarten bleiben Habitatbeobachtungen.
+
+### Nachbesserung 2026-11-12
+
+Die Prüfung der 55 Punkte ergab fünf Stellen, an denen das Profil zwar einen Wert lieferte, aber noch keinen vollständigen Verbraucher hatte. Diese sind jetzt geschlossen:
+
+- **1.2.5.12 Verborgene Lichtungen:** `landscape.openPath` öffnet Sicht und Bewegung; der Renderer zeichnet die Lichtung mit seltenen Leuchtpflanzen statt sie hinter Fels oder Wand zu verstecken.
+- **1.2.5.27/1.2.5.30/1.2.5.31 Fels und Aussicht:** Felsdurchgänge gelten als `passage`, Felsvorsprünge geben zusätzliche Deckung, und erhöhte Fels-/Lichtungsflächen wirken als Aussichtspunkte mit größerer Sichtweite.
+- **1.2.5.6/1.2.5.19 Dornen:** `hazards.thorns` ist an `tropicalExposure()` angeschlossen und kann Waldarbeiter verletzen.
+- **1.2.5.17/1.2.5.23 Riesenfarne und seltene Pflanzen:** eigene Canvas-Signaturen für Riesenfarne und leuchtende Rare-Blüten.
+- **1.2.5.38 Tarnung:** getarnte Arten reduzieren die Beute eines Jagdgangs, ohne ein zweites Populationsmodell einzuführen.
 - **Versorgung:** `supplyFactor` sinkt mit Dickicht, Sichtbehinderung, fehlenden Durchgängen und Überschwemmung. Der Wert wird im Forester-Panel und in der taktischen Zusammenfassung angezeigt.
 
 ## Rendering
 
 `js/presentation/rendering/jungle-render.js` zeichnet:
 
-- Dickicht, Dornen, Bambus, Lianenvorhänge und Vegetationswände,
-- Tierpfade, Lichtungen, Aussichtspunkte,
+- Dickicht, Dornen, Bambus, Lianenvorhänge, Riesenfarne und Vegetationswände,
+- Tierpfade, Lichtungen, verborgene Lichtungen, Aussichtspunkte und seltene Leuchtblüten,
 - Schluchten, Felsvorsprünge, verborgene Bäche und Wasserfälle,
 - Überschwemmungen und den dunkleren Dschungelboden.
 
@@ -174,7 +185,7 @@ Die beiden folgenden Blöcke werden von `scripts/sync-jungle-doc.mjs` aus dem zu
 | Kampf | `AMBUSH` bei Tick 23; `SUPPLY` bei Tick 37 mit **1** Attritionsschaden; Deckung dicht **14** vs. offen **18** Schaden; lokale Levy **25** vs. fremde Garde **22** Schaden |
 | Ressourcen | Acht Gruppen real gesammelt (8 Gruppen im Bericht); Bestand enthält u. a. Açaí, Timber, Rattan, Quinine, Curare, Vanilla, Bromeliads und Orchideen |
 | Versteckter Ort | `HIDDEN GLADE` in der UI; UI-Gather liefert **11** Güter, darunter Bromeliads und Orchideen; **14** Bestands-IDs |
-| UI-Felder | `Layers`, `Sight 2`, `Ambush 65 %`, `Cover 100 %`, `Supply 65 %`, `Guerrilla 83 %`, `Local 25 %`, `Disease 75 %`, `Parasites 86 %` |
+| UI-Felder | `Layers`, `Sight 2`, `Ambush 63 %`, `Cover 100 %`, `Supply 66 %`, `Guerrilla 82 %`, `Local 25 %`, `Disease 75 %`, `Parasites 86 %` |
 | Konsole/Netz | **0** Page-/Console-Fehler, **0** Console-Fehler, **0** fehlgeschlagene Requests, **0** HTTP-Fehler, **0** fehlende Assets |
 <!-- JUNGLE_EVIDENCE_END -->
 
@@ -214,24 +225,24 @@ Bewusst schwaches Profil: **720 × 540 CSS-Pixel, Device-Pixel-Ratio 1, 50 % Ren
 
 | Jahreszeit | Frames (App) | Median App | App-p95 | Roh-p95 / Max | Draw-p95 / Max | Sim-p95 / Max | UI-p95 / Max | Präsentations-FPS | Fenster-FPS |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Frühling (Tag 50) | 66 (66) | 33,5 ms | **36,0 ms** | 36,0 / 43,8 ms | 3,2 / 3,6 ms | 0,6 / 10,2 ms | 0,0 / 0,0 ms | **30,227** | 29,980 |
-| Sommer (Tag 150) | 65 (65) | 33,5 ms | **41,7 ms** | 41,7 / 46,1 ms | 3,7 / 5,3 ms | 0,8 / 8,8 ms | 0,0 / 0,0 ms | **30,009** | 29,536 |
-| Herbst (Tag 250) | 66 (64) | 33,3 ms | **34,9 ms** | 35,9 / 55,0 ms | 2,7 / 4,8 ms | 0,7 / 24,1 ms | 0,0 / 0,0 ms | **30,462** | 29,971 |
-| Winter (Tag 350) | 66 (66) | 33,2 ms | **35,7 ms** | 35,7 / 38,3 ms | 3,1 / 4,0 ms | 0,5 / 4,4 ms | 0,9 / 0,9 ms | **30,443** | 29,995 |
-| Gesamtfenster | 48 (48) | 33,3 ms | **35,1 ms** | 35,1 / 43,0 ms | 3,5 / 3,8 ms | 0,0 / 5,0 ms | 0,4 / 0,4 ms | **30,616** | 29,993 |
+| Frühling (Tag 50) | 65 (65) | 33,3 ms | **35,3 ms** | 35,3 / 42,0 ms | 2,7 / 3,4 ms | 0,6 / 9,4 ms | 0,0 / 0,0 ms | **30,313** | 29,540 |
+| Sommer (Tag 150) | 65 (64) | 33,3 ms | **34,7 ms** | 34,8 / 50,1 ms | 2,7 / 3,7 ms | 0,3 / 7,0 ms | 0,0 / 0,0 ms | **30,273** | 29,536 |
+| Herbst (Tag 250) | 67 (65) | 33,3 ms | **36,4 ms** | 36,7 / 41,5 ms | 2,5 / 4,6 ms | 0,6 / 0,7 ms | 0,1 / 0,1 ms | **30,397** | 30,336 |
+| Winter (Tag 350) | 66 (66) | 33,3 ms | **35,2 ms** | 35,2 / 43,5 ms | 2,5 / 9,0 ms | 0,6 / 5,7 ms | 0,0 / 0,8 ms | **30,437** | 29,958 |
+| Gesamtfenster | 47 (46) | 33,2 ms | **35,0 ms** | 36,1 / 56,6 ms | 2,5 / 3,8 ms | 0,1 / 3,7 ms | 0,0 / 0,0 ms | **30,262** | 29,366 |
 
-**Gesamte Messstrecke:** 263 präsentierte Frames in vier 2,2-s-Fenstern; 261 davon sind Anwendungsframes. Die Summe der vier First-to-last-Spannen beträgt **8684,1 ms**; daraus ergeben sich **30,285 Präsentations-FPS**. Die Summe der vier vollen 2,2-s-Wanduhren beträgt **8804,7 ms** und ergibt **29,870 Fenster-FPS**; die Differenz sind die vier Start-/Endränder und keine entfernte No-Work-Lücke. 0 externe No-Work-Lücken mit zusammen **0,0 ms** liegen vollständig in der Präsentationsspanne und senken die Rate. Die längste Jahreszeiten-Lücke war keine externe No-Work-Lücke.
+**Gesamte Messstrecke:** 263 präsentierte Frames in vier 2,2-s-Fenstern; 260 davon sind Anwendungsframes. Die Summe der vier First-to-last-Spannen beträgt **8664,0 ms**; daraus ergeben sich **30,355 Präsentations-FPS**. Die Summe der vier vollen 2,2-s-Wanduhren beträgt **8812,8 ms** und ergibt **29,843 Fenster-FPS**; die Differenz sind die vier Start-/Endränder und keine entfernte No-Work-Lücke. 1 externe No-Work-Lücken mit zusammen **50,1 ms** liegen vollständig in der Präsentationsspanne und senken die Rate. Die längste Jahreszeiten-Lücke war **50,1 ms** (Tag 150) mit **1,7 ms** App-Arbeit und keinem Long Task.
 
-**Gate:** Jede der vier Jahreszeiten wird einzeln gegen **App-p95 ≤ 50 ms** geprüft; ein fehlender oder nicht-finiter Wert lässt den Lauf scheitern. Zusätzlich werden Draw- und UI-p95/Max pro Jahreszeit gegen **16,7 ms** und die Gesamtstrecke gegen **≥30 Präsentations-FPS** geprüft. Der schlechteste App-p95 ist **41,7 ms**, der schlechteste Draw-Max **5,3 ms**, der schlechteste UI-Max **0,9 ms**.
+**Gate:** Jede der vier Jahreszeiten wird einzeln gegen **App-p95 ≤ 50 ms** geprüft; ein fehlender oder nicht-finiter Wert lässt den Lauf scheitern. Zusätzlich werden Draw- und UI-p95/Max pro Jahreszeit gegen **16,7 ms** und die Gesamtstrecke gegen **≥30 Präsentations-FPS** geprüft. Der schlechteste App-p95 ist **36,4 ms**, der schlechteste Draw-Max **9,0 ms**, der schlechteste UI-Max **0,8 ms**.
 
-**Kontrolllauf ohne Dschungelarbeit:** Dieselbe Seite, dieselbe Kamera-Mechanik, dasselbe 4×-Throttling und derselbe Canvas-Renderer, aber die statische Wasser-/Leerfläche `(3, 3)` statt des dichten Dschungels. Ausgewählt wurde der Versuch mit der größten gemessenen No-Work-Lücke (1 Versuch insgesamt): **120 Frames (119 App)**, App-Median **33,4 ms**, App-p95 **36,0 ms**, Präsentations-FPS **30,120**, **1 externe Lücke(n)** mit **66,7 ms** und **1,6 ms** App-Arbeit (Draw 1,6 ms, Sim 0,0 ms, UI 0,0 ms), **0 Long Tasks**. Damit tritt eine lange No-Work-Pause nachweislich auch ohne Vegetation, Simulation oder Dschungel-Draw auf.
+**Kontrolllauf ohne Dschungelarbeit:** Dieselbe Seite, dieselbe Kamera-Mechanik, dasselbe 4×-Throttling und derselbe Canvas-Renderer, aber die statische Wasser-/Leerfläche `(3, 3)` statt des dichten Dschungels. Ausgewählt wurde der Versuch mit der größten gemessenen No-Work-Lücke (2 Versuche insgesamt): **116 Frames (113 App)**, App-Median **33,2 ms**, App-p95 **42,0 ms**, Präsentations-FPS **29,241**, **3 externe Lücke(n)** mit **237,5 ms** und **3,0 ms** App-Arbeit (Draw 2,7 ms, Sim 0,3 ms, UI 0,0 ms), **0 Long Tasks**. Damit tritt eine lange No-Work-Pause nachweislich auch ohne Vegetation, Simulation oder Dschungel-Draw auf.
 
 **Budgets und Begründung:**
 
-- **Draw und UI:** Das Projekt definiert in `docs/TERRAIN_PERFORMANCE.md` und dem Endurance-Audit bereits **16,7 ms pro Draw-Pass und UI-Refresh**. Dieses Harness prüft p95 und Max; der schlechteste Draw war **5,3 ms**, die schlechteste UI **0,9 ms**.
-- **Frame-Pacing:** Für das 4×-CPU-/Software-GL-Profil gilt **p95 ≤ 50 ms**. Das ist bewusst konservativer als ein 60-FPS-Budget. Der Median liegt in allen vier Jahreszeiten bei 33–34 ms (30 FPS), der schlechteste App-p95 bei **41,7 ms**.
-- **FPS:** Die Gesamtstrecke hält **30,285 Präsentations-FPS** (≥ 30). Die reine Fenster-FPS ist mit **29,870** niedriger, weil sie zusätzlich die vier Start-/Endränder der 2,2-s-Fenster enthält; sie ist kein Gate und wird nicht schöngerechnet. Frühere 30,4 FPS waren gap-bereinigt und sind **kein gültiger Vergleichswert** für dieses Gate.
-- **Keine Ausnahme-Jahreszeit:** Alle vier App-p95-Werte (36,0 / 41,7 / 34,9 / 35,7 ms) liegen unter 50 ms. Rohwerte über 50 ms sind ausschließlich die als externe No-Work-Lücken klassifizierten Frames; ihre App-Arbeit liegt bei keine, und der Kontrolllauf zeigt dieselbe Art Lücke ohne Dschungel.
+- **Draw und UI:** Das Projekt definiert in `docs/TERRAIN_PERFORMANCE.md` und dem Endurance-Audit bereits **16,7 ms pro Draw-Pass und UI-Refresh**. Dieses Harness prüft p95 und Max; der schlechteste Draw war **9,0 ms**, die schlechteste UI **0,8 ms**.
+- **Frame-Pacing:** Für das 4×-CPU-/Software-GL-Profil gilt **p95 ≤ 50 ms**. Das ist bewusst konservativer als ein 60-FPS-Budget. Der Median liegt in allen vier Jahreszeiten bei 33–34 ms (30 FPS), der schlechteste App-p95 bei **36,4 ms**.
+- **FPS:** Die Gesamtstrecke hält **30,355 Präsentations-FPS** (≥ 30). Die reine Fenster-FPS ist mit **29,843** niedriger, weil sie zusätzlich die vier Start-/Endränder der 2,2-s-Fenster enthält; sie ist kein Gate und wird nicht schöngerechnet. Frühere 30,4 FPS waren gap-bereinigt und sind **kein gültiger Vergleichswert** für dieses Gate.
+- **Keine Ausnahme-Jahreszeit:** Alle vier App-p95-Werte (35,3 / 34,7 / 36,4 / 35,2 ms) liegen unter 50 ms. Rohwerte über 50 ms sind ausschließlich die als externe No-Work-Lücken klassifizierten Frames; ihre App-Arbeit liegt bei 1,7–1,7 ms, und der Kontrolllauf zeigt dieselbe Art Lücke ohne Dschungel.
 
 **Vorher/Nachher der behobenen Nachweis-Hindernisse (aktuelle Messung):**
 
@@ -241,9 +252,9 @@ Bewusst schwaches Profil: **720 × 540 CSS-Pixel, Device-Pixel-Ratio 1, 50 % Ren
 | Bewegung auf Pfad | Pfad hatte keinen eigenen Bewegungsvorteil (Faktor **0,550**) | Pfad-Faktor **0,652**; dichte Wand bleibt **0,550** |
 | UI-Krankheit/Parasiten | Felder fehlten im SiteNote-String (`null`) | **Disease 75 % / Parasites 86 %** sichtbar |
 | Seltener Fund im Bestand | Fünf-Slot-Auswahl lieferte nur generische Güter; versteckte Rare-IDs blieben außerhalb | Gemischte Ernte + Rare-Fund: UI-Gather **11 Güter**, Bestand **14 IDs** inkl. Orchideen/Bromeliads |
-| Performance-Sample | Management-Modal ließ `ui-modal-open` aktiv; der Loop zeichnete die Welt absichtlich nicht, Probe = **0 Frames** | Modal geschlossen und explizit geprüft; **66/65/66/66 Frames** über vier Jahreszeiten |
-| Frame-Metrik | Frühere Probe verteilte Start/Warten/Auslesen über Harness-Schritte; die gap-bereinigte 30,4-FPS-Zahl entfernte Stalls aus dem Nenner | Vollständig autonomes In-Page-Fenster; **30,285 Präsentations-FPS** aus allen Frames über die Wall-Clock-Spanne, **29,870 Fenster-FPS** inklusive der vier Ränder |
-| Kontrolllauf | Fehlte in der ersten Runde; externe Pausen waren nur eine Behauptung | Leere Wasserfläche: **1** No-Work-Lücke(n) von **66,7 ms** bei **1,6 ms** App-Arbeit, **0** Long Tasks |
+| Performance-Sample | Management-Modal ließ `ui-modal-open` aktiv; der Loop zeichnete die Welt absichtlich nicht, Probe = **0 Frames** | Modal geschlossen und explizit geprüft; **65/65/67/66 Frames** über vier Jahreszeiten |
+| Frame-Metrik | Frühere Probe verteilte Start/Warten/Auslesen über Harness-Schritte; die gap-bereinigte 30,4-FPS-Zahl entfernte Stalls aus dem Nenner | Vollständig autonomes In-Page-Fenster; **30,355 Präsentations-FPS** aus allen Frames über die Wall-Clock-Spanne, **29,843 Fenster-FPS** inklusive der vier Ränder |
+| Kontrolllauf | Fehlte in der ersten Runde; externe Pausen waren nur eine Behauptung | Leere Wasserfläche: **3** No-Work-Lücke(n) von **237,5 ms** bei **3,0 ms** App-Arbeit, **0** Long Tasks |
 
 **Reproduktion und Grenzen der Metrik:** Der Befehl oben baut `artifacts/kings-and-cards-deploy/public` und schreibt `artifacts/jungle-proof/jungle-proof.json`; die Tabellenwerte werden von `scripts/sync-jungle-doc.mjs` aus genau diesem Bericht erzeugt und danach geprüft. Die Kontrollfläche wird über `isWaterAt()` aus derselben echten Welt gewählt. Die Klassifikation ist absichtlich konservativ: Eine externe Lücke muss über dem 50-ms-Budget liegen, unter 12 ms App-Arbeit haben und darf keinen Long Task überlappen. `PerformanceObserver('longtask')` und die CDP-Drosselung sind Browser-Diagnosen; der Nachweis gilt für diesen gebauten Lauf, diesen Seed und diese Software-GL-Umgebung. Er ist kein Hardware-GPU-Benchmark und keine Garantie für jede denkbare Maschine. Ein einzelner 55-ms-Stall senkt die Präsentations-FPS; er verschwindet nicht durch eine Subtraktion.
 <!-- JUNGLE_PERFORMANCE_END -->

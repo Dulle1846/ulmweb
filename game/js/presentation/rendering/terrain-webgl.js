@@ -651,6 +651,7 @@ void main() {
 `;
 
 let gl = null;
+let rendererInfoCache = null;
 let program = null;
 let vao = null;
 let vertexBuffer = null;
@@ -678,6 +679,25 @@ let uploadedHeights = null;
 let uploadedWidth = 0;
 let uploadedHeight = 0;
 let initialized = false;
+
+// Release the resources we created without forcing a context loss. Chrome and
+// some ANGLE drivers log "CONTEXT_LOST_WEBGL: loseContext: context lost" for an
+// intentional loss, which looked like a game error even though the renderer
+// switch was healthy. The old canvas is replaced by its caller, so dropping the
+// context reference lets the browser reclaim it once the canvas is collected.
+function discardWebGLResources() {
+    if (!gl) return;
+    const context = gl;
+    try {
+        context.bindVertexArray(null);
+        if (program) context.deleteProgram(program);
+        if (vertexBuffer) context.deleteBuffer(vertexBuffer);
+        if (vao) context.deleteVertexArray(vao);
+        for (const texture of [terrainTexture, wearTexture, waterDistTexture, atlasTexture, occlusionTexture]) {
+            if (texture) context.deleteTexture(texture);
+        }
+    } catch { /* a lost context has released its resources already */ }
+}
 
 function compileShader(type, source) {
     const shader = gl.createShader(type);
@@ -1234,14 +1254,20 @@ function sunState(phase) {
     };
 }
 
-// Probe on a detached canvas so choosing Canvas 2D never locks the visible
-// terrain surface into a WebGL context. The probe context is discarded again.
-export function terrainRendererInfo() {
+// Detect the renderer once. The initial terrain surface can be used as the
+// probe, which lets the renderer switch keep that WebGL canvas instead of
+// creating a throwaway context. Detached probes are shrunk and dropped without
+// WEBGL_lose_context, which logs a driver warning. The result is cached because
+// the renderer does not change during a session.
+export function terrainRendererInfo(canvas = null) {
+    if (rendererInfoCache) return rendererInfoCache;
     if (typeof document === "undefined") return { name: "", software: true };
     try {
-        const probeCanvas = document.createElement("canvas");
-        probeCanvas.width = 1;
-        probeCanvas.height = 1;
+        const probeCanvas = canvas || document.createElement("canvas");
+        if (!canvas) {
+            probeCanvas.width = 1;
+            probeCanvas.height = 1;
+        }
         const probe = probeCanvas.getContext("webgl2", {
             alpha: false,
             antialias: false,
@@ -1252,20 +1278,23 @@ export function terrainRendererInfo() {
         if (!probe) return { name: "", software: true };
         const debug = probe.getExtension("WEBGL_debug_renderer_info");
         const name = String(probe.getParameter(debug ? debug.UNMASKED_RENDERER_WEBGL : probe.RENDERER) || "");
-        probe.getExtension("WEBGL_lose_context")?.loseContext();
-        return {
+        if (!canvas) {
+            probeCanvas.width = 0;
+            probeCanvas.height = 0;
+        }
+        rendererInfoCache = {
             name,
             software: /swiftshader|llvmpipe|software|basic render|microsoft basic/i.test(name),
+            boundCanvas: Boolean(canvas),
         };
+        return rendererInfoCache;
     } catch {
         return { name: "", software: true };
     }
 }
 
 export function resetTerrainWebGL() {
-    try {
-        gl?.getExtension("WEBGL_lose_context")?.loseContext();
-    } catch { /* a lost context is already unusable */ }
+    discardWebGLResources();
     gl = null;
     program = null;
     vao = null;

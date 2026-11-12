@@ -20,6 +20,7 @@
     "test:forest-occlusion": "node tests/browser/forest-occlusion.mjs",
     "test:forest-detail": "node tests/browser/forest-detail-reference.mjs",
     "test:terrain-stability": "node tests/browser/terrain-stability.mjs",
+    "test:renderer-recycle": "node tests/browser/renderer-recycle-audit.mjs",
     "test:device-benchmark": "node tests/browser/device-benchmark.mjs",
     "test:atmosphere-reference": "node tests/browser/daylight-reference.mjs",
     "test:forester-stewardship": "node tests/browser/forester-stewardship.mjs",

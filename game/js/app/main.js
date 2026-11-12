@@ -23,7 +23,7 @@ import { addLog } from "../systems/events.js";
 import { restoreEconomyCycleState } from "../systems/economy-cycle.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera,setRenderScale } from "../presentation/camera.js";
-import { terrainRendererInfo,resetTerrainWebGL } from "../presentation/rendering/terrain-webgl.js";
+import { terrainRendererInfo } from "../presentation/rendering/terrain-webgl.js";
 import { setupInput } from "../presentation/input.js";
 import { renderUI,showBigMessage,setupMapViewControls } from "../presentation/rendering/ui.js";
 import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,getLocalSaveInfo,listLocalProfiles,selectLocalProfile,loadSettings,saveSettings } from "../core/persistence.js";
@@ -54,6 +54,11 @@ import {BENCHMARK_MIN_FRAMES,BENCHMARK_SAMPLE_MS,BENCHMARK_WARMUP_MS,buildBenchm
 
 let loopStarted=false;
 let settings=loadSettings();
+// A canvas can only ever own one context type. Keep one prepared surface per
+// renderer instead of allocating (and losing) a WebGL context on every switch.
+let terrainCanvas2D=null;
+let terrainCanvasWebGL=null;
+let appliedTerrainMode=null;
 function applyInterfaceSettings(){
     document.body.classList.toggle("hide-resource-deltas",settings.showDeltas===false);
     document.body.classList.toggle("reduce-interface-motion",settings.reduceMotion===true);
@@ -63,14 +68,47 @@ function applyInterfaceSettings(){
     root.classList.toggle("ui-high-contrast",settings.highContrast===true);
 }
 
-function replaceTerrainCanvas(){
+function cloneTerrainCanvas(previous){
+    const canvas=previous.cloneNode(false);
+    canvas.width=Math.max(1,Number(previous.width)||1);
+    canvas.height=Math.max(1,Number(previous.height)||1);
+    canvas.style.opacity="";
+    canvas.style.transform="";
+    return canvas;
+}
+
+function cacheTerrainCanvas(mode,canvas){
+    if(!canvas)return;
+    if(mode==="webgl")terrainCanvasWebGL=canvas;
+    else terrainCanvas2D=canvas;
+}
+
+function activateTerrainCanvas(next){
     const previous=state.terrainCanvasEl;
-    if(!previous||!previous.parentElement)return;
-    const replacement=previous.cloneNode(false);
-    replacement.width=previous.width;replacement.height=previous.height;
-    replacement.style.opacity="";
-    previous.replaceWith(replacement);
-    state.terrainCanvasEl=replacement;
+    if(!next||next===previous)return;
+    // Never resize the cached surface here. Assigning width/height clears a
+    // Canvas2D backing store while terrain.js still considers its detail layer
+    // valid, which left the switched-back terrain black. ensureTerrainSurface()
+    // and drawTerrainGL() resize on the next draw and invalidate their caches
+    // when the size actually changes.
+    next.style.opacity="";
+    next.style.transform="";
+    if(previous?.parentElement)previous.replaceWith(next);
+    else document.getElementById("terrain-canvas")?.replaceWith(next);
+    state.terrainCanvasEl=next;
+}
+
+function selectTerrainCanvas(nextMode,previousMode){
+    const active=state.terrainCanvasEl;
+    if(!active)return;
+    if(previousMode==="webgl"&&!terrainCanvasWebGL)terrainCanvasWebGL=active;
+    if(previousMode==="canvas"&&!terrainCanvas2D)terrainCanvas2D=active;
+    let next=nextMode==="webgl"?terrainCanvasWebGL:terrainCanvas2D;
+    if(!next){
+        next=cloneTerrainCanvas(active);
+        cacheTerrainCanvas(nextMode,next);
+    }
+    activateTerrainCanvas(next);
 }
 
 function applyPerformanceSettings(){
@@ -79,18 +117,34 @@ function applyPerformanceSettings(){
     state.adaptiveQuality=settings.adaptiveQuality!==false;
     state.showFps=settings.showFps===true;
     setRenderScale(settings.renderScale);
+    const firstApply=appliedTerrainMode===null;
     let info=null;
-    if(settings.terrainRenderer!=="canvas")info=terrainRendererInfo();
+    // Use the real initial surface for the one-time probe. On a software
+    // renderer it becomes the cached WebGL canvas, so the probe context is
+    // recycled later instead of staying as a second, unused context.
+    if(settings.terrainRenderer!=="canvas")info=terrainRendererInfo(firstApply?state.terrainCanvasEl:null);
     state.terrainRendererName=info?.name||"";
-    const previousMode=state.terrainAutoMode;
     const nextMode=settings.terrainRenderer==="auto"
         ?(!info||info.software?"canvas":"webgl")
         :settings.terrainRenderer;
-    if(previousMode!==nextMode){
-        // A canvas keeps its first context type forever. A renderer switch
-        // therefore needs a fresh surface and a clean WebGL resource set.
-        resetTerrainWebGL();
-        replaceTerrainCanvas();
+    if(firstApply){
+        appliedTerrainMode=nextMode;
+        if(nextMode==="webgl"||info?.boundCanvas){
+            // Auto may have bound the initial surface to WebGL and then chosen
+            // Canvas because it is software. Keep that context for a later
+            // switch and give Canvas mode its own surface.
+            cacheTerrainCanvas("webgl",state.terrainCanvasEl);
+            if(nextMode==="canvas"){
+                const canvas2D=cloneTerrainCanvas(state.terrainCanvasEl);
+                cacheTerrainCanvas("canvas",canvas2D);
+                activateTerrainCanvas(canvas2D);
+            }
+        }else{
+            cacheTerrainCanvas("canvas",state.terrainCanvasEl);
+        }
+    }else if(appliedTerrainMode!==nextMode){
+        selectTerrainCanvas(nextMode,appliedTerrainMode);
+        appliedTerrainMode=nextMode;
     }
     state.terrainAutoMode=nextMode;
     state.terrainMode=nextMode;

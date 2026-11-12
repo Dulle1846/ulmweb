@@ -274,7 +274,8 @@ export function getForestMovementFactorAt(x, y) {
     // undergrowth, not just a sight flag. It removes most of the jungle's
     // movement penalty, while a closed wall retains it.
     const jungleLandscape = node?.forestJungleLandscape;
-    const openJunglePath = Boolean(jungleLandscape?.clearing
+    const openJunglePath = Boolean(jungleLandscape?.openPath
+        || jungleLandscape?.clearing || jungleLandscape?.hiddenGlade
         || jungleLandscape?.animalTrail || jungleLandscape?.passage);
     const rawJungleSpeed = Math.max(1, Number(jungle?.movementFactor) || 1);
     const adjustedJungleSpeed = openJunglePath ? 1 + (rawJungleSpeed - 1) * 0.35 : rawJungleSpeed;

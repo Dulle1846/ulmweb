@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { forestStandAt, forestSurveyAt } from "../../js/world/forest-ecology.js";
+import { FOREST_FAUNA, FOREST_GOODS, forestSightBlock, forestStandAt, forestSurveyAt } from "../../js/world/forest-ecology.js";
 import {
     JUNGLE_FAUNA, JUNGLE_FAUNA_GROUPS, JUNGLE_GOOD_IDS, JUNGLE_POINTS,
     JUNGLE_RESOURCE_GROUPS, jungleProfileFor, jungleTacticsFromStand,
@@ -85,9 +85,43 @@ test("jungle layers, walls, passages and hidden landscape are deterministic", ()
         "rock outcrop jungle", "hidden glade"].includes(first.type));
 });
 
+test("hidden glades, viewpoints and rock passages open real terrain", () => {
+    let glade = null;
+    let rockPassage = null;
+    for (let y = 0; y < 80 && (!glade || !rockPassage); y++) {
+        for (let x = 0; x < 120; x++) {
+            const profile = jungleProfileFor({
+                seed: 20261111, x, y, formationId: "tropical-ancient",
+                moisture: 0.9, height: 0.62, canopy: 0.94, density: 0.94,
+                ageClass: "ancient", species: ["mahogany", "bamboo", "palm"],
+            });
+            if (!glade && profile.landscape.hiddenGlade && !profile.landscape.clearing) glade = profile;
+            if (!rockPassage && profile.landscape.rockPassage) rockPassage = profile;
+        }
+    }
+    assert.ok(glade, "the sample must contain a hidden glade");
+    assert.equal(glade.landscape.openPath, true, "a hidden glade must break the undergrowth wall");
+    assert.ok(glade.navigation.sightRadiusTiles >= 4, "a hidden glade must restore local sight");
+    assert.ok(glade.features["1.2.5.12"] > 0.6, "a hidden glade must carry its derived strength");
+    assert.ok(rockPassage, "the sample must contain a rock-plant passage");
+    assert.equal(rockPassage.landscape.passage, true, "a rock passage must be traversable");
+    assert.ok(rockPassage.features["1.2.5.30"] > 0.6, "a rock passage must carry its derived strength");
+    assert.ok(rockPassage.navigation.defenceBonus >= 0.5, "rock and vegetation must give real cover");
+    assert.ok(rockPassage.landscape.viewpoint, "an elevated rock outcrop must act as a viewpoint");
+    const sightStand = {
+        forest: true, density: 0.94, canopy: 0.94, coniferShare: 0,
+        clearing: 0, groundShade: 0, visibility: 0.2,
+        sightRadius: glade.navigation.sightRadiusTiles, jungle: glade,
+    };
+    assert.equal(forestSightBlock(sightStand), 0, "a hidden glade must break the line-of-sight wall");
+});
+
 test("every jungle resource group resolves through the shared tropical goods register", () => {
     assert.equal(JUNGLE_GOOD_IDS.length, new Set(JUNGLE_GOOD_IDS).size);
-    for (const id of JUNGLE_GOOD_IDS) assert.ok(TROPICAL_GOODS[id], id + " must exist in the shared register");
+    for (const id of JUNGLE_GOOD_IDS) {
+        assert.ok(TROPICAL_GOODS[id], id + " must exist in the shared register");
+        assert.ok(FOREST_GOODS[id], id + " must be reachable through the forest goods ledger");
+    }
     for (const [group, ids] of Object.entries(JUNGLE_RESOURCE_GROUPS)) {
         assert.ok(ids.length >= 3, group + " needs real choices");
         for (const id of ids) assert.ok(TROPICAL_GOODS[id], group + " contains unknown " + id);
@@ -111,6 +145,9 @@ test("jungle fauna covers predators, reptiles, primates, birds, insects, amphibi
     }
     assert.ok(JUNGLE_FAUNA.some(entry => entry.camouflage > 0.9), "camouflaged animals are required");
     assert.ok(JUNGLE_FAUNA.some(entry => entry.rare > 0.7 && entry.danger > 0.6), "rare dangerous animals are required");
+    for (const entry of JUNGLE_FAUNA) {
+        assert.ok(FOREST_FAUNA[entry.id], entry.id + " must be registered in the shared fauna catalogue");
+    }
     const fauna = new Set(profiles.flatMap(profile => profile.fauna.map(entry => entry.id)));
     for (const id of ["jaguar", "anaconda", "howler-monkey", "toucan", "bullet-ant", "poison-dart-frog",
         "leaf-mimic-frog", "bushmaster", "giant-otter"]) {

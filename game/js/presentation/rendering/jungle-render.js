@@ -177,9 +177,58 @@ function drawRockOutcrop(ctx, px, py, cellPx, s, s1, s2) {
     ctx.restore();
 }
 
-function drawClearing(ctx, px, py, cellPx, s, s1, s2, viewpoint) {
+function drawGiantFern(ctx, px, py, cellPx, s, s1, s2) {
     ctx.save();
-    ctx.fillStyle = 'rgba(184, 186, 108, 0.22)';
+    ctx.strokeStyle = '#456d38';
+    ctx.lineWidth = Math.max(0.6, 1.15 * s);
+    ctx.lineCap = 'round';
+    const rootX = px + (s1 - 0.5) * cellPx * 0.12;
+    const rootY = py + 4 * s;
+    for (let f = 0; f < 5; f++) {
+        const angle = -Math.PI / 2 + (f - 2) * 0.42 + (s1 - 0.5) * 0.2;
+        const length = (11 + (f % 3) * 3 + s2 * 4) * s;
+        ctx.beginPath();
+        ctx.moveTo(rootX, rootY);
+        ctx.quadraticCurveTo(rootX + Math.cos(angle) * length * 0.55,
+            rootY + Math.sin(angle) * length * 0.6,
+            rootX + Math.cos(angle) * length, rootY + Math.sin(angle) * length);
+        ctx.stroke();
+        for (let leaflet = 1; leaflet <= 3; leaflet++) {
+            const t = leaflet / 4;
+            const lx = rootX + Math.cos(angle) * length * t;
+            const ly = rootY + Math.sin(angle) * length * t;
+            const side = leaflet % 2 ? 1 : -1;
+            ctx.beginPath();
+            ctx.moveTo(lx, ly);
+            ctx.lineTo(lx + side * (2.6 - leaflet * 0.3) * s, ly - (1.6 + leaflet * 0.2) * s);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+function drawRareBloom(ctx, px, py, s, s1, s2) {
+    ctx.save();
+    ctx.globalAlpha = 0.82;
+    ctx.fillStyle = 'rgba(190, 245, 167, 0.18)';
+    ctx.beginPath();
+    ctx.arc(px, py - 3 * s, 6 * s, 0, Math.PI * 2);
+    ctx.fill();
+    for (let i = 0; i < 6; i++) {
+        const angle = i * Math.PI / 3 + s1 * 2;
+        leaf(ctx, px + Math.cos(angle) * 2.2 * s, py - 3 * s + Math.sin(angle) * 2.2 * s,
+            1.7 * s, 0.7 * s, angle, '#c6f68d', 0.9);
+    }
+    ctx.fillStyle = '#fef3c7';
+    ctx.beginPath();
+    ctx.arc(px + (s2 - 0.5) * s, py - 3 * s, 1.2 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawClearing(ctx, px, py, cellPx, s, s1, s2, viewpoint, hidden = false) {
+    ctx.save();
+    ctx.fillStyle = hidden ? 'rgba(24, 54, 37, 0.38)' : 'rgba(184, 186, 108, 0.22)';
     ctx.beginPath();
     ctx.ellipse(px, py + 2 * s, cellPx * 0.42, cellPx * 0.2, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -191,6 +240,10 @@ function drawClearing(ctx, px, py, cellPx, s, s1, s2, viewpoint) {
         ctx.moveTo(x, py + 3 * s);
         ctx.lineTo(x + (i % 2 ? 1.8 : -1.4) * s, py - (2 + i % 3) * s);
         ctx.stroke();
+    }
+    if (hidden) {
+        drawRareBloom(ctx, px - cellPx * 0.16, py + 2 * s, s, s1, s2);
+        drawRareBloom(ctx, px + cellPx * 0.19, py - 1 * s, s, s2, s1);
     }
     if (viewpoint) {
         ctx.strokeStyle = 'rgba(225, 218, 160, 0.7)';
@@ -247,12 +300,16 @@ export function drawJungleUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3) {
         drawRavine(ctx, px, py, cellPx, s);
         return true;
     }
-    if (l.rockOutcrop && (f['1.2.5.27'] || 0) > 0.55 && s2 < 0.36) {
-        drawRockOutcrop(ctx, px, py, cellPx, s, s1, s2);
+    // A hidden glade is still a clearing in the undergrowth. Drawing the rock
+    // outcrop first hid the glade and its rare plants on mixed tiles.
+    if ((l.clearing || l.hiddenGlade)
+        && ((f['1.2.5.31'] || 0) > 0.5 || (f['1.2.5.12'] || 0) > 0.6)
+        && s1 < (l.hiddenGlade ? 0.4 : 0.48)) {
+        drawClearing(ctx, px, py, cellPx, s, s1, s2, l.viewpoint, Boolean(l.hiddenGlade));
         return true;
     }
-    if (l.clearing && (f['1.2.5.31'] || 0) > 0.5 && s1 < 0.48) {
-        drawClearing(ctx, px, py, cellPx, s, s1, s2, l.viewpoint);
+    if (l.rockOutcrop && (f['1.2.5.27'] || 0) > 0.55 && s2 < 0.36) {
+        drawRockOutcrop(ctx, px, py, cellPx, s, s1, s2);
         return true;
     }
     if (l.animalTrail && (f['1.2.5.13'] || 0) > 0.5 && s3 > 0.55) {
@@ -263,12 +320,20 @@ export function drawJungleUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3) {
         drawBambooBrake(ctx, px, py, cellPx, s, s1, s2);
         return true;
     }
+    if ((f['1.2.5.17'] || 0) > 0.58 && s2 > 0.16 && s2 < 0.44) {
+        drawGiantFern(ctx, px, py, cellPx, s, s1, s2);
+        return true;
+    }
     if ((f['1.2.5.6'] || 0) > 0.32 && s3 < 0.38) {
         drawThornScrub(ctx, px, py, cellPx, s, s1, s2);
         return true;
     }
     if ((f['1.2.5.18'] || 0) > 0.42 && s1 > 0.66) {
         drawVineCurtain(ctx, px, py, cellPx, s, s1, s2);
+        return true;
+    }
+    if ((f['1.2.5.23'] || 0) > 0.34 && s3 < 0.12) {
+        drawRareBloom(ctx, px + (s1 - 0.5) * cellPx * 0.2, py + 2 * s, s, s2, s3);
         return true;
     }
     if ((f['1.2.5.14'] || 0) > 0.52 && s2 > 0.62) {

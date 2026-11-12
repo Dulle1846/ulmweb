@@ -1117,7 +1117,8 @@ export function forestStandAt(x, y, context = {}) {
     // crowns and tightly packed conifer stems close the view; an edge or a
     // clearing opens it again. The radius is derived from the same value so the
     // renderer and the gathering work factor cannot drift apart.
-    const jungleOpenSight = Boolean(jungle?.landscape?.clearing
+    const jungleOpenSight = Boolean(jungle?.landscape?.openPath
+        || jungle?.landscape?.clearing || jungle?.landscape?.hiddenGlade
         || jungle?.landscape?.animalTrail || jungle?.landscape?.passage);
     const visibility = clamp01(1 - canopy * 0.62 - coniferShare * 0.2 - density * 0.16
         - (tropical?.hazard.visibility || 0) * 0.34
@@ -1433,7 +1434,8 @@ export function forestSightBlock(stand) {
         const restriction = Number(jungle.features?.['1.2.5.49'] || 0);
         // A clearing, a game trail and a rock-plant passage are real openings:
         // they break the undergrowth wall and restore line of sight.
-        const openTrail = Boolean(jungle.landscape?.clearing
+        const openTrail = Boolean(jungle.landscape?.openPath
+            || jungle.landscape?.clearing || jungle.landscape?.hiddenGlade
             || jungle.landscape?.animalTrail || jungle.landscape?.passage);
         if (restriction < 0.52 || openTrail) return 0;
         return Math.min(0.54, clamp01(0.14 + restriction * 0.36

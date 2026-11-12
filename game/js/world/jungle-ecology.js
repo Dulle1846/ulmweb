@@ -204,17 +204,27 @@ export function jungleProfileFor(input = {}) {
     const clearingSpot = Boolean(open > 0.35 || (gapPatch > 0.86 && open > 0.12));
     const hiddenGlade = Boolean(!clearingSpot && gladePatch > 0.82 && (ancient || ravine || wet > 0.66));
     const animalTrail = Boolean(trailPatch > 0.67 || (edge && trailPatch > 0.52));
-    const passage = Boolean(animalTrail || clearingSpot || (ravine && ravinePatch > 0.7));
-    const viewpoint = Boolean(clearingSpot && hillside > 0.38 || (hiddenGlade && hillside > 0.6));
-    const vegetationWall = Boolean(density > 0.72 && !passage && !clearingSpot);
+    // A rock outcrop split by a gap is a real passage between stone and
+    // vegetation. Treat it like a game trail; otherwise the tile is drawn as
+    // a passage but still blocks sight and movement.
+    const rockPassage = Boolean(rockOutcrop && (gapPatch > 0.54 || animalTrail));
+    const passage = Boolean(animalTrail || clearingSpot || rockPassage
+        || (ravine && ravinePatch > 0.7));
+    // Hidden glades are small local openings, not through-routes. They still
+    // break the undergrowth wall for sight and movement on their own tile.
+    const openPath = Boolean(passage || clearingSpot || hiddenGlade);
+    const viewpoint = Boolean(((clearingSpot || rockOutcrop) && hillside > 0.38)
+        || (hiddenGlade && hillside > 0.55));
+    const vegetationWall = Boolean(density > 0.72 && !openPath);
     const impenetrable = clamp01(density * 0.52 + open * -0.26 + (vegetationWall ? 0.2 : 0)
         + (formationId === 'tropical-bamboo' ? 0.28 : 0) + (ravine ? 0.08 : 0));
     const sightRangeVariety = clamp01(0.38 + hillside * 0.2 + open * 0.3 + (1 - density) * 0.22
-        + (viewpoint ? 0.12 : 0));
+        + (viewpoint ? 0.16 : 0));
     const movementPenalty = clamp01(0.2 + impenetrable * 0.52 + (flooded ? 0.14 : 0)
         + (ravine ? 0.1 : 0) + (bambooShare + (formationId === 'tropical-bamboo' ? 0.55 : 0)) * 0.12);
     const sightRestriction = clamp01(0.28 + density * 0.38 + impenetrable * 0.24
-        + (vegetationWall ? 0.12 : 0) - open * 0.34 + (wet ? 0.05 : 0));
+        + (vegetationWall ? 0.12 : 0) - open * 0.34
+        - (hiddenGlade ? 0.16 : 0) - (viewpoint ? 0.1 : 0) + (wet ? 0.05 : 0));
     const navigationDifficulty = clamp01(movementPenalty * 0.62 + sightRestriction * 0.28
         + (impenetrable > 0.68 ? 0.12 : 0));
     const disease = clamp01(0.26 + wet * 0.38 + density * 0.12 + (flooded ? 0.12 : 0));
@@ -254,7 +264,8 @@ export function jungleProfileFor(input = {}) {
     const rockOutcrops = clamp01(rockOutcrop ? 0.94 : 0.06 + hillside * 0.18);
     const waterfalls = clamp01(waterfall ? 0.98 : 0.03 + (hiddenStream ? 0.1 : 0));
     const floodedJungle = clamp01(flooded ? 0.94 : 0.04 + wet * 0.16);
-    const rockPassages = clamp01((passage ? 0.5 : 0.12) + (rockOutcrop ? 0.28 : 0) + (ravine ? 0.12 : 0));
+    const rockPassages = clamp01((rockPassage ? 0.72 : 0.12)
+        + (rockOutcrop ? 0.28 : 0) + (ravine ? 0.12 : 0));
     const clearings = clamp01(clearingSpot ? 0.92 : 0.06 + open * 0.2);
     const predators = clamp01(predator * 0.86 + (ancient ? 0.12 : 0));
     const reptiles = clamp01(0.38 + wet * 0.3 + (ravine ? 0.12 : 0));
@@ -286,6 +297,7 @@ export function jungleProfileFor(input = {}) {
     const supplyDifficulty = clamp01(movementPenalty * 0.34 + sightRestriction * 0.18
         + (1 - (passage ? 0.35 : 0)) * 0.2 + (flooded ? 0.12 : 0));
     const local = clamp01(0.18 + trails * 0.26 + passages * 0.2 + (animalTrail ? 0.1 : 0)
+        + (hiddenGlade ? 0.06 : 0) + (rockPassage ? 0.04 : 0)
         + (1 - navigationDifficulty) * 0.12);
     const guerrilla = clamp01(0.22 + impenetrable * 0.28 + ambush * 0.26 + sightRestriction * 0.14
         + (vegetationWall ? 0.1 : 0));
@@ -341,7 +353,8 @@ export function jungleProfileFor(input = {}) {
         label: look.label,
         hillside: round(hillside),
         ravine, rockOutcrop, hiddenStream, waterfall, flooded,
-        clearing: clearingSpot, hiddenGlade, animalTrail, passage, viewpoint, vegetationWall,
+        clearing: clearingSpot, hiddenGlade, animalTrail, passage, openPath, rockPassage,
+        viewpoint, vegetationWall,
         denseWall: round(walls),
         openPatches: round(openPatches),
         sightRangeMeters: Math.round((4 + (1 - sightRestriction) * 44) * 10) / 10,
@@ -356,7 +369,8 @@ export function jungleProfileFor(input = {}) {
         supplyFactor: Math.round((1 - supplyDifficulty * 0.58) * 100) / 100,
         localAdvantage: round(local),
         guerrillaBonus: round(guerrilla),
-        defenceBonus: round(clamp01(guerrilla * 0.62 + coverValue(impenetrable, vegetationWall))),
+        defenceBonus: round(clamp01(guerrilla * 0.62
+            + coverValue(impenetrable, vegetationWall, rockOutcrop))),
         disease: round(disease),
         parasites: round(parasites),
     });
@@ -387,8 +401,8 @@ export function jungleProfileFor(input = {}) {
     });
 }
 
-function coverValue(impenetrable, wall) {
-    return clamp01(impenetrable * 0.35 + (wall ? 0.24 : 0));
+function coverValue(impenetrable, wall, rock = false) {
+    return clamp01(impenetrable * 0.35 + (wall ? 0.24 : 0) + (rock ? 0.1 : 0));
 }
 
 // Compact helper for combat and travel code. It intentionally accepts a stand

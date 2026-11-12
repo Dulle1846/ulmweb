@@ -22,6 +22,13 @@ import { seasonalState } from "../world/season.js";
 
 const VERSION = 1;
 const MAX_HERDS = 240;
+// Camouflaged jungle species are harder to take in one visit. This is a
+// hunting-pressure rule, not a second population model: the herd still breeds,
+// moves and can be hunted, but a single shot yields fewer animals.
+const CAMOUFLAGED_SPECIES = new Set([
+    "jaguar", "ocelot", "bushmaster", "anaconda", "iguana", "vine-snake",
+    "tarantula", "poison-dart-frog", "leaf-mimic-frog",
+]);
 const MAX_INSECTS = 480;
 const MAX_DAY_STEP = 30;
 const DAYS_PER_YEAR = 400;
@@ -556,7 +563,8 @@ export function harvestForestGameAt(x, y, requested = 1) {
     const herd = herds[0];
     if (!herd) return null;
     const before = Math.max(1, Number(herd.population) || 0);
-    const wanted = Math.max(1, Math.min(3, Math.floor(number(requested, 1))));
+    const camouflagePenalty = CAMOUFLAGED_SPECIES.has(herd.species) ? 1 : 0;
+    const wanted = Math.max(1, Math.min(3, Math.floor(number(requested, 1))) - camouflagePenalty);
     const taken = Math.min(wanted, Math.max(0, Math.floor(before - 0.8)));
     if (taken <= 0) return null;
     const after = Math.round((before - taken) * 10) / 10;
