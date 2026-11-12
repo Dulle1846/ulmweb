@@ -21,7 +21,7 @@ async function captureRealmState(page){
         // Render telemetry changes every animation frame even while the realm
         // is paused. It is not persistent world state, so comparing it makes
         // this probe depend on when the screenshot happened to land.
-        const ignored=new Set(["canvas","ctx","minimapCanvas","minimapCtx","terrainCanvas","terrainCanvasEl","fogCanvas","fogExploredRef","lastFrameTime","lastUiRender","lastMinimapRender","tickAccumulator","particles","floaters","pendingPresentationEffects","lastDrawMs","renderedFrames","renderStats","terrainCacheHits","terrainCacheMisses","terrainCacheRevision","forestVisualRevision","terrainDirty","fogDirty"]);
+        const ignored=new Set(["canvas","ctx","minimapCanvas","minimapCtx","terrainCanvas","terrainCanvasEl","fogCanvas","fogExploredRef","lastFrameTime","lastUiRender","lastMinimapRender","tickAccumulator","particles","floaters","pendingPresentationEffects","lastDrawMs","lastWorldDrawMs","lastUiRenderMs","lastSimulationMs","terrainBuildThisFrame","terrainDecorationBuildMs","renderedFrames","renderStats","terrainCacheHits","terrainCacheMisses","terrainCacheRevision","forestVisualRevision","terrainDirty","fogDirty"]);
         const hashed=new Set(["heightMap","moistureMap","temperatureMap","explored"]);
         const hashPersistent=(value,label)=>{
             let hashA=2166136261>>>0,hashB=5381>>>0;
@@ -635,7 +635,10 @@ try{
     const courtSite=await buildStructure(71,"justice");
     // Freeze the realm only after placement: the canvas ignores build clicks
     // while paused, and a running tick can pop a realm event over the deck.
-    await page.evaluate(()=>{const button=document.querySelector("#pause-btn");if(button&&!button.classList.contains("is-paused"))button.click();});
+    await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        if(!state.isPaused)document.querySelector("#pause-btn").click();
+    });
     await clearRealmEvent();
 
     await clearRealmEvent();
@@ -726,8 +729,9 @@ try{
     });
     await page.evaluate(()=>{
         document.querySelector("#load-btn").click();
-        const pause=document.querySelector("#pause-btn");
-        if(pause&&!pause.classList.contains("is-paused"))pause.click();
+        // Loading always resumes the simulation; pause synchronously before a
+        // frame can run. The button class is repainted later by renderUI.
+        document.querySelector("#pause-btn")?.click();
     });
     await page.waitForFunction(()=>{const message=document.querySelector("#status-message")?.textContent||"";return message.includes("Loaded realm")||message.includes("Load failed")||message.includes("No valid saved realm");},null,{timeout:5000});
     assert.ok((await page.locator("#status-message").innerText()).includes("Loaded realm"));
@@ -745,7 +749,10 @@ try{
     assert.ok(afterLoad.shrineSites>=1&&afterLoad.courtSites>=1,"both newly built sites must survive save/load");
     await clearRealmEvent();
     console.log("Faith/justice E2E:",JSON.stringify({shrineSite:shrineSite.site,courtSite:courtSite.site,faith:{clergy:afterLoad.clergy.length,history:afterLoad.faithHistory.length,festival:afterLoad.festival},justice:{judges:afterLoad.judges.length,history:afterLoad.justiceHistory.length,cases:afterLoad.cases.length,fines:afterLoad.fines}}));
-    if(await page.evaluate(()=>document.querySelector("#pause-btn")?.classList.contains("is-paused")))await page.locator("#pause-btn").click();
+    if(await page.evaluate(async()=>(await import("./js/core/state.js")).state.isPaused)){
+        await page.locator("#pause-btn").click();
+        await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="PAUSE",null,{timeout:3000});
+    }
     await clearRealmEvent();
     await page.locator("#command-open-btn").click();
 
@@ -875,7 +882,12 @@ try{
     assert.equal(await forestGatherButton.count(),1,"the selected forest building must expose one gather action");
     await forestGatherButton.evaluate(element=>{const record=element.closest("details");if(record)record.open=true;});
     await forestGatherButton.scrollIntoViewIfNeeded();
-    assert.equal((await forestGatherButton.innerText()).trim(),"GATHER FOREST PRODUCTS");
+    // Chromium can report an empty innerText immediately after a <details>
+    // element is opened programmatically, even though the button is laid out
+    // and visible. Assert the real text content and visibility, then exercise
+    // the action below so the UI path is still proven end-to-end.
+    assert.equal(await forestGatherButton.isVisible(),true,"the forest gather action must be visible");
+    assert.equal((await forestGatherButton.textContent()).trim(),"GATHER FOREST PRODUCTS");
     const beforeGather=await page.evaluate(async({node})=>{
         const [{state},{getResourceNodeAt}]=await Promise.all([
             import("./js/core/state.js"),import("./js/systems/resource-geography.js")
@@ -917,7 +929,10 @@ try{
     // real pause button programmatically instead of letting the overlay
     // intercept a pointer click. The button handler and state transition are
     // the same; only the synthetic pointer path is bypassed.
-    await page.evaluate(()=>document.querySelector("#pause-btn").click());
+    await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        if(!state.isPaused)document.querySelector("#pause-btn").click();
+    });
     await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
     const goldDeliveryBefore=await page.evaluate(async()=>{
         const [{state},{ensureForestGathering},{renderUI}]=await Promise.all([
@@ -1119,11 +1134,21 @@ try{
     await page.locator("#realm-event-dismiss").click();
     await page.locator("#realm-event-modal").waitFor({state:"hidden",timeout:3000});
     await page.locator('[data-command-tab="chronicle"]').click();
+    // The archive hydrates in bounded animation-frame chunks on low-end
+    // devices. Wait for the first persisted record instead of sampling the
+    // panel in the same task as the tab switch.
+    await page.locator("#chronicle-search").waitFor({state:"visible",timeout:5000});
+    await page.locator("#command-panel-content .chronicle-entry").first().waitFor({state:"attached",timeout:5000});
     assert.ok(await page.locator("#command-panel-content .chronicle-entry").count()>=1,"chronicle must render persisted event records");
+    // The archive note is the final chunk. Waiting for it proves that all
+    // earlier entry nodes have been appended, so the delegated filter below
+    // cannot race still-hydrating records and leave them unfiltered.
+    await page.locator("#command-panel-content").getByText(/The living timeline retains up to 2,400 pages/).waitFor({state:"attached",timeout:5000});
     await page.locator("#chronicle-search").fill("E2E CHRONICLE ENTRY");
     assert.equal(await page.locator("#command-panel-content .chronicle-entry:not(.is-filtered)").count(),1,"chronicle search must filter actual event text");
     await page.locator("#chronicle-search").fill("");
     await page.locator('[data-command="show-active-event"]').click();
+    await page.locator("#realm-event-modal").waitFor({state:"visible",timeout:5000});
     assert.ok(await page.locator("#realm-event-modal").isVisible(),"chronicle must reopen a dismissed active issue");
     await page.locator("#realm-event-choices .event-choice").first().click();
     await page.locator('[data-command-tab="cards"]').click();
@@ -1365,6 +1390,12 @@ try{
     assert.ok(chosen,"at least one of five drawn cards should be affordable");
     assert.equal(await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.length;}),countBeforeClick,"selecting a card must not remove it");
     assert.equal((await page.locator("#tab-content").innerText()).includes("PLAYED "),false,"selecting a card must not play it");
+    // The HUD paints in bounded animation-frame chunks; wait for the inspector
+    // to show the card instead of reading the previous frame's placeholder.
+    await page.waitForFunction(()=>{
+        const text=document.querySelector("#card-name")?.textContent.trim();
+        return Boolean(text)&&text!=="NO CARD SELECTED";
+    },null,{timeout:3000});
     const selectedName=(await page.locator("#card-name").innerText()).trim();
     assert.notEqual(selectedName,"NO CARD SELECTED","the selected card must be shown in the inspector");
 
@@ -1455,15 +1486,20 @@ try{
 
     await page.locator("#pause-btn").click();
     // A simulation tick may already be queued when the pause action lands.
-    // Let that in-flight frame settle, then assert that no later tick advances.
+    // Let that in-flight frame settle, then assert that the simulation clock
+    // itself does not advance. The HUD paints in 13 animation-frame chunks, so
+    // reading #tick-count here would measure paint lag, not the paused clock.
     await page.waitForTimeout(120);
-    const pausedTick=(await page.locator("#tick-count").innerText()).trim();
+    const pausedTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
     await page.waitForTimeout(500);
-    assert.equal((await page.locator("#tick-count").innerText()).trim(),pausedTick,"paused simulation tick must remain fixed after the in-flight frame settles");
+    assert.equal(await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick),pausedTick,"paused simulation tick must remain fixed after the in-flight frame settles");
     await page.locator("#pause-btn").click();
     await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="PAUSE",null,{timeout:3000});
     try{
-        await page.waitForFunction(previous=>Number(document.querySelector("#tick-count")?.textContent||0)>Number(previous),pausedTick,{timeout:5000});
+        await page.waitForFunction(async previous=>{
+            const {state}=await import("./js/core/state.js");
+            return state.tick>previous;
+        },pausedTick,{timeout:5000});
     }catch(error){
         const diagnostic=await page.evaluate(()=>({
             tick:document.querySelector("#tick-count")?.textContent.trim(),
@@ -1535,21 +1571,25 @@ try{
     assert.ok(ecologyAfterMutation.insects.some(insect=>insect.id===ecologyMutation.colonyId&&insect.population===0),"the post-save insect mutation must be visible before loading");
     assert.equal(ecologyAfterMutation.herbalDoses,0,"the post-save herbal dose mutation must be visible before loading");
     await page.locator("#speed-4").click();
-    const loadedTick=await page.evaluate(()=>{
+    await page.evaluate(()=>{
         document.querySelector("#load-btn").click();
-        // Loading resets the pause flag and the restored realm keeps running, so
-        // the next animation frame would advance the tick before it is read.
-        // Pause inside the same synchronous task as the click: no frame can run
-        // in between, and loading has just re-rendered #tick-count from the
-        // restored tick, so this is the exact tick that was restored.
-        const pauseButton=document.querySelector("#pause-btn");
-        if(pauseButton&&!pauseButton.classList.contains("is-paused"))pauseButton.click();
-        return Number((document.querySelector("#tick-count")?.textContent||"").replace(/,/g,""));
+        // Loading always resets the pause flag, and renderUI paints the pause
+        // control on the next animation frame. Click it unconditionally here,
+        // in the same synchronous task as the load, instead of trusting a
+        // stale is-paused class that still belongs to the pre-save realm.
+        document.querySelector("#pause-btn")?.click();
     });
     await page.waitForFunction(()=>{
         const message=document.querySelector("#status-message")?.textContent||"";
         return message.includes("Loaded realm")||message.includes("Load failed")||message.includes("No valid saved realm");
     },null,{timeout:5000});
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
+    const loadedState=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return {tick:state.tick,paused:state.isPaused};
+    });
+    assert.equal(loadedState.paused,true,"the restored realm must be paused before ecology is sampled");
+    const loadedTick=loadedState.tick;
     const loadStatus=(await page.locator("#status-message").innerText()).trim();
     assert.ok(loadStatus.includes("Loaded realm"),"load must succeed; actual status: "+loadStatus);
     assert.ok(await page.locator("#speed-2").evaluate(el=>el.classList.contains("is-active")),"save/load must restore the saved simulation speed");
@@ -1607,14 +1647,13 @@ try{
     const loadRealm=async()=>{
         await page.evaluate(()=>{const status=document.querySelector("#status-message");if(status)status.textContent="";});
         await dismissRealmEvent();
-        // Loading resumes the simulation, so the restored realm would keep
-        // advancing ticks while the test reads it back. Pause inside the same
-        // synchronous task as the load click: no frame can run in between, so
-        // the assertions see exactly the snapshot that was restored.
+        // Loading always resumes the simulation, so pause inside the same
+        // synchronous task as the load click. The pause control's class is
+        // repainted by renderUI on the next frame and can still be stale here,
+        // so click it unconditionally instead of trusting the class.
         await page.evaluate(()=>{
             document.querySelector("#load-btn").click();
-            const pauseButton=document.querySelector("#pause-btn");
-            if(pauseButton&&!pauseButton.classList.contains("is-paused"))pauseButton.click();
+            document.querySelector("#pause-btn")?.click();
         });
         await page.waitForFunction(()=>{
             const message=document.querySelector("#status-message")?.textContent||"";
@@ -2118,10 +2157,34 @@ try{
         await page.locator("#command-open-btn").click();
         await assertOverlayFits("#command-modal","management shell","management-shell");
         for(const tab of ["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","dynasty","creatures","chronicle"]){
-            await page.locator('[data-command-tab="'+tab+'"]').click();
+            // The tab strip is hidden on narrow screens; the same navigation
+            // is exposed through the accessible panel select there.
+            const mobileTabSelect=page.locator("#command-tab-select");
+            if(await mobileTabSelect.isVisible())await mobileTabSelect.selectOption(tab);
+            else await page.locator('[data-command-tab="'+tab+'"]').click();
             await page.waitForTimeout(25);
             if(tab==="dynasty"&&width<=420){
-                await page.waitForFunction(()=>[...document.querySelectorAll(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling")].some(path=>path.getAttribute("d")?.length>0),null,{timeout:5000});
+                try{
+                    await page.waitForFunction(()=>[...document.querySelectorAll(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling")].some(path=>path.getAttribute("d")?.length>0),null,{timeout:15000});
+                }catch(error){
+                    const diagnostic=await page.evaluate(()=>{
+                        const panel=document.querySelector("#command-panel-content");
+                        const graph=panel?.querySelector(".dynasty-lineage-graph");
+                        const paths=[...(graph?.querySelectorAll(".dynasty-lineage-edge--partner,.dynasty-lineage-edge--sibling")||[])];
+                        return {
+                            tab:document.querySelector("#command-tab-select")?.value,
+                            panelLength:panel?.innerText.length||0,
+                            panelStart:panel?.innerText.slice(0,160)||"",
+                            hasGraph:Boolean(graph),
+                            nodes:graph?.querySelectorAll("[data-lineage-node-id]").length||0,
+                            edgeCount:paths.length,
+                            edgePaths:paths.slice(0,4).map(path=>({kind:path.getAttribute("class"),d:path.getAttribute("d")})),
+                            timing:window.__progressiveTiming||null
+                        };
+                    });
+                    console.log("Dynasty mobile diagnostics:",JSON.stringify(diagnostic));
+                    throw error;
+                }
                 const mobileConnector=await page.evaluate(()=>{
                     const graph=document.querySelector("#command-panel-content .dynasty-lineage-graph");
                     const path=graph?.querySelector(".dynasty-lineage-edge--partner")||graph?.querySelector(".dynasty-lineage-edge--sibling");

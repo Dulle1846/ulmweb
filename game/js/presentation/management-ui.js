@@ -544,9 +544,7 @@ function drawDynastyConnectors(){
  const svg=graph.querySelector(".dynasty-lineage-edges");
  if(!svg)return;
  // Connector geometry needs several rect reads and a full SVG layout pass.
- // On a phone the lanes and their explicit relationship labels remain the
- // authoritative view; skip the decorative overlay rather than spend a frame.
- if(narrowViewport()){svg.replaceChildren();return;}
+ // It is drawn once after the panel has hydrated, including on narrow screens.
  const bounds=graph.getBoundingClientRect();
  // The SVG is decorative and must never widen the 360px panel. Measure the
  // content box, not scrollWidth, and cache every node rect once: asking the
@@ -610,9 +608,8 @@ function dynasty(){
   current=next;
  }
  const history=h.history.slice().reverse().slice(0,12).map(x=>'<article class="command-history"><strong>YEAR '+number(x.year)+' · '+esc(x.kind)+'</strong><p>'+esc(x.detail)+'</p></article>').join("");
- const narrowDynasty=narrowViewport();
  return intro("HOUSE OF THE CROWN","Dynasty & lineage","A multi-generation view of the actual kinship graph. Select any recorded person to open their full dossier.")+
- (narrowDynasty?'': '<div class="command-section-title">INTERACTIVE LINEAGE</div>'+lineageGraph(king,heirId))+
+ '<div class="command-section-title">INTERACTIVE LINEAGE</div>'+lineageGraph(king,heirId)+
  '<div class="command-section-title">DESCENDANTS & SUCCESSION</div><div class="dynasty-tree">'+(generations.join("")||'<p class="command-note">No descendant links are recorded for the current sovereign.</p>')+'</div>'+
  '<div class="command-section-title">ROYAL SUCCESSION RECORD</div><div class="command-history-list">'+(history||'<p class="command-note">No royal event has been recorded yet.</p>')+'</div>'+
  '<p class="command-note">Only saved family relationships are drawn. Missing, unknown or unlinked relatives are intentionally not inferred.</p>';
@@ -998,7 +995,9 @@ function render(resetScroll=false){
   // its slots synchronously so that hydrator can find them.
   if(narrowViewport()&&activePanel!=="chronicle"){
    progressiveDynasty=false;
-   renderProgressive(panel,markup);
+   renderProgressive(panel,markup,{onDone:()=>{
+    if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
+   }});
   }else {cancelProgressiveRender(panel);panel.innerHTML=markup;}
  }
  if(activePanel==="dynasty"&&!narrowViewport())requestAnimationFrame(drawDynastyConnectors);
