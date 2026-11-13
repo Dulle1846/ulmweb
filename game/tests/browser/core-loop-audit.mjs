@@ -224,9 +224,73 @@ async function buyFoodFromMarket() {
     await buyButton.click();
     const after = await read();
     assert.equal(after.trades, before.trades + 1, "one market click must complete exactly one trade");
-    assert.equal(after.resources.food, before.resources.food + 5, "one market click must add exactly five food");
+    assert.ok(Math.abs(after.resources.food - (before.resources.food + 5)) < 1e-9, "one market click must add exactly five food");
     assert.ok(after.resources.gold < before.resources.gold, "the food purchase must be paid from the treasury");
     return {before, after, choice};
+}
+
+async function setPaused(paused) {
+    const currentlyPaused = (await page.locator("#pause-text").innerText()).trim() === "RESUME";
+    if (currentlyPaused !== paused) await page.locator("#pause-btn").click();
+    await runFor(60);
+    const next = (await page.locator("#pause-text").innerText()).trim();
+    assert.equal(next, paused ? "RESUME" : "PAUSE", "the visible pause control must change the simulation state");
+}
+
+// The audit needs a real shortage state, not a synthetic resource write. A
+// player can create one through the existing regional market: selling the
+// stored food removes it, and selling the last timber makes the farm counsel
+// unaffordable so the next step must point at the market. Pause first so the
+// sale cannot race against daily production.
+//
+async function sellStaplesToZero() {
+    await setPaused(true);
+    await page.locator("#tab-2").click();
+    let marketVisible = false;
+    for (let attempt = 0; attempt < 20 && !marketVisible; attempt++) {
+        await runFor(100);
+        marketVisible = /REGIONAL EXCHANGE/.test(await page.locator("#tab-content").innerText());
+    }
+    assert.equal(marketVisible, true, "the market tab must expose the regional exchange");
+    for (let guard = 0; guard < 240; guard++) {
+        const current = await read();
+        if (current.resources.food <= 0 && current.resources.wood < 4) return current;
+        const resource = current.resources.food > 0 ? "food" : "wood";
+        const buttons = page.locator(`#tab-content [data-trade="sell"][data-resource="${resource}"]`);
+        const count = await buttons.count();
+        assert.ok(count > 0, "the market must keep a visible sell control for " + resource);
+        for (let index = 0; index < count; index++) {
+            const before = await read();
+            if (resource === "food" ? before.resources.food <= 0 : before.resources.wood < 4) break;
+            await buttons.nth(index).click();
+            await runFor(10);
+        }
+        const afterRound = await read();
+        if (afterRound.resources[resource] >= current.resources[resource]) {
+            // A partner whose treasury is exhausted rejects further sales. Buy
+            // surplus stone to move gold back into the visible market and keep
+            // the sale route usable; this does not touch food or timber.
+            const buyStone = page.locator('#tab-content [data-trade="buy"][data-resource="stone"]');
+            const buyCount = await buyStone.count();
+            for (let index = 0; index < buyCount; index++) {
+                if (await buyStone.nth(index).isEnabled()) {
+                    await buyStone.nth(index).click();
+                    await runFor(10);
+                }
+            }
+        }
+    }
+    const stuck = await read();
+    const market = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return {
+            prices: state.market?.prices,
+            partners: (state.market?.partners || []).map(partner => ({
+                id: partner.id, treasury: partner.treasury, food: partner.stock?.food, wood: partner.stock?.wood, stone: partner.stock?.stone
+            }))
+        };
+    });
+    throw new Error("the visible market could not drain food and timber to zero: " + JSON.stringify({ resources: stuck.resources, market }));
 }
 
 async function recoverFood(label) {
@@ -476,9 +540,12 @@ try {
     assert.ok(last.cottages >= 1, "the built cottage must remain in the realm");
     assert.ok(last.resourceTotal !== report.initial.resourceTotal, "the run must change the realm economy");
     assert.ok(new Set(report.years.map(entry => entry.counsel.text)).size >= 2, "NEXT MOVE must adapt across the run");
+    last = await sellStaplesToZero();
     assert.equal(last.resources.food, 0, "the audit must reach a real food-zero state");
+    assert.ok(last.resources.wood < 4, "the audit must make the farm counsel genuinely unaffordable");
     assert.equal(last.counsel.panel, "market", "food-zero counsel must use the existing market");
     last = await recoverFood("Year 4");
+    await setPaused(false);
 
     // Keep playing from the recovered state. Five completed years means Year 6.
     for (let chunk = 0; chunk < 28 && last.year < 6; chunk++) {

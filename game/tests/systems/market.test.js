@@ -28,6 +28,17 @@ test("selling goods pays gold and adds stock to the partner",()=>{
     assert.equal(state.incomeThisTick.gold,result.gold);
     assert.equal(state.market.partners[0].stock.wood,stockBefore+5);
 });
+test("selling clears a fractional remainder below a whole lot",()=>{
+    state.resources.food=4.62;
+    const before=state.resources.gold;
+    const result=executeTrade("northmere","food","sell",5);
+    assert.equal(result.ok,true);
+    assert.equal(result.amount,4.62);
+    assert.equal(state.resources.food,0);
+    assert.ok(state.resources.gold>before);
+    assert.equal(state.incomeThisTick.food,-4.62);
+});
+
 test("trades reject unaffordable purchases without changing resources",()=>{
     state.resources.gold=0;
     const before=state.resources.wood;

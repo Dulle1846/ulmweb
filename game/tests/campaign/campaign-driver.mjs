@@ -370,6 +370,61 @@ function captureSnapshot(extra = {}) {
     };
 }
 
+// Read-only evidence for the one-shot fuel order. The harness never calls
+// the order or sets its flags; it only observes the normal simulation state
+// after each tick. Continuous leases are one order, while a changed lease on
+// the same worker is an illness extension, not a second order.
+function observeFuelBackfill(previous, phases, diagnostics) {
+    const current = new Map();
+    for (const entity of state.entities) {
+        const building = entity.workplace;
+        const lease = Number(entity.fuelBackfillUntil);
+        if (entity.dead || entity.type !== TYPE.VILLAGER || !(lease > state.tick)) continue;
+        if (!building || building.dead || ![TYPE.LUMBER, TYPE.SAWMILL].includes(building.type)) continue;
+        current.set(entity.id + ":" + building.id, {
+            lease,
+            worker: entity,
+            building
+        });
+    }
+    for (const [key, active] of current) {
+        const before = previous.get(key);
+        if (before && before.lease === active.lease) continue;
+        if (before) {
+            diagnostics.extensions++;
+            continue;
+        }
+        const phase = active.building.id + ":" + active.lease;
+        const count = (phases.get(phase) || 0) + 1;
+        phases.set(phase, count);
+        diagnostics.orders++;
+        diagnostics.phases = phases.size;
+        diagnostics.maxOrdersPerPhase = Math.max(diagnostics.maxOrdersPerPhase, count);
+        const sick = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER
+            && entity.workplace === active.building && Number(entity.illnessUntilTick) > state.tick);
+        if (diagnostics.observations.length < 6) {
+            diagnostics.observations.push({
+                tick: state.tick,
+                year: state.year,
+                buildingId: active.building.id,
+                buildingType: active.building.type,
+                replacementId: active.worker.id,
+                replacementJob: active.worker.job,
+                lease: active.lease,
+                firewoodStock: Number(state.city?.needs?.summary?.firewoodStock),
+                sick: sick.map(entity => ({
+                    id: entity.id,
+                    job: entity.job,
+                    illnessUntilTick: entity.illnessUntilTick,
+                    guardUntil: entity.fuelBackfillGuardUntil
+                }))
+            });
+        }
+    }
+    previous.clear();
+    for (const [key, active] of current) previous.set(key, active);
+}
+
 function initialiseFreshRealm(seed) {
     corridorCache = null;
     keepAccess = null;
@@ -425,9 +480,12 @@ export function runCampaign({
         stalledSites: [],
         recoveredSites: [],
         heirAttempts: [],
+        fuelBackfill: { orders: 0, phases: 0, extensions: 0, maxOrdersPerPhase: 0, observations: [] },
         lastBuild: null,
         lastHeir: null
     };
+    const fuelBackfillActive = new Map();
+    const fuelBackfillPhases = new Map();
     let previousYear = state.year;
     let lastBuildCheck = 0;
     let lastHeirYear = 0;
@@ -435,6 +493,7 @@ export function runCampaign({
 
     for (let index = 0; index < totalTicks; index++) {
         updateSimulation();
+        observeFuelBackfill(fuelBackfillActive, fuelBackfillPhases, diagnostics.fuelBackfill);
         resolveActiveEvent();
         for (let step = 0; step < LOGISTICS_STEPS; step++) updateLogisticsMovement(LOGISTICS_DT);
 

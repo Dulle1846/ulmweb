@@ -29,3 +29,15 @@ test("destroyed buildings no longer occupy space", () => {
     assert.equal(buildingAt(20, 20), false);
     assert.equal(buildingOverlaps(21, 20, TYPE.HOUSE), false);
 });
+
+test("scaled footprints are indexed and an ignored building does not block itself", () => {
+    const keep = spawnEntity(20, 20, TYPE.KEEP);
+    assert.equal(buildingOverlaps(23, 20, TYPE.HOUSE), false);
+    assert.equal(buildingOverlaps(20, 20, TYPE.HOUSE, 1, keep), false);
+
+    keep.footprintScale = 2;
+    state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
+
+    assert.equal(buildingOverlaps(23, 20, TYPE.HOUSE), true);
+    assert.equal(buildingOverlaps(23, 20, TYPE.HOUSE, 1, keep), false);
+});

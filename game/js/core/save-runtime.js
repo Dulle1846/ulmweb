@@ -51,6 +51,26 @@ import { normalizeRoomFurniture } from "../systems/furniture.js";
 import { migrateSaveSnapshot } from "./save-migrations.js";
 import { SAVE_SCHEMA_VERSION, normalizeSaveSnapshot, validateSaveSnapshot } from "./save-validation.js";
 
+// One-shot fuel-backfill ownership is transient simulation state, but it must
+// survive a reload: otherwise the sick worker's guard and the temporary
+// replacement disappear, allowing a second replacement to consume the seat.
+// Only the guard on the absent worker and the lease on the replacement are
+// authoritative; keeping any more would duplicate derived ownership. Only emit
+// keys that are actually set so ordinary entities keep byte-identical
+// snapshots and older saves without these fields keep loading unchanged.
+const FUEL_BACKFILL_FIELDS = Object.freeze([
+    "fuelBackfillGuardUntil",
+    "fuelBackfillUntil"
+]);
+
+function pickFuelBackfillFields(source) {
+    const fields = {};
+    for (const key of FUEL_BACKFILL_FIELDS) {
+        if (source?.[key] !== undefined) fields[key] = source[key];
+    }
+    return fields;
+}
+
 function serializeEntity(entity, indexByEntity) {
     return {
         id: entity.id || null,
@@ -104,7 +124,8 @@ function serializeEntity(entity, indexByEntity) {
         tint: entity.tint,
         householdId: entity.householdId || null,
         civicOrigin: entity.civicOrigin || null,
-        lastAgedYear: entity.lastAgedYear ?? null
+        lastAgedYear: entity.lastAgedYear ?? null,
+        ...pickFuelBackfillFields(entity)
     };
 }
 
@@ -287,7 +308,8 @@ export function restoreSaveSnapshot(snapshot) {
             moraleMod: dto.moraleMod || 0,
             tint: dto.tint || 0,
             householdId: dto.householdId || null,
-            lastAgedYear: dto.lastAgedYear === null ? null : (Number.isFinite(dto.lastAgedYear) ? dto.lastAgedYear : Math.max(1, Math.floor(Number(snapshot.year) || 1)))
+            lastAgedYear: dto.lastAgedYear === null ? null : (Number.isFinite(dto.lastAgedYear) ? dto.lastAgedYear : Math.max(1, Math.floor(Number(snapshot.year) || 1))),
+            ...pickFuelBackfillFields(dto)
         });
         restored.push(entity);
     }

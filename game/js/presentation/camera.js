@@ -152,7 +152,7 @@ export function resize() {
 // camera are stored in backing pixels, so the same world region is visible at
 // every scale and all drawing code keeps one coordinate system.
 export function setRenderScale(nextScale) {
-    const scale = Math.max(0.5, Math.min(1, Number(nextScale) || 1));
+    const scale = Math.max(0.25, Math.min(1, Number(nextScale) || 1));
     const canvas = state.canvas;
     if (!canvas) {
         state.renderScale = scale;

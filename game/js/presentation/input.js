@@ -224,7 +224,14 @@ export function setupInput(){
         const button=event.target.closest("[data-event-choice]");
         if(!button)return;
         const resolved=resolveEventChoice(Number(button.dataset.eventChoice));
-        if(resolved)showToast("REALM ISSUE RESOLVED");
+        if(resolved){
+            // Resolving clears the blocking event immediately. Do not wait for
+            // the chunked HUD queue to reach renderRealmEvent: on a slow frame
+            // the stale modal would otherwise stay over the realm for several
+            // frames after the decision has already been applied.
+            document.getElementById("realm-event-modal")?.classList.add("hidden");
+            showToast("REALM ISSUE RESOLVED");
+        }
         renderUI();
     });
 

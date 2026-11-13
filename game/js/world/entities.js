@@ -59,24 +59,57 @@ export function buildingAt(tx, ty) {
 }
 
 // Check the full rectangular footprint, not only the building's centre tile.
-// Placement scans used to walk every villager and animal for every candidate
-// tile. The building list is static between collision-version bumps, so cache
-// it once and still filter dead entries in the query (deaths do not need a
-// collision bump for correctness here).
+// Placement scans used to walk every building for every candidate tile and
+// recompute every footprint. The building list is static between
+// collision-version bumps, so build a small spatial grid and precompute the
+// scaled AABBs once. Dead entries are still filtered in the query because
+// deaths do not bump the collision version.
+const COLLISION_CELL = 4;
+const COLLISION_GRID_OFFSET = 2048;
 let collisionCacheEntities = null;
 let collisionCacheVersion = null;
 let collisionCacheLength = -1;
-let collisionBuildingCache = [];
-function collisionBuildings() {
+let collisionGrid = null;
+let collisionQueryStamp = 0;
+
+function collisionIndex() {
     const version = state.buildingCollisionVersion || 0;
     if (collisionCacheEntities !== state.entities || collisionCacheVersion !== version
         || collisionCacheLength !== state.entities.length) {
-        collisionBuildingCache = state.entities.filter(entity => entity.isBuilding());
+        collisionGrid = new Map();
+        for (const entity of state.entities) {
+            if (!entity.isBuilding()) continue;
+            const size = BUILDING_SIZE[entity.type] || { w: 1, h: 1 };
+            const scale = Math.max(0.25, Number(entity.footprintScale) || 1);
+            const entry = {
+                entity,
+                left: entity.x + 0.5 - size.w * scale / 2,
+                right: entity.x + 0.5 + size.w * scale / 2,
+                top: entity.y + 0.5 - size.h * scale / 2,
+                bottom: entity.y + 0.5 + size.h * scale / 2,
+                stamp: 0,
+            };
+            const minX = Math.floor(entry.left / COLLISION_CELL);
+            const maxX = Math.floor(entry.right / COLLISION_CELL);
+            const minY = Math.floor(entry.top / COLLISION_CELL);
+            const maxY = Math.floor(entry.bottom / COLLISION_CELL);
+            for (let gx = minX; gx <= maxX; gx++) {
+                for (let gy = minY; gy <= maxY; gy++) {
+                    const key = (gx + COLLISION_GRID_OFFSET) * 4096 + (gy + COLLISION_GRID_OFFSET);
+                    let bucket = collisionGrid.get(key);
+                    if (!bucket) {
+                        bucket = [];
+                        collisionGrid.set(key, bucket);
+                    }
+                    bucket.push(entry);
+                }
+            }
+        }
         collisionCacheEntities = state.entities;
         collisionCacheVersion = version;
         collisionCacheLength = state.entities.length;
     }
-    return collisionBuildingCache;
+    return collisionGrid;
 }
 
 export function buildingOverlaps(tx, ty, type, footprintScale = 1, ignore = null) {
@@ -87,23 +120,26 @@ export function buildingOverlaps(tx, ty, type, footprintScale = 1, ignore = null
     const right = tx + 0.5 + candidate.w / 2;
     const top = ty + 0.5 - candidate.h / 2;
     const bottom = ty + 0.5 + candidate.h / 2;
-
-    return collisionBuildings().some(e => {
-        if (e.dead || e === ignore) return false;
-        const size = BUILDING_SIZE[e.type] || { w: 1, h: 1 };
-        const otherLeft = e.x + 0.5 - size.w / 2;
-        const otherRight = e.x + 0.5 + size.w / 2;
-        const otherTop = e.y + 0.5 - size.h / 2;
-        const otherBottom = e.y + 0.5 + size.h / 2;
-
-        const scale = Math.max(0.25, Number(e.footprintScale) || 1);
-        const scaledLeft = e.x + 0.5 - size.w * scale / 2;
-        const scaledRight = e.x + 0.5 + size.w * scale / 2;
-        const scaledTop = e.y + 0.5 - size.h * scale / 2;
-        const scaledBottom = e.y + 0.5 + size.h * scale / 2;
-        return left < scaledRight && right > scaledLeft &&
-            top < scaledBottom && bottom > scaledTop;
-    });
+    const grid = collisionIndex();
+    const stamp = ++collisionQueryStamp;
+    const minX = Math.floor(left / COLLISION_CELL);
+    const maxX = Math.floor(right / COLLISION_CELL);
+    const minY = Math.floor(top / COLLISION_CELL);
+    const maxY = Math.floor(bottom / COLLISION_CELL);
+    for (let gx = minX; gx <= maxX; gx++) {
+        for (let gy = minY; gy <= maxY; gy++) {
+            const bucket = grid.get((gx + COLLISION_GRID_OFFSET) * 4096 + (gy + COLLISION_GRID_OFFSET));
+            if (!bucket) continue;
+            for (const entry of bucket) {
+                if (entry.stamp === stamp) continue;
+                entry.stamp = stamp;
+                if (entry.entity.dead || entry.entity === ignore) continue;
+                if (left < entry.right && right > entry.left
+                    && top < entry.bottom && bottom > entry.top) return true;
+            }
+        }
+    }
+    return false;
 }
 
 export function getEntitiesOfType(type) {

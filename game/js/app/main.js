@@ -981,7 +981,13 @@ function init(){
         window.dispatchEvent(new CustomEvent("kac:open-person",{detail:{personId:String(button.dataset.eventPerson||"")}}));
     });
     document.getElementById("realm-event-dismiss")?.addEventListener("click",()=>{
-        if(state.activeEvent){state.activeEvent.dismissed=true;renderUI();}
+        if(state.activeEvent){
+            state.activeEvent.dismissed=true;
+            // Dismissal is immediate; the chunked HUD refresh is not allowed to
+            // leave a blocking modal on screen after the player has closed it.
+            document.getElementById("realm-event-modal")?.classList.add("hidden");
+            renderUI();
+        }
     });
 setupBuildUI();
     setupWorkshopUI();

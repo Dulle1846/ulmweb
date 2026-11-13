@@ -58,6 +58,9 @@ function emptyModel(seed) {
         spreadings: 0,
         suppressed: 0,
         tiles: {},
+        // Internal work list: recovered records stay in tiles so the renderer
+        // keeps their history, but they no longer need a daily age update.
+        activeKeys: [],
         history: [],
         spreadHistory: [],
     };
@@ -106,6 +109,27 @@ function standAtTile(geo, x, y) {
 // records start at age zero so a fresh realm still shows its burn scars,
 // windthrow gaps and disease patches; only elapsed simulation days move them
 // into regrowth.
+// Recovered records are permanent history, not active disturbances. Keeping
+// them out of the daily loop avoids walking every old burn scar forever.
+function rebuildActiveKeys(model) {
+    const keys = [];
+    for (const key in model.tiles) {
+        if (activeSuccessionRecord(model.tiles[key])) keys.push(key);
+    }
+    model.activeKeys = keys;
+    return keys;
+}
+
+function activeKeyList(model) {
+    if (!Array.isArray(model.activeKeys)) rebuildActiveKeys(model);
+    return model.activeKeys;
+}
+
+function activateKey(model, key) {
+    const keys = activeKeyList(model);
+    if (!keys.includes(key)) keys.push(key);
+}
+
 export function ensureForestSuccession() {
     if (validModel(state.forestSuccession)) return state.forestSuccession;
     const geo = state.resourceGeography;
@@ -124,6 +148,7 @@ export function ensureForestSuccession() {
             count++;
         }
     }
+    rebuildActiveKeys(model);
     state.forestSuccession = model;
     return model;
 }
@@ -291,6 +316,7 @@ function spawnDisturbance(model) {
         const after = Math.max(1, Math.min(before, Math.floor(before * profile.severity)));
         geo.forestStock[index] = after;
         model.tiles[key] = { kind, age: 0, containedUntil: 0 };
+        activateKey(model, key);
         model.events++;
         model.lastEventDay = model.day;
         model.history.push({ day: model.day, kind, x, y, stockBefore: before, stockAfter: after });
@@ -309,13 +335,16 @@ export function updateForestSuccession(days = 1) {
     const steps = Math.max(0, Math.min(MAX_STEP_DAYS, Math.floor(number(days, 1))));
     if (!steps) return model;
 
-    // Object.entries allocated a fresh 4,000-row array every tick. This loop
-    // only advances a handful of active records; use the object keys directly
-    // and cache the profile lookup by disturbance kind.
+    // The active work list contains only records that can still change. The
+    // recovered records remain in model.tiles for rendering and save history,
+    // but they are not scanned every tick. Keep the list exact when a record
+    // reaches its recovered age.
+    const active = activeKeyList(model);
+    const remaining = [];
     const profiles = new Map();
-    for (const key in model.tiles) {
-        if (!Object.prototype.hasOwnProperty.call(model.tiles, key)) continue;
+    for (const key of active) {
         const record = model.tiles[key];
+        if (!record) continue;
         let profile = profiles.get(record.kind);
         if (profile === undefined) {
             profile = forestSuccessionProfile(record.kind);
@@ -333,8 +362,11 @@ export function updateForestSuccession(days = 1) {
             if (age !== profile.recoveredDays) record.age = profile.recoveredDays;
             continue;
         }
-        record.age = Math.min(profile.recoveredDays, age + steps);
+        const next = Math.min(profile.recoveredDays, age + steps);
+        record.age = next;
+        if (next < profile.recoveredDays) remaining.push(key);
     }
+    model.activeKeys = remaining;
     model.day = Math.max(0, Math.floor(number(model.day))) + steps;
     model.daysSinceEvent = Math.max(0, Math.floor(number(model.daysSinceEvent))) + steps;
     if (model.daysSinceEvent >= EVENT_INTERVAL_DAYS) {
@@ -376,6 +408,10 @@ function spreadDisturbances(model) {
     const width = Number(state.worldW) || 0;
     const height = Number(state.worldH) || 0;
     if (!geo || !width || !height) return 0;
+    // Spread order must stay in tile-creation order for deterministic saves:
+    // reuse a recovered slot at its original position rather than iterating a
+    // filtered work list. This pass only runs every twelve days; the daily age
+    // loop still uses the active list.
     const keys = Object.keys(model.tiles);
     let tileCount = keys.length;
     const neighbourOrder = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
@@ -421,6 +457,7 @@ function spreadDisturbances(model) {
             const after = Math.max(1, Math.floor(before * 0.72));
             geo.forestStock[index] = after;
             model.tiles[nkey] = { kind: record.kind, age: 0, containedUntil: 0 };
+            activateKey(model, nkey);
             tileCount++;
             model.spreadings = Math.max(0, Math.floor(number(model.spreadings))) + 1;
             model.spreadHistory.push({
@@ -590,6 +627,8 @@ export function restoreForestSuccession(snapshot) {
         tiles,
         history: (Array.isArray(snapshot.history) ? snapshot.history : []).slice(-MAX_HISTORY),
         spreadHistory: (Array.isArray(snapshot.spreadHistory) ? snapshot.spreadHistory : []).slice(-MAX_HISTORY),
+        activeKeys: [],
     };
+    rebuildActiveKeys(state.forestSuccession);
     return Object.keys(tiles).length;
 }

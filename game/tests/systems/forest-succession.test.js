@@ -161,6 +161,8 @@ test("elapsed days advance one disturbance into regrowth and a durable recovery"
     assert.equal(recovered.recovered, true);
     assert.equal(recovered.label, null);
     assert.equal(state.forestSuccession.tiles[key].age, profile.recoveredDays);
+    assert.equal(state.forestSuccession.activeKeys.includes(key), false,
+        "a recovered record must leave the daily work list");
     const [x, y] = key.split(":").map(Number);
     const node = getResourceNodeAt(x, y);
     assert.equal(node.forestSuccessionStage, "recovered");
@@ -257,6 +259,8 @@ test("spread and control state survives a save and an older snapshot", () => {
     assert.equal(state.forestSuccession.spreadings, snapshot.spreadings);
     assert.equal(state.forestSuccession.spreadHistory.length, snapshot.spreadHistory.length);
     assert.equal(state.forestSuccession.tiles[key].containedUntil, snapshot.tiles[key].containedUntil);
+    assert.ok(state.forestSuccession.activeKeys.includes(key),
+        "restore must rebuild the active work list");
 
     const legacy = {
         version: 1, seed: 7, day: 0, events: 0, lastEventDay: 0, daysSinceEvent: 0,

@@ -92,6 +92,13 @@ export function updateVillagers() {
         if(list)list.push(entity);
     }
 
+    cleanupExpiredFuelBackfills(villagers);
+    // Fuel is a settlement emergency, not a campaign-driver action. Keep a
+    // small reserve so a sick woodcutter or sawyer does not empty the hearths
+    // while the normal job rotation waits for the next refresh.
+    if (state.tick % FUEL_POLICY_INTERVAL === 0 && lowFuelReserve()) {
+        assignWorkerToVacantFuelJob();
+    }
     const workerCounts=new Map();
     for(const villager of villagers){
         if(villager.workplace&&!villager.workplace.dead)workerCounts.set(villager.workplace,(workerCounts.get(villager.workplace)||0)+1);
@@ -106,10 +113,17 @@ export function updateVillagers() {
             v.lastAgedYear = state.year;
         }
 
-        v.jobRefreshTimer--;
-        if (v.jobRefreshTimer <= 0) {
-            assignJob(v,workplaces,workerCounts);
-            v.jobRefreshTimer = 80 + Math.floor(rand(0, 120));
+        // Both the sick original and their temporary replacement keep their
+        // job timers frozen for the duration of the one-shot order. No random
+        // roll is consumed here, so the backfill cannot perturb the settlement's
+        // later random sequence or rotate either worker.
+        if (!(Number(v.fuelBackfillGuardUntil)>state.tick)
+            && !(Number(v.fuelBackfillUntil)>state.tick)) {
+            v.jobRefreshTimer--;
+            if (v.jobRefreshTimer <= 0) {
+                assignJob(v,workplaces,workerCounts);
+                v.jobRefreshTimer = 80 + Math.floor(rand(0, 120));
+            }
         }
 
         v.routineTimer--;
@@ -122,6 +136,135 @@ export function updateVillagers() {
             key: "food:residents:" + state.tick
         });
         addResource("food", -1);
+    }
+}
+
+// A one-shot labour order. It is deliberately separate from the recurring job
+// refresh: one healthy worker is moved into the empty fuel seat and no other
+// building is re-sorted. Two transient fields are enough:
+//   - fuelBackfillGuardUntil: one illness phase on the absent fuel worker
+//   - fuelBackfillUntil:      the temporary replacement's lease
+// The guard survives the replacement's death, so one phase cannot hire twice.
+const FUEL_POLICY_INTERVAL = 20;
+const FUEL_RESERVE = 18;
+
+function lowFuelReserve(){
+    // updateSettlementNeeds() publishes the live store total in the needs
+    // summary. Reading the parent object made this policy silently inert in
+    // the real game while a hand-shaped test object could still pass.
+    const stock=Number(state.city?.needs?.summary?.firewoodStock);
+    return Number.isFinite(stock)&&stock<=FUEL_RESERVE;
+}
+function isSickVillager(villager){
+    return Number(villager.illnessUntilTick)>state.tick;
+}
+function fuelJobFor(building){
+    const entry=JOB_MAP.find(row=>row.building===building.type);
+    return entry?entry.job:"worker";
+}
+function canBackfill(villager){
+    return !villager.dead&&villager.type===TYPE.VILLAGER&&!villager.isKing
+        &&!isSickVillager(villager)&&!(Number(villager.fuelBackfillUntil)>state.tick);
+}
+function isCompletedWorkplace(villager){
+    const building=villager.workplace;
+    return building&&!building.dead&&!(building.construction&&building.construction.stage<3);
+}
+function fuelBackfillCandidate(){
+    const villagers=state.entities.filter(entity=>entity.type===TYPE.VILLAGER&&canBackfill(entity));
+    // Prefer a genuinely idle resident. Mature realms often have none.
+    const idle=villagers.find(villager=>!villager.workplace);
+    if(idle) return idle;
+    // A builder whose site has already completed is still attached to the
+    // finished building. Moving this worker does not take labour away from a
+    // productive room and prevents the emergency order from reshuffling jobs.
+    const strandedBuilder=villagers.find(villager=>String(villager.job||"").toLowerCase()==="builder"
+        &&isCompletedWorkplace(villager)&&![TYPE.LUMBER,TYPE.SAWMILL].includes(villager.workplace.type));
+    if(strandedBuilder) return strandedBuilder;
+    // Last resort: take one healthy member of a crew that keeps another worker.
+    const crewCounts=new Map();
+    for(const villager of villagers){
+        const building=villager.workplace;
+        if(!building||building.dead) continue;
+        crewCounts.set(building,(crewCounts.get(building)||0)+1);
+    }
+    return villagers.find(villager=>{
+        const building=villager.workplace;
+        if(!building||building.dead||[TYPE.LUMBER,TYPE.SAWMILL].includes(building.type)) return false;
+        if(building.construction&&building.construction.stage<3) return false;
+        const capacity=BUILDING_WORKFORCE[building.type]||0;
+        return capacity>1&&(crewCounts.get(building)||0)>1;
+    })||null;
+}
+export function assignWorkerToVacantFuelJob(){
+    if (state.isPaused || state.gameOver) return null;
+    for(const building of state.entities){
+        if(building.dead||!building.isBuilding?.()
+            ||![TYPE.LUMBER,TYPE.SAWMILL].includes(building.type)
+            ||(building.construction&&building.construction.stage<3)) continue;
+        const capacity=BUILDING_WORKFORCE[building.type]||0;
+        if(capacity<=0) continue;
+        const assigned=state.entities.filter(entity=>!entity.dead&&entity.type===TYPE.VILLAGER&&entity.workplace===building);
+        const sick=assigned.filter(isSickVillager);
+        if(!sick.length||assigned.length-sick.length>=capacity) continue;
+        // The replacement lease and the illness guard both last for the whole
+        // phase. Either one blocks a second order, including after the first
+        // replacement dies.
+        if(assigned.some(villager=>Number(villager.fuelBackfillUntil)>state.tick)) continue;
+        if(sick.some(villager=>Number(villager.fuelBackfillGuardUntil)>state.tick)) continue;
+        const replacement=fuelBackfillCandidate();
+        if(!replacement) continue;
+        const guardUntil=Math.max(state.tick+1,...sick.map(villager=>Number(villager.illnessUntilTick)||0));
+        for(const villager of sick) villager.fuelBackfillGuardUntil=guardUntil;
+        replacement.workplace=building;
+        replacement.job=fuelJobFor(building);
+        replacement.anchor={x:building.x,y:building.y};
+        replacement.routinePhase=4;
+        replacement.routineTimer=1;
+        replacement.velocityX=0;
+        replacement.velocityY=0;
+        replacement.fuelBackfillUntil=guardUntil;
+        replacement.jobRefreshTimer=80;
+        return { ok:true, villagerId:replacement.id, buildingId:building.id, job:replacement.job };
+    }
+    return null;
+}
+
+function cleanupExpiredFuelBackfills(villagers){
+    for(const villager of villagers){
+        if(villager.type!==TYPE.VILLAGER) continue;
+        if(Number(villager.fuelBackfillGuardUntil)<=state.tick){
+            if(isSickVillager(villager)) villager.fuelBackfillGuardUntil=Number(villager.illnessUntilTick)||0;
+            else delete villager.fuelBackfillGuardUntil;
+        }
+        if(villager.fuelBackfillUntil===undefined||Number(villager.fuelBackfillUntil)>state.tick) continue;
+        const building=villager.workplace&&!villager.workplace.dead?villager.workplace:null;
+        const sickAtBuilding=building?state.entities.filter(other=>!other.dead&&other.type===TYPE.VILLAGER
+            &&other.workplace===building&&isSickVillager(other)):[];
+        if(sickAtBuilding.length){
+            villager.fuelBackfillUntil=Math.max(state.tick+1,...sickAtBuilding.map(other=>Number(other.illnessUntilTick)||0));
+            continue;
+        }
+        const capacity=building?(BUILDING_WORKFORCE[building.type]||0):0;
+        const healthy=building?state.entities.filter(other=>!other.dead&&other.type===TYPE.VILLAGER
+            &&other.workplace===building&&!isSickVillager(other)).length:0;
+        if(building&&healthy<capacity){
+            // The recovered original cannot fill the whole seat (for example a
+            // second worker died); keep the productive replacement and hand it
+            // back to the normal assignment cycle.
+            delete villager.fuelBackfillUntil;
+            continue;
+        }
+        // The original worker is back or the building is gone. Release the
+        // temporary seat; this is the only reset and it happens after the
+        // illness, never as part of the one-shot assignment.
+        villager.workplace=null;
+        villager.job="wanderer";
+        villager.anchor={...(villager.home||{x:villager.x,y:villager.y})};
+        villager.routinePhase=4;
+        villager.routineTimer=1;
+        villager.jobRefreshTimer=0;
+        delete villager.fuelBackfillUntil;
     }
 }
 
@@ -819,6 +962,17 @@ function nearestLeisureSpot(unit) {
 
 function assignJob(villager,workplaces=null,workerCounts=new Map()) {
     const previousWorkplace=villager.workplace;
+    // A one-shot fuel backfill owns this seat until the sick worker recovers.
+    // Returning before the usual decrement/re-scan prevents a later refresh
+    // from rotating the replacement into another building.
+    if(Number(villager.fuelBackfillUntil)>state.tick&&previousWorkplace&&!previousWorkplace.dead){
+        if(!villager.job){
+            const entry=JOB_MAP.find(row=>row.building===previousWorkplace.type);
+            villager.job=entry?entry.job:"worker";
+        }
+        villager.anchor={x:previousWorkplace.x,y:previousWorkplace.y};
+        return;
+    }
     if(previousWorkplace)workerCounts.set(previousWorkplace,Math.max(0,(workerCounts.get(previousWorkplace)||0)-1));
     // Keep a healthy assignment instead of rerolling every few months. The old
     // distance-only scan repeatedly poached the sawyer for a nearer farm, so

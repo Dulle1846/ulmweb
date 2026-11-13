@@ -10,6 +10,10 @@ import { createLegacyState, PRESTIGE_LIMIT, recordLegacy } from "./legacy.js";
 import { DIPLOMATIC_REALMS } from "./diplomacy-config.js";
 import { applyPoliticalEffects } from "./politics.js";
 
+// `toLocaleString` builds a formatter on every call. Ambition labels are
+// refreshed with each simulation snapshot, so reuse one en-US formatter.
+const INTEGER_FORMAT = new Intl.NumberFormat("en-US");
+const formatInteger = value => INTEGER_FORMAT.format(Math.floor(Number(value) || 0));
 const RESOURCE_ORDER = ["wood", "stone", "gold", "food"];
 const RESOURCE_LABELS = Object.freeze({ wood: "wood", stone: "stone", gold: "gold", food: "food" });
 
@@ -679,7 +683,7 @@ export const ETERNAL_DEEDS = Object.freeze([
         description: "Hold a larger reserve of gold in the royal treasury.",
         value: gold,
         target: current => Math.ceil(Math.max(current + 400, current * 1.35)),
-        progressLabel: (value, target) => Math.floor(value).toLocaleString("en-US") + " / " + Math.floor(target).toLocaleString("en-US") + " gold",
+        progressLabel: (value, target) => formatInteger(value) + " / " + formatInteger(target) + " gold",
         reward: Object.freeze({ stone: 40, food: 40 })
     }),
     Object.freeze({
@@ -688,7 +692,7 @@ export const ETERNAL_DEEDS = Object.freeze([
         description: "Keep a deeper reserve of food in store.",
         value: food,
         target: current => Math.ceil(Math.max(current + 300, current * 1.3)),
-        progressLabel: (value, target) => Math.floor(value).toLocaleString("en-US") + " / " + Math.floor(target).toLocaleString("en-US") + " food",
+        progressLabel: (value, target) => formatInteger(value) + " / " + formatInteger(target) + " food",
         reward: Object.freeze({ wood: 40, gold: 40 })
     }),
     Object.freeze({

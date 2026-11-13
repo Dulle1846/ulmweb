@@ -468,6 +468,150 @@ export function forestTypeFromIndex(index) {
     return slot > 0 ? FOREST_TYPE_IDS[slot - 1] || null : null;
 }
 
+// Formation-level species and goods data never changes at runtime. Computing
+// the same totals, sorted species list and goods set for every tile was a
+// measurable share of the campaign profile, so keep one exact descriptor per
+// formation object and reuse it in every stand.
+const FORMATION_METADATA = new WeakMap();
+function formationMetadata(formation) {
+    const cached = FORMATION_METADATA.get(formation);
+    if (cached) return cached;
+    const entries = Object.entries(formation.species).map(([id, rawWeight]) => ({
+        id,
+        weight: Math.max(0, Number(rawWeight) || 0),
+        rawWeight,
+        species: FOREST_SPECIES[id] || null,
+    }));
+    const weightTotal = entries.reduce((sum, entry) => sum + entry.weight, 0);
+    const speciesWeightTotal = weightTotal || 1;
+    const coniferEntries = entries.filter(entry => entry.species?.conifer);
+    const broadleafEntries = entries.filter(entry => !entry.species?.conifer);
+    const coniferShare = clamp01(coniferEntries.reduce((sum, entry) => sum + entry.weight, 0) / speciesWeightTotal);
+    const speciesList = entries
+        .slice()
+        .sort((a, b) => b.weight - a.weight)
+        .map(entry => ({
+            id: entry.id,
+            label: entry.species?.label || entry.id,
+            weight: entry.weight,
+        }));
+    const speciesSimpson = speciesList.reduce((sum, entry) =>
+        sum + Math.pow(entry.weight / speciesWeightTotal, 2), 0);
+    const speciesDiversity = clamp01(1 - speciesSimpson);
+    const baseGoods = new Set(formation.goods || []);
+    for (const entry of entries) {
+        for (const good of entry.species?.goods || []) baseGoods.add(good);
+        if (entry.species?.wood) baseGoods.add(entry.species.wood);
+    }
+    baseGoods.add('timber');
+    baseGoods.add('firewood');
+    const broadleafShare = clamp01(broadleafEntries.reduce((sum, entry) => sum + entry.weight, 0) / speciesWeightTotal);
+    const larchEntry = entries.find(entry => entry.id === 'larch') || null;
+    const larchShare = clamp01((larchEntry?.weight || 0) / speciesWeightTotal);
+    const dominantShare = clamp01((speciesList[0]?.weight || 0) / speciesWeightTotal);
+    const shannon = speciesList.reduce((sum, entry) => {
+        const share = clamp01(entry.weight / speciesWeightTotal);
+        return sum - (share > 0 ? share * Math.log(share) : 0);
+    }, 0);
+    const evenness = clamp01(shannon / Math.log(Math.max(2, speciesList.length)));
+    const mixed = Boolean(formation.mixed) || (speciesList.length >= 4 && speciesDiversity >= 0.42);
+    const metadata = {
+        entries,
+        weightTotal,
+        speciesWeightTotal,
+        speciesList,
+        coniferEntries,
+        broadleafEntries,
+        larchEntry,
+        coniferShare,
+        speciesSimpson,
+        speciesDiversity,
+        baseGoods,
+        broadleafShare,
+        larchShare,
+        dominantShare,
+        shannon,
+        evenness,
+        mixed,
+        mixturePattern: formation.mixturePattern || (dominantShare > 0.5 ? 'grouped' : 'even'),
+        groupCount: Math.max(1, Math.min(3, Number(formation.canopyLayers) || (mixed ? 2 : 1))),
+        fauna: formation.fauna,
+        coniferLabel: entries
+            .filter(entry => entry.species?.conifer)
+            .map(entry => FOREST_SPECIES[entry.id]?.label || entry.id)
+            .join(' · '),
+        phenology: speciesList
+            .map(entry => {
+                const window = FOREST_PHENOLOGY[entry.id];
+                return window ? { id: entry.id, label: FOREST_SPECIES[entry.id]?.label || entry.id, ...window } : null;
+            })
+            .filter(Boolean)
+            .slice(0, 6),
+        mastShare: speciesList
+            .filter(entry => ['oak', 'beech', 'chestnut', 'hazel', 'hornbeam'].includes(entry.id))
+            .reduce((sum, entry) => sum + entry.weight, 0) / speciesWeightTotal,
+        browsingPressure: clamp01(
+            (formation.fauna.includes('deer') ? 0.34 : 0)
+            + (formation.fauna.includes('roe-deer') ? 0.24 : 0)
+            + (formation.fauna.includes('tapir') ? 0.18 : 0)
+            + (formation.fauna.includes('agouti') ? 0.08 : 0)),
+        predatorPressure: clamp01(
+            (formation.fauna.includes('wolf') ? 0.48 : 0)
+            + (formation.fauna.includes('lynx') ? 0.3 : 0)
+            + (formation.fauna.includes('jaguar') ? 0.44 : 0)
+            + (formation.fauna.includes('ocelot') ? 0.16 : 0)
+            + (formation.fauna.includes('harpy-eagle') ? 0.12 : 0)
+            + (formation.fauna.includes('fox') ? 0.08 : 0)),
+    };
+    FORMATION_METADATA.set(formation, metadata);
+    return metadata;
+}
+
+// Goods, silviculture and wood grades depend on only three values: formation,
+// age class and disturbance. Cache the finished sorted arrays instead of
+// cloning a Set and sorting every tile's goods list.
+const FORMATION_DERIVED = new WeakMap();
+function formationDerived(formation, meta, ageClass, disturbance) {
+    let cache = FORMATION_DERIVED.get(formation);
+    if (!cache) {
+        cache = new Map();
+        FORMATION_DERIVED.set(formation, cache);
+    }
+    const key = ageClass + '|' + (disturbance || '');
+    let derived = cache.get(key);
+    if (derived) return derived;
+    const goods = new Set(meta.baseGoods);
+    if (ageClass === 'ancient' || disturbance === 'burned') goods.add('charcoal');
+    if (goods.has('honey')) goods.add('beeswax');
+    if (goods.has('game')) { goods.add('fur'); goods.add('hides'); }
+    const sortedGoods = [...goods].sort();
+    const silviculture = [...new Set([
+        ...(formation.silviculture || []),
+        ...(ageClass === 'ancient' ? ['protection'] : []),
+        ...(sortedGoods.includes('charcoal') ? ['charcoal'] : []),
+        ...(sortedGoods.includes('honey') ? ['honey'] : []),
+    ])];
+    const woodQuality = meta.speciesList.slice(0, 5).map(entry => ({
+        id: entry.id,
+        label: FOREST_SPECIES[entry.id]?.label || entry.id,
+        timber: Number(FOREST_SPECIES[entry.id]?.timber) || 1,
+        grade: ageClass === 'ancient' ? 'old-growth' : ageClass === 'young' ? 'young' : 'mature',
+    }));
+    derived = { goods: sortedGoods, silviculture, woodQuality };
+    cache.set(key, derived);
+    return derived;
+}
+
+function weightedPickEntries(entries, total, roll) {
+    if (!total) return entries[0]?.id || 'oak';
+    let cursor = clamp01(Number(roll) || 0) * total;
+    for (const entry of entries) {
+        cursor -= entry.weight;
+        if (cursor <= 0) return entry.id;
+    }
+    return entries[entries.length - 1]?.id || 'oak';
+}
+
 // Seasonal goods are ecological availability, not a second resource economy.
 // The existing wood/food ledger stays authoritative; these descriptors let the
 // survey and the forester/lumber panels explain what a particular wood offers.
@@ -866,9 +1010,9 @@ export function forestStandAt(x, y, context = {}) {
     // stand for disturbance purposes. Weight the seeded pest/snow/drought
     // hazards by the actual conifer share so a 15% spruce mixed wood does not
     // receive the same outbreak probability as a sprucewood.
-    const baseSpeciesTotal = Object.values(baseFormation.species).reduce((sum, weight) => sum + Math.max(0, weight), 0) || 1;
-    const baseConiferShare = Object.entries(baseFormation.species).reduce((sum, [id, weight]) =>
-        sum + (FOREST_SPECIES[id]?.conifer ? Math.max(0, weight) : 0), 0) / baseSpeciesTotal;
+    const baseMeta = formationMetadata(baseFormation);
+    const baseSpeciesTotal = baseMeta.speciesWeightTotal;
+    const baseConiferShare = baseMeta.coniferShare;
     const coniferHazard = coniferBase && baseConiferShare > 0.3;
     const barkThreshold = 0.93 + (1 - baseConiferShare) * 0.05;
     const snowThreshold = 0.93 + (1 - baseConiferShare) * 0.05;
@@ -938,12 +1082,12 @@ export function forestStandAt(x, y, context = {}) {
 
     const ageClass = forcedAgeClass || ageClassFor(formation, tx, ty, seed);
     const ageScale = AGE_SCALE[ageClass];
+    const meta = formationMetadata(formation);
     const density = clamp01(formation.density * (0.58 + forestPressure * 0.42) * (0.72 + stockRatio * 0.28));
     const canopy = clamp01(density * (1 - clearing * 0.74) * (ageClass === 'young' ? 0.82 : 1));
     const light = clamp01(0.22 + (1 - canopy) * 0.78 + (edge ? 0.12 : 0));
-    const speciesWeightTotal = Object.values(formation.species).reduce((sum, weight) => sum + Math.max(0, Number(weight) || 0), 0) || 1;
-    const coniferShare = clamp01(Object.entries(formation.species).reduce((sum, [id, weight]) =>
-        sum + (FOREST_SPECIES[id]?.conifer ? Math.max(0, Number(weight) || 0) : 0), 0) / speciesWeightTotal);
+    const speciesWeightTotal = meta.speciesWeightTotal;
+    const coniferShare = meta.coniferShare;
     let treeChance = clamp01(0.08 + density * 0.78 + (edge ? 0.06 : 0) - clearing * 0.56);
     if (formation.id === 'regenerating') treeChance = clamp01(0.32 + density * 0.4);
     if (formation.id === 'cutover') treeChance = clamp01(0.12 + density * 0.62);
@@ -973,7 +1117,7 @@ export function forestStandAt(x, y, context = {}) {
     // characteristic rust-brown carpet. It is derived, never saved separately.
     const needles = clamp01(coniferShare * (0.55 + litter * 0.22) + (formation.needleLitter || 0) * 0.3);
 
-    const dominantSpecies = weightedPick(formation.species, unitHash(seed, tx, ty, 0x53504543));
+    const dominantSpecies = weightedPickEntries(meta.entries, meta.weightTotal, unitHash(seed, tx, ty, 0x53504543));
     // Linden and elm share one ecological formation but the survey names the
     // stand after the linden/elm share that actually dominates the local
     // canopy; another species may still be the single most common tree.
@@ -982,27 +1126,15 @@ export function forestStandAt(x, y, context = {}) {
             : (Number(formation.species.elm) || 0) > (Number(formation.species.linden) || 0) ? 'elm' : 'linden')
         : null;
     const standLabel = lindenElm === 'elm' ? 'Elm Stand' : lindenElm === 'linden' ? 'Linden Stand' : formation.label;
-    const speciesList = Object.entries(formation.species)
-        .sort((a, b) => b[1] - a[1])
-        .map(([id, weight]) => ({ id, label: FOREST_SPECIES[id]?.label || id, weight }));
+    const speciesList = meta.speciesList;
     // Diversity is measured from the actual species weights, not from a broad
     // "conifer share". A five-species mixed conifer wood is not a monoculture.
-    const speciesSimpson = speciesList.reduce((sum, entry) =>
-        sum + Math.pow(Math.max(0, entry.weight) / speciesWeightTotal, 2), 0);
-    const speciesDiversity = clamp01(1 - speciesSimpson);
+    const speciesSimpson = meta.speciesSimpson;
+    const speciesDiversity = meta.speciesDiversity;
 
-    const baseGoods = new Set([...formation.goods]);
-    for (const entry of speciesList) {
-        for (const good of FOREST_SPECIES[entry.id]?.goods || []) baseGoods.add(good);
-        // Species-specific timber keeps an oak beam distinguishable from beech,
-        // birch, maple, chestnut, linden, elm or alder in the forest ledger.
-        const wood = FOREST_SPECIES[entry.id]?.wood;
-        if (wood) baseGoods.add(wood);
-    }
-    // Every wood can be worked for timber and firewood; charcoal belongs to
-    // the older, denser stands and to burn scars.
-    baseGoods.add('timber');
-    baseGoods.add('firewood');
+    // The formation's species goods and timbers are static. Start from the
+    // cached set and only add the age/disturbance-dependent goods here.
+    const baseGoods = new Set(meta.baseGoods);
     if (ageClass === 'ancient' || disturbance === 'burned') baseGoods.add('charcoal');
     if (baseGoods.has('honey')) baseGoods.add('beeswax');
     if (baseGoods.has('game')) { baseGoods.add('fur'); baseGoods.add('hides'); }
@@ -1085,19 +1217,9 @@ export function forestStandAt(x, y, context = {}) {
     // Large herbivores and predators are habitat-derived pressures, not new
     // saved populations. They let browsing slow regrowth and predation shape
     // herd growth without adding a second trophic simulation.
-    const browsingPressure = clamp01(
-        (formation.fauna.includes('deer') ? 0.34 : 0)
-        + (formation.fauna.includes('roe-deer') ? 0.24 : 0)
-        + (formation.fauna.includes('tapir') ? 0.18 : 0)
-        + (formation.fauna.includes('agouti') ? 0.08 : 0)
+    const browsingPressure = clamp01(meta.browsingPressure
         + (ageClass === 'young' ? 0.1 : 0) + (edge ? 0.08 : 0));
-    const predatorPressure = clamp01(
-        (formation.fauna.includes('wolf') ? 0.48 : 0)
-        + (formation.fauna.includes('lynx') ? 0.3 : 0)
-        + (formation.fauna.includes('jaguar') ? 0.44 : 0)
-        + (formation.fauna.includes('ocelot') ? 0.16 : 0)
-        + (formation.fauna.includes('harpy-eagle') ? 0.12 : 0)
-        + (formation.fauna.includes('fox') ? 0.08 : 0));
+    const predatorPressure = meta.predatorPressure;
     const deadwood = clamp01(logs * 0.72 + stumps * 0.32
         + (ageClass === 'ancient' ? 0.12 : 0) + (disturbance === 'diseased' ? 0.12 : 0));
     const structure = {
@@ -1136,21 +1258,18 @@ export function forestStandAt(x, y, context = {}) {
     // structure, a layered canopy, an understorey character and a set of
     // silvicultural uses. All of it is derived from the same stand inputs and
     // stays deterministic, so renderer, survey and economy cannot disagree.
-    const coniferEntries = speciesList.filter(entry => FOREST_SPECIES[entry.id]?.conifer);
-    const broadleafEntries = speciesList.filter(entry => !FOREST_SPECIES[entry.id]?.conifer);
-    const larchEntry = speciesList.find(entry => entry.id === 'larch');
-    const broadleafShare = clamp01(broadleafEntries.reduce((sum, entry) => sum + entry.weight, 0) / speciesWeightTotal);
-    const larchShare = clamp01((larchEntry?.weight || 0) / speciesWeightTotal);
+    const coniferEntries = meta.coniferEntries;
+    const broadleafEntries = meta.broadleafEntries;
+    const larchEntry = meta.larchEntry;
+    const broadleafShare = meta.broadleafShare;
+    const larchShare = meta.larchShare;
     const deciduousShare = clamp01(broadleafShare + larchShare);
-    const dominantShare = clamp01((speciesList[0]?.weight || 0) / speciesWeightTotal);
-    const shannon = speciesList.reduce((sum, entry) => {
-        const share = clamp01(entry.weight / speciesWeightTotal);
-        return sum - (share > 0 ? share * Math.log(share) : 0);
-    }, 0);
-    const evenness = clamp01(shannon / Math.log(Math.max(2, speciesList.length)));
-    const mixed = Boolean(formation.mixed) || (speciesList.length >= 4 && speciesDiversity >= 0.42);
-    const mixturePattern = formation.mixturePattern || (dominantShare > 0.5 ? 'grouped' : 'even');
-    const groupCount = Math.max(1, Math.min(3, Number(formation.canopyLayers) || (mixed ? 2 : 1)));
+    const dominantShare = meta.dominantShare;
+    const shannon = meta.shannon;
+    const evenness = meta.evenness;
+    const mixed = meta.mixed;
+    const mixturePattern = meta.mixturePattern;
+    const groupCount = meta.groupCount;
     const groups = [];
     if (mixed) {
         for (let group = 0; group < groupCount; group++) {
@@ -1250,28 +1369,9 @@ export function forestStandAt(x, y, context = {}) {
         score: clamp01(formation.fauna.length / 10 * 0.34 + speciesDiversity * 0.24
             + structure.deadwood * 0.16 + (ecotone ? 0.1 : 0) + foodPlants.length / 8 * 0.16),
     };
-    const silviculture = [...new Set([
-        ...(formation.silviculture || []),
-        ...(ageClass === 'ancient' ? ['protection'] : []),
-        ...(baseGoods.has('charcoal') ? ['charcoal'] : []),
-        ...(baseGoods.has('honey') ? ['honey'] : []),
-    ])];
-    const woodQuality = speciesList.slice(0, 5).map(entry => ({
-        id: entry.id,
-        label: FOREST_SPECIES[entry.id]?.label || entry.id,
-        timber: Number(FOREST_SPECIES[entry.id]?.timber) || 1,
-        grade: ageClass === 'ancient' ? 'old-growth' : ageClass === 'young' ? 'young' : 'mature',
-    }));
-    const phenology = speciesList
-        .map(entry => {
-            const window = FOREST_PHENOLOGY[entry.id];
-            return window ? { id: entry.id, label: FOREST_SPECIES[entry.id]?.label || entry.id, ...window } : null;
-        })
-        .filter(Boolean)
-        .slice(0, 6);
-    const mastShare = speciesList
-        .filter(entry => ['oak', 'beech', 'chestnut', 'hazel', 'hornbeam'].includes(entry.id))
-        .reduce((sum, entry) => sum + entry.weight, 0) / speciesWeightTotal;
+    const derived = formationDerived(formation, meta, ageClass, disturbance);
+    const { silviculture, woodQuality } = derived;
+    const { phenology, mastShare } = meta;
     const mastCrop = clamp01(foodPlants.length / 6 * 0.6 + mastShare * 0.4);
     const mixture = {
         mixed,
@@ -1328,8 +1428,8 @@ export function forestStandAt(x, y, context = {}) {
             pools: tropical?.water.pools ?? 0, decay: tropical?.soil.decayingMatter ?? 0,
             surfaceRoots: tropical?.soil.surfaceRoots ?? roots, weathered: tropical?.soil.weathered ?? 0,
         },
-        goods: [...baseGoods].sort(),
-        fauna: [...formation.fauna],
+        goods: derived.goods,
+        fauna: meta.fauna,
         coniferShare,
         speciesDiversity,
         monoculture,
@@ -1340,7 +1440,7 @@ export function forestStandAt(x, y, context = {}) {
         windExposure,
         treeline,
         conifer: coniferShare >= 0.4,
-        coniferLabel: [...speciesList].filter(entry => FOREST_SPECIES[entry.id]?.conifer).map(entry => entry.label).join(' · '),
+        coniferLabel: meta.coniferLabel,
         visibility,
         groundShade,
         lightShaft: clamp01(light * (1 - canopy * 0.46)),

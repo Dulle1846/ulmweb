@@ -22,6 +22,7 @@
     "test:terrain-stability": "node tests/browser/terrain-stability.mjs",
     "test:renderer-recycle": "node tests/browser/renderer-recycle-audit.mjs",
     "test:device-benchmark": "node tests/browser/device-benchmark.mjs",
+    "test:performance:low-end": "node tests/browser/low-end-performance.mjs",
     "test:atmosphere-reference": "node tests/browser/daylight-reference.mjs",
     "test:forester-stewardship": "node tests/browser/forester-stewardship.mjs",
     "test:forester-stewardship-longrun": "node tests/browser/forester-stewardship-longrun.mjs",

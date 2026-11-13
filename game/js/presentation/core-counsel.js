@@ -3,6 +3,7 @@
 import { TYPE } from "../core/types.js";
 import { BUILDING_COSTS, CONSTRUCTION_SHARE, costShare, isHousingType, housingCapacityFor } from "../systems/city-config.js";
 import { ROAD_TYPES } from "../systems/roads.js";
+import { getAmbitionSnapshot } from "../systems/ambitions.js";
 
 function canAfford(state, cost) {
     return Object.entries(cost || {}).every(([resource, amount]) =>
@@ -117,6 +118,22 @@ export function getCoreCounsel(state) {
             panel: "kingdom"
         };
     }
+    // After the first house, road and card, the onboarding path continues with
+    // the first royal ambition. "Stores are steady" was a dead end for a new
+    // player who had just finished the checklist but did not know where the
+    // long-term goal lived. Only the live realm carries the ambition model;
+    // synthetic counsel readers stay pure and keep their steady fallback.
+    try {
+        const ambition = state?.ambitions && typeof state.ambitions === "object" ? getAmbitionSnapshot() : null;
+        if (ambition && !ambition.allComplete && Number(ambition.completedCount) === 0) {
+            return {
+                id: "ambition",
+                text: "The realm is steady. Complete your first royal ambition: " + (ambition.title || "open the royal ledger") + ".",
+                actionLabel: "REVIEW REALM",
+                panel: "kingdom"
+            };
+        }
+    } catch { /* the counsel must remain available during early loading */ }
     return {
         id: "steady",
         text: "Stores are steady. Follow the royal ambition or draw another card.",

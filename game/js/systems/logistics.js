@@ -113,10 +113,21 @@ export function ensureInventory(entity) {
     inventory.reservedIn = inventory.reservedIn && typeof inventory.reservedIn === "object" ? inventory.reservedIn : {};
     inventory.reservedOut = inventory.reservedOut && typeof inventory.reservedOut === "object" ? inventory.reservedOut : {};
     for (const key of GOOD_KEYS) {
-        inventory.input[key] = cleanQuantity(inventory.input[key]);
-        inventory.output[key] = cleanQuantity(inventory.output[key]);
-        inventory.reservedIn[key] = cleanQuantity(inventory.reservedIn[key]);
-        inventory.reservedOut[key] = Math.min(cleanQuantity(inventory.reservedOut[key]), cleanQuantity(inventory.output[key]));
+        // Most inventories already contain clean non-negative integers. Avoid
+        // rewriting every slot on every stock query; only repair the rare
+        // malformed value or an over-reserved output.
+        const input = inventory.input[key];
+        if (!Number.isInteger(input) || input < 0) inventory.input[key] = cleanQuantity(input);
+        const output = inventory.output[key];
+        if (!Number.isInteger(output) || output < 0) inventory.output[key] = cleanQuantity(output);
+        const reservedIn = inventory.reservedIn[key];
+        if (!Number.isInteger(reservedIn) || reservedIn < 0) inventory.reservedIn[key] = cleanQuantity(reservedIn);
+        const reservedOut = inventory.reservedOut[key];
+        if (!Number.isInteger(reservedOut) || reservedOut < 0) {
+            inventory.reservedOut[key] = cleanQuantity(reservedOut);
+        } else if (reservedOut > inventory.output[key]) {
+            inventory.reservedOut[key] = inventory.output[key];
+        }
     }
     if (entity.type === TYPE.WAREHOUSE || entity.type === TYPE.KEEP) {
         if (!entity.warehouse || typeof entity.warehouse !== "object") entity.warehouse = {};
@@ -139,9 +150,16 @@ export function ensureInventory(entity) {
         entity.warehouse.reservedIn = entity.warehouse.reservedIn && typeof entity.warehouse.reservedIn === "object" ? entity.warehouse.reservedIn : {};
         entity.warehouse.reservedOut = entity.warehouse.reservedOut && typeof entity.warehouse.reservedOut === "object" ? entity.warehouse.reservedOut : {};
         for (const key of GOOD_KEYS) {
-            entity.warehouse.stored[key] = cleanQuantity(entity.warehouse.stored[key]);
-            entity.warehouse.reservedIn[key] = cleanQuantity(entity.warehouse.reservedIn[key]);
-            entity.warehouse.reservedOut[key] = Math.min(cleanQuantity(entity.warehouse.reservedOut[key]), entity.warehouse.stored[key]);
+            const stored = entity.warehouse.stored[key];
+            if (!Number.isInteger(stored) || stored < 0) entity.warehouse.stored[key] = cleanQuantity(stored);
+            const reservedIn = entity.warehouse.reservedIn[key];
+            if (!Number.isInteger(reservedIn) || reservedIn < 0) entity.warehouse.reservedIn[key] = cleanQuantity(reservedIn);
+            const reservedOut = entity.warehouse.reservedOut[key];
+            if (!Number.isInteger(reservedOut) || reservedOut < 0) {
+                entity.warehouse.reservedOut[key] = cleanQuantity(reservedOut);
+            } else if (reservedOut > entity.warehouse.stored[key]) {
+                entity.warehouse.reservedOut[key] = entity.warehouse.stored[key];
+            }
         }
     }
     return inventory;

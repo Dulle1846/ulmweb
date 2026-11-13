@@ -833,6 +833,10 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
 function drawDetailLayerGaps(ctx, zoom, cam, canvas, transform) {
     const rect = transformedLayerRect(transform, canvas.width, canvas.height, Number(state.renderScale) || 1);
     if (rect.width <= 0 || rect.height <= 0) return;
+    // A settled layer covers the whole viewport. There is no uncovered strip
+    // to fill; the clipped ground/fog blit would otherwise reprocess a
+    // full-screen texture every frame on a low-end software rasteriser.
+    if (rect.x <= 0 && rect.y <= 0 && rect.x + rect.width >= canvas.width && rect.y + rect.height >= canvas.height) return;
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, canvas.width, canvas.height);

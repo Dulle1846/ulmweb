@@ -131,7 +131,12 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     if (!partner || !MARKET_RESOURCES.includes(resource) || !["buy","sell"].includes(direction)) {
         return {ok:false,reason:"INVALID TRADE"};
     }
-    const amount = Math.max(1,Math.min(25,Math.floor(Number(quantity)||1)));
+    const requestedAmount = Math.max(1,Math.min(25,Math.floor(Number(quantity)||1)));
+    // Harvests and consumption make food fractional. A sale must be able to
+    // take the remaining balance below one lot instead of stranding it behind
+    // a SELL 5 control. Buying always trades whole lots.
+    const available = direction === "sell" ? Math.max(0, Number(state.resources[resource]) || 0) : 0;
+    const amount = available > 0 && available < requestedAmount ? available : requestedAmount;
     const price = state.market.prices[resource];
     const terms = getDiplomaticTradeTerms(state.diplomacy, partnerId, getCourtModifiers().tradeBonus);
     state.market.debtPressure = getDebtPressure();

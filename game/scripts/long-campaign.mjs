@@ -63,7 +63,12 @@ const summary = {
 };
 console.log("LONG CAMPAIGN", JSON.stringify(summary, null, 2));
 
+const fuelBackfill = result.diagnostics?.fuelBackfill;
 if (!result.ok) {
     console.error("LONG CAMPAIGN FAILED");
+    process.exitCode = 1;
+}
+if (!fuelBackfill || fuelBackfill.orders < 1 || fuelBackfill.maxOrdersPerPhase > 1) {
+    console.error("FUEL BACKFILL EVIDENCE FAILED", JSON.stringify(fuelBackfill || null));
     process.exitCode = 1;
 }
