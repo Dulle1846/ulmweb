@@ -4,6 +4,7 @@ import { resetIncome } from "../systems/resources.js";
 import { updateMorale } from "../systems/morale.js";
 import { checkRandomEvents,addLog } from "../systems/events.js";
 import { updateMarket } from "../systems/market.js";
+import { updateRealmCycle } from "../systems/realm-cycle.js";
 import { updateDiplomacy } from "../systems/diplomacy.js";
 import { updateCourt } from "../systems/court.js";
 import { updateCivic } from "../systems/civic.js";
@@ -95,7 +96,7 @@ export function updateSimulation(){
     if(newborn)addLog("A CHILD WAS BORN: "+newborn.person.name,"#e8c77b","family");
     else if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
     updateFields();updateForestSuccession();if(state.resourceGeography)regrowForests(400,{slice:state.tick%400,slices:400});updateForestFauna();updateForestPannage();updateBuildingIncome();updateCraftProduction();updateLogistics();updateConstruction();updateVillagers();updateMilitary();updateCombat();checkRandomEvents();
-    updateWeather();updateMorale();updateMarket();updateEconomy();updateHealth();updateAmbitions();
+    updateWeather();updateMorale();updateMarket();updateEconomy();updateRealmCycle();updateHealth();updateAmbitions();
     // Procedural chronicle events are independent of the decision-bearing
     // issue inbox. They never open a modal or wait for the player; the bounded
     // timeline and presentation queue keep them off the simulation hot path.

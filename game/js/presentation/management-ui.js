@@ -34,6 +34,7 @@ import { getIdentitySnapshot } from "../systems/identity.js";
 import { getResearchSnapshot, startResearch, setResearchFunding, appointScholar, dismissScholar } from "../systems/research.js";
 import { GRAIN_CONTRACTS, WATERWORKS_LEVELS, getCrownSupplySnapshot, setGrainContract, setWaterworks, upgradeHousingStock, provisionGranary } from "../systems/crown-supply.js";
 import { applyCrownRelief } from "../systems/crown-relief.js";
+import { getRealmCycleSnapshot, resolveRealmCyclePetition } from "../systems/realm-cycle.js";
 import { getLegacySnapshot } from "../systems/legacy.js";
 import { constructionSnapshot, isUnderConstruction } from "../systems/construction.js";
 import { getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReason, getCitySummary, getLogisticsSnapshot, setWarehouseProfile } from "../systems/logistics.js";
@@ -172,6 +173,14 @@ export function resources(){
  '<div class="resource-detail-grid">'+RESOURCE_ORDER.map(key=>resourceCard(key,history)).join("")+'</div>'+
  '<p class="command-note">Stock history contains up to 24 completed 20-day settlements. The chart is intentionally blank until two settlements exist; no interpolated or invented points are drawn.</p>';
 }
+function realmCycleStatus(){
+ const c=getRealmCycleSnapshot();
+ const phase=String(c.phase||"stable").toUpperCase();
+ const petition=c.petition?'A '+esc(c.petition.faction)+' petition is waiting in Politics.':'No petition is waiting. The crown can still watch the reserve and the market before pressure becomes a demand.';
+ const reserve=Number(c.drivers?.reserveYears)||0;
+ const price=Number(c.drivers?.foodPrice)||0;
+ return '<div class="command-summary"><div><small>PHASE</small><strong>'+esc(phase)+'</strong></div><div><small>SCARCITY</small><strong>'+Math.round(c.scarcity*100)+'%</strong></div><div><small>MARKET PRESSURE</small><strong>'+Math.round(c.marketPressure*100)+'%</strong></div><div><small>UNREST</small><strong>'+Math.round(c.unrest*100)+'%</strong></div><div><small>RESERVE</small><strong>'+amount(reserve)+' Y</strong></div><div><small>GRAIN PRICE</small><strong>'+amount(price)+'G</strong></div></div><p class="command-note">'+petition+'</p>';
+}
 function kingdom(){
  if(!state.hasStarted)return intro("THE REALM OF "+(state.kingdomName||"ELDRIA"),"Awaiting its founding","The royal ledger becomes active when a new campaign begins.")+'<div class="command-note">No campaign is running yet. Begin a new game to appoint the sovereign, populate the settlement and activate the royal ledger.</div>';
  const h=getRoyalHouse(),p=getPoliticalSnapshot(),w=getWorkforceSnapshot(),housing=getHousingSnapshot();
@@ -183,6 +192,7 @@ function kingdom(){
  return intro("THE REALM OF "+(state.kingdomName||"ELDRIA"),"Kingdom overview","A live summary of the crown, people, treasury and stability. Figures below are read from the running simulation.")+
  '<div class="command-summary"><div><small>SOVEREIGN</small><strong>'+esc(sovereign)+'</strong></div><div><small>YEAR</small><strong>'+number(state.year)+'</strong></div><div><small>POPULATION</small><strong>'+number(housing.population)+'</strong></div><div><small>MORALE</small><strong>'+Math.round(state.morale||0)+'/100</strong></div></div>'+
  '<div class="command-section-title">THE REALM AT A GLANCE</div><div class="command-summary"><div><small>TREASURY</small><strong>'+number(state.resources?.gold)+'</strong></div><div><small>HOUSING</small><strong>'+number(housing.population)+' / '+number(housing.capacity)+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div></div>'+
+ '<div class="command-section-title">LIVING REALM CYCLE</div>'+realmCycleStatus()+
  '<div class="command-section-title">ROYAL STORES</div><div class="command-resource-grid">'+resources+'</div>'+
  '<div class="command-section-title">CURRENT PRODUCTION FLOW</div><div class="command-resource-grid">'+Object.entries(income).map(([key,value])=>'<div class="command-resource"><span>'+esc(key)+' · change</span><strong>'+(Number(value)>0?"+":"")+number(value)+'</strong></div>').join("")+'</div>'+
  '<div class="command-section-title">REALM ISSUES</div>'+active+
@@ -220,10 +230,31 @@ function government(){
  const charterSection='<div class="command-section-title">FOUNDING CHARTER</div><div class="command-summary"><div><small>RELIGION</small><strong>'+esc(identity.religionDetails.label)+'</strong></div><div><small>TRADITION</small><strong>'+esc(identity.traditionDetails.label)+'</strong></div><div><small>LAW</small><strong>'+esc(identity.lawDetails.label)+'</strong></div><div><small>LEGITIMACY</small><strong>'+esc(identity.legitimacyDetails.label)+'</strong></div></div><div class="command-summary"><div><small>STARTING CHARTER</small><strong>'+esc(identity.foundingDetails.label)+'</strong></div><div><small>TAX</small><strong>'+((identity.modifiers.tax>=0?"+":"")+Math.round(identity.modifiers.tax*100))+'%</strong></div><div><small>TRADE</small><strong>'+((identity.modifiers.trade>=0?"+":"")+Math.round(identity.modifiers.trade*100))+'%</strong></div><div><small>RESEARCH</small><strong>'+((identity.modifiers.research>=0?"+":"")+Math.round(identity.modifiers.research*100))+'%</strong></div></div><p class="command-note">'+esc(identity.religionDetails.description)+' · '+esc(identity.traditionDetails.description)+' · '+esc(identity.lawDetails.description)+' · '+esc(identity.legitimacyDetails.description)+'</p>'+(identity.background?'<p class="command-note"><strong>FOUNDING CHRONICLE</strong><br>'+esc(identity.background)+'</p>':'')+'<p class="command-note">The starting charter added '+esc(identity.foundingDetails.description)+'</p>';
  return intro("THE CROWN & ITS INSTITUTIONS","Government","Choose how authority is organized. Changing the constitution costs 20 gold and shifts faction support. The royal court below turns those factions into named offices and annual petitions.")+identitySection+charterSection+'<div class="command-summary"><div><small>IN FORCE</small><strong>'+esc(f.label)+'</strong></div><div><small>TAX BASELINE</small><strong>'+g.taxRate+'%</strong></div><div><small>COUNCIL SEATS</small><strong>'+g.councilSeats+'</strong></div><div><small>DECREE COUNT</small><strong>'+g.decrees+'</strong></div></div><div class="command-section-title">TAX RATE · CURRENT '+g.taxRate+'%</div><p class="command-note">The tax rate is charged against employed households at every 20-day settlement. Raising it lifts revenue but embitters the commons and guilds; lowering it buys goodwill and leaves less for wages. Last changed in year '+(g.lastTaxChangeYear||"—")+'.</p>'+taxButtons+'<div class="command-section-title">CONSTITUTIONAL MODELS</div><div class="command-choice-grid">'+forms+'</div><div class="command-note">The six offices are now live. Ministries, lawmaking procedure and regional autonomy beyond this court remain future modules.</div>'+courtSection();
 }
+function realmCycleSection(){
+ const c=getRealmCycleSnapshot();
+ const phase=String(c.phase||"stable").toUpperCase();
+ const narrative={
+  prosperity:"The granary is full, the market is calm and households are confident. Low prices and a strong reserve are feeding the next season of growth.",
+  stable:"The realm is holding. Reserves, prices and public confidence are close enough to balance that ordinary decisions still matter more than crisis.",
+  strain:"Scarcity is reaching the market and household confidence is weakening. A petition is likely if the crown does not act.",
+  crisis:"Scarcity, market pressure and unrest are reinforcing one another. Requisition can end the immediate petition, but it makes the next season harder."
+ }[c.phase]||"The cycle is moving through the real stores, market and settlement.";
+ const actions=(c.actions||[]).map(a=>'<article class="command-policy"><div><strong>'+esc(a.label)+'</strong><p>'+esc(a.detail)+'</p><small>'+esc(costLabel(a.cost||{})||"NO DIRECT COST")+'</small></div><button data-command="realm-cycle" data-value="'+esc(a.id)+'"'+(a.available?'':' disabled')+'>'+(a.available?'ANSWER PETITION':'NOT AVAILABLE')+'</button></article>').join("");
+ const petition=c.petition?'<article class="command-policy"><div><span class="command-ribbon">'+esc(c.petition.faction.toUpperCase())+' PETITION · EXPIRES YEAR '+Math.floor((Number(c.petition.expiresTick)||0)/400+1)+'</span><strong>'+esc(c.petition.title)+'</strong><p>'+esc(c.petition.demand)+'</p></div></article><div class="command-policy-list">'+actions+'</div>':'<p class="command-note">No petition is waiting. When unrest crosses '+Math.round(0.42*100)+'%, the households or the guilds will bring a demand to the crown. Ignoring it raises unrest and lowers legitimacy.</p>';
+ const recent=(c.history||[]).slice(-4).reverse().map(row=>'<div class="command-history"><strong>'+esc(String(row.phase||"stable").toUpperCase())+' · TICK '+number(row.tick)+'</strong><p>Scarcity '+Math.round(row.scarcity*100)+'% · market '+Math.round(row.marketPressure*100)+'% · unrest '+Math.round(row.unrest*100)+'% · prosperity '+Math.round(row.prosperity*100)+'%</p></div>').join("");
+ const drivers=c.drivers||{};
+ return '<div class="command-summary"><div><small>PHASE</small><strong>'+esc(phase)+'</strong></div><div><small>SCARCITY</small><strong>'+Math.round(c.scarcity*100)+'%</strong></div><div><small>MARKET PRESSURE</small><strong>'+Math.round(c.marketPressure*100)+'%</strong></div><div><small>UNREST</small><strong>'+Math.round(c.unrest*100)+'%</strong></div><div><small>PROSPERITY</small><strong>'+Math.round(c.prosperity*100)+'%</strong></div><div><small>PETITIONS ANSWERED</small><strong>'+number(c.resolvedPetitions)+' / '+number(c.totalPetitions)+'</strong></div></div>'+
+  '<div class="command-meter-list">'+meter("SCARCITY",c.scarcity*100)+meter("MARKET PRESSURE",c.marketPressure*100)+meter("PUBLIC UNREST",c.unrest*100)+meter("PROSPERITY",c.prosperity*100)+'</div>'+
+  '<p class="command-note"><strong>LIVING LOOP</strong> Granary reserve → grain price and market stock → household confidence → petition → concession or requisition → migration and demand → the next reserve. '+esc(narrative)+'</p>'+
+  '<div class="command-note">Reserve '+amount(Number(drivers.foodReserve)||0)+' food · demand '+amount(Number(drivers.foodDemand)||0)+' per settlement · '+amount(Number(drivers.reserveYears)||0)+' years of cover · regional market stock '+amount(Number(drivers.regionalFoodStock)||0)+' / '+amount(Number(drivers.regionalFoodTarget)||0)+' · '+(c.displacement?'<strong>'+number(c.displacement)+' displacement(s) recorded.</strong>':'no displacement recorded yet.')+'</div>'+
+  petition+
+  '<div class="command-section-title">CYCLE RECORD · LAST '+Math.min(4,(c.history||[]).length)+' CHECKS</div><div class="command-history-list">'+(recent||'<p class="command-note">The first cycle check will appear after the next 20-day settlement.</p>')+'</div>'+
+  (c.lastResolution?'<p class="command-note"><strong>LAST CROWN ANSWER</strong> '+esc(c.lastResolution)+'</p>':'');
+}
 function politics(){
  const p=getPoliticalSnapshot(),court=getCourtSnapshot(),f=Object.entries(p.factions).map(([k,v])=>meter(k,v)).join(""),policies=Object.entries(GOVERNMENT_POLICIES).map(([id,x])=>'<article class="command-policy"><div><strong>'+esc(x.label)+'</strong><p>'+esc(x.description)+'</p></div><button data-command="policy" data-value="'+id+'">ENACT</button></article>').join("");
  const petition=court.demand?'<p class="command-note"><strong>COURT PETITION</strong><br>'+esc(court.demand.factionLabel)+' asks: '+esc(court.demand.title)+'. Grant or ignore it in Government → Royal Court.</p>':'';
- return intro("FACTIONS & PUBLIC ORDER","Politics","Legitimacy and faction support respond to decrees and the realm's material conditions.")+'<div class="command-summary"><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div><div><small>AVERAGE SUPPORT</small><strong>'+Math.round(p.averageSupport)+'/100</strong></div><div><small>DECISIONS</small><strong>'+p.settlements+'</strong></div></div><div class="command-section-title">FACTION SUPPORT</div><div class="command-meter-list">'+f+'</div>'+petition+'<div class="command-section-title">ROYAL DECREES · ONE PER YEAR</div><div class="command-policy-list">'+policies+'</div>';
+ return intro("FACTIONS & PUBLIC ORDER","Politics","Legitimacy and faction support respond to decrees and the realm's material conditions. The living realm cycle below connects granary scarcity to market prices, household unrest and real petitions.")+'<div class="command-summary"><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div><div><small>AVERAGE SUPPORT</small><strong>'+Math.round(p.averageSupport)+'/100</strong></div><div><small>DECISIONS</small><strong>'+p.settlements+'</strong></div></div><div class="command-section-title">LIVING REALM CYCLE</div>'+realmCycleSection()+'<div class="command-section-title">FACTION SUPPORT</div><div class="command-meter-list">'+f+'</div>'+petition+'<div class="command-section-title">ROYAL DECREES · ONE PER YEAR</div><div class="command-policy-list">'+policies+'</div>';
 }
 function diplomacy(){
  const d=getDiplomacySnapshot(),c=d.costs,gold=Number(state.resources?.gold)||0,food=Number(state.resources?.food)||0,court=getCourtSnapshot();
@@ -1024,7 +1055,8 @@ function render(resetScroll=false){
 }
 function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
 
- if(a==="endeavour-start")r=startEndeavour(v,{overseerId:$("endeavour-overseer-select")?.value||null,funding:endeavourFunding});
+ if(a==="realm-cycle")r=resolveRealmCyclePetition(v);
+ else if(a==="endeavour-start")r=startEndeavour(v,{overseerId:$("endeavour-overseer-select")?.value||null,funding:endeavourFunding});
  else if(a==="endeavour-funding"){endeavourFunding=Math.max(0,Math.min(2,Number(v)||0));r={ok:true};}
  else if(a==="endeavour-active-funding")r=setEndeavourFunding(Number(v));
  else if(a==="endeavour-abandon")r=abandonEndeavour();
@@ -1044,6 +1076,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a.startsWith("research-"))toast(String(r.message||"RESEARCH UPDATED").toUpperCase());
   else if(a.startsWith("endeavour-"))toast(String(r.message||"CROWN WORK UPDATED").toUpperCase());
   else if(a.startsWith("crown-"))toast(String(r.message||"CROWN SUPPLY UPDATED").toUpperCase());
+  else if(a==="realm-cycle")toast(String(r.message||"PETITION ANSWERED").toUpperCase());
   else if(a==="open-atelier")toast("ATELIER OPEN");
   else toast("DECISION RECORDED");
   renderUI();render();

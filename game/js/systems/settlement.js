@@ -187,6 +187,10 @@ export function updateSettlementNeeds() {
     const occupiedHomes = houseRows.filter(houseIsOccupied);
     const services = city.services.summary || updateServices();
     const season = Math.max(0, Math.min(3, Math.floor(number(state.seasonIndex))));
+    // Civic unrest is a real household condition, not a separate HUD number.
+    // It erodes safety and social trust so a sustained political crisis slows
+    // immigration and can push the existing migration gate to its limit.
+    const civicStrain = Math.max(0, Math.min(1, number(state.realmCycle?.unrest)));
     const houseWarmth = new Map();
     for (const house of occupiedHomes) houseWarmth.set(house.id, warmthSatisfaction(house, season));
     const firewood = occupiedHomes.length
@@ -202,8 +206,8 @@ export function updateSettlementNeeds() {
             food: foodSatisfaction(population),
             water: coverage.water ? 1 : 0,
             warmth: Math.min(1, (coverage.water ? 0.75 : 0.55) + comfort * 0.25) * houseWarmth.get(house.id),
-            safety: coverage.safety ? 1 : 0.45,
-            social: coverage.social ? 1 : 0.4,
+            safety: Math.max(0.12, (coverage.safety ? 1 : 0.45) - civicStrain * 0.24),
+            social: Math.max(0.12, (coverage.social ? 1 : 0.4) - civicStrain * 0.30),
             health: coverage.health ? 1 : 0.5,
             comfort
         };
@@ -230,7 +234,8 @@ export function updateSettlementNeeds() {
         trade: services.trade || 0, satisfaction: average,
         productivity: city.needs.productivity,
         lowChecks, firewoodStock: getWarehouseStock("firewood"),
-        waterStock: getWarehouseStock("water"), aleStock: getWarehouseStock("ale")
+        waterStock: getWarehouseStock("water"), aleStock: getWarehouseStock("ale"),
+        civicUnrest: civicStrain
     };
     city.needs.households = householdRows;
     city.needs.summary = summary;

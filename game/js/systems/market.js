@@ -111,8 +111,12 @@ export function updateMarket() {
         const targetStock = 90 * state.market.partners.length;
         const scarcityPressure = Math.max(-0.22,Math.min(0.38,(targetStock-regionalStock)/targetStock*0.32));
         const hungerPressure = resource === "food" ? getFoodCrisisSnapshot().severity * 0.35 : 0;
-        state.market.priceTrend[resource] = Math.max(-0.45,Math.min(0.55,(state.market.priceTrend[resource]||0)*0.68+drift+scarcityPressure*0.12+hungerPressure*0.04));
-        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource]+scarcityPressure+hungerPressure)*100)/100);
+        // Civic pressure is the market's read of the same living cycle. A
+        // household petition does not exist in a separate economy: it makes
+        // grain dearer through this bounded term until stock or policy eases.
+        const civicPressure = resource === "food" ? Math.max(0,Math.min(0.35,Number(state.realmCycle?.marketPressure)||0))*0.35 : 0;
+        state.market.priceTrend[resource] = Math.max(-0.45,Math.min(0.55,(state.market.priceTrend[resource]||0)*0.68+drift+scarcityPressure*0.12+hungerPressure*0.04+civicPressure*0.04));
+        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource]+scarcityPressure+hungerPressure+civicPressure)*100)/100);
         const history = state.market.priceHistory[resource] || (state.market.priceHistory[resource] = []);
         history.push(state.market.prices[resource]);
         if (history.length > 16) history.shift();

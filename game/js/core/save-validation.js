@@ -17,6 +17,7 @@ import { validateIdentity } from "../systems/identity.js";
 import { validateResearchState } from "../systems/research.js";
 import { validateLegacyState } from "../systems/legacy.js";
 import { validatePopulationState } from "../systems/population-register.js";
+import { validateRealmCycleState } from "../systems/realm-cycle.js";
 import { validateAiChronicleState } from "./ai-chronicle-state.js";
 import { validateEventTimelineState } from "./event-timeline.js";
 import { validateCraftedItems } from "../systems/item-lexicon.js";
@@ -226,6 +227,9 @@ export function validateSaveSnapshot(snapshot) {
     }
     if (snapshot.population !== undefined && snapshot.population !== null) {
         validateDomainSnapshot(snapshot.population, "population", validatePopulationState);
+    }
+    if (snapshot.realmCycle !== undefined) {
+        validateDomainSnapshot(snapshot.realmCycle, "realmCycle", validateRealmCycleState);
     }
     if (snapshot.aiChronicle !== undefined && snapshot.aiChronicle !== null) {
         validateDomainSnapshot(snapshot.aiChronicle, "aiChronicle", validateAiChronicleState);
