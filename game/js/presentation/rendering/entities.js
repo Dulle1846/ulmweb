@@ -823,6 +823,79 @@ function drawPersonRoleIcon(ctx, e, sx, sy, cellPx) {
     ctx.restore();
 }
 
+// The district-view badge is pure glyph work: ring, badge, gloss, emoji and
+// crown are identical for every resident with the same profession/status and
+// zoom. Rasterising the colour emoji for every person on every frame is
+// expensive on a software canvas. Cache that small static badge once; bob,
+// lean, walk feet and draw order stay per entity around the same transform.
+const PERSON_ICON_CACHE_LIMIT = 320;
+let personIconSprites = new Map();
+
+function personIconSpriteFor(emoji, badgeColor, statusColor, baseRadius, scale, isKing, isWorking) {
+    const key = [emoji, badgeColor, statusColor, baseRadius.toFixed(2), isKing ? 1 : 0, isWorking ? 1 : 0].join("|");
+    let sprite = personIconSprites.get(key);
+    if (sprite) return sprite;
+    if (personIconSprites.size >= PERSON_ICON_CACHE_LIMIT) personIconSprites.clear();
+    const margin = Math.ceil(8 * scale);
+    const size = Math.max(8, Math.ceil(baseRadius * 2 + margin * 2 + 4 * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const sctx = canvas.getContext("2d");
+    if (!sctx) return null;
+    sctx.translate(size / 2, size / 2);
+
+    sctx.globalAlpha = 0.25;
+    sctx.fillStyle = "#000";
+    sctx.beginPath();
+    sctx.ellipse(1 * scale, baseRadius + 4 * scale, baseRadius * 0.85, 3 * scale, 0, 0, Math.PI * 2);
+    sctx.fill();
+    sctx.globalAlpha = 1;
+
+    sctx.fillStyle = "#111";
+    sctx.beginPath();
+    sctx.arc(0, 0, baseRadius + 2 * scale, 0, Math.PI * 2);
+    sctx.fill();
+    sctx.fillStyle = statusColor;
+    sctx.beginPath();
+    sctx.arc(0, 0, baseRadius, 0, Math.PI * 2);
+    sctx.fill();
+
+    sctx.fillStyle = isWorking ? lightenColor(badgeColor, 0.25) : badgeColor;
+    sctx.beginPath();
+    sctx.arc(0, 0, baseRadius - 1.5 * scale, 0, Math.PI * 2);
+    sctx.fill();
+
+    sctx.fillStyle = "rgba(255,255,255,0.14)";
+    sctx.beginPath();
+    sctx.ellipse(-baseRadius * 0.25, -baseRadius * 0.35, baseRadius * 0.45, baseRadius * 0.3, -0.4, 0, Math.PI * 2);
+    sctx.fill();
+
+    const fontSize = Math.max(8, Math.round(baseRadius * 1.2));
+    sctx.font = `${fontSize}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    sctx.textAlign = "center";
+    sctx.textBaseline = "middle";
+    sctx.fillText(emoji, 0, 1 * scale);
+
+    if (isKing) {
+        sctx.fillStyle = "#f2c744";
+        const crownY = -baseRadius - 6 * scale;
+        sctx.beginPath();
+        sctx.moveTo(-5 * scale, crownY + 4 * scale);
+        sctx.lineTo(-5 * scale, crownY);
+        sctx.lineTo(-2 * scale, crownY + 3 * scale);
+        sctx.lineTo(0, crownY - 2 * scale);
+        sctx.lineTo(2 * scale, crownY + 3 * scale);
+        sctx.lineTo(5 * scale, crownY);
+        sctx.lineTo(5 * scale, crownY + 4 * scale);
+        sctx.closePath();
+        sctx.fill();
+    }
+    sprite = { canvas, offset: size / 2 };
+    personIconSprites.set(key, sprite);
+    return sprite;
+}
+
 function drawPersonIcon(ctx, e, sx, sy, cellPx, tick) {
     if (state.zoomLevel >= 4) {
         drawPersonTopDown(ctx, e, sx, sy, cellPx);
@@ -848,47 +921,22 @@ function drawPersonIcon(ctx, e, sx, sy, cellPx, tick) {
     const px = sx + cellPx / 2;
     const py = sy + cellPx / 2;
 
+    const statusColor = isFleeing ? "#ef4444" : isWorking ? (palette ? palette.accent : "#f59e0b") : badgeColor;
+    const sprite = personIconSpriteFor(emoji, badgeColor, statusColor, baseRadius, scale, e.isKing, isWorking);
+
     ctx.save();
     ctx.translate(px, py - 4 * scale + bobAmount);
     ctx.rotate(lean);
 
-    // Schatten
-    ctx.globalAlpha = 0.25;
-    ctx.fillStyle = "#000";
-    ctx.beginPath();
-    ctx.ellipse(1 * scale, baseRadius + 4 * scale, baseRadius * 0.85, 3 * scale, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-
-    // Ring
-    const statusColor = isFleeing ? "#ef4444" : isWorking ? (palette ? palette.accent : "#f59e0b") : badgeColor;
-    ctx.fillStyle = "#111";
-    ctx.beginPath();
-    ctx.arc(0, 0, baseRadius + 2 * scale, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = statusColor;
-    ctx.beginPath();
-    ctx.arc(0, 0, baseRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Badge
-    ctx.fillStyle = isWorking ? lightenColor(badgeColor, 0.25) : badgeColor;
-    ctx.beginPath();
-    ctx.arc(0, 0, baseRadius - 1.5 * scale, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Glanz
-    ctx.fillStyle = "rgba(255,255,255,0.14)";
-    ctx.beginPath();
-    ctx.ellipse(-baseRadius * 0.25, -baseRadius * 0.35, baseRadius * 0.45, baseRadius * 0.3, -0.4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Emoji
-    const fontSize = Math.max(8, Math.round(baseRadius * 1.2));
-    ctx.font = `${fontSize}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(emoji, 0, 1 * scale);
+    if (sprite) {
+        ctx.drawImage(sprite.canvas, -sprite.offset, -sprite.offset);
+    } else {
+        // A minimal 2D shim without canvas support still gets the readable badge.
+        ctx.fillStyle = statusColor;
+        ctx.beginPath();
+        ctx.arc(0, 0, baseRadius, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     // Füße
     if (isMoving) {
@@ -898,22 +946,6 @@ function drawPersonIcon(ctx, e, sx, sy, cellPx, tick) {
         ctx.fill();
         ctx.beginPath();
         ctx.ellipse(3 * scale - walkCycle * 2.5 * scale, baseRadius + 2 * scale, 3 * scale, 1.8 * scale, 0, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    // Krone
-    if (e.isKing) {
-        ctx.fillStyle = "#f2c744";
-        const crownY = -baseRadius - 6 * scale;
-        ctx.beginPath();
-        ctx.moveTo(-5 * scale, crownY + 4 * scale);
-        ctx.lineTo(-5 * scale, crownY);
-        ctx.lineTo(-2 * scale, crownY + 3 * scale);
-        ctx.lineTo(0, crownY - 2 * scale);
-        ctx.lineTo(2 * scale, crownY + 3 * scale);
-        ctx.lineTo(5 * scale, crownY);
-        ctx.lineTo(5 * scale, crownY + 4 * scale);
-        ctx.closePath();
         ctx.fill();
     }
 

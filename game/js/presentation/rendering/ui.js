@@ -370,18 +370,30 @@ function renderDynamicPanels(){
 }
 const UI_HUD_CHUNKS=Object.freeze([renderResourceValues,renderResourceIncome,renderMoraleHud,renderWorldLabels,renderTopStatus,renderHousingHud,renderCardHud,renderRoomBonuses,renderAmbition,renderFirstSession,renderViewHud,renderDynamicPanels]);
 let uiHudFrame=0,uiHudIndex=0,uiHudPending=false;
-function runHudRefresh(){
-    uiHudFrame=0;
-    const chunk=UI_HUD_CHUNKS[uiHudIndex++];
+function runHudRefresh() {
+    uiHudFrame = 0;
+    const chunk = UI_HUD_CHUNKS[uiHudIndex++];
     try{chunk();}catch(error){console.error(error);}
-    if(uiHudIndex<UI_HUD_CHUNKS.length){uiHudFrame=requestAnimationFrame(runHudRefresh);return;}
-    if(uiHudPending){uiHudPending=false;uiHudIndex=0;uiHudFrame=requestAnimationFrame(runHudRefresh);}
+    if (uiHudIndex < UI_HUD_CHUNKS.length) {
+        uiHudFrame = setTimeout(runHudRefresh, 0);
+        return;
+    }
+    if (uiHudPending) {
+        uiHudPending = false;
+        uiHudIndex = 0;
+        uiHudFrame = setTimeout(runHudRefresh, 0);
+    }
 }
-export function renderUI(){
-    if(!state.hasStarted)return;
-    if(uiHudFrame){uiHudPending=true;return;}
-    uiHudIndex=0;
-    uiHudFrame=requestAnimationFrame(runHudRefresh);
+export function renderUI() {
+    if (!state.hasStarted) return;
+    if (uiHudFrame) { uiHudPending = true; return; }
+    uiHudIndex = 0;
+    // HUD chunks used to share the animation frame with drawWorld. A heavy
+    // chunk (inventory, trade, event panels) then extended the frame by up to
+    // its full DOM cost. Run one chunk per task between frames instead; the
+    // visible refresh cadence is unchanged, but the world frame keeps its
+    // budget and Long Task attribution stops at the chunk itself.
+    uiHudFrame = setTimeout(runHudRefresh, 0);
 }
 const MAP_LAYER_LEGENDS=Object.freeze({
     resources:{

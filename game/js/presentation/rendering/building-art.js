@@ -203,17 +203,120 @@ export function footprintOf(e) {
     return sizeOf(e);
 }
 
-export function drawAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, options = {}) {
+// Building art is the dominant entity-layer cost on a software canvas. A
+// structure only changes its rooftop when the simulation tick changes; all
+// frames between two ticks would repaint exactly the same paths. Render each
+// structure once per tick into a small sprite and blit it for the remaining
+// frames. This preserves the authored art and every tick-driven animation
+// exactly, while turning dozens of path fills into one drawImage.
+const BUILDING_SPRITE_CACHE_LIMIT = 96;
+const BUILDING_SPRITE_BUILD_MS = 1;
+const buildingSprites = new Map();
+let buildingSpriteWindowStart = 0;
+let buildingSpriteWindowMs = 0;
+
+// Tick-driven rooftop animations all invalidate on the same frame. Rebuilding
+// every visible structure then turns the cache into one large task. Keep the
+// previous sprite visible and refresh only a small slice each frame; a
+// structure is never missing, it merely catches its animation up a few frames
+// later.
+function buildingSpriteBudget() {
+    const now = performance.now();
+    if (now - buildingSpriteWindowStart >= 16) {
+        buildingSpriteWindowStart = now;
+        buildingSpriteWindowMs = 0;
+    }
+    return buildingSpriteWindowMs < BUILDING_SPRITE_BUILD_MS;
+}
+
+function buildingMetrics(e, cellPx) {
     const { w: bw, h: bh } = sizeOf(e);
     const w = bw * cellPx;
     const h = bh * cellPx;
+    const scale = cellPx / CELL;
+    const style = variantStyle(ROOF_STYLES[e.type] || ROOF_STYLES[TYPE.HOUSE], e);
+    const detail = Math.max(0, Math.min(1.4, ((Math.min(w, h) - 16) / 40)));
+    return { w, h, scale, style, detail };
+}
+
+export function drawAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, options = {}) {
+    const { w, h, scale, style, detail } = buildingMetrics(e, cellPx);
+    const left = sx + cellPx / 2 - w / 2;
+    const top = sy + cellPx / 2 - h / 2;
+
+    if (options.interior && state.zoomLevel >= 4) {
+        paintAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, { ...options, selection: true });
+        return;
+    }
+
+    const styleKey = `${style.wall}|${style.roof}|${style.trim || ''}`;
+    const cacheKey = String(e.id);
+    const selected = state.selectedBuildingId === e.id;
+    let sprite = buildingSprites.get(cacheKey);
+    const stale = !sprite
+        || sprite.tick !== tick
+        || sprite.width !== Math.ceil(w) + sprite.padding * 2
+        || sprite.height !== Math.ceil(h) + sprite.padding * 2
+        || sprite.styleKey !== styleKey
+        || sprite.type !== e.type
+        || sprite.detail !== detail;
+    // A missing sprite must be painted now, otherwise the building disappears.
+    // A stale one can wait for the next frame's budget slice.
+    if (stale && (!sprite || buildingSpriteBudget())) {
+        const buildStart = performance.now();
+        const padding = Math.ceil(28 * scale);
+        const width = Math.ceil(w) + padding * 2;
+        const height = Math.ceil(h) + padding * 2;
+        // Reuse the per-building canvas across ticks. Creating a fresh canvas
+        // for every structure every tick allocated megabytes per second and
+        // produced GC pauses that looked like simulation spikes.
+        const canvas = sprite?.canvas || document.createElement('canvas');
+        if (canvas.width !== width) canvas.width = width;
+        if (canvas.height !== height) canvas.height = height;
+        const sctx = canvas.getContext('2d');
+        if (sctx) {
+            sctx.clearRect(0, 0, width, height);
+            // Place the structure's top-left at (padding, padding), so shadows,
+            // flags and smoke plumes have room inside the sprite.
+            paintAuthoredBuilding(
+                sctx, e,
+                padding + w / 2 - cellPx / 2,
+                padding + h / 2 - cellPx / 2,
+                cellPx, tick, { ...options, interior: false, selection: false }
+            );
+        }
+        sprite = { canvas, padding, width, height, tick, styleKey, type: e.type, detail };
+        if (!buildingSprites.has(cacheKey) && buildingSprites.size >= BUILDING_SPRITE_CACHE_LIMIT) {
+            const oldest = buildingSprites.keys().next().value;
+            if (oldest !== undefined) buildingSprites.delete(oldest);
+        }
+        buildingSprites.set(cacheKey, sprite);
+        buildingSpriteWindowMs += performance.now() - buildStart;
+    }
+
+    if (!sprite) return;
+    ctx.drawImage(sprite.canvas, left - sprite.padding, top - sprite.padding);
+
+    // Selection changes independently of the building art, so keep it out of
+    // the cached sprite and draw it only for the selected structure.
+    if (selected) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(246,214,132,0.95)';
+        ctx.lineWidth = Math.max(1.4, 2.2 * scale);
+        ctx.setLineDash([5 * scale, 4 * scale]);
+        roundRect(ctx, left - 3 * scale, top - 3 * scale, w + 6 * scale, h + 6 * scale, 4 * scale);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+    }
+}
+
+function paintAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, options = {}) {
+    const { w, h, scale, style, detail } = buildingMetrics(e, cellPx);
     const cx = sx + cellPx / 2;
     const cy = sy + cellPx / 2;
     const left = cx - w / 2;
     const top = cy - h / 2;
-    const scale = cellPx / CELL;
-    const style = variantStyle(ROOF_STYLES[e.type] || ROOF_STYLES[TYPE.HOUSE], e);
-    const detail = Math.max(0, Math.min(1.4, ((Math.min(w, h) - 16) / 40)));
     const box = { left, top, w, h, cx, cy, scale, detail, tick, style, e, cellPx };
 
     ctx.save();
@@ -229,7 +332,7 @@ export function drawAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, options = {})
     else drawRooftopPlan(ctx, box);
 
     // Selection ring from the workshop.
-    if (state.selectedBuildingId && e.id === state.selectedBuildingId) {
+    if (options.selection !== false && state.selectedBuildingId && e.id === state.selectedBuildingId) {
         ctx.strokeStyle = 'rgba(246,214,132,0.95)';
         ctx.lineWidth = Math.max(1.4, 2.2 * scale);
         ctx.setLineDash([5 * scale, 4 * scale]);

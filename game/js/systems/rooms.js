@@ -178,13 +178,11 @@ export function getBuildingRoomBreakdown(entity) {
 // Furniture is maintained whether or not its room is currently reachable; the
 // ledger charges every assigned item once per settlement period.
 export function getFurnitureUpkeepTotal() {
-    let total = 0;
-    for (const entity of Array.isArray(state.entities) ? state.entities : []) {
-        const breakdown = getBuildingRoomBreakdown(entity);
-        if (!breakdown) continue;
-        total += breakdown.furnitureUpkeep;
-    }
-    return round(total);
+    // The room snapshot already walks every building and sums the same
+    // per-building furniture upkeep. Reusing it avoids a second full layout /
+    // furniture plan pass on every settlement tick; the cached value is exact,
+    // not an approximation.
+    return getRoomBonusSnapshot().furnitureUpkeep;
 }
 
 let cacheKey = "";

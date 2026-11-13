@@ -586,25 +586,27 @@ test("drawTerrain reaches the real grassland detail and wind path end to end", (
                 && state.terrainTreeDraws > 0
                 && created[0]?.operations.some(operation => operation.op === "ellipse")) break;
         }
-        const stage = created[0];
-        assert.ok(stage, "the real drawTerrain path did not create its staging surface");
-        assert.ok(stage.operations.some(operation => operation.op === "ellipse"),
-            "the real detail build did not emit any grass/tree geometry");
-        assert.ok(stage.operations.some(operation => operation.op === "quadraticCurveTo"),
-            "the real detail build did not emit grass blades");
+        // A cold start builds directly on the visible terrain surface. There is
+        // no offscreen staging swap and no full-viewport fallback in the main
+        // canvas; the progressive raster is already the presented layer.
+        const painted = surface;
+        assert.ok(painted.operations.some(operation => operation.op === "ellipse"),
+            "the visible detail build did not emit any grass/tree geometry");
+        assert.ok(painted.operations.some(operation => operation.op === "quadraticCurveTo"),
+            "the visible detail build did not emit grass blades");
         const expectedGrass = grasslandProfileAt(0.5, 0.5, {
             seed: state.worldSeed, moisture: 0.8, temperature: 0.56, height: 0.46,
             climate: "temperate", forests: 0, seaLevel: 0.33, dayOfYear: 170,
             year: 5, hour: 9, weather: "clear", wind: 1,
         });
-        assert.ok(stage.operations.some(operation => operation.op === "ellipse"
+        assert.ok(painted.operations.some(operation => operation.op === "ellipse"
             && operation.fillStyle === expectedGrass.grassHex),
-        "the real detail build did not paint the grassland sward colour");
-        assert.ok(stage.operations.some(operation => operation.op === "translate"),
-            "the real detail build did not emit a fauna/vegetation translate");
+        "the visible detail build did not paint the grassland sward colour");
+        assert.ok(painted.operations.some(operation => operation.op === "translate"),
+            "the visible detail build did not emit a fauna/vegetation translate");
         assert.ok(state.terrainTreeDraws > 0, "the real renderer did not draw a tree");
-        assert.ok(main.operations.some(operation => operation.op === "drawImage"),
-            "the cached terrain layer was not copied to the visible canvas");
+        assert.ok(painted.operations.some(operation => operation.op === "drawImage"),
+            "the baked ground was not painted onto the visible terrain surface");
         assert.ok(count(main, "stroke") > 0,
             "the animated wind overlay was not drawn after the cached layer");
 

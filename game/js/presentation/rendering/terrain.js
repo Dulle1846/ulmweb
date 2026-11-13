@@ -44,6 +44,13 @@ function windMultiplier() {
 //  GROUND
 // ═══════════════════════════════════════════════════════════════
 
+// True once a complete detail raster exists for the current view. Startup uses
+// this to finish the one-time cold build while the start screen still covers the
+// realm, so the first playable frames already have a settled layer.
+export function isTerrainDetailSettled() {
+    return !detailBuild && Boolean(detailState);
+}
+
 export function drawTerrain(ctx) {
     const zoom = state.zoom;
     const cam = state.camera;
@@ -197,12 +204,12 @@ let detailBuild = null;
 // detail surface is still separate and remains untouched until the swap.
 let detailStageCanvas = null;
 let detailStageCtx = null;
-const DETAIL_BUILD_SLICE_MS = 4;
+const DETAIL_BUILD_SLICE_MS = 3;
 // One slice per frame made a rebuild take many wall-clock frames. That kept
 // the old layer visible longer and left staging work running into the next
 // seasonal window. Spend the remaining frame headroom on another slice while
 // keeping a hard per-frame build budget.
-const DETAIL_BUILD_FRAME_MS = 4;
+const DETAIL_BUILD_FRAME_MS = 3;
 // Terrain content changes (exploration, forest growth, roads, seasons) can
 // arrive many times per second. Aborting an in-progress multi-frame build on
 // every content-key change starves the cache forever: the detail layer never
@@ -211,7 +218,7 @@ const DETAIL_BUILD_FRAME_MS = 4;
 // changes. Once a layer is available, content-only refreshes wait for a quiet
 // moment, with a bounded maximum age so a changing realm still catches up.
 const DETAIL_CONTENT_SETTLE_MS = 500;
-const DETAIL_CONTENT_REFRESH_MS = 4000;
+const DETAIL_CONTENT_REFRESH_MS = 12000;
 let observedView = "";
 let lastViewChangeAt = 0;
 let lastContentKey = null;
@@ -272,7 +279,10 @@ function detailContentKey() {
         : (Number(state.seasonIndex) || 0) * 100;
     // Snow and foliage turn slowly. A multi-day bucket avoids a complete
     // re-rasterisation at every day boundary while still following seasons.
-    const dayBucket = state.terrainMode === "canvas" ? 12 : 4;
+    // Forest growth and seasonal tint are slow visual inputs. A coarse day
+    // bucket keeps the raster from being rebuilt every few seconds while a
+    // building/road revision still refreshes immediately once the view settles.
+    const dayBucket = state.terrainMode === "canvas" ? 40 : 8;
     const hour = Number.isFinite(Number(state.timeOfDay)) ? Number(state.timeOfDay) : 12;
     return [
         detailWorldKey(),
@@ -283,7 +293,10 @@ function detailContentKey() {
         Math.floor(hour / 2),
         Number(state.exploredRevision) || 0,
         Number(state.terrainCacheRevision) || 0,
-        Number(state.forestVisualRevision) || 0,
+        // Raw forestVisualRevision changes almost every simulation step while
+        // trees grow. The day bucket above already carries that slow visual
+        // change; including the raw revision here defeated every cache policy
+        // and rebuilt the whole viewport on the maximum-age timer.
         Number(state.roads?.revision) || 0,
         Number(state.buildingCollisionVersion) || 0,
         // Entity count is not a terrain input. Living units, particles and
@@ -294,22 +307,41 @@ function detailContentKey() {
     ].join("|");
 }
 
-function beginDetailBuild(zoom, cam, canvas, key, worldKey) {
+function beginDetailBuild(zoom, cam, canvas, key, worldKey, surfaceCtx = null) {
     const width = Math.max(1, canvas.width);
     const height = Math.max(1, canvas.height);
-    if (!detailStageCanvas || detailStageCanvas.width !== width || detailStageCanvas.height !== height) {
-        detailStageCanvas = document.createElement("canvas");
-        detailStageCanvas.width = width;
-        detailStageCanvas.height = height;
-        detailStageCtx = detailStageCanvas.getContext("2d", { alpha: false });
+    // A cold start has no old raster to preserve, so build directly on the
+    // visible surface. Every completed slice is immediately on screen: baked
+    // ground first, then grain and decorations. The main canvas never has to
+    // repaint the expensive full-viewport fallback while this runs.
+    const visible = !detailState && Boolean(surfaceCtx);
+    let staging = null;
+    let stagingCtx = null;
+    if (visible) {
+        staging = state.terrainCanvasEl;
+        stagingCtx = surfaceCtx;
+    } else {
+        if (!detailStageCanvas || detailStageCanvas.width !== width || detailStageCanvas.height !== height) {
+            detailStageCanvas = document.createElement("canvas");
+            detailStageCanvas.width = width;
+            detailStageCanvas.height = height;
+            detailStageCtx = detailStageCanvas.getContext("2d", { alpha: false });
+        }
+        staging = detailStageCanvas;
+        stagingCtx = detailStageCtx;
     }
-    const staging = detailStageCanvas;
-    const stagingCtx = detailStageCtx;
     if (!stagingCtx) return null;
     const setupStart = performance.now();
     stagingCtx.clearRect(0, 0, staging.width, staging.height);
     drawBakedGround(stagingCtx, zoom, cam, canvas);
-    if (state.zoomLevel >= 3) drawGroundGrain(stagingCtx, zoom, cam, canvas);
+    if (visible) {
+        // Fog must cover unexplored tiles from the first progressive frame.
+        // Decorations skip those tiles, so it can be painted before the slices.
+        drawFogOfWar(stagingCtx, zoom, cam, { width, height });
+        state.terrainCanvasEl.style.transformOrigin = "0 0";
+        state.terrainCanvasEl.style.transform = "translate(0px, 0px) scale(1)";
+        state.terrainCanvasEl.style.opacity = "1";
+    }
     state.terrainTreeDraws = 0;
     const setupMs = performance.now() - setupStart;
     detailBuild = {
@@ -319,13 +351,16 @@ function beginDetailBuild(zoom, cam, canvas, key, worldKey) {
         renderScale: Number(state.renderScale) || 1,
         width: canvas.width, height: canvas.height,
         cursor: { x: null, y: null },
+        grainCursor: { x: null, y: null },
+        grainDone: false,
+        visible,
         startedAt: setupStart,
         workMs: setupMs,
         steps: 1,
     };
     state.terrainDecorationBuildMs = Math.round(setupMs);
     state.terrainBuildThisFrame = setupMs;
-    state.terrainCanvasEl.style.opacity = detailState ? "1" : "0";
+    if (!visible) state.terrainCanvasEl.style.opacity = "1";
     return detailBuild;
 }
 
@@ -333,11 +368,13 @@ function finishDetailBuild(surfaceCtx) {
     const build = detailBuild;
     if (!build) return false;
     const finishStart = performance.now();
-    drawFogOfWar(build.stagingCtx, build.zoom, { x: build.camX, y: build.camY }, {
-        width: build.width, height: build.height,
-    });
-    surfaceCtx.clearRect(0, 0, detailCanvas.width, detailCanvas.height);
-    surfaceCtx.drawImage(build.staging, 0, 0);
+    if (!build.visible) {
+        drawFogOfWar(build.stagingCtx, build.zoom, { x: build.camX, y: build.camY }, {
+            width: build.width, height: build.height,
+        });
+        surfaceCtx.clearRect(0, 0, detailCanvas.width, detailCanvas.height);
+        surfaceCtx.drawImage(build.staging, 0, 0);
+    }
     const finishMs = performance.now() - finishStart;
     build.workMs += finishMs;
     detailState = {
@@ -368,6 +405,19 @@ function advanceDetailBuild(surfaceCtx, canvas) {
             sliceStart + DETAIL_BUILD_SLICE_MS,
             stepStart + DETAIL_BUILD_FRAME_MS
         );
+        if (!build.grainDone) {
+            build.grainDone = drawGroundGrain(
+                build.stagingCtx,
+                build.zoom,
+                { x: build.camX, y: build.camY },
+                canvas,
+                build.grainCursor,
+                sliceDeadline
+            );
+            build.steps += 1;
+            build.workMs += performance.now() - sliceStart;
+            continue;
+        }
         done = drawTerrainDecorations(
             build.stagingCtx,
             build.zoom,
@@ -383,8 +433,10 @@ function advanceDetailBuild(surfaceCtx, canvas) {
     if (done) return finishDetailBuild(surfaceCtx);
     state.terrainDecorationBuildMs = Math.round(build.workMs);
     state.terrainBuildThisFrame = stepMs;
-    state.terrainCanvasEl.style.opacity = detailState ? "1" : "0";
-    return false;
+    // A visible cold-start layer is already serving the compositor. Do not
+    // hide it or repaint the full fallback while later slices are pending.
+    if (!build.visible) state.terrainCanvasEl.style.opacity = "1";
+    return build.visible;
 }
 
 
@@ -834,8 +886,9 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
         } else {
             const finished = advanceDetailBuild(surfaceCtx, canvas);
             if (finished) return true;
-            // Without a previous visible layer the cheap baked surface is the
-            // fallback until the staged layer is complete.
+            // A visible cold-start build is already on screen; a staged rebuild
+            // keeps the previous layer. Neither needs the full fallback pass.
+            if (build.visible) return true;
             return detailState ? drawPreviousDetailLayer(ctx, zoom, cam, canvas) : false;
         }
     }
@@ -844,8 +897,8 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
         // The first layer is started immediately; later rebuilds wait for the
         // camera to settle so a moving view does not create throwaway rasters.
         lastDetailBuildStartedAt = now;
-        beginDetailBuild(zoom, cam, canvas, key, worldKey);
-        return false;
+        const first = beginDetailBuild(zoom, cam, canvas, key, worldKey, surfaceCtx);
+        return Boolean(first?.visible);
     }
 
     const surfaceMatches = detailState.width === canvas.width
@@ -872,7 +925,7 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
         && (contentSettled || now - lastDetailBuildStartedAt >= DETAIL_CONTENT_REFRESH_MS);
     if (contentRefreshDue || (settled && viewMoved)) {
         lastDetailBuildStartedAt = now;
-        beginDetailBuild(zoom, cam, canvas, key, worldKey);
+        beginDetailBuild(zoom, cam, canvas, key, worldKey, surfaceCtx);
         return drawPreviousDetailLayer(ctx, zoom, cam, canvas);
     }
 
@@ -1280,10 +1333,10 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
 // High-frequency ground grain: the baked texture carries the broad colour
 // field, this adds tile-scale variation so close inspection never reads as
 // one blurred gradient.
-function drawGroundGrain(ctx, zoom, cam, canvas) {
-    if (!state.heightMap) return;
+function drawGroundGrain(ctx, zoom, cam, canvas, cursor = null, deadline = Infinity) {
+    if (!state.heightMap) return true;
     const cellPx = CELL * zoom;
-    if (cellPx < 14) return;
+    if (cellPx < 14) return true;
     const W = worldW(), H = worldH();
     const sea = state.seaLevel ?? 0.33;
     const startX = Math.max(0, Math.floor(cam.x / cellPx) - 1);
@@ -1291,9 +1344,16 @@ function drawGroundGrain(ctx, zoom, cam, canvas) {
     const endX = Math.min(W, Math.ceil((cam.x + canvas.width) / cellPx) + 1);
     const endY = Math.min(H, Math.ceil((cam.y + canvas.height) / cellPx) + 1);
 
+    let x = Number.isInteger(cursor?.x) ? cursor.x : startX;
+    let y = Number.isInteger(cursor?.y) ? cursor.y : startY;
     ctx.save();
-    for (let x = startX; x < endX; x++) {
-        for (let y = startY; y < endY; y++) {
+    for (; x < endX; x++) {
+        for (; y < endY; y++) {
+            if (deadline !== Infinity && performance.now() >= deadline) {
+                if (cursor) { cursor.x = x; cursor.y = y; }
+                ctx.restore();
+                return false;
+            }
             if (!state.explored[x]?.[y]) continue;
             const h = getHeightAt(x + 0.5, y + 0.5);
             if (h < sea) continue;
@@ -1321,8 +1381,11 @@ function drawGroundGrain(ctx, zoom, cam, canvas) {
                 }
             }
         }
+        if (cursor) cursor.x = x + 1;
+        y = startY;
     }
     ctx.restore();
+    return true;
 }
 
 function drawWaterGlint(ctx, px, py, cellPx, tick, s1) {

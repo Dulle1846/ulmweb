@@ -24,6 +24,7 @@ import { restoreEconomyCycleState } from "../systems/economy-cycle.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera,setRenderScale } from "../presentation/camera.js";
 import { terrainRendererInfo } from "../presentation/rendering/terrain-webgl.js";
+import { drawTerrain, isTerrainDetailSettled } from "../presentation/rendering/terrain.js";
 import { setupInput } from "../presentation/input.js";
 import { renderUI,showBigMessage,setupMapViewControls } from "../presentation/rendering/ui.js";
 import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,getLocalSaveInfo,listLocalProfiles,selectLocalProfile,loadSettings,saveSettings } from "../core/persistence.js";
@@ -555,7 +556,19 @@ function refreshFoundingSummary(){
     summary.textContent=profile.label+" · "+profile.description+"  |  Tax "+pct(modifiers.tax)+" · Trade "+pct(modifiers.trade)+" · Research "+pct(modifiers.research)+" · Food demand "+pct(modifiers.foodDemand)+" · Legitimacy "+pct(modifiers.legitimacy)+" · Mortality "+pct(modifiers.mortality);
 }
 
-function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
+async function warmTerrainDetailForStart(){
+    if(!state.ctx)return;
+    drawTerrain(state.ctx);
+    // WebGL has no staged Canvas2D raster to finish.
+    if(state.terrainMode!=="canvas")return;
+    const started=performance.now();
+    while(!isTerrainDetailSettled()&&performance.now()-started<1800){
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        drawTerrain(state.ctx);
+    }
+}
+
+async function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     resetForRun(profile);
     applyIdentityForNewRealm();
     state.worldSeed=seed;
@@ -573,6 +586,10 @@ function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     drawStartingHand();
     state.camera.x=0;state.camera.y=0;
     centerCamera();
+    // Finish the first terrain raster one 3 ms slice per frame while the start
+    // screen covers the stage. The realm becomes interactive only with a
+    // settled layer; this is startup work, not a blocked gameplay frame.
+    await warmTerrainDetailForStart();
     addLog("KINGDOM FOUNDED — "+profile.displayName.toUpperCase(),"#e4bd72","milestone");
     addLog("A NEW REALM RISES · SEED "+seed,"#a3d6a7","milestone");
     state.selectedTab=0;
@@ -838,7 +855,8 @@ function bindMenu(){
                 const typed=nameInput?.value?.trim();
                 const player=active&&(!typed||typed===active.displayName)?active:createLocalProfile(typed||"Realm Keeper");
                 const seed=Number(seedInput?.value);
-                startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player,readWorldOptions());
+                startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player,readWorldOptions())
+                    .catch(error=>showStatus(error.message));
             }catch(error){showStatus(error.message);}
             finally{startButton.disabled=false;startButton.textContent=label;}
         },40);

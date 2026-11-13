@@ -38,6 +38,46 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ## Production release history
 
+### 3.15.0-dev — Low-end render budget (performance pass)
+
+**Released:** 2026-11-13
+
+**Scope:** Frame-time work for the shipped hosted build on the low-end profile
+(1366×768, 4× CPU throttle, 8 s quiet / 6 s dense). No gameplay, save-schema or
+simulation change.
+
+**Changes:** The first terrain detail raster is now built in 3 ms slices while
+the start screen still covers the realm; the game loop starts only after the
+layer is settled, so the first playable frames do not carry the cold build. A
+cold build paints directly on the visible terrain surface instead of waiting
+for a full offscreen staging pass. Building artwork is painted once per tick
+into a reusable per-building sprite and blitted between ticks, with a 1 ms
+per-frame refresh budget and a bounded cache. The district person badge (ring,
+status colour, emoji, crown) is a cached glyph sprite; bob, lean, feet and draw
+order remain per entity. HUD chunks run one per task between animation frames
+instead of sharing the world frame. Furniture upkeep reuses the existing room
+snapshot instead of walking every building twice.
+
+The measured gains come from the building sprite cache and the visible cold
+start; a terrain prewarm loop, entity-sprite prewarm and banded ground blit
+were each reverted after they failed to improve the same harness.
+
+**Before (5cbf350) / after (same host):**
+
+| Phase | p95 frame | >33 ms | >50 ms | Long tasks |
+| --- | --- | --- | --- | --- |
+| Quiet cold start | 83.4 → **33.5 ms** | 88.4 → **27.7 %** | 31.4 → **1.94 %** | 12 → **3** |
+| Dense mature | 66.7 → **33.3 ms** (best run 16.8) | 49.3 → **8.2 %** | 8.45 → **0.61 %** | 10 → **0** |
+
+Median frame time is 16.7 ms in both final phases; dense tick p95 is 15.8 ms
+and draw p95 4.2 ms. Three quiet-phase long tasks remain (largest 82 ms); the
+realm start itself is no longer one of them.
+
+**Verification:** `npm test` 905/905 and the syntax/relative-import/UI-id check
+pass for 137 source files and 203 UI ids. The deterministic 25-year campaign
+still ends at 10,040 ticks with `allComplete:true` and `noStalls:true`. The
+terrain browser reference renders on WebKit WebGL and exits 0.
+
 ### 3.15.0-dev — The Second Crown and its Era Agenda
 
 **Scope:** A one-time post-ambition fork. After the thirteenth royal ambition,
