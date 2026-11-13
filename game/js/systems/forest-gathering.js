@@ -8,6 +8,8 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { FOREST_GOODS, forestGoodsFor, forestSnowDepthAt, forestStandAt } from "../world/forest-ecology.js";
+import { grasslandProductsAt } from "../world/grassland-ecology.js";
+import { grasslandUseAt } from "./grassland-use.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import {
     findNearestResourceNode, getResourceNodeAt, getResourceSiteAt, harvestForest,
@@ -33,11 +35,13 @@ const FOOD_DELIVERY = Object.freeze(new Set([
     "mushrooms", "chanterelle", "porcini", "wild-garlic", "wood-sorrel", "wild-strawberry",
     "sloes", "crab-apples", "berries", "truffles", "honey", "maple-syrup", "birch-sap",
     "game", "cured-game", "blueberries", "lingonberries", "rowan-berries", "elderberries", "hazelnuts",
+    "orchard-fruit",
 ]));
 const GOLD_DELIVERY = Object.freeze(new Set([
     "fur", "hides", "tanned-fur", "cured-hides", "resin", "beeswax", "herbs", "lichen",
     "bark", "linden-flower", "elm-seeds", "alder-cones", "yew-berries", "dwarf-pine-cones",
     "ash-keys", "hornbeam-seeds", "willow-withies", "woodruff", "valerian", "tinder-fungus",
+    "hay", "meadow-grass", "wildflowers", "reed", "turf",
 ]));
 const TROPICAL_GOLD_HUNT = Object.freeze(new Set(["hides", "feathers"]));
 
@@ -404,6 +408,82 @@ export function gatherNearestForestProducts(x, y, radius = GATHER_RADIUS) {
     const node = findNearestResourceNode("forest", x, y, radius);
     if (!node) return { ok: false, reason: "No forest in working range" };
     return gatherForestProducts(node.x, node.y);
+}
+
+function meadowContextAt(x, y, options = {}) {
+    return {
+        seed: Number(state.worldSeed) || 1,
+        moisture: getMoistureAt(x + 0.5, y + 0.5),
+        temperature: getTemperatureAt(x + 0.5, y + 0.5),
+        height: getHeightAt(x + 0.5, y + 0.5),
+        climate: state.worldOptions?.climate || "temperate",
+        forests: state.worldOptions?.forests ?? 52,
+        seaLevel: Number(state.seaLevel) || 0.33,
+        dayOfYear: options.dayOfYear ?? state.dayOfYear,
+        year: options.year ?? state.year,
+        hour: Number(state.timeOfDay) || 12,
+        weather: state.weather || "clear",
+        wind: String(state.weather || "").toLowerCase() === "storm" ? 2 : 1,
+        use: grasslandUseAt(x, y),
+    };
+}
+
+// Meadow gathering uses the same ledger and daily cooldown as woodland
+// gathering. Hay, grass, wildflowers, orchard fruit, reeds, turf, herbs and
+// honey therefore reach the existing economy without a second inventory.
+export function gatherMeadowProducts(x, y, options = {}) {
+    const ledger = ensureForestGathering();
+    const products = grasslandProductsAt(x, y, meadowContextAt(x, y, options));
+    if (!products) return { ok: false, reason: "No harvestable meadow at this tile" };
+    const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
+    const year = Math.floor(number(options.year, state.year) || 1);
+    if (!isValidGather(ledger, products.x, products.y, day, year)) {
+        return { ok: false, reason: "This meadow was already gathered today" };
+    }
+    const candidates = products.goods.filter(good => FOREST_GOODS[good.id]).slice(0, 5);
+    if (!candidates.length) return { ok: false, reason: "No seasonal meadow product is available" };
+    const gathered = [];
+    for (const good of candidates) {
+        const amount = Math.max(1, Math.round(1 + good.abundance * 3));
+        const accepted = addStock(ledger, good.id, amount);
+        if (accepted > 0) gathered.push({ ...good, amount: accepted });
+    }
+    if (!gathered.length) return { ok: false, reason: "The meadow products could not be gathered" };
+    ledger.lastGather[products.x + ":" + products.y] = { day, year };
+    const keys = Object.keys(ledger.lastGather);
+    if (keys.length > MAX_LAST_GATHER) {
+        for (const key of keys.slice(0, keys.length - MAX_LAST_GATHER)) delete ledger.lastGather[key];
+    }
+    ledger.history.push({
+        x: products.x, y: products.y, day, year, kind: "gather",
+        goods: gathered.map(good => ({ id: good.id, amount: good.amount })),
+    });
+    if (ledger.history.length > MAX_HISTORY) ledger.history.splice(0, ledger.history.length - MAX_HISTORY);
+    return {
+        ok: true,
+        tile: { x: products.x, y: products.y, type: products.profile.formation, label: products.label },
+        goods: gathered,
+        fauna: products.fauna,
+        use: products.use,
+        total: gathered.reduce((sum, good) => sum + good.amount, 0),
+    };
+}
+
+export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
+    const limit = Math.max(1, Math.min(16, Math.floor(number(radius, GATHER_RADIUS))));
+    let best = null;
+    for (let ty = Math.floor(y) - limit; ty <= Math.floor(y) + limit; ty++) {
+        for (let tx = Math.floor(x) - limit; tx <= Math.floor(x) + limit; tx++) {
+            if (tx < 0 || ty < 0) continue;
+            const node = getResourceNodeAt(tx, ty);
+            if (node?.forestCapacity && node.forestStock > 0) continue;
+            const products = grasslandProductsAt(tx, ty, meadowContextAt(tx, ty));
+            if (!products) continue;
+            if (!best || products.goods.length > best.products.goods.length) best = { products, tx, ty };
+        }
+    }
+    if (!best) return { ok: false, reason: "No meadow in working range" };
+    return gatherMeadowProducts(best.tx, best.ty);
 }
 
 // Player-directed thinning removes crowded stems and sends the usable logs to

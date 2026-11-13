@@ -10,9 +10,11 @@ import { flowerBloom, foliageState } from './seasonal-foliage.js';
 import { seasonalState } from '../../world/season.js';
 import {
     FOREST_SPECIES, forestCanopyShade, forestFaunaFor, forestLineOfSightBlocked, forestMicrofaunaAt,
-    forestPotentialAt, forestSightProfile, forestStandAt, forestTreeCopies, forestTreeForm,
+    forestClearingAt, forestPotentialAt, forestSightProfile, forestStandAt, forestTreeCopies, forestTreeForm,
     pickAgeClass, pickSpecies,
 } from '../../world/forest-ecology.js';
+import { grasslandProfileAt } from '../../world/grassland-ecology.js';
+import { grasslandUseAt } from '../../systems/grassland-use.js';
 import {
     DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
     transformedLayerRect, treeStepForZoom, visibleTileBounds,
@@ -66,13 +68,17 @@ export function drawTerrain(ctx) {
         // old raster transformed while the camera moves, then re-rasterises at
         // the settled view instead of blinking out of existence.
         drawOverlayDecorations(ctx, zoom, cam, canvas);
+        drawGrasslandWindOverlay(ctx, zoom, cam, canvas);
         return;
     }
 
     // The cached surface contains baked ground, fog and every decoration. It
     // stays on the compositor as its own layer, so panning only moves it; the
     // layer is rebuilt once after the view settles.
-    if (drawCachedDecorations(ctx, zoom, cam, canvas)) return;
+    if (drawCachedDecorations(ctx, zoom, cam, canvas)) {
+        drawGrasslandWindOverlay(ctx, zoom, cam, canvas);
+        return;
+    }
     if (state.terrainCanvasEl) state.terrainCanvasEl.style.opacity = "0";
     drawBakedGround(ctx, zoom, cam, canvas);
     drawFogOfWar(ctx, zoom, cam, canvas);
@@ -264,6 +270,10 @@ function detailContentKey() {
         Number(state.exploredRevision) || 0,
         Number(state.terrainCacheRevision) || 0,
         Number(state.forestVisualRevision) || 0,
+        Number(state.roads?.revision) || 0,
+        Number(state.buildingCollisionVersion) || 0,
+        (state.entities || []).length,
+        Math.max(1, Math.floor(Number(state.year) || 1)),
     ].join("|");
 }
 
@@ -1064,6 +1074,10 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // `continue` erased mountain-conifer, mixed-conifer and snowbreak
             // crowns from the high-altitude formations entirely.
             const potentialForest = forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 });
+            // Neither the detail lattice nor the tree lattice needs this tile.
+            // Do this before forestStandAt(), whose species wave is much more
+            // expensive than the profile or the cheap forest gate.
+            if (!detail && !treeSample) continue;
 
             // Snowfields get sparse rocks and drifts, not grass. The alpine
             // line rises in summer and sinks in winter, so peaks do not stay
@@ -1087,10 +1101,10 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // Most of the landscape is bare ground. Skip the ecosystem work
             // entirely unless this tile is on either the ground-detail or the
             // tree lattice. This keeps a full-world landscape rebuild cheap.
-            const cluster = 0.5 + 0.5 * Math.sin(x * 0.19 + y * 0.13) * Math.sin(x * 0.06 - y * 0.11);
-            const loneTree = treeSample && !potentialForest && cluster > 0.74 && m > 0.3 && temp > 0.28 && s1 > 0.925;
-            if (!potentialForest && !loneTree && !detail) continue;
-
+            // A forest clearance is meadow too: the same profile and the same
+            // wind overlay must be reachable inside a wooded landscape, not
+            // only in worlds where the forest slider is at zero. The forest
+            // gate is kept cheap and exact via forestClearingAt().
             let stand = null;
             if (potentialForest) {
                 let stockRatio = 1;
@@ -1106,6 +1120,17 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                     succession,
                 });
             }
+            const clearingMeadow = Boolean(stand?.forest && stand.clearing > 0.22);
+            const grass = (!potentialForest || clearingMeadow) && h >= sea && h < 0.86
+                ? grasslandProfileAt(x + 0.5, y + 0.5, {
+                    seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
+                    climate: climateKey, forests, seaLevel: sea, dayOfYear, year: Number(state.year) || 1,
+                    hour, weather: state.weather || "clear", wind: windMultiplier(),
+                    use: grasslandUseAt(x, y),
+                })
+                : null;
+            const meadowTree = Boolean(treeSample && grass && grass.treeChance > 0 && s1 < grass.treeChance);
+            if (!potentialForest && !meadowTree && !detail) continue;
 
             // A forest is an ecosystem, not a tree sprinkle: floor, understorey,
             // gaps, deadwood and fauna are drawn from the same stand definition.
@@ -1174,38 +1199,29 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 } else if (zoom >= 0.5) {
                     drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey);
                 }
+                if (clearingMeadow && grass && zoom >= 0.34) {
+                    drawGrassland(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
+                }
                 if (zoom >= 0.75 && s1 > 0.95) drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s3, zoom, x, y, tick);
                 if (zoom >= 0.9 && s1 > 0.972) drawFallenLog(ctx, px, py, cellPx, stand, s2, s3, dayOfYear, climateKey);
                 continue;
             }
 
-            if (loneTree) {
-                const loneStand = { forest: true, treeChance: 1, ageClass: 'mature', ageScale: 0.92, clearing: 0 };
-                state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + 1;
-                if (distant) drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, loneStand, climate, dayOfYear, sun);
-                else drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, m, dayOfYear, climateKey, shoreDir, loneStand, sun);
+            if (meadowTree && grass.trees.length) {
+                state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + grass.trees.length;
+                for (const tree of grass.trees) {
+                    drawGrasslandTree(ctx, px, py, cellPx, tree, grass, tick);
+                }
                 continue;
             }
             if (!detail) continue;
 
-            if (cluster > 0.6 && m > 0.34 && s1 > 0.8) {
-                drawShrub(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey);
-                continue;
-            }
-
-            // Desert and steppe flora.
-            if (temp > 0.66 && m < 0.36) {
-                if (s1 > 0.74) drawCactus(ctx, px, py, cellPx, s1);
-                else if (s1 > 0.6) drawGrassTufts(ctx, px, py, cellPx, s1, s2, true, climate.foliageTurn, climate.snowCover);
-                continue;
-            }
-
-            // Meadows: flower drifts, tufts and the occasional boulder.
-            if (h >= sea && h < 0.62 && zoom >= 0.34) {
-                if (s1 > 0.9) drawFlowerCluster(ctx, px, py, cellPx, s1, s2, dayOfYear, climateKey);
-                else if (s1 > 0.76) drawFlower(ctx, px, py, cellPx, s1, dayOfYear, climateKey);
-                else if (s1 > 0.64) drawGrassTufts(ctx, px, py, cellPx, s1, s2, false, climate.foliageTurn, climate.snowCover);
-                else if (s1 > 0.625) drawRock(ctx, px, py, cellPx, zoom, false);
+            // Open grass, meadow, steppe and hill pasture are one ecological
+            // surface. The profile decides whether this tile is short turf,
+            // tall hay, wet meadow, dry chalk, orchard or mountain pasture.
+            if (grass && zoom >= 0.34) {
+                if (temp > 0.68 && m < 0.3 && s1 > 0.86) drawCactus(ctx, px, py, cellPx, s1);
+                else drawGrassland(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
             }
         }
         y = bounds.startY;
@@ -3675,6 +3691,558 @@ function drawGrassTufts(ctx, px, py, cellPx, s1, s2, dry, turn = 0, snow = 0) {
     ctx.quadraticCurveTo(px + 3 * s + lean, py - 0.6 * s, px + 2.4 * s + lean, py - 3.8 * s);
     ctx.stroke();
     ctx.lineCap = "butt";
+}
+
+
+// ── Grassland ecology renderer ──────────────────────────────────────────────
+// The profile already knows whether this tile is short turf, a hay meadow, wet
+// ground, chalk downland, a hillside, an orchard or a mountain pasture. The
+// renderer only turns that shared description into strokes: no second biome
+// decision can disagree with gathering or the survey.
+function drawMeadowFlower(ctx, x, y, size, flower, alpha = 0.85, glow = 0) {
+    if (!flower) return;
+    const colour = flower.colours?.[0] || "#e7d9a4";
+    const centre = flower.colours?.[1] || "#dfae42";
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = "rgba(72,92,47,0.62)";
+    ctx.lineWidth = Math.max(0.5, 0.55 * size);
+    ctx.beginPath();
+    ctx.moveTo(x, y + 4 * size);
+    ctx.lineTo(x + 0.4 * size, y);
+    ctx.stroke();
+    if (glow > 0.08) {
+        ctx.globalAlpha = alpha * (0.16 + glow * 0.2);
+        ctx.fillStyle = colour;
+        ctx.beginPath();
+        ctx.arc(x, y, 2.6 * size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = alpha;
+    }
+    ctx.fillStyle = colour;
+    for (let petal = 0; petal < 4; petal++) {
+        const angle = petal * Math.PI / 2 + 0.35;
+        ctx.beginPath();
+        ctx.ellipse(x + Math.cos(angle) * 1.35 * size, y + Math.sin(angle) * 1.35 * size,
+            1.25 * size, 0.8 * size, angle, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = centre;
+    ctx.beginPath();
+    ctx.arc(x, y, 0.8 * size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawMeadowHerb(ctx, x, y, size, herb) {
+    if (!herb) return;
+    ctx.save();
+    ctx.globalAlpha = 0.72;
+    ctx.strokeStyle = "rgba(79,106,56,0.8)";
+    ctx.lineWidth = Math.max(0.45, 0.5 * size);
+    ctx.beginPath();
+    ctx.moveTo(x, y + 4 * size);
+    ctx.quadraticCurveTo(x + 0.7 * size, y + 1 * size, x + 0.2 * size, y - 1.6 * size);
+    ctx.stroke();
+    ctx.fillStyle = herb.colour || "#d9d0ad";
+    for (let index = 0; index < 4; index++) {
+        const angle = index * Math.PI / 2;
+        ctx.beginPath();
+        ctx.arc(x + 0.2 * size + Math.cos(angle) * 1.2 * size, y - 1.6 * size + Math.sin(angle) * 1.2 * size,
+            0.55 * size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawMeadowSapling(ctx, x, y, size, profile) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(87,107,57,0.72)";
+    ctx.lineWidth = Math.max(0.5, 0.55 * size);
+    ctx.beginPath();
+    ctx.moveTo(x, y + 2.8 * size);
+    ctx.lineTo(x + 0.3 * size, y - 2.6 * size);
+    ctx.stroke();
+    ctx.fillStyle = profile.leafColour || "#6d8c4c";
+    ctx.globalAlpha = 0.72;
+    ctx.beginPath();
+    ctx.ellipse(x + 0.2 * size, y - 2.5 * size, 1.4 * size, 0.68 * size, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+export function drawGrasslandFauna(ctx, x, y, size, animal, tick, season) {
+    if (!animal) return;
+    const kind = animal.kind;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha = 0.82;
+    const bob = Math.sin(tick * 0.012 + x * 0.02) * 0.3 * size;
+    if (kind === "deer") {
+        ctx.fillStyle = season === "winter" ? "#756e5b" : "#92724e";
+        ctx.beginPath();
+        ctx.ellipse(0, -3.4 * size + bob, 3.5 * size, 1.8 * size, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(-2.2 * size, -2.2 * size, 0.7 * size, 3.1 * size);
+        ctx.fillRect(1.7 * size, -2.2 * size, 0.7 * size, 3.1 * size);
+        ctx.beginPath();
+        ctx.ellipse(3.7 * size, -5 * size + bob, 1.2 * size, 1.05 * size, 0.25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#654d36";
+        ctx.lineWidth = Math.max(0.45, 0.45 * size);
+        ctx.beginPath();
+        ctx.moveTo(4.1 * size, -6 * size + bob);
+        ctx.lineTo(5.6 * size, -8.6 * size + bob);
+        ctx.moveTo(4.6 * size, -6 * size + bob);
+        ctx.lineTo(6.2 * size, -7.4 * size + bob);
+        ctx.stroke();
+    } else if (kind === "hare") {
+        ctx.fillStyle = season === "winter" ? "#d9d6c8" : "#a98d66";
+        ctx.beginPath();
+        ctx.ellipse(0, -1.8 * size + bob, 2.8 * size, 1.55 * size, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(2.4 * size, -3.1 * size + bob, 0.9 * size, 0.7 * size, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(2.6 * size, -5.2 * size + bob, 0.34 * size, 1.6 * size, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (kind === "fox" || kind === "stoat") {
+        const stoat = kind === "stoat";
+        ctx.fillStyle = stoat ? (season === "winter" ? "#e5e2d6" : "#b28d5c") : "#ad6234";
+        ctx.beginPath();
+        ctx.ellipse(0, -2 * size + bob, stoat ? 2.5 * size : 3.2 * size, 1.15 * size, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(2.4 * size, -3 * size + bob, 0.9 * size, 0.72 * size, 0.25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = ctx.fillStyle;
+        ctx.lineWidth = 0.8 * size;
+        ctx.beginPath();
+        ctx.moveTo(-2.2 * size, -1.8 * size + bob);
+        ctx.quadraticCurveTo(-4.8 * size, -1.2 * size + bob, -5.2 * size, -3.2 * size + bob);
+        ctx.stroke();
+    } else if (kind === "butterfly") {
+        const wing = Math.sin(tick * 0.09 + x) * 0.35 + 0.75;
+        ctx.fillStyle = animal.id === "meadow-brown" ? "#8f6b45" : "#c48544";
+        ctx.beginPath();
+        ctx.ellipse(-0.9 * size, -1.2 * size, 1.2 * size * wing, 1.5 * size, -0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(0.9 * size, -1.2 * size, 1.2 * size * wing, 1.5 * size, 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#4e3e2c";
+        ctx.fillRect(-0.18 * size, -2.4 * size, 0.36 * size, 2.4 * size);
+    } else if (kind === "bee") {
+        ctx.fillStyle = "#d4a62e";
+        ctx.beginPath();
+        ctx.ellipse(0, -1.6 * size, 1.2 * size, 0.8 * size, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(232,235,218,0.7)";
+        ctx.beginPath();
+        ctx.ellipse(-0.55 * size, -2.2 * size, 0.9 * size, 0.55 * size, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(0.55 * size, -2.2 * size, 0.9 * size, 0.55 * size, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (kind === "raptor") {
+        ctx.strokeStyle = "#66523d";
+        ctx.lineWidth = Math.max(0.6, 0.65 * size);
+        ctx.beginPath();
+        ctx.moveTo(-4 * size, -4 * size + bob);
+        ctx.quadraticCurveTo(-1 * size, -2.8 * size + bob, 0, -3.6 * size + bob);
+        ctx.quadraticCurveTo(1 * size, -2.8 * size + bob, 4 * size, -4 * size + bob);
+        ctx.stroke();
+    } else if (kind === "songbird" || kind === "ground-bird") {
+        ctx.fillStyle = kind === "ground-bird" ? "#9a8762" : "#6d6754";
+        ctx.beginPath();
+        ctx.ellipse(0, -1.8 * size + bob, 1.5 * size, 1.05 * size, -0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(1.4 * size, -2.8 * size + bob, 0.65 * size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#7a5e38";
+        ctx.lineWidth = 0.4 * size;
+        ctx.beginPath();
+        ctx.moveTo(-0.3 * size, -0.7 * size);
+        ctx.lineTo(-0.3 * size, 1.6 * size);
+        ctx.moveTo(0.5 * size, -0.7 * size);
+        ctx.lineTo(0.5 * size, 1.6 * size);
+        ctx.stroke();
+    } else if (kind === "mouse") {
+        ctx.fillStyle = "#8c7655";
+        ctx.beginPath();
+        ctx.ellipse(0, -0.9 * size, 1.35 * size, 0.75 * size, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(1.1 * size, -1.4 * size, 0.5 * size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#8c7655";
+        ctx.lineWidth = 0.35 * size;
+        ctx.beginPath();
+        ctx.moveTo(-1.2 * size, -0.7 * size);
+        ctx.quadraticCurveTo(-2.3 * size, -0.5 * size, -2.8 * size, 0.2 * size);
+        ctx.stroke();
+    } else if (kind === "cattle" || kind === "sheep" || kind === "goat" || kind === "horse") {
+        const horse = kind === "horse";
+        const sheep = kind === "sheep";
+        const goat = kind === "goat";
+        const body = horse ? "#6c5440" : sheep ? "#ddd8c6" : goat ? "#a18a67" : "#795540";
+        ctx.fillStyle = body;
+        if (sheep) {
+            for (let index = 0; index < 3; index++) {
+                ctx.beginPath();
+                ctx.ellipse((index - 1) * 1.25 * size, -2.4 * size + bob, 1.8 * size, 1.35 * size, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else {
+            ctx.beginPath();
+            ctx.ellipse(0, -2.6 * size + bob, 3.6 * size, 1.65 * size, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.fillStyle = sheep ? "#6f604e" : body;
+        ctx.beginPath();
+        ctx.ellipse(3.1 * size, -3.5 * size + bob, 1.05 * size, 0.85 * size, horse ? 0.3 : 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(-2.2 * size, -1.5 * size, 0.65 * size, 3.8 * size);
+        ctx.fillRect(1.7 * size, -1.5 * size, 0.65 * size, 3.8 * size);
+        if (goat || sheep) {
+            ctx.strokeStyle = "#6d5b45";
+            ctx.lineWidth = 0.4 * size;
+            ctx.beginPath();
+            ctx.moveTo(3.2 * size, -4.2 * size + bob);
+            ctx.lineTo(4.1 * size, -5.8 * size + bob);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+export function drawGrasslandTree(ctx, px, py, cellPx, tree, profile, tick) {
+    if (!tree) return;
+    const s = cellPx / 48;
+    const scale = Number(tree.scale) || 1;
+    const x = px + (Number(tree.offsetX) || 0) * cellPx;
+    const baseY = py + (Number(tree.offsetY) || 0) * cellPx + 4 * s;
+    const sway = Math.sin(tick * 0.0016 + profile.visual.phase + x * 0.01) * 1.2 * s * (0.4 + profile.visual.windSway);
+    const kind = tree.kind || "old";
+    const hedge = kind === "hedge";
+    const trunkHeight = (hedge ? 5 : 12) * s * scale;
+    const crownY = baseY - trunkHeight * (hedge ? 0.62 : 0.86);
+    const crownWidth = (hedge ? 8.2 : 6.8) * s * scale * (tree.crown || 0.7);
+    const crownHeight = (hedge ? 4.2 : 5.2) * s * scale * (tree.crown || 0.7);
+    const colour = tree.colours?.[profile.season] || profile.leafColour;
+    const light = profile.season === "winter" ? "#ddd9ca" : profile.season === "autumn" ? "#c6a05d" : "#8daa61";
+    ctx.save();
+    ctx.globalAlpha = 0.92;
+    ctx.strokeStyle = "#5e4832";
+    ctx.fillStyle = "#5e4832";
+    ctx.lineWidth = Math.max(0.8, (hedge ? 0.9 : 1.5) * s * scale);
+    if (!hedge) {
+        ctx.beginPath();
+        ctx.moveTo(x - 0.8 * s, baseY);
+        ctx.quadraticCurveTo(x + sway * 0.4, baseY - trunkHeight * 0.55, x + sway, crownY + crownHeight * 0.25);
+        ctx.stroke();
+        ctx.fillRect(x - 1.2 * s, baseY - 1.2 * s, 2.4 * s, 1.1 * s);
+    }
+    ctx.fillStyle = colour;
+    ctx.beginPath();
+    ctx.ellipse(x + sway, crownY, crownWidth, crownHeight, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = light;
+    ctx.globalAlpha = 0.48;
+    ctx.beginPath();
+    ctx.ellipse(x + sway - crownWidth * 0.22, crownY - crownHeight * 0.28,
+        crownWidth * 0.52, crownHeight * 0.46, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.92;
+    if (kind === "fruit" && profile.season === "autumn") {
+        ctx.fillStyle = "#b34f3d";
+        for (let fruit = 0; fruit < 4; fruit++) {
+            ctx.beginPath();
+            ctx.arc(x + sway + (fruit - 1.5) * crownWidth * 0.26, crownY + (fruit % 2 ? 1 : -1) * crownHeight * 0.2,
+                0.7 * s * scale, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    if (profile.visual.snowCover > 0.18) {
+        ctx.globalAlpha = Math.min(0.8, profile.visual.snowCover * 0.9);
+        ctx.fillStyle = "#eef5f4";
+        ctx.beginPath();
+        ctx.ellipse(x + sway, crownY - crownHeight * 0.44, crownWidth * 0.68, crownHeight * 0.22, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+export function drawGrassland(ctx, px, py, cellPx, profile, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey) {
+    if (!profile) return;
+    const s = cellPx / 48;
+    const snow = profile.visual.snowCover;
+    if (snow > 0.86) return;
+    const use = profile.use;
+    const density = Math.max(0.2, profile.sward.density);
+    const tall = profile.sward.tall;
+    const medium = profile.sward.medium;
+    const useScale = use.overgrazed ? 0.34 : use.grazed ? 0.48 : use.mowed ? 0.54 : use.trampled ? 0.28 : 1;
+    const bladeCount = Math.max(2, Math.min(8, Math.round(3 + density * 5)));
+    const phase = profile.visual.phase;
+    const grassList = profile.grasses.length ? profile.grasses : [{ colours: [profile.grassHex, profile.grassHex] }];
+    ctx.save();
+    // The sward base supplies the hill colour gradient and the broad seasonal
+    // tint; the individual blades then break it up at close range.
+    ctx.globalAlpha = 0.13 + density * 0.08;
+    ctx.fillStyle = profile.grassHex;
+    ctx.beginPath();
+    ctx.ellipse(px, py + 2.5 * s, (5 + density * 3.4) * s, (2.2 + density * 1.4) * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (use.bareSoil) {
+        ctx.globalAlpha = use.overgrazed ? 0.48 : 0.32;
+        ctx.fillStyle = use.overgrazed ? "#8b7854" : "#aa9871";
+        ctx.beginPath();
+        ctx.ellipse(px + (s1 - 0.5) * 4 * s, py + 2.4 * s, (3.4 + density * 1.8) * s, 1.8 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    const seasonOffset = profile.seasonIndex;
+    for (let index = 0; index < bladeCount; index++) {
+        const grass = grassList[index % grassList.length];
+        const colour = grass.colours?.[(seasonOffset + index) % 2] || profile.grassHex;
+        const bladePhase = phase + index * 1.37 + py * 0.01;
+        const wave = Math.sin(tick * 0.0024 + bladePhase + (px + py) * 0.006);
+        const sway = wave * profile.visual.windSway * 2.7 * s;
+        const heightScale = tall ? 1 : medium ? 0.78 : 0.56;
+        const bladeHeight = (3.4 + (index % 4) * 1.25) * s * heightScale * useScale;
+        const baseY = py + 2.8 * s + (index % 2) * 0.8 * s;
+        const offset = (index - (bladeCount - 1) / 2) * 1.28 * s;
+        ctx.globalAlpha = (use.overgrazed ? 0.34 : 0.62) * (1 - snow * 0.78);
+        ctx.strokeStyle = colour;
+        ctx.lineWidth = Math.max(0.65, (tall ? 1.08 : 0.88) * s);
+        ctx.beginPath();
+        ctx.moveTo(px + offset, baseY);
+        ctx.quadraticCurveTo(px + offset + sway * 0.28, baseY - bladeHeight * 0.55,
+            px + offset + sway, baseY - bladeHeight);
+        ctx.stroke();
+    }
+
+    if (use.mowed) {
+        ctx.globalAlpha = 0.32;
+        ctx.strokeStyle = "#c1a96b";
+        ctx.lineWidth = Math.max(0.45, 0.5 * s);
+        for (let row = 0; row < 3; row++) {
+            ctx.beginPath();
+            ctx.moveTo(px - 5 * s, py + (row - 1) * 1.7 * s);
+            ctx.lineTo(px + 5 * s, py + (row - 1) * 1.7 * s);
+            ctx.stroke();
+        }
+    }
+
+    if (use.path) {
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = "#c9b68a";
+        ctx.beginPath();
+        ctx.ellipse(px, py + 2.8 * s, 7 * s, 1.5 * s, -0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.24;
+        ctx.strokeStyle = "#9e8a62";
+        ctx.lineWidth = Math.max(0.45, 0.45 * s);
+        for (let rut = -1; rut <= 1; rut += 2) {
+            ctx.beginPath();
+            ctx.moveTo(px - 6 * s, py + 2.4 * s + rut * 0.55 * s);
+            ctx.quadraticCurveTo(px, py + 2.1 * s + rut * 0.4 * s, px + 6 * s, py + 2.5 * s + rut * 0.5 * s);
+            ctx.stroke();
+        }
+    }
+
+    if (profile.bloom > 0.1 && profile.flowers.length && !use.overgrazed) {
+        // A rare plant is part of the promise of 1.2.6.15. It arrives at the
+        // end of the flower list, so a plain slice(0, 3) could hide it forever.
+        // Put the rare flower first while keeping the per-tile cap at three.
+        const flowerList = profile.rarePlant
+            ? [profile.rarePlant, ...profile.flowers.filter(flower => flower.id !== profile.rarePlant.id)]
+            : profile.flowers;
+        const flowerCount = Math.min(3, flowerList.length);
+        for (let index = 0; index < flowerCount; index++) {
+            const flower = flowerList[index];
+            const fx = px + ((index - (flowerCount - 1) / 2) * 3.5 + (s1 - 0.5) * 2.2) * s;
+            const fy = py - (1.4 + index * 1.1 + density * 1.2) * s;
+            drawMeadowFlower(ctx, fx, fy, s * (tall ? 1.06 : 0.9), flower, 0.76 + profile.visual.flowerGlow * 0.18, profile.visual.flowerGlow);
+        }
+    }
+
+    if (profile.herbs.length) {
+        const herbCount = Math.min(2, profile.herbs.length);
+        for (let index = 0; index < herbCount; index++) {
+            drawMeadowHerb(ctx, px + (index ? 3.2 : -4.2) * s, py - 0.4 * s, s * 0.92, profile.herbs[index]);
+        }
+    }
+
+    if (profile.pollinator > 0.54 && profile.bloom > 0.16 && s3 > 0.36) {
+        const wing = Math.sin(tick * 0.09 + s1 * 12) * 0.2 + 0.8;
+        ctx.globalAlpha = 0.56;
+        ctx.fillStyle = profile.flowers[0]?.colours?.[0] || "#d8aa3c";
+        ctx.beginPath();
+        ctx.ellipse(px + (s2 - 0.5) * 7 * s, py - 5 * s, 1.15 * s * wing, 1.35 * s, -0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#6b593b";
+        ctx.fillRect(px + (s2 - 0.5) * 7 * s - 0.12 * s, py - 6 * s, 0.24 * s, 2.3 * s);
+    }
+
+    if ((profile.hedge || profile.shrubPatches > 0.56) && s1 > 0.44) {
+        drawShrub(ctx, px + (s2 - 0.5) * 6 * s, py - 0.8 * s, cellPx * 0.86, s1, s2, dayOfYear, climateKey);
+    }
+    if (profile.use.encroachment && s1 > 0.62) {
+        drawMeadowSapling(ctx, px + (s2 - 0.5) * 7 * s, py + 1.2 * s, s, profile);
+        if (s3 > 0.55) drawMeadowSapling(ctx, px - 3.6 * s, py + 2.4 * s, s * 0.84, profile);
+    }
+    if (profile.use.reforestation && s1 > 0.5) {
+        drawMeadowSapling(ctx, px - 4.6 * s, py + 1.8 * s, s * 1.08, profile);
+        drawMeadowSapling(ctx, px + 2.8 * s, py - 0.4 * s, s * 0.9, profile);
+    }
+
+    if (profile.landform.rocky && s1 > 0.58) drawRock(ctx, px, py, cellPx, zoom, false);
+
+    if (profile.visual.dew > 0.24 && zoom >= 0.75) {
+        ctx.globalAlpha = Math.min(0.72, profile.visual.dew * 0.8);
+        ctx.fillStyle = "#eef4e9";
+        for (let drop = 0; drop < 3; drop++) {
+            ctx.beginPath();
+            ctx.arc(px + (drop - 1) * 3.2 * s + (s1 - 0.5) * 2 * s, py - (1.8 + drop * 0.7) * s,
+                Math.max(0.42, 0.5 * s), 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    if (profile.visual.mist > 0.2 && zoom >= 0.6) {
+        ctx.globalAlpha = Math.min(0.22, profile.visual.mist * 0.19);
+        ctx.fillStyle = "#dbe6df";
+        ctx.beginPath();
+        ctx.ellipse(px, py - 1.5 * s, 8 * s, 4.2 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    if (profile.visual.sunlight > 0.3 && profile.bloom > 0.12) {
+        ctx.globalAlpha = Math.min(0.46, profile.visual.sunlight * 0.35);
+        ctx.strokeStyle = "#f3dd9b";
+        ctx.lineWidth = Math.max(0.5, 0.48 * s);
+        ctx.beginPath();
+        ctx.moveTo(px - 3 * s, py - 1 * s);
+        ctx.lineTo(px - 2 * s, py - 4 * s);
+        ctx.moveTo(px + 3 * s, py - 0.8 * s);
+        ctx.lineTo(px + 3.6 * s, py - 3.5 * s);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    if (zoom >= 0.95 && s3 > 0.92 && profile.fauna.length) {
+        // A meadow is not a single animal. Drawing only fauna[0] made foxes,
+        // birds and insects unreachable whenever a deer or hare came first in
+        // the list. Pick at most three distinct groups per tile: livestock is
+        // preferred on grazed ground, then the next groups in profile order.
+        // The cap keeps a close-up cluster bounded while making every group
+        // visible across a meadow.
+        const maxVisible = zoom >= 1.15 ? 3 : 2;
+        const ordered = profile.use.grazed
+            ? [...profile.fauna].sort((a, b) => Number(b.group === "livestock") - Number(a.group === "livestock"))
+            : profile.fauna;
+        const visibleFauna = [];
+        const groups = new Set();
+        for (const animal of ordered) {
+            if (visibleFauna.length >= maxVisible) break;
+            if (groups.has(animal.group)) continue;
+            visibleFauna.push(animal);
+            groups.add(animal.group);
+        }
+        for (let index = 0; index < visibleFauna.length; index++) {
+            const spread = index === 0 ? 0 : (index === 1 ? 0.26 : -0.24);
+            drawGrasslandFauna(
+                ctx,
+                px + (s1 - 0.5) * cellPx * 0.3 + spread * cellPx,
+                py + (s2 - 0.5) * cellPx * 0.18 + (index === 2 ? 0.15 : 0) * cellPx,
+                s * (index === 0 ? 1 : 0.82),
+                visibleFauna[index],
+                tick,
+                profile.season,
+            );
+        }
+    }
+}
+
+// A bounded animated overlay on top of the cached detail layer. Only wind is
+// redrawn per frame: a small, fixed number of tall-grass tufts near the camera
+// gives the meadow its wave motion without re-rasterising every planted tile.
+export const GRASSLAND_WIND_LIMITS = Object.freeze({ maxTufts: 44, maxExamined: 260 });
+
+// `probe` is optional instrumentation for the headless renderer test. It is
+// never allocated by the game loop; production calls pass no probe.
+export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
+    const startedAt = performance.now();
+    if (probe) { probe.examined = 0; probe.tufts = 0; probe.elapsedMs = 0; }
+    if (!state.heightMap || zoom < 0.62) return;
+    const cellPx = CELL * zoom;
+    if (cellPx < 14) return;
+    const sea = state.seaLevel ?? 0.33;
+    const dayOfYear = Number.isFinite(Number(state.dayOfYear))
+        ? Number(state.dayOfYear)
+        : (Number(state.seasonIndex) || 0) * 100;
+    const climateKey = state.worldOptions?.climate || "temperate";
+    const hour = Number(state.timeOfDay);
+    const tick = Number(state.tick) || 0;
+    const wind = windMultiplier();
+    const forests = state.worldOptions?.forests ?? 52;
+    const bounds = visibleTileBounds({
+        cellPx, cameraX: cam.x, cameraY: cam.y, width: canvas.width, height: canvas.height,
+        worldWidth: worldW(), worldHeight: worldH(),
+    });
+    const step = zoom >= 1.1 ? 2 : 3;
+    const startX = Math.max(0, Math.floor(bounds.startX / step) * step);
+    const startY = Math.max(0, Math.floor(bounds.startY / step) * step);
+    let drawn = 0;
+    let examined = 0;
+    const { maxTufts, maxExamined } = GRASSLAND_WIND_LIMITS;
+    ctx.save();
+    for (let x = startX; x < bounds.endX && drawn < maxTufts && examined < maxExamined; x += step) {
+        for (let y = startY; y < bounds.endY && drawn < maxTufts && examined < maxExamined; y += step) {
+            examined += 1;
+            if (!state.explored?.[x]?.[y]) continue;
+            const h = getHeightAt(x + 0.5, y + 0.5);
+            if (h < sea + 0.03 || h > sea + 0.52) continue;
+            const m = getMoistureAt(x + 0.5, y + 0.5);
+            const temp = getTemperatureAt(x + 0.5, y + 0.5);
+            if (forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 })
+                && !forestClearingAt(x, y, {
+                    seed: Number(state.worldSeed) || 1, moisture: m, height: h, forests, rockLine: 0.92,
+                })) continue;
+            const profile = grasslandProfileAt(x + 0.5, y + 0.5, {
+                seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
+                climate: climateKey, forests, seaLevel: sea, dayOfYear, year: Number(state.year) || 1,
+                hour: Number.isFinite(hour) ? hour : 12, weather: state.weather || "clear", wind,
+                use: grasslandUseAt(x, y),
+            });
+            if (!profile.sward.tall || profile.visual.windSway < 0.14) continue;
+            const s = cellPx / 48;
+            const px = x * cellPx - cam.x + cellPx * (0.28 + ((x * 7 + y * 3) % 10) / 22);
+            const py = y * cellPx - cam.y + cellPx * (0.35 + ((x * 3 + y * 7) % 10) / 28);
+            if (px < -10 || py < -10 || px > canvas.width + 10 || py > canvas.height + 10) continue;
+            const wave = Math.sin(tick * 0.0019 + x * 0.17 + y * 0.11);
+            const sway = wave * (2.6 + profile.visual.windSway * 3.4) * s;
+            ctx.globalAlpha = 0.2 + profile.visual.windSway * 0.16;
+            ctx.strokeStyle = profile.grassHex;
+            ctx.lineWidth = Math.max(0.7, 0.8 * s);
+            ctx.beginPath();
+            ctx.moveTo(px - 2.2 * s, py + 3 * s);
+            ctx.quadraticCurveTo(px - 1.2 * s + sway * 0.4, py - 2 * s, px - 1.4 * s + sway, py - 6.2 * s);
+            ctx.moveTo(px + 1.8 * s, py + 3 * s);
+            ctx.quadraticCurveTo(px + 2.4 * s + sway * 0.35, py - 1.5 * s, px + 2.1 * s + sway * 0.82, py - 5.2 * s);
+            ctx.stroke();
+            drawn += 1;
+        }
+    }
+    ctx.restore();
+    if (probe) {
+        probe.examined = examined;
+        probe.tufts = drawn;
+        probe.elapsedMs = performance.now() - startedAt;
+    }
 }
 
 function drawSnowTuft(ctx, px, py, cellPx, s1) {

@@ -15,6 +15,7 @@ import {
     TROPICAL_SEASON_GOODS, TROPICAL_SPECIES, isTropicalClimate, tropicalFormationFor, tropicalProfileFor,
 } from './tropical-ecology.js';
 import { jungleProfileFor } from './jungle-ecology.js';
+import { GRASSLAND_GOODS } from './grassland-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -686,6 +687,7 @@ export const FOREST_GOODS = Object.freeze({
     'cured-game': Object.freeze({ id: 'cured-game', label: 'Cured game', category: 'hunt', processed: true }),
     'tanned-fur': Object.freeze({ id: 'tanned-fur', label: 'Tanned furs', category: 'hunt', processed: true }),
     'cured-hides': Object.freeze({ id: 'cured-hides', label: 'Cured hides', category: 'hunt', processed: true }),
+    ...GRASSLAND_GOODS,
     ...TROPICAL_GOODS,
 });
 
@@ -959,6 +961,19 @@ export function forestSuccessionStage(kind, age) {
     return { id: 'recovered', formation: null, disturbance: null, label: null, ageClass: null };
 }
 
+// True when a tile is open ground: either outside the forest potential, or
+// inside a seeded canopy gap. It uses the same gap hashes as forestStandAt()
+// so the renderer can keep a meadow visible without generating a full stand.
+export function forestClearingAt(x, y, { seed = 1, moisture = 0.55, height = 0.55, forests = 52, rockLine = 0.92 } = {}) {
+    if (!forestPotentialAt({ moisture, height, forests, rockLine })) return true;
+    const safeSeed = Number.isSafeInteger(Number(seed)) && Number(seed) > 0 ? Number(seed) >>> 0 : 1;
+    const tx = Number(x) || 0;
+    const ty = Number(y) || 0;
+    const gapPatch = coarseUnit(safeSeed, tx, ty, 5, 0x47415031);
+    const gapEdge = wave(tx, ty, safeSeed, 0.045, 0x47415032);
+    return gapPatch > 0.86 || gapEdge > 0.86;
+}
+
 // Cheap land test used before generating a full stand. It mirrors the forest
 // gate in forestStandAt exactly; rendering can then skip the expensive wave,
 // species and goods work on open ground while still visiting every tile for
@@ -968,6 +983,11 @@ export function forestPotentialAt({ moisture = 0.55, height = 0.55, forests = 52
     const h = clamp01(Number(height));
     const f = Number.isFinite(Number(forests)) ? Number(forests) : 52;
     const line = Number.isFinite(Number(rockLine)) ? Number(rockLine) : 0.92;
+    // A world with the forest slider at zero must not inherit forest from its
+    // moisture alone. This also keeps the renderer's open-meadow path reachable
+    // in valid no-forest worlds; the moisture-only formula previously made
+    // every damp meadow look like potential woodland.
+    if (f <= 0) return false;
     const pressure = clamp01((m - 0.34) / 0.46 + (f - 50) * 0.0018 - 0.04);
     return pressure > 0.1 && h < line;
 }
@@ -986,7 +1006,9 @@ export function forestStandAt(x, y, context = {}) {
     const rockLine = Number.isFinite(Number(context.rockLine)) ? Number(context.rockLine) : 0.92;
 
     const forestPressure = clamp01((moisture - 0.34) / 0.46 + (forests - 50) * 0.0018 - 0.04);
-    const forest = forestPressure > 0.1 && height < rockLine;
+    // Keep the cheap gate and the full stand in agreement: zero forest cover
+    // is a real option, not a request for moisture-driven woodland.
+    const forest = forests > 0 && forestPressure > 0.1 && height < rockLine;
     const gapPatch = coarseUnit(seed, tx, ty, 5, 0x47415031);
     const gapEdge = wave(tx, ty, seed, 0.045, 0x47415032);
     const clearing = forest && (gapPatch > 0.86 || gapEdge > 0.86)

@@ -1,9 +1,10 @@
-// Pannage: mast from the wood becomes a real feed reserve for stables.
+// Pannage and meadow fodder: mast from the wood and hay from the grass become
+// a real feed reserve for stables.
 //
-// The forest ledger owns acorns, beechnuts and chestnuts. Feeding a stable
-// consumes those goods and records horse-days on the stable itself, so the
-// reserve survives save/load and is visible in the management panel. This is a
-// local forest right, not a second city currency.
+// The shared gathering ledger owns acorns, beechnuts, chestnuts, hay and meadow
+// grass. Feeding a stable consumes those goods and records horse-days on the
+// stable itself, so the reserve survives save/load and is visible in the
+// management panel. This is a local feed right, not a second city currency.
 import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { ensureForestGathering } from "./forest-gathering.js";
@@ -11,6 +12,10 @@ import { ensureForestGathering } from "./forest-gathering.js";
 const VERSION = 1;
 const MAX_DAYS = 30;
 const MAST_GOODS = Object.freeze(["acorns", "beechnuts", "chestnuts"]);
+// Hay and meadow grass are the grassland counterpart to mast. They are less
+// concentrated, so one unit still feeds one reserve day, but they let a stable
+// survive when the wood has no mast left.
+const FODDER_GOODS = Object.freeze(["hay", "meadow-grass"]);
 
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 
@@ -35,7 +40,7 @@ function normalizePannage(building) {
 export function pannageSummary(building) {
     if (!isStable(building)) return "";
     const reserve = normalizePannage(building);
-    return reserve.days + " days · " + reserve.fedTotal + " mast fed";
+    return reserve.days + " days · " + reserve.fedTotal + " feed units";
 }
 
 export function feedStableFromMast(building, rations = 6) {
@@ -49,7 +54,7 @@ export function feedStableFromMast(building, rations = 6) {
     const ledger = ensureForestGathering();
     let remaining = Math.min(room, Math.max(1, Math.floor(number(rations, 6))));
     const taken = {};
-    for (const good of MAST_GOODS) {
+    for (const good of [...MAST_GOODS, ...FODDER_GOODS]) {
         if (remaining <= 0) break;
         const available = Math.max(0, Math.floor(number(ledger.stock[good])));
         const amount = Math.min(remaining, available);
@@ -59,7 +64,7 @@ export function feedStableFromMast(building, rations = 6) {
         remaining -= amount;
     }
     const fed = Object.values(taken).reduce((sum, amount) => sum + amount, 0);
-    if (fed <= 0) return { ok: false, reason: "No acorns, beechnuts or chestnuts in the forest ledger" };
+    if (fed <= 0) return { ok: false, reason: "No mast, hay or meadow grass in the stores" };
     reserve.days += fed;
     reserve.fedTotal += fed;
     reserve.mastUsed += fed;
@@ -102,4 +107,4 @@ export function validatePannage(value) {
     return true;
 }
 
-export const PANNAGE_LIMITS = Object.freeze({ version: VERSION, maxDays: MAX_DAYS, mastGoods: MAST_GOODS });
+export const PANNAGE_LIMITS = Object.freeze({ version: VERSION, maxDays: MAX_DAYS, mastGoods: MAST_GOODS, fodderGoods: FODDER_GOODS });

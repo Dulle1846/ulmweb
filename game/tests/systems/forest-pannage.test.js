@@ -50,3 +50,22 @@ test("pannage is consumed day by day and cannot exceed its bounded reserve", () 
     assert.throws(() => validatePannage({ version: 1, days: PANNAGE_LIMITS.maxDays + 1 }), /oversized/);
     assert.equal(serializeForestGathering().stock.acorns || 0, 0);
 });
+
+test("hay and meadow grass feed a stable when mast is exhausted", () => {
+    const stable = setup();
+    restoreForestGathering({
+        version: 1,
+        stock: { hay: 2, "meadow-grass": 1 },
+        totalGathered: { hay: 2, "meadow-grass": 1 },
+        quality: {},
+        history: [],
+        lastGather: {},
+    });
+    const result = feedStableFromMast(stable, 6);
+    assert.equal(result.ok, true);
+    assert.equal(result.fed, 3);
+    assert.equal(result.days, 3);
+    assert.equal(state.forestGathering.stock.hay, 0);
+    assert.equal(state.forestGathering.stock["meadow-grass"], 0);
+    assert.match(pannageSummary(stable), /3 days/);
+});
