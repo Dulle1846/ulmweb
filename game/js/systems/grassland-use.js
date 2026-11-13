@@ -9,6 +9,7 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { grasslandProfileAt, grasslandSummary } from "../world/grassland-ecology.js";
+import { isSteppeSite, steppeProfileAt, steppeSummary } from "../world/steppe-ecology.js";
 
 const BUCKET = 8;
 const CACHE_VERSION = 1;
@@ -146,14 +147,15 @@ export function grasslandUseAt(x, y) {
     };
 }
 
-export function grasslandSiteProfileAt(x, y, overrides = {}) {
+function siteContextAt(x, y, overrides = {}) {
     const height = getHeightAt(x + 0.5, y + 0.5);
     const moisture = getMoistureAt(x + 0.5, y + 0.5);
     const temperature = getTemperatureAt(x + 0.5, y + 0.5);
-    return grasslandProfileAt(x + 0.5, y + 0.5, {
+    return {
         seed: Number(state.worldSeed) || 1,
         moisture, temperature, height,
         climate: state.worldOptions?.climate || "temperate",
+        aridity: state.worldOptions?.aridity ?? 50,
         forests: state.worldOptions?.forests ?? 52,
         seaLevel: Number(state.seaLevel) || 0.33,
         dayOfYear: Number(state.dayOfYear) || 150,
@@ -163,12 +165,36 @@ export function grasslandSiteProfileAt(x, y, overrides = {}) {
         wind: String(state.weather || "").toLowerCase() === "storm" ? 2 : String(state.weather || "").toLowerCase() === "rain" ? 1.25 : 1,
         use: grasslandUseAt(x, y),
         ...overrides,
-    });
+    };
 }
 
+export function grasslandSiteProfileAt(x, y, overrides = {}) {
+    return grasslandProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
+}
+
+export function steppeSiteProfileAt(x, y, overrides = {}) {
+    return steppeProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
+}
+
+export function steppeSiteSummaryAt(x, y) {
+    try {
+        const context = siteContextAt(x, y);
+        return isSteppeSite(x + 0.5, y + 0.5, context) ? steppeSummary(steppeProfileAt(x + 0.5, y + 0.5, context)) : "";
+    } catch {
+        return "";
+    }
+}
+
+// Kept for the existing farm/stable panels. On a steppe tile the same site
+// query returns the steppe survey, so the UI does not need a second button or
+// a second resource model.
 export function grasslandSiteSummaryAt(x, y) {
     try {
-        return grasslandSummary(grasslandSiteProfileAt(x, y));
+        const context = siteContextAt(x, y);
+        if (isSteppeSite(x + 0.5, y + 0.5, context)) {
+            return steppeSummary(steppeProfileAt(x + 0.5, y + 0.5, context));
+        }
+        return grasslandSummary(grasslandProfileAt(x + 0.5, y + 0.5, context));
     } catch {
         return "";
     }

@@ -9,6 +9,7 @@ import { TYPE } from "../core/types.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { FOREST_GOODS, forestGoodsFor, forestSnowDepthAt, forestStandAt } from "../world/forest-ecology.js";
 import { grasslandProductsAt } from "../world/grassland-ecology.js";
+import { isSteppeSite, steppeProductsAt } from "../world/steppe-ecology.js";
 import { grasslandUseAt } from "./grassland-use.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import {
@@ -417,6 +418,7 @@ function meadowContextAt(x, y, options = {}) {
         temperature: getTemperatureAt(x + 0.5, y + 0.5),
         height: getHeightAt(x + 0.5, y + 0.5),
         climate: state.worldOptions?.climate || "temperate",
+        aridity: state.worldOptions?.aridity ?? 50,
         forests: state.worldOptions?.forests ?? 52,
         seaLevel: Number(state.seaLevel) || 0.33,
         dayOfYear: options.dayOfYear ?? state.dayOfYear,
@@ -433,8 +435,12 @@ function meadowContextAt(x, y, options = {}) {
 // honey therefore reach the existing economy without a second inventory.
 export function gatherMeadowProducts(x, y, options = {}) {
     const ledger = ensureForestGathering();
-    const products = grasslandProductsAt(x, y, meadowContextAt(x, y, options));
-    if (!products) return { ok: false, reason: "No harvestable meadow at this tile" };
+    const context = meadowContextAt(x, y, options);
+    // A steppe is still forage land. The same button and ledger serve both
+    // profiles; the terrain decides which harvest vocabulary is present.
+    const products = (isSteppeSite(x, y, context) ? steppeProductsAt(x, y, context) : null)
+        || grasslandProductsAt(x, y, context);
+    if (!products) return { ok: false, reason: "No harvestable grassland at this tile" };
     const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
     const year = Math.floor(number(options.year, state.year) || 1);
     if (!isValidGather(ledger, products.x, products.y, day, year)) {
@@ -477,7 +483,9 @@ export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
             if (tx < 0 || ty < 0) continue;
             const node = getResourceNodeAt(tx, ty);
             if (node?.forestCapacity && node.forestStock > 0) continue;
-            const products = grasslandProductsAt(tx, ty, meadowContextAt(tx, ty));
+            const context = meadowContextAt(tx, ty);
+            const products = (isSteppeSite(tx, ty, context) ? steppeProductsAt(tx, ty, context) : null)
+                || grasslandProductsAt(tx, ty, context);
             if (!products) continue;
             if (!best || products.goods.length > best.products.goods.length) best = { products, tx, ty };
         }

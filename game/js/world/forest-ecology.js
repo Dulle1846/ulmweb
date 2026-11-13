@@ -16,6 +16,7 @@ import {
 } from './tropical-ecology.js';
 import { jungleProfileFor } from './jungle-ecology.js';
 import { GRASSLAND_GOODS } from './grassland-ecology.js';
+import { STEPPE_GOODS } from './steppe-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -688,6 +689,7 @@ export const FOREST_GOODS = Object.freeze({
     'tanned-fur': Object.freeze({ id: 'tanned-fur', label: 'Tanned furs', category: 'hunt', processed: true }),
     'cured-hides': Object.freeze({ id: 'cured-hides', label: 'Cured hides', category: 'hunt', processed: true }),
     ...GRASSLAND_GOODS,
+    ...STEPPE_GOODS,
     ...TROPICAL_GOODS,
 });
 

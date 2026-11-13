@@ -14,6 +14,8 @@ import {
     pickAgeClass, pickSpecies,
 } from '../../world/forest-ecology.js';
 import { grasslandProfileAt } from '../../world/grassland-ecology.js';
+import { isSteppeSite, steppeProfileAt } from '../../world/steppe-ecology.js';
+import { drawSteppe } from './steppe-render.js';
 import { grasslandUseAt } from '../../systems/grassland-use.js';
 import {
     DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
@@ -1121,14 +1123,21 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 });
             }
             const clearingMeadow = Boolean(stand?.forest && stand.clearing > 0.22);
-            const grass = (!potentialForest || clearingMeadow) && h >= sea && h < 0.86
-                ? grasslandProfileAt(x + 0.5, y + 0.5, {
+            const grassContext = (!potentialForest || clearingMeadow) && h >= sea && h < 0.86
+                ? {
                     seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
-                    climate: climateKey, forests, seaLevel: sea, dayOfYear, year: Number(state.year) || 1,
+                    climate: climateKey, aridity: state.worldOptions?.aridity ?? 50, forests, seaLevel: sea, dayOfYear, year: Number(state.year) || 1,
                     hour, weather: state.weather || "clear", wind: windMultiplier(),
                     use: grasslandUseAt(x, y),
-                })
+                }
                 : null;
+            // Steppe is open, arid grassland, not a meadow recoloured. It keeps
+            // the same terrain lattice but owns its grasses, thorn scrub,
+            // fauna, hazards and seasonal colour. Forest clearings stay meadow.
+            const steppe = grassContext && !potentialForest && isSteppeSite(x + 0.5, y + 0.5, grassContext)
+                ? steppeProfileAt(x + 0.5, y + 0.5, grassContext)
+                : null;
+            const grass = grassContext ? (steppe || grasslandProfileAt(x + 0.5, y + 0.5, grassContext)) : null;
             const meadowTree = Boolean(treeSample && grass && grass.treeChance > 0 && s1 < grass.treeChance);
             if (!potentialForest && !meadowTree && !detail) continue;
 
@@ -1220,7 +1229,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // surface. The profile decides whether this tile is short turf,
             // tall hay, wet meadow, dry chalk, orchard or mountain pasture.
             if (grass && zoom >= 0.34) {
-                if (temp > 0.68 && m < 0.3 && s1 > 0.86) drawCactus(ctx, px, py, cellPx, s1);
+                if (grass.steppe) drawSteppe(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
+                else if (temp > 0.68 && m < 0.3 && s1 > 0.86) drawCactus(ctx, px, py, cellPx, s1);
                 else drawGrassland(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
             }
         }
@@ -4212,12 +4222,17 @@ export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
                 && !forestClearingAt(x, y, {
                     seed: Number(state.worldSeed) || 1, moisture: m, height: h, forests, rockLine: 0.92,
                 })) continue;
-            const profile = grasslandProfileAt(x + 0.5, y + 0.5, {
+            const windContext = {
                 seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
-                climate: climateKey, forests, seaLevel: sea, dayOfYear, year: Number(state.year) || 1,
+                climate: climateKey, aridity: state.worldOptions?.aridity ?? 50, forests, seaLevel: sea,
+                dayOfYear, year: Number(state.year) || 1,
                 hour: Number.isFinite(hour) ? hour : 12, weather: state.weather || "clear", wind,
                 use: grasslandUseAt(x, y),
-            });
+            };
+            const steppeWind = isSteppeSite(x + 0.5, y + 0.5, windContext)
+                ? steppeProfileAt(x + 0.5, y + 0.5, windContext)
+                : null;
+            const profile = steppeWind || grasslandProfileAt(x + 0.5, y + 0.5, windContext);
             if (!profile.sward.tall || profile.visual.windSway < 0.14) continue;
             const s = cellPx / 48;
             const px = x * cellPx - cam.x + cellPx * (0.28 + ((x * 7 + y * 3) % 10) / 22);
