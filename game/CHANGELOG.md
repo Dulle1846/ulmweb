@@ -75,21 +75,26 @@ emblem. A matching heraldic dragon symbol was added; the audit now resolves
 **Performance attribution:** The old shipped build mixed two effects. Applying
 the low-end settings after the realm was already running measured 7.522 % of
 quiet frames above 33 ms; preloading the same settings measured 1.891 %. The
-current control run measured 3.404 % (preloaded control 1.891 %), 16.8 ms p95,
-0.213 % above 50 ms and 0 long tasks; the dense phase measured 0.559 % above
-33 ms, 0 % above 50 ms and 0 long tasks. Timestamp probes still show occasional
-single heavy simulation ticks (29.6–37.6 ms at the day-90 settlement services
-pass) and terrain-cache rebuild slices, so the residual is not claimed to be
-exclusively a harness artefact. One additional guard is now in place: a delayed
-frame executes at most one fixed simulation step and keeps the rest in the
-accumulator, so a catch-up frame can no longer run several settlement ticks
-back-to-back. Every tick still runs in the original order; the deterministic
-campaign does not use wall-clock pacing.
+latest post-start-settings run measured 3.457 % above 33 ms, 16.8 ms p95,
+0.247 % above 50 ms and one Long Task; the dense phase measured 0 % above
+33 ms, 0 % above 50 ms and no long tasks. Timestamp probes still show occasional
+single heavy simulation ticks (31.5 ms at the day-90 fauna/services pass) and
+terrain-cache rebuild slices, so the residual is not claimed to be exclusively
+a harness artefact. Two guards are now in place. A delayed frame executes at
+most one fixed simulation step and keeps the rest in the accumulator, so a
+catch-up frame can no longer run several settlement ticks back-to-back; every
+tick still runs in the original order and the deterministic campaign does not
+use wall-clock pacing. The forest-habitat cache ceiling rose from 12,000 to
+20,000 entries so a full 160×160 default forest map stays resident: the
+day-90 tick probe fell from 41.2 ms to 31.5 ms, quiet tick p95 from 16.0 to
+13.1 ms, and the dense phase reached 0 % over 33 ms. The cache remains bounded
+and is still invalidated by geography, succession, climate and forest-option
+changes.
 
 **Verification:** `npm test` 905/905 with the syntax, relative-import and UI-id
 check passing for 137 source files and 203 referenced UI ids. The 25-year
 campaign ends at 10,040 ticks with `allComplete:true`, all intermediate, era and
-agenda requirements true, and `noStalls:true` (0.849 ms/tick). Visual proof:
+agenda requirements true, and `noStalls:true` (0.841 ms/tick). Visual proof:
 [artifacts/visual-proof](artifacts/visual-proof/).
 
 ### 3.15.0-dev — Cold-start frame budget (realm start pass)

@@ -191,7 +191,13 @@ export function generateResourceGeography(seed=state.worldSeed){
 // largest tick cost. This cache keeps the habitat fields only while the exact
 // inputs that produce the stand are unchanged (stock, capacity and succession
 // age), so it cannot mask a harvest, fire or regrowth event.
-const HABITAT_CACHE_LIMIT = 12000;
+// A 160×160 realm can hold more than 13k forest tiles at the default forest
+// coverage. The old 12k ceiling cleared the whole derived cache near the end of
+// a full pressure pass, so the next fauna day rebuilt stands it had just
+// computed. Keep a full default forest map resident; the cache is still
+// bounded and is invalidated by geography, succession, climate and forest
+// option changes.
+const HABITAT_CACHE_LIMIT = 20000;
 let habitatCacheGeography = null;
 let habitatCacheSuccession = null;
 let habitatCacheClimate = null;
