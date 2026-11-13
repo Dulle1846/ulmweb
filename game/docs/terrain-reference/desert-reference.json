@@ -1,0 +1,367 @@
+{
+  "seed": 20261100,
+  "viewport": {
+    "width": 800,
+    "height": 800
+  },
+  "timeOfDay": 12,
+  "canvas": {
+    "width": 800,
+    "height": 800
+  },
+  "renderer": "WebKit WebGL",
+  "generatedAt": "2026-11-13T22:28:35.093Z",
+  "world": {
+    "width": 176,
+    "height": 176,
+    "climate": "arid",
+    "aridity": 100,
+    "seaLevel": 0.28075
+  },
+  "formations": [
+    {
+      "formation": "sand-sea",
+      "x": 70,
+      "y": 67,
+      "label": "Sand sea",
+      "sand": "rose-sand",
+      "dunes": [],
+      "water": null,
+      "fields": false,
+      "palms": [],
+      "goods": [
+        "Desert sand",
+        "Salt",
+        "Desert stone",
+        "Copper ore",
+        "Gemstones",
+        "Desert herbs",
+        "Desert resin",
+        "Archaeological find",
+        "Hides"
+      ],
+      "fauna": [
+        "Desert fox",
+        "Horned viper",
+        "Darkling beetle",
+        "Jerboa",
+        "Sand rat",
+        "Desert vulture"
+      ],
+      "featureCount": 39
+    },
+    {
+      "formation": "dune-field",
+      "x": 54,
+      "y": 53,
+      "label": "Dune field",
+      "sand": "red-ochre",
+      "dunes": [
+        "great-dunes",
+        "linear-ridges",
+        "crescent-dunes"
+      ],
+      "water": "spring",
+      "fields": false,
+      "palms": [
+        "Date palm",
+        "Doum palm"
+      ],
+      "goods": [
+        "Dates",
+        "Desert herbs",
+        "Desert resin",
+        "Desert sand",
+        "Hides",
+        "Wild game"
+      ],
+      "fauna": [
+        "Desert fox",
+        "Darkling beetle",
+        "Jerboa",
+        "Desert vulture",
+        "Camel"
+      ],
+      "featureCount": 39
+    },
+    {
+      "formation": "rock-desert",
+      "x": 106,
+      "y": 58,
+      "label": "Rock desert",
+      "sand": "rose-sand",
+      "dunes": [],
+      "water": null,
+      "fields": false,
+      "palms": [],
+      "goods": [
+        "Desert stone",
+        "Salt",
+        "Desert herbs",
+        "Desert sand",
+        "Archaeological find",
+        "Desert resin",
+        "Copper ore",
+        "Hides"
+      ],
+      "fauna": [
+        "Desert fox",
+        "Sand cat",
+        "Horned viper",
+        "Darkling beetle",
+        "Sand rat",
+        "Desert vulture"
+      ],
+      "featureCount": 41
+    },
+    {
+      "formation": "gravel-desert",
+      "x": 87,
+      "y": 23,
+      "label": "Gravel desert",
+      "sand": "pale-gold",
+      "dunes": [
+        "small-hills",
+        "wind-scour"
+      ],
+      "water": "waterhole",
+      "fields": false,
+      "palms": [
+        "Doum palm"
+      ],
+      "goods": [
+        "Salt",
+        "Dates",
+        "Desert herbs",
+        "Desert sand",
+        "Desert resin",
+        "Desert stone",
+        "Hides",
+        "Wild game"
+      ],
+      "fauna": [
+        "Desert fox",
+        "Horned viper",
+        "Monitor lizard",
+        "Darkling beetle",
+        "Jerboa",
+        "Desert vulture",
+        "Camel"
+      ],
+      "featureCount": 41
+    },
+    {
+      "formation": "pebble-plain",
+      "x": 112,
+      "y": 33,
+      "label": "Pebble plain",
+      "sand": "rose-sand",
+      "dunes": [
+        "great-dunes",
+        "linear-ridges"
+      ],
+      "water": null,
+      "fields": false,
+      "palms": [],
+      "goods": [
+        "Desert herbs",
+        "Desert stone",
+        "Desert sand",
+        "Hides"
+      ],
+      "fauna": [
+        "Desert fox",
+        "Monitor lizard",
+        "Scorpion",
+        "Darkling beetle",
+        "Jerboa",
+        "Sand rat",
+        "Desert vulture"
+      ],
+      "featureCount": 34
+    },
+    {
+      "formation": "salt-flat",
+      "x": 38,
+      "y": 126,
+      "label": "Salt flat",
+      "sand": "rose-sand",
+      "dunes": [],
+      "water": null,
+      "fields": false,
+      "palms": [],
+      "goods": [
+        "Desert sand",
+        "Desert stone",
+        "Salt",
+        "Archaeological find",
+        "Desert herbs",
+        "Gemstones",
+        "Desert resin",
+        "Wool",
+        "Hides"
+      ],
+      "fauna": [
+        "Desert fox",
+        "Horned viper",
+        "Scorpion",
+        "Darkling beetle",
+        "Sand rat"
+      ],
+      "featureCount": 40
+    },
+    {
+      "formation": "semi-desert",
+      "x": 110,
+      "y": 68,
+      "label": "Semi-desert",
+      "sand": "ash-grey",
+      "dunes": [
+        "small-hills",
+        "wind-scour"
+      ],
+      "water": "spring",
+      "fields": false,
+      "palms": [
+        "Date palm",
+        "Fan palm"
+      ],
+      "goods": [
+        "Dates",
+        "Desert resin",
+        "Wool",
+        "Desert herbs",
+        "Desert sand",
+        "Salt",
+        "Hides",
+        "Wild game"
+      ],
+      "fauna": [
+        "Horned viper",
+        "Scorpion",
+        "Darkling beetle",
+        "Sand rat",
+        "Desert vulture",
+        "Camel"
+      ],
+      "featureCount": 40
+    },
+    {
+      "formation": "cold-desert",
+      "x": 41,
+      "y": 70,
+      "label": "Cold desert",
+      "sand": "red-ochre",
+      "dunes": [],
+      "water": null,
+      "fields": false,
+      "palms": [],
+      "goods": [
+        "Desert stone",
+        "Desert sand",
+        "Archaeological find",
+        "Salt",
+        "Desert herbs",
+        "Gemstones",
+        "Copper ore",
+        "Desert resin",
+        "Hides"
+      ],
+      "fauna": [
+        "Desert fox",
+        "Sand cat",
+        "Horned viper",
+        "Scorpion",
+        "Darkling beetle",
+        "Sand rat",
+        "Desert vulture"
+      ],
+      "featureCount": 46
+    },
+    {
+      "formation": "mountain-desert",
+      "x": 124,
+      "y": 141,
+      "label": "Mountain desert",
+      "sand": "red-ochre",
+      "dunes": [],
+      "water": "spring",
+      "fields": false,
+      "palms": [
+        "Doum palm",
+        "Date palm"
+      ],
+      "goods": [
+        "Archaeological find",
+        "Dates",
+        "Desert stone",
+        "Desert herbs",
+        "Desert sand",
+        "Desert resin",
+        "Gemstones",
+        "Copper ore",
+        "Hides"
+      ],
+      "fauna": [
+        "Monitor lizard",
+        "Jerboa",
+        "Sand rat",
+        "Desert vulture",
+        "Camel"
+      ],
+      "featureCount": 51
+    },
+    {
+      "formation": "dry-basin",
+      "x": 139,
+      "y": 27,
+      "label": "Dry basin",
+      "sand": "red-ochre",
+      "dunes": [
+        "small-hills",
+        "crescent-dunes",
+        "wind-scour"
+      ],
+      "water": "waterhole",
+      "fields": false,
+      "palms": [
+        "Doum palm"
+      ],
+      "goods": [
+        "Dates",
+        "Salt",
+        "Desert herbs",
+        "Desert sand",
+        "Desert stone",
+        "Hides",
+        "Wild game"
+      ],
+      "fauna": [
+        "Desert fox",
+        "Monitor lizard",
+        "Scorpion",
+        "Jerboa",
+        "Desert vulture",
+        "Camel"
+      ],
+      "featureCount": 41
+    }
+  ],
+  "seasonalFocus": {
+    "x": 124,
+    "y": 141,
+    "label": "Mountain desert",
+    "formation": "mountain-desert"
+  },
+  "seasonalDays": [
+    50,
+    150,
+    250,
+    350
+  ],
+  "artifactHashes": {
+    "formations": "35826e8c43caf3c73f23ea7f765f954fef91ea314a11371d7ca2bc91a6723783",
+    "seasons": "7173d7edd0487cdd39340590cc7b4e243b601e1aae2bd251bb9d04fc8acfe84a"
+  },
+  "note": "Arid realm, 100 aridity, 8% forest cover; HUD, entities, fog and weather hidden; paused simulation; 2.4x interior view at midday. Every formation is a real generated tile. The seasonal strip follows a water-bearing tile through four seasons. Not a GPU performance benchmark."
+}

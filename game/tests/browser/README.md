@@ -30,6 +30,7 @@ dense-forest occlusion proof and full-year audit are separate, explicit runs:
 npm run test:terrain-reference
 npm run test:season-year
 npm run test:climate-reference
+npm run test:desert-reference
 npm run test:forest-reference
 npm run test:conifer-reference
 npm run test:mixed-reference

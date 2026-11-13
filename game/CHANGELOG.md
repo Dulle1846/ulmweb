@@ -5,7 +5,7 @@
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-11 (UTC)
+**Last repository verification:** 2026-11-13 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
@@ -37,6 +37,50 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.15.0-dev — Deserts and semi-deserts (spec 1.2.8)
+
+**Released:** 2026-11-13
+
+**Scope:** All 75 requirements `1.2.8.1`–`1.2.8.75` are implemented and
+covered by an explicit ID audit. Deserts are a deterministic ecology layer,
+not a recoloured grassland. The new `desert-ecology.js` derives ten formations
+(sand sea, dune field, rock, gravel, pebble, salt, semi-desert, cold, mountain
+and dry-basin desert) from height, moisture, temperature, climate, season,
+weather, wind and land use. Four sand colours and five dune types feed the new
+`desert-render.js` detail layer: crests and lee slopes, wind scour, gravel,
+salt crust, boulders, cliffs, mesas, canyons, caves, thorn scrub, succulents,
+rain flowers, palms, oasis water and fields, caravans and desert wildlife.
+Cold desert is reachable in an arid world through high, dry mountains rather
+than a special-case tile.
+
+**Integration:** The existing terrain priority now chooses desert before
+steppe and grassland, palms use the shared tree lattice, and the wind pass
+accepts the desert profile. Forest ecology registers the desert goods; the
+gathering paths check desert before steppe and grassland and deliver dates as
+food, desert herbs as medicine and the remaining goods through the shared
+ledger. `grasslandSiteSummaryAt()` exposes the desert profile and oasis
+water/fields to the existing farm and pasture overview. There is no new tick
+loop and no new save field; every per-frame loop is bounded and every profile
+is deterministic.
+
+**Verification:** Focused desert tests pass 10/10, including the exact 75-ID
+set, complete vocabulary, determinism, bounded values, a ten-tile survey that
+reaches every requirement, all ten formations, four sand colours, five dune
+types, oasis services, hazards and goods delivery. Full `npm test` passes
+915/915 with syntax and relative imports for 139 source files and 203
+referenced UI IDs. The 25-year campaign completes 10,040 ticks / 13 of 13
+ambitions with `noStalls:true`, no game over and 0.842 ms per tick. The browser
+reference generated all ten formations as real tiles at 2.4× interior zoom
+(seed `20261100`, 176×176 arid world, aridity 100, WebKit WebGL 800×800); the
+formation sheet and four-season oasis strip are in
+[docs/terrain-reference/desert-reference.png](docs/terrain-reference/desert-reference.png)
+and [docs/terrain-reference/desert-seasons.png](docs/terrain-reference/desert-seasons.png).
+The full implementation and 75-row audit are in [docs/DESERTS.md](docs/DESERTS.md).
+
+**Deployment:** Hosted preview and production are published from this commit;
+the Freebuff Sites operation receipts and final origin checks are reported with
+the release hand-off.
 
 ### 3.15.0-dev — Visual delivery audit and command-emblem repair
 

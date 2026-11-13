@@ -10,6 +10,7 @@ import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js"
 import { FOREST_GOODS, forestGoodsFor, forestSnowDepthAt, forestStandAt } from "../world/forest-ecology.js";
 import { grasslandProductsAt } from "../world/grassland-ecology.js";
 import { isSteppeSite, steppeProductsAt } from "../world/steppe-ecology.js";
+import { isDesertSite, desertProductsAt } from "../world/desert-ecology.js";
 import { grasslandUseAt } from "./grassland-use.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import {
@@ -36,13 +37,14 @@ const FOOD_DELIVERY = Object.freeze(new Set([
     "mushrooms", "chanterelle", "porcini", "wild-garlic", "wood-sorrel", "wild-strawberry",
     "sloes", "crab-apples", "berries", "truffles", "honey", "maple-syrup", "birch-sap",
     "game", "cured-game", "blueberries", "lingonberries", "rowan-berries", "elderberries", "hazelnuts",
-    "orchard-fruit",
+    "orchard-fruit", "dates",
 ]));
 const GOLD_DELIVERY = Object.freeze(new Set([
     "fur", "hides", "tanned-fur", "cured-hides", "resin", "beeswax", "herbs", "lichen",
     "bark", "linden-flower", "elm-seeds", "alder-cones", "yew-berries", "dwarf-pine-cones",
     "ash-keys", "hornbeam-seeds", "willow-withies", "woodruff", "valerian", "tinder-fungus",
-    "hay", "meadow-grass", "wildflowers", "reed", "turf",
+    "hay", "meadow-grass", "wildflowers", "reed", "turf", "salt", "wool",
+    "desert-sand", "desert-stone", "gemstones", "copper-ore", "desert-fibre", "desert-resin", "archaeological-find",
 ]));
 const TROPICAL_GOLD_HUNT = Object.freeze(new Set(["hides", "feathers"]));
 
@@ -436,9 +438,11 @@ function meadowContextAt(x, y, options = {}) {
 export function gatherMeadowProducts(x, y, options = {}) {
     const ledger = ensureForestGathering();
     const context = meadowContextAt(x, y, options);
-    // A steppe is still forage land. The same button and ledger serve both
-    // profiles; the terrain decides which harvest vocabulary is present.
-    const products = (isSteppeSite(x, y, context) ? steppeProductsAt(x, y, context) : null)
+    // Desert and steppe are still forage land. The same button and ledger
+    // serve all three profiles; the terrain decides which harvest vocabulary
+    // is present. A true desert wins over the semi-arid steppe margin.
+    const products = (isDesertSite(x, y, context) ? desertProductsAt(x, y, context) : null)
+        || (isSteppeSite(x, y, context) ? steppeProductsAt(x, y, context) : null)
         || grasslandProductsAt(x, y, context);
     if (!products) return { ok: false, reason: "No harvestable grassland at this tile" };
     const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
@@ -484,7 +488,8 @@ export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
             const node = getResourceNodeAt(tx, ty);
             if (node?.forestCapacity && node.forestStock > 0) continue;
             const context = meadowContextAt(tx, ty);
-            const products = (isSteppeSite(tx, ty, context) ? steppeProductsAt(tx, ty, context) : null)
+            const products = (isDesertSite(tx, ty, context) ? desertProductsAt(tx, ty, context) : null)
+                || (isSteppeSite(tx, ty, context) ? steppeProductsAt(tx, ty, context) : null)
                 || grasslandProductsAt(tx, ty, context);
             if (!products) continue;
             if (!best || products.goods.length > best.products.goods.length) best = { products, tx, ty };

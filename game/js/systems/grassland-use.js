@@ -10,6 +10,7 @@ import { TYPE } from "../core/types.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { grasslandProfileAt, grasslandSummary } from "../world/grassland-ecology.js";
 import { isSteppeSite, steppeProfileAt, steppeSummary } from "../world/steppe-ecology.js";
+import { isDesertSite, desertProfileAt, desertSummary } from "../world/desert-ecology.js";
 
 const BUCKET = 8;
 const CACHE_VERSION = 1;
@@ -176,6 +177,20 @@ export function steppeSiteProfileAt(x, y, overrides = {}) {
     return steppeProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
 }
 
+export function desertSiteProfileAt(x, y, overrides = {}) {
+    return desertProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
+}
+
+export function desertSiteSummaryAt(x, y) {
+    try {
+        const context = siteContextAt(x, y);
+        return isDesertSite(x + 0.5, y + 0.5, context)
+            ? desertSummary(desertProfileAt(x + 0.5, y + 0.5, context)) : "";
+    } catch {
+        return "";
+    }
+}
+
 export function steppeSiteSummaryAt(x, y) {
     try {
         const context = siteContextAt(x, y);
@@ -185,12 +200,15 @@ export function steppeSiteSummaryAt(x, y) {
     }
 }
 
-// Kept for the existing farm/stable panels. On a steppe tile the same site
-// query returns the steppe survey, so the UI does not need a second button or
-// a second resource model.
+// Kept for the existing farm/stable panels. On a desert or steppe tile the
+// same site query returns that ecosystem's survey, so the UI does not need a
+// second button or a second resource model.
 export function grasslandSiteSummaryAt(x, y) {
     try {
         const context = siteContextAt(x, y);
+        if (isDesertSite(x + 0.5, y + 0.5, context)) {
+            return desertSummary(desertProfileAt(x + 0.5, y + 0.5, context));
+        }
         if (isSteppeSite(x + 0.5, y + 0.5, context)) {
             return steppeSummary(steppeProfileAt(x + 0.5, y + 0.5, context));
         }
