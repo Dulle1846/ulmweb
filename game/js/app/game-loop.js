@@ -125,8 +125,15 @@ function gameLoop(timestamp){
    if(!state.isPaused&&!state.gameOver){
     const simulationStarted=performance.now();
     const clock=consumeSimulationTime(state.tickAccumulator,deltaTime,state.gameSpeed,BASE_TICK_INTERVAL);
-    state.tickAccumulator=clock.remainderMs;
-    for(let step=0;step<clock.steps;step++){
+    // A delayed frame can accumulate several fixed steps. Running all of them
+    // back-to-back creates a catch-up spike on exactly the frames that were
+    // already late. Execute at most one step per presented frame and keep the
+    // remaining time in the accumulator; every simulation tick still runs, in
+    // the same order, and the deterministic campaign never goes through this
+    // wall-clock pacing.
+    const stepCount=Math.min(clock.steps,1);
+    state.tickAccumulator=clock.remainderMs+(clock.steps-stepCount)*BASE_TICK_INTERVAL;
+    for(let step=0;step<stepCount;step++){
      updateSimulation();updateParticles();updateFloaters();
      if(state.gameOver)break;
     }

@@ -38,6 +38,60 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ## Production release history
 
+### 3.15.0-dev — Visual delivery audit and command-emblem repair
+
+**Released:** 2026-11-13
+
+**Scope:** Post-release visual acceptance of the hosted build (`32bf99c`) at the
+real Production origin, plus the one defect that audit exposed. No simulation
+rule, save schema, terrain colour or camera behaviour was changed.
+
+**Visual evidence:** A fresh realm (seed `20261108`, 23 residents, 30 buildings,
+56 entities) was captured after normalising the clock to Year 1, day 50, noon,
+clear weather so the Production and `5cbf350` frames can be compared directly.
+The set contains the overview at Landscape ×0.09, Rooftops ×0.95 and Interiors
+×2.40, plus the POPULATION, ECONOMY, BUILDINGS and CREATURES panels. Terrain
+coverage is complete: the landscape reference has 0 % black pixels and 83,499
+colours; the overview contains only 0.3 % dark fog-of-war area, and the two
+close views contain none. Buildings, residents, trees, resource icons, HUD
+rings and panel icons are all present. No page errors, console errors or failed
+requests occurred while opening the panels, zooming and panning; the only
+browser messages were the known SwiftShader `ReadPixels` warnings.
+
+Against `5cbf350`, the roof-level terrain below the fixed top bar is
+pixel-identical (mean absolute difference 0.011, 0 % of pixels above 3). The
+landscape differs by a mean of 0.85 levels, with 99.99 % of pixels within 10
+levels; every difference above 50 is confined to the top bar's live morale and
+treasury text, not the world. Zooming, panning and starting the realm left the
+population, building and resource numbers unchanged.
+
+**Root-cause fix:** The static asset audit found 18 external SVG references, of
+which 17 resolved. The CREATURES tab referenced
+`assets/command-emblems.svg#dragon`, but that atlas contained only crown,
+scales, seal, cards, coins, book and people. The panel therefore had no dragon
+emblem. A matching heraldic dragon symbol was added; the audit now resolves
+18/18, and the deployed CREATURES panel shows the emblem and its illustration.
+
+**Performance attribution:** The old shipped build mixed two effects. Applying
+the low-end settings after the realm was already running measured 7.522 % of
+quiet frames above 33 ms; preloading the same settings measured 1.891 %. The
+current control run measured 3.404 % (preloaded control 1.891 %), 16.8 ms p95,
+0.213 % above 50 ms and 0 long tasks; the dense phase measured 0.559 % above
+33 ms, 0 % above 50 ms and 0 long tasks. Timestamp probes still show occasional
+single heavy simulation ticks (29.6–37.6 ms at the day-90 settlement services
+pass) and terrain-cache rebuild slices, so the residual is not claimed to be
+exclusively a harness artefact. One additional guard is now in place: a delayed
+frame executes at most one fixed simulation step and keeps the rest in the
+accumulator, so a catch-up frame can no longer run several settlement ticks
+back-to-back. Every tick still runs in the original order; the deterministic
+campaign does not use wall-clock pacing.
+
+**Verification:** `npm test` 905/905 with the syntax, relative-import and UI-id
+check passing for 137 source files and 203 referenced UI ids. The 25-year
+campaign ends at 10,040 ticks with `allComplete:true`, all intermediate, era and
+agenda requirements true, and `noStalls:true` (0.849 ms/tick). Visual proof:
+[artifacts/visual-proof](artifacts/visual-proof/).
+
 ### 3.15.0-dev — Cold-start frame budget (realm start pass)
 
 **Released:** 2026-11-13
@@ -73,11 +127,13 @@ cached sovereign instead of rebuilding the royal house.
 
 Median frame time is 16.7 ms in both phases. Quiet tick p95 is 10.6–13.5 ms;
 dense tick p95 is 11.3–13.8 ms. The two clean final runs had no
-quiet long tasks and no frame over 50 ms; the residual 2.56–3.44 % of frames
-over 33 ms are missed display refreshes while the harness applies its low-end
-settings and the terrain cache settles, not long tasks. One host-contended
-repeat measured 0.44 % over 50 ms and one Long Task; the other final runs
-measured zero in both. The 2ab825a build still had three quiet long tasks
+quiet long tasks and no frame over 50 ms. A control run with the low-end
+settings preloaded cut quiet frames over 33 ms from 7.522 % to 1.891 %, which
+isolates most of the residual as harness settings application and terrain-cache
+settling; timestamp probes still show a few single heavy settlement ticks and
+cache-rebuild slices, so not every residual frame is a harness artefact. One
+host-contended repeat measured 0.44 % over 50 ms and one Long Task; the other
+final runs measured zero in both. The 2ab825a build still had three quiet long tasks
 (largest 82 ms) and 1.94 % over 50 ms; those are gone.
 
 **Verification:** `npm test` 905/905 and the syntax/relative-import/UI-id check
