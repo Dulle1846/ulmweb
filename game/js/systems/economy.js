@@ -151,6 +151,28 @@ export function getBuildingEfficiency(building, workforce = null) {
         getFoodCrisisProductivity() * getDebtProductivity();
 }
 
+// Startup warm-up for the modifier caches used by the first settlement
+// ledger. These getters are pure memoized reads; calling them while the start
+// screen covers the realm only moves their first allocation off the first
+// visible settlement tick.
+export function warmEconomyCaches() {
+    getEdictModifiers();
+    getCourtModifiers();
+    getFaithModifiers();
+    getJusticeModifiers();
+    getResearchModifiers();
+    getEndeavourModifiers();
+    getCivicModifiers();
+    getCitizenModifiers();
+    getFoodCrisisProductivity();
+    getDebtProductivity();
+    getFoodDemandInputs();
+    getFoodStorageCapacity();
+    getRoadUpkeepTotal();
+    getFurnitureUpkeepTotal();
+    return true;
+}
+
 export function updateEconomy() {
     if (state.tick <= 0 || state.tick % ECONOMY_INTERVAL !== 0) return null;
     const economy = ensureEconomyCycleState();

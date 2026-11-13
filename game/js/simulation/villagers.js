@@ -26,12 +26,17 @@ const MOVING_TYPES = new Set([
 const LEISURE_TYPES = new Set([TYPE.TAVERN, TYPE.MARKET, TYPE.TEMPLE, TYPE.WELL, TYPE.SHRINE]);
 
 const blockedBuildingTiles=new Set();
+let blockedTileWorldWidth=0;
+let blockedTileWorldHeight=0;
 let blockedEntityCount=-1,blockedWorldSeed=-1,blockedWorldEpoch=-1,blockedBuildingVersion=-1;
 
 export function rebuildBlockedBuildingTiles(){
     const version=state.buildingCollisionVersion||0;
     if(blockedEntityCount===state.entities.length&&blockedWorldSeed===state.worldSeed&&blockedWorldEpoch===state.worldEpoch&&blockedBuildingVersion===version)return;
     blockedBuildingTiles.clear();
+    const blockedW=worldWidth();
+    blockedTileWorldWidth=blockedW;
+    blockedTileWorldHeight=worldHeight();
     for(const entity of state.entities){
         if(entity.dead||!entity.isBuilding())continue;
         const base=BUILDING_SIZE[entity.type]||{w:1,h:1};
@@ -40,10 +45,9 @@ export function rebuildBlockedBuildingTiles(){
         const right=entity.x+0.5+(base.w*scale)/2;
         const top=entity.y+0.5-(base.h*scale)/2;
         const bottom=entity.y+0.5+(base.h*scale)/2;
-        const W=worldWidth(),H=worldHeight();
-        for(let x=Math.max(0,Math.floor(left));x<Math.min(W,Math.ceil(right));x++){
-            for(let y=Math.max(0,Math.floor(top));y<Math.min(H,Math.ceil(bottom));y++){
-                blockedBuildingTiles.add(x+":"+y);
+        for(let x=Math.max(0,Math.floor(left));x<Math.min(blockedW,Math.ceil(right));x++){
+            for(let y=Math.max(0,Math.floor(top));y<Math.min(blockedTileWorldHeight,Math.ceil(bottom));y++){
+                blockedBuildingTiles.add(y*blockedW+x);
             }
         }
     }
@@ -272,12 +276,50 @@ function cleanupExpiredFuelBackfills(villagers){
 //  PRO FRAME — Smooth Movement
 // ═══════════════════════════════════════════════════════════════
 
+// At most one A* search per movement call. Without this gate several blocked
+// residents could each start a search in the same frame and stack into a long
+// task; a resident that does not get the token simply tries again next call.
+let pathSearchesLeft=1;
+// Reused every movement call. Residents move continuously, but the container
+// objects do not have to be reallocated twice per frame and then collected.
+const movementUnits=[];
+const movementEnemies=[];
+const enemyBuckets=new Map();
+const residentBuckets=new Map();
+const movementAvoid={x:0,y:0};
+const BUCKET_STRIDE=4096;
+// Warm the path search while the start overlay is still covering the realm.
+// A* and its route cache are pure reads of the generated world; warming the
+// common resident routes removes the first cold searches from gameplay.
+export function warmVillagerPaths(maxSearches = 18) {
+    const villagers = [], targets = [];
+    for (const entity of state.entities) {
+        if (entity.dead) continue;
+        if (entity.type === TYPE.VILLAGER) villagers.push(entity);
+        else if (entity.isBuilding()) targets.push(entity);
+    }
+    const limit = Math.min(maxSearches, villagers.length * Math.max(1, targets.length));
+    let searches = 0;
+    for (const villager of villagers) {
+        if (searches >= limit) break;
+        const destination = villager.workplace || villager.home || targets[searches % Math.max(1, targets.length)];
+        if (!destination) continue;
+        const targetX = destination.x ?? villager.targetX;
+        const targetY = destination.y ?? villager.targetY;
+        if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) continue;
+        findPath(villager.x, villager.y, targetX, targetY);
+        searches++;
+    }
+    return searches;
+}
+
 export function updateFriendlyMovement(deltaSeconds) {
     if (state.isPaused || state.gameOver) return;
     if (deltaSeconds <= 0 || deltaSeconds > 0.2) return;
-
+    pathSearchesLeft=1;
     rebuildBlockedBuildingTiles();
-    const units=[],enemies=[];
+    const units=movementUnits,enemies=movementEnemies;
+    units.length=0;enemies.length=0;
     let keep=null;
     for(const entity of state.entities){
         if(entity.dead)continue;
@@ -285,31 +327,41 @@ export function updateFriendlyMovement(deltaSeconds) {
         if(entity.isEnemy())enemies.push(entity);
         if(entity.type===TYPE.KEEP)keep=entity;
     }
-    const buckets = new Map();
+    const buckets = enemies.length ? enemyBuckets : null;
     const bucketSize = FLEE_DISTANCE;
-    for (const enemy of enemies) {
-        const key = Math.floor(enemy.x / bucketSize) + ":" + Math.floor(enemy.y / bucketSize);
-        if (!buckets.has(key)) buckets.set(key, []);
-        buckets.get(key).push(enemy);
+    if (buckets) {
+        buckets.clear();
+        for (const enemy of enemies) {
+            const key = Math.floor(enemy.x / bucketSize) * BUCKET_STRIDE + Math.floor(enemy.y / bucketSize);
+            const local = buckets.get(key);
+            if (local) local.push(enemy);
+            else buckets.set(key, [enemy]);
+        }
     }
 
     // Residents need personal space even when their route targets coincide.
     // A tiny spatial hash keeps this local instead of comparing every pair.
-    const unitBuckets = new Map();
+    const unitBuckets = residentBuckets;
+    unitBuckets.clear();
     const unitBucketSize = 1.7;
     for (const unit of units) {
-        const key = Math.floor(unit.x / unitBucketSize) + ":" + Math.floor(unit.y / unitBucketSize);
-        if (!unitBuckets.has(key)) unitBuckets.set(key, []);
-        unitBuckets.get(key).push(unit);
+        const key = Math.floor(unit.x / unitBucketSize) * BUCKET_STRIDE + Math.floor(unit.y / unitBucketSize);
+        const local = unitBuckets.get(key);
+        if (local) local.push(unit);
+        else unitBuckets.set(key, [unit]);
     }
 
     units.forEach(unit => {
-        const threat = findThreat(unit, buckets, bucketSize);
+        const threat = buckets ? findThreat(unit, buckets, bucketSize) : null;
         if (threat) {
             handleFlee(unit, threat, deltaSeconds, keep);
             return;
         }
-        const avoid = separationSteer(unit, unitBuckets, unitBucketSize);
+        // Residents at work or asleep do not move, so their unused separation
+        // vector is pointless work. Skip the neighbourhood scan for them.
+        const stationary = unit.routinePhase === ROUTINE.WORKING || unit.routinePhase === ROUTINE.RESTING;
+        const avoid = stationary ? movementAvoid : separationSteer(unit, unitBuckets, unitBucketSize, movementAvoid);
+        if (stationary) { avoid.x = 0; avoid.y = 0; }
         handleRoutineMovement(unit, deltaSeconds, avoid);
     });
 }
@@ -328,7 +380,7 @@ function findThreat(unit, buckets, bucketSize) {
     const maxY = Math.floor((unit.y + FLEE_DISTANCE) / bucketSize);
     for (let bx = minX; bx <= maxX; bx++) {
         for (let by = minY; by <= maxY; by++) {
-            const local = buckets.get(bx + ":" + by) || [];
+            const local = buckets.get(bx * BUCKET_STRIDE + by) || [];
             for (const enemy of local) {
                 const d = Math.hypot(unit.x - enemy.x, unit.y - enemy.y);
                 if (d < closestDist) { closestDist = d; closest = enemy; }
@@ -475,7 +527,11 @@ function moveToward(unit, dt, avoid = { x: 0, y: 0 }) {
     // Cheap axis sliding handles most small obstacles. Invoke A* only when
     // both axis alternatives are blocked, avoiding path searches on ordinary frames.
     if(!moved){
-        const route=findPath(unit.x,unit.y,unit.targetX,unit.targetY);
+        if(pathSearchesLeft<=0)return;
+        pathSearchesLeft--;
+        // Residents steer locally; 600 expanded nodes is ample for a home or
+        // workplace trip. Campaign and carrier routes keep the full default.
+        const route=findPath(unit.x,unit.y,unit.targetX,unit.targetY,600);
         if(route?.length){
             unit.path=route;unit.pathIndex=0;unit.pathTargetX=targetTileX;unit.pathTargetY=targetTileY;
             unit.pathVersion=(state.buildingCollisionVersion||0)+':'+(state.roads?.revision||0);
@@ -519,35 +575,109 @@ export function isWalkable(x, y) {
     const ty = Math.floor(y);
     if (tx < 0 || ty < 0 || tx >= worldWidth() || ty >= worldHeight()) return false;
     if (isWaterAt(x, y)) return false;
-    return !blockedBuildingTiles.has(tx+":"+ty);
+    return !blockedBuildingTiles.has(ty*blockedTileWorldWidth+tx);
 }
 
-function heapPush(heap,node){
-    heap.push(node);
-    let index=heap.length-1;
-    while(index>0){
-        const parent=(index-1)>>1;
-        if(heap[parent].f<=node.f)break;
-        heap[index]=heap[parent];index=parent;
+// Direct A* used to allocate a Map/Set plus one object per visited node for
+// every search. On the low-end profile a single path took 5-16 ms and several
+// could collide in one movement call. The search is unchanged, but its state
+// now lives in reusable typed arrays with generation stamps, so a node costs
+// an array slot instead of an object and a hash entry.
+const ASTAR_DIRECTIONS = Object.freeze([
+    [-1, 0, 1], [1, 0, 1], [0, -1, 1], [0, 1, 1],
+    [-1, -1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [1, 1, Math.SQRT2]
+]);
+let astarBufferSize = 0;
+let astarCost = new Float64Array(0);
+let astarParent = new Int32Array(0);
+let astarSeen = new Uint32Array(0);
+let astarClosed = new Uint32Array(0);
+let astarGeneration = 0;
+let astarHeapIndex = new Int32Array(0);
+let astarHeapG = new Float64Array(0);
+let astarHeapF = new Float64Array(0);
+let astarHeapLength = 0;
+let astarPoppedG = 0;
+
+function ensureAstarBuffers(size, initialHeap) {
+    if (size > astarBufferSize) {
+        astarBufferSize = size;
+        astarCost = new Float64Array(size);
+        astarParent = new Int32Array(size);
+        astarSeen = new Uint32Array(size);
+        astarClosed = new Uint32Array(size);
+        astarGeneration = 0;
     }
-    heap[index]=node;
+    if (initialHeap > astarHeapIndex.length) {
+        const capacity = Math.max(64, initialHeap);
+        astarHeapIndex = new Int32Array(capacity);
+        astarHeapG = new Float64Array(capacity);
+        astarHeapF = new Float64Array(capacity);
+    }
+    astarGeneration++;
+    if (astarGeneration === 0) {
+        astarSeen.fill(0);
+        astarClosed.fill(0);
+        astarGeneration = 1;
+    }
+    astarHeapLength = 0;
 }
-function heapPop(heap){
-    if(!heap.length)return null;
-    const first=heap[0],last=heap.pop();
-    if(heap.length){
-        let index=0;
-        while(true){
-            const left=index*2+1,right=left+1;
-            if(left>=heap.length)break;
-            let child=right<heap.length&&heap[right].f<heap[left].f?right:left;
-            if(heap[child].f>=last.f)break;
-            heap[index]=heap[child];index=child;
+
+function growAstarHeap() {
+    const capacity = astarHeapIndex.length * 2;
+    const index = new Int32Array(capacity);
+    const g = new Float64Array(capacity);
+    const f = new Float64Array(capacity);
+    index.set(astarHeapIndex);
+    g.set(astarHeapG);
+    f.set(astarHeapF);
+    astarHeapIndex = index;
+    astarHeapG = g;
+    astarHeapF = f;
+}
+
+function astarHeapPush(index, g, f) {
+    if (astarHeapLength >= astarHeapIndex.length) growAstarHeap();
+    let slot = astarHeapLength++;
+    while (slot > 0) {
+        const parent = (slot - 1) >> 1;
+        if (astarHeapF[parent] <= f) break;
+        astarHeapIndex[slot] = astarHeapIndex[parent];
+        astarHeapG[slot] = astarHeapG[parent];
+        astarHeapF[slot] = astarHeapF[parent];
+        slot = parent;
+    }
+    astarHeapIndex[slot] = index;
+    astarHeapG[slot] = g;
+    astarHeapF[slot] = f;
+}
+
+function astarHeapPop() {
+    const first = astarHeapIndex[0];
+    astarPoppedG = astarHeapG[0];
+    astarHeapLength--;
+    if (astarHeapLength > 0) {
+        const lastIndex = astarHeapIndex[astarHeapLength];
+        const lastG = astarHeapG[astarHeapLength];
+        const lastF = astarHeapF[astarHeapLength];
+        let slot = 0;
+        while (true) {
+            const left = slot * 2 + 1, right = left + 1;
+            if (left >= astarHeapLength) break;
+            const child = right < astarHeapLength && astarHeapF[right] < astarHeapF[left] ? right : left;
+            if (astarHeapF[child] >= lastF) break;
+            astarHeapIndex[slot] = astarHeapIndex[child];
+            astarHeapG[slot] = astarHeapG[child];
+            astarHeapF[slot] = astarHeapF[child];
+            slot = child;
         }
-        heap[index]=last;
+        astarHeapIndex[slot] = lastIndex;
+        astarHeapG[slot] = lastG;
+        astarHeapF[slot] = lastF;
     }
     return first;
 }
+
 const pathHeuristic=(x,y,tx,ty)=>{
     const dx=Math.abs(tx-x),dy=Math.abs(ty-y);
     return Math.max(dx,dy)+(Math.SQRT2-1)*Math.min(dx,dy);
@@ -566,38 +696,45 @@ function findPathDirect(startX,startY,targetX,targetY,maxNodes=1800){
     if(sx===tx&&sy===ty){lastDirectPathResult="found";return [];}
     if(!isWalkable(tx+0.5,ty+0.5)){lastDirectPathResult="unreachable";return null;}
     const start=sy*W+sx,target=ty*W+tx;
-    const open=[],costs=new Map([[start,0]]),parents=new Map(),closed=new Set();
-    heapPush(open,{index:start,x:sx,y:sy,g:0,f:pathHeuristic(sx,sy,tx,ty)*0.78});
-    const directions=[[-1,0,1],[1,0,1],[0,-1,1],[0,1,1],[-1,-1,Math.SQRT2],[1,-1,Math.SQRT2],[-1,1,Math.SQRT2],[1,1,Math.SQRT2]];
+    const limit=Math.max(100,Math.min(5000,Math.floor(maxNodes)||1800));
+    ensureAstarBuffers(W*H,Math.max(64,limit*8+16));
+    const generation=astarGeneration;
+    astarSeen[start]=generation;
+    astarCost[start]=0;
+    astarParent[start]=-1;
+    astarHeapPush(start,0,pathHeuristic(sx,sy,tx,ty)*0.78);
     let visited=0;
-    while(open.length&&visited<Math.max(100,Math.min(5000,Math.floor(maxNodes)||1800))){
-        const current=heapPop(open);
-        if(closed.has(current.index))continue;
-        if(current.g!==costs.get(current.index))continue;
-        if(current.index===target){
+    while(astarHeapLength&&visited<limit){
+        const current=astarHeapPop();
+        const currentG=astarPoppedG;
+        if(astarClosed[current]===generation)continue;
+        if(currentG!==astarCost[current])continue;
+        if(current===target){
             const route=[];let cursor=target;
             while(cursor!==start){
                 route.push({x:(cursor%W)+0.5,y:Math.floor(cursor/W)+0.5});
-                cursor=parents.get(cursor);
-                if(cursor===undefined){lastDirectPathResult="unreachable";return null;}
+                cursor=astarParent[cursor];
+                if(cursor===-1){lastDirectPathResult="unreachable";return null;}
             }
             lastDirectPathResult="found";
             route.reverse();return route;
         }
-        closed.add(current.index);visited++;
-        for(const [dx,dy,stepCost] of directions){
-            const nx=current.x+dx,ny=current.y+dy;
+        astarClosed[current]=generation;visited++;
+        const currentX=current%W,currentY=Math.floor(current/W);
+        for(const [dx,dy,stepCost] of ASTAR_DIRECTIONS){
+            const nx=currentX+dx,ny=currentY+dy;
             if(nx<0||ny<0||nx>=W||ny>=H)continue;
             const next=ny*W+nx;
-            if(closed.has(next)||!isWalkable(nx+0.5,ny+0.5))continue;
-            if(dx!==0&&dy!==0&&(!isWalkable(current.x+dx+0.5,current.y+0.5)||!isWalkable(current.x+0.5,current.y+dy+0.5)))continue;
-            const nextCost=current.g+stepCost*getRoadTravelCost(nx+0.5,ny+0.5),known=costs.get(next);
-            if(known!==undefined&&nextCost>=known)continue;
-            costs.set(next,nextCost);parents.set(next,current.index);
-            heapPush(open,{index:next,x:nx,y:ny,g:nextCost,f:nextCost+pathHeuristic(nx,ny,tx,ty)*0.78});
+            if(astarClosed[next]===generation||!isWalkable(nx+0.5,ny+0.5))continue;
+            if(dx!==0&&dy!==0&&(!isWalkable(currentX+dx+0.5,currentY+0.5)||!isWalkable(currentX+0.5,currentY+dy+0.5)))continue;
+            const nextCost=currentG+stepCost*getRoadTravelCost(nx+0.5,ny+0.5);
+            const known=astarSeen[next]===generation?astarCost[next]:Infinity;
+            if(nextCost>=known)continue;
+            astarSeen[next]=generation;astarCost[next]=nextCost;astarParent[next]=current;
+            astarHeapPush(next,nextCost,nextCost+pathHeuristic(nx,ny,tx,ty)*0.78);
         }
     }
-    lastDirectPathResult = open.length ? "cap" : "unreachable";
+    lastDirectPathResult = astarHeapLength ? "cap" : "unreachable";
     return null;
 }
 
@@ -851,7 +988,12 @@ export function findPath(startX,startY,targetX,targetY,maxNodes=1800){
         pathResultCache.clear();
         pathResultWorldKey = routeWorldKey;
     }
-    const cacheKey = startX + "," + startY + "," + targetX + "," + targetY + "," + maxNodes;
+    // findPathDirect floors both ends to tiles, so continuous sub-tile motion
+    // must not produce a new cache key on every frame. Keying by the tiles the
+    // search actually uses turns repeated blocked-steering attempts into hits
+    // instead of running A* again for every resident.
+    const cacheKey = Math.floor(startX) + "," + Math.floor(startY) + ","
+        + Math.floor(targetX) + "," + Math.floor(targetY) + "," + maxNodes;
     if (pathResultCache.has(cacheKey)) {
         pathCacheStats.hits++;
         pathCacheStats.routeHits++;
@@ -890,7 +1032,7 @@ function followCachedPath(unit,dt,speedMultiplier=1,avoid={x:0,y:0}){
     const node=ahead.node,dx=node.x-unit.x,dy=node.y-unit.y,dist=Math.hypot(dx,dy);
     if(dist<0.001){unit.pathIndex++;return true;}
     const speed=(UNIT_SPEED[unit.type]||1)*speedMultiplier,s=Math.min(1,dt*4);
-    const steerX=dx/dist+(avoid.x||0)*1.15,steerY=dy/dist+(avoid.y||0)*1.15;
+    const steerX=dx/dist+(avoid.x||0)*0.78,steerY=dy/dist+(avoid.y||0)*0.78;
     const steerLength=Math.hypot(steerX,steerY)||1;
     unit.velocityX+=((steerX/steerLength)*speed-unit.velocityX)*s;
     unit.velocityY+=((steerY/steerLength)*speed-unit.velocityY)*s;
@@ -921,23 +1063,24 @@ function lookAheadPathNode(unit, path) {
     return { index: unit.pathIndex, node: path[unit.pathIndex] };
 }
 
-function separationSteer(unit, buckets, bucketSize) {
+function separationSteer(unit, buckets, bucketSize, out = { x: 0, y: 0 }) {
     let ax = 0, ay = 0;
     const cx = Math.floor(unit.x / bucketSize), cy = Math.floor(unit.y / bucketSize);
     for (let bx = cx - 1; bx <= cx + 1; bx++) {
         for (let by = cy - 1; by <= cy + 1; by++) {
-            const local = buckets.get(bx + ":" + by) || [];
+            const local = buckets.get(bx * BUCKET_STRIDE + by) || [];
             for (const other of local) {
                 if (other === unit || other.dead) continue;
                 const ox = unit.x - other.x, oy = unit.y - other.y;
-                const d = Math.hypot(ox, oy);
+                const d2 = ox * ox + oy * oy;
+                if (d2 >= 2.1025) continue;
+                const d = Math.sqrt(d2);
                 if (d < 0.0001) {
                     const direction = String(unit.id || "").localeCompare(String(other.id || "")) <= 0 ? 1 : -1;
                     ax += 0.55 * direction;
                     ay += 0.3;
                     continue;
                 }
-                if (d >= 1.45) continue;
                 const weight = (1.45 - d) / 1.45;
                 ax += (ox / d) * weight;
                 ay += (oy / d) * weight;
@@ -946,7 +1089,8 @@ function separationSteer(unit, buckets, bucketSize) {
     }
     const length = Math.hypot(ax, ay);
     if (length > 1) { ax /= length; ay /= length; }
-    return { x: ax, y: ay };
+    out.x = ax; out.y = ay;
+    return out;
 }
 
 function nearestLeisureSpot(unit) {

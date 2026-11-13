@@ -4,7 +4,7 @@ import { state } from "../../core/state.js";
 import { getTradePartners,MARKET_RESOURCES } from "../../systems/market.js";
 import { getHousingSnapshot } from "../../systems/population.js";
 import { getRoomBonusSnapshot, roomBonusSignature } from "../../systems/rooms.js";
-import { getRoyalHouse } from "../../systems/royal-dynasty.js";
+import { getSovereign } from "../../systems/royal-dynasty.js";
 import { getAmbitionSnapshot } from "../../systems/ambitions.js";
 import { getCoreCounsel } from "../core-counsel.js";
 import { getFirstSessionSnapshot } from "../first-session.js";
@@ -40,9 +40,12 @@ function personName(personId){
     return memorial?.person?.name||("Recorded person "+id);
 }
 function renderTopStatus(){
-    let house=null;
-    try{house=getRoyalHouse();}catch{/* The realm has not appointed a sovereign yet. */}
-    const ruler=house?.king||null,person=ruler?.person||null;
+    // The top bar only needs the reigning sovereign. getRoyalHouse() also
+    // rebuilds the full candidate list, family snapshot and history on every
+    // HUD refresh; on the low-end profile that alone cost 13-19 ms per second.
+    let ruler=null;
+    try{ruler=getSovereign();}catch{/* The realm has not appointed a sovereign yet. */}
+    const person=ruler?.person||null;
     const personId=String(ruler?.personId||person?.id||"");
     setText("ruler-name",person?.name||"THE CROWN VACANT");
     setText("ruler-title",person?String(person.role||"sovereign").toUpperCase()+" OF "+(state.kingdomName||"ELDRIA"):"AWAITING SUCCESSION");
@@ -384,6 +387,16 @@ function runHudRefresh() {
         uiHudFrame = setTimeout(runHudRefresh, 0);
     }
 }
+// The first HUD pass is deterministic setup for the realm that is already
+// loaded. Run it while the start overlay still covers the stage instead of
+// letting a dozen setTimeout chunks compete with the first gameplay frames.
+export function renderInitialUI() {
+    if (!state.hasStarted) return;
+    for (const chunk of UI_HUD_CHUNKS) {
+        try { chunk(); } catch (error) { console.error(error); }
+    }
+}
+
 export function renderUI() {
     if (!state.hasStarted) return;
     if (uiHudFrame) { uiHudPending = true; return; }

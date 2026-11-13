@@ -561,6 +561,16 @@ function maybeLaunchWarFront(military, year) {
     addLog("WAR FRONT: " + spawned + " RAIDERS CROSS THE BORDER FROM " + String(realm.name || "THE ENEMY").toUpperCase(), "#e9857b", "military");
 }
 
+// Resolve the opening year's muster before the start overlay lifts. This is
+// idempotent annual bookkeeping and runs exactly once, exactly as it would on
+// the first visible simulation tick.
+export function warmMilitaryCaches() {
+    const military = ensureMilitary();
+    const year = yearNow();
+    if (year > military.lastMusterYear) resolveMilitaryYear();
+    return true;
+}
+
 export function updateMilitary() {
     const military = ensureMilitary();
     const year = yearNow();

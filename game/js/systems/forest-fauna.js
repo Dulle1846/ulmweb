@@ -450,6 +450,15 @@ export function ensureForestFauna() {
     return model;
 }
 
+// Initialise the herd model and its spatial pressure maps while the start
+// screen still covers the realm. Both are pure derived state; the first
+// visible simulation day no longer pays for generating them.
+export function warmForestFaunaCaches() {
+    const model = ensureForestFauna();
+    if (model) buildFaunaPressureMaps(model);
+    return Boolean(model);
+}
+
 export function resetForestFauna() {
     state.forestFauna = null;
 }

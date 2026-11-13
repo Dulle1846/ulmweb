@@ -33,6 +33,32 @@ export function cleanAmount(value, scope = "good") {
 // mature tick. The array is sanitised once per identity instead; trimming then
 // happens in place and only when the bound is actually exceeded.
 const sanitizedLedgers = new WeakSet();
+// Idempotency keys used to be found with ledger.find(), which is O(600) per
+// booking and dominated goods-heavy production ticks. Keep an exact index next
+// to the ring buffer; entries removed by trimming are removed from the index
+// too, so a key can become bookable again exactly when the baseline allowed it.
+const ledgerKeyIndexes = new WeakMap();
+
+function ledgerIndex(ledger) {
+    let index = ledgerKeyIndexes.get(ledger);
+    if (index) return index;
+    index = new Map();
+    for (const entry of ledger) {
+        if (entry && entry.key) index.set(String(entry.key), entry);
+    }
+    ledgerKeyIndexes.set(ledger, index);
+    return index;
+}
+
+function trimLedger(ledger) {
+    if (ledger.length <= GOODS_LEDGER_LIMIT) return;
+    const removed = ledger.splice(0, ledger.length - GOODS_LEDGER_LIMIT);
+    const index = ledgerKeyIndexes.get(ledger);
+    if (!index) return;
+    for (const entry of removed) {
+        if (entry && entry.key && index.get(String(entry.key)) === entry) index.delete(String(entry.key));
+    }
+}
 
 function ensureLedger(logistics) {
     if (!Array.isArray(logistics.ledger)) logistics.ledger = [];
@@ -42,7 +68,7 @@ function ensureLedger(logistics) {
         if (clean.length !== ledger.length) logistics.ledger = ledger = clean;
         sanitizedLedgers.add(ledger);
     }
-    if (ledger.length > GOODS_LEDGER_LIMIT) ledger.splice(0, ledger.length - GOODS_LEDGER_LIMIT);
+    trimLedger(ledger);
     return ledger;
 }
 
@@ -100,8 +126,9 @@ export function recordGoodsMovement(entry) {
     if (quantity <= 0) return null;
     const logistics = ensureGoodsBook();
     const key = entry.key ? String(entry.key) : null;
+    const index = ledgerIndex(logistics.ledger);
     if (key) {
-        const existing = logistics.ledger.find(item => item.key === key);
+        const existing = index.get(key);
         if (existing) return existing;
     }
     const type = String(entry.type || "moved");
@@ -117,7 +144,8 @@ export function recordGoodsMovement(entry) {
         key
     };
     logistics.ledger.push(record);
-    if (logistics.ledger.length > GOODS_LEDGER_LIMIT) logistics.ledger.splice(0, logistics.ledger.length - GOODS_LEDGER_LIMIT);
+    if (key) index.set(key, record);
+    trimLedger(logistics.ledger);
     const totals = ensureTotals(good);
     if (CREATES_STOCK.has(type)) totals.produced = round2(totals.produced + quantity);
     else if (DESTROYS_STOCK.has(type)) totals.consumed = round2(totals.consumed + quantity);
@@ -125,6 +153,12 @@ export function recordGoodsMovement(entry) {
     totals.audit.consumed[good] = totals.consumed;
     totals.audit.lastTick = record.tick;
     return record;
+}
+
+export function findGoodsMovementByKey(key) {
+    if (!key) return null;
+    const logistics = ensureGoodsBook();
+    return ledgerIndex(logistics.ledger).get(String(key)) || null;
 }
 
 export function readAuditTotals(good, scope) {

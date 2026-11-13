@@ -38,6 +38,55 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ## Production release history
 
+### 3.15.0-dev — Cold-start frame budget (realm start pass)
+
+**Released:** 2026-11-13
+
+**Scope:** The cold start of the hosted build on the low-end profile
+(1366×768, 4× CPU throttle, 8 s quiet / 6 s dense). Rendering, map detail,
+save schema and the deterministic campaign are unchanged.
+
+**Changes:** The opening realm is now assembled before the start screen lifts:
+terrain detail is settled, room/modifier/herd/chronicle caches are warmed, the
+opening routes and resident paths are memoized, and the first production cycle
+runs behind the overlay. `state.hasStarted` is only set when that work is done,
+so neither the runtime nor the save path can observe a half-founded realm.
+Large settlements spread their six-tick production batches over three stable
+entity-id phases instead of booking every building in one block; small
+settlements keep the old single batch so the production contract in isolated
+tests is unchanged. The settlement fields scan entities once and reuse the
+stable list, the economy modifier caches are precomputed, and the recycling
+goods ledger keeps an exact idempotency-key index. The A* cache is keyed by
+tile, resident search trees are typed arrays with generation stamps and a
+bounded per-movement expansion budget, and only one resident search runs per
+movement call. The HUD refreshes at 1.5 s and the minimap at 4 s, while the
+first full HUD and world paint happen behind the overlay. The carrier render
+path no longer builds the complete logistics snapshot, and top status reads the
+cached sovereign instead of rebuilding the royal house.
+
+**Before (5cbf350) / before this pass (2ab825a) / now (same host, clean runs):**
+
+| Phase | p95 frame | >33 ms | >50 ms | Long tasks |
+| --- | --- | --- | --- | --- |
+| Quiet cold start | 83.4 / 33.5 / **16.8 ms** | 88.4 / 27.7 / **2.56–4.83 %** | 31.4 / 1.94 / **0–0.44 %** | 12 / 3 / **0–1** |
+| Dense mature | 66.7 / 33.3 / **16.8 ms** | 49.3 / 8.2 / **0–0.56 %** | 8.45 / 0.61 / **0 %** | 10 / 0 / **0** |
+
+Median frame time is 16.7 ms in both phases. Quiet tick p95 is 10.6–13.5 ms;
+dense tick p95 is 11.3–13.8 ms. The two clean final runs had no
+quiet long tasks and no frame over 50 ms; the residual 2.56–3.44 % of frames
+over 33 ms are missed display refreshes while the harness applies its low-end
+settings and the terrain cache settles, not long tasks. One host-contended
+repeat measured 0.44 % over 50 ms and one Long Task; the other final runs
+measured zero in both. The 2ab825a build still had three quiet long tasks
+(largest 82 ms) and 1.94 % over 50 ms; those are gone.
+
+**Verification:** `npm test` 905/905 and the syntax/relative-import/UI-id check
+passes for 137 source files and 203 UI ids. The deterministic 25-year campaign
+still ends at 10,040 ticks with `allComplete:true`, all intermediate/era/agenda
+requirements true and `noStalls:true`. The terrain browser reference renders on
+WebKit WebGL and exits 0; its generated reference files are left untouched when
+the pixels are unchanged.
+
 ### 3.15.0-dev — Low-end render budget (performance pass)
 
 **Released:** 2026-11-13

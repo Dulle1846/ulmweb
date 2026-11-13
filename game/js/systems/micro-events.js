@@ -564,6 +564,14 @@ function applyImpact(effects) {
 
 // Called once from the fixed simulation step. The due check is O(1); the
 // catalogue and the world scan run only on the 2–5 day event boundary.
+// Build the shared context once behind the start screen. It only reads and
+// classifies the opening realm; the first chronicle tick reuses the warmed
+// templates and entity arrays instead of allocating them during play.
+export function warmMicroEventContext() {
+    buildContext();
+    return true;
+}
+
 export function updateMicroEvents() {
     if (!state.hasStarted || state.isPaused || state.gameOver) return null;
     if (!state.eventTimeline || typeof state.eventTimeline !== "object") {

@@ -143,21 +143,20 @@ function continueHarvest(farm, field) {
     state.statistics.totalHarvests = (state.statistics.totalHarvests || 0) + 1;
 }
 
-function stableManureNear(farm) {
+function stableManureNear(farm, stables) {
     const x = Number(farm.x), y = Number(farm.y);
     if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
-    return state.entities.some(entity => {
-        if (!entity || entity.dead || entity.type !== TYPE.STABLE) return false;
-        if (entity.construction && entity.construction.stage < 3) return false;
-        return Math.hypot(Number(entity.x) - x, Number(entity.y) - y) <= MANURE_RADIUS;
-    });
+    for (const stable of stables) {
+        if (Math.hypot(Number(stable.x) - x, Number(stable.y) - y) <= MANURE_RADIUS) return true;
+    }
+    return false;
 }
 
 function recoverSoil(field, amount) {
     field.fertility = Math.min(field.maxFertility, field.fertility + amount);
 }
 
-function seasonalFieldUpdate(farm) {
+function seasonalFieldUpdate(farm, stables) {
     const field = ensureField(farm);
     const season = Math.max(0, Math.min(3, Math.floor(number(state.seasonIndex))));
     const storedGrain = getAvailableOutput(farm, "grain");
@@ -174,7 +173,7 @@ function seasonalFieldUpdate(farm) {
         continueHarvest(farm, field);
         return;
     }
-    const manure = stableManureNear(farm);
+    const manure = stableManureNear(farm, stables);
     if (field.resting) {
         // A resting field is fallow ground, not a standing harvested crop. The
         // status must be visible before the next winter boundary.
@@ -284,14 +283,25 @@ function foresterUpdate(building, workforce) {
 
 export function updateFields() {
     if (!state.hasStarted || state.isPaused || state.gameOver) return null;
-    ensureFields();
     const workforce = getWorkforceSnapshot();
-    const farms = state.entities.filter(entity => !entity.dead && entity.type === TYPE.FARM);
+    const farms = [];
+    const foresters = [];
+    const stables = [];
+    for (const entity of state.entities) {
+        if (!entity || entity.dead) continue;
+        if (entity.type === TYPE.FARM) {
+            ensureField(entity);
+            farms.push(entity);
+        } else if (entity.type === TYPE.FORESTER) {
+            foresters.push(entity);
+        } else if (entity.type === TYPE.STABLE && !(entity.construction && entity.construction.stage < 3)) {
+            stables.push(entity);
+        }
+    }
     for (const farm of farms) {
         farm.workerCount = workforce.workersByBuilding.get(farm) || 0;
-        seasonalFieldUpdate(farm);
+        seasonalFieldUpdate(farm, stables);
     }
-    const foresters = state.entities.filter(entity => !entity.dead && entity.type === TYPE.FORESTER);
     for (const forester of foresters) {
         forester.workerCount = workforce.workersByBuilding.get(forester) || 0;
         foresterUpdate(forester, workforce);

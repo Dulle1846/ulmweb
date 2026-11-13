@@ -161,7 +161,7 @@ function gameLoop(timestamp){
    // The minimap does not need 2.5 updates per second on a low-end device.
    // A 1 Hz cadence keeps it useful without competing with the 30 FPS world
    // budget; the terrain half is cached separately inside updateMinimap().
-   if(!worldOccluded&&timestamp-state.lastMinimapRender>=1000){updateMinimap();state.lastMinimapRender=timestamp;}
+   if(!worldOccluded&&timestamp-state.lastMinimapRender>=4000){updateMinimap();state.lastMinimapRender=timestamp;}
    // Simulation and camera updates stay smooth, while expensive world drawing
    // follows the selected 60/30 FPS cap. A sub-millisecond tolerance avoids
    // dropping every other frame on displays whose refresh interval is rounded.
@@ -176,7 +176,7 @@ function gameLoop(timestamp){
      state.terrainBuildThisFrame=0;
      drawWorld();
      state.lastWorldDrawMs=Math.max(0,performance.now()-drawStarted);
-     if(timestamp-state.lastUiRender>=160){
+     if(timestamp-state.lastUiRender>=1500){
       const uiStarted=performance.now();
       renderUI();
       state.lastUiRenderMs=Math.max(0,performance.now()-uiStarted);

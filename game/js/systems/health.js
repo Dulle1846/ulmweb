@@ -736,6 +736,15 @@ function auditHealthYear() {
     addLog("PUBLIC HEALTH AUDIT · YEAR " + year + " · SANITATION " + audit.sanitation + " · " + sick + " ILL · " + health.healers.length + " HEALERS · MEDICINE " + health.medicineStock, "#9ab7a1", "health");
 }
 
+// Run the first annual health audit while the start screen still covers the
+// realm. It is the same audit the opening tick performs; moving it one frame
+// earlier keeps its result and removes a one-off block from visible play.
+export function warmHealthCaches() {
+    const health = ensureHealth();
+    if (health.lastYear < state.year) auditHealthYear();
+    return true;
+}
+
 export function updateHealth() {
     if (state.tick <= 0) return null;
     const health = ensureHealth();

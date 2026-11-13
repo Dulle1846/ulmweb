@@ -196,11 +196,13 @@ export function invalidateRoomBonusCache() {
 function snapshotKey() {
     return [
         state.worldEpoch || 0,
+        // Room layout and furniture are covered by these three revisions.
+        // Entity count and nextEntityId change when residents, animals or
+        // caravans spawn; they are not room inputs and used to invalidate the
+        // whole snapshot on every population change.
         state.buildingLayoutVersion || 0,
         state.buildingInteriorVersion || 0,
         state.buildingCollisionVersion || 0,
-        state.entities?.length || 0,
-        state.nextEntityId || 0,
     ].join(":");
 }
 

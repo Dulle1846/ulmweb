@@ -11,7 +11,7 @@ import { drawPlacementPreview } from './placement-preview.js';
 import { getRoadTiles,getRoadAt,ROAD_TYPES } from '../../systems/roads.js';
 import { getResourceNodeAt } from '../../systems/resource-geography.js';
 import { getServiceBuildingsForOverlay } from '../../systems/settlement.js';
-import { getLogisticsSnapshot } from '../../systems/logistics.js';
+import { getLogisticsSnapshot, getCarriersForRender } from '../../systems/logistics.js';
 import { worldWidth,worldHeight } from '../../world/world.js';
 import { drawWeatherOverlay } from './weather-overlay.js';
 import { drawDaylightOverlay } from './daylight.js';
@@ -395,18 +395,18 @@ function drawLogisticsRoutes(ctx,zoom,camera,canvas){
 }
 function drawCarriers(ctx,zoom,camera,canvas){
     if(zoom<.45)return;
-    let snapshot;
-    try{snapshot=getLogisticsSnapshot();}catch{return;}
+    let carriers;
+    try{carriers=getCarriersForRender();}catch{return;}
     const now=performance.now();
     if(now>=visibleCarrierIdsUntil){
         visibleCarrierIdsUntil=now+100;
-        visibleCarrierIdsCache=new Set((snapshot.carriers||[])
+        visibleCarrierIdsCache=new Set(carriers
             .filter(carrier=>isForestSightVisible(carrier.x,carrier.y))
             .map(carrier=>carrier.id));
     }
     const tile=CELL*zoom;
     ctx.save();
-    for(const carrier of snapshot.carriers||[]){
+    for(const carrier of carriers){
         if(!visibleCarrierIdsCache.has(carrier.id))continue;
         const x=carrier.x*tile-camera.x,y=carrier.y*tile-camera.y;
         if(x< -tile||y< -tile||x>canvas.width+tile||y>canvas.height+tile)continue;

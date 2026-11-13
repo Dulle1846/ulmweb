@@ -17,16 +17,25 @@ import { normalizeHealthState } from "../systems/health.js";
 import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeHouseholdAssignments } from "../systems/population.js";
 import { initializePopulationRegister,normalizePopulationState,serializePopulationState,synchronizePopulationRegister } from "../systems/population-register.js";
-import { invalidateRoomBonusCache } from "../systems/rooms.js";
+import { invalidateRoomBonusCache, getRoomBonusSnapshot } from "../systems/rooms.js";
 import { normalizeRoomFurniture } from "../systems/furniture.js";
 import { addLog } from "../systems/events.js";
 import { restoreEconomyCycleState } from "../systems/economy-cycle.js";
+import { updateSimulation } from "../simulation/simulation.js";
+import { warmLogisticsRoutes } from "../systems/logistics.js";
+import { warmEconomyCaches } from "../systems/economy.js";
+import { warmForestFaunaCaches } from "../systems/forest-fauna.js";
+import { warmMicroEventContext } from "../systems/micro-events.js";
+import { warmHealthCaches } from "../systems/health.js";
+import { warmMilitaryCaches } from "../systems/military.js";
+import { warmVillagerPaths } from "../simulation/villagers.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera,setRenderScale } from "../presentation/camera.js";
 import { terrainRendererInfo } from "../presentation/rendering/terrain-webgl.js";
 import { drawTerrain, isTerrainDetailSettled } from "../presentation/rendering/terrain.js";
+import { drawWorld } from "../presentation/rendering/renderer.js";
 import { setupInput } from "../presentation/input.js";
-import { renderUI,showBigMessage,setupMapViewControls } from "../presentation/rendering/ui.js";
+import { renderUI,renderInitialUI,showBigMessage,setupMapViewControls } from "../presentation/rendering/ui.js";
 import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,getLocalSaveInfo,listLocalProfiles,selectLocalProfile,loadSettings,saveSettings } from "../core/persistence.js";
 import { startSoundtrack,setMusicEnabled,setMusicVolume,applySoundtrackSettings } from "../core/soundtrack.js";
 import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
@@ -439,7 +448,6 @@ function resetForRun(profile){
     state.research=createResearchState();
     state.legacy=createLegacyState({foundedYear:1});
     state.diplomacy=createDiplomacyState();
-    state.hasStarted=true;
     state.gameSpeed=1;
     state.isPaused=false;
     state.zoom=1;state.zoomTarget=1;state.zoomLevel=3;
@@ -590,13 +598,43 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     // screen covers the stage. The realm becomes interactive only with a
     // settled layer; this is startup work, not a blocked gameplay frame.
     await warmTerrainDetailForStart();
+    // The realm is only "started" once every cache and the opening production
+    // cycle are ready. The harness and the save system treat this flag as a
+    // readiness signal, so it must not turn true while the world is still
+    // being assembled behind the overlay.
+    state.hasStarted=true;
+    // Build the room ledger, modifier caches, reachability memo and opening
+    // routes while the overlay still covers the stage. All are caches with the
+    // same values as their lazy first use.
+    getRoomBonusSnapshot();
+    warmEconomyCaches();
+    warmForestFaunaCaches();
+    warmMicroEventContext();
+    warmHealthCaches();
+    warmMilitaryCaches();
+    warmLogisticsRoutes();
+    warmVillagerPaths();
     addLog("KINGDOM FOUNDED — "+profile.displayName.toUpperCase(),"#e4bd72","milestone");
     addLog("A NEW REALM RISES · SEED "+seed,"#a3d6a7","milestone");
+    // Pre-run the opening days behind the start overlay. These ticks build the
+    // workforce, herd, logistics and production caches and run the first
+    // seasonal/day boundaries. They are the same deterministic ticks the realm
+    // would run a moment later; doing them here keeps the first visible frames
+    // free of their one-off compilation and allocation cost.
+    for(let warmTick=0;warmTick<60;warmTick++)updateSimulation();
     state.selectedTab=0;
+    renderInitialUI();
+    // Warm the complete entity/overlay draw pipeline and let the first HUD
+    // layout settle while the start overlay still covers the stage. The realm
+    // that becomes visible then starts on a warm canvas instead of paying the
+    // first sprite allocations and style recalculation in gameplay frames.
+    if (state.ctx) { drawWorld(); drawWorld(); }
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     document.getElementById("start-screen").classList.add("hidden");
     document.getElementById("settings-modal").classList.add("hidden");
     if(!loopStarted){loopStarted=true;startGameLoop();}
-    renderUI();
+    // The full HUD was already rendered behind the start overlay. Starting a
+    // second refresh chain on the first visible frame only competes with it.
     startSoundtrack().catch(()=>{});
 }
 

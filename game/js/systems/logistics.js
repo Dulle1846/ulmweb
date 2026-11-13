@@ -14,7 +14,7 @@ import { getForestMovementFactorAt, getResourceNodeAt } from "./resource-geograp
 import { findPath, isWalkable, rebuildBlockedBuildingTiles } from "../simulation/villagers.js";
 import { getRoadSpeedMultiplier } from "./roads.js";
 import { GOOD_KEYS, GOODS, CITY_VERSION, NEW_BUILDING_TYPES, RECIPES, WAREHOUSE_PROFILES, WAREHOUSE_PROFILE_IDS } from "./city-config.js";
-import { GOODS_LEDGER_LIMIT, ensureGoodsBook, recordGoodsMovement, setAuditOpening, readAuditTotals, recordResourceMovement } from "./goods-book.js";
+import { GOODS_LEDGER_LIMIT, ensureGoodsBook, findGoodsMovementByKey, recordGoodsMovement, setAuditOpening, readAuditTotals, recordResourceMovement } from "./goods-book.js";
 export { recordResourceMovement };
 
 export const WAREHOUSE_CAPACITY = Object.freeze({ [TYPE.KEEP]: 320, [TYPE.WAREHOUSE]: 180 });
@@ -328,7 +328,7 @@ export function consumeFromWarehouse(warehouse, good, quantity, { cause = "house
     if (!isWarehouse(warehouse) || !GOOD_KEYS.includes(good)) return 0;
     const logistics = ensureCityState().logistics;
     if (key) {
-        const existing = logistics.ledger.find(entry => entry.key === key);
+        const existing = findGoodsMovementByKey(key);
         if (existing) return cleanQuantity(existing.quantity);
     }
     const amount = withdrawUnreservedFromWarehouse(warehouse, good, quantity);
@@ -363,6 +363,20 @@ export function findLocalWarehouse(good, x, y, radius) {
 }
 
 const routeCache = new Map();
+// Full carrier paths are reused across jobs with the same endpoints. The path
+// array is immutable: carriers only advance their own pathIndex and replace
+// their own reference, so a shared array is safe and saves repeated A* work.
+const carrierPathCache = new Map();
+const CARRIER_PATH_CACHE_LIMIT = 240;
+function cachedCarrierPath(startX, startY, endX, endY) {
+    const version = (state.buildingCollisionVersion || 0) + ":" + (state.roads?.revision || 0);
+    const key = startX + "," + startY + ">" + endX + "," + endY + "@" + version;
+    if (carrierPathCache.has(key)) return carrierPathCache.get(key);
+    const path = findPath(startX, startY, endX, endY, 2400) || null;
+    if (carrierPathCache.size >= CARRIER_PATH_CACHE_LIMIT) carrierPathCache.clear();
+    carrierPathCache.set(key, path);
+    return path;
+}
 // Reachability is path-based, not euclidean. Results are cached per collision
 // and road revision because blocking changes invalidate old routes.
 export function hasOverlandRoute(a, b) {
@@ -379,6 +393,26 @@ export function hasOverlandRoute(a, b) {
 }
 export function clearRouteCache() {
     routeCache.clear();
+}
+
+// Populate the path cache for the starting layout while the start screen still
+// covers the realm. The cache is keyed by collision/road revision and is only
+// a memo of reachability; simulation results are unchanged.
+export function warmLogisticsRoutes() {
+    const warehouses = getWarehouses();
+    if (!warehouses.length) return 0;
+    const origins = state.entities.filter(entity =>
+        !entity.dead && entity.isBuilding() && RECIPES[entity.type]
+    );
+    let warmed = 0;
+    for (const origin of origins) {
+        if (routeCache.size > ROUTE_CACHE_LIMIT - warehouses.length - 1) break;
+        for (const warehouse of warehouses) {
+            if (warehouse === origin) continue;
+            if (hasOverlandRoute(origin, warehouse)) warmed++;
+        }
+    }
+    return warmed;
 }
 
 function waypoint(ref) {
@@ -1004,14 +1038,14 @@ function spawnCarrier(job, carrierLimit = getCarrierLimit()) {
     if (!destination) { job.reason = "Destination removed"; job.retryAt = (state.tick || 0) + JOB_RETRY_TICKS; return null; }
     const start = nearestWalkable(source.x, source.y);
     let end = nearestWalkable(destination.x, destination.y);
-    let path = findPath(start.x, start.y, end.x, end.y, 2400);
+    let path = cachedCarrierPath(start.x, start.y, end.x, end.y);
     if (!path && (Math.abs(start.x - end.x) > 1 || Math.abs(start.y - end.y) > 1) && job.to.kind === "warehouse") {
         // The nearest store is not reachable. Pick a reachable alternative
         // instead of blocking a carrier on a destination it can never serve.
         if (retargetWarehouse(job, source)) {
             const newTarget = entityFromRef(job.to);
             end = nearestWalkable(newTarget.x, newTarget.y);
-            path = findPath(start.x, start.y, end.x, end.y, 2400);
+            path = cachedCarrierPath(start.x, start.y, end.x, end.y);
         }
     }
     if (!path && (Math.abs(start.x - end.x) > 1 || Math.abs(start.y - end.y) > 1)) {
@@ -1264,7 +1298,7 @@ export function updateLogisticsMovement(deltaSeconds) {
                 }
                 continue;
             }
-            carrier.path = findPath(carrier.x, carrier.y, end.x, end.y, 2400) || [];
+            carrier.path = cachedCarrierPath(carrier.x, carrier.y, end.x, end.y) || [];
             carrier.pathIndex = 0;
             if (!carrier.path.length) {
                 job.status = "blocked";
@@ -1301,6 +1335,16 @@ export function updateLogisticsMovement(deltaSeconds) {
         }
     }
 }
+
+// The renderer only needs the live carrier positions. Building the complete
+// logistics snapshot (job copies, ledger copy, physical-stock scans) for every
+// world frame cost ~1.7 ms on the low-end profile and nothing else read it.
+export function getCarriersForRender() {
+    const city = ensureCityState();
+    if (!city.enabled) return EMPTY_CARRIERS;
+    return city.logistics.carriers;
+}
+const EMPTY_CARRIERS = Object.freeze([]);
 
 export function getLogisticsSnapshot() {
     const city = ensureCityState();
