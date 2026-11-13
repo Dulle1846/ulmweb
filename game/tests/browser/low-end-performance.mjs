@@ -172,11 +172,6 @@ await page.route("**/js/app/game-loop.js", async route => {
     source = source.replace(uiCallMarker,
         "      if(!globalThis.__KAC_PERF_SKIP_UI) renderUI();\n"
     );
-    const vignetteMarker = "     drawVignette();\n";
-    if (!source.includes(vignetteMarker)) throw new Error("Could not instrument the vignette");
-    source = source.replace(vignetteMarker,
-        "     if(!globalThis.__KAC_PERF_SKIP_VIGNETTE) drawVignette();\n"
-    );
     const workMarker = "state.lastSimulationMs=simulationMs;";
     if (!source.includes(workMarker)) throw new Error("Could not instrument frame work");
     source = source.replace(workMarker,

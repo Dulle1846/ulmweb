@@ -203,8 +203,20 @@ const DETAIL_BUILD_SLICE_MS = 4;
 // seasonal window. Spend the remaining frame headroom on another slice while
 // keeping a hard per-frame build budget.
 const DETAIL_BUILD_FRAME_MS = 4;
+// Terrain content changes (exploration, forest growth, roads, seasons) can
+// arrive many times per second. Aborting an in-progress multi-frame build on
+// every content-key change starves the cache forever: the detail layer never
+// finishes and every frame pays for the expensive baked-ground fallback. A
+// running build is therefore only abandoned when its viewport or world
+// changes. Once a layer is available, content-only refreshes wait for a quiet
+// moment, with a bounded maximum age so a changing realm still catches up.
+const DETAIL_CONTENT_SETTLE_MS = 500;
+const DETAIL_CONTENT_REFRESH_MS = 4000;
 let observedView = "";
 let lastViewChangeAt = 0;
+let lastContentKey = null;
+let lastContentChangeAt = 0;
+let lastDetailBuildStartedAt = 0;
 let overlayCanvas = null;
 let overlayCtx = null;
 let overlayState = null;
@@ -274,7 +286,10 @@ function detailContentKey() {
         Number(state.forestVisualRevision) || 0,
         Number(state.roads?.revision) || 0,
         Number(state.buildingCollisionVersion) || 0,
-        (state.entities || []).length,
+        // Entity count is not a terrain input. Living units, particles and
+        // caravans change constantly; keying the decoration cache on the raw
+        // array length rebuilt the whole raster many times per second on a
+        // low-end device. Buildings and roads already bump their own revisions.
         Math.max(1, Math.floor(Number(state.year) || 1)),
     ].join("|");
 }
@@ -758,10 +773,17 @@ function drawPreviousDetailLayer(ctx, zoom, cam, canvas) {
         previousRenderScale: detailState.renderScale,
         zoom, cameraX: cam.x, cameraY: cam.y, renderScale,
     });
-    state.terrainCanvasEl.style.transformOrigin = "0 0";
-    state.terrainCanvasEl.style.transform =
-        `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
-    state.terrainCanvasEl.style.opacity = "1";
+    // A stationary camera produces the same transform every frame. Reassigning
+    // it anyway marks the large terrain layer dirty and forces a compositor
+    // commit on software renderers. Only write when the composited value
+    // actually changes; a moving camera still updates immediately.
+    const surface = state.terrainCanvasEl;
+    if (surface) {
+        const transformValue = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
+        if (surface.style.transformOrigin !== "0 0") surface.style.transformOrigin = "0 0";
+        if (surface.style.transform !== transformValue) surface.style.transform = transformValue;
+        if (surface.style.opacity !== "1") surface.style.opacity = "1";
+    }
     drawDetailLayerGaps(ctx, zoom, cam, canvas, transform);
     state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
     return true;
@@ -783,6 +805,11 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
     }
     const settled = now - lastViewChangeAt >= DETAIL_SETTLE_MS;
     const key = detailContentKey();
+    if (key !== lastContentKey) {
+        lastContentKey = key;
+        lastContentChangeAt = now;
+    }
+    const contentSettled = now - lastContentChangeAt >= DETAIL_CONTENT_SETTLE_MS;
     const worldKey = detailWorldKey();
     const renderScale = Number(state.renderScale) || 1;
 
@@ -791,11 +818,14 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
     // the raster that is currently being built.
     if (detailBuild) {
         const build = detailBuild;
+        // The staged raster belongs to its viewport. A changed content key is
+        // not a reason to discard that work: the completed layer stays visible
+        // and a later refresh picks up newer content. Only a different
+        // surface, world, zoom or camera invalidates the staged pixels.
         const matches = build.width === canvas.width
             && build.height === canvas.height
             && build.renderScale === renderScale
             && build.worldKey === worldKey
-            && build.key === key
             && Math.abs(build.zoom - zoom) <= 0.00005
             && Math.abs(build.camX - cam.x) <= 0.02
             && Math.abs(build.camY - cam.y) <= 0.02;
@@ -813,6 +843,7 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
     if (!detailState) {
         // The first layer is started immediately; later rebuilds wait for the
         // camera to settle so a moving view does not create throwaway rasters.
+        lastDetailBuildStartedAt = now;
         beginDetailBuild(zoom, cam, canvas, key, worldKey);
         return false;
     }
@@ -834,9 +865,15 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
     const viewMoved = Math.abs(detailState.zoom - zoom) > 0.00005
         || Math.abs(detailState.camX - cam.x) > 0.02
         || Math.abs(detailState.camY - cam.y) > 0.02;
-    if (settled && (contentStale || viewMoved)) {
+    // Never replace a usable layer just because content is still changing.
+    // The old raster keeps the world visible and cheap while a refresh waits
+    // for a quiet window (or for the bounded maximum age).
+    const contentRefreshDue = settled && contentStale
+        && (contentSettled || now - lastDetailBuildStartedAt >= DETAIL_CONTENT_REFRESH_MS);
+    if (contentRefreshDue || (settled && viewMoved)) {
+        lastDetailBuildStartedAt = now;
         beginDetailBuild(zoom, cam, canvas, key, worldKey);
-        return detailState ? drawPreviousDetailLayer(ctx, zoom, cam, canvas) : false;
+        return drawPreviousDetailLayer(ctx, zoom, cam, canvas);
     }
 
     return drawPreviousDetailLayer(ctx, zoom, cam, canvas);

@@ -5,7 +5,7 @@ import { consumeSimulationTime } from "../core/simulation-clock.js";
 import { updateSimulation } from "../simulation/simulation.js";
 import { updateFriendlyMovement } from "../simulation/villagers.js";
 import { updateLogisticsMovement } from "../systems/logistics.js";
-import { drawWorld,drawVignette } from "../presentation/rendering/renderer.js";
+import { drawWorld } from "../presentation/rendering/renderer.js";
 import { renderUI } from "../presentation/rendering/ui.js";
 import { updateCamera } from "../presentation/camera.js";
 import { updateParticles,updateFloaters } from "../presentation/rendering/particles.js";
@@ -182,7 +182,9 @@ function gameLoop(timestamp){
       state.lastUiRenderMs=Math.max(0,performance.now()-uiStarted);
       state.lastUiRender=timestamp;
      }
-     drawVignette();
+     // The vignette is a static CSS layer over the stage (stage-grain). A
+     // second full-screen radial gradient in the gameplay canvas cost a
+     // software rasteriser real milliseconds on every single frame.
      state.lastDrawMs=Math.max(0,performance.now()-drawStarted);
      state.renderedFrames=(Number(state.renderedFrames)||0)+1;
      // Optional bounded probe for browser performance audits. It is disabled
