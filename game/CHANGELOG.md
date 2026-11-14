@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.14.2`
-**Next development line:** `3.16.1-dev`
+**Next development line:** `3.16.2-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -24,7 +24,8 @@ The version in `game/package.json` is the machine-readable game version. Update 
 
 ## Separate hosted development builds
 
-- **Kings & Cards — taiga campaign and low-end proof (current hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. The runtime package is 324 files / 7.73 MiB and its `version.json` identifies commit `67c6395bc5a7edab50ac2e131d4436eb39e3e506`. Preview receipt `3ecddb96-6286-49d4-8678-0753dc2e5d85` (18:17:17–18:17:19Z) and production receipt `71cac150-91e6-4141-bea6-f4d1e8da3d52` (18:17:22–18:17:24Z) both succeeded; both environments are `published:true`. Both origins return HTTP 200, serve that commit and the same `js/simulation/villagers.js` SHA-256 `01040c124ffd17aaef594e39044bb82f511a02cde49347c38c6f332d224331f1`. The 25-year Taiga sweep exits 0 with 3/3 seeds, eight real orders, max one per phase and a genuine sick-sawyer replacement at 47 firewood; the unchanged savanna sweep remains 3/3 with 29 orders. The low-end run is inside budget for summer (p95 16.7 ms / 164 draw calls), winter ice (16.7 ms / 174) and the populated settlement (16.8 ms / 412 / 20 entities), with zero long tasks. A live production load selected Taiga, founded a 176 × 176 realm, showed the frozen winter shoreline at day 340, and reported no page errors, console errors, failed requests or HTTP errors. Full record: [docs/TAIGA.md](docs/TAIGA.md).
+- **Kings & Cards — taiga transition budget (current hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. Runtime commit `4bee9d1c5444d10555302cc397db915db24fb3c3` (324 files / 7.73 MiB). Preview receipt `4f5e41ad-dfa5-4269-84a7-f3ea56691220` and production receipt `c3fc3920-059a-442b-ba7d-d356b968f6c0` both succeeded; both environments are `published:true`. Both origins return HTTP 200, serve the same commit and matching `terrain.js` SHA-256 `80a62a916c703c5e8ccdc2078e0e5914790f9967f8f66d14b312dd0e17f158b0`. The new immediate camera/season jump phase measures **16.8 ms p95**, 2.75% over 33 ms, 0.55% over 50 ms, zero long tasks, 397 draw calls, 22 entities and 8.5 ms canvas draw after the rebuild fixes; the summer, winter-ice and settled-settlement scenes remain green. A live production jump had no page, console, request or HTTP errors and reached `water.ice:true`. Full record: [docs/TAIGA.md](docs/TAIGA.md#low-end-performance).
+- **Kings & Cards — taiga campaign and low-end proof (previous hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. The runtime package is 324 files / 7.73 MiB and its `version.json` identifies commit `67c6395bc5a7edab50ac2e131d4436eb39e3e506`. Preview receipt `3ecddb96-6286-49d4-8678-0753dc2e5d85` (18:17:17–18:17:19Z) and production receipt `71cac150-91e6-4141-bea6-f4d1e8da3d52` (18:17:22–18:17:24Z) both succeeded; both environments are `published:true`. Both origins return HTTP 200, serve that commit and the same `js/simulation/villagers.js` SHA-256 `01040c124ffd17aaef594e39044bb82f511a02cde49347c38c6f332d224331f1`. The 25-year Taiga sweep exits 0 with 3/3 seeds, eight real orders, max one per phase and a genuine sick-sawyer replacement at 47 firewood; the unchanged savanna sweep remains 3/3 with 29 orders. The low-end run is inside budget for summer (p95 16.7 ms / 164 draw calls), winter ice (16.7 ms / 174) and the populated settlement (16.8 ms / 412 / 20 entities), with zero long tasks. A live production load selected Taiga, founded a 176 × 176 realm, showed the frozen winter shoreline at day 340, and reported no page errors, console errors, failed requests or HTTP errors. Full record: [docs/TAIGA.md](docs/TAIGA.md).
 - **Kings & Cards — Canvas-only renderer and warning-free benchmark (current hosted build):** every user-reachable renderer path is Canvas 2D. The **Terrain renderer** selector and its WebGL option are removed; a saved `terrainRenderer` value is ignored on load. The **Device Benchmark** now measures only Canvas 2D at 100, 85, 70 and 50% (4 rows, progress max 4), so it cannot create a WebGL context. The **Adaptive quality** setting and its fallback loop were removed because Auto no longer uses WebGL. The runtime never calls `readPixels` and never requests WebGL or WebGPU on a user path. A no-GPU Chromium load created **0 WebGL contexts** and **0 page console messages**, with no software-WebGL or `ReadPixels` lines; the browser benchmark completed 4 Canvas rows, created **0 WebGL contexts** and emitted **no warnings**. Verified on this head: `npm test` **949/949**, syntax/imports **145 files / 201 UI ids**, 25-year campaign **10,040 ticks / 13/13 ambitions / 0.835 ms per tick / no stalls / no game over**, and the complete browser E2E green. Preview deploy receipt `a1943e40-d889-4c62-ae75-d2119120a56b` (17:09:29–17:09:33Z) and production receipt `eca17118-f67f-4936-bb52-9808c45cbb7c` (17:09:41–17:09:45Z) both succeeded; both environments report `published:true`. Both origins serve HTTP 200 and a `version.json` identifying commit `cdd07f8334f441238f0fd3e98de17fe726f964f3`; the runtime package is 322 files / 7.64 MiB. A live hardware-browser load confirmed `renderer:canvas`, no terrain-renderer or adaptive control, the four-row Canvas benchmark label, and 0 console messages. A local no-GPU Chromium load created 0 WebGL contexts and 0 console messages, and its Settings benchmark completed four Canvas rows with 0 WebGL contexts and no software-WebGL/`ReadPixels` warnings.
 
 - **Kings & Cards — campaign sweep and eight-climate low-end proof (current hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. The runtime package is 322 files / 7.65 MiB and its runtime deployment's `version.json` identified commit `89ad0cac6118a9ecbfc7644441948c008ce4e627`; the later documentation build adds only this record and keeps the same runtime package. Preview deploy receipt `4dda27c7-f04f-41db-8349-90b4f2c82f70` (15:35:23–15:35:27Z) and production receipt `97ac77cd-16f2-433c-a9a8-3eb213214d32` (15:35:37–15:35:40Z) both succeeded; both environments report `published:true`. Both origins return HTTP 200 and serve matching SHA-256 hashes for `terrain.js` `3c375ab3c99b1387822abe8ad63b39319c4e0660a630b5df9e1b3c3c96f5c888`, `savanna-ecology.js` `7f675f510d46fe15265369bea555cfec99cc91c2d3d02e831dac328e39c56446`, `savanna-render.js` `8755b029b237ec64058c77e9f2e12b6bbab2612b07ba42cbec79b7e34134a0ec` and `terrain-model.js` `c8ba932d22c1a0532dd67cb8a20fa0706180dec77af3341c17bcf5de03b4a1dd`. A live production load and a live preview load each exposed all eight climate options (Temperate, Northern, Tundra, Savanna, Mediterranean, Arid, Enchanted, Tropical rainforest), returned HTTP 200 for every requested script and stylesheet, and reported no page or console errors; only the expected software-WebGL `ReadPixels` warning appeared. Verified on this head: focused savanna render 6/6, campaign aggregation 4/4, `npm test` 950/950, syntax/imports 145 files / 203 ids, complete browser E2E green, the three-seed savanna sweep exit 0 with 2 real fuel-backfill orders, and the eight-climate low-end proof exit 0 at p95 16.8 ms. Full record: [docs/SAVANNA.md](docs/SAVANNA.md).
@@ -44,6 +45,51 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.16.2-dev — Taiga camera-jump transition
+
+**Released:** 2026-11-14
+
+**Scope:** Profile the one-time terrain-detail rebuild after a camera or season
+jump, make it fit the existing frame budget, and add the jump itself to the
+Taiga benchmark instead of waiting past it.
+
+**Profile and fixes:** the new transition phase starts sampling immediately
+after the camera and season change. Its first measured run was **66.7 ms p95**,
+with **100%** of frames over 33 ms and **60.7%** over 50 ms. The fallback was
+re-sampling the whole-world fog texture and baked ground every frame, an
+off-screen old detail layer was still being composited, and the first underlay
+raster could exceed a long-task budget. `js/presentation/rendering/terrain.js`
+now:
+
+- crops the fog source to the visible tiles instead of the whole realm;
+- skips the fog draw when every visible tile is explored (the texture is
+  transparent there);
+- hides the old detail layer when less than 45% of it remains on screen after a
+  jump; and
+- caches the static ground/fog underlay while the staged detail rebuild runs,
+  then blits it instead of re-rasterising every frame.
+
+**Measured transition:** 182 frames, **16.8 ms p95**, 2.75% over 33 ms, 0.55%
+over 50 ms, **0 long tasks**, **397 draw calls p95 / 467 max**, **22 visible
+entities p95**, **8.5 ms canvas draw p95**. The existing summer (16.7 ms / 164
+draws / 1.5 ms canvas), winter-ice (16.7 ms / 174 / 1.8 ms) and settled
+settlement (16.8 ms / 433 / 7.0 ms) scenes remain green under the same budgets;
+no budget was relaxed and no scene was removed. Full benchmark exits 0 with
+`npm run test:performance:taiga`.
+
+**Verification:** full `npm test` **966/966**; syntax and relative imports clean
+for **147 source files / 201 UI ids**; runtime build **324 files / 7.73 MiB** at
+commit `4bee9d1c5444d10555302cc397db915db24fb3c3`. Preview receipt
+`4f5e41ad-dfa5-4269-84a7-f3ea56691220` (19:21:29–19:21:33Z) and production
+receipt `c3fc3920-059a-442b-ba7d-d356b968f6c0` (19:21:36–19:21:40Z) both
+succeeded; both environments report `published:true`. Both origins return
+HTTP 200, serve that commit in `version.json`, and match the runtime
+`js/presentation/rendering/terrain.js` SHA-256
+`80a62a916c703c5e8ccdc2078e0e5914790f9967f8f66d14b312dd0e17f158b0`. A live
+production camera/season jump recorded zero page errors, console errors, failed
+requests or HTTP errors and reached `water.ice:true`. Full record:
+[docs/TAIGA.md](docs/TAIGA.md#low-end-performance).
 
 ### 3.16.1-dev — Taiga fuel staffing and measured low-end proof
 
