@@ -330,23 +330,30 @@ export function drawTaiga(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0.5, s3 =
 export function drawTaigaIce(ctx, px, py, cellPx, s1 = 0.5, s2 = 0.5) {
     if (!ctx || !(cellPx > 0)) return;
     ctx.save();
-    ctx.globalAlpha = 0.86;
-    ctx.fillStyle = "#bfd5dc";
+    // Opaque fill with a one-pixel overlap: adjacent water tiles must read as
+    // one frozen surface, not a grid of pale rectangles.
+    ctx.fillStyle = "#b8cfd6";
     ctx.fillRect(px, py, cellPx + 1, cellPx + 1);
-    ctx.globalAlpha = 0.22;
-    ctx.fillStyle = "#edf5f6";
-    ctx.fillRect(px + cellPx * 0.08, py + cellPx * 0.1, cellPx * 0.72, cellPx * 0.16);
-    ctx.globalAlpha = 0.34;
-    ctx.strokeStyle = "#eaf3f5";
-    ctx.lineWidth = Math.max(0.7, cellPx * 0.018);
-    ctx.beginPath();
-    ctx.moveTo(px + cellPx * (0.14 + s1 * 0.2), py + cellPx * 0.18);
-    ctx.lineTo(px + cellPx * (0.42 + s2 * 0.2), py + cellPx * 0.52);
-    ctx.lineTo(px + cellPx * (0.3 + s1 * 0.3), py + cellPx * 0.83);
-    ctx.moveTo(px + cellPx * (0.58 + s1 * 0.2), py + cellPx * 0.24);
-    ctx.lineTo(px + cellPx * (0.78 + s2 * 0.12), py + cellPx * 0.46);
-    ctx.lineTo(px + cellPx * (0.9 - s1 * 0.1), py + cellPx * 0.74);
-    ctx.stroke();
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = "#e1ecef";
+    ctx.fillRect(px + cellPx * (0.14 + s1 * 0.44), py + cellPx * (0.2 + s2 * 0.4), cellPx * 0.26, cellPx * 0.07);
+    // Sparse pressure cracks and wind-scoured flecks avoid a repeated stamp.
+    ctx.globalAlpha = 0.36;
+    ctx.strokeStyle = "#e4eff1";
+    ctx.lineWidth = Math.max(0.7, cellPx * 0.014);
+    if (s1 > 0.52) {
+        ctx.beginPath();
+        ctx.moveTo(px + cellPx * (0.12 + s1 * 0.16), py + cellPx * 0.22);
+        ctx.lineTo(px + cellPx * (0.4 + s2 * 0.16), py + cellPx * (0.46 + s1 * 0.08));
+        ctx.lineTo(px + cellPx * (0.32 + s2 * 0.2), py + cellPx * 0.78);
+        ctx.stroke();
+    }
+    if (s2 > 0.72) {
+        ctx.beginPath();
+        ctx.moveTo(px + cellPx * (0.62 + s2 * 0.12), py + cellPx * 0.3);
+        ctx.lineTo(px + cellPx * (0.82 - s1 * 0.08), py + cellPx * 0.66);
+        ctx.stroke();
+    }
     ctx.restore();
 }
 
