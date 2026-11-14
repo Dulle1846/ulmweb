@@ -177,9 +177,10 @@ deployed from its exact build directory. Preview receipt
 `4dda27c7-f04f-41db-8349-90b4f2c82f70` (2026-11-14 15:35:23–15:35:27Z) and
 production receipt `97ac77cd-16f2-433c-a9a8-3eb213214d32`
 (15:35:37–15:35:40Z) both succeeded; both environments report
-`published:true`. Both origins serve `version.json` for `89ad0ca`, and the
-`version.json`, `terrain.js`, `savanna-ecology.js`, `savanna-render.js` and
-`terrain-model.js` SHA-256 hashes match the built package. Live production and
+`published:true`. At runtime deployment, both origins served `version.json` for
+`89ad0ca`; the documentation build adds only this record and keeps the same
+runtime package. The `terrain.js`, `savanna-ecology.js`, `savanna-render.js`
+and `terrain-model.js` SHA-256 hashes match the built package. Live production and
 preview loads each exposed all eight climate options (Temperate, Northern,
 Tundra, Savanna, Mediterranean, Arid, Enchanted, Tropical rainforest), loaded
 every requested script and stylesheet with HTTP 200, and reported no page or
