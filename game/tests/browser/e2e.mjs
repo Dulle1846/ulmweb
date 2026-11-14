@@ -21,7 +21,7 @@ async function captureRealmState(page){
         // Render telemetry changes every animation frame even while the realm
         // is paused. It is not persistent world state, so comparing it makes
         // this probe depend on when the screenshot happened to land.
-        const ignored=new Set(["canvas","ctx","minimapCanvas","minimapCtx","terrainCanvas","terrainCanvasEl","fogCanvas","fogExploredRef","lastFrameTime","lastUiRender","lastMinimapRender","tickAccumulator","particles","floaters","pendingPresentationEffects","lastDrawMs","lastWorldDrawMs","lastUiRenderMs","lastSimulationMs","terrainBuildThisFrame","terrainDecorationBuildMs","renderedFrames","renderStats","terrainCacheHits","terrainCacheMisses","terrainCacheRevision","forestVisualRevision","terrainDirty","fogDirty"]);
+        const ignored=new Set(["canvas","ctx","minimapCanvas","minimapCtx","terrainCanvas","terrainCanvasEl","fogCanvas","fogExploredRef","lastFrameTime","lastUiRender","lastMinimapRender","tickAccumulator","particles","floaters","pendingPresentationEffects","lastDrawMs","lastWorldDrawMs","lastUiRenderMs","lastSimulationMs","terrainBuildThisFrame","terrainDecorationBuildMs","terrainTreeDraws","renderedFrames","renderStats","terrainCacheHits","terrainCacheMisses","terrainCacheRevision","forestVisualRevision","terrainDirty","fogDirty"]);
         const hashed=new Set(["heightMap","moistureMap","temperatureMap","explored"]);
         const hashPersistent=(value,label)=>{
             let hashA=2166136261>>>0,hashB=5381>>>0;
@@ -501,7 +501,7 @@ try{
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
-    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),22,"all twenty-two management tabs, including the Atelier, city charter and item lexicon, must live inside the dialog");
+    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),23,"all twenty-three management tabs, including Explore, the Atelier, city charter and item lexicon, must live inside the dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Kingdom overview","management must open on the live kingdom overview");
     await page.locator('[data-command-tab="kingdom"]').click();
     assert.equal(await page.locator("body > .command-deck").count(),0,"there must be no obscured duplicate navigation outside the dialog");
@@ -2156,7 +2156,7 @@ try{
         // Inspect all twelve management screens, not only the shell of the shared dialog.
         await page.locator("#command-open-btn").click();
         await assertOverlayFits("#command-modal","management shell","management-shell");
-        for(const tab of ["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","dynasty","creatures","chronicle"]){
+        for(const tab of ["kingdom","government","politics","diplomacy","explore","decisions","cards","economy","resources","buildings","dynasty","creatures","chronicle"]){
             // The tab strip is hidden on narrow screens; the same navigation
             // is exposed through the accessible panel select there.
             const mobileTabSelect=page.locator("#command-tab-select");

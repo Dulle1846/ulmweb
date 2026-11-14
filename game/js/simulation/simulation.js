@@ -44,6 +44,7 @@ import { updateEndeavours } from "../systems/endeavours.js";
 import { settleCrownSupply } from "../systems/crown-supply.js";
 import { spoilForestGoods } from "../systems/forest-gathering.js";
 import { updateMicroEvents } from "../systems/micro-events.js";
+import { updateExpeditions } from "../systems/expeditions.js";
 export function updateSimulation(){
     if(state.isPaused||state.gameOver||!state.hasStarted)return;
     const previousYear=state.year;
@@ -95,7 +96,7 @@ export function updateSimulation(){
     }
     if(newborn)addLog("A CHILD WAS BORN: "+newborn.person.name,"#e8c77b","family");
     else if(newcomer)addLog("A NEW RESIDENT HAS JOINED THE REALM","#a3d6a7","population");
-    updateFields();updateForestSuccession();if(state.resourceGeography)regrowForests(400,{slice:state.tick%400,slices:400});updateForestFauna();updateForestPannage();updateBuildingIncome();updateCraftProduction();updateLogistics();updateConstruction();updateVillagers();updateMilitary();updateCombat();checkRandomEvents();
+    updateFields();updateForestSuccession();if(state.resourceGeography)regrowForests(400,{slice:state.tick%400,slices:400});updateForestFauna();updateForestPannage();updateBuildingIncome();updateCraftProduction();updateLogistics();updateConstruction();updateVillagers();updateMilitary();updateCombat();updateExpeditions();checkRandomEvents();
     updateWeather();updateMorale();updateMarket();updateEconomy();updateRealmCycle();updateHealth();updateAmbitions();
     // Procedural chronicle events are independent of the decision-bearing
     // issue inbox. They never open a modal or wait for the player; the bounded

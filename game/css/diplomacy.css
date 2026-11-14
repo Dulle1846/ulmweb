@@ -64,3 +64,48 @@
 .court-office .command-inline{margin-top:9px;flex-wrap:wrap}
 .court-office .command-inline select{min-width:100%;flex:1 1 100%}
 @media(max-width:560px){.diplomacy-grid{grid-template-columns:1fr}.diplomacy-realm__stats{grid-template-columns:repeat(3,1fr)}}
+
+/* Royal expeditions: a bounded survey layer with one party on the road. */
+.expedition-active{padding:14px;border:2px solid #ad8750;border-left:5px solid #2f6f88;border-radius:10px;background:linear-gradient(145deg,#eef5e7,#dce8cf);color:#243a50;box-shadow:inset 0 1px #fff8}
+.expedition-active--idle{border-left-color:#b68a4b;background:linear-gradient(145deg,#fff8e4,#eddfbd)}
+.expedition-active__head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.expedition-kicker{color:#9b4a2a;font:1000 7px/1.3 Arial,sans-serif;letter-spacing:.16em;text-transform:uppercase}
+.expedition-active h4{margin:4px 0 2px;color:#203c58;font:bold 18px Georgia,serif}
+.expedition-active p{margin:0;color:#5d5547;font-size:9px;line-height:1.5}
+.expedition-active__days{flex:0 0 auto;color:#2f6f88;font:bold 24px Georgia,serif;text-align:right;line-height:.9}
+.expedition-active__days small{display:block;margin-top:5px;color:#756445;font:1000 6px Arial,sans-serif;letter-spacing:.12em}
+.expedition-active__outcome{margin-top:9px!important;padding-top:8px;border-top:1px dashed #a9bd94;color:#3f5b45!important}
+.expedition-progress{display:grid;grid-template-columns:1fr 38px;align-items:center;gap:8px;margin:12px 0 8px}
+.expedition-progress>span{display:block;height:9px;border:1px solid #8ca17e;border-radius:999px;background:#f8f1d9;overflow:hidden}
+.expedition-progress i{display:block;height:100%;background:linear-gradient(90deg,#4e8a61,#2f6f88);transition:width .3s ease}
+.expedition-progress strong{color:#2f6f88;font:bold 11px Georgia,serif;text-align:right}
+.expedition-controls{display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,.7fr);gap:10px;align-items:end;padding:12px;border:1px solid #ad8750;border-radius:9px;background:#fff5d8}
+.expedition-controls label{display:grid;gap:5px;color:#756445;font:1000 7px Arial,sans-serif;letter-spacing:.12em}
+.expedition-controls select{min-height:32px;padding:4px 7px;border:1px solid #a77b42;border-radius:5px;background:#fffaf0;color:#263b52;font:bold 10px Georgia,serif}
+.expedition-controls p{grid-column:1/-1;margin:0;color:#675b49;font-size:8px;line-height:1.5}
+.expedition-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:10px;margin-top:10px}
+.expedition-site{padding:12px;border:2px solid #ad8750;border-radius:9px;background:#fff5d8;color:#243a50;box-shadow:inset 0 1px #fff8}
+.expedition-site.is-known{border-left:5px solid #4e8a61}
+.expedition-site.is-uncharted{border-left:5px solid #9b4a2a;background:#f8ead2}
+.expedition-site.is-cleared{border-left:5px solid #2f6f88;background:#eef5e7}
+.expedition-site__head{display:flex;align-items:flex-start;gap:9px}
+.expedition-glyph{flex:0 0 34px;display:grid;place-items:center;width:34px;height:34px;border:1px solid #a57c43;border-radius:50%;background:#f1d99f;color:#5d4528;font:bold 19px Georgia,serif}
+.expedition-site__head>div{min-width:0;flex:1}
+.expedition-site h4{margin:2px 0 0;color:#263b52;font:bold 15px Georgia,serif}
+.expedition-danger{flex:0 0 auto;color:#9b4a2a;font-size:12px;letter-spacing:.08em;white-space:nowrap}
+.expedition-site__meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:9px 0}
+.expedition-site__meta span{padding:5px 6px;border:1px solid #c6ae7c;border-radius:5px;background:#f8ebcd;color:#806d52;font:1000 6px/1.3 Arial,sans-serif;letter-spacing:.06em}
+.expedition-site__meta b{display:block;margin-top:3px;color:#263b52;font:bold 10px Georgia,serif;letter-spacing:0}
+.expedition-site__note{margin:6px 0 9px;color:#675b49;font-size:8px;line-height:1.45}
+.expedition-launch{width:100%;min-height:30px;border:1px solid #20374d;border-radius:5px;background:linear-gradient(#f7d67f,#d69a37);color:#24384d;font:1000 7px Arial,sans-serif;letter-spacing:.08em;cursor:pointer}
+.expedition-launch:disabled{opacity:.45;cursor:not-allowed}
+.expedition-history{display:grid;gap:2px;margin-top:8px}
+.expedition-history__row{display:grid;grid-template-columns:62px 1fr;gap:7px;padding:7px;border-bottom:1px solid #c8ad7d;color:#554a3a;font-size:8px}
+.expedition-history__year{color:#9b4a2a;font:1000 6px/1.4 Arial,sans-serif;letter-spacing:.08em}
+.expedition-history__row strong{display:block;color:#263b52;font:bold 10px Georgia,serif}
+.expedition-history__row small{display:block;margin-top:2px;color:#756445;font-size:7px;line-height:1.4}
+.expedition-lore-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:8px}
+.expedition-lore{padding:10px;border:1px solid #ad8750;border-radius:7px;background:#fffaf0}
+.expedition-lore h4{margin:3px 0 4px;color:#263b52;font:bold 12px Georgia,serif}
+.expedition-lore p{margin:0;color:#675b49;font-size:8px;line-height:1.55}
+@media(max-width:640px){.expedition-controls{grid-template-columns:1fr}.expedition-site__meta{grid-template-columns:1fr 1fr}.expedition-active__days{font-size:19px}}

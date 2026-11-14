@@ -18,6 +18,7 @@ import { validateResearchState } from "../systems/research.js";
 import { validateLegacyState } from "../systems/legacy.js";
 import { validatePopulationState } from "../systems/population-register.js";
 import { validateRealmCycleState } from "../systems/realm-cycle.js";
+import { validateExpeditionsState } from "../systems/expeditions.js";
 import { validateAiChronicleState } from "./ai-chronicle-state.js";
 import { validateEventTimelineState } from "./event-timeline.js";
 import { validateCraftedItems } from "../systems/item-lexicon.js";
@@ -206,6 +207,9 @@ export function validateSaveSnapshot(snapshot) {
     }
     if (snapshot.military !== undefined && snapshot.military !== null) {
         validateDomainSnapshot(snapshot.military, "military", validateMilitaryState);
+    }
+    if (snapshot.expeditions !== undefined && snapshot.expeditions !== null) {
+        validateDomainSnapshot(snapshot.expeditions, "expeditions", validateExpeditionsState);
     }
     if (snapshot.health !== undefined && snapshot.health !== null) {
         validateDomainSnapshot(snapshot.health, "health", validateHealthState);

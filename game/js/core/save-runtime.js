@@ -10,6 +10,7 @@ import { WORLD_W } from "./config.js";
 import { getRandomStreamSnapshot, restoreRandomStreams } from "./random.js";
 import { normalizeCraftedItems } from "../systems/item-lexicon.js";
 import { normalizeAiChronicleState, serializeAiChronicleState } from "./ai-chronicle-state.js";
+import { normalizeExpeditionsState } from "../systems/expeditions.js";
 import { normalizeEventTimelineState, serializeEventTimelineState } from "./event-timeline.js";
 import { normalizeLayout, serializeLayout } from "../presentation/building-layout.js";
 import { restoreRoads, serializeRoads } from "../systems/roads.js";
@@ -209,6 +210,7 @@ export function createSaveSnapshot() {
         realmCycle: JSON.parse(JSON.stringify(state.realmCycle || createRealmCycleState())),
         court: JSON.parse(JSON.stringify(state.court || createCourtState())),
         diplomacy: JSON.parse(JSON.stringify(state.diplomacy || createDiplomacyState())),
+        expeditions: JSON.parse(JSON.stringify(normalizeExpeditionsState(state.expeditions))),
         identity: JSON.parse(JSON.stringify(state.identity || {})),
         research: JSON.parse(JSON.stringify(state.research || {})),
         legacy: JSON.parse(JSON.stringify(state.legacy || {})),
@@ -419,6 +421,7 @@ export function restoreSaveSnapshot(snapshot) {
     state.realmCycle = normalizeRealmCycleState(snapshot.realmCycle);
     state.court = normalizeCourtState(snapshot.court);
     state.diplomacy = normalizeDiplomacySnapshot(snapshot.diplomacy);
+    state.expeditions = normalizeExpeditionsState(snapshot.expeditions);
     if (Array.isArray(snapshot.explored) && snapshot.explored.length === (Number(state.worldW) || WORLD_W)) {
         state.explored = snapshot.explored;
     }

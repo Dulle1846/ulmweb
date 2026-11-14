@@ -38,6 +38,48 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ## Production release history
 
+### 3.15.0-dev — Royal expeditions and the living frontier
+
+**Released:** 2026-11-14
+
+**Scope:** A persistent exploration layer built from the systems the realm
+already owns. Every world seeds eight deterministic landmarks (sunken ruins,
+cave, shrine, watchtower, crater, grove, barrow and caravanserai) from its seed
+and keep position. A named, living adult resident can lead one party at a time;
+their command, learning, care and trade skills, the chosen supply level and the
+site's danger decide a triumph, success, costly return or disaster. Supplies
+are paid from real food and gold, distance extends the journey, arrival calls
+the existing fog reveal, and loot is credited only when the party is home.
+Injury uses the existing illness field, disaster touches morale, and first
+discoveries feed person memories, legacy, the event log and a bounded lore
+archive. A cleared site can be surveyed again for a smaller cache without
+duplicating its principal lore.
+
+**Integration:** The normal simulation tick calls `updateExpeditions()` once;
+there is no new loop, renderer or resource. The save snapshot persists a
+normalized `expeditions` block inside schema 11, loading repairs old or missing
+blocks, and the validator rejects malformed records. The command deck gains an
+EXPLORE tab backed by a dedicated panel, with leader/supply selection, eight
+landmark cards, live travel progress, returned reports and recovered fragments.
+The panel refreshes on a real `kac:expedition-change` event when travel
+resolves.
+
+**Verification:** Focused domain, save and UI-contract tests pass 7/7. Full
+`npm test` passes 922/922 with syntax and relative imports for 141 source
+files and 203 referenced UI IDs. The 25-year campaign completes 10,040 ticks,
+13/13 ambitions, `noStalls:true`, no game over and 0.861 ms/tick. The real
+browser audit (seed `20261114`) founded a realm, opened EXPLORE, counted eight
+landmarks, chose a named leader and grand equipage, launched and resolved a
+triumph, verified the completed/surveyed/fragment counters, the history row,
+the lore card and the save snapshot, and produced no page or console errors.
+Reference frames are in
+[docs/expeditions-reference/](docs/expeditions-reference/); the full design and
+save contract are in [docs/EXPEDITIONS.md](docs/EXPEDITIONS.md).
+
+**Deployment:** Hosted preview and production are published from this commit;
+the Freebuff Sites receipts and origin checks are reported with the release
+hand-off.
+
 ### 3.15.0-dev — Deserts and semi-deserts (spec 1.2.8)
 
 **Released:** 2026-11-13

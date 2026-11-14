@@ -4,6 +4,8 @@ import { getGovernmentSnapshot, GOVERNMENT_FORMS, GOVERNMENT_POLICIES, setGovern
 import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getCourtSnapshot, appointMinister, dismissMinister, addressFactionDemand } from "../systems/court.js";
 import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, declareWar, sueForPeace, appointEnvoy, recallEnvoy } from "../systems/diplomacy.js";
+import { startExpedition } from "../systems/expeditions.js";
+import { renderExpeditionsPanel } from "./expeditions-panel.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { renderEndeavoursPanel } from "./endeavours-panel.js";
 import { startEndeavour, abandonEndeavour, setEndeavourFunding, setEndeavourOverseer } from "../systems/endeavours.js";
@@ -1012,7 +1014,7 @@ function render(resetScroll=false){
  const splitPanelPaint=resetScroll&&narrowViewport();
  const revealToken=++panelRevealToken;
  if(splitPanelPaint)panel.style.visibility="hidden";
- const renderers={kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle,atelier:renderAiChroniclePanel};
+ const renderers={kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle,atelier:renderAiChroniclePanel,explore:renderExpeditionsPanel};
  // A new tab starts at its title, not at the scroll offset of the previous
  // panel. Reset the old, already-laid-out view before inserting the new DOM:
  // assigning scrollTop after innerHTML forces a synchronous layout of the
@@ -1056,6 +1058,7 @@ function render(resetScroll=false){
 function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
 
  if(a==="realm-cycle")r=resolveRealmCyclePetition(v);
+ else if(a==="expedition-start")r=startExpedition(v,$("expedition-leader-select")?.value,$("expedition-supply-select")?.value);
  else if(a==="endeavour-start")r=startEndeavour(v,{overseerId:$("endeavour-overseer-select")?.value||null,funding:endeavourFunding});
  else if(a==="endeavour-funding"){endeavourFunding=Math.max(0,Math.min(2,Number(v)||0));r={ok:true};}
  else if(a==="endeavour-active-funding")r=setEndeavourFunding(Number(v));
@@ -1077,6 +1080,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a.startsWith("endeavour-"))toast(String(r.message||"CROWN WORK UPDATED").toUpperCase());
   else if(a.startsWith("crown-"))toast(String(r.message||"CROWN SUPPLY UPDATED").toUpperCase());
   else if(a==="realm-cycle")toast(String(r.message||"PETITION ANSWERED").toUpperCase());
+  else if(a.startsWith("expedition-"))toast(String(r.message||"ROYAL EXPEDITION UPDATED").toUpperCase());
   else if(a==="open-atelier")toast("ATELIER OPEN");
   else toast("DECISION RECORDED");
   renderUI();render();
@@ -1106,6 +1110,9 @@ async function runAiCommand(kind){
 
 export function setupManagementUI(){
  ensureDynastyNetworkStyles();
+ window.addEventListener("kac:expedition-change",()=>{
+  if(activePanel==="explore"&&!$("command-modal")?.classList.contains("hidden"))render(false);
+ });
  window.addEventListener("resize",()=>{if(activePanel==="dynasty")drawDynastyConnectors();});
  document.querySelectorAll("[data-kac-panel]").forEach(button=>button.addEventListener("click",()=>{
   const target=button.dataset.kacPanel;
@@ -1114,7 +1121,7 @@ export function setupManagementUI(){
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
   if(target==="market"){$("tab-2")?.click();return;}
-  if(["kingdom","government","politics","diplomacy","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
+  if(["kingdom","government","politics","diplomacy","explore","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
    if(target==="chronicle")resetTimelineView(state.year);
    activePanel=target;$("command-modal")?.classList.remove("hidden");render(true);
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));
