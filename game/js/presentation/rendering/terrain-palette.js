@@ -72,6 +72,44 @@ function seasonalPalette(base, season) {
     return p;
 }
 
+
+function savannaPalette(base, season) {
+    const p = clonePalette(base);
+    // Savanna seasons are a wet/dry pulse, not the temperate snow cycle. The
+    // wet months flush green, the dry months pull the grass to gold and the
+    // late-year pan is pale straw rather than snow-grey.
+    if (season === 0) {
+        p.meadow = toward(p.meadow, [120, 142, 66], 0.44);
+        p.lush = toward(p.lush, [88, 122, 56], 0.30);
+        p.forest = toward(p.forest, [66, 96, 48], 0.20);
+        p.dry = toward(p.dry, [172, 142, 84], 0.16);
+    } else if (season === 1) {
+        p.meadow = toward(p.meadow, [150, 146, 70], 0.36);
+        p.lush = toward(p.lush, [104, 128, 58], 0.18);
+        p.dry = toward(p.dry, [190, 150, 82], 0.30);
+        p.sand = toward(p.sand, [216, 184, 132], 0.18);
+    } else if (season === 2) {
+        p.meadow = toward(p.meadow, [176, 138, 64], 0.62);
+        p.lush = toward(p.lush, [136, 112, 54], 0.52);
+        p.forest = toward(p.forest, [120, 92, 46], 0.40);
+        p.dry = toward(p.dry, [198, 158, 82], 0.46);
+        p.swamp = toward(p.swamp, [112, 100, 58], 0.34);
+        p.waterDeep = toward(p.waterDeep, [24, 54, 58], 0.16);
+    } else {
+        p.meadow = toward(p.meadow, [168, 144, 86], 0.56);
+        p.lush = toward(p.lush, [132, 122, 70], 0.48);
+        p.forest = toward(p.forest, [106, 94, 56], 0.42);
+        p.dry = toward(p.dry, [190, 158, 94], 0.52);
+        p.sand = toward(p.sand, [214, 188, 142], 0.26);
+        p.swamp = toward(p.swamp, [108, 102, 64], 0.42);
+        p.rock = toward(p.rock, [148, 122, 96], 0.16);
+        p.waterDeep = toward(p.waterDeep, [24, 58, 64], 0.18);
+        p.waterShallow = toward(p.waterShallow, [66, 122, 116], 0.18);
+    }
+    p.earth = mix(p.dry, p.rock, 0.52);
+    return p;
+}
+
 function tropicalPalette(base, season, phase = season) {
     const seasonal = seasonalState(phase * 100, 'tropical');
     // The rainforest has a wet/dry rhythm, not a temperate autumn/winter
@@ -96,6 +134,15 @@ export function terrainPaletteFor(climate, seasonIndex = 0) {
     const season = ((Math.trunc(Number(seasonIndex) || 0) % 4) + 4) % 4;
     const base = TERRAIN_PALETTES[climate] || TERRAIN_PALETTES.temperate;
     if (climate === 'tropical') return tropicalPalette(base, season);
+    if (climate === 'savanna') {
+        return {
+            ...savannaPalette(base, season),
+            season,
+            snowBias: 0,
+            autumn: season === 2 ? 1 : 0,
+            winter: 0,
+        };
+    }
     const palette = seasonalPalette(base, season);
     return {
         ...palette,
@@ -161,8 +208,9 @@ export function terrainPaletteForPhase(climate, phase) {
     const fraction = raw * raw * (3 - 2 * raw);
     const base = TERRAIN_PALETTES[climate] || TERRAIN_PALETTES.temperate;
     if (climate === 'tropical') return tropicalPalette(base, lower, wrapped);
-    const from = seasonalPalette(base, lower);
-    const to = seasonalPalette(base, (lower + 1) % 4);
+    const seasonalFrom = climate === 'savanna' ? savannaPalette : seasonalPalette;
+    const from = seasonalFrom(base, lower);
+    const to = seasonalFrom(base, (lower + 1) % 4);
     const palette = fraction < 1e-4 ? from : mixPalette(from, to, fraction);
     // Effects follow their own asymmetric curves: snow starts in late autumn and
     // melts in early spring, leaves turn before the first frost and are gone by
@@ -172,11 +220,11 @@ export function terrainPaletteForPhase(climate, phase) {
         ...palette,
         season: lower,
         seasonPhase: wrapped,
-        snowBias: 0.28 * seasonal.snowCover,
+        snowBias: climate === 'savanna' ? 0 : 0.28 * seasonal.snowCover,
         spring: seasonal.greenUp,
         summer: seasonal.warmth,
         autumn: seasonal.foliageTurn,
-        winter: seasonal.snowCover,
+        winter: climate === 'savanna' ? 0 : seasonal.snowCover,
     };
 }
 

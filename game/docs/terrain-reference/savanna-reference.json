@@ -1,0 +1,390 @@
+{
+  "seed": 20261114,
+  "viewport": {
+    "width": 800,
+    "height": 800
+  },
+  "timeOfDay": 12,
+  "canvas": {
+    "width": 800,
+    "height": 800
+  },
+  "renderer": "WebKit WebGL",
+  "generatedAt": "2026-11-14T13:49:09.204Z",
+  "world": {
+    "width": 176,
+    "height": 176,
+    "climate": "savanna",
+    "seaLevel": 0.3026
+  },
+  "formations": [
+    {
+      "formation": "grass-plains",
+      "x": 81,
+      "y": 10,
+      "label": "Open grass plains",
+      "day": 130,
+      "season": "summer",
+      "wet": 78,
+      "dry": 8,
+      "water": "standing water",
+      "heat": 44,
+      "trees": [],
+      "goods": [
+        "Hay",
+        "Meadow grass",
+        "Sorghum",
+        "Savanna herbs",
+        "Wild game",
+        "Meat",
+        "Hides",
+        "Ivory and bone",
+        "Bone and horn"
+      ],
+      "fauna": [
+        "Elephant",
+        "Zebra",
+        "Wildebeest",
+        "Impala",
+        "Lion",
+        "Cheetah",
+        "Hyena",
+        "Ostrich"
+      ],
+      "featureCount": 30
+    },
+    {
+      "formation": "acacia-savanna",
+      "x": 92,
+      "y": 11,
+      "label": "Acacia savanna",
+      "day": 130,
+      "season": "summer",
+      "wet": 79,
+      "dry": 7,
+      "water": "dry channel",
+      "heat": 45,
+      "trees": [
+        "Umbrella acacia"
+      ],
+      "goods": [
+        "Hay",
+        "Meadow grass",
+        "Sorghum",
+        "Savanna herbs",
+        "Wild game",
+        "Firewood",
+        "Gum arabic",
+        "Meat",
+        "Hides"
+      ],
+      "fauna": [
+        "Elephant",
+        "Giraffe",
+        "Zebra",
+        "Impala",
+        "Lion",
+        "Cheetah",
+        "Ostrich",
+        "Guinea fowl"
+      ],
+      "featureCount": 34
+    },
+    {
+      "formation": "baobab-grove",
+      "x": 75,
+      "y": 12,
+      "label": "Baobab grove",
+      "day": 250,
+      "season": "autumn",
+      "wet": 2,
+      "dry": 98,
+      "water": "dry",
+      "heat": 27,
+      "trees": [
+        "Baobab"
+      ],
+      "goods": [
+        "Baobab fruit",
+        "Firewood",
+        "Charcoal",
+        "Wild game",
+        "Baobab fibre",
+        "Savanna salt",
+        "Meadow grass",
+        "Meat",
+        "Hides"
+      ],
+      "fauna": [
+        "Gazelle",
+        "Lion",
+        "Cheetah",
+        "Hyena",
+        "Ostrich",
+        "Guinea fowl"
+      ],
+      "featureCount": 23
+    },
+    {
+      "formation": "riparian-corridor",
+      "x": 80,
+      "y": 10,
+      "label": "Riparian corridor",
+      "day": 130,
+      "season": "summer",
+      "wet": 77,
+      "dry": 9,
+      "water": "standing water",
+      "heat": 45,
+      "trees": [
+        "Fever tree",
+        "Sausage tree"
+      ],
+      "goods": [
+        "Hay",
+        "Firewood",
+        "Sorghum",
+        "Savanna herbs",
+        "Wild game",
+        "Thatching grass",
+        "Gum arabic",
+        "Meat",
+        "Hides"
+      ],
+      "fauna": [
+        "Giraffe",
+        "Zebra",
+        "Impala",
+        "Gazelle",
+        "Hyena",
+        "Guinea fowl",
+        "Termite"
+      ],
+      "featureCount": 34
+    },
+    {
+      "formation": "dry-riverbed",
+      "x": 84,
+      "y": 10,
+      "label": "Dry riverbed",
+      "day": 130,
+      "season": "summer",
+      "wet": 78,
+      "dry": 7,
+      "water": "standing water",
+      "heat": 45,
+      "trees": [
+        "Camelthorn"
+      ],
+      "goods": [
+        "Meadow grass",
+        "Sorghum",
+        "Savanna herbs",
+        "Wild game",
+        "Firewood",
+        "Gum arabic",
+        "Thorn branches",
+        "Meat",
+        "Hides"
+      ],
+      "fauna": [
+        "Zebra",
+        "Wildebeest",
+        "Vulture",
+        "Ostrich",
+        "Guinea fowl"
+      ],
+      "featureCount": 29
+    },
+    {
+      "formation": "thorn-scrub",
+      "x": 63,
+      "y": 15,
+      "label": "Thorn scrub",
+      "day": 250,
+      "season": "autumn",
+      "wet": 3,
+      "dry": 97,
+      "water": "dry",
+      "heat": 27,
+      "trees": [],
+      "goods": [
+        "Savanna salt",
+        "Charcoal",
+        "Wild game",
+        "Thorn branches",
+        "Meadow grass",
+        "Firewood",
+        "Meat",
+        "Hides",
+        "Savanna herbs"
+      ],
+      "fauna": [
+        "Zebra",
+        "Gazelle",
+        "Ostrich",
+        "Guinea fowl",
+        "Termite",
+        "Dung beetle"
+      ],
+      "featureCount": 21
+    },
+    {
+      "formation": "termite-mound-field",
+      "x": 111,
+      "y": 13,
+      "label": "Termite-mound field",
+      "day": 130,
+      "season": "summer",
+      "wet": 75,
+      "dry": 11,
+      "water": "dry",
+      "heat": 45,
+      "trees": [
+        "Marula",
+        "Marula"
+      ],
+      "goods": [
+        "Hay",
+        "Meadow grass",
+        "Firewood",
+        "Sorghum",
+        "Marula fruit",
+        "Savanna herbs",
+        "Wild game",
+        "Meat",
+        "Hides"
+      ],
+      "fauna": [
+        "Elephant",
+        "Impala",
+        "Lion",
+        "Cheetah",
+        "Hyena",
+        "Vulture",
+        "Guinea fowl",
+        "Termite"
+      ],
+      "featureCount": 30
+    },
+    {
+      "formation": "seasonal-pan",
+      "x": 29,
+      "y": 84,
+      "label": "Seasonal pan",
+      "day": 130,
+      "season": "summer",
+      "wet": 90,
+      "dry": 0,
+      "water": "standing water",
+      "heat": 62,
+      "trees": [],
+      "goods": [
+        "Meadow grass",
+        "Sorghum",
+        "Savanna herbs",
+        "Wild game",
+        "Thatching grass",
+        "Thorn branches",
+        "Firewood",
+        "Meat",
+        "Hides"
+      ],
+      "fauna": [
+        "Elephant",
+        "Zebra",
+        "Hyena",
+        "Ostrich",
+        "Guinea fowl",
+        "Baboon"
+      ],
+      "featureCount": 30
+    },
+    {
+      "formation": "burned-grassland",
+      "x": 85,
+      "y": 15,
+      "label": "Burned grassland",
+      "day": 250,
+      "season": "autumn",
+      "wet": 1,
+      "dry": 98,
+      "water": "dry",
+      "heat": 26,
+      "trees": [],
+      "goods": [
+        "Charcoal",
+        "Hay",
+        "Wild game",
+        "Thorn branches",
+        "Firewood",
+        "Meat",
+        "Hides",
+        "Savanna salt",
+        "Bone and horn"
+      ],
+      "fauna": [
+        "Zebra",
+        "Wildebeest",
+        "Gazelle",
+        "Lion",
+        "Termite"
+      ],
+      "featureCount": 23
+    },
+    {
+      "formation": "rocky-kopje",
+      "x": 77,
+      "y": 18,
+      "label": "Rocky kopje",
+      "day": 130,
+      "season": "summer",
+      "wet": 80,
+      "dry": 6,
+      "water": "dry",
+      "heat": 44,
+      "trees": [
+        "Sausage tree"
+      ],
+      "goods": [
+        "Meadow grass",
+        "Sorghum",
+        "Savanna herbs",
+        "Wild game",
+        "Firewood",
+        "Thorn branches",
+        "Meat",
+        "Hides",
+        "Timber"
+      ],
+      "fauna": [
+        "Elephant",
+        "Impala",
+        "Gazelle",
+        "Lion",
+        "Cheetah",
+        "Hyena",
+        "Vulture",
+        "Ostrich"
+      ],
+      "featureCount": 30
+    }
+  ],
+  "seasonalFocus": {
+    "x": 29,
+    "y": 84,
+    "label": "Seasonal pan",
+    "formation": "seasonal-pan"
+  },
+  "seasonalDays": [
+    60,
+    145,
+    250,
+    340
+  ],
+  "artifactHashes": {
+    "formations": "17860f1c29c9391ed6f419f53b3b9911139f1f812a904ae2e515a599b761ba88",
+    "seasons": "604cecbe4cb63b7b8da83578f2082d26c618ad7a48ab91ec62e1e338e0dff860"
+  },
+  "note": "Savanna realm, 52 fertility, 32% forest cover; HUD, entities, fog and weather hidden; paused simulation; 2.4x interior view at midday. Every formation is a real generated tile. The seasonal strip follows a seasonal pan through four seasons. Not a GPU performance benchmark."
+}

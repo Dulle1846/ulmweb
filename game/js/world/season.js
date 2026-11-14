@@ -31,6 +31,12 @@ export const CLIMATE_SEASONS = Object.freeze({
         snowStart: 200, snowFull: 252, meltStart: 344, meltEnd: 432,
         snowScale: 1.22, foliageShift: -16, foliageScale: 0.72, greenShift: 20, warmthShift: -22,
     }),
+    // Savanna has no snow at all. Its green-up curve is the wet-season flush:
+    // rain arrives in late winter and spring, then fades into a long dry heat.
+    savanna: Object.freeze({
+        snowStart: 400, snowFull: 401, meltStart: 401, meltEnd: 402,
+        snowScale: 0, foliageShift: 4, foliageScale: 0.5, greenShift: 60, warmthShift: 22,
+    }),
     mediterranean: Object.freeze({
         snowStart: 272, snowFull: 325, meltStart: 350, meltEnd: 410,
         snowScale: 0.55, foliageShift: 5, foliageScale: 0.9, greenShift: -6, warmthShift: 8,

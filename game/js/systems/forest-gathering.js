@@ -12,6 +12,7 @@ import { grasslandProductsAt } from "../world/grassland-ecology.js";
 import { isSteppeSite, steppeProductsAt } from "../world/steppe-ecology.js";
 import { isDesertSite, desertProductsAt } from "../world/desert-ecology.js";
 import { isTundraSite, tundraProductsAt } from "../world/tundra-ecology.js";
+import { isSavannaSite, savannaProductsAt, SAVANNA_GOODS } from "../world/savanna-ecology.js";
 import { grasslandUseAt } from "./grassland-use.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import {
@@ -57,6 +58,12 @@ export function forestDeliveryChannel(id) {
     if (good.category === "medicine") return "medicine";
     if (FOOD_DELIVERY.has(id)) return "food";
     if (GOLD_DELIVERY.has(id)) return "gold";
+    const savanna = SAVANNA_GOODS[id];
+    if (savanna) {
+        if (["sorghum", "millet", "marula-fruit", "baobab-fruit", "meat"].includes(id)) return "food";
+        if (["gum-arabic", "savanna-salt", "thorn-branches", "termite-earth", "charcoal", "ivory", "baobab-fibre", "thatching-grass"].includes(id)) return "gold";
+        return null;
+    }
     const tropical = TROPICAL_GOODS[id];
     if (!tropical) return null;
     if (tropical.category === "gather" || tropical.category === "hunt") {
@@ -444,6 +451,7 @@ export function gatherMeadowProducts(x, y, options = {}) {
     // ledger serve all four profiles; the terrain decides which harvest
     // vocabulary is present. Cold ground wins over the arid margins.
     const products = (isTundraSite(x, y, context) ? tundraProductsAt(x, y, context) : null)
+        || (isSavannaSite(x, y, context) ? savannaProductsAt(x, y, context) : null)
         || (isDesertSite(x, y, context) ? desertProductsAt(x, y, context) : null)
         || (isSteppeSite(x, y, context) ? steppeProductsAt(x, y, context) : null)
         || grasslandProductsAt(x, y, context);
@@ -492,6 +500,7 @@ export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
             if (node?.forestCapacity && node.forestStock > 0) continue;
             const context = meadowContextAt(tx, ty);
             const products = (isTundraSite(tx, ty, context) ? tundraProductsAt(tx, ty, context) : null)
+                || (isSavannaSite(tx, ty, context) ? savannaProductsAt(tx, ty, context) : null)
                 || (isDesertSite(tx, ty, context) ? desertProductsAt(tx, ty, context) : null)
                 || (isSteppeSite(tx, ty, context) ? steppeProductsAt(tx, ty, context) : null)
                 || grasslandProductsAt(tx, ty, context);

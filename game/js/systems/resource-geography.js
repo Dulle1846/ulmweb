@@ -108,10 +108,36 @@ export function generateResourceGeography(seed=state.worldSeed){
             // Forest stands follow the same ecology model as the renderer. The
             // capacity is not one universal number: an old oakwood holds more
             // timber than a thin birch grove, and a burn scar holds less.
-            if(h>=forestLine&&h<BIOME.ROCK){
-                const density=clamp((h-forestLine)/Math.max(0.001,BIOME.ROCK-forestLine),0,1);
-                const climate=state.worldOptions?.climate||"temperate";
-                if(climate==="tundra"){
+            const climate=state.worldOptions?.climate||"temperate";
+            // Savanna trees grow on the grassy plains below the closed-forest
+            // line as well as on the slopes above it. Without this belt a
+            // lowland savanna start has no harvestable woodland at all: no
+            // lumberjacks, no logs and no firewood for the settlement.
+            const savannaBelt=climate==="savanna"&&h>=sea+0.012;
+            if((h>=forestLine||savannaBelt)&&h<BIOME.ROCK){
+                const density=climate==="savanna"
+                    ?clamp((h-sea)/Math.max(0.001,BIOME.ROCK-sea),0,1)
+                    :clamp((h-forestLine)/Math.max(0.001,BIOME.ROCK-forestLine),0,1);
+                if(climate==="savanna"){
+                    // Savanna is an open woodland, not a closed forest. A small
+                    // fraction of the grassy belt carries harvestable acacia,
+                    // camelthorn and riparian timber; the rest stays grass.
+                    const groveChance=0.045+density*0.08+moisture*0.045;
+                    if(unitHash(worldSeed,index,0x53415641)<groveChance){
+                        const stand=forestStandAt(x+0.5,y+0.5,{
+                            seed:worldSeed, moisture, temperature, height:h,
+                            climate, forests:state.worldOptions?.forests??52,
+                            stockRatio:1, rockLine:BIOME.ROCK,
+                        });
+                        if(stand.forest){
+                            const capacity=Math.max(20,Math.min(90,Math.round(34+density*30+moisture*22+unitHash(worldSeed,index,0x53415652)*22)));
+                            forestCapacity[index]=capacity;
+                            forestStock[index]=capacity;
+                            forestKind[index]=forestTypeIndex("savanna-woodland");
+                            forestAge[index]=2;
+                        }
+                    }
+                }else if(climate==="tundra"){
                     // Tundra carries only scattered scrub: enough for a little
                     // fuel, fencing and repair timber, never a closed canopy.
                     // Keep it sparse and much smaller than a woodland stand so
@@ -296,6 +322,14 @@ export function getForestMovementFactorAt(x, y) {
         const thaw = seasonal.season === 0 ? (1 - seasonal.greenUp) * 0.12 : 0;
         return clamp(1 - seasonal.snowCover * 0.34 - thaw, 0.58, 1);
     }
+    // The savanna wet season makes tracks and floodplains heavy; the dry
+    // season leaves hard, fast ground. This is a cheap seasonal route cost,
+    // not a second terrain walk.
+    if (climate === "savanna") {
+        const seasonal = seasonalState(Number(state.dayOfYear) || 0, "savanna");
+        const wet = clamp(seasonal.greenUp + (seasonal.season === 0 ? 0.18 : 0), 0, 1);
+        return clamp(1 - wet * 0.12, 0.86, 1);
+    }
     if (climate !== "tropical") return 1;
     const point = readTile(x, y);
     if (!point) return 1;
@@ -383,8 +417,10 @@ export function getResourceNodeAt(x,y){
     // Tundra scrub keeps one identity even when the shared succession model
     // adds a windthrow or snowbreak history: the player must never see a
     // "Drought-stressed Pine" label on a treeless tundra tile.
-    const tundraScrub=(state.worldOptions?.climate||"temperate")==="tundra"&&geo.forestCapacity[i]>0;
-    const forestType=tundraScrub?"subalpine-scrub":forestTypeFromIndex(geo.forestKind?.[i]||0);
+    const climateKey=state.worldOptions?.climate||"temperate";
+    const tundraScrub=climateKey==="tundra"&&geo.forestCapacity[i]>0;
+    const savannaWoodland=climateKey==="savanna"&&geo.forestCapacity[i]>0;
+    const forestType=tundraScrub?"subalpine-scrub":savannaWoodland?"savanna-woodland":forestTypeFromIndex(geo.forestKind?.[i]||0);
     const forestDefinition=forestType?FOREST_TYPES[forestType]:null;
     const forestAgeIndex=Number(geo.forestAge?.[i]||0);
     const succession=forestSuccessionAt(point.x,point.y);
@@ -424,7 +460,7 @@ export function getResourceNodeAt(x,y){
         x:point.x,y:point.y,
         forestStock:geo.forestStock[i],forestCapacity:geo.forestCapacity[i],
         forestStand,forestStandSeed:geo.seed,
-        forestType,forestTypeLabel:tundraScrub?"Subalpine Scrub":(succession?.label||forestDefinition?.label||null),
+        forestType,forestTypeLabel:tundraScrub?"Subalpine Scrub":savannaWoodland?"Savanna Woodland":(succession?.label||forestDefinition?.label||null),
         forestSuccession:succession,forestDisturbance:succession&&!succession.recovered?succession.kind:null,
         forestSuccessionStage:succession?.stage||null,forestSuccessionAge:succession?.age??null,
         forestAge:forestAgeIndex?["young","mature","ancient"][forestAgeIndex-1]||null:null,

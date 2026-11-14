@@ -158,7 +158,10 @@ function warmthSatisfaction(house, season) {
     // One load of firewood keeps a hearth burning for forty days. Drawing two
     // loads every ten days demanded four times what a staffed sawmill could
     // produce, so every winter opened with cold houses and no firewood.
-    const interval = 40;
+    // Savanna winters are dry and mild, not freezing. A hearth load lasts
+    // longer there, so the same store supports the settlement without the
+    // frozen-climate burn rate.
+    const interval = state.worldOptions?.climate === "savanna" ? 160 : 40;
     const lastHeated = Math.max(0, number(house.lastHeatedTick));
     if (lastHeated > 0 && state.tick - lastHeated < interval) return 1;
     const needed = 1;

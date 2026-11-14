@@ -12,6 +12,7 @@ import { grasslandProfileAt, grasslandSummary } from "../world/grassland-ecology
 import { isSteppeSite, steppeProfileAt, steppeSummary } from "../world/steppe-ecology.js";
 import { isDesertSite, desertProfileAt, desertSummary } from "../world/desert-ecology.js";
 import { isTundraSite, tundraProfileAt, tundraSummary } from "../world/tundra-ecology.js";
+import { isSavannaSite, savannaProfileAt, savannaSummary } from "../world/savanna-ecology.js";
 
 const BUCKET = 8;
 const CACHE_VERSION = 1;
@@ -186,6 +187,20 @@ export function tundraSiteProfileAt(x, y, overrides = {}) {
     return tundraProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
 }
 
+export function savannaSiteProfileAt(x, y, overrides = {}) {
+    return savannaProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
+}
+
+export function savannaSiteSummaryAt(x, y) {
+    try {
+        const context = siteContextAt(x, y);
+        return isSavannaSite(x + 0.5, y + 0.5, context)
+            ? savannaSummary(savannaProfileAt(x + 0.5, y + 0.5, context)) : "";
+    } catch {
+        return "";
+    }
+}
+
 export function tundraSiteSummaryAt(x, y) {
     try {
         const context = siteContextAt(x, y);
@@ -223,6 +238,9 @@ export function grasslandSiteSummaryAt(x, y) {
         const context = siteContextAt(x, y);
         if (isTundraSite(x + 0.5, y + 0.5, context)) {
             return tundraSummary(tundraProfileAt(x + 0.5, y + 0.5, context));
+        }
+        if (isSavannaSite(x + 0.5, y + 0.5, context)) {
+            return savannaSummary(savannaProfileAt(x + 0.5, y + 0.5, context));
         }
         if (isDesertSite(x + 0.5, y + 0.5, context)) {
             return desertSummary(desertProfileAt(x + 0.5, y + 0.5, context));

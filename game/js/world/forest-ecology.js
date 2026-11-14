@@ -19,6 +19,7 @@ import { GRASSLAND_GOODS } from './grassland-ecology.js';
 import { STEPPE_GOODS } from './steppe-ecology.js';
 import { DESERT_GOODS } from './desert-ecology.js';
 import { TUNDRA_GOODS } from './tundra-ecology.js';
+import { SAVANNA_GOODS, SAVANNA_SPECIES } from './savanna-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -247,6 +248,9 @@ export const FOREST_SPECIES = Object.freeze({
     // Tropical species (1.2.4) are appended after the 20 temperate species so
     // every existing species lookup and saved formation index keeps its meaning.
     ...TROPICAL_SPECIES,
+    // Savanna species are appended last; existing species lookups and saved
+    // formation indices keep their exact meaning.
+    ...SAVANNA_SPECIES,
 });
 
 export const FOREST_SPECIES_IDS = Object.freeze(Object.keys(FOREST_SPECIES));
@@ -457,6 +461,11 @@ export const FOREST_TYPES = Object.freeze({
     // numeric forestTypeIndex stored in an old save still resolves exactly as
     // before; only new tropical indices are added at the end.
     ...TROPICAL_FORMATIONS,
+    // Savanna woodland is appended last so every numeric type index stored in
+    // an older save keeps resolving to the same formation.
+    'savanna-woodland': type('savanna-woodland', 'Savanna Woodland', 'Scattered flat-crowned acacias and camelthorn over sunlit grass',
+        { acacia: 0.42, camelthorn: 0.22, marula: 0.18, 'fever-tree': 0.1, baobab: 0.08 },
+        { density: 0.34, openness: 0.58, understory: { grass: 0.72, shrub: 0.24, herb: 0.18, moss: 0.02, lichen: 0.04 }, goods: ['gum-arabic', 'firewood', 'timber', 'marula-fruit', 'game'], fauna: ['giraffe', 'elephant', 'impala', 'guinea-fowl', 'lion', 'vulture'], ageBias: 'mature', productivity: 0.62 }),
 });
 
 export const FOREST_TYPE_IDS = Object.freeze(Object.keys(FOREST_TYPES));
@@ -695,6 +704,7 @@ export const FOREST_GOODS = Object.freeze({
     ...DESERT_GOODS,
     ...TUNDRA_GOODS,
     ...TROPICAL_GOODS,
+    ...SAVANNA_GOODS,
 });
 
 const SEASON_GOODS = Object.freeze({
@@ -799,6 +809,10 @@ function formationFor(x, y, ctx) {
     // harvestable drift of dwarf birch and willow that a tundra household can
     // use for fuel and small repairs; it is never a closed forest.
     if (climate === 'tundra') return 'subalpine-scrub';
+    // Savanna timber is real but sparse: flat-crowned acacia, camelthorn and
+    // the occasional riparian fever tree. It is a woodland formation for the
+    // shared stand model, never a closed temperate canopy on the map.
+    if (climate === 'savanna') return 'savanna-woodland';
     // Chestnut groves belong to the warm, sheltered lowlands. The generated
     // temperate map rarely exceeds .62 on land, so .58 is the playable warm
     // band rather than an unreachable threshold.

@@ -109,6 +109,7 @@ export const CLIMATES = [
     { id: 'temperate',    label: 'Temperate',    note: 'Green meadows, mixed forests, four seasons' },
     { id: 'northern',     label: 'Northern',     note: 'Taiga, tundra and long snowy winters' },
     { id: 'tundra',       label: 'Tundra',       note: 'Permafrost, low shrubs, bogs and a short summer' },
+    { id: 'savanna',      label: 'Savanna',      note: 'Tall grass, flat-crowned trees and a long dry season' },
     { id: 'mediterranean',label: 'Mediterranean',note: 'Warm dry summers and olive hills' },
     { id: 'arid',         label: 'Arid',         note: 'Steppe, desert plateaus and oases' },
     { id: 'enchanted',    label: 'Enchanted',    note: 'A milder climate with uncanny colours' },
@@ -237,8 +238,11 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
     // Cold, poorly drained ground keeps many small hollows and fens even where
     // the terrain is otherwise open. This is moisture, not a second biome.
     const tundra = options.climate === 'tundra' ? 0.05 : 0;
+    // Savanna is drier than the rainforest but not a desert: the wet-season
+    // pulse in the ecology profile carries the real seasonal contrast.
+    const savanna = options.climate === 'savanna' ? -0.03 : 0;
     return clamp(
-        noise + tropical + tundra + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
+        noise + tropical + tundra + savanna + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
         + (options.wetlands - 50) * 0.0016 - (options.aridity - 50) * 0.0012,
         0, 1
     );
@@ -246,7 +250,7 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
 
 export function sampleTemperature(wx, wy, W, H, height, sea, rawOptions = {}) {
     const options = rawOptions.__normalized ? rawOptions : normalizeWorldOptions(rawOptions);
-    const base = { temperate: 0.58, northern: 0.33, tundra: 0.20, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
+    const base = { temperate: 0.58, northern: 0.33, tundra: 0.20, savanna: 0.76, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
     const latitude = 1 - Math.abs(wy / H - 0.5) * 2;   // 1 at the equator, 0 at the poles
     let t = base + (latitude - 0.62) * 0.26 - Math.max(0, height - sea) * 0.30;
     t += (fbm(wx * 0.0085 + 91.3, wy * 0.0085 + 17.9, 3, 0.5, 2.1) - 0.5) * 0.07;
@@ -606,6 +610,12 @@ const PALETTES = {
         dry: [132, 134, 108], meadow: [104, 124, 94], lush: [72, 104, 80], forest: [54, 82, 66],
         cold: [142, 150, 146], hot: [150, 148, 116], sand: [174, 170, 150], swamp: [76, 92, 80],
         rock: [112, 116, 114], snow: [236, 241, 245],
+    },
+    savanna: {
+        waterDeep: [24, 64, 72], waterShallow: [66, 126, 122], foam: [218, 224, 202],
+        dry: [174, 137, 84], meadow: [140, 142, 74], lush: [100, 126, 58], forest: [74, 96, 50],
+        cold: [150, 140, 108], hot: [192, 142, 76], sand: [208, 176, 124], swamp: [96, 102, 62],
+        rock: [136, 110, 88], snow: [232, 231, 220],
     },
     mediterranean: {
         waterDeep: [24, 68, 96], waterShallow: [62, 140, 158], foam: [218, 232, 228],
