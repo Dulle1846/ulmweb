@@ -85,6 +85,26 @@ current save schema remains 11 because no existing field changed shape.
 
 ## Verification
 
+### Automated regression guard
+
+`tests/systems/nobility-balance.test.js` runs the fixed seeds
+`20261106, 20261108, 20261110, 20261111, 20261114, 20261143, 20261152, 20261201`
+through the real 25-year campaign. Each seed gets a fresh child process, so
+campaign module state cannot leak into the noble result.
+
+The test reads the annual noble audit and fails if any house is missing, has no
+living members, is dormant in any audited year, ends with no members, falls
+below the game's actual **30-point** withholding threshold, or withholds dues in
+any audit. A separate synthetic case proves the same gate rejects permanent
+dormancy, a single withheld audit and a missing audit. The test deliberately
+does not freeze the observed 56–63 loyalty band.
+
+The current sweep is green: **4/4 houses in every seed**, **0 dormant**, **0
+withheld audits**, minimum loyalty **56**, with **25** audits per seed. Full
+suite: **977/977**.
+
+### Recorded measurements
+
 Recorded on the implementation head:
 
 - Focused noble-house tests: **7/7**.

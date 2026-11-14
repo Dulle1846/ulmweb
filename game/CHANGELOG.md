@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.14.2`
-**Next development line:** `3.17.0-dev`
+**Next development line:** `3.17.1-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -111,6 +111,28 @@ production load founded seed `20261108` with 23 residents, forced the calendar
 to year 3 day 399, and completed the real rollover to year 4 day 9 / tick 1209
 with **zero long tasks**, no page errors, no console errors and no failed
 requests.
+
+### 3.17.1-dev — Noble-house regression guard
+
+**Released:** 2026-11-14 on the development line
+
+**Scope:** keep the noble-house balance from silently regressing. No runtime
+behaviour or balance values changed; the new guard makes the existing health
+contract executable in `npm test`.
+
+- Added `tests/systems/nobility-balance.test.js` and its isolated campaign probe.
+  Eight fixed seeds each run a real 25-year campaign in a **fresh child
+  process**, so module state cannot leak from one seed into the next.
+- Every annual audit is checked for all four houses: no missing audit, no
+  dormant year, no zero-member final state, no loyalty below the game's real
+  30-point withholding threshold, and no withheld dues.
+- The gate also rejects a synthetic house with permanent dormancy, a single
+  withholding audit, or a missing audit, proving the test fails on the failure
+  class rather than only on today's measured values. It does not assert the
+  56–63 loyalty band.
+- Recorded result: all eight seeds keep **4/4 houses**, **0 dormant**, **0
+  withheld audits**, minimum loyalty **56**, over all 25 annual audits. Full
+  suite **977/977** with syntax/import checks.
 
 ### 3.17.0-dev — Living noble houses
 
