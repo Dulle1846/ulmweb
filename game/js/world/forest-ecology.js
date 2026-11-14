@@ -18,6 +18,7 @@ import { jungleProfileFor } from './jungle-ecology.js';
 import { GRASSLAND_GOODS } from './grassland-ecology.js';
 import { STEPPE_GOODS } from './steppe-ecology.js';
 import { DESERT_GOODS } from './desert-ecology.js';
+import { TUNDRA_GOODS } from './tundra-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -692,6 +693,7 @@ export const FOREST_GOODS = Object.freeze({
     ...GRASSLAND_GOODS,
     ...STEPPE_GOODS,
     ...DESERT_GOODS,
+    ...TUNDRA_GOODS,
     ...TROPICAL_GOODS,
 });
 
@@ -793,6 +795,10 @@ function formationFor(x, y, ctx) {
     if (isTropicalClimate(climate)) {
         return tropicalFormationFor(x, y, seed, moisture, temperature, height);
     }
+    // Tundra has no tall timber. A rare, low subalpine scrub stand is the
+    // harvestable drift of dwarf birch and willow that a tundra household can
+    // use for fuel and small repairs; it is never a closed forest.
+    if (climate === 'tundra') return 'subalpine-scrub';
     // Chestnut groves belong to the warm, sheltered lowlands. The generated
     // temperate map rarely exceeds .62 on land, so .58 is the playable warm
     // band rather than an unreachable threshold.

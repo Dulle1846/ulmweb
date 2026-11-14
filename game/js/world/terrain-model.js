@@ -108,6 +108,7 @@ export const WORLD_SHAPES = [
 export const CLIMATES = [
     { id: 'temperate',    label: 'Temperate',    note: 'Green meadows, mixed forests, four seasons' },
     { id: 'northern',     label: 'Northern',     note: 'Taiga, tundra and long snowy winters' },
+    { id: 'tundra',       label: 'Tundra',       note: 'Permafrost, low shrubs, bogs and a short summer' },
     { id: 'mediterranean',label: 'Mediterranean',note: 'Warm dry summers and olive hills' },
     { id: 'arid',         label: 'Arid',         note: 'Steppe, desert plateaus and oases' },
     { id: 'enchanted',    label: 'Enchanted',    note: 'A milder climate with uncanny colours' },
@@ -233,8 +234,11 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
     // The tropical profile is humid even away from a river; the wetlands and
     // fertility sliders still move the local water table inside that envelope.
     const tropical = options.climate === 'tropical' ? 0.2 : 0;
+    // Cold, poorly drained ground keeps many small hollows and fens even where
+    // the terrain is otherwise open. This is moisture, not a second biome.
+    const tundra = options.climate === 'tundra' ? 0.05 : 0;
     return clamp(
-        noise + tropical + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
+        noise + tropical + tundra + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
         + (options.wetlands - 50) * 0.0016 - (options.aridity - 50) * 0.0012,
         0, 1
     );
@@ -242,7 +246,7 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
 
 export function sampleTemperature(wx, wy, W, H, height, sea, rawOptions = {}) {
     const options = rawOptions.__normalized ? rawOptions : normalizeWorldOptions(rawOptions);
-    const base = { temperate: 0.58, northern: 0.33, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
+    const base = { temperate: 0.58, northern: 0.33, tundra: 0.20, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
     const latitude = 1 - Math.abs(wy / H - 0.5) * 2;   // 1 at the equator, 0 at the poles
     let t = base + (latitude - 0.62) * 0.26 - Math.max(0, height - sea) * 0.30;
     t += (fbm(wx * 0.0085 + 91.3, wy * 0.0085 + 17.9, 3, 0.5, 2.1) - 0.5) * 0.07;
@@ -597,6 +601,12 @@ const PALETTES = {
         cold: [138, 146, 140], hot: [150, 146, 104], sand: [176, 172, 146], swamp: [72, 84, 70],
         rock: [108, 110, 108], snow: [232, 238, 242],
     },
+    tundra: {
+        waterDeep: [16, 42, 60], waterShallow: [42, 92, 108], foam: [214, 228, 230],
+        dry: [132, 134, 108], meadow: [104, 124, 94], lush: [72, 104, 80], forest: [54, 82, 66],
+        cold: [142, 150, 146], hot: [150, 148, 116], sand: [174, 170, 150], swamp: [76, 92, 80],
+        rock: [112, 116, 114], snow: [236, 241, 245],
+    },
     mediterranean: {
         waterDeep: [24, 68, 96], waterShallow: [62, 140, 158], foam: [218, 232, 228],
         dry: [176, 158, 104], meadow: [128, 148, 82], lush: [84, 118, 58], forest: [56, 88, 48],
@@ -678,7 +688,12 @@ export function terrainColor(height, moisture, temperature, px, py, climate, sea
     color = mix(color, P.rock, rock * 0.94);
     const snow = climate === 'tropical'
         ? smoothstep(0.88, 0.98, e)
-        : Math.max(smoothstep(0.78, 0.93, e), smoothstep(0.26, 0.12, temperature));
+        : climate === 'tundra'
+            // Tundra soil is not permanently white. Snow belongs to the season
+            // and to the high snowfields; the low ground still reads as moss,
+            // lichen and shallow pools in summer.
+            ? Math.max(smoothstep(0.72, 0.91, e), smoothstep(0.12, 0.03, temperature))
+            : Math.max(smoothstep(0.78, 0.93, e), smoothstep(0.26, 0.12, temperature));
     color = mix(color, P.snow, snow);
 
     // Sand ribbon with a ragged edge and pebble flecks where land meets water.

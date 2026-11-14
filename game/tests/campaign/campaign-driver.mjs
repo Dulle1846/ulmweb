@@ -425,11 +425,14 @@ function observeFuelBackfill(previous, phases, diagnostics) {
     for (const [key, active] of current) previous.set(key, active);
 }
 
-function initialiseFreshRealm(seed) {
+function initialiseFreshRealm(seed, worldOptions = null) {
     corridorCache = null;
     keepAccess = null;
     resetState();
     state.worldSeed = seed;
+    if (worldOptions && typeof worldOptions === "object") {
+        state.worldOptions = { ...state.worldOptions, ...worldOptions };
+    }
     state.hasStarted = true;
     state.isPaused = false;
     state.gameOver = false;
@@ -450,11 +453,12 @@ export function runCampaign({
     sampleTicks = 120,
     era = "common-weal",
     minAgendaStages = 1,
+    worldOptions = null,
     onTick = null,
     onInitialized = null
 } = {}) {
     if (initialize) {
-        initialiseFreshRealm(seed);
+        initialiseFreshRealm(seed, worldOptions);
         // Long-run audits need the same identity/legacy surface as a browser
         // realm so their saves pass the real import validation. Keep this
         // opt-in: the deterministic campaign benchmarks intentionally use the

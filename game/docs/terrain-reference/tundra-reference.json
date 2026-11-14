@@ -1,0 +1,389 @@
+{
+  "seed": 20261113,
+  "viewport": {
+    "width": 800,
+    "height": 800
+  },
+  "timeOfDay": 12,
+  "canvas": {
+    "width": 800,
+    "height": 800
+  },
+  "renderer": "WebKit WebGL",
+  "generatedAt": "2026-11-14T12:55:24.861Z",
+  "world": {
+    "width": 176,
+    "height": 176,
+    "climate": "tundra",
+    "seaLevel": 0.30870000000000003
+  },
+  "formations": [
+    {
+      "formation": "moss-tundra",
+      "x": 76,
+      "y": 13,
+      "label": "Moss tundra",
+      "day": 145,
+      "season": "summer",
+      "permafrost": 88,
+      "wetland": 0,
+      "water": "dry",
+      "snow": 0,
+      "trees": [
+        "Dwarf birch"
+      ],
+      "goods": [
+        "Willow bark",
+        "Lichen",
+        "Tundra herbs",
+        "Wild game",
+        "Hides",
+        "Antler",
+        "Soapstone",
+        "Cloudberries",
+        "Willow withies"
+      ],
+      "fauna": [
+        "Moose",
+        "Reindeer",
+        "Musk ox",
+        "Wolf",
+        "Lemming"
+      ],
+      "featureCount": 33
+    },
+    {
+      "formation": "lichen-tundra",
+      "x": 69,
+      "y": 10,
+      "label": "Lichen tundra",
+      "day": 145,
+      "season": "summer",
+      "permafrost": 88,
+      "wetland": 5,
+      "water": "dry",
+      "snow": 0,
+      "trees": [],
+      "goods": [
+        "Lichen",
+        "Soapstone",
+        "Willow bark",
+        "Wild game",
+        "Hides",
+        "Tundra herbs",
+        "Antler",
+        "Furs",
+        "Bone and horn"
+      ],
+      "fauna": [
+        "Reindeer",
+        "Musk ox",
+        "Arctic fox",
+        "Wolverine",
+        "Arctic hare",
+        "Tundra vole",
+        "Mosquito swarm"
+      ],
+      "featureCount": 33
+    },
+    {
+      "formation": "dwarf-shrub-tundra",
+      "x": 91,
+      "y": 15,
+      "label": "Dwarf-shrub tundra",
+      "day": 145,
+      "season": "summer",
+      "permafrost": 88,
+      "wetland": 10,
+      "water": "dry",
+      "snow": 0,
+      "trees": [
+        "Arctic willow"
+      ],
+      "goods": [
+        "Willow bark",
+        "Willow withies",
+        "Lichen",
+        "Cloudberries",
+        "Tundra herbs",
+        "Wild game",
+        "Hides",
+        "Soapstone",
+        "Antler"
+      ],
+      "fauna": [
+        "Moose",
+        "Reindeer",
+        "Ptarmigan",
+        "Migratory goose",
+        "Arctic hare",
+        "Lemming",
+        "Mosquito swarm"
+      ],
+      "featureCount": 34
+    },
+    {
+      "formation": "willow-thicket",
+      "x": 66,
+      "y": 10,
+      "label": "Willow thicket",
+      "day": 145,
+      "season": "summer",
+      "permafrost": 88,
+      "wetland": 2,
+      "water": "dry",
+      "snow": 0,
+      "trees": [
+        "Arctic willow"
+      ],
+      "goods": [
+        "Willow bark",
+        "Soapstone",
+        "Lichen",
+        "Willow withies",
+        "Tundra herbs",
+        "Wild game",
+        "Hides",
+        "Cloudberries",
+        "Antler"
+      ],
+      "fauna": [
+        "Reindeer",
+        "Musk ox",
+        "Arctic fox",
+        "Ptarmigan",
+        "Arctic hare",
+        "Tundra vole",
+        "Mosquito swarm"
+      ],
+      "featureCount": 34
+    },
+    {
+      "formation": "berry-heath",
+      "x": 70,
+      "y": 11,
+      "label": "Berry heath",
+      "day": 145,
+      "season": "summer",
+      "permafrost": 88,
+      "wetland": 4,
+      "water": "dry",
+      "snow": 0,
+      "trees": [
+        "Netleaf willow"
+      ],
+      "goods": [
+        "Willow bark",
+        "Willow withies",
+        "Lichen",
+        "Cloudberries",
+        "Tundra herbs",
+        "Soapstone",
+        "Wild game",
+        "Hides",
+        "Antler"
+      ],
+      "fauna": [
+        "Moose",
+        "Reindeer",
+        "Wolf",
+        "Wolverine",
+        "Migratory goose",
+        "Arctic hare",
+        "Lemming",
+        "Mosquito swarm"
+      ],
+      "featureCount": 34
+    },
+    {
+      "formation": "sedge-wetland",
+      "x": 95,
+      "y": 85,
+      "label": "Sedge wetland",
+      "day": 145,
+      "season": "summer",
+      "permafrost": 84,
+      "wetland": 100,
+      "water": "open pool",
+      "snow": 0,
+      "trees": [],
+      "goods": [
+        "Arctic char",
+        "Peat",
+        "Cloudberries",
+        "Willow bark",
+        "Tundra herbs",
+        "Wild game",
+        "Hides",
+        "Antler",
+        "Lichen"
+      ],
+      "fauna": [
+        "Reindeer",
+        "Musk ox",
+        "Arctic fox",
+        "Snowy owl",
+        "Migratory goose",
+        "Arctic hare"
+      ],
+      "featureCount": 36
+    },
+    {
+      "formation": "frost-polygon",
+      "x": 76,
+      "y": 12,
+      "label": "Frost-polygon ground",
+      "day": 145,
+      "season": "summer",
+      "permafrost": 88,
+      "wetland": 1,
+      "water": "dry",
+      "snow": 0,
+      "trees": [],
+      "goods": [
+        "Lichen",
+        "Tundra herbs",
+        "Wild game",
+        "Hides",
+        "Antler",
+        "Cloudberries",
+        "Furs",
+        "Soapstone",
+        "Bone and horn"
+      ],
+      "fauna": [
+        "Moose",
+        "Reindeer",
+        "Musk ox",
+        "Arctic fox",
+        "Ptarmigan",
+        "Snowy owl",
+        "Arctic hare",
+        "Lemming"
+      ],
+      "featureCount": 33
+    },
+    {
+      "formation": "rocky-tundra",
+      "x": 74,
+      "y": 18,
+      "label": "Rocky tundra",
+      "day": 145,
+      "season": "summer",
+      "permafrost": 91,
+      "wetland": 0,
+      "water": "dry",
+      "snow": 0,
+      "trees": [],
+      "goods": [
+        "Soapstone",
+        "Lichen",
+        "Tundra herbs",
+        "Cloudberries",
+        "Wild game",
+        "Hides",
+        "Antler",
+        "Furs",
+        "Bone and horn"
+      ],
+      "fauna": [
+        "Moose",
+        "Reindeer",
+        "Wolf",
+        "Wolverine",
+        "Ptarmigan",
+        "Arctic hare",
+        "Tundra vole",
+        "Mosquito swarm"
+      ],
+      "featureCount": 35
+    },
+    {
+      "formation": "coastal-tundra",
+      "x": 64,
+      "y": 9,
+      "label": "Coastal tundra",
+      "day": 145,
+      "season": "summer",
+      "permafrost": 87,
+      "wetland": 2,
+      "water": "dry",
+      "snow": 0,
+      "trees": [
+        "Netleaf willow",
+        "Arctic willow"
+      ],
+      "goods": [
+        "Willow bark",
+        "Willow withies",
+        "Cloudberries",
+        "Lichen",
+        "Tundra herbs",
+        "Wild game",
+        "Hides",
+        "Antler",
+        "Furs"
+      ],
+      "fauna": [
+        "Moose",
+        "Reindeer",
+        "Arctic fox",
+        "Ptarmigan",
+        "Migratory goose",
+        "Arctic hare",
+        "Lemming",
+        "Mosquito swarm"
+      ],
+      "featureCount": 34
+    },
+    {
+      "formation": "snowfield-tundra",
+      "x": 64,
+      "y": 9,
+      "label": "Snowfield tundra",
+      "day": 340,
+      "season": "winter",
+      "permafrost": 87,
+      "wetland": 2,
+      "water": "dry",
+      "snow": 100,
+      "trees": [],
+      "goods": [
+        "Lichen",
+        "Willow bark",
+        "Wild game",
+        "Hides",
+        "Antler",
+        "Furs",
+        "Bone and horn",
+        "Willow withies"
+      ],
+      "fauna": [
+        "Moose",
+        "Reindeer",
+        "Arctic fox",
+        "Ptarmigan",
+        "Arctic hare",
+        "Lemming"
+      ],
+      "featureCount": 31
+    }
+  ],
+  "seasonalFocus": {
+    "x": 95,
+    "y": 85,
+    "label": "Sedge wetland",
+    "formation": "sedge-wetland"
+  },
+  "seasonalDays": [
+    50,
+    145,
+    245,
+    340
+  ],
+  "artifactHashes": {
+    "formations": "40bb21a4f128cd03b36a094eea3ea192669f71e992afa5ace6537529b155c3c8",
+    "seasons": "92e759170534877a00799a9a94e93df59daebf9165ff35d4a93f0a6ed34c52e8"
+  },
+  "note": "Tundra realm, 22 fertility, 8% forest cover; HUD, entities, fog and weather hidden; paused simulation; 2.4x interior view at midday. Every formation is a real generated tile. The seasonal strip follows a wetland tile through four seasons. Not a GPU performance benchmark."
+}

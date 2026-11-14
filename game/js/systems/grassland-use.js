@@ -11,6 +11,7 @@ import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js"
 import { grasslandProfileAt, grasslandSummary } from "../world/grassland-ecology.js";
 import { isSteppeSite, steppeProfileAt, steppeSummary } from "../world/steppe-ecology.js";
 import { isDesertSite, desertProfileAt, desertSummary } from "../world/desert-ecology.js";
+import { isTundraSite, tundraProfileAt, tundraSummary } from "../world/tundra-ecology.js";
 
 const BUCKET = 8;
 const CACHE_VERSION = 1;
@@ -181,6 +182,20 @@ export function desertSiteProfileAt(x, y, overrides = {}) {
     return desertProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
 }
 
+export function tundraSiteProfileAt(x, y, overrides = {}) {
+    return tundraProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
+}
+
+export function tundraSiteSummaryAt(x, y) {
+    try {
+        const context = siteContextAt(x, y);
+        return isTundraSite(x + 0.5, y + 0.5, context)
+            ? tundraSummary(tundraProfileAt(x + 0.5, y + 0.5, context)) : "";
+    } catch {
+        return "";
+    }
+}
+
 export function desertSiteSummaryAt(x, y) {
     try {
         const context = siteContextAt(x, y);
@@ -200,12 +215,15 @@ export function steppeSiteSummaryAt(x, y) {
     }
 }
 
-// Kept for the existing farm/stable panels. On a desert or steppe tile the
-// same site query returns that ecosystem's survey, so the UI does not need a
-// second button or a second resource model.
+// Kept for the existing farm/stable panels. On a tundra, desert or steppe
+// tile the same site query returns that ecosystem's survey, so the UI does not
+// need a second button or a second resource model.
 export function grasslandSiteSummaryAt(x, y) {
     try {
         const context = siteContextAt(x, y);
+        if (isTundraSite(x + 0.5, y + 0.5, context)) {
+            return tundraSummary(tundraProfileAt(x + 0.5, y + 0.5, context));
+        }
         if (isDesertSite(x + 0.5, y + 0.5, context)) {
             return desertSummary(desertProfileAt(x + 0.5, y + 0.5, context));
         }

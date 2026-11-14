@@ -123,6 +123,7 @@ export const TREE_SPECIES = Object.freeze({
 export const CLIMATE_FOLIAGE = Object.freeze({
     temperate: Object.freeze({ turnShift: 0, dropShift: 0, leafOutShift: 0, spanScale: 1, marcescentScale: 1, snowLoad: 1, turnScale: 1 }),
     northern: Object.freeze({ turnShift: -7, dropShift: -9, leafOutShift: 7, spanScale: 1.12, marcescentScale: 0.85, snowLoad: 1.15, turnScale: 1 }),
+    tundra: Object.freeze({ turnShift: -13, dropShift: -15, leafOutShift: 13, spanScale: 0.82, marcescentScale: 0.4, snowLoad: 1.25, turnScale: 0.9 }),
     mediterranean: Object.freeze({ turnShift: 5, dropShift: 4, leafOutShift: -6, spanScale: 0.9, marcescentScale: 0.6, snowLoad: 0.7, turnScale: 0.9 }),
     arid: Object.freeze({ turnShift: 9, dropShift: 6, leafOutShift: -8, spanScale: 0.78, marcescentScale: 0.25, snowLoad: 0.35, turnScale: 0.55 }),
     enchanted: Object.freeze({ turnShift: -3, dropShift: -4, leafOutShift: 3, spanScale: 1.04, marcescentScale: 1, snowLoad: 1.08, turnScale: 1 }),

@@ -18,6 +18,8 @@ import { isSteppeSite, steppeProfileAt } from '../../world/steppe-ecology.js';
 import { drawSteppe } from './steppe-render.js';
 import { isDesertSite, desertProfileAt } from '../../world/desert-ecology.js';
 import { drawDesert, drawDesertTree } from './desert-render.js';
+import { isTundraSite, tundraProfileAt } from '../../world/tundra-ecology.js';
+import { drawTundra, drawTundraTree } from './tundra-render.js';
 import { grasslandUseAt } from '../../systems/grassland-use.js';
 import {
     DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
@@ -1167,7 +1169,14 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // potential before the snow/rock exits below: otherwise the early
             // `continue` erased mountain-conifer, mixed-conifer and snowbreak
             // crowns from the high-altitude formations entirely.
-            const potentialForest = forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 });
+            // Tundra is open by definition: no tall canopy, no forestry. The
+            // cheap cold-site gate also replaces the forest gate, so no stand
+            // species or tree wave is built on a tundra tile.
+            const tundraSite = isTundraSite(x + 0.5, y + 0.5, {
+                seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
+                height: h, climate: climateKey, seaLevel: sea,
+            });
+            const potentialForest = !tundraSite && forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 });
             // Neither the detail lattice nor the tree lattice needs this tile.
             // Do this before forestStandAt(), whose species wave is much more
             // expensive than the profile or the cheap forest gate.
@@ -1176,7 +1185,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // Snowfields get sparse rocks and drifts, not grass. The alpine
             // line rises in summer and sinks in winter, so peaks do not stay
             // painted white through July while the lowlands are green.
-            if (temp < 0.22 || h > 0.92 - climate.snowCover * 0.05) {
+            if (temp < (climateKey === "tundra" ? 0.11 : 0.22) || h > 0.92 - climate.snowCover * 0.05) {
                 if (!potentialForest) {
                     if (detail) {
                         if (s1 > 0.72) drawSnowTuft(ctx, px, py, cellPx, s1);
@@ -1215,7 +1224,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 });
             }
             const clearingMeadow = Boolean(stand?.forest && stand.clearing > 0.22);
-            const grassContext = (!potentialForest || clearingMeadow) && h >= sea && h < 0.86
+            const grassContext = (!potentialForest || clearingMeadow) && h >= sea && h < (tundraSite ? 0.92 : 0.86)
                 ? {
                     seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
                     climate: climateKey, aridity: state.worldOptions?.aridity ?? 50, forests, seaLevel: sea, dayOfYear, year: Number(state.year) || 1,
@@ -1223,17 +1232,20 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                     use: grasslandUseAt(x, y),
                 }
                 : null;
-            // Desert and steppe are open, arid landscapes, not meadows
+            // Tundra, desert and steppe are open landscapes, not meadows
             // recoloured. They keep the same terrain lattice but own their
-            // landforms, flora, fauna, hazards and seasonal colour. A true
-            // desert wins over the steppe margin; forest clearings stay meadow.
-            const desert = grassContext && !potentialForest && isDesertSite(x + 0.5, y + 0.5, grassContext)
+            // landforms, flora, fauna, hazards and seasonal colour. Cold ground
+            // wins first; forest clearings stay meadow.
+            const tundra = grassContext && !potentialForest && tundraSite
+                ? tundraProfileAt(x + 0.5, y + 0.5, grassContext)
+                : null;
+            const desert = grassContext && !potentialForest && !tundra && isDesertSite(x + 0.5, y + 0.5, grassContext)
                 ? desertProfileAt(x + 0.5, y + 0.5, grassContext)
                 : null;
-            const steppe = grassContext && !potentialForest && !desert && isSteppeSite(x + 0.5, y + 0.5, grassContext)
+            const steppe = grassContext && !potentialForest && !tundra && !desert && isSteppeSite(x + 0.5, y + 0.5, grassContext)
                 ? steppeProfileAt(x + 0.5, y + 0.5, grassContext)
                 : null;
-            const grass = grassContext ? (desert || steppe || grasslandProfileAt(x + 0.5, y + 0.5, grassContext)) : null;
+            const grass = grassContext ? (tundra || desert || steppe || grasslandProfileAt(x + 0.5, y + 0.5, grassContext)) : null;
             const meadowTree = Boolean(treeSample && grass && grass.treeChance > 0 && s1 < grass.treeChance);
             if (!potentialForest && !meadowTree && !detail) continue;
 
@@ -1319,6 +1331,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                         drawDesertTree(ctx, px + (Number(tree.offsetX) || 0) * cellPx,
                             py + (Number(tree.offsetY) || 0) * cellPx + 4 * (cellPx / 48),
                             cellPx, tree, grass, (s1 + s2 * 0.5) % 1);
+                    } else if (grass.tundra) {
+                        drawTundraTree(ctx, px, py, cellPx, tree, grass, (s1 + s2 * 0.5) % 1);
                     } else {
                         drawGrasslandTree(ctx, px, py, cellPx, tree, grass, tick);
                     }
@@ -1331,7 +1345,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // surface. The profile decides whether this tile is short turf,
             // tall hay, wet meadow, dry chalk, orchard or mountain pasture.
             if (grass && zoom >= 0.34) {
-                if (grass.desert) drawDesert(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
+                if (grass.tundra) drawTundra(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
+                else if (grass.desert) drawDesert(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
                 else if (grass.steppe) drawSteppe(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
                 else if (temp > 0.68 && m < 0.3 && s1 > 0.86) drawCactus(ctx, px, py, cellPx, s1);
                 else drawGrassland(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
@@ -4342,14 +4357,17 @@ export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
                 hour: Number.isFinite(hour) ? hour : 12, weather: state.weather || "clear", wind,
                 use: grasslandUseAt(x, y),
             };
-            const desertWind = isDesertSite(x + 0.5, y + 0.5, windContext)
+            const tundraWind = isTundraSite(x + 0.5, y + 0.5, windContext)
+                ? tundraProfileAt(x + 0.5, y + 0.5, windContext)
+                : null;
+            const desertWind = !tundraWind && isDesertSite(x + 0.5, y + 0.5, windContext)
                 ? desertProfileAt(x + 0.5, y + 0.5, windContext)
                 : null;
-            const steppeWind = !desertWind && isSteppeSite(x + 0.5, y + 0.5, windContext)
+            const steppeWind = !tundraWind && !desertWind && isSteppeSite(x + 0.5, y + 0.5, windContext)
                 ? steppeProfileAt(x + 0.5, y + 0.5, windContext)
                 : null;
-            const profile = desertWind || steppeWind || grasslandProfileAt(x + 0.5, y + 0.5, windContext);
-            if (!(profile.sward?.tall || profile.desert) || profile.visual.windSway < 0.14) continue;
+            const profile = tundraWind || desertWind || steppeWind || grasslandProfileAt(x + 0.5, y + 0.5, windContext);
+            if (!(profile.sward?.tall || profile.desert || profile.tundra) || profile.visual.windSway < 0.14) continue;
             const s = cellPx / 48;
             const px = x * cellPx - cam.x + cellPx * (0.28 + ((x * 7 + y * 3) % 10) / 22);
             const py = y * cellPx - cam.y + cellPx * (0.35 + ((x * 3 + y * 7) % 10) / 28);

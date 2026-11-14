@@ -31,7 +31,7 @@ test("world sizes grow from compact to colossal", () => {
 
 test("every shape and climate is selectable and documented", () => {
     assert.equal(WORLD_SHAPES.length, 5);
-    assert.equal(CLIMATES.length, 6);
+    assert.equal(CLIMATES.length, 7);
     for (const entry of [...WORLD_SHAPES, ...CLIMATES]) {
         assert.ok(entry.id && entry.label && entry.note, entry.id);
     }
@@ -166,6 +166,7 @@ test("gameplay biomes keep the original water/sand/grass/forest vocabulary", () 
     assert.equal(gameplayBiome("water"), "water");
     assert.equal(gameplayBiome("desert"), "sand");
     assert.equal(gameplayBiome("taiga"), "forest");
+    assert.equal(gameplayBiome("tundra"), "grass");
     assert.equal(gameplayBiome("meadow"), "grass");
 });
 

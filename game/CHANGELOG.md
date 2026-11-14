@@ -5,7 +5,7 @@
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-13 (UTC)
+**Last repository verification:** 2026-11-14 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
@@ -37,6 +37,35 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.15.0-dev — Tundra and the living permafrost (1.2.9)
+
+**Released:** 2026-11-14
+
+**Scope:** Tundra becomes the seventh climate instead of a colder variant of
+`northern`. A dedicated, deterministic ecology module derives moss, lichen,
+dwarf-shrub, willow-thicket, berry-heath, sedge-wetland, frost-polygon, rocky,
+coastal and snowfield formations from height, moisture, temperature, season,
+weather, wind and real land use. The profile carries permafrost and a summer
+active layer, thaw depth, polygons, cracks, hummocks, bearing strength, pools,
+peat, ten formations, cold-adapted fauna and the full 48-point vocabulary.
+
+**Integration:** `terrain.js` gives tundra priority over the other biomes and
+suppresses tall forest; `tundra-render.js` draws a bounded detail layer. The
+shared forest, gathering, goods, hauling and farm/stable survey systems carry
+the new products. Rare low subalpine-scrub stands give the lumber chain a small
+renewable timber and fuel source without painting a forest over the tundra.
+Harvest yield, spoilage, winter/spring movement, farm and stable summaries and
+the climate selector all read the same climate profile. Existing worlds and
+saves keep their settlements and terrain unchanged.
+
+**Verification:** focused tundra ecology and rendering 10/10; full `npm test`
+933/933 with syntax and relative imports clean for 143 source files / 203 UI
+ids; complete browser E2E green; 25-year temperate campaign 10,040 ticks,
+13/13 ambitions, no stalls and no game over; a 25-year tundra campaign reaches
+the same 10,040 ticks and 13/13 ambitions. The deterministic browser reference
+`npm run test:tundra-reference` captures all ten formations and one wetland
+through four seasons.
 
 ### 3.15.0-dev — Loaded realms keep their HUD and realm issues
 

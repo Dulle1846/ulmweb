@@ -6,6 +6,7 @@ import {
     FOREST_TYPES, forestRegrowthFactor, forestSightProfile, forestSnowDepthAt, forestStandAt, forestTypeFromIndex, forestTypeIndex,
 } from "../world/forest-ecology.js";
 import { forestSuccessionAt } from "./forest-succession.js";
+import { seasonalState } from "../world/season.js";
 
 const VERSION=1;
 
@@ -109,21 +110,46 @@ export function generateResourceGeography(seed=state.worldSeed){
             // timber than a thin birch grove, and a burn scar holds less.
             if(h>=forestLine&&h<BIOME.ROCK){
                 const density=clamp((h-forestLine)/Math.max(0.001,BIOME.ROCK-forestLine),0,1);
-                const presence=0.42+density*0.34+moisture*0.18+resourceBias;
-                if(unitHash(worldSeed,index,0x46525354)<presence){
-                    const stand=forestStandAt(x+0.5,y+0.5,{
-                        seed:worldSeed, moisture, temperature, height:h,
-                        climate:state.worldOptions?.climate||"temperate",
-                        forests:state.worldOptions?.forests??52,
-                        stockRatio:1, rockLine:BIOME.ROCK,
-                    });
-                    if(stand.forest){
-                        const base=35+density*85+moisture*55+unitHash(worldSeed,index,0x46434150)*45;
-                        const capacity=Math.max(1,Math.min(65535,Math.round(base*(0.68+stand.productivity*0.6))));
-                        forestCapacity[index]=capacity;
-                        forestStock[index]=capacity;
-                        forestKind[index]=forestTypeIndex(stand.type);
-                        forestAge[index]=stand.ageClass==="ancient"?3:stand.ageClass==="young"?1:2;
+                const climate=state.worldOptions?.climate||"temperate";
+                if(climate==="tundra"){
+                    // Tundra carries only scattered scrub: enough for a little
+                    // fuel, fencing and repair timber, never a closed canopy.
+                    // Keep it sparse and much smaller than a woodland stand so
+                    // the resource layer matches the open tundra renderer.
+                    const scrubChance=0.055+density*0.07+moisture*0.035;
+                    if(unitHash(worldSeed,index,0x54554e44)<scrubChance){
+                        const stand=forestStandAt(x+0.5,y+0.5,{
+                            seed:worldSeed, moisture, temperature, height:h,
+                            climate, forests:state.worldOptions?.forests??52,
+                            stockRatio:1, rockLine:BIOME.ROCK,
+                        });
+                        if(stand.forest){
+                            const capacity=Math.max(4,Math.min(36,Math.round(8+density*12+moisture*8+unitHash(worldSeed,index,0x54534352)*10)));
+                            forestCapacity[index]=capacity;
+                            forestStock[index]=capacity;
+                            // The renderer and survey must agree: tundra scrub is
+                            // always subalpine scrub, never a disturbance label
+                            // such as "Drought-stressed Pine".
+                            forestKind[index]=forestTypeIndex("subalpine-scrub");
+                            forestAge[index]=1;
+                        }
+                    }
+                }else{
+                    const presence=0.42+density*0.34+moisture*0.18+resourceBias;
+                    if(unitHash(worldSeed,index,0x46525354)<presence){
+                        const stand=forestStandAt(x+0.5,y+0.5,{
+                            seed:worldSeed, moisture, temperature, height:h,
+                            climate, forests:state.worldOptions?.forests??52,
+                            stockRatio:1, rockLine:BIOME.ROCK,
+                        });
+                        if(stand.forest){
+                            const base=35+density*85+moisture*55+unitHash(worldSeed,index,0x46434150)*45;
+                            const capacity=Math.max(1,Math.min(65535,Math.round(base*(0.68+stand.productivity*0.6))));
+                            forestCapacity[index]=capacity;
+                            forestStock[index]=capacity;
+                            forestKind[index]=forestTypeIndex(stand.type);
+                            forestAge[index]=stand.ageClass==="ancient"?3:stand.ageClass==="young"?1:2;
+                        }
                     }
                 }
             }
@@ -261,7 +287,16 @@ export function getForestHabitatAt(x, y) {
 // tile, stock or world changes, so repeated steps over the same ground are a
 // Map lookup rather than a stand rebuild.
 export function getForestMovementFactorAt(x, y) {
-    if ((state.worldOptions?.climate || "temperate") !== "tropical") return 1;
+    const climate = state.worldOptions?.climate || "temperate";
+    // Deep snow and the spring thaw are route costs, not a cosmetic overlay.
+    // The tundra profile has no timber traffic to price, so this cheap scalar
+    // check runs before any tile lookup and stays unchanged for other worlds.
+    if (climate === "tundra") {
+        const seasonal = seasonalState(Number(state.dayOfYear) || 0, "tundra");
+        const thaw = seasonal.season === 0 ? (1 - seasonal.greenUp) * 0.12 : 0;
+        return clamp(1 - seasonal.snowCover * 0.34 - thaw, 0.58, 1);
+    }
+    if (climate !== "tropical") return 1;
     const point = readTile(x, y);
     if (!point) return 1;
     const geo = ensureGeography();
@@ -345,7 +380,11 @@ export function getResourceNodeAt(x,y){
     const point=readTile(x,y);
     if(!point)return null;
     const geo=ensureGeography(),i=point.index;
-    const forestType=forestTypeFromIndex(geo.forestKind?.[i]||0);
+    // Tundra scrub keeps one identity even when the shared succession model
+    // adds a windthrow or snowbreak history: the player must never see a
+    // "Drought-stressed Pine" label on a treeless tundra tile.
+    const tundraScrub=(state.worldOptions?.climate||"temperate")==="tundra"&&geo.forestCapacity[i]>0;
+    const forestType=tundraScrub?"subalpine-scrub":forestTypeFromIndex(geo.forestKind?.[i]||0);
     const forestDefinition=forestType?FOREST_TYPES[forestType]:null;
     const forestAgeIndex=Number(geo.forestAge?.[i]||0);
     const succession=forestSuccessionAt(point.x,point.y);
@@ -385,7 +424,7 @@ export function getResourceNodeAt(x,y){
         x:point.x,y:point.y,
         forestStock:geo.forestStock[i],forestCapacity:geo.forestCapacity[i],
         forestStand,forestStandSeed:geo.seed,
-        forestType,forestTypeLabel:succession?.label||forestDefinition?.label||null,
+        forestType,forestTypeLabel:tundraScrub?"Subalpine Scrub":(succession?.label||forestDefinition?.label||null),
         forestSuccession:succession,forestDisturbance:succession&&!succession.recovered?succession.kind:null,
         forestSuccessionStage:succession?.stage||null,forestSuccessionAge:succession?.age??null,
         forestAge:forestAgeIndex?["young","mature","ancient"][forestAgeIndex-1]||null:null,

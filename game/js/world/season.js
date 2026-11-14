@@ -24,6 +24,13 @@ export const CLIMATE_SEASONS = Object.freeze({
         snowStart: 238, snowFull: 300, meltStart: 395, meltEnd: 470,
         snowScale: 1.15, foliageShift: -8, foliageScale: 1, greenShift: 8, warmthShift: -10,
     }),
+    // Snow lies from early autumn to late spring, so only the short summer is
+    // reliably bare. Green-up is compressed and arrives late; warmth peaks
+    // briefly and fades quickly.
+    tundra: Object.freeze({
+        snowStart: 200, snowFull: 252, meltStart: 344, meltEnd: 432,
+        snowScale: 1.22, foliageShift: -16, foliageScale: 0.72, greenShift: 20, warmthShift: -22,
+    }),
     mediterranean: Object.freeze({
         snowStart: 272, snowFull: 325, meltStart: 350, meltEnd: 410,
         snowScale: 0.55, foliageShift: 5, foliageScale: 0.9, greenShift: -6, warmthShift: 8,

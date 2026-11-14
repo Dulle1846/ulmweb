@@ -25,6 +25,7 @@ export const ECONOMY_TUNING = Object.freeze({
     safeStorageRatio: 0.90,
     spoilageRate: 0.0015,
     tropicalSpoilageRate: 0.004,
+    tundraSpoilageRate: 0.0008,
     stormSpoilageAdd: 0.001,
     // A farm household keeps part of its crop. This is the subsistence share
     // that never enters the market chain; it makes a staffed field feed people
@@ -107,7 +108,9 @@ export function calculateFoodSpoilage(foodAvailable, storageCapacity, { climate 
     const safe = capacity * ECONOMY_TUNING.safeStorageRatio;
     const exposed = Math.max(0, food - safe);
     if (exposed <= 0) return 0;
-    const rate = climate === "tropical" ? ECONOMY_TUNING.tropicalSpoilageRate : ECONOMY_TUNING.spoilageRate;
+    const rate = climate === "tropical" ? ECONOMY_TUNING.tropicalSpoilageRate
+        : climate === "tundra" ? ECONOMY_TUNING.tundraSpoilageRate
+            : ECONOMY_TUNING.spoilageRate;
     const weatherAdd = weather === "rain" || weather === "storm" ? ECONOMY_TUNING.stormSpoilageAdd : 0;
     return Math.min(exposed, round2(exposed * (rate + weatherAdd)));
 }
@@ -124,6 +127,7 @@ export function getHarvestYieldFactor() {
         arid: 0.90,
         tropical: 1.06,
         northern: 0.94,
+        tundra: 0.72,
         mediterranean: 1.02,
         enchanted: 1.02
     }[climate] || 1;

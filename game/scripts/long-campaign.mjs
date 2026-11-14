@@ -11,6 +11,7 @@ const SEED = Number(process.env.CAMPAIGN_SEED || 20261108);
 const YEARS = Math.max(1, Number(process.env.CAMPAIGN_YEARS || 25));
 const ERA = process.env.CAMPAIGN_ERA || "common-weal";
 const MIN_AGENDA_STAGES = Math.max(1, Math.min(3, Number(process.env.CAMPAIGN_MIN_AGENDA_STAGES || 1)));
+const CLIMATE = process.env.CAMPAIGN_CLIMATE || "temperate";
 
 function makeCanvasStub() {
     return {
@@ -37,7 +38,10 @@ globalThis.document = {
 
 let result;
 try {
-    result = runCampaign({ seed: SEED, years: YEARS, era: ERA, minAgendaStages: MIN_AGENDA_STAGES });
+    result = runCampaign({
+        seed: SEED, years: YEARS, era: ERA, minAgendaStages: MIN_AGENDA_STAGES,
+        worldOptions: { climate: CLIMATE },
+    });
 } finally {
     globalThis.document = previousDocument;
 }

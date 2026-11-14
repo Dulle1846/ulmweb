@@ -12,6 +12,7 @@
     "test:season-year": "node tests/browser/season-year.mjs",
     "test:climate-reference": "node tests/browser/climate-reference.mjs",
     "test:desert-reference": "node tests/browser/desert-reference.mjs",
+    "test:tundra-reference": "node tests/browser/tundra-reference.mjs",
     "test:forest-reference": "node tests/browser/forest-reference.mjs",
     "test:conifer-reference": "node tests/browser/conifer-reference.mjs",
     "test:mixed-reference": "FOREST_REFERENCE_PROFILE=mixed node tests/browser/forest-reference.mjs",
