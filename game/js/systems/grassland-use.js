@@ -12,6 +12,7 @@ import { grasslandProfileAt, grasslandSummary } from "../world/grassland-ecology
 import { isSteppeSite, steppeProfileAt, steppeSummary } from "../world/steppe-ecology.js";
 import { isDesertSite, desertProfileAt, desertSummary } from "../world/desert-ecology.js";
 import { isTundraSite, tundraProfileAt, tundraSummary } from "../world/tundra-ecology.js";
+import { isTaigaSite, taigaProfileAt, taigaSummary } from "../world/taiga-ecology.js";
 import { isSavannaSite, savannaProfileAt, savannaSummary } from "../world/savanna-ecology.js";
 
 const BUCKET = 8;
@@ -187,6 +188,10 @@ export function tundraSiteProfileAt(x, y, overrides = {}) {
     return tundraProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
 }
 
+export function taigaSiteProfileAt(x, y, overrides = {}) {
+    return taigaProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
+}
+
 export function savannaSiteProfileAt(x, y, overrides = {}) {
     return savannaProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
 }
@@ -206,6 +211,16 @@ export function tundraSiteSummaryAt(x, y) {
         const context = siteContextAt(x, y);
         return isTundraSite(x + 0.5, y + 0.5, context)
             ? tundraSummary(tundraProfileAt(x + 0.5, y + 0.5, context)) : "";
+    } catch {
+        return "";
+    }
+}
+
+export function taigaSiteSummaryAt(x, y) {
+    try {
+        const context = siteContextAt(x, y);
+        return isTaigaSite(x + 0.5, y + 0.5, context)
+            ? taigaSummary(taigaProfileAt(x + 0.5, y + 0.5, context)) : "";
     } catch {
         return "";
     }
@@ -238,6 +253,9 @@ export function grasslandSiteSummaryAt(x, y) {
         const context = siteContextAt(x, y);
         if (isTundraSite(x + 0.5, y + 0.5, context)) {
             return tundraSummary(tundraProfileAt(x + 0.5, y + 0.5, context));
+        }
+        if (isTaigaSite(x + 0.5, y + 0.5, context)) {
+            return taigaSummary(taigaProfileAt(x + 0.5, y + 0.5, context));
         }
         if (isSavannaSite(x + 0.5, y + 0.5, context)) {
             return savannaSummary(savannaProfileAt(x + 0.5, y + 0.5, context));

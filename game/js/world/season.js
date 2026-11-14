@@ -24,6 +24,13 @@ export const CLIMATE_SEASONS = Object.freeze({
         snowStart: 238, snowFull: 300, meltStart: 395, meltEnd: 470,
         snowScale: 1.15, foliageShift: -8, foliageScale: 1, greenShift: 8, warmthShift: -10,
     }),
+    // The taiga keeps a deep snow pack from mid-autumn into late spring. Its
+    // summer is short but can be warm and humid; the long melt is what makes
+    // spring transport and flooding a real seasonal problem.
+    taiga: Object.freeze({
+        snowStart: 210, snowFull: 265, meltStart: 380, meltEnd: 470,
+        snowScale: 1.28, foliageShift: -12, foliageScale: 0.62, greenShift: 18, warmthShift: -16,
+    }),
     // Snow lies from early autumn to late spring, so only the short summer is
     // reliably bare. Green-up is compressed and arrives late; warmth peaks
     // briefly and fades quickly.

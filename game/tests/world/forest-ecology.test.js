@@ -15,7 +15,7 @@ const standContext = (overrides = {}) => ({
 });
 
 test("forest species, formations and goods form a complete shared vocabulary", () => {
-    assert.equal(FOREST_TYPE_IDS.length, 52);
+    assert.equal(FOREST_TYPE_IDS.length, 57);
     assert.deepEqual(Object.keys(FOREST_TYPES), FOREST_TYPE_IDS);
     for (const [id, species] of Object.entries(FOREST_SPECIES)) {
         assert.equal(species.id, id);

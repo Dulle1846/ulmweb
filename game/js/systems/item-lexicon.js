@@ -7,6 +7,7 @@ import { FURNITURE_ITEM_IDS, FURNITURE_COSTS, FURNITURE_UPKEEP } from "./furnitu
 import { FOREST_GOODS } from "../world/forest-ecology.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import { SAVANNA_GOODS } from "../world/savanna-ecology.js";
+import { TAIGA_GOODS } from "../world/taiga-ecology.js";
 
 export const MAX_CRAFTED_ITEMS = 500;
 const MAX_MATERIALS = 8;
@@ -201,25 +202,30 @@ function buildBaseItems() {
 
     const tropicalIds = new Set(Object.keys(TROPICAL_GOODS));
     const savannaIds = new Set(Object.keys(SAVANNA_GOODS));
+    const taigaIds = new Set(Object.keys(TAIGA_GOODS));
     for (const good of Object.values(FOREST_GOODS)) {
         if (!good || seen.has(good.id)) continue;
         seen.add(good.id);
         const category = FOREST_CATEGORY_IDS[good.category] || "forage";
         const tropical = tropicalIds.has(good.id);
         const savanna = savannaIds.has(good.id);
-        const zone = tropical ? "Tropical forests" : savanna ? "Savanna and open woodland" : "Temperate forests";
+        const taiga = taigaIds.has(good.id);
+        const zone = tropical ? "Tropical forests" : savanna ? "Savanna and open woodland"
+            : taiga ? "Boreal taiga and forest lakes" : "Temperate forests";
         const processed = Boolean(good.processed);
         items.push(freezeItem({
-            id: "base:forest:" + good.id, origin: tropical ? "tropical" : savanna ? "savanna" : "forest", kind: "good", category,
+            id: "base:forest:" + good.id, origin: tropical ? "tropical" : savanna ? "savanna" : taiga ? "taiga" : "forest", kind: "good", category,
             label: good.label, source: zone + (processed ? " · processed" : " · seasonal gathering"),
             summary: FOREST_CATEGORY_NOTES[good.category] || "An ecological product gathered from the living forest.",
             detail: (tropical
                 ? "This species belongs to the tropical canopy, riverbank or swidden garden. Its season is part of the forest's own fruiting and flowering cycle."
                 : savanna
                     ? "This species belongs to the savanna grass, thorn scrub, riparian corridor or scattered woodland. Its yield follows the wet and dry season recorded on the map."
-                    : "This species belongs to the temperate woodland. Its seasonal yield follows the forest type, age and management recorded on the map.")
+                    : taiga
+                        ? "This product belongs to the boreal spruce, pine, larch and birch forest, its moss floor, bogs or forest lakes. Its yield follows the long winter and short summer recorded on the map."
+                        : "This species belongs to the temperate woodland. Its seasonal yield follows the forest type, age and management recorded on the map.")
                 + (processed ? " It is a processed product: raw carcasses or hides are turned into this good before delivery." : ""),
-            tags: [tropical ? "tropical" : savanna ? "savanna" : "temperate", good.category, processed ? "processed" : "raw", good.id],
+            tags: [tropical ? "tropical" : savanna ? "savanna" : taiga ? "taiga" : "temperate", good.category, processed ? "processed" : "raw", good.id],
             availability: processed ? "Processed from raw stock" : "Seasonal · ecology-limited",
             recipe: null,
         }));

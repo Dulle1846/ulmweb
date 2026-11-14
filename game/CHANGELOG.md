@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.14.2`
-**Next development line:** `3.15.0-dev`
+**Next development line:** `3.16.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -43,6 +43,34 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.16.0-dev — Taiga (1.2.10)
+
+**Released:** in development
+
+**Scope:** Add the complete 56-point Taiga climate as a dedicated living biome,
+not a recolour of the temperate forest. Ten formations cover old spruce forest,
+pine ridge, larch stand, birch island, mixed taiga, forest clearing, tundra
+ecotone, peat bog, taiga lakeshore and rocky woodland. Five taiga forest stand
+types join the existing shared stand model without renumbering any old forest
+index, and real snowbreak, windthrow, fire and bark-beetle disturbances use the
+same resource nodes as lumberjacks and sawmills.
+
+`taiga-ecology.js` derives soil, water, vegetation, fauna, goods, hazards and
+economy from height, moisture, temperature, season, weather, wind and real land
+use with no extra tick loop or per-tile save data. `taiga-render.js` draws the
+bounded moss/lichen floor, lake and ice, sedges, berry shrubs, flowers, deadwood,
+exposed roots, snow, fire scars, wildlife and four tree silhouettes. Gathering
+checks taiga after tundra and before savanna; lake fish delivers food, boreal
+herbs and bear fat deliver medicine, and five new goods join the single ledger.
+Long winters raise fuel demand, shorten the growing season, slow snow-season
+movement and make stored winter supplies and waterways economically important.
+The 56-point audit is in [docs/TAIGA.md](docs/TAIGA.md).
+
+**Verification:** `npm test` **964/964** including the new ecology, generated-
+world resource and renderer suites; all 56 requirement IDs and all ten
+formations are reachable in the deterministic survey. No production deployment
+is claimed by this entry until its receipt and live check are recorded below.
 
 ### 3.15.0-dev — Campaign seed sweep and eight-climate low-end proof (1.2.11)
 

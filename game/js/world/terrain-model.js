@@ -108,6 +108,7 @@ export const WORLD_SHAPES = [
 export const CLIMATES = [
     { id: 'temperate',    label: 'Temperate',    note: 'Green meadows, mixed forests, four seasons' },
     { id: 'northern',     label: 'Northern',     note: 'Taiga, tundra and long snowy winters' },
+    { id: 'taiga',        label: 'Taiga',        note: 'Spruce, pine, larch and birch under long snow' },
     { id: 'tundra',       label: 'Tundra',       note: 'Permafrost, low shrubs, bogs and a short summer' },
     { id: 'savanna',      label: 'Savanna',      note: 'Tall grass, flat-crowned trees and a long dry season' },
     { id: 'mediterranean',label: 'Mediterranean',note: 'Warm dry summers and olive hills' },
@@ -241,8 +242,11 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
     // Savanna is drier than the rainforest but not a desert: the wet-season
     // pulse in the ecology profile carries the real seasonal contrast.
     const savanna = options.climate === 'savanna' ? -0.03 : 0;
+    // The taiga is damp, poorly drained and full of small hollows; this is the
+    // same moisture field that later forms moss floors, bogs and forest ponds.
+    const taiga = options.climate === 'taiga' ? 0.05 : 0;
     return clamp(
-        noise + tropical + tundra + savanna + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
+        noise + tropical + tundra + savanna + taiga + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
         + (options.wetlands - 50) * 0.0016 - (options.aridity - 50) * 0.0012,
         0, 1
     );
@@ -250,7 +254,7 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
 
 export function sampleTemperature(wx, wy, W, H, height, sea, rawOptions = {}) {
     const options = rawOptions.__normalized ? rawOptions : normalizeWorldOptions(rawOptions);
-    const base = { temperate: 0.58, northern: 0.33, tundra: 0.20, savanna: 0.76, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
+    const base = { temperate: 0.58, northern: 0.33, taiga: 0.27, tundra: 0.20, savanna: 0.76, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
     const latitude = 1 - Math.abs(wy / H - 0.5) * 2;   // 1 at the equator, 0 at the poles
     let t = base + (latitude - 0.62) * 0.26 - Math.max(0, height - sea) * 0.30;
     t += (fbm(wx * 0.0085 + 91.3, wy * 0.0085 + 17.9, 3, 0.5, 2.1) - 0.5) * 0.07;
@@ -611,6 +615,12 @@ const PALETTES = {
         cold: [142, 150, 146], hot: [150, 148, 116], sand: [174, 170, 150], swamp: [76, 92, 80],
         rock: [112, 116, 114], snow: [236, 241, 245],
     },
+    taiga: {
+        waterDeep: [18, 48, 66], waterShallow: [46, 102, 118], foam: [214, 228, 230],
+        dry: [130, 128, 102], meadow: [94, 118, 84], lush: [58, 94, 66], forest: [30, 66, 48],
+        cold: [138, 150, 146], hot: [154, 148, 110], sand: [178, 172, 146], swamp: [74, 86, 70],
+        rock: [104, 108, 106], snow: [236, 242, 246],
+    },
     savanna: {
         waterDeep: [24, 64, 72], waterShallow: [66, 126, 122], foam: [218, 224, 202],
         dry: [174, 137, 84], meadow: [140, 142, 74], lush: [100, 126, 58], forest: [74, 96, 50],
@@ -703,7 +713,11 @@ export function terrainColor(height, moisture, temperature, px, py, climate, sea
             // and to the high snowfields; the low ground still reads as moss,
             // lichen and shallow pools in summer.
             ? Math.max(smoothstep(0.72, 0.91, e), smoothstep(0.12, 0.03, temperature))
-            : Math.max(smoothstep(0.78, 0.93, e), smoothstep(0.26, 0.12, temperature));
+            : climate === 'taiga'
+                // The taiga floor stays dark conifer forest in summer. Only
+                // high exposed ground is painted as permanent snow.
+                ? Math.max(smoothstep(0.82, 0.94, e), smoothstep(0.17, 0.08, temperature))
+                : Math.max(smoothstep(0.78, 0.93, e), smoothstep(0.26, 0.12, temperature));
     color = mix(color, P.snow, snow);
 
     // Sand ribbon with a ragged edge and pebble flecks where land meets water.

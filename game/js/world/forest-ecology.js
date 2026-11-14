@@ -19,6 +19,7 @@ import { GRASSLAND_GOODS } from './grassland-ecology.js';
 import { STEPPE_GOODS } from './steppe-ecology.js';
 import { DESERT_GOODS } from './desert-ecology.js';
 import { TUNDRA_GOODS } from './tundra-ecology.js';
+import { TAIGA_GOODS } from './taiga-ecology.js';
 import { SAVANNA_GOODS, SAVANNA_SPECIES } from './savanna-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
@@ -466,6 +467,21 @@ export const FOREST_TYPES = Object.freeze({
     'savanna-woodland': type('savanna-woodland', 'Savanna Woodland', 'Scattered flat-crowned acacias and camelthorn over sunlit grass',
         { acacia: 0.42, camelthorn: 0.22, marula: 0.18, 'fever-tree': 0.1, baobab: 0.08 },
         { density: 0.34, openness: 0.58, understory: { grass: 0.72, shrub: 0.24, herb: 0.18, moss: 0.02, lichen: 0.04 }, goods: ['gum-arabic', 'firewood', 'timber', 'marula-fruit', 'game'], fauna: ['giraffe', 'elephant', 'impala', 'guinea-fowl', 'lion', 'vulture'], ageBias: 'mature', productivity: 0.62 }),
+    'taiga-spruce': type('taiga-spruce', 'Taiga Spruce Forest', 'Dark spruce spires over a deep moss floor, deadwood and long snow',
+        { spruce: 0.56, pine: 0.12, larch: 0.1, birch: 0.16, rowan: 0.06 },
+        { density: 0.86, openness: 0.1, conifer: true, needleLitter: 0.98, understory: { fern: 0.1, bramble: 0, shrub: 0.08, moss: 0.62, heather: 0, lichen: 0.26, berry: 0.18, grass: 0.04, herb: 0.08 }, goods: ['spruce-cones', 'resin', 'mushrooms', 'lichen', 'blueberries', 'game'], fauna: ['moose', 'bear', 'wolf', 'lynx', 'crossbill', 'capercaillie', 'owl', 'fox'], ageBias: 'ancient', silviculture: ['timber', 'firewood', 'resin', 'hunting', 'protection'] }),
+    'taiga-pine': type('taiga-pine', 'Taiga Pine Ridge', 'Sunlit pine trunks, lichen heath and dry needle litter on a low ridge',
+        { pine: 0.58, spruce: 0.12, larch: 0.12, birch: 0.12, juniper: 0.06 },
+        { density: 0.62, openness: 0.3, conifer: true, needleLitter: 0.84, understory: { fern: 0.04, bramble: 0, shrub: 0.12, moss: 0.22, heather: 0.42, lichen: 0.46, berry: 0.26, grass: 0.08, herb: 0.06 }, goods: ['pine-cones', 'resin', 'blueberries', 'lingonberries', 'mushrooms', 'game'], fauna: ['moose', 'bear', 'fox', 'hare', 'crossbill', 'capercaillie', 'ant'], ageBias: 'mature', silviculture: ['timber', 'firewood', 'resin', 'hunting', 'mushrooms'] }),
+    'taiga-larch': type('taiga-larch', 'Taiga Larch Stand', 'Airy larch crowns that turn gold and drop their needles before winter',
+        { larch: 0.52, pine: 0.16, spruce: 0.12, birch: 0.14, rowan: 0.06 },
+        { density: 0.7, openness: 0.26, conifer: true, needleLitter: 0.78, understory: { fern: 0.12, bramble: 0, shrub: 0.14, moss: 0.3, heather: 0.18, lichen: 0.24, berry: 0.3, grass: 0.1, herb: 0.12 }, goods: ['larch-timber', 'larch-cones', 'resin', 'mushrooms', 'blueberries', 'herbs'], fauna: ['moose', 'bear', 'roe-deer', 'fox', 'crossbill', 'capercaillie', 'songbird'], ageBias: 'mature', silviculture: ['timber', 'firewood', 'resin', 'hunting', 'mushrooms'] }),
+    'taiga-birch': type('taiga-birch', 'Taiga Birch Island', 'White birch stems in a bright island of regrowth among dark conifers',
+        { birch: 0.48, spruce: 0.18, pine: 0.16, larch: 0.12, rowan: 0.06 },
+        { density: 0.58, openness: 0.38, needleLitter: 0.34, understory: { fern: 0.12, bramble: 0.1, shrub: 0.24, moss: 0.2, heather: 0.24, lichen: 0.18, berry: 0.38, grass: 0.18, herb: 0.18 }, goods: ['birch-sap', 'birch-bark', 'mushrooms', 'chanterelle', 'blueberries', 'game'], fauna: ['moose', 'bear', 'hare', 'fox', 'squirrel', 'capercaillie', 'songbird'], ageBias: 'young', productivity: 0.86, silviculture: ['firewood', 'poles', 'hunting', 'mushrooms'] }),
+    'taiga-mixed': type('taiga-mixed', 'Mixed Taiga', 'Spruce, pine, larch and birch in an uneven, many-aged mosaic',
+        { spruce: 0.32, pine: 0.24, larch: 0.16, birch: 0.22, rowan: 0.06 },
+        { density: 0.8, openness: 0.14, conifer: true, needleLitter: 0.66, canopyLayers: 3, mixturePattern: 'mosaic', understory: { fern: 0.12, bramble: 0, shrub: 0.2, moss: 0.42, heather: 0.12, lichen: 0.2, berry: 0.28, grass: 0.08, herb: 0.12 }, goods: ['spruce-cones', 'pine-cones', 'resin', 'mushrooms', 'blueberries', 'game'], fauna: ['moose', 'bear', 'wolf', 'lynx', 'crossbill', 'capercaillie', 'owl', 'fox'], ageBias: 'mature', productivity: 1.02, silviculture: ['selection-felling', 'timber', 'firewood', 'hunting', 'mushrooms', 'protection'] }),
 });
 
 export const FOREST_TYPE_IDS = Object.freeze(Object.keys(FOREST_TYPES));
@@ -703,6 +719,7 @@ export const FOREST_GOODS = Object.freeze({
     ...STEPPE_GOODS,
     ...DESERT_GOODS,
     ...TUNDRA_GOODS,
+    ...TAIGA_GOODS,
     ...TROPICAL_GOODS,
     ...SAVANNA_GOODS,
 });
@@ -723,6 +740,11 @@ const FAUNA = Object.freeze({
     squirrel: Object.freeze({ label: 'Squirrel', group: 'small', note: 'caching nuts in the canopy' }),
     mouse: Object.freeze({ label: 'Wood mouse', group: 'small', note: 'rustling under the brambles' }),
     owl: Object.freeze({ label: 'Owl', group: 'bird', note: 'watching from a hollow' }),
+    moose: Object.freeze({ label: 'Moose', group: 'large', note: 'browsing the willow and young birch' }),
+    reindeer: Object.freeze({ label: 'Reindeer', group: 'large', note: 'moving in a loose herd through the lichen' }),
+    bear: Object.freeze({ label: 'Brown bear', group: 'predator', note: 'turning over deadwood for grubs' }),
+    beaver: Object.freeze({ label: 'Beaver', group: 'small', note: 'working a dam on the forest stream' }),
+    otter: Object.freeze({ label: 'Otter', group: 'predator', note: 'fishing the open water' }),
     woodpecker: Object.freeze({ label: 'Woodpecker', group: 'bird', note: 'drumming on a dead trunk' }),
     songbird: Object.freeze({ label: 'Songbird', group: 'bird', note: 'singing in the understorey' }),
     raptor: Object.freeze({ label: 'Buzzard', group: 'bird', note: 'circling above the canopy gap' }),
@@ -798,6 +820,15 @@ function mixedFormationFor(temperature, moisture, height, variant) {
     return 'mixed-oak-beech-spruce';
 }
 
+function taigaFormationFor(x, y, seed, moisture) {
+    const variant = coarseUnit(seed, x, y, 5, 0x54414947);
+    if (variant > 0.8) return 'taiga-birch';
+    if (variant > 0.62) return 'taiga-larch';
+    if (variant > 0.4) return 'taiga-mixed';
+    if (moisture < 0.5) return 'taiga-pine';
+    return 'taiga-spruce';
+}
+
 function formationFor(x, y, ctx) {
     const { moisture, temperature, height, seed, climate } = ctx;
     // Tropical climate has its own formation vocabulary, but still uses the
@@ -812,7 +843,9 @@ function formationFor(x, y, ctx) {
     // Savanna timber is real but sparse: flat-crowned acacia, camelthorn and
     // the occasional riparian fever tree. It is a woodland formation for the
     // shared stand model, never a closed temperate canopy on the map.
+    // Taiga (1.2.10) appends its own boreal formations below.
     if (climate === 'savanna') return 'savanna-woodland';
+    if (climate === 'taiga') return taigaFormationFor(x, y, seed, moisture);
     // Chestnut groves belong to the warm, sheltered lowlands. The generated
     // temperate map rarely exceeds .62 on land, so .58 is the playable warm
     // band rather than an unreachable threshold.
@@ -1084,16 +1117,16 @@ export function forestStandAt(x, y, context = {}) {
     } else if (forest && damage > 0.942) {
         formation = FOREST_TYPES.diseased;
         disturbance = 'diseased';
-    } else if (forest && baseFormation.mixed && coarseUnit(seed, tx, ty, 8, 0x4d414e43) > 0.72) {
+    } else if (forest && climate !== 'taiga' && baseFormation.mixed && coarseUnit(seed, tx, ty, 8, 0x4d414e43) > 0.72) {
         // Old species-rich mixed stands and young mixed plantations are not a
         // second taxonomy: they reuse the mixed formation vocabulary with the
         // age structure and canopy layers that actually belong to them.
         formation = FOREST_TYPES['mixed-ancient'];
-    } else if (forest && baseFormation.mixed && coarseUnit(seed, tx, ty, 8, 0x4d594f55) > 0.74) {
+    } else if (forest && climate !== 'taiga' && baseFormation.mixed && coarseUnit(seed, tx, ty, 8, 0x4d594f55) > 0.74) {
         formation = FOREST_TYPES['mixed-young'];
-    } else if (forest && coarseUnit(seed, tx, ty, 9, 0x4f4c4457) > 0.955) {
+    } else if (forest && climate !== 'taiga' && coarseUnit(seed, tx, ty, 9, 0x4f4c4457) > 0.955) {
         formation = FOREST_TYPES.ancient;
-    } else if (forest && coarseUnit(seed, tx, ty, 6, 0x52454745) > 0.91) {
+    } else if (forest && climate !== 'taiga' && coarseUnit(seed, tx, ty, 6, 0x52454745) > 0.91) {
         formation = FOREST_TYPES.regenerating;
     }
 

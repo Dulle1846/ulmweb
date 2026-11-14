@@ -12,6 +12,7 @@ import { grasslandProductsAt } from "../world/grassland-ecology.js";
 import { isSteppeSite, steppeProductsAt } from "../world/steppe-ecology.js";
 import { isDesertSite, desertProductsAt } from "../world/desert-ecology.js";
 import { isTundraSite, tundraProductsAt } from "../world/tundra-ecology.js";
+import { isTaigaSite, taigaProductsAt, TAIGA_GOODS } from "../world/taiga-ecology.js";
 import { isSavannaSite, savannaProductsAt, SAVANNA_GOODS } from "../world/savanna-ecology.js";
 import { grasslandUseAt } from "./grassland-use.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
@@ -39,7 +40,7 @@ const FOOD_DELIVERY = Object.freeze(new Set([
     "mushrooms", "chanterelle", "porcini", "wild-garlic", "wood-sorrel", "wild-strawberry",
     "sloes", "crab-apples", "berries", "truffles", "honey", "maple-syrup", "birch-sap",
     "game", "cured-game", "blueberries", "lingonberries", "rowan-berries", "elderberries", "hazelnuts",
-    "orchard-fruit", "dates", "cloudberry", "crowberry", "arctic-char",
+    "orchard-fruit", "dates", "cloudberry", "crowberry", "arctic-char", "lake-fish",
 ]));
 const GOLD_DELIVERY = Object.freeze(new Set([
     "fur", "hides", "tanned-fur", "cured-hides", "resin", "beeswax", "herbs", "lichen",
@@ -47,7 +48,7 @@ const GOLD_DELIVERY = Object.freeze(new Set([
     "ash-keys", "hornbeam-seeds", "willow-withies", "woodruff", "valerian", "tinder-fungus",
     "hay", "meadow-grass", "wildflowers", "reed", "turf", "salt", "wool",
     "desert-sand", "desert-stone", "gemstones", "copper-ore", "desert-fibre", "desert-resin", "archaeological-find",
-    "antler", "bone", "peat", "soapstone", "bog-iron", "qiviut",
+    "antler", "bone", "peat", "soapstone", "bog-iron", "qiviut", "larch-cones", "birch-bark",
 ]));
 const TROPICAL_GOLD_HUNT = Object.freeze(new Set(["hides", "feathers"]));
 
@@ -58,6 +59,13 @@ export function forestDeliveryChannel(id) {
     if (good.category === "medicine") return "medicine";
     if (FOOD_DELIVERY.has(id)) return "food";
     if (GOLD_DELIVERY.has(id)) return "gold";
+    const taiga = TAIGA_GOODS[id];
+    if (taiga) {
+        if (taiga.category === "medicine") return "medicine";
+        if (taiga.category === "wood") return "wood";
+        if (id === "lake-fish") return "food";
+        return "gold";
+    }
     const savanna = SAVANNA_GOODS[id];
     if (savanna) {
         if (["sorghum", "millet", "marula-fruit", "baobab-fruit", "meat"].includes(id)) return "food";
@@ -451,6 +459,7 @@ export function gatherMeadowProducts(x, y, options = {}) {
     // ledger serve all four profiles; the terrain decides which harvest
     // vocabulary is present. Cold ground wins over the arid margins.
     const products = (isTundraSite(x, y, context) ? tundraProductsAt(x, y, context) : null)
+        || (isTaigaSite(x, y, context) ? taigaProductsAt(x, y, context) : null)
         || (isSavannaSite(x, y, context) ? savannaProductsAt(x, y, context) : null)
         || (isDesertSite(x, y, context) ? desertProductsAt(x, y, context) : null)
         || (isSteppeSite(x, y, context) ? steppeProductsAt(x, y, context) : null)
@@ -500,6 +509,7 @@ export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
             if (node?.forestCapacity && node.forestStock > 0) continue;
             const context = meadowContextAt(tx, ty);
             const products = (isTundraSite(tx, ty, context) ? tundraProductsAt(tx, ty, context) : null)
+                || (isTaigaSite(tx, ty, context) ? taigaProductsAt(tx, ty, context) : null)
                 || (isSavannaSite(tx, ty, context) ? savannaProductsAt(tx, ty, context) : null)
                 || (isDesertSite(tx, ty, context) ? desertProductsAt(tx, ty, context) : null)
                 || (isSteppeSite(tx, ty, context) ? steppeProductsAt(tx, ty, context) : null)

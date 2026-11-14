@@ -161,7 +161,8 @@ function warmthSatisfaction(house, season) {
     // Savanna winters are dry and mild, not freezing. A hearth load lasts
     // longer there, so the same store supports the settlement without the
     // frozen-climate burn rate.
-    const interval = state.worldOptions?.climate === "savanna" ? 160 : 40;
+    const interval = state.worldOptions?.climate === "savanna" ? 160
+        : state.worldOptions?.climate === "taiga" ? 32 : 40;
     const lastHeated = Math.max(0, number(house.lastHeatedTick));
     if (lastHeated > 0 && state.tick - lastHeated < interval) return 1;
     const needed = 1;

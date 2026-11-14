@@ -325,6 +325,13 @@ export function getForestMovementFactorAt(x, y) {
     // The savanna wet season makes tracks and floodplains heavy; the dry
     // season leaves hard, fast ground. This is a cheap seasonal route cost,
     // not a second terrain walk.
+    // The taiga's deep snow and long spring melt make forest transport a real
+    // seasonal cost. Frozen ground in midwinter is easier, but the thaw is slow.
+    if (climate === "taiga") {
+        const seasonal = seasonalState(Number(state.dayOfYear) || 0, "taiga");
+        const thaw = seasonal.season === 0 ? (1 - seasonal.greenUp) * 0.16 : 0;
+        return clamp(1 - seasonal.snowCover * 0.3 - thaw, 0.56, 1);
+    }
     if (climate === "savanna") {
         const seasonal = seasonalState(Number(state.dayOfYear) || 0, "savanna");
         const wet = clamp(seasonal.greenUp + (seasonal.season === 0 ? 0.18 : 0), 0, 1);

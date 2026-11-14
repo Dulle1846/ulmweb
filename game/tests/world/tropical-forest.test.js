@@ -62,9 +62,9 @@ test("tropical climate is a full climate, not a palette alias", () => {
     assert.ok(hot > cool);
 });
 
-test("thirty-three species and fifty-one formations preserve every existing index", () => {
+test("thirty-three species and fifty-seven shared formations preserve every existing index", () => {
     assert.equal(Object.keys(FOREST_SPECIES).length, 38);
-    assert.equal(FOREST_TYPE_IDS.length, 52);
+    assert.equal(FOREST_TYPE_IDS.length, 57);
     assert.equal(FOREST_TYPE_IDS[38], "selection-forest");
     TROPICAL_FORMATION_IDS.forEach((id, index) => {
         assert.equal(FOREST_TYPE_IDS[39 + index], id);
