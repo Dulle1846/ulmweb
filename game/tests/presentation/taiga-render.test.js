@@ -84,7 +84,7 @@ test("winter snow and deadwood render without overflowing the tile", () => {
 test("winter ice fills a water tile with bounded, finite marks", () => {
     const ctx = makeContext();
     drawTaigaIce(ctx, 12, 18, 36, 0.71, 0.81);
-    assert.ok(ctx.calls.fillRect >= 2);
+    assert.ok(ctx.calls.fillRect >= 1);
     assert.ok(ctx.calls.stroke >= 1);
     assert.ok(ctx.calls.lineTo >= 2);
     assert.doesNotThrow(() => drawTaigaIce(null, 0, 0, 10));

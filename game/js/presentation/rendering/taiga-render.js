@@ -334,10 +334,7 @@ export function drawTaigaIce(ctx, px, py, cellPx, s1 = 0.5, s2 = 0.5) {
     // one frozen surface, not a grid of pale rectangles.
     ctx.fillStyle = "#b8cfd6";
     ctx.fillRect(px, py, cellPx + 1, cellPx + 1);
-    ctx.globalAlpha = 0.2;
-    ctx.fillStyle = "#e1ecef";
-    ctx.fillRect(px + cellPx * (0.14 + s1 * 0.44), py + cellPx * (0.2 + s2 * 0.4), cellPx * 0.26, cellPx * 0.07);
-    // Sparse pressure cracks and wind-scoured flecks avoid a repeated stamp.
+    // Sparse pressure cracks avoid a repeated stamp across a large lake.
     ctx.globalAlpha = 0.36;
     ctx.strokeStyle = "#e4eff1";
     ctx.lineWidth = Math.max(0.7, cellPx * 0.014);
