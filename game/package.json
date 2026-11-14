@@ -40,6 +40,7 @@
     "test:campaign:players": "node scripts/player-profiles.mjs",
     "test:colossal-growth": "node --expose-gc scripts/colossal-decade-growth.mjs",
     "test:campaign:browser": "node tests/browser/long-campaign.mjs",
+    "test:nobility-ui": "node tests/browser/nobility-ui.mjs",
     "test:jungle-understory": "JUNGLE_PROOF_ZOOM=2.4 JUNGLE_PROOF_OUT=artifacts/jungle-understory-2.4 node tests/browser/jungle-proof.mjs"
   },
   "engines": {

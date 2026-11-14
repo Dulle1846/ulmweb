@@ -7,6 +7,7 @@ import { updateMarket } from "../systems/market.js";
 import { updateRealmCycle } from "../systems/realm-cycle.js";
 import { updateDiplomacy } from "../systems/diplomacy.js";
 import { updateCourt } from "../systems/court.js";
+import { updateNobility } from "../systems/nobility.js";
 import { updateCivic } from "../systems/civic.js";
 import { updateEconomy } from "../systems/economy.js";
 import { updateEdicts } from "../systems/edicts.js";
@@ -69,6 +70,7 @@ const ANNUAL_TASKS = [
     { name: "births", run(annual) { annual.newborn = updateBirths(); } },
     { name: "diplomacy", run() { updateDiplomacy(); } },
     { name: "court", run() { updateCourt(); } },
+    { name: "nobility", run() { updateNobility(); } },
     { name: "civic", run() { updateCivic(); } },
     { name: "endeavours", run() { updateEndeavours(); } },
     { name: "crownSupply", run() { settleCrownSupply(); } }

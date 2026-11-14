@@ -3,6 +3,7 @@ import { state } from "../core/state.js";
 import { getGovernmentSnapshot, GOVERNMENT_FORMS, GOVERNMENT_POLICIES, setGovernmentForm, setTaxRate, enactPolicy } from "../systems/government.js";
 import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getCourtSnapshot, appointMinister, dismissMinister, addressFactionDemand } from "../systems/court.js";
+import { getNobilitySnapshot, grantNobleCharter, callNobleLevy } from "../systems/nobility.js";
 import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, declareWar, sueForPeace, appointEnvoy, recallEnvoy } from "../systems/diplomacy.js";
 import { startExpedition } from "../systems/expeditions.js";
 import { renderExpeditionsPanel } from "./expeditions-panel.js";
@@ -253,10 +254,37 @@ function realmCycleSection(){
   '<div class="command-section-title">CYCLE RECORD · LAST '+Math.min(4,(c.history||[]).length)+' CHECKS</div><div class="command-history-list">'+(recent||'<p class="command-note">The first cycle check will appear after the next 20-day settlement.</p>')+'</div>'+
   (c.lastResolution?'<p class="command-note"><strong>LAST CROWN ANSWER</strong> '+esc(c.lastResolution)+'</p>':'');
 }
+function nobleRealmNote(){
+ const n=getNobilitySnapshot();
+ const houses=n.houses.filter(h=>h.memberCount>0).sort((a,b)=>b.loyalty-a.loyalty||a.familyName.localeCompare(b.familyName)).slice(0,3).map(h=>esc(h.familyName)+" "+Math.round(h.loyalty)).join(" · ");
+ return '<div class="command-note"><strong>NOBLE HOUSES · '+n.houseCount+'</strong> '+(houses?houses+" loyalty":'No living noble house is recorded yet.')+' · defence +'+Math.round((n.defenseBonus-1)*100)+'% · '+n.duesThisYear+' gold dues in the last audit. Charters cost gold and timber; high taxes, low legitimacy and withheld charters erode loyalty, while court office and a loyal house strengthen it.</div>';
+}
+function nobilityPanel(){
+ if(!state.hasStarted)return intro("THE NOBLE HOUSES","Awaiting their founding","Noble houses emerge from the named residents of a living realm.")+'<div class="command-note">Begin a campaign to record its families, estates, dues and levies.</div>';
+ const n=getNobilitySnapshot(),gold=Number(state.resources?.gold)||0,wood=Number(state.resources?.wood)||0;
+ const cards=n.houses.map(h=>{
+  const cost=n.charterCost,canCharter=!h.charter&&Boolean(h.head)&&gold>=cost.gold&&wood>=cost.wood;
+  const cooldown=h.lastLevyYear?Math.max(0,h.lastLevyYear+n.levyCooldownYears-state.year):0;
+  const canLevy=Boolean(h.head)&&h.loyalty>=35&&cooldown===0;
+  const people=h.memberNames.length?h.memberNames.slice(0,5).join(" · ")+(h.memberCount>5?" · +"+(h.memberCount-5):""):"No living members";
+  const latest=h.history[0]?h.history[0].summary:"No house record yet.";
+  return '<article class="noble-house" data-noble-house="'+esc(h.id)+'"><header class="noble-house__head"><div><span class="command-ribbon">'+esc(String(h.status).toUpperCase())+(h.mustered?' · LEVY MUSTERED':'')+'</span><h4>HOUSE '+esc(h.familyName.toUpperCase())+'</h4><p>'+esc(h.seat)+' · founded year '+number(h.foundedYear)+'</p></div><div class="noble-house__power"><strong>'+Math.round(h.power)+'</strong><small>POWER</small></div></header>'+
+   meter("LOYALTY",h.loyalty)+'<div class="noble-house__stats"><span>HEAD<b>'+esc(h.head?.name||"VACANT")+'</b></span><span>MEMBERS<b>'+h.memberCount+'</b></span><span>WEALTH<b>'+Math.round(h.wealth)+'</b></span><span>LEVY<b>'+h.levyActive+'</b></span><span>COURT OFFICES<b>'+h.heldOffices+'</b></span><span>DUES / YEAR<b>'+h.dues+'G</b></span></div>'+
+   '<p class="noble-house__people"><strong>NOBLE MEMBERS</strong> '+esc(people)+'</p><p class="command-note">'+esc(latest)+'</p><div class="noble-house__actions"><button type="button" data-command="noble-charter" data-value="'+esc(h.id)+'"'+(canCharter?'':' disabled')+'>'+(h.charter?'CHARTER GRANTED':'GRANT CHARTER · '+cost.gold+'G / '+cost.wood+' WOOD')+'</button><button type="button" data-command="noble-levy" data-value="'+esc(h.id)+'"'+(canLevy?'':' disabled')+'>'+(cooldown?'LEVY COOLDOWN · '+cooldown+'Y':'CALL THE LEVY · 2 YEARS')+'</button></div></article>';
+ }).join("");
+ const audit=n.lastAudit?'<p class="command-note">Last audit year '+n.lastAudit.year+' · '+n.lastAudit.houses+' living houses · '+n.lastAudit.dues+' gold dues · '+n.lastAudit.withheld+' withheld · defence multiplier '+n.lastAudit.defenseBonus.toFixed(2)+'.</p>':'';
+ const history=n.history.length?n.history.slice(0,6).map(entry=>'<div class="command-history"><strong>YEAR '+entry.year+' · '+esc(String(entry.kind).toUpperCase())+'</strong><p>'+esc(entry.summary)+'</p></div>').join(""):'<p class="command-note">No noble audit has been recorded yet.</p>';
+ return intro("THE NOBLE HOUSES","Estates, loyalty & levies","Houses are drawn from the realm's real families. Their heads hold estates, pay annual dues, answer the crown's call to arms and react to taxes, legitimacy, charters and court office.")+
+  '<div class="command-summary"><div><small>LIVING HOUSES</small><strong>'+n.houseCount+' / '+n.houses.length+'</strong></div><div><small>AVERAGE LOYALTY</small><strong>'+Math.round(n.averageLoyalty)+'/100</strong></div><div><small>FIELD LEVY</small><strong>'+n.totalLevy+'</strong></div><div><small>DEFENCE BONUS</small><strong>+'+Math.round((n.defenseBonus-1)*100)+'%</strong></div><div><small>DUES LAST AUDIT</small><strong>'+n.duesThisYear+'G</strong></div><div><small>TOTAL DUES</small><strong>'+number(n.duesCollected)+'G</strong></div></div>'+
+  '<p class="command-note"><strong>LIVING LINK</strong> Annual dues reach the treasury; loyalty feeds the nobility faction and legitimacy; a called levy raises the realm’s combat defence; and members who hold court office add to their house’s standing. Houses with no living member become dormant instead of inventing a new family.</p>'+audit+
+  '<div class="command-section-title">THE GREAT HOUSES</div><div class="noble-house-grid">'+(cards||'<p class="command-note">No named family has yet crossed the threshold into a noble house.</p>')+'</div>'+
+  '<div class="command-section-title">NOBLE CHRONICLE</div><div class="command-history-list">'+history+'</div>'+
+  '<p class="command-note">Charters permanently raise wealth and loyalty at a cost of '+n.charterCost.gold+' gold and '+n.charterCost.wood+' wood. A called levy lasts through the following year, adds defence in combat and lowers the house’s loyalty by 7. Each house can muster again after '+n.levyCooldownYears+' years. All noble work is annual and bounded to four houses.</p>';
+}
 function politics(){
  const p=getPoliticalSnapshot(),court=getCourtSnapshot(),f=Object.entries(p.factions).map(([k,v])=>meter(k,v)).join(""),policies=Object.entries(GOVERNMENT_POLICIES).map(([id,x])=>'<article class="command-policy"><div><strong>'+esc(x.label)+'</strong><p>'+esc(x.description)+'</p></div><button data-command="policy" data-value="'+id+'">ENACT</button></article>').join("");
  const petition=court.demand?'<p class="command-note"><strong>COURT PETITION</strong><br>'+esc(court.demand.factionLabel)+' asks: '+esc(court.demand.title)+'. Grant or ignore it in Government → Royal Court.</p>':'';
- return intro("FACTIONS & PUBLIC ORDER","Politics","Legitimacy and faction support respond to decrees and the realm's material conditions. The living realm cycle below connects granary scarcity to market prices, household unrest and real petitions.")+'<div class="command-summary"><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div><div><small>AVERAGE SUPPORT</small><strong>'+Math.round(p.averageSupport)+'/100</strong></div><div><small>DECISIONS</small><strong>'+p.settlements+'</strong></div></div><div class="command-section-title">LIVING REALM CYCLE</div>'+realmCycleSection()+'<div class="command-section-title">FACTION SUPPORT</div><div class="command-meter-list">'+f+'</div>'+petition+'<div class="command-section-title">ROYAL DECREES · ONE PER YEAR</div><div class="command-policy-list">'+policies+'</div>';
+ return intro("FACTIONS & PUBLIC ORDER","Politics","Legitimacy and faction support respond to decrees and the realm's material conditions. The living realm cycle below connects granary scarcity to market prices, household unrest and real petitions.")+'<div class="command-summary"><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div><div><small>AVERAGE SUPPORT</small><strong>'+Math.round(p.averageSupport)+'/100</strong></div><div><small>DECISIONS</small><strong>'+p.settlements+'</strong></div></div><div class="command-section-title">LIVING REALM CYCLE</div>'+realmCycleSection()+'<div class="command-section-title">FACTION SUPPORT</div><div class="command-meter-list">'+f+'</div>'+nobleRealmNote()+petition+'<div class="command-section-title">ROYAL DECREES · ONE PER YEAR</div><div class="command-policy-list">'+policies+'</div>';
 }
 function diplomacy(){
  const d=getDiplomacySnapshot(),c=d.costs,gold=Number(state.resources?.gold)||0,food=Number(state.resources?.food)||0,court=getCourtSnapshot();
@@ -1014,7 +1042,7 @@ function render(resetScroll=false){
  const splitPanelPaint=resetScroll&&narrowViewport();
  const revealToken=++panelRevealToken;
  if(splitPanelPaint)panel.style.visibility="hidden";
- const renderers={kingdom,government,politics,diplomacy,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle,atelier:renderAiChroniclePanel,explore:renderExpeditionsPanel};
+ const renderers={kingdom,government,politics,nobility:nobilityPanel,diplomacy,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,chronicle,atelier:renderAiChroniclePanel,explore:renderExpeditionsPanel};
  // A new tab starts at its title, not at the scroll offset of the previous
  // panel. Reset the old, already-laid-out view before inserting the new DOM:
  // assigning scrollTop after innerHTML forces a synchronous layout of the
@@ -1058,6 +1086,8 @@ function render(resetScroll=false){
 function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
 
  if(a==="realm-cycle")r=resolveRealmCyclePetition(v);
+ else if(a==="noble-charter")r=grantNobleCharter(v);
+ else if(a==="noble-levy")r=callNobleLevy(v);
  else if(a==="expedition-start")r=startExpedition(v,$("expedition-leader-select")?.value,$("expedition-supply-select")?.value);
  else if(a==="endeavour-start")r=startEndeavour(v,{overseerId:$("endeavour-overseer-select")?.value||null,funding:endeavourFunding});
  else if(a==="endeavour-funding"){endeavourFunding=Math.max(0,Math.min(2,Number(v)||0));r={ok:true};}
@@ -1080,6 +1110,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a.startsWith("endeavour-"))toast(String(r.message||"CROWN WORK UPDATED").toUpperCase());
   else if(a.startsWith("crown-"))toast(String(r.message||"CROWN SUPPLY UPDATED").toUpperCase());
   else if(a==="realm-cycle")toast(String(r.message||"PETITION ANSWERED").toUpperCase());
+  else if(a.startsWith("noble-"))toast(String(r.message||"NOBLE HOUSE UPDATED").toUpperCase());
   else if(a.startsWith("expedition-"))toast(String(r.message||"ROYAL EXPEDITION UPDATED").toUpperCase());
   else if(a==="open-atelier")toast("ATELIER OPEN");
   else toast("DECISION RECORDED");
@@ -1121,7 +1152,7 @@ export function setupManagementUI(){
   if(target==="settings"){$("settings-btn")?.click();return;}
   if(target==="build"){$("build-open-btn")?.click();return;}
   if(target==="market"){$("tab-2")?.click();return;}
-  if(["kingdom","government","politics","diplomacy","explore","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
+  if(["kingdom","government","politics","nobility","diplomacy","explore","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
    if(target==="chronicle")resetTimelineView(state.year);
    activePanel=target;$("command-modal")?.classList.remove("hidden");render(true);
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));

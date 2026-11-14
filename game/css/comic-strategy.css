@@ -198,3 +198,21 @@
        the full modal. This is a compositor hint, not a layout change. */
     #command-panel-content { will-change: transform; transform: translateZ(0); }
 }
+
+/* Living noble houses: resident-led estates, loyalty and levies. */
+.noble-house-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.noble-house{padding:12px;border:2px solid #ad8750;border-radius:10px;background:linear-gradient(145deg,#fff8df,#ecd8ad);color:#243a50}
+.noble-house__head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.noble-house__head h4{margin:4px 0 2px;color:#203c58;font:bold 18px Georgia,serif;letter-spacing:.02em}
+.noble-house__head p{margin:0;color:#756445;font-size:8px}
+.noble-house__power{min-width:54px;text-align:right;color:#9b4a2a;font:bold 26px Georgia,serif}
+.noble-house__power small{display:block;color:#756445;font:700 6px sans-serif;letter-spacing:.14em}
+.noble-house__stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:8px 0}
+.noble-house__stats span{display:flex;flex-direction:column;gap:2px;padding:5px;border:1px solid #cfb47f;border-radius:5px;color:#756445;font-size:7px;overflow:hidden}
+.noble-house__stats b{color:#263b52;font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.noble-house__people{margin:6px 0;color:#554a3a;font-size:8px;line-height:1.5}
+.noble-house__people strong{color:#806d52;letter-spacing:.08em}
+.noble-house__actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.noble-house__actions button{min-height:30px;padding:0 8px;border:1px solid #20374d;border-radius:5px;background:linear-gradient(#f7d67f,#d69a37);color:#24384d;font-size:6px;font-weight:1000;cursor:pointer}
+.noble-house__actions button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:560px){.noble-house-grid{grid-template-columns:1fr}.noble-house__stats{grid-template-columns:repeat(2,minmax(0,1fr))}}

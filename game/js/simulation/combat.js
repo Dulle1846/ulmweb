@@ -5,6 +5,7 @@ import { queueParticle,queueFloater,queueMessage } from "../core/presentation-ef
 import { rand as seededRand } from "../core/random.js";
 import { getRaidDamageMultiplier } from "../systems/rooms.js";
 import { getCourtModifiers } from "../systems/court.js";
+import { getNobilityDefenseMultiplier } from "../systems/nobility.js";
 import { getSoldierPower,getSoldierArmor,recordMilitaryVictory,recordMilitaryWound,recordMilitaryCasualty } from "../systems/military.js";
 import { getJungleTacticsAt } from "../systems/resource-geography.js";
 const rand=(min,max)=>seededRand(min,max,"combat");
@@ -50,6 +51,9 @@ export function updateCombat(){
  if(!enemies.length)return;
  const raidDamageMultiplier=getRaidDamageMultiplier();
  const readiness=Math.max(1,Math.min(1.25,Number(getCourtModifiers().militaryReadiness)||1));
+ // Loyal noble houses put their retainers on the walls. The multiplier is
+ // cached by the annual noble audit; combat only reads one bounded number.
+ const nobleDefense=getNobilityDefenseMultiplier();
  const defenders=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER,TYPE.TOWER].includes(e.type));
  const enemyBuckets=indexEntities(enemies),defenderBuckets=indexEntities(defenders);
  const keep=state.entities.find(e=>!e.dead&&e.type===TYPE.KEEP)||null;
@@ -86,7 +90,7 @@ export function updateCombat(){
    const cover=getJungleTacticsAt(target.x,target.y);
    const localDefender=Boolean(target.military&&target.military.origin==="levy");
    const coverMultiplier=cover?1-Math.min(.32,(Number(cover.defenceBonus)||0)*.35+(localDefender?(Number(cover.localAdvantage)||0)*.08:0)):1;
-   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/readiness*(1-armor)*coverMultiplier));
+   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/(readiness*nobleDefense)*(1-armor)*coverMultiplier));
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
    if(target.hp<=0){
     if(!target.isKing&&!target.isBuilding?.())recordMilitaryCasualty(target,"raid");
@@ -117,7 +121,7 @@ export function updateCombat(){
   const local=Boolean(defender.military&&defender.military.origin==="levy");
   const junglePower=jungleDefence?1+Math.min(.38,(Number(jungleDefence.guerrillaBonus)||0)*.3
       +(local?(Number(jungleDefence.localAdvantage)||0)*.12:0)):1;
-  enemy.hp-=Math.max(1,Math.round(basePower*readiness*junglePower));
+  enemy.hp-=Math.max(1,Math.round(basePower*readiness*(1+(nobleDefense-1)*0.6)*junglePower));
   queueParticle(enemy.x*TILE_SIZE+12,enemy.y*TILE_SIZE-18,"#fde047",22,rand(-1,4),-3);
   if(enemy.hp<=0){enemy.dead=true;if(namedPower>0)recordMilitaryVictory(defender);queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE,"SLAIN","#eab308");}
  }

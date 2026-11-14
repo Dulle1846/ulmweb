@@ -10,6 +10,7 @@ import { validateForestGatheringSnapshot } from "../systems/forest-gathering.js"
 import { validateForestSuccessionSnapshot } from "../systems/forest-succession.js";
 import { validatePannage } from "../systems/forest-pannage.js";
 import { validateMilitaryState } from "../systems/military.js";
+import { validateNobilityState } from "../systems/nobility.js";
 import { validateHealthState } from "../systems/health.js";
 import { validateFaithState } from "../systems/faith.js";
 import { validateJusticeState } from "../systems/justice.js";
@@ -207,6 +208,9 @@ export function validateSaveSnapshot(snapshot) {
     }
     if (snapshot.military !== undefined && snapshot.military !== null) {
         validateDomainSnapshot(snapshot.military, "military", validateMilitaryState);
+    }
+    if (snapshot.nobility !== undefined && snapshot.nobility !== null) {
+        validateDomainSnapshot(snapshot.nobility, "nobility", validateNobilityState);
     }
     if (snapshot.expeditions !== undefined && snapshot.expeditions !== null) {
         validateDomainSnapshot(snapshot.expeditions, "expeditions", validateExpeditionsState);

@@ -28,6 +28,7 @@ import { initializeSettlementForRealm } from "../systems/settlement.js";
 import { createFaithState, normalizeFaithState } from "../systems/faith.js";
 import { createJusticeState, normalizeJusticeState } from "../systems/justice.js";
 import { createCourtState, normalizeCourtState } from "../systems/court.js";
+import { createNobilityState, normalizeNobilityState } from "../systems/nobility.js";
 import { createDiplomacyState, normalizeDiplomacySnapshot } from "../systems/diplomacy.js";
 import { createCrownSupplyState, normalizeCrownSupplyState } from "../systems/crown-supply.js";
 import { createMarketState } from "../systems/market.js";
@@ -213,6 +214,7 @@ export function createSaveSnapshot() {
         market: JSON.parse(JSON.stringify(state.market)),
         realmCycle: JSON.parse(JSON.stringify(state.realmCycle || createRealmCycleState())),
         court: JSON.parse(JSON.stringify(state.court || createCourtState())),
+        nobility: JSON.parse(JSON.stringify(state.nobility || createNobilityState())),
         diplomacy: JSON.parse(JSON.stringify(state.diplomacy || createDiplomacyState())),
         expeditions: JSON.parse(JSON.stringify(normalizeExpeditionsState(state.expeditions))),
         identity: JSON.parse(JSON.stringify(state.identity || {})),
@@ -424,6 +426,7 @@ export function restoreSaveSnapshot(snapshot) {
     state.market = snapshot.market || createMarketState();
     state.realmCycle = normalizeRealmCycleState(snapshot.realmCycle);
     state.court = normalizeCourtState(snapshot.court);
+    state.nobility = normalizeNobilityState(snapshot.nobility);
     state.diplomacy = normalizeDiplomacySnapshot(snapshot.diplomacy);
     state.expeditions = normalizeExpeditionsState(snapshot.expeditions);
     if (Array.isArray(snapshot.explored) && snapshot.explored.length === (Number(state.worldW) || WORLD_W)) {

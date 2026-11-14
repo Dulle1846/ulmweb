@@ -80,4 +80,4 @@ At the court release the new state was additive on schema 4. The current save sc
 
 ## Deliberate limits
 
-This is a court, not a full parliamentary state. There is no elected parliament, law-voting procedure, independent judiciary, provincial autonomy, noble land army, espionage network or autonomous envoy travel. Corruption is an annual skim with a visible audit, not a complete shadow economy. These remain later roadmap slices and are not claimed as implemented.
+This is a court, not a full parliamentary state. The separate [living noble houses](NOBILITY.md) now provide resident-led houses, estates, dues, charters and levies. There is still no elected parliament, law-voting procedure, independent judiciary, provincial autonomy, noble land army, espionage network or autonomous envoy travel. Corruption is an annual skim with a visible audit, not a complete shadow economy. These remain later roadmap slices and are not claimed as implemented.

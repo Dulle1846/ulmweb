@@ -979,6 +979,9 @@ try {
     await page.locator('[data-command-tab="population"]').click();
     await page.waitForTimeout(600);
     const panel = await samplePhase("population-panel-open", PANEL_MS);
+    await page.locator('[data-command-tab="nobility"]').click();
+    await page.waitForTimeout(600);
+    const nobilityPanel = await samplePhase("nobility-panel-open", PANEL_MS);
     await page.locator("#command-close").click();
     await resumeAfterPanel();
 
@@ -1026,7 +1029,7 @@ try {
             steadyGrowthPct: heapWarmStart ? Math.round((heapEnd - heapWarmStart) / heapWarmStart * 10000) / 100 : null
         },
         taiga: taigaInfo ? { ...taigaInfo, phases: taigaPhases.map(phase => phase.name) } : null,
-        phases: [...(simOnly ? [simOnly] : []), quiet, dense, ...taigaPhases, panel, warPhase],
+        phases: [...(simOnly ? [simOnly] : []), quiet, dense, ...taigaPhases, panel, nobilityPanel, warPhase],
         saveLoad,
         pageErrors: errors,
         consoleErrors,

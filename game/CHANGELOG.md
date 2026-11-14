@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.14.2`
-**Next development line:** `3.16.4-dev`
+**Next development line:** `3.17.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -110,6 +110,49 @@ production load founded seed `20261108` with 23 residents, forced the calendar
 to year 3 day 399, and completed the real rollover to year 4 day 9 / tick 1209
 with **zero long tasks**, no page errors, no console errors and no failed
 requests.
+
+### 3.17.0-dev — Living noble houses
+
+**Released:** 2026-11-14 on the development line
+
+**Scope:** add the missing resident-led nobility layer. Four houses are founded
+from the realm's real family names; each has a named head, estate, wealth,
+loyalty, power, levy and annual dues. Houses are not a parallel population:
+births, deaths, court offices and family names continue to drive membership.
+
+**Player system:**
+
+- The new **NOBILITY** command panel lists each house, its head, members, wealth,
+  power, levy, loyalty, dues and latest chronicle record.
+- **Grant charter** costs 30 gold and 10 wood, permanently raises the house's
+  wealth, loyalty, levy and power, and applies a real political effect.
+- **Call the levy** requires 35 loyalty, lowers loyalty by 7, musters the house
+  for two years and raises the realm's combat defence.
+- The annual audit collects real gold dues, withholds them from houses below 30
+  loyalty, applies faction and legitimacy pressure, and records the result.
+- Dead heads pass to the oldest living adult; empty houses become dormant rather
+  than inventing a new family.
+
+**Integration:** economy (`addResource` dues and charter costs), politics
+(`applyPoliticalEffects` from loyalty and withholding), combat
+(`getNobilityDefenseMultiplier()`), court (member office standing) and
+dynasty/population (real heads and family-name membership).
+
+**Save:** additive `state.nobility`; normalized after court on restore, bounded
+to four active houses, 48 members and 24 chronicle entries. Save schema stays
+11 because no existing field changed.
+
+**Verification:** focused tests **7/7**; `npm test` **975/975** with syntax and
+relative-import checks; 25-year campaign **10,040 ticks**, **13/13 ambitions**,
+all requirements true, no stalls, no game over, **0.797 ms/tick**. The 4×
+CPU-throttled Taiga run adds a `nobility-panel-open` phase: **475 frames**,
+**16.8 ms p95**, **0.421% over 33 ms**, **0% over 50 ms**, **0 long tasks**;
+save **184 ms**, load **1,372 ms**, no page or console errors. The real-browser
+`npm run test:nobility-ui` run founded seed `20261114`, granted a charter,
+mustered a levy, ran the annual audit, saved, reloaded and verified persistence
+with **0 page / 0 console errors**. The existing full browser E2E also passes
+with the 24-tab command deck and no page errors. Full record:
+[docs/NOBILITY.md](docs/NOBILITY.md).
 
 ### 3.16.3-dev — Taiga wilderness fog transition
 

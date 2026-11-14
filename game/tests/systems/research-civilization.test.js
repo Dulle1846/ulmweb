@@ -228,7 +228,7 @@ test("the save, load, simulation and UI source contracts include the civilizatio
     assert.ok(saveRuntime.includes("state.identity=normalizeIdentity") && saveRuntime.includes("state.research=normalizeResearchState") && saveRuntime.includes("state.legacy=normalizeLegacyState"), "loading must normalize all three blocks");
     assert.ok(migrations.includes("6:snapshot=>") && main.includes("applyIdentityForNewRealm"), "schema 6 saves must migrate and a new realm must record its identity");
     assert.ok(validation.includes("validateIdentity") && validation.includes("validateResearchState") && validation.includes("validateLegacyState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 23, "the command deck must expose twenty-three tabs, including the Explore survey, Atelier, city charter and item lexicon");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 24, "the command deck must expose twenty-four tabs, including the Explore survey, Atelier, city charter, item lexicon and noble houses");
     assert.ok(html.includes('data-command-tab="research"') && html.includes('id="realm-culture"'), "the founding form and research tab must exist");
     assert.ok(ui.includes("research:researchPanel") && ui.includes("research-start") && ui.includes("research-appoint"), "the research panel and its actions must be wired");
     assert.ok(ui.includes("getLegacySnapshot()") && ui.includes("LEGACY ·"), "the chronicle must show the legacy record");
