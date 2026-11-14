@@ -282,3 +282,10 @@ over 50 ms, **0 long tasks**, **171 draw calls p95 / 371 max**, **0 visible
 entities** and **1.8 ms canvas draw p95**, with **59** fogged tiles proving the
 active fog path. The explored jump and all four prior scenes remain green in
 the same full run; `npm run test:performance:taiga` exits 0.
+
+The deployed production build was checked against the live origin. The
+wilderness transition sampled 150 frames at **16.8 ms p95**, zero long tasks,
+171 draw calls, 1.9 ms canvas draw and **59 fogged tiles**, with
+`water.ice:true`; the run reported zero page, console, network and HTTP errors.
+The preview and production deployments both succeeded and are published. Full
+live report: `artifacts/taiga-fog-live.json`.
