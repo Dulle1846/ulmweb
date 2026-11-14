@@ -67,7 +67,7 @@ Long winters raise fuel demand, shorten the growing season, slow snow-season
 movement and make stored winter supplies and waterways economically important.
 The 56-point audit is in [docs/TAIGA.md](docs/TAIGA.md).
 
-**Verification:** `npm test` **964/964** including the new ecology, generated-
+**Verification:** `npm test` **965/965** including the new ecology, generated-
 world resource and renderer suites; all 56 requirement IDs and all ten
 formations are reachable in the deterministic survey. No production deployment
 is claimed by this entry until its receipt and live check are recorded below.

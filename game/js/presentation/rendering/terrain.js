@@ -21,7 +21,7 @@ import { drawDesert, drawDesertTree } from './desert-render.js';
 import { isTundraSite, tundraProfileAt } from '../../world/tundra-ecology.js';
 import { isTaigaSite, taigaOpenAt, taigaProfileAt } from '../../world/taiga-ecology.js';
 import { drawTundra, drawTundraTree } from './tundra-render.js';
-import { drawTaiga, drawTaigaTree } from './taiga-render.js';
+import { drawTaiga, drawTaigaIce, drawTaigaTree } from './taiga-render.js';
 import { isSavannaSite, savannaProfileAt } from '../../world/savanna-ecology.js';
 import { drawSavanna, drawSavannaTree } from './savanna-render.js';
 import { grasslandUseAt } from '../../systems/grassland-use.js';
@@ -1153,7 +1153,9 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // Only the sampled ground grid needs animated water and shoreline
             // dressing; tree placement is independent of that grid.
             if (above < 0) {
-                if (detail && zoom >= 0.5 && s1 > 0.72) drawWaterGlint(ctx, px, py, cellPx, tick, s1);
+                const taigaIce = detail && climateKey === "taiga" && climate.snowCover > 0.55 && above < -0.008;
+                if (taigaIce) drawTaigaIce(ctx, x * cellPx - cam.x, y * cellPx - cam.y, cellPx, s1, s2);
+                if (!taigaIce && detail && zoom >= 0.5 && s1 > 0.72) drawWaterGlint(ctx, px, py, cellPx, tick, s1);
                 if (detail && above > -0.02 && s1 > 0.5) drawShoreFoam(ctx, px, py, cellPx, tick, s2, zoom);
                 continue;
             }

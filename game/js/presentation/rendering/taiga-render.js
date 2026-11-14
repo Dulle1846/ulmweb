@@ -324,6 +324,32 @@ export function drawTaiga(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0.5, s3 =
  * larch is an airy deciduous conifer and birch is a pale airy stem. The tree is
  * always rooted in its tile and stays finite at every zoom.
  */
+// Winter ice is painted by the terrain detail layer because the baked ground
+// colour is shared by every season. Keeping it per-tile avoids a full-map
+// rebake when the first frost arrives.
+export function drawTaigaIce(ctx, px, py, cellPx, s1 = 0.5, s2 = 0.5) {
+    if (!ctx || !(cellPx > 0)) return;
+    ctx.save();
+    ctx.globalAlpha = 0.86;
+    ctx.fillStyle = "#bfd5dc";
+    ctx.fillRect(px, py, cellPx + 1, cellPx + 1);
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = "#edf5f6";
+    ctx.fillRect(px + cellPx * 0.08, py + cellPx * 0.1, cellPx * 0.72, cellPx * 0.16);
+    ctx.globalAlpha = 0.34;
+    ctx.strokeStyle = "#eaf3f5";
+    ctx.lineWidth = Math.max(0.7, cellPx * 0.018);
+    ctx.beginPath();
+    ctx.moveTo(px + cellPx * (0.14 + s1 * 0.2), py + cellPx * 0.18);
+    ctx.lineTo(px + cellPx * (0.42 + s2 * 0.2), py + cellPx * 0.52);
+    ctx.lineTo(px + cellPx * (0.3 + s1 * 0.3), py + cellPx * 0.83);
+    ctx.moveTo(px + cellPx * (0.58 + s1 * 0.2), py + cellPx * 0.24);
+    ctx.lineTo(px + cellPx * (0.78 + s2 * 0.12), py + cellPx * 0.46);
+    ctx.lineTo(px + cellPx * (0.9 - s1 * 0.1), py + cellPx * 0.74);
+    ctx.stroke();
+    ctx.restore();
+}
+
 export function drawTaigaTree(ctx, px, py, cellPx, tree, profile, roll = 0.5) {
     if (!ctx || !tree || !(cellPx > 0)) return;
     const s = cellPx / 48;

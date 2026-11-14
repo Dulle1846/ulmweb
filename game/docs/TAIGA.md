@@ -149,7 +149,7 @@ tick loop, no per-tile save data and no parallel inventory.
 - `tests/world/taiga-resource.test.js`: generated-world forest nodes, all five
   taiga stand types, realistic capacity, biome summaries and snow movement.
 - `tests/presentation/taiga-render.test.js`: all ten formations render with
-  finite coordinates and a bounded call count; every tree variant is safe.
+  finite coordinates and a bounded call count; every tree variant and winter ice tile is safe.
 
 ```sh
 cd game

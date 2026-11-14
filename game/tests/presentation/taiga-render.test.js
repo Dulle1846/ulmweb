@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { TAIGA_FORMATIONS, TAIGA_TREES, taigaProfileAt } from "../../js/world/taiga-ecology.js";
-import { drawTaiga, drawTaigaTree } from "../../js/presentation/rendering/taiga-render.js";
+import { drawTaiga, drawTaigaIce, drawTaigaTree } from "../../js/presentation/rendering/taiga-render.js";
 
 const BASE = {
     seed: 20261116, seaLevel: 0.33, climate: "taiga", temperature: 0.26,
@@ -79,4 +79,13 @@ test("winter snow and deadwood render without overflowing the tile", () => {
         assert.ok(ctx.calls.fillRect + ctx.calls.fill + ctx.calls.ellipse < 650);
     }
     assert.ok(winter.visual.snowCover > profile.visual.snowCover);
+});
+
+test("winter ice fills a water tile with bounded, finite marks", () => {
+    const ctx = makeContext();
+    drawTaigaIce(ctx, 12, 18, 36, 0.31, 0.77);
+    assert.ok(ctx.calls.fillRect >= 2);
+    assert.ok(ctx.calls.stroke >= 1);
+    assert.ok(ctx.calls.lineTo >= 2);
+    assert.doesNotThrow(() => drawTaigaIce(null, 0, 0, 10));
 });
