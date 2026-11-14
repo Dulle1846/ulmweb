@@ -157,25 +157,35 @@ Reference metadata: `docs/terrain-reference/savanna-reference.json` (seed
   errors.
 - 25-year temperate campaign: 10,040 ticks, 13/13 ambitions, no stalls, no game
   over, 0.830 ms/tick.
-- 25-year savanna campaign (seed `20261106`): 10,040 ticks, **all campaign
-  requirements true**, 13/13 ambitions, 46 firewood in the final store, no
-  stalls, no game over, 0.585 ms/tick. The harness's separate fuel-backfill
-  evidence is not produced on this seed: it requires a random illness to strike
-  a lumberjack or sawmill worker, and the savanna seed with a healthy fuel
-  reserve had no such illness. This is a harness coverage limit, not a failed
-  campaign requirement.
+- 25-year savanna campaign seed sweep (`20261106`, `20261143`, `20261152`):
+  10,040 ticks on every seed, **all real campaign requirements true**, 13/13
+  ambitions, no stalled sites, no game over, 0.605–0.619 ms/tick. Across the
+  sweep the ordinary health simulation produced **2 real illness-to-
+  fuel-backfill orders** on seed `20261152` (in 2 phases, at most one order per
+  phase) after a sawyer fell ill in years 7–8 and the normal workforce logic
+  replaced them. The earlier `20261106` seed remains green but has zero orders;
+  the runner requires the rare chain only somewhere in the documented sweep.
+  Run `npm run test:campaign:sweep`; requirements and evidence are recorded in
+  [CAMPAIGN_VERIFICATION.md](CAMPAIGN_VERIFICATION.md).
 - The browser reference captured all ten formations and the pan at days 60,
   145, 250 and 340 on WebKit WebGL at 800 × 800.
 
 ## Deployment
 
-Runtime commit `6386544` was built to 322 files / 7.64 MiB and deployed from
-its exact build directory. Preview receipt
-`a0c421fb-f643-421f-8d34-4817f0b0e644` (2026-11-14 14:04:29–14:04:32Z) and
-production receipt `b74bdc0a-b8c8-4d66-8fe5-eb21ef7ac538`
-(14:04:43–14:04:46Z) both succeeded; both environments report
-`published:true`. Both origins serve `version.json` for `6386544`, and the
-`savanna-ecology.js`, `savanna-render.js`, `terrain.js` and `terrain-model.js`
-SHA-256 hashes match the built package. The live production and preview pages
-loaded with no page or console errors beyond the expected software-WebGL
-`ReadPixels` warning.
+Runtime commit `89ad0ca` (1.2.11) was built to 322 files / 7.65 MiB and
+deployed from its exact build directory. Preview receipt
+`4dda27c7-f04f-41db-8349-90b4f2c82f70` (2026-11-14 15:35:23–15:35:27Z) and
+production receipt `97ac77cd-16f2-433c-a9a8-3eb213214d32`
+(15:35:37–15:35:40Z) both succeeded; both environments report
+`published:true`. Both origins serve `version.json` for `89ad0ca`, and the
+`version.json`, `terrain.js`, `savanna-ecology.js`, `savanna-render.js` and
+`terrain-model.js` SHA-256 hashes match the built package. Live production and
+preview loads each exposed all eight climate options (Temperate, Northern,
+Tundra, Savanna, Mediterranean, Arid, Enchanted, Tropical rainforest), loaded
+every requested script and stylesheet with HTTP 200, and reported no page or
+console errors beyond the expected software-WebGL `ReadPixels` warning.
+
+The previous 1.2.10 runtime (`6386544`, 322 files / 7.64 MiB) was deployed from
+its exact build with preview receipt `a0c421fb-f643-421f-8d34-4817f0b0e644`
+and production receipt `b74bdc0a-b8c8-4d66-8fe5-eb21ef7ac538`; both
+environments also reported `published:true`.

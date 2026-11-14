@@ -24,13 +24,13 @@ The version in `game/package.json` is the machine-readable game version. Update 
 
 ## Separate hosted development builds
 
-- **Kings & Cards — savanna (current hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. The runtime package is 322 files / 7.64 MiB and its `version.json` identifies runtime commit `6386544`. Preview deploy receipt `a0c421fb-f643-421f-8d34-4817f0b0e644` (14:04:29–14:04:32Z) and production receipt `b74bdc0a-b8c8-4d66-8fe5-eb21ef7ac538` (14:04:43–14:04:46Z) both succeeded; both environments are `published:true`. Both origins return HTTP 200 and carry matching SHA-256 hashes for `savanna-ecology.js` `7f675f510d46fe15265369bea555cfec99cc91c2d3d02e831dac328e39c56446`, `savanna-render.js` `8755b029b237ec64058c77e9f2e12b6bbab2612b07ba42cbec79b7e34134a0ec`, `terrain.js` `e4970c9e01967fe177068398eb9f4e40fb1eeff929bb26a68448bbaa7a6c2c45` and `terrain-model.js` `c8ba932d22c1a0532dd67cb8a20fa0706180dec77af3341c17bcf5de03b4a1dd`. A live production load exposed the Savanna climate option, loaded all requested scripts and styles with HTTP 200, and reported no page or console errors; only the expected software-WebGL `ReadPixels` warning appeared. The same clean load was repeated on preview. Verified on this head: focused savanna tests 12/12; `npm test` 945/945; syntax/imports 145 files / 203 ids; complete browser E2E green; 25-year temperate campaign 10,040 ticks / 13/13 / 0.830 ms per tick / no stalls / no game over; 25-year savanna campaign (seed 20261106) 10,040 ticks / 13/13 / all requirements true / no stalls / no game over / 0.585 ms per tick. Full record: [docs/SAVANNA.md](docs/SAVANNA.md).
+- **Kings & Cards — campaign sweep and eight-climate low-end proof (current hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. The runtime package is 322 files / 7.65 MiB and its `version.json` identifies runtime commit `89ad0cac6118a9ecbfc7644441948c008ce4e627`. Preview deploy receipt `4dda27c7-f04f-41db-8349-90b4f2c82f70` (15:35:23–15:35:27Z) and production receipt `97ac77cd-16f2-433c-a9a8-3eb213214d32` (15:35:37–15:35:40Z) both succeeded; both environments report `published:true`. Both origins return HTTP 200 and serve matching SHA-256 hashes for `version.json` `eb22e1d01a7e7d5ab8c379cf057e1395cfc588d86eedc5ff2b2e94cc305a8cbb`, `terrain.js` `3c375ab3c99b1387822abe8ad63b39319c4e0660a630b5df9e1b3c3c96f5c888`, `savanna-ecology.js` `7f675f510d46fe15265369bea555cfec99cc91c2d3d02e831dac328e39c56446`, `savanna-render.js` `8755b029b237ec64058c77e9f2e12b6bbab2612b07ba42cbec79b7e34134a0ec` and `terrain-model.js` `c8ba932d22c1a0532dd67cb8a20fa0706180dec77af3341c17bcf5de03b4a1dd`. A live production load and a live preview load each exposed all eight climate options (Temperate, Northern, Tundra, Savanna, Mediterranean, Arid, Enchanted, Tropical rainforest), returned HTTP 200 for every requested script and stylesheet, and reported no page or console errors; only the expected software-WebGL `ReadPixels` warning appeared. Verified on this head: focused savanna render 6/6, campaign aggregation 4/4, `npm test` 950/950, syntax/imports 145 files / 203 ids, complete browser E2E green, the three-seed savanna sweep exit 0 with 2 real fuel-backfill orders, and the eight-climate low-end proof exit 0 at p95 16.8 ms. Full record: [docs/SAVANNA.md](docs/SAVANNA.md).
 
 - **Kings & Cards — tundra (previous hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. Preview receipt `8c735389-98ad-4cb5-9032-0a06873b6686` (13:02:56–13:02:59Z) and production receipt `ca2f623c-bfe4-4898-8907-f96051c5a81d` (13:03:07–13:03:11Z) both succeeded; both environments remain `published:true`. The runtime package is 320 files / 7.57 MiB and its `version.json` identifies the deployed commit. Both origins return HTTP 200 and carry matching SHA-256 hashes for `tundra-ecology.js` `b35e169c39f55cf5d0acc9500300501941335398877ad23828e409798b606814`, `tundra-render.js` `ceec5f76b7b76882fcf98b111ad4a0cea4956501e4ff0d83b44750a8aaaa831f` and `terrain-model.js` `bb22b227f4fbf2a09123fe54f741657e1bb0ee3c86e3b1c442a0dbbea68dbd2e`. A live production load exposed the Tundra climate option, returned HTTP 200 for the document and every requested script and stylesheet, and reported no page or console errors; only the expected software-WebGL `ReadPixels` warning appeared. Verified on this head: focused tundra tests green; `npm test` 933/933; syntax/imports 143 files / 203 ids; complete browser E2E green; 25-year temperate campaign 10,040 ticks / 13/13 / 0.833 ms per tick / no stalls / no game over; 25-year tundra campaign 10,040 ticks / 13/13 / 0.553 ms per tick / no game over, with its firewood-stock flag still false (real fuel scarcity). Full record: [docs/TUNDRA.md](docs/TUNDRA.md).
 
 These builds are published from the current development worktree to Freebuff Sites. They are **not** the Cloudflare Pages production branch and do not change the `3.10.0` Pages release status.
 
-- **Kings & Cards — living population (current hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-10. Preview receipt `4d93041d-fc21-4ddf-8cd4-74ed48a242ca` (05:37:11–05:37:13Z) and production receipt `f1f68065-3d97-4ba1-af3b-a491f70e5c75` (05:38:43–05:38:45Z) both succeeded; both environments remain `published:true`. The runtime package is 131 files / 2.4 MB and serves the same `population-register.js` SHA-256 `5fbc0c3ffbcd011aa070120bf46cb0fcd5aabe6a4e1db120b46a48565822e9b4` and `population-panel.js` SHA-256 `f301219473797f0fdc4531eda95aff10215c2f239ade4c94a6e35de34bff4bba` on both origins. A Cloud-browser check founded Avalon / House Vere on both environments and opened the 18th PEOPLE tab: preview showed 22 citizens / 6 households / 22 civilians + 0 soldiers with Wren Goldleaf as the only royal; production showed 22 / 6 / 22 + 0 with Kael Longstride as the only royal. The SOLDIERS filter returned `0 matching · showing 0` with its empty state on both; production reported 0 console messages and no failed resources, preview only four software-WebGL `ReadPixels` warnings and no errors. The first preview check exposed that the sovereign's royal `KNIGHT` entity was counted as a soldier; the register now classifies royals as civilians and a regression test covers it. The performance pass then found the census entry point normalizing the whole register on every tick before its annual early return; it now checks the stored census year first, and same-year calls return the live register. Five post-fix campaigns measured 2.980–3.073 ms/tick (median 3.023, spread 0.093 ms), with the median below the 3.062 ms baseline and every run at 10,040 ticks / 13/13 / no game over. Verified on this head: focused population 8/8; `npm test` 683/683; syntax/UI 101 files / 189 ids. Full record: [docs/LIVING_POPULATION.md](docs/LIVING_POPULATION.md).
+- **Kings & Cards — living population (previous hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-10. Preview receipt `4d93041d-fc21-4ddf-8cd4-74ed48a242ca` (05:37:11–05:37:13Z) and production receipt `f1f68065-3d97-4ba1-af3b-a491f70e5c75` (05:38:43–05:38:45Z) both succeeded; both environments remain `published:true`. The runtime package is 131 files / 2.4 MB and serves the same `population-register.js` SHA-256 `5fbc0c3ffbcd011aa070120bf46cb0fcd5aabe6a4e1db120b46a48565822e9b4` and `population-panel.js` SHA-256 `f301219473797f0fdc4531eda95aff10215c2f239ade4c94a6e35de34bff4bba` on both origins. A Cloud-browser check founded Avalon / House Vere on both environments and opened the 18th PEOPLE tab: preview showed 22 citizens / 6 households / 22 civilians + 0 soldiers with Wren Goldleaf as the only royal; production showed 22 / 6 / 22 + 0 with Kael Longstride as the only royal. The SOLDIERS filter returned `0 matching · showing 0` with its empty state on both; production reported 0 console messages and no failed resources, preview only four software-WebGL `ReadPixels` warnings and no errors. The first preview check exposed that the sovereign's royal `KNIGHT` entity was counted as a soldier; the register now classifies royals as civilians and a regression test covers it. The performance pass then found the census entry point normalizing the whole register on every tick before its annual early return; it now checks the stored census year first, and same-year calls return the live register. Five post-fix campaigns measured 2.980–3.073 ms/tick (median 3.023, spread 0.093 ms), with the median below the 3.062 ms baseline and every run at 10,040 ticks / 13/13 / no game over. Verified on this head: focused population 8/8; `npm test` 683/683; syntax/UI 101 files / 189 ids. Full record: [docs/LIVING_POPULATION.md](docs/LIVING_POPULATION.md).
 
 - **Kings & Cards — realm founding (previous hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-10. Preview receipt `3047608e-096f-4c0c-b723-c7ec43047368` (04:56:06–04:56:09Z) and production receipt `0dd6ffcc-79b6-4369-92f2-716549ef2fb0` (04:56:11–04:56:15Z) both succeeded; both environments remain `published:true`. The runtime package is 129 files / 2.3 MB. A Cloud-browser check on the deployed preview rendered all new founding controls and the live summary, founded Avalon / House Vere with the harvest rite, guild custom, common law, consent doctrine, mercantile compact and mixed constitution, and opened the GOVERNMENT panel with the FOUNDING CHARTER block and chronicle; no console errors appeared, only software-WebGL `ReadPixels` warnings. The run exposed a duplicated “House House” chronicle prefix; it was fixed, the final build passed 675/675 tests, was rebuilt and redeployed to both environments, and production returned HTTP 200 with the fix confirmed. The 25-year campaign still reaches 10,040 ticks / 13/13 ambitions / 37.6 s / 3.062 ms per tick. Full record: [docs/REALM_FOUNDING.md](docs/REALM_FOUNDING.md).
 
@@ -41,6 +41,80 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.15.0-dev — Campaign seed sweep and eight-climate low-end proof (1.2.11)
+
+**Released:** 2026-11-14
+
+**Scope:** Close the campaign fuel-backfill diagnostic honestly on the
+eight-climate world, remove the stale limitation note, and re-prove the
+low-end frame, save/load and memory budget on the heaviest savanna scene. No
+campaign requirement was weakened and no event, illness or worker was
+hand-placed.
+
+**Campaign verification:** the reference runner now supports a documented
+seed sweep (`npm run test:campaign:sweep`). All three savanna seeds
+`20261106`, `20261143` and `20261152` reach 10,040 ticks with every real
+requirement true, 13/13 ambitions, no stalled sites and no game over
+(0.605–0.619 ms/tick). Across the sweep the ordinary annual health simulation
+produces **two real illness-to-fuel-backfill orders in two phases** on seed
+`20261152`: a sawyer falls ill in years 7–8, the normal workforce logic
+replaces them and the replacement receives the one-shot fuel lease. The other
+two seeds remain fully green with zero orders. Aggregation is fail-closed:
+every seed must pass every requirement, no worker phase may receive more than
+one order, and the whole sweep must contain at least one real order. The
+extracted `tests/campaign/sweep-results.mjs` is covered by
+`tests/campaign/sweep-results.test.js` (4/4). Requirements and evidence:
+[docs/CAMPAIGN_VERIFICATION.md](docs/CAMPAIGN_VERIFICATION.md). The old
+"harness coverage limit" note is removed from this changelog and
+`docs/SAVANNA.md`.
+
+**Savanna wind cache:** the animated tall-grass overlay previously rebuilt the
+complete savanna ecology profile (grasses, trees, fauna, goods, soils and
+hazards) for up to 260 scanned tiles on every rendered frame. It now caches the
+four values it actually draws (tall-tuft flag, sway, grass colour and alpha)
+in a hard-bounded 8,192-tile map. Invalidation keys cover the world seed,
+terrain version and sampled terrain maps, climate/forest/aridity options,
+explored/terrain/road/building revisions, season, year, day bucket, weather,
+wind and land-use bucket; the cache never holds full profiles and a change in
+any input clears it. In the accelerated-canvas diagnostic on the same host,
+wind-path draw p95 fell from 25.4 ms to 13.7 ms quiet and 14.1 ms to 8.5 ms
+dense; app work p95 fell from 32.9/19.7 ms to 19.4/14.7 ms in that diagnostic. A focused test
+proves reuse, zero misses on an unchanged frame and weather invalidation
+(`tests/presentation/grassland-render.test.js`, 6/6).
+
+**Low-end proof:** the shipped low-end profile is 1366×768, 4× CPU throttle,
+Auto terrain on Canvas2D, 70 % render scale, 60 FPS cap, two in-game years, and
+the software Canvas2D/compositor path used when a device has no usable GPU
+(`PERF_SOFTWARE_CANVAS=1`). The harness preloads the settings before founding,
+so the quiet phase measures play rather than a post-start terrain rebuild. The
+eight-climate scene is savanna, forests 85 (woodland and forest clearings) and
+a real settlement on seed `20261152`. Final run (`npm run
+test:performance:eight-climate`, exit 0):
+
+| Phase | Frames | Median | p95 | >33 ms | >50 ms | Long tasks |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Quiet realm | 479 | 16.7 ms | **16.8 ms** | **0.63 %** | **0 %** | **0** |
+| Dense mature realm | 601 | 16.7 ms | **16.8 ms** | **0 %** | **0 %** | **0** |
+| Population panel | 476 | 16.7 ms | 16.7 ms | 0.42 % | 0.21 % | 0 |
+| War/diplomacy panel | 472 | 16.7 ms | 16.8 ms | 0.64 % | 0 % | 0 |
+
+Quiet/dense draw p95 is **7.8 / 7.6 ms** and simulation p95 is **4.9 /
+3.3 ms**; app work p95 is **11.5 / 10.4 ms**. A real production save took
+**170.1 ms** and load **1048.8 ms** (906,134-byte save), both under the new
+1000/2500 ms budgets, with no page or console errors. Warm retained heap grew
+**2.12 %** after bounded caches filled; the cold-start report still records
++34.56 % and is kept for visibility. The harness now samples the real
+`state.performanceProbe` work per presented frame, preloads settings, drives
+the production save/load controls directly, and gates heap growth only after
+the one-time cache warm-up.
+
+**Verification:** focused savanna render 6/6, campaign aggregation 4/4, full
+`npm test` **950/950** with syntax/relative imports clean for 145 source files
+and 203 UI ids. Complete browser E2E is green across world forge, drag
+placement, save/load, gathering, production, ecology legacy save and large
+orders. The three-seed sweep exits 0, and the eight-climate low-end proof exits
+0 with the numbers above.
 
 ### 3.15.0-dev — Savanna and the living grassland (1.2.10)
 
@@ -72,11 +146,11 @@ files / 203 UI ids; complete browser E2E green; 25-year temperate campaign
 10,040 ticks, 13/13 ambitions, 0.830 ms/tick, no stalls and no game over; a
 25-year savanna campaign on seed 20261106 reaches the same 10,040 ticks and
 13/13 ambitions with every campaign requirement true, 46 firewood in store,
-no stalls and no game over at 0.585 ms/tick. The harness's separate fuel-backfill
-diagnostic requires a random illness to strike a lumber or sawmill worker; the
-healthy savanna seed had no such illness, so that diagnostic recorded zero
-orders while every campaign requirement passed. The deterministic browser
-reference captures all ten formations and one seasonal pan through four seasons.
+no stalls and no game over at 0.585 ms/tick. This seed records no
+fuel-backfill order; the later 1.2.11 documented seed sweep adds seed
+`20261152`, where ordinary sawyer illness produces two real orders while all
+requirements remain true. The deterministic browser reference captures all ten
+formations and one seasonal pan through four seasons.
 
 ### 3.15.0-dev — Tundra and the living permafrost (1.2.9)
 

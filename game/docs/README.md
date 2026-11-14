@@ -27,6 +27,7 @@ For the current development stage, these documents focus on making the existing 
 - [Steppen 1.2.7](STEPPES.md) — 56-Punkte-Steppenökologie mit Gräsern, Dornbusch, Schwarzerde, Salz, Herden, Weide, Pferdezucht, Wasserstellen und Dürre-/Feuer-/Wintergefahren.
 - [Tundra 1.2.9](TUNDRA.md) — dedicated cold climate, permafrost, ten formations, 48-point audit, sparse scrub timber and the four-season reference.
 - [Savanna 1.2.10](SAVANNA.md) — fire- and grazing-shaped wet/dry climate, ten formations, 48-point audit, sparse woodland, pastoral/grain economy, hazards and the four-season reference.
+- [Campaign verification](CAMPAIGN_VERIFICATION.md) — the real 25-year requirements, documented seed sweep, fuel-backfill evidence and the low-end/frame reproduction commands.
 - [Named garrison and public health](MILITARY_AND_PUBLIC_HEALTH.md) — barracks/stables, named recruits and timed drill, warhorses and annual payroll, sanitation, outbreaks, healers, medicine, quarantine, mortality and the schema-5 save contract.
 - [Faith, culture and justice](FAITH_AND_JUSTICE.md) — named clergy and judges, shrines, courts and prisons, festivals, pilgrimages, heresy, emergent crime, trials, legal codes, charters, corruption, schema-6 saves and the verified hosted build.
 - [Realm founding](REALM_FOUNDING.md) — cultures, religions, traditions, legal orders, legitimacy doctrines, starting charters, oligarchy and mixed constitution, save-compatible identity modifiers and the verified hosted build.

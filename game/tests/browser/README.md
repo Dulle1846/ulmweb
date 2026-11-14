@@ -49,13 +49,21 @@ The 25-year scripted campaign is separate from the legacy E2E suite:
 
 ```sh
 cd game
-npm run test:campaign                 # headless, real simulation + player APIs
+npm run test:campaign                 # one seed, real simulation + player APIs
+npm run test:campaign:sweep           # documented three-seed savanna sweep
 python3 -m http.server 3000 --bind 127.0.0.1   # in another shell, from game/
 E2E_BASE_URL=http://127.0.0.1:3000 npm run test:campaign:browser
 ```
 
-Both use seed `20261108` and 25 years by default. Set `CAMPAIGN_YEARS` to
-shorten a run and `CAMPAIGN_SEED` to change the realm. The browser audit starts
+The single-seed run uses seed `20261108` and 25 years by default. Set
+`CAMPAIGN_YEARS` to shorten a run and `CAMPAIGN_SEED` to change the realm. The
+sweep sets `CAMPAIGN_CLIMATE=savanna` and
+`CAMPAIGN_SEEDS=20261106,20261143,20261152`: every seed must pass all real
+campaign requirements, and at least one seed must contain a real
+illness-to-fuel-backfill order. The full requirements and evidence are in
+[docs/CAMPAIGN_VERIFICATION.md](../../docs/CAMPAIGN_VERIFICATION.md).
+
+The browser audit starts
 through the real start screen, verifies all 13 ambitions and the mature-realm
 frame sample, and writes `artifacts/long-campaign-audit.json` plus three
 responsive screenshots. It fails on a missed requirement, a stalled site, a
@@ -247,3 +255,42 @@ uploads `contact-sheet.png`, `season-transition.png`, `tree-seasons.png`,
 All four generation steps also run when the E2E step fails, so a failed
 gameplay run still produces the visual surface report and the weather/foliage
 records.
+
+
+## Low-end performance audit
+
+The low-end profile is the real realm at 1366×768, 4× CPU throttling, Auto
+terrain (Canvas 2D on a software renderer), 70 % render scale and 60 FPS cap.
+The harness preloads the settings before founding so the quiet phase measures
+steady play rather than a settings/cache rebuild. It samples the quiet realm,
+a mature realm, the population panel and the war/diplomacy panel, then times a
+real save and load through the production controls. `PERF_SOFTWARE_CANVAS=1`
+uses the software Canvas2D/compositor path, which is the relevant low-end path
+when a device has no usable GPU; accelerated Canvas2D under SwiftShader
+saturates Chromium's GPU process and is not a game-side computation.
+
+```sh
+npm run test:performance:eight-climate
+```
+
+The documented eight-climate scene uses savanna, forests 85 (savanna plus
+woodland and forest clearings), a real settlement and seed `20261152`. The
+budget is:
+
+| Metric | Budget | 1.2.11 measurement |
+| --- | ---: | ---: |
+| Frame p95, quiet / dense | ≤ 33 ms | **16.8 / 16.8 ms** |
+| Frames > 33 ms, quiet / dense | ≤ 15 % | **0.63 / 0 %** |
+| Frames > 50 ms, quiet / dense | ≤ 3 % | **0 / 0 %** |
+| Long tasks | 0 | **0 / 0** |
+| Draw p95, quiet / dense | ≤ 16.7 ms | **7.8 / 7.6 ms** |
+| Simulation p95, quiet / dense | ≤ 16.7 ms | **4.9 / 3.3 ms** |
+| Save | ≤ 1000 ms | **170.1 ms** |
+| Load | ≤ 2500 ms | **1048.8 ms** |
+| Warm heap growth | ≤ 25 % | **2.12 %** |
+
+The cold-start heap report is kept for visibility; the heap gate starts after
+the bounded forest/terrain/pathing caches have warmed, so it measures retained
+growth instead of one-time cache fill. Override seeds, climate, scale or budget
+with the `PERF_*` environment variables documented at the top of
+`tests/browser/low-end-performance.mjs`.
