@@ -102,13 +102,14 @@ Recorded on the implementation head:
   dues and defence multiplier survived. **0 page errors / 0 console errors**.
 - Existing full browser E2E: passes with the 24-tab command deck and reports no
   page errors.
-- Canonical Pages production (https://kings-and-cards.pages.dev/) and deployment
-  preview (https://bfc7e403.kings-and-cards.pages.dev) serve runtime commit
-  `611964d2511779f5e9c1eb0505f52b8f7c0a5d0b` (325 files / 7.77 MiB) from
-  workflow run `43642748905`. Both return the commit in `version.json` and the
-  24-tab deck. The live production run repeated the full browser flow on the
-  deployed origin: four houses, charter, levy, **36 gold** annual dues, defence
-  **1.1463**, save/reload, **0 page / 0 console errors**.
+- Canonical Pages production (https://kings-and-cards.pages.dev/) and the
+  per-deployment Pages preview alias serve the final release-record HEAD with
+  the same 325 files / 7.77 MiB runtime. The feature code is commit
+  `611964d2511779f5e9c1eb0505f52b8f7c0a5d0b`; the documentation-only HEAD
+  carries identical runtime files. Both origins return the deployed HEAD in
+  `version.json` and the 24-tab deck. The live production run repeated the full
+  browser flow on the deployed origin: four houses, charter, levy, **36 gold**
+  annual dues, defence **1.1463**, save/reload, **0 page / 0 console errors**.
 
 ## Deliberately not included
 

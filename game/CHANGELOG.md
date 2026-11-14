@@ -24,7 +24,7 @@ The version in `game/package.json` is the machine-readable game version. Update 
 
 ## Separate hosted development builds
 
-- **Kings & Cards — living noble houses (canonical Pages build):** production https://kings-and-cards.pages.dev/ · deployment preview https://bfc7e403.kings-and-cards.pages.dev · runtime commit `611964d2511779f5e9c1eb0505f52b8f7c0a5d0b` · workflow run `43642748905` succeeded on 2026-11-14. The package is 325 files / 7.77 MiB, builtAt `2026-11-14T21:26:33.188Z`. Both origins serve the same `version.json` and 24 command tabs including NOBILITY. A live production run founded seed `20261114`, verified four houses, granted a charter, called a levy, collected 36 gold in annual dues, saved/reloaded and continued with the charter, muster, dues and defence intact; 0 page and 0 console errors. Full record: [docs/NOBILITY.md](docs/NOBILITY.md).
+- **Kings & Cards — living noble houses (canonical Pages build):** production https://kings-and-cards.pages.dev/ · per-deployment Pages preview alias from the successful workflow · feature code commit `611964d2511779f5e9c1eb0505f52b8f7c0a5d0b`; the documentation-only release-record HEAD carries identical runtime files and is deployed through the same workflow. The package is 325 files / 7.77 MiB. Production and its preview serve the same `version.json` and 24 command tabs including NOBILITY. A live production run founded seed `20261114`, verified four houses, granted a charter, called a levy, collected 36 gold in annual dues, saved/reloaded and continued with the charter, muster, dues and defence intact; 0 page and 0 console errors. Full record: [docs/NOBILITY.md](docs/NOBILITY.md).
 - **Kings & Cards — year rollover maintenance budget (previous Sites build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. Runtime commit `cd5ab916fac260a27273852e5c56d40cef405ee9` (324 files / 7.73 MiB). Preview receipt `fd4a63fe-d61e-43ff-a481-967f6c46be70` (20:50:50–20:50:53Z) and production receipt `21f635a2-33f2-4d52-954e-2a0ee5828837` (20:51:01–20:51:04Z) both succeeded; both environments are `published:true`. Both origins return HTTP 200, serve that commit in `version.json`, and match the runtime hashes `js/simulation/simulation.js` `70dcad6dd71b618b80815a6d3b66efcd750ef603e85ff0856cfc563da23f2962` and `js/app/game-loop.js` `5082d0fcaa7a8bffa3b9cf4d2349669e1607613046685a652b0f3c00f5987a0c`. A live production load founded seed `20261108` with 23 residents, forced the calendar to year 3 day 399, and completed the real rollover to year 4 day 9 / tick 1209 with **zero long tasks**, no page errors, no console errors and no failed requests. Full record: [docs/TAIGA.md](docs/TAIGA.md#low-end-performance).
 - **Kings & Cards — taiga wilderness fog transition (previous hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. Runtime commit `3496172cbe0a2a2b310e16fe897ba3d959f7ea03` (324 files / 7.73 MiB). Preview receipt `b624e4cc-c7af-4f8a-a89a-596c1ae0e4a9` (20:08:26–20:08:29Z) and production receipt `5fa93518-7eea-4785-a0e1-8edeefa42af4` (20:08:34–20:08:37Z) both succeeded; both environments are `published:true`. Both origins return HTTP 200, serve that commit and matching `terrain.js` SHA-256 `5d1a7d3b12d3bd41169dac5cb7d31940b75fcddd2d1bd520c2085e4d3d726dd3`. The new immediate wilderness fog jump measures **16.8 ms p95**, 0.56% over 33 ms, 0% over 50 ms, zero long tasks, 171 draw calls, 0 entities, 1.8 ms canvas draw and **59 fogged tiles**; the explored jump and all steady scenes remain green. A live production run of the same transition measured 150 frames at **16.8 ms p95**, zero long tasks, 171 draw calls, 1.9 ms canvas draw, 59 fogged tiles and `water.ice:true`, with zero page, console, network or HTTP errors. Full record: [docs/TAIGA.md](docs/TAIGA.md#low-end-performance).
 - **Kings & Cards — taiga transition budget (previous hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. Runtime commit `4bee9d1c5444d10555302cc397db915db24fb3c3` (324 files / 7.73 MiB). Preview receipt `4f5e41ad-dfa5-4269-84a7-f3ea56691220` and production receipt `c3fc3920-059a-442b-ba7d-d356b968f6c0` both succeeded; both environments are `published:true`. Both origins return HTTP 200, serve the same commit and matching `terrain.js` SHA-256 `80a62a916c703c5e8ccdc2078e0e5914790f9967f8f66d14b312dd0e17f158b0`. The new immediate camera/season jump phase measures **16.8 ms p95**, 2.75% over 33 ms, 0.55% over 50 ms, zero long tasks, 397 draw calls, 22 entities and 8.5 ms canvas draw after the rebuild fixes; the summer, winter-ice and settled-settlement scenes remain green. A live production jump had no page, console, request or HTTP errors and reached `water.ice:true`. Full record: [docs/TAIGA.md](docs/TAIGA.md#low-end-performance).
@@ -156,17 +156,19 @@ with the 24-tab command deck and no page errors. Full record:
 [docs/NOBILITY.md](docs/NOBILITY.md).
 
 **Deployed and live-verified:** canonical Pages production
-https://kings-and-cards.pages.dev/ and deployment preview
-https://bfc7e403.kings-and-cards.pages.dev serve runtime commit
-`611964d2511779f5e9c1eb0505f52b8f7c0a5d0b` (325 files / 7.77 MiB). GitHub
-Actions run `43642748905` passed the full suite, runtime boundary checks,
-deployment and the production version-marker check. Both origins return the
-commit in `version.json` and expose the 24-tab command deck with the NOBILITY
-tab. A live production Playwright run founded seed `20261114`, verified four
-resident-led houses, granted House Longstride's charter, called its levy, ran the
-annual audit (**36 gold** dues, defence **1.1463**), saved, reloaded and
-continued with the charter, muster, dues and defence intact, with **0 page
-errors / 0 console errors**.
+https://kings-and-cards.pages.dev/ and the per-deployment Pages preview alias
+from the successful workflow serve the same runtime files (325 files / 7.77
+MiB). The feature code is commit `611964d2511779f5e9c1eb0505f52b8f7c0a5d0b`;
+the documentation-only release-record HEAD carries identical runtime files and
+is the deployed build. The initial feature deployment was GitHub Actions run
+`43642748905`; the final release-record deployment uses the same workflow and
+production version-marker check. Both origins return the deployed HEAD in
+`version.json` and expose the 24-tab command deck with the NOBILITY tab. A live
+production Playwright run founded seed `20261114`, verified four resident-led
+houses, granted House Longstride's charter, called its levy, ran the annual audit
+(**36 gold** dues, defence **1.1463**), saved, reloaded and continued with the
+charter, muster, dues and defence intact, with **0 page errors / 0 console
+errors**.
 
 ### 3.16.3-dev — Taiga wilderness fog transition
 
