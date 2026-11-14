@@ -693,6 +693,12 @@
   .realm-action-dock{padding:6px 8px}
   .realm-action-dock>button{min-width:0;flex:1 1 0;font-size:8px}
   .save-status{flex-basis:100%;margin-left:0;text-align:center;order:9}
+  /* On narrow screens the build header, category tabs and summaries can
+     consume the whole panel height. The options body then collapses to 0px
+     and its rendered buttons cannot be clicked. Let the panel scroll and
+     keep the options at their natural height. */
+  .build-panel{overflow-y:auto}
+  .build-panel .build-options{flex:0 0 auto}
 }
 
 @media(max-width:560px){
