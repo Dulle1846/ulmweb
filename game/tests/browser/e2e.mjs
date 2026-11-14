@@ -735,6 +735,7 @@ try{
     });
     await page.waitForFunction(()=>{const message=document.querySelector("#status-message")?.textContent||"";return message.includes("Loaded realm")||message.includes("Load failed")||message.includes("No valid saved realm");},null,{timeout:5000});
     assert.ok((await page.locator("#status-message").innerText()).includes("Loaded realm"));
+    assert.equal(await page.evaluate(async()=>(await import("./js/core/state.js")).state.hasStarted),true,"loading a realm must mark it started so the HUD and realm issues keep rendering");
     const afterLoad=await page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");
         return {clergy:state.faith.clergy.map(entry=>({personId:entry.personId,name:entry.name,conviction:entry.conviction,competence:entry.competence})),faithHistory:state.faith.history.map(entry=>entry.summary),festival:state.faith.festival.lastKind,judges:state.justice.judges.map(entry=>({personId:entry.personId,name:entry.name,competence:entry.competence,integrity:entry.integrity})),justiceHistory:state.justice.history.map(entry=>entry.summary),cases:state.justice.cases.map(entry=>entry.id),fines:state.justice.sentenceTotals.fine,shrineSites:state.entities.filter(entity=>!entity.dead&&entity.type===70&&entity.construction).length,courtSites:state.entities.filter(entity=>!entity.dead&&entity.type===71&&entity.construction).length};

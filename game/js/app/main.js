@@ -667,6 +667,12 @@ function loadSnapshotIntoGame(profile,snapshot){
     }
     resetForRun(profile);
     const restored=restoreSaveSnapshot(prepared);
+    // resetForRun clears readiness before the snapshot is applied. Restoring a
+    // prepared snapshot rebuilds the realm and resumes the loop, so it must
+    // mark the realm started again; otherwise every renderUI() call (HUD,
+    // chronicle, active issue) silently returns and the loaded realm can never
+    // open or dismiss a realm issue.
+    state.hasStarted=true;
     const savedSpeed=Number(state.gameSpeed);
     document.querySelectorAll(".speed-button").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.speed)===savedSpeed));
     if(restored.hasSavedCamera)clampCamera();else centerCamera();

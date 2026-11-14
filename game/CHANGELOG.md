@@ -38,6 +38,30 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ## Production release history
 
+### 3.15.0-dev — Loaded realms keep their HUD and realm issues
+
+**Released:** 2026-11-14
+
+**Cause:** Loading a saved realm calls `resetForRun()`, which clears
+`state.hasStarted`, and then restores the snapshot. The load path hid the start
+screen and resumed the simulation, but never marked the restored realm as
+started. `renderUI()` therefore returned at its first guard on every call: the
+loaded realm stayed visible but its HUD stopped refreshing, and the chronicle
+could not reopen an active realm issue because the modal was never painted. The
+browser E2E caught this at the issue-reopen fixture, several minutes after the
+real save/load action that caused it.
+
+**Fix:** `loadSnapshotIntoGame()` now sets `state.hasStarted = true` after a
+successful restore and before its first render. The browser E2E asserts the
+readiness flag immediately after the existing real load, next to the action that
+regresses it.
+
+**Verification:** `npm test` 922/922 with syntax and relative imports clean for
+141 source files / 203 UI ids; complete browser E2E green with no page or console
+errors, including dismissing and reopening the chronicle issue; Royal
+Expeditions browser audit green; 25-year campaign 10,040 ticks, 13/13
+ambitions, no stalls, no game over, 0.835 ms/tick (previous baseline 0.861).
+
 ### 3.15.0-dev — Royal expeditions and the living frontier
 
 **Released:** 2026-11-14
