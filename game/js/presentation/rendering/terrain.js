@@ -101,10 +101,11 @@ export function drawTerrain(ctx) {
     drawFogOfWar(ctx, zoom, cam, canvas);
 }
 
-function drawBakedGround(ctx, zoom, cam, canvas) {
+function drawBakedGround(ctx, zoom, cam, canvas, quality = "high") {
     // Safety net for browsers without WebGL2. Smoothing stays on even at the
     // closest zoom; the old hard nearest-neighbour switch was the main source
-    // of the visible block pattern.
+    // of the visible block pattern. The transient jump underlay can use low
+    // quality because it is replaced by the full detail layer shortly after.
     const tc = state.terrainCanvas;
     ctx.save();
     ctx.fillStyle = "#0a120a";
@@ -133,7 +134,7 @@ function drawBakedGround(ctx, zoom, cam, canvas) {
     }
 
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
+    ctx.imageSmoothingQuality = quality;
     ctx.drawImage(
         tc,
         sx, sy, sw, sh,
@@ -193,7 +194,7 @@ function fogNeeded(cam, zoom, canvas) {
     return false;
 }
 
-function drawFogOfWar(ctx, zoom, cam, canvas) {
+function drawFogOfWar(ctx, zoom, cam, canvas, quality = "high") {
     const cellPx = CELL * zoom;
     if (!(cellPx > 0)) return;
     // The fog texture is transparent over explored tiles. The normal view is
@@ -215,7 +216,7 @@ function drawFogOfWar(ctx, zoom, cam, canvas) {
     // The exploration mask is one cell per tile. Bilinear display would soften
     // the old hard cell edges; the fog itself is still authoritative.
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
+    ctx.imageSmoothingQuality = quality;
     ctx.drawImage(
         fog, sx, sy, sw, sh,
         sx * cellPx - cam.x, sy * cellPx - cam.y,
@@ -381,7 +382,10 @@ function beginDetailBuild(zoom, cam, canvas, key, worldKey, surfaceCtx = null) {
     if (!stagingCtx) return null;
     const setupStart = performance.now();
     stagingCtx.clearRect(0, 0, staging.width, staging.height);
-    drawBakedGround(stagingCtx, zoom, cam, canvas);
+    // The detail slices paint grain and objects over this base. Low-quality
+    // upscaling keeps the synchronous setup below a long-task frame while the
+    // finished layer still carries the full detail pass.
+    drawBakedGround(stagingCtx, zoom, cam, canvas, "low");
     if (visible) {
         // Fog must cover unexplored tiles from the first progressive frame.
         // Decorations skip those tiles, so it can be painted before the slices.
@@ -1037,8 +1041,11 @@ function drawDetailLayerGaps(ctx, zoom, cam, canvas, transform) {
         }
         if (gapKey !== signature) {
             if (gapCtx) {
-                drawBakedGround(gapCtx, zoom, cam, canvas);
-                drawFogOfWar(gapCtx, zoom, cam, canvas);
+                // This underlay exists only while the staged detail layer is
+                // rebuilding. Low-quality upscaling keeps the first fog raster
+                // out of the long-task budget; the settled layer uses high.
+                drawBakedGround(gapCtx, zoom, cam, canvas, "low");
+                drawFogOfWar(gapCtx, zoom, cam, canvas, "low");
             }
             gapKey = signature;
         }

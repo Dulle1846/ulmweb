@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.14.2`
-**Next development line:** `3.16.2-dev`
+**Next development line:** `3.16.3-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -45,6 +45,37 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.16.3-dev — Taiga wilderness fog transition
+
+**Released:** 2026-11-14
+
+**Scope:** Test the immediate camera/season jump into unexplored terrain, prove
+the active fog path is actually drawn, and keep the transition inside the
+existing frame, long-task, draw-call, entity and canvas budgets.
+
+**Benchmark:** `tests/browser/low-end-performance.mjs` now finds an unexplored
+non-water Taiga tile far from the lake and settlement, reveals only a radius-4
+island, and samples `taiga-unexplored-transition` immediately after the jump.
+`applyTaigaScene()` counts visible fogged tiles and the budget gate fails the
+phase if `fogTiles` is zero, so the fully-explored fog shortcut cannot pass by
+skipping the fog path.
+
+**Profile and fixes:** the jump no longer invalidates the fog mask on a camera
+or season change; only an actual exploration change does. The transient gap
+underlay and detail-base pass use low-quality upscaling while the staged layer
+is rebuilding, while the settled layer keeps full-quality fog. The phase
+sampler resets at a clean `requestAnimationFrame` boundary, so a frame already
+in flight is not charged to the next phase.
+
+**Measured wilderness fog transition:** 179 frames, **16.8 ms p95**, **0.56%**
+over 33 ms, **0%** over 50 ms, **0 long tasks**, **171 draw calls p95 / 371
+max**, **0 visible entities**, **1.8 ms canvas draw p95** and **59 fogged
+tiles**. The explored camera/season jump is **16.7 ms p95** with 0 long tasks;
+the summer (16.7 ms / 164 draws / 1.6 ms), winter-ice (16.7 / 174 / 1.8) and
+settled settlement (16.8 / 392 / 6.8) scenes remain green. Full
+`npm run test:performance:taiga` exits 0 with no budget relaxed and no scene
+removed. Full record: [docs/TAIGA.md](docs/TAIGA.md#low-end-performance).
 
 ### 3.16.2-dev — Taiga camera-jump transition
 

@@ -298,20 +298,24 @@ with the `PERF_*` environment variables documented at the top of
 ### Taiga scenes
 
 `npm run test:performance:taiga` sets `PERF_TAIGA_SCENES=1` and samples a real
-generated Taiga realm in four additional views: a summer waterway, the same
+generated Taiga realm in five additional views: a summer waterway, the same
 waterway frozen in winter, the populated settlement after the staged detail
-layer settles, and the **camera + season jump** to that settlement sampled
-immediately. `PERF_TAIGA_SCENE_MS` controls each steady sample,
-`PERF_TAIGA_TRANSITION_MS` controls the jump sample, and `PERF_WARMUP_MS` lets
-startup caches settle. The steady scenes wait for `isTerrainDetailSettled()`;
-the transition deliberately does not, so the rebuild is measured rather than
-skipped. The harness wraps the real Canvas2D primitive methods while
-`drawWorld()` is active, so the reported draw-call figures are actual canvas
-work in that frame, and it reads the renderer's visible entity/carrier
-diagnostics. Taiga scene budgets are 1,500 draw calls p95, 120 visible entities
-p95 and 16.7 ms canvas draw p95 in addition to the frame and long-task budgets.
-The measured Taiga results, including the before/after transition profile, are
-recorded in [docs/TAIGA.md](../../docs/TAIGA.md#low-end-performance).
+layer settles, the **camera + season jump** to that settlement sampled
+immediately, and an immediate **wilderness fog jump** into a mostly unexplored
+land tile with only a radius-4 island revealed. `PERF_TAIGA_SCENE_MS` controls
+each steady sample, `PERF_TAIGA_TRANSITION_MS` controls both jump samples, and
+`PERF_WARMUP_MS` lets startup caches settle. The steady scenes wait for
+`isTerrainDetailSettled()`; both transitions deliberately do not, so the
+rebuild is measured rather than skipped. The wilderness phase counts fogged
+tiles in the viewport and fails when `fogTiles` is zero, which prevents the
+fully-explored fog shortcut from producing a false green. The harness wraps the
+real Canvas2D primitive methods while `drawWorld()` is active, so the reported
+draw-call figures are actual canvas work in that frame, and it reads the
+renderer's visible entity/carrier diagnostics. Taiga scene budgets are 1,500
+draw calls p95, 120 visible entities p95 and 16.7 ms canvas draw p95 in
+addition to the frame and long-task budgets. The measured Taiga results,
+including the active-fog transition, are recorded in
+[docs/TAIGA.md](../../docs/TAIGA.md#low-end-performance).
 
 On a rootless Linux container, prefix the command with the browser paths from
 the section below (`LD_LIBRARY_PATH` and `FONTCONFIG_FILE`); otherwise Chromium

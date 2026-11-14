@@ -223,10 +223,11 @@ p95** and **16.7 ms canvas draw p95**.
 
 | Scene | Season / condition | Frames | p95 frame | >33 ms | >50 ms | Long tasks | Draw calls p95 / max | Visible entities p95 | Canvas draw p95 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Summer waterway | day 197, summer, clear | 479 | **16.7 ms** | 0 % | 0 % | 0 | **164 / 225** | 0 | 1.5 ms |
-| Frozen winter water | day 396, winter, snow | 480 | **16.7 ms** | 0 % | 0 % | 0 | **174 / 514** | 0 | 1.8 ms |
-| Populated settlement | day 199, summer, 30 buildings | 475 | **16.8 ms** | 1.26 % | 0 % | 0 | **433 / 693** | 24 | 7.0 ms |
-| Camera + season jump | winter lake → summer settlement, sampled immediately | 182 | **16.8 ms** | 2.75 % | 0.55 % | 0 | **397 / 467** | 22 | 8.5 ms |
+| Summer waterway | day 197, summer, clear | 479 | **16.7 ms** | 0 % | 0 % | 0 | **164 / 196** | 0 | 1.6 ms |
+| Frozen winter water | day 396, winter, snow | 480 | **16.7 ms** | 0 % | 0 % | 0 | **174 / 501** | 0 | 1.8 ms |
+| Populated settlement | day 199, summer, 30 buildings | 474 | **16.8 ms** | 1.06 % | 0 % | 0 | **392 / 634** | 23 | 6.8 ms |
+| Camera + season jump | winter lake → summer settlement, sampled immediately | 180 | **16.7 ms** | 0 % | 0 % | 0 | **414 / 512** | 23 | 7.9 ms |
+| Wilderness fog jump | winter, 59 fogged tiles in view, sampled immediately | 179 | **16.8 ms** | 0.56 % | 0 % | 0 | **171 / 371** | 0 | 1.8 ms |
 
 The winter scene reports `water.ice:true` from the real Taiga profile while
 the same camera in summer reports `water.ice:false`; the renderer is showing a
@@ -253,8 +254,31 @@ and the first underlay raster was a long task. The fixes are in
 - The static ground/fog underlay is cached during the staged rebuild and blitted
   rather than re-rasterised on every frame.
 
-The transition now measures **16.8 ms p95**, 2.75 % over 33 ms, 0.55 % over
-50 ms, 0 long tasks, 397 draw calls p95, 22 visible entities and 8.5 ms canvas
+The explored transition now measures **16.7 ms p95**, 0 % over 33 ms, 0 % over
+50 ms, 0 long tasks, 414 draw calls p95, 23 visible entities and 7.9 ms canvas
 draw p95. It uses the same 33 ms / 15 % / 3 % / zero-long-task and 1,500 draw /
 120 entity / 16.7 ms canvas budgets as the steady scenes. The settled
 settlement remains **16.8 ms**; no budget was relaxed and no scene was removed.
+
+The same harness now jumps from the settled settlement into a mostly
+unexplored wilderness. `prepareTaigaScenes()` picks a non-water land tile far
+from both known scenes and reveals only a radius-4 island, so the viewport has
+a real fog boundary instead of a fully explored backdrop.
+`applyTaigaScene()` counts the fogged tiles in the current viewport and the
+benchmark fails the phase when `fogTiles` is not greater than zero; a path that
+silently skips fog rendering cannot pass. The phase starts sampling immediately
+after the camera and season change, before the staged detail layer settles.
+
+The first active-fog measurements were already within the frame budget, but the
+jump sometimes paid for rebuilding the exploration mask even though a camera or
+season change cannot alter explored tiles. `applyTaigaScene()` no longer
+invalidates `state.fogDirty`; only an actual exploration change does. The
+transient gap underlay and detail-base pass now use low-quality upscaling while
+the staged layer is rebuilding; the settled detail layer still paints fog at
+full quality. The sampler also resets at a clean `requestAnimationFrame`
+boundary so a frame already in flight cannot be charged to the next phase.
+The wilderness jump measures **16.8 ms p95**, **0.56 %** over 33 ms, **0 %**
+over 50 ms, **0 long tasks**, **171 draw calls p95 / 371 max**, **0 visible
+entities** and **1.8 ms canvas draw p95**, with **59** fogged tiles proving the
+active fog path. The explored jump and all four prior scenes remain green in
+the same full run; `npm run test:performance:taiga` exits 0.

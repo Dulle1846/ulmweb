@@ -533,7 +533,14 @@ function summarizePhase(name, payload) {
 }
 
 async function samplePhase(name, durationMs) {
-    await page.evaluate(() => {
+    // Reset on a clean frame boundary. Clearing the sampler in a separate
+    // evaluation could charge a frame that was already in flight to the new
+    // phase: its draw landed in perf.draws after the clear while its long task
+    // started after phaseStarted, even though the game probe had already
+    // discarded that frame. Starting after two rAF callbacks removes the race.
+    await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         const perf = window.__KAC_PERF;
         perf.raf.length = 0;
         perf.tickMs.length = 0;
@@ -543,15 +550,12 @@ async function samplePhase(name, durationMs) {
         perf.workMs.length = 0;
         perf.draws.length = 0;
         perf.longTasks.length = 0;
-        perf.phaseStarted = performance.now();
-    });
-    await page.evaluate(async () => {
-        const { state } = await import("./js/core/state.js");
         if (state.performanceProbe) {
             state.performanceProbe.frames.length = 0;
             state.performanceProbe.lastPresentedAt = 0;
             state.performanceProbe.lastRenderedAt = 0;
         }
+        perf.phaseStarted = performance.now();
     });
     await page.waitForTimeout(durationMs);
     const payload = await page.evaluate(async () => {
@@ -704,11 +708,28 @@ async function prepareTaigaScenes() {
             }
             : { x: W / 2, y: H / 2 };
         reveal(Math.floor(centre.x), Math.floor(centre.y), 20);
+        // Pick a land tile that is still unexplored and far from both revealed
+        // scenes. Reveal only a small island of ground so the camera jump has a
+        // real fog boundary; the rest of the view exercises the active fog path.
+        let wilderness = null;
+        for (let y = 8; y < H - 8; y += 2) {
+            for (let x = 8; x < W - 8; x += 2) {
+                if (state.explored[x][y] || isWaterAt(x, y)) continue;
+                const distance = Math.abs(x - lake.x) + Math.abs(y - lake.y)
+                    + Math.abs(x - centre.x) + Math.abs(y - centre.y);
+                const edge = Math.min(x, y, W - x - 1, H - y - 1);
+                const score = distance + Math.min(12, edge);
+                if (!wilderness || score > wilderness.score) wilderness = { x, y, distance, edge, score };
+            }
+        }
+        if (!wilderness) throw new Error("The generated taiga realm has no unexplored land for the fog transition");
+        reveal(wilderness.x, wilderness.y, 4);
         state.fogDirty = true;
         state.fogExploredRef = null;
         return {
             lake,
             settlement: { x: centre.x, y: centre.y, buildings: buildings.length },
+            wilderness,
             world: { width: W, height: H, cell: CELL },
             population: state.entities.filter(entity => !entity.dead && entity.type === 20).length
         };
@@ -736,8 +757,8 @@ async function applyTaigaScene(target, season, zoom) {
         const maxY = Math.max(0, (Number(state.worldH) || 0) * CELL * zoom - canvas.height);
         state.camera.x = Math.max(0, Math.min(maxX, target.x * CELL * zoom - canvas.width / 2));
         state.camera.y = Math.max(0, Math.min(maxY, target.y * CELL * zoom - canvas.height / 2));
-        state.fogDirty = true;
-        state.fogExploredRef = null;
+        // A camera or season change does not alter the exploration mask. Keep
+        // the fog canvas warm instead of charging a mask rebuild to the jump.
         const profile = taigaProfileAt(target.x + 0.5, target.y + 0.5, {
             climate: "taiga",
             dayOfYear: state.dayOfYear,
@@ -749,6 +770,17 @@ async function applyTaigaScene(target, season, zoom) {
             weather: state.weather,
             use: { state: "wild" }
         });
+        const cellPx = CELL * zoom;
+        let fogTiles = 0;
+        if (cellPx > 0 && state.explored) {
+            const x0 = Math.max(0, Math.floor(state.camera.x / cellPx));
+            const y0 = Math.max(0, Math.floor(state.camera.y / cellPx));
+            const x1 = Math.min(state.worldW - 1, Math.floor((state.camera.x + canvas.width) / cellPx));
+            const y1 = Math.min(state.worldH - 1, Math.floor((state.camera.y + canvas.height) / cellPx));
+            for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+                if (!state.explored[x]?.[y]) fogTiles++;
+            }
+        }
         return {
             scene: winter ? "winter-ice" : "summer-lake",
             formation: profile?.formation || null,
@@ -764,6 +796,7 @@ async function applyTaigaScene(target, season, zoom) {
             zoom: state.zoom,
             camera: { x: state.camera.x, y: state.camera.y },
             canvas: { width: canvas.width, height: canvas.height },
+            fogTiles,
             terrainCacheMisses: Number(state.terrainCacheMisses) || 0
         };
     }, { target, season, zoom });
@@ -915,17 +948,28 @@ try {
             // The settlement scene is a real camera and season jump. Sample it
             // immediately, before waiting for the staged terrain-detail build,
             // then wait and sample the settled view as its own scene.
-            { target: taigaInfo.settlement, season: "summer", zoom: 1.0, name: "taiga-populated-settlement", transition: true }
+            { target: taigaInfo.settlement, season: "summer", zoom: 1.0, name: "taiga-populated-settlement", transition: true },
+            // A second jump goes from the settled settlement into a mostly
+            // unexplored wilderness. The small revealed island gives the view
+            // a real fog boundary; the immediate transition sample proves the
+            // active fog path is not skipped for a nearly empty view.
+            { target: taigaInfo.wilderness, season: "winter", zoom: 1.0, name: "taiga-unexplored-fog", transition: true, transitionName: "taiga-unexplored-transition", settled: false }
         ];
         for (const scene of scenes) {
             const applied = await applyTaigaScene(scene.target, scene.season, scene.zoom);
             if (scene.transition) {
-                taigaInfo.scenes.push({ ...applied, phase: "taiga-transition-jump", transition: true });
-                taigaPhases.push(await samplePhase("taiga-transition-jump", TAIGA_TRANSITION_MS));
+                const transitionName = scene.transitionName || "taiga-transition-jump";
+                const transitionPhase = await samplePhase(transitionName, TAIGA_TRANSITION_MS);
+                transitionPhase.fogTiles = applied.fogTiles;
+                taigaInfo.scenes.push({ ...applied, phase: transitionName, transition: true });
+                taigaPhases.push(transitionPhase);
             }
             await settleTaigaScene(applied.terrainCacheMisses);
+            if (scene.settled === false) continue;
+            const settledPhase = await samplePhase(scene.name, TAIGA_SCENE_MS);
+            settledPhase.fogTiles = applied.fogTiles;
             taigaInfo.scenes.push({ ...applied, phase: scene.name });
-            taigaPhases.push(await samplePhase(scene.name, TAIGA_SCENE_MS));
+            taigaPhases.push(settledPhase);
         }
     }
 
@@ -1009,6 +1053,7 @@ if (summary) {
             if (phase.drawCallsP95 === null || phase.drawCallsP95 > BUDGET.taigaDrawCalls) failures.push(phase.name + " draw calls p95 " + phase.drawCallsP95 + " exceeds " + BUDGET.taigaDrawCalls);
             if (phase.entitiesP95 === null || phase.entitiesP95 > BUDGET.taigaEntities) failures.push(phase.name + " visible entities p95 " + phase.entitiesP95 + " exceeds " + BUDGET.taigaEntities);
             if (phase.canvasDrawP95Ms === null || phase.canvasDrawP95Ms > BUDGET.taigaDrawMs) failures.push(phase.name + " canvas draw p95 " + phase.canvasDrawP95Ms + "ms exceeds " + BUDGET.taigaDrawMs + "ms");
+            if (phase.name.startsWith("taiga-unexplored") && !(phase.fogTiles > 0)) failures.push(phase.name + " did not exercise the active fog path: fogTiles=" + phase.fogTiles);
         }
     }
     if (summary.heap.steadyGrowthPct !== null && summary.heap.steadyGrowthPct > 25) failures.push("warm retained JS heap grew by " + summary.heap.steadyGrowthPct + "%");
