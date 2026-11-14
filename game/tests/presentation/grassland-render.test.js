@@ -19,6 +19,7 @@ import {
     drawGrasslandTree,
     drawGrasslandWindOverlay,
     GRASSLAND_WIND_LIMITS,
+    grasslandWindCacheStats,
 } from "../../js/presentation/rendering/terrain.js";
 
 const SEASONS = Object.freeze([
@@ -436,6 +437,29 @@ function renderOverlay(width, height, zoom, probe) {
     drawGrasslandWindOverlay(recorder.ctx, zoom, { x: 0, y: 0 }, recorder.canvas, probe);
     return recorder;
 }
+
+test("the wind tile cache reuses profiles and invalidates on weather", () => {
+    installOverlayWorld();
+    state.weather = "clear";
+    const firstProbe = {};
+    renderOverlay(1280, 720, 1.2, firstProbe);
+    const secondProbe = {};
+    renderOverlay(1280, 720, 1.2, secondProbe);
+    assert.ok(firstProbe.cacheMisses > 0, "the first frame must populate the tile cache");
+    assert.ok(secondProbe.cacheHits > 0, "the second frame must reuse cached wind profiles");
+    assert.equal(secondProbe.cacheMisses, 0, "an unchanged frame must not recompute any tile");
+    assert.equal(secondProbe.tufts, firstProbe.tufts, "cached profiles must draw the same tufts");
+    assert.ok(grasslandWindCacheStats().size >= secondProbe.cacheHits,
+        "the cache must hold the tile entries it reports as hits");
+
+    const generation = grasslandWindCacheStats().generation;
+    state.weather = "storm";
+    const weatherProbe = {};
+    renderOverlay(1280, 720, 1.2, weatherProbe);
+    assert.ok(weatherProbe.cacheMisses > 0, "a weather change must invalidate every cached tile");
+    assert.ok(grasslandWindCacheStats().generation > generation,
+        "weather invalidation must advance the cache generation");
+});
 
 test("the wind overlay obeys its hard per-frame tuft and scan budget", () => {
     assert.deepEqual(

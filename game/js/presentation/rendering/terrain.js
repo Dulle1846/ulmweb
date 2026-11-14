@@ -4329,11 +4329,40 @@ export function drawGrassland(ctx, px, py, cellPx, profile, s1, s2, s3, tick, zo
 // gives the meadow its wave motion without re-rasterising every planted tile.
 export const GRASSLAND_WIND_LIMITS = Object.freeze({ maxTufts: 44, maxExamined: 260 });
 
+// The animated overlay only needs four values from each tile: whether it can
+// grow a tall tuft, its sway strength, its grass colour and its alpha. Deriving
+// the complete ecology profile (grasses, trees, fauna, goods, soils, hazards)
+// for every scanned tile on every rendered frame cost several milliseconds in
+// the savanna. Cache those four visual values per tile and only recompute them
+// when a real visual input changes. The map is hard-bounded; the key includes
+// terrain, season, weather, wind and land-use revisions, so a regenerated map,
+// a new day-bucket or a new building/road invalidates it.
+const WIND_TILE_CACHE_LIMIT = 8192;
+const windTileCache = new Map();
+let windTileCacheKey = "";
+const windTileCacheStats = { hits: 0, misses: 0, generation: 0 };
+
+function terrainContentSignature() {
+    const sample = map => {
+        if (!map || !map.length) return "";
+        const middle = Math.floor(map.length / 2);
+        return [map[0], map[middle], map[map.length - 1]]
+            .map(value => Math.round((Number(value) || 0) * 1000)).join(",");
+    };
+    return sample(state.heightMap) + "|" + sample(state.moistureMap) + "|" + sample(state.temperatureMap);
+}
+
+// Read-only diagnostic for the renderer regression tests. It reports only
+// counter values and the current cache size, never profile payloads.
+export function grasslandWindCacheStats() {
+    return { ...windTileCacheStats, size: windTileCache.size };
+}
+
 // `probe` is optional instrumentation for the headless renderer test. It is
 // never allocated by the game loop; production calls pass no probe.
 export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
     const startedAt = performance.now();
-    if (probe) { probe.examined = 0; probe.tufts = 0; probe.elapsedMs = 0; }
+    if (probe) { probe.examined = 0; probe.tufts = 0; probe.elapsedMs = 0; probe.cacheHits = 0; probe.cacheMisses = 0; }
     if (!state.heightMap || zoom < 0.62) return;
     const cellPx = CELL * zoom;
     if (cellPx < 14) return;
@@ -4355,53 +4384,101 @@ export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
     const startY = Math.max(0, Math.floor(bounds.startY / step) * step);
     let drawn = 0;
     let examined = 0;
+    let cacheHits = 0;
+    let cacheMisses = 0;
     const { maxTufts, maxExamined } = GRASSLAND_WIND_LIMITS;
+    // The four cached visual values do not depend on the clock hour. Sway and
+    // grass colour change with the season, weather and land use, so a coarse
+    // day bucket and the real revision counters invalidate the tile cache.
+    const dayBucket = Math.floor(dayOfYear / 8);
+    const useBucket = Math.floor(tick / 400);
+    const nextCacheKey = [
+        Number(state.worldSeed) || 0, worldW(), worldH(),
+        Number(state.terrainPixW) || 0, Number(state.terrainPixH) || 0,
+        Number(state.terrainVersion) || 0, Math.round(sea * 1000),
+        climateKey, forests, Number(state.worldOptions?.aridity) || 0,
+        terrainContentSignature(),
+        Number(state.exploredRevision) || 0,
+        Number(state.terrainCacheRevision) || 0,
+        Number(state.roads?.revision) || 0,
+        Number(state.buildingCollisionVersion) || 0,
+        Math.floor((Number(state.forestVisualRevision) || 0) / 2000),
+        Number(state.year) || 1, Number(state.seasonIndex) || 0,
+        dayBucket, state.weather || "clear", Math.round(wind * 20),
+        useBucket,
+    ].join("|");
+    if (nextCacheKey !== windTileCacheKey) {
+        windTileCache.clear();
+        windTileCacheKey = nextCacheKey;
+        windTileCacheStats.generation += 1;
+    }
     ctx.save();
     for (let x = startX; x < bounds.endX && drawn < maxTufts && examined < maxExamined; x += step) {
         for (let y = startY; y < bounds.endY && drawn < maxTufts && examined < maxExamined; y += step) {
             examined += 1;
             if (!state.explored?.[x]?.[y]) continue;
-            const h = getHeightAt(x + 0.5, y + 0.5);
-            if (h < sea + 0.03 || h > sea + 0.52) continue;
-            const m = getMoistureAt(x + 0.5, y + 0.5);
-            const temp = getTemperatureAt(x + 0.5, y + 0.5);
-            const openSavanna = isSavannaSite(x + 0.5, y + 0.5, {
-                seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
-                climate: climateKey, seaLevel: sea,
-            });
-            if (!openSavanna && forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 })
-                && !forestClearingAt(x, y, {
-                    seed: Number(state.worldSeed) || 1, moisture: m, height: h, forests, rockLine: 0.92,
-                })) continue;
-            const windContext = {
-                seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
-                climate: climateKey, aridity: state.worldOptions?.aridity ?? 50, forests, seaLevel: sea,
-                dayOfYear, year: Number(state.year) || 1,
-                hour: Number.isFinite(hour) ? hour : 12, weather: state.weather || "clear", wind,
-                use: grasslandUseAt(x, y),
-            };
-            const tundraWind = isTundraSite(x + 0.5, y + 0.5, windContext)
-                ? tundraProfileAt(x + 0.5, y + 0.5, windContext)
-                : null;
-            const desertWind = !tundraWind && isDesertSite(x + 0.5, y + 0.5, windContext)
-                ? desertProfileAt(x + 0.5, y + 0.5, windContext)
-                : null;
-            const steppeWind = !tundraWind && !desertWind && isSteppeSite(x + 0.5, y + 0.5, windContext)
-                ? steppeProfileAt(x + 0.5, y + 0.5, windContext)
-                : null;
-            const savannaWind = !tundraWind && !desertWind && !steppeWind && openSavanna
-                ? savannaProfileAt(x + 0.5, y + 0.5, windContext)
-                : null;
-            const profile = tundraWind || savannaWind || desertWind || steppeWind || grasslandProfileAt(x + 0.5, y + 0.5, windContext);
-            if (!(profile.sward?.tall || profile.desert || profile.tundra || profile.savanna) || profile.visual.windSway < 0.14) continue;
+            const tileKey = x + "|" + y;
+            let tuft = windTileCache.get(tileKey);
+            if (tuft === undefined) {
+                tuft = null;
+                const h = getHeightAt(x + 0.5, y + 0.5);
+                if (h >= sea + 0.03 && h <= sea + 0.52) {
+                    const m = getMoistureAt(x + 0.5, y + 0.5);
+                    const temp = getTemperatureAt(x + 0.5, y + 0.5);
+                    const openSavanna = isSavannaSite(x + 0.5, y + 0.5, {
+                        seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
+                        climate: climateKey, seaLevel: sea,
+                    });
+                    const forested = !openSavanna
+                        && forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 })
+                        && !forestClearingAt(x, y, {
+                            seed: Number(state.worldSeed) || 1, moisture: m, height: h, forests, rockLine: 0.92,
+                        });
+                    if (!forested) {
+                        const windContext = {
+                            seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
+                            climate: climateKey, aridity: state.worldOptions?.aridity ?? 50, forests, seaLevel: sea,
+                            dayOfYear, year: Number(state.year) || 1,
+                            hour: Number.isFinite(hour) ? hour : 12, weather: state.weather || "clear", wind,
+                            use: grasslandUseAt(x, y),
+                        };
+                        const tundraWind = isTundraSite(x + 0.5, y + 0.5, windContext)
+                            ? tundraProfileAt(x + 0.5, y + 0.5, windContext)
+                            : null;
+                        const desertWind = !tundraWind && isDesertSite(x + 0.5, y + 0.5, windContext)
+                            ? desertProfileAt(x + 0.5, y + 0.5, windContext)
+                            : null;
+                        const steppeWind = !tundraWind && !desertWind && isSteppeSite(x + 0.5, y + 0.5, windContext)
+                            ? steppeProfileAt(x + 0.5, y + 0.5, windContext)
+                            : null;
+                        const savannaWind = !tundraWind && !desertWind && !steppeWind && openSavanna
+                            ? savannaProfileAt(x + 0.5, y + 0.5, windContext)
+                            : null;
+                        const profile = tundraWind || savannaWind || desertWind || steppeWind || grasslandProfileAt(x + 0.5, y + 0.5, windContext);
+                        if ((profile.sward?.tall || profile.desert || profile.tundra || profile.savanna)
+                            && profile.visual.windSway >= 0.14) {
+                            tuft = { sway: profile.visual.windSway, colour: profile.grassHex };
+                        }
+                    }
+                }
+                if (windTileCache.size >= WIND_TILE_CACHE_LIMIT) {
+                    windTileCache.clear();
+                    windTileCacheStats.generation += 1;
+                }
+                windTileCache.set(tileKey, tuft);
+                cacheMisses += 1;
+            } else {
+                cacheHits += 1;
+            }
+            if (!tuft) continue;
             const s = cellPx / 48;
             const px = x * cellPx - cam.x + cellPx * (0.28 + ((x * 7 + y * 3) % 10) / 22);
             const py = y * cellPx - cam.y + cellPx * (0.35 + ((x * 3 + y * 7) % 10) / 28);
             if (px < -10 || py < -10 || px > canvas.width + 10 || py > canvas.height + 10) continue;
             const wave = Math.sin(tick * 0.0019 + x * 0.17 + y * 0.11);
-            const sway = wave * (2.6 + profile.visual.windSway * 3.4) * s;
-            ctx.globalAlpha = 0.2 + profile.visual.windSway * 0.16;
-            ctx.strokeStyle = profile.grassHex;
+            const sway = wave * (2.6 + tuft.sway * 3.4) * s;
+            ctx.globalAlpha = 0.2 + tuft.sway * 0.16;
+            ctx.strokeStyle = tuft.colour;
             ctx.lineWidth = Math.max(0.7, 0.8 * s);
             ctx.beginPath();
             ctx.moveTo(px - 2.2 * s, py + 3 * s);
@@ -4413,10 +4490,16 @@ export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
         }
     }
     ctx.restore();
+    windTileCacheStats.hits += cacheHits;
+    windTileCacheStats.misses += cacheMisses;
     if (probe) {
         probe.examined = examined;
         probe.tufts = drawn;
         probe.elapsedMs = performance.now() - startedAt;
+        probe.cacheHits = cacheHits;
+        probe.cacheMisses = cacheMisses;
+        probe.cacheSize = windTileCache.size;
+        probe.cacheGeneration = windTileCacheStats.generation;
     }
 }
 
