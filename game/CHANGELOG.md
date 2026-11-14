@@ -24,6 +24,7 @@ The version in `game/package.json` is the machine-readable game version. Update 
 
 ## Separate hosted development builds
 
+- **Kings & Cards — taiga (current hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. The runtime package is 324 files / 7.72 MiB and its `version.json` identifies commit `1279dee51e4eee60f8144a7bf5cd522409eb4f66`. Preview receipt `508adf3a-6b45-440d-b377-6e199f41920f` and production receipt `7b2939ed-8577-48da-ad2a-7c15e88d13f6` both succeeded; both environments are `published:true`. Both origins return HTTP 200 and matching SHA-256 for the Taiga ecology and renderer. A live production load exposed the Taiga climate, founded a 176 × 176 taiga realm, rendered mixed taiga forest and winter lake ice, and reported no page or console errors. Full record: [docs/TAIGA.md](docs/TAIGA.md).
 - **Kings & Cards — Canvas-only renderer and warning-free benchmark (current hosted build):** every user-reachable renderer path is Canvas 2D. The **Terrain renderer** selector and its WebGL option are removed; a saved `terrainRenderer` value is ignored on load. The **Device Benchmark** now measures only Canvas 2D at 100, 85, 70 and 50% (4 rows, progress max 4), so it cannot create a WebGL context. The **Adaptive quality** setting and its fallback loop were removed because Auto no longer uses WebGL. The runtime never calls `readPixels` and never requests WebGL or WebGPU on a user path. A no-GPU Chromium load created **0 WebGL contexts** and **0 page console messages**, with no software-WebGL or `ReadPixels` lines; the browser benchmark completed 4 Canvas rows, created **0 WebGL contexts** and emitted **no warnings**. Verified on this head: `npm test` **949/949**, syntax/imports **145 files / 201 UI ids**, 25-year campaign **10,040 ticks / 13/13 ambitions / 0.835 ms per tick / no stalls / no game over**, and the complete browser E2E green. Preview deploy receipt `a1943e40-d889-4c62-ae75-d2119120a56b` (17:09:29–17:09:33Z) and production receipt `eca17118-f67f-4936-bb52-9808c45cbb7c` (17:09:41–17:09:45Z) both succeeded; both environments report `published:true`. Both origins serve HTTP 200 and a `version.json` identifying commit `cdd07f8334f441238f0fd3e98de17fe726f964f3`; the runtime package is 322 files / 7.64 MiB. A live hardware-browser load confirmed `renderer:canvas`, no terrain-renderer or adaptive control, the four-row Canvas benchmark label, and 0 console messages. A local no-GPU Chromium load created 0 WebGL contexts and 0 console messages, and its Settings benchmark completed four Canvas rows with 0 WebGL contexts and no software-WebGL/`ReadPixels` warnings.
 
 - **Kings & Cards — campaign sweep and eight-climate low-end proof (current hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. The runtime package is 322 files / 7.65 MiB and its runtime deployment's `version.json` identified commit `89ad0cac6118a9ecbfc7644441948c008ce4e627`; the later documentation build adds only this record and keeps the same runtime package. Preview deploy receipt `4dda27c7-f04f-41db-8349-90b4f2c82f70` (15:35:23–15:35:27Z) and production receipt `97ac77cd-16f2-433c-a9a8-3eb213214d32` (15:35:37–15:35:40Z) both succeeded; both environments report `published:true`. Both origins return HTTP 200 and serve matching SHA-256 hashes for `terrain.js` `3c375ab3c99b1387822abe8ad63b39319c4e0660a630b5df9e1b3c3c96f5c888`, `savanna-ecology.js` `7f675f510d46fe15265369bea555cfec99cc91c2d3d02e831dac328e39c56446`, `savanna-render.js` `8755b029b237ec64058c77e9f2e12b6bbab2612b07ba42cbec79b7e34134a0ec` and `terrain-model.js` `c8ba932d22c1a0532dd67cb8a20fa0706180dec77af3341c17bcf5de03b4a1dd`. A live production load and a live preview load each exposed all eight climate options (Temperate, Northern, Tundra, Savanna, Mediterranean, Arid, Enchanted, Tropical rainforest), returned HTTP 200 for every requested script and stylesheet, and reported no page or console errors; only the expected software-WebGL `ReadPixels` warning appeared. Verified on this head: focused savanna render 6/6, campaign aggregation 4/4, `npm test` 950/950, syntax/imports 145 files / 203 ids, complete browser E2E green, the three-seed savanna sweep exit 0 with 2 real fuel-backfill orders, and the eight-climate low-end proof exit 0 at p95 16.8 ms. Full record: [docs/SAVANNA.md](docs/SAVANNA.md).
@@ -46,7 +47,7 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ### 3.16.0-dev — Taiga (1.2.10)
 
-**Released:** in development
+**Released:** 2026-11-14
 
 **Scope:** Add the complete 56-point Taiga climate as a dedicated living biome,
 not a recolour of the temperate forest. Ten formations cover old spruce forest,
@@ -69,8 +70,19 @@ The 56-point audit is in [docs/TAIGA.md](docs/TAIGA.md).
 
 **Verification:** `npm test` **965/965** including the new ecology, generated-
 world resource and renderer suites; all 56 requirement IDs and all ten
-formations are reachable in the deterministic survey. No production deployment
-is claimed by this entry until its receipt and live check are recorded below.
+formations are reachable in the deterministic survey. The final runtime package
+is **324 files / 7.72 MiB**. Preview receipt `508adf3a-6b45-440d-b377-6e199f41920f`
+(17:44:13–17:44:16Z) and production receipt
+`7b2939ed-8577-48da-ad2a-7c15e88d13f6` (17:44:24–17:44:27Z) both succeeded;
+both environments report `published:true`. Both origins return HTTP 200 and
+serve `version.json` for commit `1279dee51e4eee60f8144a7bf5cd522409eb4f66`,
+with matching SHA-256 for `taiga-ecology.js`
+`17078cc4d2df7db269cd1146d3e2dc3c6c1c43bac6fa80b1f642f486763500da` and
+`taiga-render.js`
+`135f3b35854ef1c8d50a77a65db5a0286c9b801757037c4d30788bba1e6e2f79`.
+A live production load exposed the Taiga option, founded a 176 × 176 taiga
+realm, and rendered a mixed taiga forest with a frozen winter lake. No page or
+console errors were emitted.
 
 ### 3.15.0-dev — Campaign seed sweep and eight-climate low-end proof (1.2.11)
 
