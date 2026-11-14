@@ -178,15 +178,49 @@ function getFogCanvas() {
     return fog;
 }
 
-function drawFogOfWar(ctx, zoom, cam, canvas) {
-    const fog = getFogCanvas();
+function fogNeeded(cam, zoom, canvas) {
     const cellPx = CELL * zoom;
+    if (!(cellPx > 0) || !state.explored) return true;
+    const x0 = Math.max(0, Math.floor(cam.x / cellPx));
+    const y0 = Math.max(0, Math.floor(cam.y / cellPx));
+    const x1 = Math.min(worldW() - 1, Math.floor((cam.x + canvas.width) / cellPx));
+    const y1 = Math.min(worldH() - 1, Math.floor((cam.y + canvas.height) / cellPx));
+    for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+            if (!state.explored[x]?.[y]) return true;
+        }
+    }
+    return false;
+}
+
+function drawFogOfWar(ctx, zoom, cam, canvas) {
+    const cellPx = CELL * zoom;
+    if (!(cellPx > 0)) return;
+    // The fog texture is transparent over explored tiles. The normal view is
+    // fully explored, so testing the visible tiles is cheaper than sampling a
+    // full-screen transparent texture on every fallback frame.
+    if (!fogNeeded(cam, zoom, canvas)) return;
+    const fog = getFogCanvas();
+    // The fog canvas is one pixel per world tile. Drawing all 176 x 176
+    // pixels to a world-sized destination made the browser sample a texture
+    // larger than the viewport on every fallback frame. Crop the source to the
+    // visible tiles (plus one tile of margin for smoothing) so the cost is
+    // bounded by the screen, not by the size of the realm.
+    const sx = Math.max(0, Math.floor(cam.x / cellPx) - 1);
+    const sy = Math.max(0, Math.floor(cam.y / cellPx) - 1);
+    const sw = Math.min(fog.width - sx, Math.ceil(canvas.width / cellPx) + 3);
+    const sh = Math.min(fog.height - sy, Math.ceil(canvas.height / cellPx) + 3);
+    if (sw <= 0 || sh <= 0) return;
     ctx.save();
     // The exploration mask is one cell per tile. Bilinear display would soften
     // the old hard cell edges; the fog itself is still authoritative.
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(fog, 0, 0, fog.width, fog.height, -cam.x, -cam.y, fog.width * cellPx, fog.height * cellPx);
+    ctx.drawImage(
+        fog, sx, sy, sw, sh,
+        sx * cellPx - cam.x, sy * cellPx - cam.y,
+        sw * cellPx, sh * cellPx
+    );
     ctx.restore();
 }
 
@@ -212,6 +246,12 @@ let detailBuild = null;
 // detail surface is still separate and remains untouched until the swap.
 let detailStageCanvas = null;
 let detailStageCtx = null;
+// A camera jump leaves no useful previous raster. The fallback ground/fog is
+// static while the staged build runs, so rasterise it once and blit the cached
+// underlay instead of re-sampling the full-screen fog every frame.
+let gapCanvas = null;
+let gapCtx = null;
+let gapKey = "";
 const DETAIL_BUILD_SLICE_MS = 3;
 // One slice per frame made a rebuild take many wall-clock frames. That kept
 // the old layer visible longer and left staging work running into the next
@@ -443,7 +483,7 @@ function advanceDetailBuild(surfaceCtx, canvas) {
     state.terrainBuildThisFrame = stepMs;
     // A visible cold-start layer is already serving the compositor. Do not
     // hide it or repaint the full fallback while later slices are pending.
-    if (!build.visible) state.terrainCanvasEl.style.opacity = "1";
+    if (!build.visible && !build.hideOld) state.terrainCanvasEl.style.opacity = "1";
     return build.visible;
 }
 
@@ -897,6 +937,13 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
             // A visible cold-start build is already on screen; a staged rebuild
             // keeps the previous layer. Neither needs the full fallback pass.
             if (build.visible) return true;
+            if (build.hideOld && state.terrainCanvasEl) {
+                // The old raster is almost entirely outside the viewport after
+                // a camera jump. Keep it hidden until the new raster is ready;
+                // the fallback ground is cheaper than compositing two
+                // full-screen canvases.
+                state.terrainCanvasEl.style.opacity = "0";
+            }
             return detailState ? drawPreviousDetailLayer(ctx, zoom, cam, canvas) : false;
         }
     }
@@ -942,6 +989,22 @@ function drawCachedDecorations(ctx, zoom, cam, canvas) {
 
 function drawDetailLayerGaps(ctx, zoom, cam, canvas, transform) {
     const rect = transformedLayerRect(transform, canvas.width, canvas.height, Number(state.renderScale) || 1);
+    const coveredWidth = Math.max(0, Math.min(canvas.width, rect.x + rect.width) - Math.max(0, rect.x));
+    const coveredHeight = Math.max(0, Math.min(canvas.height, rect.y + rect.height) - Math.max(0, rect.y));
+    const coverage = (coveredWidth * coveredHeight) / Math.max(1, canvas.width * canvas.height);
+    if (detailBuild) {
+        // A camera jump can leave the previous raster entirely off-screen. In
+        // that case hide its DOM layer so the browser does not composite a
+        // full-screen canvas that contributes no visible pixels. A normal pan
+        // keeps the old layer because it still covers most of the viewport.
+        if (coverage < 0.45) {
+            detailBuild.hideOld = true;
+            if (state.terrainCanvasEl) state.terrainCanvasEl.style.opacity = "0";
+        } else if (detailBuild.hideOld) {
+            detailBuild.hideOld = false;
+            if (state.terrainCanvasEl) state.terrainCanvasEl.style.opacity = "1";
+        }
+    }
     if (rect.width <= 0 || rect.height <= 0) return;
     // A settled layer covers the whole viewport. There is no uncovered strip
     // to fill; the clipped ground/fog blit would otherwise reprocess a
@@ -955,6 +1018,34 @@ function drawDetailLayerGaps(ctx, zoom, cam, canvas, transform) {
     // to show the baked ground and fog immediately; otherwise a fast pan or a
     // zoom reveals the dark stage background.
     ctx.clip("evenodd");
+    if (detailBuild && coverage < 0.45) {
+        const signature = [
+            canvas.width, canvas.height,
+            Math.round(zoom * 100000),
+            Math.round(cam.x * 10), Math.round(cam.y * 10),
+            Number(state.renderScale) || 1,
+            detailContentKey(),
+            Number(state.exploredRevision) || 0,
+            state.fogDirty ? 1 : 0,
+        ].join("|");
+        if (!gapCtx || gapCanvas.width !== canvas.width || gapCanvas.height !== canvas.height) {
+            gapCanvas = document.createElement("canvas");
+            gapCanvas.width = Math.max(1, canvas.width);
+            gapCanvas.height = Math.max(1, canvas.height);
+            gapCtx = gapCanvas.getContext("2d", { alpha: false });
+            gapKey = "";
+        }
+        if (gapKey !== signature) {
+            if (gapCtx) {
+                drawBakedGround(gapCtx, zoom, cam, canvas);
+                drawFogOfWar(gapCtx, zoom, cam, canvas);
+            }
+            gapKey = signature;
+        }
+        if (gapCtx) ctx.drawImage(gapCanvas, 0, 0);
+        ctx.restore();
+        return;
+    }
     drawBakedGround(ctx, zoom, cam, canvas);
     drawFogOfWar(ctx, zoom, cam, canvas);
     ctx.restore();

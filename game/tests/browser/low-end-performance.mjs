@@ -31,6 +31,7 @@ const SIM_ONLY_MS = Number(process.env.PERF_SIM_ONLY_MS || 0);
 const REPORT_ONLY = process.env.PERF_REPORT_ONLY === "1";
 const TAIGA_SCENES = process.env.PERF_TAIGA_SCENES === "1";
 const TAIGA_SCENE_MS = Number(process.env.PERF_TAIGA_SCENE_MS || 6000);
+const TAIGA_TRANSITION_MS = Number(process.env.PERF_TAIGA_TRANSITION_MS || 2500);
 const TAIGA_SETTLE_MS = Number(process.env.PERF_TAIGA_SETTLE_MS || 2500);
 const WARMUP_MS = Number(process.env.PERF_WARMUP_MS || 0);
 const TAIGA_DRAW_CALL_BUDGET = Number(process.env.PERF_BUDGET_DRAW_CALLS || 1500);
@@ -372,10 +373,46 @@ async function installAutoResolver() {
             import("./js/systems/events.js")
         ]);
         const tick = () => {
-            if (state.activeEvent && !state.activeEvent.dismissed) resolveEventChoice(0);
+            if (state.activeEvent && !state.activeEvent.dismissed) {
+                resolveEventChoice(0);
+                // An unaffordable issue can reject the first choice. The
+                // performance run must not leave a blocking modal that makes
+                // the game loop skip world drawing; dismiss it instead.
+                if (state.activeEvent) state.activeEvent.dismissed = true;
+            }
+            document.getElementById("realm-event-modal")?.classList.add("hidden");
         };
         window.__KAC_PERF_AUTO_RESOLVE = setInterval(tick, 250);
         tick();
+    });
+}
+
+async function pauseForPanel() {
+    // A realm event can open between the auto-resolver tick and Playwright's
+    // actionability check. Pause the clock and resolve once more so the
+    // management panel measurement is not rejected by a transient modal.
+    await page.evaluate(async () => {
+        const [{ state }, { resolveEventChoice }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/events.js")
+        ]);
+        state.isPaused = true;
+        if (state.activeEvent && !state.activeEvent.dismissed) {
+            resolveEventChoice(0);
+            // Some issues cannot be paid for with the current stores. The
+            // benchmark is measuring the panel, not resolving that event, so
+            // dismiss it rather than leaving a blocking modal on screen.
+            if (state.activeEvent) state.activeEvent.dismissed = true;
+        }
+        document.getElementById("realm-event-modal")?.classList.add("hidden");
+    });
+    await page.waitForTimeout(150);
+}
+
+async function resumeAfterPanel() {
+    await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        state.isPaused = false;
     });
 }
 
@@ -875,21 +912,30 @@ try {
         const scenes = [
             { target: taigaInfo.lake, season: "summer", zoom: 1.05, name: "taiga-summer-lake" },
             { target: taigaInfo.lake, season: "winter", zoom: 1.05, name: "taiga-winter-ice" },
-            { target: taigaInfo.settlement, season: "summer", zoom: 1.0, name: "taiga-populated-settlement" }
+            // The settlement scene is a real camera and season jump. Sample it
+            // immediately, before waiting for the staged terrain-detail build,
+            // then wait and sample the settled view as its own scene.
+            { target: taigaInfo.settlement, season: "summer", zoom: 1.0, name: "taiga-populated-settlement", transition: true }
         ];
         for (const scene of scenes) {
             const applied = await applyTaigaScene(scene.target, scene.season, scene.zoom);
+            if (scene.transition) {
+                taigaInfo.scenes.push({ ...applied, phase: "taiga-transition-jump", transition: true });
+                taigaPhases.push(await samplePhase("taiga-transition-jump", TAIGA_TRANSITION_MS));
+            }
             await settleTaigaScene(applied.terrainCacheMisses);
             taigaInfo.scenes.push({ ...applied, phase: scene.name });
             taigaPhases.push(await samplePhase(scene.name, TAIGA_SCENE_MS));
         }
     }
 
+    await pauseForPanel();
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="population"]').click();
     await page.waitForTimeout(600);
     const panel = await samplePhase("population-panel-open", PANEL_MS);
     await page.locator("#command-close").click();
+    await resumeAfterPanel();
 
     const war = await page.evaluate(async () => {
         const [{ getDiplomacySnapshot, declareWar }, { state }] = await Promise.all([
@@ -901,11 +947,13 @@ try {
         state.isPaused = false;
         return { ok: result.ok, partnerId: partner?.id || null };
     });
+    await pauseForPanel();
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="diplomacy"]').click();
     await page.waitForTimeout(600);
     const warPhase = await samplePhase("war-diplomacy-panel", WAR_MS);
     await page.locator("#command-close").click().catch(() => {});
+    await resumeAfterPanel();
     const saveLoad = await measureSaveLoad();
     const heapEnd = await heapUsed();
 

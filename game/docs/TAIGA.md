@@ -223,22 +223,38 @@ p95** and **16.7 ms canvas draw p95**.
 
 | Scene | Season / condition | Frames | p95 frame | >33 ms | >50 ms | Long tasks | Draw calls p95 / max | Visible entities p95 | Canvas draw p95 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Summer waterway | day 197, summer, clear | 479 | **16.7 ms** | 0 % | 0 % | 0 | **164 / 226** | 0 | 1.1 ms |
-| Frozen winter water | day 396, winter, snow | 480 | **16.7 ms** | 0 % | 0 % | 0 | **174 / 515** | 0 | 1.6 ms |
-| Populated settlement | day 199, summer, 30 buildings | 478 | **16.8 ms** | 1.46 % | 0.63 % | 0 | **412 / 679** | 20 | 6.5 ms |
+| Summer waterway | day 197, summer, clear | 479 | **16.7 ms** | 0 % | 0 % | 0 | **164 / 225** | 0 | 1.5 ms |
+| Frozen winter water | day 396, winter, snow | 480 | **16.7 ms** | 0 % | 0 % | 0 | **174 / 514** | 0 | 1.8 ms |
+| Populated settlement | day 199, summer, 30 buildings | 475 | **16.8 ms** | 1.26 % | 0 % | 0 | **433 / 693** | 24 | 7.0 ms |
+| Camera + season jump | winter lake → summer settlement, sampled immediately | 182 | **16.8 ms** | 2.75 % | 0.55 % | 0 | **397 / 467** | 22 | 8.5 ms |
 
 The winter scene reports `water.ice:true` from the real Taiga profile while
 the same camera in summer reports `water.ice:false`; the renderer is showing a
 frozen waterway, not a winter colour swap. The unchanged quiet and dense
 control phases also pass at p95 **16.8 ms** with 0 long tasks. A real save took
-**192 ms** and load **1,394 ms**; warm heap shrank **16.7 %** after bounded
-caches settled; there were no page or console errors.
+**254 ms** and load **1,546 ms**; warm heap shrank after bounded caches
+settled; there were no page or console errors.
 
-An earlier run sampled the settlement at p95 **50.1 ms** immediately after the
-camera and season switch, while the staged terrain-detail layer was rebuilding.
-The harness now waits for the real `isTerrainDetailSettled()` state and a
-bounded warm-up before sampling steady play. The final steady-state scene is
-**16.8 ms** with draw p95 **6.5 ms**; the transient was a cache transition, not
-a per-frame terrain/entity hotspot. A startup-only run also caught a single
-69 ms long task before the warm-up; the final five-second warm-up removes it
-from the steady sample.
+The jump row is a separate transition phase, not a skipped rebuild: the camera
+and season change to the populated settlement and sampling starts immediately,
+before `settleTaigaScene()` waits for the staged detail layer. Its first
+measured run was **66.7 ms p95**, with 100 % of frames over 33 ms and 60.7 %
+over 50 ms. The fallback was re-sampling the full-world fog texture and baked
+ground every frame, the old off-screen detail layer was still being composited,
+and the first underlay raster was a long task. The fixes are in
+`js/presentation/rendering/terrain.js`:
+
+- `drawFogOfWar()` crops its source to the visible tiles instead of sampling
+  the whole world-sized texture.
+- A fully explored view skips the fog draw entirely; the texture is transparent
+  there.
+- A jump that leaves less than 45 % of the old detail layer on screen hides that
+  off-screen layer until the replacement is complete.
+- The static ground/fog underlay is cached during the staged rebuild and blitted
+  rather than re-rasterised on every frame.
+
+The transition now measures **16.8 ms p95**, 2.75 % over 33 ms, 0.55 % over
+50 ms, 0 long tasks, 397 draw calls p95, 22 visible entities and 8.5 ms canvas
+draw p95. It uses the same 33 ms / 15 % / 3 % / zero-long-task and 1,500 draw /
+120 entity / 16.7 ms canvas budgets as the steady scenes. The settled
+settlement remains **16.8 ms**; no budget was relaxed and no scene was removed.
