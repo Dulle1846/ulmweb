@@ -34,13 +34,22 @@ test("the renderer probe is cached instead of creating a context per settings ch
     assert.match(source, /export function terrainRendererInfo\(canvas = null\)/);
 });
 
+test("Auto never probes WebGL, so software GPUs cannot log a fallback warning", () => {
+    assert.match(mainSource, /const nextMode=settings\.terrainRenderer==="webgl"\?"webgl":"canvas";/);
+    assert.match(mainSource, /if\(nextMode==="webgl"\)info=terrainRendererInfo\(\);/);
+    assert.doesNotMatch(mainSource, /navigator\.gpu|requestAdapter/);
+    assert.doesNotMatch(source, /console\.warn\("Terrain WebGL2 unavailable/);
+    assert.doesNotMatch(source, /\.readPixels\s*\(/, "the runtime must never read pixels back from WebGL");
+});
+
 test("renderer switches recycle one prepared surface per context type", () => {
     assert.match(mainSource, /let terrainCanvas2D=null;/);
     assert.match(mainSource, /let terrainCanvasWebGL=null;/);
     assert.match(mainSource, /function selectTerrainCanvas\(nextMode,previousMode\)/);
     assert.match(mainSource, /terrainCanvasWebGL=active/);
     assert.match(mainSource, /terrainCanvas2D=active/);
-    assert.match(mainSource, /terrainRendererInfo\(firstApply\?state\.terrainCanvasEl:null\)/);
+    assert.match(mainSource, /terrainRendererInfo\(\)/);
+    assert.doesNotMatch(mainSource, /terrainRendererInfo\([^)]/);
     assert.doesNotMatch(mainSource, /resetTerrainWebGL/);
     assert.doesNotMatch(mainSource, /replaceTerrainCanvas/);
     // Resizing the cached surface on activation clears a Canvas2D backing

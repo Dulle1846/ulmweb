@@ -129,14 +129,14 @@ function applyPerformanceSettings(){
     setRenderScale(settings.renderScale);
     const firstApply=appliedTerrainMode===null;
     let info=null;
-    // Use the real initial surface for the one-time probe. On a software
-    // renderer it becomes the cached WebGL canvas, so the probe context is
-    // recycled later instead of staying as a second, unused context.
-    if(settings.terrainRenderer!=="canvas")info=terrainRendererInfo(firstApply?state.terrainCanvasEl:null);
+    // Auto stays on the cached Canvas2D path and never probes WebGL. Chromium
+    // logs the "Automatic fallback to software WebGL has been deprecated"
+    // warning for any WebGL request on a software GPU, even a detached probe,
+    // so the only warning-free automatic path is Canvas2D. WebGL remains an
+    // explicit, hardware-only option for players who want it.
+    const nextMode=settings.terrainRenderer==="webgl"?"webgl":"canvas";
+    if(nextMode==="webgl")info=terrainRendererInfo();
     state.terrainRendererName=info?.name||"";
-    const nextMode=settings.terrainRenderer==="auto"
-        ?(!info||info.software?"canvas":"webgl")
-        :settings.terrainRenderer;
     if(firstApply){
         appliedTerrainMode=nextMode;
         if(nextMode==="webgl"||info?.boundCanvas){
@@ -196,7 +196,7 @@ function updateBenchmarkProgress(value,max){
 }
 
 function setBenchmarkControlsDisabled(disabled){
-    for(const id of ["settings-terrain-renderer","settings-frame-limit","settings-render-scale","settings-adaptive-toggle","settings-fps-toggle"]){
+    for(const id of ["settings-terrain-renderer","settings-frame-limit","settings-render-scale","settings-fps-toggle"]){
         const control=document.getElementById(id);
         if(control)control.disabled=disabled;
     }
@@ -992,11 +992,6 @@ function bindMenu(){
     if(renderScaleSelect){
         renderScaleSelect.value=String(Math.round(settings.renderScale*100));
         renderScaleSelect.addEventListener("change",event=>{settings.renderScale=Number(event.target.value)/100;applyPerformanceSettings();saveSettings(settings);});
-    }
-    const adaptiveToggle=document.getElementById("settings-adaptive-toggle");
-    if(adaptiveToggle){
-        adaptiveToggle.checked=settings.adaptiveQuality!==false;
-        adaptiveToggle.addEventListener("change",event=>{settings.adaptiveQuality=event.target.checked;applyPerformanceSettings();saveSettings(settings);});
     }
     const fpsToggle=document.getElementById("settings-fps-toggle");
     if(fpsToggle){

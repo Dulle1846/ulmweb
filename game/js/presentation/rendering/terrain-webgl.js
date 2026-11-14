@@ -757,7 +757,6 @@ function init() {
         powerPreference: "high-performance",
     });
     if (!gl) {
-        console.warn("Terrain WebGL2 unavailable; using the Canvas2D terrain fallback.");
         failed = true;
         return false;
     }
@@ -1254,11 +1253,10 @@ function sunState(phase) {
     };
 }
 
-// Detect the renderer once. The initial terrain surface can be used as the
-// probe, which lets the renderer switch keep that WebGL canvas instead of
-// creating a throwaway context. Detached probes are shrunk and dropped without
-// WEBGL_lose_context, which logs a driver warning. The result is cached because
-// the renderer does not change during a session.
+// Detect the renderer once on a detached 1x1 canvas. This keeps software WebGL
+// off the visible terrain surface; a probe is shrunk and dropped without
+// WEBGL_lose_context, which would log a driver warning. The result is cached
+// because the renderer does not change during a session.
 export function terrainRendererInfo(canvas = null) {
     if (rendererInfoCache) return rendererInfoCache;
     if (typeof document === "undefined") return { name: "", software: true };
@@ -1275,7 +1273,10 @@ export function terrainRendererInfo(canvas = null) {
             stencil: false,
             powerPreference: "high-performance",
         });
-        if (!probe) return { name: "", software: true };
+        if (!probe) {
+            rendererInfoCache = { name: "", software: true, boundCanvas: false };
+            return rendererInfoCache;
+        }
         const debug = probe.getExtension("WEBGL_debug_renderer_info");
         const name = String(probe.getParameter(debug ? debug.UNMASKED_RENDERER_WEBGL : probe.RENDERER) || "");
         if (!canvas) {
