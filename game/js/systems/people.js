@@ -116,10 +116,18 @@ export function normalizePersonProfile(saved,entity,{role="resident"}={}){
         createdAtTick:Number.isSafeInteger(saved.createdAtTick)?Math.max(0,saved.createdAtTick):0
     };
 }
+const normalizedPeople = new WeakSet();
 export function ensurePersonProfile(entity,options={}){
     if(!entity||typeof entity!=="object")return null;
     entity.personId=String(entity.personId||entity.id||"person-unknown");
+    // Normalizing the whole profile on every call rebuilt traits, needs,
+    // appearance, skills, memories and kinship each time. Social and mortality
+    // call this repeatedly for the same residents, which made the yearly update
+    // a long task on low-end CPUs. A profile is immutable-shaped after the first
+    // normalization; keep that object and only rebuild legacy/raw save data.
+    if(entity.person&&typeof entity.person==="object"&&normalizedPeople.has(entity.person))return entity.person;
     entity.person=normalizePersonProfile(entity.person,entity,options);
+    if(entity.person&&typeof entity.person==="object")normalizedPeople.add(entity.person);
     return entity.person;
 }
 export function addPersonMemory(entity,memory){

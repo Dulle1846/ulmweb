@@ -951,9 +951,10 @@ try {
             { target: taigaInfo.settlement, season: "summer", zoom: 1.0, name: "taiga-populated-settlement", transition: true },
             // A second jump goes from the settled settlement into a mostly
             // unexplored wilderness. The small revealed island gives the view
-            // a real fog boundary; the immediate transition sample proves the
-            // active fog path is not skipped for a nearly empty view.
-            { target: taigaInfo.wilderness, season: "winter", zoom: 1.0, name: "taiga-unexplored-fog", transition: true, transitionName: "taiga-unexplored-transition", settled: false }
+            // a real fog boundary; the immediate transition proves the active
+            // fog path is not skipped, and the settled sample crosses the next
+            // year rollover so the annual maintenance stays in the frame budget.
+            { target: taigaInfo.wilderness, season: "winter", zoom: 1.0, name: "taiga-unexplored-fog", transition: true, transitionName: "taiga-unexplored-transition" }
         ];
         for (const scene of scenes) {
             const applied = await applyTaigaScene(scene.target, scene.season, scene.zoom);

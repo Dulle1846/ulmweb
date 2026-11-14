@@ -21,7 +21,7 @@ import { invalidateRoomBonusCache, getRoomBonusSnapshot } from "../systems/rooms
 import { normalizeRoomFurniture } from "../systems/furniture.js";
 import { addLog } from "../systems/events.js";
 import { restoreEconomyCycleState } from "../systems/economy-cycle.js";
-import { updateSimulation } from "../simulation/simulation.js";
+import { resetAnnualMaintenance, setAnnualMaintenanceSlicing, updateSimulation } from "../simulation/simulation.js";
 import { warmLogisticsRoutes } from "../systems/logistics.js";
 import { warmEconomyCaches } from "../systems/economy.js";
 import { warmForestFaunaCaches } from "../systems/forest-fauna.js";
@@ -344,6 +344,7 @@ function ensureProfile(){
 }
 
 function resetForRun(profile){
+    resetAnnualMaintenance();
     resetState();
     clearTimelineNotifications();
     state.endeavours=createEndeavoursState();
@@ -532,6 +533,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     // would run a moment later; doing them here keeps the first visible frames
     // free of their one-off compilation and allocation cost.
     for(let warmTick=0;warmTick<60;warmTick++)updateSimulation();
+    setAnnualMaintenanceSlicing(true);
     state.selectedTab=0;
     renderInitialUI();
     // Warm the complete entity/overlay draw pipeline and let the first HUD
@@ -577,6 +579,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     }
     resetForRun(profile);
     const restored=restoreSaveSnapshot(prepared);
+    setAnnualMaintenanceSlicing(true);
     // resetForRun clears readiness before the snapshot is applied. Restoring a
     // prepared snapshot rebuilds the realm and resumes the loop, so it must
     // mark the realm started again; otherwise every renderUI() call (HUD,

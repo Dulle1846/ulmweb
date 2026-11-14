@@ -228,12 +228,13 @@ p95** and **16.7 ms canvas draw p95**.
 | Populated settlement | day 199, summer, 30 buildings | 474 | **16.8 ms** | 1.06 % | 0 % | 0 | **392 / 634** | 23 | 6.8 ms |
 | Camera + season jump | winter lake → summer settlement, sampled immediately | 180 | **16.7 ms** | 0 % | 0 % | 0 | **414 / 512** | 23 | 7.9 ms |
 | Wilderness fog jump | winter, 59 fogged tiles in view, sampled immediately | 179 | **16.8 ms** | 0.56 % | 0 % | 0 | **171 / 371** | 0 | 1.8 ms |
+| Settled wilderness fog (year rollover) | winter, 59 fogged tiles, crosses year 4 | 479 | **16.7 ms** | 0 % | 0 % | 0 | **171 / 387** | 0 | 1.4 ms |
 
 The winter scene reports `water.ice:true` from the real Taiga profile while
 the same camera in summer reports `water.ice:false`; the renderer is showing a
 frozen waterway, not a winter colour swap. The unchanged quiet and dense
 control phases also pass at p95 **16.8 ms** with 0 long tasks. A real save took
-**254 ms** and load **1,546 ms**; warm heap shrank after bounded caches
+**169 ms** and load **1,183 ms**; warm heap shrank after bounded caches
 settled; there were no page or console errors.
 
 The jump row is a separate transition phase, not a skipped rebuild: the camera
@@ -282,6 +283,29 @@ over 50 ms, **0 long tasks**, **171 draw calls p95 / 371 max**, **0 visible
 entities** and **1.8 ms canvas draw p95**, with **59** fogged tiles proving the
 active fog path. The explored jump and all four prior scenes remain green in
 the same full run; `npm run test:performance:taiga` exits 0.
+
+The settled wilderness fog scene is sampled for eight seconds after the camera
+jump, so it crosses the next year boundary. It previously exposed the annual
+maintenance long task: 17 yearly systems ran in one tick, measuring 54–58 ms of
+simulation time and a 95 ms long task on the low-end profile. The scene was
+temporarily sampled only during the transition; it is now restored as a
+permanent regression check. Two shared fixes keep the rollover inside the
+budget:
+
+- `ensurePersonProfile()` caches the normalized profile object with a
+  `WeakSet`. Repeated social, mortality and memory lookups no longer rebuild
+  traits, needs, appearance, skills and kinship. Raw legacy/save profiles are
+  still normalized once; the change is identity-stable and save-compatible.
+- The browser game loop runs the annual systems as small deterministic slices
+  under a 6 ms budget. No tick, daily system or random draw runs between the
+  slices, so the state is the same as the synchronous sequence. Headless
+  campaigns still run the complete rollover in one call, the simulation clock
+  is not consumed during the slices, and saving flushes the remaining work
+  before the snapshot is written.
+
+On the final run the year-4 rollover completed inside the fog phase with
+**0 long tasks**, **0 % over 33 ms** and **0 % over 50 ms**; the phase recorded
+479 frames at **16.7 ms p95** and still showed **59 fogged tiles**.
 
 The deployed production build was checked against the live origin. The
 wilderness transition sampled 150 frames at **16.8 ms p95**, zero long tasks,

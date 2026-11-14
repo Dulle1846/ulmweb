@@ -52,6 +52,7 @@ import { normalizeFamilyLinks } from "../systems/families.js";
 import { normalizeRoomFurniture } from "../systems/furniture.js";
 import { migrateSaveSnapshot } from "./save-migrations.js";
 import { SAVE_SCHEMA_VERSION, normalizeSaveSnapshot, validateSaveSnapshot } from "./save-validation.js";
+import { finishAnnualMaintenanceForSave } from "../simulation/simulation.js";
 
 // One-shot fuel-backfill ownership is transient simulation state, but it must
 // survive a reload: otherwise the sick worker's guard and the temporary
@@ -132,6 +133,9 @@ function serializeEntity(entity, indexByEntity) {
 }
 
 export function createSaveSnapshot() {
+    // A save can arrive during the few frames of annual maintenance. Complete
+    // that tick first so the snapshot never contains a half-applied year.
+    finishAnnualMaintenanceForSave();
     // The civic register is derived from the authoritative entities only once
     // per year. A soldier recruited after that census would otherwise be saved
     // as a civilian and reclassified on load, breaking an exact round-trip.

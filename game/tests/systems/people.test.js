@@ -9,6 +9,29 @@ test("king receives an individual person record when the starting realm is found
 test("person memory is bounded and rejects empty entries",()=>{resetState();state.worldSeed=2;const resident=spawnEntity(1,1,TYPE.VILLAGER);for(let i=0;i<30;i++)addPersonMemory(resident,{text:"Memory "+i,tick:i,importance:i});assert.equal(resident.person.memories.length,24);assert.equal(addPersonMemory(resident,{text:""}),false);assert.equal(resident.person.memories[0].text,"Memory 29");});
 test("legacy person records are normalized and malformed fields are bounded",()=>{resetState();const entity={id:"legacy-1",personId:"legacy-1"};const person=normalizePersonProfile({id:"spoofed",name:"X".repeat(500),species:"unknown",ageYears:9999,traits:{ambition:900,greed:-5},needs:{food:NaN},memories:Array(100).fill({text:"x"})},entity);assert.equal(person.id,"legacy-1");assert.equal(person.species,"human");assert.equal(person.ageYears,1000);assert.equal(person.traits.ambition,100);assert.equal(person.traits.greed,0);assert.equal(person.memories.length,24);});
 
+test("person profiles normalize once and keep object identity across repeated lookups",()=>{
+    resetState();state.worldSeed=4402;
+    const resident=spawnEntity(3,4,TYPE.VILLAGER);
+    const first=ensurePersonProfile(resident);
+    const second=ensurePersonProfile(resident);
+    assert.equal(second,first);
+    assert.equal(resident.person,first);
+    first.ageYears=37;
+    assert.equal(ensurePersonProfile(resident).ageYears,37);
+});
+
+test("a raw legacy profile is normalized once before being kept",()=>{
+    resetState();
+    const entity={id:"legacy-once",personId:"legacy-once",person:{
+        species:"unknown",ageYears:9999,traits:{ambition:900},needs:{food:NaN}
+    }};
+    const first=ensurePersonProfile(entity);
+    assert.equal(first.species,"human");
+    assert.equal(first.ageYears,1000);
+    assert.equal(first.traits.ambition,100);
+    assert.equal(ensurePersonProfile(entity),first);
+});
+
 test("event participants receive durable memories and directed relationships with the king",()=>{
     resetState();state.worldSeed=771;state.tick=40;initStartingKingdom();
     const resident=state.entities.find(entity=>entity.type===TYPE.VILLAGER&&!entity.dead);

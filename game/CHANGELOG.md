@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.14.2`
-**Next development line:** `3.16.3-dev`
+**Next development line:** `3.16.4-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -46,6 +46,56 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.16.4-dev — Year rollover stays inside the frame budget
+
+**Released:** 2026-11-14
+
+**Scope:** Remove the annual maintenance long task that the restored settled
+wilderness fog scene exposed. This is a shared simulation fix, not a Taiga-only
+render change: every climate and every low-end device crosses the same year
+boundary.
+
+**Profile:** the annual block measured **26.6 ms** in Node for the first
+rollover and 11.4–14.0 ms afterwards. Under the browser's 4× CPU throttle the
+same work was **40–55 ms**, and the settled fog phase recorded a **54–58 ms
+simulation frame** and one long task: the annual block was running every yearly
+system in a single tick.
+
+**Fixes:**
+
+- `ensurePersonProfile()` no longer reconstructs traits, needs, appearance,
+  skills, memories and kinship on every lookup. A `WeakSet` marks already
+  normalized profile objects; raw legacy/save profiles and freshly created
+  profiles are still normalized once. The annual Node block fell to **13.8 ms**
+  for the cold rollover and **3.7–5.0 ms** for steady years, with identical
+  campaign outcomes.
+- The presented game loop now runs the 17 annual systems as deterministic
+  **6 ms slices** over a few frames. No daily system, tick or random draw runs
+  between slices, so the resulting state is exactly the synchronous sequence.
+  Headless tests and the deterministic campaign still execute the complete
+  rollover in one `updateSimulation()` call. The simulation clock is not
+  consumed during the slices, so no catch-up backlog is created. Saving during
+  the window completes the year first; the save snapshot can never contain a
+  half-applied rollover.
+
+**Benchmark:** the settled `taiga-unexplored-fog` phase now runs through the
+year-4 boundary instead of skipping it. It records **479 frames**, **16.7 ms
+p95**, **0 % over 33 ms**, **0 % over 50 ms**, **0 long tasks**, **171 draw
+calls p95 / 387 max**, **0 visible entities**, **1.4 ms canvas draw p95** and
+**59 fogged tiles**. The quiet, dense, summer, winter-ice, populated-settlement,
+explored-jump and immediate fog-jump phases all remain green in the same run;
+`npm run test:performance:taiga` exits 0. A real save took **169 ms** and load
+**1,183 ms**, with no page or console errors.
+
+**Verification:** `npm test` **968/968** with syntax, relative imports and
+201 referenced UI ids clean for 147 source files. The deterministic 25-year
+campaign completes **10,040 ticks**, **13/13 ambitions**, every requirement
+true, no stalls, no game over and **0.804 ms/tick**. Full record:
+[docs/TAIGA.md](docs/TAIGA.md#low-end-performance).
+
+**Deployed and live-verified:** deployment details are recorded after the
+runtime build and origin checks.
 
 ### 3.16.3-dev — Taiga wilderness fog transition
 

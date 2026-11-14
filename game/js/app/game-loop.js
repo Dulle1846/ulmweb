@@ -2,7 +2,7 @@
 import { BASE_TICK_INTERVAL,MOVEMENT_TICK_REFERENCE_MS } from "../core/config.js";
 import { state } from "../core/state.js";
 import { consumeSimulationTime } from "../core/simulation-clock.js";
-import { updateSimulation } from "../simulation/simulation.js";
+import { advanceAnnualMaintenance, hasPendingAnnualMaintenance, setAnnualMaintenanceSlicing, updateSimulation } from "../simulation/simulation.js";
 import { updateFriendlyMovement } from "../simulation/villagers.js";
 import { updateLogisticsMovement } from "../systems/logistics.js";
 import { drawWorld } from "../presentation/rendering/renderer.js";
@@ -69,7 +69,7 @@ function samplePerformance(timestamp,deltaTime){
 
 export function startGameLoop(){
  if(loopStarted)return;
- loopStarted=true;resetFrameClock();
+ loopStarted=true;setAnnualMaintenanceSlicing(true);resetFrameClock();
  document.addEventListener("visibilitychange",()=>{
   resetFrameClock();
   if(!document.hidden)state.lastFrameTime=0;
@@ -101,37 +101,44 @@ function gameLoop(timestamp){
    let simulationMs=0;
    if(!state.isPaused&&!state.gameOver){
     const simulationStarted=performance.now();
-    const clock=consumeSimulationTime(state.tickAccumulator,deltaTime,state.gameSpeed,BASE_TICK_INTERVAL);
-    // A delayed frame can accumulate several fixed steps. Running all of them
-    // back-to-back creates a catch-up spike on exactly the frames that were
-    // already late. Execute at most one step per presented frame and keep the
-    // remaining time in the accumulator; every simulation tick still runs, in
-    // the same order, and the deterministic campaign never goes through this
-    // wall-clock pacing.
-    const stepCount=Math.min(clock.steps,1);
-    state.tickAccumulator=clock.remainderMs+(clock.steps-stepCount)*BASE_TICK_INTERVAL;
-    for(let step=0;step<stepCount;step++){
-     updateSimulation();updateParticles();updateFloaters();
-     if(state.gameOver)break;
-    }
-    state.movementAccumulator+=deltaSeconds;
-    const movementStep=1/30;
-    let movementSteps=0;
-    while(state.movementAccumulator>=movementStep&&movementSteps<3){
-     // At 4x a whole movement step is ~0.30s, while both movers reject deltas
-     // above 0.20s to keep collision resolution bounded. Subdivide instead of
-     // dropping the update: otherwise retailers and carriers freeze at high
-     // speed while the simulation clock keeps advancing.
-     let movementDelta=movementStep*state.gameSpeed*(BASE_TICK_INTERVAL/MOVEMENT_TICK_REFERENCE_MS);
-     while(movementDelta>0.0001){
-      const stepDelta=Math.min(movementDelta,0.2);
-      updateFriendlyMovement(stepDelta);
-      updateLogisticsMovement(stepDelta);
-      movementDelta-=stepDelta;
+    if(hasPendingAnnualMaintenance()){
+     // The year rollover is split into small deterministic slices. It does not
+     // consume simulation time or advance another tick, so the clock cannot
+     // accumulate a catch-up backlog while the realm finishes the year start.
+     advanceAnnualMaintenance();updateParticles();updateFloaters();
+    }else{
+     const clock=consumeSimulationTime(state.tickAccumulator,deltaTime,state.gameSpeed,BASE_TICK_INTERVAL);
+     // A delayed frame can accumulate several fixed steps. Running all of them
+     // back-to-back creates a catch-up spike on exactly the frames that were
+     // already late. Execute at most one step per presented frame and keep the
+     // remaining time in the accumulator; every simulation tick still runs, in
+     // the same order, and the deterministic campaign never goes through this
+     // wall-clock pacing.
+     const stepCount=Math.min(clock.steps,1);
+     state.tickAccumulator=clock.remainderMs+(clock.steps-stepCount)*BASE_TICK_INTERVAL;
+     for(let step=0;step<stepCount;step++){
+      updateSimulation();updateParticles();updateFloaters();
+      if(state.gameOver)break;
      }
-     state.movementAccumulator-=movementStep;movementSteps++;
+     state.movementAccumulator+=deltaSeconds;
+     const movementStep=1/30;
+     let movementSteps=0;
+     while(state.movementAccumulator>=movementStep&&movementSteps<3){
+      // At 4x a whole movement step is ~0.30s, while both movers reject deltas
+      // above 0.20s to keep collision resolution bounded. Subdivide instead of
+      // dropping the update: otherwise retailers and carriers freeze at high
+      // speed while the simulation clock keeps advancing.
+      let movementDelta=movementStep*state.gameSpeed*(BASE_TICK_INTERVAL/MOVEMENT_TICK_REFERENCE_MS);
+      while(movementDelta>0.0001){
+       const stepDelta=Math.min(movementDelta,0.2);
+       updateFriendlyMovement(stepDelta);
+       updateLogisticsMovement(stepDelta);
+       movementDelta-=stepDelta;
+      }
+      state.movementAccumulator-=movementStep;movementSteps++;
+     }
+     if(movementSteps===3)state.movementAccumulator=Math.min(state.movementAccumulator,movementStep);
     }
-    if(movementSteps===3)state.movementAccumulator=Math.min(state.movementAccumulator,movementStep);
     simulationMs=performance.now()-simulationStarted;
    }
    state.lastSimulationMs=simulationMs;
