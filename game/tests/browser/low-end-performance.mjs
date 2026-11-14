@@ -29,6 +29,13 @@ const PANEL_MS = Number(process.env.PERF_PANEL_MS || 8000);
 const WAR_MS = Number(process.env.PERF_WAR_MS || 8000);
 const SIM_ONLY_MS = Number(process.env.PERF_SIM_ONLY_MS || 0);
 const REPORT_ONLY = process.env.PERF_REPORT_ONLY === "1";
+const TAIGA_SCENES = process.env.PERF_TAIGA_SCENES === "1";
+const TAIGA_SCENE_MS = Number(process.env.PERF_TAIGA_SCENE_MS || 6000);
+const TAIGA_SETTLE_MS = Number(process.env.PERF_TAIGA_SETTLE_MS || 2500);
+const WARMUP_MS = Number(process.env.PERF_WARMUP_MS || 0);
+const TAIGA_DRAW_CALL_BUDGET = Number(process.env.PERF_BUDGET_DRAW_CALLS || 1500);
+const TAIGA_ENTITY_BUDGET = Number(process.env.PERF_BUDGET_ENTITIES || 120);
+const TAIGA_DRAW_MS_BUDGET = Number(process.env.PERF_BUDGET_DRAW_MS || 16.7);
 const OUT = resolve(ROOT, "..", "artifacts", "low-end-performance.json");
 
 // A 60 Hz presentation target on a low-end desktop. The budget is intentionally
@@ -40,7 +47,10 @@ const BUDGET = Object.freeze({
     over50Pct: Number(process.env.PERF_BUDGET_OVER50 || 0.03),
     longTasks: Number(process.env.PERF_BUDGET_LONG_TASKS || 0),
     saveMs: Number(process.env.PERF_BUDGET_SAVE_MS || 1000),
-    loadMs: Number(process.env.PERF_BUDGET_LOAD_MS || 2500)
+    loadMs: Number(process.env.PERF_BUDGET_LOAD_MS || 2500),
+    taigaDrawCalls: TAIGA_DRAW_CALL_BUDGET,
+    taigaEntities: TAIGA_ENTITY_BUDGET,
+    taigaDrawMs: TAIGA_DRAW_MS_BUDGET
 });
 
 const mime = {
@@ -120,7 +130,7 @@ page.on("console", message => {
 // frames while a management dialog suppresses world drawing. It only stores
 // timestamps, so it cannot affect layout or gameplay.
 await page.addInitScript(() => {
-    window.__KAC_PERF = { raf: [], longTasks: [], tickMs: [], uiChunkMs: [], friendlyMs: [], logisticsMs: [], workMs: [] };
+    window.__KAC_PERF = { raf: [], longTasks: [], tickMs: [], uiChunkMs: [], friendlyMs: [], logisticsMs: [], workMs: [], draws: [] };
     window.__KAC_LOAD_TIMES = {};
     const sample = timestamp => {
         const frames = window.__KAC_PERF.raf;
@@ -141,6 +151,27 @@ await page.addInitScript(() => {
     } catch {
         // Long Task entries are Chromium-only; the test reports the absence as
         // a limitation instead of pretending a timer measures the same thing.
+    }
+    // Count real Canvas2D primitives, not JS calls that draw nothing. The
+    // wrappers are inert unless the harness is inside drawWorld(), so the
+    // setting, start screen and management UI are not charged to the world.
+    window.__KAC_DRAW_ACTIVE = false;
+    window.__KAC_DRAW_CALLS = {};
+    try {
+        const proto = CanvasRenderingContext2D.prototype;
+        for (const name of ["fill", "stroke", "fillRect", "strokeRect", "drawImage", "fillText"]) {
+            const original = proto[name];
+            proto[name] = function (...args) {
+                if (window.__KAC_DRAW_ACTIVE) {
+                    window.__KAC_DRAW_CALLS.total = (window.__KAC_DRAW_CALLS.total || 0) + 1;
+                    window.__KAC_DRAW_CALLS[name] = (window.__KAC_DRAW_CALLS[name] || 0) + 1;
+                }
+                return original.apply(this, args);
+            };
+        }
+    } catch {
+        // A browser without a writable Canvas2D prototype still reports frame
+        // timing; the draw-call reading is then explicitly absent.
     }
 });
 
@@ -184,6 +215,10 @@ if (process.env.PERF_LOAD_BREAKDOWN === "1") {
 await page.route("**/js/app/game-loop.js", async route => {
     const response = await route.fetch();
     let source = await response.text();
+    const rendererImport = 'import { drawWorld } from "../presentation/rendering/renderer.js";';
+    if (!source.includes(rendererImport)) throw new Error("Could not instrument renderer diagnostics");
+    source = source.replace(rendererImport,
+        'import { drawWorld, visibleEntityIdsForTest, visibleCarrierIdsForTest } from "../presentation/rendering/renderer.js";');
     const tickMarker = "updateSimulation();updateParticles();updateFloaters();";
     if (!source.includes(tickMarker)) throw new Error("Could not instrument the live tick loop");
     source = source.replace(tickMarker,
@@ -207,7 +242,18 @@ await page.route("**/js/app/game-loop.js", async route => {
     const drawCallMarker = "     drawWorld();\n";
     if (!source.includes(drawCallMarker)) throw new Error("Could not instrument the world draw call");
     source = source.replace(drawCallMarker,
-        "     if(!globalThis.__KAC_PERF_SKIP_WORLD) drawWorld();\n"
+        "     if(!globalThis.__KAC_PERF_SKIP_WORLD){" +
+        "globalThis.__KAC_DRAW_ACTIVE=true;globalThis.__KAC_DRAW_CALLS={total:0};" +
+        "const __kacDrawStarted=performance.now();" +
+        "try{drawWorld();}finally{" +
+        "const __kacDrawMs=performance.now()-__kacDrawStarted;" +
+        "globalThis.__KAC_DRAW_ACTIVE=false;" +
+        "const __kacDrawCalls=Number(globalThis.__KAC_DRAW_CALLS.total)||0;" +
+        "const __kacEntities=visibleEntityIdsForTest().length;" +
+        "const __kacCarriers=visibleCarrierIdsForTest().length;" +
+        "if(globalThis.__KAC_PERF&&globalThis.__KAC_PERF.draws.length<200000)" +
+        "globalThis.__KAC_PERF.draws.push({ms:__kacDrawMs,calls:__kacDrawCalls,entities:__kacEntities,carriers:__kacCarriers});" +
+        "}}\n"
     );
     const uiCallMarker = "      renderUI();\n";
     if (!source.includes(uiCallMarker)) throw new Error("Could not instrument the HUD refresh call");
@@ -348,9 +394,24 @@ function summarizePhase(name, payload) {
     const friendlySorted = payload.friendlyMs.slice().sort((a, b) => a - b);
     const logisticsSorted = payload.logisticsMs.slice().sort((a, b) => a - b);
     const workSorted = payload.workMs.slice().sort((a, b) => a - b);
+    const drawRows = Array.isArray(payload.draws) ? payload.draws : [];
+    const drawCallSorted = drawRows.map(row => Number(row.calls) || 0).sort((a, b) => a - b);
+    const drawCallMsSorted = drawRows.map(row => Number(row.ms) || 0).sort((a, b) => a - b);
+    const entitySorted = drawRows.map(row => (Number(row.entities) || 0) + (Number(row.carriers) || 0))
+        .sort((a, b) => a - b);
     const probe = Array.isArray(payload.probeFrames) ? payload.probeFrames : [];
-    const presented = probe.filter(frame => Number(frame.intervalMs) > 0);
-    const frameCost = frame => Math.max(0, Number(frame.drawMs) || 0) + Math.max(0, Number(frame.simMs) || 0) + Math.max(0, Number(frame.uiMs) || 0);
+            const presented = probe.filter(frame => Number(frame.intervalMs) > 0);
+        const slowFrames = presented.slice()
+            .sort((a, b) => (Number(b.intervalMs) || 0) - (Number(a.intervalMs) || 0))
+            .slice(0, 8)
+            .map(frame => ({
+                intervalMs: Number(frame.intervalMs) || 0,
+                drawMs: Number(frame.drawMs) || 0,
+                worldDrawMs: Number(frame.worldDrawMs) || 0,
+                simMs: Number(frame.simMs) || 0,
+                uiMs: Number(frame.uiMs) || 0
+            }));
+        const frameCost = frame => Math.max(0, Number(frame.drawMs) || 0) + Math.max(0, Number(frame.simMs) || 0) + Math.max(0, Number(frame.uiMs) || 0);
     // A long wall-clock frame with almost no main-thread work is a browser or
     // host scheduling gap, not an app frame. Keep both readings: the raw wall
     // interval is reported, and the budget is applied to frames where the app
@@ -390,6 +451,13 @@ function summarizePhase(name, payload) {
         p95LogisticsMs: percentile(logisticsSorted, 0.95),
         medianWorkMs: percentile(workSorted, 0.5),
         p95WorkMs: percentile(workSorted, 0.95),
+        drawCallSamples: drawRows.length,
+        drawCallsP95: percentile(drawCallSorted, 0.95),
+        drawCallsMax: drawCallSorted.length ? drawCallSorted[drawCallSorted.length - 1] : null,
+        canvasDrawP95Ms: percentile(drawCallMsSorted, 0.95),
+        canvasDrawMaxMs: drawCallMsSorted.length ? drawCallMsSorted[drawCallMsSorted.length - 1] : null,
+        entitiesP95: percentile(entitySorted, 0.95),
+        entitiesMax: entitySorted.length ? entitySorted[entitySorted.length - 1] : null,
         lastDrawMs: payload.state.lastDrawMs,
         lastWorldDrawMs: payload.state.lastWorldDrawMs,
         lastUiRenderMs: payload.state.lastUiRenderMs,
@@ -403,6 +471,11 @@ function summarizePhase(name, payload) {
         terrainCacheMisses: payload.state.terrainCacheMisses,
         terrainBuildMs: payload.state.terrainBuildMs,
         dayOfYear: payload.state.dayOfYear,
+        seasonIndex: payload.state.seasonIndex,
+        weather: payload.state.weather,
+        zoom: payload.state.zoom,
+        camera: { x: payload.state.cameraX, y: payload.state.cameraY },
+        slowFrames,
         probe: presented.length ? {
             samples: presented.length,
             rawP95Ms: percentile(presentedSorted, 0.95),
@@ -431,6 +504,7 @@ async function samplePhase(name, durationMs) {
         perf.friendlyMs.length = 0;
         perf.logisticsMs.length = 0;
         perf.workMs.length = 0;
+        perf.draws.length = 0;
         perf.longTasks.length = 0;
         perf.phaseStarted = performance.now();
     });
@@ -454,6 +528,7 @@ async function samplePhase(name, durationMs) {
             friendlyMs: perf.friendlyMs.slice(),
             logisticsMs: perf.logisticsMs.slice(),
             workMs: perf.workMs.slice(),
+            draws: perf.draws.slice(),
             probeFrames: state.performanceProbe?.frames?.slice() || [],
             longTasks: perf.longTasks.filter(entry => entry.startTime >= phaseStarted),
             state: {
@@ -472,7 +547,12 @@ async function samplePhase(name, durationMs) {
                 terrainCacheHits: Number(state.terrainCacheHits) || 0,
                 terrainCacheMisses: Number(state.terrainCacheMisses) || 0,
                 terrainBuildMs: Number(state.terrainDecorationBuildMs) || 0,
-                dayOfYear: Number(state.dayOfYear) || 0
+                dayOfYear: Number(state.dayOfYear) || 0,
+                seasonIndex: Number(state.seasonIndex) || 0,
+                weather: state.weather || "clear",
+                zoom: Number(state.zoom) || 0,
+                cameraX: Number(state.camera?.x) || 0,
+                cameraY: Number(state.camera?.y) || 0
             },
             heapUsedBytes: 0
         };
@@ -541,6 +621,128 @@ async function waitForYear(year) {
     throw new Error("The live realm did not reach year " + year + " before the performance timeout");
 }
 
+// Pick a real lake and the centre of the built settlement from the generated
+// realm. The scene only moves the presentation camera and reveals the chosen
+// area; it never places buildings, water or residents.
+async function prepareTaigaScenes() {
+    return page.evaluate(async () => {
+        const [{ state }, { CELL }, { isWaterAt }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/core/config.js"),
+            import("./js/world/world.js")
+        ]);
+        const W = Math.max(1, Number(state.worldW) || 0);
+        const H = Math.max(1, Number(state.worldH) || 0);
+        let lake = null;
+        for (let y = 10; y < H - 10; y++) {
+            for (let x = 10; x < W - 10; x++) {
+                if (!isWaterAt(x, y)) continue;
+                let water = 0;
+                for (let dy = -4; dy <= 4; dy += 2) {
+                    for (let dx = -7; dx <= 7; dx += 2) {
+                        if (isWaterAt(x + dx, y + dy)) water++;
+                    }
+                }
+                // Prefer a substantial body away from the map edge; the camera
+                // must show a lake with taiga shore, not the clamp at a corner.
+                const edge = Math.min(x, y, W - x - 1, H - y - 1);
+                const score = water * 4 + Math.min(20, edge);
+                if (!lake || score > lake.score) lake = { x, y, water, edge, score };
+            }
+        }
+        if (!lake) throw new Error("The generated taiga realm has no water for the winter-ice scene");
+        const reveal = (cx, cy, radius) => {
+            for (let y = Math.max(0, cy - radius); y <= Math.min(H - 1, cy + radius); y++) {
+                for (let x = Math.max(0, cx - radius); x <= Math.min(W - 1, cx + radius); x++) {
+                    state.explored[x][y] = true;
+                }
+            }
+        };
+        reveal(lake.x, lake.y, 22);
+        const buildings = state.entities.filter(entity => !entity.dead && entity.isBuilding?.());
+        const centre = buildings.length
+            ? {
+                x: buildings.reduce((sum, entity) => sum + Number(entity.x || 0), 0) / buildings.length,
+                y: buildings.reduce((sum, entity) => sum + Number(entity.y || 0), 0) / buildings.length
+            }
+            : { x: W / 2, y: H / 2 };
+        reveal(Math.floor(centre.x), Math.floor(centre.y), 20);
+        state.fogDirty = true;
+        state.fogExploredRef = null;
+        return {
+            lake,
+            settlement: { x: centre.x, y: centre.y, buildings: buildings.length },
+            world: { width: W, height: H, cell: CELL },
+            population: state.entities.filter(entity => !entity.dead && entity.type === 20).length
+        };
+    });
+}
+
+async function applyTaigaScene(target, season, zoom) {
+    return page.evaluate(async ({ target, season, zoom }) => {
+        const [{ state }, { CELL }, { taigaProfileAt }, { getHeightAt, getMoistureAt, getTemperatureAt }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/core/config.js"),
+            import("./js/world/taiga-ecology.js"),
+            import("./js/world/world.js")
+        ]);
+        const winter = season === "winter";
+        state.dayOfYear = winter ? 340 : 140;
+        state.seasonIndex = winter ? 3 : 1;
+        state.weather = "clear";
+        state.timeOfDay = 12;
+        state.zoom = zoom;
+        state.zoomTarget = zoom;
+        state.zoomAnchor = null;
+        const canvas = state.canvas;
+        const maxX = Math.max(0, (Number(state.worldW) || 0) * CELL * zoom - canvas.width);
+        const maxY = Math.max(0, (Number(state.worldH) || 0) * CELL * zoom - canvas.height);
+        state.camera.x = Math.max(0, Math.min(maxX, target.x * CELL * zoom - canvas.width / 2));
+        state.camera.y = Math.max(0, Math.min(maxY, target.y * CELL * zoom - canvas.height / 2));
+        state.fogDirty = true;
+        state.fogExploredRef = null;
+        const profile = taigaProfileAt(target.x + 0.5, target.y + 0.5, {
+            climate: "taiga",
+            dayOfYear: state.dayOfYear,
+            seasonIndex: state.seasonIndex,
+            year: state.year,
+            height: getHeightAt(Math.floor(target.x), Math.floor(target.y)),
+            moisture: getMoistureAt(Math.floor(target.x), Math.floor(target.y)),
+            temperature: getTemperatureAt(Math.floor(target.x), Math.floor(target.y)),
+            weather: state.weather,
+            use: { state: "wild" }
+        });
+        return {
+            scene: winter ? "winter-ice" : "summer-lake",
+            formation: profile?.formation || null,
+            ice: Boolean(profile?.water?.ice),
+            water: {
+                lake: Number(profile?.water?.lake) || 0,
+                river: Number(profile?.water?.river) || 0,
+                marsh: Number(profile?.water?.marsh) || 0
+            },
+            dayOfYear: state.dayOfYear,
+            seasonIndex: state.seasonIndex,
+            weather: state.weather,
+            zoom: state.zoom,
+            camera: { x: state.camera.x, y: state.camera.y },
+            canvas: { width: canvas.width, height: canvas.height },
+            terrainCacheMisses: Number(state.terrainCacheMisses) || 0
+        };
+    }, { target, season, zoom });
+}
+
+async function settleTaigaScene(beforeMisses) {
+    await page.waitForFunction(async before => {
+        const [{ state }, { isTerrainDetailSettled }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/presentation/rendering/terrain.js")
+        ]);
+        return Number(state.terrainCacheMisses) > before && isTerrainDetailSettled();
+    }, beforeMisses, { timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(TAIGA_SETTLE_MS);
+}
+
 await mkdir(resolve(ROOT, "..", "artifacts"), { recursive: true });
 let summary;
 try {
@@ -579,8 +781,13 @@ try {
     // Applying settings invalidates the terrain detail cache. Let the one-time
     // rebuild settle before sampling steady play; otherwise the quiet sample
     // measures a settings change, not the game's normal frame budget.
+    await page.waitForFunction(async () => {
+        const { isTerrainDetailSettled } = await import("./js/presentation/rendering/terrain.js");
+        return isTerrainDetailSettled();
+    }, null, { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(1200);
     await setLiveSettings();
+    if (WARMUP_MS > 0) await page.waitForTimeout(WARMUP_MS);
     await page.evaluate(({ skipWorld, skipUi, skipStatic, skipEntities, skipScreen, skipVignette }) => {
         globalThis.__KAC_PERF_SKIP_WORLD = skipWorld;
         globalThis.__KAC_PERF_SKIP_UI = skipUi;
@@ -660,6 +867,24 @@ try {
     // growth remains reported for visibility.
     const heapWarmStart = await heapUsed();
 
+    let taigaInfo = null;
+    const taigaPhases = [];
+    if (TAIGA_SCENES) {
+        taigaInfo = await prepareTaigaScenes();
+        taigaInfo.scenes = [];
+        const scenes = [
+            { target: taigaInfo.lake, season: "summer", zoom: 1.05, name: "taiga-summer-lake" },
+            { target: taigaInfo.lake, season: "winter", zoom: 1.05, name: "taiga-winter-ice" },
+            { target: taigaInfo.settlement, season: "summer", zoom: 1.0, name: "taiga-populated-settlement" }
+        ];
+        for (const scene of scenes) {
+            const applied = await applyTaigaScene(scene.target, scene.season, scene.zoom);
+            await settleTaigaScene(applied.terrainCacheMisses);
+            taigaInfo.scenes.push({ ...applied, phase: scene.name });
+            taigaPhases.push(await samplePhase(scene.name, TAIGA_SCENE_MS));
+        }
+    }
+
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="population"]').click();
     await page.waitForTimeout(600);
@@ -707,7 +932,8 @@ try {
             steadyGrowthBytes: heapEnd - heapWarmStart,
             steadyGrowthPct: heapWarmStart ? Math.round((heapEnd - heapWarmStart) / heapWarmStart * 10000) / 100 : null
         },
-        phases: [...(simOnly ? [simOnly] : []), quiet, dense, panel, warPhase],
+        taiga: taigaInfo ? { ...taigaInfo, phases: taigaPhases.map(phase => phase.name) } : null,
+        phases: [...(simOnly ? [simOnly] : []), quiet, dense, ...taigaPhases, panel, warPhase],
         saveLoad,
         pageErrors: errors,
         consoleErrors,
@@ -731,6 +957,11 @@ if (summary) {
         if (phase.over33Pct === null || phase.over33Pct > BUDGET.over33Pct * 100) failures.push(phase.name + " frames over 33ms " + phase.over33Pct + "% exceeds " + (BUDGET.over33Pct * 100) + "%");
         if (phase.over50Pct === null || phase.over50Pct > BUDGET.over50Pct * 100) failures.push(phase.name + " frames over 50ms " + phase.over50Pct + "% exceeds " + (BUDGET.over50Pct * 100) + "%");
         if (phase.longTasks > BUDGET.longTasks) failures.push(phase.name + " has " + phase.longTasks + " long tasks");
+        if (TAIGA_SCENES && phase.name.startsWith("taiga-")) {
+            if (phase.drawCallsP95 === null || phase.drawCallsP95 > BUDGET.taigaDrawCalls) failures.push(phase.name + " draw calls p95 " + phase.drawCallsP95 + " exceeds " + BUDGET.taigaDrawCalls);
+            if (phase.entitiesP95 === null || phase.entitiesP95 > BUDGET.taigaEntities) failures.push(phase.name + " visible entities p95 " + phase.entitiesP95 + " exceeds " + BUDGET.taigaEntities);
+            if (phase.canvasDrawP95Ms === null || phase.canvasDrawP95Ms > BUDGET.taigaDrawMs) failures.push(phase.name + " canvas draw p95 " + phase.canvasDrawP95Ms + "ms exceeds " + BUDGET.taigaDrawMs + "ms");
+        }
     }
     if (summary.heap.steadyGrowthPct !== null && summary.heap.steadyGrowthPct > 25) failures.push("warm retained JS heap grew by " + summary.heap.steadyGrowthPct + "%");
     if (summary.saveLoad) {

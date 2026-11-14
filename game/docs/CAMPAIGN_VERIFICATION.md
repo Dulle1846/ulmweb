@@ -8,8 +8,9 @@ not hand-place buildings, events, illness or workers.
 
 ```sh
 cd game
-npm run test:campaign        # one seed (20261108 by default)
-npm run test:campaign:sweep  # documented three-seed savanna sweep
+npm run test:campaign              # one seed (20261108 by default)
+npm run test:campaign:sweep        # documented three-seed savanna sweep
+npm run test:campaign:sweep:taiga  # documented three-seed taiga sweep
 ```
 
 The single-seed runner accepts:
@@ -41,7 +42,9 @@ It exits zero only when **all** of the following hold:
 
 A single seed can therefore be honest about a rare random illness: the sweep
 does not demand a rare event on every seed, but it does demand that every seed
-still passes every real campaign requirement.
+still passes every real campaign requirement. The gate is deliberately
+climate-agnostic. The Taiga sweep uses the same fail-closed checks; it does not
+substitute a different, weaker order requirement.
 
 ## Real campaign requirements
 
@@ -78,20 +81,49 @@ crowding, food shortage and household/community spread determine outbreaks;
 healthy settlements therefore see this chain only occasionally. It is real,
 not impossible:
 
-### 1.2.11 documented sweep (2026-11-14)
+### 1.2.11 savanna reference sweep (2026-11-14, current)
 
 | Seed | Requirements | Ticks | Firewood | Population | Gold | Fuel orders | Max per phase |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `20261106` | all true | 10,040 | 46 | 63 | 4,274.93 | 0 | 0 |
-| `20261143` | all true | 10,040 | 42 | 74 | 4,362.88 | 0 | 0 |
-| `20261152` | all true | 10,040 | 50 | 67 | 4,437.10 | **2** | **1** |
+| `20261106` | all true | 10,040 | 46 | 63 | 4,282.95 | **12** | **1** |
+| `20261143` | all true | 10,040 | 42 | 74 | 4,369.28 | **6** | **1** |
+| `20261152` | all true | 10,040 | 48 | 63 | 4,333.91 | **11** | **1** |
 
-Sweep result: `ok:true`, 3/3 seeds green, 2 real orders in 2 phases, no game
-over, no stalled sites. Seed `20261152` records the illness in years 7–8 of
-ordinary play; the sawmill's sick sawyer is replaced by the normal workforce
-logic and the replacement receives the one-shot fuel-backfill lease. Every
-campaign requirement remains true on that seed. Tick cost across the sweep was
-0.605–0.619 ms/tick.
+Sweep result: `ok:true`, 3/3 seeds green, **29** real orders in 29 phases, no
+game over, no stalled sites. Every order is produced by the ordinary annual
+health audit and the ordinary workforce tick; no illness or lease is placed by
+the harness. Tick cost across the sweep was 0.634–0.892 ms/tick.
+
+### 1.2.10 taiga sweep (2026-11-14)
+
+The Taiga failure was not a missing campaign requirement. Seed `20261108`
+reached all 13 ambitions with every requirement true, but produced no fuel
+order: its sick fuel worker fell ill during summer with 45 firewood in store,
+while the store only fell below the 18-load reserve during winter and spring.
+The two conditions never overlapped. The settlement was working, but the
+one-shot replacement was gated on a coincidence rather than on the real
+staffing gap.
+
+`fuelStaffingGap()` in `js/simulation/villagers.js` now treats a completed
+lumber camp or sawmill with a sick worker and fewer healthy workers than its
+capacity as a fuel emergency, even while the current store is healthy. The
+low-reserve path remains in place. The replacement still receives the same
+one-shot lease, the same illness guard prevents a second order for the same
+phase, and the sweep gate itself was not changed.
+
+| Seed | Requirements | Ticks | Firewood | Population | Gold | Fuel orders | Max per phase |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `20261108` | all true | 10,040 | 50 | 74 | 4,686.99 | **1** | **1** |
+| `20261110` | all true | 10,040 | 46 | 70 | 4,392.17 | **7** | **1** |
+| `20261111` | all true | 10,040 | 47 | 74 | 4,727.48 | 0 | 0 |
+
+Sweep result: `ok:true`, 3/3 seeds green, **8** real orders in 8 phases, no
+game over, no stalled sites, 0.908–1.088 ms/tick. The accepted seed
+`20261108` order is logged at **year 25, tick 9720**: the sawmill's sick
+sawyer is replaced by a real resident, the replacement becomes `sawyer`, the
+lease lasts to tick 9820, and the store holds **47 firewood** at the moment of
+the order. The harness observed the lease after the real simulation tick; it
+did not call the order or move the worker.
 
 ## Performance and determinism
 
@@ -103,7 +135,8 @@ performance profile for presentation budgets.
 See [tests/browser/README.md](../tests/browser/README.md) for the browser
 campaign and low-end performance commands.
 
-Verified on 2026-11-14 against runtime commit `89ad0ca`: `npm run
-test:campaign:sweep` exits 0 with the three documented seeds, every campaign
-requirement true on every seed, and the real illness-to-fuel-backfill chain
-present on seed `20261152`.
+Verified on 2026-11-14: `npm run test:campaign:sweep` exits 0 with the three
+documented savanna seeds, and `npm run test:campaign:sweep:taiga` exits 0 with
+seeds `20261108`, `20261110` and `20261111`. Both sweeps have every campaign
+requirement true, no game over, no stalled sites and no worker phase with more
+than one order.

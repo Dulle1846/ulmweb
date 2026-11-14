@@ -155,3 +155,90 @@ tick loop, no per-tile save data and no parallel inventory.
 cd game
 node --test tests/world/taiga-ecology.test.js tests/world/taiga-resource.test.js tests/presentation/taiga-render.test.js
 ```
+
+## Campaign verification
+
+The Taiga campaign uses the same deterministic 25-year driver, the same real
+construction/logistics/royal/ambition APIs and the same fail-closed sweep gate
+as the savanna reference. The Taiga seed set is separate because the savanna
+seeds do not all complete the Taiga agenda and winter fuel requirements.
+
+```sh
+cd game
+npm run test:campaign:sweep:taiga
+```
+
+| Seed | Requirements | Ticks | Firewood | Population | Gold | Fuel orders | Max per phase |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `20261108` | all true | 10,040 | 50 | 74 | 4,686.99 | **1** | **1** |
+| `20261110` | all true | 10,040 | 46 | 70 | 4,392.17 | **7** | **1** |
+| `20261111` | all true | 10,040 | 47 | 74 | 4,727.48 | 0 | 0 |
+
+Final result: `ok:true`, 3/3 seeds green, eight real orders in eight phases,
+no game over and no stalled sites, at 0.908–1.088 ms/tick. The observed
+`20261108` order is at year 25, tick 9720: a real resident replaces the sick
+sawyer, receives the `sawyer` job and a lease through tick 9820 while the
+store holds 47 firewood. The diagnostic reads the lease after the ordinary
+simulation tick; it never places an illness or calls the order.
+
+### Why the first Taiga sweep failed
+
+The first Taiga run was not missing a campaign requirement: seed `20261108`
+reached 13/13 ambitions with every real requirement true. It produced no fuel
+order because the sick fuel worker fell ill in summer with 45 firewood, while
+the settlement only fell below the 18-load reserve in winter and spring. The
+loop had no missing link, but the one-shot replacement was gated on the two
+independent conditions coinciding.
+
+`fuelStaffingGap()` in `js/simulation/villagers.js` now recognises a completed
+lumber camp or sawmill with a sick worker and fewer healthy workers than its
+capacity as a fuel emergency, even before the store is low. The original
+low-reserve trigger remains. The replacement keeps the one-shot lease, the
+illness guard still blocks a second order for the same phase, and the sweep
+aggregation was not weakened. The same change still leaves the savanna
+reference sweep green (3/3 seeds, every requirement true, 29 orders, max one
+per phase).
+
+## Low-end performance
+
+The Taiga performance proof runs the real game, not a synthetic canvas, with
+the same low-end profile used by the other climate benchmarks: 1366 × 768,
+**4× CPU throttling**, software Canvas2D, **70 % render scale**, 60 FPS cap,
+seed `20261108`, forests 75, two in-game years and a real 30-building /
+23-resident settlement. The scene finder selects a real water body and the
+real built settlement from the generated realm; it only moves the camera and
+reveals the local map area for the capture.
+
+```sh
+cd game
+npm run test:performance:taiga
+```
+
+The harness now counts actual Canvas2D primitives (`fill`, `stroke`,
+`fillRect`, `strokeRect`, `drawImage`, `fillText`) only while `drawWorld()` is
+running, and records the renderer's visible entity/carrier counts. The frame
+budget is p95 ≤ 33 ms, ≤ 15 % over 33 ms, ≤ 3 % over 50 ms and zero long tasks.
+The Taiga scene budgets are **1,500 draw calls p95**, **120 visible entities
+p95** and **16.7 ms canvas draw p95**.
+
+| Scene | Season / condition | Frames | p95 frame | >33 ms | >50 ms | Long tasks | Draw calls p95 / max | Visible entities p95 | Canvas draw p95 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Summer waterway | day 197, summer, clear | 479 | **16.7 ms** | 0 % | 0 % | 0 | **164 / 226** | 0 | 1.1 ms |
+| Frozen winter water | day 396, winter, snow | 480 | **16.7 ms** | 0 % | 0 % | 0 | **174 / 515** | 0 | 1.6 ms |
+| Populated settlement | day 199, summer, 30 buildings | 478 | **16.8 ms** | 1.46 % | 0.63 % | 0 | **412 / 679** | 20 | 6.5 ms |
+
+The winter scene reports `water.ice:true` from the real Taiga profile while
+the same camera in summer reports `water.ice:false`; the renderer is showing a
+frozen waterway, not a winter colour swap. The unchanged quiet and dense
+control phases also pass at p95 **16.8 ms** with 0 long tasks. A real save took
+**192 ms** and load **1,394 ms**; warm heap shrank **16.7 %** after bounded
+caches settled; there were no page or console errors.
+
+An earlier run sampled the settlement at p95 **50.1 ms** immediately after the
+camera and season switch, while the staged terrain-detail layer was rebuilding.
+The harness now waits for the real `isTerrainDetailSettled()` state and a
+bounded warm-up before sampling steady play. The final steady-state scene is
+**16.8 ms** with draw p95 **6.5 ms**; the transient was a cache transition, not
+a per-frame terrain/entity hotspot. A startup-only run also caught a single
+69 ms long task before the warm-up; the final five-second warm-up removes it
+from the steady sample.

@@ -97,10 +97,13 @@ export function updateVillagers() {
     }
 
     cleanupExpiredFuelBackfills(villagers);
-    // Fuel is a settlement emergency, not a campaign-driver action. Keep a
-    // small reserve so a sick woodcutter or sawyer does not empty the hearths
-    // while the normal job rotation waits for the next refresh.
-    if (state.tick % FUEL_POLICY_INTERVAL === 0 && lowFuelReserve()) {
+    // Fuel is a settlement emergency, not a campaign-driver action. A low
+    // reserve needs an absent fuel worker replaced before the hearths empty;
+    // an illness that leaves a one-seat lumber camp or sawmill unstaffed is
+    // equally urgent even while the current store is still healthy. Waiting
+    // for both conditions to coincide made the order depend on a rare overlap
+    // instead of on the real staffing gap.
+    if (state.tick % FUEL_POLICY_INTERVAL === 0 && fuelEmergency()) {
         assignWorkerToVacantFuelJob();
     }
     const workerCounts=new Map();
@@ -151,6 +154,34 @@ export function updateVillagers() {
 // The guard survives the replacement's death, so one phase cannot hire twice.
 const FUEL_POLICY_INTERVAL = 20;
 const FUEL_RESERVE = 18;
+const FUEL_WORKPLACES = new Set([TYPE.LUMBER, TYPE.SAWMILL]);
+
+function fuelEmergency(){
+    return lowFuelReserve()||fuelStaffingGap();
+}
+
+// A completed fuel workplace with a sick worker and fewer healthy workers than
+// its capacity is a real production gap. The reserve check alone missed this:
+// a sawyer could fall ill while the store was healthy, stop production, and
+// never receive the one-shot replacement intended for exactly that illness.
+function fuelStaffingGap(){
+    const crews=new Map();
+    for(const entity of state.entities){
+        if(entity.dead||entity.type!==TYPE.VILLAGER)continue;
+        const building=entity.workplace;
+        if(!building||building.dead||!FUEL_WORKPLACES.has(building.type))continue;
+        if(building.construction&&building.construction.stage<3)continue;
+        let crew=crews.get(building);
+        if(!crew){crew={assigned:0,sick:0};crews.set(building,crew);}
+        crew.assigned++;
+        if(isSickVillager(entity))crew.sick++;
+    }
+    for(const [building,crew] of crews){
+        const capacity=BUILDING_WORKFORCE[building.type]||0;
+        if(capacity>0&&crew.sick>0&&crew.assigned-crew.sick<capacity)return true;
+    }
+    return false;
+}
 
 function lowFuelReserve(){
     // updateSettlementNeeds() publishes the live store total in the needs

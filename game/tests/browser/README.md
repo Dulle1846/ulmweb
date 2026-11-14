@@ -294,3 +294,22 @@ the bounded forest/terrain/pathing caches have warmed, so it measures retained
 growth instead of one-time cache fill. Override seeds, climate, scale or budget
 with the `PERF_*` environment variables documented at the top of
 `tests/browser/low-end-performance.mjs`.
+
+### Taiga scenes
+
+`npm run test:performance:taiga` sets `PERF_TAIGA_SCENES=1` and samples a real
+generated Taiga realm in three additional views: a summer waterway, the same
+waterway frozen in winter, and the populated settlement. `PERF_TAIGA_SCENE_MS`
+controls each sample, `PERF_WARMUP_MS` lets startup caches settle, and the
+harness waits for `isTerrainDetailSettled()` after moving the camera or season.
+It wraps the real Canvas2D primitive methods while `drawWorld()` is active, so
+the reported draw-call figures are actual canvas work in that frame, and it
+reads the renderer's visible entity/carrier diagnostics. Taiga scene budgets
+are 1,500 draw calls p95, 120 visible entities p95 and 16.7 ms canvas draw p95
+in addition to the frame and long-task budgets. The measured Taiga result is
+recorded in [docs/TAIGA.md](../../docs/TAIGA.md#low-end-performance).
+
+On a rootless Linux container, prefix the command with the browser paths from
+the section below (`LD_LIBRARY_PATH` and `FONTCONFIG_FILE`); otherwise Chromium
+cannot launch and the harness correctly reports the missing runtime instead of
+producing a performance number.

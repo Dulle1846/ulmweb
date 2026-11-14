@@ -263,6 +263,35 @@ test("fuel-backfill guards survive an exact save/load roundtrip without touching
     }
 });
 
+test("a sick fuel worker is replaced while the reserve is still healthy",()=>{
+    resetState();
+    state.terrainResolution=1;
+    state.terrainPixW=WORLD_W;
+    state.terrainPixH=WORLD_H;
+    state.heightMap=new Float32Array(WORLD_W*WORLD_H).fill(0.5);
+    state.isPaused=false;
+    state.gameOver=false;
+    state.tick=20;
+    state.city.needs={summary:{firewoodStock:60}};
+    const sawmill=spawnEntity(80,80,TYPE.SAWMILL);
+    const sick=spawnEntity(81,80,TYPE.VILLAGER);
+    sick.workplace=sawmill;
+    sick.job="sawyer";
+    sick.illnessUntilTick=state.tick+120;
+    sick.jobRefreshTimer=1000;
+    sick.routineTimer=1000;
+    const idle=spawnEntity(82,80,TYPE.VILLAGER);
+    idle.jobRefreshTimer=1000;
+    idle.routineTimer=1000;
+
+    updateVillagers();
+
+    assert.equal(idle.workplace,sawmill,"the policy must see the unstaffed fuel seat, not only a low store");
+    assert.equal(idle.job,"sawyer");
+    assert.ok(idle.fuelBackfillUntil>state.tick);
+    assert.ok(sick.fuelBackfillGuardUntil>state.tick);
+});
+
 test("the normal villager tick fills a sick fuel seat when the reserve runs low",()=>{
     resetState();
     state.terrainResolution=1;
