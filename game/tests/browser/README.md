@@ -31,6 +31,8 @@ npm run test:terrain-reference
 npm run test:season-year
 npm run test:climate-reference
 npm run test:desert-reference
+npm run test:tundra-reference
+npm run test:savanna-reference
 npm run test:forest-reference
 npm run test:conifer-reference
 npm run test:mixed-reference
@@ -67,7 +69,11 @@ comparison. `test:climate-reference` writes the same-grove 5 × 4 climate
 matrix, five live 1280 × 800 climate screenshots and their JSON logs.
 `test:forest-reference` writes `forest-reference.png` with all fifteen broadleaf
 formations and `forest-seasons.png` with one ancient wood on days 50, 150, 250
-and 350, plus `forest-reference.json`. `test:conifer-reference` and
+and 350, plus `forest-reference.json`. `test:tundra-reference` writes `tundra-reference.png`, `tundra-seasons.png`
+and `tundra-reference.json`; `test:savanna-reference` writes
+`savanna-reference.png`, `savanna-seasons.png` and `savanna-reference.json`
+with ten formations and one seasonal pan on days 60, 145, 250 and 340.
+`test:conifer-reference` and
 `test:mixed-reference` reuse the same harness for the twelve conifer and twelve
 mixed formations; they write `conifer-reference.png` / `conifer-seasons.png` /
 `conifer-reference.json` and `mixed-reference.png` / `mixed-seasons.png` /

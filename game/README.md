@@ -25,6 +25,8 @@
 16. [Deep playtest 3.13.3](docs/DEEP_PLAYTEST_3.13.3.md) — the previous seed-robust living-realm pass, four seeds × three playstyles over 25 years and the mature-realm immigration/relief record.
 17. [AI Living Chronicle](docs/AI_CHRONICLE.md) — optional Atelier books, artifacts, conversations and contacts; server-side Z.ai proxy, deterministic offline fallback, schema-11 saves and verification limits.
 18. [Living events and the chronicle timeline](docs/MICRO_EVENTS.md) — 50 weighted procedural micro-events, existing world-event bridge, 2,400-page time scrubber, centre notices, bounded effects and schema-11 migration.
+19. [Tundra 1.2.9](docs/TUNDRA.md) — dedicated cold climate, permafrost, ten formations, the 48-point audit and sparse scrub timber.
+20. [Savanna 1.2.10](docs/SAVANNA.md) — fire- and grazing-shaped wet/dry climate, ten formations, sparse woodland, pastoral/grain economy, hazards and the four-season reference.
 
 ## Development rules
 

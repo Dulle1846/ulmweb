@@ -23,8 +23,10 @@ For the current development stage, these documents focus on making the existing 
 - [Nadelwälder 1.2.2](CONIFER_FORESTS.md) — five conifer species, twelve conifer formations, seasonal larch needles, needle-floor ecology, conifer products and disturbance succession.
 - [Mischwälder 1.2.3](MIXED_FORESTS.md)
 - [Tropische Regenwälder 1.2.4](TROPICAL_RAINFORESTS.md) — 13 tropische Baumarten, zwölf Formationen, 65-Punkte-Audit, Wasser, Gefahren, Medizin, Landnutzung und Browser-Referenz.
+- [Mischwälder 1.2.3](MIXED_FORESTS.md) — twenty forest species, twelve mixed formations, mixture ratios, dominant species, group/mosaic patterns, age structure, canopy layers, understorey, phenology, seasonal light, habitat value, timber grades, silviculture and the 1.2.3.1–35 audit.
 - [Steppen 1.2.7](STEPPES.md) — 56-Punkte-Steppenökologie mit Gräsern, Dornbusch, Schwarzerde, Salz, Herden, Weide, Pferdezucht, Wasserstellen und Dürre-/Feuer-/Wintergefahren.
- — twenty forest species, twelve mixed formations, mixture ratios, dominant species, group/mosaic patterns, age structure, canopy layers, understorey, phenology, seasonal light, habitat value, timber grades, silviculture and the 1.2.3.1–35 audit.
+- [Tundra 1.2.9](TUNDRA.md) — dedicated cold climate, permafrost, ten formations, 48-point audit, sparse scrub timber and the four-season reference.
+- [Savanna 1.2.10](SAVANNA.md) — fire- and grazing-shaped wet/dry climate, ten formations, 48-point audit, sparse woodland, pastoral/grain economy, hazards and the four-season reference.
 - [Named garrison and public health](MILITARY_AND_PUBLIC_HEALTH.md) — barracks/stables, named recruits and timed drill, warhorses and annual payroll, sanitation, outbreaks, healers, medicine, quarantine, mortality and the schema-5 save contract.
 - [Faith, culture and justice](FAITH_AND_JUSTICE.md) — named clergy and judges, shrines, courts and prisons, festivals, pilgrimages, heresy, emergent crime, trials, legal codes, charters, corruption, schema-6 saves and the verified hosted build.
 - [Realm founding](REALM_FOUNDING.md) — cultures, religions, traditions, legal orders, legitimacy doctrines, starting charters, oligarchy and mixed constitution, save-compatible identity modifiers and the verified hosted build.

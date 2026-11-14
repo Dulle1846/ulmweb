@@ -24,7 +24,9 @@ The version in `game/package.json` is the machine-readable game version. Update 
 
 ## Separate hosted development builds
 
-- **Kings & Cards — tundra (current hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. Preview receipt `8c735389-98ad-4cb5-9032-0a06873b6686` (13:02:56–13:02:59Z) and production receipt `ca2f623c-bfe4-4898-8907-f96051c5a81d` (13:03:07–13:03:11Z) both succeeded; both environments remain `published:true`. The runtime package is 320 files / 7.57 MiB and its `version.json` identifies the deployed commit. Both origins return HTTP 200 and carry matching SHA-256 hashes for `tundra-ecology.js` `b35e169c39f55cf5d0acc9500300501941335398877ad23828e409798b606814`, `tundra-render.js` `ceec5f76b7b76882fcf98b111ad4a0cea4956501e4ff0d83b44750a8aaaa831f` and `terrain-model.js` `bb22b227f4fbf2a09123fe54f741657e1bb0ee3c86e3b1c442a0dbbea68dbd2e`. A live production load exposed the Tundra climate option, returned HTTP 200 for the document and every requested script and stylesheet, and reported no page or console errors; only the expected software-WebGL `ReadPixels` warning appeared. Verified on this head: focused tundra tests green; `npm test` 933/933; syntax/imports 143 files / 203 ids; complete browser E2E green; 25-year temperate campaign 10,040 ticks / 13/13 / 0.833 ms per tick / no stalls / no game over; 25-year tundra campaign 10,040 ticks / 13/13 / 0.553 ms per tick / no game over, with its firewood-stock flag still false (real fuel scarcity). Full record: [docs/TUNDRA.md](docs/TUNDRA.md).
+- **Kings & Cards — savanna (current hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. The runtime package is 322 files / 7.64 MiB and its `version.json` identifies runtime commit `6386544`. Preview deploy receipt `a0c421fb-f643-421f-8d34-4817f0b0e644` (14:04:29–14:04:32Z) and production receipt `b74bdc0a-b8c8-4d66-8fe5-eb21ef7ac538` (14:04:43–14:04:46Z) both succeeded; both environments are `published:true`. Both origins return HTTP 200 and carry matching SHA-256 hashes for `savanna-ecology.js` `7f675f510d46fe15265369bea555cfec99cc91c2d3d02e831dac328e39c56446`, `savanna-render.js` `8755b029b237ec64058c77e9f2e12b6bbab2612b07ba42cbec79b7e34134a0ec`, `terrain.js` `e4970c9e01967fe177068398eb9f4e40fb1eeff929bb26a68448bbaa7a6c2c45` and `terrain-model.js` `c8ba932d22c1a0532dd67cb8a20fa0706180dec77af3341c17bcf5de03b4a1dd`. A live production load exposed the Savanna climate option, loaded all requested scripts and styles with HTTP 200, and reported no page or console errors; only the expected software-WebGL `ReadPixels` warning appeared. The same clean load was repeated on preview. Verified on this head: focused savanna tests 12/12; `npm test` 945/945; syntax/imports 145 files / 203 ids; complete browser E2E green; 25-year temperate campaign 10,040 ticks / 13/13 / 0.830 ms per tick / no stalls / no game over; 25-year savanna campaign (seed 20261106) 10,040 ticks / 13/13 / all requirements true / no stalls / no game over / 0.585 ms per tick. Full record: [docs/SAVANNA.md](docs/SAVANNA.md).
+
+- **Kings & Cards — tundra (previous hosted build):** production https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page · preview https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page · site 054512f6-1fcf-489c-8406-3ab4e49022e3 · published 2026-11-14. Preview receipt `8c735389-98ad-4cb5-9032-0a06873b6686` (13:02:56–13:02:59Z) and production receipt `ca2f623c-bfe4-4898-8907-f96051c5a81d` (13:03:07–13:03:11Z) both succeeded; both environments remain `published:true`. The runtime package is 320 files / 7.57 MiB and its `version.json` identifies the deployed commit. Both origins return HTTP 200 and carry matching SHA-256 hashes for `tundra-ecology.js` `b35e169c39f55cf5d0acc9500300501941335398877ad23828e409798b606814`, `tundra-render.js` `ceec5f76b7b76882fcf98b111ad4a0cea4956501e4ff0d83b44750a8aaaa831f` and `terrain-model.js` `bb22b227f4fbf2a09123fe54f741657e1bb0ee3c86e3b1c442a0dbbea68dbd2e`. A live production load exposed the Tundra climate option, returned HTTP 200 for the document and every requested script and stylesheet, and reported no page or console errors; only the expected software-WebGL `ReadPixels` warning appeared. Verified on this head: focused tundra tests green; `npm test` 933/933; syntax/imports 143 files / 203 ids; complete browser E2E green; 25-year temperate campaign 10,040 ticks / 13/13 / 0.833 ms per tick / no stalls / no game over; 25-year tundra campaign 10,040 ticks / 13/13 / 0.553 ms per tick / no game over, with its firewood-stock flag still false (real fuel scarcity). Full record: [docs/TUNDRA.md](docs/TUNDRA.md).
 
 These builds are published from the current development worktree to Freebuff Sites. They are **not** the Cloudflare Pages production branch and do not change the `3.10.0` Pages release status.
 
@@ -39,6 +41,42 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.15.0-dev — Savanna and the living grassland (1.2.10)
+
+**Released:** 2026-11-14
+
+**Scope:** Savanna becomes the eighth dedicated climate instead of a warmer
+variant of `arid` or `grassland`. A deterministic ecology module derives ten
+formations (open grass plains, acacia savanna, baobab grove, riparian corridor,
+dry riverbed, thorn scrub, termite-mound field, seasonal pan, burned grassland
+and rocky kopje) from height, moisture, temperature, season, weather, wind and
+real land use. The profile carries the wet/dry pulse, laterite soil, seasonal
+pans and waterholes, dry riverbeds, grazing and fire pressure, drought, heat,
+predator, water-scarcity, flood and livestock-disease risk, and the full
+48-point vocabulary.
+
+**Integration:** `terrain.js` gives savanna priority over desert, steppe and
+grassland and suppresses closed forest; `savanna-render.js` draws a bounded
+ground and detail layer. Sparse savanna woodland is seeded on the grassy belt
+below the old forest line as well as above it, so a lowland start has logs,
+lumberjacks and firewood without a closed canopy. Gathering, the shared good
+ledger, farm/stable surveys, movement costs, harvest yield, spoilage, the
+climate selector and savanna's milder hearth-load interval all read the same
+climate profile. Existing worlds and saves keep their settlements and terrain
+unchanged.
+
+**Verification:** focused savanna ecology, rendering and resource tests 12/12;
+full `npm test` 945/945 with syntax and relative imports clean for 145 source
+files / 203 UI ids; complete browser E2E green; 25-year temperate campaign
+10,040 ticks, 13/13 ambitions, 0.830 ms/tick, no stalls and no game over; a
+25-year savanna campaign on seed 20261106 reaches the same 10,040 ticks and
+13/13 ambitions with every campaign requirement true, 46 firewood in store,
+no stalls and no game over at 0.585 ms/tick. The harness's separate fuel-backfill
+diagnostic requires a random illness to strike a lumber or sawmill worker; the
+healthy savanna seed had no such illness, so that diagnostic recorded zero
+orders while every campaign requirement passed. The deterministic browser
+reference captures all ten formations and one seasonal pan through four seasons.
 
 ### 3.15.0-dev — Tundra and the living permafrost (1.2.9)
 
