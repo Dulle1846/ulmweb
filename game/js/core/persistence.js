@@ -154,7 +154,6 @@ export function getLocalSaveInfo(profileId) {
     } : null;
 }
 
-const TERRAIN_RENDERERS = new Set(["auto", "webgl", "canvas"]);
 const FRAME_LIMITS = new Set([30, 60]);
 const RENDER_SCALES = new Set([0.5, 0.7, 0.85, 1]);
 const DEFAULT_SETTINGS = Object.freeze({
@@ -164,10 +163,8 @@ const DEFAULT_SETTINGS = Object.freeze({
     showDeltas: true,
     reduceMotion: false,
     highContrast: false,
-    terrainRenderer: "auto",
     frameLimit: 60,
     renderScale: 1,
-    adaptiveQuality: true,
     showFps: false,
 });
 
@@ -183,10 +180,8 @@ export function normalizeSettings(rawSettings = {}) {
         showDeltas: settings.showDeltas !== false,
         reduceMotion: settings.reduceMotion === true,
         highContrast: settings.highContrast === true,
-        terrainRenderer: TERRAIN_RENDERERS.has(settings.terrainRenderer) ? settings.terrainRenderer : DEFAULT_SETTINGS.terrainRenderer,
         frameLimit: FRAME_LIMITS.has(frameLimit) ? frameLimit : DEFAULT_SETTINGS.frameLimit,
         renderScale: RENDER_SCALES.has(renderScale) ? renderScale : DEFAULT_SETTINGS.renderScale,
-        adaptiveQuality: settings.adaptiveQuality !== false,
         showFps: settings.showFps === true,
     };
 }

@@ -107,7 +107,7 @@ Die Punkte 1.2.1.1–1.2.1.60 bleiben unverändert belegt. Die folgende Vertiefu
 | Performance | Streu- und Moosschleifen reduziert (19→15, 5→4), Mikrofauna auf drei Gruppen × drei Marken und Nahzoom begrenzt, ein Solarvektor statt drei Berechnungen | `terrain.js`; `terrain-webgl.js` |
 | Performance Regrowth | 400-Tage-Zyklus in 400 Tagesscheiben; 576×576 mit 201.570 halb geleerten Wald-Tiles: 802 ms pro Vollpass → 2,34 ms Median / 5,71 ms Maximum pro Tagesscheibe | `regrowForests`; `resource-geography.test.js` |
 
-Die `GL Driver Message … GPU stall due to ReadPixels` ist eine Browser-/Screenshot-Rücklesewarnung des Software-WebGL-Pfads, kein Spielcode-Fehler: im Quellbaum gibt es kein `readPixels` außer im separaten Testwerkzeug `tests/browser/terrain-perf.html`. **Auto** fordert inzwischen gar keinen WebGL-Kontext mehr an, sondern bleibt auf dem gecachten Canvas-2D-Terrain; WebGL ist eine ausdrückliche Hardware-Option. Damit entstehen auf Software-GPUs auch keine `Automatic fallback to software WebGL`-Warnungen mehr.
+Die `GL Driver Message … GPU stall due to ReadPixels` ist eine Browser-/Screenshot-Rücklesewarnung des Software-WebGL-Pfads, kein Spielcode-Fehler: im Quellbaum gibt es kein `readPixels` außer im separaten Testwerkzeug `tests/browser/terrain-perf.html`. Das Spiel rendert ausschließlich auf dem gecachten Canvas-2D-Terrain und fordert auf keinem Spielerpfad einen WebGL-/WebGPU-Kontext an; der Renderer-Schalter und die WebGL-Zeilen des Benchmarks wurden entfernt. Damit entstehen auf Software-GPUs auch keine `Automatic fallback to software WebGL`-Warnungen mehr.
 
 ## Ergebnis
 

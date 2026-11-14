@@ -278,7 +278,6 @@ async function measureInPage({ day, seasonIndex, tile, kind, durationMs = 2200, 
         state.timeOfDay = 12;
         state.frameLimit = 30;
         state.renderScale = 0.5;
-        state.adaptiveQuality = true;
         state.showFps = false;
         state.entities = state.entities.filter(entity => entity.dead || entity.type === 0);
         state.dayOfYear = day;
@@ -970,7 +969,6 @@ try {
         state.timeOfDay = 12;
         state.frameLimit = 30;
         state.renderScale = 0.5;
-        state.adaptiveQuality = true;
         state.showFps = false;
         state.entities = state.entities.filter(entity => entity.dead || entity.type === 0);
         resize();

@@ -385,18 +385,17 @@
         <div class="settings-section-heading">ATMOSPHERE</div>
         <div class="setting-row volume-setting time-of-day-setting"><div><strong>Time of day</strong><small>Dawn warmth, neutral daylight, dusk colour and a cool night veil over the realm map. 12:00 is the full-quality default.</small></div><div class="time-of-day-control"><input id="settings-time-of-day" type="range" min="0" max="23" step="1" value="12" aria-label="Time of day"><output id="settings-time-of-day-value" for="settings-time-of-day">12:00</output></div></div>
         <div class="settings-section-heading">PERFORMANCE</div>
-        <div class="setting-row"><div><strong>Terrain renderer</strong><small>Auto keeps the cached Canvas 2D terrain and never probes software WebGL. Choose WebGL for hardware acceleration; Canvas keeps every decoration and detail.</small></div><select id="settings-terrain-renderer" class="settings-select" aria-label="Terrain renderer"><option value="auto">Auto (Canvas 2D)</option><option value="webgl">WebGL (hardware)</option><option value="canvas">Canvas 2D</option></select></div>
         <div class="setting-row"><div><strong>Frame limit</strong><small>Cap world drawing at 60 or 30 FPS. Simulation keeps running at full tick rate.</small></div><select id="settings-frame-limit" class="settings-select" aria-label="Frame limit"><option value="60">60 FPS</option><option value="30">30 FPS</option></select></div>
         <div class="setting-row"><div><strong>Render scale</strong><small>Optional internal resolution for weak devices. 100% is the full-quality default; lower values upscale the same scene.</small></div><select id="settings-render-scale" class="settings-select" aria-label="Render scale"><option value="100">100%</option><option value="85">85%</option><option value="70">70%</option><option value="50">50%</option><option value="25">25%</option></select></div>
         <div class="setting-row"><div><strong>Performance overlay</strong><small>Show FPS, frame time and the active terrain renderer.</small></div><label class="toggle"><input id="settings-fps-toggle" type="checkbox" aria-label="Show performance overlay"><span></span></label></div>
         <div class="performance-benchmark" aria-labelledby="performance-benchmark-title">
             <div class="performance-benchmark__intro">
-                <div><strong id="performance-benchmark-title">Device benchmark</strong><small>Measure the live scene across Auto, WebGL and Canvas 2D at 100, 85, 70 and 50% scale. Your saved settings return when it finishes.</small></div>
+                <div><strong id="performance-benchmark-title">Device benchmark</strong><small>Measure the live Canvas 2D scene at 100, 85, 70 and 50% scale. Your saved settings return when it finishes.</small></div>
                 <button id="run-performance-benchmark" class="ui-button ui-button--secondary secondary-button performance-benchmark__run" type="button" disabled>RUN BENCHMARK</button>
             </div>
             <p id="performance-benchmark-status" class="performance-benchmark__status" role="status" aria-live="polite">Found a realm to benchmark the live scene.</p>
             <div id="performance-benchmark-meta" class="performance-benchmark__device hidden"></div>
-            <progress id="performance-benchmark-progress" class="performance-benchmark__progress hidden" max="12" value="0" aria-label="Benchmark progress"></progress>
+            <progress id="performance-benchmark-progress" class="performance-benchmark__progress hidden" max="4" value="0" aria-label="Benchmark progress"></progress>
             <div id="performance-benchmark-results" class="performance-benchmark__results hidden">
                 <div id="performance-benchmark-summary" class="performance-benchmark__summary"></div>
                 <table class="performance-benchmark__table" aria-label="Renderer benchmark results">

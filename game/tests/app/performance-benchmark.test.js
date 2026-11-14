@@ -9,21 +9,16 @@ import {
     summarizeBenchmarkSamples,
 } from "../../js/app/performance-benchmark.js";
 
-test("benchmark plan covers every renderer and render scale", () => {
+test("benchmark plan covers the Canvas render scale ladder", () => {
     const plan = buildBenchmarkPlan();
     assert.equal(plan.length, BENCHMARK_RENDERERS.length * BENCHMARK_SCALES.length);
-    assert.deepEqual(plan.slice(0, 4).map(row => [row.renderer, row.scaleLabel]), [
-        ["auto", 100],
-        ["auto", 85],
-        ["auto", 70],
-        ["auto", 50],
-    ]);
-    assert.deepEqual(plan.slice(-4).map(row => [row.renderer, row.scaleLabel]), [
+    assert.deepEqual(plan.map(row => [row.renderer, row.scaleLabel]), [
         ["canvas", 100],
         ["canvas", 85],
         ["canvas", 70],
         ["canvas", 50],
     ]);
+    assert.ok(BENCHMARK_RENDERERS.every(row => row.id === "canvas"), "the benchmark must never request WebGL");
     assert.ok(BENCHMARK_MIN_FRAMES >= 20,"a single slow frame must not decide a row");
 });
 

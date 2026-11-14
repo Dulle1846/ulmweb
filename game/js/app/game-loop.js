@@ -18,12 +18,11 @@ let perfWindowStarted=0;
 let perfRenderedFrames=0;
 let perfIntervalTotal=0;
 let perfLastFrameAt=0;
-let slowRenderFrames=0;
 
 function resetFrameClock(){
  state.lastFrameTime=0;lastRenderTimestamp=0;state.tickAccumulator=0;state.movementAccumulator=0;
  state.lastMinimapRender=0;state.lastUiRender=0;
- perfWindowStarted=0;perfRenderedFrames=0;perfIntervalTotal=0;perfLastFrameAt=0;slowRenderFrames=0;
+ perfWindowStarted=0;perfRenderedFrames=0;perfIntervalTotal=0;perfLastFrameAt=0;
 }
 
 function frameIntervalMs(){
@@ -31,10 +30,8 @@ function frameIntervalMs(){
 }
 
 function performanceLabel(){
- const renderer=state.terrainRenderer==="auto"
-  ?(state.terrainFallback?"AUTO → CANVAS":"AUTO")  :String(state.terrainRenderer||"auto").toUpperCase();
  const scale=Math.round((Number(state.renderScale)||1)*100);
- return renderer+" · "+(state.terrainMode==="webgl"?"WEBGL":"CANVAS")+" · "+scale+"%";
+ return "CANVAS · "+scale+"%";
 }
 
 function updatePerformanceHud(){
@@ -68,26 +65,6 @@ function samplePerformance(timestamp,deltaTime){
  };
  updatePerformanceHud();
  perfWindowStarted=timestamp;perfRenderedFrames=0;perfIntervalTotal=0;perfLastFrameAt=0;
-}
-
-// WebGL is normally the faster path, but software WebGL (SwiftShader/llvmpipe)
-// can be far slower than Canvas 2D. If frames remain slow after startup even
-// though the automatic choice picked WebGL, fall back without losing detail;
-// Canvas 2D keeps the full artwork and the terrain cache.
-function considerAdaptiveFallback(deltaTime){
- if(!state.adaptiveQuality||state.terrainRenderer!=="auto"||state.terrainMode!=="webgl"||state.terrainFallback){
-  slowRenderFrames=0;
-  return;
- }
- if(deltaTime>48)slowRenderFrames++;
- else slowRenderFrames=Math.max(0,slowRenderFrames-1);
- if(slowRenderFrames<5)return;
- state.terrainAutoMode="canvas";
- state.terrainFallback=true;
- state.terrainCacheRevision=(Number(state.terrainCacheRevision)||0)+1;
- state.terrainCacheHits=0;state.terrainCacheMisses=0;
- slowRenderFrames=0;
- updatePerformanceHud();
 }
 
 export function startGameLoop(){
@@ -225,7 +202,6 @@ function gameLoop(timestamp){
       });
      }
      samplePerformance(timestamp,deltaTime);
-     considerAdaptiveFallback(deltaTime);
     }
     lastRenderTimestamp=timestamp;
    }

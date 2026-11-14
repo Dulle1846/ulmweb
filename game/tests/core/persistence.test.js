@@ -63,24 +63,21 @@ test("settings are clamped and persisted with safe defaults",()=>{
     assert.equal(settings.showTooltips,false);
     assert.equal(settings.reduceMotion,true);
     assert.equal(settings.highContrast,true);
-    assert.equal(settings.terrainRenderer,"auto");
     assert.equal(settings.frameLimit,60);
     assert.equal(settings.renderScale,1);
-    assert.equal(settings.adaptiveQuality,true);
     assert.equal(settings.showFps,false);
+    assert.equal("terrainRenderer" in settings,false,"the removed renderer switch must not persist");
+    assert.equal("adaptiveQuality" in settings,false,"the removed adaptive setting must not persist");
 
-    saveSettings({terrainRenderer:"canvas",frameLimit:30,renderScale:0.7,adaptiveQuality:false,showFps:true});
+    saveSettings({frameLimit:30,renderScale:0.7,showFps:true});
     const performanceSettings=loadSettings();
-    assert.equal(performanceSettings.terrainRenderer,"canvas");
     assert.equal(performanceSettings.frameLimit,30);
     assert.equal(performanceSettings.renderScale,0.7);
-    assert.equal(performanceSettings.adaptiveQuality,false);
     assert.equal(performanceSettings.showFps,true);
     assert.equal(performanceSettings.highContrast,false);
 
-    saveSettings({terrainRenderer:"not-a-renderer",frameLimit:120,renderScale:0.33});
+    saveSettings({frameLimit:120,renderScale:0.33});
     const sanitized=loadSettings();
-    assert.equal(sanitized.terrainRenderer,"auto");
     assert.equal(sanitized.frameLimit,60);
     assert.equal(sanitized.renderScale,1);
 });

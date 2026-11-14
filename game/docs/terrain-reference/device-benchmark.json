@@ -4,136 +4,56 @@
     "width": 1000,
     "height": 700
   },
-  "generatedAt": "2026-11-11T16:13:03.725Z",
+  "generatedAt": "2026-11-14T17:08:22.792Z",
   "scene": {
     "zoom": 0.09,
     "zoomLevel": 1,
     "terrainMode": "canvas",
-    "cacheMisses": 2,
-    "landscapePeakDrawMs": 46.39999997615814,
-    "renderer": "auto",
+    "cacheMisses": 3,
+    "landscapePeakDrawMs": 6.199999988079071,
+    "renderer": "canvas",
     "renderScale": 1
   },
   "summary": "COMPLETE · LIVE SCENE · 585 × 481 VIEW · 8 THREADS",
   "device": "LIVE SCENE · 585 × 481 VIEW · 8 THREADS",
   "rows": [
     {
-      "text": "AUTO ACTUAL CANVAS 100% 16.8 0.8 ms",
-      "cells": [
-        "AUTO ACTUAL CANVAS",
-        "100%",
-        "16.8",
-        "0.8 ms"
-      ],
-      "best": false
-    },
-    {
-      "text": "AUTO ACTUAL CANVAS 85% 23.1 0.7 ms",
-      "cells": [
-        "AUTO ACTUAL CANVAS",
-        "85%",
-        "23.1",
-        "0.7 ms"
-      ],
-      "best": false
-    },
-    {
-      "text": "AUTO ACTUAL CANVAS 70% 24.3 0.7 ms",
-      "cells": [
-        "AUTO ACTUAL CANVAS",
-        "70%",
-        "24.3",
-        "0.7 ms"
-      ],
-      "best": false
-    },
-    {
-      "text": "AUTO ACTUAL CANVAS 50% 23.2 0.7 ms",
-      "cells": [
-        "AUTO ACTUAL CANVAS",
-        "50%",
-        "23.2",
-        "0.7 ms"
-      ],
-      "best": false
-    },
-    {
-      "text": "WEBGL 100% 8.7 1.6 ms",
-      "cells": [
-        "WEBGL",
-        "100%",
-        "8.7",
-        "1.6 ms"
-      ],
-      "best": false
-    },
-    {
-      "text": "WEBGL 85% 12.1 1.5 ms",
-      "cells": [
-        "WEBGL",
-        "85%",
-        "12.1",
-        "1.5 ms"
-      ],
-      "best": false
-    },
-    {
-      "text": "WEBGL 70% 14.5 1.2 ms",
-      "cells": [
-        "WEBGL",
-        "70%",
-        "14.5",
-        "1.2 ms"
-      ],
-      "best": false
-    },
-    {
-      "text": "WEBGL 50% 18.7 1.1 ms",
-      "cells": [
-        "WEBGL",
-        "50%",
-        "18.7",
-        "1.1 ms"
-      ],
-      "best": false
-    },
-    {
-      "text": "CANVAS 2D 100% 18.1 0.6 ms",
+      "text": "CANVAS 2D 100% 60.0 0.3 ms",
       "cells": [
         "CANVAS 2D",
         "100%",
-        "18.1",
-        "0.6 ms"
+        "60.0",
+        "0.3 ms"
       ],
       "best": false
     },
     {
-      "text": "CANVAS 2D 85% 22.2 0.7 ms",
+      "text": "CANVAS 2D 85% 60.0 0.3 ms",
       "cells": [
         "CANVAS 2D",
         "85%",
-        "22.2",
-        "0.7 ms"
+        "60.0",
+        "0.3 ms"
       ],
       "best": false
     },
     {
-      "text": "CANVAS 2D BEST 70% 25.1 0.6 ms",
+      "text": "CANVAS 2D BEST 70% 60.0 0.3 ms",
       "cells": [
         "CANVAS 2D BEST",
         "70%",
-        "25.1",
-        "0.6 ms"
+        "60.0",
+        "0.3 ms"
       ],
       "best": true
     },
     {
-      "text": "CANVAS 2D 50% 23.2 0.7 ms",
+      "text": "CANVAS 2D 50% 60.0 0.3 ms",
       "cells": [
         "CANVAS 2D",
         "50%",
-        "23.2",
-        "0.7 ms"
+        "60.0",
+        "0.3 ms"
       ],
       "best": false
     }

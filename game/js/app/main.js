@@ -31,7 +31,6 @@ import { warmMilitaryCaches } from "../systems/military.js";
 import { warmVillagerPaths } from "../simulation/villagers.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera,setRenderScale } from "../presentation/camera.js";
-import { terrainRendererInfo } from "../presentation/rendering/terrain-webgl.js";
 import { drawTerrain, isTerrainDetailSettled } from "../presentation/rendering/terrain.js";
 import { drawWorld } from "../presentation/rendering/renderer.js";
 import { setupInput } from "../presentation/input.js";
@@ -64,11 +63,6 @@ import {BENCHMARK_MIN_FRAMES,BENCHMARK_SAMPLE_MS,BENCHMARK_WARMUP_MS,buildBenchm
 
 let loopStarted=false;
 let settings=loadSettings();
-// A canvas can only ever own one context type. Keep one prepared surface per
-// renderer instead of allocating (and losing) a WebGL context on every switch.
-let terrainCanvas2D=null;
-let terrainCanvasWebGL=null;
-let appliedTerrainMode=null;
 function applyInterfaceSettings(){
     document.body.classList.toggle("hide-resource-deltas",settings.showDeltas===false);
     document.body.classList.toggle("reduce-interface-motion",settings.reduceMotion===true);
@@ -78,90 +72,21 @@ function applyInterfaceSettings(){
     root.classList.toggle("ui-high-contrast",settings.highContrast===true);
 }
 
-function cloneTerrainCanvas(previous){
-    const canvas=previous.cloneNode(false);
-    canvas.width=Math.max(1,Number(previous.width)||1);
-    canvas.height=Math.max(1,Number(previous.height)||1);
-    canvas.style.opacity="";
-    canvas.style.transform="";
-    return canvas;
-}
-
-function cacheTerrainCanvas(mode,canvas){
-    if(!canvas)return;
-    if(mode==="webgl")terrainCanvasWebGL=canvas;
-    else terrainCanvas2D=canvas;
-}
-
-function activateTerrainCanvas(next){
-    const previous=state.terrainCanvasEl;
-    if(!next||next===previous)return;
-    // Never resize the cached surface here. Assigning width/height clears a
-    // Canvas2D backing store while terrain.js still considers its detail layer
-    // valid, which left the switched-back terrain black. ensureTerrainSurface()
-    // and drawTerrainGL() resize on the next draw and invalidate their caches
-    // when the size actually changes.
-    next.style.opacity="";
-    next.style.transform="";
-    if(previous?.parentElement)previous.replaceWith(next);
-    else document.getElementById("terrain-canvas")?.replaceWith(next);
-    state.terrainCanvasEl=next;
-}
-
-function selectTerrainCanvas(nextMode,previousMode){
-    const active=state.terrainCanvasEl;
-    if(!active)return;
-    if(previousMode==="webgl"&&!terrainCanvasWebGL)terrainCanvasWebGL=active;
-    if(previousMode==="canvas"&&!terrainCanvas2D)terrainCanvas2D=active;
-    let next=nextMode==="webgl"?terrainCanvasWebGL:terrainCanvas2D;
-    if(!next){
-        next=cloneTerrainCanvas(active);
-        cacheTerrainCanvas(nextMode,next);
-    }
-    activateTerrainCanvas(next);
-}
-
 function applyPerformanceSettings(){
-    state.terrainRenderer=settings.terrainRenderer;
+    // The terrain is Canvas 2D only. Chromium logs a software-WebGL fallback
+    // warning for any WebGL request on a software GPU, even a detached probe,
+    // so the game never creates a WebGL context on a user-reachable path.
+    state.terrainRenderer="canvas";
+    state.terrainAutoMode="canvas";
+    state.terrainMode="canvas";
+    state.terrainRendererName="";
+    state.terrainFallback=false;
     state.frameLimit=settings.frameLimit===30?30:60;
-    state.adaptiveQuality=settings.adaptiveQuality!==false;
     state.showFps=settings.showFps===true;
     setRenderScale(settings.renderScale);
-    const firstApply=appliedTerrainMode===null;
-    let info=null;
-    // Auto stays on the cached Canvas2D path and never probes WebGL. Chromium
-    // logs the "Automatic fallback to software WebGL has been deprecated"
-    // warning for any WebGL request on a software GPU, even a detached probe,
-    // so the only warning-free automatic path is Canvas2D. WebGL remains an
-    // explicit, hardware-only option for players who want it.
-    const nextMode=settings.terrainRenderer==="webgl"?"webgl":"canvas";
-    if(nextMode==="webgl")info=terrainRendererInfo();
-    state.terrainRendererName=info?.name||"";
-    if(firstApply){
-        appliedTerrainMode=nextMode;
-        if(nextMode==="webgl"||info?.boundCanvas){
-            // Auto may have bound the initial surface to WebGL and then chosen
-            // Canvas because it is software. Keep that context for a later
-            // switch and give Canvas mode its own surface.
-            cacheTerrainCanvas("webgl",state.terrainCanvasEl);
-            if(nextMode==="canvas"){
-                const canvas2D=cloneTerrainCanvas(state.terrainCanvasEl);
-                cacheTerrainCanvas("canvas",canvas2D);
-                activateTerrainCanvas(canvas2D);
-            }
-        }else{
-            cacheTerrainCanvas("canvas",state.terrainCanvasEl);
-        }
-    }else if(appliedTerrainMode!==nextMode){
-        selectTerrainCanvas(nextMode,appliedTerrainMode);
-        appliedTerrainMode=nextMode;
-    }
-    state.terrainAutoMode=nextMode;
-    state.terrainMode=nextMode;
-    state.terrainFallback=false;
     state.terrainCacheRevision=(Number(state.terrainCacheRevision)||0)+1;
     state.terrainCacheHits=0;state.terrainCacheMisses=0;
-    state.renderStats={fps:0,frameMs:0,mode:state.terrainMode,fallback:false,renderScale:state.renderScale};
+    state.renderStats={fps:0,frameMs:0,mode:"canvas",fallback:false,renderScale:state.renderScale};
     const hud=document.getElementById("performance-hud");
     if(hud)hud.classList.toggle("hidden",state.showFps!==true);
 }
@@ -196,7 +121,7 @@ function updateBenchmarkProgress(value,max){
 }
 
 function setBenchmarkControlsDisabled(disabled){
-    for(const id of ["settings-terrain-renderer","settings-frame-limit","settings-render-scale","settings-fps-toggle"]){
+    for(const id of ["settings-frame-limit","settings-render-scale","settings-fps-toggle"]){
         const control=document.getElementById(id);
         if(control)control.disabled=disabled;
     }
@@ -225,11 +150,6 @@ function benchmarkDeviceSummary(){
     ].filter(Boolean).join(" · ");
 }
 
-function benchmarkActualMode(row){
-    const actual=row.mode==="webgl"?"WEBGL":"CANVAS";
-    return row.renderer==="auto"||row.mode!==row.renderer?"ACTUAL "+actual:"";
-}
-
 function formatBenchmarkMetric(value,suffix=""){
     return Number.isFinite(value)&&value>0?value.toFixed(1)+suffix:"—";
 }
@@ -241,12 +161,8 @@ function renderBenchmarkResults(results,total,deviceLabel){
     if(!wrap||!body)return;
     if(!results.length){wrap.classList.add("hidden");return;}
     const winner=findBenchmarkWinner(results);
-    body.innerHTML=results.map(row=>{
-        const actual=benchmarkActualMode(row);
-        return "<tr"+(winner===row?' class="is-best"':"")+"><td><strong>"+row.rendererLabel.toUpperCase()+"</strong>"+
-            (actual?"<small>"+actual+"</small>":"")+(winner===row?"<em>BEST</em>":"")+
-            "</td><td>"+row.scaleLabel+"%</td><td>"+formatBenchmarkMetric(row.fps)+"</td><td>"+formatBenchmarkMetric(row.drawMs," ms")+"</td></tr>";
-    }).join("");
+    body.innerHTML=results.map(row=>"<tr"+(winner===row?' class="is-best"':"")+"><td><strong>"+row.rendererLabel.toUpperCase()+"</strong>"+
+        (winner===row?"<em>BEST</em>":"")+"</td><td>"+row.scaleLabel+"%</td><td>"+formatBenchmarkMetric(row.fps)+"</td><td>"+formatBenchmarkMetric(row.drawMs," ms")+"</td></tr>").join("");
     if(summary)summary.textContent=(results.length===total?"COMPLETE":"PARTIAL")+" · "+deviceLabel;
     wrap.classList.remove("hidden");
 }
@@ -347,10 +263,8 @@ async function runPerformanceBenchmark(){
     try{
         // Prime the 100% surface once before scoring. Building the largest
         // terrain cache inside the first measured row made that row look slower.
-        settings.terrainRenderer="auto";
         settings.renderScale=1;
         settings.frameLimit=60;
-        settings.adaptiveQuality=false;
         applyPerformanceSettings();
         setBenchmarkStatus("PRIMING LIVE SCENE");
         setBenchmarkLiveStatus("PRIMING LIVE SCENE");
@@ -360,10 +274,8 @@ async function runPerformanceBenchmark(){
         for(let index=0;index<plan.length;index++){
             if(benchmarkCancelRequested){cancelled=true;break;}
             const config=plan[index];
-            settings.terrainRenderer=config.renderer;
             settings.renderScale=config.scale;
             settings.frameLimit=60;
-            settings.adaptiveQuality=false;
             applyPerformanceSettings();
             const benchmarkMessage="WARMING "+(index+1)+"/"+plan.length+" · "+config.rendererLabel.toUpperCase()+" · "+config.scaleLabel+"%";
             setBenchmarkStatus(benchmarkMessage);setBenchmarkLiveStatus(benchmarkMessage);
@@ -567,8 +479,6 @@ function refreshFoundingSummary(){
 async function warmTerrainDetailForStart(){
     if(!state.ctx)return;
     drawTerrain(state.ctx);
-    // WebGL has no staged Canvas2D raster to finish.
-    if(state.terrainMode!=="canvas")return;
     const started=performance.now();
     while(!isTerrainDetailSettled()&&performance.now()-started<1800){
         await new Promise(resolve=>requestAnimationFrame(resolve));
@@ -977,11 +887,6 @@ function bindMenu(){
         timeOfDayControl.value=String(Number.isFinite(initialTime)?Math.max(0,Math.min(23,initialTime)):12);
         syncTimeOfDay();
         timeOfDayControl.addEventListener("input",syncTimeOfDay);
-    }
-    const rendererSelect=document.getElementById("settings-terrain-renderer");
-    if(rendererSelect){
-        rendererSelect.value=settings.terrainRenderer;
-        rendererSelect.addEventListener("change",event=>{settings.terrainRenderer=event.target.value;applyPerformanceSettings();saveSettings(settings);});
     }
     const frameLimitSelect=document.getElementById("settings-frame-limit");
     if(frameLimitSelect){

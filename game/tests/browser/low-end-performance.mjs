@@ -300,7 +300,6 @@ async function applyLowEndSettings() {
             select.value = String(value);
             select.dispatchEvent(new Event("change", { bubbles: true }));
         };
-        set("settings-terrain-renderer", "auto");
         set("settings-frame-limit", frameLimit);
         set("settings-render-scale", renderScale);
     }, { frameLimit: FRAME_LIMIT, renderScale: RENDER_SCALE });
@@ -554,8 +553,6 @@ try {
             localStorage.setItem("kings-and-cards:settings:v1", JSON.stringify({
                 renderScale: renderScale / 100,
                 frameLimit,
-                terrainRenderer: "auto",
-                adaptiveQuality: true,
             }));
         } catch { /* storage is optional in hardened browser profiles */ }
     }, { renderScale: RENDER_SCALE, frameLimit: FRAME_LIMIT });

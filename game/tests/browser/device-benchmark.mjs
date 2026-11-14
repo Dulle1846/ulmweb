@@ -1,9 +1,10 @@
 // Runs the in-game Device Benchmark in a real browser and stores its rows.
 //
-// This is the same benchmark a player starts from Settings. It is not a GPU
-// comparison: in this container Chromium uses SwiftShader, so the numbers are
-// diagnostic. The value of the artifact is that the benchmark actually ran
-// through the product UI and measured rendered frames, not synthetic sleeps.
+// This is the same benchmark a player starts from Settings. The game is
+// Canvas-only, so the benchmark must never create a WebGL context on the
+// software renderer used by this container. The value of the artifact is that
+// the benchmark actually ran through the product UI and measured rendered
+// frames, not synthetic sleeps.
 
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -60,6 +61,14 @@ await fs.mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch(browserLaunchOptions());
 const context = await browser.newContext({ viewport, deviceScaleFactor: 1 });
 const page = await context.newPage();
+await page.addInitScript(() => {
+    window.__webglContexts = 0;
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function(type, ...args) {
+        if (type === "webgl" || type === "webgl2") window.__webglContexts++;
+        return original.call(this, type, ...args);
+    };
+});
 const diagnostics = [];
 page.on("console", message => {
     if (message.type() === "error" || message.type() === "warning") diagnostics.push(message.type() + ": " + message.text());
@@ -75,7 +84,7 @@ try {
     await page.waitForTimeout(800);
 
     // Benchmark the landscape view as a player sees it, not the default
-    // close-up. The in-game plan still cycles Auto/WebGL/Canvas and all scales.
+    // close-up. The in-game plan cycles the four Canvas render scales.
     await page.evaluate(async () => {
         const { state } = await import("./js/core/state.js");
         const { ZOOM_PRESETS } = await import("./js/core/zoom-model.js");
@@ -139,8 +148,9 @@ try {
         }));
         return { summary, meta, rows };
     });
-    assert.ok(results.rows.length >= 12, "the live benchmark did not return all renderer/scale rows");
+    assert.ok(results.rows.length >= 4, "the live benchmark did not return all render-scale rows");
     assert.ok(results.rows.some(row => row.cells.length >= 3), "benchmark rows have no metrics");
+    assert.equal(await page.evaluate(() => window.__webglContexts), 0, "the Canvas benchmark created a WebGL context");
 
     const screenshot = await page.locator("#settings-modal").screenshot({ type: "png", animations: "disabled" });
     await fs.writeFile(path.join(outputDir, "device-benchmark.png"), screenshot);
@@ -162,7 +172,9 @@ try {
     console.log("Device benchmark: " + path.relative(gameRoot, path.join(outputDir, "device-benchmark.json")));
 
     const fatal = diagnostics.filter(text => /pageerror|TypeError|ReferenceError|Benchmark failed/i.test(text));
+    const webglWarnings = diagnostics.filter(text => /software webgl|swiftshader|readpixels|gpu stall|fallback/i.test(text));
     if (diagnostics.length) console.log("Diagnostics: " + JSON.stringify(diagnostics, null, 2));
+    assert.equal(webglWarnings.length, 0, "the benchmark emitted a software-WebGL warning:\n" + webglWarnings.join("\n"));
     assert.equal(fatal.length, 0, "device benchmark diagnostics were emitted:\n" + fatal.join("\n"));
 } finally {
     await browser.close().catch(() => {});

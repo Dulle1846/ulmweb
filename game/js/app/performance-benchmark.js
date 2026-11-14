@@ -5,8 +5,6 @@ export const BENCHMARK_WARMUP_MS = 650;
 export const BENCHMARK_SAMPLE_MS = 1500;
 export const BENCHMARK_MIN_FRAMES = 20;
 export const BENCHMARK_RENDERERS = Object.freeze([
-    { id: "auto", label: "Auto" },
-    { id: "webgl", label: "WebGL" },
     { id: "canvas", label: "Canvas 2D" },
 ]);
 export const BENCHMARK_SCALES = Object.freeze([1, 0.85, 0.7, 0.5]);
