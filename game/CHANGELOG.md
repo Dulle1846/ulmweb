@@ -66,31 +66,44 @@ and specialised hot-mineral species. Basalt, volcanic stone, obsidian, pumice,
 sulfur, metal ore, minerals, geothermal energy, fertile volcanic soil and rare
 crater materials enter the existing goods and delivery ledger. Hazards cover
 eruptions, lava flows, ash rain, toxic gas, earthquakes, unstable ground,
-rockfall and long-term uninhabitability, with evidence-gated destruction of
-settlements and infrastructure only on an active eruption that actually
-carries such a feature.
+rockfall and long-term uninhabitability. `volcano-hazards.js` now runs one
+bounded annual pass over buildings, works, sampled roads and wild ground: an
+eruption or earthquake marks a real building dead or removes a real road,
+clears worker assignments, consumes food under ash and stone under tremor, and
+writes the loss to the chronicle. Keeps and wonders stay protected, and the
+scan never enters the frame loop.
 
 **Integration:** **Volcanic Lands** is selectable in world creation and has its
 own palette, seasonal curve and hillshade. `volcano-render.js` draws bounded
 cones, crater rims, calderas, fissures, cooled clinker, glowing cracks, steam,
-hot water, minerals, flora, fauna and works without stamping every tile with
-the same landmark. Ten player works — lava, obsidian and pumice quarries, sulfur
-and metal mines, mineral works, geothermal plant, fertile terrace, crater
-expedition and observatory — spend real goods and persist in an optional bounded
-`volcanoWorks` block in save schema 11. The shared movement cache and combat
-path carry volcanic cost, gas and rockfall damage and local defence. No extra
-tick loop, renderer, inventory or save migration was added.
+hot water, yellow sulfur, pale mineral veins, cave mouths, new watercourses,
+ash plumes, hot-rock cracks, flora, fauna and works without stamping every tile
+with the same landmark; deep craters also draw on non-landmark tiles so an
+active lava lake cannot disappear. Ten player works — lava, obsidian and pumice
+quarries, sulfur and metal mines, mineral works, geothermal plant, fertile
+terrace, crater expedition and observatory — spend real goods and persist in an
+optional bounded `volcanoWorks` block in save schema 11. The sulfur work reads
+the real `economy.sulfur` gate and delivers sulfur, and the construction path
+rejects uninhabitable or too-young volcanic ground while allowing old usable
+soil. The shared movement cache and combat path carry volcanic cost, gas and
+rockfall damage and local defence. No extra tick loop, renderer, inventory or
+save migration was added.
 
 **Verification:** all 73 requirements are declared once and reached by the
-deterministic survey; requirement 66 is evidence-gated. Focused volcanic tests
-are 14/14 green and the full suite is **1018/1018** green with syntax/imports
-**157 files / 201 UI ids**. The browser reference `volcano-formations.mjs`
-captured all ten formations on seed `20261212` with no page or console errors.
-The volcanic low-end run (4× CPU, software Canvas, 70% scale, 55% forests, two
-years) held **16.7–16.8 ms p95** in all five phases with **zero long tasks**,
-saved a 971,574-byte realm in **175 ms** and loaded it in **1,417 ms**. The
-deterministic 25-year campaign completed **10,040 ticks**, **13/13 ambitions**,
-**0.817 ms per tick**, with no stalled sites and no game over. Full record:
+deterministic survey. `scripts/volcano-audit.mjs` generated a real 176×176
+volcanic world (30,976 volcanic tiles), exercised work, gathering, hazard and
+construction paths, and wrote a committed 73-row audit with a representative
+tile, real profile values and observed downstream evidence for every item:
+[artifacts/VOLCANO_1.2.13_AUDIT.md](../artifacts/VOLCANO_1.2.13_AUDIT.md).
+Focused volcanic tests are **18/18** green and the full suite is
+**1022/1022** green with syntax/imports **158 files / 201 UI ids**. The browser
+reference `volcano-formations.mjs` captured all ten formations on seed
+`20261212` with no page or console errors. The volcanic low-end run (4× CPU,
+software Canvas, 70% scale, 55% forests, two years) held **16.7–16.8 ms p95**
+in all five phases with **zero long tasks**, saved a 970,822-byte realm in
+**176.5 ms** and loaded it in **1503.7 ms**. The deterministic 25-year campaign
+completed **10,040 ticks**, **13/13 ambitions**, **0.752 ms per tick**, with no
+stalled sites and no game over. Full record:
 [docs/VOLCANOES.md](docs/VOLCANOES.md).
 
 ### 3.16.4-dev — Year rollover stays inside the frame budget

@@ -46,6 +46,7 @@ import { settleCrownSupply } from "../systems/crown-supply.js";
 import { spoilForestGoods } from "../systems/forest-gathering.js";
 import { updateMicroEvents } from "../systems/micro-events.js";
 import { updateExpeditions } from "../systems/expeditions.js";
+import { updateVolcanoHazards } from "../world/volcano-hazards.js";
 
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 const ANNUAL_SLICE_BUDGET_MS = 6;
@@ -73,7 +74,11 @@ const ANNUAL_TASKS = [
     { name: "nobility", run() { updateNobility(); } },
     { name: "civic", run() { updateCivic(); } },
     { name: "endeavours", run() { updateEndeavours(); } },
-    { name: "crownSupply", run() { settleCrownSupply(); } }
+    { name: "crownSupply", run() { settleCrownSupply(); } },
+    // One bounded hazard pass at the year boundary: eruption, earthquake,
+    // ashfall and real destruction on volcanic ground. Temperate worlds return
+    // immediately, so the shared campaign keeps its existing tick cost.
+    { name: "volcanoHazards", run(annual) { annual.volcanoHazards = updateVolcanoHazards(); } }
 ];
 
 let annualSlicingEnabled = false;
@@ -98,7 +103,8 @@ function createAnnualMaintenance() {
         guardianships: [],
         socialResult: null,
         newborn: null,
-        succession: null
+        succession: null,
+        volcanoHazards: null
     };
 }
 

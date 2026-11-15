@@ -120,6 +120,47 @@ test("player volcanic works spend real resources and deliver volcanic goods", ()
     assert.match(repeated.reason, /recover/);
 });
 
+test("sulfur works require a real deposit and deliver sulfur, not a phantom success", () => {
+    resetState();
+    state.worldSeed = 20261313;
+    state.worldW = 32;
+    state.worldH = 32;
+    state.terrainResolution = 2;
+    state.terrainPixW = 64;
+    state.terrainPixH = 64;
+    state.worldOptions = { landmass: 50, ruggedness: 70, forests: 40, water: 48, climate: "volcanic" };
+    state.seaLevel = 0.33;
+    state.heightMap = new Float32Array(64 * 64).fill(0.72);
+    state.moistureMap = new Float32Array(64 * 64).fill(0.4);
+    state.temperatureMap = new Float32Array(64 * 64).fill(0.7);
+    state.resources = { wood: 200, stone: 200, gold: 100, food: 100 };
+    state.dayOfYear = 140;
+    state.year = 2;
+    state.volcanoWorks = null;
+
+    let rich = null, poor = null;
+    for (let y = 2; y < 30 && (!rich || !poor); y++) {
+        for (let x = 2; x < 30; x++) {
+            const availability = volcanoWorkAvailability(x, y);
+            if (!availability.ok) continue;
+            if (!rich && availability.works.sulfurMine?.ok && availability.profile.economy.sulfur > 0.3) {
+                rich = { x, y, availability };
+            }
+            if (!poor && availability.profile.economy.sulfur < 0.2) {
+                poor = { x, y, availability };
+            }
+        }
+    }
+    assert.ok(rich, "a sulfur-bearing tile must exist");
+    assert.ok(poor, "a sulfur-poor volcanic tile must exist");
+    assert.equal(poor.availability.works.sulfurMine.ok, false);
+    assert.match(poor.availability.works.sulfurMine.reason, /sulfur/i);
+    const result = performVolcanoWork(rich.x, rich.y, "sulfurMine", { dayOfYear: 140 });
+    assert.equal(result.ok, true, result.reason);
+    assert.ok(result.goods.some(good => good.id === "sulfur" && good.amount > 0),
+        "the sulfur mine must put real sulfur in the ledger");
+});
+
 test("built works change the same volcanic profile the renderer and survey read", () => {
     state.volcanoWorks = null;
     applyVolcanoWork(6, 7, "fertileTerrace", { day: 10 });

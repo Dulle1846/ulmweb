@@ -1,5 +1,8 @@
 /freebuff-sites-build/
-/artifacts/
+/artifacts/*
+!/artifacts/VOLCANO_1.2.13_AUDIT.md
+!/artifacts/volcano-audit.json
+!/artifacts/volcano-formations.png
 /game/node_modules/
 /.worktrees/
 /game/.browser-cache/

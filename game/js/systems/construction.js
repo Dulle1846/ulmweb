@@ -7,7 +7,9 @@ import { WORLD_W, WORLD_H, BUILDING_SIZE } from "../core/config.js";
 import { addResource } from "./resources.js";
 import { recordResourceMovement } from "./goods-book.js";
 import { spawnEntity, canSpawnEntity, buildingOverlaps } from "../world/entities.js";
-import { isWaterAt, worldWidth, worldHeight, revealArea } from "../world/world.js";
+import { isWaterAt, worldWidth, worldHeight, revealArea, getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
+import { volcanoProfileAt } from "../world/volcano-ecology.js";
+import { volcanoWorkUseAt } from "../world/volcano-works.js";
 import { getResourceSiteAt } from "./resource-geography.js";
 import { getWorkforceSnapshot } from "./economy.js";
 import { getResearchModifiers } from "./research.js";
@@ -66,6 +68,40 @@ export function getBuildingCost(type) {
     return cost;
 }
 
+// Volcanic ground has a real settlement frontier. Fresh lava and lahar aprons
+// cannot carry a permanent structure; older, weathered ground with developed
+// usability can. This is the same profile the survey, renderer and works read,
+// not a second suitability table.
+export function volcanicSiteVerdictAt(type, tx, ty) {
+    if ((state.worldOptions?.climate || "temperate") !== "volcanic") return { ok: true, reason: null };
+    const x = Math.floor(Number(tx)), y = Math.floor(Number(ty));
+    if (!Number.isInteger(x) || !Number.isInteger(y)) return { ok: true, reason: null };
+    const profile = volcanoProfileAt(x + 0.5, y + 0.5, {
+        seed: Number(state.worldSeed) || 1, climate: "volcanic",
+        height: getHeightAt(x + 0.5, y + 0.5), moisture: getMoistureAt(x + 0.5, y + 0.5),
+        temperature: getTemperatureAt(x + 0.5, y + 0.5), seaLevel: Number(state.seaLevel) || 0.33,
+        dayOfYear: Number(state.dayOfYear) || 0, year: Math.max(1, Number(state.year) || 1),
+        hour: Number(state.timeOfDay) || 12, weather: state.weather || "clear", wind: 1,
+        use: { settlement: true, ...volcanoWorkUseAt(x, y) },
+    });
+    // The keep and wonder are the realm's protected core. They are exempt from
+    // the settlement frontier (and from volcanic destruction) so a valid new
+    // volcanic realm cannot be founded on an impossible building site.
+    if (type === TYPE.KEEP || type === TYPE.WONDER) {
+        return { ok: true, reason: null, profile };
+    }
+    if (profile.hazards.uninhabitable > 0.7) {
+        return { ok: false, reason: "UNINHABITABLE VOLCANIC GROUND", profile };
+    }
+    // Long-term usability is the positive side of the same rule: young lava
+    // cannot host a household, while weathered ground can. Terraces and an
+    // observatory raise usability through their real work flags.
+    if (isHousingType(type) && profile.economy.usability < 0.3) {
+        return { ok: false, reason: "YOUNG LAVA HAS NOT YET BECOME SETTLEMENT GROUND", profile };
+    }
+    return { ok: true, reason: null, profile };
+}
+
 export function siteSuitability(type, tx, ty) {
     const x = Math.floor(Number(tx)), y = Math.floor(Number(ty));
     if (!Number.isInteger(x) || !Number.isInteger(y)) return { ok: false, reason: "INVALID SITE" };
@@ -78,6 +114,8 @@ export function siteSuitability(type, tx, ty) {
         return { ok: true, reason: null };
     }
     if (!node) return { ok: false, reason: "NO SURVEYED LAND" };
+    const volcanic = volcanicSiteVerdictAt(type, x, y);
+    if (!volcanic.ok) return volcanic;
     if (type === TYPE.LUMBER || type === TYPE.FORESTER) {
         if (!node.forest || node.forest <= 0) return { ok: false, reason: "NO FOREST WITHIN WORKING RANGE" };
     } else if (type === TYPE.QUARRY) {

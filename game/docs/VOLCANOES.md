@@ -40,14 +40,18 @@ tick loop, no per-tile save payload and no parallel resource ledger.
   sulfur, metal ore, mineral deposits, geothermal energy, fertile volcanic soil
   and rare crater materials enter `FOREST_GOODS`, the item lexicon, the shared
   gathering ledger and the existing delivery channels.
-- **Hazards (1.2.13.58–1.2.13.66):** eruptions, lava flows, ash rain, toxic gas,
-  earthquakes, hot springs, unstable ground, rockfall and long-term
-  uninhabitability. `resource-geography.js` caches a volcanic movement cost and
-  tactical profile; `combat.js` applies gas and rockfall losses plus local
-  movement and defence modifiers. Requirement 66 (destruction of settlements and
-  infrastructure) is evidence-gated: it is only reported for an active eruption
-  on a tile that actually carries a settlement or infrastructure flag, never as
-  a passive checklist claim.
+- **Hazards (1.2.13.58–1.2.13.66):** `volcano-hazards.js` runs one bounded
+  annual pass over at most 96 candidates: occupied buildings, volcanic works,
+  sampled roads and wild ground. An active eruption or earthquake on occupied
+  ground marks a real building dead or removes a real road through
+  `destroyRoad()`, clears worker assignments, invalidates collision, consumes
+  food under ashfall and stone under tremor, and writes the loss to the shared
+  chronicle. Keeps and wonders are deliberately protected from destruction and
+  exempt from the placement frontier. The scan runs only at the year boundary,
+  never in the frame loop. `resource-geography.js` caches a
+  volcanic movement cost and tactical profile; `combat.js` applies gas and
+  rockfall losses plus local movement and defence modifiers. Requirement 66 is
+  therefore a real state change, not a pre-seeded checklist flag.
 - **Long-term change (1.2.13.67–1.2.13.73):** colonisation of old lava, slow
   soil formation, new watercourses, changing crater landscapes, post-eruption
   vegetation recovery, new mineral resources and changing long-term usability
@@ -57,14 +61,19 @@ tick loop, no per-tile save payload and no parallel resource ledger.
   mine, metal mine, mineral works, geothermal plant, fertile terrace, crater
   expedition and observatory. Each spends real goods, marks a bounded work tile,
   repaints the terrain, feeds the shared ledger and respects a per-tile recovery
-  cooldown. The panel reuses the existing works UI rather than adding a new
-  management screen.
+  cooldown. Ecological gates read the same economy fields as the profile: a
+  sulfur mine without `economy.sulfur` is rejected, and a successful sulfur mine
+  delivers actual sulfur rather than a phantom action. The panel reuses the
+  existing works UI rather than adding a new management screen.
 - **Rendering:** `game/js/presentation/rendering/volcano-render.js` draws the
   baked ground as-is and adds discrete, bounded detail: cones, craters,
   calderas, open fissures, cooled clinker, glowing cracks, steam, hot pools,
-  sulfur and mineral crusts, flora, fauna, work marks and volcanic tree forms.
-  Landmark occupancy is deterministic, so panning cannot pop a cone in or out;
-  capped loops and visible-tile-only work keep low-end frames inside budget.
+  yellow sulfur, pale mineral veins, cave mouths, new watercourses, ash plumes,
+  hot-rock cracks, flora, fauna, work marks and volcanic tree forms. Landmark
+  occupancy is deterministic, so panning cannot pop a cone in or out; deep
+  craters are still drawn on non-landmark tiles so an active lava lake cannot
+  disappear. Capped loops and visible-tile-only work keep low-end frames inside
+  budget.
 - **Persistence:** save schema 11 gains an optional bounded `volcanoWorks`
   block. `state.js`, `save-validation.js` and `save-runtime.js` serialize,
   validate and restore it; old saves without the block load unchanged.
@@ -80,22 +89,35 @@ formations and every natural feature; the built-profile survey reaches all ten
 works. Requirement 66 only passes with real damage evidence, not with a
 pre-seeded flag.
 
+## Runtime audit
+
+`scripts/volcano-audit.mjs` generates a real 176×176 volcanic world (seed
+`20261212`), surveys all 30,976 volcanic tiles, and then exercises the actual
+work, gathering, hazard and construction paths. It writes
+[`../../artifacts/VOLCANO_1.2.13_AUDIT.md`](../../artifacts/VOLCANO_1.2.13_AUDIT.md)
+and `../../artifacts/volcano-audit.json`: every one of the 73 items has a status,
+code location, a representative tile with its real profile values and, where
+applicable, the observed work output, hazard destruction, gather result or
+construction verdict. All 73 current entries are `working`; the audit script
+exits nonzero if a work, earthquake, destruction or construction probe fails.
+
 ## Verification
 
-- Focused volcanic tests: `tests/world/volcano-ecology.test.js` and
-  `tests/world/volcano-works.test.js`, 14/14 green.
-- Full suite: **1018/1018** green, syntax/imports **157 files**, **201 UI ids**,
+- Focused volcanic tests: `tests/world/volcano-ecology.test.js`,
+  `tests/world/volcano-works.test.js` and `tests/world/volcano-hazards.test.js`,
+  **18/18** green.
+- Full suite: **1022/1022** green, syntax/imports **158 files**, **201 UI ids**,
   zero failures.
 - Browser reference: `tests/browser/volcano-formations.mjs` founded seed
   `20261212`, captured all ten formations and wrote
-  `artifacts/volcano-formations.png` plus a 220 px-per-cell formation atlas.
-  The run reported no page or console errors.
+  `../../artifacts/volcano-formations.png` plus a 220 px-per-cell formation atlas.
+  The run reported **10/10** formations and no page or console errors.
 - Low-end profile: 4× CPU throttle, software Canvas, 70% render scale, 55%
   forests, seed `20261212`, two years. All five phases held **16.7–16.8 ms
-  p95**, with **zero long tasks**. Save took **175 ms** and load **1,417 ms**
-  for a 971,574-byte realm; there were no page or console errors.
+  p95**, with **zero long tasks**. Save took **176.5 ms** and load **1503.7 ms**
+  for a 970,822-byte realm; there were no page or console errors.
 - Deterministic 25-year campaign: **10,040 ticks**, **13/13 ambitions**,
-  **0.817 ms per tick**, no stalled sites and no game over.
+  **0.752 ms per tick**, no stalled sites and no game over.
 
 ## Notes
 

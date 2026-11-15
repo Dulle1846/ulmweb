@@ -1,0 +1,885 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-11-15T22:39:39.258Z",
+  "seed": 20261212,
+  "world": {
+    "width": 176,
+    "height": 176,
+    "resolution": 4,
+    "seaLevel": 0.3277,
+    "volcanicTiles": 30976,
+    "formations": [
+      "single-cone",
+      "large-crater",
+      "crater-field",
+      "shield-volcano",
+      "steep-cone",
+      "caldera",
+      "fissure-field",
+      "volcanic-chain",
+      "extinct-volcano",
+      "lava-field"
+    ]
+  },
+  "summary": {
+    "total": 73,
+    "working": 73,
+    "partial": 0,
+    "missing": 0
+  },
+  "works": {
+    "lavaQuarry": {
+      "ok": true,
+      "x": 105,
+      "y": 9,
+      "label": "Lava field",
+      "formation": "lava-field",
+      "goods": [
+        {
+          "id": "basalt",
+          "amount": 6
+        }
+      ],
+      "reason": null
+    },
+    "obsidianQuarry": {
+      "ok": true,
+      "x": 108,
+      "y": 9,
+      "label": "Lava field",
+      "formation": "lava-field",
+      "goods": [
+        {
+          "id": "obsidian",
+          "amount": 5
+        },
+        {
+          "id": "crater-crystal",
+          "amount": 1
+        }
+      ],
+      "reason": null
+    },
+    "pumiceQuarry": {
+      "ok": true,
+      "x": 100,
+      "y": 9,
+      "label": "Lava field",
+      "formation": "lava-field",
+      "goods": [
+        {
+          "id": "pumice",
+          "amount": 7
+        }
+      ],
+      "reason": null
+    },
+    "sulfurMine": {
+      "ok": true,
+      "x": 63,
+      "y": 18,
+      "label": "Volcanic crater field",
+      "formation": "crater-field",
+      "goods": [
+        {
+          "id": "sulfur",
+          "amount": 7
+        },
+        {
+          "id": "volcanic-minerals",
+          "amount": 3
+        }
+      ],
+      "reason": null
+    },
+    "metalMine": {
+      "ok": true,
+      "x": 100,
+      "y": 9,
+      "label": "Lava field",
+      "formation": "lava-field",
+      "goods": [
+        {
+          "id": "iron-ore",
+          "amount": 4
+        }
+      ],
+      "reason": null
+    },
+    "mineralWorks": {
+      "ok": true,
+      "x": 100,
+      "y": 9,
+      "label": "Lava field",
+      "formation": "lava-field",
+      "goods": [
+        {
+          "id": "volcanic-minerals",
+          "amount": 7
+        }
+      ],
+      "reason": null
+    },
+    "geothermalPlant": {
+      "ok": true,
+      "x": 100,
+      "y": 9,
+      "label": "Lava field",
+      "formation": "lava-field",
+      "goods": [
+        {
+          "id": "geothermal-energy",
+          "amount": 3
+        },
+        {
+          "id": "hot-spring-water",
+          "amount": 4
+        }
+      ],
+      "reason": null
+    },
+    "fertileTerrace": {
+      "ok": true,
+      "x": 100,
+      "y": 9,
+      "label": "Lava field",
+      "formation": "lava-field",
+      "goods": [
+        {
+          "id": "volcanic-soil",
+          "amount": 5
+        }
+      ],
+      "reason": null
+    },
+    "craterExpedition": {
+      "ok": true,
+      "x": 100,
+      "y": 9,
+      "label": "Lava field",
+      "formation": "lava-field",
+      "goods": [
+        {
+          "id": "crater-crystal",
+          "amount": 2
+        },
+        {
+          "id": "volcanic-minerals",
+          "amount": 2
+        }
+      ],
+      "reason": null
+    },
+    "observatory": {
+      "ok": true,
+      "x": 100,
+      "y": 9,
+      "label": "Lava field",
+      "formation": "lava-field",
+      "goods": [],
+      "reason": null
+    }
+  },
+  "gather": {
+    "x": 107,
+    "y": 17,
+    "formation": "steep-cone",
+    "ok": true,
+    "goods": [
+      {
+        "id": "basalt",
+        "amount": 3
+      },
+      {
+        "id": "hot-spring-water",
+        "amount": 2
+      },
+      {
+        "id": "pumice",
+        "amount": 2
+      },
+      {
+        "id": "geothermal-energy",
+        "amount": 2
+      },
+      {
+        "id": "volcanic-minerals",
+        "amount": 2
+      }
+    ],
+    "reason": null
+  },
+  "hazard": {
+    "target": {
+      "x": 3,
+      "y": 0,
+      "formation": "shield-volcano",
+      "destruction": 0.6423199585390394
+    },
+    "eruption": {
+      "events": [
+        "ERUPTION IN BROAD SHIELD VOLCANO · ASH 48%",
+        "ASHFALL BURIES THE PASTURE · FOOD -1",
+        "DESTROYED BUILDING"
+      ],
+      "destroyed": {
+        "ok": true,
+        "kind": "building",
+        "label": "Timber Cottage",
+        "x": 3,
+        "y": 0
+      },
+      "candidates": 19,
+      "eruption": {
+        "x": 3,
+        "y": 0,
+        "destruction": 0.6423199585390394
+      },
+      "earthquake": {
+        "x": 3,
+        "y": 0,
+        "magnitude": 0.4910014595251996
+      }
+    },
+    "houseDead": true,
+    "quakeTarget": {
+      "x": 18,
+      "y": 0,
+      "earthquake": 0.6937845039942768
+    },
+    "quake": {
+      "ok": true,
+      "kind": "building",
+      "label": "Timber Cottage",
+      "x": 18,
+      "y": 0
+    },
+    "quakeHouseDead": true
+  },
+  "construction": {
+    "hostile": {
+      "x": 3,
+      "y": 0,
+      "ok": false,
+      "reason": "UNINHABITABLE VOLCANIC GROUND",
+      "uninhabitable": 0.860156230381094,
+      "usability": 0.20449693754148712,
+      "freshLava": 0.945970426393021
+    },
+    "young": {
+      "x": 9,
+      "y": 0,
+      "ok": false,
+      "reason": "YOUNG LAVA HAS NOT YET BECOME SETTLEMENT GROUND",
+      "uninhabitable": 0.6569520298520732,
+      "usability": 0.27481941982180824,
+      "freshLava": 0.7772168801869859
+    },
+    "old": {
+      "x": 0,
+      "y": 0,
+      "ok": true,
+      "reason": null,
+      "uninhabitable": 0,
+      "usability": 0.5914487833650381,
+      "freshLava": 0.07217966343340919
+    }
+  },
+  "crossChecks": {
+    "browser": {
+      "command": "node tests/browser/volcano-formations.mjs",
+      "result": "10/10 formations, seed 20261212, no page or console errors",
+      "image": "volcano-formations.png"
+    },
+    "lowEnd": {
+      "command": "PERF_SOFTWARE_CANVAS=1 PERF_CLIMATE=volcanic PERF_FORESTS=55 PERF_SEED=20261212 PERF_YEARS=2 PERF_RENDER_SCALE=70 node tests/browser/low-end-performance.mjs",
+      "result": "16.7–16.8 ms p95, 0 long tasks, save 176.5 ms, load 1503.7 ms, 970,822 bytes"
+    }
+  },
+  "items": [
+    {
+      "id": "1.2.13.1",
+      "label": "Single volcanic cones",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "64,26 y1; formation=single-cone; cone=0.459; drawCone"
+    },
+    {
+      "id": "1.2.13.2",
+      "label": "Large volcanic craters",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "108,21 y1; formation=large-crater; crater=0.807; drawCrater"
+    },
+    {
+      "id": "1.2.13.3",
+      "label": "Several craters inside a volcanic field",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "22,0 y1; formation=crater-field; crater=0.140; drawCrater twice"
+    },
+    {
+      "id": "1.2.13.4",
+      "label": "Shield volcanoes",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "0,0 y1; formation=shield-volcano; shield=0.800; broad drawCone"
+    },
+    {
+      "id": "1.2.13.5",
+      "label": "Steep volcanic cones",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "107,17 y1; formation=steep-cone; slope=0.695; steep drawCone"
+    },
+    {
+      "id": "1.2.13.6",
+      "label": "Collapsed craters and calderas",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "81,27 y1; formation=caldera; caldera=0.870; drawCrater"
+    },
+    {
+      "id": "1.2.13.7",
+      "label": "Lava fissures",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "16,0 y1; formation=volcanic-chain; fissure=0.761; drawFissure"
+    },
+    {
+      "id": "1.2.13.8",
+      "label": "Volcanic mountain chains",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "9,0 y1; formation=volcanic-chain; chain=0.832; two cones"
+    },
+    {
+      "id": "1.2.13.9",
+      "label": "Extinct volcanoes with weathered forms",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "52,0 y1; formation=extinct-volcano; oldLava=0.798; eroded drawCone"
+    },
+    {
+      "id": "1.2.13.10",
+      "label": "Fresh dark lava fields",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "3,0 y1; freshLava=0.946; drawLavaField"
+    },
+    {
+      "id": "1.2.13.11",
+      "label": "Old weathered lava surfaces",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "16,0 y1; oldLava=0.627; weathered lava ground"
+    },
+    {
+      "id": "1.2.13.12",
+      "label": "Solidified lava flows",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround",
+      "evidence": "5,0 y1; lavaFlow=0.447; drawLavaField/crack"
+    },
+    {
+      "id": "1.2.13.13",
+      "label": "Basalt formations",
+      "group": "rock",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawSulfurAndMinerals",
+      "evidence": "10,0 y1; basalt=0.336; drawSulfurAndMinerals"
+    },
+    {
+      "id": "1.2.13.14",
+      "label": "Pumice fields",
+      "group": "rock",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawSulfurAndMinerals",
+      "evidence": "3,0 y1; pumice=0.404; pumice speckles"
+    },
+    {
+      "id": "1.2.13.15",
+      "label": "Obsidian occurrences",
+      "group": "rock",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawSulfurAndMinerals",
+      "evidence": "16,0 y1; obsidian=0.540; obsidian shard"
+    },
+    {
+      "id": "1.2.13.16",
+      "label": "Volcanic rock spires",
+      "group": "rock",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawSulfurAndMinerals",
+      "evidence": "110,18 y1; spires=0.479; spire triangles"
+    },
+    {
+      "id": "1.2.13.17",
+      "label": "Broken and fissured rock surfaces",
+      "group": "rock",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawSulfurAndMinerals",
+      "evidence": "3,0 y1; brokenRock=0.497; broken clinker lines"
+    },
+    {
+      "id": "1.2.13.18",
+      "label": "Different lava colours and textures",
+      "group": "rock",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawSulfurAndMinerals",
+      "evidence": "12,0 y1; lavaColour=grey; ground=#363532; lava=#b34321"
+    },
+    {
+      "id": "1.2.13.19",
+      "label": "Smoking craters",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoDetails",
+      "evidence": "108,21 y1; smoke=0.606; drawSteam"
+    },
+    {
+      "id": "1.2.13.20",
+      "label": "Steam vents",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoDetails",
+      "evidence": "4,0 y1; steam=0.391; drawSteam"
+    },
+    {
+      "id": "1.2.13.21",
+      "label": "Glowing lava in active areas",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoDetails",
+      "evidence": "3,0 y1; hotRock=0.631; active=true; drawLavaCrack/drawCrater"
+    },
+    {
+      "id": "1.2.13.22",
+      "label": "Small lava streams",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoDetails",
+      "evidence": "3,0 y1; lavaFlow=0.620; drawLavaCrack/drawFissure"
+    },
+    {
+      "id": "1.2.13.23",
+      "label": "Ash emissions",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoDetails",
+      "evidence": "3,0 y1; ash=0.481; drawAshPlume"
+    },
+    {
+      "id": "1.2.13.24",
+      "label": "Sulfur deposits",
+      "group": "rock",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawSulfurAndMinerals",
+      "evidence": "22,0 y1; sulfur=0.884; yellow sulfur dots"
+    },
+    {
+      "id": "1.2.13.25",
+      "label": "Hot rock surfaces",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoDetails",
+      "evidence": "3,0 y1; hotRock=0.631; drawHotRock"
+    },
+    {
+      "id": "1.2.13.26",
+      "label": "Earthquakes and ground cracks",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards",
+      "evidence": "3,0 y1; earthquake=0.491; drawFissure + annual quake"
+    },
+    {
+      "id": "1.2.13.27",
+      "label": "Hot springs",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawHotWater/drawWatercourse",
+      "evidence": "4,0 y1; hotSpring=0.573; drawHotWater"
+    },
+    {
+      "id": "1.2.13.28",
+      "label": "Geysers",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawHotWater/drawWatercourse",
+      "evidence": "4,0 y1; geyser=0.537; drawHotWater plume"
+    },
+    {
+      "id": "1.2.13.29",
+      "label": "Fumaroles",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawHotWater/drawWatercourse",
+      "evidence": "22,0 y1; fumarole=0.525; drawSteam"
+    },
+    {
+      "id": "1.2.13.30",
+      "label": "Sulfur springs",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawHotWater/drawWatercourse",
+      "evidence": "22,0 y1; sulfurSpring=0.633; sulfur-coloured pool"
+    },
+    {
+      "id": "1.2.13.31",
+      "label": "Mineral deposits",
+      "group": "rock",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawSulfurAndMinerals",
+      "evidence": "3,0 y1; minerals=0.377; mineral vein"
+    },
+    {
+      "id": "1.2.13.32",
+      "label": "Volcanic mud pools",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawHotWater/drawWatercourse",
+      "evidence": "44,0 y1; mudPool=0.416; drawHotWater"
+    },
+    {
+      "id": "1.2.13.33",
+      "label": "Geothermally heated water",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawHotWater/drawWatercourse",
+      "evidence": "4,0 y1; heatedWater=0.576; drawHotWater"
+    },
+    {
+      "id": "1.2.13.34",
+      "label": "Steaming ground",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoDetails",
+      "evidence": "8,0 y1; steam=0.316; hotRock=0.631; steaming ground"
+    },
+    {
+      "id": "1.2.13.35",
+      "label": "Sparsely vegetated young lava",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawFlora",
+      "evidence": "3,0 y1; stage=bare; soilAge=0.067; no flora branch"
+    },
+    {
+      "id": "1.2.13.36",
+      "label": "First lichens and mosses",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawFlora",
+      "evidence": "0,0 y1; mosses=moss,lava-lichen; drawFlora"
+    },
+    {
+      "id": "1.2.13.37",
+      "label": "Pioneer plants",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawFlora",
+      "evidence": "0,0 y1; stage=grass; grasses=fescue"
+    },
+    {
+      "id": "1.2.13.38",
+      "label": "Grasses on weathered volcanic soil",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawFlora",
+      "evidence": "0,0 y1; grasses=fescue; grass strokes"
+    },
+    {
+      "id": "1.2.13.39",
+      "label": "Shrub vegetation on older surfaces",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawFlora",
+      "evidence": "2,0 y1; shrubs=manzanita; shrub arc"
+    },
+    {
+      "id": "1.2.13.40",
+      "label": "Fertile soils in suitable volcanic regions",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawFlora",
+      "evidence": "0,0 y1; fertile=0.625; goods=iron-ore,game,volcanic-minerals,volcanic-soil,copper-ore,fur"
+    },
+    {
+      "id": "1.2.13.41",
+      "label": "Different regeneration stages",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawFlora",
+      "evidence": "0,0 y1; stage=grass; rank=3; yearsSinceEruption=7"
+    },
+    {
+      "id": "1.2.13.42",
+      "label": "Heat and drought adapted plants",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawFlora",
+      "evidence": "10,0 y1; flowers=sulfur-cinquefoil; temperature=0.553"
+    },
+    {
+      "id": "1.2.13.43",
+      "label": "Small reptiles in warm regions",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#buildFauna + js/presentation/rendering/volcano-render.js#drawFauna/drawCaveMouth",
+      "evidence": "3,0 y1; fauna=lava-lizard; drawFauna"
+    },
+    {
+      "id": "1.2.13.44",
+      "label": "Birds at suitable rock and crater sites",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#buildFauna + js/presentation/rendering/volcano-render.js#drawFauna/drawCaveMouth",
+      "evidence": "4,0 y1; birds=raven"
+    },
+    {
+      "id": "1.2.13.45",
+      "label": "Insects and pioneer species",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#buildFauna + js/presentation/rendering/volcano-render.js#drawFauna/drawCaveMouth",
+      "evidence": "0,0 y1; insects=beetle"
+    },
+    {
+      "id": "1.2.13.46",
+      "label": "Mammals on older vegetated volcanic ground",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#buildFauna + js/presentation/rendering/volcano-render.js#drawFauna/drawCaveMouth",
+      "evidence": "0,0 y1; mammals=mouse,feral-goat"
+    },
+    {
+      "id": "1.2.13.47",
+      "label": "Cave and crevice dwellers",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#buildFauna + js/presentation/rendering/volcano-render.js#drawFauna/drawCaveMouth",
+      "evidence": "24,0 y1; cave=true; fauna=bat; drawCaveMouth"
+    },
+    {
+      "id": "1.2.13.48",
+      "label": "Specialised animals in hot mineral-rich areas",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#buildFauna + js/presentation/rendering/volcano-render.js#drawFauna/drawCaveMouth",
+      "evidence": "3,0 y1; hotRock=0.631; fauna=lava-lizard"
+    },
+    {
+      "id": "1.2.13.49",
+      "label": "Basalt and other volcanic stone",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork",
+      "evidence": "work=Lava field at 105,9; goods=basalt:6; sample=10,0 y1"
+    },
+    {
+      "id": "1.2.13.50",
+      "label": "Obsidian",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork",
+      "evidence": "work=Lava field at 108,9; goods=obsidian:5,crater-crystal:1; sample=16,0 y1"
+    },
+    {
+      "id": "1.2.13.51",
+      "label": "Pumice",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork",
+      "evidence": "work=Lava field at 100,9; goods=pumice:7; sample=3,0 y1"
+    },
+    {
+      "id": "1.2.13.52",
+      "label": "Sulfur",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork",
+      "evidence": "work=Volcanic crater field at 63,18; goods=sulfur:7,volcanic-minerals:3; sample=22,0 y1"
+    },
+    {
+      "id": "1.2.13.53",
+      "label": "Metal ores",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork",
+      "evidence": "work=Lava field at 100,9; goods=iron-ore:4; sample=0,0 y1"
+    },
+    {
+      "id": "1.2.13.54",
+      "label": "Mineral deposits",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork",
+      "evidence": "work=Lava field at 100,9; goods=volcanic-minerals:7; sample=0,0 y1"
+    },
+    {
+      "id": "1.2.13.55",
+      "label": "Geothermal energy",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork",
+      "evidence": "work=Lava field at 100,9; goods=geothermal-energy:3,hot-spring-water:4; sample=3,0 y1"
+    },
+    {
+      "id": "1.2.13.56",
+      "label": "Fertile volcanic soils",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork",
+      "evidence": "work=Lava field at 100,9; goods=volcanic-soil:5; sample=0,0 y1"
+    },
+    {
+      "id": "1.2.13.57",
+      "label": "Rare materials in crater regions",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork",
+      "evidence": "work=Lava field at 100,9; goods=crater-crystal:2,volcanic-minerals:2; sample=18,0 y1"
+    },
+    {
+      "id": "1.2.13.58",
+      "label": "Volcanic eruptions",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards",
+      "evidence": "3,0 y1; eruption=0.687; active=true; annual event=yes"
+    },
+    {
+      "id": "1.2.13.59",
+      "label": "Lava flows",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards",
+      "evidence": "3,0 y1; lavaFlow=0.620; destruction=0.642; hazard=fired"
+    },
+    {
+      "id": "1.2.13.60",
+      "label": "Ashfall",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards",
+      "evidence": "3,0 y1; ash=0.481; ashfall food loss=yes; drawAshPlume"
+    },
+    {
+      "id": "1.2.13.61",
+      "label": "Toxic volcanic gases",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards",
+      "evidence": "22,0 y1; toxicGas=0.642; combat.js gas loss + work exposure"
+    },
+    {
+      "id": "1.2.13.62",
+      "label": "Earthquakes",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/volcano-hazards.js#updateVolcanoHazards + js/systems/roads.js#destroyRoad",
+      "evidence": "18,0; earthquake=0.694; quake=destroyed building; stone loss"
+    },
+    {
+      "id": "1.2.13.63",
+      "label": "Hot springs and unstable ground",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards",
+      "evidence": "4,0 y1; hotSpring=0.573; unstable=0.365; movement=0.758"
+    },
+    {
+      "id": "1.2.13.64",
+      "label": "Rockfall",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards",
+      "evidence": "156,12 y1; rockfall=0.440; combat.js ROCKFALL damage"
+    },
+    {
+      "id": "1.2.13.65",
+      "label": "Long-term uninhabitable areas",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/systems/construction.js#volcanicSiteVerdictAt + js/world/volcano-ecology.js#volcanoProfileAt",
+      "evidence": "3,0 y1; uninhabitable=0.860; build verdict=blocked"
+    },
+    {
+      "id": "1.2.13.66",
+      "label": "Destruction of settlements and infrastructure",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/volcano-hazards.js#updateVolcanoHazards + js/systems/roads.js#destroyRoad",
+      "evidence": "3,0 y1; destruction=0.642; hazard=real building destroyed"
+    },
+    {
+      "id": "1.2.13.67",
+      "label": "Colonisation and growth on old lava",
+      "group": "succession",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/systems/construction.js#volcanicSiteVerdictAt",
+      "evidence": "2,0 y1; oldLava=0.499; stage=shrub; regeneration=0.489"
+    },
+    {
+      "id": "1.2.13.68",
+      "label": "Slow soil formation",
+      "group": "succession",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/systems/construction.js#volcanicSiteVerdictAt",
+      "evidence": "0,0 y1; soilAge=0.530; soil.formation=0.674; ageYears=138"
+    },
+    {
+      "id": "1.2.13.69",
+      "label": "Formation of new watercourses",
+      "group": "succession",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/systems/construction.js#volcanicSiteVerdictAt",
+      "evidence": "4,0 y1; newChannel=0.635; drawWatercourse; water=0.584"
+    },
+    {
+      "id": "1.2.13.70",
+      "label": "Change of the crater landscape",
+      "group": "succession",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/systems/construction.js#volcanicSiteVerdictAt",
+      "evidence": "107,17 y1; active=true; cycle=0.056; crater=0.533; drawCrater lava lake"
+    },
+    {
+      "id": "1.2.13.71",
+      "label": "Vegetation regeneration after eruptions",
+      "group": "succession",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/systems/construction.js#volcanicSiteVerdictAt",
+      "evidence": "0,0 y1; stage=grass; yearsSinceEruption=7; vegetation=0.126"
+    },
+    {
+      "id": "1.2.13.72",
+      "label": "Formation of new mineral resources",
+      "group": "succession",
+      "status": "working",
+      "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/systems/construction.js#volcanicSiteVerdictAt",
+      "evidence": "3,0 y1; minerals=0.377; rare=0.315; goods=iron-ore,copper-ore,pumice,volcanic-minerals"
+    },
+    {
+      "id": "1.2.13.73",
+      "label": "Long-term changes in land usability",
+      "group": "succession",
+      "status": "working",
+      "code": "js/systems/construction.js#volcanicSiteVerdictAt + js/world/volcano-ecology.js#volcanoProfileAt",
+      "evidence": "0,0 y1; usability=0.552; verdict=old ground buildable; observatory=built at 100,9"
+    }
+  ]
+}

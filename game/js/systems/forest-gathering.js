@@ -818,7 +818,7 @@ function volcanoWorkEcologicalReason(kind, profile) {
     if (kind === "lavaQuarry" && profile.landform.basalt < 0.22) return "No workable basalt flow at this tile";
     if (kind === "obsidianQuarry" && profile.landform.obsidian < 0.28) return "No obsidian at this tile";
     if (kind === "pumiceQuarry" && profile.landform.pumice < 0.28) return "No pumice bed at this tile";
-    if (kind === "sulfurMine" && profile.landform.sulfur < 0.24) return "No sulfur crust at this tile";
+    if (kind === "sulfurMine" && profile.economy.sulfur < 0.24) return "No sulfur crust at this tile";
     if (kind === "metalMine" && profile.economy.mine < 0.2) return "No workable ore seam at this tile";
     if (kind === "mineralWorks" && profile.economy.minerals < 0.2) return "No mineral deposit at this tile";
     if (kind === "geothermalPlant" && profile.economy.geothermalPlant < 0.22) return "No strong geothermal source at this tile";
@@ -875,7 +875,7 @@ export function performVolcanoWork(x, y, kind, options = {}) {
         add("pumice", 4 + Math.round(profile.landform.pumice * 5));
         add("stone", 1);
     } else if (kind === "sulfurMine") {
-        add("sulfur", 3 + Math.round(profile.landform.sulfur * 4));
+        add("sulfur", 3 + Math.round(profile.economy.sulfur * 4));
         if (profile.economy.minerals > 0.45) add("volcanic-minerals", 1 + Math.round(profile.economy.minerals * 2));
     } else if (kind === "metalMine") {
         add("iron-ore", 2 + Math.round(profile.economy.ore * 5));

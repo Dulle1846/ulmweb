@@ -58,8 +58,12 @@ function drawCone(ctx, px, py, cellPx, s, profile, roll) {
     const cone = land.cone;
     if (cone < 0.16) return;
     const baseY = py + cellPx * (0.54 + roll * 0.1);
-    const height = cellPx * (0.28 + cone * 0.5);
-    const half = cellPx * (0.34 + cone * 0.2);
+    // A shield volcano is low and broad; an extinct cone is worn down and
+    // rounded. Without these formation terms every cone shared one silhouette.
+    const broad = profile.formation === "shield-volcano";
+    const worn = profile.formation === "extinct-volcano";
+    const height = cellPx * (0.28 + cone * 0.5) * (broad ? 0.58 : worn ? 0.52 : 1);
+    const half = cellPx * (0.34 + cone * 0.2) * (broad ? 1.34 : worn ? 1.2 : 1);
     ctx.save();
     ctx.globalAlpha = 0.34 + cone * 0.22;
     ctx.fillStyle = colour(profile.visual.rockHex, "#5c5750");
@@ -75,6 +79,21 @@ function drawCone(ctx, px, py, cellPx, s, profile, roll) {
     ctx.ellipse(px + cellPx * (0.01 + (roll - 0.5) * 0.08), baseY - height * 0.94,
         cellPx * (0.07 + land.crater * 0.06), cellPx * 0.03, 0, 0, Math.PI * 2);
     ctx.fill();
+    if (worn) {
+        // Two shallow erosion gullies and a breached rim read as age, not as a
+        // fresh scoria cone with a different colour.
+        ctx.globalAlpha = 0.4;
+        ctx.strokeStyle = "#777064";
+        ctx.lineWidth = Math.max(0.45, 0.7 * s);
+        for (let index = 0; index < 2; index++) {
+            const side = index === 0 ? -1 : 1;
+            ctx.beginPath();
+            ctx.moveTo(px + side * cellPx * 0.04, baseY - height * 0.9);
+            ctx.quadraticCurveTo(px + side * cellPx * 0.11, baseY - height * 0.48,
+                px + side * cellPx * (0.22 + roll * 0.04), baseY - cellPx * 0.02);
+            ctx.stroke();
+        }
+    }
     if (land.lavaFlow > 0.36 && land.freshLava > 0.28) {
         ctx.globalAlpha = 0.56;
         ctx.strokeStyle = colour(profile.visual.lavaHex, "#b34321");
@@ -116,12 +135,13 @@ function drawCrater(ctx, px, py, cellPx, s, profile, roll) {
 }
 
 function drawFissure(ctx, px, py, cellPx, s, profile, roll) {
-    if (profile.landform.fissure < 0.28) return;
+    const strength = Math.max(profile.landform.fissure, profile.hazards.earthquake * 0.8);
+    if (strength < 0.28) return;
     const fresh = profile.landform.freshLava > 0.25 || profile.climate.active;
     ctx.save();
     ctx.globalAlpha = 0.52;
     ctx.strokeStyle = fresh ? colour(profile.visual.lavaHex, "#b34321") : "#242526";
-    ctx.lineWidth = Math.max(0.55, (0.8 + profile.landform.fissure * 1.4) * s);
+    ctx.lineWidth = Math.max(0.55, (0.8 + strength * 1.4) * s);
     ctx.beginPath();
     ctx.moveTo(px - cellPx * 0.38, py + cellPx * (0.2 + roll * 0.36));
     ctx.lineTo(px - cellPx * 0.13, py + cellPx * (0.33 + roll * 0.16));
@@ -138,11 +158,15 @@ function drawFissure(ctx, px, py, cellPx, s, profile, roll) {
 
 function drawLavaField(ctx, px, py, cellPx, s, profile, roll, s2 = 0.5, s3 = 0.5) {
     const lava = profile.landform;
-    if (lava.freshLava < 0.2 && lava.oldLava < 0.3) return;
+    if (lava.freshLava < 0.2 && lava.oldLava < 0.3 && lava.lavaFlow < 0.42) return;
     if (roll > 0.54) return;
     ctx.save();
     ctx.globalAlpha = 0.11 + lava.freshLava * 0.13;
-    ctx.fillStyle = lava.freshLava > 0.45 ? "#1c1c1f" : "#3f403e";
+    // The profile's baked ground colour carries fresh black, rust, grey and
+    // ochre lava. Using it here makes requirement 18 visible instead of
+    // reducing every cooled field to the same grey patch.
+    ctx.fillStyle = lava.freshLava > 0.45 ? colour(profile.visual.groundHex, "#1c1c1f")
+        : lava.oldLava > 0.5 ? "#4d4a42" : "#3f403e";
     // Broken clinker, not a perfect pool. Four uneven corners keep the flow
     // texture from stamping the same oval onto every tile.
     poly(ctx, [
@@ -165,6 +189,97 @@ function drawLavaField(ctx, px, py, cellPx, s, profile, roll, s2 = 0.5, s3 = 0.5
             ctx.lineTo(x + cellPx * 0.09, y + cellPx * 0.04);
             ctx.stroke();
         }
+    }
+    ctx.restore();
+}
+
+
+// A dark, heat-cracked patch that says the rock itself is hot. It is separate
+// from the lava crack: hot rock can occur without an open flow.
+function drawHotRock(ctx, px, py, cellPx, s, profile, roll) {
+    const land = profile.landform;
+    if (land.hotRock < 0.38) return;
+    ctx.save();
+    ctx.globalAlpha = 0.2 + land.hotRock * 0.18;
+    ctx.strokeStyle = colour(profile.visual.lavaHex, "#b34321");
+    ctx.lineWidth = Math.max(0.4, 0.6 * s);
+    for (let index = 0; index < 2; index++) {
+        const x = px + (index * 0.19 + roll * 0.12 - 0.16) * cellPx;
+        const y = py + (0.3 + index * 0.12) * cellPx;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + cellPx * 0.06, y + cellPx * 0.025);
+        ctx.lineTo(x + cellPx * 0.035, y + cellPx * 0.055);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// Cave mouths are the visible habitat behind 1.2.13.47. Without this mark the
+// bat existed only in a data array and the tile looked like open ash.
+function drawCaveMouth(ctx, px, py, cellPx, s, profile) {
+    if (!profile.landform.cave) return;
+    ctx.save();
+    ctx.globalAlpha = 0.82;
+    ctx.fillStyle = "#151518";
+    ctx.beginPath();
+    ctx.moveTo(px - cellPx * 0.22, py + cellPx * 0.5);
+    ctx.quadraticCurveTo(px - cellPx * 0.12, py + cellPx * 0.22, px - cellPx * 0.02, py + cellPx * 0.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = colour(profile.visual.rockHex, "#655f56");
+    ctx.lineWidth = Math.max(0.45, 0.8 * s);
+    ctx.beginPath();
+    ctx.arc(px - cellPx * 0.12, py + cellPx * 0.49, cellPx * 0.1, Math.PI, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// A new meltwater channel is a landscape feature, not a label. It runs from
+// the upper slope to the lower edge and is distinct from a hot spring pool.
+function drawWatercourse(ctx, px, py, cellPx, s, profile, roll) {
+    const channel = profile.water.newChannel;
+    if (channel < 0.46) return;
+    ctx.save();
+    ctx.globalAlpha = 0.3 + channel * 0.28;
+    ctx.strokeStyle = colour(profile.visual.waterHex, "#4f9990");
+    ctx.lineWidth = Math.max(0.6, (0.65 + channel * 1.1) * s);
+    const startX = px + (roll - 0.5) * cellPx * 0.18;
+    ctx.beginPath();
+    ctx.moveTo(startX + cellPx * 0.06, py + cellPx * 0.12);
+    ctx.bezierCurveTo(startX - cellPx * 0.1, py + cellPx * 0.24,
+        startX + cellPx * 0.12, py + cellPx * 0.36, startX - cellPx * 0.02, py + cellPx * 0.54);
+    ctx.stroke();
+    ctx.globalAlpha = 0.24;
+    ctx.lineWidth = Math.max(0.35, 0.45 * s);
+    ctx.strokeStyle = "#cfe4dc";
+    ctx.stroke();
+    ctx.restore();
+}
+
+// Ash is not steam. A dark, leaning plume and a few falling specks distinguish
+// an ash emission from the pale fumarole and geyser lines.
+function drawAshPlume(ctx, px, py, cellPx, s, profile, roll) {
+    const ash = profile.climate.ash;
+    if (ash < 0.34) return;
+    ctx.save();
+    ctx.globalAlpha = 0.14 + ash * 0.2;
+    ctx.strokeStyle = "#4a4541";
+    ctx.lineWidth = Math.max(0.7, (0.9 + ash * 1.3) * s);
+    const x = px + (roll - 0.5) * cellPx * 0.16;
+    ctx.beginPath();
+    ctx.moveTo(x, py + cellPx * 0.48);
+    ctx.bezierCurveTo(x - cellPx * 0.12, py + cellPx * 0.28,
+        x + cellPx * 0.14, py + cellPx * 0.13, x + cellPx * 0.06, py - cellPx * 0.02);
+    ctx.stroke();
+    ctx.fillStyle = "#3b3733";
+    for (let index = 0; index < 3; index++) {
+        const fx = x + (index - 1) * cellPx * 0.13;
+        const fy = py + cellPx * (0.18 + ((roll + index * 0.27) % 0.25));
+        ctx.beginPath();
+        ctx.arc(fx, fy, Math.max(0.3, cellPx * 0.012), 0, Math.PI * 2);
+        ctx.fill();
     }
     ctx.restore();
 }
@@ -200,10 +315,20 @@ export function drawVolcanoGround(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0
         drawCone(ctx, px, py, cellPx, s, profile, roll);
         drawCrater(ctx, px, py, cellPx, s, profile, roll);
     }
-    if (profile.formation === "fissure-field" || profile.landform.fissure > 0.45) {
-        if (s2 > 0.46 || profile.formation === "fissure-field") drawFissure(ctx, px, py, cellPx, s, profile, roll);
+    if (profile.formation === "fissure-field" || profile.landform.fissure > 0.45
+        || profile.hazards.earthquake > 0.55) {
+        if (s2 > 0.4 || profile.formation === "fissure-field" || profile.hazards.earthquake > 0.55) {
+            drawFissure(ctx, px, py, cellPx, s, profile, roll);
+        }
     }
     if (landmark && (profile.formation === "large-crater" || profile.formation === "caldera")) drawCrater(ctx, px, py, cellPx, s, profile, roll);
+    // A deep crater must not disappear on the two thirds of tiles that are not
+    // chosen as the landmark stamp. Requirement 1.2.13.70 is about the visible
+    // crater changing with eruptions; hiding it behind a landmark roll made the
+    // profile value impossible to observe on most of the landscape.
+    if (!landmark && (profile.landform.crater > 0.5 || profile.landform.caldera > 0.5)) {
+        drawCrater(ctx, px, py, cellPx, s, profile, roll);
+    }
     if (s2 > 0.74 && (profile.landform.freshLava > 0.32 || profile.climate.active)) {
         drawLavaCrack(ctx, px, py, cellPx, s, profile, roll, 0);
     }
@@ -237,6 +362,7 @@ function drawHotWater(ctx, px, py, cellPx, s, profile, roll, tick) {
     const water = profile.water;
     if (water.hotSpring < 0.6 && water.mudPool < 0.62 && water.geyser < 0.6) return;
     if (roll < 0.66) return;
+    const sulfurSpring = water.sulfurSpring > 0.38;
     const spring = Math.max(water.hotSpring, water.mudPool);
     const radiusX = cellPx * (0.1 + spring * 0.16);
     const radiusY = cellPx * (0.055 + spring * 0.075);
@@ -244,12 +370,13 @@ function drawHotWater(ctx, px, py, cellPx, s, profile, roll, tick) {
     const y = py + cellPx * 0.36;
     ctx.save();
     ctx.globalAlpha = 0.62;
-    ctx.fillStyle = water.mudPool > water.hotSpring ? "#5c4c3f" : colour(profile.visual.hotWaterHex, "#67b8a7");
+    ctx.fillStyle = sulfurSpring ? "#a7a24e"
+        : water.mudPool > water.hotSpring ? "#5c4c3f" : colour(profile.visual.hotWaterHex, "#67b8a7");
     ctx.beginPath();
     ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 0.36;
-    ctx.strokeStyle = "#ddd6c4";
+    ctx.strokeStyle = sulfurSpring ? "#e5d76e" : "#ddd6c4";
     ctx.lineWidth = Math.max(0.4, 0.55 * s);
     ctx.beginPath();
     ctx.ellipse(x, y, radiusX * 1.05, radiusY * 1.1, 0, 0, Math.PI * 2);
@@ -269,9 +396,10 @@ function drawHotWater(ctx, px, py, cellPx, s, profile, roll, tick) {
 
 function drawSulfurAndMinerals(ctx, px, py, cellPx, s, profile, roll) {
     const land = profile.landform;
+    const sulfur = Number(profile.soil?.sulfur) || 0;
     ctx.save();
-    if (land.sulfur > 0.3) {
-        ctx.globalAlpha = 0.28 + land.sulfur * 0.26;
+    if (sulfur > 0.3) {
+        ctx.globalAlpha = 0.28 + sulfur * 0.26;
         ctx.fillStyle = colour(profile.visual.sulfurHex, "#c6b84e");
         for (let index = 0; index < 2; index++) {
             ctx.beginPath();
@@ -294,6 +422,18 @@ function drawSulfurAndMinerals(ctx, px, py, cellPx, s, profile, roll) {
         ctx.globalAlpha = 0.5;
         ctx.fillStyle = colour(profile.visual.obsidianHex, "#24252b");
         poly(ctx, [[px + cellPx * 0.12, py + cellPx * 0.44], [px + cellPx * 0.18, py + cellPx * 0.26], [px + cellPx * 0.24, py + cellPx * 0.44]]);
+    }
+    if (profile.soil?.minerals > 0.35) {
+        // Mineral crusts are a separate pale vein from yellow sulfur and grey
+        // pumice. This is the visible surface of 1.2.13.31 / 1.2.13.54.
+        ctx.globalAlpha = 0.24 + profile.soil.minerals * 0.2;
+        ctx.strokeStyle = colour(profile.visual.mineralHex, "#c9c4b2");
+        ctx.lineWidth = Math.max(0.4, 0.6 * s);
+        ctx.beginPath();
+        ctx.moveTo(px - cellPx * 0.25, py + cellPx * 0.36);
+        ctx.lineTo(px - cellPx * 0.08, py + cellPx * 0.31);
+        ctx.lineTo(px + cellPx * 0.1, py + cellPx * 0.38);
+        ctx.stroke();
     }
     if (land.basalt > 0.42) {
         ctx.globalAlpha = 0.2;
@@ -374,6 +514,28 @@ function drawFauna(ctx, px, py, cellPx, s, profile, tick) {
         ctx.lineTo(x + cellPx * 0.05, y - cellPx * 0.035);
         ctx.strokeStyle = "#3d3730";
         ctx.lineWidth = Math.max(0.4, 0.5 * s);
+        ctx.stroke();
+    } else if (animal.group === "cave") {
+        ctx.beginPath();
+        ctx.ellipse(x, y, cellPx * 0.014, cellPx * 0.02, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x - cellPx * 0.05, y - cellPx * 0.05, x - cellPx * 0.08, y - cellPx * 0.01);
+        ctx.quadraticCurveTo(x - cellPx * 0.04, y + cellPx * 0.01, x, y);
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + cellPx * 0.05, y - cellPx * 0.05, x + cellPx * 0.08, y - cellPx * 0.01);
+        ctx.quadraticCurveTo(x + cellPx * 0.04, y + cellPx * 0.01, x, y);
+        ctx.fill();
+    } else if (animal.kind === "lizard" || animal.kind === "gecko") {
+        ctx.beginPath();
+        ctx.ellipse(x, y, cellPx * 0.045, cellPx * 0.016, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#61584b";
+        ctx.lineWidth = Math.max(0.4, 0.5 * s);
+        ctx.beginPath();
+        ctx.moveTo(x - cellPx * 0.04, y);
+        ctx.lineTo(x - cellPx * 0.085, y - cellPx * 0.012);
         ctx.stroke();
     } else if (animal.group === "insect") {
         ctx.beginPath();
@@ -485,7 +647,11 @@ export function drawVolcanoDetails(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 
     drawWorks(ctx, px, py, cellPx, s, profile, roll);
     drawHotWater(ctx, px, py, cellPx, s, profile, roll, tick);
     drawSteam(ctx, px, py, cellPx, s, profile, roll, tick);
+    drawAshPlume(ctx, px, py, cellPx, s, profile, roll);
+    drawHotRock(ctx, px, py, cellPx, s, profile, roll);
     drawSulfurAndMinerals(ctx, px, py, cellPx, s, profile, roll);
+    drawCaveMouth(ctx, px, py, cellPx, s, profile);
+    drawWatercourse(ctx, px, py, cellPx, s, profile, roll);
     if (fine) drawFlora(ctx, px, py, cellPx, s, profile, roll);
     if (fine) drawFauna(ctx, px, py, cellPx, s, profile, tick);
     if (profile.visual.lightMood === "ash-cloud") {

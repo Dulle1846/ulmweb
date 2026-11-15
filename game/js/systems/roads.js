@@ -139,6 +139,18 @@ export function removeRoad(x,y){
     return {ok:true,x:tx,y:ty,refund:cost};
 }
 
+// Volcanic destruction removes the road without a salvage refund. The normal
+// player-facing removeRoad() keeps its 25% material refund.
+export function destroyRoad(x,y){
+    const tx=Math.floor(Number(x)),ty=Math.floor(Number(y));
+    if(tx<0||ty<0||tx>=worldWidth()||ty>=worldHeight())return {ok:false,reason:"Outside the realm"};
+    const roads=ensureRoadState(),key=keyFor(tx,ty),existing=roads.tiles[key];
+    if(!existing)return {ok:false,reason:"No road on this tile"};
+    delete roads.tiles[key];
+    bumpRevision();
+    return {ok:true,x:tx,y:ty,type:existing.type};
+}
+
 export function setRoadBuildMode(type){
     if(type!=="remove"&&!ROAD_TYPES[type])return false;
     state.roadBuildMode=type;
