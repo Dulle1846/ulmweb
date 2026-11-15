@@ -70,6 +70,11 @@ export function normalizeMilitaryState(value = {}) {
             soldiers: round(entry.soldiers),
             horses: round(entry.horses),
             goldNeed: clamp(entry.goldNeed, 0, 1000000),
+            // The in-kind settlement is part of the historical record. Dropping
+            // these fields made a long campaign's save and its restored copy
+            // disagree even though no simulation value had changed.
+            goldNeedBeforeKind: clamp(entry.goldNeedBeforeKind ?? entry.goldNeed, 0, 1000000),
+            kindPayment: clamp(entry.kindPayment, 0, 1000000),
             goldPaid: clamp(entry.goldPaid, 0, 1000000),
             foodNeed: clamp(entry.foodNeed, 0, 1000000),
             foodPaid: clamp(entry.foodPaid, 0, 1000000),
@@ -88,12 +93,17 @@ export function normalizeMilitaryState(value = {}) {
     const lastPayroll = source.lastPayroll && typeof source.lastPayroll === "object" && !Array.isArray(source.lastPayroll)
         ? {
             year: clamp(source.lastPayroll.year, 1, 1000000),
+            soldiers: round(source.lastPayroll.soldiers),
+            horses: clamp(source.lastPayroll.horses, 0, 500),
             goldNeed: clamp(source.lastPayroll.goldNeed, 0, 1000000),
+            goldNeedBeforeKind: clamp(source.lastPayroll.goldNeedBeforeKind ?? source.lastPayroll.goldNeed, 0, 1000000),
+            kindPayment: clamp(source.lastPayroll.kindPayment, 0, 1000000),
             goldPaid: clamp(source.lastPayroll.goldPaid, 0, 1000000),
             foodNeed: clamp(source.lastPayroll.foodNeed, 0, 1000000),
             foodPaid: clamp(source.lastPayroll.foodPaid, 0, 1000000),
             pannageDays: round(source.lastPayroll.pannageDays),
-            desertions: round(source.lastPayroll.desertions)
+            desertions: round(source.lastPayroll.desertions),
+            morale: clamp(source.lastPayroll.morale, 0, 100)
         } : null;
     return {
         version: 1,

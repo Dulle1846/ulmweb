@@ -200,6 +200,16 @@ test("mortality is recorded by age and occupation and old saves normalize", () =
     assert.equal(oldMilitary.horses, 2);
     assert.equal(oldMilitary.recruitsTrained, 4);
     assert.ok(Array.isArray(oldMilitary.history));
+    // A long campaign must round-trip the complete muster record. The
+    // endurance audit catches any field the save normalizer silently drops.
+    const payroll = {
+        year: 12, soldiers: 7, horses: 3, goldNeed: 24, goldNeedBeforeKind: 40,
+        kindPayment: 16, goldPaid: 24, foodNeed: 21, foodPaid: 21,
+        pannageDays: 5, desertions: 1, morale: 68.5
+    };
+    const normalized = normalizeMilitaryState({ lastPayroll: payroll, history: [payroll] });
+    assert.deepEqual(normalized.lastPayroll, payroll);
+    assert.deepEqual(normalized.history[0], payroll);
 });
 
 test("health update consumes medicine and raises immunity after recovery", () => {
