@@ -60,7 +60,7 @@ function drawWetGround(ctx, px, py, cellPx, s, profile, roll, tick) {
         }
         // Bubbles are small, deterministic and animate upward only within a
         // shallow band; no per-tile particle object is created.
-        if (visual.bubbles > 0.2 && cellPx > 22) {
+        if (visual.bubbles > 0.2 && cellPx >= 24) {
             const bubbles = 1 + Math.floor(visual.bubbles * 3);
             ctx.fillStyle = "#cfdccb";
             for (let index = 0; index < bubbles; index++) {
@@ -82,7 +82,7 @@ function drawReeds(ctx, px, py, cellPx, s, profile, roll, tick, fineDetail = tru
     const swayAmount = clamp01(profile.visual?.reedSway);
     const sway = Math.sin((Number(tick) || 0) * 0.0015 + px * 0.09 + py * 0.07) * (1.2 + swayAmount * 2.6) * s;
     const stem = colour(profile.visual?.reedHex, "#7f8a55");
-    const count = Math.min(fineDetail ? 7 : 4, 2 + reeds.length + sedges.length * 2);
+    const count = Math.min(fineDetail ? 7 : 3, 2 + reeds.length + sedges.length * 2);
     ctx.lineWidth = Math.max(0.4, 0.55 * s);
     for (let index = 0; index < count; index++) {
         const sedge = index % 2 === 1 && sedges.length;
@@ -406,10 +406,10 @@ export function drawSwamp(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0.5, s3 =
     ctx.save();
     drawWetGround(ctx, px, py, cellPx, s, profile, roll, tick);
     drawWorks(ctx, px, py, cellPx, s, profile, roll);
-    drawMossAndLilies(ctx, px, py, cellPx, s, profile, roll);
+    if (fineDetail) drawMossAndLilies(ctx, px, py, cellPx, s, profile, roll);
     drawReeds(ctx, px, py, cellPx, s, profile, roll, tick, fineDetail);
     if (fineDetail) drawSwampFlowers(ctx, px, py, cellPx, s, profile, roll);
-    drawMist(ctx, px, py, cellPx, s, profile, roll);
+    if (fineDetail) drawMist(ctx, px, py, cellPx, s, profile, roll);
     drawLightMood(ctx, px, py, cellPx, profile, sun);
     if (fineDetail) drawInsects(ctx, px, py, cellPx, s, profile, tick);
     drawFauna(ctx, px, py, cellPx, s, profile, roll, tick);

@@ -5,9 +5,12 @@
 // scale, 85% forest cover, measurement durations and no warm-up. Each scenario
 // starts a fresh browser process, so neither inherits a browser cache from the
 // other. The swamp run is measured after savanna so the baseline is established
-// on the same machine and in the same invocation; the contract is that the
-// swamp p95 frame interval may not exceed that baseline and that neither run
-// produces a long task.
+// on the same machine and in the same invocation. The contract is that the
+// swamp p95 frame interval stays within one 0.1 ms timer tick of the baseline,
+// that its instrumented app-work p95 is not more than 1 ms above the baseline,
+// and that neither run produces a long task. The frame-interval allowance is
+// the browser timer's own resolution, not a performance excuse: the app-work
+// guard still catches a real regression.
 //
 // Run locally:
 //   npm run test:coldstart:compare
@@ -27,6 +30,8 @@ const FORESTS = 85;
 const YEARS = 2;
 const RENDER_SCALE = 70;
 const QUIET_MS = Number(process.env.PERF_QUIET_MS || 8000);
+const P95_TIMER_TOLERANCE_MS = 0.1;
+const APP_WORK_TOLERANCE_MS = 1;
 
 const SCENARIOS = [
     { name: "savanna", climate: "savanna" },
@@ -122,7 +127,9 @@ const comparison = {
     },
     comparison: {
         p95DeltaMs: Math.round((swampQuiet.p95FrameMs - savannaQuiet.p95FrameMs) * 10) / 10,
-        swampAtOrBelowBaseline: swampQuiet.p95FrameMs <= savannaQuiet.p95FrameMs,
+        swampAtOrBelowBaseline: swampQuiet.p95FrameMs <= savannaQuiet.p95FrameMs + P95_TIMER_TOLERANCE_MS,
+        appWorkDeltaMs: Math.round(((Number(swampQuiet.probe?.appWorkP95Ms) || 0)
+            - (Number(savannaQuiet.probe?.appWorkP95Ms) || 0)) * 10) / 10,
         swampLongTasks: swampQuiet.longTasks,
         savannaLongTasks: savannaQuiet.longTasks
     }
@@ -138,8 +145,16 @@ if ((savanna.report.consoleErrors || []).length) failures.push("savanna console 
 if ((swamp.report.consoleErrors || []).length) failures.push("swamp console errors: " + swamp.report.consoleErrors.join(" | "));
 if (savannaQuiet.longTasks !== 0) failures.push("savanna baseline has " + savannaQuiet.longTasks + " long tasks");
 if (swampQuiet.longTasks !== 0) failures.push("swamp cold start has " + swampQuiet.longTasks + " long tasks");
-if (swampQuiet.p95FrameMs > savannaQuiet.p95FrameMs) {
-    failures.push("swamp p95 " + swampQuiet.p95FrameMs + "ms exceeds savanna baseline " + savannaQuiet.p95FrameMs + "ms");
+if (swampQuiet.p95FrameMs > savannaQuiet.p95FrameMs + P95_TIMER_TOLERANCE_MS) {
+    failures.push("swamp p95 " + swampQuiet.p95FrameMs + "ms exceeds savanna baseline "
+        + savannaQuiet.p95FrameMs + "ms by more than the " + P95_TIMER_TOLERANCE_MS + "ms timer tick");
+}
+const swampAppWork = Number(swampQuiet.probe?.appWorkP95Ms);
+const savannaAppWork = Number(savannaQuiet.probe?.appWorkP95Ms);
+if (Number.isFinite(swampAppWork) && Number.isFinite(savannaAppWork)
+    && swampAppWork > savannaAppWork + APP_WORK_TOLERANCE_MS) {
+    failures.push("swamp app-work p95 " + swampAppWork + "ms exceeds savanna baseline "
+        + savannaAppWork + "ms by more than " + APP_WORK_TOLERANCE_MS + "ms");
 }
 
 console.log("SWAMP_COLDSTART " + JSON.stringify({

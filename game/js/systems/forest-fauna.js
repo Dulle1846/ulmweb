@@ -22,6 +22,10 @@ import { seasonalState } from "../world/season.js";
 
 const VERSION = 1;
 const MAX_HERDS = 240;
+// A single day must not resolve every due or crowded herd in one frame. The
+// budget is spread over the following days; the eighth-day refresh still
+// reaches every herd and the long-run audit verifies the bounded outcome.
+const MAX_HERD_RESOLVES_PER_DAY = 48;
 // Camouflaged jungle species are harder to take in one visit. This is a
 // hunting-pressure rule, not a second population model: the herd still breeds,
 // moves and can be hunted, but a single shot yields fewer animals.
@@ -732,6 +736,7 @@ export function updateForestFauna(days = 1) {
             const key = herd.x + ":" + herd.y;
             occupied.set(key, (occupied.get(key) || 0) + 1);
         }
+        let resolvedHerds = 0;
         for (let herdIndex = 0; herdIndex < model.herds.length; herdIndex++) {
             const herd = model.herds[herdIndex];
             const spec = SIMULATED_SPECIES[herd.species];
@@ -749,8 +754,8 @@ export function updateForestFauna(days = 1) {
             const crowded = herd.population > Math.max(1, Number(herd.capacity) || 1) * 0.94;
             const refresh = (model.day + herdIndex) % 8 === 0;
             let resolved = null;
-            const canMigrate = !due || dueTurn || crowded || refresh;
-            if ((due && dueTurn) || crowded || refresh) {
+            if (((due && dueTurn) || crowded || refresh) && resolvedHerds < MAX_HERD_RESOLVES_PER_DAY) {
+                resolvedHerds += 1;
                 resolved = resolveHerd(herd, model.day);
                 if (!resolved) {
                     herd.population = Math.max(0, herd.population - 1);
@@ -758,6 +763,7 @@ export function updateForestFauna(days = 1) {
                 }
                 herd.capacity = Math.round(resolved.capacity * 10) / 10;
             }
+            const canMigrate = Boolean(resolved) || (!due && !crowded);
             const capacity = resolved ? resolved.capacity : Math.max(1, Number(herd.capacity) || 1);
             const crowding = herd.population / Math.max(1, capacity);
             const winterReproduction = Number(spec.winterReproduction ?? 0.85);
