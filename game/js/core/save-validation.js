@@ -10,6 +10,7 @@ import { validateForestGatheringSnapshot } from "../systems/forest-gathering.js"
 import { validateForestSuccessionSnapshot } from "../systems/forest-succession.js";
 import { validateSwampWorksSnapshot } from "../world/swamp-works.js";
 import { validateMountainWorksSnapshot } from "../world/mountain-works.js";
+import { validateVolcanoWorksSnapshot } from "../world/volcano-works.js";
 import { validatePannage } from "../systems/forest-pannage.js";
 import { validateMilitaryState } from "../systems/military.js";
 import { validateNobilityState } from "../systems/nobility.js";
@@ -203,6 +204,7 @@ export function validateSaveSnapshot(snapshot) {
     if (snapshot.forestSuccession !== undefined) validateDomainSnapshot(snapshot.forestSuccession, "forestSuccession", validateForestSuccessionSnapshot);
     if (snapshot.swampWorks !== undefined) validateDomainSnapshot(snapshot.swampWorks, "swampWorks", validateSwampWorksSnapshot);
     if (snapshot.mountainWorks !== undefined) validateDomainSnapshot(snapshot.mountainWorks, "mountainWorks", validateMountainWorksSnapshot);
+    if (snapshot.volcanoWorks !== undefined) validateDomainSnapshot(snapshot.volcanoWorks, "volcanoWorks", validateVolcanoWorksSnapshot);
     if (snapshot.city !== undefined) validateDomainSnapshot(snapshot.city, "city", validateCitySnapshot);
     if (snapshot.diplomacy !== undefined) {
         const diplomacy = snapshot.diplomacy;

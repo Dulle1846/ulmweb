@@ -18,6 +18,7 @@ import { isSwampSite, swampProfileAt, swampSummary } from "../world/swamp-ecolog
 import { swampWorkUseAt } from "../world/swamp-works.js";
 import { isMountainSite, mountainProfileAt, mountainSummary } from "../world/mountain-ecology.js";
 import { mountainWorkUseAt } from "../world/mountain-works.js";
+import { volcanoWorkUseAt } from "../world/volcano-works.js";
 
 const BUCKET = 8;
 const CACHE_VERSION = 1;
@@ -138,11 +139,13 @@ export function grasslandUseAt(x, y) {
     const path = Boolean(road.adjacent || (settlement && settlement.distance <= 5 && seedRoll > 0.86));
     const intensity = overgrazed ? 1 : grazed ? 0.72 : mowed ? 0.58 : trampled ? 0.86 : clamp01(0.12 + (wildYears / 60));
     const works = state.worldOptions?.climate === "swamp" ? swampWorkUseAt(tx, ty)
-        : state.worldOptions?.climate === "mountain" ? mountainWorkUseAt(tx, ty) : {};
+        : state.worldOptions?.climate === "mountain" ? mountainWorkUseAt(tx, ty)
+            : state.worldOptions?.climate === "volcanic" ? volcanoWorkUseAt(tx, ty) : {};
     return {
         state: works.drained ? "drained" : works.peatCut ? "peat-cut"
-            : works.terraced ? "terraced" : works.valleySettlement ? "valley-settlement"
-            : works.road ? "mountain-road" : overgrazed ? "overgrazed" : grazed ? "grazed" : mowed ? "mowed" : trampled ? "trampled" : "wild",
+            : works.terraced ? "terraced" : works.fertileTerrace ? "volcanic-terrace"
+                : works.valleySettlement ? "valley-settlement"
+                    : works.road ? "mountain-road" : overgrazed ? "overgrazed" : grazed ? "grazed" : mowed ? "mowed" : trampled ? "trampled" : "wild",
         grazed, mowed, wild, trampled, path, overgrazed,
         bareSoil: overgrazed || trampled,
         encroachment,

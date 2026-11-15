@@ -44,6 +44,13 @@ export const CLIMATE_SEASONS = Object.freeze({
         snowStart: 225, snowFull: 285, meltStart: 365, meltEnd: 455,
         snowScale: 1.25, foliageShift: -9, foliageScale: 0.64, greenShift: 18, warmthShift: -18,
     }),
+    // The volcanic climate has no dependable snow pack. Its seasons are a
+    // heat and ash rhythm: pioneer green-up in spring, dry summer, a muted
+    // autumn and a warm winter that still steams at the vents.
+    volcanic: Object.freeze({
+        snowStart: 400, snowFull: 401, meltStart: 401, meltEnd: 402,
+        snowScale: 0, foliageShift: 8, foliageScale: 0.42, greenShift: 42, warmthShift: 16,
+    }),
     // Savanna has no snow at all. Its green-up curve is the wet-season flush:
     // rain arrives in late winter and spring, then fades into a long dry heat.
     savanna: Object.freeze({

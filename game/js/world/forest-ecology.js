@@ -23,6 +23,7 @@ import { TAIGA_GOODS } from './taiga-ecology.js';
 import { SAVANNA_GOODS, SAVANNA_SPECIES } from './savanna-ecology.js';
 import { SWAMP_GOODS } from './swamp-ecology.js';
 import { MOUNTAIN_GOODS } from './mountain-ecology.js';
+import { VOLCANO_GOODS } from './volcano-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -731,6 +732,7 @@ export const FOREST_GOODS = Object.freeze({
     ...SAVANNA_GOODS,
     ...SWAMP_GOODS,
     ...MOUNTAIN_GOODS,
+    ...VOLCANO_GOODS,
 });
 
 const SEASON_GOODS = Object.freeze({

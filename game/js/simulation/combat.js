@@ -7,7 +7,7 @@ import { getRaidDamageMultiplier } from "../systems/rooms.js";
 import { getCourtModifiers } from "../systems/court.js";
 import { getNobilityDefenseMultiplier } from "../systems/nobility.js";
 import { getSoldierPower,getSoldierArmor,recordMilitaryVictory,recordMilitaryWound,recordMilitaryCasualty } from "../systems/military.js";
-import { getJungleTacticsAt, getMountainTacticsAt } from "../systems/resource-geography.js";
+import { getJungleTacticsAt, getMountainTacticsAt, getVolcanoTacticsAt } from "../systems/resource-geography.js";
 const rand=(min,max)=>seededRand(min,max,"combat");
 
 const CELL=8;
@@ -66,11 +66,15 @@ export function updateCombat(){
   const dx=target.x-enemy.x,dy=target.y-enemy.y,dist=Math.hypot(dx,dy);
   const jungle=getJungleTacticsAt(enemy.x,enemy.y);
   const mountain=getMountainTacticsAt(enemy.x,enemy.y);
+  const volcano=getVolcanoTacticsAt(enemy.x,enemy.y);
   const jungleSpeed=jungle?Math.max(.42,1/(Number(jungle.movementFactor)||1)):1;
   // A mountain is not a flat raid lane. The same slope, snow and bridge state
   // that prices villager travel also decides how fast a raider can climb.
   const mountainSpeed=mountain?Math.max(.38,Number(mountain.movementFactor)||1):1;
-  if(dist>1.8){enemy.x+=Math.sign(dx)*0.065*jungleSpeed*mountainSpeed;enemy.y+=Math.sign(dy)*0.065*jungleSpeed*mountainSpeed;}
+  // Ash, clinker and glowing lava slow an approach exactly as they slow a
+  // villager. The profile is cached per tile, not recomputed per frame.
+  const volcanoSpeed=volcano?Math.max(.34,Number(volcano.movementFactor)||1):1;
+  if(dist>1.8){enemy.x+=Math.sign(dx)*0.065*jungleSpeed*mountainSpeed*volcanoSpeed;enemy.y+=Math.sign(dy)*0.065*jungleSpeed*mountainSpeed*volcanoSpeed;}
   // Avalanche and supply attrition are battlefield events, not a stat on a
   // survey card. They use the seeded combat stream so replays stay identical.
   if(mountain&&tick%31===0&&rand(0,1)<Math.min(.26,(Number(mountain.avalanche)||0)*.16)){
@@ -81,6 +85,18 @@ export function updateCombat(){
   if(!enemy.dead&&mountain&&tick%47===0&&(Number(mountain.supply)||0)>.62){
    enemy.hp-=1;
    queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE-12,"SUPPLY","#fbbf24");
+   if(enemy.hp<=0)enemy.dead=true;
+  }
+  // Volcanic gas, rockfall and a lava front are battlefield events, not just
+  // survey values. The seeded combat stream keeps replays deterministic.
+  if(!enemy.dead&&volcano&&tick%29===0&&rand(0,1)<Math.min(.26,(Number(volcano.toxicGas)||0)*.2)){
+   enemy.hp-=Math.max(1,Math.round(2+(Number(volcano.toxicGas)||0)*7));
+   queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE-14,"VOLCANIC GAS","#c4b5fd");
+   if(enemy.hp<=0)enemy.dead=true;
+  }
+  if(!enemy.dead&&volcano&&tick%41===0&&rand(0,1)<Math.min(.24,(Number(volcano.rockfall)||0)*.18)){
+   enemy.hp-=Math.max(2,Math.round(4+(Number(volcano.rockfall)||0)*9));
+   queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE-8,"ROCKFALL","#d6d3d1");
    if(enemy.hp<=0)enemy.dead=true;
   }
   if(enemy.dead)continue;
@@ -106,12 +122,16 @@ export function updateCombat(){
    // trails and use the ambush lanes; a foreign raider does not.
    const cover=getJungleTacticsAt(target.x,target.y);
    const mountain=getMountainTacticsAt(target.x,target.y);
+   const volcano=getVolcanoTacticsAt(target.x,target.y);
    const localDefender=Boolean(target.military&&target.military.origin==="levy");
    const coverMultiplier=cover?1-Math.min(.32,(Number(cover.defenceBonus)||0)*.35+(localDefender?(Number(cover.localAdvantage)||0)*.08:0)):1;
    // Height, broken ground and a fortified pass are a real defensive
    // multiplier. It is capped so a raid can still hurt a mountain realm.
    const heightMultiplier=mountain?1-Math.min(.24,(Number(mountain.defenceBonus)||0)*.24+(localDefender?.04:0)):1;
-   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/(readiness*nobleDefense)*(1-armor)*coverMultiplier*heightMultiplier));
+   // Crater rims and obsidian ridges give the defender cover, but never make
+   // the realm immune. The same volcano profile prices both sides.
+   const volcanoMultiplier=volcano?1-Math.min(.22,(Number(volcano.defenceBonus)||0)*.22+(localDefender?.04:0)):1;
+   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/(readiness*nobleDefense)*(1-armor)*coverMultiplier*heightMultiplier*volcanoMultiplier));
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
    if(target.hp<=0){
     if(!target.isKing&&!target.isBuilding?.())recordMilitaryCasualty(target,"raid");
@@ -140,6 +160,7 @@ export function updateCombat(){
   const basePower=namedPower>0?namedPower:(defender.type===TYPE.KNIGHT?34:18);
   const jungleDefence=getJungleTacticsAt(defender.x,defender.y);
   const mountainDefence=getMountainTacticsAt(defender.x,defender.y);
+  const volcanoDefence=getVolcanoTacticsAt(defender.x,defender.y);
   const local=Boolean(defender.military&&defender.military.origin==="levy");
   const junglePower=jungleDefence?1+Math.min(.38,(Number(jungleDefence.guerrillaBonus)||0)*.3
       +(local?(Number(jungleDefence.localAdvantage)||0)*.12:0)):1;
@@ -148,7 +169,11 @@ export function updateCombat(){
   const veteran=defender.military?.rank==="veteran"||defender.military?.rank==="elite";
   const mountainPower=mountainDefence?1+Math.min(.26,(Number(mountainDefence.mountainExperience)||0)*.24
       +(local?.06:0)+(veteran?.06:0)):1;
-  enemy.hp-=Math.max(1,Math.round(basePower*readiness*(1+(nobleDefense-1)*0.6)*junglePower*mountainPower));
+  // Local levies know the safe lava margins and read the warning bell. The
+  // bonus stays small and bounded.
+  const volcanoPower=volcanoDefence?1+Math.min(.22,(Number(volcanoDefence.volcanicExperience)||0)*.22
+      +(local?.05:0)+(veteran?.04:0)):1;
+  enemy.hp-=Math.max(1,Math.round(basePower*readiness*(1+(nobleDefense-1)*0.6)*junglePower*mountainPower*volcanoPower));
   queueParticle(enemy.x*TILE_SIZE+12,enemy.y*TILE_SIZE-18,"#fde047",22,rand(-1,4),-3);
   if(enemy.hp<=0){enemy.dead=true;if(namedPower>0)recordMilitaryVictory(defender);queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE,"SLAIN","#eab308");}
  }

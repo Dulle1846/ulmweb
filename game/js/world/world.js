@@ -111,8 +111,9 @@ export function prerenderTerrain() {
             // height step can be a 30-degree ridge or a gentle field. Increase
             // only the mountain bake, leaving every other climate's goldens and
             // illumination contract untouched.
-            const reliefScale = climate === 'mountain' ? 5600 : 2400;
-            const hillshade = climate === 'mountain'
+            const highRelief = climate === 'mountain' || climate === 'volcanic';
+            const reliefScale = highRelief ? 5600 : 2400;
+            const hillshade = highRelief
                 ? Math.max(-52, Math.min(58, slope * reliefScale))
                 : Math.max(-30, Math.min(32, slope * reliefScale));
 

@@ -9,6 +9,8 @@ import { forestSuccessionAt } from "./forest-succession.js";
 import { seasonalState } from "../world/season.js";
 import { swampWorkUseAt } from "../world/swamp-works.js";
 import { mountainWorkUseAt, mountainWorkAt } from "../world/mountain-works.js";
+import { volcanoWorkUseAt, volcanoWorkAt } from "../world/volcano-works.js";
+import { volcanoProfileAt } from "../world/volcano-ecology.js";
 
 const VERSION=1;
 
@@ -306,6 +308,8 @@ const habitatCache = new Map();
 const MOVEMENT_CACHE_LIMIT = 2048;
 const forestMovementCache = new Map();
 const mountainMovementCache = new Map();
+const volcanoMovementCache = new Map();
+const volcanoTacticsCache = new Map();
 
 export function clearForestHabitatCache() {
     habitatCache.clear();
@@ -396,6 +400,29 @@ export function getForestMovementFactorAt(x, y) {
         const boardwalk = works.boardwalk ? 0.18 : 0;
         const drained = works.drained ? 0.05 : 0;
         return clamp(0.72 - seasonal.snowCover * 0.08 - flood + boardwalk + drained, 0.54, 0.94);
+    }
+    // Volcanic ground is priced by the same profile the renderer and survey
+    // use: fresh lava, ash, unstable crevices and steep cones cost time, while
+    // a built road or bridge restores a practical route. The works revision is
+    // part of the cache key so a new quarry or road takes effect immediately.
+    if (climate === "volcanic") {
+        const key = (Number(state.worldSeed) || 0) + ":" + Math.floor(x) + ":" + Math.floor(y)
+            + ":" + Math.floor(Number(state.dayOfYear) || 0) + ":" + (Number(state.volcanoWorks?.revision) || 0);
+        const cached = volcanoMovementCache.get(key);
+        if (cached !== undefined) return cached;
+        const tx = Math.floor(x), ty = Math.floor(y);
+        const terrain = sampleTerrain(tx, ty);
+        const profile = volcanoProfileAt(tx + 0.5, ty + 0.5, {
+            seed: Number(state.worldSeed) || 1, moisture: terrain.moisture,
+            temperature: terrain.temperature, height: terrain.height,
+            climate: "volcanic", seaLevel: Number(state.seaLevel) || 0.33,
+            dayOfYear: Number(state.dayOfYear) || 0, year: Number(state.year) || 1,
+            weather: state.weather || "clear", wind: 1, use: volcanoWorkUseAt(tx, ty),
+        });
+        const factor = clamp(Number(profile?.hazards?.movement) || 1, 0.32, 1);
+        if (volcanoMovementCache.size >= MOVEMENT_CACHE_LIMIT) volcanoMovementCache.clear();
+        volcanoMovementCache.set(key, factor);
+        return factor;
     }
     // Steep mountain ground costs real travel time. The cache key includes the
     // day and the works revision, so a new switchback or bridge takes effect
@@ -501,6 +528,43 @@ export function getMountainTacticsAt(x, y) {
         pass: Boolean(works.fortifiedPass),
         height: h,
     };
+}
+
+// Compact volcanic defence and hazard values used by combat. The profile is
+// generated once per tile and cached for the current day and works revision;
+// no per-tick object graph is retained.
+export function getVolcanoTacticsAt(x, y) {
+    if ((state.worldOptions?.climate || "temperate") !== "volcanic") return null;
+    const point = readTile(x, y);
+    if (!point) return null;
+    const key = (Number(state.worldSeed) || 0) + ":" + point.x + ":" + point.y
+        + ":" + Math.floor(Number(state.dayOfYear) || 0) + ":" + (Number(state.volcanoWorks?.revision) || 0);
+    const cached = volcanoTacticsCache.get(key);
+    if (cached !== undefined) return cached;
+    const terrain = sampleTerrain(point.x, point.y);
+    const profile = volcanoProfileAt(point.x + 0.5, point.y + 0.5, {
+        seed: Number(state.worldSeed) || 1, moisture: terrain.moisture,
+        temperature: terrain.temperature, height: terrain.height,
+        climate: "volcanic", seaLevel: Number(state.seaLevel) || 0.33,
+        dayOfYear: Number(state.dayOfYear) || 0, year: Number(state.year) || 1,
+        weather: state.weather || "clear", wind: 1, use: volcanoWorkUseAt(point.x, point.y),
+    });
+    const result = {
+        defenceBonus: Number(profile.hazards.defence) || 0,
+        movementFactor: Number(profile.hazards.movement) || 1,
+        volcanicExperience: 0.14 + (Number(profile.landform.oldLava) || 0) * 0.18
+            + (profile.use?.observatory ? 0.14 : 0) + (profile.use?.road ? 0.06 : 0),
+        lava: Number(profile.hazards.lava) || 0,
+        toxicGas: Number(profile.hazards.toxicGas) || 0,
+        rockfall: Number(profile.hazards.rockfall) || 0,
+        ash: Number(profile.hazards.ash) || 0,
+        earthquake: Number(profile.hazards.earthquake) || 0,
+        warning: Number(profile.hazards.warning) || 0,
+        height: Number(profile.height) || 0,
+    };
+    if (volcanoTacticsCache.size >= MOVEMENT_CACHE_LIMIT) volcanoTacticsCache.clear();
+    volcanoTacticsCache.set(key, result);
+    return result;
 }
 
 // Placement, forester range checks and field surveys only need the raw

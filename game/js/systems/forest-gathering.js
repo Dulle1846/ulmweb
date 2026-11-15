@@ -19,6 +19,10 @@ import {
     SWAMP_WORKS, applySwampWork, swampWorkAt, swampWorkReady, swampWorksSummaryAt,
 } from "../world/swamp-works.js";
 import { isMountainSite, mountainProductsAt, mountainProfileAt, MOUNTAIN_GOODS } from "../world/mountain-ecology.js";
+import { isVolcanoSite, volcanoProductsAt, volcanoProfileAt, VOLCANO_GOODS } from "../world/volcano-ecology.js";
+import {
+    VOLCANO_WORKS, applyVolcanoWork, volcanoWorkAt, volcanoWorkReady, volcanoWorksSummaryAt, volcanoWorkUseAt,
+} from "../world/volcano-works.js";
 import {
     MOUNTAIN_WORKS, applyMountainWork, mountainWorkAt, mountainWorkReady, mountainWorksSummaryAt,
 } from "../world/mountain-works.js";
@@ -92,6 +96,13 @@ export function forestDeliveryChannel(id) {
     if (mountain) {
         if (mountain.category === "wood") return "wood";
         if (mountain.category === "medicine") return "medicine";
+        return "gold";
+    }
+    const volcano = VOLCANO_GOODS[id];
+    if (volcano) {
+        if (volcano.category === "wood") return "wood";
+        if (volcano.category === "medicine") return "medicine";
+        if (volcano.category === "food") return "food";
         return "gold";
     }
     const tropical = TROPICAL_GOODS[id];
@@ -470,6 +481,7 @@ function meadowContextAt(x, y, options = {}) {
         use: {
             ...grasslandUseAt(x, y),
             ...(state.worldOptions?.climate === "mountain" ? mountainWorkUseAt(x, y) : {}),
+            ...(state.worldOptions?.climate === "volcanic" ? volcanoWorkUseAt(x, y) : {}),
         },
     };
 }
@@ -495,7 +507,8 @@ export function gatherMeadowProducts(x, y, options = {}) {
     // Tundra, desert and steppe are still forage land. The same button and
     // ledger serve all four profiles; the terrain decides which harvest
     // vocabulary is present. Cold ground wins over the arid margins.
-    const products = (isMountainSite(x, y, context) ? mountainProductsAt(x, y, context) : null)
+    const products = (isVolcanoSite(x, y, context) ? volcanoProductsAt(x, y, context) : null)
+        || (isMountainSite(x, y, context) ? mountainProductsAt(x, y, context) : null)
         || (isSwampSite(x, y, context) ? swampProductsAt(x, y, context) : null)
         || (isTundraSite(x, y, context) ? tundraProductsAt(x, y, context) : null)
         || (isTaigaSite(x, y, context) ? taigaProductsAt(x, y, context) : null)
@@ -774,6 +787,135 @@ export function performMountainWork(x, y, kind, options = {}) {
     };
 }
 
+// --- Player-built volcanic works and extraction (1.2.13.49–1.2.13.57) ---
+
+function volcanoWorkContextAt(x, y, options = {}) {
+    const context = meadowContextAt(x, y, options);
+    context.use = { ...context.use, ...volcanoWorkUseAt(x, y) };
+    return context;
+}
+
+function volcanoWorkSiteAt(x, y, options = {}) {
+    const context = volcanoWorkContextAt(x, y, options);
+    return isVolcanoSite(x, y, context) ? volcanoProfileAt(x + 0.5, y + 0.5, context) : null;
+}
+
+function volcanoWorkCost(def) {
+    return Object.entries(def?.cost || {}).filter(([, value]) => Number(value) > 0);
+}
+
+function canPayVolcanoWork(def) {
+    return volcanoWorkCost(def).every(([resource, amount]) => (Number(state.resources?.[resource]) || 0) >= Number(amount));
+}
+
+function payVolcanoWork(def) {
+    if (!canPayVolcanoWork(def)) return false;
+    for (const [resource, amount] of volcanoWorkCost(def)) addResource(resource, -Number(amount));
+    return true;
+}
+
+function volcanoWorkEcologicalReason(kind, profile) {
+    if (kind === "lavaQuarry" && profile.landform.basalt < 0.22) return "No workable basalt flow at this tile";
+    if (kind === "obsidianQuarry" && profile.landform.obsidian < 0.28) return "No obsidian at this tile";
+    if (kind === "pumiceQuarry" && profile.landform.pumice < 0.28) return "No pumice bed at this tile";
+    if (kind === "sulfurMine" && profile.landform.sulfur < 0.24) return "No sulfur crust at this tile";
+    if (kind === "metalMine" && profile.economy.mine < 0.2) return "No workable ore seam at this tile";
+    if (kind === "mineralWorks" && profile.economy.minerals < 0.2) return "No mineral deposit at this tile";
+    if (kind === "geothermalPlant" && profile.economy.geothermalPlant < 0.22) return "No strong geothermal source at this tile";
+    if (kind === "fertileTerrace" && profile.economy.fertileSoil < 0.25) return "The ash is too fresh for a terrace";
+    if (kind === "craterExpedition" && profile.economy.craterExpedition < 0.25) return "No rare crater materials to survey";
+    return null;
+}
+
+export function volcanoWorkAvailability(x, y, options = {}) {
+    const profile = volcanoWorkSiteAt(x, y, options);
+    if (!profile) return { ok: false, reason: "No volcanic ground at this tile", works: {} };
+    const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
+    const works = {};
+    for (const [kind, definition] of Object.entries(VOLCANO_WORKS)) {
+        const ready = volcanoWorkReady(x, y, kind, day);
+        const ecological = volcanoWorkEcologicalReason(kind, profile);
+        const affordable = canPayVolcanoWork(definition);
+        const reason = ready.reason || ecological || (affordable ? null
+            : "Not enough " + volcanoWorkCost(definition).filter(([resource, amount]) => (Number(state.resources?.[resource]) || 0) < Number(amount)).map(([resource]) => resource).join(", "));
+        works[kind] = { ...definition, ok: !reason, reason };
+    }
+    return {
+        ok: true, profile, works,
+        summary: volcanoWorksSummaryAt(x, y),
+        title: profile.label + " · " + profile.landform.label,
+        audit: profile.features?.length || 0,
+    };
+}
+
+export function performVolcanoWork(x, y, kind, options = {}) {
+    const definition = VOLCANO_WORKS[kind];
+    if (!definition) return { ok: false, reason: "Unknown volcanic work" };
+    const availability = volcanoWorkAvailability(x, y, options);
+    if (!availability.ok) return { ok: false, reason: availability.reason };
+    if (!availability.works[kind]?.ok) return { ok: false, reason: availability.works[kind]?.reason || "This work is not possible here" };
+    const profile = availability.profile;
+    const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
+    const year = Math.floor(number(options.year, state.year) || 1);
+    if (!payVolcanoWork(definition)) return { ok: false, reason: "The work could not be paid for" };
+    const ledger = ensureForestGathering();
+    const goods = [];
+    const add = (id, amount) => {
+        const accepted = addStock(ledger, id, Math.max(0, Math.floor(amount)));
+        if (accepted > 0 && FOREST_GOODS[id]) goods.push({ ...FOREST_GOODS[id], amount: accepted });
+        return accepted;
+    };
+    if (kind === "lavaQuarry") {
+        add("basalt", 4 + Math.round(profile.landform.basalt * 6));
+        add("stone", 2 + Math.round(profile.landform.basalt * 2));
+    } else if (kind === "obsidianQuarry") {
+        add("obsidian", 2 + Math.round(profile.landform.obsidian * 4));
+        if (profile.landform.obsidian > 0.55) add("crater-crystal", 1);
+    } else if (kind === "pumiceQuarry") {
+        add("pumice", 4 + Math.round(profile.landform.pumice * 5));
+        add("stone", 1);
+    } else if (kind === "sulfurMine") {
+        add("sulfur", 3 + Math.round(profile.landform.sulfur * 4));
+        if (profile.economy.minerals > 0.45) add("volcanic-minerals", 1 + Math.round(profile.economy.minerals * 2));
+    } else if (kind === "metalMine") {
+        add("iron-ore", 2 + Math.round(profile.economy.ore * 5));
+        if (profile.economy.metals > 0.4) add("copper-ore", 1 + Math.round(profile.economy.metals * 3));
+        if (profile.economy.rare > 0.5) add("crater-crystal", 1);
+    } else if (kind === "mineralWorks") {
+        add("volcanic-minerals", 3 + Math.round(profile.economy.minerals * 5));
+        if (profile.economy.rare > 0.45) add("crater-crystal", 1);
+    } else if (kind === "geothermalPlant") {
+        add("geothermal-energy", 2 + Math.round(profile.economy.geothermal * 3));
+        add("hot-spring-water", 2 + Math.round(profile.water.heatedWater * 3));
+    } else if (kind === "fertileTerrace") {
+        add("volcanic-soil", 3 + Math.round(profile.economy.fertileSoil * 4));
+        addResource("food", 1);
+    } else if (kind === "craterExpedition") {
+        add("crater-crystal", 1 + Math.round(profile.economy.rare * 3));
+        add("volcanic-minerals", 1 + Math.round(profile.economy.minerals * 2));
+    }
+    applyVolcanoWork(x, y, kind, { day });
+    const exposure = (kind === "sulfurMine" || kind === "metalMine" || kind === "craterExpedition" || kind === "geothermalPlant")
+        ? tropicalExposure({
+            disease: clamp(profile.hazards.toxicGas * 0.22, 0, 1),
+            diseaseLabel: "volcanic gas",
+        }, { source: "volcanic-work", x, y })
+        : { outbreak: false, injury: false, foodLost: 0 };
+    const record = volcanoWorkAt(x, y);
+    if (record) {
+        record.lastHarvest = record.lastHarvest || {};
+        record.lastHarvest[kind] = day;
+    }
+    ledger.history.push({ x: Math.floor(x), y: Math.floor(y), day, year, kind: "volcano-work", work: kind, goods: goods.map(good => ({ id: good.id, amount: good.amount })) });
+    if (ledger.history.length > MAX_HISTORY) ledger.history.splice(0, ledger.history.length - MAX_HISTORY);
+    return {
+        ok: true, kind, label: definition.label,
+        tile: { x: Math.floor(x), y: Math.floor(y), label: profile.label, formation: profile.formation },
+        goods, exposure, summary: volcanoWorksSummaryAt(x, y),
+        message: definition.label.toUpperCase() + (goods.length ? " · " + goods.map(good => good.amount + " " + good.label).join(" · ") : " COMPLETED"),
+    };
+}
+
 export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
     const limit = Math.max(1, Math.min(16, Math.floor(number(radius, GATHER_RADIUS))));
     let best = null;
@@ -783,7 +925,8 @@ export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
             const node = getResourceNodeAt(tx, ty);
             if (node?.forestCapacity && node.forestStock > 0) continue;
             const context = meadowContextAt(tx, ty);
-            const products = (isMountainSite(tx, ty, context) ? mountainProductsAt(tx, ty, context) : null)
+            const products = (isVolcanoSite(tx, ty, context) ? volcanoProductsAt(tx, ty, context) : null)
+                || (isMountainSite(tx, ty, context) ? mountainProductsAt(tx, ty, context) : null)
                 || (isSwampSite(tx, ty, context) ? swampProductsAt(tx, ty, context) : null)
                 || (isTundraSite(tx, ty, context) ? tundraProductsAt(tx, ty, context) : null)
                 || (isTaigaSite(tx, ty, context) ? taigaProductsAt(tx, ty, context) : null)

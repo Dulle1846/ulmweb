@@ -5,7 +5,7 @@
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-14 (UTC)
+**Last repository verification:** 2026-11-15 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
@@ -48,6 +48,50 @@ These builds are published from the current development worktree to Freebuff Sit
 - **Kings & Cards — crown, court and living diplomacy:** production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page` · preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page` · site `054512f6-1fcf-489c-8406-3ab4e49022e3` · published 2026-11-09. This was the previous hosted build. Deployment and publish receipts succeeded; production returned HTTP 200 and loaded in the Cloud browser without page errors. Verified on that head: `npm test` 636/636, browser E2E passed in 78.7 s, 25-year campaign 13/13 in 50.9 s.
 
 ## Production release history
+
+### 3.20.0-dev — Volcano landscapes (1.2.13.1–1.2.13.73)
+
+**Released:** 2026-11-15 on the development line
+
+**Scope:** a complete twelfth climate with ten formations: single cone, large
+crater, crater field, shield volcano, steep cone, caldera, fissure field,
+volcanic chain, extinct weathered volcano and lava field. The deterministic
+`volcano-ecology.js` profile supplies cone and crater relief, collapsed
+calderas, open fissures, fresh, cooled and weathered lava, basalt, pumice,
+obsidian, spires, ash, sulfur, mineral crusts, hot rock, fumaroles, steam,
+hot springs, geysers, mud pools, soil age and regeneration stage. Flora moves
+from lichen and moss through pioneer plants to grass, scrub and fertile soil;
+fauna covers reptiles, birds, insects, crevice dwellers, mammals on old flows
+and specialised hot-mineral species. Basalt, volcanic stone, obsidian, pumice,
+sulfur, metal ore, minerals, geothermal energy, fertile volcanic soil and rare
+crater materials enter the existing goods and delivery ledger. Hazards cover
+eruptions, lava flows, ash rain, toxic gas, earthquakes, unstable ground,
+rockfall and long-term uninhabitability, with evidence-gated destruction of
+settlements and infrastructure only on an active eruption that actually
+carries such a feature.
+
+**Integration:** **Volcanic Lands** is selectable in world creation and has its
+own palette, seasonal curve and hillshade. `volcano-render.js` draws bounded
+cones, crater rims, calderas, fissures, cooled clinker, glowing cracks, steam,
+hot water, minerals, flora, fauna and works without stamping every tile with
+the same landmark. Ten player works — lava, obsidian and pumice quarries, sulfur
+and metal mines, mineral works, geothermal plant, fertile terrace, crater
+expedition and observatory — spend real goods and persist in an optional bounded
+`volcanoWorks` block in save schema 11. The shared movement cache and combat
+path carry volcanic cost, gas and rockfall damage and local defence. No extra
+tick loop, renderer, inventory or save migration was added.
+
+**Verification:** all 73 requirements are declared once and reached by the
+deterministic survey; requirement 66 is evidence-gated. Focused volcanic tests
+are 14/14 green and the full suite is **1018/1018** green with syntax/imports
+**157 files / 201 UI ids**. The browser reference `volcano-formations.mjs`
+captured all ten formations on seed `20261212` with no page or console errors.
+The volcanic low-end run (4× CPU, software Canvas, 70% scale, 55% forests, two
+years) held **16.7–16.8 ms p95** in all five phases with **zero long tasks**,
+saved a 971,574-byte realm in **175 ms** and loaded it in **1,417 ms**. The
+deterministic 25-year campaign completed **10,040 ticks**, **13/13 ambitions**,
+**0.817 ms per tick**, with no stalled sites and no game over. Full record:
+[docs/VOLCANOES.md](docs/VOLCANOES.md).
 
 ### 3.16.4-dev — Year rollover stays inside the frame budget
 

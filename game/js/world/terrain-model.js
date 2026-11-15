@@ -111,6 +111,7 @@ export const CLIMATES = [
     { id: 'taiga',        label: 'Taiga',        note: 'Spruce, pine, larch and birch under long snow' },
     { id: 'tundra',       label: 'Tundra',       note: 'Permafrost, low shrubs, bogs and a short summer' },
     { id: 'mountain',     label: 'Mountains & Highlands', note: 'High chains, passes, glaciers, mines and terraced valleys' },
+    { id: 'volcanic',     label: 'Volcanic Lands', note: 'Lava fields, craters, hot springs, ash and volcanic soil' },
     { id: 'savanna',      label: 'Savanna',      note: 'Tall grass, flat-crowned trees and a long dry season' },
     { id: 'swamp',        label: 'Swamps & Bogs', note: 'Shallow water, alder carr, reeds, fens and deep peat' },
     { id: 'mediterranean',label: 'Mediterranean',note: 'Warm dry summers and olive hills' },
@@ -234,6 +235,12 @@ export function sampleHeight(wx, wy, W, H, rawOptions = {}) {
     if (options.climate === 'mountain') {
         h += 0.035 + smoothstep(0.28, 0.78, h) * 0.12;
     }
+    // Volcanic country builds broad shields and steep cones on the same base
+    // terrain. The profile still chooses the formation per tile; this lift
+    // only keeps the land above the shoreline and gives the relief room to read.
+    if (options.climate === 'volcanic') {
+        h += 0.04 + smoothstep(0.24, 0.7, h) * 0.15;
+    }
     return clamp(h, 0, 1);
 }
 
@@ -259,8 +266,11 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
     // Mountain country is drier than a wetland but not a desert; springs,
     // snowmelt and shaded north faces still carry real water.
     const mountain = options.climate === 'mountain' ? -0.02 : 0;
+    // Volcanic soils are often dry on the surface and wet at the spring line.
+    // The local water table is low, but hot springs are added by the profile.
+    const volcanic = options.climate === 'volcanic' ? -0.05 : 0;
     return clamp(
-        noise + tropical + tundra + savanna + taiga + swamp + mountain + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
+        noise + tropical + tundra + savanna + taiga + swamp + mountain + volcanic + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
         + (options.wetlands - 50) * 0.0016 - (options.aridity - 50) * 0.0012,
         0, 1
     );
@@ -268,7 +278,7 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
 
 export function sampleTemperature(wx, wy, W, H, height, sea, rawOptions = {}) {
     const options = rawOptions.__normalized ? rawOptions : normalizeWorldOptions(rawOptions);
-    const base = { temperate: 0.58, northern: 0.33, taiga: 0.27, tundra: 0.20, mountain: 0.34, savanna: 0.76, swamp: 0.55, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
+    const base = { temperate: 0.58, northern: 0.33, taiga: 0.27, tundra: 0.20, mountain: 0.34, volcanic: 0.72, savanna: 0.76, swamp: 0.55, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
     const latitude = 1 - Math.abs(wy / H - 0.5) * 2;   // 1 at the equator, 0 at the poles
     let t = base + (latitude - 0.62) * 0.26 - Math.max(0, height - sea) * 0.30;
     t += (fbm(wx * 0.0085 + 91.3, wy * 0.0085 + 17.9, 3, 0.5, 2.1) - 0.5) * 0.07;
@@ -677,6 +687,12 @@ const PALETTES = {
         cold: [132, 142, 144], hot: [172, 154, 108], sand: [184, 176, 148], swamp: [72, 88, 72],
         rock: [124, 124, 120], snow: [238, 243, 247],
     },
+    volcanic: {
+        waterDeep: [25, 50, 58], waterShallow: [58, 106, 106], foam: [214, 224, 216],
+        dry: [78, 72, 65], meadow: [101, 98, 72], lush: [72, 94, 55], forest: [42, 65, 41],
+        cold: [113, 109, 104], hot: [134, 83, 52], sand: [96, 88, 78], swamp: [62, 66, 54],
+        rock: [62, 60, 58], snow: [220, 216, 207],
+    },
 };
 
 function mix(a, b, t) {
@@ -730,16 +746,24 @@ export function terrainColor(height, moisture, temperature, px, py, climate, sea
     // A mountain is mostly rock above the valley floor, not a green hill with
     // a grey cap. Gate the forest belt to the lower slopes before the rock
     // wash so the nival and scree belts read at a glance.
-    const forestGate = climate === 'mountain' ? 1 - smoothstep(0.28, 0.58, e) : 1;
+    const forestGate = climate === 'mountain' || climate === 'volcanic'
+        ? 1 - smoothstep(0.28, 0.58, e) : 1;
     color = mix(color, P.forest, forest * 0.9 * forestGate);
 
     // Rock breaks through on steep, high ground; snow caps the peaks.
     const rock = climate === 'mountain'
         ? smoothstep(0.24, 0.64, e)
-        : smoothstep(0.55, 0.82, e);
-    color = mix(color, P.rock, rock * (climate === 'mountain' ? 0.98 : 0.94));
+        : climate === 'volcanic'
+            ? smoothstep(0.16, 0.54, e)
+            : smoothstep(0.55, 0.82, e);
+    color = mix(color, P.rock, rock * (climate === 'mountain' || climate === 'volcanic' ? 0.98 : 0.94));
     const snow = climate === 'tropical'
         ? smoothstep(0.88, 0.98, e)
+        : climate === 'volcanic'
+            // Volcanic peaks are dark rock and ash, not a temperate snow cap.
+            // Snow can still fall in the seasonal detail layer; the baked
+            // surface keeps the lava and crater colours readable.
+            ? smoothstep(0.94, 1, e) * 0.32
         : climate === 'mountain'
             // Permanent snow belongs to the nival belt; lower slopes keep their
             // seasonal cover from the detail renderer. The line sits lower than

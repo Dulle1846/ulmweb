@@ -110,6 +110,24 @@ function savannaPalette(base, season) {
     return p;
 }
 
+function volcanicPalette(base, season, phase = season) {
+    const seasonal = seasonalState(phase * 100, 'volcanic');
+    // Ash and basalt should not green up like a meadow. The seasonal cycle is
+    // carried by pioneer growth, steam and light; the ground stays dark and
+    // warm-coloured all year.
+    return {
+        ...base,
+        earth: mix(base.dry, base.rock, 0.58),
+        season,
+        seasonPhase: phase,
+        snowBias: 0,
+        spring: seasonal.greenUp * 0.35,
+        summer: seasonal.warmth * 0.82,
+        autumn: seasonal.foliageTurn * 0.46,
+        winter: 0.08,
+    };
+}
+
 function tropicalPalette(base, season, phase = season) {
     const seasonal = seasonalState(phase * 100, 'tropical');
     // The rainforest has a wet/dry rhythm, not a temperate autumn/winter
@@ -134,6 +152,7 @@ export function terrainPaletteFor(climate, seasonIndex = 0) {
     const season = ((Math.trunc(Number(seasonIndex) || 0) % 4) + 4) % 4;
     const base = TERRAIN_PALETTES[climate] || TERRAIN_PALETTES.temperate;
     if (climate === 'tropical') return tropicalPalette(base, season);
+    if (climate === 'volcanic') return volcanicPalette(base, season);
     if (climate === 'savanna') {
         return {
             ...savannaPalette(base, season),
@@ -208,6 +227,7 @@ export function terrainPaletteForPhase(climate, phase) {
     const fraction = raw * raw * (3 - 2 * raw);
     const base = TERRAIN_PALETTES[climate] || TERRAIN_PALETTES.temperate;
     if (climate === 'tropical') return tropicalPalette(base, lower, wrapped);
+    if (climate === 'volcanic') return volcanicPalette(base, lower, wrapped);
     const seasonalFrom = climate === 'savanna' ? savannaPalette : seasonalPalette;
     const from = seasonalFrom(base, lower);
     const to = seasonalFrom(base, (lower + 1) % 4);
