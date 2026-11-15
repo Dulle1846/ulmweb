@@ -134,6 +134,7 @@ page.on("console", message => {
 await page.addInitScript(() => {
     window.__KAC_PERF = { raf: [], longTasks: [], tickMs: [], uiChunkMs: [], friendlyMs: [], logisticsMs: [], workMs: [], draws: [] };
     window.__KAC_SIM_TIMES = {};
+    window.__KAC_SIM_SAMPLES = {};
     window.__KAC_LOAD_TIMES = {};
     const sample = timestamp => {
         const frames = window.__KAC_PERF.raf;
@@ -230,7 +231,8 @@ if (process.env.PERF_SIM_BREAKDOWN === "1") {
             "updateMicroEvents"
         ];
         const helper = "const __kacSimT=(name,fn)=>{const t=performance.now();fn();" +
-            "const d=performance.now()-t;globalThis.__KAC_SIM_TIMES[name]=Math.max(globalThis.__KAC_SIM_TIMES[name]||0,d);};\n";
+            "const d=performance.now()-t;globalThis.__KAC_SIM_TIMES[name]=Math.max(globalThis.__KAC_SIM_TIMES[name]||0,d);" +
+            "(globalThis.__KAC_SIM_SAMPLES[name]||(globalThis.__KAC_SIM_SAMPLES[name]=[])).push(d);};\n";
         source = source.replace("export function updateSimulation()", helper + "export function updateSimulation()");
         for (const name of names) {
             const re = new RegExp("(?<![A-Za-z0-9_.])" + name + "\\(\\)", "g");
@@ -940,7 +942,14 @@ try {
     }
     const quiet = await samplePhase("quiet-early-realm", QUIET_MS);
     const simBreakdown = process.env.PERF_SIM_BREAKDOWN === "1"
-        ? await page.evaluate(() => ({ ...globalThis.__KAC_SIM_TIMES }))
+        ? await page.evaluate(() => {
+            const out = {};
+            for (const [name, values] of Object.entries(globalThis.__KAC_SIM_SAMPLES || {})) {
+                const sorted = values.slice().sort((a, b) => a - b);
+                out[name] = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] || 0;
+            }
+            return out;
+        })
         : null;
     if (profileSession) {
         const { profile } = await cdp.send("Profiler.stop");

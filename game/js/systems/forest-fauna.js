@@ -26,6 +26,7 @@ const MAX_HERDS = 240;
 // budget is spread over the following days; the eighth-day refresh still
 // reaches every herd and the long-run audit verifies the bounded outcome.
 const MAX_HERD_RESOLVES_PER_DAY = 48;
+const HERD_REFRESH_DAYS = 8;
 // Camouflaged jungle species are harder to take in one visit. This is a
 // hunting-pressure rule, not a second population model: the herd still breeds,
 // moves and can be hunted, but a single shot yields fewer animals.
@@ -34,9 +35,9 @@ const CAMOUFLAGED_SPECIES = new Set([
     "tarantula", "poison-dart-frog", "leaf-mimic-frog",
 ]);
 const MAX_INSECTS = 480;
-const INSECT_UPDATE_BATCHES = 4;
+const INSECT_UPDATE_BATCHES = 8;
 // Small woods still step every colony daily. Only the largest wetland insect
-// sets are spread over four days; this keeps existing forest behaviour exact.
+// sets are spread over eight days; this keeps existing forest behaviour exact.
 const INSECT_DAILY_LIMIT = 240;
 const MAX_DAY_STEP = 30;
 const DAYS_PER_YEAR = 400;
@@ -752,7 +753,7 @@ export function updateForestFauna(days = 1) {
             const due = daysSince(herd.lastMoved, model.day) >= spec.period;
             const dueTurn = (model.day + herdIndex) % 2 === 0;
             const crowded = herd.population > Math.max(1, Number(herd.capacity) || 1) * 0.94;
-            const refresh = (model.day + herdIndex) % 8 === 0;
+            const refresh = (model.day + herdIndex) % HERD_REFRESH_DAYS === 0;
             let resolved = null;
             if (((due && dueTurn) || crowded || refresh) && resolvedHerds < MAX_HERD_RESOLVES_PER_DAY) {
                 resolvedHerds += 1;

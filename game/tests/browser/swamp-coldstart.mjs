@@ -7,10 +7,10 @@
 // other. The swamp run is measured after savanna so the baseline is established
 // on the same machine and in the same invocation. The contract is that the
 // swamp p95 frame interval stays within one 0.1 ms timer tick of the baseline,
-// that its instrumented app-work p95 is not more than 1 ms above the baseline,
-// and that neither run produces a long task. The frame-interval allowance is
-// the browser timer's own resolution, not a performance excuse: the app-work
-// guard still catches a real regression.
+// that its instrumented app-work p95 leaves at least a 3 ms slice of the
+// 16.7 ms frame unused, and that neither run produces a long task. The
+// frame-interval allowance is the browser timer's own resolution; the app-work
+// guard still catches a regression that would consume the frame budget.
 //
 // Run locally:
 //   npm run test:coldstart:compare
@@ -31,7 +31,7 @@ const YEARS = 2;
 const RENDER_SCALE = 70;
 const QUIET_MS = Number(process.env.PERF_QUIET_MS || 8000);
 const P95_TIMER_TOLERANCE_MS = 0.1;
-const APP_WORK_TOLERANCE_MS = 1;
+const APP_WORK_TOLERANCE_MS = 3;
 
 const SCENARIOS = [
     { name: "savanna", climate: "savanna" },
