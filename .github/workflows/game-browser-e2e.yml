@@ -32,7 +32,7 @@ jobs:
   browser-e2e:
     name: Chromium gameplay smoke test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     outputs:
       started_at: ${{ steps.timing.outputs.started_at }}
       finished_at: ${{ steps.finish.outputs.finished_at }}
@@ -80,14 +80,14 @@ jobs:
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit "$code"
-      - name: Run swamp low-end performance audit
+      - name: Run swamp cold-start comparison
         id: swamp_performance
         working-directory: game
-        timeout-minutes: 6
+        timeout-minutes: 9
         run: |
           set +e
           set -o pipefail
-          npm run test:performance:swamp 2>&1 | tee "$RUNNER_TEMP/swamp-performance.log"
+          npm run test:coldstart:compare 2>&1 | tee "$RUNNER_TEMP/swamp-coldstart.log"
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit "$code"
@@ -160,8 +160,11 @@ jobs:
             artifacts/swamp-live-proof-map.png
             artifacts/swamp-live-proof.json
             artifacts/low-end-performance.json
+            artifacts/swamp-coldstart-report.json
+            artifacts/swamp-coldstart-swamp.json
+            artifacts/swamp-coldstart-savanna.json
             ${{ runner.temp }}/swamp-live-proof.log
-            ${{ runner.temp }}/swamp-performance.log
+            ${{ runner.temp }}/swamp-coldstart.log
           if-no-files-found: warn
           retention-days: 7
       - name: Upload browser E2E log

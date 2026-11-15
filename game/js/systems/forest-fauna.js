@@ -30,6 +30,10 @@ const CAMOUFLAGED_SPECIES = new Set([
     "tarantula", "poison-dart-frog", "leaf-mimic-frog",
 ]);
 const MAX_INSECTS = 480;
+const INSECT_UPDATE_BATCHES = 4;
+// Small woods still step every colony daily. Only the largest wetland insect
+// sets are spread over four days; this keeps existing forest behaviour exact.
+const INSECT_DAILY_LIMIT = 240;
 const MAX_DAY_STEP = 30;
 const DAYS_PER_YEAR = 400;
 
@@ -649,17 +653,36 @@ function preyBiomassAt(preyTiles, x, y, species, radius = 4) {
 function updateInsectPopulations(model) {
     const colonies = ensureInsectCollection(model);
     const survivors = [];
-    for (const insect of colonies) {
+    // Insect colonies are slow-moving and bounded. Updating all 480 every day
+    // made a wetland with many carr tiles the only remaining >30 ms simulation
+    // tick. Update a deterministic quarter per day; the window rotates with the
+    // simulation day, so every colony still advances every four days and the
+    // result is reproducible across saves.
+    const batchSize = colonies.length <= INSECT_DAILY_LIMIT
+        ? colonies.length
+        : Math.max(1, Math.ceil(colonies.length / INSECT_UPDATE_BATCHES));
+    const batchStart = colonies.length ? (Math.floor(number(model.day)) * batchSize) % colonies.length : 0;
+    let removed = false;
+    for (let colonyIndex = 0; colonyIndex < colonies.length; colonyIndex++) {
+        const insect = colonies[colonyIndex];
+        const inBatch = colonies.length
+            && ((colonyIndex - batchStart + colonies.length) % colonies.length) < batchSize;
+        if (!inBatch) {
+            survivors.push(insect);
+            continue;
+        }
         const spec = SIMULATED_INSECTS[insect.species];
-        if (!spec) continue;
+        if (!spec) { removed = true; continue; }
         const node = nodeAt(insect.x, insect.y);
         const stand = node?.forestCapacity ? standAt(insect.x, insect.y, node) : null;
         const habitat = forestInsectHabitat(stand, insect.species);
         if (!stand?.forest || !habitat) {
             insect.population = Math.round(Math.max(0, number(insect.population) - 0.12) * 100) / 100;
             insect.trend = "declining";
-            if (insect.population <= 0.04) model.stats.insectDeaths = Math.max(0, Math.floor(number(model.stats.insectDeaths))) + 1;
-            else survivors.push(insect);
+            if (insect.population <= 0.04) {
+                model.stats.insectDeaths = Math.max(0, Math.floor(number(model.stats.insectDeaths))) + 1;
+                removed = true;
+            } else survivors.push(insect);
             continue;
         }
         const before = Math.max(0, number(insect.population));
@@ -684,7 +707,11 @@ function updateInsectPopulations(model) {
         if (insect.population > 0.04) survivors.push(insect);
     }
     model.insects = survivors.slice(0, MAX_INSECTS);
-    model.insectIndex = buildInsectIndex(model.insects);
+    // Population changes mutate colony objects in place. The spatial index only
+    // needs a rebuild when a colony actually dropped out of the collection.
+    if (removed || !(model.insectIndex instanceof Map)) {
+        model.insectIndex = buildInsectIndex(model.insects);
+    }
     return model.insects;
 }
 
@@ -705,15 +732,33 @@ export function updateForestFauna(days = 1) {
             const key = herd.x + ":" + herd.y;
             occupied.set(key, (occupied.get(key) || 0) + 1);
         }
-        for (const herd of model.herds) {
-            const resolved = resolveHerd(herd, model.day);
-            if (!resolved) {
-                herd.population = Math.max(0, herd.population - 1);
-                continue;
-            }
+        for (let herdIndex = 0; herdIndex < model.herds.length; herdIndex++) {
+            const herd = model.herds[herdIndex];
             const spec = SIMULATED_SPECIES[herd.species];
-            const { stand, node, capacity } = resolved;
-            herd.capacity = Math.round(capacity * 10) / 10;
+            if (!spec) continue;
+            // Habitat and carrying capacity move much more slowly than a day.
+            // Refresh an eighth of the herds per day, and resolve immediately
+            // only when the herd is due to migrate or is crowding its range.
+            // The old daily resolve over every herd rebuilt habitat objects for
+            // a whole wetland every tick, which was the remaining low-end
+            // simulation spike after the renderer fixes. Splitting the due
+            // herds over two days prevents the periodic migration wave from
+            // resolving all of them in one frame.
+            const due = daysSince(herd.lastMoved, model.day) >= spec.period;
+            const dueTurn = (model.day + herdIndex) % 2 === 0;
+            const crowded = herd.population > Math.max(1, Number(herd.capacity) || 1) * 0.94;
+            const refresh = (model.day + herdIndex) % 8 === 0;
+            let resolved = null;
+            const canMigrate = !due || dueTurn || crowded || refresh;
+            if ((due && dueTurn) || crowded || refresh) {
+                resolved = resolveHerd(herd, model.day);
+                if (!resolved) {
+                    herd.population = Math.max(0, herd.population - 1);
+                    continue;
+                }
+                herd.capacity = Math.round(resolved.capacity * 10) / 10;
+            }
+            const capacity = resolved ? resolved.capacity : Math.max(1, Number(herd.capacity) || 1);
             const crowding = herd.population / Math.max(1, capacity);
             const winterReproduction = Number(spec.winterReproduction ?? 0.85);
             const reproduction = spec.reproduction * (season === "spring" ? 1.18 : season === "winter" ? winterReproduction : 1);
@@ -738,7 +783,7 @@ export function updateForestFauna(days = 1) {
             herd.huntingPressure = Math.max(0, Math.round(hunting * 0.985 * 1000) / 1000);
             herd.trend = herd.population > before + 0.2 ? "growing" : herd.population < before - 0.2 ? "declining" : "stable";
             const oldX = herd.x, oldY = herd.y;
-            if (maybeMigrate(model, herd, resolved, model.day, occupied)) {
+            if (canMigrate && maybeMigrate(model, herd, resolved || { capacity, stand: null }, model.day, occupied)) {
                 const oldKey = oldX + ":" + oldY;
                 const remaining = (occupied.get(oldKey) || 0) - 1;
                 if (remaining > 0) occupied.set(oldKey, remaining);

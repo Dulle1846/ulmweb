@@ -4468,9 +4468,22 @@ export const GRASSLAND_WIND_LIMITS = Object.freeze({ maxTufts: 44, maxExamined: 
 // terrain, season, weather, wind and land-use revisions, so a regenerated map,
 // a new day-bucket or a new building/road invalidates it.
 const WIND_TILE_CACHE_LIMIT = 8192;
+// A cold wind cache used to evaluate every visible swamp profile in one frame.
+// On a 4x-throttled device that is a >50 ms main-thread task exactly when a
+// realm becomes visible. Fill the cache cooperatively across frames instead:
+// cached tufts still draw immediately, while new tiles are admitted within a
+// small per-frame budget. The result settles visually in a few frames without
+// ever blocking one frame on a whole viewport of ecosystem work.
+const WIND_FILL_BUDGET_MS = 2;
 const windTileCache = new Map();
 let windTileCacheKey = "";
+let windFillCursor = null;
+let windFillKey = "";
 const windTileCacheStats = { hits: 0, misses: 0, generation: 0 };
+
+function endXForFill(bounds) {
+    return bounds.endX;
+}
 
 function terrainContentSignature() {
     const sample = map => {
@@ -4540,11 +4553,32 @@ export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
     if (nextCacheKey !== windTileCacheKey) {
         windTileCache.clear();
         windTileCacheKey = nextCacheKey;
+        windFillCursor = null;
+        windFillKey = "";
         windTileCacheStats.generation += 1;
     }
+    const fillKey = nextCacheKey + "|" + startX + "|" + endXForFill(bounds) + "|" + startY + "|" + bounds.endY + "|" + step;
+    if (fillKey !== windFillKey) {
+        windFillKey = fillKey;
+        windFillCursor = null;
+    }
+    // The probe is the headless determinism/budget harness. It deliberately
+    // scans the fixed viewport from the beginning in one bounded pass so two
+    // identical calls emit identical commands. Production uses the cooperative
+    // cursor below and may finish the cache over several frames.
+    const deterministicProbe = Boolean(probe);
+    if (deterministicProbe) windFillCursor = null;
+    let x = windFillCursor?.x ?? startX;
+    let y = windFillCursor?.y ?? startY;
+    let stopped = false;
     ctx.save();
-    for (let x = startX; x < bounds.endX && drawn < maxTufts && examined < maxExamined; x += step) {
-        for (let y = startY; y < bounds.endY && drawn < maxTufts && examined < maxExamined; y += step) {
+    outer: for (; x < bounds.endX && drawn < maxTufts && examined < maxExamined; x += step, y = startY) {
+        for (; y < bounds.endY && drawn < maxTufts && examined < maxExamined; y += step) {
+            if (!deterministicProbe && performance.now() - startedAt >= WIND_FILL_BUDGET_MS) {
+                windFillCursor = { x, y };
+                stopped = true;
+                break outer;
+            }
             examined += 1;
             if (!state.explored?.[x]?.[y]) continue;
             const tileKey = x + "|" + y;
@@ -4637,6 +4671,7 @@ export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
         }
     }
     ctx.restore();
+    if (!stopped) windFillCursor = null;
     windTileCacheStats.hits += cacheHits;
     windTileCacheStats.misses += cacheMisses;
     if (probe) {

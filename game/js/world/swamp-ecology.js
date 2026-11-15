@@ -362,6 +362,10 @@ function normalizeUse(value = {}) {
         peatCut: Boolean(explicit.peatCut || state === "peat-cut"),
         boardwalk: Boolean(explicit.boardwalk || state === "boardwalk"),
         fished: Boolean(explicit.fished || state === "fished"),
+        reedsCut: Boolean(explicit.reedsCut || state === "reeds-cut"),
+        bridged: Boolean(explicit.bridged || state === "bridged"),
+        defended: Boolean(explicit.defended || state === "defended"),
+        surveyed: Boolean(explicit.surveyed || state === "surveyed"),
         burnt: Boolean(explicit.burnt || explicit.burned || state === "burnt"),
         path: Boolean(explicit.path || state === "path"),
         intensity: clamp01(explicit.intensity ?? 0.12),
@@ -534,13 +538,22 @@ export function swampProfileAt(x, y, context = {}) {
     const springFlood = smoothstep(20, 115, dayOfYear) * (1 - smoothstep(145, 220, dayOfYear));
     const autumnRefill = smoothstep(245, 300, dayOfYear) * (1 - smoothstep(350, 390, dayOfYear));
     const seasonalPulse = clamp01(springFlood * 0.8 + autumnRefill * 0.45 + base.greenUp * 0.18);
-    const waterLevel = clamp01(0.38 + seasonalPulse * 0.42 + moisture * 0.24 - (season === "summer" ? 0.16 : 0));
-    const waterTable = clamp01(0.54 + moisture * 0.34 + seasonalPulse * 0.12);
-    const depth = clamp01((0.3 + waterRoll * 0.5 + waterLevel * 0.25) * (1 - aboveSea * 0.5));
+    // Built works change the water table immediately: drainage lowers standing
+    // water, and a cut-over peat face holds less water than intact bog. The
+    // profile is recomputed only when the tile is queried; the works overlay
+    // itself is a handful of boolean flags in state.swampWorks.
+    const drainage = use.drained ? 1 : 0;
+    const peatCut = use.peatCut ? 1 : 0;
+    const waterLevel = clamp01(0.38 + seasonalPulse * 0.42 + moisture * 0.24
+        - (season === "summer" ? 0.16 : 0) - drainage * 0.16 - peatCut * 0.04);
+    const waterTable = clamp01(0.54 + moisture * 0.34 + seasonalPulse * 0.12 - drainage * 0.12);
+    const depth = clamp01((0.3 + waterRoll * 0.5 + waterLevel * 0.25) * (1 - aboveSea * 0.5)
+        - drainage * 0.18 - peatCut * 0.05);
     const shallow = clamp01(1 - smoothstep(0.34, 0.7, depth));
     const deep = clamp01(smoothstep(0.46, 0.8, depth));
-    const reed = clamp01(reedRoll * 0.58 + moisture * 0.24 + shallow * 0.24);
-    const peat = clamp01(peatRoll * 0.54 + (1 - aboveSea * 2.4) * 0.24 + moisture * 0.2);
+    const reed = clamp01(reedRoll * 0.58 + moisture * 0.24 + shallow * 0.24 - (use.reedsCut ? 0.18 : 0));
+    const peat = clamp01(peatRoll * 0.54 + (1 - aboveSea * 2.4) * 0.24 + moisture * 0.2
+        - peatCut * 0.12 - drainage * 0.06);
     const carr = clamp01(carrRoll * 0.52 + treeRoll * 0.3 + moisture * 0.2 - shallow * 0.1);
     const fen = clamp01(fenRoll * 0.54 + moisture * 0.28 + (1 - peat) * 0.12);
     const floodplain = clamp01(riverRoll * 0.72 + seasonalPulse * 0.24 + shallow * 0.14);
@@ -572,18 +585,22 @@ export function swampProfileAt(x, y, context = {}) {
         .filter((entry, index) => unit(seed, x, y, 0x4341524e + index) > 0.46 - peat * 0.2);
     const plantIslands = clamp01(shallow * (0.26 + reed * 0.5) + unit(seed, x, y, 0x504c414e) * 0.12);
     const cover = clamp01(reed * 0.26 + mosses.length * 0.06 + trees.length * 0.08 + shrubs.length * 0.04);
-    const mud = clamp01(0.34 + (1 - waterLevel) * 0.34 + seasonal * 0.12 + waterRoll * 0.16);
+    const mud = clamp01(0.34 + (1 - waterLevel) * 0.34 + seasonal * 0.12 + waterRoll * 0.16
+        + drainage * 0.08 + peatCut * 0.05);
     const firmIsland = islandRoll > 0.78 && aboveSea > 0.018;
-    const bearing = clamp01(0.2 + (firmIsland ? 0.38 : 0) + aboveSea * 1.8 + (1 - peat) * 0.14 - mud * 0.12);
+    const bearing = clamp01(0.2 + (firmIsland ? 0.38 : 0) + aboveSea * 1.8 + (1 - peat) * 0.14 - mud * 0.12
+        + drainage * 0.12 + (use.boardwalk ? 0.06 : 0) + (use.settled ? 0.08 : 0) + (use.bridged ? 0.07 : 0));
     const instability = clamp01(0.42 + peat * 0.3 + shallow * 0.16 - bearing * 0.34);
     const sinking = clamp01(instability * 0.8 + mud * 0.28 - bearing * 0.24);
     const mosquito = season === "winter" ? 0.06 : clamp01(0.28 + shallow * 0.34 + temperature * 0.2 + seasonal * 0.14);
     const fever = clamp01(mosquito * 0.72 + shallow * 0.16 + (weather === "rain" ? 0.08 : 0));
-    const contaminated = clamp01(0.24 + mud * 0.28 + (use.settled ? 0.14 : 0) + (use.peatCut ? 0.12 : 0));
+    const contaminated = clamp01(0.24 + mud * 0.28 + (use.settled ? 0.14 : 0) + (use.peatCut ? 0.12 : 0)
+        - drainage * 0.12);
     const fog = clamp01((hour < 8 || hour > 20 ? 0.34 : 0.08) + moisture * 0.24 + (weather === "fog" ? 0.44 : 0) + shallow * 0.12);
     const mist = clamp01(fog * 0.8 + waterLevel * 0.22);
     const navigation = clamp01(0.3 + reed * 0.34 + fog * 0.26 - bearing * 0.14);
-    const movement = clamp01(0.52 - sinking * 0.22 - mud * 0.14 - fog * 0.08 + (use.boardwalk ? 0.28 : 0) + (use.path ? 0.12 : 0));
+    const movement = clamp01(0.52 - sinking * 0.22 - mud * 0.14 - fog * 0.08
+        + (use.boardwalk ? 0.28 : 0) + (use.bridged ? 0.2 : 0) + (use.path ? 0.12 : 0));
     const wagon = clamp01(sinking * 0.74 + mud * 0.3 + (1 - bearing) * 0.24);
     const fish = clamp01(deep * 0.7 + shallow * 0.3 + riverRoll * 0.14 - (season === "winter" ? 0.18 : 0));
     const waterfowl = clamp01(0.24 + shallow * 0.3 + reed * 0.22 + (season === "spring" || season === "autumn" ? 0.22 : 0));
@@ -596,9 +613,12 @@ export function swampProfileAt(x, y, context = {}) {
         peat, mud, rare: rareRoll, wet: seasonalPulse,
     });
     const rarePlants = clamp01(rareRoll * 0.5 + peat * 0.24 + (carnivorous.length ? 0.12 : 0));
-    const defence = clamp01(0.32 + reed * 0.3 + shallow * 0.22 + sinking * 0.18);
-    const development = clamp01(0.36 + instability * 0.3 + reed * 0.16 + (1 - bearing) * 0.2);
-    const settlement = clamp01(bearing * 0.62 + (firmIsland ? 0.28 : 0) + aboveSea * 1.2 - shallow * 0.24);
+    const defence = clamp01(0.32 + reed * 0.3 + shallow * 0.22 + sinking * 0.18
+        + (use.defended ? 0.2 : 0));
+    const development = clamp01(0.36 + instability * 0.3 + reed * 0.16 + (1 - bearing) * 0.2
+        - (use.surveyed ? 0.16 : 0) + (use.boardwalk ? 0.05 : 0));
+    const settlement = clamp01(bearing * 0.62 + (firmIsland ? 0.28 : 0) + aboveSea * 1.2 - shallow * 0.24
+        + (use.settled ? 0.12 : 0));
     const grassCover = clamp01(reed * 0.24 + sedges.length * 0.05 + mosses.length * 0.04 + (1 - shallow) * 0.08);
     const sunlight = clamp01((Math.sin(((hour - 6) / 24) * Math.PI * 2) + 0.16) * 0.64);
     const openLight = clamp01(sunlight * (0.72 + (1 - trees.length * 0.12) * 0.24));
@@ -617,6 +637,15 @@ export function swampProfileAt(x, y, context = {}) {
     if (fog > 0.42) { dynamic.add("1.2.11.61"); dynamic.add("1.2.11.73"); }
     if (mist > 0.28) dynamic.add("1.2.11.74");
     if (seasonalPulse > 0.4) dynamic.add("1.2.11.28");
+    if (use.boardwalk) { dynamic.add("1.2.11.65"); dynamic.add("1.2.11.62"); }
+    if (use.drained) { dynamic.add("1.2.11.67"); dynamic.add("1.2.11.64"); dynamic.add("1.2.11.56"); }
+    if (use.peatCut) { dynamic.add("1.2.11.68"); dynamic.add("1.2.11.47"); dynamic.add("1.2.11.31"); }
+    if (use.fished) { dynamic.add("1.2.11.69"); dynamic.add("1.2.11.49"); dynamic.add("1.2.11.43"); }
+    if (use.reedsCut) { dynamic.add("1.2.11.70"); dynamic.add("1.2.11.46"); dynamic.add("1.2.11.11"); }
+    if (use.settled) { dynamic.add("1.2.11.64"); dynamic.add("1.2.11.34"); }
+    if (use.bridged) { dynamic.add("1.2.11.66"); dynamic.add("1.2.11.62"); }
+    if (use.defended) { dynamic.add("1.2.11.71"); dynamic.add("1.2.11.62"); }
+    if (use.surveyed) { dynamic.add("1.2.11.72"); dynamic.add("1.2.11.60"); }
 
     return {
         biome: "swamp", swamp: true, x: Math.floor(number(x)), y: Math.floor(number(y)), seed, year,
@@ -635,6 +664,7 @@ export function swampProfileAt(x, y, context = {}) {
             drainage: clamp01(0.14 + aboveSea * 2.2 - peat * 0.1),
             erosion: clamp01(floodplain * 0.28 + seasonalPulse * 0.2 + (1 - reed) * 0.14),
             rootMats: clamp01(0.34 + carr * 0.3 + mosses.length * 0.06),
+            vegetationMats: clamp01(0.24 + reed * 0.34 + shallow * 0.26 + mosses.length * 0.04),
             decayingMaterial: clamp01(0.52 + peat * 0.3 + (season === "autumn" ? 0.14 : 0)),
         },
         water: {
@@ -664,7 +694,7 @@ export function swampProfileAt(x, y, context = {}) {
             drainage: clamp01(1 - waterLevel * 0.6 - instability * 0.2), peatCutting: clamp01(peat * 0.72),
             fishing: fish, basketry: clamp01(reed * 0.58 + sedges.length * 0.1), defence,
             development, settlement, boardwalk: clamp01(0.2 + reeds.length * 0.08 + trees.length * 0.08),
-            bridges: clamp01(floodplain * 0.5 + riverRoll * 0.2), carryingCapacity: bearing,
+            bridges: clamp01(floodplain * 0.5 + riverRoll * 0.2 + (use.bridged ? 0.24 : 0)), carryingCapacity: bearing,
         },
         hazards: {
             sinking, hiddenDepth: deep, insects: mosquito, disease: fever, contaminatedWater: contaminated,
@@ -713,7 +743,20 @@ export function swampSummary(profile) {
     if (!profile) return "";
     const goods = profile.goods.slice(0, 4).map(good => good.label).join(", ") || "no surface harvest";
     const wildlife = profile.fauna.slice(0, 3).map(entry => entry.label).join(", ") || "no wildlife observed";
-    return `${profile.label} · ${profile.water.label} · ${goods} · ${wildlife}`;
+    const works = ["boardwalk", "drained", "peatCut", "fished", "reedsCut", "settled"]
+        .filter(key => profile.use?.[key])
+        .map(key => ({ boardwalk: "boardwalk", drained: "drained", peatCut: "peat cutting", fished: "fished", reedsCut: "reeds cut", settled: "stilt platform" })[key]);
+    return `${profile.label} · ${profile.water.label} · ${goods} · ${wildlife}`
+        + (works.length ? " · works: " + works.join(", ") : "");
+}
+
+/** Audit one profile against the complete 1.2.11 requirement list. */
+export function swampRequirementAudit(profile) {
+    const present = new Set(profile?.features || []);
+    return SWAMP_REQUIREMENTS.map(requirement => ({
+        ...requirement,
+        present: present.has(requirement.id),
+    }));
 }
 
 export function swampRequirement(id) {

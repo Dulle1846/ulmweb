@@ -14,7 +14,10 @@ import { isDesertSite, desertProductsAt } from "../world/desert-ecology.js";
 import { isTundraSite, tundraProductsAt } from "../world/tundra-ecology.js";
 import { isTaigaSite, taigaProductsAt, TAIGA_GOODS } from "../world/taiga-ecology.js";
 import { isSavannaSite, savannaProductsAt, SAVANNA_GOODS } from "../world/savanna-ecology.js";
-import { isSwampSite, swampProductsAt, SWAMP_GOODS } from "../world/swamp-ecology.js";
+import { isSwampSite, swampProductsAt, swampProfileAt, SWAMP_GOODS } from "../world/swamp-ecology.js";
+import {
+    SWAMP_WORKS, applySwampWork, swampWorkAt, swampWorkReady, swampWorksSummaryAt,
+} from "../world/swamp-works.js";
 import { grasslandUseAt } from "./grassland-use.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import {
@@ -506,6 +509,132 @@ export function gatherMeadowProducts(x, y, options = {}) {
         fauna: products.fauna,
         use: products.use,
         total: gathered.reduce((sum, good) => sum + good.amount, 0),
+    };
+}
+
+// --- Player-built wetland works and harvests (1.2.11.64–1.2.11.72) -------
+//
+// The meadow gather button already harvests reeds and peat as generic goods.
+// These actions add the works that a wetland needs before it can be lived in:
+// a boardwalk, a drainage cut, a stilt platform, a peat face, a fish trap and
+// a managed reed bed. Every action shares the existing ledger and the existing
+// daily cooldown; no second inventory and no extra simulation tick are added.
+
+function swampWorkContextAt(x, y, options = {}) {
+    return meadowContextAt(x, y, options);
+}
+
+function swampWorkSiteAt(x, y, options = {}) {
+    const context = swampWorkContextAt(x, y, options);
+    if (!isSwampSite(x, y, context)) return null;
+    const profile = swampProfileAt(x + 0.5, y + 0.5, context);
+    return profile?.swamp ? { profile, context } : null;
+}
+
+function swampWorkCost(def) {
+    return Object.entries(def?.cost || {}).filter(([, amount]) => Number(amount) > 0);
+}
+
+function canPaySwampWork(def) {
+    return swampWorkCost(def).every(([resource, amount]) =>
+        (Number(state.resources?.[resource]) || 0) >= Number(amount));
+}
+
+function paySwampWork(def) {
+    if (!canPaySwampWork(def)) return false;
+    for (const [resource, amount] of swampWorkCost(def)) addResource(resource, -Number(amount));
+    return true;
+}
+
+function swampWorkEcologicalReason(kind, profile) {
+    if (kind === "peat" && profile.economy.peatCutting < 0.18) return "No workable peat at this tile";
+    if (kind === "fishing" && profile.economy.fish < 0.12) return "No fishable water at this tile";
+    if (kind === "reeds" && profile.economy.reeds < 0.12) return "No standing reed bed at this tile";
+    if (kind === "stilt" && profile.economy.settlement < 0.16) return "The ground is too soft for a stilt platform";
+    if (kind === "drainage" && profile.water.waterLevel < 0.3) return "The ground is already dry enough";
+    if (kind === "defence" && profile.economy.defence < 0.2) return "No reed or firm bank for a defence";
+    return null;
+}
+
+export function swampWorkAvailability(x, y, options = {}) {
+    const site = swampWorkSiteAt(x, y, options);
+    if (!site) return { ok: false, reason: "No wetland at this tile", works: {} };
+    const { profile } = site;
+    const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
+    const works = {};
+    for (const [kind, definition] of Object.entries(SWAMP_WORKS)) {
+        const ready = swampWorkReady(x, y, kind, day);
+        const ecological = swampWorkEcologicalReason(kind, profile);
+        const affordable = canPaySwampWork(definition);
+        const reason = ready.reason || ecological || (affordable ? null
+            : "Not enough " + swampWorkCost(definition).filter(([resource, amount]) => (Number(state.resources?.[resource]) || 0) < Number(amount)).map(([resource]) => resource).join(", "));
+        works[kind] = { ...definition, ok: !reason, reason };
+    }
+    return {
+        ok: true,
+        profile,
+        works,
+        summary: swampWorksSummaryAt(x, y),
+        title: profile.label + " · " + profile.water.label,
+        audit: profile.features?.length || 0,
+    };
+}
+
+export function performSwampWork(x, y, kind, options = {}) {
+    const definition = SWAMP_WORKS[kind];
+    if (!definition) return { ok: false, reason: "Unknown wetland work" };
+    const availability = swampWorkAvailability(x, y, options);
+    if (!availability.ok) return { ok: false, reason: availability.reason };
+    if (!availability.works[kind]?.ok) {
+        return { ok: false, reason: availability.works[kind]?.reason || "This work is not possible here" };
+    }
+    const profile = availability.profile;
+    const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
+    const year = Math.floor(number(options.year, state.year) || 1);
+    if (!paySwampWork(definition)) return { ok: false, reason: "The work could not be paid for" };
+    const ledger = ensureForestGathering();
+    const goods = [];
+    const add = (id, amount) => {
+        const accepted = addStock(ledger, id, Math.max(0, Math.floor(amount)));
+        if (accepted > 0 && FOREST_GOODS[id]) {
+            goods.push({ ...FOREST_GOODS[id], amount: accepted });
+        }
+        return accepted;
+    };
+
+    if (kind === "fishing") {
+        add("marsh-fish", 3 + Math.round(profile.economy.fish * 4));
+        if (profile.economy.waterfowl > 0.26) add("waterfowl", 1 + Math.round(profile.economy.waterfowl * 2));
+    } else if (kind === "reeds") {
+        add("reed", 4 + Math.round(profile.economy.reeds * 5));
+        add("reed-matting", 1 + Math.round(profile.economy.basketry * 2));
+    } else if (kind === "peat") {
+        add("peat", 4 + Math.round(profile.economy.peatCutting * 5));
+        add("swamp-mud", 1);
+    }
+    applySwampWork(x, y, kind, { day });
+    const exposure = (kind === "fishing" || kind === "peat" || kind === "reeds")
+        ? tropicalExposure({
+            disease: clamp(profile.hazards.fever * 0.24, 0, 1),
+            diseaseLabel: "marsh fever",
+        }, { source: "wetland-work", x, y })
+        : { outbreak: false, injury: false, foodLost: 0 };
+    const record = swampWorkAt(x, y);
+    if (record) {
+        record.lastHarvest = record.lastHarvest || {};
+        record.lastHarvest[kind] = day;
+    }
+    const summary = swampWorksSummaryAt(x, y);
+    ledger.history.push({
+        x: Math.floor(x), y: Math.floor(y), day, year, kind: "swamp-work",
+        work: kind, goods: goods.map(good => ({ id: good.id, amount: good.amount })),
+    });
+    if (ledger.history.length > MAX_HISTORY) ledger.history.splice(0, ledger.history.length - MAX_HISTORY);
+    return {
+        ok: true, kind, label: definition.label,
+        tile: { x: Math.floor(x), y: Math.floor(y), label: profile.label, formation: profile.formation },
+        goods, exposure, summary,
+        message: definition.label.toUpperCase() + (goods.length ? " · " + goods.map(good => good.amount + " " + good.label).join(" · ") : " COMPLETED"),
     };
 }
 

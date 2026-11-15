@@ -7,6 +7,7 @@ import {
 } from "../world/forest-ecology.js";
 import { forestSuccessionAt } from "./forest-succession.js";
 import { seasonalState } from "../world/season.js";
+import { swampWorkUseAt } from "../world/swamp-works.js";
 
 const VERSION=1;
 
@@ -367,7 +368,10 @@ export function getForestMovementFactorAt(x, y) {
     if (climate === "swamp") {
         const seasonal = seasonalState(Number(state.dayOfYear) || 0, "swamp");
         const flood = seasonal.season === 0 ? (1 - seasonal.greenUp) * 0.16 : 0;
-        return clamp(0.72 - seasonal.snowCover * 0.08 - flood, 0.54, 0.82);
+        const works = swampWorkUseAt(x, y);
+        const boardwalk = works.boardwalk ? 0.18 : 0;
+        const drained = works.drained ? 0.05 : 0;
+        return clamp(0.72 - seasonal.snowCover * 0.08 - flood + boardwalk + drained, 0.54, 0.94);
     }
     if (climate !== "tropical") return 1;
     const point = readTile(x, y);

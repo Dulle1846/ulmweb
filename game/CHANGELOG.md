@@ -131,13 +131,33 @@ reed craft and natural defences.
 seasonal snow curve and palette, a `swamp-render.js` Canvas2D layer for water,
 reeds, moss, mist, reflections, bubbles, insect clouds and fauna, carr timber in
 the shared forest model, swamp goods in `FOREST_GOODS` and delivery channels,
-and wetland survey summaries in the existing land-use path. No save schema,
-per-tile state or extra tick loop was added.
+and wetland survey summaries in the existing land-use path. Schema 11 gains an
+optional bounded `swampWorks` block and no extra tick loop.
+
+**Wetland works and active hazards:** the profile was already complete, but the
+works it described were passive booleans. They are now real player actions on a
+wetland farm or stable: **timber boardwalk**, **drainage cut**, **stilt
+platform**, **small bridge and dam**, **peat cutting**, **wetland fishing**,
+**managed reed harvest**, a **reed screen and dyke** for natural defence, and a
+**wetland access survey** that lowers the development penalty. Each spends real
+wood/stone/gold, marks the tile in
+`state.swampWorks`, changes the ecology profile (lower water and bearing for
+drainage, better movement for boardwalk/bridge, lower reed/peat abundance after
+cutting), repaints the tile, and delivers peat, marsh fish, waterfowl, reed and
+reed matting into the existing gathering ledger. Extractive work has a
+per-tile recovery cooldown and can trigger marsh fever through the existing
+public-health exposure path. The wetland renderer now draws planks, ditches,
+peat faces, fish traps, reed stubble, bridges, defended reed screens, survey
+markers and stilt floors, and uses the profile's open/closed light mood for the
+canopy/shore contrast.
 
 **Verification:** all 81 requirements are declared and reached by a two-season
-deterministic survey covering all ten formations; focused wetland tests pass;
-the existing 984-test suite remains green after its hardcoded climate and
-formation counts were updated.
+deterministic survey covering all ten formations; the full suite is
+**988/988** green after its hardcoded climate and formation counts were
+updated. The cold-start comparison on the shipped low-end profile (4x CPU,
+software Canvas, 70% render scale, 85% forest, two years, no warm-up) measured
+swamp **16.8 ms p95** against savanna **16.8 ms**, with **zero long tasks** in
+both scenarios.
 
 - **50-year browser endurance:** the resumable audit completed all ten
   five-year blocks, year 26 → 76, **19,942 ticks**, **11 samples**, every

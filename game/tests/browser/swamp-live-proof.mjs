@@ -300,6 +300,51 @@ try {
     assert.ok(gathered.delivery,
         "the gathered swamp good must have an existing delivery channel: " + JSON.stringify(gathered.delivery));
 
+    // A boardwalk is the least destructive work and makes the player-built
+    // layer visible in the same screenshot as the natural wetland. It must
+    // spend real wood, persist in state.swampWorks, change the site profile and
+    // remain queryable through the same availability gate the UI uses.
+    const wetlandWorks = await page.evaluate(async ({ tile }) => {
+        const [{ state }, { performSwampWork, swampWorkAvailability }, { swampProfileAt }] = await Promise.all([
+            import("/js/core/state.js"),
+            import("/js/systems/forest-gathering.js"),
+            import("/js/world/swamp-ecology.js")
+        ]);
+        const before = swampWorkAvailability(tile.x, tile.y);
+        const woodBefore = Number(state.resources.wood) || 0;
+        const result = performSwampWork(tile.x, tile.y, "boardwalk", { dayOfYear: state.dayOfYear });
+        const after = swampWorkAvailability(tile.x, tile.y);
+        const record = state.swampWorks?.tiles?.[tile.x + ":" + tile.y] || null;
+        return {
+            before: before.ok ? { title: before.title, summary: before.summary, audit: before.audit } : before,
+            after: after.ok ? { title: after.title, summary: after.summary, audit: after.audit } : after,
+            result: result.ok ? { ok: true, kind: result.kind, label: result.label, message: result.message, goods: result.goods } : result,
+            record,
+            woodSpent: woodBefore - (Number(state.resources.wood) || 0),
+            profile: (() => {
+                const context = {
+                    seed: Number(state.worldSeed) || 1,
+                    climate: state.worldOptions?.climate || "",
+                    height: 0, moisture: 0, temperature: 0,
+                    seaLevel: Number(state.seaLevel) || 0.33,
+                    dayOfYear: Number(state.dayOfYear) || 1,
+                    year: Number(state.year) || 1,
+                    hour: Number(state.timeOfDay) || 12,
+                    weather: state.weather || "clear",
+                    wind: 1,
+                    use: state.swampWorks?.tiles?.[tile.x + ":" + tile.y] || {}
+                };
+                return swampProfileAt(tile.x + 0.5, tile.y + 0.5, context)?.visual || null;
+            })()
+        };
+    }, { tile: world.sight });
+    assert.equal(wetlandWorks.result.ok, true,
+        "a wetland farm/stable must be able to build a boardwalk: " + JSON.stringify(wetlandWorks.result));
+    assert.equal(wetlandWorks.record?.boardwalk, true);
+    assert.ok(wetlandWorks.woodSpent >= 10, "the boardwalk must spend real wood");
+    assert.match(wetlandWorks.after.summary, /boardwalk/i,
+        "the survey must report the built boardwalk: " + JSON.stringify(wetlandWorks.after));
+
     await settleOverlays(page);
     await page.evaluate(async () => {
         const { clearTimelineNotifications } = await import("/js/presentation/event-notifications.js");
@@ -361,6 +406,7 @@ try {
         tile: world.sight,
         survey,
         gathering: gathered,
+        wetlandWorks,
         performance,
         screenshots: [FULL_SHOT, MAP_SHOT],
         pageErrors,

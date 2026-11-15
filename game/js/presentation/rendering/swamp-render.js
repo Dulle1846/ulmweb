@@ -75,14 +75,14 @@ function drawWetGround(ctx, px, py, cellPx, s, profile, roll, tick) {
     }
 }
 
-function drawReeds(ctx, px, py, cellPx, s, profile, roll, tick) {
+function drawReeds(ctx, px, py, cellPx, s, profile, roll, tick, fineDetail = true) {
     const reeds = profile.vegetation?.reeds || [];
     const sedges = profile.vegetation?.sedges || [];
     if (!reeds.length && !sedges.length) return;
     const swayAmount = clamp01(profile.visual?.reedSway);
     const sway = Math.sin((Number(tick) || 0) * 0.0015 + px * 0.09 + py * 0.07) * (1.2 + swayAmount * 2.6) * s;
     const stem = colour(profile.visual?.reedHex, "#7f8a55");
-    const count = Math.min(7, 2 + reeds.length + sedges.length * 2);
+    const count = Math.min(fineDetail ? 7 : 4, 2 + reeds.length + sedges.length * 2);
     ctx.lineWidth = Math.max(0.4, 0.55 * s);
     for (let index = 0; index < count; index++) {
         const sedge = index % 2 === 1 && sedges.length;
@@ -250,6 +250,146 @@ function drawFauna(ctx, px, py, cellPx, s, profile, roll, tick) {
     }
 }
 
+function drawLightMood(ctx, px, py, cellPx, profile, sun) {
+    const visual = profile.visual || {};
+    const shaded = visual.lightMood === "shaded";
+    const light = Math.max(0, Math.min(1, Number(shaded ? visual.closedLight : visual.openLight) || Number(sun) || 0.5));
+    ctx.globalAlpha = shaded ? 0.13 - light * 0.06 : 0.035 + light * 0.05;
+    ctx.fillStyle = shaded ? "#263a2d" : "#e8e4ba";
+    ctx.beginPath();
+    ctx.ellipse(px, py + cellPx * 0.08, cellPx * 0.31, cellPx * 0.19, 0, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawWorks(ctx, px, py, cellPx, s, profile, roll) {
+    const use = profile.use || {};
+    if (use.boardwalk) {
+        ctx.globalAlpha = 0.72;
+        ctx.strokeStyle = "#7c6646";
+        ctx.lineWidth = Math.max(0.7, 1.05 * s);
+        for (let index = 0; index < 5; index++) {
+            const y = py + cellPx * (0.02 + index * 0.052);
+            ctx.beginPath();
+            ctx.moveTo(px - cellPx * 0.27, y);
+            ctx.lineTo(px + cellPx * 0.27, y + cellPx * 0.012);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 0.34;
+        ctx.strokeStyle = "#4b3f2e";
+        ctx.lineWidth = Math.max(0.5, 0.7 * s);
+        for (const x of [-0.24, 0.24]) {
+            ctx.beginPath();
+            ctx.moveTo(px + cellPx * x, py - cellPx * 0.02);
+            ctx.lineTo(px + cellPx * x, py + cellPx * 0.25);
+            ctx.stroke();
+        }
+    }
+    if (use.drained) {
+        ctx.globalAlpha = 0.38;
+        ctx.strokeStyle = "#3f5148";
+        ctx.lineWidth = Math.max(0.6, 0.9 * s);
+        ctx.beginPath();
+        ctx.moveTo(px - cellPx * 0.3, py + cellPx * (0.19 + roll * 0.05));
+        ctx.quadraticCurveTo(px, py + cellPx * 0.14, px + cellPx * 0.31, py + cellPx * 0.2);
+        ctx.stroke();
+        ctx.globalAlpha = 0.18;
+        ctx.strokeStyle = "#b7c4af";
+        ctx.beginPath();
+        ctx.moveTo(px - cellPx * 0.29, py + cellPx * 0.205);
+        ctx.quadraticCurveTo(px, py + cellPx * 0.155, px + cellPx * 0.3, py + cellPx * 0.215);
+        ctx.stroke();
+    }
+    if (use.peatCut) {
+        ctx.globalAlpha = 0.34;
+        ctx.fillStyle = "#3c3022";
+        for (let index = 0; index < 3; index++) {
+            ctx.fillRect(px + cellPx * (-0.2 + index * 0.13), py + cellPx * (0.18 + (index % 2) * 0.035), cellPx * 0.1, cellPx * 0.045);
+        }
+    }
+    if (use.fished) {
+        ctx.globalAlpha = 0.48;
+        ctx.strokeStyle = "#6d5a3d";
+        ctx.lineWidth = Math.max(0.5, 0.7 * s);
+        for (let index = 0; index < 3; index++) {
+            const x = px + cellPx * (-0.16 + index * 0.12);
+            ctx.beginPath();
+            ctx.moveTo(x, py + cellPx * 0.12);
+            ctx.lineTo(x, py + cellPx * 0.03);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x, py + cellPx * 0.145, cellPx * 0.025, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+    if (use.reedsCut) {
+        ctx.globalAlpha = 0.28;
+        ctx.strokeStyle = "#8b8758";
+        ctx.lineWidth = Math.max(0.4, 0.55 * s);
+        for (let index = 0; index < 6; index++) {
+            const x = px + cellPx * (-0.22 + index * 0.085);
+            ctx.beginPath();
+            ctx.moveTo(x, py + cellPx * 0.18);
+            ctx.lineTo(x + (index % 2 ? 1 : -1) * 1.2 * s, py + cellPx * 0.12);
+            ctx.stroke();
+        }
+    }
+    if (use.bridged) {
+        ctx.globalAlpha = 0.62;
+        ctx.strokeStyle = "#8a704a";
+        ctx.lineWidth = Math.max(0.8, 1.1 * s);
+        ctx.beginPath();
+        ctx.moveTo(px - cellPx * 0.28, py + cellPx * 0.08);
+        ctx.quadraticCurveTo(px, py + cellPx * 0.03, px + cellPx * 0.28, py + cellPx * 0.09);
+        ctx.stroke();
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = "#4b3b28";
+        ctx.lineWidth = Math.max(0.4, 0.6 * s);
+        for (let index = -2; index <= 2; index++) {
+            const x = px + cellPx * index * 0.09;
+            ctx.beginPath();
+            ctx.moveTo(x, py + cellPx * 0.02);
+            ctx.lineTo(x, py + cellPx * 0.13);
+            ctx.stroke();
+        }
+    }
+    if (use.defended) {
+        ctx.globalAlpha = 0.44;
+        ctx.strokeStyle = "#7f774d";
+        ctx.lineWidth = Math.max(0.5, 0.7 * s);
+        for (let index = 0; index < 8; index++) {
+            const x = px + cellPx * (-0.26 + index * 0.075);
+            ctx.beginPath();
+            ctx.moveTo(x, py + cellPx * 0.16);
+            ctx.lineTo(x + 0.8 * s, py - cellPx * 0.02);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = "#4e4930";
+        ctx.fillRect(px - cellPx * 0.28, py + cellPx * 0.15, cellPx * 0.56, cellPx * 0.025);
+    }
+    if (use.surveyed) {
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = "#d7c990";
+        ctx.lineWidth = Math.max(0.35, 0.5 * s);
+        ctx.beginPath();
+        ctx.moveTo(px + cellPx * 0.18, py + cellPx * 0.13);
+        ctx.lineTo(px + cellPx * 0.26, py - cellPx * 0.02);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(px + cellPx * 0.26, py - cellPx * 0.03, 0.9 * s, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    if (use.settled) {
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = "#8a6f4d";
+        ctx.fillRect(px - cellPx * 0.1, py + cellPx * 0.015, cellPx * 0.2, cellPx * 0.115);
+        ctx.globalAlpha = 0.22;
+        ctx.strokeStyle = "#3d3021";
+        ctx.lineWidth = Math.max(0.4, 0.6 * s);
+        ctx.strokeRect(px - cellPx * 0.1, py + cellPx * 0.015, cellPx * 0.2, cellPx * 0.115);
+    }
+}
+
 /**
  * Draw one swamp tile. The function is safe with a null profile, and every
  * loop has a hard cap so the detail layer stays within the terrain budget.
@@ -258,13 +398,20 @@ export function drawSwamp(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0.5, s3 =
     if (!ctx || !profile?.swamp || !(cellPx > 0)) return;
     const s = cellPx / 48;
     const roll = clamp01((Number(s1) || 0) * 0.55 + (Number(s2) || 0) * 0.3 + (Number(s3) || 0) * 0.15);
+    // At the shipped 70% low-end scale a tile is only ~23 px wide. Keep the
+    // water, ground, works, reeds and fauna that carry the wetland read, but
+    // drop the sub-pixel flower heads and swarm dots instead of spending a
+    // path per dot on every tile in the viewport.
+    const fineDetail = cellPx >= 24 && Number(zoom) >= 0.62;
     ctx.save();
     drawWetGround(ctx, px, py, cellPx, s, profile, roll, tick);
+    drawWorks(ctx, px, py, cellPx, s, profile, roll);
     drawMossAndLilies(ctx, px, py, cellPx, s, profile, roll);
-    drawReeds(ctx, px, py, cellPx, s, profile, roll, tick);
-    drawSwampFlowers(ctx, px, py, cellPx, s, profile, roll);
+    drawReeds(ctx, px, py, cellPx, s, profile, roll, tick, fineDetail);
+    if (fineDetail) drawSwampFlowers(ctx, px, py, cellPx, s, profile, roll);
     drawMist(ctx, px, py, cellPx, s, profile, roll);
-    drawInsects(ctx, px, py, cellPx, s, profile, tick);
+    drawLightMood(ctx, px, py, cellPx, profile, sun);
+    if (fineDetail) drawInsects(ctx, px, py, cellPx, s, profile, tick);
     drawFauna(ctx, px, py, cellPx, s, profile, roll, tick);
     ctx.restore();
 }

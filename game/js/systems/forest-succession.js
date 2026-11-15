@@ -408,19 +408,21 @@ function spreadDisturbances(model) {
     const width = Number(state.worldW) || 0;
     const height = Number(state.worldH) || 0;
     if (!geo || !width || !height) return 0;
-    // Spread order must stay in tile-creation order for deterministic saves:
-    // reuse a recovered slot at its original position rather than iterating a
-    // filtered work list. This pass only runs every twelve days; the daily age
-    // loop still uses the active list.
-    const keys = Object.keys(model.tiles);
-    let tileCount = keys.length;
+    // Spread order must stay in tile-creation order for deterministic saves.
+    // Iterate the maintained active list (also insertion-ordered) instead of
+    // every recovered record: a mature wetland can hold thousands of old
+    // scars, and re-evaluating each one every twelve days was the remaining
+    // low-end spike. The snapshot preserves the old "do not visit records
+    // created during this pass" rule.
+    const keys = activeKeyList(model).slice();
+    let tileCount = Object.keys(model.tiles).length;
     const neighbourOrder = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
     let spreads = 0;
 
     for (const key of keys) {
         if (spreads >= MAX_SPREAD_PER_PASS) break;
         const record = model.tiles[key];
-        if (!record || !activeSuccessionRecord(record)) continue;
+        if (!record) continue;
         if (Math.max(0, number(record.containedUntil)) > model.day) continue;
         const profile = forestSuccessionProfile(record.kind);
         if (!profile?.spreadChance) continue;

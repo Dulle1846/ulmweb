@@ -38,6 +38,7 @@ const TAIGA_DRAW_CALL_BUDGET = Number(process.env.PERF_BUDGET_DRAW_CALLS || 1500
 const TAIGA_ENTITY_BUDGET = Number(process.env.PERF_BUDGET_ENTITIES || 120);
 const TAIGA_DRAW_MS_BUDGET = Number(process.env.PERF_BUDGET_DRAW_MS || 16.7);
 const OUT = resolve(ROOT, "..", "artifacts", "low-end-performance.json");
+const EXTERNAL_BASE = process.env.PERF_BASE_URL ? new URL(process.env.PERF_BASE_URL).origin : "";
 
 // A 60 Hz presentation target on a low-end desktop. The budget is intentionally
 // expressed in wall-clock frame intervals, not renderer draw time: a slow main
@@ -96,9 +97,9 @@ if (!probe.ok) {
     process.exit(1);
 }
 
-const server = serveGame();
-await new Promise(resolveListen => server.listen(0, "127.0.0.1", resolveListen));
-const port = server.address().port;
+const server = EXTERNAL_BASE ? null : serveGame();
+if (server) await new Promise(resolveListen => server.listen(0, "127.0.0.1", resolveListen));
+const baseUrl = EXTERNAL_BASE || ("http://127.0.0.1:" + server.address().port);
 const browser = await chromium.launch({
     ...browserLaunchOptions(),
     args: [
@@ -132,6 +133,7 @@ page.on("console", message => {
 // timestamps, so it cannot affect layout or gameplay.
 await page.addInitScript(() => {
     window.__KAC_PERF = { raf: [], longTasks: [], tickMs: [], uiChunkMs: [], friendlyMs: [], logisticsMs: [], workMs: [], draws: [] };
+    window.__KAC_SIM_TIMES = {};
     window.__KAC_LOAD_TIMES = {};
     const sample = timestamp => {
         const frames = window.__KAC_PERF.raf;
@@ -210,6 +212,35 @@ if (process.env.PERF_LOAD_BREAKDOWN === "1") {
             source = source.replace(marker, `{const __kacT=performance.now();${marker}globalThis.__KAC_LOAD_TIMES.${key}=performance.now()-__kacT;}`);
         }
         await route.fulfill({ response, body: source });
+    });
+}
+
+if (process.env.PERF_SIM_BREAKDOWN === "1") {
+    await page.route("**/js/simulation/simulation.js", async route => {
+        const response = await route.fetch();
+        let source = await response.text();
+        const names = [
+            "resetIncome", "updateSettlement", "updateCitizenRegister",
+            "updateFields", "updateForestSuccession", "updateForestFauna",
+            "updateForestPannage", "updateBuildingIncome", "updateCraftProduction",
+            "updateLogistics", "updateConstruction", "updateVillagers",
+            "updateMilitary", "updateCombat", "updateExpeditions",
+            "checkRandomEvents", "updateWeather", "updateMorale", "updateMarket",
+            "updateEconomy", "updateRealmCycle", "updateHealth", "updateAmbitions",
+            "updateMicroEvents"
+        ];
+        const helper = "const __kacSimT=(name,fn)=>{const t=performance.now();fn();" +
+            "const d=performance.now()-t;globalThis.__KAC_SIM_TIMES[name]=Math.max(globalThis.__KAC_SIM_TIMES[name]||0,d);};\n";
+        source = source.replace("export function updateSimulation()", helper + "export function updateSimulation()");
+        for (const name of names) {
+            const re = new RegExp("(?<![A-Za-z0-9_.])" + name + "\\(\\)", "g");
+            source = source.replace(re, `__kacSimT("${name}",()=>${name}())`);
+        }
+        const headers = { ...response.headers() };
+        delete headers["content-encoding"];
+        delete headers["content-length"];
+        delete headers["transfer-encoding"];
+        await route.fulfill({ status: response.status(), headers, body: source });
     });
 }
 
@@ -828,7 +859,7 @@ try {
             }));
         } catch { /* storage is optional in hardened browser profiles */ }
     }, { renderScale: RENDER_SCALE, frameLimit: FRAME_LIMIT });
-    await page.goto("http://127.0.0.1:" + port + "/", { waitUntil: "networkidle", timeout: 120000 });
+    await page.goto(baseUrl + "/", { waitUntil: "networkidle", timeout: 120000 });
     assert.equal(await page.title(), "KINGS & CARDS • Eternal Realm");
     await page.locator("#world-seed-input").fill(String(SEED));
     await page.selectOption("#world-climate", CLIMATE);
@@ -901,7 +932,20 @@ try {
             transferMode: "ReportEvents"
         });
     }
+    const profileSession = process.env.PERF_PROFILE === "1";
+    if (profileSession) {
+        await cdp.send("Profiler.enable");
+        await cdp.send("Profiler.setSamplingInterval", { interval: 100 });
+        await cdp.send("Profiler.start");
+    }
     const quiet = await samplePhase("quiet-early-realm", QUIET_MS);
+    const simBreakdown = process.env.PERF_SIM_BREAKDOWN === "1"
+        ? await page.evaluate(() => ({ ...globalThis.__KAC_SIM_TIMES }))
+        : null;
+    if (profileSession) {
+        const { profile } = await cdp.send("Profiler.stop");
+        await writeFile(resolve(ROOT, "..", "artifacts", "cpu-profile.cpuprofile"), JSON.stringify(profile));
+    }
     if (trace) {
         await cdp.send("Tracing.end");
         await page.waitForTimeout(500);
@@ -1008,6 +1052,7 @@ try {
     summary = {
         seed: SEED,
         climate: CLIMATE,
+        baseUrl,
         forests: FORESTS,
         viewport: VIEWPORT,
         cpuThrottle: CPU_THROTTLE,
@@ -1030,6 +1075,7 @@ try {
         },
         taiga: taigaInfo ? { ...taigaInfo, phases: taigaPhases.map(phase => phase.name) } : null,
         phases: [...(simOnly ? [simOnly] : []), quiet, dense, ...taigaPhases, panel, nobilityPanel, warPhase],
+        simBreakdown,
         saveLoad,
         pageErrors: errors,
         consoleErrors,
@@ -1039,7 +1085,7 @@ try {
     console.log(JSON.stringify(summary, null, 2));
 } finally {
     await browser.close().catch(() => {});
-    await new Promise(resolveClose => server.close(resolveClose));
+    if (server) await new Promise(resolveClose => server.close(resolveClose));
 }
 
 const failures = [];

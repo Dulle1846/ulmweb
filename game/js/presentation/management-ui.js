@@ -18,7 +18,7 @@ import { TYPE } from "../core/types.js";
 import { CARD_DECK, drawPlayerCard, selectCard } from "../systems/cards.js";
 import { getResourceNodeAt } from "../systems/resource-geography.js";
 import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
-import { deliverForestGoods, forestDeliveryAvailability, forestGatheringSummary, forestThinningAvailability, gatherNearestForestProducts, gatherNearestGrasslandProducts, processForestHunt, thinNearestForest } from "../systems/forest-gathering.js";
+import { deliverForestGoods, forestDeliveryAvailability, forestGatheringSummary, forestThinningAvailability, gatherNearestForestProducts, gatherNearestGrasslandProducts, performSwampWork, processForestHunt, swampWorkAvailability, thinNearestForest } from "../systems/forest-gathering.js";
 import { grasslandSiteSummaryAt } from "../systems/grassland-use.js";
 import { feedStableFromMast, pannageSummary } from "../systems/forest-pannage.js";
 import { suppressNearestForestDisturbance } from "../systems/forest-succession.js";
@@ -444,6 +444,13 @@ function buildings(){
   ].join(""):"";
   const forestPannage=building.type===TYPE.STABLE?'<button type="button" class="command-choice" data-feed-stable="'+esc(building.id)+'">FEED STABLE FROM MAST OR HAY</button>':"";
   const meadowGather=[TYPE.FARM,TYPE.STABLE].includes(building.type)?'<button type="button" class="command-choice" data-gather-meadow="'+esc(building.id)+'">GATHER MEADOW PRODUCTS</button>':"";
+  let wetlandWorks="";
+  try{
+   if([TYPE.FARM,TYPE.STABLE].includes(building.type)&&state.worldOptions?.climate==="swamp"){
+    const wetland=swampWorkAvailability(building.x,building.y);
+    if(wetland.ok) wetlandWorks='<span class="building-detail-wide"><strong>Wetland works</strong><small>'+esc(wetland.title)+' · '+esc(wetland.summary||"no works built")+' · '+wetland.audit+' site features</small>'+Object.values(wetland.works).map(work=>'<button type="button" class="command-choice" data-swamp-work="'+esc(work.id)+'" data-swamp-building="'+esc(building.id)+'"'+(work.ok?'':' disabled title="'+esc(work.reason||"Not possible here")+'"')+'>'+esc(work.label.toUpperCase())+'</button>').join("")+'</span>';
+   }
+  }catch{}
   const detail=card?.desc||BUILDING_LABELS[building.type]||"No additional building description is recorded.";
   const inventory=getInventorySummary(building);
   const jobs=getBuildingLogisticsStatus(building)||[];
@@ -464,7 +471,7 @@ function buildings(){
   const profileField=inventory?.kind==="warehouse"?'<span>Warehouse profile<strong>'+(building.type===TYPE.KEEP?esc(inventory.profileLabel||"General store")+" · fixed by the crown":'<select class="warehouse-profile-select" data-warehouse-profile="'+esc(building.id)+'" aria-label="Warehouse profile for '+esc(name)+'">'+Object.values(WAREHOUSE_PROFILES).map(profile=>'<option value="'+esc(profile.id)+'"'+(inventory.profile===profile.id?' selected':'')+'>'+esc(profile.label)+" · "+number(profile.capacity)+'</option>').join("")+'</select>')+'</strong></span>':"";
   const fieldText=building.field?" · field "+building.field.stage+" ("+Math.round(building.field.growth)+"%) · soil "+Math.round(building.field.fertility)+"%"+(building.field.resting?" · resting":""):"";
   const stewardship=foresterStewardship(building);
-  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"'+(String(building.id)===String(expandedBuildingId)?' open':'')+'><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+profileField+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+forestGather+forestPannage+meadowGather+'</div></div></details>';
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"'+(String(building.id)===String(expandedBuildingId)?' open':'')+'><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+profileField+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+forestGather+forestPannage+meadowGather+wetlandWorks+'</div></div></details>';
  }).join("");
  const logisticsClosed=narrowViewport()&&!expandedBuildingLogistics;
  const rejection=!logisticsClosed&&logistics.lastRejection?'<p class="command-note logistics-rejection">LAST ORDER REJECTED · '+esc(logistics.lastRejection.reason)+' · '+esc(logistics.lastRejection.kind||"job")+' '+(logistics.lastRejection.good?esc(logistics.lastRejection.good):"")+' · tick '+number(logistics.lastRejection.tick)+'</p>':"";
@@ -1313,6 +1320,14 @@ export function setupManagementUI(){
    const result=entity?gatherNearestGrasslandProducts(entity.x,entity.y,7):{ok:false,reason:"Building not found"};
    if(result.ok){toast("MEADOW HARVEST · "+result.goods.map(good=>good.amount+" "+good.label).join(" · "));renderUI();render();}
    else toast(String(result.reason||"MEADOW HARVEST FAILED").toUpperCase());
+   return;
+  }
+  const swampWork=e.target.closest("[data-swamp-work]");
+  if(swampWork){
+   const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(swampWork.dataset.swampBuilding));
+   const result=entity?performSwampWork(entity.x,entity.y,swampWork.dataset.swampWork):{ok:false,reason:"Building not found"};
+   if(result.ok){toast(result.message);renderUI();render();}
+   else toast(String(result.reason||"WETLAND WORK FAILED").toUpperCase());
    return;
   }
   const person=e.target.closest("[data-open-person]");
