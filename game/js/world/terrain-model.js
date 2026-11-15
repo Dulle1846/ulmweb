@@ -742,8 +742,10 @@ export function terrainColor(height, moisture, temperature, px, py, climate, sea
         ? smoothstep(0.88, 0.98, e)
         : climate === 'mountain'
             // Permanent snow belongs to the nival belt; lower slopes keep their
-            // seasonal cover from the detail renderer.
-            ? smoothstep(0.68, 0.9, e)
+            // seasonal cover from the detail renderer. The line sits lower than
+            // a generic alpine cap so highland realms read as highland from the
+            // first tile, with the detail layer adding drift and aspect.
+            ? smoothstep(0.66, 0.9, e)
         : climate === 'tundra'
             // Tundra soil is not permanently white. Snow belongs to the season
             // and to the high snowfields; the low ground still reads as moss,

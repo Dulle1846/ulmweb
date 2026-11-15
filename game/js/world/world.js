@@ -107,7 +107,14 @@ export function prerenderTerrain() {
             const north = terrainHeight(px, py - 1, h);
             const northWest = terrainHeight(px - 1, py - 1, h);
             const slope = h - (west + north + northWest) / 3;
-            const hillshade = Math.max(-30, Math.min(32, slope * 2400));
+            // Mountain relief needs a harder key light than pasture: the same
+            // height step can be a 30-degree ridge or a gentle field. Increase
+            // only the mountain bake, leaving every other climate's goldens and
+            // illumination contract untouched.
+            const reliefScale = climate === 'mountain' ? 5600 : 2400;
+            const hillshade = climate === 'mountain'
+                ? Math.max(-52, Math.min(58, slope * reliefScale))
+                : Math.max(-30, Math.min(32, slope * reliefScale));
 
             const color = terrainColor(h, m, temperature, px, py, climate, sea, hillshade);
             const pi = idx * 4;

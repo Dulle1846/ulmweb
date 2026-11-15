@@ -169,6 +169,24 @@ scale, 55% forest, two years) held **16.7–16.8 ms p95** in all five phases wit
 **zero long tasks**, 6.9–9.3 ms p95 canvas draw, 431–445 p95 draw calls, 203 ms
 save, 1,433 ms load and **0 page / 0 console errors**.
 
+**Relief pass and five-year mountain audit:** the flat highland screenshot is
+replaced by hard-edged formation silhouettes, reduced colour and snow over the
+baked hillshade, and a shared `drawMountainGround` path so rock, snow and forest
+tiles keep their landform instead of falling into the generic snow branch. Each
+of the ten formations has a distinct silhouette — a three-tooth high chain,
+serrated jagged peaks, a vertical sheer wall, parallel ridge bands, a V-notch
+deep valley, a narrow gorge slot, a flat mesa, rounded domes, low foothills and
+an asymmetric isolated massif — with capped snow and a shaded lower snow line.
+The highland bake uses a stronger key light and a lower permanent snow line; the
+detail layer adds cast shadows and snowdrifts. A new
+`tests/browser/mountain-formations.mjs` reference captures all ten formations
+and a large renderer atlas. A five-year `runCampaign` audit builds terrace, road,
+quarry, mine and aqueduct on one real mountain tile, observes every winter,
+proves winter avalanche exposure rises above summer, and round-trips the works,
+resources, tick and year through the production save pipeline. Full suite:
+**1003/1003** green; live proof still **60 FPS / 0.6 ms p95** with no page,
+console or request errors.
+
 ### 3.18.0-dev — Swamps and bogs (1.2.11.1–1.2.11.81)
 
 **Released:** 2026-11-15 on the development line

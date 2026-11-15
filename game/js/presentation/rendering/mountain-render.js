@@ -16,20 +16,202 @@ function hash(value, seed) {
     return ((Math.imul((value | 0) + 1, 0x9e3779b1) ^ Math.imul((seed | 0) + 1, 0x85ebca6b)) >>> 0) / 0x100000000;
 }
 
+
+// The broad terrain colour only knows height and moisture; it cannot tell a
+// jagged arête from a rounded dome. These ten small, capped silhouettes give
+// each formation a readable profile at play zoom without adding a terrain
+// mesh. They deliberately use a hard rock face and a sunlit crest: the baked
+// highland is pale enough that a low-alpha overlay would vanish in snow.
+function drawFormationRelief(ctx, px, py, cellPx, s, profile, roll) {
+    if (cellPx < 20) return;
+    const formation = profile.formation;
+    const land = profile.landform || {};
+    const visual = profile.visual || {};
+    const snow = clamp01(visual.snow);
+    const snowHex = colour(visual.snowHex, "#f4f6ef");
+    // Profile coordinates are world tiles. Screen coordinates would make the
+    // silhouette gate and width change whenever the camera pans.
+    const tileX = Number.isFinite(Number(profile.x)) ? Number(profile.x) : Math.floor(px / cellPx);
+    const tileY = Number.isFinite(Number(profile.y)) ? Number(profile.y) : Math.floor(py / cellPx);
+    const shift = (hash(tileX + tileY * 37, 91) - 0.5) * cellPx * 0.16;
+    // Skipping a deterministic minority of cells breaks the carpet of
+    // identical peaks without thinning the range into isolated icons.
+    if (hash(tileX + tileY * 97, 7) < 0.16) return;
+    const width = 0.78 + hash(tileX + tileY * 113, 43) * 0.28;
+    const L = px - cellPx * 0.47 * width + shift;
+    const R = px + cellPx * 0.47 * width + shift;
+    const mid = (L + R) / 2;
+    // Keep the whole silhouette inside its tile. Neighbouring rows paint in
+    // ascending order, so a peak rising above py would be covered by the next
+    // row and every formation would collapse to the same little tent.
+    const peak = py + cellPx * (0.025 + hash(tileX + tileY * 53, 23) * 0.035);
+    const foot = py + cellPx * (0.43 + hash(tileX + tileY * 71, 37) * 0.035);
+    const dark = "#505a59";
+    const deeper = "#333d41";
+    const lit = "#ded7c3";
+    const poly = (points, fill, alpha) => {
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.moveTo(points[0][0], points[0][1]);
+        for (let index = 1; index < points.length; index++) ctx.lineTo(points[index][0], points[index][1]);
+        ctx.closePath();
+        ctx.fill();
+    };
+    const line = (points, stroke, width, alpha = 0.72) => {
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = Math.max(0.5, width * s);
+        ctx.beginPath();
+        ctx.moveTo(points[0][0], points[0][1]);
+        for (let index = 1; index < points.length; index++) ctx.lineTo(points[index][0], points[index][1]);
+        ctx.stroke();
+    };
+    const snowCap = (points, alpha = 0.9) => {
+        if (snow < 0.2) return;
+        poly(points, snowHex, clamp01(alpha * (0.45 + snow * 0.6)));
+        // A shaded lower lip turns a white roof into a real snow line.
+        line(points, "#8f9995", 0.55, 0.32);
+    };
+    ctx.save();
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    if (formation === "foothills") {
+        const hill = [[L, foot], [L + cellPx * 0.04, foot - cellPx * 0.02],
+            [L + cellPx * 0.16, foot - cellPx * 0.105], [mid - cellPx * 0.04, foot - cellPx * 0.13],
+            [mid + cellPx * 0.13, foot - cellPx * 0.085], [R - cellPx * 0.08, foot - cellPx * 0.12],
+            [R, foot]];
+        poly(hill, "#6f7c64", 0.42);
+        line(hill.slice(1, -1), "#4e5b45", 0.7, 0.55);
+    } else if (formation === "high-chain") {
+        const ridge = [[L, foot], [L + cellPx * 0.09, py + cellPx * 0.1],
+            [L + cellPx * 0.18, peak + cellPx * 0.03], [L + cellPx * 0.27, py + cellPx * 0.12],
+            [mid, peak - cellPx * 0.015], [mid + cellPx * 0.1, py + cellPx * 0.1],
+            [R - cellPx * 0.08, peak + cellPx * 0.035], [R, foot]];
+        poly(ridge, dark, 0.58);
+        line([[L + cellPx * 0.09, py + cellPx * 0.1], [L + cellPx * 0.18, peak + cellPx * 0.03],
+            [L + cellPx * 0.27, py + cellPx * 0.12], [mid, peak - cellPx * 0.015],
+            [mid + cellPx * 0.1, py + cellPx * 0.1], [R - cellPx * 0.08, peak + cellPx * 0.035]], lit, 0.9);
+        snowCap([[mid, peak - cellPx * 0.015], [mid + cellPx * 0.07, py + cellPx * 0.035], [mid - cellPx * 0.05, py + cellPx * 0.04]], 0.85);
+        snowCap([[L + cellPx * 0.18, peak + cellPx * 0.03], [L + cellPx * 0.23, py + cellPx * 0.045], [L + cellPx * 0.14, py + cellPx * 0.05]], 0.62);
+        snowCap([[R - cellPx * 0.08, peak + cellPx * 0.035], [R - cellPx * 0.14, py + cellPx * 0.05], [R - cellPx * 0.03, py + cellPx * 0.055]], 0.62);
+    } else if (formation === "jagged-peaks") {
+        const teeth = [[L, foot], [L + cellPx * 0.12, py + cellPx * 0.01],
+            [L + cellPx * 0.2, peak + cellPx * 0.06], [L + cellPx * 0.26, py + cellPx * 0.02],
+            [mid, peak - cellPx * 0.035], [mid + cellPx * 0.06, py + cellPx * 0.055],
+            [mid + cellPx * 0.2, peak + cellPx * 0.015], [R - cellPx * 0.1, py + cellPx * 0.03],
+            [R, foot]];
+        poly(teeth, dark, 0.62);
+        line([[L + cellPx * 0.12, py + cellPx * 0.01], [L + cellPx * 0.2, peak + cellPx * 0.06],
+            [L + cellPx * 0.26, py + cellPx * 0.02], [mid, peak - cellPx * 0.035],
+            [mid + cellPx * 0.06, py + cellPx * 0.055], [mid + cellPx * 0.2, peak + cellPx * 0.015]], lit, 0.85);
+        snowCap([[mid, peak - cellPx * 0.035], [mid + cellPx * 0.05, py + cellPx * 0.045], [mid - cellPx * 0.055, py + cellPx * 0.055]]);
+        snowCap([[L + cellPx * 0.2, peak + cellPx * 0.06], [L + cellPx * 0.24, py + cellPx * 0.04], [L + cellPx * 0.15, py + cellPx * 0.05]], 0.65);
+        line([[mid + cellPx * 0.01, peak + cellPx * 0.05], [mid - cellPx * 0.03, foot]], deeper, 0.8, 0.55);
+    } else if (formation === "rounded-summits") {
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = "#626a60";
+        ctx.beginPath();
+        ctx.moveTo(L, foot);
+        ctx.bezierCurveTo(mid - cellPx * 0.28, py + cellPx * 0.02, mid - cellPx * 0.12, peak, mid, peak);
+        ctx.bezierCurveTo(mid + cellPx * 0.18, peak + cellPx * 0.01, mid + cellPx * 0.32, py + cellPx * 0.04, R, foot);
+        ctx.closePath();
+        ctx.fill();
+        line([[mid - cellPx * 0.25, foot - cellPx * 0.04], [mid - cellPx * 0.1, peak + cellPx * 0.015],
+            [mid + cellPx * 0.08, peak + cellPx * 0.005], [mid + cellPx * 0.27, foot - cellPx * 0.03]], lit, 0.9);
+        snowCap([[mid - cellPx * 0.1, peak + cellPx * 0.028], [mid, peak + cellPx * 0.005],
+            [mid + cellPx * 0.11, peak + cellPx * 0.03], [mid + cellPx * 0.03, peak + cellPx * 0.07],
+            [mid - cellPx * 0.06, peak + cellPx * 0.07]]);
+    } else if (formation === "sheer-walls") {
+        const wall = [[L, foot], [L + cellPx * 0.035, py - cellPx * 0.005], [R - cellPx * 0.02, py],
+            [R, foot]];
+        poly(wall, dark, 0.62);
+        poly([[mid, py], [R, foot], [mid + cellPx * 0.08, foot], [mid + cellPx * 0.02, py]], deeper, 0.5);
+        line([[L + cellPx * 0.04, py], [R - cellPx * 0.02, py + cellPx * 0.005]], lit, 1.0);
+        for (let index = 0; index < 3; index++) {
+            const y = py + cellPx * (0.035 + index * 0.05);
+            line([[L + cellPx * 0.04, y], [R - cellPx * 0.01, y + cellPx * 0.008]], "#394345", 0.55, 0.45);
+        }
+        snowCap([[L + cellPx * 0.05, py - cellPx * 0.002], [R - cellPx * 0.03, py], [R - cellPx * 0.06, py + cellPx * 0.035], [L + cellPx * 0.1, py + cellPx * 0.03]]);
+    } else if (formation === "ridges") {
+        for (let index = 0; index < 3; index++) {
+            const lift = index * cellPx * 0.065;
+            const band = [[L, foot - lift], [R, foot - lift - cellPx * 0.12],
+                [R, foot - lift - cellPx * 0.075], [L, foot - lift + cellPx * 0.055]];
+            poly(band, index === 1 ? dark : "#626a63", index === 1 ? 0.55 : 0.38);
+            line([[L, foot - lift], [R, foot - lift - cellPx * 0.12]], lit, 0.65, index === 1 ? 0.72 : 0.4);
+        }
+        snowCap([[mid - cellPx * 0.24, foot - cellPx * 0.2], [mid + cellPx * 0.22, foot - cellPx * 0.31],
+            [mid + cellPx * 0.28, foot - cellPx * 0.275], [mid - cellPx * 0.18, foot - cellPx * 0.165]], 0.7);
+    } else if (formation === "deep-valleys") {
+        const left = [[L, foot], [L + cellPx * 0.1, py + cellPx * 0.03],
+            [mid - cellPx * 0.1, peak], [mid - cellPx * 0.015, foot - cellPx * 0.02]];
+        const right = [[R, foot], [R - cellPx * 0.1, py + cellPx * 0.03],
+            [mid + cellPx * 0.1, peak - cellPx * 0.005], [mid + cellPx * 0.015, foot - cellPx * 0.02]];
+        poly(left, dark, 0.56);
+        poly(right, dark, 0.56);
+        line(left.slice(1), lit, 0.8);
+        line(right.slice(1), lit, 0.8);
+        poly([[mid - cellPx * 0.12, py + cellPx * 0.03], [mid, foot], [mid + cellPx * 0.12, py + cellPx * 0.03]], deeper, 0.55);
+        snowCap([[mid - cellPx * 0.1, peak], [mid - cellPx * 0.035, py + cellPx * 0.035], [mid - cellPx * 0.12, py + cellPx * 0.045]], 0.75);
+        snowCap([[mid + cellPx * 0.1, peak - cellPx * 0.005], [mid + cellPx * 0.04, py + cellPx * 0.035], [mid + cellPx * 0.13, py + cellPx * 0.04]], 0.75);
+    } else if (formation === "gorge") {
+        const leftWall = [[L, foot], [L + cellPx * 0.03, py], [mid - cellPx * 0.085, py + cellPx * 0.005],
+            [mid - cellPx * 0.045, foot]];
+        const rightWall = [[R, foot], [R - cellPx * 0.03, py],
+            [mid + cellPx * 0.085, py + cellPx * 0.005], [mid + cellPx * 0.045, foot]];
+        poly(leftWall, "#59625f", 0.6);
+        poly(rightWall, "#495250", 0.68);
+        line([[L + cellPx * 0.04, py], [mid - cellPx * 0.085, py + cellPx * 0.005]], lit, 0.9);
+        line([[R - cellPx * 0.04, py], [mid + cellPx * 0.085, py + cellPx * 0.005]], lit, 0.9);
+        poly([[mid - cellPx * 0.06, py + cellPx * 0.01], [mid, foot], [mid + cellPx * 0.06, py + cellPx * 0.01]], "#293537", 0.62);
+        snowCap([[mid - cellPx * 0.1, py + cellPx * 0.008], [mid - cellPx * 0.035, py + cellPx * 0.008], [mid - cellPx * 0.05, py + cellPx * 0.03]], 0.55);
+        snowCap([[mid + cellPx * 0.1, py + cellPx * 0.008], [mid + cellPx * 0.035, py + cellPx * 0.008], [mid + cellPx * 0.05, py + cellPx * 0.03]], 0.55);
+    } else if (formation === "plateau") {
+        const mesa = [[L + cellPx * 0.02, py + cellPx * 0.005], [R - cellPx * 0.02, py - cellPx * 0.005],
+            [R - cellPx * 0.035, foot], [L + cellPx * 0.04, foot]];
+        poly(mesa, "#5b635f", 0.6);
+        poly([[mid, py], [R - cellPx * 0.02, py - cellPx * 0.005], [R - cellPx * 0.035, foot], [mid + cellPx * 0.06, foot]], deeper, 0.42);
+        line([[L + cellPx * 0.04, py + cellPx * 0.003], [R - cellPx * 0.03, py - cellPx * 0.003]], lit, 1.1);
+        for (let index = 0; index < 2; index++) {
+            line([[L + cellPx * 0.08 + index * cellPx * 0.2, py + cellPx * 0.035], [L + cellPx * 0.11 + index * cellPx * 0.2, foot - cellPx * 0.02]], "#3e4747", 0.55, 0.45);
+        }
+        snowCap([[L + cellPx * 0.06, py], [R - cellPx * 0.03, py - cellPx * 0.004], [R - cellPx * 0.1, py + cellPx * 0.025], [L + cellPx * 0.12, py + cellPx * 0.025]]);
+    } else {
+        // Isolated massif: one compact asymmetric peak with two shoulders,
+        // distinct from both the long high chain and the sharp multi-peak row.
+        const massif = [[L, foot], [mid - cellPx * 0.2, py + cellPx * 0.12], [mid - cellPx * 0.08, py + cellPx * 0.035],
+            [mid, peak], [mid + cellPx * 0.07, py + cellPx * 0.07],
+            [mid + cellPx * 0.22, py + cellPx * 0.13], [R, foot]];
+        poly(massif, dark, 0.6);
+        line([[mid - cellPx * 0.2, py + cellPx * 0.12], [mid, peak], [mid + cellPx * 0.22, py + cellPx * 0.13]], lit, 0.95);
+        poly([[mid, peak], [mid + cellPx * 0.07, py + cellPx * 0.055], [mid + cellPx * 0.015, foot]], deeper, 0.32);
+        snowCap([[mid, peak], [mid + cellPx * 0.055, py + cellPx * 0.035], [mid + cellPx * 0.02, py + cellPx * 0.06],
+            [mid - cellPx * 0.045, py + cellPx * 0.055], [mid - cellPx * 0.06, py + cellPx * 0.1]], 0.8);
+    }
+    // A hard cast shadow under the south-east flank sells the relief even
+    // where the baked hillshade is gentle.
+    if (land.cliff > 0.28 || land.ridge > 0.34) {
+        poly([[mid + cellPx * 0.04, foot - cellPx * 0.02], [R, foot],
+            [mid + cellPx * 0.14, foot + cellPx * 0.02]], "#283438", 0.3);
+    }
+    ctx.restore();
+}
+
 function drawRockGround(ctx, px, py, cellPx, s, profile, roll) {
     const land = profile.landform || {};
     const visual = profile.visual || {};
     const rock = clamp01(land.rock);
     const snow = clamp01(visual.snow);
     const scree = clamp01(land.scree);
-    ctx.globalAlpha = 0.2;
+    ctx.globalAlpha = 0.28;
     ctx.fillStyle = colour(visual.groundHex, "#77756a");
     ctx.beginPath();
     ctx.ellipse(px + cellPx * 0.03, py + cellPx * 0.09, cellPx * 0.27, cellPx * 0.12, roll * 0.3, 0, Math.PI * 2);
     ctx.fill();
     if (rock > 0.18) {
-        ctx.globalAlpha = 0.26;
-        ctx.fillStyle = colour(visual.rockHex, "#8b8175");
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = "#66685f";
         ctx.beginPath();
         ctx.moveTo(px - cellPx * 0.2, py + cellPx * 0.16);
         ctx.lineTo(px - cellPx * 0.06, py + cellPx * (0.02 + roll * 0.04));
@@ -39,8 +221,8 @@ function drawRockGround(ctx, px, py, cellPx, s, profile, roll) {
         ctx.fill();
         // Bedding planes and cracks are what separate a rock face from a grey
         // polygon. Keep the lines long and sparse enough to read at 24 px.
-        ctx.globalAlpha = 0.24;
-        ctx.strokeStyle = land.rockType === "slate" ? "#3f4a4d" : "#5f5b52";
+        ctx.globalAlpha = 0.38;
+        ctx.strokeStyle = land.rockType === "slate" ? "#343f42" : "#4b4840";
         ctx.lineWidth = Math.max(0.4, 0.55 * s);
         const planes = Math.min(3, 1 + Math.floor(rock * 3));
         for (let index = 0; index < planes; index++) {
@@ -72,19 +254,15 @@ function drawRockGround(ctx, px, py, cellPx, s, profile, roll) {
             ctx.fill();
         }
     }
-    if (snow > 0.24) {
-        ctx.globalAlpha = 0.34;
+    // Snow on the detail layer lives on the formation caps. A broad white
+    // band here would sit above the silhouette and flatten every ridge into
+    // the same plateau, so only a small wind drift survives at the tile edge.
+    if (snow > 0.7) {
+        ctx.globalAlpha = 0.18;
         ctx.fillStyle = colour(visual.snowHex, "#e4e7e2");
         ctx.beginPath();
-        ctx.ellipse(px + cellPx * 0.02, py + cellPx * 0.02, cellPx * 0.24, cellPx * (0.06 + snow * 0.04), roll * 0.2, 0, Math.PI * 2);
+        ctx.ellipse(px - cellPx * 0.3, py + cellPx * 0.04, cellPx * 0.09, cellPx * 0.022, roll * 0.3, 0, Math.PI * 2);
         ctx.fill();
-        if (snow > 0.55) {
-            ctx.globalAlpha = 0.26;
-            ctx.fillStyle = "#f1f3ed";
-            ctx.beginPath();
-            ctx.ellipse(px - cellPx * 0.08, py + cellPx * 0.01, cellPx * 0.11, cellPx * 0.035, -0.2, 0, Math.PI * 2);
-            ctx.fill();
-        }
     }
     if (clamp01(visual.ice) > 0.28) {
         ctx.globalAlpha = 0.28;
@@ -139,12 +317,14 @@ function drawWater(ctx, px, py, cellPx, s, profile, roll, tick) {
         ctx.fill();
     }
     if (water.glacier > 0.46) {
-        ctx.globalAlpha = 0.24;
+        // A short ice tongue, not a full-width white band: the band used to
+        // sit on top of every summit and flatten all ten silhouettes.
+        ctx.globalAlpha = 0.17;
         ctx.strokeStyle = "#cce1e2";
-        ctx.lineWidth = Math.max(0.5, 0.8 * s);
+        ctx.lineWidth = Math.max(0.5, 0.7 * s);
         ctx.beginPath();
-        ctx.moveTo(px - cellPx * 0.2, py + cellPx * 0.03);
-        ctx.quadraticCurveTo(px, py + cellPx * 0.08, px + cellPx * 0.2, py + cellPx * 0.02);
+        ctx.moveTo(px - cellPx * 0.1, py + cellPx * 0.07);
+        ctx.quadraticCurveTo(px - cellPx * 0.02, py + cellPx * 0.1, px + cellPx * 0.09, py + cellPx * 0.055);
         ctx.stroke();
     }
 }
@@ -318,14 +498,24 @@ function drawFauna(ctx, px, py, cellPx, s, profile, tick) {
     }
 }
 
-/** Draw one mountain tile with capped, deterministic detail. */
-export function drawMountain(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0.5, s3 = 0.5, tick = 0, zoom = 1, sun = 0.6, dayOfYear = 150, climate = "mountain") {
+/** Ground and landform alone: safe on rock, snow and forest mountain tiles. */
+export function drawMountainGround(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0.5, s3 = 0.5) {
+    if (!ctx || !profile?.mountain || !(cellPx > 0)) return;
+    const s = cellPx / 48;
+    const roll = clamp01((Number(s1) || 0) * 0.55 + (Number(s2) || 0) * 0.3 + (Number(s3) || 0) * 0.15);
+    ctx.save();
+    drawRockGround(ctx, px, py, cellPx, s, profile, roll);
+    drawFormationRelief(ctx, px, py, cellPx, s, profile, roll);
+    ctx.restore();
+}
+
+/** Works, water, alpine flora and fauna: open mountain pasture only. */
+export function drawMountainDetails(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0.5, s3 = 0.5, tick = 0, zoom = 1) {
     if (!ctx || !profile?.mountain || !(cellPx > 0)) return;
     const s = cellPx / 48;
     const roll = clamp01((Number(s1) || 0) * 0.55 + (Number(s2) || 0) * 0.3 + (Number(s3) || 0) * 0.15);
     const fineDetail = cellPx >= 24 && Number(zoom) >= 0.62;
     ctx.save();
-    drawRockGround(ctx, px, py, cellPx, s, profile, roll);
     drawWorks(ctx, px, py, cellPx, s, profile, roll);
     drawWater(ctx, px, py, cellPx, s, profile, roll, tick);
     if (fineDetail) drawAlpineFlora(ctx, px, py, cellPx, s, profile, roll);
@@ -342,6 +532,12 @@ export function drawMountain(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0.5, s
         ctx.fillRect(px - cellPx * 0.2, py + cellPx * 0.02, cellPx * 0.4, cellPx * 0.14);
     }
     ctx.restore();
+}
+
+/** Draw one complete mountain tile with capped, deterministic detail. */
+export function drawMountain(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0.5, s3 = 0.5, tick = 0, zoom = 1) {
+    drawMountainGround(ctx, px, py, cellPx, profile, s1, s2, s3);
+    drawMountainDetails(ctx, px, py, cellPx, profile, s1, s2, s3, tick, zoom);
 }
 
 /** Draw one mountain tree: conifer spire or small broadleaf, capped. */

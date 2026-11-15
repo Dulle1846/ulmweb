@@ -28,7 +28,7 @@ import { isSwampSite, swampProfileAt } from '../../world/swamp-ecology.js';
 import { drawSwamp, drawSwampTree } from './swamp-render.js';
 import { isMountainSite, mountainProfileAt } from '../../world/mountain-ecology.js';
 import { mountainWorkUseAt } from '../../world/mountain-works.js';
-import { drawMountain, drawMountainTree } from './mountain-render.js';
+import { drawMountainDetails, drawMountainGround, drawMountainTree } from './mountain-render.js';
 import { grasslandUseAt } from '../../systems/grassland-use.js';
 import {
     DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
@@ -1311,6 +1311,14 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 hour: Number(state.timeOfDay) || 12, weather: state.weather || "clear",
                 wind: windMultiplier(), use: mountainWorkUseAt(x, y),
             }) : null;
+            // Rock, snow and forest mountain tiles used to fall into generic
+            // snow/rock branches before the mountain profile could draw its
+            // landform. Paint the mountain ground and formation silhouette here,
+            // once for every mountain tile, so a plateau still reads as a mesa
+            // and a gorge as a slot even when no pasture reaches drawMountain.
+            if (mountain && detail && zoom >= 0.34) {
+                drawMountainGround(ctx, px, py, cellPx, mountain, s1, s2, s3);
+            }
             const taigaSite = isTaigaSite(x + 0.5, y + 0.5, {
                 seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
                 height: h, climate: climateKey, seaLevel: sea,
@@ -1510,7 +1518,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // surface. The profile decides whether this tile is short turf,
             // tall hay, wet meadow, dry chalk, orchard or mountain pasture.
             if (grass && zoom >= 0.34) {
-                if (grass.mountain) drawMountain(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
+                if (grass.mountain) drawMountainDetails(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom);
                 else if (grass.swamp) drawSwamp(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
                 else if (grass.tundra) drawTundra(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
                 else if (grass.taiga) drawTaiga(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
