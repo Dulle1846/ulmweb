@@ -139,6 +139,27 @@ deterministic survey covering all ten formations; focused wetland tests pass;
 the existing 984-test suite remains green after its hardcoded climate and
 formation counts were updated.
 
+- **50-year browser endurance:** the resumable audit completed all ten
+  five-year blocks, year 26 → 76, **19,942 ticks**, **11 samples**, every
+  checkpoint exact, and the schema-8 legacy round-trip back to schema 11 exact.
+  It recorded **0 page errors / 0 console errors** and **30 FPS** at the shipped
+  low-end profile. `test:endurance` is now a job in the browser workflow; the
+  audit also fixes its real ordering bug by selecting 4× before validating the
+  loaded start sample.
+- **Live swamp gameplay:** a fresh browser realm in the **Swamps & Bogs**
+  climate found a fen with standing deep water, reeds and carr. The live survey
+  returned `Fen meadow · deep black water · Peat, Reeds, Marsh fish, Swamp mud
+  and clay` plus marsh frog, toad and bog adder; player gathering added **Peat,
+  Reeds, Marsh fish, Reed matting and Swamp mud and clay** to the real ledger.
+  The proof recorded 0 page/console/request errors and 60 FPS, with 0.68 ms
+  average / 0.9 ms p95 frame draw time.
+- **Low-end swamp audit:** at 4× CPU throttle, software Canvas2D, 70% render
+  scale and 85% forest cover, all five phases held **16.8 ms p95** frame time,
+  **0 long tasks** after the cold-cache warm-up, 7.9 ms / 7.0 ms p95 draw time,
+  176 ms save and 1,253 ms load, with 0 page and console errors. The dedicated
+  `test:performance:swamp` and `test:swamp-live` commands are part of the
+  browser workflow.
+
 ### 3.17.2-dev — 50-year endurance audit stays synchronized
 
 **Released:** 2026-11-15 on the development line

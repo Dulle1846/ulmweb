@@ -9,6 +9,8 @@
     "test:e2e:setup": "node tests/browser/setup-e2e.mjs",
     "test:e2e": "node tests/browser/run-e2e.mjs",
     "test:endurance": "node tests/browser/endurance-50y.mjs",
+    "test:swamp-live": "node tests/browser/swamp-live-proof.mjs",
+    "test:performance:swamp": "PERF_SOFTWARE_CANVAS=1 PERF_CLIMATE=swamp PERF_FORESTS=85 PERF_SEED=20261152 PERF_YEARS=2 PERF_RENDER_SCALE=70 PERF_WARMUP_MS=6000 node tests/browser/low-end-performance.mjs",
     "test:terrain-reference": "node tests/browser/terrain-reference.mjs",
     "test:season-year": "node tests/browser/season-year.mjs",
     "test:climate-reference": "node tests/browser/climate-reference.mjs",

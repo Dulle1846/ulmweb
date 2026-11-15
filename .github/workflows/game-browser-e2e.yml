@@ -69,6 +69,28 @@ jobs:
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit "$code"
+      - name: Run swamp 1.2.11 live browser proof
+        id: swamp_live
+        working-directory: game
+        timeout-minutes: 5
+        run: |
+          set +e
+          set -o pipefail
+          npm run test:swamp-live 2>&1 | tee "$RUNNER_TEMP/swamp-live-proof.log"
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit "$code"
+      - name: Run swamp low-end performance audit
+        id: swamp_performance
+        working-directory: game
+        timeout-minutes: 6
+        run: |
+          set +e
+          set -o pipefail
+          npm run test:performance:swamp 2>&1 | tee "$RUNNER_TEMP/swamp-performance.log"
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit "$code"
       - name: Run three-seed Forester stewardship audit
         id: forester_longrun
         working-directory: game
@@ -126,6 +148,20 @@ jobs:
             ${{ runner.temp }}/terrain-reference/forest-reference.png
             ${{ runner.temp }}/terrain-reference/forest-seasons.png
             ${{ runner.temp }}/terrain-reference/forest-reference.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Upload swamp live proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-swamp-live-proof
+          path: |
+            artifacts/swamp-live-proof.png
+            artifacts/swamp-live-proof-map.png
+            artifacts/swamp-live-proof.json
+            artifacts/low-end-performance.json
+            ${{ runner.temp }}/swamp-live-proof.log
+            ${{ runner.temp }}/swamp-performance.log
           if-no-files-found: warn
           retention-days: 7
       - name: Upload browser E2E log
@@ -230,3 +266,54 @@ jobs:
           git add ci/game-browser-e2e.json
           git commit -m "Record workflow run ${GITHUB_RUN_ID}"
           git push --force origin HEAD:refs/heads/ci-run-receipts
+
+
+  endurance-50y:
+    name: 50-year endurance audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser test dependency
+        working-directory: game
+        run: npm install --no-audit --no-fund --package-lock=false
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-1.56.1
+      - name: Install Chromium, system libraries and fonts
+        working-directory: game
+        run: npm run test:e2e:setup -- --with-deps
+      - name: Run 50-year endurance audit
+        working-directory: game
+        timeout-minutes: 35
+        env:
+          ENDURANCE_STATE_DIR: ${{ runner.temp }}/endurance-50y-state
+        run: |
+          python3 -m http.server 3000 --bind 127.0.0.1 > "$RUNNER_TEMP/endurance-http.log" 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          npm run test:endurance
+      - name: Upload endurance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-endurance-50y
+          path: |
+            game/reports/endurance-50y.json
+            game/reports/endurance-50y.md
+            artifacts/browser-endurance-50y-failure.json
+          if-no-files-found: warn
+          retention-days: 7
