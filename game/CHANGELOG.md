@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.14.2`
-**Next development line:** `3.17.1-dev`
+**Next development line:** `3.17.2-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -111,6 +111,36 @@ production load founded seed `20261108` with 23 residents, forced the calendar
 to year 3 day 399, and completed the real rollover to year 4 day 9 / tick 1209
 with **zero long tasks**, no page errors, no console errors and no failed
 requests.
+
+### 3.17.2-dev — 50-year endurance audit stays synchronized
+
+**Released:** 2026-11-15 on the development line
+
+**Scope:** make the long-running browser audit measure the real game after a
+mature realm is loaded. No runtime behaviour or balance values changed; every
+edit is in `tests/browser/endurance-50y.mjs`, plus a `test:endurance` script.
+
+- The HUD intentionally paints `SIM TICK` at most once per second. The audit
+  now allows a 12-tick display lag instead of treating a deliberate DOM budget
+  as a simulation mismatch.
+- DOM resources and panel values are read only after the bounded HUD chunks
+  have landed, with the simulation paused for that same task. Panel checks pause
+  while the panel is measured and then resume the previous run state. Raw
+  resource numbers are kept for the exact floor comparison instead of comparing
+  a two-decimal display value.
+- The frame-rate sample now runs in a fresh real-time context after the fake
+  clock is removed, loads the saved realm through the visible continue control,
+  and brings that page to the front before sampling. A separate mature-load
+  check rendered a **75-year realm** at **129 frames in 4.0 s (30 FPS)** with
+  zero page errors and zero console errors.
+- Recorded 50-year run: **year 76 / tick 30,091**, **12 samples**, 74
+  population, 132 entities, stable resources, morale 99.7 and legitimacy 100,
+  with exact save/load and zero page or console errors. Its last FPS assertion
+  was invalidated by the headless page losing foreground focus; the sampler now
+  brings the fresh page to the front before sampling.
+- Final 5-year harness run after that fix: **29.94 FPS** over 90 frames, exact
+  schema-11 save/load (2.30 MB, 728 ms), zero page errors and zero console
+  errors. Full suite **977/977**.
 
 ### 3.17.1-dev — Noble-house regression guard
 
