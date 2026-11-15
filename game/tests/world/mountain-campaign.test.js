@@ -134,6 +134,13 @@ test("a five-year mountain run builds works, exposes winter hazards and restores
         assert.ok(winter.avalanche >= 0 && winter.avalanche <= 1);
         assert.ok(winter.defenceBonus >= 0 && winter.defenceBonus <= 1);
         assert.ok(winter.movementBurden >= 0 && winter.movementBurden <= 1);
+        assert.ok(winter.movementFactor >= 0.34 && winter.movementFactor <= 1,
+            "the raid route must read the same mountain movement factor as the economy");
+        assert.ok(winter.mountainExperience >= 0 && winter.mountainExperience <= 0.7,
+            "mountain experience must be a bounded, real tactical value");
+        assert.ok(winter.supply >= 0 && winter.supply <= 1);
+        assert.ok(summer.movementFactor >= winter.movementFactor,
+            "summer travel must not be slower than winter travel on the same mountain tile");
 
         const saved = JSON.parse(JSON.stringify(createSaveSnapshot()));
         assert.ok(saved.mountainWorks, "the production save must carry the mountain works state");

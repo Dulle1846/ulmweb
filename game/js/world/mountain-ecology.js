@@ -164,24 +164,6 @@ export const MOUNTAIN_FORMATIONS = Object.freeze({
     }),
 });
 
-// Every formation always contributes its defining features. The complete union
-// covers all 77 requirements; dynamic snow, water, rock and works flags add the
-// local state without creating a second feature vocabulary.
-const FORMATION_FEATURE_NUMBERS = Object.freeze({
-    foothills: [1, 7, 11, 12, 18, 28, 30, 31, 32, 35, 36, 37, 44, 47, 49, 50, 51, 55, 57, 58, 60, 61, 65, 67, 68, 69, 70, 73, 76, 77],
-    "high-chain": [2, 6, 7, 9, 12, 13, 15, 16, 18, 19, 20, 22, 23, 24, 25, 27, 28, 29, 30, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 46, 47, 48, 49, 51, 52, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 71, 72, 73, 74, 75, 76, 77],
-    "jagged-peaks": [3, 5, 8, 10, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 33, 34, 35, 40, 42, 43, 46, 48, 50, 51, 52, 53, 54, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 71, 72, 74, 75, 76],
-    "rounded-summits": [4, 9, 12, 14, 18, 28, 29, 30, 31, 32, 35, 36, 37, 39, 41, 42, 44, 45, 47, 49, 50, 51, 55, 57, 58, 60, 63, 64, 67, 68, 69, 70, 71, 73, 77],
-    "sheer-walls": [3, 5, 8, 15, 19, 20, 21, 22, 23, 24, 25, 26, 27, 33, 34, 40, 43, 46, 51, 52, 53, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 71, 72, 74, 75, 76],
-    ridges: [2, 3, 4, 6, 7, 12, 13, 15, 18, 19, 21, 22, 23, 24, 25, 27, 29, 32, 33, 34, 35, 36, 37, 41, 42, 44, 45, 46, 47, 48, 49, 50, 51, 52, 55, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 71, 72, 73, 74, 75, 76],
-    "deep-valleys": [7, 8, 10, 11, 12, 18, 26, 28, 29, 30, 31, 32, 36, 37, 38, 39, 41, 44, 47, 48, 50, 51, 55, 56, 57, 58, 60, 61, 63, 65, 67, 68, 69, 70, 73, 74, 77],
-    gorge: [5, 7, 8, 10, 15, 20, 21, 22, 25, 26, 27, 34, 36, 37, 38, 39, 41, 43, 46, 51, 52, 53, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 71, 72, 73, 74, 75, 76, 77],
-    plateau: [4, 7, 9, 14, 15, 18, 19, 20, 21, 22, 23, 24, 27, 29, 30, 31, 32, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 47, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 75, 76, 77],
-    "isolated-massif": [1, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 29, 32, 33, 34, 35, 39, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77],
-});
-const FORMATION_FEATURES = Object.freeze(Object.fromEntries(Object.entries(FORMATION_FEATURE_NUMBERS)
-    .map(([id, numbers]) => [id, Object.freeze(numbers.map(number => "1.2.12." + number))])));
-
 // Only genuinely new goods live here. Stone, copper, gemstones, salt, timber,
 // firewood, herbs, game, fur and hides already exist in the shared catalogue.
 export const MOUNTAIN_GOODS = Object.freeze({
@@ -510,7 +492,9 @@ export function mountainProfileAt(x, y, context = {}) {
     const transport = clamp01(0.28 + slope * 0.44 + snow * 0.18 - (use.road ? 0.2 : 0) - (use.bridge ? 0.12 : 0));
     const supply = clamp01(0.65 - relative * 0.26 - snow * 0.14 - avalanche * 0.08 + (use.road ? 0.22 : 0) + (use.aqueduct ? 0.04 : 0));
     const defence = clamp01(0.32 + cliff * 0.28 + smoothstep(0.35, 0.8, relative) * 0.2 + (use.fortress ? 0.18 : 0) + (use.fortifiedPass ? 0.14 : 0));
-    const mountainTroops = clamp01(0.2 + relative * 0.2 + (use.terraced ? 0.1 : 0));
+    const mountainTroops = clamp01(0.16 + relative * 0.3
+        + (zone === "subalpine" || zone === "alpine" || zone === "nival" ? 0.1 : 0)
+        + (use.terraced ? 0.08 : 0));
     const settlement = clamp01((1 - relative) * 0.58 + (1 - slope) * 0.3 + moisture * 0.12 + (use.valleySettlement ? 0.18 : 0) + (use.terraced ? 0.12 : 0) - snow * 0.1);
     const terraced = clamp01((1 - relative) * 0.44 + slope * 0.22 + (use.terraced ? 0.34 : 0));
     const passScore = clamp01(pass * 0.82 + (use.fortifiedPass ? 0.2 : 0));
@@ -531,47 +515,112 @@ export function mountainProfileAt(x, y, context = {}) {
     const openLight = clamp01(sunlight * (0.72 + (1 - snow) * 0.22));
     const cloud = clamp01((zone === "alpine" || zone === "nival" ? 0.24 : 0.08) + moisture * 0.18 + (weather === "fog" ? 0.38 : 0));
     const treeline = treeLine;
-    const dynamic = new Set(FORMATION_FEATURES[formation.id] || []);
-    if (snow > 0.26) { dynamic.add("1.2.12.16"); dynamic.add("1.2.12.35"); dynamic.add("1.2.12.42"); }
-    if (permanentIce > 0.35) { dynamic.add("1.2.12.17"); dynamic.add("1.2.12.40"); }
-    if (iceCave > 0.34) dynamic.add("1.2.12.43");
-    if (frozenFalls > 0.42) dynamic.add("1.2.12.43");
-    if (spring > 0.24) dynamic.add("1.2.12.36");
-    if (stream > 0.3) dynamic.add("1.2.12.37");
-    if (waterfall > 0.38) dynamic.add("1.2.12.38");
-    if (lake > 0.42) dynamic.add("1.2.12.39");
-    if (meltwater > 0.3) dynamic.add("1.2.12.41");
-    if (caveRoll > 0.76) dynamic.add("1.2.12.26");
-    if (cliff > 0.5) dynamic.add("1.2.12.5");
-    if (scree > 0.4) dynamic.add("1.2.12.23");
-    if (trees.length) { dynamic.add("1.2.12.28"); dynamic.add("1.2.12.57"); }
-    if (zone === "subalpine" || zone === "alpine") dynamic.add("1.2.12.29");
-    if (flowers.length) dynamic.add("1.2.12.31");
-    if (flowers.some(flower => flower.rare)) dynamic.add("1.2.12.33");
-    if (mosses.length) dynamic.add("1.2.12.32");
-    if (relative > treeline) dynamic.add("1.2.12.18");
-    if (trees.length === 0 && rock > 0.4) dynamic.add("1.2.12.34");
-    if (use.terraced) { dynamic.add("1.2.12.69"); dynamic.add("1.2.12.18"); }
-    if (use.valleySettlement) dynamic.add("1.2.12.70");
-    if (use.fortress) dynamic.add("1.2.12.71");
-    if (use.fortifiedPass) { dynamic.add("1.2.12.72"); dynamic.add("1.2.12.63"); }
-    if (use.road) { dynamic.add("1.2.12.73"); dynamic.add("1.2.12.60"); }
-    if (use.bridge) { dynamic.add("1.2.12.74"); dynamic.add("1.2.12.61"); }
-    if (use.mine) { dynamic.add("1.2.12.75"); dynamic.add("1.2.12.52"); }
-    if (use.quarry) { dynamic.add("1.2.12.76"); dynamic.add("1.2.12.51"); }
-    if (use.aqueduct) { dynamic.add("1.2.12.77"); dynamic.add("1.2.12.56"); }
+    const crevice = clamp01(cliff * 0.5 + (1 - roughness) * 0.16);
+    const boulders = clamp01(scree * 0.7 + rock * 0.2);
+    const cave = caveRoll > 0.76;
+    const overhang = caveRoll > 0.86;
+    const treelineVariation = clamp01(Math.abs(treeLine - 0.42) * 3
+        + (aspectName === "north" ? 0.15 : aspectName === "south" ? 0.08 : 0));
+    const broadleaf = trees.some(tree => tree.kind === "broadleaf");
+    const conifer = trees.some(tree => tree.kind === "conifer");
+    const rarePlant = flowers.some(flower => flower.rare);
+    const faunaIds = new Set(fauna.map(entry => entry.id));
+    const goodIds = new Set(goods.map(entry => entry.id));
+    const features = new Set();
+    // A feature is emitted only when the tile actually has the terrain, water,
+    // plant, animal, resource or effect. The old formation checklists made a
+    // cave appear on every "sheer wall" and a glacier on every jagged peak,
+    // which made the requirement survey green without matching the renderer.
+    const add = (numberId, present = true) => { if (present) features.add("1.2.12." + numberId); };
+    add(1, relative < 0.3);
+    add(2, relative >= 0.55);
+    add(3, formation.id === "jagged-peaks" || (relative > 0.72 && cliff > 0.42));
+    add(4, formation.id === "rounded-summits");
+    add(5, cliff > 0.42);
+    add(6, ridgeRoll > 0.5 || formation.id === "ridges");
+    add(7, valley > 0.52);
+    add(8, gorge > 0.48);
+    add(9, plateau > 0.42);
+    add(10, formation.id === "isolated-massif");
+    add(11, trees.length > 0 && relative < 0.3);
+    add(12, trees.length > 0 && broadleaf && (zone === "lower" || zone === "montane"));
+    add(13, trees.length > 0 && conifer && zone === "subalpine");
+    add(14, grasses.length > 0 && relative >= 0.52);
+    add(15, rock > 0.42 || scree > 0.36);
+    add(16, snow > 0.26);
+    add(17, permanentIce > 0.3);
+    add(18, treelineVariation > 0.1 || use.terraced);
+    add(19, rockType === "granite" && rock > 0.26);
+    add(20, rockType === "limestone" && rock > 0.26);
+    add(21, rockType === "slate" && rock > 0.24);
+    add(22, boulders > 0.38);
+    add(23, scree > 0.32);
+    add(24, cliff > 0.28 && rock > 0.24);
+    add(25, crevice > 0.3);
+    add(26, cave);
+    add(27, rock > 0.18);
+    add(28, trees.length > 0);
+    add(29, (zone === "subalpine" || zone === "alpine") && shrubs.length > 0);
+    add(30, grasses.length > 0);
+    add(31, flowers.length > 0);
+    add(32, mosses.length > 0);
+    add(33, rarePlant);
+    add(34, rock > 0.38 && cover < 0.16);
+    add(35, snow > 0.1 && snow < 0.66);
+    add(36, spring > 0.22);
+    add(37, stream > 0.28);
+    add(38, waterfall > 0.32);
+    add(39, lake > 0.4);
+    add(40, glacier > 0.4);
+    add(41, meltwater > 0.28);
+    add(42, snowfield > 0.34);
+    add(43, iceCave > 0.3 || frozenFalls > 0.38);
+    add(44, faunaIds.has("ibex") || faunaIds.has("chamois"));
+    add(45, faunaIds.has("marmot"));
+    add(46, faunaIds.has("golden-eagle") || faunaIds.has("vulture"));
+    add(47, faunaIds.has("fox"));
+    add(48, faunaIds.has("wolf") || faunaIds.has("lynx"));
+    add(49, faunaIds.has("ptarmigan"));
+    add(50, faunaIds.has("snow-vole") || faunaIds.has("mountain-hare"));
+    add(51, goodIds.has("stone") || goodIds.has("granite") || goodIds.has("limestone") || goodIds.has("slate") || goodIds.has("marble"));
+    add(52, ore > 0.24 || goodIds.has("iron-ore") || goodIds.has("copper-ore"));
+    add(53, gems > 0.38 || goodIds.has("gemstones"));
+    add(54, salt > 0.34 || goodIds.has("salt"));
+    add(55, herbs.length > 0);
+    add(56, water > 0.18);
+    add(57, trees.length > 0 && zone !== "nival");
+    add(58, cover > 0.2 || goodIds.has("game") || goodIds.has("fur"));
+    add(59, gems > 0.4 || ore > 0.55);
+    add(60, movement < 0.72);
+    add(61, slope > 0.52);
+    add(62, cliff > 0.34 || scree > 0.5);
+    add(63, passScore > 0.45);
+    add(64, defence > 0.5);
+    add(65, transport > 0.55);
+    add(66, avalanche > 0.34);
+    add(67, supply < 0.5);
+    add(68, mountainTroops > 0.45);
+    add(69, use.terraced);
+    add(70, use.valleySettlement);
+    add(71, use.fortress);
+    add(72, use.fortifiedPass);
+    add(73, use.road);
+    add(74, use.bridge);
+    add(75, use.mine);
+    add(76, use.quarry);
+    add(77, use.aqueduct);
 
     return {
         biome: "mountain", mountain: true, x: Math.floor(number(x)), y: Math.floor(number(y)), seed, year,
         formation: formation.id, label: formation.label, note: formation.note,
         season, seasonIndex, climate: context.climate || "mountain", moisture, temperature, height,
-        features: MOUNTAIN_REQUIREMENT_IDS.filter(id => dynamic.has(id)),
+        features: MOUNTAIN_REQUIREMENT_IDS.filter(id => features.has(id)),
         landform: {
             relative, aboveSea, altitudeM: Math.round(relative * 3200), slope, relief: roughness,
             ridge: clamp01(smoothstep(0.52, 0.86, ridgeRoll) + relative * 0.18), valley: clamp01(valley + gorge * 0.2),
-            gorge, cliff, scree, boulders: clamp01(scree * 0.7 + rock * 0.2), plateau,
-            cave: caveRoll > 0.76, overhang: caveRoll > 0.86, crevice: clamp01(cliff * 0.5 + (1 - roughness) * 0.16),
-            aspect, aspectName, northness, rock, rockType, treeline, snowLine,
+            gorge, cliff, scree, boulders, plateau,
+            cave, overhang, crevice,
+            aspect, aspectName, northness, rock, rockType, treeline, treeLineVariation: treelineVariation, snowLine,
             label: zone === "nival" ? "nival rock and ice" : cliff > 0.55 ? "sheer rock face"
                 : gorge > 0.55 ? "gorge floor" : plateau > 0.5 ? "open plateau"
                 : valley > 0.55 ? "sheltered valley" : "mountain slope",

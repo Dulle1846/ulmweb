@@ -118,16 +118,50 @@ test("the mountain profile is deterministic, bounded and seasonally variable", (
     assert.notDeepEqual(mountainProfileAt(12.5, 9.5, context({ seed: 20261213, height: 0.7 })), first);
 });
 
-test("the four-season survey reaches all 77 requirements and all ten formations", () => {
+test("the four-season survey reaches every natural requirement and all ten formations", () => {
     const seen = new Set();
     const formations = new Set();
-    for (const profile of surveyProfiles()) {
+    const profiles = surveyProfiles();
+    for (const profile of profiles) {
         formations.add(profile.formation);
         for (const id of profile.features) seen.add(id);
     }
-    assert.deepEqual(MOUNTAIN_REQUIREMENT_IDS.filter(id => !seen.has(id)), []);
+    const natural = MOUNTAIN_REQUIREMENT_IDS.slice(0, 68);
+    assert.deepEqual(natural.filter(id => !seen.has(id)), []);
     assert.deepEqual(Object.keys(MOUNTAIN_FORMATIONS).filter(id => !formations.has(id)), []);
     assert.equal(formations.size, 10);
+
+    // Requirements 69–77 are player-built works, not passive scenery. They
+    // only appear on a profile whose use flags match the actual work state.
+    const built = mountainProfileAt(4.5, 4.5, context({
+        height: 0.7, moisture: 0.55, dayOfYear: 150,
+        use: {
+            terraced: true, valleySettlement: true, fortress: true, fortifiedPass: true,
+            road: true, bridge: true, mine: true, quarry: true, aqueduct: true,
+        },
+    }));
+    for (const id of MOUNTAIN_REQUIREMENT_IDS.slice(68)) assert.ok(built.features.includes(id), id);
+    const wild = mountainProfileAt(4.5, 4.5, context({ height: 0.7, moisture: 0.55, use: {} }));
+    assert.deepEqual(wild.features.filter(id => MOUNTAIN_REQUIREMENT_IDS.slice(68).includes(id)), [],
+        "a wild mountain must not claim player-built works");
+});
+
+test("feature flags are evidence from the tile, not a formation checklist", () => {
+    const forest = surveyProfiles().find(profile => profile.vegetation.trees.length > 0);
+    const bare = surveyProfiles().find(profile => profile.vegetation.trees.length === 0);
+    assert.ok(forest && bare);
+    assert.equal(forest.features.includes("1.2.12.28"), true);
+    assert.equal(bare.features.includes("1.2.12.28"), false);
+    const cave = surveyProfiles().find(profile => profile.landform.cave);
+    const noCave = surveyProfiles().find(profile => !profile.landform.cave);
+    assert.ok(cave && noCave);
+    assert.equal(cave.features.includes("1.2.12.26"), true);
+    assert.equal(noCave.features.includes("1.2.12.26"), false);
+    const ibex = surveyProfiles().find(profile => profile.fauna.some(entry => entry.id === "ibex"));
+    assert.ok(ibex, "the survey must observe an ibex on a real rock tile");
+    assert.equal(ibex.features.includes("1.2.12.44"), true);
+    const dry = surveyProfiles().find(profile => !profile.fauna.some(entry => entry.id === "ibex"));
+    if (dry) assert.equal(dry.features.includes("1.2.12.44"), false);
 });
 
 test("mountains are the dedicated mountain climate and expose real products", () => {

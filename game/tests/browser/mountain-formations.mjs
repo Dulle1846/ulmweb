@@ -227,7 +227,7 @@ try {
     // A direct renderer atlas at a large cell size makes the silhouette itself
     // reviewable, independent of the map's tile lattice and camera.
     const atlasUrl = await page.evaluate(async () => {
-        const [{ state }, { mountainProfileAt }, { getHeightAt, getMoistureAt, getTemperatureAt }, { drawMountain }] =
+        const [{ state }, { mountainProfileAt }, { getHeightAt, getMoistureAt, getTemperatureAt }, { drawMountainGround }] =
             await Promise.all([
                 import("/js/core/state.js"),
                 import("/js/world/mountain-ecology.js"),
@@ -270,7 +270,9 @@ try {
             ctx.fillRect(col * cell, row * cell, cell, cell);
             const cx = col * cell + cell / 2;
             const cy = row * cell + cell / 2;
-            drawMountain(ctx, cx, cy, cell, profile, 0.35, 0.55, 0.7, 0, 1.35);
+            // The atlas is a landform reference. Ground-only keeps water,
+            // wildlife and works from covering the silhouette at 220 px.
+            drawMountainGround(ctx, cx, cy, cell, profile, 0.35, 0.55, 0.7);
             ctx.globalAlpha = 1;
             ctx.fillStyle = "#1b2321";
             ctx.fillRect(col * cell, row * cell + cell - 24, cell, 24);

@@ -65,8 +65,25 @@ export function updateCombat(){
   if(!target)continue;
   const dx=target.x-enemy.x,dy=target.y-enemy.y,dist=Math.hypot(dx,dy);
   const jungle=getJungleTacticsAt(enemy.x,enemy.y);
+  const mountain=getMountainTacticsAt(enemy.x,enemy.y);
   const jungleSpeed=jungle?Math.max(.42,1/(Number(jungle.movementFactor)||1)):1;
-  if(dist>1.8){enemy.x+=Math.sign(dx)*0.065*jungleSpeed;enemy.y+=Math.sign(dy)*0.065*jungleSpeed;}
+  // A mountain is not a flat raid lane. The same slope, snow and bridge state
+  // that prices villager travel also decides how fast a raider can climb.
+  const mountainSpeed=mountain?Math.max(.38,Number(mountain.movementFactor)||1):1;
+  if(dist>1.8){enemy.x+=Math.sign(dx)*0.065*jungleSpeed*mountainSpeed;enemy.y+=Math.sign(dy)*0.065*jungleSpeed*mountainSpeed;}
+  // Avalanche and supply attrition are battlefield events, not a stat on a
+  // survey card. They use the seeded combat stream so replays stay identical.
+  if(mountain&&tick%31===0&&rand(0,1)<Math.min(.26,(Number(mountain.avalanche)||0)*.16)){
+   enemy.hp-=Math.max(2,Math.round(4+(Number(mountain.avalanche)||0)*10));
+   queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE-14,"AVALANCHE","#dbeafe");
+   if(enemy.hp<=0)enemy.dead=true;
+  }
+  if(!enemy.dead&&mountain&&tick%47===0&&(Number(mountain.supply)||0)>.62){
+   enemy.hp-=1;
+   queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE-12,"SUPPLY","#fbbf24");
+   if(enemy.hp<=0)enemy.dead=true;
+  }
+  if(enemy.dead)continue;
   // Dense jungle turns an approach into an ambush lane. The roll uses the
   // existing seeded combat stream, so the same realm still replays identically.
   if(jungle&&tick%23===0&&rand(0,1)<Math.min(.42,Number(jungle.ambushChance)||0)){
@@ -122,10 +139,16 @@ export function updateCombat(){
   const namedPower=getSoldierPower(defender);
   const basePower=namedPower>0?namedPower:(defender.type===TYPE.KNIGHT?34:18);
   const jungleDefence=getJungleTacticsAt(defender.x,defender.y);
+  const mountainDefence=getMountainTacticsAt(defender.x,defender.y);
   const local=Boolean(defender.military&&defender.military.origin==="levy");
   const junglePower=jungleDefence?1+Math.min(.38,(Number(jungleDefence.guerrillaBonus)||0)*.3
       +(local?(Number(jungleDefence.localAdvantage)||0)*.12:0)):1;
-  enemy.hp-=Math.max(1,Math.round(basePower*readiness*(1+(nobleDefense-1)*0.6)*junglePower));
+  // Local levies and veteran garrison know where to place a foot, when a snow
+  // slab moves and how to hold a pass. This is the mountain-experience bonus.
+  const veteran=defender.military?.rank==="veteran"||defender.military?.rank==="elite";
+  const mountainPower=mountainDefence?1+Math.min(.26,(Number(mountainDefence.mountainExperience)||0)*.24
+      +(local?.06:0)+(veteran?.06:0)):1;
+  enemy.hp-=Math.max(1,Math.round(basePower*readiness*(1+(nobleDefense-1)*0.6)*junglePower*mountainPower));
   queueParticle(enemy.x*TILE_SIZE+12,enemy.y*TILE_SIZE-18,"#fde047",22,rand(-1,4),-3);
   if(enemy.hp<=0){enemy.dead=true;if(namedPower>0)recordMilitaryVictory(defender);queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE,"SLAIN","#eab308");}
  }

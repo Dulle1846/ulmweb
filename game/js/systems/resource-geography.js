@@ -486,10 +486,18 @@ export function getMountainTacticsAt(x, y) {
     const hx = sampleTerrain(point.x + 1, point.y).height || h;
     const hy = sampleTerrain(point.x, point.y + 1).height || h;
     const slope = clamp(Math.hypot(hx - h, hy - h) * 24, 0, 1);
+    const snowCover = Number(seasonalState(Number(state.dayOfYear) || 0, "mountain").snowCover) || 0;
+    // The same route cost the villagers pay is now exposed to combat. Raiders
+    // and pack trains climb the exact slope, snow and bridge/switchback state
+    // the economy uses instead of moving at lowland speed through a pass.
+    const movementFactor = getForestMovementFactorAt(point.x, point.y);
     return {
         defenceBonus: clamp(0.2 + slope * 0.3 + Math.max(0, h - 0.4) * 0.4 + (works.fortress ? 0.2 : 0) + (works.fortifiedPass ? 0.18 : 0), 0, 1),
         movementBurden: clamp(0.2 + slope * 0.5 + Math.max(0, h - 0.5) * 0.3 - (works.road ? 0.2 : 0), 0, 1),
-        avalanche: clamp((Number(seasonalState(Number(state.dayOfYear) || 0, "mountain").snowCover) || 0) * 0.5 + slope * 0.2, 0, 1),
+        movementFactor: clamp(movementFactor, 0.34, 1),
+        avalanche: clamp(snowCover * 0.5 + slope * 0.2, 0, 1),
+        supply: clamp(0.55 + slope * 0.34 + snowCover * 0.14 - (works.road ? 0.18 : 0), 0, 1),
+        mountainExperience: clamp(0.18 + Math.max(0, h - 0.4) * 0.3 + (works.terraced ? 0.08 : 0) + (works.road ? 0.06 : 0), 0, 0.7),
         pass: Boolean(works.fortifiedPass),
         height: h,
     };

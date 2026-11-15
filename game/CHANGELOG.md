@@ -187,6 +187,24 @@ resources, tick and year through the production save pipeline. Full suite:
 **1003/1003** green; live proof still **60 FPS / 0.6 ms p95** with no page,
 console or request errors.
 
+**Evidence audit and mountain depth pass:** the 77-point checklist is now
+evidence-gated instead of pre-seeded per formation. A cave flag appears only on
+a tile whose `cave` landform is true, a glacier only where permanent ice is
+present, an ibex only where the fauna list contains one, and works 69–77 only
+when the player-built `use` flags exist. The four-season survey still reaches
+every natural requirement and the rendered built profile reaches all nine
+works, while a wild tile can no longer claim a fortress it does not have. The
+renderer adds granite speckles, limestone bedding, slate cleavage, marble veins,
+boulder fields, crevices, cave mouths and overhangs; species-shaped alpine
+flowers with rare-plant halos, lichen patches, spring eyes, ice caves, frozen
+falls, snowfield edges and distinct goat, marmot, raptor, predator and rodent
+silhouettes. Combat now reads the same cached mountain movement factor as the
+economy, applies avalanche and supply attrition to raiders, and gives local
+levies and veterans a bounded mountain-experience attack bonus. The suite is
+**1004/1004** green; the low-end mountain run holds **16.7–16.8 ms p95** with
+**zero long tasks**, 220 ms save and 1,512 ms load; the live proof reports
+**59.9 FPS**, **0.5 ms p95 draw** and zero page, console or request errors.
+
 ### 3.18.0-dev — Swamps and bogs (1.2.11.1–1.2.11.81)
 
 **Released:** 2026-11-15 on the development line
