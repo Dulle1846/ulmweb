@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.14.2`
-**Next development line:** `3.17.2-dev`
+**Next development line:** `3.18.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -111,6 +111,33 @@ production load founded seed `20261108` with 23 residents, forced the calendar
 to year 3 day 399, and completed the real rollover to year 4 day 9 / tick 1209
 with **zero long tasks**, no page errors, no console errors and no failed
 requests.
+
+### 3.18.0-dev — Swamps and bogs (1.2.11.1–1.2.11.81)
+
+**Released:** 2026-11-15 on the development line
+
+**Scope:** a complete wetland climate with ten formations: shallow- and
+deep-water swamp, reed swamp, alder carr, fen, raised bog, peat bog, flooded
+floodplain, seasonal wetland and coastal mangrove. The deterministic
+`swamp-ecology.js` profile supplies water depth and turbidity, peat and unstable
+ground, reeds, sedges, mosses, water lilies, carnivorous plants, alder and
+willow carr, frogs through otters and fish, seasonal berries, medicinal herbs,
+peat, clay and rare bog plants. Hazards include sinking mud, hidden depth,
+insect-borne fever, contaminated water, fog, high movement cost and wagon risk;
+the same profile carries boardwalks, bridges, drainage, peat cutting, fishing,
+reed craft and natural defences.
+
+**Integration:** a new selectable **Swamps & Bogs** climate with its own
+seasonal snow curve and palette, a `swamp-render.js` Canvas2D layer for water,
+reeds, moss, mist, reflections, bubbles, insect clouds and fauna, carr timber in
+the shared forest model, swamp goods in `FOREST_GOODS` and delivery channels,
+and wetland survey summaries in the existing land-use path. No save schema,
+per-tile state or extra tick loop was added.
+
+**Verification:** all 81 requirements are declared and reached by a two-season
+deterministic survey covering all ten formations; focused wetland tests pass;
+the existing 984-test suite remains green after its hardcoded climate and
+formation counts were updated.
 
 ### 3.17.2-dev — 50-year endurance audit stays synchronized
 

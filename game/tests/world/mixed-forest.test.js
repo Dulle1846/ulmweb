@@ -45,7 +45,7 @@ const sample = id => {
 
 test("temperate species and fifty-seven shared formations preserve every existing index", () => {
     assert.ok(Object.keys(FOREST_SPECIES).length >= 20);
-    assert.equal(FOREST_TYPE_IDS.length, 57);
+    assert.equal(FOREST_TYPE_IDS.length, 58);
     assert.equal(FOREST_TYPE_IDS.slice(0, 39).length, 39);
     assert.equal(forestTypeIndex("oakwood"), 1);
     assert.equal(forestTypeIndex("drought-stressed"), 27);

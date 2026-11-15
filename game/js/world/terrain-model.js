@@ -111,6 +111,7 @@ export const CLIMATES = [
     { id: 'taiga',        label: 'Taiga',        note: 'Spruce, pine, larch and birch under long snow' },
     { id: 'tundra',       label: 'Tundra',       note: 'Permafrost, low shrubs, bogs and a short summer' },
     { id: 'savanna',      label: 'Savanna',      note: 'Tall grass, flat-crowned trees and a long dry season' },
+    { id: 'swamp',        label: 'Swamps & Bogs', note: 'Shallow water, alder carr, reeds, fens and deep peat' },
     { id: 'mediterranean',label: 'Mediterranean',note: 'Warm dry summers and olive hills' },
     { id: 'arid',         label: 'Arid',         note: 'Steppe, desert plateaus and oases' },
     { id: 'enchanted',    label: 'Enchanted',    note: 'A milder climate with uncanny colours' },
@@ -245,8 +246,12 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
     // The taiga is damp, poorly drained and full of small hollows; this is the
     // same moisture field that later forms moss floors, bogs and forest ponds.
     const taiga = options.climate === 'taiga' ? 0.05 : 0;
+    // The wetland climate keeps a high water table across the low ground, so
+    // fens, carr and open pools occur as real formations rather than rare
+    // exceptions. The aridity slider still trims the local envelope.
+    const swamp = options.climate === 'swamp' ? 0.12 : 0;
     return clamp(
-        noise + tropical + tundra + savanna + taiga + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
+        noise + tropical + tundra + savanna + taiga + swamp + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
         + (options.wetlands - 50) * 0.0016 - (options.aridity - 50) * 0.0012,
         0, 1
     );
@@ -254,7 +259,7 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
 
 export function sampleTemperature(wx, wy, W, H, height, sea, rawOptions = {}) {
     const options = rawOptions.__normalized ? rawOptions : normalizeWorldOptions(rawOptions);
-    const base = { temperate: 0.58, northern: 0.33, taiga: 0.27, tundra: 0.20, savanna: 0.76, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
+    const base = { temperate: 0.58, northern: 0.33, taiga: 0.27, tundra: 0.20, savanna: 0.76, swamp: 0.55, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
     const latitude = 1 - Math.abs(wy / H - 0.5) * 2;   // 1 at the equator, 0 at the poles
     let t = base + (latitude - 0.62) * 0.26 - Math.max(0, height - sea) * 0.30;
     t += (fbm(wx * 0.0085 + 91.3, wy * 0.0085 + 17.9, 3, 0.5, 2.1) - 0.5) * 0.07;
@@ -626,6 +631,12 @@ const PALETTES = {
         dry: [174, 137, 84], meadow: [140, 142, 74], lush: [100, 126, 58], forest: [74, 96, 50],
         cold: [150, 140, 108], hot: [192, 142, 76], sand: [208, 176, 124], swamp: [96, 102, 62],
         rock: [136, 110, 88], snow: [232, 231, 220],
+    },
+    swamp: {
+        waterDeep: [18, 40, 38], waterShallow: [54, 82, 66], foam: [196, 208, 184],
+        dry: [128, 120, 84], meadow: [104, 124, 78], lush: [70, 102, 62], forest: [46, 76, 48],
+        cold: [120, 128, 112], hot: [154, 142, 96], sand: [174, 162, 126], swamp: [72, 78, 54],
+        rock: [108, 110, 98], snow: [226, 234, 236],
     },
     mediterranean: {
         waterDeep: [24, 68, 96], waterShallow: [62, 140, 158], foam: [218, 232, 228],

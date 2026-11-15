@@ -44,6 +44,13 @@ export const CLIMATE_SEASONS = Object.freeze({
         snowStart: 400, snowFull: 401, meltStart: 401, meltEnd: 402,
         snowScale: 0, foliageShift: 4, foliageScale: 0.5, greenShift: 60, warmthShift: 22,
     }),
+    // Wetlands have no reliable snow pack. Spring flooding and a long autumn
+    // refill drive the seasonal cycle; foliage stays green far longer than on
+    // dry ground, with only a muted late-autumn turn.
+    swamp: Object.freeze({
+        snowStart: 330, snowFull: 370, meltStart: 382, meltEnd: 420,
+        snowScale: 0.22, foliageShift: 12, foliageScale: 0.46, greenShift: 34, warmthShift: 4,
+    }),
     mediterranean: Object.freeze({
         snowStart: 272, snowFull: 325, meltStart: 350, meltEnd: 410,
         snowScale: 0.55, foliageShift: 5, foliageScale: 0.9, greenShift: -6, warmthShift: 8,

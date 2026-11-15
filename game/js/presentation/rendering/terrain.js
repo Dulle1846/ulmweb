@@ -24,6 +24,8 @@ import { drawTundra, drawTundraTree } from './tundra-render.js';
 import { drawTaiga, drawTaigaIce, drawTaigaTree } from './taiga-render.js';
 import { isSavannaSite, savannaProfileAt } from '../../world/savanna-ecology.js';
 import { drawSavanna, drawSavannaTree } from './savanna-render.js';
+import { isSwampSite, swampProfileAt } from '../../world/swamp-ecology.js';
+import { drawSwamp, drawSwampTree } from './swamp-render.js';
 import { grasslandUseAt } from '../../systems/grassland-use.js';
 import {
     DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
@@ -1288,6 +1290,10 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
                 height: h, climate: climateKey, seaLevel: sea,
             });
+            const swampSite = isSwampSite(x + 0.5, y + 0.5, {
+                seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
+                height: h, climate: climateKey, seaLevel: sea,
+            });
             const taigaSite = isTaigaSite(x + 0.5, y + 0.5, {
                 seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
                 height: h, climate: climateKey, seaLevel: sea,
@@ -1300,7 +1306,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             });
             // Savanna keeps its trees scattered, so the closed-canopy forest
             // gate stays off even where a generic moisture test would pass.
-            const potentialForest = !tundraSite && !savannaSite && !taigaOpen
+            const potentialForest = !swampSite && !tundraSite && !savannaSite && !taigaOpen
                 && forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 });
             // Neither the detail lattice nor the tree lattice needs this tile.
             // Do this before forestStandAt(), whose species wave is much more
@@ -1364,7 +1370,10 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             const tundra = grassContext && !potentialForest && tundraSite
                 ? tundraProfileAt(x + 0.5, y + 0.5, grassContext)
                 : null;
-            const taiga = grassContext && !potentialForest && !tundra && taigaSite
+            const swamp = grassContext && !potentialForest && swampSite
+                ? swampProfileAt(x + 0.5, y + 0.5, grassContext)
+                : null;
+            const taiga = grassContext && !potentialForest && !swamp && taigaSite
                 ? taigaProfileAt(x + 0.5, y + 0.5, grassContext)
                 : null;
             const savanna = grassContext && !potentialForest && !tundra && !taiga && savannaSite
@@ -1376,7 +1385,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             const steppe = grassContext && !potentialForest && !tundra && !taiga && !savanna && !desert && isSteppeSite(x + 0.5, y + 0.5, grassContext)
                 ? steppeProfileAt(x + 0.5, y + 0.5, grassContext)
                 : null;
-            const grass = grassContext ? (tundra || taiga || savanna || desert || steppe || grasslandProfileAt(x + 0.5, y + 0.5, grassContext)) : null;
+            const grass = grassContext ? (swamp || tundra || taiga || savanna || desert || steppe || grasslandProfileAt(x + 0.5, y + 0.5, grassContext)) : null;
             const meadowTree = Boolean(treeSample && grass && grass.treeChance > 0 && s1 < grass.treeChance);
             if (!potentialForest && !meadowTree && !detail) continue;
 
@@ -1468,6 +1477,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                         drawTaigaTree(ctx, px, py, cellPx, tree, grass, (s1 + s2 * 0.5) % 1);
                     } else if (grass.savanna) {
                         drawSavannaTree(ctx, px, py, cellPx, tree, grass, (s1 + s2 * 0.5) % 1);
+                    } else if (grass.swamp) {
+                        drawSwampTree(ctx, px, py, cellPx, tree, grass, (s1 + s2 * 0.5) % 1);
                     } else {
                         drawGrasslandTree(ctx, px, py, cellPx, tree, grass, tick);
                     }
@@ -1480,7 +1491,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // surface. The profile decides whether this tile is short turf,
             // tall hay, wet meadow, dry chalk, orchard or mountain pasture.
             if (grass && zoom >= 0.34) {
-                if (grass.tundra) drawTundra(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
+                if (grass.swamp) drawSwamp(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
+                else if (grass.tundra) drawTundra(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
                 else if (grass.taiga) drawTaiga(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
                 else if (grass.savanna) drawSavanna(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
                 else if (grass.desert) drawDesert(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
@@ -4547,6 +4559,10 @@ export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
                         seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
                         climate: climateKey, seaLevel: sea,
                     });
+                    const openSwamp = isSwampSite(x + 0.5, y + 0.5, {
+                        seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
+                        climate: climateKey, seaLevel: sea,
+                    });
                     const openTaiga = isTaigaSite(x + 0.5, y + 0.5, {
                         seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
                         climate: climateKey, seaLevel: sea,
@@ -4554,7 +4570,7 @@ export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
                         seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp, height: h,
                         climate: climateKey, seaLevel: sea,
                     });
-                    const forested = !openSavanna && !openTaiga
+                    const forested = !openSwamp && !openSavanna && !openTaiga
                         && forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 })
                         && !forestClearingAt(x, y, {
                             seed: Number(state.worldSeed) || 1, moisture: m, height: h, forests, rockLine: 0.92,
@@ -4582,8 +4598,11 @@ export function drawGrasslandWindOverlay(ctx, zoom, cam, canvas, probe = null) {
                         const savannaWind = !tundraWind && !taigaWind && !desertWind && !steppeWind && openSavanna
                             ? savannaProfileAt(x + 0.5, y + 0.5, windContext)
                             : null;
-                        const profile = tundraWind || taigaWind || savannaWind || desertWind || steppeWind || grasslandProfileAt(x + 0.5, y + 0.5, windContext);
-                        if ((profile.sward?.tall || profile.desert || profile.tundra || profile.taiga || profile.savanna)
+                        const swampWind = !tundraWind && !taigaWind && !desertWind && !steppeWind && openSwamp
+                            ? swampProfileAt(x + 0.5, y + 0.5, windContext)
+                            : null;
+                        const profile = swampWind || tundraWind || taigaWind || savannaWind || desertWind || steppeWind || grasslandProfileAt(x + 0.5, y + 0.5, windContext);
+                        if ((profile.sward?.tall || profile.desert || profile.tundra || profile.taiga || profile.savanna || profile.swamp)
                             && profile.visual.windSway >= 0.14) {
                             tuft = { sway: profile.visual.windSway, colour: profile.grassHex };
                         }

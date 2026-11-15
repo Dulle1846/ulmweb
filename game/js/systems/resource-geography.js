@@ -114,11 +114,35 @@ export function generateResourceGeography(seed=state.worldSeed){
             // lowland savanna start has no harvestable woodland at all: no
             // lumberjacks, no logs and no firewood for the settlement.
             const savannaBelt=climate==="savanna"&&h>=sea+0.012;
-            if((h>=forestLine||savannaBelt)&&h<BIOME.ROCK){
+            // Wetland carr begins at the shore, not at the dry forest line.
+            // Alder and willow stands can therefore occupy the low, wet belt
+            // below the ordinary woodland threshold.
+            const swampBelt=climate==="swamp"&&h>=sea+0.008;
+            if((h>=forestLine||savannaBelt||swampBelt)&&h<BIOME.ROCK){
                 const density=climate==="savanna"
                     ?clamp((h-sea)/Math.max(0.001,BIOME.ROCK-sea),0,1)
                     :clamp((h-forestLine)/Math.max(0.001,BIOME.ROCK-forestLine),0,1);
-                if(climate==="savanna"){
+                if(climate==="swamp"){
+                    // Carr is a ribbon of alder and willow through open wetland,
+                    // not a closed dry forest. Only a minority of wet tiles
+                    // carries harvestable stems; the rest stays reed, sedge or
+                    // open water. Capacity is low but the wood is real.
+                    const carrChance=0.16+moisture*0.18+density*0.08;
+                    if(unitHash(worldSeed,index,0x5357414d)<carrChance){
+                        const stand=forestStandAt(x+0.5,y+0.5,{
+                            seed:worldSeed, moisture, temperature, height:h,
+                            climate, forests:state.worldOptions?.forests??52,
+                            stockRatio:1, rockLine:BIOME.ROCK,
+                        });
+                        if(stand.forest){
+                            const capacity=Math.max(12,Math.min(120,Math.round(24+moisture*42+density*26+unitHash(worldSeed,index,0x53574350)*24)));
+                            forestCapacity[index]=capacity;
+                            forestStock[index]=capacity;
+                            forestKind[index]=forestTypeIndex("swamp-carr");
+                            forestAge[index]=2;
+                        }
+                    }
+                }else if(climate==="savanna"){
                     // Savanna is an open woodland, not a closed forest. A small
                     // fraction of the grassy belt carries harvestable acacia,
                     // camelthorn and riparian timber; the rest stays grass.
@@ -336,6 +360,14 @@ export function getForestMovementFactorAt(x, y) {
         const seasonal = seasonalState(Number(state.dayOfYear) || 0, "savanna");
         const wet = clamp(seasonal.greenUp + (seasonal.season === 0 ? 0.18 : 0), 0, 1);
         return clamp(1 - wet * 0.12, 0.86, 1);
+    }
+    // Wetland carr is slow all year, and the spring flood is the worst season
+    // for carts and pack animals. The floor keeps a route possible; the effect
+    // is a genuine cost, not an impassable wall.
+    if (climate === "swamp") {
+        const seasonal = seasonalState(Number(state.dayOfYear) || 0, "swamp");
+        const flood = seasonal.season === 0 ? (1 - seasonal.greenUp) * 0.16 : 0;
+        return clamp(0.72 - seasonal.snowCover * 0.08 - flood, 0.54, 0.82);
     }
     if (climate !== "tropical") return 1;
     const point = readTile(x, y);

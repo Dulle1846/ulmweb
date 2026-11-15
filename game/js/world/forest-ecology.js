@@ -21,6 +21,7 @@ import { DESERT_GOODS } from './desert-ecology.js';
 import { TUNDRA_GOODS } from './tundra-ecology.js';
 import { TAIGA_GOODS } from './taiga-ecology.js';
 import { SAVANNA_GOODS, SAVANNA_SPECIES } from './savanna-ecology.js';
+import { SWAMP_GOODS } from './swamp-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -482,6 +483,11 @@ export const FOREST_TYPES = Object.freeze({
     'taiga-mixed': type('taiga-mixed', 'Mixed Taiga', 'Spruce, pine, larch and birch in an uneven, many-aged mosaic',
         { spruce: 0.32, pine: 0.24, larch: 0.16, birch: 0.22, rowan: 0.06 },
         { density: 0.8, openness: 0.14, conifer: true, needleLitter: 0.66, canopyLayers: 3, mixturePattern: 'mosaic', understory: { fern: 0.12, bramble: 0, shrub: 0.2, moss: 0.42, heather: 0.12, lichen: 0.2, berry: 0.28, grass: 0.08, herb: 0.12 }, goods: ['spruce-cones', 'pine-cones', 'resin', 'mushrooms', 'blueberries', 'game'], fauna: ['moose', 'bear', 'wolf', 'lynx', 'crossbill', 'capercaillie', 'owl', 'fox'], ageBias: 'mature', productivity: 1.02, silviculture: ['selection-felling', 'timber', 'firewood', 'hunting', 'mushrooms', 'protection'] }),
+    // Wetland carr is appended last so every numeric type index stored in an
+    // older save keeps resolving to the same formation.
+    'swamp-carr': type('swamp-carr', 'Alder and Willow Carr', 'Alder, willow, bog birch and floodplain oak standing in black water and moss',
+        { alder: 0.34, willow: 0.28, birch: 0.16, ash: 0.12, oak: 0.1 },
+        { density: 0.62, openness: 0.38, understory: { fern: 0.14, bramble: 0.04, shrub: 0.24, moss: 0.56, heather: 0, lichen: 0.08, berry: 0.2, grass: 0.08, herb: 0.24 }, goods: ['alder-timber', 'willow-withies', 'sphagnum', 'bog-herb', 'bog-cranberry', 'game', 'firewood'], fauna: ['beaver', 'otter', 'heron', 'frog', 'mallard', 'deer', 'boar'], ageBias: 'mature', productivity: 0.78, silviculture: ['firewood', 'basketry', 'coppice', 'hunting', 'medicine', 'protection'] }),
 });
 
 export const FOREST_TYPE_IDS = Object.freeze(Object.keys(FOREST_TYPES));
@@ -722,13 +728,14 @@ export const FOREST_GOODS = Object.freeze({
     ...TAIGA_GOODS,
     ...TROPICAL_GOODS,
     ...SAVANNA_GOODS,
+    ...SWAMP_GOODS,
 });
 
 const SEASON_GOODS = Object.freeze({
     spring: { herbs: 0.9, 'wild-garlic': 0.88, 'wood-sorrel': 0.72, 'wild-strawberry': 0.3, 'birch-sap': 0.9, 'maple-syrup': 0.75, 'linden-flower': 0.45, honey: 0.55, beeswax: 0.25, mushrooms: 0.18, berries: 0.12, game: 0.3, fur: 0.25, hides: 0.2, resin: 0.22, lichen: 0.2, woodruff: 0.7, 'willow-withies': 0.45 },
-    summer: { herbs: 0.65, 'wild-garlic': 0.38, 'wood-sorrel': 0.55, 'wild-strawberry': 0.9, chanterelle: 0.18, 'linden-flower': 0.95, honey: 0.95, beeswax: 0.55, berries: 0.9, mushrooms: 0.3, game: 0.35, fur: 0.2, hides: 0.16, 'maple-syrup': 0.3, resin: 0.75, blueberries: 0.9, lingonberries: 0.45, lichen: 0.25, woodruff: 0.45, valerian: 0.65, elderberries: 0.15 },
-    autumn: { mushrooms: 0.95, chanterelle: 0.9, porcini: 0.82, sloes: 0.76, 'crab-apples': 0.7, 'wood-sorrel': 0.3, 'wild-strawberry': 0.15, berries: 0.55, acorns: 0.95, beechnuts: 0.9, chestnuts: 0.95, truffles: 0.7, game: 0.9, fur: 0.5, hides: 0.45, herbs: 0.25, honey: 0.2, beeswax: 0.18, resin: 0.5, 'spruce-cones': 0.8, 'fir-cones': 0.8, 'pine-cones': 0.9, 'juniper-berries': 0.85, 'yew-berries': 0.7, 'dwarf-pine-cones': 0.62, blueberries: 0.35, lingonberries: 0.9, hazelnuts: 0.92, 'hornbeam-seeds': 0.6, 'rowan-berries': 0.85, elderberries: 0.8, 'ash-keys': 0.55, 'tinder-fungus': 0.5 },
-    winter: { game: 0.55, fur: 0.85, hides: 0.65, mushrooms: 0.08, berries: 0.04, charcoal: 0.5, resin: 0.05, 'spruce-cones': 0.35, 'fir-cones': 0.32, 'pine-cones': 0.45, 'juniper-berries': 0.5, 'yew-berries': 0.3, 'dwarf-pine-cones': 0.25, lichen: 0.3, 'willow-withies': 0.7, 'tinder-fungus': 0.45 },
+    summer: { herbs: 0.65, 'wild-garlic': 0.38, 'wood-sorrel': 0.55, 'wild-strawberry': 0.9, chanterelle: 0.18, 'linden-flower': 0.95, honey: 0.95, beeswax: 0.55, berries: 0.9, mushrooms: 0.3, game: 0.35, fur: 0.2, hides: 0.16, 'maple-syrup': 0.3, resin: 0.75, blueberries: 0.9, lingonberries: 0.45, lichen: 0.25, woodruff: 0.45, valerian: 0.65, elderberries: 0.15, 'bog-herb': 0.85, sphagnum: 0.6, 'bog-cranberry': 0.32 },
+    autumn: { mushrooms: 0.95, chanterelle: 0.9, porcini: 0.82, sloes: 0.76, 'crab-apples': 0.7, 'wood-sorrel': 0.3, 'wild-strawberry': 0.15, berries: 0.55, acorns: 0.95, beechnuts: 0.9, chestnuts: 0.95, truffles: 0.7, game: 0.9, fur: 0.5, hides: 0.45, herbs: 0.25, honey: 0.2, beeswax: 0.18, resin: 0.5, 'spruce-cones': 0.8, 'fir-cones': 0.8, 'pine-cones': 0.9, 'juniper-berries': 0.85, 'yew-berries': 0.7, 'dwarf-pine-cones': 0.62, blueberries: 0.35, lingonberries: 0.9, hazelnuts: 0.92, 'hornbeam-seeds': 0.6, 'rowan-berries': 0.85, elderberries: 0.8, 'ash-keys': 0.55, 'tinder-fungus': 0.5, 'bog-herb': 0.35, sphagnum: 0.6, 'bog-cranberry': 0.9 },
+    winter: { game: 0.55, fur: 0.85, hides: 0.65, mushrooms: 0.08, berries: 0.04, charcoal: 0.5, resin: 0.05, 'spruce-cones': 0.35, 'fir-cones': 0.32, 'pine-cones': 0.45, 'juniper-berries': 0.5, 'yew-berries': 0.3, 'dwarf-pine-cones': 0.25, lichen: 0.3, 'willow-withies': 0.7, 'tinder-fungus': 0.45, 'bog-herb': 0.12, sphagnum: 0.5, 'bog-cranberry': 0.3 },
 });
 
 const FAUNA = Object.freeze({
@@ -845,6 +852,10 @@ function formationFor(x, y, ctx) {
     // shared stand model, never a closed temperate canopy on the map.
     // Taiga (1.2.10) appends its own boreal formations below.
     if (climate === 'savanna') return 'savanna-woodland';
+    // Wetland climate carries a single carr formation: alder, willow, bog
+    // birch, floodplain ash and bog oak in standing water. Open reed, fen and
+    // bog communities are rendered by swamp-ecology.js, not this stand.
+    if (climate === 'swamp') return 'swamp-carr';
     if (climate === 'taiga') return taigaFormationFor(x, y, seed, moisture);
     // Chestnut groves belong to the warm, sheltered lowlands. The generated
     // temperate map rarely exceeds .62 on land, so .58 is the playable warm

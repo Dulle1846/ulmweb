@@ -14,6 +14,7 @@ import { isDesertSite, desertProfileAt, desertSummary } from "../world/desert-ec
 import { isTundraSite, tundraProfileAt, tundraSummary } from "../world/tundra-ecology.js";
 import { isTaigaSite, taigaProfileAt, taigaSummary } from "../world/taiga-ecology.js";
 import { isSavannaSite, savannaProfileAt, savannaSummary } from "../world/savanna-ecology.js";
+import { isSwampSite, swampProfileAt, swampSummary } from "../world/swamp-ecology.js";
 
 const BUCKET = 8;
 const CACHE_VERSION = 1;
@@ -196,6 +197,20 @@ export function savannaSiteProfileAt(x, y, overrides = {}) {
     return savannaProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
 }
 
+export function swampSiteProfileAt(x, y, overrides = {}) {
+    return swampProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
+}
+
+export function swampSiteSummaryAt(x, y) {
+    try {
+        const context = siteContextAt(x, y);
+        return isSwampSite(x + 0.5, y + 0.5, context)
+            ? swampSummary(swampProfileAt(x + 0.5, y + 0.5, context)) : "";
+    } catch {
+        return "";
+    }
+}
+
 export function savannaSiteSummaryAt(x, y) {
     try {
         const context = siteContextAt(x, y);
@@ -256,6 +271,9 @@ export function grasslandSiteSummaryAt(x, y) {
         }
         if (isTaigaSite(x + 0.5, y + 0.5, context)) {
             return taigaSummary(taigaProfileAt(x + 0.5, y + 0.5, context));
+        }
+        if (isSwampSite(x + 0.5, y + 0.5, context)) {
+            return swampSummary(swampProfileAt(x + 0.5, y + 0.5, context));
         }
         if (isSavannaSite(x + 0.5, y + 0.5, context)) {
             return savannaSummary(savannaProfileAt(x + 0.5, y + 0.5, context));

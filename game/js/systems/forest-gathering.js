@@ -14,6 +14,7 @@ import { isDesertSite, desertProductsAt } from "../world/desert-ecology.js";
 import { isTundraSite, tundraProductsAt } from "../world/tundra-ecology.js";
 import { isTaigaSite, taigaProductsAt, TAIGA_GOODS } from "../world/taiga-ecology.js";
 import { isSavannaSite, savannaProductsAt, SAVANNA_GOODS } from "../world/savanna-ecology.js";
+import { isSwampSite, swampProductsAt, SWAMP_GOODS } from "../world/swamp-ecology.js";
 import { grasslandUseAt } from "./grassland-use.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import {
@@ -70,6 +71,14 @@ export function forestDeliveryChannel(id) {
     if (savanna) {
         if (["sorghum", "millet", "marula-fruit", "baobab-fruit", "meat"].includes(id)) return "food";
         if (["gum-arabic", "savanna-salt", "thorn-branches", "termite-earth", "charcoal", "ivory", "baobab-fibre", "thatching-grass"].includes(id)) return "gold";
+        return null;
+    }
+    const swamp = SWAMP_GOODS[id];
+    if (swamp) {
+        if (swamp.category === "wood") return "wood";
+        if (swamp.category === "medicine") return "medicine";
+        if (["bog-cranberry", "bog-bean", "water-lily", "cattail-flour", "waterfowl", "marsh-fish"].includes(id)) return "food";
+        if (["bog-orchid", "sphagnum", "reed-matting", "bog-cotton", "swamp-mud"].includes(id)) return "gold";
         return null;
     }
     const tropical = TROPICAL_GOODS[id];
@@ -458,7 +467,8 @@ export function gatherMeadowProducts(x, y, options = {}) {
     // Tundra, desert and steppe are still forage land. The same button and
     // ledger serve all four profiles; the terrain decides which harvest
     // vocabulary is present. Cold ground wins over the arid margins.
-    const products = (isTundraSite(x, y, context) ? tundraProductsAt(x, y, context) : null)
+    const products = (isSwampSite(x, y, context) ? swampProductsAt(x, y, context) : null)
+        || (isTundraSite(x, y, context) ? tundraProductsAt(x, y, context) : null)
         || (isTaigaSite(x, y, context) ? taigaProductsAt(x, y, context) : null)
         || (isSavannaSite(x, y, context) ? savannaProductsAt(x, y, context) : null)
         || (isDesertSite(x, y, context) ? desertProductsAt(x, y, context) : null)
@@ -508,7 +518,8 @@ export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
             const node = getResourceNodeAt(tx, ty);
             if (node?.forestCapacity && node.forestStock > 0) continue;
             const context = meadowContextAt(tx, ty);
-            const products = (isTundraSite(tx, ty, context) ? tundraProductsAt(tx, ty, context) : null)
+            const products = (isSwampSite(tx, ty, context) ? swampProductsAt(tx, ty, context) : null)
+                || (isTundraSite(tx, ty, context) ? tundraProductsAt(tx, ty, context) : null)
                 || (isTaigaSite(tx, ty, context) ? taigaProductsAt(tx, ty, context) : null)
                 || (isSavannaSite(tx, ty, context) ? savannaProductsAt(tx, ty, context) : null)
                 || (isDesertSite(tx, ty, context) ? desertProductsAt(tx, ty, context) : null)
