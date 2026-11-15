@@ -80,6 +80,17 @@ jobs:
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit "$code"
+      - name: Run mountain 1.2.12 live browser proof
+        id: mountain_live
+        working-directory: game
+        timeout-minutes: 5
+        run: |
+          set +e
+          set -o pipefail
+          npm run test:mountain-live 2>&1 | tee "$RUNNER_TEMP/mountain-live-proof.log"
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit "$code"
       - name: Run swamp cold-start comparison
         id: swamp_performance
         working-directory: game
@@ -159,11 +170,15 @@ jobs:
             artifacts/swamp-live-proof.png
             artifacts/swamp-live-proof-map.png
             artifacts/swamp-live-proof.json
+            artifacts/mountain-live-proof.png
+            artifacts/mountain-live-proof-map.png
+            artifacts/mountain-live-proof.json
             artifacts/low-end-performance.json
             artifacts/swamp-coldstart-report.json
             artifacts/swamp-coldstart-swamp.json
             artifacts/swamp-coldstart-savanna.json
             ${{ runner.temp }}/swamp-live-proof.log
+            ${{ runner.temp }}/mountain-live-proof.log
             ${{ runner.temp }}/swamp-coldstart.log
           if-no-files-found: warn
           retention-days: 7

@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.14.2`
-**Next development line:** `3.18.0-dev`
+**Next development line:** `3.19.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -111,6 +111,63 @@ production load founded seed `20261108` with 23 residents, forced the calendar
 to year 3 day 399, and completed the real rollover to year 4 day 9 / tick 1209
 with **zero long tasks**, no page errors, no console errors and no failed
 requests.
+
+### 3.19.0-dev — Mountains and highlands (1.2.12.1–1.2.12.77)
+
+**Released:** 2026-11-15 on the development line
+
+**Scope:** a complete mountain climate with ten formations: low foothills,
+high chains, jagged peaks, rounded summits, sheer walls, ridges, deep valleys,
+gorges, plateaus and isolated massifs. The deterministic
+`mountain-ecology.js` profile supplies altitude, relative height, slope,
+aspect, rock type and exposure, scree, cliffs, permanent snow and ice,
+treelines that follow climate and aspect, springs, streams, waterfalls, tarns,
+glaciers, meltwater and snowfields. Flora spans low montane and mixed forest,
+subalpine conifers, krummholz, alpine grasses, mountain flowers, mosses,
+lichens and rare high-altitude plants; fauna spans ibex, chamois, marmots,
+eagles, vultures, foxes, wolves, lynx, ptarmigan and small rodents. Stone,
+granite, limestone, slate, marble, iron and other ores, gemstones, salt,
+mountain herbs, spring water, high timber, hunting goods and rare minerals
+enter the existing economy. Hazards and movement costs cover steep slopes,
+difficult traverses, limited passability, passes, height advantage, heavy
+equipment, avalanches and supply burden.
+
+**Integration:** a new selectable **Mountains & Highlands** climate with a
+dedicated base palette, seasonal snow curve, `mountain-render.js` Canvas2D
+layer for strata, scree, snow, ice, water, flora, fauna and works, mountain
+timber and goods in `FOREST_GOODS`, the shared gathering ledger and delivery
+channels, altitude/slope movement pricing with cached factors, height and pass
+defence in combat, mountain survey summaries in the existing land-use path,
+and short-goods telemetry through the shared systems. Schema 11 gains an
+optional bounded `mountainWorks` block; no extra tick loop, no parallel
+resource economy and no renderer above the existing detail budget.
+
+**Mountain works:** all nine works are real player actions on a completed
+building: **terraced village**, **sheltered valley settlement**, **summit
+fortress**, **fortified pass**, **switchback road**, **gorge bridge**,
+**mountain mine**, **stone quarry**, and **water conduit with a small dam**.
+Each spends real wood/stone/gold, marks the tile in `state.mountainWorks`,
+changes the ecology profile the renderer and survey read, repaints the tile and
+delivers ore, stone, granite, limestone, slate, marble, gemstones, salt or
+mountain water into the existing ledger. Extractive works have a per-tile
+recovery cooldown and can trigger exposure through the existing public-health
+path. Works panel, action delegation, save serialization, validation and
+restore are wired into the same locations as the wetland works.
+
+**Verification:** all 77 requirements are declared exactly once and all 77 are
+reached by a four-season deterministic survey covering all ten formations; the
+full suite is **1002/1002** green after the climate count and UI smoke checks
+were updated. All nine works are buildable on the generated mountain map. The
+live browser proof founded a mountain realm on seed `20261212`, selected an
+**isolated massif** with 70 site features, surveyed
+`Isolated massif · mountain slope · Stone, Granite blocks, Mountain spring
+water, Firewood`, gathered real granite and mountain water into the ledger,
+built a stone quarry for 4 wood / 2 stone and received 4 granite blocks. It
+reported **60.5 FPS**, **0.6 ms p95** frame draw, and **0 page / 0 console / 0
+request errors**. The mountain low-end run (4× CPU, software Canvas, 70% render
+scale, 55% forest, two years) held **16.7–16.8 ms p95** in all five phases with
+**zero long tasks**, 6.9–9.3 ms p95 canvas draw, 431–445 p95 draw calls, 203 ms
+save, 1,433 ms load and **0 page / 0 console errors**.
 
 ### 3.18.0-dev — Swamps and bogs (1.2.11.1–1.2.11.81)
 

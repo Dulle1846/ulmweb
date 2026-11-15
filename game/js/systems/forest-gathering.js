@@ -18,6 +18,10 @@ import { isSwampSite, swampProductsAt, swampProfileAt, SWAMP_GOODS } from "../wo
 import {
     SWAMP_WORKS, applySwampWork, swampWorkAt, swampWorkReady, swampWorksSummaryAt,
 } from "../world/swamp-works.js";
+import { isMountainSite, mountainProductsAt, mountainProfileAt, MOUNTAIN_GOODS } from "../world/mountain-ecology.js";
+import {
+    MOUNTAIN_WORKS, applyMountainWork, mountainWorkAt, mountainWorkReady, mountainWorksSummaryAt,
+} from "../world/mountain-works.js";
 import { grasslandUseAt } from "./grassland-use.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import {
@@ -83,6 +87,12 @@ export function forestDeliveryChannel(id) {
         if (["bog-cranberry", "bog-bean", "water-lily", "cattail-flour", "waterfowl", "marsh-fish"].includes(id)) return "food";
         if (["bog-orchid", "sphagnum", "reed-matting", "bog-cotton", "swamp-mud"].includes(id)) return "gold";
         return null;
+    }
+    const mountain = MOUNTAIN_GOODS[id];
+    if (mountain) {
+        if (mountain.category === "wood") return "wood";
+        if (mountain.category === "medicine") return "medicine";
+        return "gold";
     }
     const tropical = TROPICAL_GOODS[id];
     if (!tropical) return null;
@@ -457,8 +467,23 @@ function meadowContextAt(x, y, options = {}) {
         hour: Number(state.timeOfDay) || 12,
         weather: state.weather || "clear",
         wind: String(state.weather || "").toLowerCase() === "storm" ? 2 : 1,
-        use: grasslandUseAt(x, y),
+        use: {
+            ...grasslandUseAt(x, y),
+            ...(state.worldOptions?.climate === "mountain" ? mountainWorkUseAt(x, y) : {}),
+        },
     };
+}
+
+// Mountain works are a separate player action; their use flags are merged
+// into the same context so the ecology profile and the works cannot disagree.
+function mountainWorkUseAt(x, y) {
+    try {
+        return mountainWorkAt(x, y) ? Object.fromEntries(
+            ["terraced", "valleySettlement", "fortress", "fortifiedPass", "road", "bridge", "mine", "quarry", "aqueduct"]
+                .filter(flag => mountainWorkAt(x, y)?.[flag])
+                .map(flag => [flag, true])
+        ) : {};
+    } catch { return {}; }
 }
 
 // Meadow gathering uses the same ledger and daily cooldown as woodland
@@ -470,7 +495,8 @@ export function gatherMeadowProducts(x, y, options = {}) {
     // Tundra, desert and steppe are still forage land. The same button and
     // ledger serve all four profiles; the terrain decides which harvest
     // vocabulary is present. Cold ground wins over the arid margins.
-    const products = (isSwampSite(x, y, context) ? swampProductsAt(x, y, context) : null)
+    const products = (isMountainSite(x, y, context) ? mountainProductsAt(x, y, context) : null)
+        || (isSwampSite(x, y, context) ? swampProductsAt(x, y, context) : null)
         || (isTundraSite(x, y, context) ? tundraProductsAt(x, y, context) : null)
         || (isTaigaSite(x, y, context) ? taigaProductsAt(x, y, context) : null)
         || (isSavannaSite(x, y, context) ? savannaProductsAt(x, y, context) : null)
@@ -638,6 +664,116 @@ export function performSwampWork(x, y, kind, options = {}) {
     };
 }
 
+// --- Player-built mountain works and extraction (1.2.12.69–1.2.12.77) ----
+
+function mountainWorkContextAt(x, y, options = {}) {
+    const context = meadowContextAt(x, y, options);
+    context.use = { ...context.use, ...mountainWorkUseAt(x, y) };
+    return context;
+}
+
+function mountainWorkSiteAt(x, y, options = {}) {
+    const context = mountainWorkContextAt(x, y, options);
+    return isMountainSite(x, y, context) ? mountainProfileAt(x + 0.5, y + 0.5, context) : null;
+}
+
+function mountainWorkCost(def) {
+    return Object.entries(def?.cost || {}).filter(([, value]) => Number(value) > 0);
+}
+
+function canPayMountainWork(def) {
+    return mountainWorkCost(def).every(([resource, amount]) => (Number(state.resources?.[resource]) || 0) >= Number(amount));
+}
+
+function payMountainWork(def) {
+    if (!canPayMountainWork(def)) return false;
+    for (const [resource, amount] of mountainWorkCost(def)) addResource(resource, -Number(amount));
+    return true;
+}
+
+function mountainWorkEcologicalReason(kind, profile) {
+    if (kind === "terrace" && profile.landform.slope < 0.22) return "The slope is too gentle for terraces";
+    if (kind === "village" && profile.economy.settlement < 0.18) return "No sheltered building ground at this tile";
+    if (kind === "fort" && profile.landform.relative < 0.28) return "A summit fortress needs a real height advantage";
+    if (kind === "passFort" && profile.economy.pass < 0.24) return "No pass or saddle at this tile";
+    if (kind === "bridge" && profile.landform.gorge < 0.28) return "No gorge or ravine to bridge";
+    if (kind === "mine" && profile.economy.mine < 0.2) return "No workable ore seam at this tile";
+    if (kind === "quarry" && profile.economy.quarry < 0.2) return "No workable stone at this tile";
+    if (kind === "aqueduct" && profile.water.water < 0.16) return "No spring or tarn to draw from";
+    return null;
+}
+
+export function mountainWorkAvailability(x, y, options = {}) {
+    const profile = mountainWorkSiteAt(x, y, options);
+    if (!profile) return { ok: false, reason: "No mountain slope at this tile", works: {} };
+    const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
+    const works = {};
+    for (const [kind, definition] of Object.entries(MOUNTAIN_WORKS)) {
+        const ready = mountainWorkReady(x, y, kind, day);
+        const ecological = mountainWorkEcologicalReason(kind, profile);
+        const affordable = canPayMountainWork(definition);
+        const reason = ready.reason || ecological || (affordable ? null
+            : "Not enough " + mountainWorkCost(definition).filter(([resource, amount]) => (Number(state.resources?.[resource]) || 0) < Number(amount)).map(([resource]) => resource).join(", "));
+        works[kind] = { ...definition, ok: !reason, reason };
+    }
+    return {
+        ok: true, profile, works,
+        summary: mountainWorksSummaryAt(x, y),
+        title: profile.label + " · " + profile.landform.label,
+        audit: profile.features?.length || 0,
+    };
+}
+
+export function performMountainWork(x, y, kind, options = {}) {
+    const definition = MOUNTAIN_WORKS[kind];
+    if (!definition) return { ok: false, reason: "Unknown mountain work" };
+    const availability = mountainWorkAvailability(x, y, options);
+    if (!availability.ok) return { ok: false, reason: availability.reason };
+    if (!availability.works[kind]?.ok) return { ok: false, reason: availability.works[kind]?.reason || "This work is not possible here" };
+    const profile = availability.profile;
+    const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
+    const year = Math.floor(number(options.year, state.year) || 1);
+    if (!payMountainWork(definition)) return { ok: false, reason: "The work could not be paid for" };
+    const ledger = ensureForestGathering();
+    const goods = [];
+    const add = (id, amount) => {
+        const accepted = addStock(ledger, id, Math.max(0, Math.floor(amount)));
+        if (accepted > 0 && FOREST_GOODS[id]) goods.push({ ...FOREST_GOODS[id], amount: accepted });
+        return accepted;
+    };
+    if (kind === "mine") {
+        add("iron-ore", 2 + Math.round(profile.economy.ore * 5));
+        if (profile.economy.metals > 0.4) add("copper-ore", 1 + Math.round(profile.economy.metals * 3));
+        if (profile.economy.gems > 0.5) add("gemstones", 1 + Math.round(profile.economy.gems * 2));
+        if (profile.economy.salt > 0.52) add("salt", 1 + Math.round(profile.economy.salt * 3));
+    } else if (kind === "quarry") {
+        add("stone", 4 + Math.round(profile.economy.stone * 6));
+        if (profile.economy.granite > 0.3) add("granite", 2 + Math.round(profile.economy.granite * 3));
+        else if (profile.economy.limestone > 0.3) add("limestone", 2 + Math.round(profile.economy.limestone * 3));
+        else if (profile.economy.slate > 0.3) add("slate", 2 + Math.round(profile.economy.slate * 3));
+        else if (profile.economy.marble > 0.3) add("marble", 2 + Math.round(profile.economy.marble * 3));
+    } else if (kind === "aqueduct") {
+        add("mountain-water", 3 + Math.round(profile.economy.water * 4));
+    }
+    applyMountainWork(x, y, kind, { day });
+    const exposure = (kind === "mine" || kind === "quarry" || kind === "road" || kind === "bridge")
+        ? tropicalExposure({ disease: clamp(profile.hazards.avalanche * 0.2, 0, 1), diseaseLabel: "mountain exposure" }, { source: "mountain-work", x, y })
+        : { outbreak: false, injury: false, foodLost: 0 };
+    const record = mountainWorkAt(x, y);
+    if (record) {
+        record.lastHarvest = record.lastHarvest || {};
+        record.lastHarvest[kind] = day;
+    }
+    ledger.history.push({ x: Math.floor(x), y: Math.floor(y), day, year, kind: "mountain-work", work: kind, goods: goods.map(good => ({ id: good.id, amount: good.amount })) });
+    if (ledger.history.length > MAX_HISTORY) ledger.history.splice(0, ledger.history.length - MAX_HISTORY);
+    return {
+        ok: true, kind, label: definition.label,
+        tile: { x: Math.floor(x), y: Math.floor(y), label: profile.label, formation: profile.formation },
+        goods, exposure, summary: mountainWorksSummaryAt(x, y),
+        message: definition.label.toUpperCase() + (goods.length ? " · " + goods.map(good => good.amount + " " + good.label).join(" · ") : " COMPLETED"),
+    };
+}
+
 export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
     const limit = Math.max(1, Math.min(16, Math.floor(number(radius, GATHER_RADIUS))));
     let best = null;
@@ -647,7 +783,8 @@ export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
             const node = getResourceNodeAt(tx, ty);
             if (node?.forestCapacity && node.forestStock > 0) continue;
             const context = meadowContextAt(tx, ty);
-            const products = (isSwampSite(tx, ty, context) ? swampProductsAt(tx, ty, context) : null)
+            const products = (isMountainSite(tx, ty, context) ? mountainProductsAt(tx, ty, context) : null)
+                || (isSwampSite(tx, ty, context) ? swampProductsAt(tx, ty, context) : null)
                 || (isTundraSite(tx, ty, context) ? tundraProductsAt(tx, ty, context) : null)
                 || (isTaigaSite(tx, ty, context) ? taigaProductsAt(tx, ty, context) : null)
                 || (isSavannaSite(tx, ty, context) ? savannaProductsAt(tx, ty, context) : null)

@@ -26,6 +26,9 @@ import { isSavannaSite, savannaProfileAt } from '../../world/savanna-ecology.js'
 import { drawSavanna, drawSavannaTree } from './savanna-render.js';
 import { isSwampSite, swampProfileAt } from '../../world/swamp-ecology.js';
 import { drawSwamp, drawSwampTree } from './swamp-render.js';
+import { isMountainSite, mountainProfileAt } from '../../world/mountain-ecology.js';
+import { mountainWorkUseAt } from '../../world/mountain-works.js';
+import { drawMountain, drawMountainTree } from './mountain-render.js';
 import { grasslandUseAt } from '../../systems/grassland-use.js';
 import {
     DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
@@ -1294,6 +1297,20 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
                 height: h, climate: climateKey, seaLevel: sea,
             });
+            const mountainSite = isMountainSite(x + 0.5, y + 0.5, {
+                seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
+                height: h, climate: climateKey, seaLevel: sea,
+            });
+            // Mountain ground is drawn from its own altitude profile even above
+            // the old snow/rock exits. It owns the nival belt, so the generic
+            // early "snow and rock" branches must not erase it.
+            const mountain = mountainSite ? mountainProfileAt(x + 0.5, y + 0.5, {
+                seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
+                height: h, climate: climateKey, seaLevel: sea,
+                dayOfYear, year: Number(state.year) || 1,
+                hour: Number(state.timeOfDay) || 12, weather: state.weather || "clear",
+                wind: windMultiplier(), use: mountainWorkUseAt(x, y),
+            }) : null;
             const taigaSite = isTaigaSite(x + 0.5, y + 0.5, {
                 seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
                 height: h, climate: climateKey, seaLevel: sea,
@@ -1306,7 +1323,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             });
             // Savanna keeps its trees scattered, so the closed-canopy forest
             // gate stays off even where a generic moisture test would pass.
-            const potentialForest = !swampSite && !tundraSite && !savannaSite && !taigaOpen
+            const potentialForest = !swampSite && !tundraSite && !savannaSite && !taigaOpen && !mountainSite
                 && forestPotentialAt({ moisture: m, height: h, forests, rockLine: 0.92 });
             // Neither the detail lattice nor the tree lattice needs this tile.
             // Do this before forestStandAt(), whose species wave is much more
@@ -1316,7 +1333,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // Snowfields get sparse rocks and drifts, not grass. The alpine
             // line rises in summer and sinks in winter, so peaks do not stay
             // painted white through July while the lowlands are green.
-            if (temp < (climateKey === "tundra" ? 0.11 : 0.22) || h > 0.92 - climate.snowCover * 0.05) {
+            if (!mountainSite && (temp < (climateKey === "tundra" ? 0.11 : 0.22) || h > 0.92 - climate.snowCover * 0.05)) {
                 if (!potentialForest) {
                     if (detail) {
                         if (s1 > 0.72) drawSnowTuft(ctx, px, py, cellPx, s1);
@@ -1327,7 +1344,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             }
 
             // Mountain rock and scree sit above the woodland belt.
-            if (h > 0.88 && s1 > 0.4 && !potentialForest) {
+            if (!mountainSite && h > 0.88 && s1 > 0.4 && !potentialForest) {
                 if (detail) drawRock(ctx, px, py, cellPx, zoom, false);
                 continue;
             }
@@ -1385,7 +1402,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             const steppe = grassContext && !potentialForest && !tundra && !taiga && !savanna && !desert && isSteppeSite(x + 0.5, y + 0.5, grassContext)
                 ? steppeProfileAt(x + 0.5, y + 0.5, grassContext)
                 : null;
-            const grass = grassContext ? (swamp || tundra || taiga || savanna || desert || steppe || grasslandProfileAt(x + 0.5, y + 0.5, grassContext)) : null;
+            const grass = mountain || (grassContext ? (swamp || tundra || taiga || savanna || desert || steppe || grasslandProfileAt(x + 0.5, y + 0.5, grassContext)) : null);
             const meadowTree = Boolean(treeSample && grass && grass.treeChance > 0 && s1 < grass.treeChance);
             if (!potentialForest && !meadowTree && !detail) continue;
 
@@ -1467,7 +1484,9 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             if (meadowTree && grass.trees.length) {
                 state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + grass.trees.length;
                 for (const tree of grass.trees) {
-                    if (grass.desert) {
+                    if (grass.mountain) {
+                        drawMountainTree(ctx, px, py, cellPx, tree, grass, (s1 + s2 * 0.5) % 1);
+                    } else if (grass.desert) {
                         drawDesertTree(ctx, px + (Number(tree.offsetX) || 0) * cellPx,
                             py + (Number(tree.offsetY) || 0) * cellPx + 4 * (cellPx / 48),
                             cellPx, tree, grass, (s1 + s2 * 0.5) % 1);
@@ -1491,7 +1510,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // surface. The profile decides whether this tile is short turf,
             // tall hay, wet meadow, dry chalk, orchard or mountain pasture.
             if (grass && zoom >= 0.34) {
-                if (grass.swamp) drawSwamp(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
+                if (grass.mountain) drawMountain(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
+                else if (grass.swamp) drawSwamp(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
                 else if (grass.tundra) drawTundra(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
                 else if (grass.taiga) drawTaiga(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
                 else if (grass.savanna) drawSavanna(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);

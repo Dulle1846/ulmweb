@@ -16,6 +16,8 @@ import { isTaigaSite, taigaProfileAt, taigaSummary } from "../world/taiga-ecolog
 import { isSavannaSite, savannaProfileAt, savannaSummary } from "../world/savanna-ecology.js";
 import { isSwampSite, swampProfileAt, swampSummary } from "../world/swamp-ecology.js";
 import { swampWorkUseAt } from "../world/swamp-works.js";
+import { isMountainSite, mountainProfileAt, mountainSummary } from "../world/mountain-ecology.js";
+import { mountainWorkUseAt } from "../world/mountain-works.js";
 
 const BUCKET = 8;
 const CACHE_VERSION = 1;
@@ -135,9 +137,12 @@ export function grasslandUseAt(x, y) {
     const reforestation = Boolean(wild && wildYears >= 9 && seedRoll > 0.72);
     const path = Boolean(road.adjacent || (settlement && settlement.distance <= 5 && seedRoll > 0.86));
     const intensity = overgrazed ? 1 : grazed ? 0.72 : mowed ? 0.58 : trampled ? 0.86 : clamp01(0.12 + (wildYears / 60));
-    const works = state.worldOptions?.climate === "swamp" ? swampWorkUseAt(tx, ty) : {};
+    const works = state.worldOptions?.climate === "swamp" ? swampWorkUseAt(tx, ty)
+        : state.worldOptions?.climate === "mountain" ? mountainWorkUseAt(tx, ty) : {};
     return {
-        state: works.drained ? "drained" : works.peatCut ? "peat-cut" : overgrazed ? "overgrazed" : grazed ? "grazed" : mowed ? "mowed" : trampled ? "trampled" : "wild",
+        state: works.drained ? "drained" : works.peatCut ? "peat-cut"
+            : works.terraced ? "terraced" : works.valleySettlement ? "valley-settlement"
+            : works.road ? "mountain-road" : overgrazed ? "overgrazed" : grazed ? "grazed" : mowed ? "mowed" : trampled ? "trampled" : "wild",
         grazed, mowed, wild, trampled, path, overgrazed,
         bareSoil: overgrazed || trampled,
         encroachment,
@@ -148,7 +153,9 @@ export function grasslandUseAt(x, y) {
         grazingPressure: clamp01(stableCount * 0.42 + (stable ? 0.3 : 0)),
         mowingPressure: farm ? clamp01(1 - farm.distance / 6) : 0,
         livestock: stable ? ["cattle", "sheep", "horse"] : farm ? ["sheep", "goat"] : [],
-        label: works.drained ? "drained wetland" : works.peatCut ? "cut-over peat" : overgrazed ? "overgrazed, damaged turf" : grazed ? "grazed pasture" : mowed ? "mown hay meadow"
+        label: works.drained ? "drained wetland" : works.peatCut ? "cut-over peat"
+            : works.terraced ? "terraced mountain ground" : works.valleySettlement ? "sheltered valley settlement"
+            : works.road ? "switchback road" : overgrazed ? "overgrazed, damaged turf" : grazed ? "grazed pasture" : mowed ? "mown hay meadow"
             : trampled ? "trampled ground" : "unmanaged meadow",
         nearest: settlement ? { kind: settlement.kind, distance: settlement.distance } : null,
         ...works,
@@ -274,6 +281,9 @@ export function grasslandSiteSummaryAt(x, y) {
         }
         if (isTaigaSite(x + 0.5, y + 0.5, context)) {
             return taigaSummary(taigaProfileAt(x + 0.5, y + 0.5, context));
+        }
+        if (isMountainSite(x + 0.5, y + 0.5, context)) {
+            return mountainSummary(mountainProfileAt(x + 0.5, y + 0.5, context));
         }
         if (isSwampSite(x + 0.5, y + 0.5, context)) {
             return swampSummary(swampProfileAt(x + 0.5, y + 0.5, context));

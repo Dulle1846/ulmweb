@@ -38,6 +38,12 @@ export const CLIMATE_SEASONS = Object.freeze({
         snowStart: 200, snowFull: 252, meltStart: 344, meltEnd: 432,
         snowScale: 1.22, foliageShift: -16, foliageScale: 0.72, greenShift: 20, warmthShift: -22,
     }),
+    // Mountains hold snow from mid-autumn into late spring. The snow line
+    // rises and falls with the same curve, so passes open late and close early.
+    mountain: Object.freeze({
+        snowStart: 225, snowFull: 285, meltStart: 365, meltEnd: 455,
+        snowScale: 1.25, foliageShift: -9, foliageScale: 0.64, greenShift: 18, warmthShift: -18,
+    }),
     // Savanna has no snow at all. Its green-up curve is the wet-season flush:
     // rain arrives in late winter and spring, then fades into a long dry heat.
     savanna: Object.freeze({

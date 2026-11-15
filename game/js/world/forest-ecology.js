@@ -22,6 +22,7 @@ import { TUNDRA_GOODS } from './tundra-ecology.js';
 import { TAIGA_GOODS } from './taiga-ecology.js';
 import { SAVANNA_GOODS, SAVANNA_SPECIES } from './savanna-ecology.js';
 import { SWAMP_GOODS } from './swamp-ecology.js';
+import { MOUNTAIN_GOODS } from './mountain-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -729,6 +730,7 @@ export const FOREST_GOODS = Object.freeze({
     ...TROPICAL_GOODS,
     ...SAVANNA_GOODS,
     ...SWAMP_GOODS,
+    ...MOUNTAIN_GOODS,
 });
 
 const SEASON_GOODS = Object.freeze({
@@ -856,6 +858,17 @@ function formationFor(x, y, ctx) {
     // birch, floodplain ash and bog oak in standing water. Open reed, fen and
     // bog communities are rendered by swamp-ecology.js, not this stand.
     if (climate === 'swamp') return 'swamp-carr';
+    // Mountain climate uses the same high-country formations, but the tree
+    // line sits lower and the upper belt is conifer or wind-bent scrub.
+    if (climate === 'mountain') {
+        const coniferPatch = coarseUnit(seed, x, y, 7, 0x4d4e544e);
+        if (height > 0.88) return coniferPatch > 0.34 ? 'subalpine-scrub' : 'mountain-conifer';
+        if (height > 0.7) return coniferPatch > 0.55 ? 'subalpine-scrub' : 'mountain-conifer';
+        if (height > 0.52) return moisture > 0.56 ? 'mixed-montane' : 'mixed-conifer';
+        if (moisture > 0.66) return 'mixed-alluvial';
+        if (moisture < 0.4) return 'pinewood';
+        return 'beechwood';
+    }
     if (climate === 'taiga') return taigaFormationFor(x, y, seed, moisture);
     // Chestnut groves belong to the warm, sheltered lowlands. The generated
     // temperate map rarely exceeds .62 on land, so .58 is the playable warm

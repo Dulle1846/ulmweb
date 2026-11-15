@@ -8,6 +8,7 @@ import {
 import { forestSuccessionAt } from "./forest-succession.js";
 import { seasonalState } from "../world/season.js";
 import { swampWorkUseAt } from "../world/swamp-works.js";
+import { mountainWorkUseAt, mountainWorkAt } from "../world/mountain-works.js";
 
 const VERSION=1;
 
@@ -119,7 +120,11 @@ export function generateResourceGeography(seed=state.worldSeed){
             // Alder and willow stands can therefore occupy the low, wet belt
             // below the ordinary woodland threshold.
             const swampBelt=climate==="swamp"&&h>=sea+0.008;
-            if((h>=forestLine||savannaBelt||swampBelt)&&h<BIOME.ROCK){
+            // Mountain forest begins on the lower slopes and climbs to the
+            // resource rock line; the ecological tree line is rendered by
+            // mountain-render.js, while this layer only carries harvestable wood.
+            const mountainBelt=climate==="mountain"&&h>=sea+0.01;
+            if((h>=forestLine||savannaBelt||swampBelt||mountainBelt)&&h<BIOME.ROCK){
                 const density=climate==="savanna"
                     ?clamp((h-sea)/Math.max(0.001,BIOME.ROCK-sea),0,1)
                     :clamp((h-forestLine)/Math.max(0.001,BIOME.ROCK-forestLine),0,1);
@@ -183,6 +188,24 @@ export function generateResourceGeography(seed=state.worldSeed){
                             // such as "Drought-stressed Pine".
                             forestKind[index]=forestTypeIndex("subalpine-scrub");
                             forestAge[index]=1;
+                        }
+                    }
+                }else if(climate==="mountain"){
+                    // Montane and subalpine stands are real but thinner than a
+                    // lowland wood. The tree line and bare rock stay open.
+                    const presence=0.28+density*0.26+moisture*0.18+resourceBias;
+                    if(unitHash(worldSeed,index,0x4d544e46)<presence){
+                        const stand=forestStandAt(x+0.5,y+0.5,{
+                            seed:worldSeed, moisture, temperature, height:h,
+                            climate, forests:state.worldOptions?.forests??52,
+                            stockRatio:1, rockLine:BIOME.ROCK,
+                        });
+                        if(stand.forest){
+                            const capacity=Math.max(8,Math.min(160,Math.round(18+density*54+moisture*32+unitHash(worldSeed,index,0x4d544e50)*28)));
+                            forestCapacity[index]=capacity;
+                            forestStock[index]=capacity;
+                            forestKind[index]=forestTypeIndex(stand.type);
+                            forestAge[index]=stand.ageClass==="ancient"?3:stand.ageClass==="young"?1:2;
                         }
                     }
                 }else{
@@ -282,6 +305,7 @@ let habitatCacheForests = null;
 const habitatCache = new Map();
 const MOVEMENT_CACHE_LIMIT = 2048;
 const forestMovementCache = new Map();
+const mountainMovementCache = new Map();
 
 export function clearForestHabitatCache() {
     habitatCache.clear();
@@ -373,6 +397,27 @@ export function getForestMovementFactorAt(x, y) {
         const drained = works.drained ? 0.05 : 0;
         return clamp(0.72 - seasonal.snowCover * 0.08 - flood + boardwalk + drained, 0.54, 0.94);
     }
+    // Steep mountain ground costs real travel time. The cache key includes the
+    // day and the works revision, so a new switchback or bridge takes effect
+    // immediately without adding a second route simulation.
+    if (climate === "mountain") {
+        const key = (Number(state.worldSeed) || 0) + ":" + Math.floor(x) + ":" + Math.floor(y)
+            + ":" + Math.floor(Number(state.dayOfYear) || 0) + ":" + (Number(state.mountainWorks?.revision) || 0);
+        const cached = mountainMovementCache.get(key);
+        if (cached !== undefined) return cached;
+        const tx = Math.floor(x), ty = Math.floor(y);
+        const h = sampleTerrain(tx, ty).height || 0;
+        const hx = sampleTerrain(tx + 1, ty).height || h;
+        const hy = sampleTerrain(tx, ty + 1).height || h;
+        const slope = clamp(Math.hypot(hx - h, hy - h) * 24, 0, 1);
+        const works = mountainWorkUseAt(x, y);
+        const seasonal = seasonalState(Number(state.dayOfYear) || 0, "mountain");
+        const factor = clamp(1 - slope * 0.38 - seasonal.snowCover * 0.16 - Math.max(0, h - 0.5) * 0.18
+            + (works.road ? 0.26 : 0) + (works.bridge ? 0.12 : 0) + (works.terraced ? 0.05 : 0), 0.34, 1);
+        if (mountainMovementCache.size >= MOVEMENT_CACHE_LIMIT) mountainMovementCache.clear();
+        mountainMovementCache.set(key, factor);
+        return factor;
+    }
     if (climate !== "tropical") return 1;
     const point = readTile(x, y);
     if (!point) return 1;
@@ -427,6 +472,27 @@ export function getJungleTacticsAt(x, y) {
     if (jungleTacticsCache.size >= JUNGLE_TACTICS_CACHE_LIMIT) jungleTacticsCache.clear();
     jungleTacticsCache.set(key, result);
     return result;
+}
+
+// Compact mountain defence/burden values used by combat and the survey. The
+// plateau and cliff give the defender a real advantage; roads and fortified
+// passes reduce the attacker's supply burden. No per-tile object is retained.
+export function getMountainTacticsAt(x, y) {
+    if ((state.worldOptions?.climate || "temperate") !== "mountain") return null;
+    const point = readTile(x, y);
+    if (!point) return null;
+    const works = mountainWorkAt(point.x, point.y) || {};
+    const h = sampleTerrain(point.x, point.y).height || 0;
+    const hx = sampleTerrain(point.x + 1, point.y).height || h;
+    const hy = sampleTerrain(point.x, point.y + 1).height || h;
+    const slope = clamp(Math.hypot(hx - h, hy - h) * 24, 0, 1);
+    return {
+        defenceBonus: clamp(0.2 + slope * 0.3 + Math.max(0, h - 0.4) * 0.4 + (works.fortress ? 0.2 : 0) + (works.fortifiedPass ? 0.18 : 0), 0, 1),
+        movementBurden: clamp(0.2 + slope * 0.5 + Math.max(0, h - 0.5) * 0.3 - (works.road ? 0.2 : 0), 0, 1),
+        avalanche: clamp((Number(seasonalState(Number(state.dayOfYear) || 0, "mountain").snowCover) || 0) * 0.5 + slope * 0.2, 0, 1),
+        pass: Boolean(works.fortifiedPass),
+        height: h,
+    };
 }
 
 // Placement, forester range checks and field surveys only need the raw

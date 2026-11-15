@@ -7,7 +7,7 @@ import { getRaidDamageMultiplier } from "../systems/rooms.js";
 import { getCourtModifiers } from "../systems/court.js";
 import { getNobilityDefenseMultiplier } from "../systems/nobility.js";
 import { getSoldierPower,getSoldierArmor,recordMilitaryVictory,recordMilitaryWound,recordMilitaryCasualty } from "../systems/military.js";
-import { getJungleTacticsAt } from "../systems/resource-geography.js";
+import { getJungleTacticsAt, getMountainTacticsAt } from "../systems/resource-geography.js";
 const rand=(min,max)=>seededRand(min,max,"combat");
 
 const CELL=8;
@@ -88,9 +88,13 @@ export function updateCombat(){
    // A defender standing in the jungle gets real cover. Local levies know the
    // trails and use the ambush lanes; a foreign raider does not.
    const cover=getJungleTacticsAt(target.x,target.y);
+   const mountain=getMountainTacticsAt(target.x,target.y);
    const localDefender=Boolean(target.military&&target.military.origin==="levy");
    const coverMultiplier=cover?1-Math.min(.32,(Number(cover.defenceBonus)||0)*.35+(localDefender?(Number(cover.localAdvantage)||0)*.08:0)):1;
-   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/(readiness*nobleDefense)*(1-armor)*coverMultiplier));
+   // Height, broken ground and a fortified pass are a real defensive
+   // multiplier. It is capped so a raid can still hurt a mountain realm.
+   const heightMultiplier=mountain?1-Math.min(.24,(Number(mountain.defenceBonus)||0)*.24+(localDefender?.04:0)):1;
+   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/(readiness*nobleDefense)*(1-armor)*coverMultiplier*heightMultiplier));
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
    if(target.hp<=0){
     if(!target.isKing&&!target.isBuilding?.())recordMilitaryCasualty(target,"raid");
