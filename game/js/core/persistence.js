@@ -124,7 +124,20 @@ export function writeLocalSave(profileId, snapshot) {
         const { restoredFromBackup, ...previous } = current;
         try { writeJson(backupKey(profileId), previous); } catch { /* best-effort backup */ }
     }
-    writeJson(saveKey(profileId), envelope);
+    try {
+        writeJson(saveKey(profileId), envelope);
+    } catch (error) {
+        // The backup can itself consume the quota that the authoritative save
+        // needs. Drop only the recovery copy and retry the primary slot; if the
+        // primary still cannot fit, keep the original failure so the UI can
+        // report it instead of pretending the realm was saved.
+        try { localStorage.removeItem(backupKey(profileId)); } catch { /* storage unavailable */ }
+        try {
+            writeJson(saveKey(profileId), envelope);
+        } catch {
+            throw error;
+        }
+    }
     return envelope.savedAt;
 }
 

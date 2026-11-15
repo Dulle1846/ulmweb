@@ -153,8 +153,10 @@ canopy/shore contrast.
 
 **Verification:** all 81 requirements are declared and reached by a two-season
 deterministic survey covering all ten formations; the full suite is
-**988/988** green after its hardcoded climate and formation counts were
-updated. The cold-start comparison on the shipped low-end profile (4x CPU,
+**989/989** green after its hardcoded climate and formation counts were
+updated. A local-storage save that no longer fits both the primary slot and
+its recovery copy now evicts only the backup and retries the authoritative
+save, so a large late-game realm cannot fail at the save button. The cold-start comparison on the shipped low-end profile (4x CPU,
 software Canvas, 70% render scale, 85% forest, two years, no warm-up) measured
 swamp **16.8 ms p95** against savanna **16.8 ms**, with **zero long tasks** in
 both scenarios.

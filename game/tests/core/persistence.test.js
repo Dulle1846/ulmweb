@@ -17,6 +17,27 @@ function installStorage() {
     return values;
 }
 
+function installQuotaStorage(limit) {
+    const values=new Map();
+    const size=()=>[...values.entries()].reduce((total,[key,value])=>total+key.length+String(value).length,0);
+    globalThis.localStorage={
+        getItem:key=>values.has(key)?values.get(key):null,
+        setItem:(key,value)=>{
+            const incoming=String(value);
+            const previous=values.has(key)?key.length+String(values.get(key)).length:0;
+            if(size()-previous+key.length+incoming.length>limit){
+                const error=new Error("quota exceeded");
+                error.name="QuotaExceededError";
+                throw error;
+            }
+            values.set(key,incoming);
+        },
+        removeItem:key=>values.delete(key),
+        clear:()=>values.clear()
+    };
+    return values;
+}
+
 function legacyEnvelope(profileId, snapshot, version) {
     return JSON.stringify({version, savedAt:"2025-01-01T00:00:00.000Z", profileId, snapshot});
 }
@@ -90,6 +111,18 @@ test("a second save preserves the previous valid realm as a recovery backup",()=
     assert.equal(current.snapshot.tick,240);
     assert.equal(current.restoredFromBackup,undefined);
     assert.ok(values.has("kings-and-cards:save-backup:v"+SAVE_VERSION+":profile-a"));
+});
+test("a full quota evicts only the recovery backup instead of losing the new save",()=>{
+    const values=installQuotaStorage(2000);
+    const backup="kings-and-cards:save-backup:v"+SAVE_VERSION+":profile-a";
+    writeLocalSave("profile-a",{worldSeed:11,tick:120,blob:"a".repeat(200)});
+    writeLocalSave("profile-a",{worldSeed:11,tick:240,blob:"b".repeat(700)});
+    assert.ok(values.has(backup),"the ordinary two-slot save still keeps a recovery copy");
+    const savedAt=writeLocalSave("profile-a",{worldSeed:11,tick:360,blob:"c".repeat(1100)});
+    assert.ok(savedAt);
+    assert.equal(readLocalSave("profile-a").snapshot.tick,360);
+    assert.equal(values.has(backup),false,"the oversized backup must be evicted, not the new save");
+    assert.equal(JSON.parse(values.get("kings-and-cards:save:v"+SAVE_VERSION+":profile-a")).snapshot.tick,360);
 });
 test("a corrupted primary save falls back to the last valid backup",()=>{
     const values=installStorage();
