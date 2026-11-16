@@ -49,9 +49,32 @@ function findSite(predicate) {
     return null;
 }
 
+function findSites(predicate, limit = 2) {
+    for (let year = 1; year <= 30; year++) {
+        const found = [];
+        for (let y = 0; y < 32; y++) {
+            for (let x = 0; x < 32; x++) {
+                const profile = volcanoProfileAt(x + 0.5, y + 0.5, {
+                    ...BASE, year, use: { settlement: true },
+                });
+                if (predicate(profile)) found.push({ x, y, year, profile });
+                if (found.length >= limit) return found;
+            }
+        }
+    }
+    return [];
+}
+
 function houseAt(site, id = 901) {
     return {
         id, x: site.x, y: site.y, type: TYPE.HOUSE, hp: 80, maxHp: 80,
+        isBuilding() { return true; },
+    };
+}
+
+function keepAt(site, id = 900) {
+    return {
+        id, x: site.x, y: site.y, type: TYPE.KEEP, hp: 1200, maxHp: 1200,
         isBuilding() { return true; },
     };
 }
@@ -85,6 +108,37 @@ test("earthquake destruction is a separate runtime cause and is logged", () => {
     assert.equal(result.ok, true);
     assert.equal(house.dead, true);
     assert.match(state.eventLog.map(entry => entry.text).join(" "), /EARTHQUAKE COLLAPSES/);
+});
+
+test("a protected keep does not consume the annual eruption instead of a real building", () => {
+    prepareWorld();
+    const sites = findSites(profile => profile.climate.active && profile.hazards.destruction > 0.5);
+    assert.equal(sites.length, 2, "the deterministic survey needs two active eruption sites");
+    state.year = sites[0].year;
+    const keep = keepAt(sites[0]);
+    const house = houseAt(sites[1]);
+    state.entities = [keep, house];
+    const result = updateVolcanoHazards({ force: true });
+    assert.equal(keep.dead, undefined, "the protected keep must survive");
+    assert.equal(house.dead, true, "the event must move to the real destructible building");
+    assert.equal(result.destroyed?.kind, "building");
+    assert.equal(result.destroyed?.x, sites[1].x);
+    assert.equal(result.destroyed?.y, sites[1].y);
+});
+
+test("a focused earthquake pass destroys a real building without an eruption", () => {
+    prepareWorld();
+    const site = findSite(profile => profile.hazards.earthquake > 0.65);
+    assert.ok(site, "the deterministic survey needs a strong earthquake site");
+    state.year = site.year;
+    const house = houseAt(site, 903);
+    state.entities = [house];
+    const result = updateVolcanoHazards({ force: true, focus: "earthquake" });
+    assert.equal(result.eruption, null);
+    assert.equal(house.dead, true);
+    assert.equal(result.destroyed?.kind, "building");
+    assert.match(result.events.join(" "), /EARTH TREMOR/);
+    assert.equal(result.events.some(text => /ERUPTION/.test(text)), false);
 });
 
 test("volcanic ground blocks uninhabitable and young-lava house sites but allows old ground", () => {

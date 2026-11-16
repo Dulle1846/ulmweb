@@ -41,6 +41,7 @@
     "test:core-loop": "node tests/browser/core-loop-audit.mjs",
     "test:chronicles": "node tests/browser/chronicle-audit.mjs",
     "test:campaign": "node scripts/long-campaign.mjs",
+    "test:campaign:volcano": "node scripts/volcano-campaign.mjs",
     "test:campaign:sweep": "CAMPAIGN_CLIMATE=savanna CAMPAIGN_SEEDS=20261106,20261143,20261152 node scripts/long-campaign.mjs",
     "test:campaign:sweep:taiga": "CAMPAIGN_CLIMATE=taiga CAMPAIGN_SEEDS=20261108,20261110,20261111 node scripts/long-campaign.mjs",
     "test:campaign:players": "node scripts/player-profiles.mjs",

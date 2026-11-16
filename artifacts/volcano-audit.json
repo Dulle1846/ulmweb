@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-11-15T22:39:39.258Z",
+  "generatedAt": "2026-11-16T07:39:58.806Z",
   "seed": 20261212,
   "world": {
     "width": 176,
@@ -285,6 +285,495 @@
       "freshLava": 0.07217966343340919
     }
   },
+  "campaign": {
+    "ok": true,
+    "seed": 20260004,
+    "years": 9,
+    "totalTicks": 3200,
+    "initial": {
+      "year": 1,
+      "tick": 0,
+      "population": 23,
+      "buildings": 30,
+      "activeSites": 0,
+      "resources": {
+        "wood": 180,
+        "stone": 95,
+        "gold": 75,
+        "food": 120
+      },
+      "disasters": []
+    },
+    "final": {
+      "year": 9,
+      "tick": 3200,
+      "population": 22,
+      "buildings": 23,
+      "activeSites": 0,
+      "resources": {
+        "wood": 819.35,
+        "stone": 733.92,
+        "gold": 1575.44,
+        "food": 582.03
+      },
+      "disasters": [
+        "ASHFALL BURIES THE PASTURE · FOOD -1",
+        "ERUPTION IN COLLAPSED CALDERA · ASH 51%",
+        "EARTH TREMOR SHAKES BROAD SHIELD VOLCANO · 70%",
+        "LAVA BURIES SMITHY",
+        "ASHFALL BURIES THE PASTURE · FOOD -1",
+        "ERUPTION IN VOLCANIC MOUNTAIN CHAIN · ASH 68%",
+        "EARTH TREMOR SHAKES VOLCANIC MOUNTAIN CHAIN · 74%",
+        "LAVA BURIES TIMBER COTTAGE"
+      ]
+    },
+    "hazards": [
+      {
+        "year": 3,
+        "focus": "eruption",
+        "events": [
+          "ERUPTION IN STEEP ASH CONE · ASH 60%",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "DESTROYED BUILDING"
+        ],
+        "eruption": {
+          "x": 97,
+          "y": 96,
+          "destruction": 0.8190641996696778
+        },
+        "earthquake": null,
+        "destroyed": {
+          "ok": true,
+          "kind": "building",
+          "label": "Flour Mill",
+          "x": 97,
+          "y": 96
+        },
+        "target": {
+          "id": "ec28pw-f",
+          "type": 10,
+          "label": "Flour Mill",
+          "x": 97,
+          "y": 96
+        },
+        "buildingsBefore": 29,
+        "buildingsAfter": 28,
+        "resourcesBefore": {
+          "wood": 345.74,
+          "stone": 226.74,
+          "gold": 479.07,
+          "food": 349.05
+        },
+        "resourcesAfter": {
+          "wood": 345.74,
+          "stone": 226.74,
+          "gold": 479.07,
+          "food": 348.05
+        }
+      },
+      {
+        "year": 4,
+        "focus": "earthquake",
+        "events": [
+          "EARTH TREMOR SHAKES STEEP ASH CONE · 60%",
+          "COLLAPSED BUILDING"
+        ],
+        "eruption": null,
+        "earthquake": {
+          "x": 101,
+          "y": 90,
+          "magnitude": 0.6024599679949694
+        },
+        "destroyed": {
+          "ok": true,
+          "kind": "building",
+          "label": "Sawmill",
+          "x": 101,
+          "y": 90
+        },
+        "target": {
+          "id": "ec28pw-i",
+          "type": 63,
+          "label": "Sawmill",
+          "x": 101,
+          "y": 90
+        },
+        "buildingsBefore": 27,
+        "buildingsAfter": 26,
+        "resourcesBefore": {
+          "wood": 391.96,
+          "stone": 283.25,
+          "gold": 664.86,
+          "food": 450.43
+        },
+        "resourcesAfter": {
+          "wood": 391.96,
+          "stone": 282.25,
+          "gold": 664.86,
+          "food": 450.43
+        }
+      }
+    ],
+    "rebuilds": [
+      {
+        "cause": "eruption",
+        "label": "Flour Mill",
+        "originalId": "ec28pw-f",
+        "original": {
+          "x": 97,
+          "y": 96
+        },
+        "site": {
+          "x": 97,
+          "y": 96,
+          "exact": true
+        },
+        "newId": "ec28pw-1m",
+        "placedYear": 5,
+        "ok": true,
+        "reason": null,
+        "completedYear": 6,
+        "complete": true,
+        "stage": 3
+      },
+      {
+        "cause": "earthquake",
+        "label": "Sawmill",
+        "originalId": "ec28pw-i",
+        "original": {
+          "x": 101,
+          "y": 90
+        },
+        "site": {
+          "x": 101,
+          "y": 90,
+          "exact": true
+        },
+        "newId": "ec28pw-1n",
+        "placedYear": 5,
+        "ok": true,
+        "reason": null,
+        "completedYear": 6,
+        "complete": true,
+        "stage": 3
+      }
+    ],
+    "yearly": [
+      {
+        "year": 1,
+        "tick": 0,
+        "population": 23,
+        "buildings": 30,
+        "activeSites": 0,
+        "resources": {
+          "wood": 180,
+          "stone": 95,
+          "gold": 75,
+          "food": 120
+        },
+        "disasters": []
+      },
+      {
+        "year": 2,
+        "tick": 400,
+        "population": 24,
+        "buildings": 29,
+        "activeSites": 0,
+        "resources": {
+          "wood": 279.33,
+          "stone": 160.22,
+          "gold": 285.16,
+          "food": 217.68
+        },
+        "disasters": [
+          "EARTH TREMOR SHAKES STEEP ASH CONE · 77%",
+          "LAVA BURIES TIMBER COTTAGE",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN LAVA FIELD · ASH 66%"
+        ],
+        "rebuilds": []
+      },
+      {
+        "year": 3,
+        "tick": 800,
+        "population": 24,
+        "buildings": 28,
+        "activeSites": 0,
+        "resources": {
+          "wood": 345.74,
+          "stone": 226.74,
+          "gold": 479.07,
+          "food": 348.05
+        },
+        "disasters": [
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN STEEP ASH CONE · ASH 60%",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN STEEP ASH CONE · ASH 60%",
+          "EARTH TREMOR SHAKES STEEP ASH CONE · 77%",
+          "LAVA BURIES TIMBER COTTAGE",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN LAVA FIELD · ASH 66%"
+        ],
+        "rebuilds": []
+      },
+      {
+        "year": 4,
+        "tick": 1200,
+        "population": 24,
+        "buildings": 26,
+        "activeSites": 0,
+        "resources": {
+          "wood": 391.96,
+          "stone": 282.25,
+          "gold": 664.86,
+          "food": 450.43
+        },
+        "disasters": [
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN STEEP ASH CONE · ASH 60%",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN STEEP ASH CONE · ASH 60%",
+          "EARTH TREMOR SHAKES STEEP ASH CONE · 77%",
+          "LAVA BURIES TIMBER COTTAGE",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN LAVA FIELD · ASH 66%"
+        ],
+        "rebuilds": []
+      },
+      {
+        "year": 5,
+        "tick": 1600,
+        "population": 24,
+        "buildings": 27,
+        "activeSites": 2,
+        "resources": {
+          "wood": 471.38,
+          "stone": 340.43,
+          "gold": 845.24,
+          "food": 291.81
+        },
+        "disasters": [
+          "EARTH TREMOR SHAKES STEEP ASH CONE · 60%",
+          "LAVA BURIES WELL",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN BROAD SHIELD VOLCANO · ASH 64%",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN STEEP ASH CONE · ASH 60%",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN STEEP ASH CONE · ASH 60%"
+        ],
+        "rebuilds": [
+          {
+            "cause": "eruption",
+            "newId": "ec28pw-1m",
+            "alive": true,
+            "stage": 0,
+            "complete": false,
+            "reason": "SITE PREPARATION"
+          },
+          {
+            "cause": "earthquake",
+            "newId": "ec28pw-1n",
+            "alive": true,
+            "stage": 0,
+            "complete": false,
+            "reason": "SITE PREPARATION"
+          }
+        ]
+      },
+      {
+        "year": 6,
+        "tick": 2000,
+        "population": 24,
+        "buildings": 26,
+        "activeSites": 0,
+        "resources": {
+          "wood": 492.45,
+          "stone": 418.66,
+          "gold": 1021.69,
+          "food": 257.23
+        },
+        "disasters": [
+          "EARTHQUAKE COLLAPSES SAWMILL",
+          "EARTH TREMOR SHAKES STEEP ASH CONE · 60%",
+          "EARTH TREMOR SHAKES STEEP ASH CONE · 60%",
+          "LAVA BURIES WELL",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN BROAD SHIELD VOLCANO · ASH 64%",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN STEEP ASH CONE · ASH 60%"
+        ],
+        "rebuilds": [
+          {
+            "cause": "eruption",
+            "newId": "ec28pw-1m",
+            "alive": true,
+            "stage": 3,
+            "complete": true,
+            "reason": "COMPLETED"
+          },
+          {
+            "cause": "earthquake",
+            "newId": "ec28pw-1n",
+            "alive": true,
+            "stage": 3,
+            "complete": true,
+            "reason": "COMPLETED"
+          }
+        ]
+      },
+      {
+        "year": 7,
+        "tick": 2400,
+        "population": 22,
+        "buildings": 25,
+        "activeSites": 0,
+        "resources": {
+          "wood": 551.33,
+          "stone": 480.05,
+          "gold": 1205.29,
+          "food": 369.02
+        },
+        "disasters": [
+          "ERUPTION IN VOLCANIC CRATER FIELD · ASH 76%",
+          "EARTH TREMOR SHAKES BROAD SHIELD VOLCANO · 70%",
+          "LAVA BURIES FARMSTEAD",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN BROAD SHIELD VOLCANO · ASH 60%",
+          "EARTHQUAKE COLLAPSES SAWMILL",
+          "EARTH TREMOR SHAKES STEEP ASH CONE · 60%",
+          "EARTH TREMOR SHAKES STEEP ASH CONE · 60%"
+        ],
+        "rebuilds": [
+          {
+            "cause": "eruption",
+            "newId": "ec28pw-1m",
+            "alive": true,
+            "stage": 3,
+            "complete": true,
+            "reason": "COMPLETED"
+          },
+          {
+            "cause": "earthquake",
+            "newId": "ec28pw-1n",
+            "alive": true,
+            "stage": 3,
+            "complete": true,
+            "reason": "COMPLETED"
+          }
+        ]
+      },
+      {
+        "year": 8,
+        "tick": 2800,
+        "population": 22,
+        "buildings": 24,
+        "activeSites": 0,
+        "resources": {
+          "wood": 628.95,
+          "stone": 544.41,
+          "gold": 1388.2,
+          "food": 388.52
+        },
+        "disasters": [
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN VOLCANIC MOUNTAIN CHAIN · ASH 68%",
+          "EARTH TREMOR SHAKES VOLCANIC MOUNTAIN CHAIN · 74%",
+          "LAVA BURIES TIMBER COTTAGE",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN VOLCANIC CRATER FIELD · ASH 76%",
+          "EARTH TREMOR SHAKES BROAD SHIELD VOLCANO · 70%",
+          "LAVA BURIES FARMSTEAD"
+        ],
+        "rebuilds": [
+          {
+            "cause": "eruption",
+            "newId": "ec28pw-1m",
+            "alive": true,
+            "stage": 3,
+            "complete": true,
+            "reason": "COMPLETED"
+          },
+          {
+            "cause": "earthquake",
+            "newId": "ec28pw-1n",
+            "alive": true,
+            "stage": 3,
+            "complete": true,
+            "reason": "COMPLETED"
+          }
+        ]
+      },
+      {
+        "year": 9,
+        "tick": 3200,
+        "population": 22,
+        "buildings": 23,
+        "activeSites": 0,
+        "resources": {
+          "wood": 819.35,
+          "stone": 733.92,
+          "gold": 1575.44,
+          "food": 582.03
+        },
+        "disasters": [
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN COLLAPSED CALDERA · ASH 51%",
+          "EARTH TREMOR SHAKES BROAD SHIELD VOLCANO · 70%",
+          "LAVA BURIES SMITHY",
+          "ASHFALL BURIES THE PASTURE · FOOD -1",
+          "ERUPTION IN VOLCANIC MOUNTAIN CHAIN · ASH 68%",
+          "EARTH TREMOR SHAKES VOLCANIC MOUNTAIN CHAIN · 74%",
+          "LAVA BURIES TIMBER COTTAGE"
+        ],
+        "rebuilds": [
+          {
+            "cause": "eruption",
+            "newId": "ec28pw-1m",
+            "alive": true,
+            "stage": 3,
+            "complete": true,
+            "reason": "COMPLETED"
+          },
+          {
+            "cause": "earthquake",
+            "newId": "ec28pw-1n",
+            "alive": true,
+            "stage": 3,
+            "complete": true,
+            "reason": "COMPLETED"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "eruptionDestroyed": "Flour Mill",
+      "earthquakeDestroyed": "Sawmill",
+      "rebuilt": [
+        "Flour Mill",
+        "Sawmill"
+      ],
+      "recoveryComplete": true,
+      "populationStart": 23,
+      "populationFinal": 22,
+      "buildingsStart": 30,
+      "buildingsFinal": 23,
+      "resourcesStart": {
+        "wood": 180,
+        "stone": 95,
+        "gold": 75,
+        "food": 120
+      },
+      "resourcesFinal": {
+        "wood": 819.35,
+        "stone": 733.92,
+        "gold": 1575.44,
+        "food": 582.03
+      }
+    },
+    "failures": []
+  },
   "crossChecks": {
     "browser": {
       "command": "node tests/browser/volcano-formations.mjs",
@@ -294,6 +783,14 @@
     "lowEnd": {
       "command": "PERF_SOFTWARE_CANVAS=1 PERF_CLIMATE=volcanic PERF_FORESTS=55 PERF_SEED=20261212 PERF_YEARS=2 PERF_RENDER_SCALE=70 node tests/browser/low-end-performance.mjs",
       "result": "16.7–16.8 ms p95, 0 long tasks, save 176.5 ms, load 1503.7 ms, 970,822 bytes"
+    },
+    "campaign": {
+      "command": "node scripts/volcano-campaign.mjs",
+      "result": "9-year volcanic settlement campaign at seed 20260004: Flour Mill lost to eruption, Sawmill lost to earthquake, rebuilt Flour Mill, Sawmill; recovery=complete",
+      "seed": 20260004,
+      "years": 9,
+      "ticks": 3200,
+      "recoveryComplete": true
     }
   },
   "items": [
@@ -759,7 +1256,7 @@
       "group": "hazard",
       "status": "working",
       "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards",
-      "evidence": "3,0 y1; eruption=0.687; active=true; annual event=yes"
+      "evidence": "3,0 y1; eruption=0.687; active=true; campaign year 3 eruption destroyed Flour Mill"
     },
     {
       "id": "1.2.13.59",
@@ -767,7 +1264,7 @@
       "group": "hazard",
       "status": "working",
       "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards",
-      "evidence": "3,0 y1; lavaFlow=0.620; destruction=0.642; hazard=fired"
+      "evidence": "3,0 y1; lavaFlow=0.620; destruction=0.642; campaign destroyed Flour Mill and rebuilt Flour Mill, Sawmill"
     },
     {
       "id": "1.2.13.60",
@@ -775,7 +1272,7 @@
       "group": "hazard",
       "status": "working",
       "code": "js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards",
-      "evidence": "3,0 y1; ash=0.481; ashfall food loss=yes; drawAshPlume"
+      "evidence": "3,0 y1; ash=0.481; campaign ashfall=ERUPTION IN STEEP ASH CONE · ASH 60% ASHFALL BURIES THE PASTURE · FOOD -1 DESTROYED BUILDING; drawAshPlume"
     },
     {
       "id": "1.2.13.61",
@@ -791,7 +1288,7 @@
       "group": "hazard",
       "status": "working",
       "code": "js/world/volcano-hazards.js#updateVolcanoHazards + js/systems/roads.js#destroyRoad",
-      "evidence": "18,0; earthquake=0.694; quake=destroyed building; stone loss"
+      "evidence": "18,0; earthquake=0.694; campaign quake destroyed Sawmill at year 4; stone loss"
     },
     {
       "id": "1.2.13.63",
@@ -823,7 +1320,7 @@
       "group": "hazard",
       "status": "working",
       "code": "js/world/volcano-hazards.js#updateVolcanoHazards + js/systems/roads.js#destroyRoad",
-      "evidence": "3,0 y1; destruction=0.642; hazard=real building destroyed"
+      "evidence": "3,0 y1; destruction=0.642; campaign real buildings destroyed=Flour Mill, Sawmill; rebuilt=Flour Mill, Sawmill; recovery=complete"
     },
     {
       "id": "1.2.13.67",

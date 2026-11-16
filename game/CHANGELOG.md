@@ -1,11 +1,11 @@
 # Kings & Cards — Version and Development History
 
 **Current production version:** `3.14.2`
-**Next development line:** `3.19.0-dev`
+**Next development line:** `3.20.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-15 (UTC)
+**Last repository verification:** 2026-11-16 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
@@ -70,8 +70,12 @@ rockfall and long-term uninhabitability. `volcano-hazards.js` now runs one
 bounded annual pass over buildings, works, sampled roads and wild ground: an
 eruption or earthquake marks a real building dead or removes a real road,
 clears worker assignments, consumes food under ash and stone under tremor, and
-writes the loss to the chronicle. Keeps and wonders stay protected, and the
-scan never enters the frame loop.
+writes the loss to the chronicle. Keeps and wonders stay protected and are
+excluded from the destruction candidate scan; selecting a protected core had
+consumed an annual event without damaging anything. The pass never enters the
+frame loop. An optional `focus` lets a verification campaign exercise the real
+eruption or earthquake branch without a roll, while the default still considers
+both.
 
 **Integration:** **Volcanic Lands** is selectable in world creation and has its
 own palette, seasonal curve and hillshade. `volcano-render.js` draws bounded
@@ -89,22 +93,33 @@ soil. The shared movement cache and combat path carry volcanic cost, gas and
 rockfall damage and local defence. No extra tick loop, renderer, inventory or
 save migration was added.
 
+**Settlement recovery proof:** `scripts/volcano-campaign.mjs` runs a 9-year,
+3,200-tick volcanic realm with the shipped simulation, construction, logistics,
+population and event systems. The year-3 eruption destroys a real **Flour
+Mill** and the year-4 earthquake destroys a real **Sawmill**; both are rebuilt
+through `placeDirectBuilding()` on the same tiles and complete construction in
+year 6. The run ends with 22 residents, 23 buildings, 582 food and no failures.
+The audit carries the hazard log, destruction counts, coordinates, rebuilt
+entity IDs and yearly recovery table.
+
 **Verification:** all 73 requirements are declared once and reached by the
 deterministic survey. `scripts/volcano-audit.mjs` generated a real 176×176
 volcanic world (30,976 volcanic tiles), exercised work, gathering, hazard and
 construction paths, and wrote a committed 73-row audit with a representative
 tile, real profile values and observed downstream evidence for every item:
 [artifacts/VOLCANO_1.2.13_AUDIT.md](../artifacts/VOLCANO_1.2.13_AUDIT.md).
-Focused volcanic tests are **18/18** green and the full suite is
-**1022/1022** green with syntax/imports **158 files / 201 UI ids**. The browser
+Focused volcanic tests are **20/20** green and the full suite is
+**1024/1024** green with syntax/imports **158 files / 201 UI ids**. The browser
 reference `volcano-formations.mjs` captured all ten formations on seed
 `20261212` with no page or console errors. The volcanic low-end run (4× CPU,
 software Canvas, 70% scale, 55% forests, two years) held **16.7–16.8 ms p95**
 in all five phases with **zero long tasks**, saved a 970,822-byte realm in
 **176.5 ms** and loaded it in **1503.7 ms**. The deterministic 25-year campaign
-completed **10,040 ticks**, **13/13 ambitions**, **0.752 ms per tick**, with no
-stalled sites and no game over. Full record:
-[docs/VOLCANOES.md](docs/VOLCANOES.md).
+completed **10,040 ticks**, **13/13 ambitions**, **0.805 ms per tick**, with no
+stalled sites and no game over. The volcanic settlement campaign completed
+**3,200 ticks**, destroyed **Flour Mill** by eruption and **Sawmill** by
+earthquake, rebuilt both to **COMPLETED**, and ended with no failures. Full
+record: [docs/VOLCANOES.md](docs/VOLCANOES.md).
 
 ### 3.16.4-dev — Year rollover stays inside the frame budget
 

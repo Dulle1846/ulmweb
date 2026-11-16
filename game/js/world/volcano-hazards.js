@@ -99,6 +99,11 @@ export function volcanoHazardCandidates() {
 
     for (const entity of state.entities || []) {
         if (!isBuilding(entity)) continue;
+        // The Keep and Wonder are protected from volcanic destruction. They
+        // must not enter the candidate set either: selecting one consumed the
+        // annual event at the realm's central high-risk tile and then returned
+        // "nothing destroyed", shielding every real building from the hazard.
+        if (entity.type === TYPE.KEEP || entity.type === TYPE.WONDER) continue;
         add(entity.x, entity.y, { settlement: true });
     }
     for (const key of Object.keys(state.volcanoWorks?.tiles || {})) {
@@ -158,9 +163,11 @@ export function destroyVolcanicTargetAt(x, y, { cause = "eruption" } = {}) {
 
 /**
  * One bounded annual hazard pass. The deterministic roll is derived from seed,
- * year and tile, so a replay reaches the same destruction.
+ * year and tile, so a replay reaches the same destruction. `focus` is used by
+ * the campaign proof to exercise one hazard branch without the other; the
+ * default pass always considers both.
  */
-export function updateVolcanoHazards({ force = false } = {}) {
+export function updateVolcanoHazards({ force = false, focus = null } = {}) {
     if ((state.worldOptions?.climate || "temperate") !== "volcanic") {
         return { events: [], destroyed: null, candidates: 0, eruption: null, earthquake: null };
     }
@@ -173,12 +180,12 @@ export function updateVolcanoHazards({ force = false } = {}) {
         // no building or road is exposed.
         const occupied = Boolean(candidate.use?.settlement || candidate.use?.road);
         const eruptionScore = profile.hazards.destruction + (occupied ? 1 : 0);
-        if (profile.climate.active && profile.hazards.destruction > 0.45
+        if (focus !== "earthquake" && profile.climate.active && profile.hazards.destruction > 0.45
             && (!eruption || eruptionScore > eruption.score)) {
             eruption = { ...candidate, profile, score: eruptionScore };
         }
         const quakeScore = profile.hazards.earthquake + (occupied ? 1 : 0);
-        if (profile.hazards.earthquake > 0.45
+        if (focus !== "eruption" && profile.hazards.earthquake > 0.45
             && (!earthquake || quakeScore > earthquake.score)) {
             earthquake = { ...candidate, profile, score: quakeScore };
         }

@@ -89,6 +89,11 @@ formations and every natural feature; the built-profile survey reaches all ten
 works. Requirement 66 only passes with real damage evidence, not with a
 pre-seeded flag.
 
+The hazard candidate scan excludes the protected Keep and Wonder instead of
+selecting them and then destroying nothing. `updateVolcanoHazards()` also
+accepts an optional `focus` of `eruption` or `earthquake`; the default still
+considers both branches and performs one bounded pass per year.
+
 ## Runtime audit
 
 `scripts/volcano-audit.mjs` generates a real 176×176 volcanic world (seed
@@ -101,12 +106,25 @@ applicable, the observed work output, hazard destruction, gather result or
 construction verdict. All 73 current entries are `working`; the audit script
 exits nonzero if a work, earthquake, destruction or construction probe fails.
 
+A separate settlement campaign (`scripts/volcano-campaign.mjs`, also available
+as `npm run test:campaign:volcano`) starts the shipped realm in the volcanic
+climate on seed `20260004`. It runs **9 years / 3,200 ticks** of ordinary
+fixed-step simulation with construction, carrier logistics, population, fields,
+weather and events. Year 3 runs the real annual eruption branch and destroys
+**Flour Mill** at `97,96`; year 4 runs the real annual earthquake branch and
+destroys **Sawmill** at `101,90`. Both are rebuilt through
+`placeDirectBuilding()` on the same tiles in year 5 and reach construction
+stage 3 (`COMPLETED`) in year 6. The final realm has 22 residents, 23 buildings
+and 582 food, with no campaign failures. The focused annual passes make this
+proof deterministic; the candidate scan, event log, building removal, worker
+cleanup, construction and recovery all use the shipped paths.
+
 ## Verification
 
 - Focused volcanic tests: `tests/world/volcano-ecology.test.js`,
   `tests/world/volcano-works.test.js` and `tests/world/volcano-hazards.test.js`,
-  **18/18** green.
-- Full suite: **1022/1022** green, syntax/imports **158 files**, **201 UI ids**,
+  **20/20** green.
+- Full suite: **1024/1024** green, syntax/imports **158 files**, **201 UI ids**,
   zero failures.
 - Browser reference: `tests/browser/volcano-formations.mjs` founded seed
   `20261212`, captured all ten formations and wrote
@@ -117,7 +135,10 @@ exits nonzero if a work, earthquake, destruction or construction probe fails.
   p95**, with **zero long tasks**. Save took **176.5 ms** and load **1503.7 ms**
   for a 970,822-byte realm; there were no page or console errors.
 - Deterministic 25-year campaign: **10,040 ticks**, **13/13 ambitions**,
-  **0.752 ms per tick**, no stalled sites and no game over.
+  **0.805 ms per tick**, no stalled sites and no game over.
+- Volcanic settlement campaign: **9 years / 3,200 ticks**, **Flour Mill** lost to
+  eruption and **Sawmill** lost to earthquake, both rebuilt to **COMPLETED** in
+  year 6; recovery complete, no failures.
 
 ## Notes
 

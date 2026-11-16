@@ -21,6 +21,7 @@ import { updateVolcanoHazards, destroyVolcanicTargetAt } from "../js/world/volca
 import { volcanicSiteVerdictAt } from "../js/systems/construction.js";
 import { drawVolcano } from "../js/presentation/rendering/volcano-render.js";
 import { getVolcanoTacticsAt } from "../js/systems/resource-geography.js";
+import { runVolcanoSettlementCampaign } from "./volcano-campaign.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = resolve(ROOT, "..", "artifacts");
@@ -209,8 +210,9 @@ function rowStatus(id, profile, extras) {
         const work = extras.works[id];
         if (!work?.ok || !work.goods.length) return "partial";
     }
-    if (id === "1.2.13.62" && !extras.hazard?.quake?.ok) return "partial";
-    if (id === "1.2.13.66" && !extras.hazard?.houseDead) return "partial";
+    if (id === "1.2.13.62" && (!extras.hazard?.quake?.ok || !extras.campaign?.ok)) return "partial";
+    if (id === "1.2.13.66" && (!extras.hazard?.houseDead || !extras.campaign?.ok)) return "partial";
+    if (["1.2.13.58", "1.2.13.59", "1.2.13.60"].includes(id) && extras.campaign?.ok !== true) return "partial";
     if (id === "1.2.13.65" && extras.construction?.hostile?.ok !== false) return "partial";
     if (id === "1.2.13.73" && !(extras.construction?.old?.ok && extras.works["1.2.13.73"]?.ok)) return "partial";
     return "working";
@@ -278,15 +280,15 @@ function evidence(id, sample, extras) {
         case "1.2.13.55": return workLine(extras, "1.2.13.55") + `; sample=${common}`;
         case "1.2.13.56": return workLine(extras, "1.2.13.56") + `; sample=${common}`;
         case "1.2.13.57": return workLine(extras, "1.2.13.57") + `; sample=${common}`;
-        case "1.2.13.58": return `${common}; eruption=${n(p.climate.eruption)}; active=${p.climate.active}; annual event=${extras.hazard?.eruption ? "yes" : "no"}`;
-        case "1.2.13.59": return `${common}; lavaFlow=${n(p.landform.lavaFlow)}; destruction=${n(p.hazards.destruction)}; hazard=${extras.hazard?.eruption ? "fired" : "survey"}`;
-        case "1.2.13.60": return `${common}; ash=${n(p.climate.ash)}; ashfall food loss=${extras.hazard?.eruption ? "yes" : "no"}; drawAshPlume`;
+        case "1.2.13.58": return `${common}; eruption=${n(p.climate.eruption)}; active=${p.climate.active}; campaign year ${extras.campaign?.hazards?.[0]?.year || "?"} eruption destroyed ${extras.campaign?.summary?.eruptionDestroyed || "nothing"}`;
+        case "1.2.13.59": return `${common}; lavaFlow=${n(p.landform.lavaFlow)}; destruction=${n(p.hazards.destruction)}; campaign destroyed ${extras.campaign?.summary?.eruptionDestroyed || "nothing"} and rebuilt ${extras.campaign?.summary?.rebuilt?.join(", ") || "nothing"}`;
+        case "1.2.13.60": return `${common}; ash=${n(p.climate.ash)}; campaign ashfall=${(extras.campaign?.hazards?.[0]?.events || []).join(" ") || "none"}; drawAshPlume`;
         case "1.2.13.61": return `${common}; toxicGas=${n(p.hazards.toxicGas)}; combat.js gas loss + work exposure`;
-        case "1.2.13.62": return `${extras.hazard?.quakeTarget ? extras.hazard.quakeTarget.x + "," + extras.hazard.quakeTarget.y : common}; earthquake=${n(extras.hazard?.quakeTarget?.earthquake ?? p.hazards.earthquake)}; quake=${extras.hazard?.quake?.ok ? "destroyed building" : "not fired"}; stone loss`;
+        case "1.2.13.62": return `${extras.hazard?.quakeTarget ? extras.hazard.quakeTarget.x + "," + extras.hazard.quakeTarget.y : common}; earthquake=${n(extras.hazard?.quakeTarget?.earthquake ?? p.hazards.earthquake)}; campaign quake destroyed ${extras.campaign?.summary?.earthquakeDestroyed || "nothing"} at year ${extras.campaign?.hazards?.find(row => row.focus === "earthquake")?.year || "?"}; stone loss`;
         case "1.2.13.63": return `${common}; hotSpring=${n(p.water.hotSpring)}; unstable=${n(p.hazards.unstable)}; movement=${n(p.hazards.movement)}`;
         case "1.2.13.64": return `${common}; rockfall=${n(p.hazards.rockfall)}; combat.js ROCKFALL damage`;
         case "1.2.13.65": return `${common}; uninhabitable=${n(p.hazards.uninhabitable)}; build verdict=${extras.construction?.hostile?.ok === false ? "blocked" : "open"}`;
-        case "1.2.13.66": return `${common}; destruction=${n(p.hazards.destruction)}; hazard=${extras.hazard?.houseDead ? "real building destroyed" : "not fired"}`;
+        case "1.2.13.66": return `${common}; destruction=${n(p.hazards.destruction)}; campaign real buildings destroyed=${[extras.campaign?.summary?.eruptionDestroyed, extras.campaign?.summary?.earthquakeDestroyed].filter(Boolean).join(", ") || "none"}; rebuilt=${extras.campaign?.summary?.rebuilt?.join(", ") || "none"}; recovery=${extras.campaign?.summary?.recoveryComplete ? "complete" : "incomplete"}`;
         case "1.2.13.67": return `${common}; oldLava=${n(p.landform.oldLava)}; stage=${p.vegetation.stage}; regeneration=${n(p.vegetation.regeneration)}`;
         case "1.2.13.68": return `${common}; soilAge=${n(p.vegetation.soilAge)}; soil.formation=${n(p.soil.formation)}; ageYears=${p.soil.ageYears}`;
         case "1.2.13.69": return `${common}; newChannel=${n(p.water.newChannel)}; drawWatercourse; water=${n(p.water.water)}`;
@@ -316,6 +318,10 @@ const workEvidence = workRun.byRequirement;
 const gather = addGatherEvidence(survey.samples);
 const hazard = addHazardEvidence(survey.samples);
 const construction = addConstructionEvidence(survey.samples);
+// The campaign is deliberately last: it installs a complete realm and runs
+// years of simulation, so it must not disturb the isolated survey probes.
+const campaign = runVolcanoSettlementCampaign();
+const campaignRebuilt = campaign.rebuilds.filter(row => row.complete).map(row => row.label);
 
 const threat = [...survey.samples.values()].find(entry => entry.profile.hazards.destruction > 0.5)
     || null;
@@ -326,13 +332,13 @@ const rows = VOLCANO_REQUIREMENTS.map(requirement => {
         id: requirement.id,
         label: requirement.label,
         group: requirement.group,
-        status: rowStatus(requirement.id, profile, { works: workEvidence, hazard, construction }),
+        status: rowStatus(requirement.id, profile, { works: workEvidence, hazard, construction, campaign }),
         code: requirement.group === "hazard" && (requirement.id === "1.2.13.62" || requirement.id === "1.2.13.66")
             ? "js/world/volcano-hazards.js#updateVolcanoHazards + js/systems/roads.js#destroyRoad"
             : requirement.id === "1.2.13.65" || requirement.id === "1.2.13.73"
                 ? "js/systems/construction.js#volcanicSiteVerdictAt + js/world/volcano-ecology.js#volcanoProfileAt"
                 : CODE[requirement.group] || "js/world/volcano-ecology.js",
-        evidence: evidence(requirement.id, sample, { works: workEvidence, gather, hazard, construction }),
+        evidence: evidence(requirement.id, sample, { works: workEvidence, gather, hazard, construction, campaign }),
     };
 });
 
@@ -349,6 +355,17 @@ const crossChecks = {
         command: "PERF_SOFTWARE_CANVAS=1 PERF_CLIMATE=volcanic PERF_FORESTS=55 PERF_SEED=20261212 PERF_YEARS=2 PERF_RENDER_SCALE=70 node tests/browser/low-end-performance.mjs",
         result: "16.7–16.8 ms p95, 0 long tasks, save 176.5 ms, load 1503.7 ms, 970,822 bytes",
     },
+    campaign: {
+        command: "node scripts/volcano-campaign.mjs",
+        result: `${campaign.years}-year volcanic settlement campaign at seed ${campaign.seed}: ` +
+            `${campaign.summary.eruptionDestroyed || "no eruption loss"} lost to eruption, ` +
+            `${campaign.summary.earthquakeDestroyed || "no earthquake loss"} lost to earthquake, ` +
+            `rebuilt ${campaignRebuilt.join(", ") || "nothing"}; recovery=${campaign.summary.recoveryComplete ? "complete" : "incomplete"}`,
+        seed: campaign.seed,
+        years: campaign.years,
+        ticks: campaign.totalTicks,
+        recoveryComplete: campaign.summary.recoveryComplete,
+    },
 };
 const report = {
     schema: 1,
@@ -356,7 +373,7 @@ const report = {
     seed: SEED,
     world: { width: W, height: H, resolution: RES, seaLevel: WORLD.sea, volcanicTiles: survey.volcanic, formations: Object.keys(VOLCANO_FORMATIONS) },
     summary: { total: rows.length, working, partial, missing },
-    works, gather, hazard, construction, crossChecks,
+    works, gather, hazard, construction, campaign, crossChecks,
     items: rows,
 };
 
@@ -380,6 +397,14 @@ const lines = [
     "The `features` array is used only to locate a representative tile. Each row below also reports the actual profile field and the consumer " +
     "that makes the item observable, so a label alone cannot pass the audit.",
     "",
+    `The multi-year settlement campaign (\`scripts/volcano-campaign.mjs\`, seed \`${campaign.seed}\`, ` +
+    `${campaign.years} years / ${campaign.totalTicks} ticks) starts the shipped realm and runs the real simulation, construction, logistics, ` +
+    "population and event systems. The two annual hazard passes use the real candidate scan, event log and destruction path; " +
+    `\`focus\` selects the eruption or earthquake branch so this proof is deterministic rather than roll-dependent. ` +
+    `Result: **${campaign.summary.eruptionDestroyed || "no eruption loss"}** destroyed by eruption, ` +
+    `**${campaign.summary.earthquakeDestroyed || "no earthquake loss"}** destroyed by earthquake, and both rebuilt to **COMPLETED**: ` +
+    `${campaignRebuilt.join(", ") || "none"}.`,
+    "",
     "| ID | Requirement | Status | Code location | Observed runtime evidence |",
     "|---|---|---|---|---|",
     ...rows.map(row => `| ${row.id} | ${escape(row.label)} | **${row.status}** | ${escape(row.code)} | ${escape(row.evidence)} |`),
@@ -388,6 +413,29 @@ const lines = [
     "",
     `- Browser capture: \`${crossChecks.browser.command}\` — ${crossChecks.browser.result}.`,
     `- Low-end volcanic run: \`${crossChecks.lowEnd.command}\` — ${crossChecks.lowEnd.result}.`,
+    `- Multi-year campaign: \`${crossChecks.campaign.command}\` — ${crossChecks.campaign.result}.`,
+    "",
+    "## Multi-year settlement campaign",
+    "",
+    "The campaign starts the shipped realm in the volcanic climate and runs nine years of ordinary fixed-step simulation, including city needs, " +
+    "construction sites, carrier logistics, fields, weather, population, events and the annual hazard task. Year 3 invokes the real annual " +
+    "eruption branch; year 4 invokes the real annual earthquake branch. The destroyed entities are then rebuilt through `placeDirectBuilding()` " +
+    "and must reach stage 3 before the audit passes.",
+    "",
+    "| Year | Cause | Event log | Destroyed target | Buildings before → after |",
+    "|---|---|---|---|---|",
+    ...campaign.hazards.map(row => `| ${row.year} | ${row.focus} | ${escape((row.events || []).join(" / "))} | ${escape(row.target?.label || row.destroyed?.label || "none")} at ${row.target?.x ?? row.destroyed?.x ?? "?"},${row.target?.y ?? row.destroyed?.y ?? "?"} | ${row.buildingsBefore} → ${row.buildingsAfter} |`),
+    "",
+    "| Cause | Original | Rebuilt entity | Site | Placed | Completed |",
+    "|---|---|---|---|---|---|",
+    ...campaign.rebuilds.map(row => `| ${row.cause} | ${escape(row.label || "?")} | ${row.newId || "none"} | ${row.site?.x ?? "?"},${row.site?.y ?? "?"}${row.site?.exact ? " (same tile)" : ""} | year ${row.placedYear ?? "?"} | ${row.complete ? "year " + row.completedYear : "not complete"} |`),
+    "",
+    "| Year | Tick | Population | Buildings | Food | Active sites | Rebuilt structures complete |",
+    "|---|---|---|---|---|---|---|",
+    ...campaign.yearly.map(row => `| ${row.year} | ${row.tick} | ${row.population} | ${row.buildings} | ${row.resources?.food ?? "?"} | ${row.activeSites} | ${(row.rebuilds || []).filter(item => item.complete).length}/${(row.rebuilds || []).length} |`),
+    "",
+    `Final state: population ${campaign.final.population}, buildings ${campaign.final.buildings}, food ${campaign.final.resources.food}, ` +
+    `recovery ${campaign.summary.recoveryComplete ? "complete" : "incomplete"}.`,
     "",
     "## Work and gathering probes",
     "",
@@ -403,7 +451,7 @@ const lines = [
     "",
 ];
 writeFileSync(resolve(OUT_DIR, "VOLCANO_1.2.13_AUDIT.md"), lines.join("\n"));
-const auditOk = working === rows.length && partial === 0 && missing === 0 && gather?.ok === true;
+const auditOk = working === rows.length && partial === 0 && missing === 0 && gather?.ok === true && campaign.ok === true;
 if (!auditOk) process.exitCode = 1;
 console.log("VOLCANO_AUDIT " + JSON.stringify({
     ok: auditOk,
@@ -411,5 +459,6 @@ console.log("VOLCANO_AUDIT " + JSON.stringify({
     working,
     missing: rows.filter(row => row.status !== "working").map(row => row.id),
     world: report.world,
+    campaign: { seed: campaign.seed, years: campaign.years, ticks: campaign.totalTicks, recoveryComplete: campaign.summary.recoveryComplete },
     reports: [resolve(OUT_DIR, "VOLCANO_1.2.13_AUDIT.md"), resolve(OUT_DIR, "volcano-audit.json")],
 }));

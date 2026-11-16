@@ -8,6 +8,8 @@ Generated from a real generated world (seed `20261212`, 176×176, 30,976 volcani
 
 The `features` array is used only to locate a representative tile. Each row below also reports the actual profile field and the consumer that makes the item observable, so a label alone cannot pass the audit.
 
+The multi-year settlement campaign (`scripts/volcano-campaign.mjs`, seed `20260004`, 9 years / 3200 ticks) starts the shipped realm and runs the real simulation, construction, logistics, population and event systems. The two annual hazard passes use the real candidate scan, event log and destruction path; `focus` selects the eruption or earthquake branch so this proof is deterministic rather than roll-dependent. Result: **Flour Mill** destroyed by eruption, **Sawmill** destroyed by earthquake, and both rebuilt to **COMPLETED**: Flour Mill, Sawmill.
+
 | ID | Requirement | Status | Code location | Observed runtime evidence |
 |---|---|---|---|---|
 | 1.2.13.1 | Single volcanic cones | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/presentation/rendering/volcano-render.js#drawVolcanoGround | 64,26 y1; formation=single-cone; cone=0.459; drawCone |
@@ -67,15 +69,15 @@ The `features` array is used only to locate a representative tile. Each row belo
 | 1.2.13.55 | Geothermal energy | **working** | js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork | work=Lava field at 100,9; goods=geothermal-energy:3,hot-spring-water:4; sample=3,0 y1 |
 | 1.2.13.56 | Fertile volcanic soils | **working** | js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork | work=Lava field at 100,9; goods=volcanic-soil:5; sample=0,0 y1 |
 | 1.2.13.57 | Rare materials in crater regions | **working** | js/world/volcano-works.js + js/systems/forest-gathering.js#performVolcanoWork | work=Lava field at 100,9; goods=crater-crystal:2,volcanic-minerals:2; sample=18,0 y1 |
-| 1.2.13.58 | Volcanic eruptions | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards | 3,0 y1; eruption=0.687; active=true; annual event=yes |
-| 1.2.13.59 | Lava flows | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards | 3,0 y1; lavaFlow=0.620; destruction=0.642; hazard=fired |
-| 1.2.13.60 | Ashfall | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards | 3,0 y1; ash=0.481; ashfall food loss=yes; drawAshPlume |
+| 1.2.13.58 | Volcanic eruptions | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards | 3,0 y1; eruption=0.687; active=true; campaign year 3 eruption destroyed Flour Mill |
+| 1.2.13.59 | Lava flows | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards | 3,0 y1; lavaFlow=0.620; destruction=0.642; campaign destroyed Flour Mill and rebuilt Flour Mill, Sawmill |
+| 1.2.13.60 | Ashfall | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards | 3,0 y1; ash=0.481; campaign ashfall=ERUPTION IN STEEP ASH CONE · ASH 60% ASHFALL BURIES THE PASTURE · FOOD -1 DESTROYED BUILDING; drawAshPlume |
 | 1.2.13.61 | Toxic volcanic gases | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards | 22,0 y1; toxicGas=0.642; combat.js gas loss + work exposure |
-| 1.2.13.62 | Earthquakes | **working** | js/world/volcano-hazards.js#updateVolcanoHazards + js/systems/roads.js#destroyRoad | 18,0; earthquake=0.694; quake=destroyed building; stone loss |
+| 1.2.13.62 | Earthquakes | **working** | js/world/volcano-hazards.js#updateVolcanoHazards + js/systems/roads.js#destroyRoad | 18,0; earthquake=0.694; campaign quake destroyed Sawmill at year 4; stone loss |
 | 1.2.13.63 | Hot springs and unstable ground | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards | 4,0 y1; hotSpring=0.573; unstable=0.365; movement=0.758 |
 | 1.2.13.64 | Rockfall | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/world/volcano-hazards.js#updateVolcanoHazards | 156,12 y1; rockfall=0.440; combat.js ROCKFALL damage |
 | 1.2.13.65 | Long-term uninhabitable areas | **working** | js/systems/construction.js#volcanicSiteVerdictAt + js/world/volcano-ecology.js#volcanoProfileAt | 3,0 y1; uninhabitable=0.860; build verdict=blocked |
-| 1.2.13.66 | Destruction of settlements and infrastructure | **working** | js/world/volcano-hazards.js#updateVolcanoHazards + js/systems/roads.js#destroyRoad | 3,0 y1; destruction=0.642; hazard=real building destroyed |
+| 1.2.13.66 | Destruction of settlements and infrastructure | **working** | js/world/volcano-hazards.js#updateVolcanoHazards + js/systems/roads.js#destroyRoad | 3,0 y1; destruction=0.642; campaign real buildings destroyed=Flour Mill, Sawmill; rebuilt=Flour Mill, Sawmill; recovery=complete |
 | 1.2.13.67 | Colonisation and growth on old lava | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/systems/construction.js#volcanicSiteVerdictAt | 2,0 y1; oldLava=0.499; stage=shrub; regeneration=0.489 |
 | 1.2.13.68 | Slow soil formation | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/systems/construction.js#volcanicSiteVerdictAt | 0,0 y1; soilAge=0.530; soil.formation=0.674; ageYears=138 |
 | 1.2.13.69 | Formation of new watercourses | **working** | js/world/volcano-ecology.js#volcanoProfileAt + js/systems/construction.js#volcanicSiteVerdictAt | 4,0 y1; newChannel=0.635; drawWatercourse; water=0.584 |
@@ -88,6 +90,35 @@ The `features` array is used only to locate a representative tile. Each row belo
 
 - Browser capture: `node tests/browser/volcano-formations.mjs` — 10/10 formations, seed 20261212, no page or console errors.
 - Low-end volcanic run: `PERF_SOFTWARE_CANVAS=1 PERF_CLIMATE=volcanic PERF_FORESTS=55 PERF_SEED=20261212 PERF_YEARS=2 PERF_RENDER_SCALE=70 node tests/browser/low-end-performance.mjs` — 16.7–16.8 ms p95, 0 long tasks, save 176.5 ms, load 1503.7 ms, 970,822 bytes.
+- Multi-year campaign: `node scripts/volcano-campaign.mjs` — 9-year volcanic settlement campaign at seed 20260004: Flour Mill lost to eruption, Sawmill lost to earthquake, rebuilt Flour Mill, Sawmill; recovery=complete.
+
+## Multi-year settlement campaign
+
+The campaign starts the shipped realm in the volcanic climate and runs nine years of ordinary fixed-step simulation, including city needs, construction sites, carrier logistics, fields, weather, population, events and the annual hazard task. Year 3 invokes the real annual eruption branch; year 4 invokes the real annual earthquake branch. The destroyed entities are then rebuilt through `placeDirectBuilding()` and must reach stage 3 before the audit passes.
+
+| Year | Cause | Event log | Destroyed target | Buildings before → after |
+|---|---|---|---|---|
+| 3 | eruption | ERUPTION IN STEEP ASH CONE · ASH 60% / ASHFALL BURIES THE PASTURE · FOOD -1 / DESTROYED BUILDING | Flour Mill at 97,96 | 29 → 28 |
+| 4 | earthquake | EARTH TREMOR SHAKES STEEP ASH CONE · 60% / COLLAPSED BUILDING | Sawmill at 101,90 | 27 → 26 |
+
+| Cause | Original | Rebuilt entity | Site | Placed | Completed |
+|---|---|---|---|---|---|
+| eruption | Flour Mill | ec28pw-1m | 97,96 (same tile) | year 5 | year 6 |
+| earthquake | Sawmill | ec28pw-1n | 101,90 (same tile) | year 5 | year 6 |
+
+| Year | Tick | Population | Buildings | Food | Active sites | Rebuilt structures complete |
+|---|---|---|---|---|---|---|
+| 1 | 0 | 23 | 30 | 120 | 0 | 0/0 |
+| 2 | 400 | 24 | 29 | 217.68 | 0 | 0/0 |
+| 3 | 800 | 24 | 28 | 348.05 | 0 | 0/0 |
+| 4 | 1200 | 24 | 26 | 450.43 | 0 | 0/0 |
+| 5 | 1600 | 24 | 27 | 291.81 | 2 | 0/2 |
+| 6 | 2000 | 24 | 26 | 257.23 | 0 | 2/2 |
+| 7 | 2400 | 22 | 25 | 369.02 | 0 | 2/2 |
+| 8 | 2800 | 22 | 24 | 388.52 | 0 | 2/2 |
+| 9 | 3200 | 22 | 23 | 582.03 | 0 | 2/2 |
+
+Final state: population 22, buildings 23, food 582.03, recovery complete.
 
 ## Work and gathering probes
 
