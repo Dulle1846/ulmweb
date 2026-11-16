@@ -283,7 +283,8 @@ export function updateConstruction() {
         }
         const definition = CONSTRUCTION_STAGES[construction.stage] || CONSTRUCTION_STAGES[0];
         const requiredDays = Math.max(1, definition.days || 1);
-        construction.progress = Math.min(100, (Number(construction.progress) || 0) + (100 / requiredDays) * Math.min(2, builders));
+        const winterWorkFactor = Math.max(0.8, 1 - (Number(state.winter?.values?.clearancePenalty) || 0) * 0.5);
+        construction.progress = Math.min(100, (Number(construction.progress) || 0) + (100 / requiredDays) * Math.min(2, builders) * winterWorkFactor);
         construction.reason = definition.label;
         if (construction.progress >= 100) advanceStage(site);
     }

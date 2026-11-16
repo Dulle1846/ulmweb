@@ -80,3 +80,43 @@ Full suite: `npm test`.
 Campaign: `npm run test:campaign:snow` (seed 20261215, Royal Ascendancy). It
 reaches 10,040 ticks, year 26, 70 residents, 70+ gold, 38 firewood, all 13
 ambitions, one era stage with material feedback, no stalls and no game over.
+
+
+## 1.2.16 Winter Economy & Ice Roads
+
+`game/js/world/winter-economy.js` adds twenty systems on top of the completed
+1.2.15 profile. It is not a second ecology tick: one twenty-day ledger reads the
+same `snowProfileAt()` result already used by the renderer and survey, then writes
+bounded state into the existing realm.
+
+| ID | System | Real effect |
+| --- | --- | --- |
+| 1.2.16.1 | Snow bearing | depth, drift and slope reduce bearing |
+| 1.2.16.2 | Transport | bearing/ice/pass state change transport and remove food when slow |
+| 1.2.16.3 | Heating demand | cold, wind and building hardiness set a real firewood draw |
+| 1.2.16.4 | Heating shortfall | missing fuel raises illness risk, illness and morale loss |
+| 1.2.16.5 | Fuel price | scarcity pressure raises the wood market price and trend |
+| 1.2.16.6 | Ice roads | frozen crossings become routes with cart capacity |
+| 1.2.16.7 | Ice breakup | spring thaw marks routes broken and loses cargo |
+| 1.2.16.8 | Clearance | wood/labour cost and field-growth penalty |
+| 1.2.16.9 | Insulation | snow cover raises soil temperature and field insulation |
+| 1.2.16.10 | Frost/pests | thin cover lowers field fertility in spring |
+| 1.2.16.11 | Meltwater | once-a-year fertility recharge |
+| 1.2.16.12 | Flood | building damage and a following fertility bonus |
+| 1.2.16.13 | Wildlife | migration adds measurable hunt food |
+| 1.2.16.14 | Wolves | predator pressure removes herd food and morale |
+| 1.2.16.15 | Food stress | empty stores add migration pressure and morale loss |
+| 1.2.16.16 | Avalanche/blizzard | annual building damage and pass closure |
+| 1.2.16.17 | Caravan diplomacy | late caravans lower a neighbour relation |
+| 1.2.16.18 | Winter morale | festivals and stores change morale and migration |
+| 1.2.16.19 | Building hardiness | real stat with a paid winterisation upgrade |
+| 1.2.16.20 | Unit winter kit | real stat with a paid kit upgrade and illness protection |
+
+The HUD section `WINTER ECONOMY · 1.2.16` has IDs for snow depth, heating demand,
+ice-road status, avalanche risk, meltwater and supply. Six controls cycle
+clearance, heating reserve, ice-road access and festivals, and buy building/unit
+upgrades. `state.winter` stores only policy, bounded history and totals; derived
+values are recomputed from the current profile after a load.
+
+Run `npm run test:winter-audit` to reproduce the 20/20 observed-value audit. The
+long Snowlands campaign remains deterministic and does not stall or end the realm.

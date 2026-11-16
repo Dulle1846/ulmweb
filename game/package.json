@@ -52,7 +52,8 @@
     "test:campaign:coast": "CAMPAIGN_CLIMATE=coastal node scripts/long-campaign.mjs",
     "test:campaign:snow": "CAMPAIGN_SEED=20261215 CAMPAIGN_CLIMATE=snow CAMPAIGN_ERA=royal-ascendancy node scripts/long-campaign.mjs",
     "test:coast-audit": "node scripts/coast-audit.mjs",
-    "test:snow-audit": "node scripts/snow-audit.mjs"
+    "test:snow-audit": "node scripts/snow-audit.mjs",
+    "test:winter-audit": "node scripts/winter-audit.mjs"
   },
   "engines": {
     "node": ">=20"

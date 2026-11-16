@@ -9,6 +9,7 @@ import { getAmbitionSnapshot } from "../../systems/ambitions.js";
 import { getCoreCounsel } from "../core-counsel.js";
 import { getFirstSessionSnapshot } from "../first-session.js";
 import { renderStatisticsExplorer } from "../statistics-panel.js";
+import { renderWinterHud } from "../winter-panel.js";
 
 let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastAmbitionSignature="",lastFirstSessionSignature="",lastRenderedIssueId=null,lastCardSprite="",lastTickTextAt=0;
 function setText(id,value){const el=document.getElementById(id);const next=String(value);if(el&&el.textContent!==next)el.textContent=next;}
@@ -371,7 +372,7 @@ function renderDynamicPanels(){
     renderTabContent();
     renderRealmEvent();
 }
-const UI_HUD_CHUNKS=Object.freeze([renderResourceValues,renderResourceIncome,renderMoraleHud,renderWorldLabels,renderTopStatus,renderHousingHud,renderCardHud,renderRoomBonuses,renderAmbition,renderFirstSession,renderViewHud,renderDynamicPanels]);
+const UI_HUD_CHUNKS=Object.freeze([renderResourceValues,renderResourceIncome,renderMoraleHud,renderWorldLabels,renderTopStatus,renderHousingHud,renderCardHud,renderRoomBonuses,renderAmbition,renderFirstSession,renderWinterHud,renderViewHud,renderDynamicPanels]);
 let uiHudFrame=0,uiHudIndex=0,uiHudPending=false;
 function runHudRefresh() {
     uiHudFrame = 0;

@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="css/hud-v3.css">
     <link rel="stylesheet" href="css/world-workshop.css">
     <link rel="stylesheet" href="css/event-timeline.css">
+    <link rel="stylesheet" href="css/winter.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
 <body>
@@ -149,6 +150,28 @@
                     <div class="resource-card gold"><div class="resource-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/realm-icons.svg#coin"></use></svg></div><div class="resource-copy"><div id="res-gold" class="resource-value">75</div><div class="resource-name">GOLD</div></div><div id="gold-income" class="resource-income"></div></div>
                     <div class="resource-card food"><div class="resource-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#mill"></use></svg></div><div class="resource-copy"><div id="res-food" class="resource-value">120</div><div class="resource-name">FOOD</div></div><div id="food-income" class="resource-income"></div></div>
                 </div>
+            </section>
+
+            <section id="winter-section" class="winter-section hidden" aria-labelledby="winter-heading" aria-live="polite">
+                <div class="section-heading"><span id="winter-heading">WINTER ECONOMY · 1.2.16</span><span id="winter-status" class="subtle">SNOWLANDS</span></div>
+                <div class="winter-grid">
+                    <div class="winter-metric"><span>SNOW DEPTH</span><strong id="winter-snow-depth">0.00 m</strong><small id="winter-bearing">BEARING 100%</small></div>
+                    <div class="winter-metric"><span>HEATING DEMAND</span><strong id="winter-heating-demand">0.0</strong><small id="winter-heating-stock">FUEL 0</small></div>
+                    <div class="winter-metric"><span>ICE ROADS</span><strong id="winter-ice-roads">CLOSED</strong><small id="winter-ice-risk">RISK 0%</small></div>
+                    <div class="winter-metric"><span>AVALANCHE</span><strong id="winter-avalanche-risk">0%</strong><small id="winter-pass">PASS OPEN</small></div>
+                    <div class="winter-metric"><span>MELTWATER</span><strong id="winter-meltwater">0%</strong><small id="winter-soil">SOIL 0%</small></div>
+                    <div class="winter-metric"><span>SUPPLY FLOW</span><strong id="winter-supply">100%</strong><small id="winter-morale">MORALE 72</small></div>
+                </div>
+                <div id="winter-ice-list" class="winter-ice-list" aria-label="Ice route status"></div>
+                <div class="winter-policy-row" role="group" aria-label="Winter policies">
+                    <button id="winter-clearance-btn" class="winter-policy-btn" type="button" data-winter-action="clearance">CLEARANCE · BALANCED</button>
+                    <button id="winter-heating-btn" class="winter-policy-btn" type="button" data-winter-action="heating">HEATING · NORMAL</button>
+                    <button id="winter-ice-btn" class="winter-policy-btn" type="button" data-winter-action="iceRoads">ICE ROADS · OPEN</button>
+                    <button id="winter-festival-btn" class="winter-policy-btn" type="button" data-winter-action="festival">HOLD FESTIVAL</button>
+                    <button id="winter-upgrade-btn" class="winter-policy-btn" type="button" data-winter-action="upgrade">WINTERISE BUILDINGS</button>
+                    <button id="winter-kit-btn" class="winter-policy-btn" type="button" data-winter-action="kit">ISSUE WINTER KITS</button>
+                </div>
+                <div id="winter-event-log" class="winter-event-log" aria-live="polite"></div>
             </section>
 
             <section id="ambition-section" class="ambition-section" aria-labelledby="ambition-heading">

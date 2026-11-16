@@ -49,6 +49,7 @@ import { updateExpeditions } from "../systems/expeditions.js";
 import { updateVolcanoHazards } from "../world/volcano-hazards.js";
 import { updateCoastHazards } from "../world/coast-hazards.js";
 import { updateSnowHazards } from "../world/snow-hazards.js";
+import { updateWinterAnnual, updateWinterEconomy } from "../world/winter-economy.js";
 
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 const ANNUAL_SLICE_BUDGET_MS = 6;
@@ -85,7 +86,11 @@ const ANNUAL_TASKS = [
     // immediately outside the Coastlands climate, so inland campaigns keep
     // their existing tick cost and event sequence.
     { name: "coastHazards", run(annual) { annual.coastHazards = updateCoastHazards(); } },
-    { name: "snowHazards", run(annual) { annual.snowHazards = updateSnowHazards(); } }
+    { name: "snowHazards", run(annual) { annual.snowHazards = updateSnowHazards(); } },
+    // 1.2.16 winter economy: one bounded annual hazard and caravan pass. It
+    // returns immediately outside Snowlands, so other climates keep their
+    // exact annual sequence and tick budget.
+    { name: "winterAnnual", run(annual) { annual.winterAnnual = updateWinterAnnual(); } }
 ];
 
 let annualSlicingEnabled = false;
@@ -112,7 +117,8 @@ function createAnnualMaintenance() {
         newborn: null,
         succession: null,
         volcanoHazards: null,
-        coastHazards: null
+        coastHazards: null,
+        winterAnnual: null
     };
 }
 
@@ -176,6 +182,8 @@ function finishSimulationTick(newborn) {
     if ((state.worldOptions?.climate || "temperate") === "tropical") spoilForestGoods(1);
     resetIncome();
     updateSettlement();
+    // Twenty-day winter ledger. It is a no-op on other ticks and other climates.
+    updateWinterEconomy();
     // The standing grain contract delivers once per season. This is a single
     // bounded call four times a year, not a new per-tick system.
     if (state.tick % 100 === 0 && (state.crownSupply?.grainLevel || 0) >= 4) settleCrownSupply();

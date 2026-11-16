@@ -115,8 +115,11 @@ export function updateMarket() {
         // household petition does not exist in a separate economy: it makes
         // grain dearer through this bounded term until stock or policy eases.
         const civicPressure = resource === "food" ? Math.max(0,Math.min(0.35,Number(state.realmCycle?.marketPressure)||0))*0.35 : 0;
-        state.market.priceTrend[resource] = Math.max(-0.45,Math.min(0.55,(state.market.priceTrend[resource]||0)*0.68+drift+scarcityPressure*0.12+hungerPressure*0.04+civicPressure*0.04));
-        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource]+scarcityPressure+hungerPressure+civicPressure)*100)/100);
+        // 1.2.16: firewood scarcity is priced into the wood market. The winter
+        // ledger writes the pressure; the regular market pass carries it.
+        const fuelPressure = resource === "wood" ? Math.max(0,Math.min(0.4,Number(state.winter?.values?.fuelPricePressure)||0))*0.35 : 0;
+        state.market.priceTrend[resource] = Math.max(-0.45,Math.min(0.55,(state.market.priceTrend[resource]||0)*0.68+drift+scarcityPressure*0.12+hungerPressure*0.04+civicPressure*0.04+fuelPressure*0.05));
+        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource]+scarcityPressure+hungerPressure+civicPressure+fuelPressure)*100)/100);
         const history = state.market.priceHistory[resource] || (state.market.priceHistory[resource] = []);
         history.push(state.market.prices[resource]);
         if (history.length > 16) history.shift();

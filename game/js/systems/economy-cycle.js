@@ -141,7 +141,13 @@ export function getHarvestYieldFactor() {
     const moraleFactor = 0.85 + clamp(state.morale, 0, 100) / 500;
     const health = state.health && typeof state.health === "object" ? state.health : {};
     const healthFactor = 1 - clamp(health.severity, 0, 1) * 0.25;
-    return clamp(seasonFactor * weatherFactor * climateFactor * moraleFactor * healthFactor, 0.45, 1.35);
+    // 1.2.16: the snow cover, frost damage and spring meltwater are part of the
+    // same harvest factor. This is the visible field link of the winter layer.
+    const winter = climate === "snow" ? state.winter?.values : null;
+    const winterFieldFactor = winter ? Math.max(0.72, Math.min(1.12,
+        0.9 + (Number(winter.insulation) || 0) * 0.22 - (Number(winter.frostDamage) || 0) * 0.18
+        + (Number(winter.meltwater) || 0) * 0.08)) : 1;
+    return clamp(seasonFactor * weatherFactor * climateFactor * moraleFactor * healthFactor * winterFieldFactor, 0.45, 1.35);
 }
 
 export function normalizeFoodCrisis(input = {}) {

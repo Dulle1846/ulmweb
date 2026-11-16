@@ -60,6 +60,8 @@ import { createCrownSupplyState, normalizeCrownSupplyState } from "../systems/cr
 import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
 import {BENCHMARK_MIN_FRAMES,BENCHMARK_SAMPLE_MS,BENCHMARK_WARMUP_MS,buildBenchmarkPlan,findBenchmarkWinner,summarizeBenchmarkSamples} from "./performance-benchmark.js";
+import { initializeWinterForRealm, refreshWinterSnapshot } from "../world/winter-economy.js";
+import { setupWinterHud } from "../presentation/winter-panel.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -500,6 +502,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     initializeCityForRealm();
     normalizeHouseholdAssignments();
     initializeSettlementForRealm();
+    initializeWinterForRealm();
     initializePopulationRegister();
     openGoodsBookForNewRealm();
     drawStartingHand();
@@ -579,6 +582,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     }
     resetForRun(profile);
     const restored=restoreSaveSnapshot(prepared);
+    refreshWinterSnapshot();
     setAnnualMaintenanceSlicing(true);
     // resetForRun clears readiness before the snapshot is applied. Restoring a
     // prepared snapshot rebuilds the realm and resumes the loop, so it must
@@ -912,6 +916,7 @@ function bindMenu(){
     document.getElementById("big-message-close")?.addEventListener("click",()=>document.getElementById("big-message").classList.add("hidden"));
     window.addEventListener("kac:save-request",saveCurrentGame);
     window.addEventListener("kac:load-request",loadCurrentGame);
+    window.addEventListener("kac:winter-change",()=>{ if(state.hasStarted){ renderUI(); if(state.ctx) drawWorld(); } });
     window.addEventListener("kac:focus-map",event=>{
         const x=Number(event.detail?.x),y=Number(event.detail?.y);
         if(!Number.isFinite(x)||!Number.isFinite(y)||!state.canvas)return;
@@ -927,6 +932,7 @@ function init(){
     setupInput();
     setupCharacterDossier();
     setupManagementUI();
+    setupWinterHud();
     setupMapViewControls();
     setupModalAccessibility();
     document.getElementById("warning-inbox-btn")?.addEventListener("click",()=>{

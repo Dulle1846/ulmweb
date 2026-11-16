@@ -48,6 +48,7 @@ import { normalizeAmbitions } from "../systems/ambitions.js";
 import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeGovernment } from "../systems/government.js";
 import { normalizeRoyalState } from "../systems/royal-dynasty.js";
+import { restoreWinterState, serializeWinterState } from "../world/winter-economy.js";
 import { restoreHand } from "../systems/cards.js";
 import { resolveSavedTerrainVersion } from "../world/terrain-model.js";
 import { initWorld } from "../world/world.js";
@@ -129,6 +130,12 @@ function serializeEntity(entity, indexByEntity) {
         isDragon: Boolean(entity.isDragon),
         creature: entity.creature ? JSON.parse(JSON.stringify(entity.creature)) : null,
         moraleMod: entity.moraleMod,
+        winterHardiness: entity.winterHardiness,
+        winterUpgrade: entity.winterUpgrade,
+        winterKit: entity.winterKit,
+        winterKitTier: entity.winterKitTier,
+        snowDamagedYear: entity.snowDamagedYear,
+        floodedYear: entity.floodedYear,
         tint: entity.tint,
         householdId: entity.householdId || null,
         civicOrigin: entity.civicOrigin || null,
@@ -220,6 +227,7 @@ export function createSaveSnapshot() {
         government: JSON.parse(JSON.stringify(state.government || {})),
         royal: JSON.parse(JSON.stringify(state.royal || {})),
         market: JSON.parse(JSON.stringify(state.market)),
+        winter: serializeWinterState(),
         realmCycle: JSON.parse(JSON.stringify(state.realmCycle || createRealmCycleState())),
         court: JSON.parse(JSON.stringify(state.court || createCourtState())),
         nobility: JSON.parse(JSON.stringify(state.nobility || createNobilityState())),
@@ -328,6 +336,12 @@ export function restoreSaveSnapshot(snapshot) {
             isDragon: Boolean(dto.isDragon),
             creature: dto.creature && typeof dto.creature === "object" ? dto.creature : null,
             moraleMod: dto.moraleMod || 0,
+            winterHardiness: dto.winterHardiness === undefined ? undefined : Math.max(0, Math.min(1, Number(dto.winterHardiness) || 0)),
+            winterUpgrade: dto.winterUpgrade === undefined ? undefined : Math.max(0, Math.min(1, Number(dto.winterUpgrade) || 0)),
+            winterKit: dto.winterKit === undefined ? undefined : Math.max(0, Math.min(1, Number(dto.winterKit) || 0)),
+            winterKitTier: dto.winterKitTier === undefined ? undefined : Math.max(0, Math.min(3, Math.floor(Number(dto.winterKitTier) || 0))),
+            snowDamagedYear: dto.snowDamagedYear,
+            floodedYear: dto.floodedYear,
             tint: dto.tint || 0,
             householdId: dto.householdId || null,
             lastAgedYear: dto.lastAgedYear === null ? null : (Number.isFinite(dto.lastAgedYear) ? dto.lastAgedYear : Math.max(1, Math.floor(Number(snapshot.year) || 1))),
@@ -341,6 +355,7 @@ export function restoreSaveSnapshot(snapshot) {
         }
     });
     restoreCity(snapshot.city);
+    restoreWinterState(snapshot.winter);
     // A modern save already contains the complete logistics/needs state. Only
     // a legacy save without a city block needs a fresh derived settlement.
     if (!snapshot.city) initializeCityForRealm({ seedWarehouse: true });

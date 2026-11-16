@@ -9,6 +9,33 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
+## 1.2.16 — Winter Economy & Ice Roads (development line)
+
+The completed 1.2.15 Snowlands ecology is now the platform for a second, deeply
+linked winter layer. Twenty numbered systems (1.2.16.1–1.2.16.20) run on one
+bounded twenty-day ledger plus one annual hazard/caravan pass. They consume real
+firewood from warehouses, move market prices, fields, fertility, construction
+speed, morale, illness, buildings, resident kits and neighbour relations.
+
+- Snow depth now determines bearing capacity and transport speed; slow roads
+  remove goods from the stores.
+- Heating demand burns physical firewood. A shortfall raises illness risk,
+  lowers morale and is priced into the wood market.
+- Frozen water opens ice roads with real cart capacity; spring breakup destroys
+  them and loses cargo.
+- Clearance spends wood and labour; snow cover insulates soil, while frost and
+  meltwater change field fertility; floods damage a building and then enrich
+  fields.
+- Wildlife migration adds hunt yield; wolf pressure and empty stores remove food
+  and raise migration pressure.
+- Avalanches/blizzards damage buildings and close passes; late caravans reduce
+  relations. Festivals, winterised buildings and resident kits are real upgrades.
+- The side panel exposes depth, demand, ice status, avalanche risk, meltwater,
+  supply, event dispatch and six controls. State is save-compatible and bounded.
+- Verification: focused 23/23 winter tests, full suite, 25-year Snowlands
+  campaign, 20/20 audit at `artifacts/WINTER_1.2.16_AUDIT.md`, browser E2E and
+  production check. No new per-tile loop or frame loop was added.
+
 ## Versioning policy
 
 Kings & Cards uses a practical semantic version format:

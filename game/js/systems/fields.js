@@ -194,17 +194,19 @@ function seasonalFieldUpdate(farm, stables) {
             field.lastReason = "Granary is full";
             return;
         }
+        const winterGrowth = Math.max(0.78, 1 - (Number(state.winter?.values?.clearancePenalty) || 0) * 0.4);
         if (field.stage === "fallow" || field.stage === "harvested") {
             field.stage = "sown";
             field.growth = 0;
             field.sownYear = state.year;
         } else if (field.stage === "sown") {
-            field.growth = Math.min(90, field.growth + 0.45 + field.fertility * 0.006);
+            field.growth = Math.min(90, field.growth + (0.45 + field.fertility * 0.006) * winterGrowth);
         }
     } else if (season === 1) {
+        const winterGrowth = Math.max(0.78, 1 - (Number(state.winter?.values?.clearancePenalty) || 0) * 0.4);
         if (field.stage === "sown" || field.stage === "growing") {
             field.stage = "growing";
-            field.growth = Math.min(100, field.growth + 0.9 + field.fertility * 0.009);
+            field.growth = Math.min(100, field.growth + (0.9 + field.fertility * 0.009) * winterGrowth);
             if (field.growth >= 100) field.stage = "ripe";
         }
     } else if (season === 2) {
