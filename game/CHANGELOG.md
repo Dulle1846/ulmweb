@@ -38,6 +38,9 @@ a deterministic local profile, not by a painted texture.
   understory, light, habitat, driver/effect chips, a five-band nearest-sample
   strip and the complete 70-point manifest. PREV/NEXT on the ecotone survey also
   refreshes this density probe.
+- A survey left open across a season boundary now refreshes once on that
+  boundary instead of showing last season's band and season driver. The bounded
+  refresh keeps the panel scroll position and an expanded 70-point manifest.
 - Verification: focused density suite **9/9**, existing forest-gathering,
   pressure, insect, jungle and transition suites **38/38** together; full suite
   **1111/1111** plus syntax/import/UI checks over 174 source files. The 25-year

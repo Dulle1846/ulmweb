@@ -180,7 +180,16 @@ export function finishAnnualMaintenanceForSave() {
 }
 
 function finishSimulationTick(newborn) {
+    const previousSeason = Number(state.seasonIndex) || 0;
     state.seasonIndex = Math.floor(state.dayOfYear / 100) % 4;
+    // A live Explore survey must not keep displaying last season's density.
+    // This fires four times per year at most; the panel does the bounded
+    // re-render only while it is actually open.
+    if (state.seasonIndex !== previousSeason && typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("kac:season-change", {
+            detail: { seasonIndex: state.seasonIndex, year: state.year, tick: state.tick }
+        }));
+    }
     if ((state.worldOptions?.climate || "temperate") === "tropical") spoilForestGoods(1);
     resetIncome();
     updateSettlement();

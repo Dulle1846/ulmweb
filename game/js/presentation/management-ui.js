@@ -8,7 +8,7 @@ import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, decl
 import { startExpedition } from "../systems/expeditions.js";
 import { attuneSpecialBiome, cleanseSpecialBiome, sellSpecialGood } from "../systems/special-biome-state.js";
 import { resolveBiomeQuest, resolveBlightDecision } from "../systems/special-biome-couplings.js";
-import { refreshTransitionSurvey, renderExpeditionsPanel, stepTransitionSurvey } from "./expeditions-panel.js";
+import { refreshTransitionSurvey, refreshVegetationDensity, renderExpeditionsPanel, stepTransitionSurvey } from "./expeditions-panel.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { renderEndeavoursPanel } from "./endeavours-panel.js";
 import { startEndeavour, abandonEndeavour, setEndeavourFunding, setEndeavourOverseer } from "../systems/endeavours.js";
@@ -1187,6 +1187,21 @@ export function setupManagementUI(){
  });
  window.addEventListener("kac:special-biome-change",()=>{
   if(activePanel==="explore"&&!$("command-modal")?.classList.contains("hidden"))render(false);
+ });
+ // Density is derived from the living season. Refresh the small survey on the
+ // four seasonal boundaries instead of rebuilding the entire Explore panel or
+ // running a per-frame scan. Keep the reader's place and the 70-point list open.
+ window.addEventListener("kac:season-change",()=>{
+  if(activePanel!=="explore"||$("command-modal")?.classList.contains("hidden"))return;
+  const panel=$("command-panel-content");
+  if(!panel)return;
+  const details=panel.querySelector("[data-vegetation-density-section] details.vegetation-manifest");
+  const wasOpen=Boolean(details?.open);
+  const scrollTop=panel.scrollTop;
+  if(!refreshVegetationDensity(panel))return;
+  const next=panel.querySelector("[data-vegetation-density-section] details.vegetation-manifest");
+  if(next&&wasOpen)next.open=true;
+  panel.scrollTop=scrollTop;
  });
  window.addEventListener("resize",()=>{if(activePanel==="dynasty")drawDynastyConnectors();});
  document.querySelectorAll("[data-kac-panel]").forEach(button=>button.addEventListener("click",()=>{
