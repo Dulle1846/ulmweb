@@ -14,6 +14,7 @@ import { state } from '../core/state.js';
 import { distance } from '../core/utils.js';
 import { generateResourceGeography } from '../systems/resource-geography.js';
 import { ensureForestSuccession, resetForestSuccession } from '../systems/forest-succession.js';
+import { generateSpecialBiomes, paintSpecialBiomeTint } from '../systems/special-biome-state.js';
 
 export { normalizeWorldOptions, resolveWorldDimensions, seaLevelFor };
 
@@ -65,6 +66,18 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions, 
     generateResourceGeography(worldSeed);
     resetForestSuccession();
     ensureForestSuccession();
+    // The rare atlas is generated from the same seed and terrain samples as
+    // the normal biomes. It is a handful of regions plus one byte per tile, not
+    // a second tile-object graph.
+    generateSpecialBiomes(worldSeed, state.worldOptions, {
+        heights: state.heightMap,
+        moistures: state.moistureMap,
+        temperatures: state.temperatureMap,
+        resolution: state.terrainResolution,
+        pixW: state.terrainPixW,
+        pixH: state.terrainPixH,
+        W, H, sea: state.seaLevel,
+    });
 
     state.explored = [];
     for (let x = 0; x < W; x++) {
@@ -127,6 +140,9 @@ export function prerenderTerrain() {
     }
 
     tctx.putImageData(imageData, 0, 0);
+    // The rare biome tint is a low-resolution atlas stretched over the baked
+    // ground. It adds no per-pixel branch to the normal terrain palette.
+    paintSpecialBiomeTint(tctx, pixW, pixH);
     state.terrainCanvas = tc;
     state.terrainDirty = false;
 }

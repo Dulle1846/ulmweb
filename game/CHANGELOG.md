@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.15.0`
+**Current production version:** `3.16.0`
 **Next development line:** `3.20.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,35 @@
 **Last repository verification:** 2026-11-16 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.16.0 — Fantastic & Rare Biomes (development line)
+
+The world now carries a rare-biome atlas built from the same seed and terrain
+samples as the ordinary biomes. The requested 100-point fantastic-biome list is
+implemented as nine playable families plus eleven atlas/integration points; it is
+numbered **1.2.17** because **1.2.16** is already the shipped Winter Economy.
+
+- Nine families — Enchanted Wood, Crystal Land, Fungal Wilds, Blighted Land,
+  Glass Desert, Mist Moor, Ash Shadow, Hollow Depths and Magic Mountains — each
+  with its own terrain tint, five to nine landmark anchors, rare good, boon and
+  hazard.
+- At most twelve seeded regions per world, with satellite islets and a
+  one-byte tile lookup. No second tile-object graph, no per-tick tile scan and
+  no new O(n²) work.
+- Discovery is checked every 200 ticks against explored ground. Discovered
+  regions yield a rare good once per year; three units permanently attune a
+  region and double its yield. Blighted regions spread pressure and must be
+  cleansed before attunement.
+- A new Explore section exposes family progress, the rare-good ledger, real
+  sales for gold, Attune and Cleanse controls and a bounded atlas journal.
+- The tint is baked into the terrain surface at prerender; the landmark overlay
+  is culled and drawn only over explored tiles in the WebGL, cached and canvas
+  paths. At low zoom it degrades to a soft survey glow.
+- The block is additive on schema 11. Old saves get a freshly generated atlas;
+  saved discoveries, goods, attunement and blight pressure restore over it.
+- Verification: focused atlas suite **11/11**, full suite **1082/1082**, the
+  deterministic 25-year campaign, browser E2E and the production version check.
+  Full record: [docs/SPECIAL_BIOMES.md](docs/SPECIAL_BIOMES.md).
 
 ## 3.15.0 — The Endless Realm (development line)
 

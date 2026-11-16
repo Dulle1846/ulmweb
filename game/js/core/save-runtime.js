@@ -50,6 +50,7 @@ import { normalizeGovernment } from "../systems/government.js";
 import { normalizeRoyalState } from "../systems/royal-dynasty.js";
 import { restoreWinterState, serializeWinterState } from "../world/winter-economy.js";
 import { normalizeEndlessState } from "../systems/endless.js";
+import { restoreSpecialBiomeState, serializeSpecialBiomeState } from "../systems/special-biome-state.js";
 import { restoreHand } from "../systems/cards.js";
 import { resolveSavedTerrainVersion } from "../world/terrain-model.js";
 import { initWorld } from "../world/world.js";
@@ -230,6 +231,7 @@ export function createSaveSnapshot() {
         market: JSON.parse(JSON.stringify(state.market)),
         winter: serializeWinterState(),
         endless: JSON.parse(JSON.stringify(state.endless || {})),
+        specialBiomes: serializeSpecialBiomeState(),
         realmCycle: JSON.parse(JSON.stringify(state.realmCycle || createRealmCycleState())),
         court: JSON.parse(JSON.stringify(state.court || createCourtState())),
         nobility: JSON.parse(JSON.stringify(state.nobility || createNobilityState())),
@@ -462,6 +464,10 @@ export function restoreSaveSnapshot(snapshot) {
     state.nobility = normalizeNobilityState(snapshot.nobility);
     state.diplomacy = normalizeDiplomacySnapshot(snapshot.diplomacy);
     state.expeditions = normalizeExpeditionsState(snapshot.expeditions);
+    // initWorld has already generated the atlas for this seed. A save may carry
+    // the player's discoveries, rare goods and blight pressure; restore those
+    // over the generated baseline so older saves still get a complete atlas.
+    restoreSpecialBiomeState(snapshot.specialBiomes);
     if (Array.isArray(snapshot.explored) && snapshot.explored.length === (Number(state.worldW) || WORLD_W)) {
         state.explored = snapshot.explored;
     }

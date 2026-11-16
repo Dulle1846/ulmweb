@@ -51,6 +51,7 @@ import { updateCoastHazards } from "../world/coast-hazards.js";
 import { updateSnowHazards } from "../world/snow-hazards.js";
 import { updateWinterAnnual, updateWinterEconomy } from "../world/winter-economy.js";
 import { isEndlessEnabled, recoverEndlessMorale, updateEndlessRealm } from "../systems/endless.js";
+import { updateSpecialBiomes } from "../systems/special-biome-state.js";
 
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 const ANNUAL_SLICE_BUDGET_MS = 6;
@@ -197,6 +198,9 @@ function finishSimulationTick(newborn) {
     // Endless ages advance once per 25 years. A collapse is a recoverable
     // setback in an endless realm rather than a terminal game-over.
     updateEndlessRealm();
+    // Rare-biome discovery is checked every 200 ticks; yields and hazards
+    // settle once per year. The call itself is a couple of integer reads.
+    updateSpecialBiomes();
     // Procedural chronicle events are independent of the decision-bearing
     // issue inbox. They never open a modal or wait for the player; the bounded
     // timeline and presentation queue keep them off the simulation hot path.

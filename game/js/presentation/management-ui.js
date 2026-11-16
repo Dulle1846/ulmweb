@@ -6,6 +6,7 @@ import { getCourtSnapshot, appointMinister, dismissMinister, addressFactionDeman
 import { getNobilitySnapshot, grantNobleCharter, callNobleLevy } from "../systems/nobility.js";
 import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, declareWar, sueForPeace, appointEnvoy, recallEnvoy } from "../systems/diplomacy.js";
 import { startExpedition } from "../systems/expeditions.js";
+import { attuneSpecialBiome, cleanseSpecialBiome, sellSpecialGood } from "../systems/special-biome-state.js";
 import { renderExpeditionsPanel } from "./expeditions-panel.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { renderEndeavoursPanel } from "./endeavours-panel.js";
@@ -1116,6 +1117,9 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  if(a==="realm-cycle")r=resolveRealmCyclePetition(v);
  else if(a==="noble-charter")r=grantNobleCharter(v);
  else if(a==="noble-levy")r=callNobleLevy(v);
+ else if(a==="special-biome-attune")r=attuneSpecialBiome(v);
+ else if(a==="special-biome-cleanse")r=cleanseSpecialBiome(v);
+ else if(a==="special-good-sell")r=sellSpecialGood(v);
  else if(a==="expedition-start")r=startExpedition(v,$("expedition-leader-select")?.value,$("expedition-supply-select")?.value);
  else if(a==="endeavour-start")r=startEndeavour(v,{overseerId:$("endeavour-overseer-select")?.value||null,funding:endeavourFunding});
  else if(a==="endeavour-funding"){endeavourFunding=Math.max(0,Math.min(2,Number(v)||0));r={ok:true};}
@@ -1140,8 +1144,11 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a==="realm-cycle")toast(String(r.message||"PETITION ANSWERED").toUpperCase());
   else if(a.startsWith("noble-"))toast(String(r.message||"NOBLE HOUSE UPDATED").toUpperCase());
   else if(a.startsWith("expedition-"))toast(String(r.message||"ROYAL EXPEDITION UPDATED").toUpperCase());
+  else if(a==="special-good-sell")toast("RARE GOODS SOLD · "+(r.gold||0)+" GOLD");
+  else if(a.startsWith("special-biome-"))toast("RARE BIOME UPDATED");
   else if(a==="open-atelier")toast("ATELIER OPEN");
   else toast("DECISION RECORDED");
+  if(a.startsWith("special-"))window.dispatchEvent(new CustomEvent("kac:special-biome-change"));
   renderUI();render();
  }else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
 }
@@ -1170,6 +1177,9 @@ async function runAiCommand(kind){
 export function setupManagementUI(){
  ensureDynastyNetworkStyles();
  window.addEventListener("kac:expedition-change",()=>{
+  if(activePanel==="explore"&&!$("command-modal")?.classList.contains("hidden"))render(false);
+ });
+ window.addEventListener("kac:special-biome-change",()=>{
   if(activePanel==="explore"&&!$("command-modal")?.classList.contains("hidden"))render(false);
  });
  window.addEventListener("resize",()=>{if(activePanel==="dynasty")drawDynastyConnectors();});

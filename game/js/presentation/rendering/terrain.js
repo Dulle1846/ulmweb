@@ -4,6 +4,7 @@
 
 import { WORLD_W, WORLD_H, CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
+import { drawSpecialBiomeOverlay } from './special-biome-render.js';
 import { getHeightAt, getMoistureAt, getTemperatureAt, worldWidth, worldHeight } from '../../world/world.js';
 import { drawTerrainGL } from './terrain-webgl.js';
 import { flowerBloom, foliageState } from './seasonal-foliage.js';
@@ -99,6 +100,7 @@ export function drawTerrain(ctx) {
         // the settled view instead of blinking out of existence.
         drawOverlayDecorations(ctx, zoom, cam, canvas);
         drawGrasslandWindOverlay(ctx, zoom, cam, canvas);
+        drawSpecialBiomeOverlay(ctx, zoom, cam, canvas);
         return;
     }
 
@@ -107,11 +109,13 @@ export function drawTerrain(ctx) {
     // layer is rebuilt once after the view settles.
     if (drawCachedDecorations(ctx, zoom, cam, canvas)) {
         drawGrasslandWindOverlay(ctx, zoom, cam, canvas);
+        drawSpecialBiomeOverlay(ctx, zoom, cam, canvas);
         return;
     }
     if (state.terrainCanvasEl) state.terrainCanvasEl.style.opacity = "0";
     drawBakedGround(ctx, zoom, cam, canvas);
     drawFogOfWar(ctx, zoom, cam, canvas);
+    drawSpecialBiomeOverlay(ctx, zoom, cam, canvas);
 }
 
 function drawBakedGround(ctx, zoom, cam, canvas, quality = "high") {

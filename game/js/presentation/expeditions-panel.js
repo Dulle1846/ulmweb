@@ -3,6 +3,7 @@
 // this module never advances travel or pays loot itself.
 import { state } from "../core/state.js";
 import { getExpeditionSnapshot } from "../systems/expeditions.js";
+import { getSpecialBiomeSnapshot } from "../systems/special-biome-state.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -37,6 +38,44 @@ function siteCard(site, active, hasLeader) {
     return '<article class="expedition-site' + stateClass + '" data-expedition-site="' + esc(site.id) + '"><div class="expedition-site__head"><span class="expedition-glyph" aria-hidden="true">' + esc(site.glyph) + '</span><div><span class="expedition-kicker">' + esc(site.region) + ' · ' + esc(site.known ? site.typeLabel : "UNCHARTED") + '</span><h4>' + esc(site.name) + '</h4></div><span class="expedition-danger" aria-label="Danger ' + site.danger + ' of 3">' + danger(site.danger) + '</span></div><div class="expedition-site__meta"><span>DISTANCE<b>' + number(site.distance) + ' TILES</b></span><span>DANGER<b>' + site.danger + ' / 3</b></span><span>STATUS<b>' + esc(site.cleared ? "SURVEYED" : site.known ? "RUMOURED" : "UNCHARTED") + '</b></span></div><p class="expedition-site__note">' + esc(site.cleared ? "The principal find is already recorded. A second visit can still map the approaches and recover a smaller cache." : site.known ? "Tracks and old reports agree on this place. The party can be sent to recover what remains." : "Only a direction and a rumour. The first party to arrive will put the landmark on the royal map.") + '</p><button type="button" class="expedition-launch" data-command="expedition-start" data-value="' + esc(site.id) + '"' + (disabled ? " disabled" : "") + '>' + label + (active ? " · PARTY AWAY" : !hasLeader ? " · CHOOSE A LEADER" : "") + '</button></article>';
 }
 
+function rareGoodCard(good) {
+    const count = Number(good.count) || 0;
+    return '<article class="special-good' + (count ? " is-owned" : "") + '"><span class="special-good__glyph" aria-hidden="true">' + esc(good.glyph) + '</span><div><strong>' + esc(good.label) + '</strong><small>' + esc(good.where) + ' · ' + good.value + ' gold each</small></div><b>' + number(count) + '</b><button type="button" class="special-good__sell" data-command="special-good-sell" data-value="' + esc(good.id) + '"' + (count < 1 ? " disabled" : "") + '>SELL 1</button></article>';
+}
+
+function specialBiomeCard(region) {
+    const canAttune = region.discovered && !region.attuned && region.rareGood.count >= region.attuneCost && (region.family !== "blighted-land" || region.cleansed);
+    const canCleanse = region.family === "blighted-land" && region.discovered && !region.cleansed;
+    const attuneLabel = region.attuned ? "ATTUNED" : (region.rareGood.count < region.attuneCost ? "NEED " + region.attuneCost + " " + region.rareGood.label.toUpperCase() : "ATTUNE · " + region.attuneCost + " " + region.rareGood.label.toUpperCase());
+    const featureList = region.features.slice(0, 3).map(feature => feature.label).join(" · ");
+    return '<article class="special-biome-card" data-special-biome="' + esc(region.id) + '" style="--biome-accent:' + esc(region.accent) + ';--biome-glow:' + esc(region.glow) + '"><div class="special-biome-card__head"><span class="special-biome-glyph" aria-hidden="true">' + esc(region.glyph) + '</span><div><span class="special-biome-kicker">' + esc(region.familyKicker) + ' · ' + esc(region.variantLabel) + '</span><h4>' + esc(region.name) + '</h4><p>' + esc(region.climate) + ' · ' + number(region.distance) + ' TILES FROM THE HEART · ' + esc(region.resourceLabel) + '</p></div><span class="special-biome-status">' + (region.attuned ? "ATTUNED" : region.cleansed ? "CLEANSED" : "CHARTED") + '</span></div><p class="special-biome-card__lore">' + esc(region.boon) + '</p><div class="special-biome-card__meta"><span>YIELD<b>' + (region.richness * (region.attuned ? 2 : 1)).toFixed(0) + ' / YEAR</b></span><span>FAMILY<b>' + esc(region.familyLabel) + '</b></span><span>ATLAS<b>' + esc(region.features.length + " FEATURES") + '</b></span></div>' + (featureList ? '<p class="special-biome-card__features">' + esc(featureList) + '</p>' : '') + '<div class="special-biome-card__actions"><button type="button" class="special-biome-action" data-command="special-biome-attune" data-value="' + esc(region.id) + '"' + (canAttune ? "" : " disabled") + '>' + esc(attuneLabel) + '</button>' + (canCleanse ? '<button type="button" class="special-biome-action special-biome-action--cleanse" data-command="special-biome-cleanse" data-value="' + esc(region.id) + '">CLEANSE · 3 RESIN + 12 GOLD</button>' : '') + '</div>' + (region.family === "blighted-land" && !region.cleansed ? '<p class="special-biome-warning">BLIGHT PRESSURE ' + region.spread + ' / 6 · ' + esc(region.hazard) + '</p>' : '') + '</article>';
+}
+
+function specialBiomeSection() {
+    const snapshot = getSpecialBiomeSnapshot();
+    const regions = snapshot.regions.filter(region => region.discovered);
+    const cards = regions.length
+        ? regions.slice(0, 12).map(specialBiomeCard).join("")
+        : '<p class="command-note">No rare biome has entered the royal survey. Explore farther from the heart: the atlas hides nine families and one hundred distinct wonders in total.</p>';
+    const familyRows = Object.values(snapshot.regions.reduce((families, region) => {
+        if (!families[region.family]) families[region.family] = { label: region.familyLabel, total: 0, found: 0 };
+        families[region.family].total++;
+        if (region.discovered) families[region.family].found++;
+        return families;
+    }, {})).map(family => '<div class="special-family-row"><span>' + esc(family.label) + '</span><b>' + family.found + ' / ' + family.total + '</b></div>').join("");
+    const goods = snapshot.rareGoods.map(rareGoodCard).join("");
+    const history = snapshot.history.length
+        ? snapshot.history.slice(0, 6).map(entry => '<div class="special-history-row"><span>YEAR ' + entry.year + '</span><p>' + esc(entry.text) + '</p></div>').join("")
+        : '<p class="command-note">No rare-good trade or attunement has been recorded yet.</p>';
+    return '<div class="command-section-title">1.2.17 · FANTASTIC &amp; RARE BIOMES</div>' +
+        '<div class="special-biome-summary"><div><small>ATLAS WONDERS</small><strong>' + snapshot.manifestCount + '</strong></div><div><small>FAMILIES CHARTED</small><strong>' + snapshot.knownFamilies.length + ' / 9</strong></div><div><small>REGIONS FOUND</small><strong>' + snapshot.summary.discovered + ' / ' + snapshot.summary.total + '</strong></div><div><small>ATTUNED</small><strong>' + snapshot.summary.attuned + '</strong></div><div><small>RARE GOODS YIELDED</small><strong>' + number(snapshot.totalYield) + '</strong></div></div>' +
+        '<div class="special-biome-layout"><div><div class="command-section-title">RARE GOODS &amp; CROWN TRADE</div><div class="special-goods">' + goods + '</div><p class="command-note">Three units of a region\'s rare good permanently attune it. Goods can also be sold for gold; the price is real income, not a cosmetic counter.</p></div><div><div class="command-section-title">THE NINE FAMILIES</div><div class="special-family-list">' + familyRows + '</div><p class="command-note">Every family has its own terrain tint, landmarks, rare good, boon and hazard. Discovery is driven by exploring the map, not by a menu purchase.</p></div></div>' +
+        '<div class="command-section-title">CHARTED WONDERS</div><div class="special-biome-grid">' + cards + '</div>' +
+        '<div class="command-section-title">ROYAL ATLAS JOURNAL</div><div class="special-history">' + history + '</div>' +
+        '<p class="command-note">The atlas is bounded to twelve regions, a one-byte tile map and at most ten landmark anchors per region. Yields and hazards settle once a year; discovery checks every two hundred ticks. Blighted regions must be cleansed before they can be attuned.</p>';
+}
+
+
 export function renderExpeditionsPanel() {
     if (!state.hasStarted) {
         return intro("THE WILDS BEYOND THE WALLS", "Awaiting the realm", "Landmarks, leaders and supplies become available when a campaign begins.") +
@@ -61,5 +100,6 @@ export function renderExpeditionsPanel() {
         '<div class="command-section-title">THE EIGHT LANDMARKS</div><div class="expedition-grid">' + sites + '</div>' +
         '<div class="command-section-title">RETURNED REPORTS</div><div class="expedition-history">' + history + '</div>' +
         '<div class="command-section-title">FRAGMENTS & MAPS</div><div class="expedition-lore-list">' + lore + '</div>' +
+        specialBiomeSection() +
         '<p class="command-note">Expeditions are deliberately bounded: eight sites per world, one active party, 24 reports and 40 fragments. A cleared site can be surveyed again for a smaller cache, but its principal discovery is recorded only once.</p>';
 }

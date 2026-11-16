@@ -109,3 +109,47 @@
 .expedition-lore h4{margin:3px 0 4px;color:#263b52;font:bold 12px Georgia,serif}
 .expedition-lore p{margin:0;color:#675b49;font-size:8px;line-height:1.55}
 @media(max-width:640px){.expedition-controls{grid-template-columns:1fr}.expedition-site__meta{grid-template-columns:1fr 1fr}.expedition-active__days{font-size:19px}}
+
+/* 1.2.16 — rare biome atlas inside the Explore tab. */
+.special-biome-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:10px 0}
+.special-biome-summary>div{padding:8px;border:1px solid #b99a65;border-radius:6px;background:#fff5d8;text-align:center}
+.special-biome-summary small{display:block;color:#806d52;font:1000 6px/1.3 Arial,sans-serif;letter-spacing:.08em}
+.special-biome-summary strong{display:block;margin-top:3px;color:#263b52;font:bold 17px Georgia,serif}
+.special-biome-layout{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin:8px 0}
+.special-goods{display:grid;gap:4px}
+.special-good{display:grid;grid-template-columns:24px 1fr auto auto;align-items:center;gap:7px;padding:6px 7px;border:1px solid #c6ad7c;border-radius:6px;background:#f8ead2;color:#4e4437}
+.special-good.is-owned{border-left:4px solid #4e8a61;background:#eef5e7}
+.special-good__glyph{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#f1d99f;color:#5d4528;font:bold 12px Georgia,serif}
+.special-good strong{display:block;color:#263b52;font:bold 10px Georgia,serif}
+.special-good small{display:block;margin-top:2px;color:#756445;font-size:7px;line-height:1.3}
+.special-good>b{min-width:24px;color:#263b52;font:bold 12px Georgia,serif;text-align:right}
+.special-good__sell{min-height:24px;padding:2px 7px;border:1px solid #8a6a3f;border-radius:4px;background:#f7d67f;color:#493722;font:1000 6px Arial,sans-serif;letter-spacing:.06em;cursor:pointer}
+.special-good__sell:disabled{opacity:.4;cursor:not-allowed}
+.special-family-list{display:grid;gap:4px}
+.special-family-row{display:flex;justify-content:space-between;gap:8px;padding:5px 7px;border-bottom:1px solid #d3bc8e;color:#4e4437;font-size:8px}
+.special-family-row b{color:#2f6f88;font:bold 9px Georgia,serif}
+.special-biome-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:9px;margin-top:7px}
+.special-biome-card{padding:11px;border:2px solid var(--biome-accent,#ad8750);border-left-width:5px;border-radius:8px;background:linear-gradient(145deg,#fffaf0,#f1e6c9);color:#33463d;box-shadow:inset 0 1px #fff8}
+.special-biome-card__head{display:flex;align-items:flex-start;gap:8px}
+.special-biome-glyph{flex:0 0 32px;display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--biome-accent,#ad8750);border-radius:50%;background:var(--biome-glow,#f1d99f);color:#273d35;font:bold 17px Georgia,serif}
+.special-biome-card__head>div{min-width:0;flex:1}
+.special-biome-kicker{color:#8c5632;font:1000 6px/1.3 Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.special-biome-card h4{margin:2px 0;color:#203c58;font:bold 15px Georgia,serif}
+.special-biome-card__head p{margin:0;color:#756445;font-size:7px;line-height:1.4}
+.special-biome-status{flex:0 0 auto;padding:3px 5px;border:1px solid #9fbc8c;border-radius:3px;color:#3f6a4d;font:1000 6px Arial,sans-serif;letter-spacing:.06em;text-align:center}
+.special-biome-card__lore{margin:8px 0;color:#5c5548;font-size:8px;line-height:1.5}
+.special-biome-card__meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-bottom:6px}
+.special-biome-card__meta span{padding:5px;border:1px solid #cbb383;border-radius:4px;background:#f8ebcd;color:#806d52;font:1000 6px/1.3 Arial,sans-serif;letter-spacing:.05em}
+.special-biome-card__meta b{display:block;margin-top:2px;color:#263b52;font:bold 9px Georgia,serif;letter-spacing:0}
+.special-biome-card__features{margin:0 0 7px;color:#6e6853;font-size:7px;line-height:1.4}
+.special-biome-card__actions{display:flex;gap:5px;flex-wrap:wrap}
+.special-biome-action{min-height:26px;padding:3px 8px;border:1px solid #20374d;border-radius:4px;background:linear-gradient(#f7d67f,#d69a37);color:#24384d;font:1000 6px Arial,sans-serif;letter-spacing:.06em;cursor:pointer}
+.special-biome-action:disabled{opacity:.42;cursor:not-allowed}
+.special-biome-action--cleanse{border-color:#6f3b3b;background:linear-gradient(#e9b4a0,#bd6c5a);color:#3b2320}
+.special-biome-warning{margin:7px 0 0;color:#8a3f30;font:1000 7px/1.4 Arial,sans-serif;letter-spacing:.03em}
+.special-history{display:grid;gap:3px;margin-top:7px}
+.special-history-row{display:grid;grid-template-columns:62px 1fr;gap:7px;align-items:start;padding:6px 7px;border-bottom:1px solid #c8ad7d;color:#554a3a;font-size:8px}
+.special-history-row>span{color:#9b4a2a;font:1000 6px/1.4 Arial,sans-serif;letter-spacing:.08em}
+.special-history-row p{margin:0;color:#554a3a;font-size:8px;line-height:1.45}
+@media(max-width:760px){.special-biome-summary{grid-template-columns:1fr 1fr}.special-biome-layout{grid-template-columns:1fr}}
+@media(max-width:480px){.special-biome-summary{grid-template-columns:1fr}.special-biome-grid{grid-template-columns:1fr}.special-biome-card__meta{grid-template-columns:1fr}}
