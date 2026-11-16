@@ -5,6 +5,7 @@ import { state } from "../core/state.js";
 import { getExpeditionSnapshot } from "../systems/expeditions.js";
 import { getSpecialBiomeSnapshot } from "../systems/special-biome-state.js";
 import { getTransitionSurvey, transitionAt, transitionGameplayFor } from "../world/transition-biomes.js";
+import { getVegetationDensitySurvey, VEGETATION_REQUIREMENTS } from "../world/vegetation-density.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -225,7 +226,45 @@ export function refreshTransitionSurvey(root = document) {
     const section = root?.querySelector?.("[data-transition-biome-section]");
     if (!section) return false;
     section.innerHTML = transitionBiomeSection();
+    const density = root?.querySelector?.("[data-vegetation-density-section]");
+    if (density) density.innerHTML = vegetationDensitySection();
     return true;
+}
+
+export function refreshVegetationDensity(root = document) {
+    const section = root?.querySelector?.("[data-vegetation-density-section]");
+    if (!section) return false;
+    section.innerHTML = vegetationDensitySection();
+    return true;
+}
+
+function vegetationDensitySection() {
+    const focus = surveyFocus || {
+        x: Math.floor((Number(state.worldW) || 1) / 2),
+        y: Math.floor((Number(state.worldH) || 1) / 2),
+    };
+    const survey = getVegetationDensitySurvey(focus.x + 0.5, focus.y + 0.5, { exact: true, radius: 8 });
+    const sample = survey.sample;
+    const percent = value => Math.round((Number(value) || 0) * 100) + "%";
+    const bandCells = survey.bands.map((entry, index) => entry
+        ? '<span class="vegetation-band is-present" style="--veg-band:' + esc(entry.colour) + '" data-vegetation-band="' + index + '"><b>' + (index + 1) + '</b><small>' + esc(entry.label) + '</small><em>' + Math.round(entry.density * 100) + '%</em></span>'
+        : '<span class="vegetation-band is-empty" data-vegetation-band="' + index + '"><b>' + (index + 1) + '</b><small>not nearby</small><em>—</em></span>').join("");
+    const drivers = sample ? sample.drivers.map(driver => '<span data-vegetation-driver="' + esc(driver.id) + '">' + esc(driver.labelDe || driver.label) + ' <b>' + (typeof driver.value === "number" ? percent(driver.value) : esc(driver.value)) + '</b></span>').join("") : "";
+    const effects = sample ? sample.effects.map(effect => '<span data-vegetation-effect="' + esc(effect.id) + '">' + esc(effect.labelDe || effect.label) + ' <b>' + percent(effect.value) + '</b></span>').join("") : "";
+    const pointRows = VEGETATION_REQUIREMENTS.map(entry => '<span class="' + (sample?.requirements?.includes(Number(entry.id.split(".").pop())) ? "is-active" : "") + '" data-vegetation-point="' + esc(entry.id) + '">' + esc(entry.id) + ' · ' + esc(entry.labelDe) + '</span>').join("");
+    const sampleStrip = survey.bands.filter(Boolean).slice(0, 5).map(entry => '<span data-vegetation-sample="' + entry.x + ':' + entry.y + '"><b>' + esc(entry.label) + '</b><small>' + entry.x + ' · ' + entry.y + ' · ' + Math.round(entry.density * 100) + '%</small></span>').join("");
+    const focusLabel = sample ? sample.labelDe + ' · ' + sample.habitatLabelDe : 'Keine Vegetation';
+    return '<div class="command-section-title">1.2.18 · VEGETATIONSDICHTE IM BIOM</div>' +
+        '<div class="vegetation-summary"><div><small>MANIFEST</small><strong>' + survey.manifestCount + '</strong></div><div><small>DICHTESTUFEN</small><strong>' + survey.bandCount + '</strong></div><div><small>AKTIV AM TILE</small><strong>' + (sample?.activeCount || 0) + ' / 70</strong></div><div><small>HABITAT</small><strong>' + esc(sample?.habitatLabelDe || "—") + '</strong></div></div>' +
+        '<article class="vegetation-survey" data-vegetation-density="' + (sample?.band ?? 0) + '" data-vegetation-tile="' + focus.x + ':' + focus.y + '">' +
+        '<div class="vegetation-survey__head"><div><span class="special-biome-kicker">LOKALE DICHTE · STUFE ' + ((sample?.band ?? 0) + 1) + ' / 5</span><h4>' + esc(focusLabel) + '</h4><p>' + (sample ? 'Zusammenhängende Gruppen, Lücken und Inseln bei ' + Math.round(sample.density * 100) + '% Dichte. Kronen ' + Math.round(sample.canopy * 100) + '%, Unterholz ' + Math.round(sample.understory * 100) + '%, Licht ' + Math.round(Number(sample.drivers?.find(driver => driver.id === "sunlight")?.value || 0) * 100) + '%.' : 'Keine Vegetationsdichte an diesem Tile.') + '</p></div><div class="vegetation-survey__density"><b>' + Math.round((sample?.density || 0) * 100) + '%</b><small>DICHTE</small></div></div>' +
+        '<div class="vegetation-bands">' + bandCells + '</div>' +
+        '<div class="vegetation-focus"><small>SURVEY TILE</small><strong>' + focus.x + ' · ' + focus.y + '</strong><span>PREV/NEXT oben steuert auch diese Probe.</span></div>' +
+        '<div class="vegetation-drivers">' + drivers + '</div>' +
+        '<div class="vegetation-effects">' + effects + '</div>' +
+        '<div class="vegetation-samples">' + sampleStrip + '</div>' +
+        '<details class="vegetation-manifest"><summary>ALLE 70 PUNKTE · 1.2.18.1–70</summary><div class="vegetation-point-grid">' + pointRows + '</div><p class="command-note">Die aktiven Punkte sind am gewählten Tile farbig. Jede Dichtestufe, Gruppe, Lichtung, Wüsten-, Wasser-, Steuerungs-, Gameplay- und LOD-Anforderung ist im deterministischen Profil und im Renderer verdrahtet.</p></details>' +
+        '</article>';
 }
 
 function specialBiomeSection() {
@@ -280,6 +319,7 @@ export function renderExpeditionsPanel() {
         '<div class="command-section-title">RETURNED REPORTS</div><div class="expedition-history">' + history + '</div>' +
         '<div class="command-section-title">FRAGMENTS & MAPS</div><div class="expedition-lore-list">' + lore + '</div>' +
         '<section class="transition-biome-section" data-transition-biome-section>' + transitionBiomeSection() + '</section>' +
+        '<section class="vegetation-density-section" data-vegetation-density-section>' + vegetationDensitySection() + '</section>' +
         specialBiomeSection() +
         '<p class="command-note">Expeditions are deliberately bounded: eight sites per world, one active party, 24 reports and 40 fragments. A cleared site can be surveyed again for a smaller cache, but its principal discovery is recorded only once.</p>';
 }

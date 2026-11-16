@@ -13,6 +13,7 @@ import { volcanoWorkUseAt, volcanoWorkAt } from "../world/volcano-works.js";
 import { volcanoProfileAt } from "../world/volcano-ecology.js";
 import { snowProfileAt } from "../world/snow-ecology.js";
 import { transitionMovementFactorAt } from "../world/transition-biomes.js";
+import { vegetationMovementFactorAt } from "../world/vegetation-density.js";
 
 const VERSION=1;
 
@@ -565,8 +566,12 @@ export function getForestMovementFactorAt(x, y) {
 export function getRouteMovementFactorAt(x, y) {
     const base = terrainMovementFactorAt(x, y);
     const transition = transitionMovementFactorAt(x, y);
-    if (transition === 1) return base;
-    return clamp(base * transition, 0.25, 1.08);
+    // 1.2.18: a dense understory is a real route cost. Residents keep the
+    // historical terrain factor; only expedition/caravan routes read this
+    // small additional multiplier, so household errands and the long campaign
+    // remain stable.
+    const vegetation = vegetationMovementFactorAt(x, y);
+    return clamp(base * transition * vegetation, 0.25, 1.08);
 }
 
 // Combat and tactical travel ask for the compact jungle navigation profile.

@@ -9,6 +9,45 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
+## 1.2.18 — Vegetation Density (development line)
+
+The world now varies vegetation density inside a biome instead of treating each
+habitat as one uniform surface. The complete `1.2.18.1–70` manifest is carried by
+a deterministic local profile, not by a painted texture.
+
+- `js/world/vegetation-density.js` combines three warped, world-anchored noise
+  scales with the existing forest, grass, desert, wetland and land-use state. It
+  yields five density bands, coherent groups, gaps, clearings, islands, age and
+  disturbance structure, biome-specific habitats and bounded gameplay values.
+- The terrain renderer applies the profile to the existing stand and sward
+  objects: tree chance, canopy, clearing, understory, deadwood, tree height,
+  grass height/density, bloom, shrub patches, colour and ground tint. Desert
+  vegetation density and swamp reed counts read the same overlay. Camera LOD
+  remains on the existing detail/tree lattices and is capped at three crowns per
+  tile.
+- All requested drivers are read from existing state: soil, water, light,
+  competition, age, season, browsing, grazing, logging, fire, disease/pests and
+  regeneration. No per-tile save array and no extra tick loop are added.
+- Sight, movement, cover, concealment, hunting, wood/forage, fire risk,
+  agricultural usability and animal habitat are exposed as one compact profile.
+  Forest gathering applies its plant/food yield and hunting values while timber
+  keeps its established stock contract; expedition routes apply its movement
+  factor; field harvest applies its small agricultural factor. Resident errands
+  keep their historical timing.
+- Explore now contains a `1.2.18` survey with the active band, density, canopy,
+  understory, light, habitat, driver/effect chips, a five-band nearest-sample
+  strip and the complete 70-point manifest. PREV/NEXT on the ecotone survey also
+  refreshes this density probe.
+- Verification: focused density suite **9/9**, existing forest-gathering,
+  pressure, insect, jungle and transition suites **38/38** together; full suite
+  **1111/1111** plus syntax/import/UI checks over 174 source files. The 25-year
+  campaign completed at **10,040 ticks / 0.754 ms per tick**; the 60-year
+  endurance run completed at **24,040 ticks / 0.796 ms per tick** with save
+  round-trips. The terrain browser reference rebuilt all **34 frames** (four
+  seasons, four zoom levels, season transitions and the tree-year grove) on
+  seed `20261104`.
+- Full design and consumer map: [docs/VEGETATION_DENSITY.md](docs/VEGETATION_DENSITY.md).
+
 ## 1.2.17 — Transition Biomes (development line)
 
 The world now has a real ecotone layer between its habitats. The requested

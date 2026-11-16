@@ -10,6 +10,7 @@ import { recordResourceMovement } from "./goods-book.js";
 import { getBuildingEfficiency, getWorkforceSnapshot } from "./economy.js";
 import { ECONOMY_TUNING, getHarvestYieldFactor } from "./economy-cycle.js";
 import { transitionGameplayAt } from "../world/transition-biomes.js";
+import { vegetationDensityAt } from "../world/vegetation-density.js";
 
 export const FIELD_STAGES = Object.freeze(["fallow", "sown", "growing", "ripe", "harvested"]);
 export const FIELD_LABELS = Object.freeze({
@@ -161,7 +162,13 @@ export function ecotoneHarvestFactor(farm) {
     if (!Number.isFinite(Number(farm?.x)) || !Number.isFinite(Number(farm?.y))) return 1;
     if (!state.heightMap || !Number(state.terrainPixW) || !Number(state.terrainPixH)) return 1;
     const gameplay = transitionGameplayAt(Number(farm.x) + 0.5, Number(farm.y) + 0.5);
-    return Math.max(0.75, Math.min(1.30, 1 + (Number(gameplay?.farm) || 0)));
+    // 1.2.18: the same density profile that draws the field margin also prices
+    // how easily it can be worked. A dense, scrubby or waterlogged margin
+    // reduces the harvest; an open, soil-rich clearing improves it slightly.
+    // The effect is deliberately small so the realm economy stays stable.
+    const vegetation = vegetationDensityAt(Number(farm.x) + 0.5, Number(farm.y) + 0.5);
+    const densityFactor = 0.995 + vegetation.agriculture * 0.01;
+    return Math.max(0.75, Math.min(1.30, (1 + (Number(gameplay?.farm) || 0)) * densityFactor));
 }
 
 function recoverSoil(field, amount) {

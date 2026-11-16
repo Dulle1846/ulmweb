@@ -49,6 +49,7 @@ import { forestFaunaAt, forestFaunaSignAt, forestInsectAt } from '../../systems/
 import { forestMistFactor, solarVector } from './daylight.js';
 import { drawTropicalBamboo, drawTropicalFloor, drawTropicalPalm, drawTropicalTree, drawTropicalUnderstory } from './tropical-render.js';
 import { drawJungleUnderstory } from './jungle-render.js';
+import { vegetationDensityAt, vegetationForestStand, vegetationGrassProfile } from '../../world/vegetation-density.js';
 
 const worldW = () => Number(state.worldW) || WORLD_W;
 const worldH = () => Number(state.worldH) || WORLD_H;
@@ -1085,7 +1086,8 @@ function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayO
     const definition = FOREST_SPECIES[stand?.forest ? pickSpecies(stand, s3) : 'oak'] || FOREST_SPECIES.oak;
     const treeForm = stand?.forest ? forestTreeForm(stand, s2) : null;
     const ageScale = treeForm?.ageScale ?? (stand?.forest ? Math.max(0.55, Number(stand.ageScale) || 1) : 1);
-    const heightScale = treeForm?.heightScale || 1;
+    const heightScale = (treeForm?.heightScale || 1)
+        * Math.max(0.9, Math.min(1.1, Number(stand?.vegetationHeight) || 1));
     const crownScale = treeForm?.crownScale || 1;
     const trunkScale = treeForm?.trunkScale || 1;
     const sway = Math.sin(tick * 0.045 + s2 * 13) * Math.min(1.2, s * 0.9) * windMultiplier()
@@ -1509,6 +1511,21 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             });
             if (stand) stand = transitionForestStand(stand, transition);
             grass = transitionGrassProfile(grass, transition);
+            // 1.2.18: a second, purely local layer shapes density inside the
+            // habitat. It reads the same stand/sward/land-use objects the
+            // renderer already has, so this adds no extra ecosystem query and
+            // no per-tile state. The profile feeds both the drawn layers and
+            // the survey/gameplay helpers below.
+            if (stand || grass) {
+                const density = vegetationDensityAt(x + 0.5, y + 0.5, {
+                    seed: Number(state.worldSeed) || 1, year: Number(state.year) || 1,
+                    dayOfYear, climate: climateKey, seaLevel: sea,
+                    height: h, moisture: m, temperature: temp, zoom,
+                    stand, grass, use: grassContext?.use || null,
+                });
+                if (stand) stand = vegetationForestStand(stand, density);
+                if (grass) grass = vegetationGrassProfile(grass, density);
+            }
             const meadowTree = Boolean(treeSample && grass && grass.treeChance > 0 && s1 < grass.treeChance);
             if (!potentialForest && !meadowTree && !detail) continue;
 
@@ -1533,7 +1550,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                     // extra copies are deterministic per tile and stay inside the
                     // tile, so panning cannot reveal or hide a tree. At landscape
                     // distance a single LOD tree is enough and much cheaper.
-                    const copies = distant ? 1 : forestTreeCopies(stand);
+                    const copies = distant ? 1 : Math.max(1, Math.min(3,
+                        Math.round(forestTreeCopies(stand) * (0.82 + (stand.vegetation?.lod || 1) * 0.24))));
                     for (let copy = 0; copy < copies; copy++) {
                         const spread = copy === 0 ? 0 : cellPx * 0.24;
                         const ox = copy === 0 ? 0 : (copy === 1 ? (s2 - 0.5) * spread : (s3 - 0.5) * -spread);
@@ -1930,7 +1948,8 @@ function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, d
 
 function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0, species = "oak", climateKey = "temperate", ageScale = 1, stand = null, treeForm = null) {
     const definition = FOREST_SPECIES[species] || FOREST_SPECIES.oak;
-    const heightScale = treeForm?.heightScale || 1;
+    const heightScale = (treeForm?.heightScale || 1)
+        * (stand?.forest ? Math.max(0.86, Math.min(1.14, Number(stand.vegetationHeight) || 1)) : 1);
     const trunkScale = treeForm?.trunkScale || 1;
     const crownScale = treeForm?.crownScale || 1;
     const foliage = foliageState(dayOfYear, { seed, species, climate: climateKey });
@@ -2846,19 +2865,23 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, cli
     // blend across tile borders.
     ctx.globalAlpha = 0.4 + stand.ground.litter * 0.22;
     const coniferFloor = stand.coniferShare > 0.45;
-    const rawPalette = stand.tropical
+    const rawPalette = (stand.tropical
         ? ["#2f4c2d", "#3b5d32", "#4c4a2a", "#2a3d26", "#5a5632"]
         : coniferFloor
         ? (turn > 0.5 ? ["#59402a", "#75512f", "#8b6538", "#4d3826", "#6d5a3b"]
             : ["#4a3e2c", "#665033", "#7a5a37", "#3f4c35", "#8b7447"])
         : turn > 0.42 ? ["#704b2b", "#986130", "#8c7138", "#5d472b", "#a8793a"]
-            : ["#4c6538", "#70733a", "#57462d", "#7a5b36", "#617b40"];
+            : ["#4c6538", "#70733a", "#57462d", "#7a5b36", "#617b40"]);
     // Dense interiors are genuinely darker. This is a palette shift, not a
     // translucent disc per tile, so it cannot expose the ground lattice.
     const gloom = Math.max(0, Math.min(0.42, (0.58 - (Number(stand.visibility) || 0.7)) * 0.8));
-    const palette = gloom > 0.01
-        ? rawPalette.map(color => mixHex(color, "#17251b", gloom))
+    const densityTint = stand.vegetation?.tint;
+    const tintedPalette = densityTint
+        ? rawPalette.map(color => mixHex(color, densityTint, 0.12 + (Number(stand.vegetation?.density) || 0) * 0.10))
         : rawPalette;
+    const palette = gloom > 0.01
+        ? tintedPalette.map(color => mixHex(color, "#17251b", gloom))
+        : tintedPalette;
     // Fifteen, not nineteen, litter marks: the removed four were always covered
     // by neighbours at normal zoom and cost a path fill per tile.
     for (let i = 0; i < 15; i++) {
@@ -4416,7 +4439,8 @@ export function drawGrassland(ctx, px, py, cellPx, profile, s1, s2, s3, tick, zo
     const tall = profile.sward.tall;
     const medium = profile.sward.medium;
     const useScale = use.overgrazed ? 0.34 : use.grazed ? 0.48 : use.mowed ? 0.54 : use.trampled ? 0.28 : 1;
-    const bladeCount = Math.max(2, Math.min(8, Math.round(3 + density * 5)));
+    const localGap = Math.max(0, Math.min(0.7, Number(profile.vegetation?.gap) || 0));
+    const bladeCount = Math.max(2, Math.min(8, Math.round((3 + density * 5) * (1 - localGap * 0.3))));
     const phase = profile.visual.phase;
     const grassList = profile.grasses.length ? profile.grasses : [{ colours: [profile.grassHex, profile.grassHex] }];
     ctx.save();
@@ -4443,7 +4467,8 @@ export function drawGrassland(ctx, px, py, cellPx, profile, s1, s2, s3, tick, zo
         const bladePhase = phase + index * 1.37 + py * 0.01;
         const wave = Math.sin(tick * 0.0024 + bladePhase + (px + py) * 0.006);
         const sway = wave * profile.visual.windSway * 2.7 * s;
-        const heightScale = tall ? 1 : medium ? 0.78 : 0.56;
+        const heightScale = (tall ? 1 : medium ? 0.78 : 0.56)
+            * Math.max(0.7, Math.min(1.3, Number(profile.vegetation?.heightScale) || 1));
         const bladeHeight = (3.4 + (index % 4) * 1.25) * s * heightScale * useScale;
         const baseY = py + 2.8 * s + (index % 2) * 0.8 * s;
         const offset = (index - (bladeCount - 1) / 2) * 1.28 * s;

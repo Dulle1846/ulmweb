@@ -82,7 +82,11 @@ function drawReeds(ctx, px, py, cellPx, s, profile, roll, tick, fineDetail = tru
     const swayAmount = clamp01(profile.visual?.reedSway);
     const sway = Math.sin((Number(tick) || 0) * 0.0015 + px * 0.09 + py * 0.07) * (1.2 + swayAmount * 2.6) * s;
     const stem = colour(profile.visual?.reedHex, "#7f8a55");
-    const count = Math.min(fineDetail ? 7 : 3, 2 + reeds.length + sedges.length * 2);
+    const density = profile.vegetation?.densityOverlay;
+    if (density?.openWater) return;
+    const densityReed = Math.max(0, Math.min(1, Number(density?.reed) || 0));
+    const count = Math.max(1, Math.min(fineDetail ? 9 : 4,
+        Math.round((2 + reeds.length + sedges.length * 2) * (0.55 + densityReed * 0.8))));
     ctx.lineWidth = Math.max(0.4, 0.55 * s);
     for (let index = 0; index < count; index++) {
         const sedge = index % 2 === 1 && sedges.length;

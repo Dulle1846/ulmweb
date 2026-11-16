@@ -33,6 +33,7 @@ import {
 } from "../world/mountain-works.js";
 import { grasslandUseAt } from "./grassland-use.js";
 import { transitionGameplayAt } from "../world/transition-biomes.js";
+import { vegetationDensityAt } from "../world/vegetation-density.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import {
     findNearestResourceNode, getResourceNodeAt, getResourceSiteAt, harvestForest,
@@ -186,6 +187,14 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
     const snow = forestSnowDepthAt(stand, day, climate);
     const tropicalPenalty = Number(stand.tropical?.hazard?.workPenalty) || 0;
     const junglePenalty = Number(stand.jungle?.hazards?.workPenalty) || 0;
+    // 1.2.18: the same local density the terrain draws now prices work, sight,
+    // cover, concealment and hunting. Dense undergrowth slows a visit; an open
+    // woodland edge is easier to work and offers a clearer shot.
+    const vegetation = vegetationDensityAt(x + 0.5, y + 0.5, {
+        seed: Number(state.worldSeed) || 1, year: Number(state.year) || 1,
+        dayOfYear: day, climate, height: terrainHeight, moisture, temperature,
+        stand, use: grasslandUseAt(x, y),
+    });
     const workFactor = clamp(1 - snow.depth * 0.38 - (1 - (Number(stand.visibility) || 0)) * 0.12
         - tropicalPenalty * 0.55 - junglePenalty * 0.22, 0.3, 1);
     return {
@@ -193,6 +202,12 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
         snowDepthCm: snow.cm,
         visibility: Number(stand.visibility) || 0,
         workFactor,
+        vegetation,
+        sight: vegetation.sight,
+        movement: vegetation.movement,
+        cover: vegetation.cover,
+        concealment: vegetation.concealment,
+        huntFactor: clamp(0.76 + vegetation.hunting * 0.3, 0.76, 1.06),
         hazard: stand.tropical?.hazard
             ? { ...stand.tropical.hazard, ...(stand.jungle?.hazards || {}) }
             : stand.jungle?.hazards || null,
@@ -309,8 +324,13 @@ export function gatherForestProducts(x, y, options = {}) {
     let spoiledTotal = 0;
     const workFactor = clamp(number(products.workFactor, 1), 0.45, 1);
     const ecotoneFactor = ecotoneGatherFactor(products.x, products.y, "forest");
+    const vegetationFactor = clamp(number(products.vegetation?.yield, 1), 0.74, 1.12);
+    const huntFactor = clamp(number(products.huntFactor, 1), 0.76, 1.06);
     for (const good of candidates) {
-        let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor * ecotoneFactor));
+        // Timber keeps the historical stock contract; the local density shapes
+        // the gathered plant/food abundance and the distinct hunting factor.
+        const densityYield = good.category === "wood" ? 1 : vegetationFactor;
+        let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor * ecotoneFactor * densityYield));
         const perishable = good.category === "gather" || good.category === "hunt";
         const spoiled = perishable ? Math.min(amount, Math.floor(amount * spoilage * 0.35)) : 0;
         if (spoiled > 0) { amount -= spoiled; spoiledTotal += spoiled; }
@@ -322,7 +342,7 @@ export function gatherForestProducts(x, y, options = {}) {
             amount = taken;
         } else if (good.category === "hunt") {
             if (!hunt) continue;
-            amount = good.id === "game" ? Math.max(1, hunt.taken * 2) : Math.max(1, Math.ceil(hunt.taken / 2));
+            amount = Math.max(1, Math.round((good.id === "game" ? Math.max(1, hunt.taken * 2) : Math.max(1, Math.ceil(hunt.taken / 2))) * huntFactor));
             quality = hunt.quality;
         }
         const accepted = addStock(ledger, good.id, amount, quality);
@@ -349,6 +369,19 @@ export function gatherForestProducts(x, y, options = {}) {
         hunt: hunt ? { species: hunt.species, label: hunt.label, taken: hunt.taken, quality: hunt.quality } : null,
         workFactor,
         ecotoneFactor,
+        vegetation: {
+            density: products.vegetation?.density,
+            band: products.vegetation?.band,
+            habitat: products.vegetation?.habitat,
+            sight: products.vegetation?.sight,
+            movement: products.vegetation?.movement,
+            cover: products.vegetation?.cover,
+            concealment: products.vegetation?.concealment,
+            hunting: products.vegetation?.hunting,
+            yield: products.vegetation?.yield,
+            requirements: products.vegetation?.requirements,
+        },
+        vegetationFactor,
         spoilage,
         spoiled: spoiledTotal,
         exposure,

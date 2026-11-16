@@ -144,6 +144,44 @@
 @media(max-width:560px){.transition-survey__target{align-items:flex-start}.transition-survey__steppers{width:100%;justify-content:space-between}.transition-survey__step{flex:1 1 0;min-height:32px}.transition-survey__count{flex:0 0 34px}.transition-gameplay span{flex:1 1 calc(33.333% - 4px);min-width:0;text-align:center}}
 @media(max-width:480px){.transition-summary{grid-template-columns:1fr}.transition-pair-list{grid-template-columns:1fr}.transition-survey{flex-direction:column}.transition-survey__swatches{flex-direction:row}.transition-survey__swatches i{min-height:12px}}
 
+/* 1.2.18 — vegetation density inside a biome. */
+.vegetation-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:10px 0}
+.vegetation-summary>div{padding:8px;border:1px solid #9fa979;border-radius:6px;background:#f1f4df;text-align:center}
+.vegetation-summary small{display:block;color:#687253;font:1000 6px/1.3 Arial,sans-serif;letter-spacing:.08em}
+.vegetation-summary strong{display:block;margin-top:3px;color:#263b52;font:bold 15px Georgia,serif}
+.vegetation-survey{padding:12px;border:2px solid #88996b;border-left:6px solid var(--veg-band,#5c7d43);border-radius:9px;background:linear-gradient(135deg,#f7f2da,#edf3dd 58%,#e9eed3);color:#33463d;box-shadow:inset 0 1px #fff9}
+.vegetation-survey__head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.vegetation-survey h4{margin:3px 0 4px;color:#203c58;font:bold 16px Georgia,serif}
+.vegetation-survey p{margin:0;color:#5c5a47;font-size:8px;line-height:1.5}
+.vegetation-survey__density{flex:0 0 56px;padding:6px;border:1px solid #93a273;border-radius:7px;background:#f8f3dc;text-align:center}
+.vegetation-survey__density b{display:block;color:#2f5e42;font:bold 16px Georgia,serif}
+.vegetation-survey__density small{display:block;margin-top:2px;color:#6b7557;font:1000 6px Arial,sans-serif;letter-spacing:.08em}
+.vegetation-bands{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:9px 0}
+.vegetation-band{display:flex;flex-direction:column;gap:2px;min-width:0;padding:5px;border:1px solid #b5bd93;border-radius:5px;background:#f8f3dc}
+.vegetation-band.is-present{border-color:var(--veg-band,#5c7d43);box-shadow:inset 0 3px var(--veg-band,#5c7d43)}
+.vegetation-band.is-empty{opacity:.56}
+.vegetation-band b{color:#2f5e42;font:bold 11px Georgia,serif}
+.vegetation-band small{overflow:hidden;color:#687253;font:1000 5.5px Arial,sans-serif;letter-spacing:.04em;text-overflow:ellipsis;white-space:nowrap}
+.vegetation-band em{margin-top:auto;color:#4d6243;font:bold 7px Georgia,serif;font-style:normal}
+.vegetation-focus{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;margin-top:7px;padding-top:7px;border-top:1px dashed #b9c19b}
+.vegetation-focus small{color:#6b7557;font:1000 6px Arial,sans-serif;letter-spacing:.08em}
+.vegetation-focus strong{color:#2f5e42;font:bold 11px Georgia,serif}
+.vegetation-focus span{color:#77735a;font-size:7px}
+.vegetation-drivers,.vegetation-effects{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.vegetation-drivers span,.vegetation-effects span{padding:4px 6px;border:1px solid #a8b68d;border-radius:5px;background:#f8f3dc;color:#6b7557;font:1000 6px/1.25 Arial,sans-serif;letter-spacing:.04em}
+.vegetation-effects span{border-color:#9db08a;background:#f1f5df}
+.vegetation-drivers b,.vegetation-effects b{display:block;margin-top:2px;color:#2f5e42;font:bold 9px Georgia,serif;letter-spacing:0}
+.vegetation-samples{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:8px}
+.vegetation-samples span{display:block;min-width:0;padding:4px 5px;border:1px solid #bdc59d;border-radius:5px;background:#fff8e4}
+.vegetation-samples b{display:block;overflow:hidden;color:#355640;font:bold 7px Georgia,serif;text-overflow:ellipsis;white-space:nowrap}
+.vegetation-samples small{display:block;margin-top:2px;color:#77735a;font:6px Arial,sans-serif}
+.vegetation-manifest{margin-top:8px;padding:8px 9px;border:1px solid #b9a577;border-radius:7px;background:#fff7df}
+.vegetation-manifest summary{cursor:pointer;color:#7a4b2e;font:1000 7px Arial,sans-serif;letter-spacing:.08em}
+.vegetation-point-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;margin-top:7px}
+.vegetation-point-grid span{padding:3px 4px;border-bottom:1px solid #e3d4ae;color:#6d6752;font-size:6.5px;line-height:1.3}
+.vegetation-point-grid span.is-active{color:#2e5f3e;background:#eaf2d7;font-weight:bold}
+@media(max-width:760px){.vegetation-summary{grid-template-columns:1fr 1fr}.vegetation-point-grid{grid-template-columns:1fr}.vegetation-samples{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.vegetation-band small{font-size:5px}.vegetation-bands{gap:3px}.vegetation-survey__head{flex-direction:column}.vegetation-survey__density{flex:0 0 auto;width:100%;display:flex;align-items:baseline;justify-content:center;gap:5px}.vegetation-survey__density b{font-size:14px}.vegetation-samples{grid-template-columns:1fr 1fr}}
 /* 1.2.16 — rare biome atlas inside the Explore tab. */
 .special-biome-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:10px 0}
 .special-biome-summary>div{padding:8px;border:1px solid #b99a65;border-radius:6px;background:#fff5d8;text-align:center}
