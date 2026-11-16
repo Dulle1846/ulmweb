@@ -13,7 +13,7 @@
 import { state } from "../core/state.js";
 import { seasonalState } from "./season.js";
 
-export const VEGETATION_DENSITY_VERSION = 1;
+export const VEGETATION_DENSITY_VERSION = 2;
 
 export const VEGETATION_REQUIREMENTS = Object.freeze([
     { id: "1.2.18.1", key: "very-sparse", label: "Very low vegetation density", labelDe: "Sehr geringe Vegetationsdichte", group: "density" },
@@ -90,6 +90,57 @@ export const VEGETATION_REQUIREMENTS = Object.freeze([
 
 export const VEGETATION_REQUIREMENT_IDS = Object.freeze(VEGETATION_REQUIREMENTS.map(entry => entry.id));
 const REQUIREMENT_BY_ID = Object.freeze(Object.fromEntries(VEGETATION_REQUIREMENTS.map(entry => [entry.id, entry])));
+
+// These are deliberately not numbered requirements. They are the extra
+// structure measurements that make the seventy-point manifest inspectable in
+// the field: how closed the canopy is, how much deadwood lies on the floor,
+// whether a tile is a core or an edge, and how local relief shapes the site.
+// The survey renders them next to the official points, so “more depth” is
+// visible data rather than another label without a consumer.
+export const VEGETATION_STRUCTURE_FACETS = Object.freeze([
+    { id: "canopy-closure", field: "canopyClosure", label: "Canopy closure", labelDe: "KRONENSCHLUSS" },
+    { id: "understory", field: "understory", label: "Understorey", labelDe: "UNTERHOLZ" },
+    { id: "shrub-layer", field: "shrub", label: "Shrub layer", labelDe: "STRAUCHSCHICHT" },
+    { id: "herb-layer", field: "herb", label: "Herb layer", labelDe: "KRAUTSCHICHT" },
+    { id: "litter", field: "litter", label: "Litter", labelDe: "STREU" },
+    { id: "deadwood", field: "deadwood", label: "Deadwood", labelDe: "TOTHOLZ" },
+    { id: "snags", field: "snags", label: "Standing deadwood", labelDe: "STEHENDES TOTHOLZ" },
+    { id: "seedlings", field: "seedlings", label: "Seedlings", labelDe: "JUNGWUCHS" },
+    { id: "canopy-gap", field: "canopyGap", label: "Canopy gap", labelDe: "LICHTLÜCKE" },
+    { id: "edge", field: "edge", label: "Woodland edge", labelDe: "WALDRAND" },
+    { id: "core", field: "core", label: "Interior core", labelDe: "KERNFLÄCHE" },
+    { id: "relief", field: "relief", label: "Local relief", labelDe: "RELIEF" },
+    { id: "slope", field: "slope", label: "Slope", labelDe: "HANG" },
+    { id: "rock", field: "rock", label: "Rock cover", labelDe: "FELS" },
+    { id: "water", field: "water", label: "Open water", labelDe: "WASSER" },
+    { id: "reed", field: "reed", label: "Reed cover", labelDe: "RÖHRICHT" },
+    { id: "mud", field: "mud", label: "Bare mud", labelDe: "SCHLAMM" },
+    { id: "wetness", field: "wetness", label: "Site wetness", labelDe: "FEUCHTE" },
+]);
+
+export const VEGETATION_MICROHABITATS = Object.freeze({
+    "canopy-core": Object.freeze({ label: "Dense canopy core", labelDe: "Dichter Kronenkern" }),
+    "canopy-gap": Object.freeze({ label: "Canopy gap", labelDe: "Kronenlücke" }),
+    "woodland-edge": Object.freeze({ label: "Woodland edge", labelDe: "Waldrand" }),
+    "regeneration": Object.freeze({ label: "Regeneration patch", labelDe: "Jungwuchsinsel" }),
+    "deadwood": Object.freeze({ label: "Deadwood pocket", labelDe: "Totholzinsel" }),
+    "old-open": Object.freeze({ label: "Old open wood", labelDe: "Alter offener Wald" }),
+    "flower-aspect": Object.freeze({ label: "Flower aspect", labelDe: "Blühaspekt" }),
+    "shrub-island": Object.freeze({ label: "Shrub island", labelDe: "Buschinsel" }),
+    "hollow": Object.freeze({ label: "Damp hollow", labelDe: "Feuchte Senke" }),
+    "slope": Object.freeze({ label: "Slope thicket", labelDe: "Hanggebüsch" }),
+    "open-water": Object.freeze({ label: "Open water", labelDe: "Offene Wasserfläche" }),
+    "free-channel": Object.freeze({ label: "Free channel", labelDe: "Freier Kanal" }),
+    "reed-bed": Object.freeze({ label: "Reed bed", labelDe: "Schilfbett" }),
+    "reed-fringe": Object.freeze({ label: "Reed fringe", labelDe: "Schilfsaum" }),
+    "plant-island": Object.freeze({ label: "Plant island", labelDe: "Pflanzeninsel" }),
+    "mudflat": Object.freeze({ label: "Mudflat", labelDe: "Schlammfläche" }),
+    "oasis": Object.freeze({ label: "Oasis", labelDe: "Oase" }),
+    "arroyo": Object.freeze({ label: "Arroyo", labelDe: "Trockenlauf" }),
+    "depression": Object.freeze({ label: "Depression", labelDe: "Senke" }),
+    "rock-desert": Object.freeze({ label: "Rock desert", labelDe: "Felswüste" }),
+    "vegetated-bank": Object.freeze({ label: "Vegetated bank", labelDe: "Bewachsenes Ufer" }),
+});
 
 export const VEGETATION_DENSITY_BANDS = Object.freeze([
     Object.freeze({ id: "very-sparse", requirement: 1, label: "Very sparse", labelDe: "Sehr gering", min: 0, max: 0.11, colour: "#c5b896" }),
@@ -217,6 +268,60 @@ function terrainSample(x, y, context = {}) {
     };
 }
 
+// One extra height lookup on each side of the sampled tile is enough to
+// distinguish a hollow from a ridge without turning the renderer into a
+// hydrology simulation. The four lookups are pure array reads; the result is
+// returned raw so callers and tests can reuse an already sampled shape.
+function terrainHeightAt(x, y, context = {}) {
+    const resolution = Math.max(1, Number(state.terrainResolution) || 1);
+    const width = Number(state.terrainPixW) || 0;
+    const height = Number(state.terrainPixH) || 0;
+    if (!width || !height) return number(context.height, 0.55);
+    const px = Math.max(0, Math.min(width - 1, Math.floor(Number(x) * resolution)));
+    const py = Math.max(0, Math.min(height - 1, Math.floor(Number(y) * resolution)));
+    return number(state.heightMap?.[py * width + px], number(context.height, 0.55));
+}
+
+function terrainShape(x, y, center, context = {}) {
+    if (context.shape && typeof context.shape === "object") {
+        const supplied = context.shape;
+        return {
+            curvature: number(supplied.curvature, 0),
+            slope: clamp01(number(supplied.slope, 0)),
+            relief: clamp01(number(supplied.relief, 0)),
+            depression: clamp01(number(supplied.depression, 0)),
+            ridge: clamp01(number(supplied.ridge, 0)),
+            aspectWarm: clamp01(number(supplied.aspectWarm, 0.5)),
+        };
+    }
+    const mapCenter = terrainHeightAt(x, y, context);
+    // Some consumers pass a climate-test height that differs from the current
+    // map. Keep the local shape but remove that baseline offset, otherwise a
+    // test tile would look like a kilometre-deep crater against the map.
+    const bias = Number.isFinite(Number(context.height)) ? Number(context.height) - mapCenter : 0;
+    const north = terrainHeightAt(x, y - 1, context) + bias;
+    const south = terrainHeightAt(x, y + 1, context) + bias;
+    const west = terrainHeightAt(x - 1, y, context) + bias;
+    const east = terrainHeightAt(x + 1, y, context) + bias;
+    const neighbours = [north, south, west, east];
+    const average = neighbours.reduce((sum, value) => sum + value, 0) / neighbours.length;
+    const curvature = center - average;
+    // Height is normalised to 0..1 in the world maps. A local difference of a
+    // few thousandths is already a readable dip at tile scale.
+    const rawSlope = (Math.abs(north - south) + Math.abs(east - west)) * 0.5;
+    const rawRelief = Math.max(center, ...neighbours) - Math.min(center, ...neighbours);
+    return {
+        curvature,
+        slope: clamp01(rawSlope * 14),
+        relief: clamp01(rawRelief * 9),
+        depression: smoothstep(0.0015, 0.014, -curvature),
+        ridge: smoothstep(0.0015, 0.014, curvature),
+        // A north-facing slope is cooler, a south-facing one warmer. The
+        // renderer only needs the relative value, not a compass sector.
+        aspectWarm: clamp01(0.5 + (north - south) * 7),
+    };
+}
+
 function bandFor(density) {
     const value = clamp01(density);
     let index = 0;
@@ -300,6 +405,7 @@ export function vegetationDensityAt(x, y, context = {}) {
     const use = context.use || grass?.use || {};
     const tx = Math.floor(number(x));
     const ty = Math.floor(number(y));
+    const shape = terrainShape(tx + 0.5, ty + 0.5, height, context);
 
     // Three scales make real groups. The coarse field decides where a wood or
     // a meadow thickens; the middle field breaks it into islands; the fine
@@ -316,7 +422,11 @@ export function vegetationDensityAt(x, y, context = {}) {
     const gapStrength = clamp01(1 - smoothstep(0.24, 0.47, gapNoise) * 1.7);
     const island = smoothstep(0.66, 0.84, islandNoise);
     const localContrast = clamp01(Math.abs(coarse - middle) * 1.9 + Math.abs(middle - fine) * 0.9);
-    const variation = clamp01(Math.abs(patch - 0.5) * 1.6 + localContrast * 0.55);
+    const variation = clamp01(Math.abs(patch - 0.5) * 1.6 + localContrast * 0.55 + shape.relief * 0.2);
+    const depression = shape.depression;
+    const ridge = shape.ridge;
+    const slope = shape.slope;
+    const relief = shape.relief;
 
     const cold = ["tundra", "taiga", "snow", "northern", "mountain"].includes(climate)
         ? clamp01(0.35 + (0.42 - temperature) * 1.8 + season.snowCover * 0.25) : 0;
@@ -329,13 +439,18 @@ export function vegetationDensityAt(x, y, context = {}) {
     const savanna = climate === "savanna" || climate === "savannah";
     const rock = clamp01(rockNoise * 0.55 + (height > 0.72 ? 0.28 : 0) + (desert ? 0.18 : 0));
     const oasis = desert && (wet > 0.34 || moisture > 0.48 || waterNoise > 0.78);
-    const arroyo = desert && !oasis && waterNoise > 0.63 && gapNoise < 0.62;
-    const channel = wetland && waterNoise > 0.68 && gapNoise < 0.52;
+    // An arroyo is a seasonal wash, not a wet oasis. It needs either the broad
+    // watercourse field or a genuine local hollow; a flat tile with high noise
+    // alone is not enough any more.
+    const arroyo = desert && !oasis && ((waterNoise > 0.63 && gapNoise < 0.62) || depression > 0.22);
+    // The same rule for a free channel: the water field carves it, and a local
+    // depression keeps it open instead of letting reeds close over it.
+    const channel = wetland && ((waterNoise > 0.68 && gapNoise < 0.52) || (depression > 0.2 && wet > 0.6));
     // Open water is a real gap in the reeds, not the default wetland surface.
     // Requiring both a high water field and a high wetness keeps most marsh
     // tiles vegetated while still producing free channels and open pools.
     const openWater = wetland && ((waterNoise > 0.89 && wet > 0.68)
-        || (above < 0.012 && wet > 0.92));
+        || (above < 0.012 && wet > 0.92) || (depression > 0.42 && wet > 0.86));
     const reeds = wetland ? clamp01(wet * 0.54 + finerReed(seed, x, y) * 0.34) : 0;
     const plantIslands = wetland ? clamp01(island * 0.85 + reeds * 0.25) : 0;
 
@@ -359,7 +474,8 @@ export function vegetationDensityAt(x, y, context = {}) {
         + (ageClass === "young" ? 0.3 : 0)
         + (context.succession?.id === "regrowth" ? 0.3 : 0));
     const soil = clamp01(0.3 + moisture * 0.4 + (1 - dry) * 0.15 + middle * 0.15);
-    const sunlight = clamp01(0.48 + (1 - canopy) * 0.4 + season.warmth * 0.12 - (cold > 0.5 ? 0.16 : 0));
+    const sunlight = clamp01(0.48 + (1 - canopy) * 0.4 + season.warmth * 0.12
+        - (cold > 0.5 ? 0.16 : 0) + (shape.aspectWarm - 0.5) * 0.12);
     const competition = clamp01(canopy * 0.45 + understory * 0.3 + grassDensity * 0.2 + shrub * 0.1);
     const diseasePressure = clamp01(diseased ? 0.72 : 0.08 + (stand?.disturbance === "diseased" ? 0.2 : 0) + (moisture > 0.8 ? 0.06 : 0));
     const fireRisk = clamp01(dry * 0.52 + (1 - moisture) * 0.24 + season.warmth * 0.12 + deadwood * 0.16 - wet * 0.35);
@@ -381,6 +497,9 @@ export function vegetationDensityAt(x, y, context = {}) {
 
     let density = clamp01(potential * (0.28 + patch * 1.15) + island * 0.16 - gapStrength * 0.16);
     density = clamp01(density - grazing * 0.12 - browse * 0.06 - logged * 0.16 - burned * 0.17 - diseasePressure * 0.08 - dry * 0.16);
+    // Local relief is a real site factor, not a colour offset: hollows collect
+    // moisture and fine soil, ridges and steep faces shed both.
+    density = clamp01(density + depression * (desert ? 0.14 : 0.045) - ridge * 0.03 - slope * 0.018);
     if (stand && gapStrength > 0.58) density = clamp01(density - 0.24);
     if (desert && !oasis && !arroyo) density = Math.min(density, 0.34);
     if (openWater) density = Math.min(density, 0.10);
@@ -388,6 +507,68 @@ export function vegetationDensityAt(x, y, context = {}) {
     if (regrowth > 0.25) density = clamp01(density + 0.08);
     if (season.snowCover > 0.58) density = Math.max(0.05, density - season.snowCover * 0.16);
     const canopyDensity = clamp01(density * 0.72 + canopy * 0.25 + (1 - gapStrength) * 0.05);
+    const edgeIndex = clamp01((stand ? (stand.edge ? 0.62 : 0.16) : 0.1)
+        + gapStrength * 0.28 + (Number(stand?.clearing) || 0) * 0.55 + localContrast * 0.12);
+    const coreIndex = clamp01(stand
+        ? (1 - edgeIndex) * canopyDensity * 0.85 + patch * 0.15
+        : patch * 0.55 * (1 - gapStrength * 0.5));
+    const groundLitter = Number(stand?.ground?.litter) || 0;
+    const groundNeedles = Number(stand?.ground?.needles) || 0;
+    const mud = wetland
+        ? (openWater || channel ? 0.12 : clamp01((1 - density) * 0.8 + (1 - reeds) * 0.18 - 0.1))
+        : 0;
+    const structure = {
+        canopyClosure: canopyDensity,
+        understory,
+        shrub,
+        herb: clamp01(grassDensity * 0.55 + bloom * 0.18 + understory * 0.25),
+        litter: clamp01(stand
+            ? groundLitter * 0.75 + groundNeedles * 0.35 + (Number(stand.understory?.moss) || 0) * 0.12
+            : 0.15 + grassDensity * 0.18 + (1 - grazing) * 0.06),
+        deadwood,
+        snags: clamp01(deadwood * 0.82 + (ageClass === "ancient" ? 0.12 : 0) + (burned ? 0.14 : 0)),
+        seedlings: clamp01(regrowth * 0.55 + (ageClass === "young" ? 0.25 : 0) + understory * 0.12),
+        canopyGap: gapStrength,
+        edge: edgeIndex,
+        core: coreIndex,
+        relief: shape.relief,
+        slope: shape.slope,
+        aspect: shape.aspectWarm,
+        rock,
+        water: openWater ? 1 : wetland ? clamp01(wet * 0.55 + depression * 0.25) : 0,
+        reed: reeds,
+        mud,
+        wetness: wetland ? clamp01(wet * 0.8 + 0.2) : clamp01(wet * 0.7),
+        dryness: dry,
+    };
+    const microhabitats = [];
+    const addMicro = id => { if (!microhabitats.includes(id)) microhabitats.push(id); };
+    if (canopyDensity > 0.66 && coreIndex > 0.45) addMicro("canopy-core");
+    if (gapStrength > 0.58) addMicro("canopy-gap");
+    if (stand && edgeIndex > 0.55) addMicro("woodland-edge");
+    if (regrowth > 0.25) addMicro("regeneration");
+    if (deadwood > 0.3) addMicro("deadwood");
+    if (ageClass === "ancient" && density < 0.62) addMicro("old-open");
+    if (bloom > 0.34 && density > 0.28) addMicro("flower-aspect");
+    if (shrub > 0.4) addMicro("shrub-island");
+    if (depression > 0.28 && !wetland) addMicro("hollow");
+    if (slope > 0.3) addMicro("slope");
+    if (wetland) {
+        if (openWater) addMicro("open-water");
+        if (channel) addMicro("free-channel");
+        if (reeds > 0.5) addMicro("reed-bed");
+        else if (reeds > 0.1) addMicro("reed-fringe");
+        if (plantIslands > 0.35) addMicro("plant-island");
+        if (mud > 0.35) addMicro("mudflat");
+        if (!openWater && above > 0.02) addMicro("vegetated-bank");
+    }
+    if (desert) {
+        if (oasis) addMicro("oasis");
+        if (arroyo) addMicro("arroyo");
+        if (depression > 0.2 && !oasis) addMicro("depression");
+        if (rock > 0.55 && density < 0.28) addMicro("rock-desert");
+    }
+    const microhabitatLabels = microhabitats.map(id => VEGETATION_MICROHABITATS[id]?.labelDe || id);
     const band = bandFor(density);
     const bandEntry = VEGETATION_DENSITY_BANDS[band];
     const habitat = habitatFor({
@@ -405,7 +586,9 @@ export function vegetationDensityAt(x, y, context = {}) {
     const wood = clamp01(canopyDensity * 0.55 + shrub * 0.22 + (ageClass === "ancient" ? 0.14 : 0.04) + deadwood * 0.12);
     const forage = clamp01(grassDensity * 0.42 + (grass?.bloom || 0) * 0.22 + understory * 0.22 + island * 0.14 - grazing * 0.16);
     const agriculture = clamp01(soil * 0.4 + (1 - dry) * 0.22 + (1 - density) * 0.24 + (wetland ? -0.18 : 0) - cold * 0.12);
-    const habitatQuality = clamp01(0.18 + structureScore({ canopyDensity, understory, shrub, grassDensity, deadwood, wet, island, localContrast }));
+    const habitatQuality = clamp01(0.18 + structureScore({ canopyDensity, understory, shrub, grassDensity, deadwood, wet, island, localContrast })
+        + structure.edge * 0.05 + structure.core * 0.05 + structure.litter * 0.04
+        + structure.rock * 0.03 + structure.water * 0.05 - structure.mud * 0.03);
     const gathering = clamp(0.74 + forage * 0.22 + wood * 0.08 - understory * 0.12, 0.68, 1.08);
     const yieldFactor = clamp(0.82 + forage * 0.18 + wood * 0.08 + localContrast * 0.04, 0.74, 1.12);
 
@@ -429,22 +612,23 @@ export function vegetationDensityAt(x, y, context = {}) {
     if (grassDensity > 0.12 || bloom > 0.1) layers.push("ground");
     if (shrub > 0.22 || plantIslands > 0.3) layers.push("shrub");
     if (deadwood > 0.2) layers.push("deadwood");
+    if (structure.litter > 0.3) layers.push("litter");
     if (reeds > 0.25) layers.push("reed");
 
     const requirements = new Set([bandEntry.requirement]);
-    if (localContrast > 0.12) requirements.add(6);
+    if (localContrast > 0.12 || relief > 0.12 || slope > 0.18) requirements.add(6);
     if (patch > 0.57 && island > 0.18) requirements.add(7);
     if (gapStrength > 0.55) requirements.add(8);
     if (fine < 0.27 || localContrast > 0.36) requirements.add(9);
     if ((stand && stand.clearing > 0.24) || (gapStrength > 0.62 && canopyDensity < 0.4)) requirements.add(10);
-    if (canopyDensity > 0.64 && patch > 0.48) requirements.add(11);
-    if (stand && (canopyDensity < 0.48 || patch > 0.72) && density > 0.2) requirements.add(12);
-    if (regrowth > 0.2 || ageClass === "young") requirements.add(13);
+    if (canopyDensity > 0.64 && coreIndex > 0.45 && patch > 0.48) requirements.add(11);
+    if (edgeIndex > 0.52 && (canopyDensity < 0.58 || patch > 0.72) && density > 0.2) requirements.add(12);
+    if (regrowth > 0.2 || ageClass === "young" || structure.seedlings > 0.28) requirements.add(13);
     if (ageClass === "ancient" && density < 0.62) requirements.add(14);
     if (understory > 0.24) requirements.add(15);
     if (canopyDensity > 0.68) requirements.add(16);
     if (grass?.trees?.length || (island > 0.5 && (canopyDensity > 0.2 || shrub > 0.2))) requirements.add(17);
-    if (deadwood > 0.18 || burned || disturbance === "windthrow") requirements.add(18);
+    if (deadwood > 0.18 || structure.snags > 0.42 || burned || disturbance === "windthrow") requirements.add(18);
     if (grassTall === false && (grass || stand) && density < 0.52) requirements.add(19);
     if (grassTall || (grass?.sward?.height === "tall") || (wetland && reeds > 0.35)) requirements.add(20);
     if (bloom > 0.32 && density > 0.3) requirements.add(21);
@@ -456,9 +640,9 @@ export function vegetationDensityAt(x, y, context = {}) {
     if (desert && density < 0.12) requirements.add(27);
     if (desert && density >= 0.12 && density < 0.32) requirements.add(28);
     if (desert && island > 0.3 && density >= 0.18) requirements.add(29);
-    if (desert && (above < 0.045 || (waterNoise > 0.6 && density > 0.12))) requirements.add(30);
+    if (desert && depression > 0.18) requirements.add(30);
     if (oasis && density > 0.42) requirements.add(31);
-    if (arroyo || (desert && waterNoise > 0.72)) requirements.add(32);
+    if (arroyo) requirements.add(32);
     if (desert && (rock > 0.52 || sandContrast(seed, x, y) > 0.57)) requirements.add(33);
     if (openWater) requirements.add(34);
     if (wetland && reeds > 0.18 && reeds <= 0.58) requirements.add(35);
@@ -467,7 +651,7 @@ export function vegetationDensityAt(x, y, context = {}) {
     if (wetland && !openWater && above > -0.01 && above < 0.075 && density > 0.2) requirements.add(38);
     if (channel) requirements.add(39);
     if (wetland && (canopyDensity > 0.32 || (stand && treesInStand(stand)))) requirements.add(40);
-    if (wetland && density < 0.12) requirements.add(41);
+    if (wetland && mud > 0.35) requirements.add(41);
     // Soil, water, sun, age and season are always present as drivers, even when
     // one of them is currently limiting growth.
     requirements.add(42); requirements.add(43); requirements.add(44); requirements.add(46); requirements.add(47);
@@ -509,6 +693,8 @@ export function vegetationDensityAt(x, y, context = {}) {
         { id: "fire", label: "FIRE", labelDe: "BRAND", value: round(burned ? 1 : fireRisk) },
         { id: "disease", label: "DISEASE", labelDe: "KRANKHEIT", value: round(diseasePressure) },
         { id: "regeneration", label: "REGROWTH", labelDe: "REGENERATION", value: round(regrowth) },
+        { id: "relief", label: "RELIEF", labelDe: "RELIEF", value: round(shape.relief) },
+        { id: "slope", label: "SLOPE", labelDe: "HANG", value: round(shape.slope) },
     ];
     const effects = [
         { id: "sight", label: "SIGHT", labelDe: "SICHT", value: round(sight) },
@@ -529,8 +715,12 @@ export function vegetationDensityAt(x, y, context = {}) {
         band, bandId: bandEntry.id, label: bandEntry.label, labelDe: bandEntry.labelDe,
         density: round(density), canopy: round(canopyDensity), understory: round(understory),
         shrub: round(shrub), grass: round(grassDensity), reed: round(reeds), openWater: Boolean(openWater),
+        channel: Boolean(channel), arroyo: Boolean(arroyo), edge: round(edgeIndex), core: round(coreIndex),
+        depression: round(depression), relief: round(shape.relief), slope: round(shape.slope),
         gap: round(gapStrength), island: round(island), patch: round(patch), contrast: round(localContrast),
         variation: round(variation), habitat, habitatLabel: habitatEntry.label, habitatLabelDe: habitatEntry.labelDe,
+        structure, microhabitats: Object.freeze(microhabitats),
+        microhabitatLabels: Object.freeze(microhabitatLabels), microhabitatCount: microhabitats.length,
         palette: bandEntry.colour, tint, ground, heightScale: round(heightScale),
         layers: Object.freeze(layers), drivers, effects,
         sight: round(sight), movement: round(movement), cover: round(cover), concealment: round(concealment),
@@ -541,6 +731,8 @@ export function vegetationDensityAt(x, y, context = {}) {
         requirements: Object.freeze([...requirements].sort((a, b) => a - b)),
         requirementIds: Object.freeze([...requirements].sort((a, b) => a - b).map(id => "1.2.18." + id)),
         activeCount: requirements.size,
+        implementedCount: VEGETATION_REQUIREMENTS.length,
+        structureFacetCount: VEGETATION_STRUCTURE_FACETS.length,
     };
 }
 
@@ -573,6 +765,21 @@ export function vegetationDetailForZoom(zoom) {
     if (value < 1.25) return 0.9;
     return 1;
 }
+
+// Map the internal structure values onto the labelled facets the survey
+// renders. This is intentionally a view helper: the hot renderer only carries
+// the compact `structure` object, while the panel builds one bordered row per
+// facet when the player opens the survey.
+export function vegetationStructureFacets(density) {
+    const values = density?.structure || {};
+    return VEGETATION_STRUCTURE_FACETS.map(entry => ({
+        id: entry.id,
+        label: entry.label,
+        labelDe: entry.labelDe,
+        value: clamp01(values[entry.field]),
+    }));
+}
+
 
 // Attach the density layer to a forest stand without mutating the deterministic
 // stand object. Existing forest renderers and gathering code keep their shape.
@@ -637,6 +844,15 @@ export function vegetationGrassProfile(profile, density) {
         heightScale: density.heightScale,
         tint: density.tint,
         gap: density.gap,
+        edge: density.edge,
+        core: density.core,
+        depression: density.depression,
+        structure: density.structure,
+        microhabitats: density.microhabitats,
+        microhabitatLabels: density.microhabitatLabels,
+        openWater: density.openWater,
+        channel: density.channel,
+        arroyo: density.arroyo,
         layers: density.layers,
     };
     next.densityOverlay = density;
@@ -646,12 +862,30 @@ export function vegetationGrassProfile(profile, density) {
         vegetation.shrubCover = clamp01((Number(profile.vegetation?.shrubCover) || 0) * (0.7 + density.density * 0.55));
         vegetation.cover = clamp01((Number(profile.vegetation?.cover) || 0) * (0.72 + density.cover * 0.45));
         vegetation.treeChance = clamp01((Number(profile.vegetation?.treeChance) || 0) * (0.6 + density.density * 0.8));
+        vegetation.arroyo = Boolean(density.arroyo);
+        vegetation.depression = density.structure?.relief > 0 ? density.depression : 0;
+        vegetation.structure = density.structure;
+        vegetation.microhabitats = density.microhabitats;
     }
     if (profile.swamp) {
         const vegetation = next.vegetation;
         vegetation.density = clamp01((Number(profile.vegetation?.density) || 0.3) * (0.55 + density.density * 0.8));
         vegetation.cover = clamp01((Number(profile.vegetation?.cover) || 0) * (0.62 + density.cover * 0.58));
         vegetation.plantIslands = clamp01((Number(profile.vegetation?.plantIslands) || 0) * (0.7 + density.island * 0.55));
+        vegetation.mud = density.structure?.mud || 0;
+        vegetation.structure = density.structure;
+        vegetation.microhabitats = density.microhabitats;
+        // A free channel and an open pool are real water surfaces, not just
+        // gaps in the reeds. Copy the water object before changing it so the
+        // source swamp profile stays immutable.
+        if (density.openWater || density.channel) {
+            const water = { ...(profile.water || {}) };
+            water.standingWater = true;
+            water.depth = clamp01(Math.max(Number(water.depth) || 0, density.openWater ? 0.54 : 0.36));
+            water.reflection = clamp01(Math.max(Number(water.reflection) || 0, 0.24));
+            water.channel = Boolean(density.channel);
+            next.water = water;
+        }
     }
     return next;
 }
@@ -680,6 +914,8 @@ export function vegetationGameplayAt(x, y, context = {}) {
         habitat: density.habitat,
         gathering: density.gathering,
         yield: density.yield,
+        structure: density.structure,
+        microhabitats: density.microhabitats,
         requirements: density.requirements,
     };
 }
@@ -716,6 +952,8 @@ export function getVegetationDensitySurvey(x = null, y = null, options = {}) {
     return {
         version: VEGETATION_DENSITY_VERSION,
         manifestCount: VEGETATION_REQUIREMENTS.length,
+        implementedCount: VEGETATION_REQUIREMENTS.length,
+        structureFacetCount: VEGETATION_STRUCTURE_FACETS.length,
         bandCount: VEGETATION_DENSITY_BANDS.length,
         active: true,
         tile: { x: Math.floor(cx), y: Math.floor(cy) },
@@ -723,6 +961,9 @@ export function getVegetationDensitySurvey(x = null, y = null, options = {}) {
         bands,
         requirements: sample.requirements,
         requirementIds: sample.requirementIds,
+        structure: sample.structure,
+        microhabitats: sample.microhabitats,
+        microhabitatLabels: sample.microhabitatLabels,
         label: sample.label + " · " + sample.habitatLabel,
         labelDe: sample.labelDe + " · " + sample.habitatLabelDe,
     };
@@ -736,6 +977,6 @@ export function vegetationDensitySummary(x, y, context = {}) {
 }
 
 export const __internals = {
-    hash32, unit, valueNoise, warpedNoise, terrainSample, bandFor, standUnderstory,
-    forestDeadwood, habitatFor, mixHex,
+    hash32, unit, valueNoise, warpedNoise, terrainSample, terrainHeightAt, terrainShape,
+    bandFor, standUnderstory, forestDeadwood, habitatFor, mixHex,
 };

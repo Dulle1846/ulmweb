@@ -2,9 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import {
-    VEGETATION_DENSITY_BANDS, VEGETATION_REQUIREMENTS,
+    VEGETATION_DENSITY_BANDS, VEGETATION_REQUIREMENTS, VEGETATION_STRUCTURE_FACETS,
     getVegetationDensitySurvey, vegetationDensityAt, vegetationDetailForZoom,
-    vegetationForestStand, vegetationGameplayAt, vegetationGrassProfile, __internals
+    vegetationForestStand, vegetationGameplayAt, vegetationGrassProfile,
+    vegetationStructureFacets, __internals
 } from "../../js/world/vegetation-density.js";
 
 const SIZE = 64;
@@ -276,14 +277,15 @@ test("dense vegetation changes sight, movement, cover, concealment, hunting and 
 
 test("desert and wetland samples expose their own density habitats", () => {
     setup();
+    const flatDesert = { depression: 0, ridge: 0.3, relief: 0, slope: 0, aspectWarm: 0.5 };
     const bare = vegetationDensityAt(10.5, 10.5, baseContext({
-        climate: "arid", moisture: 0.06, temperature: 0.82, height: 0.36,
+        climate: "arid", moisture: 0.06, temperature: 0.82, height: 0.36, shape: flatDesert,
     }));
     const oasis = vegetationDensityAt(10.5, 10.5, baseContext({
         climate: "arid", moisture: 0.94, temperature: 0.82, height: 0.34,
     }));
     assert.ok(oasis.density > bare.density);
-    assert.ok(["bare-sand", "rock-desert", "desert-shrub"].includes(bare.habitat));
+    assert.ok(["bare-sand", "rock-desert", "desert-shrub", "arroyo"].includes(bare.habitat));
     assert.equal(oasis.habitat, "oasis");
     assert.ok(bare.requirements.includes(27));
     assert.ok(oasis.requirements.includes(31));
@@ -322,10 +324,78 @@ test("season and camera distance change the rendered density detail", () => {
     assert.equal(vegetationDetailForZoom(1.4), 1);
 });
 
+test("local relief creates real depressions, arroyos and free wetland channels", () => {
+    setup();
+    const shape = { curvature: -0.02, slope: 0.42, relief: 0.58, depression: 0.65, ridge: 0, aspectWarm: 0.28 };
+    let arroyo = null;
+    for (let index = 0; index < 24 && !arroyo; index++) {
+        const profile = vegetationDensityAt(index * 1.7 + 0.5, index * 1.3 + 0.5, baseContext({
+            climate: "arid", moisture: 0.12, temperature: 0.82, height: 0.36, shape,
+        }));
+        if (profile.arroyo) arroyo = profile;
+    }
+    assert.ok(arroyo, "a genuine local hollow must produce an arroyo");
+    assert.ok(arroyo.depression >= 0.6);
+    assert.ok(arroyo.requirements.includes(30), "depression vegetation must be active");
+    assert.ok(arroyo.requirements.includes(32), "seasonal watercourse vegetation must be active");
+    assert.equal(arroyo.habitat, "arroyo");
+
+    const swamp = vegetationDensityAt(12.5, 9.5, baseContext({
+        climate: "swamp", moisture: 0.9, temperature: 0.6, height: 0.34, shape,
+        grass: grassProfile({ use: {} }),
+        stand: forestStand({ density: 0.4, canopy: 0.4, type: "alder-carr" }),
+    }));
+    assert.ok(swamp.requirements.includes(39), "the depression must open a free channel");
+    assert.ok(swamp.channel || swamp.openWater);
+    const swampProfile = vegetationGrassProfile({
+        swamp: true,
+        water: { standingWater: false, depth: 0, reflection: 0 },
+        vegetation: { density: 0.3, cover: 0.4, plantIslands: 0.2 },
+    }, swamp);
+    assert.equal(swampProfile.water.standingWater, true, "the channel must become a real water surface");
+    assert.equal(swampProfile.vegetation.densityOverlay, swamp);
+    assert.equal(swampProfile.vegetation.structure, swamp.structure);
+    assert.ok(swampProfile.water.depth > 0);
+});
+
+test("the structure facets expose the extra depth without changing the 70-point manifest", () => {
+    setup();
+    const dense = vegetationDensityAt(20.5, 20.5, baseContext({
+        moisture: 0.72, temperature: 0.58, height: 0.55,
+        stand: forestStand({ density: 0.9, canopy: 0.9, clearing: 0.02 }),
+    }));
+    assert.equal(VEGETATION_STRUCTURE_FACETS.length, 18);
+    assert.equal(dense.structureFacetCount, 18);
+    assert.equal(dense.implementedCount, 70);
+    assert.equal(dense.microhabitats.length, dense.microhabitatCount);
+    assert.ok(dense.microhabitatLabels.length >= dense.microhabitats.length);
+    assert.ok(dense.structure.canopyClosure > 0.4);
+    assert.ok(dense.structure.litter >= 0 && dense.structure.litter <= 1);
+    const facets = vegetationStructureFacets(dense);
+    assert.equal(facets.length, VEGETATION_STRUCTURE_FACETS.length);
+    for (const facet of facets) {
+        assert.ok(facet.id && facet.label && facet.labelDe);
+        assert.ok(facet.value >= 0 && facet.value <= 1);
+    }
+    assert.ok(facets.find(facet => facet.id === "canopy-closure").value > 0.4);
+    assert.ok(facets.find(facet => facet.id === "deadwood"));
+    assert.ok(dense.structure.deadwood >= 0);
+    assert.ok(Number.isFinite(dense.edge) && Number.isFinite(dense.core));
+    assert.ok(Number.isFinite(dense.relief) && Number.isFinite(dense.slope));
+    assert.deepEqual(dense, vegetationDensityAt(20.5, 20.5, baseContext({
+        moisture: 0.72, temperature: 0.58, height: 0.55,
+        stand: forestStand({ density: 0.9, canopy: 0.9, clearing: 0.02 }),
+    })));
+});
+
 test("the survey reports the manifest, five density samples and the active tile", () => {
     setup();
     const survey = getVegetationDensitySurvey(32.5, 32.5, { radius: 12 });
     assert.equal(survey.manifestCount, 70);
+    assert.equal(survey.implementedCount, 70);
+    assert.equal(survey.structureFacetCount, 18);
+    assert.ok(survey.structure);
+    assert.ok(Array.isArray(survey.microhabitats));
     assert.equal(survey.bandCount, 5);
     assert.equal(survey.bands.length, 5);
     assert.equal(survey.bands.filter(Boolean).length, 5);

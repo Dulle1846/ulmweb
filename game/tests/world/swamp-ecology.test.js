@@ -196,6 +196,24 @@ test("the wetland renderer draws reeds, water, mist and fauna without unbounded 
     assert.ok(Number.isFinite(wet.visual.windSway));
     assert.ok(Number.isFinite(wet.visual.reedSway));
 
+    // The density layer can open a channel or expose a mudflat. Both are real
+    // wetland states and must keep the renderer's bounded call contract.
+    const channeled = {
+        ...wet,
+        water: { ...wet.water, standingWater: true, depth: 0.42, reflection: 0.3 },
+        vegetation: { ...wet.vegetation, densityOverlay: { channel: true, openWater: false, structure: { mud: 0.2 } } },
+    };
+    calls = 0;
+    drawSwamp(ctx, 12, 18, 48, channeled, 0.2, 0.5, 0.7, 1234, 1, 0.7, 60, "swamp");
+    assert.ok(calls > 40);
+    const muddy = {
+        ...wet,
+        vegetation: { ...wet.vegetation, densityOverlay: { channel: false, openWater: false, structure: { mud: 0.6 } } },
+    };
+    calls = 0;
+    drawSwamp(ctx, 12, 18, 48, muddy, 0.2, 0.5, 0.7, 1234, 1, 0.7, 60, "swamp");
+    assert.ok(calls > 40);
+
     // Use a real tree-bearing tile from the deterministic survey so the carr
     // branch is exercised as well.
     const carr = surveyProfiles().find(profile => profile.trees.length);

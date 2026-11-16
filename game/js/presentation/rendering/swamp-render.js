@@ -20,6 +20,7 @@ function hash(value, seed) {
 function drawWetGround(ctx, px, py, cellPx, s, profile, roll, tick) {
     const visual = profile.visual || {};
     const water = profile.water || {};
+    const density = profile.vegetation?.densityOverlay || null;
     ctx.globalAlpha = 0.32;
     ctx.fillStyle = colour(visual.groundHex, "#4d4935");
     ctx.beginPath();
@@ -40,14 +41,29 @@ function drawWetGround(ctx, px, py, cellPx, s, profile, roll, tick) {
             ctx.stroke();
         }
     }
+    // Bare mud is a real surface in the wetland profile, not merely a tile that
+    // happens to have few reeds. It sits under the water layer so a channel or
+    // pool still reads as water when both flags meet.
+    if (density && Number(density.structure?.mud) > 0.3 && !density.openWater) {
+        const mud = clamp01(density.structure.mud);
+        ctx.globalAlpha = 0.18 + mud * 0.2;
+        ctx.fillStyle = "#554d37";
+        ctx.beginPath();
+        ctx.ellipse(px + (roll - 0.5) * cellPx * 0.08, py + cellPx * 0.12,
+            cellPx * (0.18 + mud * 0.08), cellPx * (0.07 + mud * 0.025), roll * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+    }
     if (water.standingWater) {
         const depth = clamp01(water.depth);
-        const width = cellPx * (0.22 + roll * 0.1);
+        const channel = Boolean(density?.channel) || Boolean(water.channel);
+        const open = Boolean(density?.openWater);
+        const width = cellPx * (channel ? 0.13 + roll * 0.04 : open ? 0.3 + roll * 0.08 : 0.22 + roll * 0.1);
         const waterHex = colour(visual.waterHex, depth > 0.5 ? "#263a38" : "#41554a");
-        ctx.globalAlpha = 0.58;
+        ctx.globalAlpha = channel ? 0.7 : 0.58;
         ctx.fillStyle = waterHex;
         ctx.beginPath();
-        ctx.ellipse(px + cellPx * 0.02, py + cellPx * 0.11, width, width * 0.42, roll * 0.2, 0, Math.PI * 2);
+        ctx.ellipse(px + cellPx * (channel ? 0.02 : 0.02), py + cellPx * 0.11,
+            width, width * (channel ? 0.24 : 0.42), channel ? 0.03 : roll * 0.2, 0, Math.PI * 2);
         ctx.fill();
         // Reflection: a broken pale band on the still side of the pool.
         if (water.reflection > 0.24) {
@@ -83,7 +99,9 @@ function drawReeds(ctx, px, py, cellPx, s, profile, roll, tick, fineDetail = tru
     const sway = Math.sin((Number(tick) || 0) * 0.0015 + px * 0.09 + py * 0.07) * (1.2 + swayAmount * 2.6) * s;
     const stem = colour(profile.visual?.reedHex, "#7f8a55");
     const density = profile.vegetation?.densityOverlay;
-    if (density?.openWater) return;
+    // A free channel is water, not a corridor with reeds standing in it. Both
+    // flags are derived by the density layer and already reach the survey.
+    if (density?.openWater || density?.channel) return;
     const densityReed = Math.max(0, Math.min(1, Number(density?.reed) || 0));
     const count = Math.max(1, Math.min(fineDetail ? 9 : 4,
         Math.round((2 + reeds.length + sedges.length * 2) * (0.55 + densityReed * 0.8))));

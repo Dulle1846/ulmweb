@@ -533,6 +533,35 @@ export function drawDesert(ctx, px, py, cellPx, profile, s1 = 0.5, s2 = 0.5, s3 
 
     drawWaters(ctx, px, py, cellPx, s, profile, roll(81));
 
+    // Dry washes and damp hollows are the two places where a desert tile can
+    // carry more plants than its surroundings. Both come from the local relief
+    // in the density layer, so they appear only where the terrain really dips.
+    const densityOverlay = vegetation.densityOverlay || null;
+    if (densityOverlay?.arroyo) {
+        ctx.globalAlpha = 0.2;
+        ctx.strokeStyle = "#8d7958";
+        ctx.lineWidth = Math.max(0.8, 1.3 * s);
+        ctx.beginPath();
+        ctx.moveTo(px - cellPx * 0.38, py + cellPx * (0.13 + roll(810) * 0.05));
+        ctx.quadraticCurveTo(px - cellPx * 0.02, py + cellPx * 0.06, px + cellPx * 0.38, py + cellPx * (0.12 + roll(811) * 0.05));
+        ctx.stroke();
+        ctx.globalAlpha = 0.12;
+        ctx.strokeStyle = "#c3ac82";
+        ctx.lineWidth = Math.max(0.5, 0.7 * s);
+        ctx.beginPath();
+        ctx.moveTo(px - cellPx * 0.3, py + cellPx * 0.16);
+        ctx.quadraticCurveTo(px, py + cellPx * 0.1, px + cellPx * 0.3, py + cellPx * 0.15);
+        ctx.stroke();
+    } else if (Number(densityOverlay?.structure?.depression) > 0.22) {
+        const hollow = Math.max(0.22, Math.min(0.7, Number(densityOverlay.structure.depression)));
+        ctx.globalAlpha = 0.08 + hollow * 0.12;
+        ctx.fillStyle = "#7f7b4f";
+        ctx.beginPath();
+        ctx.ellipse(px + (roll(812) - 0.5) * cellPx * 0.12, py + cellPx * 0.12,
+            cellPx * (0.15 + hollow * 0.1), cellPx * (0.055 + hollow * 0.025), roll(813) * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
     const grassCount = Math.max(1, Math.min(9, Math.round(1 + (vegetation.density || 0) * 8)));
     for (let index = 0; index < grassCount; index++) {
         const angle = roll(100 + index) * Math.PI * 2;

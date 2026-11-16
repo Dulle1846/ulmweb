@@ -77,6 +77,23 @@ test("every desert formation renders with finite coordinates and a bounded call 
     assert.ok(maximumCalls < 650, "desert detail must stay bounded; maximum was " + maximumCalls);
 });
 
+test("density washes and hollows add bounded desert detail", () => {
+    const base = desertProfileAt(8.5, 7.5, context({ moisture: 0.42, temperature: 0.68, height: 0.4 }));
+    const overlays = [
+        { arroyo: true, depression: 0.7, structure: { depression: 0.7, relief: 0.5 } },
+        { arroyo: false, depression: 0.35, structure: { depression: 0.35, relief: 0.3 } },
+    ];
+    for (const overlay of overlays) {
+        const profile = { ...base, vegetation: { ...base.vegetation, densityOverlay: overlay } };
+        for (const cellPx of [18, 48, 96]) {
+            const ctx = new FakeContext();
+            drawDesert(ctx, 120, 80, cellPx, profile, 0.31, 0.62, 0.93, 123456, 1.2, 0.7, 140, "arid");
+            assert.deepEqual(ctx.badArguments, [], "the wash must keep every coordinate finite");
+            assert.ok(ctx.calls > 8);
+        }
+    }
+});
+
 test("palm trees and empty inputs are safe at every zoom", () => {
     const profile = desertProfileAt(8.5, 7.5, context({ hour: 2, weather: "storm", wind: 2 }));
     assert.ok(profile.vegetation.palms.length > 0);

@@ -171,6 +171,14 @@
 .vegetation-drivers span,.vegetation-effects span{padding:4px 6px;border:1px solid #a8b68d;border-radius:5px;background:#f8f3dc;color:#6b7557;font:1000 6px/1.25 Arial,sans-serif;letter-spacing:.04em}
 .vegetation-effects span{border-color:#9db08a;background:#f1f5df}
 .vegetation-drivers b,.vegetation-effects b{display:block;margin-top:2px;color:#2f5e42;font:bold 9px Georgia,serif;letter-spacing:0}
+.vegetation-structure{margin-top:8px;padding:7px 8px;border:1px solid #a8b68d;border-radius:6px;background:#f1f5df}
+.vegetation-structure>small{display:block;color:#5f6b4c;font:1000 6px Arial,sans-serif;letter-spacing:.08em}
+.vegetation-facets{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;margin-top:5px}
+.vegetation-facets>span{min-width:0;padding:3px 4px;border:1px solid #c1cba6;border-radius:4px;background:#fbf7e6}
+.vegetation-facets small{display:block;overflow:hidden;color:#6b7557;font:1000 5.5px/1.2 Arial,sans-serif;letter-spacing:.03em;text-overflow:ellipsis;white-space:nowrap}
+.vegetation-facets b{display:block;margin-top:2px;color:#2f5e42;font:bold 8px Georgia,serif}
+.vegetation-microhabitats{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.vegetation-microhabitats>span{padding:3px 5px;border:1px solid #9db08a;border-radius:999px;background:#e7efd2;color:#355640;font:1000 6px Arial,sans-serif;letter-spacing:.03em}
 .vegetation-samples{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:8px}
 .vegetation-samples span{display:block;min-width:0;padding:4px 5px;border:1px solid #bdc59d;border-radius:5px;background:#fff8e4}
 .vegetation-samples b{display:block;overflow:hidden;color:#355640;font:bold 7px Georgia,serif;text-overflow:ellipsis;white-space:nowrap}
@@ -180,7 +188,7 @@
 .vegetation-point-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;margin-top:7px}
 .vegetation-point-grid span{padding:3px 4px;border-bottom:1px solid #e3d4ae;color:#6d6752;font-size:6.5px;line-height:1.3}
 .vegetation-point-grid span.is-active{color:#2e5f3e;background:#eaf2d7;font-weight:bold}
-@media(max-width:760px){.vegetation-summary{grid-template-columns:1fr 1fr}.vegetation-point-grid{grid-template-columns:1fr}.vegetation-samples{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.vegetation-summary{grid-template-columns:1fr 1fr}.vegetation-facets{grid-template-columns:repeat(3,minmax(0,1fr))}.vegetation-point-grid{grid-template-columns:1fr}.vegetation-samples{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:560px){.vegetation-band small{font-size:5px}.vegetation-bands{gap:3px}.vegetation-survey__head{flex-direction:column}.vegetation-survey__density{flex:0 0 auto;width:100%;display:flex;align-items:baseline;justify-content:center;gap:5px}.vegetation-survey__density b{font-size:14px}.vegetation-samples{grid-template-columns:1fr 1fr}}
 /* 1.2.16 — rare biome atlas inside the Explore tab. */
 .special-biome-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:10px 0}
