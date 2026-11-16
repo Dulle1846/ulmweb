@@ -333,6 +333,15 @@ async function startSession(storageState, fakeClock, label) {
         storageState
     });
     const page = await context.newPage();
+    // Headless Chromium can treat a page that has never received focus as
+    // occluded after a long load. Focus emulation keeps requestAnimationFrame
+    // running for the final real-time FPS sample without changing visibility.
+    try {
+        const cdp = await context.newCDPSession(page);
+        await cdp.send("Emulation.setFocusEmulationEnabled", {enabled: true});
+    } catch (error) {
+        // Non-Chromium browsers simply keep their normal focus behavior.
+    }
     const pageErrors = [];
     const consoleErrors = [];
     page.on("pageerror", error => pageErrors.push(error.stack || error.message));
@@ -636,6 +645,32 @@ async function loadRealm(session) {
     return {loaded, snapshot, savedSnapshot};
 }
 
+// A pending court, succession or big-message dialog is allowed to be open
+// after loading a mature save. It legitimately suspends world drawing, so close
+// the visible dialogs before measuring the real-time gameplay frame budget.
+async function closeBlockingModals(page) {
+    const before = await page.evaluate(() => ({
+        modalOpen: document.body.classList.contains("ui-modal-open"),
+        visibleOverlays: [...document.querySelectorAll(".screen-overlay")]
+            .filter(element => element.getClientRects().length > 0)
+            .map(element => element.id || element.className)
+    }));
+    await page.evaluate(() => {
+        const targets = document.querySelectorAll("#big-message-close, .screen-overlay:not(.hidden) .modal-close");
+        for (const target of targets) {
+            if (target.getClientRects().length > 0) target.click();
+        }
+    });
+    await page.waitForTimeout(350);
+    const after = await page.evaluate(() => ({
+        modalOpen: document.body.classList.contains("ui-modal-open"),
+        visibleOverlays: [...document.querySelectorAll(".screen-overlay")]
+            .filter(element => element.getClientRects().length > 0)
+            .map(element => element.id || element.className)
+    }));
+    return {before, after};
+}
+
 async function setSettings(session) {
     const {page, runFor} = session;
     await page.locator("#settings-btn").click();
@@ -822,6 +857,7 @@ async function measurePerformance(checkpoint) {
     const session = await startSession(checkpoint.storageState, false, "final-performance");
     try {
         const {loaded, snapshot: loadedProbe, savedSnapshot} = await loadRealm(session);
+        const modalState = await closeBlockingModals(session.page);
         const differences = snapshotDiff(projectForRoundtrip(checkpoint.savedSnapshot),
             projectForRoundtrip(savedSnapshot));
         assert.deepEqual(differences, [],
@@ -881,14 +917,27 @@ async function measurePerformance(checkpoint) {
         const wallSeconds = Math.max(0.001, (Date.now() - wallStarted) / 1000);
         const renderedDelta = afterFps.renderedFrames - beforeFps.renderedFrames;
         const measuredFps = renderedDelta / wallSeconds;
-        assert.deepEqual(session.pageErrors, [], "performance context must have no page errors");
-        assert.deepEqual(session.consoleErrors, [], "performance context must have no console errors");
+        const diagnostics = {
+            renderedDelta,
+            wallSeconds: Math.round(wallSeconds * 1000) / 1000,
+            modalState,
+            visibility: await session.page.evaluate(() => document.visibilityState),
+            modalOpen: await session.page.evaluate(() => document.body.classList.contains("ui-modal-open")),
+            frameFaulted: afterFps.frameFaulted,
+            gameOver: afterFps.gameOver,
+            tick: afterFps.tick,
+            year: afterFps.year,
+            pageErrors: session.pageErrors,
+            consoleErrors: session.consoleErrors
+        };
+        assert.deepEqual(session.pageErrors, [], "performance context must have no page errors: " + JSON.stringify(diagnostics));
+        assert.deepEqual(session.consoleErrors, [], "performance context must have no console errors: " + JSON.stringify(diagnostics));
+        assert.equal(afterFps.frameFaulted, false, "the frame loop must not fault during the sample: " + JSON.stringify(diagnostics));
+        assert.equal(afterFps.gameOver, false, "the realm must not end during the frame sample: " + JSON.stringify(diagnostics));
         assert.ok(measuredFps >= FPS_MINIMUM,
-            "fresh real-time context must stay above " + FPS_MINIMUM + " FPS (got " + measuredFps.toFixed(2) + ")");
-        assert.ok(afterFps.lastDrawMs <= 16.7, "per-frame draw work must fit 16.7 ms");
-        assert.ok(afterFps.lastUiRenderMs <= 16.7, "UI refresh must fit 16.7 ms");
-        assert.equal(afterFps.gameOver, false, "the realm must not end during the frame sample");
-        assert.equal(afterFps.frameFaulted, false, "the frame loop must not fault during the sample");
+            "fresh real-time context must stay above " + FPS_MINIMUM + " FPS (got " + measuredFps.toFixed(2) + "): " + JSON.stringify(diagnostics));
+        assert.ok(afterFps.lastDrawMs <= 16.7, "per-frame draw work must fit 16.7 ms: " + JSON.stringify(diagnostics));
+        assert.ok(afterFps.lastUiRenderMs <= 16.7, "UI refresh must fit 16.7 ms: " + JSON.stringify(diagnostics));
         assert.ok(afterFps.year >= checkpoint.targetYear, "the performance sample must run after the target year");
         return {
             resumedRealTime: true,
