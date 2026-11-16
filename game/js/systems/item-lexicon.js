@@ -9,6 +9,7 @@ import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import { SAVANNA_GOODS } from "../world/savanna-ecology.js";
 import { SWAMP_GOODS } from "../world/swamp-ecology.js";
 import { VOLCANO_GOODS } from "../world/volcano-ecology.js";
+import { COAST_GOODS } from "../world/coast-ecology.js";
 import { TAIGA_GOODS } from "../world/taiga-ecology.js";
 
 export const MAX_CRAFTED_ITEMS = 500;
@@ -207,6 +208,7 @@ function buildBaseItems() {
     const taigaIds = new Set(Object.keys(TAIGA_GOODS));
     const swampIds = new Set(Object.keys(SWAMP_GOODS));
     const volcanoIds = new Set(Object.keys(VOLCANO_GOODS));
+    const coastIds = new Set(Object.keys(COAST_GOODS));
     for (const good of Object.values(FOREST_GOODS)) {
         if (!good || seen.has(good.id)) continue;
         seen.add(good.id);
@@ -216,13 +218,15 @@ function buildBaseItems() {
         const taiga = taigaIds.has(good.id);
         const swamp = swampIds.has(good.id);
         const volcano = volcanoIds.has(good.id);
+        const coast = coastIds.has(good.id);
         const zone = tropical ? "Tropical forests" : savanna ? "Savanna and open woodland"
             : taiga ? "Boreal taiga and forest lakes"
                 : swamp ? "Swamps, fens and peat bogs"
-                    : volcano ? "Volcanic fields and crater slopes" : "Temperate forests";
+                    : coast ? "Coastlines, beaches, dunes and salt marsh"
+                        : volcano ? "Volcanic fields and crater slopes" : "Temperate forests";
         const processed = Boolean(good.processed);
         items.push(freezeItem({
-            id: "base:forest:" + good.id, origin: tropical ? "tropical" : savanna ? "savanna" : taiga ? "taiga" : swamp ? "swamp" : volcano ? "volcanic" : "forest", kind: "good", category,
+            id: "base:forest:" + good.id, origin: tropical ? "tropical" : savanna ? "savanna" : taiga ? "taiga" : swamp ? "swamp" : coast ? "coastal" : volcano ? "volcanic" : "forest", kind: "good", category,
             label: good.label, source: zone + (processed ? " · processed" : " · seasonal gathering"),
             summary: FOREST_CATEGORY_NOTES[good.category] || "An ecological product gathered from the living forest.",
             detail: (tropical
@@ -233,11 +237,13 @@ function buildBaseItems() {
                         ? "This product belongs to the boreal spruce, pine, larch and birch forest, its moss floor, bogs or forest lakes. Its yield follows the long winter and short summer recorded on the map."
                         : swamp
                             ? "This product belongs to the shallow water, reed bed, alder carr, fen or peat bog. Its yield follows the spring flood, summer draw-down and autumn refill recorded on the map."
-                            : volcano
-                                ? "This product belongs to a lava field, ash slope, crater rim or pioneer stand on weathered volcanic soil. Its yield follows the eruption cycle and regeneration stage recorded on the map."
-                        : "This species belongs to the temperate woodland. Its seasonal yield follows the forest type, age and management recorded on the map.")
+                                                : coast
+                        ? "This product belongs to a beach, dune, tidal flat, salt marsh or sheltered coastal forest. Its yield follows the tide, wave exposure, salt and seasonal shore cycle recorded on the map."
+                        : volcano
+                            ? "This product belongs to a lava field, ash slope, crater rim or pioneer stand on weathered volcanic soil. Its yield follows the eruption cycle and regeneration stage recorded on the map."
+                            : "This species belongs to the temperate woodland. Its seasonal yield follows the forest type, age and management recorded on the map.")
                 + (processed ? " It is a processed product: raw carcasses or hides are turned into this good before delivery." : ""),
-            tags: [tropical ? "tropical" : savanna ? "savanna" : taiga ? "taiga" : swamp ? "swamp" : volcano ? "volcanic" : "temperate", good.category, processed ? "processed" : "raw", good.id],
+            tags: [tropical ? "tropical" : savanna ? "savanna" : taiga ? "taiga" : swamp ? "swamp" : coast ? "coastal" : volcano ? "volcanic" : "temperate", good.category, processed ? "processed" : "raw", good.id],
             availability: processed ? "Processed from raw stock" : "Seasonal · ecology-limited",
             recipe: null,
         }));

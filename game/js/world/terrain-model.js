@@ -112,6 +112,7 @@ export const CLIMATES = [
     { id: 'tundra',       label: 'Tundra',       note: 'Permafrost, low shrubs, bogs and a short summer' },
     { id: 'mountain',     label: 'Mountains & Highlands', note: 'High chains, passes, glaciers, mines and terraced valleys' },
     { id: 'volcanic',     label: 'Volcanic Lands', note: 'Lava fields, craters, hot springs, ash and volcanic soil' },
+    { id: 'coastal',      label: 'Coastlands',   note: 'Beaches, dunes, cliffs, salt marsh, lagoons and natural harbours' },
     { id: 'savanna',      label: 'Savanna',      note: 'Tall grass, flat-crowned trees and a long dry season' },
     { id: 'swamp',        label: 'Swamps & Bogs', note: 'Shallow water, alder carr, reeds, fens and deep peat' },
     { id: 'mediterranean',label: 'Mediterranean',note: 'Warm dry summers and olive hills' },
@@ -241,6 +242,12 @@ export function sampleHeight(wx, wy, W, H, rawOptions = {}) {
     if (options.climate === 'volcanic') {
         h += 0.04 + smoothstep(0.24, 0.7, h) * 0.15;
     }
+    // Coastlands keep long, low shelves and a ragged tidal edge. The lift is
+    // deliberately small: the shore is made by the existing sea level, not by
+    // a second terrain type, so rivers, islands and lake carving still work.
+    if (options.climate === 'coastal') {
+        h += 0.012 + (edgeNoise - 0.5) * 0.026;
+    }
     return clamp(h, 0, 1);
 }
 
@@ -269,8 +276,11 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
     // Volcanic soils are often dry on the surface and wet at the spring line.
     // The local water table is low, but hot springs are added by the profile.
     const volcanic = options.climate === 'volcanic' ? -0.05 : 0;
+    // The maritime climate carries damp air and salt-laden fog inland, but the
+    // coast's free-draining sand and shingle are still dry at the surface.
+    const coastal = options.climate === 'coastal' ? 0.075 : 0;
     return clamp(
-        noise + tropical + tundra + savanna + taiga + swamp + mountain + volcanic + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
+        noise + tropical + tundra + savanna + taiga + swamp + mountain + volcanic + coastal + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
         + (options.wetlands - 50) * 0.0016 - (options.aridity - 50) * 0.0012,
         0, 1
     );
@@ -278,7 +288,7 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
 
 export function sampleTemperature(wx, wy, W, H, height, sea, rawOptions = {}) {
     const options = rawOptions.__normalized ? rawOptions : normalizeWorldOptions(rawOptions);
-    const base = { temperate: 0.58, northern: 0.33, taiga: 0.27, tundra: 0.20, mountain: 0.34, volcanic: 0.72, savanna: 0.76, swamp: 0.55, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
+    const base = { temperate: 0.58, northern: 0.33, taiga: 0.27, tundra: 0.20, mountain: 0.34, volcanic: 0.72, coastal: 0.59, savanna: 0.76, swamp: 0.55, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
     const latitude = 1 - Math.abs(wy / H - 0.5) * 2;   // 1 at the equator, 0 at the poles
     let t = base + (latitude - 0.62) * 0.26 - Math.max(0, height - sea) * 0.30;
     t += (fbm(wx * 0.0085 + 91.3, wy * 0.0085 + 17.9, 3, 0.5, 2.1) - 0.5) * 0.07;
@@ -692,6 +702,12 @@ const PALETTES = {
         dry: [78, 72, 65], meadow: [101, 98, 72], lush: [72, 94, 55], forest: [42, 65, 41],
         cold: [113, 109, 104], hot: [134, 83, 52], sand: [96, 88, 78], swamp: [62, 66, 54],
         rock: [62, 60, 58], snow: [220, 216, 207],
+    },
+    coastal: {
+        waterDeep: [20, 68, 91], waterShallow: [55, 132, 139], foam: [218, 235, 229],
+        dry: [188, 176, 130], meadow: [124, 145, 87], lush: [73, 116, 65], forest: [43, 85, 53],
+        cold: [137, 148, 137], hot: [190, 164, 98], sand: [214, 198, 154], swamp: [83, 108, 72],
+        rock: [129, 125, 111], snow: [228, 237, 239],
     },
 };
 

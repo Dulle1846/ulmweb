@@ -47,6 +47,7 @@ import { spoilForestGoods } from "../systems/forest-gathering.js";
 import { updateMicroEvents } from "../systems/micro-events.js";
 import { updateExpeditions } from "../systems/expeditions.js";
 import { updateVolcanoHazards } from "../world/volcano-hazards.js";
+import { updateCoastHazards } from "../world/coast-hazards.js";
 
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 const ANNUAL_SLICE_BUDGET_MS = 6;
@@ -78,7 +79,11 @@ const ANNUAL_TASKS = [
     // One bounded hazard pass at the year boundary: eruption, earthquake,
     // ashfall and real destruction on volcanic ground. Temperate worlds return
     // immediately, so the shared campaign keeps its existing tick cost.
-    { name: "volcanoHazards", run(annual) { annual.volcanoHazards = updateVolcanoHazards(); } }
+    { name: "volcanoHazards", run(annual) { annual.volcanoHazards = updateVolcanoHazards(); } },
+    // One bounded coastal hazard pass at the same annual boundary. It returns
+    // immediately outside the Coastlands climate, so inland campaigns keep
+    // their existing tick cost and event sequence.
+    { name: "coastHazards", run(annual) { annual.coastHazards = updateCoastHazards(); } }
 ];
 
 let annualSlicingEnabled = false;
@@ -104,7 +109,8 @@ function createAnnualMaintenance() {
         socialResult: null,
         newborn: null,
         succession: null,
-        volcanoHazards: null
+        volcanoHazards: null,
+        coastHazards: null
     };
 }
 

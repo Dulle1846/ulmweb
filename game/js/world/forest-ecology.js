@@ -24,6 +24,7 @@ import { SAVANNA_GOODS, SAVANNA_SPECIES } from './savanna-ecology.js';
 import { SWAMP_GOODS } from './swamp-ecology.js';
 import { MOUNTAIN_GOODS } from './mountain-ecology.js';
 import { VOLCANO_GOODS } from './volcano-ecology.js';
+import { COAST_GOODS } from './coast-ecology.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -653,6 +654,10 @@ function weightedPickEntries(entries, total, roll) {
 // The existing wood/food ledger stays authoritative; these descriptors let the
 // survey and the forester/lumber panels explain what a particular wood offers.
 export const FOREST_GOODS = Object.freeze({
+    // Coastal goods are registered first so their unique sea products are
+    // available everywhere. Existing temperate entries below keep their own
+    // label, category and identity when an id is shared (fish, salt, reed).
+    ...COAST_GOODS,
     timber: Object.freeze({ id: 'timber', label: 'Timber', category: 'wood' }),
     'oak-timber': Object.freeze({ id: 'oak-timber', label: 'Oak timber', category: 'wood' }),
     'beech-timber': Object.freeze({ id: 'beech-timber', label: 'Beech timber', category: 'wood' }),

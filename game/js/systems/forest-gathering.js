@@ -23,6 +23,10 @@ import { isVolcanoSite, volcanoProductsAt, volcanoProfileAt, VOLCANO_GOODS } fro
 import {
     VOLCANO_WORKS, applyVolcanoWork, volcanoWorkAt, volcanoWorkReady, volcanoWorksSummaryAt, volcanoWorkUseAt,
 } from "../world/volcano-works.js";
+import { COAST_GOODS, coastProductsAt, coastProfileAt, isCoastSite } from "../world/coast-ecology.js";
+import {
+    COAST_WORKS, applyCoastWork, coastWorkAt, coastWorkReady, coastWorksSummaryAt, coastWorkUseAt,
+} from "../world/coast-works.js";
 import {
     MOUNTAIN_WORKS, applyMountainWork, mountainWorkAt, mountainWorkReady, mountainWorksSummaryAt,
 } from "../world/mountain-works.js";
@@ -103,6 +107,13 @@ export function forestDeliveryChannel(id) {
         if (volcano.category === "wood") return "wood";
         if (volcano.category === "medicine") return "medicine";
         if (volcano.category === "food") return "food";
+        return "gold";
+    }
+    const coast = COAST_GOODS[id];
+    if (coast) {
+        if (coast.category === "wood") return "wood";
+        if (coast.category === "food") return "food";
+        if (coast.category === "medicine") return "medicine";
         return "gold";
     }
     const tropical = TROPICAL_GOODS[id];
@@ -482,6 +493,7 @@ function meadowContextAt(x, y, options = {}) {
             ...grasslandUseAt(x, y),
             ...(state.worldOptions?.climate === "mountain" ? mountainWorkUseAt(x, y) : {}),
             ...(state.worldOptions?.climate === "volcanic" ? volcanoWorkUseAt(x, y) : {}),
+            ...(state.worldOptions?.climate === "coastal" ? coastWorkUseAt(x, y) : {}),
         },
     };
 }
@@ -507,7 +519,8 @@ export function gatherMeadowProducts(x, y, options = {}) {
     // Tundra, desert and steppe are still forage land. The same button and
     // ledger serve all four profiles; the terrain decides which harvest
     // vocabulary is present. Cold ground wins over the arid margins.
-    const products = (isVolcanoSite(x, y, context) ? volcanoProductsAt(x, y, context) : null)
+    const products = (isCoastSite(x, y, context) ? coastProductsAt(x, y, context) : null)
+        || (isVolcanoSite(x, y, context) ? volcanoProductsAt(x, y, context) : null)
         || (isMountainSite(x, y, context) ? mountainProductsAt(x, y, context) : null)
         || (isSwampSite(x, y, context) ? swampProductsAt(x, y, context) : null)
         || (isTundraSite(x, y, context) ? tundraProductsAt(x, y, context) : null)
@@ -916,6 +929,126 @@ export function performVolcanoWork(x, y, kind, options = {}) {
     };
 }
 
+// --- Player-built coastal works and sea harvests (1.2.14.54–1.2.14.63) ---
+
+function coastWorkContextAt(x, y, options = {}) {
+    const context = meadowContextAt(x, y, options);
+    context.use = { ...context.use, ...coastWorkUseAt(x, y) };
+    return context;
+}
+
+function coastWorkSiteAt(x, y, options = {}) {
+    const context = coastWorkContextAt(x, y, options);
+    if (!isCoastSite(x, y, context)) return null;
+    const profile = coastProfileAt(x + 0.5, y + 0.5, context);
+    return profile?.coastal && !profile.water?.sea ? profile : null;
+}
+
+function coastWorkCost(def) {
+    return Object.entries(def?.cost || {}).filter(([, value]) => Number(value) > 0);
+}
+
+function canPayCoastWork(def) {
+    return coastWorkCost(def).every(([resource, amount]) => (Number(state.resources?.[resource]) || 0) >= Number(amount));
+}
+
+function payCoastWork(def) {
+    if (!canPayCoastWork(def)) return false;
+    for (const [resource, amount] of coastWorkCost(def)) addResource(resource, -Number(amount));
+    return true;
+}
+
+function coastWorkEcologicalReason(kind, profile) {
+    if (kind === "fishingVillage" && profile.economy.fish < 0.18) return "No productive fishing shore at this tile";
+    if (kind === "harbour" && profile.workPotential.harbour < 0.32) return "No sheltered natural anchorage at this tile";
+    if (kind === "tradingPost" && profile.workPotential.harbour < 0.22) return "No landing place for a trading post";
+    if (kind === "fortress" && profile.workPotential.fortress < 0.2) return "No defensible coastal height at this tile";
+    if (kind === "lighthouse" && profile.workPotential.lighthouse < 0.2) return "No headland or harbour approach to mark";
+    if (kind === "shipyard" && profile.workPotential.harbour < 0.3 && profile.economy.timber < 0.12) return "No deep-water launch and timber at this tile";
+    if (kind === "saltworks" && profile.workPotential.saltworks < 0.25) return "The tide and marsh do not yield enough brine here";
+    if (kind === "market" && profile.workPotential.harbour < 0.22) return "No harbour trade reaches this shore";
+    if (kind === "navalBase" && profile.workPotential.harbour < 0.34) return "No deep sheltered anchorage for a fleet station";
+    return null;
+}
+
+export function coastWorkAvailability(x, y, options = {}) {
+    const profile = coastWorkSiteAt(x, y, options);
+    if (!profile) return { ok: false, reason: "No coastal land at this tile", works: {} };
+    const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
+    const works = {};
+    for (const [kind, definition] of Object.entries(COAST_WORKS)) {
+        const ready = coastWorkReady(x, y, kind, day);
+        const ecological = coastWorkEcologicalReason(kind, profile);
+        const affordable = canPayCoastWork(definition);
+        const reason = ready.reason || ecological || (affordable ? null
+            : "Not enough " + coastWorkCost(definition).filter(([resource, amount]) => (Number(state.resources?.[resource]) || 0) < Number(amount)).map(([resource]) => resource).join(", "));
+        works[kind] = { ...definition, ok: !reason, reason };
+    }
+    return {
+        ok: true, profile, works,
+        summary: coastWorksSummaryAt(x, y),
+        title: profile.label + " · " + profile.landform.label,
+        audit: profile.features?.length || 0,
+    };
+}
+
+export function performCoastWork(x, y, kind, options = {}) {
+    const definition = COAST_WORKS[kind];
+    if (!definition) return { ok: false, reason: "Unknown coastal work" };
+    const availability = coastWorkAvailability(x, y, options);
+    if (!availability.ok) return { ok: false, reason: availability.reason };
+    if (!availability.works[kind]?.ok) return { ok: false, reason: availability.works[kind]?.reason || "This work is not possible here" };
+    const profile = availability.profile;
+    const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
+    const year = Math.floor(number(options.year, state.year) || 1);
+    if (!payCoastWork(definition)) return { ok: false, reason: "The work could not be paid for" };
+    const ledger = ensureForestGathering();
+    const goods = [];
+    const add = (id, amount) => {
+        const accepted = addStock(ledger, id, Math.max(0, Math.floor(amount)));
+        if (accepted > 0 && FOREST_GOODS[id]) goods.push({ ...FOREST_GOODS[id], amount: accepted });
+        return accepted;
+    };
+    if (kind === "fishingVillage") {
+        add("fish", 3 + Math.round(profile.economy.fish * 5));
+        add("shellfish", 2 + Math.round(profile.economy.shellfish * 3));
+    } else if (kind === "harbour") {
+        add("sea-trade-goods", 2 + Math.round(profile.economy.trade * 4));
+        add("fish", 1 + Math.round(profile.economy.fish * 2));
+    } else if (kind === "tradingPost") {
+        add("sea-trade-goods", 1 + Math.round(profile.economy.trade * 3));
+        addResource("gold", 2);
+    } else if (kind === "fortress") {
+        addResource("stone", 1);
+    } else if (kind === "lighthouse") {
+        addResource("gold", 1);
+    } else if (kind === "shipyard") {
+        add("sea-trade-goods", 1 + Math.round(profile.workPotential.harbour * 3));
+        add("coastal-pine-timber", 2 + Math.round(profile.economy.timber * 3));
+    } else if (kind === "saltworks") {
+        add("salt", 3 + Math.round(profile.workPotential.saltworks * 5));
+    } else if (kind === "market") {
+        add("sea-trade-goods", 1 + Math.round(profile.economy.trade * 2));
+        addResource("gold", 2);
+    } else if (kind === "navalBase") {
+        add("sea-trade-goods", 1 + Math.round(profile.workPotential.harbour * 2));
+    }
+    applyCoastWork(x, y, kind, { day });
+    const record = coastWorkAt(x, y);
+    if (record) {
+        record.lastHarvest = record.lastHarvest || {};
+        record.lastHarvest[kind] = day;
+    }
+    ledger.history.push({ x: Math.floor(x), y: Math.floor(y), day, year, kind: "coast-work", work: kind, goods: goods.map(good => ({ id: good.id, amount: good.amount })) });
+    if (ledger.history.length > MAX_HISTORY) ledger.history.splice(0, ledger.history.length - MAX_HISTORY);
+    return {
+        ok: true, kind, label: definition.label,
+        tile: { x: Math.floor(x), y: Math.floor(y), label: profile.label, formation: profile.formation },
+        goods, summary: coastWorksSummaryAt(x, y),
+        message: definition.label.toUpperCase() + (goods.length ? " · " + goods.map(good => good.amount + " " + good.label).join(" · ") : " COMPLETED"),
+    };
+}
+
 export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
     const limit = Math.max(1, Math.min(16, Math.floor(number(radius, GATHER_RADIUS))));
     let best = null;
@@ -925,7 +1058,8 @@ export function gatherNearestGrasslandProducts(x, y, radius = GATHER_RADIUS) {
             const node = getResourceNodeAt(tx, ty);
             if (node?.forestCapacity && node.forestStock > 0) continue;
             const context = meadowContextAt(tx, ty);
-            const products = (isVolcanoSite(tx, ty, context) ? volcanoProductsAt(tx, ty, context) : null)
+            const products = (isCoastSite(tx, ty, context) ? coastProductsAt(tx, ty, context) : null)
+                || (isVolcanoSite(tx, ty, context) ? volcanoProductsAt(tx, ty, context) : null)
                 || (isMountainSite(tx, ty, context) ? mountainProductsAt(tx, ty, context) : null)
                 || (isSwampSite(tx, ty, context) ? swampProductsAt(tx, ty, context) : null)
                 || (isTundraSite(tx, ty, context) ? tundraProductsAt(tx, ty, context) : null)

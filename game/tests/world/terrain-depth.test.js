@@ -31,9 +31,10 @@ test("world sizes grow from compact to colossal", () => {
 
 test("every shape and climate is selectable and documented", () => {
     assert.equal(WORLD_SHAPES.length, 5);
-    assert.equal(CLIMATES.length, 12);
+    assert.equal(CLIMATES.length, 13);
     assert.ok(CLIMATES.some(entry => entry.id === "mountain" && /mountain/i.test(entry.label)));
     assert.ok(CLIMATES.some(entry => entry.id === "volcanic" && /volcanic/i.test(entry.label)));
+    assert.ok(CLIMATES.some(entry => entry.id === "coastal" && /coast/i.test(entry.label)));
     for (const entry of [...WORLD_SHAPES, ...CLIMATES]) {
         assert.ok(entry.id && entry.label && entry.note, entry.id);
     }

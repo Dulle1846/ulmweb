@@ -49,6 +49,55 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ## Production release history
 
+### 3.20.0-dev — Coastlands (1.2.14.1–1.2.14.71)
+
+**Released:** 2026-11-16 on the development line
+
+**Scope:** a complete thirteenth climate, **Coastlands**, with seventeen named
+shore formations: sand beach, shingle beach, rocky shore, sea cliff, salt
+marsh, dune field, lagoon, tidal flat, fjord, river delta, sheltered bay,
+natural harbour, island shore, coastal forest, sandbank, reef and shallow
+water. The deterministic `coast-ecology.js` profile supplies beach material,
+dunes, cliffs, intertidal ground, lagoons, reefs, sandbanks, natural harbours,
+tides, wave height, storm surge, erosion, flood, sand shift, salinisation,
+spray, fog, ice, seasonal water and long-term coastline change. Flora covers
+beach grasses, dune plants, coastal shrubs, salt-tolerant plants, coastal
+forest, reeds, salt meadow, algae and seagrass; fauna covers gulls and terns,
+seals and otters, waders, fish, crabs, mussels, sea turtles, coastal predators
+and seasonal migrants. Fish, shellfish, salt, seaweed, driftwood, coastal
+minerals, sea trade goods, pearls and amber enter the existing goods and
+delivery ledger.
+
+**Integration:** **Coastlands** is selectable in world creation and has its own
+terrain palette, height/moisture/temperature curves, maritime season and rain
+weights. One profile feeds the baked terrain, visual detail, survey, gathering
+and works. Nine player works reuse the existing work UI and ledger: fishing
+village, harbour town, trading post, coastal fortress, lighthouse, shipyard,
+saltworks, coastal market and naval base. They spend real resources, respect
+recovery cooldowns and are gated by the ecology the renderer shows. Strategic
+control of a natural harbour is the same profile field consumed by the works.
+The annual coastal hazard pass is bounded, runs only at the year boundary and
+prefers occupied ground over empty water; it can destroy real buildings and
+roads, while keeps and wonders stay protected. An optional `focus` supports a
+deterministic surge, erosion, flood, sand or salinisation proof. An optional
+bounded `coastWorks` save block is validated and restored; old saves without
+it load unchanged.
+
+**Verification:** `node scripts/coast-audit.mjs` generates a real 176×176
+coastal world, surveys every tile through all four seasons, builds all nine
+works, gathers a sea harvest and forces the real annual surge against a placed
+house. The checked audit is **71/71 working**, nine works built, gather
+successful and one real building destroyed; see
+[`../artifacts/COAST_1.2.14_AUDIT.md`](../artifacts/COAST_1.2.14_AUDIT.md).
+Focused coastal tests cover all requirement IDs, every formation, season and
+tide changes, products, work persistence, malformed saves and the protected-core
+hazard rule. The checked 25-year coastal campaign reaches **10,040 ticks /
+72 residents / 3 agenda stages / 0.937 ms per tick** with stable firewood and no
+game over. The full suite is **1033/1033**. The opening construction build-out
+now leaves at least one fuel worker at a lumber camp or sawmill, so a new realm
+cannot lose both woodcutters to foundations and stall its hearths for decades.
+Documentation: [docs/COASTS.md](docs/COASTS.md).
+
 ### 3.20.0-dev — Volcano landscapes (1.2.13.1–1.2.13.73)
 
 **Released:** 2026-11-15 on the development line

@@ -21,6 +21,7 @@ import { restoreForestSuccession, serializeForestSuccession } from "../systems/f
 import { restoreSwampWorks, serializeSwampWorks } from "../world/swamp-works.js";
 import { restoreMountainWorks, serializeMountainWorks } from "../world/mountain-works.js";
 import { restoreVolcanoWorks, serializeVolcanoWorks } from "../world/volcano-works.js";
+import { restoreCoastWorks, serializeCoastWorks } from "../world/coast-works.js";
 import { initializeCityForRealm, rebuildLogisticsReservations, restoreCity, serializeCity } from "../systems/logistics.js";
 import {
     initializePopulationRegister, normalizePopulationState, serializePopulationState,
@@ -180,6 +181,7 @@ export function createSaveSnapshot() {
         swampWorks: serializeSwampWorks(),
         mountainWorks: serializeMountainWorks(),
         volcanoWorks: serializeVolcanoWorks(),
+        coastWorks: serializeCoastWorks(),
         city: serializeCity(),
         tick: state.tick,
         year: state.year,
@@ -259,6 +261,7 @@ export function restoreSaveSnapshot(snapshot) {
     restoreSwampWorks(snapshot.swampWorks);
     restoreMountainWorks(snapshot.mountainWorks);
     restoreVolcanoWorks(snapshot.volcanoWorks);
+    restoreCoastWorks(snapshot.coastWorks);
     state.entities = [];
     // Household normalization below may move a resident to a different house.
     // The saved home/anchor is authoritative (for example a worker posted to a

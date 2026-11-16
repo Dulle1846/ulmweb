@@ -1,0 +1,883 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-11-16T08:17:31.165Z",
+  "seed": 20261214,
+  "world": {
+    "width": 176,
+    "height": 176,
+    "resolution": 4,
+    "seaLevel": 0.3277,
+    "coastalTiles": 30976,
+    "formations": [
+      "sand-beach",
+      "shingle-beach",
+      "rocky-shore",
+      "sea-cliff",
+      "salt-marsh",
+      "dune-field",
+      "lagoon",
+      "tidal-flat",
+      "fjord",
+      "river-delta",
+      "sheltered-bay",
+      "natural-harbour",
+      "island-shore",
+      "coastal-forest",
+      "shallow-water",
+      "reef",
+      "sandbank"
+    ],
+    "observedFormations": [
+      "shallow-water",
+      "reef",
+      "sandbank",
+      "sand-beach",
+      "fjord",
+      "shingle-beach",
+      "salt-marsh",
+      "dune-field",
+      "rocky-shore",
+      "river-delta",
+      "sea-cliff",
+      "sheltered-bay",
+      "coastal-forest",
+      "lagoon",
+      "natural-harbour",
+      "tidal-flat",
+      "island-shore"
+    ]
+  },
+  "summary": {
+    "total": 71,
+    "working": 71,
+    "partial": 0,
+    "missing": 0
+  },
+  "works": {
+    "fishingVillage": {
+      "ok": true,
+      "x": 99,
+      "y": 8,
+      "label": "Sand beach",
+      "formation": "sand-beach",
+      "goods": [
+        {
+          "id": "fish",
+          "amount": 4
+        },
+        {
+          "id": "shellfish",
+          "amount": 3
+        }
+      ],
+      "reason": null
+    },
+    "harbour": {
+      "ok": true,
+      "x": 99,
+      "y": 8,
+      "label": "Sand beach",
+      "formation": "sand-beach",
+      "goods": [
+        {
+          "id": "sea-trade-goods",
+          "amount": 4
+        },
+        {
+          "id": "fish",
+          "amount": 2
+        }
+      ],
+      "reason": null
+    },
+    "tradingPost": {
+      "ok": true,
+      "x": 99,
+      "y": 8,
+      "label": "Sand beach",
+      "formation": "sand-beach",
+      "goods": [
+        {
+          "id": "sea-trade-goods",
+          "amount": 3
+        }
+      ],
+      "reason": null
+    },
+    "fortress": {
+      "ok": true,
+      "x": 99,
+      "y": 8,
+      "label": "Sand beach",
+      "formation": "sand-beach",
+      "goods": [],
+      "reason": null
+    },
+    "lighthouse": {
+      "ok": true,
+      "x": 99,
+      "y": 8,
+      "label": "Sand beach",
+      "formation": "sand-beach",
+      "goods": [],
+      "reason": null
+    },
+    "shipyard": {
+      "ok": true,
+      "x": 99,
+      "y": 8,
+      "label": "Sand beach",
+      "formation": "sand-beach",
+      "goods": [
+        {
+          "id": "sea-trade-goods",
+          "amount": 3
+        },
+        {
+          "id": "coastal-pine-timber",
+          "amount": 2
+        }
+      ],
+      "reason": null
+    },
+    "saltworks": {
+      "ok": true,
+      "x": 99,
+      "y": 8,
+      "label": "Sand beach",
+      "formation": "sand-beach",
+      "goods": [
+        {
+          "id": "salt",
+          "amount": 5
+        }
+      ],
+      "reason": null
+    },
+    "market": {
+      "ok": true,
+      "x": 99,
+      "y": 8,
+      "label": "Sand beach",
+      "formation": "sand-beach",
+      "goods": [
+        {
+          "id": "sea-trade-goods",
+          "amount": 3
+        }
+      ],
+      "reason": null
+    },
+    "navalBase": {
+      "ok": true,
+      "x": 99,
+      "y": 8,
+      "label": "Sand beach",
+      "formation": "sand-beach",
+      "goods": [
+        {
+          "id": "sea-trade-goods",
+          "amount": 2
+        }
+      ],
+      "reason": null
+    }
+  },
+  "workProfile": {
+    "x": 99,
+    "y": 8,
+    "formation": "sandbank",
+    "harbour": 0.5938558279509842,
+    "features": [
+      "1.2.14.2",
+      "1.2.14.5",
+      "1.2.14.7",
+      "1.2.14.8",
+      "1.2.14.9",
+      "1.2.14.10",
+      "1.2.14.14",
+      "1.2.14.16",
+      "1.2.14.19",
+      "1.2.14.20",
+      "1.2.14.21",
+      "1.2.14.22",
+      "1.2.14.23",
+      "1.2.14.25",
+      "1.2.14.26",
+      "1.2.14.27",
+      "1.2.14.28",
+      "1.2.14.29",
+      "1.2.14.30",
+      "1.2.14.31",
+      "1.2.14.32",
+      "1.2.14.33",
+      "1.2.14.35",
+      "1.2.14.37",
+      "1.2.14.38",
+      "1.2.14.39",
+      "1.2.14.40",
+      "1.2.14.41",
+      "1.2.14.43",
+      "1.2.14.44",
+      "1.2.14.45",
+      "1.2.14.47",
+      "1.2.14.48",
+      "1.2.14.49",
+      "1.2.14.51",
+      "1.2.14.52",
+      "1.2.14.54",
+      "1.2.14.55",
+      "1.2.14.56",
+      "1.2.14.57",
+      "1.2.14.58",
+      "1.2.14.59",
+      "1.2.14.60",
+      "1.2.14.61",
+      "1.2.14.62",
+      "1.2.14.63",
+      "1.2.14.66",
+      "1.2.14.67",
+      "1.2.14.68",
+      "1.2.14.70",
+      "1.2.14.71"
+    ],
+    "strategicControl": true
+  },
+  "gather": {
+    "x": 100,
+    "y": 8,
+    "formation": "sand-beach",
+    "ok": true,
+    "goods": [
+      {
+        "id": "sea-trade-goods",
+        "amount": 3
+      },
+      {
+        "id": "salt",
+        "amount": 2
+      },
+      {
+        "id": "shellfish",
+        "amount": 2
+      },
+      {
+        "id": "reed",
+        "amount": 2
+      },
+      {
+        "id": "seaweed",
+        "amount": 2
+      }
+    ],
+    "reason": null
+  },
+  "hazard": {
+    "target": {
+      "x": 0,
+      "y": 0,
+      "formation": "shallow-water",
+      "damage": 0.32429790987682794,
+      "flood": 0.5228015085150635,
+      "erosion": 0.31328793459203247
+    },
+    "hazard": {
+      "events": [
+        "STORM SURGE ON SHALLOW COASTAL WATER · SURGE 0.7 M · WAVES 3.1 M",
+        "SALT SPRAY STRIPS THE EXPOSED FIELDS",
+        "SURGE WASHES OUT STORED FOOD · FOOD -1",
+        "DESTROYED BUILDING"
+      ],
+      "destroyed": {
+        "ok": true,
+        "kind": "building",
+        "label": "Timber Cottage",
+        "x": 0,
+        "y": 0,
+        "cause": "storm-surge"
+      },
+      "candidates": 21,
+      "surge": {
+        "x": 0,
+        "y": 0,
+        "value": 0.3914398076236248,
+        "heightM": 0.7
+      },
+      "erosion": null,
+      "flood": null,
+      "sandShift": null,
+      "salinisation": null
+    },
+    "houseDead": true
+  },
+  "items": [
+    {
+      "id": "1.2.14.1",
+      "label": "Sand beaches",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "100,8 day50; formation=sand-beach; sand=0.660; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.2",
+      "label": "Shingle beaches",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "0,0 day50; formation=shallow-water; shingle=0.841; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.3",
+      "label": "Rocky coasts",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "0,0 day50; formation=shallow-water; rock=0.600; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.4",
+      "label": "Sea cliffs",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "70,0 day50; formation=sandbank; cliff=0.662; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.5",
+      "label": "Flat marsh coasts",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "6,0 day50; formation=reef; marsh=0.855; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.6",
+      "label": "Dune coasts",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "0,0 day50; formation=shallow-water; dune=0.663; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.7",
+      "label": "Lagoons",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "0,0 day50; formation=shallow-water; lagoon=0.732; drawWater"
+    },
+    {
+      "id": "1.2.14.8",
+      "label": "Tidal flats",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "0,0 day50; formation=shallow-water; tidal=0.637; drawTidal"
+    },
+    {
+      "id": "1.2.14.9",
+      "label": "Fjord coasts",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "0,0 day50; formation=shallow-water; fjord=0.954; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.10",
+      "label": "River mouths and deltas",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "0,0 day50; formation=shallow-water; delta=0.674; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.11",
+      "label": "Beach grasses",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFlora + js/presentation/rendering/coast-render.js#drawCoastTrees",
+      "evidence": "100,8 day50; grasses=beach-grass:sand-couch; drawCoastDetails"
+    },
+    {
+      "id": "1.2.14.12",
+      "label": "Dune plants",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFlora + js/presentation/rendering/coast-render.js#drawCoastTrees",
+      "evidence": "80,22 day50; grasses=marram:beach-grass; shrubs=; drawCoastDetails"
+    },
+    {
+      "id": "1.2.14.13",
+      "label": "Coastal shrubs",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFlora + js/presentation/rendering/coast-render.js#drawCoastTrees",
+      "evidence": "104,14 day50; shrubs=juniper:bramble; drawCoastTrees"
+    },
+    {
+      "id": "1.2.14.14",
+      "label": "Salt-tolerant plants",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFlora + js/presentation/rendering/coast-render.js#drawCoastTrees",
+      "evidence": "0,0 day50; salt=0.529; stage=bare; drawCoastDetails"
+    },
+    {
+      "id": "1.2.14.15",
+      "label": "Coastal forests",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFlora + js/presentation/rendering/coast-render.js#drawCoastTrees",
+      "evidence": "100,10 day50; trees=coastal-pine; drawCoastTrees"
+    },
+    {
+      "id": "1.2.14.16",
+      "label": "Reeds and wetland plants",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFlora + js/presentation/rendering/coast-render.js#drawCoastTrees",
+      "evidence": "6,0 day50; grasses=; stage=bare"
+    },
+    {
+      "id": "1.2.14.17",
+      "label": "Salt meadow vegetation",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFlora + js/presentation/rendering/coast-render.js#drawCoastTrees",
+      "evidence": "114,18 day50; formation=salt-marsh; saltMeadow=true"
+    },
+    {
+      "id": "1.2.14.18",
+      "label": "Algae and seagrass",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFlora + js/presentation/rendering/coast-render.js#drawCoastTrees",
+      "evidence": "1,0 day50; algae=seagrass:kelp; drawWater"
+    },
+    {
+      "id": "1.2.14.19",
+      "label": "Small bays",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "30,0 day50; formation=shallow-water; bay=0.812; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.20",
+      "label": "Natural harbours",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "0,0 day50; formation=shallow-water; harbour=0.912; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.21",
+      "label": "River mouths",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; formation=shallow-water; delta=0.674; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.22",
+      "label": "Tidal areas",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; tidal=0.637; tide=0.927; drawTidal"
+    },
+    {
+      "id": "1.2.14.23",
+      "label": "Coastal lagoons",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; formation=shallow-water; lagoon=0.732; drawWater"
+    },
+    {
+      "id": "1.2.14.24",
+      "label": "Rock outcrops",
+      "group": "rock",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; outcrop=0.462; rock=0.600; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.25",
+      "label": "Island groups",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/presentation/rendering/coast-render.js",
+      "evidence": "24,0 day50; formation=sandbank; island=0.574; drawCoastGround"
+    },
+    {
+      "id": "1.2.14.26",
+      "label": "Sandbanks",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "8,0 day50; formation=reef; sandbank=0.559; drawWater"
+    },
+    {
+      "id": "1.2.14.27",
+      "label": "Reefs and underwater formations",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; formation=shallow-water; reef=0.571; drawWater"
+    },
+    {
+      "id": "1.2.14.28",
+      "label": "Shallow coastal water",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "99,6 day50; shallow=true; depth=0.055; drawWater"
+    },
+    {
+      "id": "1.2.14.29",
+      "label": "Gulls and seabirds",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFauna + js/presentation/rendering/coast-render.js#drawCoastDetails",
+      "evidence": "0,0 day50; fauna=gull:tern; drawCoastDetails"
+    },
+    {
+      "id": "1.2.14.30",
+      "label": "Seals and other marine mammals",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFauna + js/presentation/rendering/coast-render.js#drawCoastDetails",
+      "evidence": "0,0 day50; fauna=seal; drawCoastDetails"
+    },
+    {
+      "id": "1.2.14.31",
+      "label": "Coastal and wading birds",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFauna + js/presentation/rendering/coast-render.js#drawCoastDetails",
+      "evidence": "0,0 day50; fauna=oystercatcher; drawCoastDetails"
+    },
+    {
+      "id": "1.2.14.32",
+      "label": "Fish and shellfish",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFauna + js/presentation/rendering/coast-render.js#drawCoastDetails",
+      "evidence": "0,0 day50; fish=0.375; goods=fish"
+    },
+    {
+      "id": "1.2.14.33",
+      "label": "Crabs and mussels",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFauna + js/presentation/rendering/coast-render.js#drawCoastDetails",
+      "evidence": "0,0 day50; crustaceans=crab; goods=shellfish:mussels"
+    },
+    {
+      "id": "1.2.14.34",
+      "label": "Sea turtles in suitable climates",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFauna + js/presentation/rendering/coast-render.js#drawCoastDetails",
+      "evidence": "154,64 day50; turtle=false; temperature=0.620"
+    },
+    {
+      "id": "1.2.14.35",
+      "label": "Coastal predators",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFauna + js/presentation/rendering/coast-render.js#drawCoastDetails",
+      "evidence": "0,0 day50; predators=otter; drawFauna"
+    },
+    {
+      "id": "1.2.14.36",
+      "label": "Migratory birds and seasonal resting places",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#buildFauna + js/presentation/rendering/coast-render.js#drawCoastDetails",
+      "evidence": "0,0 day50; migratory=goose; season=spring"
+    },
+    {
+      "id": "1.2.14.37",
+      "label": "Fish",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; fish=0.375; goods=fish"
+    },
+    {
+      "id": "1.2.14.38",
+      "label": "Shellfish and molluscs",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; shellfish=0.410; goods=shellfish:mussels"
+    },
+    {
+      "id": "1.2.14.39",
+      "label": "Salt",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "6,0 day50; salt=0.532; goods=salt"
+    },
+    {
+      "id": "1.2.14.40",
+      "label": "Seaweed and algae",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; seaweed=0.098; algae="
+    },
+    {
+      "id": "1.2.14.41",
+      "label": "Driftwood",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; driftwood=0.271; goods=driftwood"
+    },
+    {
+      "id": "1.2.14.42",
+      "label": "Coastal minerals",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; minerals=0.374; goods=coastal-minerals"
+    },
+    {
+      "id": "1.2.14.43",
+      "label": "Sea trade goods",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; trade=0.420; goods=sea-trade-goods"
+    },
+    {
+      "id": "1.2.14.44",
+      "label": "Pearls and rare natural materials",
+      "group": "economy",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; rare=0.292; goods=pearls"
+    },
+    {
+      "id": "1.2.14.45",
+      "label": "Strong coastal winds",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; wind=1.200; wave=0.000; drawWind"
+    },
+    {
+      "id": "1.2.14.46",
+      "label": "Fog",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "49,0 day50; fog=0.260; drawFog"
+    },
+    {
+      "id": "1.2.14.47",
+      "label": "Storm surges",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; stormSurge=0.349; flood=0.523; drawStorm"
+    },
+    {
+      "id": "1.2.14.48",
+      "label": "High waves",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; waveHeightM=2.500; wave=0.608; drawWater"
+    },
+    {
+      "id": "1.2.14.49",
+      "label": "Tides",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; tide=0.927; rangeM=0.700; drawTide"
+    },
+    {
+      "id": "1.2.14.50",
+      "label": "Coastal rain",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "76,29 day50; rain=0.000; weather=#a9c6ce; drawRain"
+    },
+    {
+      "id": "1.2.14.51",
+      "label": "Salt spray",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; spray=0.529; salt=0.529; drawSaltSpray"
+    },
+    {
+      "id": "1.2.14.52",
+      "label": "Seasonal changes in water level",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; tideChange=0.389; seasonalWater=0.000; drawWater"
+    },
+    {
+      "id": "1.2.14.53",
+      "label": "Ice floes and frozen coasts",
+      "group": "climate",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day350; ice=0.200; temperature=0.433; drawIce"
+    },
+    {
+      "id": "1.2.14.54",
+      "label": "Fishing villages",
+      "group": "settlement",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "work=Sand beach at 99,8; built=true; goods=fish:4,shellfish:3"
+    },
+    {
+      "id": "1.2.14.55",
+      "label": "Harbour towns",
+      "group": "settlement",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "work=Sand beach at 99,8; built=true; goods=sea-trade-goods:4,fish:2"
+    },
+    {
+      "id": "1.2.14.56",
+      "label": "Trading posts",
+      "group": "settlement",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "work=Sand beach at 99,8; built=true; goods=sea-trade-goods:3"
+    },
+    {
+      "id": "1.2.14.57",
+      "label": "Coastal fortresses",
+      "group": "settlement",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "work=Sand beach at 99,8; built=true; goods=structural only"
+    },
+    {
+      "id": "1.2.14.58",
+      "label": "Lighthouses",
+      "group": "settlement",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "work=Sand beach at 99,8; built=true; goods=structural only"
+    },
+    {
+      "id": "1.2.14.59",
+      "label": "Shipyards",
+      "group": "settlement",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "work=Sand beach at 99,8; built=true; goods=sea-trade-goods:3,coastal-pine-timber:2"
+    },
+    {
+      "id": "1.2.14.60",
+      "label": "Salt-making works",
+      "group": "settlement",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "work=Sand beach at 99,8; built=true; goods=salt:5"
+    },
+    {
+      "id": "1.2.14.61",
+      "label": "Coastal markets",
+      "group": "settlement",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "work=Sand beach at 99,8; built=true; goods=sea-trade-goods:3"
+    },
+    {
+      "id": "1.2.14.62",
+      "label": "Naval bases and fleet stations",
+      "group": "settlement",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "work=Sand beach at 99,8; built=true; goods=sea-trade-goods:2"
+    },
+    {
+      "id": "1.2.14.63",
+      "label": "Strategic control of natural harbours",
+      "group": "settlement",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "worksite; naturalHarbour=0.000; works=9/9; strategicControl=true; coastProfileAt use flags -> feature 1.2.14.63"
+    },
+    {
+      "id": "1.2.14.64",
+      "label": "Storm surge damage",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "2,0 day50; storm=0.414; flood=0.565; annual pass"
+    },
+    {
+      "id": "1.2.14.65",
+      "label": "Coastal erosion",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; erosion=0.313; annual pass + destroyCoastalTargetAt"
+    },
+    {
+      "id": "1.2.14.66",
+      "label": "Flooding",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; flood=0.523; annual pass + drawWater"
+    },
+    {
+      "id": "1.2.14.67",
+      "label": "Sand movement",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; sandShift=0.505; annual pass + drawDunes"
+    },
+    {
+      "id": "1.2.14.68",
+      "label": "Salinisation of soils",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "0,0 day50; salinisation=0.411; annual pass + drawSalt"
+    },
+    {
+      "id": "1.2.14.69",
+      "label": "Damage to harbours and settlements",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/coast-ecology.js",
+      "evidence": "target=0,0; damage=0.324; surge=0.391; events=STORM SURGE ON SHALLOW COASTAL WATER · SURGE 0.7 M · WAVES 3.1 M / SALT SPRAY STRIPS THE EXPOSED FIELDS / SURGE WASHES OUT STORED FOOD · FOOD -1 / DESTROYED BUILDING; destroyed=Timber Cottage; dead=true"
+    },
+    {
+      "id": "1.2.14.70",
+      "label": "Changes caused by tides",
+      "group": "succession",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/world/coast-hazards.js",
+      "evidence": "0,0 day50; tide=0.927; tideChange=0.389; renderer reads level"
+    },
+    {
+      "id": "1.2.14.71",
+      "label": "Long-term changes of the coastline",
+      "group": "succession",
+      "status": "working",
+      "code": "js/world/coast-ecology.js#coastProfileAt + js/world/coast-hazards.js",
+      "evidence": "0,0 day50; coastlineChange=0.362; longTermShift=0.328; year=3"
+    }
+  ]
+}

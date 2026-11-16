@@ -1148,6 +1148,26 @@ function assignJob(villager,workplaces=null,workerCounts=new Map()) {
         villager.anchor={x:previousWorkplace.x,y:previousWorkplace.y};
         return;
     }
+    // Fuel crews are a settlement lifeline, not a labour pool for the next
+    // construction site. A woodcutter pulled onto a foundation during the
+    // opening build-out used to stay a "builder" after it completed; the
+    // lumber camp then sat empty while every hearth burned through its store.
+    // Keep a healthy fuel assignment stable so the periodic job refresh cannot
+    // silently stop logs, planks and firewood.
+    if(previousWorkplace&&!previousWorkplace.dead&&FUEL_WORKPLACES.has(previousWorkplace.type)){
+        const capacity=BUILDING_WORKFORCE[previousWorkplace.type]||0;
+        const assigned=state.entities.filter(entity=>!entity.dead&&entity.type===TYPE.VILLAGER
+            &&entity.workplace===previousWorkplace).length;
+        if(capacity>0&&assigned<=capacity){
+            if(!villager.job){
+                const entry=JOB_MAP.find(row=>row.building===previousWorkplace.type);
+                villager.job=entry?entry.job:"worker";
+            }
+            villager.workplace=previousWorkplace;
+            villager.anchor={x:previousWorkplace.x,y:previousWorkplace.y};
+            return;
+        }
+    }
     if(previousWorkplace)workerCounts.set(previousWorkplace,Math.max(0,(workerCounts.get(previousWorkplace)||0)-1));
     // Keep a healthy assignment instead of rerolling every few months. The old
     // distance-only scan repeatedly poached the sawyer for a nearer farm, so

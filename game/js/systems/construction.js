@@ -200,7 +200,14 @@ function assignBuilder(site) {
     const candidates = state.entities
         .filter(entity => !entity.dead && entity.type === TYPE.VILLAGER &&
             entity.workplace !== site && (entity.illnessUntilTick || 0) <= state.tick &&
-            !(entity.workplace?.construction && entity.workplace.construction.stage < 3))
+            !(entity.workplace?.construction && entity.workplace.construction.stage < 3) &&
+            // Never strip the last fuel worker to staff a foundation. The
+            // opening build-out used to borrow both woodcutters and leave the
+            // camp empty for twenty years, which emptied every hearth and
+            // stalled the whole settlement. One spare fuel hand remains a
+            // valid builder, and every other crew keeps its normal rotation.
+            !([TYPE.LUMBER, TYPE.SAWMILL].includes(entity.workplace?.type)
+                && (workforce.workersByBuilding.get(entity.workplace) || 0) <= 1))
         .sort((a, b) => {
             const idleA = a.workplace ? 0 : 1;
             const idleB = b.workplace ? 0 : 1;

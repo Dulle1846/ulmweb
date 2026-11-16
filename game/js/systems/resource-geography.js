@@ -126,7 +126,12 @@ export function generateResourceGeography(seed=state.worldSeed){
             // resource rock line; the ecological tree line is rendered by
             // mountain-render.js, while this layer only carries harvestable wood.
             const mountainBelt=climate==="mountain"&&h>=sea+0.01;
-            if((h>=forestLine||savannaBelt||swampBelt||mountainBelt)&&h<BIOME.ROCK){
+            // Coastal woodland starts just above the beach, not only on the
+            // inland forest line. These are the wind-pruned pine, alder and
+            // sea-buckthorn stands the coast renderer draws; without this belt
+            // a lowland coastal start had no harvestable fuel at all.
+            const coastalBelt=climate==="coastal"&&h>=sea+0.006;
+            if((h>=forestLine||savannaBelt||swampBelt||mountainBelt||coastalBelt)&&h<BIOME.ROCK){
                 const density=climate==="savanna"
                     ?clamp((h-sea)/Math.max(0.001,BIOME.ROCK-sea),0,1)
                     :clamp((h-forestLine)/Math.max(0.001,BIOME.ROCK-forestLine),0,1);
@@ -190,6 +195,26 @@ export function generateResourceGeography(seed=state.worldSeed){
                             // such as "Drought-stressed Pine".
                             forestKind[index]=forestTypeIndex("subalpine-scrub");
                             forestAge[index]=1;
+                        }
+                    }
+                }else if(climate==="coastal"){
+                    // Coastal woodland is a broken belt of wind-shaped trees and
+                    // scrub behind the beach. It is deliberately patchy so open
+                    // dunes, salt marsh and cliffs remain open, but it is real
+                    // harvestable woodland for fuel and repairs.
+                    const presence=0.18+density*0.2+moisture*0.22+resourceBias;
+                    if(unitHash(worldSeed,index,0x434f4154)<presence){
+                        const stand=forestStandAt(x+0.5,y+0.5,{
+                            seed:worldSeed, moisture, temperature, height:h,
+                            climate, forests:state.worldOptions?.forests??52,
+                            stockRatio:1, rockLine:BIOME.ROCK,
+                        });
+                        if(stand.forest){
+                            const capacity=Math.max(18,Math.min(160,Math.round(30+density*42+moisture*34+unitHash(worldSeed,index,0x434f4350)*26)));
+                            forestCapacity[index]=capacity;
+                            forestStock[index]=capacity;
+                            forestKind[index]=forestTypeIndex(stand.type);
+                            forestAge[index]=stand.ageClass==="ancient"?3:stand.ageClass==="young"?1:2;
                         }
                     }
                 }else if(climate==="mountain"){

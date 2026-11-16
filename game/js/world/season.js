@@ -51,6 +51,12 @@ export const CLIMATE_SEASONS = Object.freeze({
         snowStart: 400, snowFull: 401, meltStart: 401, meltEnd: 402,
         snowScale: 0, foliageShift: 8, foliageScale: 0.42, greenShift: 42, warmthShift: 16,
     }),
+    // The maritime climate has a short, wet winter and a cool spring. Snow is
+    // rare on the shore but can settle on the exposed dunes and cliff tops.
+    coastal: Object.freeze({
+        snowStart: 285, snowFull: 330, meltStart: 355, meltEnd: 405,
+        snowScale: 0.38, foliageShift: 4, foliageScale: 0.7, greenShift: 8, warmthShift: 2,
+    }),
     // Savanna has no snow at all. Its green-up curve is the wet-season flush:
     // rain arrives in late winter and spring, then fades into a long dry heat.
     savanna: Object.freeze({
