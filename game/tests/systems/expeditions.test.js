@@ -225,5 +225,6 @@ test("the save, simulation and UI source contracts include the expedition layer"
     assert.ok(html.includes('data-command-tab="explore"'), "the command deck must expose the Explore tab");
     assert.ok(ui.includes("explore:renderExpeditionsPanel") && ui.includes("expedition-start"), "the Explore panel and launch action must be wired");
     assert.ok(ui.includes("kac:expedition-change"), "the open panel must refresh when travel resolves");
+    assert.ok(ui.includes("stepTransitionSurvey") && ui.includes("refreshTransitionSurvey"), "the ecotone survey must step its tile cursor and refresh in place");
     assert.ok(css.includes(".expedition-site") && css.includes(".expedition-active"), "the expedition panel must have a real visual treatment");
 });

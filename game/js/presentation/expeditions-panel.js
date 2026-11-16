@@ -221,6 +221,13 @@ function transitionBiomeSection() {
         '<details class="transition-atlas"><summary>THE FIFTEEN EDGES · 1.2.17.1–15</summary><div class="transition-pair-list">' + pairRows + '</div><p class="command-note">Each seam carries intermediate stages, a warped width, mixed flora, soil mottling and a dynamic response to climate, fire, logging, grazing and the rare atlas. Rendering samples the seam only on the detail lattice; it is not a per-frame map scan.</p></details>';
 }
 
+export function refreshTransitionSurvey(root = document) {
+    const section = root?.querySelector?.("[data-transition-biome-section]");
+    if (!section) return false;
+    section.innerHTML = transitionBiomeSection();
+    return true;
+}
+
 function specialBiomeSection() {
     const snapshot = getSpecialBiomeSnapshot();
     const regions = snapshot.regions.filter(region => region.discovered);
@@ -272,7 +279,7 @@ export function renderExpeditionsPanel() {
         '<div class="command-section-title">THE EIGHT LANDMARKS</div><div class="expedition-grid">' + sites + '</div>' +
         '<div class="command-section-title">RETURNED REPORTS</div><div class="expedition-history">' + history + '</div>' +
         '<div class="command-section-title">FRAGMENTS & MAPS</div><div class="expedition-lore-list">' + lore + '</div>' +
-        transitionBiomeSection() +
+        '<section class="transition-biome-section" data-transition-biome-section>' + transitionBiomeSection() + '</section>' +
         specialBiomeSection() +
         '<p class="command-note">Expeditions are deliberately bounded: eight sites per world, one active party, 24 reports and 40 fragments. A cleared site can be surveyed again for a smaller cache, but its principal discovery is recorded only once.</p>';
 }
