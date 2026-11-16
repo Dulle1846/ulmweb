@@ -619,13 +619,17 @@ async function loadRealm(session) {
     }
     assert.equal(ready, true, "the mature save must offer a visible continue control");
     const loaded = await page.evaluate(async () => {
+        // Import before clicking: clicking loads synchronously and starts the
+        // real-time frame loop. Awaiting the import after the click lets one
+        // animation frame move villagers before the audit can pause them,
+        // which made a real-clock load differ from the saved checkpoint.
+        const {state} = await import("./js/core/state.js");
         const button = document.getElementById("continue-game-btn");
         if (!button) return {ok: false};
         const started = performance.now();
         button.click();
-        const loadMs = Math.round((performance.now() - started) * 10) / 10;
-        const {state} = await import("./js/core/state.js");
         state.isPaused = true;
+        const loadMs = Math.round((performance.now() - started) * 10) / 10;
         return {
             ok: state.hasStarted === true,
             loadMs,
