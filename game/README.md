@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.14.2
-**Next development line:** 3.15.0-dev
+**Production version:** 3.15.0
+**Next development line:** 3.16.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -27,6 +27,7 @@
 18. [Living events and the chronicle timeline](docs/MICRO_EVENTS.md) — 50 weighted procedural micro-events, existing world-event bridge, 2,400-page time scrubber, centre notices, bounded effects and schema-11 migration.
 19. [Tundra 1.2.9](docs/TUNDRA.md) — dedicated cold climate, permafrost, ten formations, the 48-point audit and sparse scrub timber.
 20. [Savanna 1.2.10](docs/SAVANNA.md) — fire- and grazing-shaped wet/dry climate, ten formations, sparse woodland, pastoral/grain economy, hazards and the four-season reference.
+21. [The Endless Realm](docs/ENDLESS_REALM.md) — terminal-defeat removal, recoverable collapses, the held keep, 25-year endless ages, save compatibility and the 250-year proof.
 
 ## Development rules
 

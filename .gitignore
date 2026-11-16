@@ -13,3 +13,8 @@
 /game/.browser-libs/
 /game/artifacts/
 /game/reports/
+!/artifacts/ENDLESS_250Y_AUDIT.md
+!/artifacts/endless-250y.json
+!/artifacts/endless-250y.png
+!/artifacts/ENDLESS_500Y_AUDIT.md
+!/artifacts/endless-500y.json

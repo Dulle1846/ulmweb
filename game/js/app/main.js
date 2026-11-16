@@ -61,6 +61,7 @@ import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
 import {BENCHMARK_MIN_FRAMES,BENCHMARK_SAMPLE_MS,BENCHMARK_WARMUP_MS,buildBenchmarkPlan,findBenchmarkWinner,summarizeBenchmarkSamples} from "./performance-benchmark.js";
 import { initializeWinterForRealm, refreshWinterSnapshot } from "../world/winter-economy.js";
+import { createEndlessState } from "../systems/endless.js";
 import { setupWinterHud } from "../presentation/winter-panel.js";
 
 let loopStarted=false;
@@ -406,6 +407,8 @@ function syncWorldForge(options){
         if(input&&Number.isFinite(Number(normalized[key])))input.value=String(normalized[key]);
         if(output)output.textContent=input?.value||"50";
     }
+    const endless=document.getElementById("world-endless");
+    if(endless)endless.checked=state.endless?.enabled!==false;
     scheduleForgePreview();
 }
 
@@ -494,6 +497,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     applyIdentityForNewRealm();
     state.worldSeed=seed;
     state.worldOptions={...worldOptions};
+    state.endless=createEndlessState({enabled:document.getElementById("world-endless")?.checked!==false});
     state.terrainVersion=TERRAIN_GENERATION_VERSION;
     initWorld(seed,state.worldOptions,state.terrainVersion);
     initStartingKingdom();

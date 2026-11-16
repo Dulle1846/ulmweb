@@ -233,6 +233,7 @@ try{
     await page.waitForFunction(()=>document.querySelector("#world-preview-status")?.textContent.includes("SEED 20261104"),null,{timeout:10000});
     assert.match(await page.locator("#world-preview-status").innerText(),/EXACT PREVIEW/,"the forge must report an exact preview");
     await page.locator("#player-name-input").fill("CI-Browser-Check");
+    assert.equal(await page.locator("#world-endless").isChecked(),true,"new realms must default to endless mode");
     assert.ok((await page.locator("#start-new-game-btn").getAttribute("class")).includes("ui-button--primary"),"founding action must use the shared primary button");
     await page.locator("#start-new-game-btn").click();
     try{
@@ -244,6 +245,11 @@ try{
     }
     assert.equal(await page.locator("#hand-dock").count(),0,"new realms must not show a permanent card hotbar");
     assert.equal(await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.length;}),0,"new realms must begin with an empty hand");
+    await page.waitForFunction(()=>document.querySelector("#endless-status")?.textContent.includes("ENDLESS"),null,{timeout:5000});
+    const endlessStart=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return {enabled:state.endless?.enabled,age:state.endless?.age,label:document.querySelector("#endless-status")?.textContent||""};});
+    assert.equal(endlessStart.enabled,true,"the founded realm must carry the endless contract");
+    assert.equal(endlessStart.age,1,"a new endless realm starts in age one");
+    assert.match(endlessStart.label,/ENDLESS/,"the HUD must expose the endless status");
     const panBefore=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return {x:state.camera.x,y:state.camera.y};});
     const panCanvasBox=await page.locator("#canvas").boundingBox();
     assert.ok(panCanvasBox);

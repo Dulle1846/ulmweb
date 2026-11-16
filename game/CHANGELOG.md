@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.14.2`
+**Current production version:** `3.15.0`
 **Next development line:** `3.20.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,31 @@
 **Last repository verification:** 2026-11-16 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.15.0 — The Endless Realm (development line)
+
+The chronicle now has no terminal state. New realms start with **∞ ENDLESS
+REALM** checked; the classic finite campaign remains available by unchecking it
+at founding.
+
+- A morale collapse restores morale to a survivable floor, costs legitimacy and
+  starts a 400-tick rescue cooldown instead of freezing the realm.
+- A keep reduced to zero health is held at 35% health; the raid still hurts, but
+  the crown keeps a seat to rebuild from. The keep-destruction game-over path is
+  preserved for classic realms.
+- Every 25 years opens a new endless age, recorded in the chronicle and shown in
+  the ambition HUD (`∞ ENDLESS · AGE N · NEXT YEAR`). The age is derived from
+  the calendar, never trusted from a stale save.
+- Existing saves without the block upgrade to endless; a save at `gameOver:true`
+  is resumed as recoverable. State is additive in schema 11, bounded to 12
+  history entries and does not change terrain or world options.
+- Verification: **1071/1071 tests**; the **500-year / 200,040-tick** run on seed
+  `20261215` reached **year 501, age 21, 56 residents, 13/13 ambitions, 16
+  Eternal Deeds, 4 recovered morale collapses, 1.346 ms/tick and no game-over**,
+  with all finite/resource/ID/entity invariants true. A 250-year gate also
+  passes at 100,040 ticks. Full record:
+  [docs/ENDLESS_REALM.md](docs/ENDLESS_REALM.md) and
+  `artifacts/ENDLESS_500Y_AUDIT.md`.
 
 ## 1.2.16 — Winter Economy & Ice Roads (development line)
 

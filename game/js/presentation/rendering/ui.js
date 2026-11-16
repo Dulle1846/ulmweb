@@ -10,6 +10,7 @@ import { getCoreCounsel } from "../core-counsel.js";
 import { getFirstSessionSnapshot } from "../first-session.js";
 import { renderStatisticsExplorer } from "../statistics-panel.js";
 import { renderWinterHud } from "../winter-panel.js";
+import { getEndlessSnapshot } from "../../systems/endless.js";
 
 let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastAmbitionSignature="",lastFirstSessionSignature="",lastRenderedIssueId=null,lastCardSprite="",lastTickTextAt=0;
 function setText(id,value){const el=document.getElementById(id);const next=String(value);if(el&&el.textContent!==next)el.textContent=next;}
@@ -123,11 +124,14 @@ function renderAmbition(){
     const section=document.getElementById("ambition-section");
     if(!section)return;
     const snapshot=getAmbitionSnapshot();
+    const endless=getEndlessSnapshot();
     const counsel=getCoreCounsel(state);
-    const signature=[snapshot.id,snapshot.completedCount,snapshot.total,Math.round(snapshot.progress*100),snapshot.progressLabel,snapshot.allComplete,snapshot.eternal,snapshot.eternalCount,snapshot.era,snapshot.agenda,snapshot.stageIndex,counsel.id,counsel.text].join("|");
+    const signature=[snapshot.id,snapshot.completedCount,snapshot.total,Math.round(snapshot.progress*100),snapshot.progressLabel,snapshot.allComplete,snapshot.eternal,snapshot.eternalCount,snapshot.era,snapshot.agenda,snapshot.stageIndex,counsel.id,counsel.text,endless.enabled,endless.age,endless.rescues,endless.keepHolds].join("|");
     if(signature===lastAmbitionSignature)return;
     lastAmbitionSignature=signature;
     setText("ambition-count",snapshot.completedCount+" / "+snapshot.total);
+    const rescueSuffix=endless.rescues?" · "+endless.rescues+" RESCUE"+(endless.rescues===1?"":"S"):"";
+    setText("endless-status",endless.label+rescueSuffix);
     setText("ambition-kicker",snapshot.agenda?"ERA AGENDA · "+(snapshot.stageIndex+1)+" OF "+snapshot.stageTotal:snapshot.eternal?(snapshot.eternalLabel||"ETERNAL DEED"):snapshot.allComplete?"LEGEND COMPLETE":"NEXT CHAPTER · "+(snapshot.completedCount+1)+" OF "+snapshot.total);
     setText("ambition-title",snapshot.title);
     setText("ambition-description",snapshot.description);

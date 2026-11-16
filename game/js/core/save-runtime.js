@@ -49,6 +49,7 @@ import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeGovernment } from "../systems/government.js";
 import { normalizeRoyalState } from "../systems/royal-dynasty.js";
 import { restoreWinterState, serializeWinterState } from "../world/winter-economy.js";
+import { normalizeEndlessState } from "../systems/endless.js";
 import { restoreHand } from "../systems/cards.js";
 import { resolveSavedTerrainVersion } from "../world/terrain-model.js";
 import { initWorld } from "../world/world.js";
@@ -228,6 +229,7 @@ export function createSaveSnapshot() {
         royal: JSON.parse(JSON.stringify(state.royal || {})),
         market: JSON.parse(JSON.stringify(state.market)),
         winter: serializeWinterState(),
+        endless: JSON.parse(JSON.stringify(state.endless || {})),
         realmCycle: JSON.parse(JSON.stringify(state.realmCycle || createRealmCycleState())),
         court: JSON.parse(JSON.stringify(state.court || createCourtState())),
         nobility: JSON.parse(JSON.stringify(state.nobility || createNobilityState())),
@@ -387,7 +389,11 @@ export function restoreSaveSnapshot(snapshot) {
     state.kingHp = snapshot.kingHp || 240;
     state.totalRaidsSurvived = snapshot.totalRaidsSurvived || 0;
     state.raidActive = Boolean(snapshot.raidActive);
+    state.endless = normalizeEndlessState(snapshot.endless, state.year);
     state.gameOver = Boolean(snapshot.gameOver);
+    // A realm saved at a terminal moment is resumed as a recoverable endless
+    // realm. The next tick restores morale and the chronicle continues.
+    if (state.endless.enabled) state.gameOver = false;
     state.victory = Boolean(snapshot.victory);
     state.lastRandomEvent = snapshot.lastRandomEvent || 0;
     state.weather = snapshot.weather || "clear";

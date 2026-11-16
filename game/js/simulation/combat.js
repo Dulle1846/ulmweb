@@ -8,6 +8,7 @@ import { getCourtModifiers } from "../systems/court.js";
 import { getNobilityDefenseMultiplier } from "../systems/nobility.js";
 import { getSoldierPower,getSoldierArmor,recordMilitaryVictory,recordMilitaryWound,recordMilitaryCasualty } from "../systems/military.js";
 import { getJungleTacticsAt, getMountainTacticsAt, getVolcanoTacticsAt } from "../systems/resource-geography.js";
+import { holdEndlessKeep, isEndlessEnabled } from "../systems/endless.js";
 const rand=(min,max)=>seededRand(min,max,"combat");
 
 const CELL=8;
@@ -134,9 +135,14 @@ export function updateCombat(){
    target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/(readiness*nobleDefense)*(1-armor)*coverMultiplier*heightMultiplier*volcanoMultiplier));
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
    if(target.hp<=0){
-    if(!target.isKing&&!target.isBuilding?.())recordMilitaryCasualty(target,"raid");
-    target.dead=true;
-    if(target.type===TYPE.KEEP){state.gameOver=true;queueMessage("THE REALM FELL","THE KEEP WAS DESTROYED",5000);}
+    if(target.type===TYPE.KEEP&&isEndlessEnabled()){
+     holdEndlessKeep(target);
+     queueMessage("THE KEEP HOLDS","THE CROWN WILL REBUILD",5000);
+    }else{
+     if(!target.isKing&&!target.isBuilding?.())recordMilitaryCasualty(target,"raid");
+     target.dead=true;
+     if(target.type===TYPE.KEEP){state.gameOver=true;queueMessage("THE REALM FELL","THE KEEP WAS DESTROYED",5000);}
+    }
    }else if(!target.isKing&&getSoldierPower(target)>0&&target.hp/target.maxHp<0.55&&rand(0,1)<0.22){
     recordMilitaryWound(target);
    }

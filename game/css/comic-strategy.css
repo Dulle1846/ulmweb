@@ -101,6 +101,10 @@
 .identity-field input:focus,.identity-field select:focus,.identity-field textarea:focus{outline:2px solid rgba(212,175,101,.65);outline-offset:1px}
 .identity-field--wide{grid-column:1/-1}
 .founding-summary{margin:.55rem 0 .2rem;padding:.62rem .7rem;border:1px solid rgba(185,154,89,.34);border-radius:6px;background:rgba(12,18,20,.5);color:#d9c9a5;font-size:.64rem;line-height:1.45;letter-spacing:.03em}
+.endless-toggle{display:flex;align-items:flex-start;gap:.6rem;margin:.55rem 0 .25rem;padding:.62rem .7rem;border:1px solid rgba(143,169,196,.48);border-radius:6px;background:linear-gradient(135deg,rgba(41,50,65,.75),rgba(12,18,20,.6));color:#dce9f5;font-size:.64rem;line-height:1.45;letter-spacing:.03em;cursor:pointer}
+.endless-toggle input{flex:0 0 auto;width:1rem;height:1rem;margin:.1rem 0 0;accent-color:#a9c8e2}
+.endless-toggle strong{display:block;font:700 .68rem var(--ui-title-font);letter-spacing:.1em;color:#d8bd82}
+.endless-toggle em{display:block;margin-top:.18rem;font-style:normal;color:#aebdcc}
 
 /* Management panels are long archives. Only the records in and near the
    scrollport need layout and paint; the DOM and its text stay complete, so

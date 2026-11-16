@@ -50,6 +50,7 @@ import { updateVolcanoHazards } from "../world/volcano-hazards.js";
 import { updateCoastHazards } from "../world/coast-hazards.js";
 import { updateSnowHazards } from "../world/snow-hazards.js";
 import { updateWinterAnnual, updateWinterEconomy } from "../world/winter-economy.js";
+import { isEndlessEnabled, recoverEndlessMorale, updateEndlessRealm } from "../systems/endless.js";
 
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 const ANNUAL_SLICE_BUDGET_MS = 6;
@@ -193,6 +194,9 @@ function finishSimulationTick(newborn) {
     else if (newcomer) addLog("A NEW RESIDENT HAS JOINED THE REALM", "#a3d6a7", "population");
     updateFields(); updateForestSuccession(); if (state.resourceGeography) regrowForests(400, { slice: state.tick % 400, slices: 400 }); updateForestFauna(); updateForestPannage(); updateBuildingIncome(); updateCraftProduction(); updateLogistics(); updateConstruction(); updateVillagers(); updateMilitary(); updateCombat(); updateExpeditions(); checkRandomEvents();
     updateWeather(); updateMorale(); updateMarket(); updateEconomy(); updateRealmCycle(); updateHealth(); updateAmbitions();
+    // Endless ages advance once per 25 years. A collapse is a recoverable
+    // setback in an endless realm rather than a terminal game-over.
+    updateEndlessRealm();
     // Procedural chronicle events are independent of the decision-bearing
     // issue inbox. They never open a modal or wait for the player; the bounded
     // timeline and presentation queue keep them off the simulation hot path.
@@ -206,8 +210,14 @@ function finishSimulationTick(newborn) {
         queueMessage("YOUR KINGDOM ENDURES", "A LEGEND WAS BORN", 8000);
     }
     if (state.morale < 8 && state.tick > 800 && !state.gameOver) {
-        state.gameOver = true; addLog("THE REALM FELL — MORALE COLLAPSED", "#e9857b", "milestone");
-        queueMessage("THE REALM FELL", "MORALE COLLAPSED", 0);
+        if (isEndlessEnabled()) {
+            if (recoverEndlessMorale()) {
+                queueMessage("THE REALM ENDURES", "A HARSH LESSON · THE CHRONICLE CONTINUES", 8000);
+            }
+        } else {
+            state.gameOver = true; addLog("THE REALM FELL — MORALE COLLAPSED", "#e9857b", "milestone");
+            queueMessage("THE REALM FELL", "MORALE COLLAPSED", 0);
+        }
     }
 }
 
