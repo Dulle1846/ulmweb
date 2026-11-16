@@ -9,6 +9,37 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
+## 1.2.17 — Transition Biomes (development line)
+
+The world now has a real ecotone layer between its habitats. The requested
+fifty-point transition manifest is implemented as fifteen named pairs, ten
+landscape types and eight live pressures, not as a painted border.
+
+- `js/world/transition-biomes.js` carries the complete `1.2.17.1–50` manifest,
+  the 15 pairs (woodland–grassland through volcanic–mountain), three intermediate
+  stage bands, warped widths, mixed flora, soil/tint mixes and a bounded survey.
+- The baked terrain colour receives a packed, pure ecotone wash underneath the
+  existing micro-relief. The detail renderer applies the same seam to the
+  existing forest and grass profiles: tree density, grass height, shrub spread,
+  clearing, understorey and a mineral soil wash. Sampling only happens on the
+  detail/tree lattice that was already being drawn.
+- Named landscapes: woodland steppe, humid grassland, dry open woodland, bush
+  steppe, woodland tundra, mountain forest line, coastal forest, floodplain,
+  savanna edge and bog–forest mosaic.
+- Live changes read existing state: long-term climate drift, forest expansion,
+  steppeification, wetland expansion, post-fire succession, logging regrowth,
+  overgrazing and the rare-biome atlas edge. No new per-tick world scan or
+  save schema is added.
+- The Explore tab exposes the active seam, stage, width, tree/grass/shrub
+  percentages, active pressures, all fifteen edges and the fifty-point count.
+- The terrain height/moisture/temperature goldens are unchanged. The preview
+  pixel golden was updated only for the intentional ecotone wash.
+- Verification: focused 1.2.17 suite **9/9**, full suite **1100/1100**, syntax/UI
+  audit **173 files / 220 UI ids**, 25-year campaign **10,040 ticks at 0.852
+  ms/tick**, 60-year endurance **24,040 ticks at 0.878 ms/tick** with all
+  requirements and exact save roundtrips. Full record:
+  [docs/TRANSITION_BIOMES.md](docs/TRANSITION_BIOMES.md).
+
 ## 3.16.0 — Fantastic & Rare Biomes (development line)
 
 The world now carries a rare-biome atlas built from the same seed and terrain

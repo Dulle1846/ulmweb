@@ -310,7 +310,9 @@ test("terrain preview pixels and tile seams are stable", () => {
     };
     renderWorldPreview(context, 1, 1, options, 20261104);
     assert.ok(image, "the preview must produce a pixel buffer without a DOM");
-    assert.deepEqual(hashBytes(image.data), { hashA: "44974c7f", hashB: "6885a8bf" });
+    // The 1.2.17 ecotone wash is an intentional visual layer; the height,
+    // moisture and temperature goldens above remain unchanged.
+    assert.deepEqual(hashBytes(image.data), { hashA: "1fb5245e", hashB: "9fc1e468" });
     assert.deepEqual(terrainSeamSpikes(image, 4), [], "tile boundaries must not create pixel seams");
     clearWorldDataCache();
 });

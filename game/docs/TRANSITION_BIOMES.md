@@ -1,0 +1,174 @@
+# Transition Biomes — 1.2.17
+
+**Feature:** `1.2.17.1–1.2.17.50`  
+**Implementation:** `js/world/transition-biomes.js`  
+**Rendering:** `js/world/terrain-model.js`, `js/presentation/rendering/terrain.js`  
+**Survey UI:** `js/presentation/expeditions-panel.js`  
+**Tests:** `tests/world/transition-biomes.test.js`
+
+## What this layer is
+
+A biome border in Kings & Cards is not a painted line or a second tile graph. It
+is a deterministic, continuous **ecotone** derived from the same height,
+moisture, temperature, water, forest and land-use fields that already drive the
+world. Each ecotone has:
+
+- a named pair of neighbouring habitats;
+- a warped width, so the seam is never a straight edge;
+- a three-band intermediate stage (first / middle / far);
+- a soil and tint mix from both sides;
+- a tree, grass and shrub density that shifts gradually;
+- a landscape name such as woodland steppe, floodplain or woodland tundra;
+- dynamic pressure from climate drift, forest growth, drought, fire, logging,
+  grazing and the rare-biome atlas.
+
+The layer is **render- and survey-derived**: it adds no tile objects and no save
+fields. Existing worlds therefore load unchanged. Forest stock, forest
+succession, grassland use and the special-biome map already contain the state
+needed for the dynamic behaviour.
+
+## Integration points
+
+| Module | Role |
+| --- | --- |
+| `js/world/transition-biomes.js` | 50-point manifest, 15 pairs, 10 landscape types, 8 dynamics, pure tint packer, profile modifiers and the Explore survey. |
+| `js/world/terrain-model.js` | `terrainColor()` adds the packed ecotone wash underneath the existing micro-relief. Water and beaches keep their old path. |
+| `js/world/world.js` | Passes the world seed into the baked terrain colour; no extra canvas or pass. |
+| `js/presentation/rendering/terrain.js` | Samples the ecotone only on the existing detail/tree lattice. Applies tree density, grass height, shrub spread, soil colour and clearing changes to the shared profiles. |
+| `js/presentation/expeditions-panel.js` | A compact Explore survey shows the active seam, stage, width, tree/grass/shrub percentages, active pressures and all fifteen edges. |
+| `css/diplomacy.css` | Styles the survey without adding global layout work. |
+
+### Why this is bounded
+
+- The terrain bake reads one packed integer per pixel. The packer is pure and
+  does not allocate a transition object, a requirement set or a history array.
+- The detail renderer samples an ecotone only where it was already computing a
+  forest stand or grass profile. There is no per-frame world scan.
+- The ecotone reads `forestStock`, `forestSuccession.tiles["x:y"]`,
+  `grasslandUseAt()` and the bounded special-biome region list. No new O(n²)
+  structure exists.
+- The detail cache already keys on `year`, so slow annual changes appear on the
+  next settled raster instead of forcing every frame to rebuild.
+
+## The fifteen requested pairs (1.2.17.1–15)
+
+| Point | Pair | Axis | Width driver | Typical landscape |
+| --- | --- | --- | --- | --- |
+| 1.2.17.1 | Woodland–Grassland | moisture | noise-warped moisture seam | woodland steppe / humid grassland |
+| 1.2.17.2 | Grassland–Steppe | moisture + warmth | dry pasture edge | bush steppe / savanna edge |
+| 1.2.17.3 | Steppe–Semi-desert | moisture + warmth | arid transition | dry open ground |
+| 1.2.17.4 | Semi-desert–Desert | moisture + heat | sand margin | desert edge |
+| 1.2.17.5 | Broadleaf–Mixed Woodland | temperature | temperate canopy mix | mixed woodland |
+| 1.2.17.6 | Mixed–Conifer Woodland | temperature | cold canopy mix | mixed conifer |
+| 1.2.17.7 | Conifer–Taiga | temperature | boreal edge | taiga edge |
+| 1.2.17.8 | Taiga–Tundra | temperature | cold tree line | woodland tundra |
+| 1.2.17.9 | Woodland–Mountain | elevation | rising rock line | mountain forest line |
+| 1.2.17.10 | Mountain–Snow | elevation | nival belt | snow margin |
+| 1.2.17.11 | Grassland–Wetland | moisture | low, wet ground | humid grassland / bog–forest mosaic |
+| 1.2.17.12 | Wetland–River | elevation / water | riparian strip | floodplain |
+| 1.2.17.13 | Coast–Woodland | elevation | coastal tree belt | coastal forest |
+| 1.2.17.14 | Coast–Dune | elevation | dry beach margin | dune |
+| 1.2.17.15 | Volcanic–Mountain | elevation + climate | volcanic slope | ash and rock margin |
+
+## Intermediate stages and mixed structure (1.2.17.16–24)
+
+- **1.2.17.16** Three stage bands (first, middle, far) are returned for every
+  seam. `stage` is a continuous 0–1 value and `stageBand` is its survey label.
+- **1.2.17.17** `treeDensity` blends from open ground to closed stand. It is
+  modified by forest regrowth, logging, fire, grazing, drought and magic.
+- **1.2.17.18** `grassHeight` selects short, medium or tall sward; grazing and
+  drought shorten it, wet years lengthen it.
+- **1.2.17.19** `soil` is a real RGB mix of the two sides, changed again by
+  fire (char), logging (bare mineral soil), grazing (trampled) and wetness.
+- **1.2.17.20** `moisture` carries the edge's own value; the dynamic wet/dry
+  pressure is reported separately and adjusts stage and vegetation.
+- **1.2.17.21** Tree and shrub densities are independent, so an open wood can
+  gain shrubs without becoming a forest, and a meadow can gain small tree
+  islands without closing its canopy.
+- **1.2.17.22** Every pair carries a mixed flora vocabulary (for example oak,
+  birch, hazel, bramble and fescue on the wood–grass edge).
+- **1.2.17.23** The forest profile receives both understorey elements and the
+  grass profile receives an extra small tree island when the tree density is
+  high enough.
+- **1.2.17.24** Boundaries are warped by deterministic value noise and by the
+  continuous terrain fields. There is no straight polygon to draw.
+
+## The ten named landscapes (1.2.17.25–34)
+
+| Point | Landscape | Where it appears |
+| --- | --- | --- |
+| 1.2.17.25 | Woodland steppe | Wood–grass edge with warm, moderately dry conditions. |
+| 1.2.17.26 | Humid grassland | Wood–grass edge on the wet side. |
+| 1.2.17.27 | Dry open woodland | Wood–grass edge with low moisture and high warmth. |
+| 1.2.17.28 | Bush steppe | Grass–steppe edge in warm, dry conditions. |
+| 1.2.17.29 | Woodland tundra | Taiga–tundra seam. |
+| 1.2.17.30 | Mountain forest line | Woodland–mountain seam above the lower slope. |
+| 1.2.17.31 | Coastal forest | Coast–woodland seam. |
+| 1.2.17.32 | Floodplain | Wetland–river or wet grass edge with woodland nearby. |
+| 1.2.17.33 | Savanna edge | Warm grass–steppe seam. |
+| 1.2.17.34 | Bog–forest mosaic | Wet grass edge with a real forest component. |
+
+## Organic shape, texture and water fit (1.2.17.35–42)
+
+- **1.2.17.35** No straight border: width and position use per-coordinate
+  noise, and the underlying moisture/temperature/elevation fields are already
+  continuous.
+- **1.2.17.36** Widths differ per pair and per sample; the survey reports the
+  actual width in tiles.
+- **1.2.17.37** Trees, shrubs, grass and understorey are modified independently,
+  so vegetation overlaps rather than switching at one threshold.
+- **1.2.17.38** Each pair owns a flora list and deterministic local variation;
+  one species does not cover the whole seam.
+- **1.2.17.39** `islandChance` plus the extra grass-profile tree copy creates
+  small islands of the neighbouring habitat.
+- **1.2.17.40** The forest floor receives one low-alpha mineral wash from the
+  ecotone soil, under the existing humus, litter and moss layers.
+- **1.2.17.41** The baked colour is a soft tint mixed through the existing
+  micro-relief, not a flat overlay.
+- **1.2.17.42** Elevation and water gate the pairs; coast, river, wetland,
+  mountain and snow edges use the real height/sea fields.
+
+## Dynamics (1.2.17.43–50)
+
+| Point | Dynamic | Data read | Visible effect |
+| --- | --- | --- | --- |
+| 1.2.17.43 | Long-term climate change | `year`, climate | Slow warming shifts stage and tree density over decades. |
+| 1.2.17.44 | Woodland expansion | forest stock ratio, succession | Regrowth raises tree density and adds islands. |
+| 1.2.17.45 | Steppeification | climate drift, dry site | Drought lowers tree density and shortens grass. |
+| 1.2.17.46 | Wetland expansion | wet drift, site moisture | Wet years raise grass/shrub density and favour wet landscapes. |
+| 1.2.17.47 | Post-fire change | `forestSuccession.tiles` burn state | Charcoal soil, fewer trees, post-fire grass. |
+| 1.2.17.48 | Logging regeneration | forest stock, cutover/windthrow state | Bare mineral soil, lower canopy, regrowth flag. |
+| 1.2.17.49 | Overgrazing | `grasslandUseAt()` | Short grazed sward, trampled soil, fewer shrubs. |
+| 1.2.17.50 | Magical spread | `specialBiomeMap`, `specialBiomes.regions` | A purple-leaning tint and higher tree density at the atlas edge. |
+
+## Save compatibility
+
+The feature is intentionally **save-neutral**:
+
+- no new `state` field;
+- no new terrain array;
+- no change to `TERRAIN_GENERATION_VERSION`;
+- no change to the height/moisture/temperature goldens;
+- the 60-year save roundtrip with and without the special-biome block remains
+  byte-identical to the existing contract.
+
+An old save restores its terrain, forest stock, succession, grassland use and
+rare atlas, and the ecotone is derived immediately from those values.
+
+## Verification
+
+| Check | Result |
+| --- | --- |
+| Focused 1.2.17 suite | **9/9** |
+| Full Node suite | **1100/1100** |
+| Syntax/UI audit | **173 source files**, **220 referenced UI ids**, local HTML assets |
+| 25-year campaign | seed `20261108`, **10,040 ticks**, year 26, **0.852 ms/tick**, all requirements true |
+| 60-year endurance | **24,040 ticks**, year 61, **0.878 ms/tick**, budget met, 74 residents, all requirements true |
+| Save roundtrip | with and without the special-biome block: exact |
+| Terrain data goldens | height, moisture and temperature unchanged |
+| Terrain preview golden | updated for the intentional ecotone wash; seam test passes |
+| Browser reference | A live Cloud-browser run founded a standard realm, rendered landscape and district terrain, loaded `transition-biomes.js` with HTTP 200 and produced **0 console errors**. The local Chromium binary is present but the VM lacks its shared libraries; the browser gate remains CI-owned. Reference screenshots are in `artifacts/transition-biomes-terrain-reference.png` and `artifacts/transition-biomes-live-detail.png`. |
+
+The terrain preview hash changed intentionally because the ecotone wash is a
+new visual layer. The separate height, moisture and temperature hashes did not
+change, which is the important compatibility check for saves and gameplay.

@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { BIOME, NOISE_SCALE } from '../core/config.js';
+import { transitionTint } from './transition-biomes.js';
 
 // ── deterministic noise ───────────────────────────────────────
 
@@ -747,7 +748,7 @@ function hash2(px, py) {
 
 // One continuous colour field instead of hard biome bands: every transition
 // is a smooth blend, which is what makes the landscape read as natural.
-export function terrainColor(height, moisture, temperature, px, py, climate, sea, shade = 0) {
+export function terrainColor(height, moisture, temperature, px, py, climate, sea, shade = 0, seed = 1) {
     const P = PALETTES[climate] || PALETTES.temperate;
     const jitter = hash2(px, py) - 0.5;
 
@@ -824,6 +825,15 @@ export function terrainColor(height, moisture, temperature, px, py, climate, sea
     const beach = 1 - smoothstep(0.004, beachEdge, height - sea);
     color = mix(color, P.sand, beach * 0.92);
     if (beach > 0.55 && jitter > 0.18) color = shift(color, -14);
+
+    // Ecotone wash: a wide, warped edge between habitats, packed into one
+    // integer by the pure transition helper. It sits under the micro-relief so
+    // the gradient still carries grain and never reads as an airbrushed stripe.
+    const ecotone = transitionTint(height, moisture, temperature, px, py, climate, sea, seed);
+    if (ecotone) {
+        const tint = [(ecotone >>> 16) & 255, (ecotone >>> 8) & 255, ecotone & 255];
+        color = mix(color, tint, ((ecotone >>> 24) / 255) * 0.34);
+    }
 
     // Layered micro-relief: broad pasture patches, fine mottling and grain.
     const pasture = Math.sin(px * 0.031 + py * 0.017) * 0.5 + Math.sin(px * 0.013 - py * 0.041 + 1.7) * 0.5;
@@ -939,7 +949,7 @@ export function renderWorldPreview(ctx, width, height, rawOptions = {}, seed = 1
             const north = heights[Math.max(0, py - 1) * pixW + px];
             const northWest = heights[Math.max(0, py - 1) * pixW + Math.max(0, px - 1)];
             const shade = clamp((h - (west + north + northWest) / 3) * 2400, -30, 32);
-            const color = terrainColor(h, moistures[index], temperatures[index], px, py, options.climate, sea, shade);
+            const color = terrainColor(h, moistures[index], temperatures[index], px, py, options.climate, sea, shade, seed);
             const offset = index * 4;
             data[offset] = clamp(Math.round(color[0]), 0, 255);
             data[offset + 1] = clamp(Math.round(color[1]), 0, 255);

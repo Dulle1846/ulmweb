@@ -4,6 +4,7 @@
 import { state } from "../core/state.js";
 import { getExpeditionSnapshot } from "../systems/expeditions.js";
 import { getSpecialBiomeSnapshot } from "../systems/special-biome-state.js";
+import { getTransitionSurvey } from "../world/transition-biomes.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -102,6 +103,36 @@ function blightDecisionCard(decision, snapshot) {
     return '<article class="special-decree" data-blight-decree="' + esc(decision.id) + '"><span class="special-biome-kicker">ROYAL BLIGHT DECREE · PRESSURE ' + decision.pressure + ' / 6</span><strong>' + esc(decision.title) + '</strong><p>' + esc(decision.demand) + '</p><div class="special-decree__choices">' + choices + '</div><small class="special-decree__deadline">Expires in year ' + decision.expiresYear + '. An unanswered decree spreads the rot.</small></article>';
 }
 
+function transitionBiomeSection() {
+    const survey = getTransitionSurvey();
+    const sample = survey.sample;
+    const requirements = sample ? sample.requirements.length : 0;
+    const stageLabel = sample ? (sample.stageBand === 0 ? "FIRST STAGE" : sample.stageBand === 1 ? "MIDDLE STAGE" : "FAR STAGE") : "NO EDGE";
+    const dynamics = sample?.dynamics?.length
+        ? sample.dynamics.map(id => {
+            const labels = {
+                "climate-change": "CLIMATE DRIFT", "forest-expansion": "WOODLAND EXPANSION",
+                "steppeification": "STEPPEIFICATION", "wetland-expansion": "WETLAND EXPANSION",
+                "post-fire": "POST-FIRE", "logging-regrowth": "LOGGING REGROWTH",
+                "grazing-change": "GRAZING", "magical-spread": "MAGICAL SPREAD"
+            };
+            return '<span>' + esc(labels[id] || id) + '</span>';
+        }).join("")
+        : '<span>NO ACTIVE PRESSURES</span>';
+    const pairRows = survey.pairs.map(pair => '<div class="transition-pair-row"><span>' + esc(pair.label) + '</span><b>1.2.17.' + pair.requirement + '</b></div>').join("");
+    const swatch = sample ? 'rgb(' + sample.tint.join(',') + ')' : '#8f8a69';
+    const soil = sample ? 'rgb(' + sample.soil.join(',') + ')' : '#8f8a69';
+    const title = sample ? sample.label + (sample.landscape ? ' · ' + sample.landscape.label : '') : survey.label;
+    return '<div class="command-section-title">1.2.17 · TRANSITION BIOMES</div>' +
+        '<div class="transition-summary"><div><small>MANIFEST POINTS</small><strong>' + survey.manifestCount + '</strong></div><div><small>BIOME EDGES</small><strong>' + survey.pairCount + '</strong></div><div><small>LANDSCAPE TYPES</small><strong>' + survey.landscapeCount + '</strong></div><div><small>ACTIVE AT HEART</small><strong>' + requirements + ' / 50</strong></div></div>' +
+        '<article class="transition-survey" data-transition-pair="' + esc(sample?.pair.id || 'none') + '" style="--ecotone-tint:' + swatch + ';--ecotone-soil:' + soil + '">' +
+        '<div class="transition-survey__swatches"><i style="background:' + swatch + '"></i><i style="background:' + soil + '"></i></div>' +
+        '<div class="transition-survey__body"><span class="special-biome-kicker">ROYAL ECOTONE SURVEY · ' + stageLabel + '</span><h4>' + esc(title) + '</h4>' +
+        '<p>' + (sample ? 'A ' + Math.round(sample.width * 100) + '-tile-wide organic seam. Tree cover ' + Math.round(sample.treeDensity * 100) + '%, grass ' + Math.round(sample.grassDensity * 100) + '%, shrubs ' + Math.round(sample.shrubDensity * 100) + '%.' : 'The heart sits inside a single stable habitat; walk outward to find a seam between two habitats.') + '</p>' +
+        '<div class="transition-survey__dynamics">' + dynamics + '</div></div></article>' +
+        '<details class="transition-atlas"><summary>THE FIFTEEN EDGES · 1.2.17.1–15</summary><div class="transition-pair-list">' + pairRows + '</div><p class="command-note">Each seam carries intermediate stages, a warped width, mixed flora, soil mottling and a dynamic response to climate, fire, logging, grazing and the rare atlas. Rendering samples the seam only on the detail lattice; it is not a per-frame map scan.</p></details>';
+}
+
 function specialBiomeSection() {
     const snapshot = getSpecialBiomeSnapshot();
     const regions = snapshot.regions.filter(region => region.discovered);
@@ -153,6 +184,7 @@ export function renderExpeditionsPanel() {
         '<div class="command-section-title">THE EIGHT LANDMARKS</div><div class="expedition-grid">' + sites + '</div>' +
         '<div class="command-section-title">RETURNED REPORTS</div><div class="expedition-history">' + history + '</div>' +
         '<div class="command-section-title">FRAGMENTS & MAPS</div><div class="expedition-lore-list">' + lore + '</div>' +
+        transitionBiomeSection() +
         specialBiomeSection() +
         '<p class="command-note">Expeditions are deliberately bounded: eight sites per world, one active party, 24 reports and 40 fragments. A cleared site can be surveyed again for a smaller cache, but its principal discovery is recorded only once.</p>';
 }

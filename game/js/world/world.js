@@ -130,7 +130,7 @@ export function prerenderTerrain() {
                 ? Math.max(-52, Math.min(58, slope * reliefScale))
                 : Math.max(-30, Math.min(32, slope * reliefScale));
 
-            const color = terrainColor(h, m, temperature, px, py, climate, sea, hillshade);
+            const color = terrainColor(h, m, temperature, px, py, climate, sea, hillshade, state.worldSeed);
             const pi = idx * 4;
             data[pi] = color[0] < 0 ? 0 : color[0] > 255 ? 255 : color[0];
             data[pi + 1] = color[1] < 0 ? 0 : color[1] > 255 ? 255 : color[1];

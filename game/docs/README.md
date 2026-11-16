@@ -35,6 +35,7 @@ For the current development stage, these documents focus on making the existing 
 - [Eternal deeds](ETERNAL_DEEDS.md) — repeatable post-ambition goals drawn from live systems, rewards, stall protection, save compatibility and the 50-year/browser evidence.
 - [Crown supply](CROWN_SUPPLY.md) — grain contracts including the war granary, seasonal deliveries, commissary barter, paid waterworks, stone-house density, farm subsistence and garrison pay in kind, with the v3.13.1 journey measurements.
 - [Fantastic & Rare Biomes 1.2.16](SPECIAL_BIOMES.md) — nine rare families, the 100-point atlas manifest, seeded regions, rare goods, discovery, blight, attunement, terrain tint, save compatibility and the Explore survey.
+- [Transition Biomes 1.2.17](TRANSITION_BIOMES.md) — fifteen named ecotones, ten landscape types, organic widths, mixed vegetation, dynamic climate/fire/logging/grazing response, save-neutral rendering and the fifty-point audit.
 - [AI Living Chronicle](AI_CHRONICLE.md) — optional Atelier books, artifacts, conversations and contacts; same-origin Z.ai proxy, deterministic offline fallback, schema-11 save contract, caps and verification limits.
 - [Living events and the chronicle timeline](MICRO_EVENTS.md) — 50 weighted micro-events, existing world-event bridge, 2,400-page time scrubber, centre notices, bounded effects and schema-11 migration.
 - [Deep playtest 3.13.4](DEEP_PLAYTEST_3.13.4.md) — the shared-simulation performance pass: profiling, exact habitat/route caches, four 100-year seeds, the 4 × 3 matrix and remaining limits.

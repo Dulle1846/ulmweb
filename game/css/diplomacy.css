@@ -110,6 +110,27 @@
 .expedition-lore p{margin:0;color:#675b49;font-size:8px;line-height:1.55}
 @media(max-width:640px){.expedition-controls{grid-template-columns:1fr}.expedition-site__meta{grid-template-columns:1fr 1fr}.expedition-active__days{font-size:19px}}
 
+/* 1.2.17 — transition biomes / ecotones inside the Explore tab. */
+.transition-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:10px 0}
+.transition-summary>div{padding:8px;border:1px solid #9aab7d;border-radius:6px;background:#eef4df;text-align:center}
+.transition-summary small{display:block;color:#667555;font:1000 6px/1.3 Arial,sans-serif;letter-spacing:.08em}
+.transition-summary strong{display:block;margin-top:3px;color:#263b52;font:bold 17px Georgia,serif}
+.transition-survey{position:relative;display:flex;gap:11px;margin:8px 0 10px;padding:12px;border:2px solid #8a9c6d;border-left:6px solid var(--ecotone-tint,#6d8a50);border-radius:9px;background:linear-gradient(135deg,#f7f2da,#e8f0d9 56%,#f2e7c9);color:#33463d;box-shadow:inset 0 1px #fff9}
+.transition-survey__swatches{flex:0 0 30px;display:flex;flex-direction:column;gap:4px}
+.transition-survey__swatches i{display:block;flex:1;min-height:26px;border:1px solid #7e8766;border-radius:5px;box-shadow:inset 0 1px #fff6}
+.transition-survey__body{min-width:0;flex:1}
+.transition-survey h4{margin:3px 0 4px;color:#203c58;font:bold 16px Georgia,serif}
+.transition-survey p{margin:0;color:#5c5a47;font-size:8px;line-height:1.5}
+.transition-survey__dynamics{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.transition-survey__dynamics span{padding:3px 6px;border:1px solid #8ea477;border-radius:999px;background:#f8f3dc;color:#4c6448;font:1000 6px Arial,sans-serif;letter-spacing:.05em}
+.transition-atlas{margin-top:7px;padding:8px 9px;border:1px solid #b9a577;border-radius:7px;background:#fff7df}
+.transition-atlas summary{cursor:pointer;color:#7a4b2e;font:1000 7px Arial,sans-serif;letter-spacing:.09em}
+.transition-pair-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;margin-top:7px}
+.transition-pair-row{display:flex;justify-content:space-between;gap:5px;padding:4px 5px;border-bottom:1px solid #d8c59b;color:#4e4437;font-size:7px}
+.transition-pair-row b{color:#2f6f88;font:bold 7px Georgia,serif;white-space:nowrap}
+@media(max-width:760px){.transition-summary{grid-template-columns:1fr 1fr}.transition-pair-list{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.transition-summary{grid-template-columns:1fr}.transition-pair-list{grid-template-columns:1fr}.transition-survey{flex-direction:column}.transition-survey__swatches{flex-direction:row}.transition-survey__swatches i{min-height:12px}}
+
 /* 1.2.16 — rare biome atlas inside the Explore tab. */
 .special-biome-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:10px 0}
 .special-biome-summary>div{padding:8px;border:1px solid #b99a65;border-radius:6px;background:#fff5d8;text-align:center}

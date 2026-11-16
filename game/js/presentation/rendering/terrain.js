@@ -15,6 +15,7 @@ import {
     pickAgeClass, pickSpecies,
 } from '../../world/forest-ecology.js';
 import { grasslandProfileAt } from '../../world/grassland-ecology.js';
+import { transitionAt, transitionForestStand, transitionGrassProfile } from '../../world/transition-biomes.js';
 import { isSteppeSite, steppeProfileAt } from '../../world/steppe-ecology.js';
 import { drawSteppe } from './steppe-render.js';
 import { isDesertSite, desertProfileAt } from '../../world/desert-ecology.js';
@@ -1497,7 +1498,17 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             const steppe = grassContext && !potentialForest && !tundra && !taiga && !savanna && !desert && isSteppeSite(x + 0.5, y + 0.5, grassContext)
                 ? steppeProfileAt(x + 0.5, y + 0.5, grassContext)
                 : null;
-            const grass = coast || volcano || mountain || (grassContext ? (swamp || tundra || taiga || savanna || desert || steppe || grasslandProfileAt(x + 0.5, y + 0.5, grassContext)) : null);
+            let grass = coast || volcano || mountain || (grassContext ? (swamp || tundra || taiga || savanna || desert || steppe || grasslandProfileAt(x + 0.5, y + 0.5, grassContext)) : null);
+            // The ecotone is a vegetation layer, not a painted border. It only
+            // runs on the detail/tree lattice that was already sampled above and
+            // reuses the stored forest succession and grassland-use state.
+            const transition = transitionAt(x + 0.5, y + 0.5, {
+                height: h, moisture: m, temperature: temp, climate: climateKey, seaLevel: sea,
+                seed: Number(state.worldSeed) || 1, year: Number(state.year) || 1,
+                use: grassContext?.use || null
+            });
+            if (stand) stand = transitionForestStand(stand, transition);
+            grass = transitionGrassProfile(grass, transition);
             const meadowTree = Boolean(treeSample && grass && grass.treeChance > 0 && s1 < grass.treeChance);
             if (!potentialForest && !meadowTree && !detail) continue;
 
@@ -2650,7 +2661,19 @@ function drawSoilWash(ctx, px, py, cellPx, stand, seed) {
         latosol: ["#3e3824", "#54452b", "#2d2d1e"],
     };
     const palette = palettes[soil] || palettes.loam;
+    const ecotone = stand.ecotone;
     ctx.save();
+    if (ecotone?.soil) {
+        // The transition soil is a real mineral wash under the humus, not a
+        // separate biome disc: one low-alpha patch lets the two soil palettes
+        // interlock while the tile grain still breaks up the edge.
+        ctx.globalAlpha = 0.10 + ecotone.strength * 0.10;
+        ctx.fillStyle = `rgb(${ecotone.soil[0]},${ecotone.soil[1]},${ecotone.soil[2]})`;
+        ctx.beginPath();
+        ctx.ellipse(px + (seed - 0.5) * 6 * s, py + 3.4 * s,
+            (5.8 + seed * 2.2) * s, (1.8 + seed * 0.8) * s, 0.08, 0, Math.PI * 2);
+        ctx.fill();
+    }
     ctx.globalAlpha = 0.13 + (stand.ground?.humus || 0) * 0.17;
     for (let i = 0; i < 3; i++) {
         const angle = i * 2.3 + seed * 5;
