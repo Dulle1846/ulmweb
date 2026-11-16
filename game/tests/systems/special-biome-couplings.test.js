@@ -211,6 +211,22 @@ test("blight forces a costed administrative decision and expiry spreads the rot"
     assert.equal(getSpecialBiomeSnapshot().couplings.failedQuests >= 0, true);
 });
 
+test("a fungal hazard can seed a real public-health outbreak", () => {
+    setAtlas([region({ family: "fungal-wilds", attuned: false, cleaned: false })], {});
+    state.entities = [{ type: TYPE.VILLAGER, dead: false }];
+    let outbreakYear = null;
+    for (let year = 2; year < 120 && !outbreakYear; year++) {
+        state.year = year;
+        state.specialBiomes.lastYear = year - 1;
+        state.specialBiomes.lastHazardYear = 0;
+        updateSpecialBiomes();
+        if (state.health?.outbreakActive) outbreakYear = year;
+    }
+    assert.ok(outbreakYear, "the bounded annual hazard roll should produce an outbreak within the sample");
+    assert.equal(state.health.disease, "spore-lung");
+    assert.ok(state.entities[0].illnessUntilTick > state.tick);
+});
+
 test("realm cycle reads blight pressure and exposes it to the administration", () => {
     setAtlas([region({ family: "blighted-land", spread: 4, attuned: false })]);
     state.year = 3;

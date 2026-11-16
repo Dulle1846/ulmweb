@@ -118,7 +118,7 @@ function specialBiomeSection() {
     const history = snapshot.history.length
         ? snapshot.history.slice(0, 6).map(entry => '<div class="special-history-row"><span>YEAR ' + entry.year + '</span><p>' + esc(entry.text) + '</p></div>').join("")
         : '<p class="command-note">No rare-good trade or attunement has been recorded yet.</p>';
-    return '<div class="command-section-title">1.2.17 · FANTASTIC &amp; RARE BIOMES</div>' +
+    return '<div class="command-section-title">1.2.16 · FANTASTIC &amp; RARE BIOMES</div>' +
         '<div class="special-biome-summary"><div><small>ATLAS WONDERS</small><strong>' + snapshot.manifestCount + '</strong></div><div><small>FAMILIES CHARTED</small><strong>' + snapshot.knownFamilies.length + ' / 9</strong></div><div><small>REGIONS FOUND</small><strong>' + snapshot.summary.discovered + ' / ' + snapshot.summary.total + '</strong></div><div><small>ATTUNED</small><strong>' + snapshot.summary.attuned + '</strong></div><div><small>RARE GOODS YIELDED</small><strong>' + number(snapshot.totalYield) + '</strong></div></div>' +
         couplingInfluenceCard(snapshot) +
         '<div class="command-section-title">ROYAL ATLAS DECISIONS</div><div class="special-decisions"><div><div class="special-decisions__label">QUEST HOOKS</div>' + (snapshot.quests.quests.length ? snapshot.quests.quests.slice(0, 4).map(quest => questCard(quest, snapshot)).join("") : '<p class="command-note">A discovery opens a survey; attuning a region opens its rite.</p>') + '</div><div><div class="special-decisions__label">BLIGHT ADMINISTRATION</div>' + blightDecisionCard(snapshot.blightDecision, snapshot) + '</div></div>' +

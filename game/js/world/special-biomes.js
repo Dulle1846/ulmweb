@@ -1,7 +1,7 @@
 // Fantastic and rare special biomes.
 //
 // This module owns the deterministic world atlas: nine biome families, the
-// 1.2.17.1–100 feature manifest, rare-region placement, satellite islands,
+// 1.2.16.1–100 feature manifest, rare-region placement, satellite islands,
 // feature anchors and the compact tile lookup. It has no DOM or game-state
 // imports, so the forge preview, tests and the renderer can reuse it without
 // creating a second source of truth.
@@ -361,7 +361,7 @@ const manifestGroups = [
 
 export const SPECIAL_BIOME_MANIFEST = freeze(manifestGroups.flatMap(([family, start, labels]) =>
     labels.map((label, index) => freeze({
-        id: "1.2.17." + (start + index),
+        id: "1.2.16." + (start + index),
         index: start + index,
         label,
         family
@@ -396,7 +396,44 @@ function sampleWorld(world, x, y) {
     };
 }
 
-function familyScore(family, world, x, y, climate) {
+const HISTORY_AFFINITY = Object.freeze({
+    "enchanted-wood": { age: 0.12, magic: 0.46 },
+    "crystal-land": { geology: 0.42, magic: 0.18 },
+    "fungal-wilds": { age: 0.30, strife: 0.12 },
+    "blighted-land": { strife: 0.72, magic: 0.22 },
+    "glass-desert": { geology: 0.46, strife: 0.10 },
+    "mist-moor": { age: 0.34, magic: 0.24 },
+    "ash-shadow": { strife: 0.62, geology: 0.18 },
+    "hollow-depths": { age: 0.44, geology: 0.24 },
+    "magic-mountains": { magic: 0.62, geology: 0.26 }
+});
+
+// Distribution reads the realm's remembered age, conflicts, magical scars and
+// geology when the caller provides them. Without a history object, seeded
+// strata give each realm a stable, varied memory instead of a uniform sprinkle.
+function historyProfile(world, options, seed) {
+    const history = (world.history && typeof world.history === "object" && !Array.isArray(world.history))
+        ? world.history
+        : ((options.history && typeof options.history === "object" && !Array.isArray(options.history)) ? options.history : {});
+    const memory = world.memory && typeof world.memory === "object" ? world.memory : {};
+    return {
+        age: clamp01(finite(history.age ?? world.worldAge ?? options.worldAge, unit(seed, 11, 13, 151))),
+        strife: clamp01(finite(history.strife ?? world.strife ?? memory.strife, unit(seed, 17, 19, 157))),
+        magic: clamp01(finite(history.magic ?? world.magic ?? memory.magic, unit(seed, 23, 29, 163))),
+        geology: clamp01(finite(history.geology ?? world.geology ?? memory.geology, unit(seed, 31, 37, 167)))
+    };
+}
+
+function historyBiasFor(family, profile) {
+    const affinity = HISTORY_AFFINITY[family.id] || {};
+    return 0.82
+        + profile.age * (affinity.age || 0)
+        + profile.strife * (affinity.strife || 0)
+        + profile.magic * (affinity.magic || 0)
+        + profile.geology * (affinity.geology || 0);
+}
+
+function familyScore(family, world, x, y, climate, historyFactor = 1) {
     if (family.climates && !family.climates.includes(climate)) return 0;
     const points = [
         [x, y], [x - 0.7, y - 0.4], [x + 0.6, y - 0.5],
@@ -421,7 +458,7 @@ function familyScore(family, world, x, y, climate) {
     // A small deterministic climate/geology bias makes rare regions feel like
     // part of the world rather than a uniform sprinkling of every family.
     const bias = 0.86 + unit(world.seed, x, y, family.id.length) * 0.28;
-    return score * (family.weight || 1) * bias * (0.7 + world.resourceRichness * 0.3);
+    return score * (family.weight || 1) * bias * historyFactor * (0.7 + world.resourceRichness * 0.3);
 }
 
 function pickFamily(scores, roll) {
@@ -513,7 +550,8 @@ export function generateSpecialBiomeRegions(seedValue, options = {}, world = {})
     const sea = finite(world.sea, 0.33);
     const climate = String(options.climate || world.climate || "temperate");
     const resourceRichness = clamp01(finite(options.resources, 50) / 100);
-    const context = { ...world, W, H, sea, seed, resourceRichness };
+    const memory = historyProfile(world, options, seed);
+    const context = { ...world, W, H, sea, seed, resourceRichness, memory };
     const target = clamp(Math.round((W * H) / 7600) + 2, SPECIAL_BIOME_MIN_REGIONS, SPECIAL_BIOME_MAX_REGIONS);
     const regions = [];
     const cx = W / 2;
@@ -528,7 +566,7 @@ export function generateSpecialBiomeRegions(seedValue, options = {}, world = {})
         if (center.height <= sea + 0.008) continue;
         const scores = {};
         for (const family of FAMILY_DEFINITIONS) {
-            const score = familyScore(family, context, x, y, climate);
+            const score = familyScore(family, context, x, y, climate, historyBiasFor(family, memory));
             if (score > 0) scores[family.id] = score;
         }
         const familyId = pickFamily(scores, unit(seed, attempt, 3, 107));

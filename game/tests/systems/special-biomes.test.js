@@ -42,7 +42,7 @@ function setupWorld(seed = SEED) {
     return state.specialBiomes;
 }
 
-test("the 1.2.17 manifest covers one hundred distinct wonders in nine families", () => {
+test("the 1.2.16 manifest covers one hundred distinct wonders in nine families", () => {
     assert.equal(SPECIAL_BIOME_MANIFEST.length, 100);
     assert.equal(new Set(SPECIAL_BIOME_MANIFEST.map(entry => entry.id)).size, 100);
     assert.equal(new Set(SPECIAL_BIOME_MANIFEST.map(entry => entry.label)).size, 100);
@@ -52,7 +52,7 @@ test("the 1.2.17 manifest covers one hundred distinct wonders in nine families",
     // additional biomes. They still need an explicit place in the manifest.
     for (const integration of ["atlas", "integration"]) assert.ok(manifestFamilies.has(integration));
     for (const entry of SPECIAL_BIOME_MANIFEST) {
-        assert.match(entry.id, /^1\.2\.17\.\d+$/);
+        assert.match(entry.id, /^1\.2\.16\.\d+$/);
         assert.ok(entry.label.length > 1);
         assert.ok(SPECIAL_BIOME_FAMILIES[entry.family] || entry.family === "atlas" || entry.family === "integration");
     }

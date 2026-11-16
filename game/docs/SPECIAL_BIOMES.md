@@ -1,13 +1,14 @@
-# Fantastic & Rare Biomes (1.2.17)
+# Fantastic & Rare Biomes (1.2.16)
 
 **Status:** implemented, tested and on the production line.
-**Point manifest:** 100 explicit entries, `1.2.17.1–1.2.17.100`.
+**Point manifest:** 100 explicit entries, `1.2.16.1–1.2.16.100`.
 **Related:** [Endless Realm](ENDLESS_REALM.md), [Terrain performance](TERRAIN_PERFORMANCE.md), [Expeditions](EXPEDITIONS.md).
 
-The repository already ships **1.2.16 Winter Economy & Ice Roads**. This
-fantastic-biome list is therefore numbered **1.2.17** to keep every requirement
-ID unique. The content is the requested 100-point atlas: nine playable families,
-plus eleven explicit atlas and integration points.
+This is the requested **1.2.16** fantastic-biome list: nine playable families,
+plus eleven explicit atlas and integration points. The repository's earlier
+Winter Economy & Ice Roads ledger keeps its own 1.2.16.1–20 system identifiers
+in [SNOWLANDS.md](SNOWLANDS.md); this document is the player-facing atlas
+manifest requested here.
 
 ## What was added
 
@@ -50,7 +51,9 @@ lookup O(1) and the save small (regions and counters, never the tile array).
 ### Determinism
 
 Placement uses the world seed, five terrain samples per candidate, a family
-score derived from height/moisture/climate and a deterministic weighted choice.
+score derived from height/moisture/climate, and a remembered-history profile
+(age, strife, magic, geology). The profile uses explicit history/geology data
+when the world provides it and otherwise derives a stable memory from the seed.
 The same seed, options and terrain always produce the same region IDs,
 coordinates, families, radii, satellites, feature anchors and resources. The
 focused test generates the same atlas twice and compares every field.
@@ -65,7 +68,9 @@ focused test generates the same atlas twice and compares every field.
 - A blighted region gains pressure each year (capped at 6), damages morale when
   it is near the realm heart, and emits pressure warnings at 2, 4 and 6.
 - One deterministic hazard roll per year can cost morale, wood or gold across
-  the whole atlas. Attunement and cleansing are routes to recovery.
+  the whole atlas. Fungal, blight, moor, ash and cave hazards can also seed a
+  real named outbreak in the existing health system. Attunement and cleansing
+  are routes to recovery.
 - Discovery and annual work are bounded by the twelve-region cap; no per-tile
   simulation is involved.
 
@@ -111,164 +116,164 @@ normal reads are O(1).
 
 ## The 100-point manifest
 
-Each row is an explicit implementation or integration point. Rows 1.2.17.85–90
-are the atlas/discovery contract; rows 1.2.17.91–100 are the cross-system
+Each row is an explicit implementation or integration point. Rows 1.2.16.85–90
+are the atlas/discovery contract; rows 1.2.16.91–100 are the cross-system
 integration contract. Rows 1–84 map to real families and feature kinds.
 
-### 1.2.17.1–1.2.17.10 · Enchanted Wood
+### 1.2.16.1–1.2.16.10 · Enchanted Wood
 
 | # | Point | Implemented as |
 |---|---|---|
-| 1.2.17.1 | Enchanted forests | Luminous grove — glowtree landmark, Aether herbs, Enchanted Wood region |
-| 1.2.17.2 | Trees with unusual colours | Colour-shifting trees — prismleaf landmark, Aether herbs, Enchanted Wood region |
-| 1.2.17.3 | Glowing plants | Glowing undergrowth — glade landmark, Aether herbs, Enchanted Wood region |
-| 1.2.17.4 | Magical clearings | Moonlit clearing — glowcap landmark, Aether herbs, Enchanted Wood region |
-| 1.2.17.5 | Rare tree species | Rare old trees — spring landmark, Aether herbs, Enchanted Wood region |
-| 1.2.17.6 | Unusual blossoms | Unusual blossoms — runestone landmark, Aether herbs, Enchanted Wood region |
-| 1.2.17.7 | Glowing mushrooms | Glowing mushrooms — glowtree landmark, Aether herbs, Enchanted Wood region |
-| 1.2.17.8 | Special woodland animals | Woodland spirits — prismleaf landmark, Aether herbs, Enchanted Wood region |
-| 1.2.17.9 | Magical springs and places of power | A spring of power — glade landmark, Aether herbs, Enchanted Wood region |
-| 1.2.17.10 | Vegetation that reacts to magical influence | A living ley-line — glowcap landmark, Aether herbs, Enchanted Wood region |
+| 1.2.16.1 | Enchanted forests | Luminous grove — glowtree landmark, Aether herbs, Enchanted Wood region |
+| 1.2.16.2 | Trees with unusual colours | Colour-shifting trees — prismleaf landmark, Aether herbs, Enchanted Wood region |
+| 1.2.16.3 | Glowing plants | Glowing undergrowth — glade landmark, Aether herbs, Enchanted Wood region |
+| 1.2.16.4 | Magical clearings | Moonlit clearing — glowcap landmark, Aether herbs, Enchanted Wood region |
+| 1.2.16.5 | Rare tree species | Rare old trees — spring landmark, Aether herbs, Enchanted Wood region |
+| 1.2.16.6 | Unusual blossoms | Unusual blossoms — runestone landmark, Aether herbs, Enchanted Wood region |
+| 1.2.16.7 | Glowing mushrooms | Glowing mushrooms — glowtree landmark, Aether herbs, Enchanted Wood region |
+| 1.2.16.8 | Special woodland animals | Woodland spirits — prismleaf landmark, Aether herbs, Enchanted Wood region |
+| 1.2.16.9 | Magical springs and places of power | A spring of power — glade landmark, Aether herbs, Enchanted Wood region |
+| 1.2.16.10 | Vegetation that reacts to magical influence | A living ley-line — glowcap landmark, Aether herbs, Enchanted Wood region |
 
-### 1.2.17.11–1.2.17.19 · Crystal Land
-
-| # | Point | Implemented as |
-|---|---|---|
-| 1.2.17.11 | Crystal landscapes | Great crystal formation — crystal-grove landmark, Crystal shards, Crystal Land region |
-| 1.2.17.12 | Great crystal formations | Crystal grove — mineral-field landmark, Crystal shards, Crystal Land region |
-| 1.2.17.13 | Crystal forests | Mineral field — glass-rock landmark, Crystal shards, Crystal Land region |
-| 1.2.17.14 | Mineral fields | Translucent coloured rock — crystal-cave landmark, Crystal shards, Crystal Land region |
-| 1.2.17.15 | Transparent or coloured rock structures | Crystal cave — vein landmark, Crystal shards, Crystal Land region |
-| 1.2.17.16 | Crystal caves | Glowing mineral vein — crystal landmark, Crystal shards, Crystal Land region |
-| 1.2.17.17 | Glowing mineral veins | Rare crystal resource — crystal-grove landmark, Crystal shards, Crystal Land region |
-| 1.2.17.18 | Rare crystal resources | A hall of reflected light — mineral-field landmark, Crystal shards, Crystal Land region |
-| 1.2.17.19 | Special light reflections | Crystal landscape — crystal landmark, Crystal shards, Crystal Land region |
-
-### 1.2.17.20–1.2.17.28 · Fungal Wilds
+### 1.2.16.11–1.2.16.19 · Crystal Land
 
 | # | Point | Implemented as |
 |---|---|---|
-| 1.2.17.20 | Mushroom forests | Giant mushrooms — giant-mushroom landmark, Glowcaps, Fungal Wilds region |
-| 1.2.17.21 | Giant mushrooms | Glowing colonies — fungal-colony landmark, Glowcaps, Fungal Wilds region |
-| 1.2.17.22 | Glowing fungal colonies | Dense fungal carpet — fungal-carpet landmark, Glowcaps, Fungal Wilds region |
-| 1.2.17.23 | Dense fungal carpets | Underground mycelial network — spore-cloud landmark, Glowcaps, Fungal Wilds region |
-| 1.2.17.24 | Underground mycelial networks | Great spore clouds — healing-mushroom landmark, Glowcaps, Fungal Wilds region |
-| 1.2.17.25 | Great spore clouds | Healing and poisonous caps — mushroom landmark, Glowcaps, Fungal Wilds region |
-| 1.2.17.26 | Rare healing and poisonous mushrooms | Fungal fauna — giant-mushroom landmark, Glowcaps, Fungal Wilds region |
-| 1.2.17.27 | Specialised fungal animals | Strange soil — fungal-colony landmark, Glowcaps, Fungal Wilds region |
-| 1.2.17.28 | Unusual soil structures | Mushroom forest — mushroom landmark, Glowcaps, Fungal Wilds region |
+| 1.2.16.11 | Crystal landscapes | Great crystal formation — crystal-grove landmark, Crystal shards, Crystal Land region |
+| 1.2.16.12 | Great crystal formations | Crystal grove — mineral-field landmark, Crystal shards, Crystal Land region |
+| 1.2.16.13 | Crystal forests | Mineral field — glass-rock landmark, Crystal shards, Crystal Land region |
+| 1.2.16.14 | Mineral fields | Translucent coloured rock — crystal-cave landmark, Crystal shards, Crystal Land region |
+| 1.2.16.15 | Transparent or coloured rock structures | Crystal cave — vein landmark, Crystal shards, Crystal Land region |
+| 1.2.16.16 | Crystal caves | Glowing mineral vein — crystal landmark, Crystal shards, Crystal Land region |
+| 1.2.16.17 | Glowing mineral veins | Rare crystal resource — crystal-grove landmark, Crystal shards, Crystal Land region |
+| 1.2.16.18 | Rare crystal resources | A hall of reflected light — mineral-field landmark, Crystal shards, Crystal Land region |
+| 1.2.16.19 | Special light reflections | Crystal landscape — crystal landmark, Crystal shards, Crystal Land region |
 
-### 1.2.17.29–1.2.17.38 · Blighted Land
-
-| # | Point | Implemented as |
-|---|---|---|
-| 1.2.17.29 | Cursed and corrupted landscapes | Black and discoloured plants — black-grass landmark, Blight resin, Blighted Land region |
-| 1.2.17.30 | Dead trees | Rotten ground — rot-pool landmark, Blight resin, Blighted Land region |
-| 1.2.17.31 | Black or discoloured plants | Unnatural fog — unnatural-fog landmark, Blight resin, Blighted Land region |
-| 1.2.17.32 | Rotten ground | Poisoned water — twisted-beast landmark, Blight resin, Blighted Land region |
-| 1.2.17.33 | Unnatural fog | Changed animals — spreading-zone landmark, Blight resin, Blighted Land region |
-| 1.2.17.34 | Poisoned water | A spreading corruption — deadwood landmark, Blight resin, Blighted Land region |
-| 1.2.17.35 | Changed animal species | A curse or supernatural danger — black-grass landmark, Blight resin, Blighted Land region |
-| 1.2.17.36 | Spreading corruption zones | A creeping boundary — rot-pool landmark, Blight resin, Blighted Land region |
-| 1.2.17.37 | Magical or supernatural dangers | Dead trees — deadwood landmark, Blight resin, Blighted Land region |
-| 1.2.17.38 | Long-term change in neighbouring biomes | Black and discoloured plants — black-grass landmark, Blight resin, Blighted Land region |
-
-### 1.2.17.39–1.2.17.47 · Glass Desert
+### 1.2.16.20–1.2.16.28 · Fungal Wilds
 
 | # | Point | Implemented as |
 |---|---|---|
-| 1.2.17.39 | Crystal deserts and glass landscapes | Mirroring rock — mirror-rock landmark, Glass sand, Glass Desert region |
-| 1.2.17.40 | Glass-like sand | Mineral columns — mineral-column landmark, Glass sand, Glass Desert region |
-| 1.2.17.41 | Crystalline dunes | Rare gemstones — gem landmark, Glass sand, Glass Desert region |
-| 1.2.17.42 | Mirroring rock formations | Shifting refraction — sharp-ground landmark, Glass sand, Glass Desert region |
-| 1.2.17.43 | Mineral columns | Dry vegetation — glass landmark, Glass sand, Glass Desert region |
-| 1.2.17.44 | Rare gemstone deposits | Dangerously sharp ground — crystal-dune landmark, Glass sand, Glass Desert region |
-| 1.2.17.45 | Special light refraction | A false horizon — mirror-rock landmark, Glass sand, Glass Desert region |
-| 1.2.17.46 | Extremely dry vegetation | Glass-like sand — glass landmark, Glass sand, Glass Desert region |
-| 1.2.17.47 | Dangerous sharp surfaces | Crystalline dunes — crystal-dune landmark, Glass sand, Glass Desert region |
+| 1.2.16.20 | Mushroom forests | Giant mushrooms — giant-mushroom landmark, Glowcaps, Fungal Wilds region |
+| 1.2.16.21 | Giant mushrooms | Glowing colonies — fungal-colony landmark, Glowcaps, Fungal Wilds region |
+| 1.2.16.22 | Glowing fungal colonies | Dense fungal carpet — fungal-carpet landmark, Glowcaps, Fungal Wilds region |
+| 1.2.16.23 | Dense fungal carpets | Underground mycelial network — spore-cloud landmark, Glowcaps, Fungal Wilds region |
+| 1.2.16.24 | Underground mycelial networks | Great spore clouds — healing-mushroom landmark, Glowcaps, Fungal Wilds region |
+| 1.2.16.25 | Great spore clouds | Healing and poisonous caps — mushroom landmark, Glowcaps, Fungal Wilds region |
+| 1.2.16.26 | Rare healing and poisonous mushrooms | Fungal fauna — giant-mushroom landmark, Glowcaps, Fungal Wilds region |
+| 1.2.16.27 | Specialised fungal animals | Strange soil — fungal-colony landmark, Glowcaps, Fungal Wilds region |
+| 1.2.16.28 | Unusual soil structures | Mushroom forest — mushroom landmark, Glowcaps, Fungal Wilds region |
 
-### 1.2.17.48–1.2.17.56 · Mist Moor
-
-| # | Point | Implemented as |
-|---|---|---|
-| 1.2.17.48 | Magical mist moors | A path that loses itself — glowreed landmark, Moor pearls, Mist Moor region |
-| 1.2.17.49 | Permanent mist layers | Permanent mist banks — mist landmark, Moor pearls, Mist Moor region |
-| 1.2.17.50 | Glowing water plants | Glowing water plants — glowreed landmark, Moor pearls, Mist Moor region |
-| 1.2.17.51 | Unusual moor lights | Unusual marsh lights — moorlight landmark, Moor pearls, Mist Moor region |
-| 1.2.17.52 | Rare herbs | Rare herbs — moor-herb landmark, Moor pearls, Mist Moor region |
-| 1.2.17.53 | Magical springs | A magical spring — moor-spring landmark, Moor pearls, Mist Moor region |
-| 1.2.17.54 | Hidden islands | Hidden islands — hidden-island landmark, Moor pearls, Mist Moor region |
-| 1.2.17.55 | Altered animal species | Changed waterfowl — mist landmark, Moor pearls, Mist Moor region |
-| 1.2.17.56 | Phenomena that make orientation difficult | A path that loses itself — glowreed landmark, Moor pearls, Mist Moor region |
-
-### 1.2.17.57–1.2.17.65 · Ash & Shadow
+### 1.2.16.29–1.2.16.38 · Blighted Land
 
 | # | Point | Implemented as |
 |---|---|---|
-| 1.2.17.57 | Ash and shadow landscapes | Charred tree remains — black-grass landmark, Ash iron, Ash & Shadow region |
-| 1.2.17.58 | Dark soils | Black grasses — ashfall landmark, Ash iron, Ash & Shadow region |
-| 1.2.17.59 | Charred tree remains | Ash rain — strange-rock landmark, Ash iron, Ash & Shadow region |
-| 1.2.17.60 | Black grasses | Strange rock formations — ash-vein landmark, Ash iron, Ash & Shadow region |
-| 1.2.17.61 | Ash rain | Changed light — ash landmark, Ash iron, Ash & Shadow region |
-| 1.2.17.62 | Strange rock formations | Hardy plants — charred-tree landmark, Ash iron, Ash & Shadow region |
-| 1.2.17.63 | Changed light | Rare mineral wealth — black-grass landmark, Ash iron, Ash & Shadow region |
-| 1.2.17.64 | Resilient plants | Ashen and shadowed landscape — ash landmark, Ash iron, Ash & Shadow region |
-| 1.2.17.65 | Rare mineral raw materials | Dark soils — charred-tree landmark, Ash iron, Ash & Shadow region |
+| 1.2.16.29 | Cursed and corrupted landscapes | Black and discoloured plants — black-grass landmark, Blight resin, Blighted Land region |
+| 1.2.16.30 | Dead trees | Rotten ground — rot-pool landmark, Blight resin, Blighted Land region |
+| 1.2.16.31 | Black or discoloured plants | Unnatural fog — unnatural-fog landmark, Blight resin, Blighted Land region |
+| 1.2.16.32 | Rotten ground | Poisoned water — twisted-beast landmark, Blight resin, Blighted Land region |
+| 1.2.16.33 | Unnatural fog | Changed animals — spreading-zone landmark, Blight resin, Blighted Land region |
+| 1.2.16.34 | Poisoned water | A spreading corruption — deadwood landmark, Blight resin, Blighted Land region |
+| 1.2.16.35 | Changed animal species | A curse or supernatural danger — black-grass landmark, Blight resin, Blighted Land region |
+| 1.2.16.36 | Spreading corruption zones | A creeping boundary — rot-pool landmark, Blight resin, Blighted Land region |
+| 1.2.16.37 | Magical or supernatural dangers | Dead trees — deadwood landmark, Blight resin, Blighted Land region |
+| 1.2.16.38 | Long-term change in neighbouring biomes | Black and discoloured plants — black-grass landmark, Blight resin, Blighted Land region |
 
-### 1.2.17.66–1.2.17.75 · Hollow Depths
-
-| # | Point | Implemented as |
-|---|---|---|
-| 1.2.17.66 | Underground biomes | Crystal cave — underground-lake landmark, Deep amber, Hollow Depths region |
-| 1.2.17.67 | Large cave systems | Subterranean lake — fungal-garden landmark, Deep amber, Hollow Depths region |
-| 1.2.17.68 | Underground forests | Fungal landscape — glowworm landmark, Deep amber, Hollow Depths region |
-| 1.2.17.69 | Crystal grottoes | Glowing organisms — underground-river landmark, Deep amber, Hollow Depths region |
-| 1.2.17.70 | Underground lakes | Underground river — cave-mouth landmark, Deep amber, Hollow Depths region |
-| 1.2.17.71 | Fungal landscapes | Blind fauna and pale flora — underground-forest landmark, Deep amber, Hollow Depths region |
-| 1.2.17.72 | Glowing organisms | Rare stone and gas — underground-lake landmark, Deep amber, Hollow Depths region |
-| 1.2.17.73 | Underground rivers | Large cave system — cave-mouth landmark, Deep amber, Hollow Depths region |
-| 1.2.17.74 | Unique animals and plants | Underground forest — underground-forest landmark, Deep amber, Hollow Depths region |
-| 1.2.17.75 | Special resources and dangers | Crystal cave — underground-lake landmark, Deep amber, Hollow Depths region |
-
-### 1.2.17.76–1.2.17.84 · Magic Mountains
+### 1.2.16.39–1.2.16.47 · Glass Desert
 
 | # | Point | Implemented as |
 |---|---|---|
-| 1.2.17.76 | Magical mountains | Crystal peaks — mountain-spring landmark, Star metal, Magic Mountains region |
-| 1.2.17.77 | Floating or unusually shaped rock formations | A spring of power — strange-weather landmark, Star metal, Magic Mountains region |
-| 1.2.17.78 | Glowing mountain veins | Unnatural weather — alpine-beast landmark, Star metal, Magic Mountains region |
-| 1.2.17.79 | Crystal peaks | Rare alpine plants and beasts — floating-rock landmark, Star metal, Magic Mountains region |
-| 1.2.17.80 | Springs of power | Precious stone — mountain-vein landmark, Star metal, Magic Mountains region |
-| 1.2.17.81 | Unnatural weather phenomena | A pass that closes itself — crystal-peak landmark, Star metal, Magic Mountains region |
-| 1.2.17.82 | Rare plants and animals | Magical mountains — floating-rock landmark, Star metal, Magic Mountains region |
-| 1.2.17.83 | Special raw materials | Floating or impossible rock — mountain-vein landmark, Star metal, Magic Mountains region |
-| 1.2.17.84 | Difficult and dangerous access | Glowing mountain veins — crystal-peak landmark, Star metal, Magic Mountains region |
+| 1.2.16.39 | Crystal deserts and glass landscapes | Mirroring rock — mirror-rock landmark, Glass sand, Glass Desert region |
+| 1.2.16.40 | Glass-like sand | Mineral columns — mineral-column landmark, Glass sand, Glass Desert region |
+| 1.2.16.41 | Crystalline dunes | Rare gemstones — gem landmark, Glass sand, Glass Desert region |
+| 1.2.16.42 | Mirroring rock formations | Shifting refraction — sharp-ground landmark, Glass sand, Glass Desert region |
+| 1.2.16.43 | Mineral columns | Dry vegetation — glass landmark, Glass sand, Glass Desert region |
+| 1.2.16.44 | Rare gemstone deposits | Dangerously sharp ground — crystal-dune landmark, Glass sand, Glass Desert region |
+| 1.2.16.45 | Special light refraction | A false horizon — mirror-rock landmark, Glass sand, Glass Desert region |
+| 1.2.16.46 | Extremely dry vegetation | Glass-like sand — glass landmark, Glass sand, Glass Desert region |
+| 1.2.16.47 | Dangerous sharp surfaces | Crystalline dunes — crystal-dune landmark, Glass sand, Glass Desert region |
 
-### 1.2.17.85–1.2.17.90 · Atlas and discovery integration
-
-| # | Point | Implemented as |
-|---|---|---|
-| 1.2.17.85 | Rare distribution of special biomes | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
-| 1.2.17.86 | Distribution tied to world history, climate, magic and geology | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
-| 1.2.17.87 | Small and large special-biome areas | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
-| 1.2.17.88 | Individual special-biome islands inside ordinary landscapes | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
-| 1.2.17.89 | Transitions to normal biomes | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
-| 1.2.17.90 | Regional and procedurally generated variants | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
-
-### 1.2.17.91–1.2.17.100 · Cross-system integration
+### 1.2.16.48–1.2.16.56 · Mist Moor
 
 | # | Point | Implemented as |
 |---|---|---|
-| 1.2.17.91 | Special discovery and exploration events | Integrated through world generation, terrain tint, renderer, simulation, save/load, Explore UI and the existing expedition/economy loops |
-| 1.2.17.92 | Integration into quests, legends and historical events | Integrated through world generation, terrain tint, renderer, simulation, save/load, Explore UI and the existing expedition/economy loops |
-| 1.2.17.93 | Special resources | Integrated through world generation, terrain tint, renderer, simulation, save/load, Explore UI and the existing expedition/economy loops |
-| 1.2.17.94 | Rare building and crafting materials | Integrated through world generation, terrain tint, renderer, simulation, save/load, Explore UI and the existing expedition/economy loops |
-| 1.2.17.95 | Unique animal species | Integrated through world generation, terrain tint, renderer, simulation, save/load, Explore UI and the existing expedition/economy loops |
-| 1.2.17.96 | Special diseases and environmental hazards | Integrated through world generation, terrain tint, renderer, simulation, save/load, Explore UI and the existing expedition/economy loops |
-| 1.2.17.97 | Magical advantages or disadvantages | Integrated through world generation, terrain tint, renderer, simulation, save/load, Explore UI and the existing expedition/economy loops |
-| 1.2.17.98 | Special settlement conditions | Integrated through world generation, terrain tint, renderer, simulation, save/load, Explore UI and the existing expedition/economy loops |
-| 1.2.17.99 | Special trade opportunities | Integrated through world generation, terrain tint, renderer, simulation, save/load, Explore UI and the existing expedition/economy loops |
-| 1.2.17.100 | Rare technologies, crafting recipes or discoveries | Integrated through world generation, terrain tint, renderer, simulation, save/load, Explore UI and the existing expedition/economy loops |
+| 1.2.16.48 | Magical mist moors | A path that loses itself — glowreed landmark, Moor pearls, Mist Moor region |
+| 1.2.16.49 | Permanent mist layers | Permanent mist banks — mist landmark, Moor pearls, Mist Moor region |
+| 1.2.16.50 | Glowing water plants | Glowing water plants — glowreed landmark, Moor pearls, Mist Moor region |
+| 1.2.16.51 | Unusual moor lights | Unusual marsh lights — moorlight landmark, Moor pearls, Mist Moor region |
+| 1.2.16.52 | Rare herbs | Rare herbs — moor-herb landmark, Moor pearls, Mist Moor region |
+| 1.2.16.53 | Magical springs | A magical spring — moor-spring landmark, Moor pearls, Mist Moor region |
+| 1.2.16.54 | Hidden islands | Hidden islands — hidden-island landmark, Moor pearls, Mist Moor region |
+| 1.2.16.55 | Altered animal species | Changed waterfowl — mist landmark, Moor pearls, Mist Moor region |
+| 1.2.16.56 | Phenomena that make orientation difficult | A path that loses itself — glowreed landmark, Moor pearls, Mist Moor region |
+
+### 1.2.16.57–1.2.16.65 · Ash & Shadow
+
+| # | Point | Implemented as |
+|---|---|---|
+| 1.2.16.57 | Ash and shadow landscapes | Charred tree remains — black-grass landmark, Ash iron, Ash & Shadow region |
+| 1.2.16.58 | Dark soils | Black grasses — ashfall landmark, Ash iron, Ash & Shadow region |
+| 1.2.16.59 | Charred tree remains | Ash rain — strange-rock landmark, Ash iron, Ash & Shadow region |
+| 1.2.16.60 | Black grasses | Strange rock formations — ash-vein landmark, Ash iron, Ash & Shadow region |
+| 1.2.16.61 | Ash rain | Changed light — ash landmark, Ash iron, Ash & Shadow region |
+| 1.2.16.62 | Strange rock formations | Hardy plants — charred-tree landmark, Ash iron, Ash & Shadow region |
+| 1.2.16.63 | Changed light | Rare mineral wealth — black-grass landmark, Ash iron, Ash & Shadow region |
+| 1.2.16.64 | Resilient plants | Ashen and shadowed landscape — ash landmark, Ash iron, Ash & Shadow region |
+| 1.2.16.65 | Rare mineral raw materials | Dark soils — charred-tree landmark, Ash iron, Ash & Shadow region |
+
+### 1.2.16.66–1.2.16.75 · Hollow Depths
+
+| # | Point | Implemented as |
+|---|---|---|
+| 1.2.16.66 | Underground biomes | Crystal cave — underground-lake landmark, Deep amber, Hollow Depths region |
+| 1.2.16.67 | Large cave systems | Subterranean lake — fungal-garden landmark, Deep amber, Hollow Depths region |
+| 1.2.16.68 | Underground forests | Fungal landscape — glowworm landmark, Deep amber, Hollow Depths region |
+| 1.2.16.69 | Crystal grottoes | Glowing organisms — underground-river landmark, Deep amber, Hollow Depths region |
+| 1.2.16.70 | Underground lakes | Underground river — cave-mouth landmark, Deep amber, Hollow Depths region |
+| 1.2.16.71 | Fungal landscapes | Blind fauna and pale flora — underground-forest landmark, Deep amber, Hollow Depths region |
+| 1.2.16.72 | Glowing organisms | Rare stone and gas — underground-lake landmark, Deep amber, Hollow Depths region |
+| 1.2.16.73 | Underground rivers | Large cave system — cave-mouth landmark, Deep amber, Hollow Depths region |
+| 1.2.16.74 | Unique animals and plants | Underground forest — underground-forest landmark, Deep amber, Hollow Depths region |
+| 1.2.16.75 | Special resources and dangers | Crystal cave — underground-lake landmark, Deep amber, Hollow Depths region |
+
+### 1.2.16.76–1.2.16.84 · Magic Mountains
+
+| # | Point | Implemented as |
+|---|---|---|
+| 1.2.16.76 | Magical mountains | Crystal peaks — mountain-spring landmark, Star metal, Magic Mountains region |
+| 1.2.16.77 | Floating or unusually shaped rock formations | A spring of power — strange-weather landmark, Star metal, Magic Mountains region |
+| 1.2.16.78 | Glowing mountain veins | Unnatural weather — alpine-beast landmark, Star metal, Magic Mountains region |
+| 1.2.16.79 | Crystal peaks | Rare alpine plants and beasts — floating-rock landmark, Star metal, Magic Mountains region |
+| 1.2.16.80 | Springs of power | Precious stone — mountain-vein landmark, Star metal, Magic Mountains region |
+| 1.2.16.81 | Unnatural weather phenomena | A pass that closes itself — crystal-peak landmark, Star metal, Magic Mountains region |
+| 1.2.16.82 | Rare plants and animals | Magical mountains — floating-rock landmark, Star metal, Magic Mountains region |
+| 1.2.16.83 | Special raw materials | Floating or impossible rock — mountain-vein landmark, Star metal, Magic Mountains region |
+| 1.2.16.84 | Difficult and dangerous access | Glowing mountain veins — crystal-peak landmark, Star metal, Magic Mountains region |
+
+### 1.2.16.85–1.2.16.90 · Atlas and discovery integration
+
+| # | Point | Implemented as |
+|---|---|---|
+| 1.2.16.85 | Rare distribution of special biomes | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
+| 1.2.16.86 | Distribution tied to world history, climate, magic and geology | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
+| 1.2.16.87 | Small and large special-biome areas | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
+| 1.2.16.88 | Individual special-biome islands inside ordinary landscapes | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
+| 1.2.16.89 | Transitions to normal biomes | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
+| 1.2.16.90 | Regional and procedurally generated variants | Atlas contract: manifest entry, deterministic region data, discovery, rare-good ledger, survey UI, save round-trip |
+
+### 1.2.16.91–1.2.16.100 · Cross-system integration
+
+| # | Point | Implemented as |
+|---|---|---|
+| 1.2.16.91 | Special discovery and exploration events | A charted region opens a survey, a chronicle entry and an Explore discovery event; the survey is remembered in the save. |
+| 1.2.16.92 | Integration into quests, legends and historical events | Discovery/attunement open survey, rite and omen quests; every result enters the bounded atlas history and the realm chronicle. |
+| 1.2.16.93 | Special resources | Nine rare goods yield once per discovered region per year; attuned regions yield double. |
+| 1.2.16.94 | Rare building and crafting materials | Rare goods are real inventory used by attunement, cleansing and quest choices, and sold in the Explore market for gold. |
+| 1.2.16.95 | Unique animal species | Each family has its own fauna feature anchors, variants and lore (spirits, twisted beasts, blind fauna, alpine beasts). |
+| 1.2.16.96 | Special diseases and environmental hazards | Annual hazards cost morale/wood/gold; fungal, blight, moor, ash and cave hazards can seed a named outbreak in the health system. |
+| 1.2.16.97 | Magical advantages or disadvantages | The cached influence profile grants family-specific boons and penalties to diplomacy, combat, city output, growth and realm stability. |
+| 1.2.16.98 | Special settlement conditions | Attuned regions add mature-realm growth slots only after the water, safety, satisfaction, food and housing gates pass. |
+| 1.2.16.99 | Special trade opportunities | The Explore market sells every rare good at its family value; trade improves annual diplomacy through the influence profile. |
+| 1.2.16.100 | Rare technologies, crafting recipes or discoveries | Attunement is a permanent regional discovery/rite; quest choices unlock chronicle outcomes, rare-good rewards and permanent regional bonds. |
 
 ## Rendering and performance
 
@@ -326,10 +331,10 @@ coordinates, out-of-range radii and negative/unknown rare goods.
   covering diplomacy, battlefield cover/attrition, harvest/production/growth,
   quests and rites, blight decrees and expiry, realm-cycle unrest, exact
   save/load and malformed coupling rejection.
-- `npm test` — **1090/1090** plus the syntax/UI-ID audit.
+- `npm test` — **1091/1091** plus the syntax/UI-ID audit.
 - `npm run test:endurance:60` — the real campaign driver over **60 years /
   24,040 ticks**, exact full-save round-trip with the coupling block, and a
-  legacy load without the block. Measured **0.804 ms/tick**, population **74**,
+  legacy load without the block. Measured **1.076 ms/tick**, population **74**,
   all campaign requirements green.
 - Browser E2E and the production build are recorded in the release changelog.
   The browser endurance gate is now a resumable **60-year** audit.

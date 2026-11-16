@@ -13,20 +13,26 @@ This is the canonical release and change record for the game. It is intentionall
 
 The world now carries a rare-biome atlas built from the same seed and terrain
 samples as the ordinary biomes. The requested 100-point fantastic-biome list is
-implemented as nine playable families plus eleven atlas/integration points; it is
-numbered **1.2.17** because **1.2.16** is already the shipped Winter Economy.
+implemented as nine playable families plus eleven atlas/integration points. This
+is the player-facing **1.2.16** manifest; the earlier Winter Economy ledger keeps
+its own 1.2.16.1–20 system identifiers in SNOWLANDS.md.
 
 - Nine families — Enchanted Wood, Crystal Land, Fungal Wilds, Blighted Land,
   Glass Desert, Mist Moor, Ash Shadow, Hollow Depths and Magic Mountains — each
   with its own terrain tint, five to nine landmark anchors, rare good, boon and
   hazard.
 - At most twelve seeded regions per world, with satellite islets and a
-  one-byte tile lookup. No second tile-object graph, no per-tick tile scan and
-  no new O(n²) work.
+  one-byte tile lookup. Distribution also reads a deterministic remembered
+  history (age, strife, magic, geology), so climate and old wounds shape which
+  families appear. No second tile-object graph, no per-tick tile scan and no
+  new O(n²) work.
 - Discovery is checked every 200 ticks against explored ground. Discovered
   regions yield a rare good once per year; three units permanently attune a
   region and double its yield. Blighted regions spread pressure and must be
   cleansed before attunement.
+- Annual hazards can now seed named public-health outbreaks (spore-lung,
+  blight-fever, moor-ague, ash-lung and cave-fever) through the existing health
+  system, instead of remaining only a morale or resource penalty.
 - The atlas now feeds one cached influence profile into diplomacy, warfare,
   harvest/building efficiency, mature household growth, realm scarcity/unrest
   and royal administration. Charted cover and attrition operate through one O(1)
@@ -42,9 +48,9 @@ numbered **1.2.17** because **1.2.16** is already the shipped Winter Economy.
   paths. At low zoom it degrades to a soft survey glow.
 - The block is additive on schema 11. Old saves get a freshly generated atlas;
   saved discoveries, goods, attunement and blight pressure restore over it.
-- Verification: focused atlas suite **11/11**, focused coupling suite **8/8**,
-  full suite **1090/1090**, and the real 60-year / **24,040-tick** campaign at
-  **0.804 ms/tick** with exact save/load and a legacy no-block load. Browser E2E,
+- Verification: focused atlas suite **12/12**, focused coupling suite **9/9**,
+  full suite **1091/1091**, and the real 60-year / **24,040-tick** campaign at
+  **1.076 ms/tick** with exact save/load and a legacy no-block load. Browser E2E,
   the resumable 60-year browser endurance gate and the production version check
   are recorded with the deployment. Full record:
   [docs/SPECIAL_BIOMES.md](docs/SPECIAL_BIOMES.md).

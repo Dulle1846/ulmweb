@@ -1,4 +1,4 @@
-// Persistent state, discovery and annual ecology for the 1.2.17 special biomes.
+// Persistent state, discovery and annual ecology for the 1.2.16 special biomes.
 //
 // The world atlas is generated once per realm. This module stores only the
 // small region DTOs, rare goods and a bounded history; the tile lookup is a
@@ -18,6 +18,7 @@ import {
     onSpecialBiomeAttuned, onSpecialBiomeCleansed, onSpecialBiomeDiscovered,
     updateSpecialBiomeCouplings, validateSpecialBiomeCouplingState
 } from "./special-biome-couplings.js";
+import { startOutbreak } from "./health.js";
 
 export const SPECIAL_BIOME_HISTORY_LIMIT = 24;
 const COUNT_LIMIT = 1_000_000;
@@ -380,6 +381,22 @@ function annualRegion(region) {
             state.resources.wood = Math.max(0, finite(state.resources.wood, 0) - 2);
         } else if (region.family === "mist-moor") {
             state.resources.gold = Math.max(0, finite(state.resources.gold, 0) - 2);
+        }
+        // Some hazards are illnesses, not just a scalar penalty. Seed one
+        // real public-health event per hazard year at most; the existing
+        // health system owns quarantine, treatment and recovery.
+        const disease = {
+            "fungal-wilds": "spore-lung",
+            "blighted-land": "blight-fever",
+            "mist-moor": "moor-ague",
+            "ash-shadow": "ash-lung",
+            "hollow-depths": "cave-fever"
+        }[region.family];
+        if (disease && !state.health?.outbreakActive) {
+            startOutbreak({
+                severity: ["fungal-wilds", "blighted-land"].includes(region.family) ? 2 : 1,
+                disease
+            });
         }
         addLog("A HAZARD STIRS IN " + region.name.toUpperCase() + ": " + family.hazard.toUpperCase(), "#e0a080", "nature");
         pushHistory("hazard", region, family.hazard);
