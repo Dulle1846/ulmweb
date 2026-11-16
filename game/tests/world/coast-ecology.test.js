@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { generateWorldData } from "../../js/world/terrain-model.js";
 import {
     COAST_REQUIREMENTS, COAST_REQUIREMENT_IDS, COAST_FORMATIONS, COAST_GOODS,
@@ -24,6 +25,11 @@ function contextAt(x, y, overrides = {}) {
         weather: "clear", wind: 1.2, ...overrides,
     };
 }
+
+test("Coastlands is selectable in the shipped world forge", async () => {
+    const html = await readFile(new URL("../../index.html", import.meta.url), "utf8");
+    assert.match(html, /<option value="coastal">Coastlands<\/option>/);
+});
 
 test("coastal requirements cover every id from 1.2.14.1 through 1.2.14.71", () => {
     assert.equal(COAST_REQUIREMENTS.length, 71);
