@@ -5,6 +5,8 @@
 !/artifacts/volcano-formations.png
 !/artifacts/COAST_1.2.14_AUDIT.md
 !/artifacts/coast-audit.json
+!/artifacts/WINTER_1.2.16_AUDIT.md
+!/artifacts/winter-1.2.16-audit.json
 /game/node_modules/
 /.worktrees/
 /game/.browser-cache/
