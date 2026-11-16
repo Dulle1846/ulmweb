@@ -5,6 +5,7 @@ import { random, randInt } from "../core/random.js";
 import { TYPE } from "../core/types.js";
 import { appendTimelineEvent, createEventTimelineState } from "../core/event-timeline.js";
 import { queuePresentationEffect } from "../core/presentation-effects.js";
+import { transitionEventWeight, transitionGameplayAt } from "../world/transition-biomes.js";
 
 const STREAM = "micro-events";
 const BASE_PLACES = Object.freeze([
@@ -71,6 +72,12 @@ function buildContext() {
     const residents = people.filter(entity => !entity.isKing);
     const dragons = (state.entities || []).filter(entity => !entity.dead && entity.isDragon && clean(entity.creature?.name));
     const places = [...BASE_PLACES];
+    const keep = (state.entities || []).find(entity => entity && !entity.dead && entity.isBuilding?.() && entity.type === TYPE.KEEP);
+    let ecotone = null;
+    if (Number.isFinite(Number(keep?.x)) && Number.isFinite(Number(keep?.y))) {
+        try { ecotone = transitionGameplayAt(Number(keep.x) + 0.5, Number(keep.y) + 0.5); } catch { /* no terrain fixture */ }
+    }
+    if (ecotone?.place && !places.includes(ecotone.place)) places.unshift(ecotone.place);
     let temples = 0;
     for (const entity of state.entities || []) {
         if (entity.dead || !building(entity)) continue;
@@ -99,6 +106,7 @@ function buildContext() {
         stone: Number(state.resources?.stone) || 0,
         atWar: hasWar(),
         temples,
+        ecotone,
         places,
         person: pick(residents.length ? residents : [rulerEntity || null]),
         soldier: pick(soldiers.length ? soldiers : [rulerEntity || null]),
@@ -488,6 +496,7 @@ function situationalWeight(spec, context, timeline) {
     if (spec.category === "ECONOMY" && (context.gold < 25 || context.food < 30)) weight *= 1.2;
     if (spec.category === "PEOPLE" && context.population > 25) weight *= 1.15;
     if (spec.category === "FAITH" && context.temples > 0) weight *= 1.1;
+    weight *= transitionEventWeight(spec.id, context.ecotone);
     const recent = (timeline?.events || []).slice(0, 8).filter(event => event.templateId === spec.id).length;
     // The realm remembers what just happened. This prevents a single quirky
     // template from monopolising a timeline without making it impossible.

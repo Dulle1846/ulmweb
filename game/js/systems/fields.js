@@ -9,6 +9,7 @@ import { addResource } from "./resources.js";
 import { recordResourceMovement } from "./goods-book.js";
 import { getBuildingEfficiency, getWorkforceSnapshot } from "./economy.js";
 import { ECONOMY_TUNING, getHarvestYieldFactor } from "./economy-cycle.js";
+import { transitionGameplayAt } from "../world/transition-biomes.js";
 
 export const FIELD_STAGES = Object.freeze(["fallow", "sown", "growing", "ripe", "harvested"]);
 export const FIELD_LABELS = Object.freeze({
@@ -152,6 +153,15 @@ function stableManureNear(farm, stables) {
     return false;
 }
 
+// A farm reads the named seam under its own field. The result is only a
+// harvest multiplier; it is never stored on the field or copied into the save.
+function ecotoneHarvestFactor(farm) {
+    if (!Number.isFinite(Number(farm?.x)) || !Number.isFinite(Number(farm?.y))) return 1;
+    if (!state.heightMap || !Number(state.terrainPixW) || !Number(state.terrainPixH)) return 1;
+    const gameplay = transitionGameplayAt(Number(farm.x) + 0.5, Number(farm.y) + 0.5);
+    return Math.max(0.75, Math.min(1.30, 1 + (Number(gameplay?.farm) || 0)));
+}
+
 function recoverSoil(field, amount) {
     field.fertility = Math.min(field.maxFertility, field.fertility + amount);
 }
@@ -211,7 +221,7 @@ function seasonalFieldUpdate(farm, stables) {
         }
     } else if (season === 2) {
         if (field.stage === "ripe") {
-            const yieldFactor = getHarvestYieldFactor();
+            const yieldFactor = getHarvestYieldFactor() * ecotoneHarvestFactor(farm);
             field.lastYieldFactor = yieldFactor;
             field.pendingHarvest = Math.max(8, Math.round((10 + field.fertility / 8 + Math.min(12, field.growth / 10)) * yieldFactor));
             field.harvestTotal = field.pendingHarvest;

@@ -30,14 +30,28 @@ landscape types and eight live pressures, not as a painted border.
   steppeification, wetland expansion, post-fire succession, logging regrowth,
   overgrazing and the rare-biome atlas edge, whose influence widens with realm
   age. No new per-tick world scan or save schema is added.
+- The seam now reaches gameplay at existing decision boundaries. Farms and
+  woodland/meadow gathering multiply their current yields by the tile's farm,
+  forest or forage value; construction reads the farm-soil threshold and
+  household suitability (only extreme bog/flood footing is refused); major and
+  micro events weight families and places from the capital's ecotone; expedition
+  travel days use the shared route-speed helper.
+- The gameplay profile is derived only from `transitionAt()` plus existing
+  forest/atlas/terrain state, so there is no new save field. Movement uses a
+  bounded per-tile cache keyed by the inputs that can move the seam; harvest,
+  placement, gathering and event lookups run only when those actions occur, not
+  per frame. Resident errands keep their established timing so the long
+  demographic balance remains stable.
 - The Explore tab exposes the active seam, stage, width, tree/grass/shrub
-  percentages, active pressures, all fifteen edges and the fifty-point count.
+  percentages, active pressures, farm/forest/forage/settlement/movement chips,
+  all fifteen edges and the fifty-point count.
 - The terrain height/moisture/temperature goldens are unchanged. The preview
   pixel golden was updated only for the intentional ecotone wash.
-- Verification: focused 1.2.17 suite **9/9**, full suite **1100/1100**, syntax/UI
-  audit **173 files / 220 UI ids**, 25-year campaign **10,040 ticks at 0.859
-  ms/tick**, 60-year endurance **24,040 ticks at 0.868 ms/tick** with all
-  requirements and exact save roundtrips. Full record:
+- Verification: focused 1.2.17 suite **11/11**, full suite **1102/1102**,
+  syntax/UI audit **173 files / 220 UI ids**, 25-year campaign **10,040 ticks at
+  0.726 ms/tick** with all requirements and 74 residents, 60-year endurance
+  **24,040 ticks at 0.836 ms/tick** with all requirements and exact save
+  roundtrips. Full record:
   [docs/TRANSITION_BIOMES.md](docs/TRANSITION_BIOMES.md).
 
 ## 3.16.0 — Fantastic & Rare Biomes (development line)

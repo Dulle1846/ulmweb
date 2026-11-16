@@ -22,10 +22,12 @@ world. Each ecotone has:
 - dynamic pressure from climate drift, forest growth, drought, fire, logging,
   grazing and the rare-biome atlas.
 
-The layer is **render- and survey-derived**: it adds no tile objects and no save
-fields. Existing worlds therefore load unchanged. Forest stock, forest
-succession, grassland use and the special-biome map already contain the state
-needed for the dynamic behaviour.
+The layer is **render-, survey- and gameplay-derived**: it adds no tile objects
+and no save fields. Existing worlds therefore load unchanged. Forest stock,
+forest succession, grassland use and the special-biome map already contain the
+state needed for the dynamic behaviour. Farms, forest and meadow gathering,
+expedition routes, placement surveys and both event engines read a compact
+`transitionGameplayAt()` profile derived from the same seam.
 
 ## Integration points
 
@@ -35,8 +37,14 @@ needed for the dynamic behaviour.
 | `js/world/terrain-model.js` | `terrainColor()` adds the packed ecotone wash underneath the existing micro-relief. Water and beaches keep their old path. |
 | `js/world/world.js` | Passes the world seed into the baked terrain colour; no extra canvas or pass. |
 | `js/presentation/rendering/terrain.js` | Samples the ecotone only on the existing detail/tree lattice. Applies tree density, grass height, shrub spread, soil colour and clearing changes to the shared profiles. |
-| `js/presentation/expeditions-panel.js` | A compact Explore survey shows the active seam, stage, width, tree/grass/shrub percentages, active pressures and all fifteen edges. |
-| `css/diplomacy.css` | Styles the survey without adding global layout work. |
+| `js/presentation/expeditions-panel.js` | A compact Explore survey shows the active seam, stage, width, tree/grass/shrub percentages, active pressures, farm/forest/forage/settlement/movement values and all fifteen edges. |
+| `js/systems/fields.js` | Every harvest multiplies the existing weather/season/soil yield by the farm tile's ecotone farm value. |
+| `js/systems/forest-gathering.js` | Woodland and meadow gathering multiply their existing work factor by the tile's forest/forage value. |
+| `js/systems/construction.js` | Site surveys read the farm soil threshold, household settlement suitability and the wet-bog house-footing refusal. |
+| `js/systems/events.js` | Major issue families and places are weighted by the capital's ecotone tags. |
+| `js/systems/micro-events.js` | The daily chronicle's template weights and place pool read the same capital profile. |
+| `js/systems/expeditions.js` | Travel days use the shared route-speed helper at the destination. |
+| `css/diplomacy.css` | Styles the survey and its gameplay chips without adding global layout work. |
 
 ### Why this is bounded
 
@@ -49,6 +57,38 @@ needed for the dynamic behaviour.
   structure exists.
 - The detail cache already keys on `year`, so slow annual changes appear on the
   next settled raster instead of forcing every frame to rebuild.
+
+## Gameplay coupling
+
+`transitionGameplayFor(transition)` turns the visual seam into a small set of
+bounded values: `farm`, `forest`, `forage`, `pasture` (additive yield bonuses),
+`settlement` (0–1 suitability) and `movement` (route-speed factor), plus tagged
+identities. The values are read only at existing decision boundaries:
+
+- **Harvest:** `fields.js` multiplies the existing harvest factor by
+  `1 + farm` at the field tile. A floodplain or humid meadow yields more; a dry
+  bush-steppe or mountain-snow margin yields less. The multiplier is not stored.
+- **Gathering:** woodland and meadow gathering use `1 + forest` / `1 + forage`
+  on the visited tile. The returned `ecotoneFactor` is presentation data, not a
+  save field.
+- **Settlement:** `siteSuitability()` uses the ecotone farm value to relax or
+  tighten the field-soil threshold, exposes the settlement value to the caller,
+  and refuses a permanent household only on an extreme bog/flood seam. Ordinary
+  wet margins and swamp hummocks remain buildable.
+- **Movement:** expedition routes use the shared `getRouteMovementFactorAt()`
+  helper at the destination. Resident errands keep the established timing so
+  the 25- and 60-year demographic contract stays stable; the same helper is
+  available for a caravan/route consumer without adding a per-step world scan.
+- **Events:** `events.js` weights issue families such as flood, fishing, harvest,
+  fire, winter, monster and omens; `micro-events.js` does the same for its
+  templates and adds the ecotone place to the location pool. Both resolve the
+  profile only when an event is actually due.
+
+The movement helper caches one scalar per tile and per input that can move the
+seam (year, forest stock/capacity, succession kind/age, atlas and seed). A
+normal route step is a Map hit; a cache miss builds one transition profile, never
+a map scan. The event, harvest, gather and placement paths run at their existing
+seasonal, click or event cadence.
 
 ## The fifteen requested pairs (1.2.17.1–15)
 
@@ -160,11 +200,11 @@ rare atlas, and the ecotone is derived immediately from those values.
 
 | Check | Result |
 | --- | --- |
-| Focused 1.2.17 suite | **9/9** |
-| Full Node suite | **1100/1100** |
+| Focused 1.2.17 suite | **11/11** |
+| Full Node suite | **1102/1102** |
 | Syntax/UI audit | **173 source files**, **220 referenced UI ids**, local HTML assets |
-| 25-year campaign | seed `20261108`, **10,040 ticks**, year 26, **0.859 ms/tick**, all requirements true |
-| 60-year endurance | **24,040 ticks**, year 61, **0.868 ms/tick**, budget met, 74 residents, all requirements true |
+| 25-year campaign | seed `20261108`, **10,040 ticks**, year 26, **0.726 ms/tick**, all requirements true, 74 residents |
+| 60-year endurance | **24,040 ticks**, year 61, **0.836 ms/tick**, budget met, 74 residents, all requirements true |
 | Save roundtrip | with and without the special-biome block: exact |
 | Terrain data goldens | height, moisture and temperature unchanged |
 | Terrain preview golden | updated for the intentional ecotone wash; seam test passes |

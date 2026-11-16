@@ -32,6 +32,7 @@ import {
     MOUNTAIN_WORKS, applyMountainWork, mountainWorkAt, mountainWorkReady, mountainWorksSummaryAt,
 } from "../world/mountain-works.js";
 import { grasslandUseAt } from "./grassland-use.js";
+import { transitionGameplayAt } from "../world/transition-biomes.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
 import {
     findNearestResourceNode, getResourceNodeAt, getResourceSiteAt, harvestForest,
@@ -248,6 +249,17 @@ function isValidGather(ledger, x, y, day, year) {
     return !last || Number(last.day) !== day || Number(last.year) !== year;
 }
 
+// Gathering reads the named seam at the visited tile, not the realm average.
+// A missing terrain fixture leaves the historical yield unchanged.
+function ecotoneGatherFactor(x, y, kind) {
+    if (!state.heightMap || !Number(state.terrainPixW) || !Number(state.terrainPixH)) return 1;
+    const gameplay = transitionGameplayAt(x + 0.5, y + 0.5, {
+        dayOfYear: state.dayOfYear, year: state.year,
+    });
+    const bonus = kind === "forest" ? gameplay?.forest : gameplay?.forage;
+    return Math.max(0.75, Math.min(1.30, 1 + (Number(bonus) || 0)));
+}
+
 export function gatherForestProducts(x, y, options = {}) {
     const ledger = ensureForestGathering();
     const products = forestProductsAt(x, y, options.dayOfYear ?? state.dayOfYear);
@@ -296,8 +308,9 @@ export function gatherForestProducts(x, y, options = {}) {
     const spoilage = clamp(number(products.spoilageRisk, 0), 0, 1);
     let spoiledTotal = 0;
     const workFactor = clamp(number(products.workFactor, 1), 0.45, 1);
+    const ecotoneFactor = ecotoneGatherFactor(products.x, products.y, "forest");
     for (const good of candidates) {
-        let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor));
+        let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor * ecotoneFactor));
         const perishable = good.category === "gather" || good.category === "hunt";
         const spoiled = perishable ? Math.min(amount, Math.floor(amount * spoilage * 0.35)) : 0;
         if (spoiled > 0) { amount -= spoiled; spoiledTotal += spoiled; }
@@ -335,6 +348,7 @@ export function gatherForestProducts(x, y, options = {}) {
         goods: gathered,
         hunt: hunt ? { species: hunt.species, label: hunt.label, taken: hunt.taken, quality: hunt.quality } : null,
         workFactor,
+        ecotoneFactor,
         spoilage,
         spoiled: spoiledTotal,
         exposure,
@@ -540,8 +554,9 @@ export function gatherMeadowProducts(x, y, options = {}) {
     const candidates = products.goods.filter(good => FOREST_GOODS[good.id]).slice(0, 5);
     if (!candidates.length) return { ok: false, reason: "No seasonal meadow product is available" };
     const gathered = [];
+    const ecotoneFactor = ecotoneGatherFactor(products.x, products.y, "meadow");
     for (const good of candidates) {
-        const amount = Math.max(1, Math.round(1 + good.abundance * 3));
+        const amount = Math.max(1, Math.round((1 + good.abundance * 3) * ecotoneFactor));
         const accepted = addStock(ledger, good.id, amount);
         if (accepted > 0) gathered.push({ ...good, amount: accepted });
     }
@@ -560,6 +575,7 @@ export function gatherMeadowProducts(x, y, options = {}) {
         ok: true,
         tile: { x: products.x, y: products.y, type: products.profile.formation, label: products.label },
         goods: gathered,
+        ecotoneFactor,
         fauna: products.fauna,
         use: products.use,
         total: gathered.reduce((sum, good) => sum + good.amount, 0),

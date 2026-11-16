@@ -16,6 +16,7 @@ import { createEventParticipants,recordPersonEventOutcome } from "./people.js";
 import { recordResourceMovement } from "./goods-book.js";
 import { addLog } from "../core/event-log.js";
 import { CROWN_ERAS, canChooseCrownEra, chooseCrownEra, getAmbitionSnapshot, getCrownEraSnapshot } from "./ambitions.js";
+import { transitionEventWeight, transitionGameplayAt } from "../world/transition-biomes.js";
 
 export { addLog };
 const PLACES=["the lower fields","the eastern orchards","the old river road","the northern watch","the abbey lands","the market square","the western marshes","the old quarry road","the royal granaries","the border villages"];
@@ -74,10 +75,20 @@ const POLITICAL_EVENT_EFFECTS=Object.freeze({
 });
 export const EVENT_VARIANT_COUNT=FAMILIES.length*PLACES.length*STAGES.length*DETAILS.length*5;
 const pick=items=>items[randInt(0,items.length)];
+// Event rolls are rare, so the capital's named seam is resolved only when an
+// issue is actually generated. The profile is derived from terrain and never
+// written to the save.
+function realmEcotone(){
+ const keep=(state.entities||[]).find(entity=>entity&&!entity.dead&&entity.isBuilding?.()&&entity.type===TYPE.KEEP);
+ const x=Number(keep?.x),y=Number(keep?.y);
+ if(!Number.isFinite(x)||!Number.isFinite(y))return null;
+ try{return transitionGameplayAt(x+0.5,y+0.5);}catch{return null;}
+}
 function chooseFamily(){
  const hidden=state.hiddenRealm||{},workforce=getWorkforceSnapshot(),politics=getPoliticalSnapshot();
  const eraBias=getCrownEraSnapshot()?.eventBias||null;
  const agendaMods=state.ambitions?.era?.agenda?.modifiers||null;
+ const ecotone=realmEcotone();
  const unrestFactor=Math.max(0.75,Math.min(1.20,Number(agendaMods?.unrestFactor)||1));
  const warCount=Array.isArray(state.diplomacy?.realms)?state.diplomacy.realms.filter(realm=>realm?.treaty==="war").length:0;
  const food=Math.max(0,state.resources.food||0);
@@ -101,7 +112,7 @@ function chooseFamily(){
   const baseWeight=(1+
    (f.tension>0?Math.max(0,hidden.tension||0)*f.tension/80:0)+
    (f.prosperity>0?Math.max(0,hidden.prosperity||0)*f.prosperity/90:0)+
-   (f.mystery>0?Math.max(0,hidden.mystery||0)*f.mystery/100:0)+situational)*(eraBias?.[f.id]||1)*(f.id==="rebellion"?unrestFactor:1);
+   (f.mystery>0?Math.max(0,hidden.mystery||0)*f.mystery/100:0)+situational)*(eraBias?.[f.id]||1)*(f.id==="rebellion"?unrestFactor:1)*transitionEventWeight(f.id,ecotone);
   const recentCount=(Array.isArray(hidden.memories)?hidden.memories.slice(0,8):[])
    .filter(memory=>memory.family===f.id).length;
   // The realm remembers what just happened: repeated families become less likely,
@@ -114,9 +125,11 @@ function chooseFamily(){
 }
 export function triggerRandomEvent(){
  if(state.activeEvent)return null;
- const family=chooseFamily(),place=pick(PLACES),stage=pick(STAGES),detail=pick(DETAILS);
+ const family=chooseFamily(),ecotone=realmEcotone();
+ const place=pick(ecotone?.place?[ecotone.place,...PLACES]:PLACES),stage=pick(STAGES),detail=pick(DETAILS);
  const title=pick(family.titles)+" — "+place;
- const description=stage+", "+detail+". The royal household must decide what is to be done.";
+ const seamNote=ecotone?` The ${ecotone.label} gives the report its own colour.`:"";
+ const description=stage+", "+detail+"."+seamNote+" The royal household must decide what is to be done.";
  const gain=Math.max(6,family.gain+randInt(-4,12)),cost=Math.max(4,family.cost+randInt(-3,7));
  const secondary=family.resource==="food"?"wood":family.resource==="wood"?"food":"stone";
  const morale=randInt(-3,5);

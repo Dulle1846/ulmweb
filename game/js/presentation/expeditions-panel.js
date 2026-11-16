@@ -123,12 +123,17 @@ function transitionBiomeSection() {
     const swatch = sample ? 'rgb(' + sample.tint.join(',') + ')' : '#8f8a69';
     const soil = sample ? 'rgb(' + sample.soil.join(',') + ')' : '#8f8a69';
     const title = sample ? sample.label + (sample.landscape ? ' · ' + sample.landscape.label : '') : survey.label;
+    const play = survey.gameplay;
+    const signedPercent = value => (value >= 0 ? '+' : '') + Math.round(value * 100) + '%';
+    const gameplay = play ? '<div class="transition-gameplay" data-transition-farm="' + Math.round(play.farm * 100) + '" data-transition-forest="' + Math.round(play.forest * 100) + '" data-transition-forage="' + Math.round(play.forage * 100) + '" data-transition-settlement="' + Math.round(play.settlement * 100) + '" data-transition-movement="' + Math.round(play.movement * 100) + '">' +
+        '<span>FARM <b>' + signedPercent(play.farm) + '</b></span><span>FOREST <b>' + signedPercent(play.forest) + '</b></span><span>FORAGE <b>' + signedPercent(play.forage) + '</b></span><span>SETTLE <b>' + Math.round(play.settlement * 100) + '%</b></span><span>MOVE <b>' + Math.round(play.movement * 100) + '%</b></span></div>' : '';
     return '<div class="command-section-title">1.2.17 · TRANSITION BIOMES</div>' +
         '<div class="transition-summary"><div><small>MANIFEST POINTS</small><strong>' + survey.manifestCount + '</strong></div><div><small>BIOME EDGES</small><strong>' + survey.pairCount + '</strong></div><div><small>LANDSCAPE TYPES</small><strong>' + survey.landscapeCount + '</strong></div><div><small>ACTIVE AT HEART</small><strong>' + requirements + ' / 50</strong></div></div>' +
         '<article class="transition-survey" data-transition-pair="' + esc(sample?.pair.id || 'none') + '" style="--ecotone-tint:' + swatch + ';--ecotone-soil:' + soil + '">' +
         '<div class="transition-survey__swatches"><i style="background:' + swatch + '"></i><i style="background:' + soil + '"></i></div>' +
         '<div class="transition-survey__body"><span class="special-biome-kicker">ROYAL ECOTONE SURVEY · ' + stageLabel + '</span><h4>' + esc(title) + '</h4>' +
         '<p>' + (sample ? 'A ' + Math.round(sample.width * 100) + '-tile-wide organic seam. Tree cover ' + Math.round(sample.treeDensity * 100) + '%, grass ' + Math.round(sample.grassDensity * 100) + '%, shrubs ' + Math.round(sample.shrubDensity * 100) + '%.' : 'The heart sits inside a single stable habitat; walk outward to find a seam between two habitats.') + '</p>' +
+        gameplay +
         '<div class="transition-survey__dynamics">' + dynamics + '</div></div></article>' +
         '<details class="transition-atlas"><summary>THE FIFTEEN EDGES · 1.2.17.1–15</summary><div class="transition-pair-list">' + pairRows + '</div><p class="command-note">Each seam carries intermediate stages, a warped width, mixed flora, soil mottling and a dynamic response to climate, fire, logging, grazing and the rare atlas. Rendering samples the seam only on the detail lattice; it is not a per-frame map scan.</p></details>';
 }

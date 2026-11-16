@@ -11,6 +11,7 @@ import { isWaterAt, worldWidth, worldHeight, revealArea, getHeightAt, getMoistur
 import { volcanoProfileAt } from "../world/volcano-ecology.js";
 import { volcanoWorkUseAt } from "../world/volcano-works.js";
 import { getResourceSiteAt } from "./resource-geography.js";
+import { transitionGameplayAt } from "../world/transition-biomes.js";
 import { getWorkforceSnapshot } from "./economy.js";
 import { getResearchModifiers } from "./research.js";
 import { getCivicModifiers } from "./civic.js";
@@ -114,8 +115,23 @@ export function siteSuitability(type, tx, ty) {
         return { ok: true, reason: null };
     }
     if (!node) return { ok: false, reason: "NO SURVEYED LAND" };
+    // The named ecotone is a placement input, but only at the low-frequency
+    // survey/click boundary. It never runs in a render or simulation loop.
+    let ecotone = null;
+    try {
+        if (state.heightMap && Number(state.terrainPixW) && Number(state.terrainPixH)) {
+            ecotone = transitionGameplayAt(x + 0.5, y + 0.5);
+        }
+    } catch { /* unit fixtures may not have a generated terrain */ }
     const volcanic = volcanicSiteVerdictAt(type, x, y);
     if (!volcanic.ok) return volcanic;
+    // A bog or floodplain seam is real ground for reeds, pasture and fishing,
+    // but not for a permanent household. Keep the rule extreme so ordinary wet
+    // margins remain buildable and a swamp realm still has its hummocks.
+    if (isHousingType(type) && ecotone && ecotone.settlement < 0.14
+        && (ecotone.tags.includes("bog") || ecotone.tags.includes("floodplain"))) {
+        return { ok: false, reason: "WATERY ECOTONE HAS NO FIRM HOUSE FOOTING", transition: ecotone };
+    }
     if (type === TYPE.LUMBER || type === TYPE.FORESTER) {
         if (!node.forest || node.forest <= 0) return { ok: false, reason: "NO FOREST WITHIN WORKING RANGE" };
     } else if (type === TYPE.QUARRY) {
@@ -125,9 +141,14 @@ export function siteSuitability(type, tx, ty) {
     } else if (type === TYPE.BREWERY || type === TYPE.BATHHOUSE) {
         if (!node.water) return { ok: false, reason: "THIS TRADE NEEDS WATER WITHIN WORKING RANGE" };
     } else if (type === TYPE.FARM) {
-        if (node.fertility < 30) return { ok: false, reason: "SOIL TOO POOR FOR A FIELD" };
+        // A fertile floodplain or humid meadow can carry a field on thinner
+        // soil than the old universal threshold; a dry, thin seam needs better
+        // ground to justify the same work.
+        const soilThreshold = ecotone && ecotone.farm >= 0.08 ? 24
+            : ecotone && ecotone.farm <= -0.08 ? 36 : 30;
+        if (node.fertility < soilThreshold) return { ok: false, reason: "SOIL TOO POOR FOR A FIELD", transition: ecotone };
     }
-    return { ok: true, reason: null, node };
+    return { ok: true, reason: null, node, transition: ecotone };
 }
 
 

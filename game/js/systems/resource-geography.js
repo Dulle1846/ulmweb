@@ -12,6 +12,7 @@ import { mountainWorkUseAt, mountainWorkAt } from "../world/mountain-works.js";
 import { volcanoWorkUseAt, volcanoWorkAt } from "../world/volcano-works.js";
 import { volcanoProfileAt } from "../world/volcano-ecology.js";
 import { snowProfileAt } from "../world/snow-ecology.js";
+import { transitionMovementFactorAt } from "../world/transition-biomes.js";
 
 const VERSION=1;
 
@@ -416,7 +417,7 @@ export function getForestHabitatAt(x, y) {
 // keeps the 30 Hz villager/carrier loop cheap: the key changes only when the
 // tile, stock or world changes, so repeated steps over the same ground are a
 // Map lookup rather than a stand rebuild.
-export function getForestMovementFactorAt(x, y) {
+function terrainMovementFactorAt(x, y) {
     const climate = state.worldOptions?.climate || "temperate";
     // Deep snow and the spring thaw are route costs, not a cosmetic overlay.
     // The tundra profile has no timber traffic to price, so this cheap scalar
@@ -550,6 +551,24 @@ export function getForestMovementFactorAt(x, y) {
     return factor;
 }
 
+// Resident walk speed keeps the historical terrain factor. An ecotone may
+// change the look and yield of the ground underfoot without re-timing every
+// household errand and birth in the long campaign.
+export function getForestMovementFactorAt(x, y) {
+    return terrainMovementFactorAt(x, y);
+}
+
+// Route speed combines the same climate/forest terrain with the named ecotone.
+// Expeditions (and any future caravan consumer) pay this cost; the ecotone
+// helper is cached per tile and only rebuilds when the year, stock, succession
+// or atlas changes, so a route query stays a Map hit in steady state.
+export function getRouteMovementFactorAt(x, y) {
+    const base = terrainMovementFactorAt(x, y);
+    const transition = transitionMovementFactorAt(x, y);
+    if (transition === 1) return base;
+    return clamp(base * transition, 0.25, 1.08);
+}
+
 // Combat and tactical travel ask for the compact jungle navigation profile.
 // The helper never builds a second stand: it reuses the cached resource node
 // and returns only scalar values, with a tiny tile cache for raid loops.
@@ -588,7 +607,7 @@ export function getMountainTacticsAt(x, y) {
     // The same route cost the villagers pay is now exposed to combat. Raiders
     // and pack trains climb the exact slope, snow and bridge/switchback state
     // the economy uses instead of moving at lowland speed through a pass.
-    const movementFactor = getForestMovementFactorAt(point.x, point.y);
+    const movementFactor = terrainMovementFactorAt(point.x, point.y);
     return {
         defenceBonus: clamp(0.2 + slope * 0.3 + Math.max(0, h - 0.4) * 0.4 + (works.fortress ? 0.2 : 0) + (works.fortifiedPass ? 0.18 : 0), 0, 1),
         movementBurden: clamp(0.2 + slope * 0.5 + Math.max(0, h - 0.5) * 0.3 - (works.road ? 0.2 : 0), 0, 1),

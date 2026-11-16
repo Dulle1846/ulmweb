@@ -112,6 +112,183 @@ export const TRANSITION_DYNAMICS = Object.freeze({
     "magical-spread": { id: "magical-spread", requirement: 50, label: "Magical atlas spread" }
 });
 
+// Gameplay reads the same named seam the renderer and survey use. Values are
+// deliberately small multipliers/bonuses: an ecotone changes the margin, not
+// the whole realm balance. `settlement` is a 0..1 suitability, `movement` is a
+// speed factor (below 1 is slower), and the other numbers are additive yield
+// modifiers. No value here is persisted; every caller derives it from terrain
+// plus the existing forest/atlas state.
+export const TRANSITION_GAMEPLAY = Object.freeze({
+    "wood-grassland": Object.freeze({ farm: 0.05, forest: 0.03, forage: 0.10, pasture: 0.12, settlement: 0.68, movement: 1.00, tags: Object.freeze(["woodland", "grassland", "meadow", "edge"]), place: "the woodland edge" }),
+    "grassland-steppe": Object.freeze({ farm: 0.02, forest: -0.02, forage: 0.06, pasture: 0.10, settlement: 0.58, movement: 1.02, tags: Object.freeze(["grassland", "steppe", "pasture", "dry"]), place: "the grassland steppe" }),
+    "steppe-semi-desert": Object.freeze({ farm: -0.08, forest: -0.04, forage: 0.04, pasture: 0.04, settlement: 0.42, movement: 1.00, tags: Object.freeze(["steppe", "dry", "scrub"]), place: "the dry steppe margin" }),
+    "semi-desert-desert": Object.freeze({ farm: -0.12, forest: -0.05, forage: 0.02, pasture: 0.01, settlement: 0.28, movement: 0.98, tags: Object.freeze(["arid", "desert", "scrub"]), place: "the desert margin" }),
+    "broadleaf-mixed": Object.freeze({ farm: 0.02, forest: 0.04, forage: 0.08, pasture: 0.04, settlement: 0.62, movement: 0.96, tags: Object.freeze(["woodland", "forest", "temperate"]), place: "the mixed wood" }),
+    "mixed-conifer": Object.freeze({ farm: -0.02, forest: 0.06, forage: 0.06, pasture: 0.02, settlement: 0.56, movement: 0.94, tags: Object.freeze(["forest", "conifer", "temperate"]), place: "the conifer edge" }),
+    "conifer-taiga": Object.freeze({ farm: -0.06, forest: 0.08, forage: 0.05, pasture: 0.02, settlement: 0.48, movement: 0.92, tags: Object.freeze(["forest", "conifer", "taiga", "cold"]), place: "the taiga rim" }),
+    "taiga-tundra": Object.freeze({ farm: -0.12, forest: 0.03, forage: 0.04, pasture: 0.04, settlement: 0.34, movement: 0.88, tags: Object.freeze(["taiga", "tundra", "cold"]), place: "the woodland tundra" }),
+    "forest-mountain": Object.freeze({ farm: -0.08, forest: 0.10, forage: 0.03, pasture: 0.05, settlement: 0.32, movement: 0.82, tags: Object.freeze(["forest", "mountain", "upland"]), place: "the mountain tree line" }),
+    "mountain-snow": Object.freeze({ farm: -0.15, forest: 0.02, forage: 0.01, pasture: 0.01, settlement: 0.16, movement: 0.78, tags: Object.freeze(["mountain", "snow", "cold", "upland"]), place: "the snow line" }),
+    "grassland-wetland": Object.freeze({ farm: 0.04, forest: 0.02, forage: 0.14, pasture: 0.10, settlement: 0.38, movement: 0.86, tags: Object.freeze(["grassland", "wetland", "water", "meadow"]), place: "the wet meadow" }),
+    "wetland-river": Object.freeze({ farm: 0.08, forest: 0.04, forage: 0.16, pasture: 0.06, settlement: 0.30, movement: 0.82, tags: Object.freeze(["wetland", "water", "river", "floodplain"]), place: "the river floodplain" }),
+    "coast-forest": Object.freeze({ farm: 0.03, forest: 0.06, forage: 0.10, pasture: 0.04, settlement: 0.52, movement: 0.90, tags: Object.freeze(["coast", "forest", "water", "wind"]), place: "the coastal wood" }),
+    "coast-dune": Object.freeze({ farm: -0.10, forest: 0.01, forage: 0.04, pasture: 0.02, settlement: 0.30, movement: 0.88, tags: Object.freeze(["coast", "dune", "dry", "wind"]), place: "the dune coast" }),
+    "volcano-mountain": Object.freeze({ farm: -0.14, forest: 0.02, forage: 0.02, pasture: 0.01, settlement: 0.18, movement: 0.80, tags: Object.freeze(["volcanic", "mountain", "ash", "upland"]), place: "the volcanic slope" })
+});
+
+const LANDSCAPE_GAMEPLAY = Object.freeze({
+    "woodland-steppe": Object.freeze({ farm: 0.06, forest: 0.00, forage: 0.06, pasture: 0.12, settlement: 0.04, movement: 0.02, tags: Object.freeze(["woodland", "steppe", "pasture"]), place: "the woodland steppe" }),
+    "humid-grassland": Object.freeze({ farm: 0.09, forest: 0.00, forage: 0.12, pasture: 0.04, settlement: 0.06, movement: -0.05, tags: Object.freeze(["grassland", "wetland", "meadow"]), place: "the humid grassland" }),
+    "dry-open-woodland": Object.freeze({ farm: -0.03, forest: 0.05, forage: 0.02, pasture: 0.00, settlement: 0.02, movement: 0.02, tags: Object.freeze(["woodland", "dry"]), place: "the open dry wood" }),
+    "bush-steppe": Object.freeze({ farm: -0.06, forest: 0.02, forage: 0.04, pasture: 0.10, settlement: 0.00, movement: 0.02, tags: Object.freeze(["steppe", "scrub", "pasture"]), place: "the bush steppe" }),
+    "woodland-tundra": Object.freeze({ farm: -0.05, forest: 0.02, forage: 0.00, pasture: 0.00, settlement: -0.02, movement: -0.04, tags: Object.freeze(["taiga", "tundra", "cold"]), place: "the woodland tundra" }),
+    "mountain-forest-line": Object.freeze({ farm: -0.04, forest: 0.06, forage: 0.02, pasture: 0.02, settlement: -0.08, movement: -0.06, tags: Object.freeze(["mountain", "forest", "upland"]), place: "the mountain forest line" }),
+    "coastal-forest": Object.freeze({ farm: 0.02, forest: 0.05, forage: 0.05, pasture: 0.02, settlement: 0.04, movement: -0.03, tags: Object.freeze(["coast", "forest"]), place: "the coastal forest" }),
+    "floodplain": Object.freeze({ farm: 0.10, forest: 0.02, forage: 0.10, pasture: 0.02, settlement: -0.10, movement: -0.10, tags: Object.freeze(["river", "wetland", "floodplain", "water"]), place: "the floodplain" }),
+    "savanna-edge": Object.freeze({ farm: 0.03, forest: 0.00, forage: 0.06, pasture: 0.12, settlement: 0.02, movement: 0.02, tags: Object.freeze(["savanna", "grassland", "pasture"]), place: "the savanna edge" }),
+    "bog-forest-mosaic": Object.freeze({ farm: -0.06, forest: 0.05, forage: 0.06, pasture: 0.00, settlement: -0.18, movement: -0.16, tags: Object.freeze(["bog", "wetland", "forest", "water"]), place: "the bog woodland" })
+});
+
+const GAMEPLAY_NEUTRAL = Object.freeze({
+    farm: 0, forest: 0, forage: 0, pasture: 0, settlement: 0.5, movement: 1,
+    tags: Object.freeze([]), place: "the ordinary land", label: "No distinct ecotone"
+});
+
+function uniquifyTags(tags) {
+    const seen = new Set();
+    const result = [];
+    for (const tag of tags) {
+        if (!tag || seen.has(tag)) continue;
+        seen.add(tag);
+        result.push(tag);
+    }
+    return result;
+}
+
+export function transitionGameplayFor(transition) {
+    if (!transition) return null;
+    const base = TRANSITION_GAMEPLAY[transition.pair?.id] || GAMEPLAY_NEUTRAL;
+    const landscape = transition.landscape?.id ? LANDSCAPE_GAMEPLAY[transition.landscape.id] : null;
+    const wet = clamp01(transition.wet);
+    const drought = clamp01(transition.drought);
+    const burned = transition.burned ? 1 : 0;
+    const grazing = clamp01(transition.grazing);
+    const magic = clamp01(transition.magic);
+    const stageSwing = clamp01(transition.stage) - 0.5;
+    const farm = clamp((Number(base.farm) || 0) + (Number(landscape?.farm) || 0)
+        + stageSwing * 0.03 + wet * 0.05 - drought * 0.11 - burned * 0.08 - grazing * 0.05, -0.28, 0.30);
+    const forest = clamp((Number(base.forest) || 0) + (Number(landscape?.forest) || 0)
+        - drought * 0.08 - burned * 0.06 + magic * 0.04, -0.20, 0.24);
+    const forage = clamp((Number(base.forage) || 0) + (Number(landscape?.forage) || 0)
+        + wet * 0.06 - drought * 0.07 + magic * 0.03, -0.20, 0.30);
+    const pasture = clamp((Number(base.pasture) || 0) + (Number(landscape?.pasture) || 0)
+        + wet * 0.03 - drought * 0.08 - grazing * 0.12, -0.20, 0.28);
+    const settlement = clamp01((Number(base.settlement) || 0) + (Number(landscape?.settlement) || 0)
+        - wet * 0.10 - drought * 0.05 + stageSwing * 0.02);
+    const movement = clamp((Number(base.movement) || 1) + (Number(landscape?.movement) || 0)
+        - wet * 0.03 - clamp01(transition.treeDensity) * 0.03 - drought * 0.01, 0.68, 1.08);
+    const tags = uniquifyTags([
+        ...(base.tags || []), ...(landscape?.tags || []),
+        ...(magic > 0.2 ? ["magic"] : []), ...(burned ? ["burned"] : []),
+        ...(drought > 0.3 ? ["dry"] : []), ...(wet > 0.55 ? ["wet"] : [])
+    ]);
+    return Object.freeze({
+        pair: transition.pair.id,
+        landscape: transition.landscape?.id || null,
+        label: transition.label + (transition.landscape ? " · " + transition.landscape.label : ""),
+        labelDe: transition.labelDe + (transition.landscape ? " · " + transition.landscape.labelDe : ""),
+        place: landscape?.place || base.place,
+        stage: transition.stage,
+        farm: round(farm),
+        forest: round(forest),
+        forage: round(forage),
+        pasture: round(pasture),
+        settlement: round(settlement),
+        movement: round(movement),
+        tags: Object.freeze(tags)
+    });
+}
+
+export function transitionGameplayAt(x, y, context = {}) {
+    return transitionGameplayFor(transitionAt(x, y, context));
+}
+
+// Low-frequency event bias. Both the realm chronicle and micro events pass
+// their family/template id here, so the same wet, dry or magical seam shapes
+// which stories are likely without a second event table.
+export function transitionEventWeight(id, gameplay) {
+    if (!gameplay) return 1;
+    const key = String(id || "").toLowerCase();
+    const tags = gameplay.tags || [];
+    const has = tag => tags.includes(tag);
+    let weight = 1;
+    if (has("floodplain") || has("wetland") || has("bog") || has("river")) {
+        if (/flood|fish|rain|storm|shortage|plague|illness/.test(key)) weight *= 1.35;
+    }
+    if (has("dry") || has("steppe") || has("arid")) {
+        if (/fire|drought|shortage|storm|wildlife|bandit/.test(key)) weight *= 1.20;
+    }
+    if (has("forest") || has("woodland") || has("meadow")) {
+        if (/harvest|herb|gather|wildlife|basket|forage|hunt/.test(key)) weight *= 1.18;
+    }
+    if (has("snow") || has("cold") || has("tundra")) {
+        if (/winter|snow|frost|shortage|fire/.test(key)) weight *= 1.25;
+    }
+    if (has("mountain") || has("upland")) {
+        if (/monster|border|stone|storm|avalanche/.test(key)) weight *= 1.15;
+    }
+    if (has("coast")) {
+        if (/fish|trade|caravan|storm|flood/.test(key)) weight *= 1.20;
+    }
+    if (has("volcanic") || has("ash")) {
+        if (/fire|monster|ruins|omen|ash/.test(key)) weight *= 1.15;
+    }
+    if (has("magic")) {
+        if (/omen|ruin|mystic|magic|relic/.test(key)) weight *= 1.45;
+    }
+    return Math.max(0.65, Math.min(1.6, weight));
+}
+
+// Movement is queried on the villager/carrier step. Cache the result per tile
+// and per input that can move the seam (year, forest stock/succession, atlas).
+// A cache hit is one Map lookup; a miss builds one transition object, never a
+// tile graph or a per-frame scan.
+const MOVEMENT_CACHE_LIMIT = 2048;
+const movementCache = new Map();
+let movementCacheGeo = null;
+let movementCacheSuccession = null;
+let movementCacheAtlas = null;
+let movementCacheSeed = 0;
+
+export function transitionMovementFactorAt(x, y) {
+    const tx = Math.floor(Number(x)), ty = Math.floor(Number(y));
+    if (!Number.isInteger(tx) || !Number.isInteger(ty)) return 1;
+    const geo = state.resourceGeography;
+    if (movementCacheGeo !== geo || movementCacheSuccession !== state.forestSuccession
+        || movementCacheAtlas !== state.specialBiomes || movementCacheSeed !== state.worldSeed) {
+        movementCache.clear();
+        movementCacheGeo = geo;
+        movementCacheSuccession = state.forestSuccession;
+        movementCacheAtlas = state.specialBiomes;
+        movementCacheSeed = state.worldSeed;
+    }
+    const width = Math.max(1, Number(state.worldW) || 1);
+    const index = ty * width + tx;
+    const record = state.forestSuccession?.tiles?.[tx + ":" + ty] || null;
+    const key = tx + ":" + ty + ":" + (Number(state.year) || 1)
+        + ":" + (Number(geo?.forestStock?.[index]) || 0)
+        + ":" + (Number(geo?.forestCapacity?.[index]) || 0)
+        + ":" + (record?.kind || "") + ":" + (record?.age ?? "");
+    const cached = movementCache.get(key);
+    if (cached !== undefined) return cached;
+    const gameplay = transitionGameplayAt(tx + 0.5, ty + 0.5);
+    const factor = Math.max(0.68, Math.min(1.08, Number(gameplay?.movement) || 1));
+    if (movementCache.size >= MOVEMENT_CACHE_LIMIT) movementCache.clear();
+    movementCache.set(key, factor);
+    return factor;
+}
+
+const clamp = (value, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
 const clamp01 = value => Math.max(0, Math.min(1, Number.isFinite(Number(value)) ? Number(value) : 0));
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const round = value => Math.round((Number(value) || 0) * 1000) / 1000;
@@ -528,6 +705,7 @@ export function getTransitionSurvey(x = null, y = null) {
         landscapeCount: Object.keys(TRANSITION_LANDSCAPES).length,
         active: Boolean(best),
         sample: best,
+        gameplay: best ? transitionGameplayFor(best) : null,
         label: best ? best.label + (best.landscape ? " · " + best.landscape.label : "") : "No distinct ecotone at the heart",
         labelDe: best ? best.labelDe + (best.landscape ? " · " + best.landscape.labelDe : "") : "Kein ausgeprägter Übergang am Reichsherzen",
         requirements: best?.requirements || [],

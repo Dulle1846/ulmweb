@@ -2,8 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import {
-    TRANSITION_DYNAMICS, TRANSITION_LANDSCAPES, TRANSITION_PAIRS, TRANSITION_REQUIREMENTS,
-    getTransitionSurvey, transitionAt, transitionForestStand, transitionGrassProfile, transitionTint,
+    TRANSITION_DYNAMICS, TRANSITION_GAMEPLAY, TRANSITION_LANDSCAPES, TRANSITION_PAIRS, TRANSITION_REQUIREMENTS,
+    getTransitionSurvey, transitionAt, transitionEventWeight, transitionForestStand, transitionGameplayFor,
+    transitionGameplayAt, transitionGrassProfile, transitionMovementFactorAt, transitionTint,
     __internals
 } from "../../js/world/transition-biomes.js";
 
@@ -229,4 +230,60 @@ test("the core helpers are deterministic for a fixed seed and input", () => {
     assert.equal(first.pair.id, "wood-grassland");
     assert.equal(__internals.climateDrift(1, "temperate").warming, 0);
     assert.ok(__internals.climateDrift(120, "temperate").warming > 0);
+});
+
+test("the named ecotone drives farm, forest, forage, settlement and movement values", () => {
+    setup();
+    const base = at(0.55, 0.44, 0.56);
+    assert.ok(base);
+    const wood = transitionGameplayFor(base);
+    assert.equal(wood.pair, "wood-grassland");
+    assert.ok(wood.farm > 0);
+    assert.ok(wood.forest > 0);
+    assert.ok(wood.forage > 0);
+    assert.ok(wood.settlement > 0.5 && wood.settlement <= 1);
+    assert.ok(wood.movement >= 0.68 && wood.movement <= 1.08);
+    assert.ok(wood.tags.includes("meadow"));
+
+    const flood = transitionGameplayFor({
+        ...base,
+        pair: TRANSITION_PAIRS.find(pair => pair.id === "wetland-river"),
+        landscape: TRANSITION_LANDSCAPES.floodplain,
+        wet: 0.9, drought: 0, stage: 0.5, treeDensity: 0.4
+    });
+    const dry = transitionGameplayFor({
+        ...base,
+        pair: TRANSITION_PAIRS.find(pair => pair.id === "grassland-steppe"),
+        landscape: TRANSITION_LANDSCAPES["bush-steppe"],
+        wet: 0, drought: 0.85, stage: 0.5, treeDensity: 0.25
+    });
+    assert.ok(flood.farm > dry.farm, "floodplain must out-yield dry bush steppe");
+    assert.ok(flood.forage > dry.forage);
+    assert.ok(flood.movement < dry.movement, "wet ground must cost movement");
+    assert.ok(flood.settlement < dry.settlement, "bog/flood ground is worse for households");
+    assert.ok(flood.tags.includes("floodplain"));
+    assert.ok(dry.tags.includes("dry"));
+});
+
+test("event weighting and the movement cache expose the same ecotone", () => {
+    setup();
+    const base = at(0.55, 0.44, 0.56);
+    const wet = transitionGameplayFor({
+        ...base, pair: TRANSITION_PAIRS.find(pair => pair.id === "wetland-river"),
+        landscape: TRANSITION_LANDSCAPES.floodplain, wet: 0.9, drought: 0
+    });
+    const dry = transitionGameplayFor({
+        ...base, pair: TRANSITION_PAIRS.find(pair => pair.id === "grassland-steppe"),
+        landscape: TRANSITION_LANDSCAPES["bush-steppe"], wet: 0, drought: 0.8
+    });
+    assert.ok(transitionEventWeight("flood", wet) > transitionEventWeight("harvest", wet));
+    assert.ok(transitionEventWeight("fire", dry) > transitionEventWeight("fishing", dry));
+    assert.equal(transitionEventWeight("harvest", null), 1);
+    const first = transitionMovementFactorAt(40, 40);
+    const second = transitionMovementFactorAt(40, 40);
+    assert.equal(first, second);
+    assert.ok(first >= 0.68 && first <= 1.08);
+    assert.ok(Object.keys(TRANSITION_GAMEPLAY).length === 15);
+    const gameplay = transitionGameplayAt(40.5, 40.5);
+    assert.ok(gameplay && gameplay.label.length > 3);
 });

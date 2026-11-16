@@ -11,6 +11,8 @@ import { addResource } from "./resources.js";
 import { ensurePersonProfile, addPersonMemory } from "./people.js";
 import { recordLegacy } from "./legacy.js";
 import { isWaterAt, revealArea, worldWidth, worldHeight } from "../world/world.js";
+import { transitionGameplayAt } from "../world/transition-biomes.js";
+import { getRouteMovementFactorAt } from "./resource-geography.js";
 
 export const EXPEDITION_VERSION = 1;
 export const MAX_SITES = 8;
@@ -510,11 +512,17 @@ export function startExpedition(siteId, leaderId, supplyId = "standard") {
     const supply = SUPPLY_BY_ID.get(supplyId) || SUPPLY_BY_ID.get("standard");
     const foodCost = supply.food + Math.ceil(site.distance * 0.35);
     const goldCost = supply.gold;
+    // The route beyond the last field reads the site's named seam. A wet
+    // floodplain or a mountain tree line costs travel days; an open dry wood
+    // is quicker. This is an expedition-scale route cost, not a per-step scan.
+    const ecotone = transitionGameplayAt(site.x + 0.5, site.y + 0.5);
+    const routeSpeed = getRouteMovementFactorAt(site.x, site.y);
+    const routeFactor = Math.max(0.75, Math.min(1.30, 1 / Math.max(0.55, routeSpeed)));
     if ((Number(state.resources.food) || 0) < foodCost) return { ok: false, reason: "not-enough-food" };
     if ((Number(state.resources.gold) || 0) < goldCost) return { ok: false, reason: "not-enough-gold" };
     addResource("food", -foodCost);
     addResource("gold", -goldCost);
-    const travelDays = 6 + Math.ceil(site.distance / 2.4);
+    const travelDays = Math.max(3, Math.round((6 + Math.ceil(site.distance / 2.4)) * routeFactor));
     const departTick = Number(state.tick) || 0;
     const id = "expedition-" + expeditions.nextId++;
     const active = {
@@ -538,7 +546,8 @@ export function startExpedition(siteId, leaderId, supplyId = "standard") {
         tick: state.tick,
         importance: 74
     });
-    addLog("ROYAL EXPEDITION SETS OUT: " + person.name.toUpperCase() + " → " + site.name.toUpperCase() + " · " + travelDays + " DAYS TO THE SITE", "#d8c18a", "exploration");
+    addLog("ROYAL EXPEDITION SETS OUT: " + person.name.toUpperCase() + " → " + site.name.toUpperCase() + " · " + travelDays + " DAYS TO THE SITE"
+        + (ecotone ? " · " + ecotone.place.toUpperCase() : ""), "#d8c18a", "exploration");
     notifyExpeditionChange();
     return { ok: true, expedition: getExpeditionSnapshot() };
 }
