@@ -26,7 +26,7 @@ const WORLD = generateWorldData(SEED, OPTIONS);
 const W = WORLD.dims.w, H = WORLD.dims.h, RES = WORLD.resolution;
 const n = value => Number(value ?? 0).toFixed(3);
 const pct = value => Math.round(Number(value ?? 0) * 100) + "%";
-const esc = value => String(value).replace(/\|/g, "\\|").replace(/\n/g, " ");
+const esc = value => String(value).replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/[\r\n]+/g, " ");
 
 function contextAt(x, y, { dayOfYear = 150, weather = "clear", use = {} } = {}) {
     const index = Math.min(WORLD.pixW * WORLD.pixH - 1, Math.floor(y * RES) * WORLD.pixW + Math.floor(x * RES));

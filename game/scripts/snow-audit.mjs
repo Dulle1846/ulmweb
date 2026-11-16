@@ -31,7 +31,7 @@ const WEATHER = ["clear", "snow", "storm", "fog"];
 
 const n = value => Number(value ?? 0).toFixed(3);
 const pct = value => Math.round(Number(value ?? 0) * 100) + "%";
-const escape = value => String(value).replace(/\|/g, "\\|").replace(/\n/g, " ");
+const escape = value => String(value).replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/[\r\n]+/g, " ");
 
 function contextAt(x, y, { year = 3, dayOfYear = 150, weather = "clear", use = {} } = {}) {
     const index = Math.floor(y * RES) * WORLD.pixW + Math.floor(x * RES);
