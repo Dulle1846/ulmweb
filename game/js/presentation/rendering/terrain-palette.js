@@ -128,6 +128,24 @@ function volcanicPalette(base, season, phase = season) {
     };
 }
 
+function snowPalette(base, season, phase = season) {
+    const seasonal = seasonalState(phase * 100, 'snow');
+    // Snowlands stay pale all year. The seasonal signal is the changing blue
+    // of meltwater, exposed ground and the weak spring light, not a green
+    // summer meadow. The shader receives a high snow bias from day one.
+    return {
+        ...base,
+        earth: mix(base.dry, base.rock, 0.48),
+        season,
+        seasonPhase: phase,
+        snowBias: 0.72 + seasonal.snowCover * 0.2,
+        spring: seasonal.greenUp * 0.22,
+        summer: seasonal.warmth * 0.12,
+        autumn: seasonal.foliageTurn * 0.08,
+        winter: 0.82 + seasonal.snowCover * 0.16,
+    };
+}
+
 function tropicalPalette(base, season, phase = season) {
     const seasonal = seasonalState(phase * 100, 'tropical');
     // The rainforest has a wet/dry rhythm, not a temperate autumn/winter
@@ -153,6 +171,7 @@ export function terrainPaletteFor(climate, seasonIndex = 0) {
     const base = TERRAIN_PALETTES[climate] || TERRAIN_PALETTES.temperate;
     if (climate === 'tropical') return tropicalPalette(base, season);
     if (climate === 'volcanic') return volcanicPalette(base, season);
+    if (climate === 'snow') return snowPalette(base, season);
     if (climate === 'savanna') {
         return {
             ...savannaPalette(base, season),
@@ -228,6 +247,7 @@ export function terrainPaletteForPhase(climate, phase) {
     const base = TERRAIN_PALETTES[climate] || TERRAIN_PALETTES.temperate;
     if (climate === 'tropical') return tropicalPalette(base, lower, wrapped);
     if (climate === 'volcanic') return volcanicPalette(base, lower, wrapped);
+    if (climate === 'snow') return snowPalette(base, lower, wrapped);
     const seasonalFrom = climate === 'savanna' ? savannaPalette : seasonalPalette;
     const from = seasonalFrom(base, lower);
     const to = seasonalFrom(base, (lower + 1) % 4);

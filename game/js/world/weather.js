@@ -31,6 +31,13 @@ export function weatherWeights(dayOfYear, climate = 'temperate') {
         const coastalSnow = snowCover > 0.02 ? 0.42 * snowCover : 0;
         return { clear: 0.32, rain: 0.68, snow: coastalSnow };
     }
+    // Snowlands spend most of the year under snowfall; a clear cold day is a
+    // real break in the weather, and wet spring snow briefly turns to rain.
+    if (climate === 'snow') {
+        const snowWeight = 0.58 + snowCover * 0.24;
+        const rainWeight = season === 0 ? 0.16 : 0.04;
+        return { clear: Math.max(0.12, 0.92 - snowWeight - rainWeight), rain: rainWeight, snow: snowWeight };
+    }
     const clear = season === 1 ? 0.58 : season === 3 ? 0.26 : 0.40;
     const rain = season === 1 ? 0.42 : season === 3 ? 0.12 : season === 2 ? 0.48 : 0.52;
     // Snow follows the climate's actual cover; arid and mediterranean winters

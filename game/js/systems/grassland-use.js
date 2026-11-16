@@ -12,6 +12,7 @@ import { grasslandProfileAt, grasslandSummary } from "../world/grassland-ecology
 import { isSteppeSite, steppeProfileAt, steppeSummary } from "../world/steppe-ecology.js";
 import { isDesertSite, desertProfileAt, desertSummary } from "../world/desert-ecology.js";
 import { isTundraSite, tundraProfileAt, tundraSummary } from "../world/tundra-ecology.js";
+import { isSnowSite, snowProfileAt, snowSummary } from "../world/snow-ecology.js";
 import { isTaigaSite, taigaProfileAt, taigaSummary } from "../world/taiga-ecology.js";
 import { isSavannaSite, savannaProfileAt, savannaSummary } from "../world/savanna-ecology.js";
 import { isSwampSite, swampProfileAt, swampSummary } from "../world/swamp-ecology.js";
@@ -198,6 +199,10 @@ export function desertSiteProfileAt(x, y, overrides = {}) {
     return desertProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
 }
 
+export function snowSiteProfileAt(x, y, overrides = {}) {
+    return snowProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
+}
+
 export function tundraSiteProfileAt(x, y, overrides = {}) {
     return tundraProfileAt(x + 0.5, y + 0.5, siteContextAt(x, y, overrides));
 }
@@ -279,6 +284,9 @@ export function steppeSiteSummaryAt(x, y) {
 export function grasslandSiteSummaryAt(x, y) {
     try {
         const context = siteContextAt(x, y);
+        if (isSnowSite(x + 0.5, y + 0.5, context)) {
+            return snowSummary(snowProfileAt(x + 0.5, y + 0.5, context));
+        }
         if (isTundraSite(x + 0.5, y + 0.5, context)) {
             return tundraSummary(tundraProfileAt(x + 0.5, y + 0.5, context));
         }

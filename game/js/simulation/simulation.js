@@ -48,6 +48,7 @@ import { updateMicroEvents } from "../systems/micro-events.js";
 import { updateExpeditions } from "../systems/expeditions.js";
 import { updateVolcanoHazards } from "../world/volcano-hazards.js";
 import { updateCoastHazards } from "../world/coast-hazards.js";
+import { updateSnowHazards } from "../world/snow-hazards.js";
 
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 const ANNUAL_SLICE_BUDGET_MS = 6;
@@ -83,7 +84,8 @@ const ANNUAL_TASKS = [
     // One bounded coastal hazard pass at the same annual boundary. It returns
     // immediately outside the Coastlands climate, so inland campaigns keep
     // their existing tick cost and event sequence.
-    { name: "coastHazards", run(annual) { annual.coastHazards = updateCoastHazards(); } }
+    { name: "coastHazards", run(annual) { annual.coastHazards = updateCoastHazards(); } },
+    { name: "snowHazards", run(annual) { annual.snowHazards = updateSnowHazards(); } }
 ];
 
 let annualSlicingEnabled = false;

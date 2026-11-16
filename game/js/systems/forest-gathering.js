@@ -12,6 +12,7 @@ import { grasslandProductsAt } from "../world/grassland-ecology.js";
 import { isSteppeSite, steppeProductsAt } from "../world/steppe-ecology.js";
 import { isDesertSite, desertProductsAt } from "../world/desert-ecology.js";
 import { isTundraSite, tundraProductsAt } from "../world/tundra-ecology.js";
+import { isSnowSite, snowProductsAt } from "../world/snow-ecology.js";
 import { isTaigaSite, taigaProductsAt, TAIGA_GOODS } from "../world/taiga-ecology.js";
 import { isSavannaSite, savannaProductsAt, SAVANNA_GOODS } from "../world/savanna-ecology.js";
 import { isSwampSite, swampProductsAt, swampProfileAt, SWAMP_GOODS } from "../world/swamp-ecology.js";
@@ -519,7 +520,8 @@ export function gatherMeadowProducts(x, y, options = {}) {
     // Tundra, desert and steppe are still forage land. The same button and
     // ledger serve all four profiles; the terrain decides which harvest
     // vocabulary is present. Cold ground wins over the arid margins.
-    const products = (isCoastSite(x, y, context) ? coastProductsAt(x, y, context) : null)
+    const products = (isSnowSite(x, y, context) ? snowProductsAt(x, y, context) : null)
+        || (isCoastSite(x, y, context) ? coastProductsAt(x, y, context) : null)
         || (isVolcanoSite(x, y, context) ? volcanoProductsAt(x, y, context) : null)
         || (isMountainSite(x, y, context) ? mountainProductsAt(x, y, context) : null)
         || (isSwampSite(x, y, context) ? swampProductsAt(x, y, context) : null)

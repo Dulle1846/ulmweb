@@ -113,6 +113,7 @@ export const CLIMATES = [
     { id: 'mountain',     label: 'Mountains & Highlands', note: 'High chains, passes, glaciers, mines and terraced valleys' },
     { id: 'volcanic',     label: 'Volcanic Lands', note: 'Lava fields, craters, hot springs, ash and volcanic soil' },
     { id: 'coastal',      label: 'Coastlands',   note: 'Beaches, dunes, cliffs, salt marsh, lagoons and natural harbours' },
+    { id: 'snow',         label: 'Snowlands',    note: 'Snow forests, frozen lakes, alpine fields, blizzards and spring thaw' },
     { id: 'savanna',      label: 'Savanna',      note: 'Tall grass, flat-crowned trees and a long dry season' },
     { id: 'swamp',        label: 'Swamps & Bogs', note: 'Shallow water, alder carr, reeds, fens and deep peat' },
     { id: 'mediterranean',label: 'Mediterranean',note: 'Warm dry summers and olive hills' },
@@ -248,6 +249,12 @@ export function sampleHeight(wx, wy, W, H, rawOptions = {}) {
     if (options.climate === 'coastal') {
         h += 0.012 + (edgeNoise - 0.5) * 0.026;
     }
+    // Snowlands build broad high shoulders above a low, ice-scoured shore.
+    // The lift leaves room for frozen lakes and rivers while making alpine
+    // snowfields, passes and permanent snow a real part of the same terrain.
+    if (options.climate === 'snow') {
+        h += 0.035 + smoothstep(0.25, 0.72, h) * 0.14 + (edgeNoise - 0.5) * 0.018;
+    }
     return clamp(h, 0, 1);
 }
 
@@ -279,8 +286,11 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
     // The maritime climate carries damp air and salt-laden fog inland, but the
     // coast's free-draining sand and shingle are still dry at the surface.
     const coastal = options.climate === 'coastal' ? 0.075 : 0;
+    // Snowlands keep a low but real water table: frozen hollows, spring melt
+    // and sheltered conifer stands still exist under the permanent cold.
+    const snow = options.climate === 'snow' ? 0.035 : 0;
     return clamp(
-        noise + tropical + tundra + savanna + taiga + swamp + mountain + volcanic + coastal + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
+        noise + tropical + tundra + savanna + taiga + swamp + mountain + volcanic + coastal + snow + (options.forests - 50) * 0.0032 + (options.fertility - 50) * 0.0016
         + (options.wetlands - 50) * 0.0016 - (options.aridity - 50) * 0.0012,
         0, 1
     );
@@ -288,7 +298,7 @@ export function sampleMoisture(wx, wy, rawOptions = {}) {
 
 export function sampleTemperature(wx, wy, W, H, height, sea, rawOptions = {}) {
     const options = rawOptions.__normalized ? rawOptions : normalizeWorldOptions(rawOptions);
-    const base = { temperate: 0.58, northern: 0.33, taiga: 0.27, tundra: 0.20, mountain: 0.34, volcanic: 0.72, coastal: 0.59, savanna: 0.76, swamp: 0.55, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
+    const base = { temperate: 0.58, northern: 0.33, taiga: 0.27, tundra: 0.20, snow: 0.12, mountain: 0.34, volcanic: 0.72, coastal: 0.59, savanna: 0.76, swamp: 0.55, mediterranean: 0.69, arid: 0.79, enchanted: 0.52, tropical: 0.84 }[options.climate] ?? 0.58;
     const latitude = 1 - Math.abs(wy / H - 0.5) * 2;   // 1 at the equator, 0 at the poles
     let t = base + (latitude - 0.62) * 0.26 - Math.max(0, height - sea) * 0.30;
     t += (fbm(wx * 0.0085 + 91.3, wy * 0.0085 + 17.9, 3, 0.5, 2.1) - 0.5) * 0.07;
@@ -709,6 +719,12 @@ const PALETTES = {
         cold: [137, 148, 137], hot: [190, 164, 98], sand: [214, 198, 154], swamp: [83, 108, 72],
         rock: [129, 125, 111], snow: [228, 237, 239],
     },
+    snow: {
+        waterDeep: [26, 58, 76], waterShallow: [105, 154, 166], foam: [208, 231, 236],
+        dry: [139, 138, 119], meadow: [105, 117, 99], lush: [76, 99, 84], forest: [48, 74, 61],
+        cold: [178, 193, 197], hot: [151, 148, 125], sand: [174, 174, 158], swamp: [87, 102, 90],
+        rock: [103, 110, 110], snow: [235, 243, 247],
+    },
 };
 
 function mix(a, b, t) {
@@ -775,6 +791,11 @@ export function terrainColor(height, moisture, temperature, px, py, climate, sea
     color = mix(color, P.rock, rock * (climate === 'mountain' || climate === 'volcanic' ? 0.98 : 0.94));
     const snow = climate === 'tropical'
         ? smoothstep(0.88, 0.98, e)
+        : climate === 'snow'
+            // Snowlands are a snow landscape at every elevation. The baked
+            // surface carries the broad cover; the snow detail layer paints
+            // powder, ice, drifts, exposed ground and spring melt.
+            ? clamp((0.74 + e * 0.22 + (1 - temperature) * 0.16) * 0.94, 0, 0.96)
         : climate === 'volcanic'
             // Volcanic peaks are dark rock and ash, not a temperate snow cap.
             // Snow can still fall in the seasonal detail layer; the baked

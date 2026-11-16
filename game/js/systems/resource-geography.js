@@ -11,6 +11,7 @@ import { swampWorkUseAt } from "../world/swamp-works.js";
 import { mountainWorkUseAt, mountainWorkAt } from "../world/mountain-works.js";
 import { volcanoWorkUseAt, volcanoWorkAt } from "../world/volcano-works.js";
 import { volcanoProfileAt } from "../world/volcano-ecology.js";
+import { snowProfileAt } from "../world/snow-ecology.js";
 
 const VERSION=1;
 
@@ -131,7 +132,11 @@ export function generateResourceGeography(seed=state.worldSeed){
             // sea-buckthorn stands the coast renderer draws; without this belt
             // a lowland coastal start had no harvestable fuel at all.
             const coastalBelt=climate==="coastal"&&h>=sea+0.006;
-            if((h>=forestLine||savannaBelt||swampBelt||mountainBelt||coastalBelt)&&h<BIOME.ROCK){
+            // Snowland woodland starts at the shore as well as above the
+            // ordinary forest line: a new snow realm needs fuel within reach
+            // of its first sawmill, not only on distant high ground.
+            const snowBelt=climate==="snow"&&h>=sea+0.006;
+            if((h>=forestLine||savannaBelt||swampBelt||mountainBelt||coastalBelt||snowBelt)&&h<BIOME.ROCK){
                 const density=climate==="savanna"
                     ?clamp((h-sea)/Math.max(0.001,BIOME.ROCK-sea),0,1)
                     :clamp((h-forestLine)/Math.max(0.001,BIOME.ROCK-forestLine),0,1);
@@ -215,6 +220,26 @@ export function generateResourceGeography(seed=state.worldSeed){
                             forestStock[index]=capacity;
                             forestKind[index]=forestTypeIndex(stand.type);
                             forestAge[index]=stand.ageClass==="ancient"?3:stand.ageClass==="young"?1:2;
+                        }
+                    }
+                }else if(climate==="snow"){
+                    // Snowland woodland is a real but broken belt of spruce,
+                    // pine and bare deciduous trees. Deep snow keeps the
+                    // understory sparse; the timber line still supplies fuel,
+                    // repairs and winter work.
+                    const presence=0.16+density*0.2+moisture*0.16+resourceBias;
+                    if(unitHash(worldSeed,index,0x534e4f57)<presence){
+                        const stand=forestStandAt(x+0.5,y+0.5,{
+                            seed:worldSeed, moisture, temperature, height:h,
+                            climate, forests:state.worldOptions?.forests??52,
+                            stockRatio:1, rockLine:BIOME.ROCK,
+                        });
+                        if(stand.forest){
+                            const capacity=Math.max(8,Math.min(80,Math.round(16+density*24+moisture*22+unitHash(worldSeed,index,0x534e4f58)*18)));
+                            forestCapacity[index]=capacity;
+                            forestStock[index]=capacity;
+                            forestKind[index]=forestTypeIndex("subalpine-scrub");
+                            forestAge[index]=1;
                         }
                     }
                 }else if(climate==="mountain"){
@@ -334,6 +359,7 @@ const MOVEMENT_CACHE_LIMIT = 2048;
 const forestMovementCache = new Map();
 const mountainMovementCache = new Map();
 const volcanoMovementCache = new Map();
+const snowMovementCache = new Map();
 const volcanoTacticsCache = new Map();
 
 export function clearForestHabitatCache() {
@@ -430,6 +456,26 @@ export function getForestMovementFactorAt(x, y) {
     // use: fresh lava, ash, unstable crevices and steep cones cost time, while
     // a built road or bridge restores a practical route. The works revision is
     // part of the cache key so a new quarry or road takes effect immediately.
+    if (climate === "snow") {
+        const key = (Number(state.worldSeed) || 0) + ":" + Math.floor(x) + ":" + Math.floor(y)
+            + ":" + Math.floor(Number(state.dayOfYear) || 0);
+        const cached = snowMovementCache.get(key);
+        if (cached !== undefined) return cached;
+        const tx = Math.floor(x), ty = Math.floor(y);
+        const terrain = sampleTerrain(tx, ty);
+        const profile = snowProfileAt(tx + 0.5, ty + 0.5, {
+            seed: Number(state.worldSeed) || 1, moisture: terrain.moisture,
+            temperature: terrain.temperature, height: terrain.height,
+            climate: "snow", seaLevel: Number(state.seaLevel) || 0.33,
+            dayOfYear: Number(state.dayOfYear) || 0, year: Number(state.year) || 1,
+            weather: state.weather || "clear", wind: 1,
+            use: { road: Boolean(state.roads?.tiles?.[tx + ":" + ty]) },
+        });
+        const factor = clamp(Number(profile?.hazards?.movement) || 1, 0.28, 1);
+        if (snowMovementCache.size >= MOVEMENT_CACHE_LIMIT) snowMovementCache.clear();
+        snowMovementCache.set(key, factor);
+        return factor;
+    }
     if (climate === "volcanic") {
         const key = (Number(state.worldSeed) || 0) + ":" + Math.floor(x) + ":" + Math.floor(y)
             + ":" + Math.floor(Number(state.dayOfYear) || 0) + ":" + (Number(state.volcanoWorks?.revision) || 0);

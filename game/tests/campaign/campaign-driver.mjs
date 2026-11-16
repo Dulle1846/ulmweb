@@ -611,7 +611,9 @@ export function runCampaign({
         Number(eraSnapshot.agenda.modifiers.foodDemandFactor) < 1 ||
         Number(eraSnapshot.agenda.modifiers.taxEfficiency) > 1 ||
         Number(eraSnapshot.agenda.modifiers.tradeFactor) > 1 ||
-        Number(eraSnapshot.agenda.modifiers.migrationFactor) > 1
+        Number(eraSnapshot.agenda.modifiers.migrationFactor) > 1 ||
+        Number(eraSnapshot.agenda.modifiers.unrestFactor) < 1 ||
+        Number(eraSnapshot.agenda.modifiers.legitimacyYear) > 0
     ));
     const constructionComplete = measuredFinal.activeSites === 0;
     const noStalledSites = diagnostics.stalledSites.length === 0;

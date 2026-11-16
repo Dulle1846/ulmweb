@@ -112,7 +112,7 @@ export function calculateFoodSpoilage(foodAvailable, storageCapacity, { climate 
     if (exposed <= 0) return 0;
     const rate = climate === "tropical" ? ECONOMY_TUNING.tropicalSpoilageRate
         : climate === "tundra" ? ECONOMY_TUNING.tundraSpoilageRate
-            : climate === "taiga" ? ECONOMY_TUNING.taigaSpoilageRate
+            : climate === "snow" ? ECONOMY_TUNING.tundraSpoilageRate : climate === "taiga" ? ECONOMY_TUNING.taigaSpoilageRate
                 : climate === "savanna" ? ECONOMY_TUNING.savannaSpoilageRate
                 : ECONOMY_TUNING.spoilageRate;
     const weatherAdd = weather === "rain" || weather === "storm" ? ECONOMY_TUNING.stormSpoilageAdd : 0;
@@ -132,6 +132,7 @@ export function getHarvestYieldFactor() {
         tropical: 1.06,
         northern: 0.94,
         tundra: 0.72,
+        snow: 0.9,
         taiga: 0.78,
         savanna: 0.96,
         mediterranean: 1.02,

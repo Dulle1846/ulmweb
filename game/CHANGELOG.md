@@ -49,6 +49,49 @@ These builds are published from the current development worktree to Freebuff Sit
 
 ## Production release history
 
+### 3.20.0-dev — Snowlands (1.2.15.1–1.2.15.69)
+
+**Released:** 2026-11-16 on the development line
+
+**Scope:** a complete fourteenth climate, **Snowlands**, with seventeen named
+formations: snowy forest, open snowfield, snow-covered grassland, alpine
+snowfield, frozen plateau, frozen valley, wind-scoured snow, permanent snow,
+snowy coast, frozen lake, frozen river, drift field, exposed ground, rocky
+snow, frozen marsh, snowbound pass and powder basin. The deterministic
+`snow-ecology.js` profile supplies snow cover, depth in metres, powder, packed
+snow, ice crust, wet snow, drifts, mounds, exposed ground, tracks, snow loads,
+surface water and ice, frozen springs, avalanches, pass closure, visibility,
+wind, frost, hoarfrost, supply, frostbite and winter hardiness. Flora covers
+snow-laden conifers, leafless deciduous trees, buried shrubs, winter grasses,
+lichens and mosses; fauna covers ptarmigan, foxes, wolves, elk, reindeer,
+subnivean rodents, migrants and hibernation.
+
+**Integration:** **Snowlands** is selectable in world creation and has its own
+height, moisture, temperature, season, weather and palette curves. One profile
+feeds the baked terrain, detail renderer, survey, gathering, movement,
+resource geography, economy and hazards. Snow woodland is a sparse but real
+timber belt. Snow products reuse the shared goods and delivery ledger. The
+annual snow hazard pass is bounded to 96 candidates, prefers occupied ground,
+can destroy a real building or road, protects keeps and wonders, and applies
+frostbite and blizzard supply loss through the existing health and resource
+paths. Spring melt, muddy roads, swollen rivers, meltwater lakes and
+north/south aspect retreat are the same fields the renderer draws.
+
+**Verification:** `node scripts/snow-audit.mjs` generates a real 176×176
+Snowlands world, surveys every tile through all four seasons and clear, snow,
+storm and fog weather, gathers a snow product and drives the annual avalanche
+pass against a placed house. The checked audit is **69/69 working**, all
+seventeen formations observed, gathering successful and one real building
+destroyed; see [`../artifacts/SNOW_1.2.15_AUDIT.md`](../artifacts/SNOW_1.2.15_AUDIT.md).
+Focused ecological tests cover every requirement ID, all formations,
+determinism, products, surfaces and the detail renderer. The full suite passes
+**1040/1040** with syntax/import and UI-id checks clean for 165 source files.
+The deterministic Snowlands campaign (`npm run test:campaign:snow`) reaches
+10,040 ticks and year 26 with 70 residents, 70+ gold, 38 firewood, all 13
+ambitions, an era objective and its material feedback, with no stalls and no
+game over at 1.33 ms per tick. Documentation:
+[docs/SNOWLANDS.md](docs/SNOWLANDS.md).
+
 ### 3.20.0-dev — Coastlands (1.2.14.1–1.2.14.71)
 
 **Released:** 2026-11-16 on the development line

@@ -38,6 +38,13 @@ export const CLIMATE_SEASONS = Object.freeze({
         snowStart: 200, snowFull: 252, meltStart: 344, meltEnd: 432,
         snowScale: 1.22, foliageShift: -16, foliageScale: 0.72, greenShift: 20, warmthShift: -22,
     }),
+    // Snowlands are a permanent winter landscape. Snow never fully leaves the
+    // ground, but the spring curve still lowers the cover and drives thaw,
+    // mud, swollen rivers and north/south aspect melt in snow-ecology.js.
+    snow: Object.freeze({
+        snowStart: 0, snowFull: 1, meltStart: 378, meltEnd: 474,
+        snowScale: 0.84, foliageShift: -14, foliageScale: 0.34, greenShift: 16, warmthShift: -26,
+    }),
     // Mountains hold snow from mid-autumn into late spring. The snow line
     // rises and falls with the same curve, so passes open late and close early.
     mountain: Object.freeze({

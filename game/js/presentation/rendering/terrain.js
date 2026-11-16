@@ -35,6 +35,8 @@ import { drawVolcanoDetails, drawVolcanoGround, drawVolcanoTree } from './volcan
 import { isCoastSite, coastProfileAt } from '../../world/coast-ecology.js';
 import { coastWorkUseAt } from '../../world/coast-works.js';
 import { drawCoastDetails, drawCoastGround, drawCoastTree, drawCoastWater } from './coast-render.js';
+import { snowProfileAt } from '../../world/snow-ecology.js';
+import { drawSnowDetails, drawSnowGround, drawSnowTree, drawSnowWater } from './snow-render.js';
 import { grasslandUseAt } from '../../systems/grassland-use.js';
 import {
     DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
@@ -1262,6 +1264,16 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // Only the sampled ground grid needs animated water and shoreline
             // dressing; tree placement is independent of that grid.
             if (above < 0) {
+                if (detail && climateKey === "snow") {
+                    const ice = snowProfileAt(x + 0.5, y + 0.5, {
+                        seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
+                        height: h, climate: climateKey, seaLevel: sea,
+                        dayOfYear, year: Number(state.year) || 1,
+                        hour, weather: state.weather || "clear", wind: windMultiplier(),
+                    });
+                    if (ice && zoom >= 0.34) drawSnowWater(ctx, px, py, cellPx, ice, s1, s2, s3);
+                    continue;
+                }
                 const coastalWater = detail && climateKey === "coastal" && isCoastSite(x + 0.5, y + 0.5, {
                     seed: Number(state.worldSeed) || 1, height: h, climate: climateKey, seaLevel: sea,
                 });
@@ -1279,6 +1291,26 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 if (taigaIce) drawTaigaIce(ctx, x * cellPx - cam.x, y * cellPx - cam.y, cellPx, s1, s2);
                 if (!coastalWater && !taigaIce && detail && zoom >= 0.5 && s1 > 0.72) drawWaterGlint(ctx, px, py, cellPx, tick, s1);
                 if (!coastalWater && !taigaIce && detail && above > -0.02 && s1 > 0.5) drawShoreFoam(ctx, px, py, cellPx, tick, s2, zoom);
+                continue;
+            }
+
+            // Snowlands own the whole land surface. The dedicated profile is
+            // one pass over powder, ice, drifts, tracks, buried flora, fauna
+            // and melt; do not run the generic forest or meadow stacks on it.
+            if (climateKey === "snow") {
+                if (!detail && !treeSample) continue;
+                const snow = snowProfileAt(x + 0.5, y + 0.5, {
+                    seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
+                    height: h, climate: climateKey, seaLevel: sea,
+                    dayOfYear, year: Number(state.year) || 1,
+                    hour, weather: state.weather || "clear", wind: windMultiplier(),
+                    use: { ...grasslandUseAt(x, y), road: Boolean(state.roads?.tiles?.[x + ":" + y]) },
+                });
+                if (detail && zoom >= 0.34) drawSnowGround(ctx, px, py, cellPx, snow, s1, s2, s3);
+                if (treeSample && s1 < (Number(snow.treeChance) || 0)) {
+                    for (const tree of snow.trees || []) drawSnowTree(ctx, px, py, cellPx, tree, snow, s2);
+                }
+                if (detail && zoom >= 0.34) drawSnowDetails(ctx, px, py, cellPx, snow, s1, s2, s3, tick, zoom);
                 continue;
             }
 

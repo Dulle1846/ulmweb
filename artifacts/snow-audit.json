@@ -1,0 +1,982 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-11-16T09:15:08.326Z",
+  "seed": 20261215,
+  "world": {
+    "width": 176,
+    "height": 176,
+    "resolution": 4,
+    "seaLevel": 0.3277,
+    "snowTiles": 16330,
+    "frozenWaterTiles": 14646,
+    "formations": [
+      "snow-forest",
+      "open-snowfield",
+      "snow-grassland",
+      "alpine-snowfield",
+      "frozen-plateau",
+      "frozen-valley",
+      "wind-scoured-snow",
+      "permanent-snow",
+      "snowy-coast",
+      "frozen-lake",
+      "frozen-river",
+      "drift-field",
+      "exposed-ground",
+      "rocky-snow",
+      "frozen-marsh",
+      "snowbound-pass",
+      "powder-basin"
+    ],
+    "observedFormations": [
+      "alpine-snowfield",
+      "drift-field",
+      "exposed-ground",
+      "frozen-lake",
+      "frozen-marsh",
+      "frozen-plateau",
+      "frozen-river",
+      "frozen-valley",
+      "open-snowfield",
+      "permanent-snow",
+      "powder-basin",
+      "rocky-snow",
+      "snow-forest",
+      "snow-grassland",
+      "snowbound-pass",
+      "snowy-coast",
+      "wind-scoured-snow"
+    ],
+    "formationCounts": {
+      "frozen-river": 6957,
+      "frozen-lake": 7689,
+      "snowy-coast": 909,
+      "powder-basin": 2070,
+      "frozen-valley": 351,
+      "frozen-marsh": 487,
+      "rocky-snow": 311,
+      "snow-forest": 97,
+      "exposed-ground": 44,
+      "snowbound-pass": 2802,
+      "wind-scoured-snow": 22,
+      "alpine-snowfield": 1876,
+      "frozen-plateau": 1005,
+      "permanent-snow": 6327,
+      "snow-grassland": 29
+    }
+  },
+  "summary": {
+    "total": 69,
+    "working": 69,
+    "missing": 0
+  },
+  "gather": {
+    "x": 92,
+    "y": 18,
+    "formation": "snowy-coast",
+    "ok": true,
+    "goods": [
+      {
+        "id": "game",
+        "amount": 2
+      },
+      {
+        "id": "peat",
+        "amount": 2
+      },
+      {
+        "id": "firewood",
+        "amount": 2
+      },
+      {
+        "id": "hides",
+        "amount": 2
+      },
+      {
+        "id": "cloudberry",
+        "amount": 2
+      }
+    ],
+    "reason": null
+  },
+  "hazard": {
+    "target": {
+      "x": 94,
+      "y": 31,
+      "formation": "snowbound-pass",
+      "avalanche": 0.5148038701576689,
+      "passClosed": 0.3409299126286439,
+      "frostbite": 0.338264656627586,
+      "supply": 0.6558052767273496
+    },
+    "hazard": {
+      "events": [
+        "AVALANCHE RISK ON SNOWBOUND PASS · 56%",
+        "A BLIZZARD HIDES THE SLOPE"
+      ],
+      "destroyed": null,
+      "candidates": 19,
+      "avalanche": {
+        "x": 94,
+        "y": 31,
+        "use": {
+          "settlement": true,
+          "insulated": false
+        },
+        "profile": {
+          "biome": "snow",
+          "snow": true,
+          "x": 94,
+          "y": 31,
+          "seed": 20261215,
+          "year": 3,
+          "formation": "snowbound-pass",
+          "label": "Snowbound pass",
+          "note": "a high pass choked by drift and avalanche debris, open only in the brief summer",
+          "season": "summer",
+          "seasonIndex": 1,
+          "climate": "snow",
+          "moisture": 0.5176855325698853,
+          "temperature": 0.12,
+          "height": 0.6064478754997253,
+          "features": [
+            "1.2.15.4",
+            "1.2.15.6",
+            "1.2.15.7",
+            "1.2.15.11",
+            "1.2.15.12",
+            "1.2.15.14",
+            "1.2.15.15",
+            "1.2.15.16",
+            "1.2.15.17",
+            "1.2.15.18",
+            "1.2.15.19",
+            "1.2.15.22",
+            "1.2.15.24",
+            "1.2.15.25",
+            "1.2.15.33",
+            "1.2.15.36",
+            "1.2.15.37",
+            "1.2.15.38",
+            "1.2.15.42",
+            "1.2.15.45",
+            "1.2.15.46",
+            "1.2.15.47",
+            "1.2.15.49",
+            "1.2.15.51",
+            "1.2.15.52",
+            "1.2.15.53",
+            "1.2.15.54",
+            "1.2.15.55",
+            "1.2.15.56",
+            "1.2.15.57",
+            "1.2.15.58",
+            "1.2.15.59",
+            "1.2.15.61",
+            "1.2.15.62",
+            "1.2.15.63",
+            "1.2.15.64",
+            "1.2.15.65",
+            "1.2.15.66",
+            "1.2.15.67",
+            "1.2.15.68"
+          ],
+          "landform": {
+            "aboveSea": 0.27874787549972535,
+            "depth": 0,
+            "relative": 0.5574957509994507,
+            "slope": 0.8439891584339589,
+            "exposure": 0.7910979727200121,
+            "shelter": 0.4534981913421458,
+            "aspectName": "west",
+            "northness": 0.72,
+            "alpine": 0.6867628613578339,
+            "plateau": 0.02699040371894735,
+            "valley": 0.6024744667946547,
+            "coastal": 0,
+            "rock": 0.6836828286917835,
+            "forest": 0.1968482123672018,
+            "marsh": 0.22474164675648273,
+            "grass": 0.6537839201316514,
+            "pass": 0.7398261637987039,
+            "permanent": 0,
+            "label": "snowbound pass"
+          },
+          "surface": {
+            "fresh": 0.01999999999999999,
+            "packed": 0.7012786990120751,
+            "icy": 0.36,
+            "wet": 0.087202176,
+            "drift": 0.8117594420984826,
+            "mound": 0.8133063642330224,
+            "exposed": 0.7079259789281587,
+            "coverage": 0.22,
+            "depth": 0.13194141628144357,
+            "depthM": 0.6,
+            "tracks": 0.30374945493065986,
+            "snowLoad": 0.0923589913970105,
+            "snowLoadVariation": 0.13853848709551575,
+            "underSnow": 0,
+            "shelterVegetation": 0.06600962395748543,
+            "driftAtStructures": 0.8997630214715144,
+            "state": "drift",
+            "label": "wind drift"
+          },
+          "water": {
+            "frozen": false,
+            "lake": false,
+            "river": false,
+            "iceCover": 0,
+            "iceEdge": 0,
+            "breakup": 0.06004196352,
+            "icicles": 0.5675180485181126,
+            "iceSheets": 0,
+            "icefalls": 0.5755169643615086,
+            "icyRocks": 0.46247313147671343,
+            "frostPatterns": 0.25616593704223634,
+            "frozenSprings": 0.2892994901199341,
+            "meltwater": 0.333566464,
+            "meltwaterLakes": 0.26676924416000003,
+            "label": "frozen ground"
+          },
+          "vegetation": {
+            "trees": [],
+            "shrubs": [],
+            "grasses": [],
+            "lichens": [
+              {
+                "id": "crustose-lichen",
+                "label": "Crustose lichen",
+                "colours": [
+                  "#a5aa99",
+                  "#c9cdbf"
+                ],
+                "goods": [
+                  "lichen"
+                ]
+              }
+            ],
+            "cover": 0.011528201720597899,
+            "snowLoad": 0.0923589913970105,
+            "snowLoadVariation": 0.13853848709551575,
+            "underSnow": 0,
+            "shelter": 0.06600962395748543,
+            "bareDeciduous": false,
+            "conifers": [],
+            "windShelter": []
+          },
+          "fauna": [
+            {
+              "id": "ptarmigan",
+              "label": "Ptarmigan",
+              "group": "bird",
+              "seasons": [
+                "spring",
+                "summer",
+                "autumn",
+                "winter"
+              ],
+              "winterFur": true,
+              "groundBird": true,
+              "count": 2
+            },
+            {
+              "id": "snow-vole",
+              "label": "Snow vole",
+              "group": "small",
+              "seasons": [
+                "spring",
+                "summer",
+                "autumn",
+                "winter"
+              ],
+              "subnivean": true,
+              "count": 1
+            }
+          ],
+          "goods": [
+            {
+              "id": "cloudberry",
+              "label": "Cloudberries",
+              "category": "food",
+              "abundance": 0.23768110562369726
+            },
+            {
+              "id": "lichen",
+              "label": "Lichen",
+              "category": "gather",
+              "abundance": 0.20111062660503096
+            }
+          ],
+          "weather": {
+            "snowIntensity": 0.56,
+            "snowfall": 0.56,
+            "snowstorm": 1,
+            "blizzard": 1,
+            "wind": 2,
+            "icyWind": true,
+            "fog": 0.18904452781677247,
+            "frost": 0.21000000000000002,
+            "hoarfrost": 0.22982968521118163,
+            "visibility": 0.09492486054229737,
+            "overcast": true,
+            "clear": false,
+            "sky": "overcast"
+          },
+          "hazards": {
+            "movement": 0.7023083141552378,
+            "deepSnow": 0.13194141628144357,
+            "icyRoads": 0.316064123802415,
+            "supply": 0.6010831221572069,
+            "frostbite": 0.2224717982794021,
+            "avalanche": 0.5604002337488113,
+            "frozenSprings": 0.2892994901199341,
+            "passClosed": 0.34768997311742855,
+            "winterHardiness": 0.49416703004622675,
+            "visibility": 0.09492486054229737,
+            "passability": 0.5671766351052556
+          },
+          "thaw": {
+            "springMelt": 0.333566464,
+            "thawedGround": 0.6025747708497111,
+            "muddyRoads": 0.2041334715883862,
+            "swollenRivers": 0.31034831419397707,
+            "meltwaterLakes": 0.26676924416000003,
+            "snowRetreat": 0.3167861248,
+            "northSouthMelt": 0.2843815534592,
+            "sunMeltDifference": 0.06885887475711998,
+            "aspect": "west",
+            "elevationMelt": 0.14760457764408877
+          },
+          "economy": {
+            "game": 0.1976851762311789,
+            "fish": 0,
+            "timber": 0.059054463710160536,
+            "fuel": 0.11131885286835955,
+            "fibres": 0.16,
+            "food": 0.19644517607783213,
+            "carryingCapacity": 0.3325708848565754,
+            "winterHardiness": 0.49416703004622675
+          },
+          "use": {
+            "settlement": true,
+            "insulated": false,
+            "state": "wild",
+            "road": false,
+            "bridge": false,
+            "stable": false,
+            "shelter": false,
+            "cleared": false,
+            "drained": false,
+            "pass": false,
+            "worked": false
+          },
+          "visual": {
+            "sunlight": 0.7424,
+            "sunlightHex": "#e8edf1",
+            "shadow": 0.08851200000000001,
+            "snowHex": "#c7d5dc",
+            "freshHex": "#f7fbfd",
+            "packedHex": "#d6e1e6",
+            "iceHex": "#a9c7d2",
+            "groundHex": "#5b5d52",
+            "rockHex": "#747a78",
+            "waterHex": "#3f6c80",
+            "skyHex": "#aebbc3",
+            "fogHex": "#c5d2d7",
+            "mood": "whiteout",
+            "wind": 0.72,
+            "windSway": 0.45741113305181796,
+            "snowCover": 0.22,
+            "snowLoad": 0.0923589913970105
+          },
+          "grassHex": "#8e9475",
+          "groundHex": "#6a6e63",
+          "trees": [],
+          "treeChance": 0,
+          "seasonalNote": "Snowbound pass · 0.6 m snow · 22% cover · Cloudberries"
+        },
+        "score": 1.5604002337488114,
+        "value": 0.5604002337488113
+      },
+      "blizzard": null,
+      "pass": null,
+      "frostbite": null,
+      "supply": null
+    },
+    "houseDead": true,
+    "direct": {
+      "ok": true,
+      "kind": "building",
+      "label": "Timber Cottage",
+      "x": 94,
+      "y": 31,
+      "cause": "avalanche"
+    }
+  },
+  "integration": {
+    "climate": {
+      "id": "snow",
+      "label": "Snowlands",
+      "note": "Snow forests, frozen lakes, alpine fields, blizzards and spring thaw"
+    },
+    "climateCount": 14,
+    "insulatedHardiness": 1,
+    "openHardiness": 0.5840332898061482,
+    "summary": "Frozen river · 0.1 m snow · Ice fish, Winter game, Peat, Firewood · Snow fox, Winter elk, Reindeer"
+  },
+  "items": [
+    {
+      "id": "1.2.15.1",
+      "label": "Snowy forests",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#chooseFormation + js/presentation/rendering/snow-render.js",
+      "evidence": "92,21 day20 clear; formation=powder-basin; forest=0.884; conifers=2"
+    },
+    {
+      "id": "1.2.15.2",
+      "label": "Open snowfields",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#chooseFormation + js/presentation/rendering/snow-render.js",
+      "evidence": "98,32 day20 clear; formation=alpine-snowfield; depth=0.435; cover=0.629"
+    },
+    {
+      "id": "1.2.15.3",
+      "label": "Snow-covered grasslands",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#chooseFormation + js/presentation/rendering/snow-render.js",
+      "evidence": "112,42 day20 clear; formation=snow-grassland; grass=0.648; grasses=2"
+    },
+    {
+      "id": "1.2.15.4",
+      "label": "Alpine snowfields",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#chooseFormation + js/presentation/rendering/snow-render.js",
+      "evidence": "94,31 day20 clear; formation=snowbound-pass; alpine=0.654; height=0.602"
+    },
+    {
+      "id": "1.2.15.5",
+      "label": "Frozen high plateaus",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#chooseFormation + js/presentation/rendering/snow-render.js",
+      "evidence": "98,34 day20 clear; formation=frozen-plateau; plateau=0.628; relative=0.708"
+    },
+    {
+      "id": "1.2.15.6",
+      "label": "Frozen valleys",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#chooseFormation + js/presentation/rendering/snow-render.js",
+      "evidence": "0,0 day20 clear; formation=frozen-river; valley=1.000; relative=0.000"
+    },
+    {
+      "id": "1.2.15.7",
+      "label": "Wind-blown snow surfaces",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#chooseFormation + js/presentation/rendering/snow-render.js",
+      "evidence": "12,0 day20 clear; formation=frozen-river; exposure=0.405; drift=0.298"
+    },
+    {
+      "id": "1.2.15.8",
+      "label": "Permanent snow regions",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#chooseFormation + js/presentation/rendering/snow-render.js",
+      "evidence": "97,35 day20 clear; formation=permanent-snow; permanent=0.552; height=0.709"
+    },
+    {
+      "id": "1.2.15.9",
+      "label": "Snow-covered coastal landscapes",
+      "group": "landform",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#chooseFormation + js/presentation/rendering/snow-render.js",
+      "evidence": "0,0 day20 clear; formation=frozen-river; coastal=1.000; shore=-0.304"
+    },
+    {
+      "id": "1.2.15.10",
+      "label": "Fresh powder snow",
+      "group": "surface",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#surface + js/presentation/rendering/snow-render.js#drawSnowGround",
+      "evidence": "0,0 day20 snow; state=wet; depth=0.141; fresh=0.512; packed=0.439; icy=0.240; wet=0.655; drift=0.165; exposed=0.294; tracks=0.205"
+    },
+    {
+      "id": "1.2.15.11",
+      "label": "Compacted snow",
+      "group": "surface",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#surface + js/presentation/rendering/snow-render.js#drawSnowGround",
+      "evidence": "5,0 day20 clear; state=wet; depth=0.108; fresh=0.100; packed=0.365; icy=0.240; wet=0.655; drift=0.291; exposed=0.463; tracks=0.199"
+    },
+    {
+      "id": "1.2.15.12",
+      "label": "Icy snow",
+      "group": "surface",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#surface + js/presentation/rendering/snow-render.js#drawSnowGround",
+      "evidence": "0,0 day20 storm; state=wet; depth=0.113; fresh=0.020; packed=0.634; icy=0.360; wet=0.631; drift=0.466; exposed=0.385; tracks=0.200"
+    },
+    {
+      "id": "1.2.15.13",
+      "label": "Wet snow",
+      "group": "surface",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#surface + js/presentation/rendering/snow-render.js#drawSnowGround",
+      "evidence": "0,0 day20 clear; state=wet; depth=0.157; fresh=0.100; packed=0.334; icy=0.240; wet=0.655; drift=0.122; exposed=0.245; tracks=0.208"
+    },
+    {
+      "id": "1.2.15.14",
+      "label": "Wind drifts",
+      "group": "surface",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#surface + js/presentation/rendering/snow-render.js#drawSnowGround",
+      "evidence": "20,0 day20 clear; state=wet; depth=0.078; fresh=0.100; packed=0.383; icy=0.240; wet=0.655; drift=0.393; exposed=0.593; tracks=0.194"
+    },
+    {
+      "id": "1.2.15.15",
+      "label": "Snow mounds",
+      "group": "surface",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#surface + js/presentation/rendering/snow-render.js#drawSnowGround",
+      "evidence": "5,0 day20 clear; state=wet; depth=0.108; fresh=0.100; packed=0.365; icy=0.240; wet=0.655; drift=0.291; exposed=0.463; tracks=0.199"
+    },
+    {
+      "id": "1.2.15.16",
+      "label": "Exposed ground patches",
+      "group": "surface",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#surface + js/presentation/rendering/snow-render.js#drawSnowGround",
+      "evidence": "0,0 day20 clear; state=wet; depth=0.157; fresh=0.100; packed=0.334; icy=0.240; wet=0.655; drift=0.122; exposed=0.245; tracks=0.208"
+    },
+    {
+      "id": "1.2.15.17",
+      "label": "Different snow depths",
+      "group": "surface",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#surface + js/presentation/rendering/snow-render.js#drawSnowGround",
+      "evidence": "0,0 day20 clear; state=wet; depth=0.157; fresh=0.100; packed=0.334; icy=0.240; wet=0.655; drift=0.122; exposed=0.245; tracks=0.208"
+    },
+    {
+      "id": "1.2.15.18",
+      "label": "Tracks and footprint patterns",
+      "group": "surface",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#surface + js/presentation/rendering/snow-render.js#drawSnowGround",
+      "evidence": "0,0 day20 clear; state=wet; depth=0.157; fresh=0.100; packed=0.334; icy=0.240; wet=0.655; drift=0.122; exposed=0.245; tracks=0.208"
+    },
+    {
+      "id": "1.2.15.19",
+      "label": "Drifts against buildings and rocks",
+      "group": "surface",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#surface + js/presentation/rendering/snow-render.js#drawSnowGround",
+      "evidence": "5,0 day20 clear; state=wet; depth=0.108; fresh=0.100; packed=0.365; icy=0.240; wet=0.655; drift=0.291; exposed=0.463; tracks=0.199"
+    },
+    {
+      "id": "1.2.15.20",
+      "label": "Frozen lakes",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#water + js/presentation/rendering/snow-render.js#drawSnowWater",
+      "evidence": "1,0 day120 clear; frozen=true; lake=true; river=false; ice=0.417; edge=0.636; breakup=0.325; icicles=0.558; sheets=0.333; icefalls=0.133"
+    },
+    {
+      "id": "1.2.15.21",
+      "label": "Frozen rivers",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#water + js/presentation/rendering/snow-render.js#drawSnowWater",
+      "evidence": "0,0 day120 clear; frozen=true; lake=false; river=true; ice=0.343; edge=0.635; breakup=0.442; icicles=0.558; sheets=0.275; icefalls=0.133"
+    },
+    {
+      "id": "1.2.15.22",
+      "label": "Icicles",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#water + js/presentation/rendering/snow-render.js#drawSnowWater",
+      "evidence": "0,0 day20 clear; frozen=true; lake=false; river=true; ice=0.175; edge=0.635; breakup=0.710; icicles=0.558; sheets=0.140; icefalls=0.133"
+    },
+    {
+      "id": "1.2.15.23",
+      "label": "Ice sheets",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#water + js/presentation/rendering/snow-render.js#drawSnowWater",
+      "evidence": "1,0 day120 clear; frozen=true; lake=true; river=false; ice=0.417; edge=0.636; breakup=0.325; icicles=0.558; sheets=0.333; icefalls=0.133"
+    },
+    {
+      "id": "1.2.15.24",
+      "label": "Small icefalls",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#water + js/presentation/rendering/snow-render.js#drawSnowWater",
+      "evidence": "92,18 day20 clear; frozen=false; lake=false; river=false; ice=0.000; edge=0.000; breakup=0.124; icicles=0.563; sheets=0.000; icefalls=0.419"
+    },
+    {
+      "id": "1.2.15.25",
+      "label": "Icy rocks",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#water + js/presentation/rendering/snow-render.js#drawSnowWater",
+      "evidence": "0,0 day20 clear; frozen=true; lake=false; river=true; ice=0.175; edge=0.635; breakup=0.710; icicles=0.558; sheets=0.140; icefalls=0.133"
+    },
+    {
+      "id": "1.2.15.26",
+      "label": "Frost patterns",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#water + js/presentation/rendering/snow-render.js#drawSnowWater",
+      "evidence": "0,0 day20 clear; frozen=true; lake=false; river=true; ice=0.175; edge=0.635; breakup=0.710; icicles=0.558; sheets=0.140; icefalls=0.133"
+    },
+    {
+      "id": "1.2.15.27",
+      "label": "Ice edges along waters",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#water + js/presentation/rendering/snow-render.js#drawSnowWater",
+      "evidence": "0,0 day20 clear; frozen=true; lake=false; river=true; ice=0.175; edge=0.635; breakup=0.710; icicles=0.558; sheets=0.140; icefalls=0.133"
+    },
+    {
+      "id": "1.2.15.28",
+      "label": "Breaking ice in spring",
+      "group": "water",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#water + js/presentation/rendering/snow-render.js#drawSnowWater",
+      "evidence": "0,0 day20 clear; frozen=true; lake=false; river=true; ice=0.175; edge=0.635; breakup=0.710; icicles=0.558; sheets=0.140; icefalls=0.133"
+    },
+    {
+      "id": "1.2.15.29",
+      "label": "Snow-laden conifers",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildTrees/buildFlora + snow-render.js#drawSnowTree/drawSnowDetails",
+      "evidence": "92,21 day20 clear; trees=snow-spruce:snow-spruce; shrubs=snow-willow; grasses=winter-sedge; lichens=feather-moss; load=0.825; underSnow=0.373"
+    },
+    {
+      "id": "1.2.15.30",
+      "label": "Leafless deciduous trees",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildTrees/buildFlora + snow-render.js#drawSnowTree/drawSnowDetails",
+      "evidence": "92,27 day20 clear; trees=bare-aspen; shrubs=snow-willow:juniper; grasses=fescue; lichens=reindeer-lichen; load=0.234; underSnow=0.464"
+    },
+    {
+      "id": "1.2.15.31",
+      "label": "Snow-covered shrubs",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildTrees/buildFlora + snow-render.js#drawSnowTree/drawSnowDetails",
+      "evidence": "0,0 day20 clear; trees=none; shrubs=snow-willow; grasses=none; lichens=none; load=0.780; underSnow=0.183"
+    },
+    {
+      "id": "1.2.15.32",
+      "label": "Low winter grasses",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildTrees/buildFlora + snow-render.js#drawSnowTree/drawSnowDetails",
+      "evidence": "3,0 day20 clear; trees=none; shrubs=none; grasses=winter-sedge; lichens=none; load=0.142; underSnow=0.185"
+    },
+    {
+      "id": "1.2.15.33",
+      "label": "Exposed lichens and mosses",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildTrees/buildFlora + snow-render.js#drawSnowTree/drawSnowDetails",
+      "evidence": "92,18 day20 clear; trees=none; shrubs=none; grasses=fescue; lichens=crustose-lichen; load=0.210; underSnow=0.218"
+    },
+    {
+      "id": "1.2.15.34",
+      "label": "Plants beneath the snow",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildTrees/buildFlora + snow-render.js#drawSnowTree/drawSnowDetails",
+      "evidence": "7,0 day20 clear; trees=none; shrubs=snow-willow; grasses=winter-sedge; lichens=none; load=0.780; underSnow=0.348"
+    },
+    {
+      "id": "1.2.15.35",
+      "label": "Visible vegetation in wind-sheltered places",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildTrees/buildFlora + snow-render.js#drawSnowTree/drawSnowDetails",
+      "evidence": "0,0 day20 clear; trees=none; shrubs=snow-willow; grasses=none; lichens=none; load=0.780; underSnow=0.183"
+    },
+    {
+      "id": "1.2.15.36",
+      "label": "Different snow loads on plants",
+      "group": "vegetation",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildTrees/buildFlora + snow-render.js#drawSnowTree/drawSnowDetails",
+      "evidence": "0,0 day20 clear; trees=none; shrubs=snow-willow; grasses=none; lichens=none; load=0.780; underSnow=0.183"
+    },
+    {
+      "id": "1.2.15.37",
+      "label": "Animals with winter coats",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildFauna + snow-render.js#drawSnowDetails",
+      "evidence": "0,0 day20 clear; fauna=ptarmigan:elk:snow-vole:migrating-goose; winterFur=true; season=spring"
+    },
+    {
+      "id": "1.2.15.38",
+      "label": "Ptarmigan",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildFauna + snow-render.js#drawSnowDetails",
+      "evidence": "0,0 day20 clear; fauna=ptarmigan:elk:snow-vole:migrating-goose; winterFur=true; season=spring"
+    },
+    {
+      "id": "1.2.15.39",
+      "label": "Foxes",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildFauna + snow-render.js#drawSnowDetails",
+      "evidence": "2,0 day20 clear; fauna=winter-stoat:ptarmigan:fox:elk:reindeer:snow-vole:lemming:migrating-goose; winterFur=true; season=spring"
+    },
+    {
+      "id": "1.2.15.40",
+      "label": "Wolves",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildFauna + snow-render.js#drawSnowDetails",
+      "evidence": "54,0 day20 clear; fauna=winter-stoat:ptarmigan:fox:wolf:elk:reindeer:snow-vole:migrating-goose; winterFur=true; season=spring"
+    },
+    {
+      "id": "1.2.15.41",
+      "label": "Deer and other winter-active herbivores",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildFauna + snow-render.js#drawSnowDetails",
+      "evidence": "0,0 day20 clear; fauna=ptarmigan:elk:snow-vole:migrating-goose; winterFur=true; season=spring"
+    },
+    {
+      "id": "1.2.15.42",
+      "label": "Small animals beneath the snow",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildFauna + snow-render.js#drawSnowDetails",
+      "evidence": "0,0 day20 clear; fauna=ptarmigan:elk:snow-vole:migrating-goose; winterFur=true; season=spring"
+    },
+    {
+      "id": "1.2.15.43",
+      "label": "Seasonal animal migrations",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildFauna + snow-render.js#drawSnowDetails",
+      "evidence": "0,0 day20 clear; fauna=ptarmigan:elk:snow-vole:migrating-goose; winterFur=true; season=spring"
+    },
+    {
+      "id": "1.2.15.44",
+      "label": "Hibernation and rest periods",
+      "group": "fauna",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#buildFauna + snow-render.js#drawSnowDetails",
+      "evidence": "4,0 day20 clear; fauna=winter-stoat:elk:snow-vole:lemming:bear; winterFur=true; season=spring"
+    },
+    {
+      "id": "1.2.15.45",
+      "label": "Snowfall of varying intensity",
+      "group": "weather",
+      "status": "working",
+      "code": "js/world/season.js + js/world/weather.js + js/world/snow-ecology.js#weather",
+      "evidence": "0,0 day20 clear; snowfall=0.160; storm=0.252; blizzard=0.351; wind=1.000; fog=0.154; frost=0.462; hoarfrost=0.524; visibility=0.659"
+    },
+    {
+      "id": "1.2.15.46",
+      "label": "Snowstorms",
+      "group": "weather",
+      "status": "working",
+      "code": "js/world/season.js + js/world/weather.js + js/world/snow-ecology.js#weather",
+      "evidence": "14,0 day20 clear; snowfall=0.160; storm=0.282; blizzard=0.372; wind=1.000; fog=0.150; frost=0.462; hoarfrost=0.521; visibility=0.645"
+    },
+    {
+      "id": "1.2.15.47",
+      "label": "Icy wind",
+      "group": "weather",
+      "status": "working",
+      "code": "js/world/season.js + js/world/weather.js + js/world/snow-ecology.js#weather",
+      "evidence": "12,0 day20 clear; snowfall=0.160; storm=0.280; blizzard=0.370; wind=1.000; fog=0.143; frost=0.462; hoarfrost=0.517; visibility=0.648"
+    },
+    {
+      "id": "1.2.15.48",
+      "label": "Fog",
+      "group": "weather",
+      "status": "working",
+      "code": "js/world/season.js + js/world/weather.js + js/world/snow-ecology.js#weather",
+      "evidence": "82,40 day20 clear; snowfall=0.160; storm=0.288; blizzard=0.376; wind=1.000; fog=0.251; frost=0.462; hoarfrost=0.589; visibility=0.608"
+    },
+    {
+      "id": "1.2.15.49",
+      "label": "Frost",
+      "group": "weather",
+      "status": "working",
+      "code": "js/world/season.js + js/world/weather.js + js/world/snow-ecology.js#weather",
+      "evidence": "0,0 day20 clear; snowfall=0.160; storm=0.252; blizzard=0.351; wind=1.000; fog=0.154; frost=0.462; hoarfrost=0.524; visibility=0.659"
+    },
+    {
+      "id": "1.2.15.50",
+      "label": "Hoarfrost",
+      "group": "weather",
+      "status": "working",
+      "code": "js/world/season.js + js/world/weather.js + js/world/snow-ecology.js#weather",
+      "evidence": "0,0 day20 clear; snowfall=0.160; storm=0.252; blizzard=0.351; wind=1.000; fog=0.154; frost=0.462; hoarfrost=0.524; visibility=0.659"
+    },
+    {
+      "id": "1.2.15.51",
+      "label": "Blizzards",
+      "group": "weather",
+      "status": "working",
+      "code": "js/world/season.js + js/world/weather.js + js/world/snow-ecology.js#weather",
+      "evidence": "20,0 day20 clear; snowfall=0.160; storm=0.295; blizzard=0.381; wind=1.000; fog=0.155; frost=0.462; hoarfrost=0.525; visibility=0.637"
+    },
+    {
+      "id": "1.2.15.52",
+      "label": "Obstructed visibility",
+      "group": "weather",
+      "status": "working",
+      "code": "js/world/season.js + js/world/weather.js + js/world/snow-ecology.js#weather",
+      "evidence": "0,0 day20 clear; snowfall=0.160; storm=0.252; blizzard=0.351; wind=1.000; fog=0.154; frost=0.462; hoarfrost=0.524; visibility=0.659"
+    },
+    {
+      "id": "1.2.15.53",
+      "label": "Alternating clear and overcast winter sky",
+      "group": "weather",
+      "status": "working",
+      "code": "js/world/season.js + js/world/weather.js + js/world/snow-ecology.js#weather",
+      "evidence": "0,0 day20 clear; snowfall=0.160; storm=0.252; blizzard=0.351; wind=1.000; fog=0.154; frost=0.462; hoarfrost=0.524; visibility=0.659"
+    },
+    {
+      "id": "1.2.15.54",
+      "label": "Higher movement cost in deep snow",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/snow-hazards.js#updateSnowHazards + js/systems/resource-geography.js",
+      "evidence": "5,0 day20 clear; movement=0.797; icyRoads=0.076; supply=0.799; frostbite=0.315; avalanche=0.149; passClosed=0.000; hardiness=0.573; annual pass=js/world/snow-hazards.js"
+    },
+    {
+      "id": "1.2.15.55",
+      "label": "Icy roads and paths",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/snow-hazards.js#updateSnowHazards + js/systems/resource-geography.js",
+      "evidence": "1,0 day120 storm; movement=0.835; icyRoads=0.292; supply=0.705; frostbite=0.428; avalanche=0.118; passClosed=0.000; hardiness=0.503; annual pass=js/world/snow-hazards.js"
+    },
+    {
+      "id": "1.2.15.56",
+      "label": "Restricted supply",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/snow-hazards.js#updateSnowHazards + js/systems/resource-geography.js",
+      "evidence": "66,0 day20 clear; movement=0.729; icyRoads=0.107; supply=0.691; frostbite=0.344; avalanche=0.048; passClosed=0.126; hardiness=0.551; annual pass=js/world/snow-hazards.js"
+    },
+    {
+      "id": "1.2.15.57",
+      "label": "Risk of frostbite",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/snow-hazards.js#updateSnowHazards + js/systems/resource-geography.js",
+      "evidence": "0,0 day20 clear; movement=0.820; icyRoads=0.070; supply=0.783; frostbite=0.322; avalanche=0.055; passClosed=0.000; hardiness=0.569; annual pass=js/world/snow-hazards.js"
+    },
+    {
+      "id": "1.2.15.58",
+      "label": "Snowstorms with loss of visibility",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/snow-hazards.js#updateSnowHazards + js/systems/resource-geography.js",
+      "evidence": "0,0 day20 snow; movement=0.827; icyRoads=0.091; supply=0.755; frostbite=0.362; avalanche=0.050; passClosed=0.000; hardiness=0.548; annual pass=js/world/snow-hazards.js"
+    },
+    {
+      "id": "1.2.15.59",
+      "label": "Avalanche danger in the mountains",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/snow-hazards.js#updateSnowHazards + js/systems/resource-geography.js",
+      "evidence": "154,0 day20 clear; movement=0.759; icyRoads=0.116; supply=0.752; frostbite=0.314; avalanche=0.294; passClosed=0.091; hardiness=0.571; annual pass=js/world/snow-hazards.js"
+    },
+    {
+      "id": "1.2.15.60",
+      "label": "Frozen water sources",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/snow-hazards.js#updateSnowHazards + js/systems/resource-geography.js",
+      "evidence": "0,0 day20 clear; movement=0.820; icyRoads=0.070; supply=0.783; frostbite=0.322; avalanche=0.055; passClosed=0.000; hardiness=0.569; annual pass=js/world/snow-hazards.js"
+    },
+    {
+      "id": "1.2.15.61",
+      "label": "Seasonal closure of passes",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/snow-hazards.js#updateSnowHazards + js/systems/resource-geography.js",
+      "evidence": "88,30 day20 clear; movement=0.713; icyRoads=0.120; supply=0.649; frostbite=0.345; avalanche=0.307; passClosed=0.323; hardiness=0.548; annual pass=js/world/snow-hazards.js"
+    },
+    {
+      "id": "1.2.15.62",
+      "label": "Different winter resilience of buildings and units",
+      "group": "hazard",
+      "status": "working",
+      "code": "js/world/snow-hazards.js#updateSnowHazards + js/systems/resource-geography.js",
+      "evidence": "0,0 day20 clear; movement=0.820; icyRoads=0.070; supply=0.783; frostbite=0.322; avalanche=0.055; passClosed=0.000; hardiness=0.569; annual pass=js/world/snow-hazards.js"
+    },
+    {
+      "id": "1.2.15.63",
+      "label": "Spring snowmelt",
+      "group": "thaw",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#thaw + snow-render.js#drawSnowWater/drawSnowDetails",
+      "evidence": "0,0 day20 clear; springMelt=0.825; thawed=0.426; mud=0.529; rivers=0.873; lakes=0.863; retreat=0.798; northSouth=0.440; aspect=east"
+    },
+    {
+      "id": "1.2.15.64",
+      "label": "Exposed ground after the thaw",
+      "group": "thaw",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#thaw + snow-render.js#drawSnowWater/drawSnowDetails",
+      "evidence": "0,0 day20 clear; springMelt=0.825; thawed=0.426; mud=0.529; rivers=0.873; lakes=0.863; retreat=0.798; northSouth=0.440; aspect=east"
+    },
+    {
+      "id": "1.2.15.65",
+      "label": "Muddy roads",
+      "group": "thaw",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#thaw + snow-render.js#drawSnowWater/drawSnowDetails",
+      "evidence": "0,0 day20 clear; springMelt=0.825; thawed=0.426; mud=0.529; rivers=0.873; lakes=0.863; retreat=0.798; northSouth=0.440; aspect=east"
+    },
+    {
+      "id": "1.2.15.66",
+      "label": "Swollen rivers",
+      "group": "thaw",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#thaw + snow-render.js#drawSnowWater/drawSnowDetails",
+      "evidence": "0,0 day20 clear; springMelt=0.825; thawed=0.426; mud=0.529; rivers=0.873; lakes=0.863; retreat=0.798; northSouth=0.440; aspect=east"
+    },
+    {
+      "id": "1.2.15.67",
+      "label": "Temporary meltwater lakes",
+      "group": "thaw",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#thaw + snow-render.js#drawSnowWater/drawSnowDetails",
+      "evidence": "0,0 day20 clear; springMelt=0.825; thawed=0.426; mud=0.529; rivers=0.873; lakes=0.863; retreat=0.798; northSouth=0.440; aspect=east"
+    },
+    {
+      "id": "1.2.15.68",
+      "label": "Snow retreat by elevation and sunlight",
+      "group": "thaw",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#thaw + snow-render.js#drawSnowWater/drawSnowDetails",
+      "evidence": "0,0 day20 clear; springMelt=0.825; thawed=0.426; mud=0.529; rivers=0.873; lakes=0.863; retreat=0.798; northSouth=0.440; aspect=east"
+    },
+    {
+      "id": "1.2.15.69",
+      "label": "Different melt speeds on north and south slopes",
+      "group": "thaw",
+      "status": "working",
+      "code": "js/world/snow-ecology.js#thaw + snow-render.js#drawSnowWater/drawSnowDetails",
+      "evidence": "0,0 day20 clear; springMelt=0.825; thawed=0.426; mud=0.529; rivers=0.873; lakes=0.863; retreat=0.798; northSouth=0.440; aspect=east"
+    }
+  ]
+}
