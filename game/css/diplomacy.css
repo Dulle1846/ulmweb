@@ -121,6 +121,15 @@
 .transition-survey__body{min-width:0;flex:1}
 .transition-survey h4{margin:3px 0 4px;color:#203c58;font:bold 16px Georgia,serif}
 .transition-survey p{margin:0;color:#5c5a47;font-size:8px;line-height:1.5}
+.transition-survey__target{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;margin-top:8px;padding-top:7px;border-top:1px dashed #b9c19b}
+.transition-survey__target>div:first-child{display:flex;align-items:baseline;gap:5px;min-width:0}
+.transition-survey__target small{color:#6b7557;font:1000 6px Arial,sans-serif;letter-spacing:.08em}
+.transition-survey__target strong{color:#2f5e42;font:bold 11px Georgia,serif}
+.transition-survey__steppers{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.transition-survey__step{min-height:26px;padding:4px 7px;border:1px solid #6e8560;border-radius:5px;background:#f8f3dc;color:#34533f;font:1000 6px Arial,sans-serif;letter-spacing:.06em;cursor:pointer}
+.transition-survey__step:hover{background:#edf5dd;border-color:#466b4a}
+.transition-survey__step:disabled{opacity:.45;cursor:default}
+.transition-survey__count{min-width:28px;text-align:center;color:#6b7557;font:bold 8px Georgia,serif}
 .transition-gameplay{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .transition-gameplay span{padding:4px 6px;border:1px solid #a8b68d;border-radius:5px;background:#f8f3dc;color:#6b7557;font:1000 6px/1.2 Arial,sans-serif;letter-spacing:.05em}
 .transition-gameplay b{display:block;margin-top:2px;color:#2f5e42;font:bold 10px Georgia,serif;letter-spacing:0}
@@ -132,6 +141,7 @@
 .transition-pair-row{display:flex;justify-content:space-between;gap:5px;padding:4px 5px;border-bottom:1px solid #d8c59b;color:#4e4437;font-size:7px}
 .transition-pair-row b{color:#2f6f88;font:bold 7px Georgia,serif;white-space:nowrap}
 @media(max-width:760px){.transition-summary{grid-template-columns:1fr 1fr}.transition-pair-list{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.transition-survey__target{align-items:flex-start}.transition-survey__steppers{width:100%;justify-content:space-between}.transition-survey__step{flex:1 1 0;min-height:32px}.transition-survey__count{flex:0 0 34px}.transition-gameplay span{flex:1 1 calc(33.333% - 4px);min-width:0;text-align:center}}
 @media(max-width:480px){.transition-summary{grid-template-columns:1fr}.transition-pair-list{grid-template-columns:1fr}.transition-survey{flex-direction:column}.transition-survey__swatches{flex-direction:row}.transition-survey__swatches i{min-height:12px}}
 
 /* 1.2.16 — rare biome atlas inside the Explore tab. */

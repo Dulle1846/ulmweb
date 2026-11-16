@@ -684,19 +684,27 @@ export function mixHex(a, b, t) {
     return "#" + color.map(value => value.toString(16).padStart(2, "0")).join("");
 }
 
-export function getTransitionSurvey(x = null, y = null) {
+export function getTransitionSurvey(x = null, y = null, options = {}) {
     const W = Math.max(1, Number(state.worldW) || 1);
     const H = Math.max(1, Number(state.worldH) || 1);
     const cx = Number.isFinite(Number(x)) ? Number(x) : W / 2;
     const cy = Number.isFinite(Number(y)) ? Number(y) : H / 2;
-    const points = [
+    // The old default searches a small ring around the requested point so a
+    // survey at the heart still finds a nearby seam. The Explore tile cursor
+    // uses exact mode: its chips must describe the tile the player selected,
+    // not a nearby neighbour that happened to be stronger.
+    const points = options.exact === true ? [[cx, cy]] : [
         [cx, cy], [cx + W * 0.08, cy], [cx - W * 0.08, cy],
         [cx, cy + H * 0.08], [cx, cy - H * 0.08]
     ];
     let best = null;
+    let tile = null;
     for (const [sx, sy] of points) {
         const point = transitionAt(sx, sy);
-        if (point && (!best || point.strength > best.strength)) best = point;
+        if (point && (!best || point.strength > best.strength)) {
+            best = point;
+            tile = { x: Math.floor(sx), y: Math.floor(sy) };
+        }
     }
     return {
         version: TRANSITION_VERSION,
@@ -705,9 +713,10 @@ export function getTransitionSurvey(x = null, y = null) {
         landscapeCount: Object.keys(TRANSITION_LANDSCAPES).length,
         active: Boolean(best),
         sample: best,
+        tile,
         gameplay: best ? transitionGameplayFor(best) : null,
-        label: best ? best.label + (best.landscape ? " · " + best.landscape.label : "") : "No distinct ecotone at the heart",
-        labelDe: best ? best.labelDe + (best.landscape ? " · " + best.landscape.labelDe : "") : "Kein ausgeprägter Übergang am Reichsherzen",
+        label: best ? best.label + (best.landscape ? " · " + best.landscape.label : "") : "No distinct ecotone at this tile",
+        labelDe: best ? best.labelDe + (best.landscape ? " · " + best.landscape.labelDe : "") : "Kein ausgeprägter Übergang an diesem Tile",
         requirements: best?.requirements || [],
         dynamics: best?.dynamics || [],
         pairs: TRANSITION_PAIRS.map(pair => ({ id: pair.id, label: pair.label, labelDe: pair.labelDe, requirement: "1.2.17." + pair.requirement }))

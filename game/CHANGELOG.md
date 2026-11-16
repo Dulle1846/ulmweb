@@ -42,15 +42,17 @@ landscape types and eight live pressures, not as a painted border.
   placement, gathering and event lookups run only when those actions occur, not
   per frame. Resident errands keep their established timing so the long
   demographic balance remains stable.
-- The Explore tab exposes the active seam, stage, width, tree/grass/shrub
-  percentages, active pressures, farm/forest/forage/settlement/movement chips,
-  all fifteen edges and the fifty-point count.
+- The Explore tab exposes the exact surveyed tile, a bounded PREV/NEXT seam
+  cursor, stage, width, tree/grass/shrub percentages, active pressures,
+  farm/forest/forage/settlement/movement chips, all fifteen edges and the
+  fifty-point count. The scan runs once per panel/world/year; the cursor is
+  transient UI state, not a save field.
 - The terrain height/moisture/temperature goldens are unchanged. The preview
   pixel golden was updated only for the intentional ecotone wash.
 - Verification: focused 1.2.17 suite **11/11**, full suite **1102/1102**,
   syntax/UI audit **173 files / 220 UI ids**, 25-year campaign **10,040 ticks at
-  0.726 ms/tick** with all requirements and 74 residents, 60-year endurance
-  **24,040 ticks at 0.836 ms/tick** with all requirements and exact save
+  0.730 ms/tick** with all requirements and 74 residents, 60-year endurance
+  **24,040 ticks at 0.823 ms/tick** with all requirements and exact save
   roundtrips. Full record:
   [docs/TRANSITION_BIOMES.md](docs/TRANSITION_BIOMES.md).
 

@@ -221,6 +221,12 @@ test("the survey is bounded, reports the manifest and names an active edge", () 
     assert.ok(survey.sample);
     assert.ok(survey.requirements.length >= 18);
     assert.match(survey.label, /Woodland|Grassland|Steppe|Forest|Coast|Mountain|Taiga|Tundra|Wetland|Volcanic|Desert|Semi/);
+    const exact = getTransitionSurvey(40.5, 40.5, { exact: true });
+    assert.equal(exact.tile.x, 40);
+    assert.equal(exact.tile.y, 40);
+    assert.ok(exact.sample);
+    assert.ok(exact.gameplay);
+    assert.equal(exact.gameplay.pair, exact.sample.pair.id);
 });
 
 test("the core helpers are deterministic for a fixed seed and input", () => {

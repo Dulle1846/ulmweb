@@ -8,7 +8,7 @@ import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, decl
 import { startExpedition } from "../systems/expeditions.js";
 import { attuneSpecialBiome, cleanseSpecialBiome, sellSpecialGood } from "../systems/special-biome-state.js";
 import { resolveBiomeQuest, resolveBlightDecision } from "../systems/special-biome-couplings.js";
-import { renderExpeditionsPanel } from "./expeditions-panel.js";
+import { renderExpeditionsPanel, stepTransitionSurvey } from "./expeditions-panel.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { renderEndeavoursPanel } from "./endeavours-panel.js";
 import { startEndeavour, abandonEndeavour, setEndeavourFunding, setEndeavourOverseer } from "../systems/endeavours.js";
@@ -1227,6 +1227,12 @@ export function setupManagementUI(){
    activePanel=nextPanel;$("command-modal")?.classList.remove("hidden");render(true);
   });
  }
+ $("command-panel-content")?.addEventListener("click",e=>{
+  const button=e.target.closest("[data-transition-survey-step]");
+  if(!button)return;
+  e.preventDefault();
+  if(stepTransitionSurvey(Number(button.dataset.transitionSurveyStep)))render(false);
+ });
  $("command-panel-content")?.addEventListener("click",async e=>{
   const button=e.target.closest("[data-ai-command]");
   if(!button)return;

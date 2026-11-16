@@ -37,7 +37,7 @@ expedition routes, placement surveys and both event engines read a compact
 | `js/world/terrain-model.js` | `terrainColor()` adds the packed ecotone wash underneath the existing micro-relief. Water and beaches keep their old path. |
 | `js/world/world.js` | Passes the world seed into the baked terrain colour; no extra canvas or pass. |
 | `js/presentation/rendering/terrain.js` | Samples the ecotone only on the existing detail/tree lattice. Applies tree density, grass height, shrub spread, soil colour and clearing changes to the shared profiles. |
-| `js/presentation/expeditions-panel.js` | A compact Explore survey shows the active seam, stage, width, tree/grass/shrub percentages, active pressures, farm/forest/forage/settlement/movement values and all fifteen edges. |
+| `js/presentation/expeditions-panel.js` | A tile-bound Explore survey with PREV/NEXT seam controls shows the exact tile coordinates, active seam, stage, width, tree/grass/shrub percentages, active pressures, farm/forest/forage/settlement/movement values and all fifteen edges. |
 | `js/systems/fields.js` | Every harvest multiplies the existing weather/season/soil yield by the farm tile's ecotone farm value. |
 | `js/systems/forest-gathering.js` | Woodland and meadow gathering multiply their existing work factor by the tile's forest/forage value. |
 | `js/systems/construction.js` | Site surveys read the farm soil threshold, household settlement suitability and the wet-bog house-footing refusal. |
@@ -89,6 +89,22 @@ seam (year, forest stock/capacity, succession kind/age, atlas and seed). A
 normal route step is a Map hit; a cache miss builds one transition profile, never
 a map scan. The event, harvest, gather and placement paths run at their existing
 seasonal, click or event cadence.
+
+### Survey tile cursor
+
+The Explore survey is a real tile inspector, not a fixed centre card. On first
+paint it scans a bounded coarse grid once and keeps up to eight profiles that
+differ in pair, landscape and **displayed** chip values. It starts at the seam
+nearest the world centre; `◀ PREV` and `NEXT ▶` cycle the cursor. The card
+exposes `data-transition-x`, `data-transition-y`, `data-transition-index`,
+`data-transition-total` and the five chip attributes, plus
+`data-transition-harvest-factor`. `getTransitionSurvey(x, y, { exact: true })`
+returns the exact selected tile rather than a nearby stronger sample.
+
+The candidate scan is not a simulation loop: it runs once per panel/world/year
+and the tile cursor is transient UI state, never a save field. The grid is
+capped at eight profiles, and the scan is bounded by the map's coarse step
+(eight tiles on a standard map).
 
 ## The fifteen requested pairs (1.2.17.1–15)
 
@@ -203,8 +219,8 @@ rare atlas, and the ecotone is derived immediately from those values.
 | Focused 1.2.17 suite | **11/11** |
 | Full Node suite | **1102/1102** |
 | Syntax/UI audit | **173 source files**, **220 referenced UI ids**, local HTML assets |
-| 25-year campaign | seed `20261108`, **10,040 ticks**, year 26, **0.726 ms/tick**, all requirements true, 74 residents |
-| 60-year endurance | **24,040 ticks**, year 61, **0.836 ms/tick**, budget met, 74 residents, all requirements true |
+| 25-year campaign | seed `20261108`, **10,040 ticks**, year 26, **0.730 ms/tick**, all requirements true, 74 residents |
+| 60-year endurance | **24,040 ticks**, year 61, **0.823 ms/tick**, budget met, 74 residents, all requirements true |
 | Save roundtrip | with and without the special-biome block: exact |
 | Terrain data goldens | height, moisture and temperature unchanged |
 | Terrain preview golden | updated for the intentional ecotone wash; seam test passes |

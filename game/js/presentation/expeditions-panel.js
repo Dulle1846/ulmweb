@@ -4,7 +4,7 @@
 import { state } from "../core/state.js";
 import { getExpeditionSnapshot } from "../systems/expeditions.js";
 import { getSpecialBiomeSnapshot } from "../systems/special-biome-state.js";
-import { getTransitionSurvey } from "../world/transition-biomes.js";
+import { getTransitionSurvey, transitionAt, transitionGameplayFor } from "../world/transition-biomes.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -103,8 +103,85 @@ function blightDecisionCard(decision, snapshot) {
     return '<article class="special-decree" data-blight-decree="' + esc(decision.id) + '"><span class="special-biome-kicker">ROYAL BLIGHT DECREE · PRESSURE ' + decision.pressure + ' / 6</span><strong>' + esc(decision.title) + '</strong><p>' + esc(decision.demand) + '</p><div class="special-decree__choices">' + choices + '</div><small class="special-decree__deadline">Expires in year ' + decision.expiresYear + '. An unanswered decree spreads the rot.</small></article>';
 }
 
+// The Explore survey is a tile cursor, not a fixed world-centre card. It is
+// transient UI state: nothing is written to the save. The candidate scan is
+// bounded to one coarse grid and only runs when the panel is first painted or
+// when the world/year changes, never in the render or simulation loop.
+const SURVEY_TILE_LIMIT = 8;
+let surveyTiles = null;
+let surveyFocus = null;
+let surveyCacheKey = "";
+
+function surveyWorldKey() {
+    return [state.worldSeed, state.worldW, state.worldH, state.year, state.worldOptions?.climate || ""].join(":");
+}
+
+function surveyCandidateStep(W, H) {
+    return Math.max(8, Math.floor(Math.min(W, H) / 22));
+}
+
+function ensureSurveyTiles() {
+    const key = surveyWorldKey();
+    if (surveyTiles && surveyCacheKey === key) return surveyTiles;
+    surveyCacheKey = key;
+    surveyTiles = [];
+    const W = Math.max(1, Math.floor(Number(state.worldW) || 1));
+    const H = Math.max(1, Math.floor(Number(state.worldH) || 1));
+    const step = surveyCandidateStep(W, H);
+    const margin = Math.max(1, Math.floor(step / 2));
+    const seen = new Set();
+    const found = [];
+    const centreX = W / 2;
+    const centreY = H / 2;
+    for (let y = margin; y < H; y += step) {
+        for (let x = margin; x < W; x += step) {
+            const transition = transitionAt(x + 0.5, y + 0.5);
+            if (!transition) continue;
+            const gameplay = transitionGameplayFor(transition);
+            if (!gameplay) continue;
+            // Different tiles can share a pair and still land on the same
+            // displayed chip values. Collapse those duplicates so NEXT always
+            // proves a real profile change.
+            const signature = [
+                transition.pair.id, transition.landscape?.id || "",
+                Math.round(gameplay.farm * 100), Math.round(gameplay.forest * 100),
+                Math.round(gameplay.forage * 100), Math.round(gameplay.settlement * 100),
+                Math.round(gameplay.movement * 100)
+            ].join("|");
+            if (seen.has(signature)) continue;
+            seen.add(signature);
+            found.push({
+                x, y,
+                label: transition.label + (transition.landscape ? " · " + transition.landscape.label : ""),
+                distance: Math.hypot(x + 0.5 - centreX, y + 0.5 - centreY)
+            });
+        }
+    }
+    found.sort((a, b) => a.distance - b.distance);
+    surveyTiles = found.slice(0, SURVEY_TILE_LIMIT);
+    if (!surveyTiles.length) {
+        surveyTiles.push({ x: Math.floor(centreX), y: Math.floor(centreY), label: "No distinct ecotone", distance: 0 });
+    }
+    if (!surveyFocus || !surveyTiles.some(tile => tile.x === surveyFocus.x && tile.y === surveyFocus.y)) {
+        surveyFocus = { x: surveyTiles[0].x, y: surveyTiles[0].y };
+    }
+    return surveyTiles;
+}
+
+export function stepTransitionSurvey(direction = 1) {
+    const tiles = ensureSurveyTiles();
+    if (tiles.length < 2) return false;
+    const delta = Number(direction) < 0 ? -1 : 1;
+    const current = Math.max(0, tiles.findIndex(tile => tile.x === surveyFocus?.x && tile.y === surveyFocus?.y));
+    const next = (current + delta + tiles.length) % tiles.length;
+    surveyFocus = { x: tiles[next].x, y: tiles[next].y };
+    return true;
+}
+
 function transitionBiomeSection() {
-    const survey = getTransitionSurvey();
+    const tiles = ensureSurveyTiles();
+    const focus = surveyFocus || tiles[0];
+    const survey = getTransitionSurvey(focus.x + 0.5, focus.y + 0.5, { exact: true });
     const sample = survey.sample;
     const requirements = sample ? sample.requirements.length : 0;
     const stageLabel = sample ? (sample.stageBand === 0 ? "FIRST STAGE" : sample.stageBand === 1 ? "MIDDLE STAGE" : "FAR STAGE") : "NO EDGE";
@@ -125,14 +202,20 @@ function transitionBiomeSection() {
     const title = sample ? sample.label + (sample.landscape ? ' · ' + sample.landscape.label : '') : survey.label;
     const play = survey.gameplay;
     const signedPercent = value => (value >= 0 ? '+' : '') + Math.round(value * 100) + '%';
-    const gameplay = play ? '<div class="transition-gameplay" data-transition-farm="' + Math.round(play.farm * 100) + '" data-transition-forest="' + Math.round(play.forest * 100) + '" data-transition-forage="' + Math.round(play.forage * 100) + '" data-transition-settlement="' + Math.round(play.settlement * 100) + '" data-transition-movement="' + Math.round(play.movement * 100) + '">' +
+    const gameplay = play ? '<div class="transition-gameplay" data-transition-farm="' + Math.round(play.farm * 100) + '" data-transition-forest="' + Math.round(play.forest * 100) + '" data-transition-forage="' + Math.round(play.forage * 100) + '" data-transition-settlement="' + Math.round(play.settlement * 100) + '" data-transition-movement="' + Math.round(play.movement * 100) + '" data-transition-harvest-factor="' + (1 + play.farm).toFixed(3) + '">' +
         '<span>FARM <b>' + signedPercent(play.farm) + '</b></span><span>FOREST <b>' + signedPercent(play.forest) + '</b></span><span>FORAGE <b>' + signedPercent(play.forage) + '</b></span><span>SETTLE <b>' + Math.round(play.settlement * 100) + '%</b></span><span>MOVE <b>' + Math.round(play.movement * 100) + '%</b></span></div>' : '';
+    const focusIndex = Math.max(0, tiles.findIndex(tile => tile.x === focus.x && tile.y === focus.y));
+    const stepperDisabled = tiles.length < 2 ? " disabled" : "";
+    const focusControls = '<div class="transition-survey__target" data-transition-x="' + focus.x + '" data-transition-y="' + focus.y + '">' +
+        '<div><small>SURVEY TILE</small><strong>' + focus.x + ' · ' + focus.y + '</strong></div>' +
+        '<div class="transition-survey__steppers"><button type="button" class="transition-survey__step" data-transition-survey-step="-1"' + stepperDisabled + ' aria-label="Previous ecotone tile">◀ PREV</button><span class="transition-survey__count">' + (focusIndex + 1) + ' / ' + tiles.length + '</span><button type="button" class="transition-survey__step" data-transition-survey-step="1"' + stepperDisabled + ' aria-label="Next ecotone tile">NEXT ▶</button></div></div>';
     return '<div class="command-section-title">1.2.17 · TRANSITION BIOMES</div>' +
-        '<div class="transition-summary"><div><small>MANIFEST POINTS</small><strong>' + survey.manifestCount + '</strong></div><div><small>BIOME EDGES</small><strong>' + survey.pairCount + '</strong></div><div><small>LANDSCAPE TYPES</small><strong>' + survey.landscapeCount + '</strong></div><div><small>ACTIVE AT HEART</small><strong>' + requirements + ' / 50</strong></div></div>' +
-        '<article class="transition-survey" data-transition-pair="' + esc(sample?.pair.id || 'none') + '" style="--ecotone-tint:' + swatch + ';--ecotone-soil:' + soil + '">' +
+        '<div class="transition-summary"><div><small>MANIFEST POINTS</small><strong>' + survey.manifestCount + '</strong></div><div><small>BIOME EDGES</small><strong>' + survey.pairCount + '</strong></div><div><small>LANDSCAPE TYPES</small><strong>' + survey.landscapeCount + '</strong></div><div><small>ACTIVE AT TILE</small><strong>' + requirements + ' / 50</strong></div></div>' +
+        '<article class="transition-survey" data-transition-pair="' + esc(sample?.pair.id || 'none') + '" data-transition-x="' + focus.x + '" data-transition-y="' + focus.y + '" data-transition-index="' + focusIndex + '" data-transition-total="' + tiles.length + '" style="--ecotone-tint:' + swatch + ';--ecotone-soil:' + soil + '">' +
         '<div class="transition-survey__swatches"><i style="background:' + swatch + '"></i><i style="background:' + soil + '"></i></div>' +
         '<div class="transition-survey__body"><span class="special-biome-kicker">ROYAL ECOTONE SURVEY · ' + stageLabel + '</span><h4>' + esc(title) + '</h4>' +
-        '<p>' + (sample ? 'A ' + Math.round(sample.width * 100) + '-tile-wide organic seam. Tree cover ' + Math.round(sample.treeDensity * 100) + '%, grass ' + Math.round(sample.grassDensity * 100) + '%, shrubs ' + Math.round(sample.shrubDensity * 100) + '%.' : 'The heart sits inside a single stable habitat; walk outward to find a seam between two habitats.') + '</p>' +
+        '<p>' + (sample ? 'A ' + Math.round(sample.width * 100) + '-tile-wide organic seam. Tree cover ' + Math.round(sample.treeDensity * 100) + '%, grass ' + Math.round(sample.grassDensity * 100) + '%, shrubs ' + Math.round(sample.shrubDensity * 100) + '%.' : 'This tile sits inside a single stable habitat. Use NEXT to survey another seam.') + '</p>' +
+        focusControls +
         gameplay +
         '<div class="transition-survey__dynamics">' + dynamics + '</div></div></article>' +
         '<details class="transition-atlas"><summary>THE FIFTEEN EDGES · 1.2.17.1–15</summary><div class="transition-pair-list">' + pairRows + '</div><p class="command-note">Each seam carries intermediate stages, a warped width, mixed flora, soil mottling and a dynamic response to climate, fire, logging, grazing and the rare atlas. Rendering samples the seam only on the detail lattice; it is not a per-frame map scan.</p></details>';

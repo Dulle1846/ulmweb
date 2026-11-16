@@ -155,7 +155,9 @@ function stableManureNear(farm, stables) {
 
 // A farm reads the named seam under its own field. The result is only a
 // harvest multiplier; it is never stored on the field or copied into the save.
-function ecotoneHarvestFactor(farm) {
+// Exported so the survey/browser audit can prove the same multiplier the
+// seasonal harvest actually applies.
+export function ecotoneHarvestFactor(farm) {
     if (!Number.isFinite(Number(farm?.x)) || !Number.isFinite(Number(farm?.y))) return 1;
     if (!state.heightMap || !Number(state.terrainPixW) || !Number(state.terrainPixH)) return 1;
     const gameplay = transitionGameplayAt(Number(farm.x) + 0.5, Number(farm.y) + 0.5);
