@@ -107,7 +107,9 @@ Result on seed `20261215`, Snowlands, `common-weal`:
 
 The run uses the real fixed-step simulation, starting kingdom, construction, logistics, events, royal house, ambitions and endeavours; only the terrain-prerender canvas is stubbed. Four real morale collapses were recovered, proving the endless path under load rather than only in a unit test. The 250-year gate (`ENDLESS_YEARS=250`) also passes: 100,040 ticks, year 251, age 11, 12 Eternal Deeds and 1.941 ms/tick.
 
-Reproduction writes a JSON record to `artifacts/endless-500y.json` and the audit to `artifacts/ENDLESS_500Y_AUDIT.md`.
+Reproduction writes a JSON record to `artifacts/endless-500y.json` and the audit to `artifacts/ENDLESS_500Y_AUDIT.md`. The production build was also opened at `https://kings-and-cards.pages.dev/`, a new realm founded through the default checked endless contract, and the HUD verified at `∞ ENDLESS · AGE 1 · NEXT 26` with no console messages.
+
+![Endless HUD in production](../../artifacts/endless-live-proof.png)
 
 ## Limits
 

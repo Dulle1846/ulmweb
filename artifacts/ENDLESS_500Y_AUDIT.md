@@ -35,3 +35,9 @@ Result: **PASS** · Game over: **false**
 | campaignNotTerminal | PASS |
 
 The 500-year run uses the real fixed-step simulation, starting kingdom, construction, logistics, events, royal house, ambitions and endeavours. Four morale collapses were recovered without a game-over, proving the endless recovery path under load. Only the terrain-prerender canvas is stubbed. Reproduce with `ENDLESS_YEARS=500 npm run test:endless`.
+
+## Live proof
+
+The production build at `c09e1ec` was opened at `https://kings-and-cards.pages.dev/`, a new realm was founded with the default endless contract and the HUD showed `∞ ENDLESS · AGE 1 · NEXT 26` with zero console messages.
+
+![Endless HUD in production](endless-live-proof.png)
