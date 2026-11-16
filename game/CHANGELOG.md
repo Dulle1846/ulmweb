@@ -28,15 +28,15 @@ landscape types and eight live pressures, not as a painted border.
   savanna edge and bog–forest mosaic.
 - Live changes read existing state: long-term climate drift, forest expansion,
   steppeification, wetland expansion, post-fire succession, logging regrowth,
-  overgrazing and the rare-biome atlas edge. No new per-tick world scan or
-  save schema is added.
+  overgrazing and the rare-biome atlas edge, whose influence widens with realm
+  age. No new per-tick world scan or save schema is added.
 - The Explore tab exposes the active seam, stage, width, tree/grass/shrub
   percentages, active pressures, all fifteen edges and the fifty-point count.
 - The terrain height/moisture/temperature goldens are unchanged. The preview
   pixel golden was updated only for the intentional ecotone wash.
 - Verification: focused 1.2.17 suite **9/9**, full suite **1100/1100**, syntax/UI
-  audit **173 files / 220 UI ids**, 25-year campaign **10,040 ticks at 0.852
-  ms/tick**, 60-year endurance **24,040 ticks at 0.878 ms/tick** with all
+  audit **173 files / 220 UI ids**, 25-year campaign **10,040 ticks at 0.859
+  ms/tick**, 60-year endurance **24,040 ticks at 0.868 ms/tick** with all
   requirements and exact save roundtrips. Full record:
   [docs/TRANSITION_BIOMES.md](docs/TRANSITION_BIOMES.md).
 

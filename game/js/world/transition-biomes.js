@@ -179,7 +179,7 @@ function climateDrift(year, climate) {
     return { warming, cycle, wet, age, dry: hot ? age * 0.10 : age * 0.035 };
 }
 
-function specialEdgeAt(x, y) {
+function specialEdgeAt(x, y, year = 1) {
     const map = state.specialBiomeMap;
     const regions = state.specialBiomes?.regions;
     if (!map || !regions?.length) return null;
@@ -191,7 +191,11 @@ function specialEdgeAt(x, y) {
     for (const region of regions) {
         if (!region) continue;
         const radius = Math.max(1, Number(region.radius) || 1);
-        const reach = radius + Math.max(0.5, Number(region.transition) || 1.4);
+        // Magical ground creeps outward across the decades instead of ending
+        // at one fixed ring. The atlas itself is unchanged; the ecotone reads
+        // the expanded influence, so an old realm shows a wider magical seam.
+        const growth = 1 + clamp01((Math.max(1, Number(year) || 1) - 1) / 80) * 0.60;
+        const reach = radius + Math.max(0.5, Number(region.transition) || 1.4) * growth;
         const distance = Math.hypot(x - region.x, y - region.y);
         if (distance > reach) continue;
         const edge = clamp01(1 - Math.abs(distance - radius) / Math.max(1, reach - radius));
@@ -321,8 +325,8 @@ function transitionCore(height, moisture, temperature, px, py, climate, sea, see
     const year = Math.max(1, Math.floor(number(context.year, state.year || 1)));
     const drift = climateDrift(year, climate);
     const forest = forestStateAt(context.x ?? px, context.y ?? py);
-    const edge = specialEdgeAt(context.x ?? px, context.y ?? py);
-    const magic = edge ? clamp01(edge.edge * 0.9) : 0;
+    const edge = specialEdgeAt(context.x ?? px, context.y ?? py, year);
+    const magic = edge ? clamp01(edge.edge * (0.85 + clamp01(year / 240) * 0.15) * 0.95) : 0;
     const use = context.use || {};
     const grazing = clamp01(use.overgrazed ? 1 : use.grazed ? 0.66 : use.intensive ? 0.42 : 0);
     const burned = forest.burned || Boolean(use.burned);

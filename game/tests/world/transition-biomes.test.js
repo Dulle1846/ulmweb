@@ -188,8 +188,12 @@ test("fire, logging, grazing, drought and the rare atlas move the seam", () => {
     state.specialBiomeMap = new Uint8Array(SIZE * SIZE);
     state.specialBiomeMap[40 * SIZE + 45] = 1;
     state.specialBiomes = { regions: [{ id: "test-region", x: 45, y: 40, radius: 4, transition: 2 }] };
+    state.year = 1;
+    const earlyMagic = at(0.55, 0.44, 0.56);
+    state.year = 120;
     const magic = at(0.55, 0.44, 0.56);
     assert.ok(magic.magic > 0.1);
+    assert.ok(magic.magic > earlyMagic.magic);
     assert.ok(magic.requirements.includes(50));
 });
 

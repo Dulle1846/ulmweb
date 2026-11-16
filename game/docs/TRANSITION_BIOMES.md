@@ -75,7 +75,8 @@ needed for the dynamic behaviour.
 - **1.2.17.16** Three stage bands (first, middle, far) are returned for every
   seam. `stage` is a continuous 0–1 value and `stageBand` is its survey label.
 - **1.2.17.17** `treeDensity` blends from open ground to closed stand. It is
-  modified by forest regrowth, logging, fire, grazing, drought and magic.
+  modified by forest regrowth, logging, fire, grazing, drought and magic. Magical
+  influence grows with realm age, from a narrow atlas fringe to a broad seam.
 - **1.2.17.18** `grassHeight` selects short, medium or tall sward; grazing and
   drought shorten it, wet years lengthen it.
 - **1.2.17.19** `soil` is a real RGB mix of the two sides, changed again by
@@ -139,7 +140,7 @@ needed for the dynamic behaviour.
 | 1.2.17.47 | Post-fire change | `forestSuccession.tiles` burn state | Charcoal soil, fewer trees, post-fire grass. |
 | 1.2.17.48 | Logging regeneration | forest stock, cutover/windthrow state | Bare mineral soil, lower canopy, regrowth flag. |
 | 1.2.17.49 | Overgrazing | `grasslandUseAt()` | Short grazed sward, trampled soil, fewer shrubs. |
-| 1.2.17.50 | Magical spread | `specialBiomeMap`, `specialBiomes.regions` | A purple-leaning tint and higher tree density at the atlas edge. |
+| 1.2.17.50 | Magical spread | `specialBiomeMap`, `specialBiomes.regions`, realm year | A purple-leaning tint and higher tree density at the atlas edge; the influence reaches about 1.6× farther by year 80, so old realms show visibly wider magical seams without rewriting the atlas. |
 
 ## Save compatibility
 
@@ -162,8 +163,8 @@ rare atlas, and the ecotone is derived immediately from those values.
 | Focused 1.2.17 suite | **9/9** |
 | Full Node suite | **1100/1100** |
 | Syntax/UI audit | **173 source files**, **220 referenced UI ids**, local HTML assets |
-| 25-year campaign | seed `20261108`, **10,040 ticks**, year 26, **0.852 ms/tick**, all requirements true |
-| 60-year endurance | **24,040 ticks**, year 61, **0.878 ms/tick**, budget met, 74 residents, all requirements true |
+| 25-year campaign | seed `20261108`, **10,040 ticks**, year 26, **0.859 ms/tick**, all requirements true |
+| 60-year endurance | **24,040 ticks**, year 61, **0.868 ms/tick**, budget met, 74 residents, all requirements true |
 | Save roundtrip | with and without the special-biome block: exact |
 | Terrain data goldens | height, moisture and temperature unchanged |
 | Terrain preview golden | updated for the intentional ecotone wash; seam test passes |
