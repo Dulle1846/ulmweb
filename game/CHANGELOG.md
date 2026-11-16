@@ -27,6 +27,14 @@ numbered **1.2.17** because **1.2.16** is already the shipped Winter Economy.
   regions yield a rare good once per year; three units permanently attune a
   region and double its yield. Blighted regions spread pressure and must be
   cleansed before attunement.
+- The atlas now feeds one cached influence profile into diplomacy, warfare,
+  harvest/building efficiency, mature household growth, realm scarcity/unrest
+  and royal administration. Charted cover and attrition operate through one O(1)
+  tile lookup; the city growth bonus cannot bypass existing needs or food gates.
+- Survey, rite and omen quests plus a real blight decree spend food, gold, wood
+  or rare goods and change morale, legitimacy, politics or the chronicle. Six
+  active quests, twelve archived quests and twelve history rows are the hard
+  caps.
 - A new Explore section exposes family progress, the rare-good ledger, real
   sales for gold, Attune and Cleanse controls and a bounded atlas journal.
 - The tint is baked into the terrain surface at prerender; the landmark overlay
@@ -34,9 +42,12 @@ numbered **1.2.17** because **1.2.16** is already the shipped Winter Economy.
   paths. At low zoom it degrades to a soft survey glow.
 - The block is additive on schema 11. Old saves get a freshly generated atlas;
   saved discoveries, goods, attunement and blight pressure restore over it.
-- Verification: focused atlas suite **11/11**, full suite **1082/1082**, the
-  deterministic 25-year campaign, browser E2E and the production version check.
-  Full record: [docs/SPECIAL_BIOMES.md](docs/SPECIAL_BIOMES.md).
+- Verification: focused atlas suite **11/11**, focused coupling suite **8/8**,
+  full suite **1090/1090**, and the real 60-year / **24,040-tick** campaign at
+  **0.804 ms/tick** with exact save/load and a legacy no-block load. Browser E2E,
+  the resumable 60-year browser endurance gate and the production version check
+  are recorded with the deployment. Full record:
+  [docs/SPECIAL_BIOMES.md](docs/SPECIAL_BIOMES.md).
 
 ## 3.15.0 — The Endless Realm (development line)
 
@@ -338,7 +349,7 @@ explored-jump and immediate fog-jump phases all remain green in the same run;
 **Verification:** `npm test` **968/968** with syntax, relative imports and
 201 referenced UI ids clean for 147 source files. The deterministic 25-year
 campaign completes **10,040 ticks**, **13/13 ambitions**, every requirement
-true, no stalls, no game over and **0.804 ms/tick**. Full record:
+true, no stalls, no game over and **1.278 ms/tick**. Full record:
 [docs/TAIGA.md](docs/TAIGA.md#low-end-performance).
 
 **Deployed and live-verified:** runtime commit

@@ -5,6 +5,7 @@
 // fields, market and the command deck. A ledger is settled every twenty days,
 // so these helpers may scan buildings and residents only on that cadence.
 import { state } from "../core/state.js";
+import { getSpecialBiomeInfluence } from "./special-biome-couplings.js";
 import { TYPE } from "../core/types.js";
 
 export const ECONOMY_TUNING = Object.freeze({
@@ -147,7 +148,8 @@ export function getHarvestYieldFactor() {
     const winterFieldFactor = winter ? Math.max(0.72, Math.min(1.12,
         0.9 + (Number(winter.insulation) || 0) * 0.22 - (Number(winter.frostDamage) || 0) * 0.18
         + (Number(winter.meltwater) || 0) * 0.08)) : 1;
-    return clamp(seasonFactor * weatherFactor * climateFactor * moraleFactor * healthFactor * winterFieldFactor, 0.45, 1.35);
+    const biomeHarvest = 1 + getSpecialBiomeInfluence().city.harvest;
+    return clamp(seasonFactor * weatherFactor * climateFactor * moraleFactor * healthFactor * winterFieldFactor * biomeHarvest, 0.45, 1.5);
 }
 
 export function normalizeFoodCrisis(input = {}) {

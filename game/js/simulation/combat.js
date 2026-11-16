@@ -9,6 +9,7 @@ import { getNobilityDefenseMultiplier } from "../systems/nobility.js";
 import { getSoldierPower,getSoldierArmor,recordMilitaryVictory,recordMilitaryWound,recordMilitaryCasualty } from "../systems/military.js";
 import { getJungleTacticsAt, getMountainTacticsAt, getVolcanoTacticsAt } from "../systems/resource-geography.js";
 import { holdEndlessKeep, isEndlessEnabled } from "../systems/endless.js";
+import { getBiomeCombatModifiersAt, getSpecialBiomeInfluence } from "../systems/special-biome-couplings.js";
 const rand=(min,max)=>seededRand(min,max,"combat");
 
 const CELL=8;
@@ -55,6 +56,7 @@ export function updateCombat(){
  // Loyal noble houses put their retainers on the walls. The multiplier is
  // cached by the annual noble audit; combat only reads one bounded number.
  const nobleDefense=getNobilityDefenseMultiplier();
+ const biomeMilitary=getSpecialBiomeInfluence().military;
  const defenders=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER,TYPE.TOWER].includes(e.type));
  const enemyBuckets=indexEntities(enemies),defenderBuckets=indexEntities(defenders);
  const keep=state.entities.find(e=>!e.dead&&e.type===TYPE.KEEP)||null;
@@ -75,6 +77,16 @@ export function updateCombat(){
   // Ash, clinker and glowing lava slow an approach exactly as they slow a
   // villager. The profile is cached per tile, not recomputed per frame.
   const volcanoSpeed=volcano?Math.max(.34,Number(volcano.movementFactor)||1):1;
+  // One cached profile plus one atlas byte per raider. Blight and ash bleed
+  // attackers without adding a region scan to the combat tick.
+  const enemyBiome=getBiomeCombatModifiersAt(enemy.x,enemy.y);
+  if(enemyBiome.enemyAttrition>0&&tick%37===0){
+   const attrition=Math.max(1,Math.round(enemyBiome.enemyAttrition+biomeMilitary.enemyAttrition*0.35));
+   enemy.hp-=attrition;
+   queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE-16,"BIOME","#a7c86a");
+   if(enemy.hp<=0)enemy.dead=true;
+  }
+  if(enemy.dead)continue;
   if(dist>1.8){enemy.x+=Math.sign(dx)*0.065*jungleSpeed*mountainSpeed*volcanoSpeed;enemy.y+=Math.sign(dy)*0.065*jungleSpeed*mountainSpeed*volcanoSpeed;}
   // Avalanche and supply attrition are battlefield events, not a stat on a
   // survey card. They use the seeded combat stream so replays stay identical.
@@ -132,7 +144,10 @@ export function updateCombat(){
    // Crater rims and obsidian ridges give the defender cover, but never make
    // the realm immune. The same volcano profile prices both sides.
    const volcanoMultiplier=volcano?1-Math.min(.22,(Number(volcano.defenceBonus)||0)*.22+(localDefender?.04:0)):1;
-   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/(readiness*nobleDefense)*(1-armor)*coverMultiplier*heightMultiplier*volcanoMultiplier));
+   const targetBiome=getBiomeCombatModifiersAt(target.x,target.y);
+   const biomeCover=1-Math.min(.30,targetBiome.defenderCover+biomeMilitary.defenderCover);
+   const biomeDefense=Math.max(1,targetBiome.defenderPower+biomeMilitary.defenderPower-1);
+   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/(readiness*nobleDefense)*(1-armor)*coverMultiplier*heightMultiplier*volcanoMultiplier*biomeCover/biomeDefense));
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
    if(target.hp<=0){
     if(target.type===TYPE.KEEP&&isEndlessEnabled()){
@@ -143,7 +158,7 @@ export function updateCombat(){
      target.dead=true;
      if(target.type===TYPE.KEEP){state.gameOver=true;queueMessage("THE REALM FELL","THE KEEP WAS DESTROYED",5000);}
     }
-   }else if(!target.isKing&&getSoldierPower(target)>0&&target.hp/target.maxHp<0.55&&rand(0,1)<0.22){
+   }else if(!target.isKing&&getSoldierPower(target)>0&&target.hp/target.maxHp<0.55&&rand(0,1)<Math.max(.05,0.22*(1-targetBiome.casualtyReduction-biomeMilitary.casualtyReduction))){
     recordMilitaryWound(target);
    }
   }
@@ -179,7 +194,9 @@ export function updateCombat(){
   // bonus stays small and bounded.
   const volcanoPower=volcanoDefence?1+Math.min(.22,(Number(volcanoDefence.volcanicExperience)||0)*.22
       +(local?.05:0)+(veteran?.04:0)):1;
-  enemy.hp-=Math.max(1,Math.round(basePower*readiness*(1+(nobleDefense-1)*0.6)*junglePower*mountainPower*volcanoPower));
+  const defenderBiome=getBiomeCombatModifiersAt(defender.x,defender.y);
+  const biomePower=Math.max(1,defenderBiome.defenderPower+biomeMilitary.defenderPower-1);
+  enemy.hp-=Math.max(1,Math.round(basePower*readiness*(1+(nobleDefense-1)*0.6)*junglePower*mountainPower*volcanoPower*biomePower));
   queueParticle(enemy.x*TILE_SIZE+12,enemy.y*TILE_SIZE-18,"#fde047",22,rand(-1,4),-3);
   if(enemy.hp<=0){enemy.dead=true;if(namedPower>0)recordMilitaryVictory(defender);queueFloater(enemy.x*TILE_SIZE,enemy.y*TILE_SIZE,"SLAIN","#eab308");}
  }

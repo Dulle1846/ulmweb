@@ -12,6 +12,12 @@ import {
     SPECIAL_BIOME_MAX_REGIONS, SPECIAL_BIOME_VERSION, buildSpecialBiomeMap,
     generateSpecialBiomeRegions, specialBiomeRegionAt, specialBiomeSummary
 } from "../world/special-biomes.js";
+import {
+    createSpecialBiomeCouplingState, getBiomeQuestSnapshot, getBlightDecisionSnapshot,
+    getSpecialBiomeInfluence, invalidateSpecialBiomeInfluence, normalizeSpecialBiomeCouplingState,
+    onSpecialBiomeAttuned, onSpecialBiomeCleansed, onSpecialBiomeDiscovered,
+    updateSpecialBiomeCouplings, validateSpecialBiomeCouplingState
+} from "./special-biome-couplings.js";
 
 export const SPECIAL_BIOME_HISTORY_LIMIT = 24;
 const COUNT_LIMIT = 1_000_000;
@@ -136,7 +142,8 @@ export function createSpecialBiomeState(source = {}, regions = []) {
         totalHazards: Math.min(COUNT_LIMIT, nonNegative(source.totalHazards)),
         totalAttuned: Math.min(COUNT_LIMIT, nonNegative(source.totalAttuned)),
         totalTraded: Math.min(COUNT_LIMIT, nonNegative(source.totalTraded)),
-        lastHazardYear: nonNegative(source.lastHazardYear)
+        lastHazardYear: nonNegative(source.lastHazardYear),
+        couplings: createSpecialBiomeCouplingState(source.couplings)
     };
 }
 
@@ -183,6 +190,7 @@ export function rebuildSpecialBiomeAtlas() {
     for (let index = 0; index < current.regions.length; index++) current.regions[index].index = index;
     state.specialBiomeMap = buildSpecialBiomeMap(current.regions, W, H);
     state.specialBiomeTintCanvas = buildTintCanvas(current.regions, W, H, state.specialBiomeMap);
+    invalidateSpecialBiomeInfluence();
 }
 
 export function generateSpecialBiomes(seed = state.worldSeed, options = state.worldOptions, world = {}) {
@@ -209,6 +217,7 @@ export function normalizeSpecialBiomeState(source, worldSeed = state.worldSeed, 
         : (Array.isArray(generatedRegions) ? generatedRegions : state.specialBiomes?.regions || []);
     const normalized = createSpecialBiomeState(source, regions);
     state.specialBiomes = normalized;
+    normalizeSpecialBiomeCouplingState(source.couplings);
     rebuildSpecialBiomeAtlas();
     return normalized;
 }
@@ -241,6 +250,7 @@ export function validateSpecialBiomeState(snapshot) {
         }
         if (Number(region.radius) < 1 || Number(region.radius) > 12) throw new Error("special-biome radius out of range");
     }
+    validateSpecialBiomeCouplingState(snapshot.couplings);
     if (snapshot.rareGoods !== undefined) {
         if (!snapshot.rareGoods || typeof snapshot.rareGoods !== "object" || Array.isArray(snapshot.rareGoods)) {
             throw new Error("special-biome rare goods must be a map");
@@ -309,6 +319,7 @@ function discoverRegion(region) {
     const family = SPECIAL_BIOME_FAMILIES[region.family];
     addLog("A " + family.label.toUpperCase() + " ENTERS THE ROYAL SURVEY: " + region.name.toUpperCase(), family.accent, "exploration");
     pushHistory("discovery", region, "The crown charted " + region.name + ".");
+    onSpecialBiomeDiscovered(region);
     return true;
 }
 
@@ -392,6 +403,8 @@ export function updateSpecialBiomes() {
     current.lastYear = year;
     current.lastHazardYear = current.lastHazardYear || 0;
     for (const region of current.regions) annualRegion(region);
+    invalidateSpecialBiomeInfluence();
+    updateSpecialBiomeCouplings();
     return current;
 }
 
@@ -409,6 +422,8 @@ export function attuneSpecialBiome(regionId) {
     applyAttunement(region);
     addLog("THE CROWN ATTUNES " + region.name.toUpperCase() + " — " + SPECIAL_BIOME_FAMILIES[region.family].label.toUpperCase(), "#d8bd82", "exploration");
     pushHistory("attune", region, "A permanent bond was made with " + region.name + ".");
+    invalidateSpecialBiomeInfluence();
+    onSpecialBiomeAttuned(region);
     return { ok: true, region: getSpecialBiomeSnapshot().regions.find(entry => entry.id === regionId) };
 }
 
@@ -429,6 +444,8 @@ export function cleanseSpecialBiome(regionId) {
     state.morale = Math.min(100, finite(state.morale, 0) + 2);
     addLog("THE BLIGHT OF " + region.name.toUpperCase() + " IS CLEANSED · THE LAND BREATHES", "#a7c86a", "exploration");
     pushHistory("cleanse", region, "The rot was cut out and the ground salted with ash and prayer.");
+    invalidateSpecialBiomeInfluence();
+    onSpecialBiomeCleansed(region);
     return { ok: true, region: getSpecialBiomeSnapshot().regions.find(entry => entry.id === regionId) };
 }
 
@@ -443,6 +460,7 @@ export function sellSpecialGood(goodId, quantity = 1) {
     current.totalTraded = Math.min(COUNT_LIMIT, current.totalTraded + count);
     addLog("RARE GOODS SOLD · " + count + " " + good.label.toUpperCase() + " FOR " + (good.value * count) + " GOLD", "#d8bd82", "economy");
     pushHistory("trade", null, count + " " + good.label + " sold for " + good.value * count + " gold.");
+    invalidateSpecialBiomeInfluence();
     return { ok: true, gold: good.value * count, remaining: current.rareGoods[goodId] };
 }
 
@@ -487,7 +505,11 @@ export function getSpecialBiomeSnapshot() {
         totalYield: current.totalYield,
         totalHazards: current.totalHazards,
         totalAttuned: current.totalAttuned,
-        totalTraded: current.totalTraded
+        totalTraded: current.totalTraded,
+        influence: getSpecialBiomeInfluence(),
+        couplings: { ...current.couplings },
+        quests: getBiomeQuestSnapshot(),
+        blightDecision: getBlightDecisionSnapshot()
     };
 }
 

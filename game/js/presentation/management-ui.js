@@ -7,6 +7,7 @@ import { getNobilitySnapshot, grantNobleCharter, callNobleLevy } from "../system
 import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, declareWar, sueForPeace, appointEnvoy, recallEnvoy } from "../systems/diplomacy.js";
 import { startExpedition } from "../systems/expeditions.js";
 import { attuneSpecialBiome, cleanseSpecialBiome, sellSpecialGood } from "../systems/special-biome-state.js";
+import { resolveBiomeQuest, resolveBlightDecision } from "../systems/special-biome-couplings.js";
 import { renderExpeditionsPanel } from "./expeditions-panel.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { renderEndeavoursPanel } from "./endeavours-panel.js";
@@ -325,6 +326,7 @@ function diplomacy(){
  }).join("");
  return intro("THE NEIGHBOURING COURTS","Diplomacy","Relationships persist between years and connect trade, faction politics, war pressure and royal prestige. Envoys and the chancellor now shape annual trust, trade terms and border risk.")+
   '<div class="command-summary"><div><small>NEIGHBOURS</small><strong>'+d.realms.length+'</strong></div><div><small>AVG RELATION</small><strong>'+Math.round(d.averageRelation)+'</strong></div><div><small>TRADE PACTS</small><strong>'+d.counts.trade+'</strong></div><div><small>ALLIANCES</small><strong>'+d.counts.alliance+'</strong></div><div><small>ENVOYS</small><strong>'+d.envoys+'</strong></div><div><small>AT WAR</small><strong>'+d.counts.war+'</strong></div></div>'+
+  '<div class="command-note"><strong>BIOME INFLUENCE</strong> · Relation '+((d.biomeInfluence.relationDrift>=0?'+':'')+d.biomeInfluence.relationDrift.toFixed(2))+' per year · guilds '+((d.biomeInfluence.guilds>=0?'+':'')+d.biomeInfluence.guilds.toFixed(2))+' · clergy '+((d.biomeInfluence.clergy>=0?'+':'')+d.biomeInfluence.clergy.toFixed(2))+' · rare-good trade '+((d.biomeInfluence.tradeValue>=0?'+':'')+d.biomeInfluence.tradeValue.toFixed(2))+'. '+esc(d.biomeInfluence.label)+'.</div>'+
   '<div class="command-section-title">'+d.realms.length+' NEIGHBOURING REALMS · LAST REVIEW YEAR '+d.lastUpdateYear+'</div><div class="diplomacy-grid">'+rows+'</div>'+
   '<p class="command-note">Gifts improve trust. Trade raises relation and improves prices through the market. Trade pacts deepen that advantage; alliances send annual aid. An appointed envoy adds annual relation and improves trade terms, while a chancellor strengthens every gift and treaty. War closes trade, raises exhaustion and makes border incidents more likely. Diplomacy resolves once per year, so its cost stays bounded to four realms.</p>';
 }
@@ -1119,6 +1121,8 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="noble-levy")r=callNobleLevy(v);
  else if(a==="special-biome-attune")r=attuneSpecialBiome(v);
  else if(a==="special-biome-cleanse")r=cleanseSpecialBiome(v);
+ else if(a==="special-biome-quest")r=resolveBiomeQuest(v,b.dataset.choice);
+ else if(a==="special-blight-choice")r=resolveBlightDecision(v);
  else if(a==="special-good-sell")r=sellSpecialGood(v);
  else if(a==="expedition-start")r=startExpedition(v,$("expedition-leader-select")?.value,$("expedition-supply-select")?.value);
  else if(a==="endeavour-start")r=startEndeavour(v,{overseerId:$("endeavour-overseer-select")?.value||null,funding:endeavourFunding});
@@ -1145,6 +1149,8 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a.startsWith("noble-"))toast(String(r.message||"NOBLE HOUSE UPDATED").toUpperCase());
   else if(a.startsWith("expedition-"))toast(String(r.message||"ROYAL EXPEDITION UPDATED").toUpperCase());
   else if(a==="special-good-sell")toast("RARE GOODS SOLD · "+(r.gold||0)+" GOLD");
+  else if(a==="special-biome-quest")toast("ATLAS QUEST RESOLVED · "+String(r.choice||"CHOICE").toUpperCase());
+  else if(a==="special-blight-choice")toast("BLIGHT DECREE ANSWERED · "+String(r.choice||"CHOICE").toUpperCase());
   else if(a.startsWith("special-biome-"))toast("RARE BIOME UPDATED");
   else if(a==="open-atelier")toast("ATELIER OPEN");
   else toast("DECISION RECORDED");

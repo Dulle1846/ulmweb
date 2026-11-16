@@ -9,6 +9,7 @@ import { getCourtModifiers } from "./court.js";
 import { addPersonMemory, ensurePersonProfile, PERSON_SPECIES } from "./people.js";
 import { TYPE } from "../core/types.js";
 import { getEndeavourModifiers } from "./endeavours.js";
+import { getSpecialBiomeInfluence } from "./special-biome-couplings.js";
 
 export const DIPLOMACY_COSTS = Object.freeze({ gift:12, tradePact:15, alliance:25, peaceGold:20, peaceFood:15, envoy:8 });
 export const TRADE_PACT_RELATION = 45;
@@ -150,7 +151,8 @@ export function getDiplomacySnapshot() {
         lastUpdateYear:diplomacy.lastUpdateYear,
         history:diplomacy.history.slice(0, 12),
         costs:DIPLOMACY_COSTS,
-        thresholds:{ tradePact:TRADE_PACT_RELATION, alliance:ALLIANCE_RELATION }
+        thresholds:{ tradePact:TRADE_PACT_RELATION, alliance:ALLIANCE_RELATION },
+        biomeInfluence:getSpecialBiomeInfluence().diplomacy
     };
 }
 
@@ -373,8 +375,14 @@ export function updateDiplomacy() {
     const year = currentYear();
     if (diplomacy.lastUpdateYear >= year) return getDiplomacySnapshot();
     const court = getCourtModifiers();
+    const biome = getSpecialBiomeInfluence().diplomacy;
     const effects = { legitimacy:0, commons:0, nobility:0, guilds:0, clergy:0 };
     let moraleDelta = 0;
+    effects.commons += biome.commons;
+    effects.nobility += biome.nobility;
+    effects.guilds += biome.guilds;
+    effects.clergy += biome.clergy;
+    effects.legitimacy += biome.relationDrift * 0.08;
 
     for (const realm of diplomacy.realms) {
         const definition = REALM_BY_ID.get(realm.id);
@@ -413,6 +421,9 @@ export function updateDiplomacy() {
         }
         const chancery = Math.max(0, Number(getEndeavourModifiers().diplomacy) || 0);
         if (chancery && realm.treaty !== "war") realm.relation = clamp(realm.relation + chancery);
+        // Charted rare goods, attunement and blight all colour the neighbouring
+        // courts. This is one cached scalar, not a scan of the atlas per realm.
+        realm.relation = clamp(realm.relation + biome.relationDrift);
         if (realm.treaty !== "war" && realm.relation < 20 && year - realm.lastIncidentYear >= 3) {
             const incidentScale = Math.max(0.2, 1 - court.incidentReduction);
             realm.lastIncidentYear = year;

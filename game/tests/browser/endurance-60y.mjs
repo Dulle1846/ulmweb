@@ -10,7 +10,7 @@
 // checkpoint instead of discarding the run. The final block runs the exact
 // save/load audit through the schema-8 legacy adapter and measures FPS in a
 // fresh real-time browser context. The final report is written to
-// `reports/endurance-50y.json` and `reports/endurance-50y.md`.
+// `reports/endurance-60y.json` and `reports/endurance-60y.md`.
 //
 // This is deliberately not part of `npm test`: it needs Chromium and is a
 // long-running hardware check. Use `npm run test:endurance`.
@@ -30,7 +30,8 @@ const BASE = process.env.E2E_BASE_URL || "http://127.0.0.1:3000";
 const ORIGIN = new URL(BASE).origin;
 const SEED = Number(process.env.ENDURANCE_SEED || 20261108);
 const SAVE_YEARS = Math.max(5, Number(process.env.ENDURANCE_SAVE_YEARS || 25));
-const YEARS = Math.max(50, Number(process.env.ENDURANCE_YEARS || 50));
+const YEARS = Math.max(60, Number(process.env.ENDURANCE_YEARS || 60));
+const REPORT_SUFFIX = YEARS + "y";
 const BLOCK_YEARS = Math.max(1, Number(process.env.ENDURANCE_BLOCK_YEARS || 5));
 const FRAME_LIMIT = Number(process.env.ENDURANCE_FRAME_LIMIT || 30);
 const RENDER_SCALE = Number(process.env.ENDURANCE_RENDER_SCALE || 50);
@@ -41,12 +42,12 @@ const TOTAL_BLOCKS = Math.ceil(YEARS / BLOCK_YEARS);
 const OUT = resolve(process.cwd(), "..", "artifacts");
 const STATE_DIR = process.env.ENDURANCE_STATE_DIR
     ? resolve(process.env.ENDURANCE_STATE_DIR)
-    : resolve(OUT, "endurance-50y-state");
+    : resolve(OUT, "endurance-" + REPORT_SUFFIX + "-state");
 const CHECKPOINT_PATH = resolve(STATE_DIR, "checkpoint.json");
 const PROGRESS_PATH = resolve(STATE_DIR, "progress.json");
 const REPORT_DIR = resolve(process.cwd(), "reports");
-const REPORT_JSON = resolve(REPORT_DIR, "endurance-50y.json");
-const REPORT_MD = resolve(REPORT_DIR, "endurance-50y.md");
+const REPORT_JSON = resolve(REPORT_DIR, "endurance-" + REPORT_SUFFIX + ".json");
+const REPORT_MD = resolve(REPORT_DIR, "endurance-" + REPORT_SUFFIX + ".md");
 const MAX_CHUNKS_PER_BLOCK = Math.max(40, BLOCK_YEARS * 40 + 40);
 const FPS_MINIMUM = Number(process.env.ENDURANCE_FPS_MIN || 18);
 const CLOCK_START = new Date("2026-01-01T00:00:00Z");
@@ -79,9 +80,9 @@ function canvasStub() {
 
 function initializeMatureRealm() {
     state.activeProfileId = PROFILE_ID;
-    state.playerName = "Fifty Year Audit";
+    state.playerName = "Sixty Year Audit";
     state.identity = createIdentityState({
-        kingdomName: "Fifty Year Realm",
+        kingdomName: "Sixty Year Realm",
         dynastyName: "Royal House",
         foundedYear: 1
     });
@@ -236,7 +237,7 @@ async function buildFixture() {
     try {
         globalThis.document = {createElement: () => canvasStub()};
         globalThis.localStorage = new MemoryStorage();
-        createLocalProfile("Fifty Year Audit", PROFILE_ID);
+        createLocalProfile("Sixty Year Audit", PROFILE_ID);
         const campaign = runCampaign({
             seed: SEED,
             years: SAVE_YEARS,
@@ -1047,7 +1048,7 @@ function currentCommit() {
 
 function reportMarkdown(report) {
     const lines = [
-        "# Kings & Cards — 50-Year Endurance Report",
+        "# Kings & Cards — 60-Year Endurance Report",
         "",
         `- Generated: **${report.generatedAt}**`,
         `- Source commit: \`${report.sourceCommit || "unknown"}\``,
@@ -1125,7 +1126,7 @@ async function finalize(checkpoint) {
     const report = {
         schema: 1,
         ok: true,
-        harness: "tests/browser/endurance-50y.mjs",
+        harness: "tests/browser/endurance-60y.mjs",
         generatedAt: new Date().toISOString(),
         sourceCommit: currentCommit(),
         config: {
@@ -1209,7 +1210,7 @@ async function finalize(checkpoint) {
     await mkdir(REPORT_DIR, {recursive: true});
     await atomicJson(REPORT_JSON, report);
     await writeFile(REPORT_MD, reportMarkdown(report));
-    await atomicJson(resolve(OUT, "browser-endurance-50y.json"), report);
+    await atomicJson(resolve(OUT, "browser-endurance-" + REPORT_SUFFIX + ".json"), report);
     console.log("BROWSER_ENDURANCE " + JSON.stringify({
         ok: true,
         seed: report.config.seed,
@@ -1228,7 +1229,7 @@ async function finalize(checkpoint) {
         },
         errors: {pageCount: report.errors.pageCount, consoleCount: report.errors.consoleCount},
         performance: report.performance,
-        report: "reports/endurance-50y.json"
+        report: "reports/endurance-" + REPORT_SUFFIX + ".json"
     }));
     return report;
 }
@@ -1273,7 +1274,7 @@ try {
         checkpointPath: CHECKPOINT_PATH,
         checkpoint: await readJson(CHECKPOINT_PATH).then(checkpoint => checkpoint ? progressOf(checkpoint) : null).catch(() => null)
     };
-    await atomicJson(resolve(OUT, "browser-endurance-50y-failure.json"), failure).catch(() => {});
+    await atomicJson(resolve(OUT, "browser-endurance-" + REPORT_SUFFIX + "-failure.json"), failure).catch(() => {});
     console.error("BROWSER_ENDURANCE_FAILED " + JSON.stringify(failure, null, 2));
     throw error;
 }

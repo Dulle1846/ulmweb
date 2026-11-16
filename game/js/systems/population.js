@@ -8,6 +8,7 @@ import { HOUSING_TIERS, housingCapacityFor, isHousingType } from "./city-config.
 import { canSettleNewcomer } from "./settlement.js";
 import { getFaithModifiers } from "./faith.js";
 import { getJusticeModifiers } from "./justice.js";
+import { getSpecialBiomeInfluence } from "./special-biome-couplings.js";
 const randInt=(min,max)=>seededRandInt(min,max,"population");
 const housingEntities=()=>state.entities.filter(entity=>!entity.dead&&isHousingType(entity.type));
 const capacityOf=house=>housingCapacityFor(house.type);
@@ -30,6 +31,9 @@ export const POPULATION_MATURE_FOOD_PER_RESIDENT = 4;
 // arrive. The extra slot is still bounded by beds, stores and the same yearly
 // cap; it is not a free resource yield.
 export function getPopulationGrowthAllowance() {
+    const biomeSlots = getSpecialBiomeInfluence().city.growthSlots;
+    // A rare biome can add a bounded slot to a healthy mature realm, but it
+    // must never bypass the existing water, safety, satisfaction or food gates.
     if (state.year < POPULATION_MATURE_YEAR) return POPULATION_GROWTH_PER_YEAR;
     const housing = getHousingSnapshot();
     const needs = state.city?.needs?.summary;
@@ -39,7 +43,7 @@ export function getPopulationGrowthAllowance() {
     if ((Number(state.resources.food) || 0) < housing.population * POPULATION_MATURE_FOOD_PER_RESIDENT) {
         return POPULATION_GROWTH_PER_YEAR;
     }
-    return POPULATION_GROWTH_PER_YEAR_MATURE;
+    return POPULATION_GROWTH_PER_YEAR_MATURE + biomeSlots;
 }
 
 export function getPopulationGrowthMoraleThreshold() {

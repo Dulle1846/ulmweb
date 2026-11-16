@@ -35,6 +35,7 @@ place in the save.
 |---|---|---|
 | Pure atlas | `js/world/special-biomes.js` | Families, 100-point manifest, seeded region placement, satellite islets, feature anchors, one-byte tile map, tint and summary helpers. |
 | Persistent state | `js/systems/special-biome-state.js` | Discovery every 200 ticks, annual yields and hazards, attunement, cleansing, rare-good trade, normalization, validation and snapshots. |
+| Cross-system couplings | `js/systems/special-biome-couplings.js` | One cached atlas influence profile, local combat cover, survey/rite/omen quests, blight decrees and the bounded coupling save block. |
 | World generation | `js/world/world.js` | Generates the atlas from the same seed and terrain samples as the normal biomes; bakes the low-resolution tint into the terrain surface. |
 | Simulation | `js/simulation/simulation.js` | One bounded call per tick. No tile scan and no new O(n²) loop. |
 | Rendering | `js/presentation/rendering/special-biome-render.js` | Culled cmd/landmark overlay on top of fog; one anchor per feature, not one object per tile. |
@@ -67,6 +68,32 @@ focused test generates the same atlas twice and compares every field.
   the whole atlas. Attunement and cleansing are routes to recovery.
 - Discovery and annual work are bounded by the twelve-region cap; no per-tile
   simulation is involved.
+
+## Cross-system couplings
+
+The atlas is not an isolated panel. `special-biome-couplings.js` turns the
+region list and rare-good ledger into one cached influence profile. It is
+rebuilt only when the atlas, a quest choice, a trade or an annual pass changes;
+normal reads are O(1).
+
+- **Diplomacy:** every neighbouring court receives the cached relation drift;
+  guild, clergy, commons and nobility effects reach the faction ledger and
+  rare-good trade improves the annual relation.
+- **Warfare:** `getBiomeCombatModifiersAt(x, y)` performs one atlas byte lookup.
+  Charted cover reduces incoming raid damage, attunement strengthens defenders,
+  and blight or ash bleeds attackers through bounded attrition.
+- **City and economy:** harvest factor, building efficiency and mature-realm
+  growth slots read the same profile. The growth slot is added only after the
+  existing water, safety, satisfaction, food and housing gates pass.
+- **Administration:** blight pressure raises realm-cycle scarcity/unrest and
+  exposes a costed royal decree. Quarantine, purge, study and ignore have
+  different real costs and consequences; an unanswered decree spreads the rot.
+- **Quests:** discovery opens a survey; attuning opens a rite; magic mountains
+  and mist moors can open an omen. Resolving a quest spends real food, gold or
+  a rare good and changes morale, legitimacy, resources or the chronicle.
+- **Bounded state:** six active quests, twelve archived quests, twelve history
+  rows and one blight decree. All of it lives inside the existing special-biome
+  save block, so old atlas saves gain a fresh coupling block automatically.
 
 ## Nine families
 
@@ -290,14 +317,22 @@ coordinates, out-of-range radii and negative/unknown rare goods.
 
 ## Verification
 
-- `tests/systems/special-biomes.test.js` — 11 focused tests covering the
+- `tests/systems/special-biomes.test.js` — 11 focused atlas tests covering the
   manifest, family vocabulary, deterministic placement, overlap-free regions,
   map lookup and bounds, discovery cadence, annual yields, attunement cost,
   blight cleansing, market sales, serialization/normalization and malformed
   snapshot rejection.
-- `npm test` — the full node suite and syntax/UI-ID audit.
-- 25-year deterministic campaign — headless campaign driver.
+- `tests/systems/special-biome-couplings.test.js` — 8 focused coupling tests
+  covering diplomacy, battlefield cover/attrition, harvest/production/growth,
+  quests and rites, blight decrees and expiry, realm-cycle unrest, exact
+  save/load and malformed coupling rejection.
+- `npm test` — **1090/1090** plus the syntax/UI-ID audit.
+- `npm run test:endurance:60` — the real campaign driver over **60 years /
+  24,040 ticks**, exact full-save round-trip with the coupling block, and a
+  legacy load without the block. Measured **0.804 ms/tick**, population **74**,
+  all campaign requirements green.
 - Browser E2E and the production build are recorded in the release changelog.
+  The browser endurance gate is now a resumable **60-year** audit.
 
 ## Known limits
 
@@ -308,3 +343,6 @@ coordinates, out-of-range radii and negative/unknown rare goods.
 - The atlas is deliberately capped at twelve regions per world. A larger cap
   would add discovery surface, not simulation depth, and was rejected to protect
   low-end frame and tick budgets.
+- Coupling quests are deliberately limited to six active and twelve archived
+  entries. Their costs and consequences read the existing resource, politics and
+  morale systems; they do not create a second economy.

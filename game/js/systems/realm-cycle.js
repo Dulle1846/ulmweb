@@ -11,6 +11,7 @@ import { state } from "../core/state.js";
 import { addLog } from "../core/event-log.js";
 import { addResource } from "./resources.js";
 import { applyPoliticalEffects } from "./politics.js";
+import { getSpecialBiomeInfluence } from "./special-biome-couplings.js";
 
 export const REALM_CYCLE_VERSION = 1;
 export const REALM_CYCLE_INTERVAL = 20;
@@ -176,6 +177,7 @@ export function ensureRealmCycle() {
 }
 
 function readSignals() {
+    const biome = getSpecialBiomeInfluence().administration;
     const economy = state.economy && typeof state.economy === "object" ? state.economy : {};
     const ledger = economy.lastLedger && typeof economy.lastLedger === "object" ? economy.lastLedger : {};
     const cityNeeds = state.city?.needs?.summary;
@@ -201,7 +203,8 @@ function readSignals() {
         shortageRatio * 0.34 +
         crisis * 0.14 +
         priceRatio * 0.12 +
-        (1 - satisfaction) * 0.10
+        (1 - satisfaction) * 0.10 +
+        biome.unrest * 0.55
     );
     const marketTarget = clamp(
         priceRatio * 0.30 +
@@ -209,12 +212,13 @@ function readSignals() {
         shortageRatio * 0.24 +
         crisis * 0.12 +
         debtPressure * 0.06 +
-        Math.max(0, 0.55 - morale) * 0.06
+        Math.max(0, 0.55 - morale) * 0.06 +
+        biome.unrest * 0.22
     );
     return {
         food, population, demand, shortage, crisis, morale, satisfaction,
         unemployment, debtPressure, foodPrice, priceRatio, regional,
-        regionalDeficit, reserveRatio, scarcityTarget, marketTarget
+        regionalDeficit, reserveRatio, scarcityTarget, marketTarget, biome
     };
 }
 
@@ -295,7 +299,8 @@ export function updateRealmCycle() {
         cycle.marketPressure * 0.20 +
         (1 - signals.morale) * 0.18 +
         (1 - signals.satisfaction) * 0.10 +
-        signals.unemployment * 0.06
+        signals.unemployment * 0.06 +
+        signals.biome.unrest * 0.30
     );
     cycle.unrest = clamp(cycle.unrest + (civicTarget - cycle.unrest) * 0.25);
     const prosperityTarget = clamp(
@@ -303,7 +308,8 @@ export function updateRealmCycle() {
         (1 - cycle.marketPressure) * 0.25 +
         signals.satisfaction * 0.20 +
         signals.morale * 0.20 -
-        signals.debtPressure * 0.15
+        signals.debtPressure * 0.15 -
+        signals.biome.unrest * 0.45
     );
     cycle.prosperity = clamp(cycle.prosperity + (prosperityTarget - cycle.prosperity) * 0.12);
 
@@ -404,6 +410,7 @@ export function getRealmCycleSnapshot() {
         displacement: cycle.displacement,
         lastAction: cycle.lastAction,
         lastResolution: cycle.lastResolution,
+        biomeInfluence: getSpecialBiomeInfluence().administration,
         drivers: {
             foodReserve: signals.food,
             foodDemand: signals.demand,

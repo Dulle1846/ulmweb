@@ -28,7 +28,7 @@
 19. [Tundra 1.2.9](docs/TUNDRA.md) — dedicated cold climate, permafrost, ten formations, the 48-point audit and sparse scrub timber.
 20. [Savanna 1.2.10](docs/SAVANNA.md) — fire- and grazing-shaped wet/dry climate, ten formations, sparse woodland, pastoral/grain economy, hazards and the four-season reference.
 21. [The Endless Realm](docs/ENDLESS_REALM.md) — terminal-defeat removal, recoverable collapses, the held keep, 25-year endless ages, save compatibility and the 250-year proof.
-22. [Fantastic & Rare Biomes 1.2.17](docs/SPECIAL_BIOMES.md) — nine rare families, the 100-point atlas manifest, seeded regions, rare goods, discovery, blight, attunement, terrain tint, save compatibility and the Explore survey.
+22. [Fantastic & Rare Biomes 1.2.17](docs/SPECIAL_BIOMES.md) — nine rare families, the 100-point atlas manifest, seeded regions, rare goods, discovery, blight, attunement, terrain tint, cross-system quests/combat/diplomacy/city couplings, save compatibility and the Explore survey.
 
 ## Development rules
 

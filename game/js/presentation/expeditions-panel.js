@@ -51,6 +51,57 @@ function specialBiomeCard(region) {
     return '<article class="special-biome-card" data-special-biome="' + esc(region.id) + '" style="--biome-accent:' + esc(region.accent) + ';--biome-glow:' + esc(region.glow) + '"><div class="special-biome-card__head"><span class="special-biome-glyph" aria-hidden="true">' + esc(region.glyph) + '</span><div><span class="special-biome-kicker">' + esc(region.familyKicker) + ' · ' + esc(region.variantLabel) + '</span><h4>' + esc(region.name) + '</h4><p>' + esc(region.climate) + ' · ' + number(region.distance) + ' TILES FROM THE HEART · ' + esc(region.resourceLabel) + '</p></div><span class="special-biome-status">' + (region.attuned ? "ATTUNED" : region.cleansed ? "CLEANSED" : "CHARTED") + '</span></div><p class="special-biome-card__lore">' + esc(region.boon) + '</p><div class="special-biome-card__meta"><span>YIELD<b>' + (region.richness * (region.attuned ? 2 : 1)).toFixed(0) + ' / YEAR</b></span><span>FAMILY<b>' + esc(region.familyLabel) + '</b></span><span>ATLAS<b>' + esc(region.features.length + " FEATURES") + '</b></span></div>' + (featureList ? '<p class="special-biome-card__features">' + esc(featureList) + '</p>' : '') + '<div class="special-biome-card__actions"><button type="button" class="special-biome-action" data-command="special-biome-attune" data-value="' + esc(region.id) + '"' + (canAttune ? "" : " disabled") + '>' + esc(attuneLabel) + '</button>' + (canCleanse ? '<button type="button" class="special-biome-action special-biome-action--cleanse" data-command="special-biome-cleanse" data-value="' + esc(region.id) + '">CLEANSE · 3 RESIN + 12 GOLD</button>' : '') + '</div>' + (region.family === "blighted-land" && !region.cleansed ? '<p class="special-biome-warning">BLIGHT PRESSURE ' + region.spread + ' / 6 · ' + esc(region.hazard) + '</p>' : '') + '</article>';
 }
 
+const signed = (value, digits = 2) => (Number(value) >= 0 ? "+" : "") + Number(value).toFixed(digits);
+const percent = value => signed(Number(value) * 100, 1) + "%";
+
+function couplingInfluenceCard(snapshot) {
+    const influence = snapshot.influence;
+    const rows = [
+        ["DIPLOMACY", signed(influence.diplomacy.relationDrift) + " relation / year", "Guilds " + signed(influence.diplomacy.guilds) + " · clergy " + signed(influence.diplomacy.clergy) + " · rare trade " + signed(influence.diplomacy.tradeValue)],
+        ["WARFARE", "Defence +" + percent(influence.military.defenderPower - 1) + " · cover " + percent(influence.military.defenderCover), "Enemy attrition " + signed(influence.military.enemyAttrition, 1) + " · wounds prevented " + percent(influence.military.casualtyReduction)],
+        ["CITY", "Harvest " + percent(influence.city.harvest) + " · production " + percent(influence.city.production), "Morale " + signed(influence.city.morale) + " / year · growth slots +" + influence.city.growthSlots],
+        ["RPG / QUESTS", snapshot.quests.active + " active · " + influence.rites + " rites completed", "Omen bias " + signed(influence.quest.omenBias) + " · discoveries open survey and rite decisions"],
+        ["ADMINISTRATION", "Blight unrest +" + percent(influence.administration.unrest) + " · legitimacy " + signed(influence.administration.legitimacy), "Blight pressure " + influence.blightPressure + " · " + influence.nearBlight + " near the heart"]
+    ];
+    return '<div class="special-couplings"><div class="special-couplings__head"><div><span class="special-biome-kicker">LIVING ATLAS · CROSS-SYSTEM COUPLINGS</span><h4>One charted world, five systems</h4></div><span class="special-couplings__count">' + influence.discovered + ' REGIONS · ' + influence.attuned + ' ATTUNED</span></div><div class="special-coupling-grid">' + rows.map(row => '<article class="special-coupling"><span>' + esc(row[0]) + '</span><strong>' + esc(row[1]) + '</strong><small>' + esc(row[2]) + '</small></article>').join("") + '</div></div>';
+}
+
+function paymentAvailable(snapshot, cost = {}, rareCost = 0, regionId = null) {
+    if (rareCost > 0) {
+        const region = regionId ? snapshot.regions.find(entry => entry.id === regionId) : null;
+        const available = region
+            ? (region.rareGood?.count || 0)
+            : snapshot.regions.reduce((maximum, entry) => Math.max(maximum, entry.rareGood?.count || 0), 0);
+        if (available < rareCost) return false;
+    }
+    for (const [key, value] of Object.entries(cost || {})) {
+        if ((Number(state.resources?.[key]) || 0) < Number(value)) return false;
+    }
+    return true;
+}
+
+function questCard(quest, snapshot) {
+    if (quest.status !== "active") {
+        return '<article class="special-quest is-resolved"><div><span class="special-biome-kicker">' + esc(String(quest.kind).toUpperCase()) + ' · ' + esc(quest.regionName) + '</span><strong>' + esc(quest.status === "completed" ? "RESOLVED" : "EXPIRED") + '</strong><small>Year ' + quest.resolvedYear + ' · ' + esc(quest.choice || "unanswered") + '</small></div></article>';
+    }
+    const choices = (quest.choices || []).map(choice => {
+        const available = paymentAvailable(snapshot, choice.cost, choice.rareCost, quest.regionId);
+        return '<button type="button" class="special-quest__choice" data-command="special-biome-quest" data-value="' + esc(quest.id) + '" data-choice="' + esc(choice.id) + '"' + (available ? "" : " disabled") + '><strong>' + esc(choice.label) + '</strong><small>' + esc(choice.detail) + '</small></button>';
+    }).join("");
+    return '<article class="special-quest" data-special-quest="' + esc(quest.id) + '"><div class="special-quest__head"><div><span class="special-biome-kicker">' + esc(String(quest.kind).toUpperCase()) + ' QUEST · ' + esc(quest.regionName) + '</span><strong>' + (quest.kind === "rite" ? "A RITE IN THE WILD" : quest.kind === "omen" ? "AN OMEN TO READ" : "A SURVEY TO FINISH") + '</strong><small>Expires year ' + quest.expiresYear + ' · discoverer’s choice has a real cost</small></div></div><div class="special-quest__choices">' + choices + '</div></article>';
+}
+
+function blightDecisionCard(decision, snapshot) {
+    if (!decision) {
+        return '<div class="special-decree is-clear"><span class="special-biome-kicker">ROYAL BLIGHT DECREE</span><strong>No decree waits at the council table.</strong><small>Blight at pressure 2 or more forces a decision with a real treasury and food cost.</small></div>';
+    }
+    const choices = decision.choices.map(choice => {
+        const available = paymentAvailable(snapshot, choice.cost);
+        return '<button type="button" class="special-decree__choice" data-command="special-blight-choice" data-value="' + esc(choice.id) + '"' + (available ? "" : " disabled") + '><strong>' + esc(choice.label) + '</strong><small>' + esc(choice.detail) + '</small></button>';
+    }).join("");
+    return '<article class="special-decree" data-blight-decree="' + esc(decision.id) + '"><span class="special-biome-kicker">ROYAL BLIGHT DECREE · PRESSURE ' + decision.pressure + ' / 6</span><strong>' + esc(decision.title) + '</strong><p>' + esc(decision.demand) + '</p><div class="special-decree__choices">' + choices + '</div><small class="special-decree__deadline">Expires in year ' + decision.expiresYear + '. An unanswered decree spreads the rot.</small></article>';
+}
+
 function specialBiomeSection() {
     const snapshot = getSpecialBiomeSnapshot();
     const regions = snapshot.regions.filter(region => region.discovered);
@@ -69,6 +120,8 @@ function specialBiomeSection() {
         : '<p class="command-note">No rare-good trade or attunement has been recorded yet.</p>';
     return '<div class="command-section-title">1.2.17 · FANTASTIC &amp; RARE BIOMES</div>' +
         '<div class="special-biome-summary"><div><small>ATLAS WONDERS</small><strong>' + snapshot.manifestCount + '</strong></div><div><small>FAMILIES CHARTED</small><strong>' + snapshot.knownFamilies.length + ' / 9</strong></div><div><small>REGIONS FOUND</small><strong>' + snapshot.summary.discovered + ' / ' + snapshot.summary.total + '</strong></div><div><small>ATTUNED</small><strong>' + snapshot.summary.attuned + '</strong></div><div><small>RARE GOODS YIELDED</small><strong>' + number(snapshot.totalYield) + '</strong></div></div>' +
+        couplingInfluenceCard(snapshot) +
+        '<div class="command-section-title">ROYAL ATLAS DECISIONS</div><div class="special-decisions"><div><div class="special-decisions__label">QUEST HOOKS</div>' + (snapshot.quests.quests.length ? snapshot.quests.quests.slice(0, 4).map(quest => questCard(quest, snapshot)).join("") : '<p class="command-note">A discovery opens a survey; attuning a region opens its rite.</p>') + '</div><div><div class="special-decisions__label">BLIGHT ADMINISTRATION</div>' + blightDecisionCard(snapshot.blightDecision, snapshot) + '</div></div>' +
         '<div class="special-biome-layout"><div><div class="command-section-title">RARE GOODS &amp; CROWN TRADE</div><div class="special-goods">' + goods + '</div><p class="command-note">Three units of a region\'s rare good permanently attune it. Goods can also be sold for gold; the price is real income, not a cosmetic counter.</p></div><div><div class="command-section-title">THE NINE FAMILIES</div><div class="special-family-list">' + familyRows + '</div><p class="command-note">Every family has its own terrain tint, landmarks, rare good, boon and hazard. Discovery is driven by exploring the map, not by a menu purchase.</p></div></div>' +
         '<div class="command-section-title">CHARTED WONDERS</div><div class="special-biome-grid">' + cards + '</div>' +
         '<div class="command-section-title">ROYAL ATLAS JOURNAL</div><div class="special-history">' + history + '</div>' +

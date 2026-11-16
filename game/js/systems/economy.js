@@ -23,6 +23,7 @@ import {
     nextFoodCrisis, takeFoodInflow
 } from "./economy-cycle.js";
 import { recordNaturalDeath } from "./mortality.js";
+import { getSpecialBiomeInfluence } from "./special-biome-couplings.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -146,7 +147,8 @@ export function getBuildingEfficiency(building, workforce = null) {
     // A newly assigned resident has potential but not yet a career. Experience
     // unlocks the skill contribution, so existing balance remains stable on day one.
     const skillFactor = 1 + (Math.max(0, Math.min(100, averageSkill)) - 50) * 0.0028 * Math.min(1, averageExperience / 25);
-    return Math.max(0, Math.min(1, workers / capacity)) * productivity * getCitizenModifiers().productivity * skillFactor *
+    const biomeProduction = 1 + getSpecialBiomeInfluence().city.production;
+    return Math.max(0, Math.min(1.15, Math.min(1, workers / capacity) * biomeProduction)) * productivity * getCitizenModifiers().productivity * skillFactor *
         Math.max(0.7, Math.min(1.30, 1 + Number(civicModifiers.production || 0))) *
         getFoodCrisisProductivity() * getDebtProductivity();
 }
