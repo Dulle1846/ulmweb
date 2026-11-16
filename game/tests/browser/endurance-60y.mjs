@@ -674,6 +674,9 @@ async function closeBlockingModals(page) {
 
 async function setSettings(session) {
     const {page, runFor} = session;
+    // A mature save can surface a chronicle dialog between blocks. It is a
+    // legitimate world event, but it must not swallow the settings click.
+    await closeBlockingModals(page);
     await page.locator("#settings-btn").click();
     await page.locator("#settings-frame-limit").selectOption(String(FRAME_LIMIT));
     await page.locator("#settings-render-scale").selectOption(String(RENDER_SCALE));
