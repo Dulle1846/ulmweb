@@ -6,6 +6,11 @@ export const DIPLOMATIC_REALMS = Object.freeze([
         ruler:"Guildmaster Aldric Vane", trait:"Mercantile",
         baseRelation:58, baseTrust:54, baseFear:20,
         tradeTreasury:420, tradeStock:Object.freeze({wood:90,stone:35,food:60}),
+        tradeAgreement:Object.freeze({
+            importResource:"wood", importPerYear:18,
+            exportResource:"stone", exportCap:12, exportKeep:60, exportUnitGold:2,
+            signingGold:12, annualGold:5, minRelation:52, minTrust:48
+        }),
         royalHouse:Object.freeze({
             id:"northmere-elowen-vane", house:"House Vane", name:"Lady Elowen Vane",
             sex:"female", species:"human", ageYears:27,
@@ -18,6 +23,11 @@ export const DIPLOMATIC_REALMS = Object.freeze([
         ruler:"Caravan-Marshal Bryn Ironvale", trait:"Defensive",
         baseRelation:52, baseTrust:50, baseFear:34,
         tradeTreasury:520, tradeStock:Object.freeze({wood:25,stone:110,food:35}),
+        tradeAgreement:Object.freeze({
+            importResource:"stone", importPerYear:16,
+            exportResource:"wood", exportCap:14, exportKeep:80, exportUnitGold:2,
+            signingGold:14, annualGold:6, minRelation:48, minTrust:46
+        }),
         royalHouse:Object.freeze({
             id:"ironvale-torren-ironvale", house:"House Ironvale", name:"Lord Torren Ironvale",
             sex:"male", species:"dwarf", ageYears:38,
@@ -30,6 +40,11 @@ export const DIPLOMATIC_REALMS = Object.freeze([
         ruler:"First Merchant Sera Voss", trait:"Wealthy",
         baseRelation:64, baseTrust:60, baseFear:12,
         tradeTreasury:760, tradeStock:Object.freeze({wood:45,stone:30,food:125}),
+        tradeAgreement:Object.freeze({
+            importResource:"food", importPerYear:20,
+            exportResource:"stone", exportCap:10, exportKeep:50, exportUnitGold:3,
+            signingGold:16, annualGold:7, minRelation:58, minTrust:54
+        }),
         royalHouse:Object.freeze({
             id:"goldcoast-marisol-voss", house:"House Voss", name:"Lady Marisol Voss",
             sex:"female", species:"human", ageYears:31,
@@ -42,6 +57,11 @@ export const DIPLOMATIC_REALMS = Object.freeze([
         ruler:"Warden-Captain Halden Rook", trait:"Wary",
         baseRelation:44, baseTrust:42, baseFear:38,
         tradeTreasury:300, tradeStock:Object.freeze({wood:60,stone:55,food:25}),
+        tradeAgreement:Object.freeze({
+            importResource:"food", importPerYear:15,
+            exportResource:"wood", exportCap:16, exportKeep:75, exportUnitGold:2,
+            signingGold:10, annualGold:4, minRelation:40, minTrust:38
+        }),
         royalHouse:Object.freeze({
             id:"redpass-rhea-rook", house:"House Rook", name:"Captain Rhea Rook",
             sex:"female", species:"orc", ageYears:29,

@@ -139,6 +139,78 @@ try {
     assert.match(afterHonor.text, /Honoured 1/);
     assert.match(afterHonor.text, /GUARANTEE STANDING · 68\/100/);
 
+    const beforeAgreement = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        const target = state.diplomacy.realms.find(item => item.id === "northmere");
+        const partner = state.market.partners.find(item => item.id === "northmere");
+        state.year = 1;
+        state.diplomacy.lastUpdateYear = 1;
+        state.resources.gold = 500;
+        state.resources.wood = 100;
+        state.resources.stone = 200;
+        state.resources.food = 500;
+        target.relation = 60;
+        target.trust = 60;
+        partner.stock.wood = 90;
+        partner.stock.stone = 35;
+        partner.treasury = 420;
+        return { gold: state.resources.gold };
+    });
+    await page.locator('[data-command-tab="politics"]').click();
+    await page.locator('[data-command-tab="diplomacy"]').click();
+    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("TRADE AGREEMENT OFFER"), null, { timeout: 10000 });
+    assert.equal(await page.locator("#trade-sign-northmere").count(), 1);
+    await page.locator("#trade-sign-northmere").click();
+    await page.waitForFunction(async () => Boolean((await import("./js/core/state.js")).state.diplomacy.realms.find(item => item.id === "northmere").tradeAgreement), null, { timeout: 10000 });
+    const afterSign = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        const target = state.diplomacy.realms.find(item => item.id === "northmere");
+        return {
+            gold: state.resources.gold,
+            agreement: JSON.parse(JSON.stringify(target.tradeAgreement)),
+            text: document.querySelector("#command-panel-content")?.textContent || ""
+        };
+    });
+    assert.equal(afterSign.gold, beforeAgreement.gold - 12);
+    assert.equal(afterSign.agreement.sinceYear, 1);
+    assert.equal(afterSign.agreement.goldPaid, 12);
+    assert.match(afterSign.text, /FOREIGN TRADE AGREEMENT/);
+    assert.equal(await page.locator("#trade-cancel-northmere").count(), 1);
+
+    const settled = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        const { updateDiplomacy } = await import("./js/systems/diplomacy.js");
+        const target = state.diplomacy.realms.find(item => item.id === "northmere");
+        const partner = state.market.partners.find(item => item.id === "northmere");
+        state.year = 2;
+        state.diplomacy.lastUpdateYear = 1;
+        state.resources.gold = 488;
+        state.resources.wood = 100;
+        state.resources.stone = 200;
+        partner.stock.wood = 90;
+        partner.stock.stone = 35;
+        partner.treasury = 420;
+        updateDiplomacy();
+        return {
+            gold: state.resources.gold,
+            wood: state.resources.wood,
+            stone: state.resources.stone,
+            agreement: JSON.parse(JSON.stringify(target.tradeAgreement)),
+            partner: { stock: { ...partner.stock }, treasury: partner.treasury }
+        };
+    });
+    assert.deepEqual(settled.agreement, {
+        sinceYear: 1, lastSettledYear: 2, yearsServed: 1,
+        imports: 18, exports: 12, goldPaid: 17, goldEarned: 24
+    });
+    assert.equal(settled.gold, 507);
+    assert.equal(settled.wood, 118);
+    assert.equal(settled.stone, 188);
+    assert.deepEqual(settled.partner, { stock: { wood: 72, stone: 47, food: 60 }, treasury: 396 });
+    await page.locator('[data-command-tab="politics"]').click();
+    await page.locator('[data-command-tab="diplomacy"]').click();
+    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("delivered 18 wood"), null, { timeout: 10000 });
+
     await page.locator("#command-close").click();
     await page.locator("#save-btn").click();
     await page.waitForFunction(() => (document.querySelector("#save-status")?.textContent || "").startsWith("LAST SAVED"), null, { timeout: 15000 });
@@ -171,6 +243,8 @@ try {
             pending: snapshot.guarantees.pending,
             guarantee: target.guarantee,
             call: target.guaranteeCall,
+            agreement: target.tradeAgreement,
+            agreements: snapshot.tradeAgreements,
             text: document.querySelector("#command-panel-content")?.textContent || ""
         };
     });
@@ -182,6 +256,39 @@ try {
     assert.equal(restored.call, null);
     assert.match(restored.text, /ROYAL GUARANTEE/);
     assert.match(restored.text, /GUARANTEE STANDING · 68\/100/);
+    assert.equal(restored.agreement.active, true);
+    assert.equal(restored.agreement.sinceYear, 1);
+    assert.equal(restored.agreement.lastSettledYear, 2);
+    assert.equal(restored.agreement.imports, 18);
+    assert.equal(restored.agreement.exports, 12);
+    assert.equal(restored.agreements.active, 1);
+    assert.match(restored.text, /FOREIGN TRADE AGREEMENT/);
+    assert.match(restored.text, /delivered 18 wood/);
+
+    const trustBeforeCancel = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return state.diplomacy.realms.find(item => item.id === "northmere").trust;
+    });
+    await page.locator("#trade-cancel-northmere").click();
+    await page.waitForFunction(async () => {
+        const { state } = await import("./js/core/state.js");
+        return !state.diplomacy.realms.find(item => item.id === "northmere").tradeAgreement &&
+            (document.querySelector("#command-panel-content")?.textContent || "").includes("TRADE AGREEMENT OFFER");
+    }, null, { timeout: 10000 });
+    const afterCancel = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        const target = state.diplomacy.realms.find(item => item.id === "northmere");
+        return {
+            trust: target.trust,
+            kind: target.history[0]?.kind,
+            agreement: target.tradeAgreement,
+            text: document.querySelector("#command-panel-content")?.textContent || ""
+        };
+    });
+    assert.equal(afterCancel.agreement, null);
+    assert.equal(afterCancel.kind, "trade-agreement-cancelled");
+    assert.ok(afterCancel.trust < trustBeforeCancel);
+    assert.equal(await page.locator("#trade-sign-northmere").count(), 1);
 
     assert.deepEqual(pageErrors, []);
     assert.deepEqual(consoleErrors, []);

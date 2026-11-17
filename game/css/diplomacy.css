@@ -75,9 +75,18 @@
 .diplomacy-guarantee-call{display:flex;align-items:baseline;gap:9px;margin-top:9px;padding:7px 9px;border:2px solid #a33d33;border-radius:7px;background:#f5dfd5;color:#68251e;font-size:8px;line-height:1.4}
 .diplomacy-guarantee-call strong{flex:0 0 auto;font:1000 7px Arial,sans-serif;letter-spacing:.08em}
 .diplomacy-guarantee-call span{min-width:0}
+.diplomacy-trade-agreement{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding:8px;border:1px solid #9a8d55;border-radius:6px;background:#f2efdc;color:#3e3a25}
+.diplomacy-trade-agreement>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.diplomacy-trade-agreement span{color:#746328;font:1000 7px Arial,sans-serif;letter-spacing:.08em}
+.diplomacy-trade-agreement strong{color:#3d351d;font:bold 12px Georgia,serif}
+.diplomacy-trade-agreement small{color:#5f573d;font-size:8px;line-height:1.4}
+.diplomacy-trade-agreement--offer{border-style:dashed;background:#f7f3e4}
+.diplomacy-trade-agreement button{min-height:28px;padding:4px 8px;border:2px solid #20374d;border-radius:7px;background:linear-gradient(#f7d67f,#d69a37);color:#24384d;font:1000 7px Arial,sans-serif;cursor:pointer}
+.diplomacy-trade-agreement button:disabled{opacity:.48;cursor:not-allowed}
+.diplomacy-trade-agreement .diplomacy-button--war{border-color:#792d28;background:linear-gradient(#d58c76,#a94f43);color:#fff0e4}
 .court-office .command-inline{margin-top:9px;flex-wrap:wrap}
 .court-office .command-inline select{min-width:100%;flex:1 1 100%}
-@media(max-width:560px){.diplomacy-grid{grid-template-columns:1fr}.diplomacy-realm__stats{grid-template-columns:repeat(3,1fr)}.diplomacy-guarantee{flex-wrap:wrap}.diplomacy-guarantee__actions{width:100%}.diplomacy-guarantee-call{flex-wrap:wrap}}
+@media(max-width:560px){.diplomacy-grid{grid-template-columns:1fr}.diplomacy-realm__stats{grid-template-columns:repeat(3,1fr)}.diplomacy-guarantee{flex-wrap:wrap}.diplomacy-guarantee__actions{width:100%}.diplomacy-guarantee-call{flex-wrap:wrap}.diplomacy-trade-agreement{flex-wrap:wrap}.diplomacy-trade-agreement button{width:100%}}
 
 /* Royal expeditions: a bounded survey layer with one party on the road. */
 .expedition-active{padding:14px;border:2px solid #ad8750;border-left:5px solid #2f6f88;border-radius:10px;background:linear-gradient(145deg,#eef5e7,#dce8cf);color:#243a50;box-shadow:inset 0 1px #fff8}

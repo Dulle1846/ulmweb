@@ -4,6 +4,7 @@ import { state } from "../core/state.js";
 import { DIPLOMATIC_REALMS, DIPLOMATIC_TREATIES, normalizeTreaty } from "./diplomacy-config.js";
 import { addLog } from "./events.js";
 import { addResource } from "./resources.js";
+import { recordResourceMovement } from "./goods-book.js";
 import { applyPoliticalEffects, normalizePoliticalState, POLITICAL_FACTIONS } from "./politics.js";
 import { getCourtModifiers } from "./court.js";
 import { addPersonMemory, ensurePersonProfile, PERSON_SPECIES } from "./people.js";
@@ -17,6 +18,28 @@ export const ALLIANCE_RELATION = 70;
 export const GUARANTEE_RELATION = 35;
 export const GUARANTEE_TERM_YEARS = 8;
 export const GUARANTEE_CREDIBILITY_DEFAULT = 60;
+
+// A marriage bond is a standing discount on the same authored agreement. The
+// saved realm record only holds runtime totals; every term below remains
+// derived from diplomacy-config.js so a manipulated save cannot invent goods.
+const TRADE_MARRIAGE_SIGNING_FACTOR = 0.5;
+const TRADE_MARRIAGE_FEE_FACTOR = 0.75;
+const TRADE_MARRIAGE_THRESHOLD_RELIEF = 5;
+
+const TRADE_AGREEMENT_BREAKS = Object.freeze({
+    war:{
+        relation:-5, trust:-8, fear:4, legitimacy:-0.2, guilds:-0.4, morale:-0.5,
+        kind:"trade-agreement-broken", label:"War breaks", color:"#d27b6d"
+    },
+    arrears:{
+        relation:-4, trust:-10, fear:3, legitimacy:-0.6, guilds:-0.8, morale:-1,
+        kind:"trade-agreement-lapsed", label:"An unpaid annual fee ends", color:"#d8a38a"
+    },
+    cancel:{
+        relation:-5, trust:-9, fear:3, legitimacy:-0.4, guilds:-0.7, morale:-0.7,
+        kind:"trade-agreement-cancelled", label:"The crown cancels", color:"#d8a38a"
+    }
+});
 
 const REALM_BY_ID = new Map(DIPLOMATIC_REALMS.map(realm => [realm.id, realm]));
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
@@ -81,6 +104,55 @@ function normalizeGuaranteeCall(input, realmId) {
     };
 }
 
+function normalizeTradeAgreement(input, definition) {
+    if (!definition?.tradeAgreement) return null;
+    const source = input && typeof input === "object" && !Array.isArray(input) ? input : null;
+    if (!source) return null;
+    const rawSinceYear = integer(source.sinceYear, 0);
+    if (!rawSinceYear) return null;
+    const year = currentYear();
+    // A future year is a forged record, not a contract. Clamp it to the present
+    // so the next ordinary review can settle it like any other agreement.
+    const sinceYear = Math.min(rawSinceYear, year);
+    return {
+        sinceYear,
+        lastSettledYear:Math.min(integer(source.lastSettledYear, 0), year),
+        yearsServed:integer(source.yearsServed, 0, 9999),
+        imports:integer(source.imports, 0),
+        exports:integer(source.exports, 0),
+        goldPaid:integer(source.goldPaid, 0),
+        goldEarned:integer(source.goldEarned, 0)
+    };
+}
+
+function tradeAgreementTerms(definition, marriageBond) {
+    const base = definition?.tradeAgreement;
+    if (!base) return null;
+    const married = Boolean(marriageBond);
+    const signingGold = married ? Math.ceil(base.signingGold * TRADE_MARRIAGE_SIGNING_FACTOR) : base.signingGold;
+    const annualGold = married ? Math.ceil(base.annualGold * TRADE_MARRIAGE_FEE_FACTOR) : base.annualGold;
+    const minRelation = Math.max(1, base.minRelation - (married ? TRADE_MARRIAGE_THRESHOLD_RELIEF : 0));
+    const minTrust = Math.max(1, base.minTrust - (married ? TRADE_MARRIAGE_THRESHOLD_RELIEF : 0));
+    return {
+        importResource:base.importResource,
+        importPerYear:base.importPerYear,
+        exportResource:base.exportResource,
+        exportCap:base.exportCap,
+        exportKeep:base.exportKeep,
+        exportUnitGold:base.exportUnitGold,
+        signingGold,
+        annualGold,
+        minRelation,
+        minTrust,
+        marriageDiscount:married ? {
+            signingGold:base.signingGold - signingGold,
+            annualGold:base.annualGold - annualGold,
+            relation:base.minRelation - minRelation,
+            trust:base.minTrust - minTrust
+        } : null
+    };
+}
+
 function normalizeHistoryEntry(entry) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
     const summary = String(entry.summary || "").trim().slice(0, 160);
@@ -111,6 +183,7 @@ export function createDiplomacyState() {
             treatySinceYear:0,
             guarantee:null,
             guaranteeCall:null,
+            tradeAgreement:null,
             envoyId:null,
             envoyName:"",
             envoySkill:0,
@@ -148,6 +221,7 @@ export function normalizeDiplomacySnapshot(input) {
             treatySinceYear:integer(saved.treatySinceYear, 0),
             guarantee:normalizeGuarantee(saved.guarantee),
             guaranteeCall:normalizeGuaranteeCall(saved.guaranteeCall, definition.id),
+            tradeAgreement:normalizeTradeAgreement(saved.tradeAgreement, definition),
             envoyId:saved.envoyId ? String(saved.envoyId).slice(0, 100) : null,
             envoyName:String(saved.envoyName || "").slice(0, 90),
             envoySkill:clamp(saved.envoySkill ?? 0),
@@ -175,7 +249,8 @@ export function normalizeDiplomacySnapshot(input) {
 export function ensureDiplomacy() {
     const current = state.diplomacy;
     const missingGuaranteeFields = current && Array.isArray(current.realms) && current.realms.some(realm =>
-        !Object.hasOwn(realm, "guarantee") || !Object.hasOwn(realm, "guaranteeCall"));
+        !Object.hasOwn(realm, "guarantee") || !Object.hasOwn(realm, "guaranteeCall") ||
+        !Object.hasOwn(realm, "tradeAgreement"));
     if (!current || typeof current !== "object" || Array.isArray(current) || current.version !== 1 ||
         !Array.isArray(current.realms) || !Number.isFinite(Number(current.guaranteeCredibility)) ||
         !Number.isFinite(Number(current.guaranteeHonored)) || !Number.isFinite(Number(current.guaranteeRefused)) ||
@@ -213,12 +288,40 @@ function realmSnapshot(realm) {
         attackerName:REALM_BY_ID.get(realm.guaranteeCall.attackerId)?.name || realm.guaranteeCall.attackerId,
         yearsLeft:Math.max(0, realm.guaranteeCall.deadlineYear - year)
     } : null;
+    const terms = tradeAgreementTerms(definition, bond);
+    const savedAgreement = realm.tradeAgreement;
+    let tradeAgreement = null;
+    if (terms) {
+        const affordable = (Number(state.resources?.gold) || 0) >= terms.signingGold;
+        const relationReady = realm.relation >= terms.minRelation;
+        const trustReady = realm.trust >= terms.minTrust;
+        let signReason = null;
+        if (savedAgreement) signReason = "agreement-active";
+        else if (realm.treaty === "war") signReason = "war-closes-the-court";
+        else if (!relationReady) signReason = "relation-below-" + terms.minRelation;
+        else if (!trustReady) signReason = "trust-below-" + terms.minTrust;
+        else if (!affordable) signReason = "not-enough-gold";
+        tradeAgreement = {
+            ...terms,
+            active:Boolean(savedAgreement) && realm.treaty !== "war",
+            sinceYear:savedAgreement?.sinceYear || 0,
+            lastSettledYear:savedAgreement?.lastSettledYear || 0,
+            yearsServed:savedAgreement?.yearsServed || 0,
+            imports:savedAgreement?.imports || 0,
+            exports:savedAgreement?.exports || 0,
+            goldPaid:savedAgreement?.goldPaid || 0,
+            goldEarned:savedAgreement?.goldEarned || 0,
+            canSign:!savedAgreement && realm.treaty !== "war" && relationReady && trustReady && affordable,
+            signReason
+        };
+    }
     return {
         ...definition,
         ...realm,
         guarantee,
         guaranteeCall,
         marriageBond,
+        tradeAgreement,
         treatyLabel:DIPLOMATIC_TREATIES[realm.treaty]?.label || "Neutral",
         treatyTone:DIPLOMATIC_TREATIES[realm.treaty]?.tone || "neutral",
         relationLabel:relationLabel(realm.relation),
@@ -234,15 +337,24 @@ export function getDiplomacySnapshot() {
     const counts = { none:0, trade:0, alliance:0, war:0 };
     let relationTotal = 0;
     let envoys = 0;
+    const tradeAgreements = { active:0, imports:0, exports:0, goldPaid:0, goldEarned:0 };
     for (const realm of realms) {
         counts[realm.treaty] = (counts[realm.treaty] || 0) + 1;
         relationTotal += realm.relation;
         if (realm.envoyId) envoys++;
+        if (realm.tradeAgreement?.active) {
+            tradeAgreements.active++;
+            tradeAgreements.imports += realm.tradeAgreement.imports;
+            tradeAgreements.exports += realm.tradeAgreement.exports;
+            tradeAgreements.goldPaid += realm.tradeAgreement.goldPaid;
+            tradeAgreements.goldEarned += realm.tradeAgreement.goldEarned;
+        }
     }
     return {
         realms,
         counts,
         envoys,
+        tradeAgreements,
         guarantees:{
             active:realms.filter(realm => realm.guarantee?.active).length,
             pending:realms.filter(realm => realm.guaranteeCall).length,
@@ -524,6 +636,7 @@ export function declareWar(id) {
     if (foreignMarriageBond(id)) return { ok:false, reason:"royal-marriage-binds-the-crown" };
     if (realm.guarantee && !realm.guaranteeCall && realm.guarantee.expiresYear <= currentYear()) realm.guarantee = null;
     if (realm.guarantee) return { ok:false, reason:"withdraw-the-guarantee-first" };
+    breakTradeAgreement(diplomacy, realm, definition, "war");
     realm.treaty = "war";
     realm.treatySinceYear = currentYear();
     realm.warExhaustion = 0;
@@ -665,6 +778,119 @@ export function recallEnvoy(id) {
     return { ok:true, message:"Envoy recalled from " + definition.name, realm:realmSnapshot(realm) };
 }
 
+function breakTradeAgreement(diplomacy, realm, definition, reason) {
+    const runtime = realm.tradeAgreement;
+    if (!runtime) return 0;
+    const details = TRADE_AGREEMENT_BREAKS[reason] || TRADE_AGREEMENT_BREAKS.cancel;
+    const years = Math.max(0, currentYear() - runtime.sinceYear);
+    realm.tradeAgreement = null;
+    realm.relation = clamp(realm.relation + details.relation);
+    realm.trust = clamp(realm.trust + details.trust);
+    realm.fear = clamp(realm.fear + details.fear);
+    record(diplomacy, realm, details.kind, details.label + " the trade agreement with " + definition.name + " after " + years + " years");
+    applyPoliticalEffects({ legitimacy:details.legitimacy, guilds:details.guilds });
+    state.morale = clamp((Number(state.morale) || 0) + details.morale);
+    addLog(details.label.toUpperCase() + ": " + definition.name.toUpperCase(), details.color, "diplomacy");
+    return years;
+}
+
+export function signTradeAgreement(id) {
+    const { diplomacy, realm, definition } = locate(id);
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    if (realm.treaty === "war") return { ok:false, reason:"war-closes-the-court" };
+    if (realm.tradeAgreement) return { ok:false, reason:"a-trade-agreement-is-already-in-force" };
+    const terms = tradeAgreementTerms(definition, foreignMarriageBond(realm.id));
+    if (!terms) return { ok:false, reason:"no-trade-agreement-offered" };
+    if (realm.relation < terms.minRelation) return { ok:false, reason:"relation-below-" + terms.minRelation };
+    if (realm.trust < terms.minTrust) return { ok:false, reason:"trust-below-" + terms.minTrust };
+    if ((Number(state.resources?.gold) || 0) < terms.signingGold) return { ok:false, reason:"not-enough-gold" };
+    addResource("gold", -terms.signingGold);
+    const year = currentYear();
+    realm.tradeAgreement = {
+        sinceYear:year,
+        lastSettledYear:year,
+        yearsServed:0,
+        imports:0,
+        exports:0,
+        goldPaid:terms.signingGold,
+        goldEarned:0
+    };
+    realm.relation = clamp(realm.relation + 3);
+    realm.trust = clamp(realm.trust + 2.5);
+    realm.fear = clamp(realm.fear - 1);
+    record(diplomacy, realm, "trade-agreement", "Trade agreement signed with " + definition.name + ": imports " + terms.importPerYear + " " + terms.importResource + " per year, exports surplus " + terms.exportResource + " at " + terms.exportUnitGold + " gold per unit");
+    applyPoliticalEffects({ legitimacy:0.2, guilds:0.9 });
+    state.morale = clamp((Number(state.morale) || 0) + 0.3);
+    addLog("TRADE AGREEMENT SIGNED WITH " + definition.name.toUpperCase(), "#a5d6a7", "diplomacy");
+    return { ok:true, message:"Trade agreement signed with " + definition.name, realm:realmSnapshot(realm) };
+}
+
+export function cancelTradeAgreement(id) {
+    const { diplomacy, realm, definition } = locate(id);
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    if (!realm.tradeAgreement) return { ok:false, reason:"no-trade-agreement-is-in-force" };
+    const years = breakTradeAgreement(diplomacy, realm, definition, "cancel");
+    return { ok:true, message:"Trade agreement with " + definition.name + " cancelled after " + years + " years", realm:realmSnapshot(realm) };
+}
+
+function settleTradeAgreement(diplomacy, realm, definition, year, effects) {
+    const runtime = realm.tradeAgreement;
+    if (!runtime || realm.treaty === "war") return;
+    if (runtime.lastSettledYear >= year) return;
+    const terms = tradeAgreementTerms(definition, foreignMarriageBond(realm.id));
+    if (!terms) { realm.tradeAgreement = null; return; }
+    if ((Number(state.resources?.gold) || 0) < terms.annualGold) {
+        breakTradeAgreement(diplomacy, realm, definition, "arrears");
+        return;
+    }
+    addResource("gold", -terms.annualGold);
+    runtime.goldPaid = Math.min(1_000_000_000, runtime.goldPaid + terms.annualGold);
+    let imported = 0;
+    let exported = 0;
+    let earned = 0;
+    const partner = Array.isArray(state.market?.partners)
+        ? state.market.partners.find(item => item && item.id === realm.id) || null
+        : null;
+    if (partner) {
+        partner.stock = partner.stock && typeof partner.stock === "object" ? partner.stock : {};
+        const stock = Math.max(0, Math.floor(Number(partner.stock[terms.importResource]) || 0));
+        imported = Math.min(terms.importPerYear, stock);
+        if (imported > 0) {
+            partner.stock[terms.importResource] = stock - imported;
+            addResource(terms.importResource, imported);
+            if (terms.importResource === "food") {
+                recordResourceMovement("food", imported, "trade-agreement", {
+                    from:{kind:"market", id:partner.id}, to:{kind:"realm", id:"royal-stores"}
+                });
+            }
+        }
+        const available = Math.max(0, Math.floor((Number(state.resources?.[terms.exportResource]) || 0) - terms.exportKeep));
+        const affordable = Math.max(0, Math.floor((Number(partner.treasury) || 0) / terms.exportUnitGold));
+        exported = Math.min(terms.exportCap, available, affordable);
+        if (exported > 0) {
+            earned = exported * terms.exportUnitGold;
+            addResource(terms.exportResource, -exported);
+            addResource("gold", earned);
+            partner.stock[terms.exportResource] = Math.max(0, Number(partner.stock[terms.exportResource]) || 0) + exported;
+            partner.treasury = Math.max(0, (Number(partner.treasury) || 0) - earned);
+        }
+    }
+    runtime.lastSettledYear = year;
+    runtime.yearsServed = Math.min(9999, runtime.yearsServed + 1);
+    runtime.imports = Math.min(1_000_000_000, runtime.imports + imported);
+    runtime.exports = Math.min(1_000_000_000, runtime.exports + exported);
+    runtime.goldEarned = Math.min(1_000_000_000, runtime.goldEarned + earned);
+    realm.tradeVolume = Math.min(1_000_000_000, realm.tradeVolume + imported + exported);
+    if (imported > 0 || exported > 0) {
+        realm.lastTradeYear = year;
+        realm.lastContactYear = year;
+    }
+    realm.relation = clamp(realm.relation + 1.2);
+    realm.trust = clamp(realm.trust + 0.8);
+    effects.guilds += 0.12;
+    effects.legitimacy += 0.02;
+}
+
 export function updateDiplomacy() {
     const diplomacy = ensureDiplomacy();
     const year = currentYear();
@@ -685,6 +911,14 @@ export function updateDiplomacy() {
         const definition = REALM_BY_ID.get(realm.id);
         if (!definition) continue;
         const envoy = livingEnvoy(realm);
+        if (realm.treaty === "war") {
+            if (realm.tradeAgreement) breakTradeAgreement(diplomacy, realm, definition, "war");
+        } else {
+            // The agreement settles only in the existing annual diplomacy pass.
+            // It reads and writes the same market partner stock and treasury the
+            // caravans use, so there is no second trade loop to keep in sync.
+            settleTradeAgreement(diplomacy, realm, definition, year, effects);
+        }
         if (realm.treaty === "war") {
             realm.warExhaustion = clamp(realm.warExhaustion + 2);
             realm.relation = clamp(realm.relation - 1.2 - realm.warExhaustion * 0.01);
