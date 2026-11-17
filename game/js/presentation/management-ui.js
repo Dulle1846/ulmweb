@@ -25,7 +25,7 @@ import { TYPE } from "../core/types.js";
 import { CARD_DECK, drawPlayerCard, selectCard } from "../systems/cards.js";
 import { getResourceNodeAt } from "../systems/resource-geography.js";
 import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
-import { craftBiomeGoods, harvestBiomeResource, huntBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, surveyBiomeRegion } from "../systems/biome-resource-state.js";
+import { craftBiomeGoods, harvestBiomeResource, huntBiomeSpecies, reintroduceBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, setBiomeProtection, surveyBiomeRegion } from "../systems/biome-resource-state.js";
 import { renderBiomePanel } from "./biome-panel.js";
 import { deliverForestGoods, forestDeliveryAvailability, forestGatheringSummary, forestThinningAvailability, gatherNearestForestProducts, gatherNearestGrasslandProducts, performMountainWork, performSwampWork, performVolcanoWork, performCoastWork, processForestHunt, mountainWorkAvailability, swampWorkAvailability, volcanoWorkAvailability, coastWorkAvailability, thinNearestForest } from "../systems/forest-gathering.js";
 import { grasslandSiteSummaryAt } from "../systems/grassland-use.js";
@@ -1238,7 +1238,9 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="biome-survey")r=surveyBiomeRegion(v);
  else if(a==="biome-harvest")r=harvestBiomeResource(v,b.dataset.biomeResource);
  else if(a==="biome-hunt")r=huntBiomeSpecies(v,b.dataset.biomeSpecies);
+ else if(a==="biome-reintroduce")r=reintroduceBiomeSpecies(v,b.dataset.biomeSpecies);
  else if(a==="biome-restore")r=restoreBiomeRegion(v);
+ else if(a==="biome-protect")r=setBiomeProtection(v,b.dataset.biomeProtected!=="0");
  else if(a==="biome-policy")r=setBiomePolicy(v,b.dataset.biomePolicy);
  else if(a==="biome-focus")r=setBiomeFocus(v,b.dataset.biomeFocus);
  else if(a==="biome-sell")r=sellBiomeGoods(v,b.dataset.biomeResource);

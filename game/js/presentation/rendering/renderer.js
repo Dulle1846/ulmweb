@@ -236,13 +236,27 @@ function drawMapLayer(ctx,zoom,camera,canvas){
             ctx.strokeStyle=cell.color;
             ctx.lineWidth=Math.max(1,tileSize*.04);
             ctx.strokeRect(left,top,width,height);
-            for(const rare of cell.rare){
-                const hash=rare.length*31+cell.id.length*17;
+            const markerColors={ore:"#c3b7a2",stone:"#d0c7b7",gem:"#9fd0e0",salt:"#f0ece3",herb:"#8fbf7a",wood:"#75a958",fish:"#78b6d0",fruit:"#d9a05b",fungus:"#b58b6a",fiber:"#c6c08a",dye:"#b07cc6",poison:"#9a6fa8",animal:"#c98a6a",fantastic:"#9fd7ff",grain:"#d8c070",spice:"#d98d4a"};
+            const markerSize=Math.max(1.5,Math.min(4,tileSize*.16));
+            for(const marker of cell.markers||[]){
+                const mx=marker.x*tileSize-camera.x,my=marker.y*tileSize-camera.y;
+                if(mx<-markerSize||my<-markerSize||mx>canvas.width+markerSize||my>canvas.height+markerSize)continue;
+                ctx.globalAlpha=marker.rare?.95:.66;
+                ctx.fillStyle=markerColors[marker.category]||"#e4bd72";
+                ctx.fillRect(mx-markerSize*.5,my-markerSize*.5,markerSize,markerSize);
+            }
+            for(const refuge of cell.refuges||[]){
+                const mx=refuge.x*tileSize-camera.x,my=refuge.y*tileSize-camera.y;
+                if(mx<-4||my<-4||mx>canvas.width+4||my>canvas.height+4)continue;
                 ctx.globalAlpha=.9;
-                ctx.fillStyle="#e4bd72";
-                ctx.beginPath();
-                ctx.arc(left+width*(.24+(hash%5)*.12),top+height*(.24+((hash>>3)%5)*.12),Math.max(2,tileSize*.12),0,Math.PI*2);
-                ctx.fill();
+                ctx.fillStyle=refuge.endangered?"#d98282":"#e9dfc8";
+                ctx.beginPath();ctx.moveTo(mx,my-markerSize*.8);ctx.lineTo(mx+markerSize*.8,my);ctx.lineTo(mx,my+markerSize*.8);ctx.lineTo(mx-markerSize*.8,my);ctx.closePath();ctx.fill();
+            }
+            if(cell.protectedArea){
+                ctx.globalAlpha=.8;ctx.strokeStyle="#8fd0a0";ctx.lineWidth=Math.max(1,tileSize*.06);
+                ctx.setLineDash([Math.max(3,tileSize*.4),Math.max(2,tileSize*.24)]);
+                ctx.strokeRect(left+2,top+2,Math.max(2,width-4),Math.max(2,height-4));
+                ctx.setLineDash([]);
             }
         }
         ctx.globalAlpha=1;

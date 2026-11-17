@@ -7,11 +7,11 @@ import {
     BIOME_WILDLIFE_BY_ID, BIOME_CRAFT_RECIPE_BY_ID
 } from "../../js/world/biome-resource-data.js";
 import {
-    craftBiomeGoods, estimateBiomePotentialYield, forestCoverShareAt, forestPointTier, generateBiomeAtlas, getBiomeAtlasSnapshot, getBiomeEconomySnapshot, getBiomeRegionSnapshot,
-    harvestBiomeResource, huntBiomeSpecies, normalizeBiomeAtlasState, restoreBiomeRegion,
+    craftBiomeGoods, estimateBiomePotentialYield, forestCoverShareAt, forestPointTier, generateBiomeAtlas, getBiomeAtlasSnapshot, getBiomeEconomySnapshot, getBiomeOverlayCells, getBiomeRegionSnapshot,
+    harvestBiomeResource, huntBiomeSpecies, normalizeBiomeAtlasState, reintroduceBiomeSpecies, restoreBiomeRegion,
     restoreBiomeAtlasState, sellBiomeCraft, sellBiomeGoods, serializeBiomeAtlasState, setBiomeFocus,
-    setBiomePolicy, shouldDrawForestPoints, surveyBiomeRegion, syncBiomeDiscovery,
-    updateBiomeAtlasAnnual, validateBiomeAtlasSnapshot
+    setBiomePolicy, setBiomeProtection, shouldDrawForestPoints, surveyBiomeRegion, syncBiomeDiscovery,
+    updateBiomeAtlasAnnual, updateBiomeAtlasSeason, validateBiomeAtlasSnapshot
 } from "../../js/systems/biome-resource-state.js";
 
 const W = 160, H = 160, RES = 2, PIX = W * RES;
@@ -527,4 +527,239 @@ test("1.2.19 map dots keep a visible forest cover without harvestable timber", (
     assert.equal(forestCoverShareAt(10, 140), 1, "a full stand keeps its own stock density");
     stock[index] = 20;
     assert.ok(forestCoverShareAt(10, 140) >= 0.18, "a logged stand keeps a visible survey footprint");
+});
+
+test("1.2.19 tile deposits, named diets, refuges and map markers are concrete", () => {
+    const atlas = setup(9191);
+    const region = discoveredRegion(atlas);
+    region.discovered = true;
+    for (const row of region.resources) row.discovered = true;
+    for (const row of region.fauna) row.discovered = true;
+    const snapshot = getBiomeRegionSnapshot(region.id);
+    for (const row of snapshot.resources) {
+        assert.ok(Array.isArray(row.deposits) && row.deposits.length >= 1 && row.deposits.length <= 3,
+            row.id + " needs concrete tile deposits");
+        for (const site of row.deposits) {
+            assert.ok(site.x >= region.x && site.x < region.x + region.width);
+            assert.ok(site.y >= region.y && site.y < region.y + region.height);
+        }
+    }
+    for (const row of snapshot.fauna) {
+        assert.ok(Array.isArray(row.refuges) && row.refuges.length >= 1 && row.refuges.length <= 3,
+            row.id + " needs concrete refuge sites");
+        assert.ok(Array.isArray(row.diet) && row.diet.length >= 1, row.id + " needs a named diet");
+        assert.ok(row.forage >= 0 && row.forage <= 1);
+    }
+    const cell = getBiomeOverlayCells().find(entry => entry.id === region.id);
+    assert.ok(cell);
+    assert.ok(cell.markers.length >= snapshot.resources.length, "discovered resources need map markers");
+    assert.ok(cell.refuges.length >= snapshot.fauna.length, "discovered species need refuge markers");
+});
+
+test("1.2.19 seasonal migration moves real populations and records a route", () => {
+    const atlas = setup(9292);
+    const species = BIOME_WILDLIFE.find(entry => entry.migratory);
+    assert.ok(species);
+    const season = [0, 1, 2, 3].find(index => !species.breeding.includes(index));
+    assert.ok(season >= 0);
+    state.seasonIndex = season;
+    const source = atlas.regions.find(region => region.fauna.some(row => row.id === species.id));
+    assert.ok(source);
+    source.discovered = true;
+    source.quality = 8;
+    source.vegetation = 0.05;
+    source.water = 0.05;
+    source.resources = [];
+    const sourceRow = source.fauna.find(row => row.id === species.id);
+    sourceRow.population = 60;
+    sourceRow.capacity = 100;
+    source.fauna = [sourceRow];
+    const target = atlas.regions[source.index % 6 < 5 ? source.index + 1 : source.index - 1];
+    target.discovered = true;
+    target.quality = 100;
+    target.vegetation = 1;
+    target.water = 1;
+    target.protectedArea = true;
+    target.resources = [];
+    const targetRow = {
+        id: species.id, population: 10, baseCapacity: 100, capacity: 100, health: 80,
+        breeding: false, migrating: false, pressure: 0, refugeSites: 1,
+        refuges: [{ x: target.x + 2, y: target.y + 2, kind: "thicket" }], discovered: true
+    };
+    target.fauna = [targetRow];
+    atlas.lastSeasonKey = 0;
+    const before = sourceRow.population;
+    const moved = updateBiomeAtlasSeason();
+    assert.equal(moved.updated, true);
+    assert.ok(moved.routes >= 1, "at least one migration route must be recorded");
+    assert.ok(sourceRow.population < before, "the source population must fall");
+    assert.ok(targetRow.population > 10, "the target population must grow");
+    assert.ok(atlas.migration.some(route => route.species === species.id && route.from === source.id && route.to === target.id));
+
+    const away = targetRow.population;
+    const homeBefore = sourceRow.population;
+    state.seasonIndex = species.breeding[0];
+    atlas.lastSeasonKey = 0;
+    const returned = updateBiomeAtlasSeason();
+    assert.equal(returned.updated, true);
+    assert.ok(targetRow.population < away, "the breeding season must return part of the herd");
+    assert.ok(sourceRow.population > homeBefore, "the home region must receive the returning cohort");
+    assert.ok(atlas.migration.some(route => route.returning === true
+        && route.from === target.id && route.to === source.id && route.species === species.id));
+});
+
+test("1.2.19 protection blocks hunting, refuges soften quotas and clear-cut leaves erosion", () => {
+    const atlas = setup(9393);
+    const region = discoveredRegion(atlas);
+    region.discovered = true;
+    for (const row of region.resources) row.discovered = true;
+    for (const row of region.fauna) row.discovered = true;
+    state.resources.gold = 5000;
+    state.resources.wood = 100;
+    const target = region.fauna.find(row => row.population > 4);
+    assert.ok(target);
+    assert.equal(setBiomeProtection(region.id, true).ok, true);
+    assert.equal(region.protectedArea, true);
+    const blocked = huntBiomeSpecies(region.id, target.id);
+    assert.equal(blocked.ok, false);
+    assert.equal(blocked.reason, "protected-area");
+    assert.equal(setBiomeProtection(region.id, false).ok, true);
+    const hunted = huntBiomeSpecies(region.id, target.id);
+    assert.equal(hunted.ok, true);
+    assert.ok(hunted.protection <= 1);
+    assert.ok(hunted.refugeSites >= 1);
+
+    const wood = region.resources.find(row => BIOME_RESOURCE_BY_ID[row.id]?.kind === "wood");
+    assert.ok(wood, "a woodland fixture is needed for clear-cut");
+    wood.stock = 400;
+    wood.capacity = 400;
+    wood.baseCapacity = 400;
+    region.resources = [wood];
+    region.clearCut = 0;
+    region.erosion = 0;
+    for (let index = 0; index < 8; index++) {
+        wood.stock = Math.max(wood.stock, 120);
+        const cut = harvestBiomeResource(region.id, wood.id);
+        assert.equal(cut.ok, true);
+    }
+    assert.ok(region.clearCut > 0, "repeated timber harvest must leave a clear-cut state");
+    assert.ok(region.erosion >= 0);
+    const beforeRestore = region.clearCut;
+    const restored = restoreBiomeRegion(region.id);
+    assert.equal(restored.ok, true);
+    assert.ok(region.clearCut < beforeRestore, "restoration must reduce the clear-cut state");
+    assert.equal(region.protectedArea, true, "restoration declares a protected habitat");
+
+    const species = BIOME_WILDLIFE.find(entry => (entry.rare || entry.endangered) && entry.biomes.includes(region.rawBiome));
+    assert.ok(species, "the fixture needs a rare species for reintroduction");
+    let depleted = region.fauna.find(row => row.id === species.id);
+    if (!depleted) {
+        depleted = {
+            id: species.id, population: 0, baseCapacity: 20, capacity: 20, health: 20,
+            breeding: false, migrating: false, pressure: 0, refugeSites: 0, refuges: [], discovered: true
+        };
+        region.fauna.push(depleted);
+    }
+    depleted.population = 0;
+    depleted.discovered = true;
+    const sourceRegion = atlas.regions.find(entry => entry !== region);
+    sourceRegion.discovered = true;
+    sourceRegion.fauna = [{
+        id: species.id, population: 50, baseCapacity: 100, capacity: 100, health: 80,
+        breeding: false, migrating: false, pressure: 0, refugeSites: 1, refuges: [], discovered: true
+    }];
+    state.resources.gold = 100;
+    const revived = reintroduceBiomeSpecies(region.id, species.id);
+    assert.equal(revived.ok, true);
+    assert.ok(depleted.population > 0, "reintroduction must release a real cohort");
+    assert.equal(state.resources.gold, 80);
+});
+
+test("1.2.19 caravans pay for real stock transfers and reduce import dependence", () => {
+    const atlas = setup(9494);
+    const categories = ["wood", "stone", "ore", "fiber", "herb", "salt", "fruit"];
+    const buyer = atlas.regions.find(region => {
+        region.discovered = true;
+        for (const row of region.resources) row.discovered = true;
+        const present = new Set(region.resources.map(row => BIOME_RESOURCE_BY_ID[row.id]?.category));
+        return categories.some(category => !present.has(category));
+    });
+    assert.ok(buyer, "a tested region must still have an import gap");
+    const need = categories.find(category => !buyer.resources.some(row => BIOME_RESOURCE_BY_ID[row.id]?.category === category));
+    assert.ok(need);
+    const donor = atlas.regions.find(region => region !== buyer);
+    donor.discovered = true;
+    donor.fauna = [];
+    donor.resources = categories.map(category => {
+        const definition = BIOME_RESOURCES.find(resource => resource.category === category && !resource.fauna);
+        return {
+            id: definition?.id || "wood", stock: 100, baseCapacity: 100, capacity: 100,
+            quality: 60, stored: 0, deposits: [], discovered: true, locallyExtinct: false, lastHarvestYear: 0
+        };
+    }).filter(row => row.id);
+    state.resources.gold = 1000;
+    state.year += 1;
+    atlas.lastYear = state.year - 1;
+    const beforeDependency = getBiomeRegionSnapshot(buyer.id).economy.importDependency;
+    const beforeStock = donor.resources.find(row => BIOME_RESOURCE_BY_ID[row.id]?.category === need).stock;
+    const result = updateBiomeAtlasAnnual();
+    assert.equal(result.updated, true);
+    assert.ok(result.caravans >= 1, "the annual pass must send at least one caravan");
+    assert.ok(atlas.caravans.some(route => route.to === buyer.id && route.category === need));
+    assert.ok(buyer.importCoverage.some(entry => entry.category === need));
+    assert.ok(donor.resources.find(row => BIOME_RESOURCE_BY_ID[row.id]?.category === need).stock < beforeStock,
+        "the donor stock must actually fall");
+    assert.ok(getBiomeRegionSnapshot(buyer.id).economy.importDependency <= beforeDependency);
+    assert.ok(atlas.trade.caravanSpend > 0);
+});
+
+test("1.2.19 save keeps tile deposits, refuges, import coverage and migration ledgers", () => {
+    const atlas = setup(9595);
+    const region = discoveredRegion(atlas);
+    region.discovered = true;
+    for (const row of region.resources) row.discovered = true;
+    for (const row of region.fauna) row.discovered = true;
+    const resource = region.resources[0];
+    const fauna = region.fauna[0];
+    region.importCoverage = [{ category: "wood", untilYear: 12 }];
+    region.caravanImports = 7;
+    region.protectedArea = true;
+    region.clearCut = 0.4;
+    region.erosion = 0.2;
+    atlas.lastSeasonKey = 123;
+    atlas.migration = [{ year: 4, season: 2, species: fauna.id, from: region.id, to: "biome-00", amount: 3 }];
+    atlas.caravans = [{ year: 4, from: "biome-00", to: region.id, category: "wood", resource: resource.id, amount: 4, price: 6 }];
+    const saved = serializeBiomeAtlasState();
+    const savedRegion = saved.regions.find(entry => entry.id === region.id);
+    assert.ok(savedRegion.resources[0].deposits.length >= 1);
+    assert.ok(savedRegion.fauna[0].refuges.length >= 1);
+    const restored = restoreBiomeAtlasState(saved);
+    const restoredRegion = restored.regions.find(entry => entry.id === region.id);
+    assert.deepEqual(restoredRegion.resources[0].deposits, savedRegion.resources[0].deposits);
+    assert.deepEqual(restoredRegion.fauna[0].refuges, savedRegion.fauna[0].refuges);
+    assert.deepEqual(restoredRegion.importCoverage, [{ category: "wood", untilYear: 12 }]);
+    assert.equal(restoredRegion.caravanImports, 7);
+    assert.equal(restoredRegion.protectedArea, true);
+    assert.equal(restored.lastSeasonKey, 123);
+    assert.equal(restored.migration[0].amount, 3);
+    assert.equal(restored.caravans[0].price, 6);
+
+    const oldSave = JSON.parse(JSON.stringify(saved));
+    const oldRegion = oldSave.regions.find(entry => entry.id === region.id);
+    delete oldRegion.protectedArea;
+    delete oldRegion.importCoverage;
+    delete oldRegion.caravanImports;
+    delete oldRegion.clearCut;
+    delete oldRegion.erosion;
+    delete oldRegion.resources[0].deposits;
+    delete oldRegion.resources[0].baseCapacity;
+    delete oldRegion.fauna[0].refuges;
+    delete oldSave.lastSeasonKey;
+    delete oldSave.migration;
+    delete oldSave.caravans;
+    const migrated = restoreBiomeAtlasState(oldSave).regions.find(entry => entry.id === region.id);
+    assert.ok(migrated.resources[0].deposits.length >= 1, "old saves receive deterministic tile deposits");
+    assert.ok(migrated.fauna[0].refuges.length >= 1, "old saves receive real refuge sites");
+    assert.deepEqual(migrated.importCoverage, []);
+    assert.equal(migrated.protectedArea, false);
 });

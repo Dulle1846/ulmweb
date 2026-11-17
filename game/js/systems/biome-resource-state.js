@@ -11,7 +11,7 @@ import { addLog } from "../core/event-log.js";
 import { addResource } from "./resources.js";
 import { classifyTerrain } from "../world/terrain-model.js";
 import {
-    BIOME_FOCUSES, BIOME_FOCUS_IDS, BIOME_POLICIES, BIOME_POLICY_IDS,
+    BIOME_DIET_CATEGORIES, BIOME_FOCUSES, BIOME_FOCUS_IDS, BIOME_POLICIES, BIOME_POLICY_IDS,
     BIOME_PROFILES, BIOME_REGION_GRID, BIOME_REGION_MAX, BIOME_RESOURCES,
     BIOME_RESOURCE_BY_ID, BIOME_RESOURCE_CATEGORIES, BIOME_RESOURCE_HISTORY_LIMIT, BIOME_RESOURCE_IDS,
     BIOME_RESOURCE_STORE_LIMIT, BIOME_RESOURCE_VERSION, BIOME_WILDLIFE,
@@ -129,6 +129,39 @@ function resourceCapacity(resource, region, seed, index) {
     return Math.round(base + 340 * rarity * (0.45 + ecological * 0.7) + unit(seed, index, stringHash(resource.id) ^ 0xcafe) * 70);
 }
 
+function depositSites(resource, region, index, seed) {
+    const count = resource.rare ? 1 : 2 + Math.floor(unit(seed, index, stringHash(resource.id) ^ 0x4445504f) * 2);
+    const deposits = [];
+    for (let site = 0; site < count; site++) {
+        const salt = stringHash(resource.id) ^ Math.imul(site + 1, 0x9e3779b1);
+        deposits.push({
+            x: region.x + 1 + Math.floor(unit(seed, index, salt ^ 0x5829) * Math.max(1, region.width - 2)),
+            y: region.y + 1 + Math.floor(unit(seed, index, salt ^ 0x5929) * Math.max(1, region.height - 2)),
+            weight: Math.round((0.4 + unit(seed, index, salt ^ 0x5a29) * 0.6) * 100) / 100
+        });
+    }
+    return deposits;
+}
+
+function refugeSitesFor(species, region, index, seed) {
+    const count = 1 + Math.floor(unit(seed, index, stringHash(species.id) ^ 0x52454655) * 3);
+    const kinds = species.role === "fish" ? ["spawn", "pool"]
+        : species.role === "predator" ? ["den", "lair"]
+        : species.role === "pollinator" ? ["hive", "hollow"]
+        : species.role === "scavenger" ? ["roost", "cliff"]
+        : ["burrow", "thicket", "ledge"];
+    const refuges = [];
+    for (let site = 0; site < count; site++) {
+        const salt = stringHash(species.id) ^ Math.imul(site + 1, 0x85ebca6b);
+        refuges.push({
+            x: region.x + 1 + Math.floor(unit(seed, index, salt ^ 0x5829) * Math.max(1, region.width - 2)),
+            y: region.y + 1 + Math.floor(unit(seed, index, salt ^ 0x5929) * Math.max(1, region.height - 2)),
+            kind: kinds[Math.floor(unit(seed, index, salt ^ 0x5b29) * kinds.length)]
+        });
+    }
+    return refuges;
+}
+
 function makeResourceRow(resource, region, index, seed, discovered) {
     const capacity = resourceCapacity(resource, region, seed, index);
     const stockShare = resource.renewable ? 0.62 : 0.72;
@@ -136,9 +169,11 @@ function makeResourceRow(resource, region, index, seed, discovered) {
     return {
         id: resource.id,
         stock: Math.round(capacity * (stockShare + unit(seed, index, stringHash(resource.id) ^ 0x53544f43) * 0.28)),
+        baseCapacity: capacity,
         capacity,
         quality: resourceQuality(resource, region, index, seed),
         stored,
+        deposits: depositSites(resource, region, index, seed),
         discovered: Boolean(discovered && !resource.surveyOnly),
         locallyExtinct: false,
         lastHarvestYear: 0
@@ -150,6 +185,7 @@ function makeFaunaRow(species, region, index, seed, discovered) {
     const habitat = species.role === "fish" ? profile.water : profile.vegetation;
     const waterFactor = species.water ? 0.58 + region.water * 0.42 : 1;
     const capacity = Math.max(3, Math.round(species.capacity * (0.38 + habitat * 0.78) * (0.72 + region.quality / 160) * waterFactor));
+    const refuges = refugeSitesFor(species, region, index, seed);
     return {
         id: species.id,
         population: Math.max(1, Math.round(capacity * (0.48 + unit(seed, index, stringHash(species.id)) * 0.38))),
@@ -159,7 +195,8 @@ function makeFaunaRow(species, region, index, seed, discovered) {
         breeding: species.breeding.includes(Number(state.seasonIndex) || 0),
         migrating: Boolean(species.migratory && !species.breeding.includes(Number(state.seasonIndex) || 0)),
         pressure: 0,
-        refugeSites: 1 + Math.floor(unit(seed, index, stringHash(species.id) ^ 0x52454655) * 3),
+        refugeSites: refuges.length,
+        refuges,
         discovered: Boolean(discovered && !species.surveyOnly)
     };
 }
@@ -348,9 +385,14 @@ function makeRegion(index, seed, context) {
         diseasePressure: 0,
         carcassLoad: 0,
         engineered: false,
+        protectedArea: false,
+        clearCut: 0,
+        erosion: 0,
         ecologyTrend: 0,
         extractionPressure: 0,
         productionCost: 1,
+        importCoverage: [],
+        caravanImports: 0,
         resources: [],
         fauna: [],
         crafted: {}
@@ -391,10 +433,13 @@ export function generateBiomeAtlas(seed, context) {
         grid: GRID,
         regions,
         history: [],
+        migration: [],
+        caravans: [],
         lastYear: Number(state.year) || 1,
         lastSeason: Number(state.seasonIndex) || 0,
+        lastSeasonKey: (Number(state.year) || 1) * 4 + (Number(state.seasonIndex) || 0),
         stats: { harvests: 0, hunts: 0, surveys: 0, crafts: 0, craftsSold: 0, rareSold: 0, goldFromTrade: 0, annualYields: 0, potentialYield: 0 },
-        trade: { gold: 0, lastYear: 0, imported: [], exported: [] }
+        trade: { gold: 0, lastYear: 0, imported: [], exported: [], caravanSpend: 0 }
     };
     state.biomeAtlas.stats.potentialYield = estimateBiomePotentialYield();
     return state.biomeAtlas;
@@ -459,10 +504,76 @@ function visibleCategories(region) {
     }
     return categories;
 }
+function importCoverageFor(region, category, year = Number(state.year) || 1) {
+    return (region?.importCoverage || []).find(entry => entry.category === category && entry.untilYear >= year) || null;
+}
 function importDependencyFor(region) {
     const categories = visibleCategories(region);
-    const missing = CORE_CATEGORIES.filter(category => !hasCoreCategory(categories, category)).length;
+    const year = Number(state.year) || 1;
+    const missing = CORE_CATEGORIES.filter(category => !hasCoreCategory(categories, category)
+        && !importCoverageFor(region, category, year)).length;
     return Math.round(missing / CORE_CATEGORIES.length * 100);
+}
+function caravanSourceRows(region, category) {
+    const wanted = category === "food" ? FOOD_CATEGORIES : [category];
+    return (region.resources || []).filter(row => {
+        const resource = BIOME_RESOURCE_BY_ID[row.id];
+        return row.discovered && !row.locallyExtinct && resource && wanted.includes(resource.category);
+    });
+}
+// One bounded caravan pass per year. A region with a missing core category
+// buys a real stock transfer from a surveyed neighbour; the donor stock falls,
+// the buyer pays gold and receives temporary import coverage. Coverage expires
+// next year, so the dependency remains a recurring economic relationship.
+function runBiomeCaravans(atlas, year) {
+    const routes = [];
+    let budget = Math.max(0, Number(state.resources.gold) || 0);
+    const discovered = atlas.regions.filter(region => region.discovered);
+    for (const region of discovered) {
+        region.importCoverage = Array.isArray(region.importCoverage) ? region.importCoverage : [];
+        region.importCoverage = region.importCoverage.filter(entry => entry.untilYear >= year);
+        const categories = visibleCategories(region);
+        const needs = CORE_CATEGORIES.filter(category => !hasCoreCategory(categories, category)
+            && !importCoverageFor(region, category, year)).slice(0, 2);
+        for (const need of needs) {
+            let best = null;
+            for (const donor of discovered) {
+                if (donor === region) continue;
+                const rows = caravanSourceRows(donor, need).filter(row => row.stock > Math.max(4, row.capacity * 0.2));
+                if (!rows.length) continue;
+                const row = rows.sort((a, b) => b.stock - a.stock)[0];
+                const amount = Math.min(8, Math.floor(row.stock * 0.12));
+                if (amount < 1) continue;
+                const resource = BIOME_RESOURCE_BY_ID[row.id];
+                const price = Math.max(1, Math.round(amount * Math.max(0.8, resource.tradeValue * 0.7)));
+                if (!best || price < best.price) best = { donor, row, amount, price, resource };
+            }
+            if (!best || best.price > budget) continue;
+            budget -= best.price;
+            addResource("gold", -best.price);
+            best.row.stock = Math.max(0, best.row.stock - best.amount);
+            region.importCoverage.push({ category: need, untilYear: year + 1 });
+            region.caravanImports = Math.round((Number(region.caravanImports) || 0) + best.amount);
+            const route = {
+                year, from: best.donor.id, to: region.id, category: need,
+                resource: best.resource.id, amount: best.amount, price: best.price
+            };
+            routes.push(route);
+            addHistory(atlas, {
+                regionId: region.id, kind: "caravan",
+                text: best.amount + " " + best.resource.label + " arrived in " + region.name
+                    + " from " + best.donor.name + " by caravan for " + best.price + " gold."
+            });
+        }
+        region.productionCost = productionCostFor(region);
+    }
+    atlas.caravans = [...(atlas.caravans || []), ...routes].slice(-24);
+    if (routes.length) {
+        atlas.trade.imported = [...new Set([...(atlas.trade.imported || []), ...routes.map(route => route.category)])].slice(-12);
+        atlas.trade.caravanSpend = Math.round((Number(atlas.trade.caravanSpend) || 0) + routes.reduce((sum, route) => sum + route.price, 0));
+        atlas.trade.lastYear = year;
+    }
+    return { routes: routes.length, gold: routes.reduce((sum, route) => sum + route.price, 0) };
 }
 function supplyBonusFor(region) {
     const quality = Number(region?.quality) || 50;
@@ -472,8 +583,9 @@ function productionCostFor(region) {
     const policy = policyFor(region);
     const importPenalty = 1 + importDependencyFor(region) / 100 * 0.22;
     const pressure = 1 + clamp(Number(region?.extractionPressure) || 0, 0, 1) * 0.08;
+    const sanitation = 1 + clamp(Number(region?.diseasePressure) || 0, 0, 1) * 0.12;
     return clamp(Math.round(policy.cost * (1.08 - (Number(region?.quality) || 50) / 900)
-        * importPenalty * pressure * 100) / 100, 0.5, 3);
+        * importPenalty * pressure * sanitation * 100) / 100, 0.5, 3);
 }
 function focusCategories(region) {
     return new Set(focusFor(region).resourceCategories || []);
@@ -500,6 +612,61 @@ function actionGoldCost(region, categories, base = 2) {
 }
 function speciesCategories(species) {
     return [...new Set((species?.products || []).map(id => BIOME_RESOURCE_BY_ID[id]?.category).filter(Boolean))];
+}
+function dietCategories(species) {
+    const categories = new Set();
+    for (const token of species?.diet || []) {
+        for (const category of BIOME_DIET_CATEGORIES[token] || []) categories.add(category);
+    }
+    return [...categories];
+}
+function forageRows(region, species) {
+    const categories = new Set(dietCategories(species));
+    if (!categories.size) return [];
+    return region.resources.filter(row => {
+        const definition = BIOME_RESOURCE_BY_ID[row.id];
+        return definition && !definition.fauna && categories.has(definition.category)
+            && !row.locallyExtinct && row.stock > 0;
+    });
+}
+function forageRatio(region, species) {
+    const rows = forageRows(region, species);
+    if (!rows.length) return clamp(Number(region?.vegetation) || 0.4, 0, 1);
+    const capacity = rows.reduce((sum, row) => sum + Math.max(1, row.capacity), 0);
+    return clamp(rows.reduce((sum, row) => sum + row.stock, 0) / capacity, 0, 1);
+}
+function seasonalStockFactor(resource, season = state.seasonIndex) {
+    const index = clamp(Math.floor(Number(season) || 0), 0, 3);
+    if (!resource?.renewable) return 1;
+    if (resource.kind === "fish") return [0.86, 1.04, 1.1, 0.9][index];
+    if (resource.kind === "wood") return [0.94, 1, 1.04, 0.96][index];
+    if (["fruit", "fungus", "herb", "spice", "dye"].includes(resource.category)) {
+        return [0.74, 0.98, 1.12, 0.9][index];
+    }
+    return [0.9, 1.04, 1.06, 0.9][index];
+}
+function effectiveStock(row, resource, season = state.seasonIndex) {
+    return Math.max(0, row.stock * seasonalStockFactor(resource, season));
+}
+function diseasePenalty(region) {
+    return clamp(1 - (Number(region?.diseasePressure) || 0) * 0.18, 0.82, 1);
+}
+function refugeProtection(row) {
+    return clamp(1 - (Number(row?.refugeSites) || 0) * 0.1, 0.55, 1);
+}
+function regionNeighbors(index) {
+    const column = index % GRID, row = Math.floor(index / GRID);
+    const neighbors = [];
+    if (column > 0) neighbors.push(index - 1);
+    if (column < GRID - 1) neighbors.push(index + 1);
+    if (row > 0) neighbors.push(index - GRID);
+    if (row < GRID - 1) neighbors.push(index + GRID);
+    return neighbors;
+}
+function habitatScore(region, species) {
+    const water = species.role === "fish" ? region.water : region.vegetation;
+    return region.quality / 100 * 0.3 + water * 0.3 + forageRatio(region, species) * 0.3
+        + (region.protectedArea ? 0.08 : 0) + Math.min(3, region.fauna.filter(row => row.id === species.id).length) * 0.01;
 }
 
 
@@ -627,13 +794,18 @@ export function harvestBiomeResource(regionId, resourceId) {
     // Degraded vegetation and a negative ecological trend reduce the usable
     // share of a harvest. This is the link from long-term damage to real yield.
     const habitatFactor = clamp(0.55 + region.vegetation * 0.38 + region.ecologyTrend * 0.2, 0.35, 1.1);
-    const amount = clamp(Math.round((5 + row.stock * 0.035) * policy.yield * qualityFactor * habitatFactor
-        * focusYieldFactor(region, resource) * supplyYieldFactor(region)), 1, 26);
-    const taken = Math.min(amount, Math.ceil(row.stock));
+    const available = effectiveStock(row, resource);
+    const amount = clamp(Math.round((5 + available * 0.035) * policy.yield * qualityFactor * habitatFactor
+        * focusYieldFactor(region, resource) * supplyYieldFactor(region) * diseasePenalty(region)), 1, 26);
+    const taken = Math.min(amount, Math.ceil(available));
     row.stock = Math.max(0, row.stock - taken);
     row.lastHarvestYear = Number(state.year) || 1;
     region.extractionPressure = clamp(region.extractionPressure + policy.pressure * 0.08, 0, 1);
     region.vegetation = clamp(region.vegetation - (resource.kind === "wood" ? taken * 0.0017 : taken * 0.0004), 0, 1);
+    if (resource.kind === "wood") {
+        region.clearCut = clamp(region.clearCut + taken * 0.0018, 0, 1);
+        region.erosion = clamp(region.erosion + region.clearCut * 0.006 * policy.pressure, 0, 1);
+    }
     if (row.stock <= 0) {
         row.locallyExtinct = Boolean(resource.rare);
         addHistory(atlas, {
@@ -655,6 +827,8 @@ export function harvestBiomeResource(regionId, resourceId) {
         ok: true,
         message: "HARVESTED " + taken + " " + resource.label.toUpperCase() + (ledger ? "" : " · STORED FOR TRADE") + " · " + actionCost + "G",
         amount: taken, ledger, stored, region: region.id, resource: resource.id, cost: actionCost,
+        seasonalStock: Math.round(available), clearCut: Math.round(region.clearCut * 100) / 100,
+        diseasePressure: Math.round(region.diseasePressure * 100) / 100,
         focusMatch: focusMatchesCategories(region, [resource.category]), supplyBonus: supplyBonusFor(region)
     };
 }
@@ -667,20 +841,23 @@ export function huntBiomeSpecies(regionId, speciesId) {
     if (!atlas || !region || !row || !species) return { ok: false, reason: "unknown-species" };
     if (!region.discovered || !row.discovered) return { ok: false, reason: "species-not-discovered" };
     if (row.population <= 0) return { ok: false, reason: "no-population" };
+    if (region.protectedArea) return { ok: false, reason: "protected-area" };
     const categories = speciesCategories(species);
     const cost = actionGoldCost(region, categories, species.rare || species.fantastic ? 14 : 4);
     if ((Number(state.resources.gold) || 0) < cost) return { ok: false, reason: "not-enough-gold" };
     addResource("gold", -cost);
     const policy = policyFor(region);
     const focusYield = focusMatchesCategories(region, categories) ? 1.15 : 0.87;
-    const quota = species.rare || species.endangered ? 1 : Math.max(1, Math.round(row.population * 0.07 * policy.yield * focusYield));
+    const protection = refugeProtection(row);
+    const quota = species.rare || species.endangered ? 1
+        : Math.max(1, Math.round(row.population * 0.07 * policy.yield * focusYield * protection));
     const taken = Math.min(row.population, quota);
     row.population = Math.max(0, row.population - taken);
-    row.pressure = clamp(row.pressure + 0.18 * policy.pressure, 0, 2);
+    row.pressure = clamp(row.pressure + 0.18 * policy.pressure * protection, 0, 2);
     region.carcassLoad = clamp(region.carcassLoad + taken * 0.035, 0, 1);
     region.extractionPressure = clamp(region.extractionPressure + 0.045 * policy.pressure, 0, 1);
     atlas.stats.hunts += 1;
-    const food = Math.max(1, Math.round(taken * (species.role === "predator" ? 5 : 3)));
+    const food = Math.max(1, Math.round(taken * (species.role === "predator" ? 5 : 3) * diseasePenalty(region)));
     addResource("food", food);
     let rareStored = 0;
     for (const productId of species.products) {
@@ -700,6 +877,7 @@ export function huntBiomeSpecies(regionId, speciesId) {
         ok: true,
         message: "HUNTED " + taken + " " + species.label.toUpperCase() + " · +" + food + " FOOD" + (rareStored ? " · +" + rareStored + " GOODS" : ""),
         amount: taken, food, stored: rareStored, region: region.id, species: species.id, cost,
+        refugeSites: row.refugeSites, protection: Math.round(protection * 100) / 100,
         focusMatch: focusMatchesCategories(region, categories), supplyBonus: supplyBonusFor(region)
     };
 }
@@ -719,6 +897,10 @@ export function restoreBiomeRegion(regionId) {
     region.water = clamp(region.water + 0.05, 0, 1);
     region.extractionPressure = clamp(region.extractionPressure * 0.35, 0, 1);
     region.carcassLoad = clamp(region.carcassLoad * 0.5, 0, 1);
+    region.diseasePressure = clamp(region.diseasePressure * 0.55, 0, 1);
+    region.clearCut = clamp(region.clearCut * 0.55, 0, 1);
+    region.erosion = clamp(region.erosion * 0.6, 0, 1);
+    region.protectedArea = true;
     for (const row of region.resources) {
         if (row.locallyExtinct) {
             row.locallyExtinct = false;
@@ -744,7 +926,7 @@ export function sellBiomeGoods(regionId, resourceId) {
     if (!atlas || !region || !row || !resource) return { ok: false, reason: "unknown-resource" };
     const stored = Math.floor(Number(row.stored) || 0);
     if (stored <= 0) return { ok: false, reason: "nothing-stored" };
-    const stockShare = clamp(row.stock / Math.max(1, row.capacity), 0, 1);
+    const stockShare = clamp(effectiveStock(row, resource) / Math.max(1, row.capacity), 0, 1);
     const scarcity = 1 + (1 - stockShare) * 0.32;
     const surplus = 1 - Math.max(0, stockShare - 0.55) * 0.35;
     const focusPremium = focusMatchesCategories(region, [resource.category]) ? 1.1 : 0.95;
@@ -861,6 +1043,62 @@ export function sellBiomeCraft(regionId, recipeId) {
     };
 }
 
+// Active reintroduction: a depleted species can be brought back only from a
+// real surviving population in another surveyed region. It costs gold, adds a
+// concrete released cohort and immediately changes the local food web.
+export function reintroduceBiomeSpecies(regionId, speciesId) {
+    const atlas = ensureBiomeAtlas();
+    const region = regionById(regionId);
+    if (!atlas || !region) return { ok: false, reason: "unknown-region" };
+    if (!region.discovered) return { ok: false, reason: "region-not-explored" };
+    const species = BIOME_WILDLIFE_BY_ID[speciesId];
+    if (!species || !species.biomes.includes(region.rawBiome)) return { ok: false, reason: "unsuitable-habitat" };
+    const current = region.fauna.find(row => row.id === species.id);
+    if (current?.population > 0) return { ok: false, reason: "already-present" };
+    const source = atlas.regions.find(other => other !== region
+        && other.fauna.some(row => row.id === species.id && row.population > Math.max(3, row.capacity * 0.12)));
+    if (!source) return { ok: false, reason: "no-source-population" };
+    const cost = 20;
+    if ((Number(state.resources.gold) || 0) < cost) return { ok: false, reason: "not-enough-gold", cost };
+    addResource("gold", -cost);
+    let row = current;
+    if (!row) {
+        const sourceRow = source.fauna.find(entry => entry.id === species.id);
+        const capacity = Math.max(4, Math.round(sourceRow.capacity * (0.55 + region.quality / 240)));
+        row = {
+            id: species.id, population: 0, baseCapacity: capacity, capacity,
+            health: 55, breeding: species.breeding.includes(Number(state.seasonIndex) || 0),
+            migrating: false, pressure: 0, refugeSites: 0, refuges: [], discovered: true
+        };
+        row.refuges = refugeSitesFor(species, region, region.index, atlas.seed);
+        row.refugeSites = row.refuges.length;
+        region.fauna.push(row);
+        region.fauna = region.fauna.slice(0, 12);
+    }
+    row.population = Math.max(2, Math.round(row.capacity * 0.12));
+    row.health = Math.max(50, Math.round(row.health));
+    row.discovered = true;
+    region.fauna = region.fauna.slice(0, 12);
+    addHistory(atlas, {
+        regionId: region.id, kind: "reintroduction",
+        text: species.label + " was reintroduced to " + region.name + " from " + source.name + "."
+    });
+    return { ok: true, species: species.id, population: row.population, cost };
+}
+
+export function setBiomeProtection(regionId, protectedArea = true) {
+    const region = regionById(regionId);
+    if (!region) return { ok: false, reason: "unknown-region" };
+    if (!region.discovered) return { ok: false, reason: "region-not-explored" };
+    region.protectedArea = Boolean(protectedArea);
+    addHistory(ensureBiomeAtlas(), {
+        regionId: region.id, kind: "protection",
+        text: region.name + (region.protectedArea ? " was declared a protected habitat." : " lost its protected-habitat status.")
+    });
+    return { ok: true, protectedArea: region.protectedArea,
+        message: (region.protectedArea ? "PROTECTED HABITAT · " : "PROTECTION LIFTED · ") + region.name };
+}
+
 function ecologyHealth(region) {
     const vegetation = clamp(region.vegetation, 0, 1);
     const soil = clamp(region.soilHealth, 0, 1);
@@ -887,6 +1125,12 @@ function regionEconomy(region) {
         productionCost: productionCostFor(region),
         supplyBonus,
         importDependency: importDependencyFor(region),
+        importCoverage: (region.importCoverage || []).map(entry => entry.category),
+        caravanImports: Math.round(Number(region.caravanImports) || 0),
+        diseasePressure: Math.round((Number(region.diseasePressure) || 0) * 100),
+        protectedArea: Boolean(region.protectedArea),
+        clearCut: Math.round((Number(region.clearCut) || 0) * 100),
+        erosion: Math.round((Number(region.erosion) || 0) * 100),
         focusMatchCount: visible.filter(row => focusMatchesCategories(region, [BIOME_RESOURCE_BY_ID[row.id].category])).length,
         health: ecologyHealth(region),
         focusLabel: focusFor(region).label
@@ -903,8 +1147,11 @@ function snapshotResource(row, region) {
         category: resource.category,
         categoryLabel: BIOME_RESOURCE_CATEGORIES[resource.category] || resource.category,
         kind: resource.kind,
-        stock: Math.round(row.stock),
+        stock: Math.round(effectiveStock(row, resource)),
+        baseStock: Math.round(row.stock),
+        seasonalStock: Math.round((seasonalStockFactor(resource) - 1) * 100),
         capacity: Math.round(row.capacity),
+        deposits: (row.deposits || []).map(site => ({ x: site.x, y: site.y, weight: site.weight })),
         quality: Math.round(row.quality),
         stored: Math.round(row.stored || 0),
         discovered: Boolean(row.discovered),
@@ -937,6 +1184,9 @@ function snapshotFauna(row, region) {
         migrating: Boolean(row.migrating),
         pressure: Math.round(row.pressure * 100) / 100,
         refugeSites: row.refugeSites,
+        refuges: (row.refuges || []).map(site => ({ x: site.x, y: site.y, kind: site.kind })),
+        diet: dietCategories(species),
+        forage: Math.round(forageRatio(region, species) * 100) / 100,
         discovered: Boolean(row.discovered),
         rare: Boolean(species.rare),
         fantastic: Boolean(species.fantastic),
@@ -1004,7 +1254,12 @@ export function getBiomeRegionSnapshot(regionId) {
         pressure: Math.round(region.extractionPressure * 100),
         diseasePressure: Math.round(region.diseasePressure * 100),
         carcassLoad: Math.round(region.carcassLoad * 100),
+        clearCut: Math.round(region.clearCut * 100),
+        erosion: Math.round(region.erosion * 100),
+        protectedArea: Boolean(region.protectedArea),
         engineered: Boolean(region.engineered),
+        importCoverage: (region.importCoverage || []).map(entry => ({ category: entry.category, untilYear: entry.untilYear })),
+        caravanImports: Math.round(Number(region.caravanImports) || 0),
         ecologyTrend: Math.round(region.ecologyTrend * 1000) / 10,
         productionLabel: profile.productionLabel,
         crafts: [...profile.crafts],
@@ -1061,6 +1316,8 @@ export function getBiomeAtlasSnapshot() {
         speciesKnown: speciesKnown.size,
         rareSpecies,
         history: [...(atlas.history || [])].reverse().slice(0, 12),
+        migration: [...(atlas.migration || [])].slice(-8),
+        caravans: [...(atlas.caravans || [])].slice(-8),
         stats: { ...atlas.stats },
         trade: { ...atlas.trade },
         imports,
@@ -1108,12 +1365,110 @@ export function getBiomeOverlayCells() {
     return atlas.regions.filter(region => region.discovered).map(region => {
         const profile = BIOME_PROFILES[region.rawBiome] || BIOME_PROFILES.meadow;
         const rare = region.resources.filter(row => row.discovered && row.rare).slice(0, 3).map(row => row.id);
+        const markers = [];
+        for (const row of region.resources) {
+            if (!row.discovered || row.locallyExtinct) continue;
+            const resource = BIOME_RESOURCE_BY_ID[row.id];
+            if (!resource) continue;
+            for (const site of (row.deposits || []).slice(0, 3)) {
+                markers.push({ x: site.x, y: site.y, category: resource.category, rare: Boolean(resource.rare) });
+            }
+        }
+        const refuges = [];
+        for (const row of region.fauna) {
+            if (!row.discovered || row.population <= 0) continue;
+            for (const site of (row.refuges || []).slice(0, 3)) {
+                refuges.push({ x: site.x, y: site.y, kind: site.kind, endangered: Boolean(BIOME_WILDLIFE_BY_ID[row.id]?.rare && row.population < row.capacity * 0.32) });
+            }
+        }
         return {
             id: region.id, x: region.x, y: region.y, width: region.width, height: region.height,
             color: profile.color, label: profile.short, rare, quality: region.quality,
-            health: ecologyHealth(region), rareCount: rare.length
+            health: ecologyHealth(region), rareCount: rare.length, markers, refuges,
+            protectedArea: Boolean(region.protectedArea)
         };
     });
+}
+
+// Seasonal change is a bounded pass over the 36-region atlas: stocks move
+// toward a season-specific carrying level and a small share of migratory
+// wildlife crosses into a better neighbouring region. Routes are recorded so
+// the movement is visible in the atlas history instead of a hidden status bit.
+export function updateBiomeAtlasSeason() {
+    const atlas = ensureBiomeAtlas();
+    if (!atlas) return { updated: false, reason: "atlas-missing" };
+    const season = clamp(Math.floor(Number(state.seasonIndex) || 0), 0, 3);
+    const key = (Number(state.year) || 1) * 4 + season;
+    if (atlas.lastSeasonKey === key) return { updated: false, reason: "already-settled", season };
+    atlas.lastSeasonKey = key;
+    atlas.lastSeason = season;
+    let moved = 0;
+    const routes = [];
+    for (const region of atlas.regions) {
+        if (!region.discovered) continue;
+        for (const row of region.resources) {
+            const resource = BIOME_RESOURCE_BY_ID[row.id];
+            if (!resource?.renewable || row.locallyExtinct) continue;
+            const target = row.capacity * clamp(seasonalStockFactor(resource, season), 0.55, 1.1);
+            row.stock = clamp(row.stock + (target - row.stock) * 0.04, 0, row.capacity);
+        }
+        for (const row of region.fauna) {
+            const species = BIOME_WILDLIFE_BY_ID[row.id];
+            if (!species?.migratory || row.population < 3) continue;
+            if (species.breeding.includes(season)) {
+                // The breeding season reverses the most recent inbound route:
+                // a share of the visiting herd returns to its home region.
+                const previous = [...(atlas.migration || [])].reverse().find(route =>
+                    route.species === species.id && route.to === region.id && route.season !== season);
+                if (!previous) continue;
+                const home = atlas.regions.find(entry => entry.id === previous.from);
+                const homeRow = home?.fauna.find(entry => entry.id === species.id);
+                if (!home || !home.discovered || !homeRow) continue;
+                const amount = Math.min(row.population, Math.max(1,
+                    Math.min(previous.amount, Math.round(row.population * 0.06))));
+                row.population = Math.max(0, row.population - amount);
+                homeRow.population = Math.min(homeRow.capacity * 1.25, homeRow.population + amount);
+                row.migrating = false;
+                homeRow.migrating = false;
+                moved += amount;
+                routes.push({
+                    year: Number(state.year) || 1, season, species: species.id,
+                    from: region.id, to: home.id, amount, returning: true
+                });
+                addHistory(atlas, {
+                    regionId: region.id, kind: "migration",
+                    text: species.label + " returned from " + region.name + " to " + home.name + " (" + amount + ")."
+                });
+                continue;
+            }
+            const sourceScore = habitatScore(region, species);
+            let best = null;
+            for (const neighborIndex of regionNeighbors(region.index)) {
+                const targetRegion = atlas.regions[neighborIndex];
+                const targetRow = targetRegion?.fauna.find(entry => entry.id === species.id);
+                if (!targetRow || targetRow.population <= 0) continue;
+                const score = habitatScore(targetRegion, species);
+                if (score > sourceScore + 0.02 && (!best || score > best.score)) best = { region: targetRegion, row: targetRow, score };
+            }
+            if (!best) continue;
+            const amount = Math.max(1, Math.round(row.population * 0.06));
+            row.population = Math.max(0, row.population - amount);
+            best.row.population = Math.min(best.row.capacity * 1.25, best.row.population + amount);
+            row.migrating = true;
+            best.row.migrating = false;
+            moved += amount;
+            routes.push({
+                year: Number(state.year) || 1, season, species: species.id,
+                from: region.id, to: best.region.id, amount
+            });
+            addHistory(atlas, {
+                regionId: region.id, kind: "migration",
+                text: species.label + " moved from " + region.name + " to " + best.region.name + " (" + amount + ")."
+            });
+        }
+    }
+    atlas.migration = [...(atlas.migration || []), ...routes].slice(-24);
+    return { updated: true, season, moved, routes: routes.length };
 }
 
 export function updateBiomeAtlasAnnual() {
@@ -1152,19 +1507,28 @@ export function updateBiomeAtlasAnnual() {
         const pressure = policy.pressure * (0.45 + region.extractionPressure);
         // Vegetation: regrowth, browsing, pollination and pests are one balance.
         const vegetationDelta = 0.018 * (0.6 + region.water) * (1 + pollinatorService * 0.35)
-            - grazerPressure * 0.0042 - pestPressure * 0.0055 - region.extractionPressure * 0.022;
+            - grazerPressure * 0.0042 - pestPressure * 0.0055 - region.extractionPressure * 0.022
+            - region.erosion * 0.018;
         region.vegetation = clamp(region.vegetation + vegetationDelta, 0.005, 1);
         region.soilHealth = clamp(region.soilHealth
             + 0.012 * (1 + soilService) * (0.4 + region.vegetation)
-            - region.extractionPressure * 0.018 + engineerService * 0.008, 0.02, 1);
+            - region.extractionPressure * 0.018 - region.erosion * 0.022 + engineerService * 0.008, 0.02, 1);
         region.water = clamp(region.water + engineerService * 0.016 - region.extractionPressure * 0.006, 0.02, 1);
-        region.diseasePressure = clamp(region.diseasePressure + region.carcassLoad * 0.06 - scavengerService * 0.08, 0, 1);
+        region.diseasePressure = clamp(region.diseasePressure + region.carcassLoad * 0.06
+            - scavengerService * (region.protectedArea ? 0.1 : 0.08) + region.clearCut * 0.006, 0, 1);
         region.carcassLoad = clamp(region.carcassLoad * 0.45, 0, 1);
+        region.clearCut = clamp(region.clearCut - 0.004 - (region.protectedArea ? 0.004 : 0) - region.vegetation * 0.002, 0, 1);
+        region.erosion = clamp(region.erosion + region.clearCut * 0.008 - region.vegetation * 0.004
+            - (region.protectedArea ? 0.003 : 0), 0, 1);
         region.engineered = Boolean(engineerService > 0.18);
         for (const row of region.resources) {
             const resource = BIOME_RESOURCE_BY_ID[row.id];
             if (!resource) continue;
             const seasonal = seasonFactor(resource, season);
+            if (resource.kind === "wood") {
+                const base = Math.max(12, Number(row.baseCapacity) || row.capacity);
+                row.capacity = Math.max(12, Math.round(base * (1 - region.clearCut * 0.35)));
+            }
             if (resource.renewable) {
                 const ecosystem = 0.4 + region.vegetation * 0.45 + region.soilHealth * 0.25 + pollinatorService * 0.16;
                 const regen = resource.regen * (resource.kind === "fish" ? region.water : ecosystem) * policy.regen
@@ -1172,6 +1536,20 @@ export function updateBiomeAtlasAnnual() {
                 if (!row.locallyExtinct) row.stock = Math.min(row.capacity, row.stock + row.capacity * regen);
             }
         }
+        // Herbivores eat named local plant stocks, not an abstract vegetation
+        // number. Demand is distributed by available stock and bounded so a
+        // large herd cannot clear an entire region in one annual tick.
+        const browseDemand = new Map();
+        for (const grazer of herbivores) {
+            const species = BIOME_WILDLIFE_BY_ID[grazer.id];
+            if (!species) continue;
+            const rows = forageRows(region, species);
+            const mass = rows.reduce((sum, row) => sum + row.stock, 0);
+            if (mass <= 0) continue;
+            const demand = Math.min(region.vegetation * 8, grazer.population * 0.012 * policy.pressure);
+            for (const row of rows) browseDemand.set(row, (browseDemand.get(row) || 0) + demand * row.stock / mass);
+        }
+        for (const [row, demand] of browseDemand) row.stock = Math.max(0, row.stock - demand);
         // The annual pass reports productive capacity; it does not put free
         // goods into the royal ledger. The player harvests through a real
         // action, so regional ecology never silently perturbs the established
@@ -1201,7 +1579,8 @@ export function updateBiomeAtlasAnnual() {
             } else if (species.role === "fish") {
                 capacity = Math.round(capacity * (0.35 + region.water * 0.75) * (0.52 + fishStockRatio * 0.58));
             } else if (species.role === "herbivore" || species.role === "omnivore") {
-                capacity = Math.round(capacity * (0.35 + region.vegetation * 0.72)
+                const forage = forageRatio(region, species);
+                capacity = Math.round(capacity * (0.28 + region.vegetation * 0.5 + forage * 0.32)
                     * (species.water ? 0.7 + region.water * 0.3 : 1));
             } else if (species.role === "scavenger") {
                 capacity = Math.round(capacity * (0.4 + region.carcassLoad * 0.5 + 0.2));
@@ -1213,12 +1592,16 @@ export function updateBiomeAtlasAnnual() {
             row.breeding = breeding;
             row.migrating = Boolean(species.migratory && !breeding);
             const density = row.population / Math.max(1, row.capacity);
+            const forage = forageRatio(region, species);
             const recruitment = row.capacity * species.reproduction * (breeding ? 1.25 : 0.35)
-                * (1 - density) * migration * (1 + region.vegetation * 0.24);
+                * (1 - density) * migration * (1 + region.vegetation * 0.24)
+                * (0.62 + forage * 0.46) * (1 - region.diseasePressure * 0.28);
             const huntingLoss = row.population * row.pressure * 0.32;
             const habitatLoss = density > 1 ? (density - 1) * row.capacity * 0.35 : 0;
-            row.population = clamp(row.population + recruitment - huntingLoss - habitatLoss, 0, row.capacity * 1.25);
-            row.health = clamp(row.health + (region.vegetation - 0.5) * 3 - row.pressure * 2 + (row.refugeSites ? 0.3 : 0), 5, 100);
+            const diseaseLoss = row.population * region.diseasePressure * 0.045;
+            row.population = clamp(row.population + recruitment - huntingLoss - habitatLoss - diseaseLoss, 0, row.capacity * 1.25);
+            row.health = clamp(row.health + (region.vegetation - 0.5) * 3 - row.pressure * 2
+                - region.diseasePressure * 4 + (row.refugeSites ? 0.3 : 0), 5, 100);
             row.pressure = clamp(row.pressure * 0.62, 0, 2);
             if (row.population <= 0.4) {
                 row.population = 0;
@@ -1252,6 +1635,9 @@ export function updateBiomeAtlasAnnual() {
         region.ecologyTrend = clamp((region.vegetation - 0.5) * 0.6 + (region.soilHealth - 0.5) * 0.4 - region.extractionPressure * 0.4, -1, 1);
         region.productionCost = productionCostFor(region);
     }
+    const caravans = runBiomeCaravans(atlas, year);
+    stats.caravans = caravans.routes;
+    stats.caravanGold = caravans.gold;
     regionEcologyHistory(atlas, stats, year);
     return { updated: true, year, ...stats };
 }
@@ -1277,9 +1663,11 @@ function serializeResourceRow(row) {
     return {
         id: row.id,
         stock: Math.round(row.stock),
+        baseCapacity: Math.round(row.baseCapacity || row.capacity),
         capacity: Math.round(row.capacity),
         quality: Math.round(row.quality),
         stored: Math.round(row.stored),
+        deposits: Array.isArray(row.deposits) ? row.deposits.map(site => ({ x: site.x, y: site.y, weight: site.weight })) : [],
         discovered: Boolean(row.discovered),
         locallyExtinct: Boolean(row.locallyExtinct),
         lastHarvestYear: Math.round(row.lastHarvestYear)
@@ -1297,6 +1685,7 @@ function serializeFaunaRow(row) {
         migrating: Boolean(row.migrating),
         pressure: Math.round(row.pressure * 1000) / 1000,
         refugeSites: Math.round(row.refugeSites),
+        refuges: Array.isArray(row.refuges) ? row.refuges.map(site => ({ x: site.x, y: site.y, kind: site.kind })) : [],
         discovered: Boolean(row.discovered)
     };
 }
@@ -1309,6 +1698,9 @@ export function serializeBiomeAtlasState() {
         seed: atlas.seed,
         lastYear: atlas.lastYear,
         lastSeason: atlas.lastSeason,
+        lastSeasonKey: atlas.lastSeasonKey,
+        migration: (atlas.migration || []).slice(-24).map(route => ({ ...route })),
+        caravans: (atlas.caravans || []).slice(-24).map(route => ({ ...route })),
         stats: { ...atlas.stats },
         trade: { ...atlas.trade },
         history: (atlas.history || []).slice(-BIOME_RESOURCE_HISTORY_LIMIT).map(entry => ({ ...entry })),
@@ -1323,7 +1715,12 @@ export function serializeBiomeAtlasState() {
             water: Math.round(region.water * 1000) / 1000,
             diseasePressure: Math.round(region.diseasePressure * 1000) / 1000,
             carcassLoad: Math.round(region.carcassLoad * 1000) / 1000,
+            protectedArea: Boolean(region.protectedArea),
+            clearCut: Math.round(region.clearCut * 1000) / 1000,
+            erosion: Math.round(region.erosion * 1000) / 1000,
             engineered: Boolean(region.engineered),
+            importCoverage: (region.importCoverage || []).map(entry => ({ category: entry.category, untilYear: entry.untilYear })),
+            caravanImports: Math.round(Number(region.caravanImports) || 0),
             ecologyTrend: Math.round(region.ecologyTrend * 1000) / 1000,
             extractionPressure: Math.round(region.extractionPressure * 1000) / 1000,
             productionCost: Math.round(region.productionCost * 100) / 100,
@@ -1342,6 +1739,15 @@ export function validateBiomeAtlasSnapshot(snapshot) {
     if (!Array.isArray(snapshot.regions) || snapshot.regions.length > MAX_REGIONS) {
         throw new Error("Save data contains an invalid biome region list.");
     }
+    if (snapshot.migration !== undefined && (!Array.isArray(snapshot.migration) || snapshot.migration.length > 24)) {
+        throw new Error("Save data contains an invalid biome migration ledger.");
+    }
+    if (snapshot.caravans !== undefined && (!Array.isArray(snapshot.caravans) || snapshot.caravans.length > 24)) {
+        throw new Error("Save data contains an invalid biome caravan ledger.");
+    }
+    if (snapshot.lastSeasonKey !== undefined && (!Number.isFinite(Number(snapshot.lastSeasonKey)) || Number(snapshot.lastSeasonKey) < 0)) {
+        throw new Error("Save data contains an invalid biome season key.");
+    }
     const seen = new Set();
     for (const region of snapshot.regions) {
         if (!region || typeof region !== "object" || Array.isArray(region)) {
@@ -1354,6 +1760,12 @@ export function validateBiomeAtlasSnapshot(snapshot) {
         if (!BIOME_FOCUS_IDS.includes(String(region.focus))) throw new Error("Save data contains an invalid biome focus.");
         if (!Array.isArray(region.resources) || region.resources.length > 24) throw new Error("Save data contains an invalid biome resource list.");
         if (!Array.isArray(region.fauna) || region.fauna.length > 12) throw new Error("Save data contains an invalid biome wildlife list.");
+        if (region.protectedArea !== undefined && typeof region.protectedArea !== "boolean") throw new Error("Save data contains an invalid protected-area flag.");
+        for (const field of ["clearCut", "erosion"]) {
+            if (region[field] !== undefined && (!Number.isFinite(Number(region[field])) || Number(region[field]) < 0 || Number(region[field]) > 1)) {
+                throw new Error("Save data contains an invalid biome landscape field.");
+            }
+        }
         if (region.crafted !== undefined) {
             if (!region.crafted || typeof region.crafted !== "object" || Array.isArray(region.crafted)) {
                 throw new Error("Save data contains an invalid biome crafted-goods store.");
@@ -1373,6 +1785,15 @@ export function validateBiomeAtlasSnapshot(snapshot) {
                 || !Number.isFinite(Number(row.stored)) || Number(row.stored) < 0 || Number(row.stored) > BIOME_RESOURCE_STORE_LIMIT) {
                 throw new Error("Save data contains an invalid biome resource row.");
             }
+            if (row.baseCapacity !== undefined && (!Number.isFinite(Number(row.baseCapacity))
+                || Number(row.baseCapacity) < 1 || Number(row.baseCapacity) > 1000000)) {
+                throw new Error("Save data contains an invalid biome resource capacity.");
+            }
+            if (row.deposits !== undefined && (!Array.isArray(row.deposits) || row.deposits.length > 4
+                || row.deposits.some(site => !site || !Number.isFinite(Number(site.x)) || !Number.isFinite(Number(site.y))
+                    || Number(site.x) < 0 || Number(site.y) < 0 || Number(site.weight) < 0 || Number(site.weight) > 1))) {
+                throw new Error("Save data contains an invalid biome deposit map.");
+            }
         }
         for (const row of region.fauna) {
             if (!row || typeof row !== "object" || !BIOME_WILDLIFE_BY_ID[row.id]
@@ -1383,6 +1804,11 @@ export function validateBiomeAtlasSnapshot(snapshot) {
                 throw new Error("Save data contains an invalid biome wildlife row: " + String(row?.id || "unknown")
                     + " pop=" + String(row?.population) + " cap=" + String(row?.capacity)
                     + " health=" + String(row?.health) + " pressure=" + String(row?.pressure));
+            }
+            if (row.refuges !== undefined && (!Array.isArray(row.refuges) || row.refuges.length > 4
+                || row.refuges.some(site => !site || !Number.isFinite(Number(site.x)) || !Number.isFinite(Number(site.y))
+                    || site.x < 0 || site.y < 0))) {
+                throw new Error("Save data contains an invalid wildlife refuge map.");
             }
         }
     }
@@ -1407,7 +1833,16 @@ export function normalizeBiomeAtlasState(snapshot) {
         region.water = clamp(finite(saved.water, region.water), 0.02, 1);
         region.diseasePressure = clamp(finite(saved.diseasePressure, 0), 0, 1);
         region.carcassLoad = clamp(finite(saved.carcassLoad, 0), 0, 1);
+        region.protectedArea = Boolean(saved.protectedArea);
+        region.clearCut = clamp(finite(saved.clearCut, 0), 0, 1);
+        region.erosion = clamp(finite(saved.erosion, 0), 0, 1);
         region.engineered = Boolean(saved.engineered);
+        region.importCoverage = Array.isArray(saved.importCoverage)
+            ? saved.importCoverage.slice(0, 8).map(entry => ({
+                category: text(entry?.category, "", 24), untilYear: boundedInt(entry?.untilYear, 0, 1000000)
+            })).filter(entry => entry.category)
+            : [];
+        region.caravanImports = boundedInt(saved.caravanImports, 0, 100000000);
         region.ecologyTrend = clamp(finite(saved.ecologyTrend, 0), -1, 1);
         region.extractionPressure = clamp(finite(saved.extractionPressure, 0), 0, 1);
         region.productionCost = clamp(finite(saved.productionCost, 1), 0.5, 3);
@@ -1424,8 +1859,16 @@ export function normalizeBiomeAtlasState(snapshot) {
             if (!savedRow) continue;
             row.stock = clamp(nonNegative(savedRow.stock), 0, Math.max(row.capacity, 1000000));
             row.capacity = Math.max(1, Math.round(clamp(nonNegative(savedRow.capacity), 1, 1000000)));
+            row.baseCapacity = Math.max(1, Math.round(clamp(nonNegative(savedRow.baseCapacity || row.capacity), 1, 1000000)));
             row.quality = Math.round(clamp(nonNegative(savedRow.quality), 0, 100));
             row.stored = Math.min(BIOME_RESOURCE_STORE_LIMIT, Math.round(nonNegative(savedRow.stored)));
+            if (Array.isArray(savedRow.deposits) && savedRow.deposits.length) {
+                row.deposits = savedRow.deposits.slice(0, 4).map(site => ({
+                    x: Math.round(clamp(nonNegative(site.x), 0, 1000000)),
+                    y: Math.round(clamp(nonNegative(site.y), 0, 1000000)),
+                    weight: Math.round(clamp(nonNegative(site.weight), 0, 1) * 100) / 100
+                }));
+            }
             row.discovered = Boolean(savedRow.discovered);
             row.locallyExtinct = Boolean(savedRow.locallyExtinct);
             row.lastHarvestYear = Math.round(clamp(nonNegative(savedRow.lastHarvestYear), 0, 1000000));
@@ -1441,12 +1884,39 @@ export function normalizeBiomeAtlasState(snapshot) {
             row.breeding = Boolean(savedRow.breeding);
             row.migrating = Boolean(savedRow.migrating);
             row.pressure = clamp(nonNegative(savedRow.pressure), 0, 2);
-            row.refugeSites = boundedInt(savedRow.refugeSites, 0, 8);
+            if (Array.isArray(savedRow.refuges) && savedRow.refuges.length) {
+                row.refuges = savedRow.refuges.slice(0, 4).map(site => ({
+                    x: Math.round(clamp(nonNegative(site.x), 0, 1000000)),
+                    y: Math.round(clamp(nonNegative(site.y), 0, 1000000)),
+                    kind: text(site.kind, "refuge", 16)
+                }));
+            } else {
+                const species = BIOME_WILDLIFE_BY_ID[row.id];
+                row.refuges = species ? refugeSitesFor(species, region, region.index, atlas.seed) : [];
+            }
+            row.refugeSites = row.refuges.length;
             row.discovered = Boolean(savedRow.discovered);
         }
     }
     atlas.lastYear = Math.round(clamp(nonNegative(snapshot.lastYear), 1, 1000000));
     atlas.lastSeason = boundedInt(snapshot.lastSeason, 0, 3);
+    atlas.lastSeasonKey = boundedInt(snapshot.lastSeasonKey, 0, 100000000);
+    atlas.migration = Array.isArray(snapshot.migration)
+        ? snapshot.migration.slice(-24).map(route => ({
+            year: boundedInt(route?.year, 1, 1000000), season: boundedInt(route?.season, 0, 3),
+            species: text(route?.species, "", 40), from: text(route?.from, "", 16),
+            to: text(route?.to, "", 16), amount: boundedInt(route?.amount, 0, 100000),
+            ...(route?.returning ? { returning: true } : {})
+        }))
+        : [];
+    atlas.caravans = Array.isArray(snapshot.caravans)
+        ? snapshot.caravans.slice(-24).map(route => ({
+            year: boundedInt(route?.year, 1, 1000000), from: text(route?.from, "", 16),
+            to: text(route?.to, "", 16), category: text(route?.category, "", 24),
+            resource: text(route?.resource, "", 40), amount: boundedInt(route?.amount, 0, 100000),
+            price: boundedInt(route?.price, 0, 100000000)
+        }))
+        : [];
     if (snapshot.stats && typeof snapshot.stats === "object") {
         atlas.stats = {
             harvests: boundedInt(snapshot.stats.harvests, 0, 1000000),
@@ -1465,7 +1935,8 @@ export function normalizeBiomeAtlasState(snapshot) {
             gold: boundedInt(snapshot.trade.gold, 0, 100000000),
             lastYear: boundedInt(snapshot.trade.lastYear, 0, 1000000),
             imported: Array.isArray(snapshot.trade.imported) ? snapshot.trade.imported.slice(0, 12).map(value => text(value, "", 32)) : [],
-            exported: Array.isArray(snapshot.trade.exported) ? snapshot.trade.exported.slice(0, 12).map(value => text(value, "", 32)) : []
+            exported: Array.isArray(snapshot.trade.exported) ? snapshot.trade.exported.slice(0, 12).map(value => text(value, "", 32)) : [],
+            caravanSpend: boundedInt(snapshot.trade.caravanSpend, 0, 100000000)
         };
     }
     if (Array.isArray(snapshot.history)) {

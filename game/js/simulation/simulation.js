@@ -31,7 +31,7 @@ import { updateFields } from "../systems/fields.js";
 import { updateForestFauna } from "../systems/forest-fauna.js";
 import { updateForestSuccession } from "../systems/forest-succession.js";
 import { updateForestPannage } from "../systems/forest-pannage.js";
-import { syncBiomeDiscovery, updateBiomeAtlasAnnual } from "../systems/biome-resource-state.js";
+import { syncBiomeDiscovery, updateBiomeAtlasAnnual, updateBiomeAtlasSeason } from "../systems/biome-resource-state.js";
 import { updateLogistics } from "../systems/logistics.js";
 import { updateSettlement } from "../systems/settlement.js";
 import { updateCombat } from "./combat.js";
@@ -203,10 +203,16 @@ function finishSimulationTick(newborn) {
     // A live Explore survey must not keep displaying last season's density.
     // This fires four times per year at most; the panel does the bounded
     // re-render only while it is actually open.
-    if (state.seasonIndex !== previousSeason && typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("kac:season-change", {
-            detail: { seasonIndex: state.seasonIndex, year: state.year, tick: state.tick }
-        }));
+    if (state.seasonIndex !== previousSeason) {
+        // Bounded four-per-year pass: seasonal stock curves and short-distance
+        // wildlife migration. It is skipped when no atlas exists or the season
+        // was already settled by a load.
+        updateBiomeAtlasSeason();
+        if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("kac:season-change", {
+                detail: { seasonIndex: state.seasonIndex, year: state.year, tick: state.tick }
+            }));
+        }
     }
     if ((state.worldOptions?.climate || "temperate") === "tropical") spoilForestGoods(1);
     resetIncome();

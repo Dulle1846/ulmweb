@@ -234,6 +234,14 @@ try {
         return state.biomeAtlas.regions.find(entry => entry.id === regionId)?.policy === "conservation";
     }, initial.regionId, { timeout: 15000 });
 
+    const protectButton = craftRegionCard.locator('[data-command="biome-protect"]');
+    await protectButton.click();
+    await page.waitForFunction(async regionId => {
+        const { state } = await import("./js/core/state.js");
+        return state.biomeAtlas.regions.find(entry => entry.id === regionId)?.protectedArea === true;
+    }, craftTarget.regionId, { timeout: 15000 });
+    assert.match(await craftRegionCard.innerText(), /PROTECTED HABITAT|LIFT PROTECTION/);
+
     await page.locator("#command-close").click();
     await page.locator("#map-layer-select").selectOption("biomes");
     await page.locator('[data-zoom-level="3"]').click();
@@ -243,6 +251,14 @@ try {
         return state.mapLayer === "biomes" && shouldDrawForestPoints(state.zoomLevel, state.mapLayer);
     }, null, { timeout: 5000 });
 
+    const mapProof = await page.evaluate(async regionId => {
+        const { getBiomeOverlayCells } = await import("./js/systems/biome-resource-state.js");
+        const cell = getBiomeOverlayCells().find(entry => entry.id === regionId);
+        return { markers: cell?.markers?.length || 0, refuges: cell?.refuges?.length || 0 };
+    }, craftTarget.regionId);
+    assert.ok(mapProof.markers >= 1, "the biome layer needs resource markers for the surveyed region");
+    assert.ok(mapProof.refuges >= 1, "the biome layer needs refuge markers for the surveyed region");
+
     const beforeSave = await page.evaluate(async ({ regionId, craftRegionId }) => {
         const { state } = await import("./js/core/state.js");
         const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
@@ -250,6 +266,7 @@ try {
         return {
             policy: region.policy,
             surveyLevel: region.surveyLevel,
+            protectedArea: craftRegion.protectedArea,
             stock: region.resources.map(row => [row.id, Math.round(row.stock)]),
             fauna: region.fauna.map(row => [row.id, Math.round(row.population * 10) / 10]),
             craft: {
@@ -290,6 +307,7 @@ try {
         return {
             policy: region.policy,
             surveyLevel: region.surveyLevel,
+            protectedArea: craftRegion.protectedArea,
             stock: region.resources.map(row => [row.id, Math.round(row.stock)]),
             fauna: region.fauna.map(row => [row.id, Math.round(row.population * 10) / 10]),
             craft: {
@@ -302,6 +320,7 @@ try {
         };
     }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId });
     assert.equal(restored.policy, "conservation");
+    assert.equal(restored.protectedArea, true, "protected-habitat status must survive reload");
     assert.ok(restored.surveyLevel >= 1);
     assert.deepEqual(restored.stock, beforeSave.stock);
     assert.deepEqual(restored.fauna, beforeSave.fauna);
@@ -329,6 +348,9 @@ try {
         hunted: faunaBefore.id,
         craft: craftSummary,
         policy: restored.policy,
+        markers: mapProof.markers,
+        refuges: mapProof.refuges,
+        protectedArea: restored.protectedArea,
         loaded: loadStatus,
         pageErrors: pageErrors.length,
         consoleErrors: consoleErrors.length

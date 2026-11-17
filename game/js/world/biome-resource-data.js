@@ -673,6 +673,30 @@ export const BIOME_WILDLIFE = freeze([
 
 export const BIOME_WILDLIFE_IDS = freeze(BIOME_WILDLIFE.map(species => species.id));
 
+// Coarse diet vocabulary from the wildlife catalog. Each token points at the
+// actual plant or animal resource categories that sustain a species; the
+// annual pass consumes those local stocks instead of one abstract vegetation
+// number. Predators also keep their explicit prey[] links.
+export const BIOME_DIET_CATEGORIES = freeze({
+    grass: ["fruit", "fiber"],
+    browse: ["wood", "resin"],
+    roots: ["fruit"],
+    mast: ["fruit"],
+    herbs: ["herb"],
+    lichen: ["herb", "fungus"],
+    moss: ["herb", "fungus"],
+    berries: ["fruit"],
+    fish: ["fish"],
+    insects: ["fiber"],
+    carrion: ["meat"],
+    nectar: ["honey"],
+    bark: ["wood"],
+    cambium: ["wood", "resin"],
+    detritus: ["fungus"],
+    eggs: ["egg"],
+    meat: ["meat"]
+});
+
 export const BIOME_RESOURCE_CATEGORIES = freeze({
     wood: "Timber", fruit: "Fruit & nuts", fungus: "Fungi", herb: "Herbs & medicine",
     "fantastic-plant": "Fantastic flora", spice: "Spices", fiber: "Fibre", dye: "Dyes",
