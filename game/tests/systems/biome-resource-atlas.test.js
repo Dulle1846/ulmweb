@@ -131,6 +131,13 @@ test("1.2.19 preferred biomes, quality and rare deposits are honoured", () => {
     }
     const qualities = new Set(atlas.regions.map(region => region.quality));
     assert.ok(qualities.size > 3, "quality must vary by location");
+    for (const region of atlas.regions) {
+        const possible = BIOME_RESOURCES.filter(resource => resource.rare && !resource.fauna && resource.biomes.includes(region.rawBiome));
+        if (possible.length) {
+            assert.ok(region.resources.some(row => BIOME_RESOURCE_BY_ID[row.id]?.rare),
+                region.rawBiome + " region " + region.id + " must offer one guaranteed rare site");
+        }
+    }
     const rare = atlas.regions.flatMap(region => region.resources
         .filter(row => BIOME_RESOURCE_BY_ID[row.id]?.rare && !BIOME_RESOURCE_BY_ID[row.id]?.fauna)
         .map(row => ({ region, row })));

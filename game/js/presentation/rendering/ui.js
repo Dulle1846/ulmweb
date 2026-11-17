@@ -447,7 +447,7 @@ const MAP_LAYER_LEGENDS=Object.freeze({
     biomes:{
         label:"BIOME ATLAS",
         items:[["map-swatch--biome","Surveyed region"],["map-swatch--forest-point","Forest point"],["map-swatch--rare","Rare deposit"]],
-        note:"Only explored regions appear. Green dots condense forest cover at detail level 3; rare deposits are shown only after a survey."
+        note:"Only explored regions appear. Forest points become dense green survey dots at detail level 3; rare deposits are shown only after a survey."
     }
 });
 let lastMapLayerLegend="";

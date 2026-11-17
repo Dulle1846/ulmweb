@@ -174,13 +174,59 @@ function pickResources(region, seed, index) {
     }).filter(entry => entry.roll < entry.chance)
         .sort((a, b) => (a.roll / Math.max(0.02, a.chance)) - (b.roll / Math.max(0.02, b.chance)));
     const selected = ranked.slice(0, 10).map(entry => entry.resource);
+    // A biome's identity includes one hidden rare site. Without this guarantee
+    // a low rareBias roll can leave an entire surveyed region without any rare
+    // deposit, which makes the rare-survey promise invisible in normal play.
+    // The site is still hidden until the second survey and its stock is tiny.
+    if (!selected.some(resource => resource.rare)) {
+        const rare = candidates.filter(resource => resource.rare)
+            .sort((a, b) => (b.rarity - a.rarity) || (stringHash(a.id) - stringHash(b.id)))[0];
+        // Keep the rare site in the first slot so the later food rescue cannot
+        // push it past the final resource cap.
+        if (rare) selected.unshift(rare);
+    }
     const hasFood = selected.some(resource => resource.yieldResource === "food" || resource.category === "fruit");
     if (!hasFood) {
         const food = candidates.filter(resource => resource.yieldResource === "food")
             .sort((a, b) => b.rarity - a.rarity)[0];
-        if (food && !selected.includes(food)) selected.push(food);
+        if (food && !selected.includes(food)) selected.unshift(food);
     }
     return selected.slice(0, 11);
+}
+
+function regionPotentialYield(region, season = state.seasonIndex) {
+    const policy = policyFor(region);
+    if (policy.yield <= 0) return 0;
+    let total = 0;
+    for (const row of region.resources) {
+        const resource = BIOME_RESOURCE_BY_ID[row.id];
+        if (!resource || !row.discovered || row.locallyExtinct || !seasonFactor(resource, season)) continue;
+        const share = resource.rare ? 0.002 : 0.006;
+        total += Math.min(3, Math.round(row.capacity * share * policy.yield * (0.55 + row.quality / 120)));
+    }
+    return total;
+}
+
+// The map dots read the compact resource geography rather than rebuilding a
+// full forest stand for every sampled tile. This keeps the biome overlay at
+// frame budget even on the dense third detail tier.
+export function forestCoverShareAt(x, y) {
+    const geo = state.resourceGeography;
+    const width = Number(state.worldW) || 0;
+    const height = Number(state.worldH) || 0;
+    const tx = Math.floor(Number(x));
+    const ty = Math.floor(Number(y));
+    if (!geo || !geo.forestCapacity || tx < 0 || ty < 0 || tx >= width || ty >= height) return 0;
+    const index = ty * width + tx;
+    const capacity = Number(geo.forestCapacity[index]) || 0;
+    if (capacity <= 0) return 0;
+    return clamp((Number(geo.forestStock?.[index]) || 0) / capacity, 0, 1);
+}
+
+export function estimateBiomePotentialYield() {
+    const atlas = ensureBiomeAtlas();
+    if (!atlas) return 0;
+    return atlas.regions.filter(region => region.discovered).reduce((sum, region) => sum + regionPotentialYield(region), 0);
 }
 
 function pickWildlife(region, seed, index) {
@@ -310,6 +356,7 @@ export function generateBiomeAtlas(seed, context) {
         stats: { harvests: 0, hunts: 0, surveys: 0, rareSold: 0, goldFromTrade: 0, annualYields: 0, potentialYield: 0 },
         trade: { gold: 0, lastYear: 0, imported: [], exported: [] }
     };
+    state.biomeAtlas.stats.potentialYield = estimateBiomePotentialYield();
     return state.biomeAtlas;
 }
 
@@ -824,6 +871,8 @@ export function updateBiomeAtlasAnnual() {
     atlas.lastSeason = Number(state.seasonIndex) || 0;
     syncBiomeDiscovery({ silent: true });
     const stats = { regions: 0, produced: 0, extinctions: 0, recoveries: 0, gold: 0 };
+    // This field is a current-year productive capacity, not a lifetime total.
+    atlas.stats.potentialYield = 0;
     for (const region of atlas.regions) {
         if (!region.discovered) continue;
         stats.regions++;
@@ -858,7 +907,6 @@ export function updateBiomeAtlasAnnual() {
         region.diseasePressure = clamp(region.diseasePressure + region.carcassLoad * 0.06 - scavengerService * 0.08, 0, 1);
         region.carcassLoad = clamp(region.carcassLoad * 0.45, 0, 1);
         region.engineered = Boolean(engineerService > 0.18);
-        let potential = 0;
         for (const row of region.resources) {
             const resource = BIOME_RESOURCE_BY_ID[row.id];
             if (!resource) continue;
@@ -869,16 +917,14 @@ export function updateBiomeAtlasAnnual() {
                     * (resource.rare ? 0.35 : 1);
                 if (!row.locallyExtinct) row.stock = Math.min(row.capacity, row.stock + row.capacity * regen);
             }
-            // The annual pass reports productive capacity; it does not put
-            // free goods into the royal ledger. The player harvests through a
-            // real action, so regional ecology never silently perturbs the
-            // established treasury, food or population systems.
-            if (!row.discovered || row.locallyExtinct || !seasonal || policy.yield <= 0) continue;
-            const share = resource.rare ? 0.002 : 0.006;
-            potential += Math.min(3, Math.round(row.capacity * share * policy.yield * (0.55 + row.quality / 120)));
         }
+        // The annual pass reports productive capacity; it does not put free
+        // goods into the royal ledger. The player harvests through a real
+        // action, so regional ecology never silently perturbs the established
+        // treasury, food or population systems.
+        const potential = regionPotentialYield(region, season);
         stats.produced += potential;
-        atlas.stats.potentialYield = (Number(atlas.stats.potentialYield) || 0) + potential;
+        atlas.stats.potentialYield += potential;
         // Wildlife: prey availability caps predators, vegetation caps grazers,
         // hunting pressure suppresses recruitment, and refuges shelter recovery.
         for (const row of region.fauna) {

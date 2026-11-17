@@ -6,7 +6,7 @@ import { CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
 import { TYPE } from '../../core/types.js';
 import { drawTerrain, drawForestVisibility, updateForestSightOrigin, isForestSightVisible } from './terrain.js';
-import { getBiomeOverlayCells, shouldDrawForestPoints } from '../../systems/biome-resource-state.js';
+import { forestCoverShareAt, getBiomeOverlayCells, shouldDrawForestPoints } from '../../systems/biome-resource-state.js';
 import { drawEntity } from './entities.js';
 import { drawPlacementPreview } from './placement-preview.js';
 import { getRoadTiles,getRoadAt,ROAD_TYPES } from '../../systems/roads.js';
@@ -229,7 +229,7 @@ function drawMapLayer(ctx,zoom,camera,canvas){
             const left=cell.x*tileSize-camera.x,top=cell.y*tileSize-camera.y;
             const width=cell.width*tileSize,height=cell.height*tileSize;
             if(left+width<0||top+height<0||left>canvas.width||top>canvas.height)continue;
-            ctx.globalAlpha=.1+Math.max(0,Math.min(100,Number(cell.health)||0))/400;
+            ctx.globalAlpha=.08+Math.max(0,Math.min(100,Number(cell.health)||0))/600;
             ctx.fillStyle=cell.color;
             ctx.fillRect(left,top,width,height);
             ctx.globalAlpha=.48;
@@ -246,22 +246,38 @@ function drawMapLayer(ctx,zoom,camera,canvas){
             }
         }
         ctx.globalAlpha=1;
-        if(showForestPoints){
-            const sample=Math.max(1,Math.ceil(2/Math.max(.35,zoom)));
+        // Forest survey stipple. Levels 1 and 2 keep a sparse reading so the
+        // region fill remains legible; the third tier switches to one point per
+        // forest tile, which is the condensed green carpet the atlas promises.
+        // Reading the compact geography arrays avoids rebuilding a forest
+        // stand per sampled tile and keeps this bounded to the visible window.
+        const forestTier=showForestPoints?3:(state.zoomLevel===2?2:1);
+        if(layer==="biomes"){
+            const sample=forestTier===3?1:forestTier===2?3:6;
+            const subDots=forestTier===3
+                ?[[.22,.26],[.76,.22],[.28,.72],[.74,.7]]
+                :[[.5,.5]];
+            const radius=forestTier===3?Math.max(2.2,tileSize*.12):Math.max(1.5,tileSize*sample*(forestTier===2?.14:.09));
+            ctx.fillStyle=forestTier===3?"#74c96a":"#6aa45d";
             for(let y=minY;y<=maxY;y+=sample){
                 for(let x=minX;x<=maxX;x+=sample){
                     if(!state.explored?.[x]?.[y])continue;
-                    let node;
-                    try{node=getResourceNodeAt(x,y);}catch{continue;}
-                    if(!node?.forestCapacity||node.forestStock/node.forestCapacity<.08)continue;
-                    const px=x*tileSize-camera.x+tileSize*.5;
-                    const py=y*tileSize-camera.y+tileSize*.5;
-                    const share=Math.max(0,Math.min(1,node.forestStock/node.forestCapacity));
-                    ctx.globalAlpha=.35+share*.5;
-                    ctx.fillStyle="#5f9b54";
-                    ctx.beginPath();
-                    ctx.arc(px,py,Math.max(1.6,tileSize*sample*.17),0,Math.PI*2);
-                    ctx.fill();
+                    const share=forestCoverShareAt(x,y);
+                    if(share<.08)continue;
+                    const left=x*tileSize-camera.x,top=y*tileSize-camera.y;
+                    const noise=(Math.imul(x+1,0x9e3779b1)^Math.imul(y+1,0x85ebca6b))>>>0;
+                    const driftX=((noise&7)/7-.5)*.2;
+                    const driftY=(((noise>>3)&7)/7-.5)*.2;
+                    ctx.globalAlpha=.44+share*.44;
+                    for(let i=0;i<subDots.length;i++){
+                        const jitterX=driftX+(((noise>>(i*3+6))&3)/3-.5)*.08;
+                        const jitterY=driftY+(((noise>>(i*3+8))&3)/3-.5)*.08;
+                        const px=left+(subDots[i][0]+jitterX)*tileSize;
+                        const py=top+(subDots[i][1]+jitterY)*tileSize;
+                        ctx.beginPath();
+                        ctx.arc(px,py,radius,0,Math.PI*2);
+                        ctx.fill();
+                    }
                 }
             }
         }
