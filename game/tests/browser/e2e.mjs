@@ -858,6 +858,8 @@ try{
     console.log("Creature species fixture:",JSON.stringify(speciesFixture));
     assert.ok(speciesFixture.some(creature=>creature.species==="wyvern"&&!creature.isDragon&&creature.icon==="🦇"),"the species selector must create a real non-dragon creature");
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("WYVERN"),"the bestiary must expose the new species");
+    const wyvernPortrait=page.locator('#command-panel-content .creature-record:not(.is-memorial) [data-creature-species="wyvern"] use').last();
+    assert.equal(await wyvernPortrait.getAttribute("href"),"assets/royal-creature-atlas.svg#wyvern","the wyvern must use its authored species portrait");
 
     await page.locator('[data-command-tab="economy"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("LATEST FINANCIAL SETTLEMENT"));

@@ -791,7 +791,8 @@ function dragonPortraitSymbol(lifeStage){const stage=String(lifeStage||"adult").
 function creatureGlyph(d){
  const species=String(d.species||"dragon");
  if(species==="dragon")return '<svg class="creature-portrait" data-life-stage="'+esc(d.lifeStage)+'" viewBox="0 0 128 96" aria-hidden="true"><use href="assets/royal-dragon-atlas.svg#'+dragonPortraitSymbol(d.lifeStage)+'"></use></svg>';
- return '<span class="creature-portrait creature-glyph" style="display:flex;align-items:center;justify-content:center;font-size:34px" aria-hidden="true">'+esc(d.icon||CREATURE_SPECIES_LIST.find(profile=>profile.id===species)?.icon||"🐉")+'</span>';
+ const symbol=CREATURE_SPECIES_LIST.some(profile=>profile.id===species)?species:"griffin";
+ return '<svg class="creature-portrait" data-creature-species="'+esc(species)+'" viewBox="0 0 128 96" aria-hidden="true"><use href="assets/royal-creature-atlas.svg#'+symbol+'"></use></svg>';
 }
 function creatures(){
  const c=getCreatureSnapshot();
