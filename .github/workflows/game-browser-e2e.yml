@@ -8,8 +8,15 @@ on:
   push:
     branches:
       - ulmweb-branch
+    # Documentation-only pushes skip the nine-minute browser matrix. The
+    # deploy workflow still runs npm test and moves production to the new HEAD.
     paths:
       - "game/**"
+      - "!game/docs/**"
+      - "!game/*.md"
+      - "!game/**/*.md"
+      - "!game/artifacts/**"
+      - "!game/reports/**"
       - ".github/workflows/game-browser-e2e.yml"
       - ".github/actions/setup-game-e2e/**"
   pull_request:

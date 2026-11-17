@@ -234,7 +234,9 @@ configured directory for review.
 `.github/workflows/game-browser-e2e.yml` runs on pull requests and on pushes to
 `ulmweb-branch`, installs the pinned dependency, caches Chromium, runs the setup
 with `--with-deps`, and then runs `npm run test:e2e`. Screenshots from the
-responsive review are uploaded even when the test fails.
+responsive review are uploaded even when the test fails. Documentation-only
+pushes to `ulmweb-branch` skip this nine-minute browser matrix; the deploy
+workflow still runs `npm test` and moves the production marker to that HEAD.
 
 After a successful E2E run, the job runs the three-seed Forester stewardship
 audit with an explicit `FORESTER_TIME_BUDGET_MS=240000`. The audit writes its

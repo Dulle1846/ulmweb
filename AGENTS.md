@@ -7,4 +7,7 @@ Develop **Kings & Cards** into a high-performance browser game that runs smoothl
 - Preserve the static browser architecture, existing systems, save compatibility and deterministic simulation.
 - Keep per-frame and per-tick work bounded; put ecological change on a bounded cadence.
 - Extend shared data and existing render/simulation patterns instead of building parallel systems.
-- Verify with the full test suite, the deterministic 25-year campaign and the relevant browser reference when the change is visual.
+- Verify in the smallest sufficient scope: run the affected test files while iterating, then one full `npm test` per batch before commit. Do not rerun an unchanged green check.
+- Run the deterministic 25-year campaign for simulation or economy changes and the relevant browser reference for visual or render changes. Leave the 60-year soak to the nightly workflow or an explicit release check; do not block routine edits on it.
+- Keep every gate at full strength. Save time by choosing the smallest sufficient check, batching independent commands and running independent checks in parallel — never by lowering years, FPS, render scale, save/load requirements or tolerances.
+- Docs- or CI-only changes skip browser E2E and campaign runs but must still pass `npm test` and the production deploy gate.
