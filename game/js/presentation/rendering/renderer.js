@@ -6,7 +6,7 @@ import { CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
 import { TYPE } from '../../core/types.js';
 import { drawTerrain, drawForestVisibility, updateForestSightOrigin, isForestSightVisible } from './terrain.js';
-import { forestCoverShareAt, getBiomeOverlayCells, shouldDrawForestPoints } from '../../systems/biome-resource-state.js';
+import { forestCoverShareAt, getBiomeDensityCells, getBiomeOverlayCells, shouldDrawForestPoints } from '../../systems/biome-resource-state.js';
 import { drawEntity } from './entities.js';
 import { drawPlacementPreview } from './placement-preview.js';
 import { getRoadTiles,getRoadAt,ROAD_TYPES } from '../../systems/roads.js';
@@ -225,6 +225,10 @@ function drawMapLayer(ctx,zoom,camera,canvas){
     if(layer==="biomes"){
         const cells=getBiomeOverlayCells();
         const showForestPoints=shouldDrawForestPoints(state.zoomLevel,layer);
+        // A separate budgeted reading of the same discovered regions. Bars are
+        // the low-detail aggregate; detail 3 adds a few clustered points per
+        // family, so the atlas never paints every sampled tile at once.
+        const densityById=new Map(getBiomeDensityCells(state.renderedFrames).map(cell=>[cell.id,cell]));
         for(const cell of cells){
             const left=cell.x*tileSize-camera.x,top=cell.y*tileSize-camera.y;
             const width=cell.width*tileSize,height=cell.height*tileSize;
@@ -238,6 +242,40 @@ function drawMapLayer(ctx,zoom,camera,canvas){
             ctx.strokeRect(left,top,width,height);
             const markerColors={ore:"#c3b7a2",stone:"#d0c7b7",gem:"#9fd0e0",salt:"#f0ece3",herb:"#8fbf7a",wood:"#75a958",fish:"#78b6d0",fruit:"#d9a05b",fungus:"#b58b6a",fiber:"#c6c08a",dye:"#b07cc6",poison:"#9a6fa8",animal:"#c98a6a",fantastic:"#9fd7ff",grain:"#d8c070",spice:"#d98d4a"};
             const markerSize=Math.max(1.5,Math.min(4,tileSize*.16));
+            const families=densityById.get(cell.id)?.families||[];
+            if(families.length){
+                // One compact bar segment per discovered family. The bar is
+                // the quantitative aggregate and stays legible at low zoom.
+                const gap=Math.max(1,tileSize*.06);
+                const barHeight=Math.max(2,Math.min(6,tileSize*.42));
+                const usableWidth=Math.max(2,width-gap*(families.length+1));
+                const weights=families.map(family=>Math.max(0,Number(family.capacity)||0) || Math.max(1,family.value||0));
+                const weightTotal=weights.reduce((sum,weight)=>sum+weight,0) || 1;
+                let barX=left+gap;
+                const barY=top+height-barHeight-gap;
+                for(let index=0;index<families.length;index++){
+                    const family=families[index];
+                    // Segment length is the sampled capacity share; opacity
+                    // keeps the local suitability readable on top of it.
+                    const barWidth=Math.max(2,usableWidth*weights[index]/weightTotal);
+                    ctx.globalAlpha=.18+Math.max(0,Math.min(100,family.value||0))/180;
+                    ctx.fillStyle=family.color;
+                    ctx.fillRect(barX,barY,barWidth,barHeight);
+                    barX+=barWidth+gap;
+                }
+                if(showForestPoints){
+                    const pointSize=Math.max(1.2,Math.min(3.2,tileSize*.075));
+                    for(const family of families){
+                        for(const point of family.points||[]){
+                            const px=point.x*tileSize-camera.x,py=point.y*tileSize-camera.y;
+                            if(px<-pointSize||py<-pointSize||px>canvas.width+pointSize||py>canvas.height+pointSize)continue;
+                            ctx.globalAlpha=.32+Math.max(0,Math.min(100,point.value||0))/190;
+                            ctx.fillStyle=family.color;
+                            ctx.fillRect(px-pointSize*.5,py-pointSize*.5,pointSize,pointSize);
+                        }
+                    }
+                }
+            }
             for(const marker of cell.markers||[]){
                 const mx=marker.x*tileSize-camera.x,my=marker.y*tileSize-camera.y;
                 if(mx<-markerSize||my<-markerSize||mx>canvas.width+markerSize||my>canvas.height+markerSize)continue;

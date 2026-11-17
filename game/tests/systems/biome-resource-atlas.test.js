@@ -3,13 +3,13 @@ import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import {
     BIOME_FOCUSES, BIOME_POLICIES, BIOME_PROFILES, BIOME_RESOURCES,
-    BIOME_RESOURCE_BY_ID, BIOME_RESOURCE_REQUIREMENTS, BIOME_WILDLIFE,
-    BIOME_WILDLIFE_BY_ID, BIOME_CRAFT_RECIPE_BY_ID
+    BIOME_RESOURCE_BY_ID, BIOME_RESOURCE_FAMILY_BY_CATEGORY, BIOME_RESOURCE_MAP_FAMILIES,
+    BIOME_RESOURCE_REQUIREMENTS, BIOME_WILDLIFE, BIOME_WILDLIFE_BY_ID, BIOME_CRAFT_RECIPE_BY_ID
 } from "../../js/world/biome-resource-data.js";
 import {
-    craftBiomeGoods, estimateBiomePotentialYield, forestCoverShareAt, forestPointTier, generateBiomeAtlas, getBiomeAtlasSnapshot, getBiomeEconomySnapshot, getBiomeOverlayCells, getBiomeRegionSnapshot,
+    beginBiomeDensityFrame, craftBiomeGoods, estimateBiomePotentialYield, forestCoverShareAt, forestPointTier, generateBiomeAtlas, getBiomeAtlasSnapshot, getBiomeDensityCells, getBiomeEconomySnapshot, getBiomeOverlayCells, getBiomeRegionSnapshot, getBiomeRegionTileSnapshot, getBiomeResourceTileSamples, getBiomeTileSampleStats,
     harvestBiomeResource, huntBiomeSpecies, normalizeBiomeAtlasState, reintroduceBiomeSpecies, restoreBiomeRegion,
-    restoreBiomeAtlasState, sellBiomeCraft, sellBiomeGoods, serializeBiomeAtlasState, setBiomeFocus,
+    invalidateBiomeTileCache, restoreBiomeAtlasState, sellBiomeCraft, sellBiomeGoods, serializeBiomeAtlasState, setBiomeFocus,
     setBiomePolicy, setBiomeProtection, shouldDrawForestPoints, surveyBiomeRegion, syncBiomeDiscovery,
     updateBiomeAtlasAnnual, updateBiomeAtlasSeason, validateBiomeAtlasSnapshot
 } from "../../js/systems/biome-resource-state.js";
@@ -276,6 +276,8 @@ test("1.2.19 extraction, habitat restoration and rare-goods trade are real actio
     assert.ok(storedResource, "a tradeable non-ledger resource must exist");
     const harvest = harvestBiomeResource(region.id, storedResource.id);
     assert.equal(harvest.ok, true);
+    assert.ok(harvest.tileQuality >= 8 && harvest.tileQuality <= 100);
+    assert.ok(harvest.tileSuitability >= 0 && harvest.tileSuitability <= 1.3);
     assert.ok(storedResource.stored > 0);
     const sold = sellBiomeGoods(region.id, storedResource.id);
     assert.equal(sold.ok, true);
@@ -762,4 +764,122 @@ test("1.2.19 save keeps tile deposits, refuges, import coverage and migration le
     assert.ok(migrated.fauna[0].refuges.length >= 1, "old saves receive real refuge sites");
     assert.deepEqual(migrated.importCoverage, []);
     assert.equal(migrated.protectedArea, false);
+});
+
+test("1.2.19.5 tile suitability is deterministic, bounded and drives the regional sample aggregate", () => {
+    const atlas = setup(7717);
+    const region = discoveredRegion(atlas);
+    const row = region.resources.find(entry => entry.discovered) || region.resources[0];
+    const first = getBiomeResourceTileSamples(region.id, row.id);
+    assert.equal(first.ok, true);
+    assert.equal(first.samples.length, 25);
+    for (const sample of first.samples) {
+        assert.ok(sample.x >= region.x && sample.x < region.x + region.width);
+        assert.ok(sample.y >= region.y && sample.y < region.y + region.height);
+        assert.ok(sample.suitability >= 0 && sample.suitability <= 1.3);
+        assert.ok(sample.capacity >= 0);
+        assert.ok(sample.quality >= 8 && sample.quality <= 100);
+    }
+    const capacitySum = first.samples.reduce((sum, sample) => sum + sample.capacity, 0);
+    assert.ok(Math.abs(capacitySum - row.capacity) <= row.capacity * 0.03 + 25, "tile capacities preserve the region total");
+    const second = getBiomeResourceTileSamples(region.id, row.id);
+    assert.equal(second.cached, true);
+    assert.deepEqual(second.samples, first.samples);
+
+    const before = first.samples.map(sample => sample.suitability);
+    region.soilHealth = Math.max(0.04, region.soilHealth - 0.2);
+    row.capacity += 31;
+    const changed = getBiomeResourceTileSamples(region.id, row.id);
+    assert.equal(changed.cached, false, "a changed resource/ecology signature must miss the cache");
+    assert.notDeepEqual(changed.samples.map(sample => sample.suitability), before);
+
+    const aggregate = getBiomeRegionTileSnapshot(region.id);
+    assert.equal(aggregate.ok, true);
+    const beforeSurvey = getBiomeResourceTileSamples(region.id, row.id);
+    state.resources.gold = 50;
+    assert.equal(surveyBiomeRegion(region.id).ok, true);
+    assert.equal(getBiomeResourceTileSamples(region.id, row.id).cached, false,
+        "a survey must invalidate the tile cache even before the next density frame");
+    assert.ok(beforeSurvey.samples.length === 25);
+    assert.ok(aggregate.tileCapacity >= 0);
+    assert.ok(aggregate.tileQuality >= 8 && aggregate.tileQuality <= 100);
+    assert.ok(aggregate.resources.every(entry => entry.samples === 25));
+
+    resetState();
+    const fresh = setup(7717);
+    const freshRegion = discoveredRegion(fresh);
+    const freshRow = freshRegion.resources.find(entry => entry.discovered) || freshRegion.resources[0];
+    const repeated = getBiomeResourceTileSamples(freshRegion.id, freshRow.id);
+    assert.deepEqual(repeated.samples.map(sample => sample.suitability), first.samples.map(sample => sample.suitability),
+        "the same seed must produce the same tile samples");
+});
+
+test("1.2.19.79 density cells are budgeted, clustered and never expose undiscovered rows", () => {
+    const atlas = setup(8123);
+    const region = discoveredRegion(atlas);
+    ensureCoreCategories(region);
+    invalidateBiomeTileCache();
+    beginBiomeDensityFrame("density-start");
+    const beforeStats = getBiomeTileSampleStats();
+    const cells = getBiomeDensityCells("density-start");
+    const afterStats = getBiomeTileSampleStats();
+    assert.equal(cells.length, atlas.regions.filter(entry => entry.discovered).length);
+    assert.ok(afterStats.cacheMisses > 0);
+    assert.ok(afterStats.cacheMisses <= beforeStats.frameSize, "a frame may only force the fixed sample budget");
+    assert.ok(afterStats.frameBudget >= 0);
+    const cell = cells.find(entry => entry.id === region.id);
+    assert.ok(cell.families.length >= 1);
+    for (const family of cell.families) {
+        assert.ok(BIOME_RESOURCE_MAP_FAMILIES[family.id]);
+        assert.ok(family.value >= 0 && family.value <= 100);
+        assert.ok(family.points.length <= 2, "detail points are clustered to a bounded set");
+        for (const point of family.points) {
+            assert.ok(point.x >= region.x && point.x < region.x + region.width);
+            assert.ok(point.y >= region.y && point.y < region.y + region.height);
+            assert.ok(point.value >= 0 && point.value <= 100);
+        }
+    }
+    assert.ok(cell.families.some(family => family.id === "timber"), "the survey must show a discovered family");
+
+    for (const row of region.resources) {
+        const resource = BIOME_RESOURCE_BY_ID[row.id];
+        if (resource && BIOME_RESOURCE_FAMILY_BY_CATEGORY[resource.category] === "timber") row.discovered = false;
+    }
+    invalidateBiomeTileCache();
+    const hiddenCells = getBiomeDensityCells("density-hidden");
+    const hiddenCell = hiddenCells.find(entry => entry.id === region.id);
+    assert.ok(hiddenCell);
+    assert.equal(hiddenCell.families.some(family => family.id === "timber"), false,
+        "an undiscovered timber row must not leak through the density aggregate");
+
+    for (const resource of BIOME_RESOURCES) {
+        assert.ok(BIOME_RESOURCE_FAMILY_BY_CATEGORY[resource.category], resource.id + " needs a density family");
+    }
+    assert.deepEqual(Object.keys(BIOME_RESOURCE_MAP_FAMILIES).sort(), ["animal", "fiber", "fish", "flora", "stone", "timber"]);
+});
+
+test("1.2.19.5 tile samples survive a save round-trip without shifting old saves", () => {
+    const atlas = setup(6621);
+    const region = discoveredRegion(atlas);
+    ensureCoreCategories(region);
+    invalidateBiomeTileCache();
+    beginBiomeDensityFrame("roundtrip-before");
+    const before = getBiomeDensityCells("roundtrip-before").find(entry => entry.id === region.id);
+    const beforeSamples = getBiomeResourceTileSamples(region.id, region.resources[0].id);
+    const saved = serializeBiomeAtlasState();
+    const restored = restoreBiomeAtlasState(saved);
+    const restoredRegion = restored.regions.find(entry => entry.id === region.id);
+    beginBiomeDensityFrame("roundtrip-after");
+    const after = getBiomeDensityCells("roundtrip-after").find(entry => entry.id === region.id);
+    const afterSamples = getBiomeResourceTileSamples(restoredRegion.id, restoredRegion.resources[0].id);
+    assert.equal(afterSamples.samples.length, beforeSamples.samples.length);
+    assert.ok(Math.abs(afterSamples.capacity - beforeSamples.capacity) <= Math.max(25, beforeSamples.capacity * 0.04));
+    assert.deepEqual(after.families.map(family => family.id), before.families.map(family => family.id));
+
+    const oldSave = JSON.parse(JSON.stringify(saved));
+    const oldRegion = oldSave.regions.find(entry => entry.id === region.id);
+    delete oldRegion.resources[0].discovered;
+    const migrated = restoreBiomeAtlasState(oldSave).regions.find(entry => entry.id === region.id);
+    assert.ok(migrated.resources.length > 0, "old saves still load their region rows");
+    assert.equal(getBiomeResourceTileSamples(migrated.id, migrated.resources[0].id).samples.length, 25);
 });

@@ -13,7 +13,8 @@ import { classifyTerrain } from "../world/terrain-model.js";
 import {
     BIOME_DIET_CATEGORIES, BIOME_FOCUSES, BIOME_FOCUS_IDS, BIOME_POLICIES, BIOME_POLICY_IDS,
     BIOME_PROFILES, BIOME_REGION_GRID, BIOME_REGION_MAX, BIOME_RESOURCES,
-    BIOME_RESOURCE_BY_ID, BIOME_RESOURCE_CATEGORIES, BIOME_RESOURCE_HISTORY_LIMIT, BIOME_RESOURCE_IDS,
+    BIOME_RESOURCE_BY_ID, BIOME_RESOURCE_CATEGORIES, BIOME_RESOURCE_FAMILY_BY_CATEGORY,
+    BIOME_RESOURCE_HISTORY_LIMIT, BIOME_RESOURCE_IDS, BIOME_RESOURCE_MAP_FAMILIES,
     BIOME_RESOURCE_STORE_LIMIT, BIOME_RESOURCE_VERSION, BIOME_WILDLIFE,
     BIOME_WILDLIFE_BY_ID, BIOME_WILDLIFE_IDS, BIOME_CRAFT_GOOD_BY_ID,
     BIOME_CRAFT_RECIPE_BY_CRAFT, BIOME_CRAFT_RECIPE_BY_ID, resourcesForBiome, wildlifeForBiome
@@ -22,6 +23,12 @@ import {
 const VERSION = BIOME_RESOURCE_VERSION;
 const GRID = BIOME_REGION_GRID;
 const MAX_REGIONS = BIOME_REGION_MAX;
+// Tile samples are a bounded diagnostic/rendering layer, never a per-tile
+// object graph. 25 points per region/resource are enough to expose local
+// differences while the region remains the saved aggregate.
+const TILE_SAMPLE_COLUMNS = 5;
+const TILE_CACHE_LIMIT = 128;
+const TILE_FRAME_BUDGET = 8;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const nonNegative = value => Math.max(0, finite(value, 0));
@@ -127,6 +134,265 @@ function resourceCapacity(resource, region, seed, index) {
     const base = resource.renewable ? 95 : 135;
     const ecological = resource.kind === "fish" ? profile.water : profile.vegetation;
     return Math.round(base + 340 * rarity * (0.45 + ecological * 0.7) + unit(seed, index, stringHash(resource.id) ^ 0xcafe) * 70);
+}
+
+let tileTerrainCache = null;
+let tileTerrainEpoch = 0;
+let tileSampleCache = new Map();
+let tileCacheHits = 0;
+let tileCacheMisses = 0;
+let tileFrameKey = null;
+let tileFrameBudget = TILE_FRAME_BUDGET;
+
+function tileTerrainContext() {
+    const heights = state.heightMap;
+    const moistures = state.moistureMap;
+    const temperatures = state.temperatureMap;
+    const fertility = state.resourceGeography?.fertility || null;
+    if (!heights || !moistures || !temperatures) return null;
+    if (!tileTerrainCache || tileTerrainCache.heights !== heights
+        || tileTerrainCache.moistures !== moistures
+        || tileTerrainCache.temperatures !== temperatures
+        || tileTerrainCache.fertility !== fertility
+        || tileTerrainCache.resolution !== state.terrainResolution
+        || tileTerrainCache.pixW !== state.terrainPixW
+        || tileTerrainCache.pixH !== state.terrainPixH
+        || tileTerrainCache.sea !== state.seaLevel) {
+        tileTerrainCache = {
+            heights, moistures, temperatures, fertility,
+            resolution: Number(state.terrainResolution) || 1,
+            pixW: Number(state.terrainPixW) || 1,
+            pixH: Number(state.terrainPixH) || 1,
+            sea: Number(state.seaLevel) || 0.33
+        };
+        tileTerrainEpoch += 1;
+    }
+    return tileTerrainCache;
+}
+
+function tileSoilAt(region, x, y) {
+    const fertility = state.resourceGeography?.fertility;
+    if (fertility) {
+        const width = Math.max(1, Number(state.worldW) || 1);
+        const index = (Number(y) || 0) * width + (Number(x) || 0);
+        return clamp(finite(fertility[index], (Number(region.soilHealth) || 0.4) * 100) / 100, 0, 1);
+    }
+    return clamp(Number(region.soilHealth) || 0.4, 0, 1);
+}
+
+function tileSamplePoints(region) {
+    const columns = TILE_SAMPLE_COLUMNS;
+    const points = [];
+    for (let row = 0; row < columns; row++) {
+        for (let column = 0; column < columns; column++) {
+            points.push({
+                x: region.x + Math.min(region.width - 1, Math.floor((column + 0.5) * region.width / columns)),
+                y: region.y + Math.min(region.height - 1, Math.floor((row + 0.5) * region.height / columns))
+            });
+        }
+    }
+    return points;
+}
+
+function tileSuitability(resource, region, sample, x, y, seed, tileSoil = null) {
+    if (!resource?.biomes?.includes(sample.rawBiome)) return 0;
+    const profile = BIOME_PROFILES[sample.rawBiome] || BIOME_PROFILES.meadow;
+    const weight = resource.quality || {};
+    const soil = clamp((tileSoil ?? (Number(region.soilHealth) || 0.4)) * 0.7 + profile.soil * 0.3, 0, 1);
+    const jitter = unit(seed, x, y, stringHash(resource.id) ^ 0x54494c45) - 0.5;
+    const score = 0.42
+        + (Number(sample.moisture) - 0.5) * 0.78 * finite(weight.moisture, 0.2)
+        + (Number(sample.temperature) - 0.5) * 0.7 * finite(weight.temperature, 0.2)
+        + (Number(sample.height) - 0.5) * 0.55 * finite(weight.height, 0.1)
+        + (soil - 0.5) * 0.72 * finite(weight.soil, 0.3)
+        + profile.vegetation * (resource.kind === "fish" ? 0.04 : 0.2)
+        + profile.water * (resource.kind === "fish" ? 0.34 : 0.04)
+        + (sample.rawBiome === region.rawBiome ? 0.12 : 0)
+        + jitter * 0.12;
+    return clamp(score, 0, 1.3);
+}
+
+function tileQuality(resource, region, sample, seed, tileSoil = null) {
+    const weight = resource.quality || {};
+    const soil = tileSoil ?? (Number(region.soilHealth) || 0.4);
+    const score = 48
+        + (Number(sample.moisture) - 0.5) * 46 * finite(weight.moisture, 0.2)
+        + (Number(sample.temperature) - 0.5) * 46 * finite(weight.temperature, 0.2)
+        + (Number(sample.height) - 0.5) * 42 * finite(weight.height, 0.1)
+        + (soil - 0.5) * 44 * finite(weight.soil, 0.3)
+        + (unit(seed, sample.x, sample.y, stringHash(resource.id) ^ 0x5155414c) - 0.5) * 12;
+    return clamp(score + (Number(region.quality) - 50) * 0.28, 8, 100);
+}
+
+function tileSignature(region, row, resource, atlas) {
+    tileTerrainContext();
+    return [
+        atlas.seed, region.id, region.x, region.y, region.width, region.height,
+        region.rawBiome, region.quality, region.soilHealth, region.vegetation, region.water,
+        region.surveyLevel, region.discovered, row.id, row.capacity, row.quality,
+        row.discovered, row.locallyExtinct, state.seasonIndex, tileTerrainEpoch
+    ].join("|");
+}
+
+function computeTileSamples(region, row, resource, atlas) {
+    const context = tileTerrainContext();
+    const points = tileSamplePoints(region);
+    const values = points.map(point => {
+        const sample = context
+            ? sampleTerrain(context, point.x + 0.5, point.y + 0.5)
+            : (region.sample || { height: 0.5, moisture: 0.5, temperature: 0.55, rawBiome: region.rawBiome });
+        const soil = tileSoilAt(region, point.x, point.y);
+        return {
+            x: point.x, y: point.y,
+            biome: sample.rawBiome,
+            height: Math.round(Number(sample.height) * 1000) / 1000,
+            moisture: Math.round(Number(sample.moisture) * 1000) / 1000,
+            temperature: Math.round(Number(sample.temperature) * 1000) / 1000,
+            soil: Math.round(soil * 1000) / 1000,
+            suitability: Math.round(tileSuitability(resource, region, sample, point.x, point.y, atlas.seed, soil) * 1000) / 1000,
+            quality: Math.round(tileQuality(resource, region, sample, atlas.seed, soil) * 10) / 10
+        };
+    });
+    const meanSuitability = values.reduce((sum, sample) => sum + sample.suitability, 0) / Math.max(1, values.length);
+    const meanQuality = values.reduce((sum, sample) => sum + sample.quality, 0) / Math.max(1, values.length);
+    const samples = values.map(sample => {
+        const factor = meanSuitability > 0.0001 ? sample.suitability / meanSuitability : 0;
+        return {
+            ...sample,
+            capacity: Math.max(0, Math.round(row.capacity * factor / Math.max(1, values.length))),
+            quality: Math.round(clamp(row.quality + (sample.quality - meanQuality) * 0.55, 8, 100))
+        };
+    });
+    const capacity = samples.reduce((sum, sample) => sum + sample.capacity, 0);
+    const weightedQuality = capacity > 0
+        ? samples.reduce((sum, sample) => sum + sample.quality * sample.capacity, 0) / capacity
+        : row.quality;
+    return {
+        samples,
+        suitability: Math.round(meanSuitability * 1000) / 1000,
+        capacity,
+        quality: Math.round(weightedQuality * 10) / 10
+    };
+}
+
+function cachedTileSamples(region, row, resource, atlas, budgeted = false) {
+    const key = region.id + ":" + row.id;
+    const signature = tileSignature(region, row, resource, atlas);
+    const cached = tileSampleCache.get(key);
+    if (cached?.signature === signature) {
+        tileCacheHits += 1;
+        tileSampleCache.delete(key);
+        tileSampleCache.set(key, cached);
+        return { ...cached.result, cached: true };
+    }
+    if (budgeted && tileFrameBudget <= 0) return null;
+    if (budgeted) tileFrameBudget -= 1;
+    tileCacheMisses += 1;
+    const result = computeTileSamples(region, row, resource, atlas);
+    tileSampleCache.set(key, { signature, result });
+    while (tileSampleCache.size > TILE_CACHE_LIMIT) {
+        tileSampleCache.delete(tileSampleCache.keys().next().value);
+    }
+    return { ...result, cached: false };
+}
+
+export function beginBiomeDensityFrame(frameKey = state.renderedFrames || 0) {
+    const key = String(frameKey);
+    if (tileFrameKey !== key) {
+        tileFrameKey = key;
+        tileFrameBudget = TILE_FRAME_BUDGET;
+    }
+}
+
+export function invalidateBiomeTileCache() {
+    tileSampleCache = new Map();
+    tileCacheHits = 0;
+    tileCacheMisses = 0;
+    tileFrameKey = null;
+    tileFrameBudget = TILE_FRAME_BUDGET;
+}
+
+export function getBiomeTileSampleStats() {
+    return {
+        cacheSize: tileSampleCache.size, cacheHits: tileCacheHits, cacheMisses: tileCacheMisses,
+        frameBudget: tileFrameBudget, frameSize: TILE_FRAME_BUDGET, frameKey: tileFrameKey
+    };
+}
+
+export function getBiomeResourceTileSamples(regionId, resourceId) {
+    const atlas = ensureBiomeAtlas();
+    const region = regionById(regionId);
+    const row = resourceRow(region, resourceId);
+    const resource = BIOME_RESOURCE_BY_ID[resourceId];
+    if (!atlas || !region || !row || !resource) return { ok: false, reason: "unknown-resource" };
+    const result = cachedTileSamples(region, row, resource, atlas, false);
+    return { ok: true, regionId: region.id, resourceId: resource.id, ...result };
+}
+
+export function getBiomeRegionTileSnapshot(regionId) {
+    const atlas = ensureBiomeAtlas();
+    const region = regionById(regionId);
+    if (!atlas || !region) return { ok: false, reason: "unknown-region" };
+    const resources = [];
+    let capacity = 0;
+    let qualityWeight = 0;
+    let qualityUnits = 0;
+    for (const row of region.resources) {
+        const resource = BIOME_RESOURCE_BY_ID[row.id];
+        if (!resource) continue;
+        const result = cachedTileSamples(region, row, resource, atlas, false);
+        resources.push({
+            id: row.id, category: resource.category,
+            tileCapacity: result.capacity, tileQuality: result.quality,
+            samples: result.samples.length, sampleSuitability: result.suitability
+        });
+        capacity += result.capacity;
+        const units = Math.max(1, result.capacity);
+        qualityWeight += result.quality * units;
+        qualityUnits += units;
+    }
+    return {
+        ok: true, regionId: region.id, tileCapacity: capacity,
+        tileQuality: Math.round((qualityWeight / Math.max(1, qualityUnits)) * 10) / 10,
+        resources
+    };
+}
+
+export function getBiomeDensityCells(frameKey = state.renderedFrames || 0) {
+    beginBiomeDensityFrame(frameKey);
+    const atlas = ensureBiomeAtlas();
+    if (!atlas) return [];
+    return atlas.regions.filter(region => region.discovered).map(region => {
+        const families = new Map();
+        for (const row of region.resources) {
+            if (!row.discovered || row.locallyExtinct) continue;
+            const resource = BIOME_RESOURCE_BY_ID[row.id];
+            if (!resource) continue;
+            const result = cachedTileSamples(region, row, resource, atlas, true);
+            if (!result) continue;
+            const familyId = BIOME_RESOURCE_FAMILY_BY_CATEGORY[resource.category] || "flora";
+            const family = BIOME_RESOURCE_MAP_FAMILIES[familyId] || BIOME_RESOURCE_MAP_FAMILIES.flora;
+            const entry = families.get(familyId) || {
+                id: family.id, label: family.label, color: family.color,
+                suitabilitySum: 0, sampleCount: 0, capacity: 0, points: []
+            };
+            entry.suitabilitySum += result.suitability * result.samples.length;
+            entry.sampleCount += result.samples.length;
+            entry.capacity += result.capacity;
+            for (const sample of result.samples) {
+                if (sample.suitability <= 0.02) continue;
+                entry.points.push({ x: sample.x, y: sample.y, value: Math.round(sample.suitability * 100) });
+            }
+            families.set(familyId, entry);
+        }
+        const visibleFamilies = [...families.values()].map(entry => ({
+            id: entry.id, label: entry.label, color: entry.color,
+            value: Math.round(100 * entry.suitabilitySum / Math.max(1, entry.sampleCount)),
+            capacity: entry.capacity,
+            points: entry.points.sort((a, b) => b.value - a.value || a.x - b.x || a.y - b.y).slice(0, 2)
+        })).sort((a, b) => b.value - a.value || a.id.localeCompare(b.id));
+        return { id: region.id, x: region.x, y: region.y, width: region.width, height: region.height, families: visibleFamilies };
+    });
 }
 
 function depositSites(resource, region, index, seed) {
@@ -442,6 +708,7 @@ export function generateBiomeAtlas(seed, context) {
         trade: { gold: 0, lastYear: 0, imported: [], exported: [], caravanSpend: 0 }
     };
     state.biomeAtlas.stats.potentialYield = estimateBiomePotentialYield();
+    invalidateBiomeTileCache();
     return state.biomeAtlas;
 }
 
@@ -697,6 +964,7 @@ function revealRegion(region, level = 1) {
     }
     region.surveyLevel = Math.max(region.surveyLevel, level);
     region.productionCost = productionCostFor(region);
+    invalidateBiomeTileCache();
 }
 
 export function syncBiomeDiscovery({ silent = false } = {}) {
@@ -795,8 +1063,15 @@ export function harvestBiomeResource(regionId, resourceId) {
     // share of a harvest. This is the link from long-term damage to real yield.
     const habitatFactor = clamp(0.55 + region.vegetation * 0.38 + region.ecologyTrend * 0.2, 0.35, 1.1);
     const available = effectiveStock(row, resource);
+    // Local tile samples are not just a map decoration: a harvest is planned
+    // around the best sampled patch of the region. The bounded 5x5 sample is
+    // only requested for this explicit action, never per frame or tick.
+    const tile = cachedTileSamples(region, row, resource, atlas, false);
+    const bestTileQuality = tile.samples.reduce((best, sample) => Math.max(best, sample.quality), row.quality);
+    const tileYieldFactor = clamp(0.88 + bestTileQuality / 100 * 0.12 + (tile.suitability - 0.5) * 0.08, 0.9, 1.08);
     const amount = clamp(Math.round((5 + available * 0.035) * policy.yield * qualityFactor * habitatFactor
-        * focusYieldFactor(region, resource) * supplyYieldFactor(region) * diseasePenalty(region)), 1, 26);
+        * focusYieldFactor(region, resource) * supplyYieldFactor(region) * diseasePenalty(region)
+        * tileYieldFactor), 1, 26);
     const taken = Math.min(amount, Math.ceil(available));
     row.stock = Math.max(0, row.stock - taken);
     row.lastHarvestYear = Number(state.year) || 1;
@@ -814,6 +1089,7 @@ export function harvestBiomeResource(regionId, resourceId) {
         });
     }
     atlas.stats.harvests += 1;
+    invalidateBiomeTileCache();
     let ledger = null;
     let stored = 0;
     if (resource.yieldResource) {
@@ -829,6 +1105,7 @@ export function harvestBiomeResource(regionId, resourceId) {
         amount: taken, ledger, stored, region: region.id, resource: resource.id, cost: actionCost,
         seasonalStock: Math.round(available), clearCut: Math.round(region.clearCut * 100) / 100,
         diseasePressure: Math.round(region.diseasePressure * 100) / 100,
+        tileQuality: tile.quality, tileSuitability: tile.suitability,
         focusMatch: focusMatchesCategories(region, [resource.category]), supplyBonus: supplyBonusFor(region)
     };
 }
@@ -915,6 +1192,7 @@ export function restoreBiomeRegion(regionId) {
         row.pressure = clamp(row.pressure * 0.4, 0, 2);
     }
     addHistory(atlas, { regionId: region.id, kind: "restoration", text: "Crown works restored habitat and breeding cover in " + region.name + "." });
+    invalidateBiomeTileCache();
     return { ok: true, message: "HABITAT RESTORATION COMPLETE · " + region.name };
 }
 
@@ -1468,6 +1746,7 @@ export function updateBiomeAtlasSeason() {
         }
     }
     atlas.migration = [...(atlas.migration || []), ...routes].slice(-24);
+    invalidateBiomeTileCache();
     return { updated: true, season, moved, routes: routes.length };
 }
 
@@ -1639,6 +1918,7 @@ export function updateBiomeAtlasAnnual() {
     stats.caravans = caravans.routes;
     stats.caravanGold = caravans.gold;
     regionEcologyHistory(atlas, stats, year);
+    invalidateBiomeTileCache();
     return { updated: true, year, ...stats };
 }
 
@@ -1953,11 +2233,13 @@ export function normalizeBiomeAtlasState(snapshot) {
 
 export function restoreBiomeAtlasState(snapshot) {
     if (snapshot === undefined || snapshot === null) return null;
+    invalidateBiomeTileCache();
     return normalizeBiomeAtlasState(snapshot);
 }
 
 export function resetBiomeAtlas() {
     state.biomeAtlas = null;
+    invalidateBiomeTileCache();
 }
 
 // Exposed for deterministic tests and diagnostics.

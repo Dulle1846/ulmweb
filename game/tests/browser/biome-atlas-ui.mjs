@@ -259,6 +259,46 @@ try {
     assert.ok(mapProof.markers >= 1, "the biome layer needs resource markers for the surveyed region");
     assert.ok(mapProof.refuges >= 1, "the biome layer needs refuge markers for the surveyed region");
 
+    const densityProof = await page.evaluate(async regionId => {
+        const atlas = await import("./js/systems/biome-resource-state.js");
+        const { state } = await import("./js/core/state.js");
+        atlas.invalidateBiomeTileCache();
+        atlas.beginBiomeDensityFrame("browser-budget");
+        const before = atlas.getBiomeTileSampleStats();
+        atlas.getBiomeDensityCells("browser-budget");
+        const firstFrame = atlas.getBiomeTileSampleStats();
+        let cell = null;
+        for (let frame = 0; frame < 48 && !cell?.families?.length; frame++) {
+            const key = "browser-density-" + frame;
+            atlas.beginBiomeDensityFrame(key);
+            cell = atlas.getBiomeDensityCells(key).find(entry => entry.id === regionId) || null;
+        }
+        return {
+            budget: before.frameSize,
+            firstFrameMisses: firstFrame.cacheMisses,
+            families: cell?.families?.map(family => ({
+                id: family.id, value: family.value, points: family.points.length, color: family.color
+            })) || [],
+            region: { x: cell?.x, y: cell?.y, width: cell?.width, height: cell?.height },
+            renderedFrames: Number(state.renderedFrames) || 0
+        };
+    }, craftTarget.regionId);
+    assert.ok(densityProof.families.length >= 1, "the biome layer needs a discovered resource-density reading");
+    assert.ok(densityProof.firstFrameMisses <= densityProof.budget, "density sampling stays inside its per-frame budget");
+    for (const family of densityProof.families) {
+        assert.ok(["timber", "stone", "flora", "fiber", "fish", "animal"].includes(family.id));
+        assert.ok(family.value >= 0 && family.value <= 100);
+        assert.ok(family.points <= 2, "detail points stay clustered");
+        assert.match(family.color, /^#[0-9a-f]{6}$/i);
+    }
+    await page.waitForFunction(() => {
+        const text = document.querySelector("#map-layer-legend")?.textContent || "";
+        return text.includes("Timber & resin") && text.includes("Fish & coast");
+    }, null, { timeout: 5000 });
+    const legendText = await page.locator("#map-layer-legend").innerText();
+    assert.match(legendText, /Density bars/);
+    assert.match(legendText, /hidden occurrences never appear/);
+
     const beforeSave = await page.evaluate(async ({ regionId, craftRegionId }) => {
         const { state } = await import("./js/core/state.js");
         const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
@@ -350,6 +390,7 @@ try {
         policy: restored.policy,
         markers: mapProof.markers,
         refuges: mapProof.refuges,
+        densityFamilies: densityProof.families.map(family => family.id),
         protectedArea: restored.protectedArea,
         loaded: loadStatus,
         pageErrors: pageErrors.length,

@@ -552,6 +552,7 @@
 .map-swatch--forest{background:#5f8f54}.map-swatch--stone{background:#a9a39a;transform:rotate(45deg);border-radius:0}.map-swatch--fertile{background:#d2b262;border-radius:50%}
 .map-swatch--low{background:#5d6b4a}.map-swatch--mid{background:#9c8b55}.map-swatch--high{background:#c9a65f}
 .map-swatch--dirt{background:#80613f}.map-swatch--gravel{background:#a69a7d}.map-swatch--stone-road{background:#c2b18c}
+.map-swatch--res-timber{background:#75a958}.map-swatch--res-stone{background:#b8b0a0}.map-swatch--res-flora{background:#a98bd6}.map-swatch--res-fiber{background:#d8c070}.map-swatch--res-fish{background:#78b6d0}.map-swatch--res-animal{background:#c98a6a}
 
 /* Resource dossiers and settlement charts --------------------------- */
 .resource-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}

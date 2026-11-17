@@ -697,6 +697,21 @@ export const BIOME_DIET_CATEGORIES = freeze({
     meat: ["meat"]
 });
 
+// Map-facing resource families. Six stable colours make abundance readable at
+// a glance without turning the atlas into a rainbow of 32 category labels.
+// Every catalog category must belong to one family; the audit test enforces it.
+export const BIOME_RESOURCE_MAP_FAMILIES = freeze({
+    timber: freeze({ id: "timber", label: "Timber & resin", color: "#75a958", categories: ["wood", "resin"] }),
+    stone: freeze({ id: "stone", label: "Stone, ore & salt", color: "#b8b0a0", categories: ["stone", "ore", "gem", "salt", "sulfur", "clay", "sand", "volcanic", "crystal", "special-mineral"] }),
+    flora: freeze({ id: "flora", label: "Fruit, herbs & fungi", color: "#a98bd6", categories: ["fruit", "herb", "fungus", "spice", "dye", "poison", "venom", "fantastic-plant"] }),
+    fiber: freeze({ id: "fiber", label: "Fibre", color: "#d8c070", categories: ["fiber"] }),
+    fish: freeze({ id: "fish", label: "Fish & coast", color: "#78b6d0", categories: ["fish"] }),
+    animal: freeze({ id: "animal", label: "Animal goods", color: "#c98a6a", categories: ["meat", "hide", "fur", "wool", "feather", "bone", "horn", "tallow", "honey", "egg", "dairy", "rare-animal"] })
+});
+export const BIOME_RESOURCE_FAMILY_BY_CATEGORY = freeze(Object.fromEntries(
+    Object.values(BIOME_RESOURCE_MAP_FAMILIES).flatMap(family => family.categories.map(category => [category, family.id]))
+));
+
 export const BIOME_RESOURCE_CATEGORIES = freeze({
     wood: "Timber", fruit: "Fruit & nuts", fungus: "Fungi", herb: "Herbs & medicine",
     "fantastic-plant": "Fantastic flora", spice: "Spices", fiber: "Fibre", dye: "Dyes",

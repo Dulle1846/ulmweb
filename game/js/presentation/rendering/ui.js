@@ -11,6 +11,7 @@ import { getFirstSessionSnapshot } from "../first-session.js";
 import { renderStatisticsExplorer } from "../statistics-panel.js";
 import { renderWinterHud } from "../winter-panel.js";
 import { getEndlessSnapshot } from "../../systems/endless.js";
+import { BIOME_RESOURCE_MAP_FAMILIES } from "../../world/biome-resource-data.js";
 
 let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastAmbitionSignature="",lastFirstSessionSignature="",lastRenderedIssueId=null,lastCardSprite="",lastTickTextAt=0;
 function setText(id,value){const el=document.getElementById(id);const next=String(value);if(el&&el.textContent!==next)el.textContent=next;}
@@ -413,6 +414,7 @@ export function renderUI() {
     // budget and Long Task attribution stops at the chunk itself.
     uiHudFrame = setTimeout(runHudRefresh, 0);
 }
+const resourceFamilyLegendItems=Object.values(BIOME_RESOURCE_MAP_FAMILIES).map(family=>["map-swatch--res-"+family.id,family.label]);
 const MAP_LAYER_LEGENDS=Object.freeze({
     resources:{
         label:"RESOURCE SURVEY",
@@ -446,8 +448,8 @@ const MAP_LAYER_LEGENDS=Object.freeze({
     },
     biomes:{
         label:"BIOME ATLAS",
-        items:[["map-swatch--biome","Surveyed region"],["map-swatch--forest-point","Forest point"],["map-swatch--rare","Rare deposit"]],
-        note:"Only explored regions appear. Forest points become dense green survey dots at detail level 3; rare deposits are shown only after a survey."
+        items:[["map-swatch--biome","Surveyed region"],["map-swatch--forest-point","Forest point"],["map-swatch--rare","Rare deposit"],...resourceFamilyLegendItems],
+        note:"Density bars count only discovered resource rows; detail level 3 adds clustered sample points. Forest points and rare deposits obey the same survey visibility, so hidden occurrences never appear in the density reading."
     }
 });
 let lastMapLayerLegend="";
