@@ -185,9 +185,24 @@ export function ensureDiplomacy() {
     return state.diplomacy;
 }
 
+function foreignMarriageBond(realmId) {
+    const bond = state.royal?.foreignMarriage;
+    if (!bond || String(bond.realmId) !== String(realmId)) return null;
+    const consortId = String(state.royal?.consortId || "");
+    if (!consortId) return null;
+    const consort = (state.entities || []).find(entity => !entity.dead && String(entity.personId || entity.id) === consortId);
+    return consort ? bond : null;
+}
+
 function realmSnapshot(realm) {
     const definition = REALM_BY_ID.get(realm.id);
     const year = currentYear();
+    const bond = foreignMarriageBond(realm.id);
+    const marriageBond = bond ? {
+        house:String(bond.house || definition?.royalHouse?.house || "Foreign house"),
+        name:String(bond.name || definition?.royalHouse?.name || "Foreign consort"),
+        sinceYear:Math.max(1, Math.floor(Number(bond.sinceYear) || 1))
+    } : null;
     const guarantee = realm.guarantee ? {
         ...realm.guarantee,
         active:realm.guarantee.expiresYear > year || Boolean(realm.guaranteeCall),
@@ -203,6 +218,7 @@ function realmSnapshot(realm) {
         ...realm,
         guarantee,
         guaranteeCall,
+        marriageBond,
         treatyLabel:DIPLOMATIC_TREATIES[realm.treaty]?.label || "Neutral",
         treatyTone:DIPLOMATIC_TREATIES[realm.treaty]?.tone || "neutral",
         relationLabel:relationLabel(realm.relation),
@@ -505,6 +521,7 @@ export function declareWar(id) {
     const { diplomacy, realm, definition } = locate(id);
     if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
     if (realm.treaty === "war") return { ok:false, reason:"already-at-war" };
+    if (foreignMarriageBond(id)) return { ok:false, reason:"royal-marriage-binds-the-crown" };
     if (realm.guarantee && !realm.guaranteeCall && realm.guarantee.expiresYear <= currentYear()) realm.guarantee = null;
     if (realm.guarantee) return { ok:false, reason:"withdraw-the-guarantee-first" };
     realm.treaty = "war";
@@ -523,6 +540,22 @@ export function declareWar(id) {
     adjustHiddenTension(8);
     addLog("WAR DECLARED AGAINST " + definition.name.toUpperCase(), "#e9857b", "diplomacy");
     return { ok:true, message:"War declared on " + definition.name, realm:realmSnapshot(realm) };
+}
+
+export function applyForeignMarriageBond(id, candidate = {}) {
+    const { diplomacy, realm, definition } = locate(id);
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    if (realm.treaty === "war") return { ok:false, reason:"war-closes-the-court" };
+    const house = definition.royalHouse;
+    realm.relation = clamp(realm.relation + 8);
+    realm.trust = clamp(realm.trust + 10);
+    realm.fear = clamp(realm.fear - 4);
+    record(diplomacy, realm, "marriage", "Royal marriage with " + (candidate.house || house.house) + " binds " + definition.name + " to the crown");
+    applyPoliticalEffects({ legitimacy:0.7, nobility:0.5, guilds:0.3 });
+    state.morale = clamp((Number(state.morale) || 0) + 1);
+    adjustHiddenTension(-2);
+    addLog("ROYAL MARRIAGE BOND WITH " + definition.name.toUpperCase(), "#e8c77b", "diplomacy");
+    return { ok:true, message:"Royal marriage bound to " + definition.name, realm:realmSnapshot(realm) };
 }
 
 export function sueForPeace(id) {
@@ -680,6 +713,12 @@ export function updateDiplomacy() {
             realm.fear = clamp(realm.fear - 0.3);
         }
 
+        const marriageBond = foreignMarriageBond(realm.id);
+        if (marriageBond && realm.treaty !== "war") {
+            realm.relation = clamp(realm.relation + 1.2);
+            realm.trust = clamp(realm.trust + 0.8);
+            effects.legitimacy += 0.03;
+        }
         if (realm.lastTradeYear >= year - 1 && realm.treaty !== "war") {
             realm.relation = clamp(realm.relation + 0.35);
         }

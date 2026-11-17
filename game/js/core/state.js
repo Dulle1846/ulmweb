@@ -18,7 +18,7 @@ function createInitialState() {
         morale:72,seasonIndex:0,year:1,dayOfYear:0,timeOfDay:12,
         identity:null,research:null,legacy:null,endeavours:null,crownSupply:null,expeditions:null,
         government:{form:"feudal",taxRate:10,councilSeats:3,succession:"primogeniture",decrees:0,lastDecisionYear:0,lastTaxChangeYear:0,history:[]},
-        royal:{dynastyName:"Royal House",consortId:null,heirId:null,lastBirthYear:0,history:[]},
+        royal:{dynastyName:"Royal House",consortId:null,heirId:null,lastBirthYear:0,foreignMarriage:null,history:[]},
         currentCard:null,availableCards:[],hand:[],cardRewardQueue:[],selectedCardInstanceId:null,cardPreview:null,
         nextCardDrawTick:0,issueSequence:0,nextIssueAtTick:0,
         worldOptions:{size:"standard",shape:"continent",climate:"temperate",landmass:50,ruggedness:55,forests:52,water:48,fertility:55,resources:50},

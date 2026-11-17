@@ -51,6 +51,13 @@ try {
     await page.locator("#pause-btn").click();
     await page.waitForFunction(async () => (await import("./js/core/state.js")).state.isPaused, null, { timeout: 5000 });
 
+    await page.locator("#command-open-btn").click();
+    await page.locator('[data-command-tab="decisions"]').click();
+    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("FOREIGN ROYAL MATCHES"), null, { timeout: 10000 });
+    assert.equal(await page.locator("[data-foreign-match]").count(), 4, "the royal house must expose all four foreign matches");
+    assert.equal(await page.locator('[data-command="foreign-marriage"]').count(), 4, "every foreign match must have a marriage command");
+    await page.locator("#command-close").click();
+
     const setup = await page.evaluate(async () => {
         const { state } = await import("./js/core/state.js");
         const { TYPE } = await import("./js/core/types.js");
