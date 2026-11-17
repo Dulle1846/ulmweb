@@ -18,7 +18,7 @@ concurrency:
 jobs:
   endurance-60y:
     name: 60-year endurance audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 55
     steps:
       - name: Check out repository
