@@ -54,6 +54,7 @@ async function dismissOverlays() {
         document.getElementById("realm-event-modal")?.classList.add("hidden");
         document.getElementById("event-notification")?.classList.add("hidden");
         document.getElementById("big-message")?.classList.add("hidden");
+        document.getElementById("action-toast")?.classList.remove("is-visible");
         const placement = document.getElementById("placement-status");
         if (placement && !state.currentCard && !state.directBuildType) placement.classList.add("hidden");
     });
@@ -187,11 +188,43 @@ try {
         };
         const rareRegions = discovered.filter(region => rareIdsFor(region).length > 0);
         const forestRegion = rareRegions[0] || discovered.find(region => ["forest", "taiga", "rainforest", "woodland"].includes(region.rawBiome)) || discovered[0];
-        // Put the third-tier camera on the densest forest patch, then shift it
-        // toward the neighbouring water so the frame proves both the dense
-        // stipple and its contrast with non-forest terrain. The first rare
-        // region is still the panel target; it can be a sparse forest edge.
-        const mapTarget = {
+        // Put the third-tier camera on a forest/meadow boundary, not only on
+        // the densest wood. The same frame must prove the stipple and its
+        // contrast with land that is not forest. The rare region remains the
+        // panel target; it can be a different part of the atlas.
+        const forestBiomes = new Set(["forest", "dense-forest", "taiga"]);
+        const openBiomes = new Set(["meadow", "rock", "beach", "tundra", "steppe"]);
+        let boundaryTarget = null;
+        for (const region of discovered) {
+            if (!forestBiomes.has(region.rawBiome)) continue;
+            for (const other of discovered) {
+                if (other === region || !openBiomes.has(other.rawBiome)) continue;
+                const overlapY = Math.min(region.y + region.height, other.y + other.height) - Math.max(region.y, other.y);
+                const overlapX = Math.min(region.x + region.width, other.x + other.width) - Math.max(region.x, other.x);
+                const sharesLeftEdge = Math.abs(region.x - (other.x + other.width)) < 2;
+                const sharesRightEdge = Math.abs(other.x - (region.x + region.width)) < 2;
+                if ((sharesLeftEdge || sharesRightEdge) && overlapY > 4) {
+                    const inside = sharesLeftEdge ? Math.min(6, Math.floor(region.width / 4)) : Math.max(1, region.width - Math.min(6, Math.floor(region.width / 4)));
+                    boundaryTarget = {
+                        x: region.x + inside,
+                        y: Math.max(region.y, other.y) + Math.floor(overlapY / 2)
+                    };
+                    break;
+                }
+                const sharesTopEdge = Math.abs(region.y - (other.y + other.height)) < 2;
+                const sharesBottomEdge = Math.abs(other.y - (region.y + region.height)) < 2;
+                if ((sharesTopEdge || sharesBottomEdge) && overlapX > 4) {
+                    const insideY = sharesTopEdge ? Math.min(6, Math.floor(region.height / 4)) : Math.max(1, region.height - Math.min(6, Math.floor(region.height / 4)));
+                    boundaryTarget = {
+                        x: Math.max(region.x, other.x) + Math.floor(overlapX / 2),
+                        y: region.y + insideY
+                    };
+                    break;
+                }
+            }
+            if (boundaryTarget) break;
+        }
+        const mapTarget = boundaryTarget || {
             x: Math.min(W - 4, best.x + 12),
             y: best.y
         };
@@ -206,7 +239,7 @@ try {
             rareRegionId: rareRegions[0]?.id || null,
             allRegions: state.biomeAtlas.regions.map(region => [region.id, region.rawBiome, region.discovered]),
             potentialYield: state.biomeAtlas.stats.potentialYield,
-            target: { x: mapTarget.x, y: mapTarget.y, score: best.score }
+            target: { x: mapTarget.x, y: mapTarget.y, score: best.score, boundary: Boolean(boundaryTarget) }
         };
     });
     console.log("ATLAS " + JSON.stringify(atlas));
@@ -376,10 +409,16 @@ try {
 
     if (await sell.count()) {
         await sell.click();
+        await page.waitForFunction(async () => (await import("./js/core/state.js")).state.biomeAtlas.trade.gold > 0, null, { timeout: 5000 });
         await page.waitForTimeout(300);
         await page.locator("#command-panel-content").evaluate(element => { element.scrollTop = 0; });
         await page.waitForTimeout(180);
         await shot("biomes-trade-sale");
+        const trade = await page.evaluate(async () => {
+            const { state } = await import("./js/core/state.js");
+            return { gold: state.biomeAtlas.trade.gold, sold: state.biomeAtlas.stats.rareSold, stores: state.biomeAtlas.regions.reduce((sum, region) => sum + region.resources.reduce((inner, row) => inner + row.stored, 0), 0) };
+        });
+        console.log("TRADE " + JSON.stringify(trade));
     }
 
     await ensureRegionOpen(firstRegionId);

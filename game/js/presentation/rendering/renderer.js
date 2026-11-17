@@ -253,27 +253,58 @@ function drawMapLayer(ctx,zoom,camera,canvas){
         // stand per sampled tile and keeps this bounded to the visible window.
         const forestTier=showForestPoints?3:(state.zoomLevel===2?2:1);
         if(layer==="biomes"){
-            const sample=forestTier===3?1:forestTier===2?3:6;
-            const subDots=forestTier===3
-                ?[[.22,.26],[.76,.22],[.28,.72],[.74,.7]]
-                :[[.5,.5]];
-            const radius=forestTier===3?Math.max(2.2,tileSize*.12):Math.max(1.5,tileSize*sample*(forestTier===2?.14:.09));
-            ctx.fillStyle=forestTier===3?"#74c96a":"#6aa45d";
-            for(let y=minY;y<=maxY;y+=sample){
-                for(let x=minX;x<=maxX;x+=sample){
-                    if(!state.explored?.[x]?.[y])continue;
-                    const share=forestCoverShareAt(x,y);
-                    if(share<.08)continue;
-                    const left=x*tileSize-camera.x,top=y*tileSize-camera.y;
-                    const noise=(Math.imul(x+1,0x9e3779b1)^Math.imul(y+1,0x85ebca6b))>>>0;
-                    const driftX=((noise&7)/7-.5)*.2;
-                    const driftY=(((noise>>3)&7)/7-.5)*.2;
-                    ctx.globalAlpha=.44+share*.44;
-                    for(let i=0;i<subDots.length;i++){
-                        const jitterX=driftX+(((noise>>(i*3+6))&3)/3-.5)*.08;
-                        const jitterY=driftY+(((noise>>(i*3+8))&3)/3-.5)*.08;
-                        const px=left+(subDots[i][0]+jitterX)*tileSize;
-                        const py=top+(subDots[i][1]+jitterY)*tileSize;
+            if(forestTier===3){
+                // Detail 3 is a stipple, not four oversized beads per tile. A
+                // 3x3-5x5 grid with a hashed phase fills the woodland with fine
+                // points; immediate fillRect calls keep the draw bounded.
+                const side=Math.max(3,Math.min(5,Math.round(tileSize/15)));
+                const total=side*side;
+                const radius=Math.max(1.45,Math.min(2.6,tileSize*.04));
+                const size=radius*2;
+                ctx.fillStyle="#a9ee7a";
+                ctx.globalAlpha=.9;
+                for(let y=minY;y<=maxY;y++){
+                    for(let x=minX;x<=maxX;x++){
+                        if(!state.explored?.[x]?.[y])continue;
+                        const share=forestCoverShareAt(x,y);
+                        if(share<.08)continue;
+                        const left=x*tileSize-camera.x,top=y*tileSize-camera.y;
+                        const noise=(Math.imul(x+1,0x9e3779b1)^Math.imul(y+1,0x85ebca6b))>>>0;
+                        const count=Math.max(1,Math.round(total*(.4+share*.6)));
+                        const phase=noise%total;
+                        for(let i=0;i<count;i++){
+                            // 7 is coprime with 16, 25 and 36, so each slot is
+                            // visited once before the chosen points wrap.
+                            const slot=(phase+i*7)%total;
+                            const col=slot%side,row=Math.floor(slot/side);
+                            const ox=(col+.5)/side;
+                            const oy=(row+.5)/side;
+                            const jitterX=(((noise>>(i*3+4))&7)/7-.5)*.16;
+                            const jitterY=(((noise>>(i*3+7))&7)/7-.5)*.16;
+                            const px=left+(ox+jitterX)*tileSize-size*.5;
+                            const py=top+(oy+jitterY)*tileSize-size*.5;
+                            ctx.fillRect(px,py,size,size);
+                        }
+                    }
+                }
+            }else{
+                const sample=forestTier===2?3:6;
+                const radius=forestTier===2
+                    ?Math.max(1.8,tileSize*sample*.075)
+                    :Math.max(1.8,tileSize*sample*.13);
+                ctx.fillStyle=forestTier===2?"#80c26e":"#6ea45e";
+                for(let y=minY;y<=maxY;y+=sample){
+                    for(let x=minX;x<=maxX;x+=sample){
+                        if(!state.explored?.[x]?.[y])continue;
+                        const share=forestCoverShareAt(x,y);
+                        if(share<.08)continue;
+                        const left=x*tileSize-camera.x,top=y*tileSize-camera.y;
+                        const noise=(Math.imul(x+1,0x9e3779b1)^Math.imul(y+1,0x85ebca6b))>>>0;
+                        const driftX=((noise&7)/7-.5)*.2;
+                        const driftY=(((noise>>3)&7)/7-.5)*.2;
+                        ctx.globalAlpha=.44+share*.44;
+                        const px=left+(.5+driftX)*tileSize;
+                        const py=top+(.5+driftY)*tileSize;
                         ctx.beginPath();
                         ctx.arc(px,py,radius,0,Math.PI*2);
                         ctx.fill();

@@ -208,8 +208,35 @@ function regionPotentialYield(region, season = state.seasonIndex) {
 }
 
 // The map dots read the compact resource geography rather than rebuilding a
-// full forest stand for every sampled tile. This keeps the biome overlay at
-// frame budget even on the dense third detail tier.
+// full forest stand for every sampled tile. Visual forest biomes still get a
+// cover baseline when a tile has no harvestable stand: otherwise the atlas
+// showed holes across half of the woodland that the terrain renderer paints.
+let forestCoverContext = null;
+function forestBiomeShareAt(tx, ty) {
+    const heights = state.heightMap;
+    if (!heights || !state.moistureMap || !state.temperatureMap) return 0;
+    if (!forestCoverContext || forestCoverContext.heights !== heights
+        || forestCoverContext.moistures !== state.moistureMap
+        || forestCoverContext.temperatures !== state.temperatureMap
+        || forestCoverContext.resolution !== state.terrainResolution) {
+        forestCoverContext = {
+            heights,
+            moistures: state.moistureMap,
+            temperatures: state.temperatureMap,
+            resolution: state.terrainResolution,
+            pixW: state.terrainPixW,
+            pixH: state.terrainPixH,
+            sea: state.seaLevel
+        };
+    }
+    const sample = sampleTerrain(forestCoverContext, tx + 0.5, ty + 0.5);
+    if (sample.rawBiome === "dense-forest") return 1;
+    if (sample.rawBiome === "forest") return 0.9;
+    if (sample.rawBiome === "taiga") return 0.78;
+    if (sample.rawBiome === "swamp") return 0.32;
+    return 0;
+}
+
 export function forestCoverShareAt(x, y) {
     const geo = state.resourceGeography;
     const width = Number(state.worldW) || 0;
@@ -219,8 +246,17 @@ export function forestCoverShareAt(x, y) {
     if (!geo || !geo.forestCapacity || tx < 0 || ty < 0 || tx >= width || ty >= height) return 0;
     const index = ty * width + tx;
     const capacity = Number(geo.forestCapacity[index]) || 0;
-    if (capacity <= 0) return 0;
-    return clamp((Number(geo.forestStock?.[index]) || 0) / capacity, 0, 1);
+    const resourceShare = capacity > 0
+        ? clamp((Number(geo.forestStock?.[index]) || 0) / capacity, 0, 1)
+        : 0;
+    // The layer marks the forest biome, not every isolated tree on a meadow.
+    // Without this gate the whole island reads as woodland and the atlas loses
+    // the contrast it needs against open, rocky and settled terrain.
+    const visualShare = forestBiomeShareAt(tx, ty);
+    if (visualShare <= 0) return 0;
+    // A healthy stand keeps its own density; a logged or capacity-less forest
+    // keeps a visible biome footprint so the atlas never invents bald patches.
+    return clamp(Math.max(visualShare * 0.72, resourceShare), 0.18, 1);
 }
 
 export function estimateBiomePotentialYield() {
@@ -632,7 +668,7 @@ export function sellBiomeGoods(regionId, resourceId) {
     const value = Math.max(1, Math.round(stored * resource.tradeValue * (0.7 + region.quality / 180)));
     row.stored = 0;
     addResource("gold", value);
-    atlas.stats.rareSold += stored;
+    if (resource.rare) atlas.stats.rareSold += stored;
     atlas.stats.goldFromTrade += value;
     atlas.trade.gold = (Number(atlas.trade.gold) || 0) + value;
     atlas.trade.lastYear = Number(state.year) || 1;
@@ -768,13 +804,14 @@ export function getBiomeAtlasSnapshot() {
     if (!atlas) {
         return {
             available: false, version: VERSION, total: MAX_REGIONS, discovered: 0,
-            regions: [], rareKnown: 0, speciesKnown: 0, rareSpecies: 0,
+            regions: [], surveyed: 0, rareKnown: 0, speciesKnown: 0, rareSpecies: 0,
             history: [], stats: {}, trade: {}, imports: [], exports: [], specialisations: [], health: 0
         };
     }
     syncBiomeDiscovery({ silent: true });
     const regions = atlas.regions.filter(region => region.discovered).map(region => getBiomeRegionSnapshot(region.id)).filter(Boolean);
     const allRegions = atlas.regions.map(region => getBiomeRegionSnapshot(region.id)).filter(Boolean);
+    const surveyed = allRegions.filter(region => region.surveyLevel > 0).length;
     const rareKnown = allRegions.reduce((sum, region) => sum + region.resources.filter(row => row.discovered && row.rare).length, 0);
     const speciesKnown = new Set();
     let rareSpecies = 0;
@@ -802,6 +839,7 @@ export function getBiomeAtlasSnapshot() {
         seed: atlas.seed,
         total: MAX_REGIONS,
         discovered: regions.length,
+        surveyed,
         regions,
         rareKnown,
         speciesKnown: speciesKnown.size,

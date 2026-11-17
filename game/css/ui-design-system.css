@@ -457,6 +457,8 @@ html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){.skip-to-game{transition:none}}
 
 /* 1.2.19 biome atlas management and map survey */
+#command-panel-content{scroll-padding-top:16px}
+#command-panel-content .command-section-title{scroll-margin-top:16px}
 .map-swatch--biome{background:#47764f;border-radius:50%}
 .map-swatch--forest-point{background:#5f9b54;border-radius:50%;box-shadow:0 0 0 1px #315e41}
 .map-swatch--rare{background:#e4bd72;transform:rotate(45deg);border-radius:0}

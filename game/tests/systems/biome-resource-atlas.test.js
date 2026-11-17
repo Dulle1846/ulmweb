@@ -7,7 +7,7 @@ import {
     BIOME_WILDLIFE_BY_ID
 } from "../../js/world/biome-resource-data.js";
 import {
-    forestPointTier, generateBiomeAtlas, getBiomeAtlasSnapshot, getBiomeEconomySnapshot,
+    forestCoverShareAt, forestPointTier, generateBiomeAtlas, getBiomeAtlasSnapshot, getBiomeEconomySnapshot,
     harvestBiomeResource, huntBiomeSpecies, normalizeBiomeAtlasState, restoreBiomeRegion,
     restoreBiomeAtlasState, sellBiomeGoods, serializeBiomeAtlasState, setBiomeFocus,
     setBiomePolicy, shouldDrawForestPoints, surveyBiomeRegion, syncBiomeDiscovery,
@@ -51,14 +51,19 @@ function contextForBands() {
 
 function setup(seed = 20261119) {
     resetState();
+    const context = contextForBands();
     state.worldSeed = seed;
     state.worldW = W;
     state.worldH = H;
+    state.heightMap = context.heights;
+    state.moistureMap = context.moistures;
+    state.temperatureMap = context.temperatures;
+    state.seaLevel = context.sea;
     state.terrainResolution = RES;
     state.terrainPixW = PIX;
     state.terrainPixH = PIX;
     state.explored = Array.from({ length: W }, () => new Array(H).fill(false));
-    return generateBiomeAtlas(seed, contextForBands());
+    return generateBiomeAtlas(seed, context);
 }
 
 function discoveredRegion(atlas) {
@@ -146,12 +151,15 @@ test("1.2.19 preferred biomes, quality and rare deposits are honoured", () => {
         assert.equal(example.row.discovered, false, "rare deposits start hidden");
         example.region.discovered = true;
         state.resources.gold = 100;
+        assert.equal(getBiomeAtlasSnapshot().surveyed, 0, "discovering a region is not a survey");
         const surveyed = surveyBiomeRegion(example.region.id);
         assert.equal(surveyed.ok, true);
         assert.equal(example.row.discovered, false, "the first survey still keeps rare deposits hidden");
+        assert.equal(getBiomeAtlasSnapshot().surveyed, 1, "the first survey is counted once");
         const rareSurvey = surveyBiomeRegion(example.region.id);
         assert.equal(rareSurvey.ok, true);
         assert.equal(example.row.discovered, true, "the dedicated rare survey reveals rare deposits");
+        assert.equal(getBiomeAtlasSnapshot().surveyed, 1, "the second survey does not double-count the region");
     }
 });
 
@@ -256,6 +264,8 @@ test("1.2.19 extraction, habitat restoration and rare-goods trade are real actio
     const sold = sellBiomeGoods(region.id, storedResource.id);
     assert.equal(sold.ok, true);
     assert.ok(sold.gold > 0);
+    assert.equal(atlas.stats.rareSold, BIOME_RESOURCE_BY_ID[storedResource.id].rare ? sold.amount : 0,
+        "the rare-goods counter must not claim ordinary goods");
     const woodBefore = state.resources.wood;
     const restored = restoreBiomeRegion(region.id);
     assert.equal(restored.ok, true);
@@ -304,4 +314,20 @@ test("1.2.19 third detail level condenses forests into green survey points", () 
     assert.equal(shouldDrawForestPoints(3, "terrain"), false);
     assert.ok(BIOME_POLICIES.sustainable && BIOME_POLICIES.intensive && BIOME_POLICIES.conservation && BIOME_POLICIES.fallow);
     assert.ok(BIOME_FOCUSES.forestry && BIOME_FOCUSES.mining && BIOME_FOCUSES.fishing);
+});
+
+test("1.2.19 map dots keep a visible forest cover without harvestable timber", () => {
+    setup();
+    const capacity = new Uint16Array(W * H);
+    const stock = new Uint16Array(W * H);
+    state.resourceGeography = { forestCapacity: capacity, forestStock: stock };
+    // The synthetic bands put forest across the lower-middle rows.
+    assert.ok(forestCoverShareAt(10, 140) >= 0.18, "woodland without a resource stand still needs atlas points");
+    assert.equal(forestCoverShareAt(10, 10), 0, "open water must stay free of forest points");
+    const index = 140 * W + 10;
+    capacity[index] = 100;
+    stock[index] = 100;
+    assert.equal(forestCoverShareAt(10, 140), 1, "a full stand keeps its own stock density");
+    stock[index] = 20;
+    assert.ok(forestCoverShareAt(10, 140) >= 0.18, "a logged stand keeps a visible survey footprint");
 });
