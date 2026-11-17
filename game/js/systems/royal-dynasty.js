@@ -67,16 +67,30 @@ export function createRoyalChild(){
 export function designateHeir(id){const s=royalState(),h=getRoyalHouse(),candidate=h.children.find(x=>personId(x)===String(id));if(!candidate)return {ok:false,reason:"not-a-living-royal-child"};s.heirId=personId(candidate);ensurePersonProfile(candidate).role="heir";record("heir-designated",ensurePersonProfile(candidate).name);return {ok:true,heir:candidate};}
 export function updateRoyalSuccession(){
  if(getSovereign())return {changed:false,king:getSovereign()};
- const s=royalState(),memorial=(state.personArchive||[]).find(x=>x.isKing),children=memorial?.person?.kinship?.children||[];
- let successor=getRoyalPerson(s.heirId);
+ const s=royalState();
+ const law=["primogeniture","elective","designated"].includes(state.government?.succession)?state.government.succession:"primogeniture";
+ const memorial=(state.personArchive||[]).find(x=>x.isKing),children=memorial?.person?.kinship?.children||[];
  const isAdult=entity=>{if(!entity)return false;const p=ensurePersonProfile(entity);return p.ageYears>=adultAge(entity);};
- if(!isAdult(successor))successor=null;
- if(!successor)successor=children.map(x=>getRoyalPerson(x.personId)).find(isAdult)||null;
- if(!successor)return {changed:false,king:null,reason:"no-living-heir"};
+ const designated=getRoyalPerson(s.heirId);
+ let successor=null;
+ if(law==="designated"){
+  successor=isAdult(designated)?designated:null;
+ }else if(law==="elective"){
+  const pool=state.entities
+   .filter(entity=>!entity.dead&&!entity.isKing&&entity.type===TYPE.VILLAGER&&entity.personId&&isAdult(entity))
+   .filter((entity,index,all)=>all.findIndex(candidate=>personId(candidate)===personId(entity))===index);
+  const score=entity=>{const p=ensurePersonProfile(entity);return (Number(p.traits?.ambition)||0)*0.35+(Number(p.traits?.discipline)||0)*0.25+(Number(p.traits?.compassion)||0)*0.20+(Number(p.traits?.piety)||0)*0.10+Math.min(80,Number(p.ageYears)||0)*0.10;};
+  successor=pool.sort((a,b)=>score(b)-score(a)||ensurePersonProfile(a).name.localeCompare(ensurePersonProfile(b).name))[0]||null;
+ }else{
+  successor=isAdult(designated)?designated:null;
+  if(!successor)successor=children.map(x=>getRoyalPerson(x.personId)).find(isAdult)||null;
+ }
+ if(!successor)return {changed:false,king:null,reason:"no-living-heir",law};
  for(const e of state.entities)if(e.isKing)e.isKing=false;
  successor.isKing=true;successor.isRoyalFamily=true;const p=ensurePersonProfile(successor,{role:"king"});p.role="king";s.heirId=null;
- state.kingHp=Math.max(1,Math.min(successor.maxHp||300,successor.hp||300));record("succession","The crown passed to "+p.name);
- addPersonMemory(successor,{id:"succession:"+successor.id+":"+state.year,type:"dynasty",text:"I inherited the crown and became sovereign in year "+state.year+".",tick:state.tick,importance:100});
- return {changed:true,king:successor};
+ state.kingHp=Math.max(1,Math.min(successor.maxHp||300,successor.hp||300));
+ record("succession","The crown passed to "+p.name+" under "+law+" law.");
+ addPersonMemory(successor,{id:"succession:"+successor.id+":"+state.year,type:"dynasty",text:"I inherited the crown under "+law+" law and became sovereign in year "+state.year+".",tick:state.tick,importance:100});
+ return {changed:true,king:successor,law};
 }
 export function normalizeRoyalState(input=state.royal){state.royal={...(input&&typeof input==="object"?input:{})};return royalState();}

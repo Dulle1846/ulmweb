@@ -78,6 +78,14 @@ At the court release the new state was additive on schema 4. The current save sc
 - Deterministic campaign: 25 years, 10,040 ticks, 13/13 ambitions, 4.371 ms/tick (50,914 ms).
 - `git diff --check`: clean.
 
+## Royal advisor (3.8)
+
+The Royal Court now includes one named advisor drawn from the living adult residents or appointed by the crown for 8 gold. The advisor has a real competence, loyalty, relationship, ambition and faction bias derived from traits, needs, kinship and the head's relationship with the sovereign.
+
+Once per year `advisor.js` reads the actual treasury, food reserve, food-crisis severity, active wars, garrison, faction support, legitimacy, docket and unemployment. It proposes one concrete decision with cited values, a real cost and real resource, political or morale effects. The player can accept, reject, delay or request evidence. Every outcome is written to bounded advisor memory, the court log and the relevant person's memories. Faction sympathy can lift a recommendation above its raw pressure score, and confidence reflects competence rather than omniscience.
+
+The advisor is stored inside `state.court.advisor`, so old saves normalize to no advisor and gain one on the next annual court session. The card is rendered in Government → Royal Court; the same snapshot drives the acceptance buttons and the advisor-memory list. The annual pass is bounded to one advisor and at most eight evidence rows.
+
 ## Deliberate limits
 
 This is a court, not a full parliamentary state. The separate [living noble houses](NOBILITY.md) now provide resident-led houses, estates, dues, charters and levies. There is still no elected parliament, law-voting procedure, independent judiciary, provincial autonomy, noble land army, espionage network or autonomous envoy travel. Corruption is an annual skim with a visible audit, not a complete shadow economy. These remain later roadmap slices and are not claimed as implemented.

@@ -89,4 +89,32 @@ export function setTaxRate(rate){
  recordReform("Tax rate "+previous+"% -> "+next+"%");
  return {ok:true,government:g,politics:getPoliticalSnapshot(),previous,rate:next};
 }
+export const SUCCESSION_LAWS = Object.freeze({
+    primogeniture: Object.freeze({ label: "Primogeniture", description: "The eldest eligible child inherits before any collateral claimant." }),
+    elective: Object.freeze({ label: "Elective crown", description: "The great houses and adult residents choose the next sovereign." }),
+    designated: Object.freeze({ label: "Designated heir", description: "Only the sovereign's sealed heir may inherit; no silent fallback." })
+});
+export const SUCCESSION_LAW_COST = 15;
+export function setSuccessionLaw(law) {
+    const g = normalizeGovernment();
+    if (!Object.hasOwn(SUCCESSION_LAWS, law)) return { ok: false, reason: "unknown-succession-law" };
+    if (g.succession === law) return { ok: false, reason: "already-in-force" };
+    const year = Math.max(1, Math.floor(Number(state.year) || 1));
+    if (g.history.some(entry => entry.year === year && entry.kind === "succession-law")) return { ok: false, reason: "one-succession-change-per-year" };
+    if ((Number(state.resources?.gold) || 0) < SUCCESSION_LAW_COST) return { ok: false, reason: "not-enough-gold" };
+    addResource("gold", -SUCCESSION_LAW_COST);
+    const previous = g.succession;
+    g.succession = law;
+    g.history.push({ year, kind: "succession-law", from: previous, to: law });
+    g.history = g.history.slice(-40);
+    g.decrees++;
+    const effects = law === "elective"
+        ? { nobility: 1.2, commons: 1.0, legitimacy: 0.3 }
+        : law === "designated"
+            ? { nobility: -1.0, legitimacy: 0.5 }
+            : { nobility: 2.0, commons: -0.5, legitimacy: 0.2 };
+    applyPoliticalEffects(effects);
+    recordReform("Succession law " + previous + " -> " + law);
+    return { ok: true, government: g, law, previous, cost: SUCCESSION_LAW_COST };
+}
 export function getGovernmentSnapshot(){const g=normalizeGovernment();return {...g,formDetails:GOVERNMENT_FORMS[g.form],modifiers:getGovernmentModifiers(),politics:getPoliticalSnapshot()};}

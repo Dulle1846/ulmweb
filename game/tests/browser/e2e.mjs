@@ -515,6 +515,30 @@ try{
     assert.equal(await page.locator("#command-modal").isVisible(),true);
     await page.locator('[data-command="government-form"][data-value="council"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Crowned council"));
+    // The royal advisor is a real resident, not a fixed label. The card must
+    // expose the cited figures and the four decisions before evidence is asked.
+    await page.locator("#command-panel-content .advisor-card").waitFor({ state: "visible", timeout: 10000 });
+    const advisorCard = await page.evaluate(async () => {
+        const { getAdvisorSnapshot } = await import("./js/systems/advisor.js");
+        const snapshot = getAdvisorSnapshot();
+        return {
+            name: snapshot.advisor?.name || "",
+            advice: snapshot.advice?.title || "",
+            evidence: snapshot.advice?.evidence?.length || 0,
+            buttons: document.querySelectorAll('#command-panel-content [data-command="advisor-action"]').length,
+            text: document.querySelector("#command-panel-content .advisor-card")?.textContent || ""
+        };
+    });
+    assert.ok(advisorCard.name, "the advisor card must name a resident");
+    assert.ok(advisorCard.advice, "the advisor card must expose a current recommendation");
+    assert.ok(advisorCard.evidence >= 2, "the recommendation must cite at least two live values");
+    assert.equal(advisorCard.buttons, 4, "accept, reject, delay and evidence must all be available");
+    assert.match(advisorCard.text, /COMPETENCE/);
+    await page.locator('#command-panel-content [data-command="advisor-action"][data-value="evidence"]').click();
+    await page.waitForFunction(async () => {
+        const { getAdvisorSnapshot } = await import("./js/systems/advisor.js");
+        return getAdvisorSnapshot().advice?.status === "evidence";
+    }, null, { timeout: 10000 });
 
     // The named garrison and the public-health chain are real management
     // screens. Grant a deterministic fixture, then execute the actual actions a

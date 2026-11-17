@@ -138,6 +138,60 @@ function normalizeOffice(saved, officeId) {
     };
 }
 
+function normalizeAdvisorRecord(saved) {
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) return null;
+    const personId = String(saved.personId || "").slice(0, 100);
+    if (!personId) return null;
+    const advice = saved.advice && typeof saved.advice === "object" && !Array.isArray(saved.advice) ? {
+        id: String(saved.advice.id || "advice").slice(0, 80),
+        kind: String(saved.advice.kind || "granary").slice(0, 24),
+        title: String(saved.advice.title || "Council advice").slice(0, 120),
+        recommendation: String(saved.advice.recommendation || "").slice(0, 240),
+        evidence: (Array.isArray(saved.advice.evidence) ? saved.advice.evidence : []).slice(0, 8).map(item => ({
+            label: String(item?.label || "").slice(0, 60),
+            value: String(item?.value ?? "").slice(0, 80)
+        })).filter(item => item.label),
+        cost: saved.advice.cost && typeof saved.advice.cost === "object" && !Array.isArray(saved.advice.cost)
+            ? Object.fromEntries(Object.entries(saved.advice.cost).filter(([, value]) => Number(value) > 0).map(([key, value]) => [String(key).slice(0, 20), integer(value)]))
+            : {},
+        effects: saved.advice.effects && typeof saved.advice.effects === "object" && !Array.isArray(saved.advice.effects) ? saved.advice.effects : {},
+        effectsLabel: String(saved.advice.effectsLabel || "").slice(0, 180),
+        createdYear: integer(saved.advice.createdYear, 1),
+        createdTick: integer(saved.advice.createdTick),
+        expiresTick: integer(saved.advice.expiresTick),
+        status: ["pending", "evidence", "accepted", "rejected", "delayed", "expired"].includes(saved.advice.status) ? saved.advice.status : "pending",
+        confidence: clamp(saved.advice.confidence ?? 50, 0, 100),
+        bias: String(saved.advice.bias || "").slice(0, 180),
+        revealed: Boolean(saved.advice.revealed),
+        outcome: String(saved.advice.outcome || "").slice(0, 180)
+    } : null;
+    return {
+        version: 1,
+        personId,
+        name: String(saved.name || "Unknown advisor").slice(0, 90),
+        appointedYear: integer(saved.appointedYear, 1),
+        faction: POLITICAL_FACTIONS.includes(saved.faction) ? saved.faction : "commons",
+        factionLabel: FACTION_LABELS[POLITICAL_FACTIONS.includes(saved.faction) ? saved.faction : "commons"],
+        biasReason: String(saved.biasReason || "").slice(0, 180),
+        competence: clamp(saved.competence ?? 50, 1, 100),
+        loyalty: clamp(saved.loyalty ?? 50, 0, 100),
+        integrity: clamp(saved.integrity ?? 50, 0, 100),
+        relationship: clamp(saved.relationship ?? 50, 0, 100),
+        ambition: clamp(saved.ambition ?? 50, 0, 100),
+        lastAdviceYear: integer(saved.lastAdviceYear, 0),
+        lastAdviceTick: integer(saved.lastAdviceTick, 0),
+        lastUpdateYear: integer(saved.lastUpdateYear, 0),
+        advice,
+        memory: (Array.isArray(saved.memory) ? saved.memory : []).slice(0, 24).map(item => item && typeof item === "object" ? {
+            id: String(item.id || "signal").slice(0, 100),
+            year: integer(item.year, 1),
+            kind: String(item.kind || "advice").slice(0, 24),
+            outcome: String(item.outcome || "").slice(0, 24),
+            text: String(item.text || "").slice(0, 180)
+        } : null).filter(item => item?.text)
+    };
+}
+
 function normalizeAudit(saved) {
     if (!saved || typeof saved !== "object" || Array.isArray(saved)) return null;
     return {
@@ -157,6 +211,7 @@ export function createCourtState() {
         lastUpdateYear: 0,
         offices: Object.fromEntries(OFFICE_IDS.map(id => [id, null])),
         demand: null,
+        advisor: null,
         history: [],
         lastAudit: null
     };
@@ -176,6 +231,7 @@ export function normalizeCourtState(input = state.court) {
             createdYear: Math.max(1, integer(rawDemand.createdYear, 1)),
             expiresYear: Math.max(1, integer(rawDemand.expiresYear, 1))
         } : null,
+        advisor: normalizeAdvisorRecord(source.advisor),
         history: (Array.isArray(source.history) ? source.history : []).map(normalizeHistoryEntry).filter(Boolean).slice(0, COURT_HISTORY_LIMIT),
         lastAudit: normalizeAudit(source.lastAudit)
     };
@@ -365,6 +421,7 @@ export function getCourtSnapshot() {
         candidates: candidatePool(court),
         modifiers,
         salaryTotal,
+        advisor: court.advisor ? { ...court.advisor, memory: (court.advisor.memory || []).slice(0, 8) } : null,
         history: court.history.slice(0, 16),
         lastAudit: court.lastAudit ? { ...court.lastAudit } : null,
         appointmentCost: COURT_APPOINTMENT_COST

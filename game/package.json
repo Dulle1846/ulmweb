@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test && node scripts/check-syntax.js",
+    "spec:audit": "node scripts/spec-audit.mjs",
     "build:runtime": "node scripts/build-runtime.mjs",
     "test:e2e:setup": "node tests/browser/setup-e2e.mjs",
     "test:e2e": "node tests/browser/run-e2e.mjs",
