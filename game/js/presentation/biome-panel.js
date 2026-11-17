@@ -27,13 +27,14 @@ function sizeClass(value) {
 function resourceRow(region, row) {
     const season = row.seasonal ? "IN SEASON" : "DORMANT";
     const rare = row.rare ? '<span class="biome-badge is-rare">' + (row.strategic ? "STRATEGIC" : "RARE") + '</span>' : "";
+    const focus = row.focusMatch ? '<span class="biome-badge">FOCUS</span>' : "";
     const stored = row.stored > 0 ? '<b class="biome-store">' + number(row.stored) + ' stored</b>' : "";
     const disabled = row.locallyExtinct || row.stock <= 0 || !row.seasonal ? " disabled" : "";
     return '<div class="biome-resource-row" data-biome-resource-row="' + esc(row.id) + '">' +
-        '<div class="biome-resource-name"><strong>' + esc(row.label) + '</strong><small>' + esc(row.categoryLabel) + ' · quality ' + row.quality + '/100 ' + rare + '</small></div>' +
+        '<div class="biome-resource-name"><strong>' + esc(row.label) + '</strong><small>' + esc(row.categoryLabel) + ' · quality ' + row.quality + '/100 ' + rare + focus + '</small></div>' +
         '<div class="biome-stock"><span><i class="' + sizeClass(row.capacity ? row.stock / row.capacity * 100 : 0) + '" style="width:' + pct(row.capacity ? row.stock / row.capacity * 100 : 0) + '%"></i></span><small>' + number(row.stock) + ' / ' + number(row.capacity) + ' stock · ' + season + ' ' + stored + '</small></div>' +
         '<div class="biome-row-actions">' +
-        '<button type="button" data-command="biome-harvest" data-value="' + esc(region.id) + '" data-biome-resource="' + esc(row.id) + '"' + disabled + '>HARVEST · 2G</button>' +
+        '<button type="button" data-command="biome-harvest" data-value="' + esc(region.id) + '" data-biome-resource="' + esc(row.id) + '"' + disabled + '>HARVEST · ' + number(row.actionCost || 3) + 'G</button>' +
         (row.stored > 0 ? '<button type="button" data-command="biome-sell" data-value="' + esc(region.id) + '" data-biome-resource="' + esc(row.id) + '">SELL · ' + number(row.stored) + '</button>' : "") +
         '</div></div>';
 }
@@ -42,12 +43,12 @@ function faunaRow(region, row) {
     const badges = [
         row.rare ? "RARE" : "", row.fantastic ? "FANTASTIC" : "",
         row.endangered ? "ENDANGERED" : "", row.breeding ? "BREEDING" : "",
-        row.migrating ? "MIGRATING" : ""
+        row.migrating ? "MIGRATING" : "", row.focusMatch ? "FOCUS" : ""
     ].filter(Boolean).map(value => '<span class="biome-badge' + (value === "ENDANGERED" ? " is-danger" : value === "RARE" || value === "FANTASTIC" ? " is-rare" : "") + '">' + value + '</span>').join("");
     return '<div class="biome-fauna-row" data-biome-fauna-row="' + esc(row.id) + '">' +
         '<div class="biome-fauna-name"><strong>' + esc(row.label) + '</strong><small>' + esc(row.role) + ' · ' + esc(row.refuge) + '</small><div class="biome-badges">' + badges + '</div></div>' +
         '<div class="biome-stock"><span><i class="' + sizeClass(share) + '" style="width:' + pct(share) + '%"></i></span><small>' + number(row.population) + ' / ' + number(row.capacity) + ' population · health ' + row.health + '/100</small></div>' +
-        '<div class="biome-row-actions"><button type="button" data-command="biome-hunt" data-value="' + esc(region.id) + '" data-biome-species="' + esc(row.id) + '"' + (row.population <= 0 ? " disabled" : "") + '>HUNT · ' + (row.rare || row.fantastic ? "14G" : "4G") + '</button></div></div>';
+        '<div class="biome-row-actions"><button type="button" data-command="biome-hunt" data-value="' + esc(region.id) + '" data-biome-species="' + esc(row.id) + '"' + (row.population <= 0 ? " disabled" : "") + '>HUNT · ' + number(row.actionCost || 4) + 'G</button></div></div>';
 }
 function regionCard(region, index) {
     const resourceRows = region.resources.filter(row => row.discovered).map(row => resourceRow(region, row)).join("");
@@ -56,6 +57,16 @@ function regionCard(region, index) {
     const policyButtons = Object.values(BIOME_POLICIES).map(policy =>
         '<button type="button" class="biome-choice' + (region.policy === policy.id ? " is-current" : "") + '" data-command="biome-policy" data-value="' + esc(region.id) + '" data-biome-policy="' + esc(policy.id) + '"><strong>' + esc(policy.short) + '</strong><small>' + esc(policy.label) + '</small></button>'
     ).join("");
+    const craftRows = (region.recipes || []).map(recipe => {
+        const inputText = recipe.inputs.map(input => input.amount + ' ' + input.label).join(' · ');
+        const missing = recipe.missing.length ? '<small class="is-low">Missing: ' + recipe.missing.map(value => esc(value)).join(', ') + '</small>' : '';
+        return '<div class="biome-resource-row biome-craft-row">' +
+            '<div class="biome-resource-name"><strong>' + esc(recipe.label) + '</strong><small>' + esc(inputText) + ' → ' + esc(recipe.label) + (recipe.focusMatch ? ' · FOCUS' : '') + '</small>' + missing + '</div>' +
+            '<div class="biome-store">' + (recipe.stored > 0 ? number(recipe.stored) + ' stored' : '') + '</div>' +
+            '<div class="biome-row-actions"><button type="button" data-command="biome-craft" data-value="' + esc(region.id) + '" data-biome-recipe="' + esc(recipe.id) + '"' + (recipe.available ? '' : ' disabled') + '>CRAFT · ' + number(recipe.cost) + 'G</button>' +
+            (recipe.stored > 0 ? '<button type="button" data-command="biome-sell-craft" data-value="' + esc(region.id) + '" data-biome-recipe="' + esc(recipe.id) + '">SELL · ' + number(recipe.stored) + '</button>' : '') +
+            '</div></div>';
+    }).join('');
     const focusButtons = Object.entries(BIOME_FOCUSES).map(([id, focus]) =>
         '<button type="button" class="biome-choice' + (region.focus === id ? " is-current" : "") + '" data-command="biome-focus" data-value="' + esc(region.id) + '" data-biome-focus="' + esc(id) + '"><strong>' + esc(focus.label.toUpperCase()) + '</strong><small>' + esc(focus.description) + '</small></button>'
     ).join("");
@@ -65,6 +76,7 @@ function regionCard(region, index) {
         '<div class="biome-region-summary"><span><small>PRODUCTION</small><strong>' + esc(region.productionLabel) + '</strong></span><span><small>SPECIALISATION</small><strong>' + esc(region.focusLabel) + '</strong></span><span><small>POLICY</small><strong>' + esc(region.policyLabel) + '</strong></span><span><small>PRODUCTION COST</small><strong>×' + region.economy.productionCost.toFixed(2) + '</strong></span><span><small>SUPPLY BONUS</small><strong>+' + region.economy.supplyBonus + '</strong></span></div>' +
         meter("VEGETATION", region.vegetation) + meter("SOIL HEALTH", region.soilHealth) + meter("FRESH WATER", region.water) +
         '<div class="biome-chip-line"><small>LOCAL CRAFTS</small>' + region.crafts.map(craft => '<span class="biome-badge">' + esc(String(craft).toUpperCase()) + '</span>').join("") + '</div>' +
+        '<div class="command-section-title">LOCAL CRAFT RECIPES</div><div class="biome-table">' + (craftRows || '<p class="command-note">No local recipe is available in this region.</p>') + '</div>' +
         '<p class="command-note">' + esc(region.policyDescription) + ' ' + esc(region.focusDescription) + '</p>' +
         '<div class="biome-actions"><button type="button" data-command="biome-restore" data-value="' + esc(region.id) + '">RESTORE HABITAT · 12G / 8 WOOD</button>' + (region.surveyLevel < 2 ? '<button type="button" data-command="biome-survey" data-value="' + esc(region.id) + '">' + (region.surveyLevel > 0 ? 'SURVEY RARE SITES' : 'SURVEY REGION') + ' · 10G</button>' : '<span class="biome-badge">FULLY SURVEYED</span>') + '</div>' +
         '<div class="command-section-title">LAND-USE POLICY</div><div class="biome-choice-grid">' + policyButtons + '</div>' +

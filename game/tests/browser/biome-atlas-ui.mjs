@@ -90,23 +90,125 @@ try {
         return state.biomeAtlas.regions.find(entry => entry.id === regionId)?.surveyLevel >= 1;
     }, initial.regionId, { timeout: 15000 });
 
-    const harvestButton = page.locator('#command-panel-content [data-command="biome-harvest"]:not([disabled])').first();
-    const harvestTarget = await harvestButton.evaluate(button => ({
-        regionId: button.dataset.value, resourceId: button.dataset.biomeResource
-    }));
+    // Pick a real local recipe and a harvested focus resource in the same
+    // region. The old reference stopped at a generic first harvest; the craft
+    // chain needs a region whose recipe is actually supplied by local rows.
+    const craftTarget = await page.evaluate(async regionId => {
+        const { state } = await import("./js/core/state.js");
+        const { getBiomeRegionSnapshot } = await import("./js/systems/biome-resource-state.js");
+        const { BIOME_FOCUSES } = await import("./js/world/biome-resource-data.js");
+        const first = state.biomeAtlas.regions.find(entry => entry.id === regionId);
+        const ordered = [first, ...state.biomeAtlas.regions.filter(entry => entry.discovered && entry.id !== regionId)];
+        for (const region of ordered) {
+            if (!region || !region.discovered) continue;
+            const snapshot = getBiomeRegionSnapshot(region.id);
+            for (const recipe of snapshot.recipes) {
+                if (!recipe.available) continue;
+                const focusId = Object.keys(BIOME_FOCUSES).find(id => BIOME_FOCUSES[id].resourceCategories.includes(recipe.focusCategory));
+                if (!focusId) continue;
+                const categories = new Set(BIOME_FOCUSES[focusId].resourceCategories);
+                const inputs = new Set(recipe.inputs.map(input => input.category));
+                const resources = snapshot.resources.filter(row => row.discovered && row.seasonal && row.stock > 0 && categories.has(row.category));
+                const resource = resources.find(row => !inputs.has(row.category)) || resources[0];
+                if (!resource) continue;
+                return {
+                    regionId: region.id, recipeId: recipe.id, recipeLabel: recipe.label,
+                    focusId, resourceId: resource.id, resourceCategory: resource.category,
+                    craftCost: recipe.cost
+                };
+            }
+        }
+        return null;
+    }, initial.regionId);
+    assert.ok(craftTarget, "the seed needs a discovered local recipe with a matching focus resource");
+
+    const craftRegionCard = page.locator('[data-biome-region="' + craftTarget.regionId + '"]');
+    if (!await craftRegionCard.evaluate(details => details.open)) {
+        await craftRegionCard.locator("summary").click();
+    }
+    const focusBefore = await page.evaluate(async regionId =>
+        (await import("./js/core/state.js")).state.biomeAtlas.regions.find(entry => entry.id === regionId)?.focus,
+    craftTarget.regionId);
+    if (focusBefore !== craftTarget.focusId) {
+        await craftRegionCard.locator('[data-biome-focus="' + craftTarget.focusId + '"]').click();
+        await page.waitForFunction(async ({ regionId, focusId }) =>
+            (await import("./js/core/state.js")).state.biomeAtlas.regions.find(entry => entry.id === regionId)?.focus === focusId,
+        craftTarget, { timeout: 15000 });
+    }
+
+    const harvestButton = craftRegionCard.locator('[data-command="biome-harvest"][data-biome-resource="' + craftTarget.resourceId + '"]:not([disabled])');
     const stockBefore = await page.evaluate(async ({ regionId, resourceId }) => {
         const { state } = await import("./js/core/state.js");
-        const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
-        const row = region.resources.find(entry => entry.id === resourceId);
-        return { id: row.id, stock: row.stock };
-    }, harvestTarget);
+        const { getBiomeRegionSnapshot } = await import("./js/systems/biome-resource-state.js");
+        const snapshot = getBiomeRegionSnapshot(regionId);
+        const row = snapshot.resources.find(entry => entry.id === resourceId);
+        return { id: row.id, stock: row.stock, focusMatch: row.focusMatch, actionCost: row.actionCost };
+    }, craftTarget);
+    assert.equal(stockBefore.focusMatch, true, "the craft target requires a focus-matched harvest");
     await harvestButton.click();
     await page.waitForFunction(async ({ regionId, resourceId, before }) => {
         const { state } = await import("./js/core/state.js");
         const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
         const row = region.resources.find(entry => entry.id === resourceId);
         return row && row.stock < before;
-    }, { ...harvestTarget, before: stockBefore.stock }, { timeout: 15000 });
+    }, { ...craftTarget, before: stockBefore.stock }, { timeout: 15000 });
+
+    const craftState = () => page.evaluate(async regionId => {
+        const { state } = await import("./js/core/state.js");
+        const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
+        return {
+            gold: state.resources.gold,
+            crafted: { ...(region.crafted || {}) },
+            crafts: Number(state.biomeAtlas.stats.crafts) || 0,
+            craftsSold: Number(state.biomeAtlas.stats.craftsSold) || 0,
+            tradeGold: Number(state.biomeAtlas.trade?.gold) || 0
+        };
+    }, craftTarget.regionId);
+    const craftBefore = await craftState();
+    const craftButton = craftRegionCard.locator('[data-command="biome-craft"][data-biome-recipe="' + craftTarget.recipeId + '"]:not([disabled])');
+    const craftButtonText = await craftButton.innerText();
+    const craftCost = Number((craftButtonText.match(/(\d+)\s*G/) || [])[1] || craftTarget.craftCost);
+    await craftButton.click();
+    await page.waitForFunction(async ({ regionId, before }) => {
+        const { state } = await import("./js/core/state.js");
+        return Number(state.biomeAtlas.stats.crafts) === before;
+    }, { regionId: craftTarget.regionId, before: craftBefore.crafts + 1 }, { timeout: 15000 });
+    const afterCraft = await craftState();
+    assert.equal(afterCraft.crafts, craftBefore.crafts + 1);
+    assert.equal(afterCraft.crafted["craft-" + craftTarget.recipeId], 1);
+    assert.equal(afterCraft.gold, craftBefore.gold - craftCost, "crafting must charge the displayed gold cost");
+
+    const sellButton = craftRegionCard.locator('[data-command="biome-sell-craft"][data-biome-recipe="' + craftTarget.recipeId + '"]');
+    await sellButton.click();
+    await page.waitForFunction(async ({ regionId, before }) => {
+        const { state } = await import("./js/core/state.js");
+        return Number(state.biomeAtlas.stats.craftsSold) === before;
+    }, { regionId: craftTarget.regionId, before: craftBefore.craftsSold + 1 }, { timeout: 15000 });
+    const afterSale = await craftState();
+    assert.equal(afterSale.craftsSold, craftBefore.craftsSold + 1);
+    assert.equal(afterSale.crafted["craft-" + craftTarget.recipeId], 0);
+    assert.ok(afterSale.tradeGold > craftBefore.tradeGold, "selling a crafted good must book trade revenue");
+    assert.equal(afterSale.gold, afterCraft.gold + afterSale.tradeGold - craftBefore.tradeGold,
+        "sale gold must equal the booked trade revenue");
+
+    // Leave one processed good in the local store so the reload proves the
+    // crafted state itself survives, not just an empty map.
+    await craftButton.click();
+    await page.waitForFunction(async ({ regionId, before }) => {
+        const { state } = await import("./js/core/state.js");
+        return Number(state.biomeAtlas.stats.crafts) === before;
+    }, { regionId: craftTarget.regionId, before: craftBefore.crafts + 2 }, { timeout: 15000 });
+    const afterSecondCraft = await craftState();
+    assert.equal(afterSecondCraft.crafts, craftBefore.crafts + 2);
+    assert.equal(afterSecondCraft.crafted["craft-" + craftTarget.recipeId], 1);
+    assert.equal(afterSecondCraft.gold, afterSale.gold - craftCost, "the second craft must charge the same gold cost");
+    const craftSummary = {
+        region: craftTarget.regionId, recipe: craftTarget.recipeId, label: craftTarget.recipeLabel,
+        focus: craftTarget.focusId, harvested: stockBefore.id, focusMatch: stockBefore.focusMatch,
+        actionCost: stockBefore.actionCost, craftCost,
+        crafted: afterSecondCraft.crafted, crafts: afterSecondCraft.crafts,
+        craftsSold: afterSecondCraft.craftsSold, tradeGold: afterSecondCraft.tradeGold
+    };
 
     const huntButton = page.locator('#command-panel-content [data-command="biome-hunt"]:not([disabled])').first();
     const huntTarget = await huntButton.evaluate(button => ({
@@ -141,16 +243,23 @@ try {
         return state.mapLayer === "biomes" && shouldDrawForestPoints(state.zoomLevel, state.mapLayer);
     }, null, { timeout: 5000 });
 
-    const beforeSave = await page.evaluate(async regionId => {
+    const beforeSave = await page.evaluate(async ({ regionId, craftRegionId }) => {
         const { state } = await import("./js/core/state.js");
         const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
+        const craftRegion = state.biomeAtlas.regions.find(entry => entry.id === craftRegionId);
         return {
             policy: region.policy,
             surveyLevel: region.surveyLevel,
             stock: region.resources.map(row => [row.id, Math.round(row.stock)]),
-            fauna: region.fauna.map(row => [row.id, Math.round(row.population * 10) / 10])
+            fauna: region.fauna.map(row => [row.id, Math.round(row.population * 10) / 10]),
+            craft: {
+                crafted: { ...(craftRegion.crafted || {}) },
+                crafts: Number(state.biomeAtlas.stats.crafts) || 0,
+                craftsSold: Number(state.biomeAtlas.stats.craftsSold) || 0,
+                gold: state.resources.gold
+            }
         };
-    }, initial.regionId);
+    }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId });
     await page.locator("#save-btn").click();
     await page.waitForFunction(() => (document.querySelector("#save-status")?.textContent || "").startsWith("LAST SAVED"), null, { timeout: 20000 });
     await page.reload({ waitUntil: "networkidle", timeout: 60000 });
@@ -174,23 +283,40 @@ try {
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="biome"]').click();
     await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").toLowerCase().includes("biome resources & wildlife"), null, { timeout: 15000 });
-    const restored = await page.evaluate(async regionId => {
+    const restored = await page.evaluate(async ({ regionId, craftRegionId }) => {
         const { state } = await import("./js/core/state.js");
         const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
+        const craftRegion = state.biomeAtlas.regions.find(entry => entry.id === craftRegionId);
         return {
             policy: region.policy,
             surveyLevel: region.surveyLevel,
             stock: region.resources.map(row => [row.id, Math.round(row.stock)]),
             fauna: region.fauna.map(row => [row.id, Math.round(row.population * 10) / 10]),
+            craft: {
+                crafted: { ...(craftRegion.crafted || {}) },
+                crafts: Number(state.biomeAtlas.stats.crafts) || 0,
+                craftsSold: Number(state.biomeAtlas.stats.craftsSold) || 0,
+                gold: state.resources.gold
+            },
             text: document.querySelector("#command-panel-content")?.textContent || ""
         };
-    }, initial.regionId);
+    }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId });
     assert.equal(restored.policy, "conservation");
     assert.ok(restored.surveyLevel >= 1);
     assert.deepEqual(restored.stock, beforeSave.stock);
     assert.deepEqual(restored.fauna, beforeSave.fauna);
+    assert.deepEqual(restored.craft, beforeSave.craft, "crafted stock, counters and gold must survive reload");
+    assert.equal(restored.craft.crafts, 2);
+    assert.equal(restored.craft.craftsSold, 1);
+    assert.deepEqual(restored.craft.crafted, { ["craft-" + craftTarget.recipeId]: 1 });
     assert.match(restored.text, /CONSERVE/);
     assert.match(restored.text, /LOCAL CRAFTS/);
+    const restoredCraftCard = page.locator('[data-biome-region="' + craftTarget.regionId + '"]');
+    if (!await restoredCraftCard.evaluate(details => details.open)) await restoredCraftCard.locator("summary").click();
+    const restoredCraftText = await restoredCraftCard.innerText();
+    assert.match(restoredCraftText, /LOCAL CRAFT RECIPES/);
+    assert.match(restoredCraftText, /SELL · 1/);
+    assert.match(restoredCraftText, /CRAFT · \d+G/);
 
     assert.deepEqual(pageErrors, []);
     assert.deepEqual(consoleErrors, []);
@@ -201,6 +327,7 @@ try {
         regions: initial.regions,
         harvest: stockBefore.id,
         hunted: faunaBefore.id,
+        craft: craftSummary,
         policy: restored.policy,
         loaded: loadStatus,
         pageErrors: pageErrors.length,

@@ -4,12 +4,12 @@ import { resetState, state } from "../../js/core/state.js";
 import {
     BIOME_FOCUSES, BIOME_POLICIES, BIOME_PROFILES, BIOME_RESOURCES,
     BIOME_RESOURCE_BY_ID, BIOME_RESOURCE_REQUIREMENTS, BIOME_WILDLIFE,
-    BIOME_WILDLIFE_BY_ID
+    BIOME_WILDLIFE_BY_ID, BIOME_CRAFT_RECIPE_BY_ID
 } from "../../js/world/biome-resource-data.js";
 import {
-    forestCoverShareAt, forestPointTier, generateBiomeAtlas, getBiomeAtlasSnapshot, getBiomeEconomySnapshot,
+    craftBiomeGoods, estimateBiomePotentialYield, forestCoverShareAt, forestPointTier, generateBiomeAtlas, getBiomeAtlasSnapshot, getBiomeEconomySnapshot, getBiomeRegionSnapshot,
     harvestBiomeResource, huntBiomeSpecies, normalizeBiomeAtlasState, restoreBiomeRegion,
-    restoreBiomeAtlasState, sellBiomeGoods, serializeBiomeAtlasState, setBiomeFocus,
+    restoreBiomeAtlasState, sellBiomeCraft, sellBiomeGoods, serializeBiomeAtlasState, setBiomeFocus,
     setBiomePolicy, shouldDrawForestPoints, surveyBiomeRegion, syncBiomeDiscovery,
     updateBiomeAtlasAnnual, validateBiomeAtlasSnapshot
 } from "../../js/systems/biome-resource-state.js";
@@ -68,6 +68,22 @@ function setup(seed = 20261119) {
 
 function discoveredRegion(atlas) {
     return atlas.regions.find(region => region.discovered);
+}
+
+function ensureCoreCategories(region) {
+    for (const category of ["wood", "stone", "food", "ore", "fiber", "herb", "salt"]) {
+        const existing = region.resources.find(row => BIOME_RESOURCE_BY_ID[row.id]?.category === category);
+        if (existing) {
+            existing.discovered = true;
+            continue;
+        }
+        const definition = BIOME_RESOURCES.find(resource => resource.category === category && !resource.fauna);
+        if (!definition) continue;
+        region.resources.push({
+            id: definition.id, stock: 100, capacity: 100, quality: 70, stored: 0,
+            discovered: true, locallyExtinct: false, lastHarvestYear: 0
+        });
+    }
 }
 
 test("1.2.19 catalog: all 84 requirements and complete resource and wildlife families", () => {
@@ -303,6 +319,187 @@ test("1.2.19 save round-trip preserves stocks, policies, discoveries and old sav
     assert.equal(normalizeBiomeAtlasState(undefined), restored);
     assert.throws(() => validateBiomeAtlasSnapshot({ version: 1, regions: [{ id: "bad" }] }));
     assert.throws(() => restoreBiomeAtlasState({ version: 1, regions: [{ id: "biome-00", policy: "nope", focus: "forestry", resources: [], fauna: [] }] }));
+});
+
+test("1.2.19 focus, production cost, supply and imports change real harvest economics", () => {
+    const atlas = setup(8181);
+    const region = discoveredRegion(atlas);
+    region.discovered = true;
+    for (const row of region.resources) row.discovered = true;
+    state.resources.gold = 10000;
+    const wood = region.resources.find(row => BIOME_RESOURCE_BY_ID[row.id]?.category === "wood"
+        && BIOME_RESOURCE_BY_ID[row.id]?.seasons.includes(state.seasonIndex) && row.stock > 20);
+    assert.ok(wood, "the fixture needs an in-season timber row");
+    // Isolate one resource so the annual potential check cannot be hidden by
+    // rounding a dozen unrelated rows into the same whole number.
+    region.resources = [wood];
+    wood.discovered = true;
+    const rowSnapshot = () => getBiomeRegionSnapshot(region.id).resources.find(row => row.id === wood.id);
+
+    // A focused wood region must produce more timber and charge less gold for
+    // the same harvest. The old UI-only focus did neither.
+    setBiomeFocus(region.id, "forestry");
+    const focusedSnapshot = rowSnapshot();
+    const focusedPotential = estimateBiomePotentialYield();
+    wood.stock = 100;
+    const focusedHarvest = harvestBiomeResource(region.id, wood.id);
+    assert.equal(focusedHarvest.ok, true);
+    assert.equal(focusedHarvest.focusMatch, true);
+    assert.ok(focusedSnapshot.focusMatch, "timber must be marked as a focus resource");
+
+    setBiomeFocus(region.id, "mining");
+    const unfocusedSnapshot = rowSnapshot();
+    const unfocusedPotential = estimateBiomePotentialYield();
+    wood.stock = 100;
+    const unfocusedHarvest = harvestBiomeResource(region.id, wood.id);
+    assert.equal(unfocusedHarvest.ok, true);
+    assert.equal(unfocusedHarvest.focusMatch, false);
+    assert.ok(focusedHarvest.amount > unfocusedHarvest.amount,
+        "forestry focus must raise the timber harvest: " + focusedHarvest.amount + " vs " + unfocusedHarvest.amount);
+    assert.ok(focusedHarvest.cost < unfocusedHarvest.cost,
+        "forestry focus must lower the timber action cost: " + focusedHarvest.cost + " vs " + unfocusedHarvest.cost);
+    assert.ok(focusedPotential > unfocusedPotential,
+        "focus must raise annual potential output: " + focusedPotential + " vs " + unfocusedPotential);
+
+    // Restore the core categories before testing import dependence.
+    ensureCoreCategories(region);
+    // Quality/vegetation create a real supply bonus; it must move both the
+    // displayed economy and the harvest, not just the panel number.
+    region.quality = 92;
+    region.vegetation = 0.95;
+    const richSnapshot = getBiomeRegionSnapshot(region.id);
+    const richBonus = richSnapshot.economy.supplyBonus;
+    wood.stock = 100;
+    const richHarvest = harvestBiomeResource(region.id, wood.id);
+    region.quality = 18;
+    region.vegetation = 0.05;
+    const poorSnapshot = getBiomeRegionSnapshot(region.id);
+    const poorBonus = poorSnapshot.economy.supplyBonus;
+    wood.stock = 100;
+    const poorHarvest = harvestBiomeResource(region.id, wood.id);
+    assert.ok(richBonus > poorBonus, "rich habitat must have the larger supply bonus");
+    assert.ok(richHarvest.amount > poorHarvest.amount,
+        "the supply bonus must raise the actual harvest: " + richHarvest.amount + " vs " + poorHarvest.amount);
+    assert.ok(richHarvest.cost <= poorHarvest.cost,
+        "the rich supply must not cost more per action");
+
+    // Hiding local core categories raises real import dependence and makes
+    // the same action more expensive. This is the cost side of scarcity.
+    for (const row of region.resources) {
+        if (row.id !== wood.id) row.discovered = false;
+    }
+    const importSnapshot = getBiomeRegionSnapshot(region.id);
+    assert.ok(importSnapshot.economy.importDependency > 0, "missing categories must create import dependence");
+    wood.stock = 100;
+    const importHarvest = harvestBiomeResource(region.id, wood.id);
+    assert.ok(importHarvest.cost >= poorHarvest.cost,
+        "an import-dependent region must charge at least as much for the same action");
+});
+
+test("1.2.19 sale prices reflect scarcity, surplus, focus and import dependence", () => {
+    const atlas = setup(8282);
+    const region = discoveredRegion(atlas);
+    region.discovered = true;
+    for (const row of region.resources) row.discovered = true;
+    const wood = region.resources.find(row => BIOME_RESOURCE_BY_ID[row.id]?.category === "wood" && row.capacity > 20);
+    assert.ok(wood);
+    state.resources.gold = 1000;
+    ensureCoreCategories(region);
+    region.quality = 80;
+    region.vegetation = 0.8;
+    setBiomeFocus(region.id, "forestry");
+
+    wood.stock = wood.capacity;
+    wood.stored = 20;
+    const surplus = sellBiomeGoods(region.id, wood.id);
+    assert.equal(surplus.ok, true);
+    wood.stock = 1;
+    wood.stored = 20;
+    const scarce = sellBiomeGoods(region.id, wood.id);
+    assert.ok(scarce.market.unitPrice > surplus.market.unitPrice,
+        "scarce stock must sell above a surplus: " + scarce.market.unitPrice + " vs " + surplus.market.unitPrice);
+
+    wood.stock = 100;
+    wood.stored = 20;
+    setBiomeFocus(region.id, "mining");
+    const offFocus = sellBiomeGoods(region.id, wood.id);
+    wood.stock = 100;
+    wood.stored = 20;
+    setBiomeFocus(region.id, "forestry");
+    const onFocus = sellBiomeGoods(region.id, wood.id);
+    assert.ok(onFocus.market.unitPrice > offFocus.market.unitPrice,
+        "a focused local good must earn a premium");
+
+    for (const row of region.resources) if (row.id !== wood.id) row.discovered = false;
+    wood.stock = 100;
+    wood.stored = 20;
+    const importPenalty = sellBiomeGoods(region.id, wood.id);
+    assert.ok(importPenalty.market.unitPrice < onFocus.market.unitPrice,
+        "import dependence must compress the sale margin: " + importPenalty.market.unitPrice + " vs " + onFocus.market.unitPrice
+        + " (import " + importPenalty.market.importMargin + " vs " + onFocus.market.importMargin + ")");
+    assert.ok(atlas.trade.gold > 0);
+});
+
+test("1.2.19 local recipes consume real region inputs and create a sellable good", () => {
+    const atlas = setup(8383);
+    const region = discoveredRegion(atlas);
+    region.discovered = true;
+    for (const row of region.resources) row.discovered = true;
+    state.resources.gold = 2000;
+    const craft = getBiomeRegionSnapshot(region.id).recipes.find(recipe => recipe.available);
+    assert.ok(craft, "the fixture must expose at least one locally supplied recipe");
+    const recipe = BIOME_CRAFT_RECIPE_BY_ID[craft.id];
+    for (const input of recipe.inputs) {
+        const row = region.resources.find(entry => BIOME_RESOURCE_BY_ID[entry.id]?.category === input.category);
+        assert.ok(row, "recipe input category must exist locally: " + input.category);
+        row.stock = Math.max(row.stock, input.amount + 20);
+    }
+    const beforeGold = state.resources.gold;
+    const made = craftBiomeGoods(region.id, recipe.id);
+    assert.equal(made.ok, true);
+    assert.ok(made.cost > 0);
+    assert.ok(state.resources.gold < beforeGold, "crafting must charge gold");
+    assert.equal(region.crafted[recipe.outputId], 1);
+    const afterCraft = getBiomeRegionSnapshot(region.id).recipes.find(entry => entry.id === recipe.id);
+    assert.equal(afterCraft.stored, 1);
+
+    const sold = sellBiomeCraft(region.id, recipe.id);
+    assert.equal(sold.ok, true);
+    assert.ok(sold.gold > 0);
+    assert.equal(region.crafted[recipe.outputId], 0);
+
+    const foreign = BIOME_CRAFT_RECIPE_BY_ID[Object.keys(BIOME_CRAFT_RECIPE_BY_ID).find(id => id !== recipe.id)];
+    const rejected = craftBiomeGoods(region.id, foreign.id);
+    assert.equal(rejected.ok, false);
+    assert.ok(["craft-not-local", "missing-local-input"].includes(rejected.reason));
+});
+
+test("1.2.19 old saves default the new craft and cost fields and keep them across load", () => {
+    const atlas = setup(8484);
+    const region = discoveredRegion(atlas);
+    region.discovered = true;
+    for (const row of region.resources) row.discovered = true;
+    state.resources.gold = 1000;
+    const recipe = BIOME_CRAFT_RECIPE_BY_ID[Object.keys(BIOME_CRAFT_RECIPE_BY_ID).find(id =>
+        getBiomeRegionSnapshot(region.id).recipes.some(entry => entry.id === id && entry.available))];
+    assert.ok(recipe);
+    for (const input of recipe.inputs) {
+        const row = region.resources.find(entry => BIOME_RESOURCE_BY_ID[entry.id]?.category === input.category);
+        row.stock = Math.max(row.stock, input.amount + 5);
+    }
+    assert.equal(craftBiomeGoods(region.id, recipe.id).ok, true);
+    const saved = serializeBiomeAtlasState();
+    assert.ok(saved.regions.find(entry => entry.id === region.id).crafted[recipe.outputId] > 0);
+    const modern = JSON.parse(JSON.stringify(saved));
+    const oldSave = JSON.parse(JSON.stringify(saved));
+    delete oldSave.regions.find(entry => entry.id === region.id).crafted;
+    delete oldSave.regions.find(entry => entry.id === region.id).productionCost;
+    const restored = restoreBiomeAtlasState(oldSave);
+    const restoredRegion = restored.regions.find(entry => entry.id === region.id);
+    assert.deepEqual(restoredRegion.crafted, {}, "old saves get an empty craft store");
+    assert.ok(restoredRegion.productionCost > 0, "old saves get a safe production cost default");
+    const modernRestored = restoreBiomeAtlasState(modern).regions.find(entry => entry.id === region.id);
+    assert.ok(modernRestored.crafted[recipe.outputId] > 0, "new craft stores survive save/load");
 });
 
 test("1.2.19 third detail level condenses forests into green survey points", () => {

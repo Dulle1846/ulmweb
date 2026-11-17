@@ -25,7 +25,7 @@ import { TYPE } from "../core/types.js";
 import { CARD_DECK, drawPlayerCard, selectCard } from "../systems/cards.js";
 import { getResourceNodeAt } from "../systems/resource-geography.js";
 import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
-import { harvestBiomeResource, huntBiomeSpecies, restoreBiomeRegion, sellBiomeGoods, setBiomeFocus, setBiomePolicy, surveyBiomeRegion } from "../systems/biome-resource-state.js";
+import { craftBiomeGoods, harvestBiomeResource, huntBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, surveyBiomeRegion } from "../systems/biome-resource-state.js";
 import { renderBiomePanel } from "./biome-panel.js";
 import { deliverForestGoods, forestDeliveryAvailability, forestGatheringSummary, forestThinningAvailability, gatherNearestForestProducts, gatherNearestGrasslandProducts, performMountainWork, performSwampWork, performVolcanoWork, performCoastWork, processForestHunt, mountainWorkAvailability, swampWorkAvailability, volcanoWorkAvailability, coastWorkAvailability, thinNearestForest } from "../systems/forest-gathering.js";
 import { grasslandSiteSummaryAt } from "../systems/grassland-use.js";
@@ -1242,6 +1242,8 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="biome-policy")r=setBiomePolicy(v,b.dataset.biomePolicy);
  else if(a==="biome-focus")r=setBiomeFocus(v,b.dataset.biomeFocus);
  else if(a==="biome-sell")r=sellBiomeGoods(v,b.dataset.biomeResource);
+ else if(a==="biome-craft")r=craftBiomeGoods(v,b.dataset.biomeRecipe);
+ else if(a==="biome-sell-craft")r=sellBiomeCraft(v,b.dataset.biomeRecipe);
  else if(a==="expedition-start")r=startExpedition(v,$("expedition-leader-select")?.value,$("expedition-supply-select")?.value);
  else if(a==="endeavour-start")r=startEndeavour(v,{overseerId:$("endeavour-overseer-select")?.value||null,funding:endeavourFunding});
  else if(a==="endeavour-funding"){endeavourFunding=Math.max(0,Math.min(2,Number(v)||0));r={ok:true};}

@@ -15,7 +15,8 @@ import {
     BIOME_PROFILES, BIOME_REGION_GRID, BIOME_REGION_MAX, BIOME_RESOURCES,
     BIOME_RESOURCE_BY_ID, BIOME_RESOURCE_CATEGORIES, BIOME_RESOURCE_HISTORY_LIMIT, BIOME_RESOURCE_IDS,
     BIOME_RESOURCE_STORE_LIMIT, BIOME_RESOURCE_VERSION, BIOME_WILDLIFE,
-    BIOME_WILDLIFE_BY_ID, BIOME_WILDLIFE_IDS, resourcesForBiome, wildlifeForBiome
+    BIOME_WILDLIFE_BY_ID, BIOME_WILDLIFE_IDS, BIOME_CRAFT_GOOD_BY_ID,
+    BIOME_CRAFT_RECIPE_BY_CRAFT, BIOME_CRAFT_RECIPE_BY_ID, resourcesForBiome, wildlifeForBiome
 } from "../world/biome-resource-data.js";
 
 const VERSION = BIOME_RESOURCE_VERSION;
@@ -202,9 +203,10 @@ function regionPotentialYield(region, season = state.seasonIndex) {
         const resource = BIOME_RESOURCE_BY_ID[row.id];
         if (!resource || !row.discovered || row.locallyExtinct || !seasonFactor(resource, season)) continue;
         const share = resource.rare ? 0.002 : 0.006;
-        total += Math.min(3, Math.round(row.capacity * share * policy.yield * (0.55 + row.quality / 120)));
+        const base = Math.min(3, row.capacity * share * policy.yield * (0.55 + row.quality / 120));
+        total += base * focusYieldFactor(region, resource) * supplyYieldFactor(region);
     }
-    return total;
+    return Math.round(total);
 }
 
 // The map dots read the compact resource geography rather than rebuilding a
@@ -339,7 +341,7 @@ function makeRegion(index, seed, context) {
         discovered: false,
         surveyLevel: 0,
         policy: "sustainable",
-        focus: profile.production === "pastoralism" ? "pastoralism" : profile.production,
+        focus: defaultFocusForBiome(profile.id),
         vegetation: 0,
         soilHealth: 0,
         water: 0,
@@ -350,7 +352,8 @@ function makeRegion(index, seed, context) {
         extractionPressure: 0,
         productionCost: 1,
         resources: [],
-        fauna: []
+        fauna: [],
+        crafted: {}
     };
     region.quality = regionQuality(sample, profile, index, seed);
     region.vegetation = clamp(profile.vegetation * (0.78 + region.quality / 220) + unit(seed, index, 0x56454745) * 0.08, 0.02, 1);
@@ -380,6 +383,7 @@ export function generateBiomeAtlas(seed, context) {
             const definition = BIOME_WILDLIFE_BY_ID[fauna.id];
             fauna.discovered = Boolean(definition && !definition.surveyOnly && !definition.rare);
         }
+        capital.productionCost = productionCostFor(capital);
     }
     state.biomeAtlas = {
         version: VERSION,
@@ -389,7 +393,7 @@ export function generateBiomeAtlas(seed, context) {
         history: [],
         lastYear: Number(state.year) || 1,
         lastSeason: Number(state.seasonIndex) || 0,
-        stats: { harvests: 0, hunts: 0, surveys: 0, rareSold: 0, goldFromTrade: 0, annualYields: 0, potentialYield: 0 },
+        stats: { harvests: 0, hunts: 0, surveys: 0, crafts: 0, craftsSold: 0, rareSold: 0, goldFromTrade: 0, annualYields: 0, potentialYield: 0 },
         trade: { gold: 0, lastYear: 0, imported: [], exported: [] }
     };
     state.biomeAtlas.stats.potentialYield = estimateBiomePotentialYield();
@@ -432,6 +436,72 @@ function policyFor(region) {
 function focusFor(region) {
     return BIOME_FOCUSES[region?.focus] || BIOME_FOCUSES.forestry;
 }
+function defaultFocusForBiome(biome) {
+    const profile = BIOME_PROFILES[biome] || BIOME_PROFILES.meadow;
+    return profile.production === "pastoralism" ? "pastoralism" : profile.production;
+}
+
+const CORE_CATEGORIES = freezeList(["wood", "stone", "food", "ore", "fiber", "herb", "salt"]);
+const FOOD_CATEGORIES = freezeList(["fruit", "fish", "meat", "dairy", "egg", "honey", "fungus"]);
+function freezeList(values) {
+    return Object.freeze([...values]);
+}
+function hasCoreCategory(categories, category) {
+    if (category === "food") return FOOD_CATEGORIES.some(food => categories.has(food));
+    return categories.has(category);
+}
+function visibleCategories(region) {
+    const categories = new Set();
+    for (const row of region?.resources || []) {
+        if (!row.discovered || row.locallyExtinct) continue;
+        const definition = BIOME_RESOURCE_BY_ID[row.id];
+        if (definition) categories.add(definition.category);
+    }
+    return categories;
+}
+function importDependencyFor(region) {
+    const categories = visibleCategories(region);
+    const missing = CORE_CATEGORIES.filter(category => !hasCoreCategory(categories, category)).length;
+    return Math.round(missing / CORE_CATEGORIES.length * 100);
+}
+function supplyBonusFor(region) {
+    const quality = Number(region?.quality) || 50;
+    return Math.round(clamp((quality - 50) * 0.22 + (Number(region?.vegetation) || 0) * 12, -20, 30));
+}
+function productionCostFor(region) {
+    const policy = policyFor(region);
+    const importPenalty = 1 + importDependencyFor(region) / 100 * 0.22;
+    const pressure = 1 + clamp(Number(region?.extractionPressure) || 0, 0, 1) * 0.08;
+    return clamp(Math.round(policy.cost * (1.08 - (Number(region?.quality) || 50) / 900)
+        * importPenalty * pressure * 100) / 100, 0.5, 3);
+}
+function focusCategories(region) {
+    return new Set(focusFor(region).resourceCategories || []);
+}
+function focusMatchesCategories(region, categories) {
+    const focus = focusCategories(region);
+    return categories.some(category => focus.has(category));
+}
+function focusYieldFactor(region, resource) {
+    return focusMatchesCategories(region, [resource?.category]) ? 1.5 : 0.7;
+}
+function focusCostFactor(region, categories) {
+    return focusMatchesCategories(region, categories) ? 0.8 : 1.2;
+}
+function supplyYieldFactor(region) {
+    return clamp(1 + supplyBonusFor(region) / 200, 0.8, 1.2);
+}
+function supplyCostFactor(region) {
+    return clamp(1 - supplyBonusFor(region) / 250, 0.85, 1.15);
+}
+function actionGoldCost(region, categories, base = 2) {
+    return Math.max(1, Math.round(base * productionCostFor(region)
+        * focusCostFactor(region, categories) * supplyCostFactor(region)));
+}
+function speciesCategories(species) {
+    return [...new Set((species?.products || []).map(id => BIOME_RESOURCE_BY_ID[id]?.category).filter(Boolean))];
+}
+
 
 function addHistory(atlas, entry) {
     if (!Array.isArray(atlas.history)) atlas.history = [];
@@ -459,6 +529,7 @@ function revealRegion(region, level = 1) {
         if (level >= 2 || (!species.surveyOnly && !species.rare)) row.discovered = true;
     }
     region.surveyLevel = Math.max(region.surveyLevel, level);
+    region.productionCost = productionCostFor(region);
 }
 
 export function syncBiomeDiscovery({ silent = false } = {}) {
@@ -467,6 +538,7 @@ export function syncBiomeDiscovery({ silent = false } = {}) {
     let discovered = 0;
     for (const region of atlas.regions) {
         if (region.discovered) {
+            region.productionCost = productionCostFor(region);
             discovered++;
             continue;
         }
@@ -482,6 +554,7 @@ export function syncBiomeDiscovery({ silent = false } = {}) {
         }
         if (total > 0 && seen / total >= 0.24) {
             revealRegion(region, 0);
+            region.productionCost = productionCostFor(region);
             discovered++;
             if (!silent) addHistory(atlas, {
                 regionId: region.id, kind: "discovery",
@@ -522,7 +595,7 @@ export function setBiomePolicy(regionId, policyId) {
     if (!BIOME_POLICY_IDS.includes(String(policyId))) return { ok: false, reason: "unknown-policy" };
     if (region.policy === policyId) return { ok: false, reason: "policy-already-set" };
     region.policy = String(policyId);
-    region.productionCost = policyFor(region).cost;
+    region.productionCost = productionCostFor(region);
     return { ok: true, message: region.name + " · " + policyFor(region).label.toUpperCase() };
 }
 
@@ -532,6 +605,7 @@ export function setBiomeFocus(regionId, focusId) {
     if (!BIOME_FOCUS_IDS.includes(String(focusId))) return { ok: false, reason: "unknown-focus" };
     if (region.focus === focusId) return { ok: false, reason: "focus-already-set" };
     region.focus = String(focusId);
+    region.productionCost = productionCostFor(region);
     return { ok: true, message: region.name + " · " + focusFor(region).label.toUpperCase() };
 }
 
@@ -546,14 +620,15 @@ export function harvestBiomeResource(regionId, resourceId) {
     if (!seasonFactor(resource)) return { ok: false, reason: "out-of-season" };
     const policy = policyFor(region);
     if (policy.yield <= 0) return { ok: false, reason: "region-is-fallow" };
-    const actionCost = Math.max(1, Math.round(2 * policyFor(region).cost));
+    const actionCost = actionGoldCost(region, [resource.category], 3);
     if ((Number(state.resources.gold) || 0) < actionCost) return { ok: false, reason: "not-enough-gold" };
     addResource("gold", -actionCost);
     const qualityFactor = 0.55 + row.quality / 130;
     // Degraded vegetation and a negative ecological trend reduce the usable
     // share of a harvest. This is the link from long-term damage to real yield.
     const habitatFactor = clamp(0.55 + region.vegetation * 0.38 + region.ecologyTrend * 0.2, 0.35, 1.1);
-    const amount = clamp(Math.round((5 + row.stock * 0.035) * policy.yield * qualityFactor * habitatFactor), 1, 26);
+    const amount = clamp(Math.round((5 + row.stock * 0.035) * policy.yield * qualityFactor * habitatFactor
+        * focusYieldFactor(region, resource) * supplyYieldFactor(region)), 1, 26);
     const taken = Math.min(amount, Math.ceil(row.stock));
     row.stock = Math.max(0, row.stock - taken);
     row.lastHarvestYear = Number(state.year) || 1;
@@ -578,8 +653,9 @@ export function harvestBiomeResource(regionId, resourceId) {
     }
     return {
         ok: true,
-        message: "HARVESTED " + taken + " " + resource.label.toUpperCase() + (ledger ? "" : " · STORED FOR TRADE"),
-        amount: taken, ledger, stored, region: region.id, resource: resource.id
+        message: "HARVESTED " + taken + " " + resource.label.toUpperCase() + (ledger ? "" : " · STORED FOR TRADE") + " · " + actionCost + "G",
+        amount: taken, ledger, stored, region: region.id, resource: resource.id, cost: actionCost,
+        focusMatch: focusMatchesCategories(region, [resource.category]), supplyBonus: supplyBonusFor(region)
     };
 }
 
@@ -591,11 +667,13 @@ export function huntBiomeSpecies(regionId, speciesId) {
     if (!atlas || !region || !row || !species) return { ok: false, reason: "unknown-species" };
     if (!region.discovered || !row.discovered) return { ok: false, reason: "species-not-discovered" };
     if (row.population <= 0) return { ok: false, reason: "no-population" };
-    const cost = Math.max(1, Math.round((species.rare || species.fantastic ? 14 : 4) * policyFor(region).cost));
+    const categories = speciesCategories(species);
+    const cost = actionGoldCost(region, categories, species.rare || species.fantastic ? 14 : 4);
     if ((Number(state.resources.gold) || 0) < cost) return { ok: false, reason: "not-enough-gold" };
     addResource("gold", -cost);
     const policy = policyFor(region);
-    const quota = species.rare || species.endangered ? 1 : Math.max(1, Math.round(row.population * 0.07 * policy.yield));
+    const focusYield = focusMatchesCategories(region, categories) ? 1.15 : 0.87;
+    const quota = species.rare || species.endangered ? 1 : Math.max(1, Math.round(row.population * 0.07 * policy.yield * focusYield));
     const taken = Math.min(row.population, quota);
     row.population = Math.max(0, row.population - taken);
     row.pressure = clamp(row.pressure + 0.18 * policy.pressure, 0, 2);
@@ -621,7 +699,8 @@ export function huntBiomeSpecies(regionId, speciesId) {
     return {
         ok: true,
         message: "HUNTED " + taken + " " + species.label.toUpperCase() + " · +" + food + " FOOD" + (rareStored ? " · +" + rareStored + " GOODS" : ""),
-        amount: taken, food, stored: rareStored, region: region.id, species: species.id
+        amount: taken, food, stored: rareStored, region: region.id, species: species.id, cost,
+        focusMatch: focusMatchesCategories(region, categories), supplyBonus: supplyBonusFor(region)
     };
 }
 
@@ -665,7 +744,15 @@ export function sellBiomeGoods(regionId, resourceId) {
     if (!atlas || !region || !row || !resource) return { ok: false, reason: "unknown-resource" };
     const stored = Math.floor(Number(row.stored) || 0);
     if (stored <= 0) return { ok: false, reason: "nothing-stored" };
-    const value = Math.max(1, Math.round(stored * resource.tradeValue * (0.7 + region.quality / 180)));
+    const stockShare = clamp(row.stock / Math.max(1, row.capacity), 0, 1);
+    const scarcity = 1 + (1 - stockShare) * 0.32;
+    const surplus = 1 - Math.max(0, stockShare - 0.55) * 0.35;
+    const focusPremium = focusMatchesCategories(region, [resource.category]) ? 1.1 : 0.95;
+    const importMargin = 1 - importDependencyFor(region) / 100 * 0.22;
+    const supplyPremium = 1 + supplyBonusFor(region) / 300;
+    const unitPrice = resource.tradeValue * (0.7 + region.quality / 180)
+        * scarcity * surplus * focusPremium * importMargin * supplyPremium;
+    const value = Math.max(1, Math.round(stored * unitPrice));
     row.stored = 0;
     addResource("gold", value);
     if (resource.rare) atlas.stats.rareSold += stored;
@@ -674,7 +761,104 @@ export function sellBiomeGoods(regionId, resourceId) {
     atlas.trade.lastYear = Number(state.year) || 1;
     if (!atlas.trade.exported.includes(resource.category)) atlas.trade.exported = [...atlas.trade.exported, resource.category].slice(-12);
     addHistory(atlas, { regionId: region.id, kind: "trade", text: stored + " " + resource.label + " from " + region.name + " sold for " + value + " gold." });
-    return { ok: true, message: "SOLD " + stored + " " + resource.label.toUpperCase() + " · +" + value + " GOLD", gold: value, amount: stored };
+    return { ok: true,         message: "SOLD " + stored + " " + resource.label.toUpperCase() + " · +" + value + " GOLD",
+        gold: value, amount: stored,
+        market: { scarcity: Math.round(scarcity * 100) / 100, surplus: Math.round(surplus * 100) / 100,
+            focusPremium: Math.round(focusPremium * 100) / 100, importMargin: Math.round(importMargin * 100) / 100,
+            supplyPremium: Math.round(supplyPremium * 100) / 100, unitPrice: Math.round(unitPrice * 100) / 100 }
+    };
+}
+
+function recipeAvailability(region, recipe) {
+    const missing = [];
+    const rows = new Map();
+    for (const input of recipe.inputs) {
+        const candidates = region.resources
+            .filter(row => row.discovered && !row.locallyExtinct && row.stock >= input.amount
+                && BIOME_RESOURCE_BY_ID[row.id]?.category === input.category)
+            .sort((a, b) => (b.stock - a.stock) || String(a.id).localeCompare(String(b.id)));
+        if (!candidates.length) missing.push(input.category);
+        else rows.set(input.category, candidates[0]);
+    }
+    return { available: missing.length === 0, missing, rows };
+}
+
+function craftCostFor(region, recipe) {
+    return actionGoldCost(region, [recipe.focusCategory], 4);
+}
+
+export function craftBiomeGoods(regionId, recipeId) {
+    const atlas = ensureBiomeAtlas();
+    const region = regionById(regionId);
+    const recipe = BIOME_CRAFT_RECIPE_BY_ID[String(recipeId)];
+    if (!atlas || !region || !recipe) return { ok: false, reason: "unknown-recipe" };
+    if (!region.discovered) return { ok: false, reason: "region-not-explored" };
+    if (!region.crafted || typeof region.crafted !== "object") region.crafted = {};
+    if (!BIOME_PROFILES[region.rawBiome]?.crafts.includes(recipe.craft)) {
+        return { ok: false, reason: "craft-not-local" };
+    }
+    if (policyFor(region).yield <= 0) return { ok: false, reason: "region-is-fallow" };
+    const availability = recipeAvailability(region, recipe);
+    if (!availability.available) {
+        return { ok: false, reason: "missing-local-input", missing: availability.missing };
+    }
+    const cost = craftCostFor(region, recipe);
+    if ((Number(state.resources.gold) || 0) < cost) return { ok: false, reason: "not-enough-gold", cost };
+    addResource("gold", -cost);
+    for (const input of recipe.inputs) {
+        const row = availability.rows.get(input.category);
+        row.stock = Math.max(0, row.stock - input.amount);
+        row.lastHarvestYear = Number(state.year) || 1;
+    }
+    const outputId = recipe.outputId;
+    const amount = 1;
+    region.crafted[outputId] = Math.min(BIOME_RESOURCE_STORE_LIMIT, (Number(region.crafted[outputId]) || 0) + amount);
+    region.extractionPressure = clamp(region.extractionPressure + 0.025 * policyFor(region).pressure, 0, 1);
+    atlas.stats.crafts = (Number(atlas.stats.crafts) || 0) + 1;
+    addHistory(atlas, {
+        regionId: region.id, kind: "craft",
+        text: region.name + " produced " + amount + " " + recipe.outputLabel + " for " + cost + " gold."
+    });
+    return {
+        ok: true,
+        message: "CRAFTED " + amount + " " + recipe.outputLabel.toUpperCase() + " · " + cost + "G",
+        amount, cost, output: outputId, region: region.id, recipe: recipe.id,
+        focusMatch: focusMatchesCategories(region, [recipe.focusCategory]),
+        supplyBonus: supplyBonusFor(region), importDependency: importDependencyFor(region)
+    };
+}
+
+export function sellBiomeCraft(regionId, recipeId) {
+    const atlas = ensureBiomeAtlas();
+    const region = regionById(regionId);
+    const recipe = BIOME_CRAFT_RECIPE_BY_ID[String(recipeId)];
+    if (!atlas || !region || !recipe) return { ok: false, reason: "unknown-recipe" };
+    if (!region.crafted || typeof region.crafted !== "object") region.crafted = {};
+    const stored = Math.floor(Number(region.crafted?.[recipe.outputId]) || 0);
+    if (stored <= 0) return { ok: false, reason: "nothing-stored" };
+    const focusPremium = focusMatchesCategories(region, [recipe.focusCategory]) ? 1.1 : 0.95;
+    const importMargin = 1 - importDependencyFor(region) / 100 * 0.15;
+    const supplyPremium = 1 + supplyBonusFor(region) / 400;
+    const unitPrice = recipe.value * recipe.demand * (0.8 + region.quality / 250)
+        * focusPremium * importMargin * supplyPremium;
+    const value = Math.max(1, Math.round(stored * unitPrice));
+    region.crafted[recipe.outputId] = 0;
+    addResource("gold", value);
+    atlas.stats.craftsSold = (Number(atlas.stats.craftsSold) || 0) + stored;
+    atlas.stats.goldFromTrade += value;
+    atlas.trade.gold = (Number(atlas.trade.gold) || 0) + value;
+    atlas.trade.lastYear = Number(state.year) || 1;
+    if (!atlas.trade.exported.includes("craft")) atlas.trade.exported = [...atlas.trade.exported, "craft"].slice(-12);
+    addHistory(atlas, {
+        regionId: region.id, kind: "trade",
+        text: stored + " " + recipe.outputLabel + " from " + region.name + " sold for " + value + " gold."
+    });
+    return {
+        ok: true,
+        message: "SOLD " + stored + " " + recipe.outputLabel.toUpperCase() + " · +" + value + " GOLD",
+        gold: value, amount: stored, output: recipe.outputId, recipe: recipe.id,
+        market: { unitPrice: Math.round(unitPrice * 100) / 100, focusPremium, importMargin, supplyPremium }
+    };
 }
 
 function ecologyHealth(region) {
@@ -689,21 +873,21 @@ function ecologyHealth(region) {
 }
 
 function regionEconomy(region) {
-    const visible = region.resources.filter(row => row.discovered && BIOME_RESOURCE_BY_ID[row.id]);
+    const visible = region.resources.filter(row => row.discovered && !row.locallyExtinct && BIOME_RESOURCE_BY_ID[row.id]);
     const exports = visible.filter(row => {
         const resource = BIOME_RESOURCE_BY_ID[row.id];
         return resource.tradeValue >= 3 || resource.rare || resource.strategic;
     }).map(row => BIOME_RESOURCE_BY_ID[row.id].label);
     const categories = new Set(visible.map(row => BIOME_RESOURCE_BY_ID[row.id].category));
-    const imports = ["wood", "stone", "food", "ore", "fiber", "herb", "salt"].filter(category => !categories.has(category));
-    const cost = policyFor(region).cost * (1.08 - region.quality / 900);
-    const supplyBonus = Math.round((region.quality - 50) * 0.22 + region.vegetation * 12);
+    const imports = CORE_CATEGORIES.filter(category => !hasCoreCategory(categories, category));
+    const supplyBonus = supplyBonusFor(region);
     return {
         exports,
         imports,
-        productionCost: Math.round(cost * 100) / 100,
+        productionCost: productionCostFor(region),
         supplyBonus,
-        importDependency: Math.round(imports.length / 7 * 100),
+        importDependency: importDependencyFor(region),
+        focusMatchCount: visible.filter(row => focusMatchesCategories(region, [BIOME_RESOURCE_BY_ID[row.id].category])).length,
         health: ecologyHealth(region),
         focusLabel: focusFor(region).label
     };
@@ -732,7 +916,9 @@ function snapshotResource(row, region) {
         locallyExtinct: Boolean(row.locallyExtinct),
         tradeValue: resource.tradeValue,
         yieldResource: resource.yieldResource,
-        description: resource.description
+        description: resource.description,
+        actionCost: actionGoldCost(region, [resource.category], 3),
+        focusMatch: focusMatchesCategories(region, [resource.category])
     };
 }
 
@@ -757,8 +943,37 @@ function snapshotFauna(row, region) {
         endangered: Boolean(species.endangered || (species.rare && row.population < row.capacity * 0.32)),
         products: [...species.products],
         refuge: species.refuge,
-        description: species.description
+        description: species.description,
+        actionCost: actionGoldCost(region, speciesCategories(species), species.rare || species.fantastic ? 14 : 4),
+        focusMatch: focusMatchesCategories(region, speciesCategories(species))
     };
+}
+
+function snapshotRecipes(region) {
+    const profile = BIOME_PROFILES[region.rawBiome] || BIOME_PROFILES.meadow;
+    return profile.crafts.map(craft => {
+        const recipe = BIOME_CRAFT_RECIPE_BY_CRAFT[craft];
+        if (!recipe) return null;
+        const availability = recipeAvailability(region, recipe);
+        return {
+            id: recipe.id,
+            craft,
+            label: recipe.outputLabel,
+            description: recipe.description,
+            inputs: recipe.inputs.map(input => ({
+                category: input.category, amount: input.amount,
+                label: BIOME_RESOURCE_CATEGORIES[input.category] || input.category
+            })),
+            missing: availability.missing,
+            available: availability.available,
+            cost: craftCostFor(region, recipe),
+            stored: Math.round(Number(region.crafted?.[recipe.outputId]) || 0),
+            value: recipe.value,
+            demand: recipe.demand,
+            focusCategory: recipe.focusCategory,
+            focusMatch: focusMatchesCategories(region, [recipe.focusCategory])
+        };
+    }).filter(Boolean);
 }
 
 export function getBiomeRegionSnapshot(regionId) {
@@ -793,6 +1008,7 @@ export function getBiomeRegionSnapshot(regionId) {
         ecologyTrend: Math.round(region.ecologyTrend * 1000) / 10,
         productionLabel: profile.productionLabel,
         crafts: [...profile.crafts],
+        recipes: snapshotRecipes(region),
         resources: region.resources.map(row => snapshotResource(row, region)).filter(Boolean),
         fauna: region.fauna.map(row => snapshotFauna(row, region)).filter(Boolean),
         economy: regionEconomy(region)
@@ -825,9 +1041,9 @@ export function getBiomeAtlasSnapshot() {
     const discoveredRegions = allRegions.filter(region => region.discovered);
     const categories = new Set();
     for (const region of discoveredRegions) {
-        for (const row of region.resources) if (row.discovered) categories.add(row.category);
+        for (const row of region.resources) if (row.discovered && !row.locallyExtinct) categories.add(row.category);
     }
-    const imports = ["wood", "stone", "food", "ore", "fiber", "herb", "salt"].filter(category => !categories.has(category));
+    const imports = CORE_CATEGORIES.filter(category => !hasCoreCategory(categories, category));
     const exports = [...new Set(discoveredRegions.flatMap(region => region.economy.exports))].slice(0, 16);
     const specialisations = [...new Set(discoveredRegions.map(region => region.focusLabel))].slice(0, 8);
     const health = discoveredRegions.length
@@ -870,7 +1086,7 @@ export function getBiomeEconomySnapshot() {
         productionCost: regions.length
             ? Math.round(regions.reduce((sum, region) => sum + region.economy.productionCost, 0) / regions.length * 100) / 100
             : 1,
-        specialisedRegions: regions.filter(region => region.focus !== region.biome).length
+        specialisedRegions: regions.filter(region => region.focus !== defaultFocusForBiome(region.biome)).length
     };
 }
 
@@ -952,7 +1168,7 @@ export function updateBiomeAtlasAnnual() {
             if (resource.renewable) {
                 const ecosystem = 0.4 + region.vegetation * 0.45 + region.soilHealth * 0.25 + pollinatorService * 0.16;
                 const regen = resource.regen * (resource.kind === "fish" ? region.water : ecosystem) * policy.regen
-                    * (resource.rare ? 0.35 : 1);
+                    * (resource.rare ? 0.35 : 1) * focusYieldFactor(region, resource);
                 if (!row.locallyExtinct) row.stock = Math.min(row.capacity, row.stock + row.capacity * regen);
             }
         }
@@ -1034,7 +1250,7 @@ export function updateBiomeAtlasAnnual() {
         }
         region.extractionPressure = clamp(region.extractionPressure * 0.72, 0, 1);
         region.ecologyTrend = clamp((region.vegetation - 0.5) * 0.6 + (region.soilHealth - 0.5) * 0.4 - region.extractionPressure * 0.4, -1, 1);
-        region.productionCost = Math.round(policy.cost * (1.08 - region.quality / 900) * 100) / 100;
+        region.productionCost = productionCostFor(region);
     }
     regionEcologyHistory(atlas, stats, year);
     return { updated: true, year, ...stats };
@@ -1111,6 +1327,7 @@ export function serializeBiomeAtlasState() {
             ecologyTrend: Math.round(region.ecologyTrend * 1000) / 1000,
             extractionPressure: Math.round(region.extractionPressure * 1000) / 1000,
             productionCost: Math.round(region.productionCost * 100) / 100,
+            crafted: { ...(region.crafted || {}) },
             resources: region.resources.map(serializeResourceRow),
             fauna: region.fauna.map(serializeFaunaRow)
         }))
@@ -1137,6 +1354,17 @@ export function validateBiomeAtlasSnapshot(snapshot) {
         if (!BIOME_FOCUS_IDS.includes(String(region.focus))) throw new Error("Save data contains an invalid biome focus.");
         if (!Array.isArray(region.resources) || region.resources.length > 24) throw new Error("Save data contains an invalid biome resource list.");
         if (!Array.isArray(region.fauna) || region.fauna.length > 12) throw new Error("Save data contains an invalid biome wildlife list.");
+        if (region.crafted !== undefined) {
+            if (!region.crafted || typeof region.crafted !== "object" || Array.isArray(region.crafted)) {
+                throw new Error("Save data contains an invalid biome crafted-goods store.");
+            }
+            for (const [id, amount] of Object.entries(region.crafted)) {
+                if (!BIOME_CRAFT_GOOD_BY_ID[id] || !Number.isFinite(Number(amount))
+                    || Number(amount) < 0 || Number(amount) > BIOME_RESOURCE_STORE_LIMIT) {
+                    throw new Error("Save data contains an invalid biome crafted-good row.");
+                }
+            }
+        }
         for (const row of region.resources) {
             if (!row || typeof row !== "object" || !BIOME_RESOURCE_BY_ID[row.id]
                 || !Number.isFinite(Number(row.stock)) || Number(row.stock) < 0 || Number(row.stock) > 1000000
@@ -1182,7 +1410,14 @@ export function normalizeBiomeAtlasState(snapshot) {
         region.engineered = Boolean(saved.engineered);
         region.ecologyTrend = clamp(finite(saved.ecologyTrend, 0), -1, 1);
         region.extractionPressure = clamp(finite(saved.extractionPressure, 0), 0, 1);
-        region.productionCost = clamp(finite(saved.productionCost, 1), 0.5, 2);
+        region.productionCost = clamp(finite(saved.productionCost, 1), 0.5, 3);
+        region.crafted = {};
+        if (saved.crafted && typeof saved.crafted === "object" && !Array.isArray(saved.crafted)) {
+            for (const [id, amount] of Object.entries(saved.crafted)) {
+                if (!BIOME_CRAFT_GOOD_BY_ID[id]) continue;
+                region.crafted[id] = Math.min(BIOME_RESOURCE_STORE_LIMIT, Math.round(nonNegative(amount)));
+            }
+        }
         const resourceMap = new Map((saved.resources || []).map(row => [String(row.id), row]));
         for (const row of region.resources) {
             const savedRow = resourceMap.get(row.id);
@@ -1217,6 +1452,8 @@ export function normalizeBiomeAtlasState(snapshot) {
             harvests: boundedInt(snapshot.stats.harvests, 0, 1000000),
             hunts: boundedInt(snapshot.stats.hunts, 0, 1000000),
             surveys: boundedInt(snapshot.stats.surveys, 0, 1000000),
+            crafts: boundedInt(snapshot.stats.crafts, 0, 1000000),
+            craftsSold: boundedInt(snapshot.stats.craftsSold, 0, 100000000),
             rareSold: boundedInt(snapshot.stats.rareSold, 0, 1000000),
             goldFromTrade: boundedInt(snapshot.stats.goldFromTrade, 0, 100000000),
             annualYields: boundedInt(snapshot.stats.annualYields, 0, 100000000),
