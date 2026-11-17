@@ -304,9 +304,10 @@ function parseDocPoints(relative, prefix) {
         if (!line.startsWith("|")) continue;
         const cells = line.split("|").slice(1, -1).map(cell => cell.trim());
         if (!cells.length) continue;
-        const match = cells[0].match(new RegExp("^" + prefix.replace(/\./g, "\\.") + "\\d+"));
+        const numericStart = cells[0].startsWith(prefix) ? cells[0].slice(prefix.length) : "";
+        const match = /^\d+/.exec(numericStart);
         if (!match) continue;
-        const id = match[0];
+        const id = prefix + match[0];
         if (found.has(id)) continue;
         let label = cells[1] || "";
         let status = cells[2] || "";
