@@ -2,20 +2,20 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "69efdd087d4beef919fd21bc2de9ea336befe7e1",
-  "sourceHash": "099b972667e0a92277915cf5a055f71bb8d8dfb9acd02de9f0d9b5cfffbd95be",
+  "commit": "76fe1d74617e48b2cae30e592c4955cf52c6217f",
+  "sourceHash": "6b1a1fb22e9c9499598672ba38959620e13c0f3424f55ca55ddf76ad41818cae",
   "totals": {
     "total": 1312,
-    "implemented": 1303,
-    "open": 9,
+    "implemented": 1304,
+    "open": 8,
     "sections": 34
   },
   "nextSection": {
-    "id": "3.9",
-    "title": "Dynasty, constitution and diplomacy",
-    "open": 1,
-    "total": 8,
-    "firstOpen": "3.9.7"
+    "id": "3.10",
+    "title": "Full creature ecosystem and comic-art expansion",
+    "open": 4,
+    "total": 7,
+    "firstOpen": "3.10.1"
   },
   "collisions": [
     {
@@ -608,8 +608,8 @@ export const SPEC_COVERAGE = Object.freeze({
       "id": "3.9",
       "title": "Dynasty, constitution and diplomacy",
       "total": 8,
-      "implemented": 7,
-      "open": 1,
+      "implemented": 8,
+      "open": 0,
       "source": "system registry"
     },
     {
@@ -630,15 +630,6 @@ export const SPEC_COVERAGE = Object.freeze({
     }
   ],
   "openPoints": [
-    {
-      "id": "3.9.7",
-      "section": "3.9",
-      "title": "Dynasty, constitution and diplomacy",
-      "label": "Guarantees and long-term diplomatic consequences",
-      "missing": [
-        "Trade pacts, alliances, wars and peace exist, but guarantees and their obligation/response consumer do not."
-      ]
-    },
     {
       "id": "3.10.1",
       "section": "3.10",

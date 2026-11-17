@@ -159,6 +159,11 @@ test("diplomacy exposes persistent neighbours, treaties and trade consequences",
   assert.ok(management.includes('data-command="diplomacy-alliance"'));
   assert.ok(management.includes('data-command="diplomacy-war"'));
   assert.ok(management.includes('data-command="diplomacy-peace"'));
+  assert.ok(management.includes('data-command="diplomacy-guarantee"'));
+  assert.ok(management.includes('data-command="diplomacy-withdraw"'));
+  assert.ok(management.includes('data-command="diplomacy-honor"'));
+  assert.ok(management.includes('data-command="diplomacy-refuse"'));
+  assert.ok(management.includes("GUARANTEE STANDING"));
   const compactSaveRuntime = saveRuntime.replace(/\s+/g, "");
   assert.ok(saveRuntime.includes("normalizeDiplomacySnapshot(snapshot.diplomacy)"));
   assert.ok(compactSaveRuntime.includes("diplomacy:JSON.parse(JSON.stringify(state.diplomacy"));

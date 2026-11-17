@@ -2,13 +2,13 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "69efdd087d4beef919fd21bc2de9ea336befe7e1",
-  "sourceHash": "099b972667e0a92277915cf5a055f71bb8d8dfb9acd02de9f0d9b5cfffbd95be",
-  "generatedAt": "2026-11-17T07:33:42+00:00",
+  "commit": "76fe1d74617e48b2cae30e592c4955cf52c6217f",
+  "sourceHash": "6b1a1fb22e9c9499598672ba38959620e13c0f3424f55ca55ddf76ad41818cae",
+  "generatedAt": "2026-11-17T08:48:13+00:00",
   "totals": {
     "total": 1312,
-    "implemented": 1303,
-    "open": 9,
+    "implemented": 1304,
+    "open": 8,
     "sections": 34
   },
   "collisions": [
@@ -350,22 +350,13 @@
     }
   ],
   "nextSection": {
-    "id": "3.9",
-    "title": "Dynasty, constitution and diplomacy",
-    "open": 1,
-    "total": 8,
-    "firstOpen": "3.9.7"
+    "id": "3.10",
+    "title": "Full creature ecosystem and comic-art expansion",
+    "open": 4,
+    "total": 7,
+    "firstOpen": "3.10.1"
   },
   "openPoints": [
-    {
-      "id": "3.9.7",
-      "section": "3.9",
-      "title": "Dynasty, constitution and diplomacy",
-      "label": "Guarantees and long-term diplomatic consequences",
-      "missing": [
-        "Trade pacts, alliances, wars and peace exist, but guarantees and their obligation/response consumer do not."
-      ]
-    },
     {
       "id": "3.10.1",
       "section": "3.10",
@@ -27901,19 +27892,44 @@
         {
           "id": "3.9.7",
           "label": "Guarantees and long-term diplomatic consequences",
-          "status": "open",
-          "missing": [
-            "Trade pacts, alliances, wars and peace exist, but guarantees and their obligation/response consumer do not."
+          "evidence": [
+            {
+              "file": "js/systems/diplomacy.js",
+              "symbol": "grantGuarantee"
+            },
+            {
+              "file": "js/systems/diplomacy.js",
+              "symbol": "honorGuaranteeCall"
+            },
+            {
+              "file": "js/systems/diplomacy.js",
+              "symbol": "refuseGuaranteeCall"
+            },
+            {
+              "file": "js/systems/diplomacy.js",
+              "symbol": "updateGuarantees"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "diplomacy"
+            }
           ],
           "tests": [
             "tests/systems/diplomacy.test.js",
-            "tests/systems/diplomacy.test.js"
+            "tests/systems/diplomacy-guarantees.test.js"
           ],
+          "status": "implemented",
+          "missing": [],
           "consumers": [
             "js/systems/diplomacy.js#getDiplomacySnapshot (diplomacy)",
             "js/systems/royal-dynasty.js#updateRoyalSuccession (dynasty)",
             "js/systems/royal-crisis.js#updateRoyalCrisis (dynasty-crisis)",
-            "js/presentation/management-ui.js#royalCrisisPanel (gameplay)"
+            "js/presentation/management-ui.js#royalCrisisPanel (gameplay)",
+            "js/systems/diplomacy.js#grantGuarantee (point)",
+            "js/systems/diplomacy.js#honorGuaranteeCall (point)",
+            "js/systems/diplomacy.js#refuseGuaranteeCall (point)",
+            "js/systems/diplomacy.js#updateGuarantees (point)",
+            "js/presentation/management-ui.js#diplomacy (point)"
           ],
           "probe": null
         },
@@ -27984,8 +28000,8 @@
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
-      "implemented": 7,
-      "open": 1,
+      "implemented": 8,
+      "open": 0,
       "total": 8
     },
     {

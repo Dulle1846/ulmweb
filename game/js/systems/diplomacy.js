@@ -11,9 +11,12 @@ import { TYPE } from "../core/types.js";
 import { getEndeavourModifiers } from "./endeavours.js";
 import { getSpecialBiomeInfluence } from "./special-biome-couplings.js";
 
-export const DIPLOMACY_COSTS = Object.freeze({ gift:12, tradePact:15, alliance:25, peaceGold:20, peaceFood:15, envoy:8 });
+export const DIPLOMACY_COSTS = Object.freeze({ gift:12, tradePact:15, alliance:25, peaceGold:20, peaceFood:15, envoy:8, guarantee:12, guaranteeAidGold:18, guaranteeAidFood:12 });
 export const TRADE_PACT_RELATION = 45;
 export const ALLIANCE_RELATION = 70;
+export const GUARANTEE_RELATION = 35;
+export const GUARANTEE_TERM_YEARS = 8;
+export const GUARANTEE_CREDIBILITY_DEFAULT = 60;
 
 const REALM_BY_ID = new Map(DIPLOMATIC_REALMS.map(realm => [realm.id, realm]));
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
@@ -21,12 +24,61 @@ const integer = (value, min = 0, max = 1_000_000_000) => Math.max(min, Math.min(
 const currentYear = () => Math.max(1, Math.floor(Number(state.year) || 1));
 const currentTick = () => Math.max(0, Math.floor(Number(state.tick) || 0));
 
+function hashText(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index++) {
+        hash ^= value.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+}
+
+function guaranteeCrisisYear(realmId, year, salt = "") {
+    return year + 2 + (hashText(`${realmId}:${year}:${salt}`) % 4);
+}
+
 function relationLabel(relation) {
     if (relation >= 85) return "Devoted";
     if (relation >= 70) return "Cordial";
     if (relation >= 45) return "Wary";
     if (relation >= 20) return "Strained";
     return "Hostile";
+}
+
+function normalizeGuarantee(input) {
+    const source = input && typeof input === "object" && !Array.isArray(input) ? input : null;
+    if (!source) return null;
+    const sinceYear = integer(source.sinceYear, 0);
+    const expiresYear = integer(source.expiresYear, 0);
+    if (!sinceYear || expiresYear <= sinceYear) return null;
+    const savedCrisisYear = Number(source.nextCrisisYear);
+    const nextCrisisYear = Number.isFinite(savedCrisisYear) && savedCrisisYear > 0
+        ? Math.max(sinceYear + 1, Math.floor(savedCrisisYear))
+        : sinceYear + 3;
+    return {
+        sinceYear,
+        expiresYear,
+        nextCrisisYear,
+        honored: integer(source.honored, 0, 999),
+        refused: integer(source.refused, 0, 999),
+        lastCallYear: integer(source.lastCallYear, 0)
+    };
+}
+
+function normalizeGuaranteeCall(input, realmId) {
+    const source = input && typeof input === "object" && !Array.isArray(input) ? input : null;
+    if (!source) return null;
+    const attackerId = String(source.attackerId || "").slice(0, 40);
+    if (!REALM_BY_ID.has(attackerId) || attackerId === realmId) return null;
+    const sinceYear = integer(source.sinceYear, 0);
+    const deadlineYear = integer(source.deadlineYear, 0);
+    if (!sinceYear || deadlineYear < sinceYear) return null;
+    return {
+        id: String(source.id || `${realmId}:${sinceYear}`).slice(0, 80),
+        attackerId,
+        sinceYear,
+        deadlineYear
+    };
 }
 
 function normalizeHistoryEntry(entry) {
@@ -47,6 +99,9 @@ export function createDiplomacyState() {
     return {
         version:1,
         lastUpdateYear:0,
+        guaranteeCredibility:GUARANTEE_CREDIBILITY_DEFAULT,
+        guaranteeHonored:0,
+        guaranteeRefused:0,
         realms:DIPLOMATIC_REALMS.map(realm => ({
             id:realm.id,
             relation:realm.baseRelation,
@@ -54,6 +109,8 @@ export function createDiplomacyState() {
             fear:realm.baseFear,
             treaty:"none",
             treatySinceYear:0,
+            guarantee:null,
+            guaranteeCall:null,
             envoyId:null,
             envoyName:"",
             envoySkill:0,
@@ -89,6 +146,8 @@ export function normalizeDiplomacySnapshot(input) {
             fear:clamp(saved.fear ?? definition.baseFear),
             treaty:normalizeTreaty(saved.treaty),
             treatySinceYear:integer(saved.treatySinceYear, 0),
+            guarantee:normalizeGuarantee(saved.guarantee),
+            guaranteeCall:normalizeGuaranteeCall(saved.guaranteeCall, definition.id),
             envoyId:saved.envoyId ? String(saved.envoyId).slice(0, 100) : null,
             envoyName:String(saved.envoyName || "").slice(0, 90),
             envoySkill:clamp(saved.envoySkill ?? 0),
@@ -105,6 +164,9 @@ export function normalizeDiplomacySnapshot(input) {
     return {
         version:1,
         lastUpdateYear:integer(source.lastUpdateYear, 0),
+        guaranteeCredibility:clamp(source.guaranteeCredibility ?? GUARANTEE_CREDIBILITY_DEFAULT),
+        guaranteeHonored:integer(source.guaranteeHonored, 0, 999999),
+        guaranteeRefused:integer(source.guaranteeRefused, 0, 999999),
         realms,
         history:(Array.isArray(source.history) ? source.history : []).map(normalizeHistoryEntry).filter(Boolean).slice(0, 30)
     };
@@ -112,7 +174,12 @@ export function normalizeDiplomacySnapshot(input) {
 
 export function ensureDiplomacy() {
     const current = state.diplomacy;
-    if (!current || typeof current !== "object" || Array.isArray(current) || current.version !== 1 || !Array.isArray(current.realms)) {
+    const missingGuaranteeFields = current && Array.isArray(current.realms) && current.realms.some(realm =>
+        !Object.hasOwn(realm, "guarantee") || !Object.hasOwn(realm, "guaranteeCall"));
+    if (!current || typeof current !== "object" || Array.isArray(current) || current.version !== 1 ||
+        !Array.isArray(current.realms) || !Number.isFinite(Number(current.guaranteeCredibility)) ||
+        !Number.isFinite(Number(current.guaranteeHonored)) || !Number.isFinite(Number(current.guaranteeRefused)) ||
+        missingGuaranteeFields) {
         state.diplomacy = normalizeDiplomacySnapshot(current);
     }
     return state.diplomacy;
@@ -120,9 +187,22 @@ export function ensureDiplomacy() {
 
 function realmSnapshot(realm) {
     const definition = REALM_BY_ID.get(realm.id);
+    const year = currentYear();
+    const guarantee = realm.guarantee ? {
+        ...realm.guarantee,
+        active:realm.guarantee.expiresYear > year || Boolean(realm.guaranteeCall),
+        yearsLeft:Math.max(0, realm.guarantee.expiresYear - year)
+    } : null;
+    const guaranteeCall = realm.guaranteeCall ? {
+        ...realm.guaranteeCall,
+        attackerName:REALM_BY_ID.get(realm.guaranteeCall.attackerId)?.name || realm.guaranteeCall.attackerId,
+        yearsLeft:Math.max(0, realm.guaranteeCall.deadlineYear - year)
+    } : null;
     return {
         ...definition,
         ...realm,
+        guarantee,
+        guaranteeCall,
         treatyLabel:DIPLOMATIC_TREATIES[realm.treaty]?.label || "Neutral",
         treatyTone:DIPLOMATIC_TREATIES[realm.treaty]?.tone || "neutral",
         relationLabel:relationLabel(realm.relation),
@@ -147,11 +227,19 @@ export function getDiplomacySnapshot() {
         realms,
         counts,
         envoys,
+        guarantees:{
+            active:realms.filter(realm => realm.guarantee?.active).length,
+            pending:realms.filter(realm => realm.guaranteeCall).length,
+            credibility:Math.round(diplomacy.guaranteeCredibility),
+            honored:diplomacy.guaranteeHonored,
+            refused:diplomacy.guaranteeRefused,
+            termYears:GUARANTEE_TERM_YEARS
+        },
         averageRelation:realms.length ? Math.round((relationTotal / realms.length) * 10) / 10 : 0,
         lastUpdateYear:diplomacy.lastUpdateYear,
         history:diplomacy.history.slice(0, 12),
         costs:DIPLOMACY_COSTS,
-        thresholds:{ tradePact:TRADE_PACT_RELATION, alliance:ALLIANCE_RELATION },
+        thresholds:{ tradePact:TRADE_PACT_RELATION, alliance:ALLIANCE_RELATION, guarantee:GUARANTEE_RELATION },
         biomeInfluence:getSpecialBiomeInfluence().diplomacy
     };
 }
@@ -241,10 +329,184 @@ export function proposeAlliance(id) {
     return { ok:true, message:"Alliance sworn with " + definition.name, realm:realmSnapshot(realm) };
 }
 
+export function grantGuarantee(id) {
+    const { diplomacy, realm, definition } = locate(id);
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    const year = currentYear();
+    if (realm.treaty === "war") return { ok:false, reason:"war-closes-the-court" };
+    if (realm.guaranteeCall) return { ok:false, reason:"a-guarantee-call-is-pending" };
+    if (realm.guarantee && !(realm.guarantee.expiresYear <= year)) return { ok:false, reason:"a-guarantee-is-already-in-force" };
+    if (realm.relation < GUARANTEE_RELATION) return { ok:false, reason:"relation-below-35" };
+    if ((Number(state.resources?.gold) || 0) < DIPLOMACY_COSTS.guarantee) return { ok:false, reason:"not-enough-gold" };
+    addResource("gold", -DIPLOMACY_COSTS.guarantee);
+    realm.guarantee = {
+        sinceYear:year,
+        expiresYear:year + GUARANTEE_TERM_YEARS,
+        nextCrisisYear:guaranteeCrisisYear(realm.id, year),
+        honored:0,
+        refused:0,
+        lastCallYear:0
+    };
+    realm.relation = clamp(realm.relation + 6);
+    realm.trust = clamp(realm.trust + 8);
+    realm.fear = clamp(realm.fear - 3);
+    record(diplomacy, realm, "guarantee", "Royal guarantee extended to " + definition.name + " until year " + realm.guarantee.expiresYear);
+    applyPoliticalEffects({ legitimacy:0.6, nobility:0.3, guilds:0.4 });
+    state.morale = clamp((Number(state.morale) || 0) + 0.5);
+    addLog("ROYAL GUARANTEE EXTENDED TO " + definition.name.toUpperCase(), "#9fc5e8", "diplomacy");
+    return { ok:true, message:"Royal guarantee extended to " + definition.name, realm:realmSnapshot(realm) };
+}
+
+function applyGuaranteeRefusal(diplomacy, realm, definition, automatic) {
+    const call = realm.guaranteeCall;
+    if (!call) return null;
+    const attackerName = REALM_BY_ID.get(call.attackerId)?.name || call.attackerId;
+    const guarantee = realm.guarantee;
+    if (guarantee) guarantee.refused = integer(guarantee.refused, 0, 999) + 1;
+    realm.guaranteeCall = null;
+    realm.guarantee = null;
+    realm.relation = clamp(realm.relation - 14);
+    realm.trust = clamp(realm.trust - 20);
+    realm.fear = clamp(realm.fear + 10);
+    for (const other of diplomacy.realms) {
+        if (other.id === realm.id) continue;
+        other.relation = clamp(other.relation - 1);
+        other.trust = clamp(other.trust - 2);
+    }
+    diplomacy.guaranteeCredibility = clamp(diplomacy.guaranteeCredibility - 16);
+    diplomacy.guaranteeRefused = integer(diplomacy.guaranteeRefused, 0, 999999) + 1;
+    const summary = automatic
+        ? "Unanswered guarantee abandoned against " + attackerName
+        : "Guarantee refused against " + attackerName;
+    record(diplomacy, realm, "guarantee-refused", summary + "; " + definition.name + " is left exposed");
+    applyPoliticalEffects({ legitimacy:-2, nobility:-1, guilds:-1.5, clergy:-0.5 });
+    state.morale = clamp((Number(state.morale) || 0) - 2);
+    adjustHiddenTension(5);
+    addLog((automatic ? "GUARANTEE LAPSED UNANSWERED: " : "GUARANTEE REFUSED: ") + definition.name.toUpperCase(), "#d27b6d", "diplomacy");
+    return { ok:true, message:summary + "; " + definition.name + " is left exposed", realmName:definition.name, attackerName };
+}
+
+export function refuseGuaranteeCall(id) {
+    const { diplomacy, realm, definition } = locate(id);
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    if (!realm.guaranteeCall) return { ok:false, reason:"no-guarantee-call" };
+    const result = applyGuaranteeRefusal(diplomacy, realm, definition, false);
+    return { ...result, realm:realmSnapshot(realm) };
+}
+
+export function honorGuaranteeCall(id) {
+    const { diplomacy, realm, definition } = locate(id);
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    const call = realm.guaranteeCall;
+    if (!call) return { ok:false, reason:"no-guarantee-call" };
+    if ((Number(state.resources?.gold) || 0) < DIPLOMACY_COSTS.guaranteeAidGold) return { ok:false, reason:"not-enough-gold" };
+    if ((Number(state.resources?.food) || 0) < DIPLOMACY_COSTS.guaranteeAidFood) return { ok:false, reason:"not-enough-food" };
+    addResource("gold", -DIPLOMACY_COSTS.guaranteeAidGold);
+    addResource("food", -DIPLOMACY_COSTS.guaranteeAidFood);
+    const year = currentYear();
+    const attacker = diplomacy.realms.find(item => item.id === call.attackerId) || null;
+    const attackerName = REALM_BY_ID.get(call.attackerId)?.name || call.attackerId;
+    const guarantee = realm.guarantee;
+    realm.guaranteeCall = null;
+    realm.relation = clamp(realm.relation + 10);
+    realm.trust = clamp(realm.trust + 12);
+    realm.fear = clamp(realm.fear - 8);
+    if (attacker) {
+        attacker.relation = clamp(attacker.relation - 8);
+        attacker.trust = clamp(attacker.trust - 4);
+        attacker.fear = clamp(attacker.fear + 6);
+    }
+    for (const other of diplomacy.realms) {
+        if (other.id === realm.id || other.id === call.attackerId) continue;
+        other.relation = clamp(other.relation + 1);
+        other.trust = clamp(other.trust + 2);
+    }
+    if (guarantee) {
+        guarantee.honored = integer(guarantee.honored, 0, 999) + 1;
+        guarantee.lastCallYear = year;
+        guarantee.nextCrisisYear = guaranteeCrisisYear(realm.id, year, "honored");
+    }
+    diplomacy.guaranteeCredibility = clamp(diplomacy.guaranteeCredibility + 8);
+    diplomacy.guaranteeHonored = integer(diplomacy.guaranteeHonored, 0, 999999) + 1;
+    record(diplomacy, realm, "guarantee-honored", "Guarantee honored against " + attackerName + "; aid reaches " + definition.name);
+    applyPoliticalEffects({ legitimacy:1.2, nobility:0.8, guilds:0.6, clergy:0.4 });
+    state.morale = clamp((Number(state.morale) || 0) + 2);
+    adjustHiddenTension(3);
+    addLog("GUARANTEE HONORED: " + definition.name.toUpperCase() + " SHIELDED", "#9fc5e8", "diplomacy");
+    const expired = Boolean(guarantee && guarantee.expiresYear <= year);
+    if (expired) realm.guarantee = null;
+    return {
+        ok:true,
+        message:"Guarantee honored against " + attackerName + "; " + definition.name + " is shielded",
+        realmName:definition.name,
+        attackerName,
+        expired
+    };
+}
+
+export function withdrawGuarantee(id) {
+    const { diplomacy, realm, definition } = locate(id);
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    if (!realm.guarantee) return { ok:false, reason:"no-guarantee-is-in-force" };
+    if (realm.guaranteeCall) return { ok:false, reason:"resolve-the-guarantee-call-first" };
+    const years = Math.max(0, currentYear() - realm.guarantee.sinceYear);
+    realm.guarantee = null;
+    realm.relation = clamp(realm.relation - 12);
+    realm.trust = clamp(realm.trust - 15);
+    realm.fear = clamp(realm.fear + 6);
+    for (const other of diplomacy.realms) {
+        if (other.id === realm.id) continue;
+        other.relation = clamp(other.relation - 1);
+        other.trust = clamp(other.trust - 2);
+    }
+    diplomacy.guaranteeCredibility = clamp(diplomacy.guaranteeCredibility - 8);
+    record(diplomacy, realm, "guarantee-withdrawn", "Royal guarantee withdrawn from " + definition.name + " after " + years + " years");
+    applyPoliticalEffects({ legitimacy:-1.5, nobility:-0.5, guilds:-0.8 });
+    state.morale = clamp((Number(state.morale) || 0) - 1);
+    addLog("ROYAL GUARANTEE WITHDRAWN FROM " + definition.name.toUpperCase(), "#d8a38a", "diplomacy");
+    return { ok:true, message:"Royal guarantee withdrawn from " + definition.name, realm:realmSnapshot(realm) };
+}
+
+function updateGuarantees(diplomacy, year) {
+    for (const realm of diplomacy.realms) {
+        const definition = REALM_BY_ID.get(realm.id);
+        if (!definition) continue;
+        if (realm.guaranteeCall && year > realm.guaranteeCall.deadlineYear) {
+            applyGuaranteeRefusal(diplomacy, realm, definition, true);
+            continue;
+        }
+        if (realm.guaranteeCall) continue;
+        if (!realm.guarantee) continue;
+        if (realm.guarantee.expiresYear <= year) {
+            realm.guarantee = null;
+            record(diplomacy, realm, "guarantee-expired", "Royal guarantee to " + definition.name + " expired in year " + year);
+            continue;
+        }
+        if (year < realm.guarantee.nextCrisisYear) continue;
+        const attacker = diplomacy.realms
+            .filter(other => other.id !== realm.id && other.treaty !== "war")
+            .sort((a, b) => a.relation - b.relation || a.id.localeCompare(b.id))[0];
+        if (!attacker) continue;
+        const attackerDefinition = REALM_BY_ID.get(attacker.id);
+        realm.guaranteeCall = {
+            id:realm.id + ":" + year,
+            attackerId:attacker.id,
+            sinceYear:year,
+            deadlineYear:year + 1
+        };
+        realm.guarantee.lastCallYear = year;
+        realm.guarantee.nextCrisisYear = guaranteeCrisisYear(realm.id, year, "next");
+        record(diplomacy, realm, "guarantee-call", definition.name + " calls on the crown against " + (attackerDefinition?.name || attacker.id));
+        addLog("GUARANTEE CALL FROM " + definition.name.toUpperCase(), "#e0b36a", "diplomacy");
+    }
+}
+
 export function declareWar(id) {
     const { diplomacy, realm, definition } = locate(id);
     if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
     if (realm.treaty === "war") return { ok:false, reason:"already-at-war" };
+    if (realm.guarantee && !realm.guaranteeCall && realm.guarantee.expiresYear <= currentYear()) realm.guarantee = null;
+    if (realm.guarantee) return { ok:false, reason:"withdraw-the-guarantee-first" };
     realm.treaty = "war";
     realm.treatySinceYear = currentYear();
     realm.warExhaustion = 0;
@@ -374,8 +636,10 @@ export function updateDiplomacy() {
     const diplomacy = ensureDiplomacy();
     const year = currentYear();
     if (diplomacy.lastUpdateYear >= year) return getDiplomacySnapshot();
+    updateGuarantees(diplomacy, year);
     const court = getCourtModifiers();
     const biome = getSpecialBiomeInfluence().diplomacy;
+    const credibilityDelta = (clamp(diplomacy.guaranteeCredibility) - 50) * 0.005;
     const effects = { legitimacy:0, commons:0, nobility:0, guilds:0, clergy:0 };
     let moraleDelta = 0;
     effects.commons += biome.commons;
@@ -421,6 +685,13 @@ export function updateDiplomacy() {
         }
         const chancery = Math.max(0, Number(getEndeavourModifiers().diplomacy) || 0);
         if (chancery && realm.treaty !== "war") realm.relation = clamp(realm.relation + chancery);
+        if (realm.guarantee && !realm.guaranteeCall) {
+            realm.relation = clamp(realm.relation + 0.4);
+            realm.trust = clamp(realm.trust + 0.2);
+        }
+        // Standing is a long-term asset: honoured guarantees make every court
+        // slightly more willing to trust the crown, while broken ones decay it.
+        if (realm.treaty !== "war") realm.trust = clamp(realm.trust + credibilityDelta);
         // Charted rare goods, attunement and blight all colour the neighbouring
         // courts. This is one cached scalar, not a scan of the atlas per realm.
         realm.relation = clamp(realm.relation + biome.relationDrift);
