@@ -6,7 +6,7 @@ Production is Cloudflare Pages at https://kings-and-cards.pages.dev/. The produc
 
 ## Automatic deployment after green tests
 
-`.github/workflows/deploy-kings-cards-after-tests.yml` is the production deployment path. It runs on pushes to `ulmweb-branch` and on manual dispatch, runs the full `npm test` in `game/`, builds a runtime-only package with `npm run build:runtime`, and only then uploads that package to the existing Pages project `kings-and-cards` on branch `ulmweb-branch` with Wrangler Direct Upload.
+`.github/workflows/deploy-kings-cards-after-tests.yml` is the production deployment path. It runs on every push to `ulmweb-branch` and on manual dispatch, runs the full `npm test` in `game/`, builds a runtime-only package with `npm run build:runtime`, and only then uploads that package to the existing Pages project `kings-and-cards` on branch `ulmweb-branch` with Wrangler Direct Upload. Running on every push is deliberate: a CI-only or documentation commit must also move the production marker to that exact HEAD instead of leaving an older runtime live.
 
 Required repository secrets:
 
@@ -15,7 +15,7 @@ Required repository secrets:
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API token with **Pages: Edit** permission for the account |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID that owns the `kings-and-cards` Pages project |
 
-Because the Pages project is Git-integrated, disable **Enable automatic production branch deployments** in Cloudflare Dashboard → Workers & Pages → `kings-and-cards` → Settings → Builds & deployments before relying on this workflow. Otherwise a push to `ulmweb-branch` can deploy before the test job finishes. The production branch remains `ulmweb-branch`; the workflow performs a Direct Upload after the test gate, and the Pages build command/output directory settings are not used by that upload.
+The Pages project is Git-integrated. That integration is the source of the former race: Cloudflare can start its own production build for a push before the GitHub Actions test gate finishes, and that Git deployment does not contain the generated `version.json` marker. The GitHub Actions deploy now closes the race at its cause: after the tests and immediately before the Wrangler upload it runs `node game/scripts/enforce-pages-direct-upload.mjs`. That script uses the Pages API to set `source.config.production_deployments_enabled=false` and `source.config.preview_deployment_setting=none`, then performs a fresh GET and fails closed unless both settings are active. The production branch remains `ulmweb-branch`; the Pages build command/output directory settings are not used by the Direct Upload.
 
 ## Stale-deploy guard
 
@@ -27,7 +27,7 @@ The guard is covered by `tests/ci/production-head-guard.test.js` (current head a
 
 The repository also isolates the deploy environment. The new workflow uses `production-current`, whose deployment branch rule allows only `ulmweb-branch`. The legacy `Production` environment is retained for deployment history but its branch rule now allows only the non-existent retired branch `retired-production`. Any pre-guard workflow run, including an old run whose YAML has no head check, therefore cannot enter the production environment from `ulmweb-branch`. Environment branch rules are matched against the workflow run's `GITHUB_REF` and are configured in repository settings, not in the workflow YAML, so this protection applies even to immutable historical workflow definitions.
 
-The runtime build writes `version.json` into the package root with `commit`, `branch` and `builtAt`. The workflow verifies that the artifact's `commit` equals the workflow commit before upload, and after the Wrangler upload it fetches `https://kings-and-cards.pages.dev/version.json?commit=<sha>` and fails unless the served `commit` and timestamp match. A plain HTTP 200 is not accepted as proof of the release.
+The runtime build writes `version.json` into the package root with `commit`, `branch` and `builtAt`. The workflow verifies that the artifact's `commit` equals the workflow commit before upload, and after the Wrangler upload it fetches `https://kings-and-cards.pages.dev/version.json?commit=<sha>` and fails unless the served `commit` and timestamp match. It then holds the marker for three further ten-second checks so a late competing deployment makes the release job fail instead of silently overwriting the tested commit. A plain HTTP 200 is not accepted as proof of the release.
 
 A workflow run is not proof of a live release by itself. After a successful Wrangler upload, also confirm the deployment in the Pages project. The marker proves that the canonical URL serves the built commit; it does not prove that Cloudflare's dashboard deployment metadata names the same deployment.
 

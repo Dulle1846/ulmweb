@@ -1,12 +1,12 @@
 name: Deploy Kings & Cards after green tests
 
 on:
+  # Every push must leave production on the pushed commit. In particular, a
+  # documentation or CI-only push must not leave the previous runtime live while
+  # Cloudflare's Git integration creates an untested deployment.
   push:
     branches:
       - ulmweb-branch
-    paths:
-      - "game/**"
-      - ".github/workflows/deploy-kings-cards-after-tests.yml"
   workflow_dispatch:
 
 permissions:
@@ -122,6 +122,13 @@ jobs:
             exit 1
           fi
 
+      - name: Make Direct Upload the only Pages deployment path
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_PROJECT: kings-and-cards
+        run: node game/scripts/enforce-pages-direct-upload.mjs
+
       - name: Deploy tested runtime to Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -171,4 +178,20 @@ jobs:
             --retry 6 --retry-delay 5 --retry-connrefused \
             https://kings-and-cards.pages.dev/ \
             -o /dev/null
+          # A competing Git deployment used to become visible a few seconds
+          # after the direct upload. Hold the marker briefly so the deploy job
+          # fails instead of certifying a race that has already overwritten it.
+          for attempt in 1 2 3; do
+            sleep 10
+            curl --fail --silent --show-error --location \
+              "https://kings-and-cards.pages.dev/version.json?stability=$attempt&t=$(date +%s)" \
+              -o "$marker"
+            node -e '
+              const fs = require("node:fs");
+              const expected = process.env.GITHUB_SHA;
+              const marker = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+              if (marker.commit !== expected) throw new Error(`stability check: commit ${marker.commit} != ${expected}`);
+              console.log(`Stability check ${process.argv[2]}/3: ${marker.commit}`);
+            ' "$marker" "$attempt"
+          done
           echo "Production URL and version marker verified: https://kings-and-cards.pages.dev/"
