@@ -392,6 +392,16 @@
             </section>
             <label class="endless-toggle" for="world-endless"><input id="world-endless" type="checkbox" checked><span><strong>∞ ENDLESS REALM</strong><em>The chronicle never ends. Morale collapse and a broken keep become recoverable setbacks, and every 25 years opens a new age. Uncheck for the classic finite campaign.</em></span></label>
             <button id="start-new-game-btn" class="ui-button ui-button--primary primary-button" type="button">FOUND A NEW REALM</button>
+            <button id="random-realm-btn" class="ui-button ui-button--secondary secondary-button random-realm-btn" type="button" aria-controls="random-realm-confirm" aria-expanded="false">⚄ RANDOM REALM</button>
+            <section id="random-realm-confirm" class="random-realm-confirm" role="region" aria-labelledby="random-realm-title" hidden>
+                <div class="random-realm-confirm__head"><span>THE FORGE OFFERS A REALM</span><h2 id="random-realm-title">FOUND THIS REALM?</h2></div>
+                <p id="random-realm-summary" class="random-realm-summary" aria-live="polite"></p>
+                <div class="random-realm-confirm__actions">
+                    <button id="random-realm-accept" class="ui-button ui-button--primary primary-button" type="button">FOUND THIS REALM</button>
+                    <button id="random-realm-reroll" class="ui-button ui-button--secondary secondary-button" type="button">REROLL</button>
+                    <button id="random-realm-cancel" class="ui-button ui-button--secondary secondary-button" type="button">CANCEL</button>
+                </div>
+            </section>
             <button id="continue-game-btn" class="ui-button ui-button--secondary secondary-button" type="button" disabled>NO SAVED REALM</button>
             <button id="load-game-btn" class="text-button" type="button">LOAD LOCAL SAVE</button>
             <button id="start-settings-btn" class="text-button" type="button">SETTINGS</button>

@@ -63,6 +63,7 @@ import {BENCHMARK_MIN_FRAMES,BENCHMARK_SAMPLE_MS,BENCHMARK_WARMUP_MS,buildBenchm
 import { initializeWinterForRealm, refreshWinterSnapshot } from "../world/winter-economy.js";
 import { createEndlessState } from "../systems/endless.js";
 import { setupWinterHud } from "../presentation/winter-panel.js";
+import { buildRandomStart } from "./start-randomizer.js";
 
 let loopStarted=false;
 let settings=loadSettings();
@@ -337,6 +338,155 @@ function randomSeed(){
         const value=new Uint32Array(1);crypto.getRandomValues(value);return (value[0]%2147483000)+1;
     }
     return Math.floor(Math.random()*2147483000)+1;
+}
+
+const START_RANDOM_WORLD_FIELDS=Object.freeze({
+    size:"world-size",shape:"world-shape",climate:"world-climate",landmass:"world-landmass",
+    ruggedness:"world-ruggedness",forests:"world-forests",water:"world-water",fertility:"world-fertility",
+    resources:"world-resources",mountains:"world-mountains",rivers:"world-rivers",lakes:"world-lakes",
+    coastline:"world-coastline",snow:"world-snow",wetlands:"world-wetlands",aridity:"world-aridity"
+});
+const START_FORM_IDS=Object.freeze([
+    "player-name-input","world-seed-input",
+    "realm-name-input","realm-dynasty-input","realm-title-input","realm-culture","realm-government",
+    "realm-religion","realm-tradition","realm-law","realm-legitimacy","realm-founding",
+    "realm-background","realm-banner","realm-emblem",
+    ...Object.values(START_RANDOM_WORLD_FIELDS),"world-endless"
+]);
+let randomStartBaseline=null;
+
+function readStartFormState(){
+    const values={};
+    for(const id of START_FORM_IDS){
+        const control=document.getElementById(id);
+        if(!control)continue;
+        values[id]=control.type==="checkbox"?Boolean(control.checked):String(control.value??"");
+    }
+    return values;
+}
+
+function writeStartFormState(values){
+    if(!values)return;
+    for(const id of START_FORM_IDS){
+        if(!Object.hasOwn(values,id))continue;
+        const control=document.getElementById(id);
+        if(!control)continue;
+        if(control.type==="checkbox")control.checked=Boolean(values[id]);
+        else control.value=String(values[id]??"");
+    }
+}
+
+function setStartControl(id,value){
+    const control=document.getElementById(id);
+    if(!control)return;
+    if(control.type==="checkbox")control.checked=Boolean(value);
+    else control.value=String(value??"");
+}
+
+function selectedStartLabel(id){
+    const option=document.getElementById(id)?.selectedOptions?.[0];
+    return String(option?.textContent||"").split("·")[0].trim();
+}
+
+function renderRandomStartSummary(){
+    const summary=document.getElementById("random-realm-summary");
+    if(!summary)return;
+    const value=id=>document.getElementById(id)?.value||"";
+    const name=String(value("player-name-input")).trim()||"Realm Keeper";
+    const realm=String(value("realm-name-input")).trim()||"New Realm";
+    const dynasty=String(value("realm-dynasty-input")).trim()||"Royal House";
+    const title=String(value("realm-title-input")).trim()||"Sovereign";
+    const background=String(value("realm-background")).trim();
+    const lines=[
+        "KEEPER "+name+" · REALM "+realm+" · "+dynasty+" · "+title,
+        "WORLD seed "+value("world-seed-input")+" · "+[selectedStartLabel("world-size"),selectedStartLabel("world-shape"),selectedStartLabel("world-climate")].filter(Boolean).join(" · "),
+        "CULTURE "+selectedStartLabel("realm-culture")+" · "+selectedStartLabel("realm-government"),
+        "FAITH "+selectedStartLabel("realm-religion")+" · "+selectedStartLabel("realm-tradition")+" · "+selectedStartLabel("realm-law")+" · "+selectedStartLabel("realm-legitimacy"),
+        "CHARTER "+selectedStartLabel("realm-founding")+" · "+selectedStartLabel("realm-banner")+" · "+selectedStartLabel("realm-emblem"),
+        document.getElementById("world-endless")?.checked?"∞ ENDLESS REALM":"CLASSIC FINITE CAMPAIGN"
+    ];
+    if(background)lines.push("“"+background+"”");
+    summary.textContent=lines.join("\n");
+}
+
+function openRandomStartConfirm(){
+    const panel=document.getElementById("random-realm-confirm");
+    if(!panel)return;
+    panel.hidden=false;
+    document.getElementById("random-realm-btn")?.setAttribute("aria-expanded","true");
+    renderRandomStartSummary();
+    document.getElementById("random-realm-accept")?.focus();
+}
+
+function closeRandomStartConfirm(restore=false){
+    const panel=document.getElementById("random-realm-confirm");
+    if(restore&&randomStartBaseline){
+        writeStartFormState(randomStartBaseline);
+        syncWorldForge(readWorldOptions());
+        refreshFoundingSummary();
+        scheduleForgePreview();
+    }
+    randomStartBaseline=null;
+    if(panel)panel.hidden=true;
+    document.getElementById("random-realm-btn")?.setAttribute("aria-expanded","false");
+}
+
+function rollRandomStart(){
+    if(!randomStartBaseline)randomStartBaseline=readStartFormState();
+    const playerName=document.getElementById("player-name-input")?.value?.trim()||"";
+    const choices=buildRandomStart({seed:randomSeed(),playerName});
+    setStartControl("player-name-input",choices.playerName);
+    setStartControl("world-seed-input",choices.seed);
+    setStartControl("world-endless",choices.endless);
+    for(const [key,id] of Object.entries(START_RANDOM_WORLD_FIELDS))setStartControl(id,choices.worldOptions[key]);
+    setStartControl("realm-name-input",choices.identity.kingdomName);
+    setStartControl("realm-dynasty-input",choices.identity.dynastyName);
+    setStartControl("realm-title-input",choices.identity.rulerTitle);
+    setStartControl("realm-culture",choices.identity.culture);
+    setStartControl("realm-government",choices.government);
+    setStartControl("realm-religion",choices.identity.religion);
+    setStartControl("realm-tradition",choices.identity.tradition);
+    setStartControl("realm-law",choices.identity.law);
+    setStartControl("realm-legitimacy",choices.identity.legitimacy);
+    setStartControl("realm-founding",choices.identity.startProfile);
+    setStartControl("realm-background",choices.identity.background);
+    setStartControl("realm-banner",choices.identity.banner);
+    setStartControl("realm-emblem",choices.identity.emblem);
+    syncWorldForge(choices.worldOptions);
+    refreshFoundingSummary();
+    scheduleForgePreview();
+    openRandomStartConfirm();
+}
+
+function cancelRandomStart(){
+    closeRandomStartConfirm(true);
+    document.getElementById("random-realm-btn")?.focus();
+}
+
+function startRealmFromForm(trigger){
+    closeRandomStartConfirm(false);
+    const label=trigger.textContent;
+    const randomButton=document.getElementById("random-realm-btn");
+    trigger.disabled=true;
+    if(randomButton)randomButton.disabled=true;
+    trigger.textContent="FORGING THE REALM…";
+    window.setTimeout(()=>{
+        try{
+            const active=getActiveProfile();
+            const input=document.getElementById("player-name-input");
+            const typed=input?.value?.trim();
+            const player=active&&(!typed||typed===active.displayName)?active:createLocalProfile(typed||"Realm Keeper");
+            const seed=Number(document.getElementById("world-seed-input")?.value);
+            const worldOptions=readWorldOptions();
+            startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player,worldOptions)
+                .catch(error=>showStatus(error.message));
+        }catch(error){showStatus(error.message);}
+        finally{
+            trigger.disabled=false;
+            if(randomButton)randomButton.disabled=false;
+            trigger.textContent=label;
+        }
+    },40);
 }
 
 function ensureProfile(){
@@ -810,21 +960,24 @@ function bindMenu(){
     seedInput?.addEventListener("input",scheduleForgePreview);
     document.getElementById("random-seed-btn")?.addEventListener("click",()=>{if(seedInput)seedInput.value=String(randomSeed());scheduleForgePreview();});
     const startButton=document.getElementById("start-new-game-btn");
-    startButton?.addEventListener("click",()=>{
-        const label=startButton.textContent;
-        startButton.disabled=true;
-        startButton.textContent="FORGING THE REALM…";
-        window.setTimeout(()=>{
-            try{
-                const active=getActiveProfile();
-                const typed=nameInput?.value?.trim();
-                const player=active&&(!typed||typed===active.displayName)?active:createLocalProfile(typed||"Realm Keeper");
-                const seed=Number(seedInput?.value);
-                startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player,readWorldOptions())
-                    .catch(error=>showStatus(error.message));
-            }catch(error){showStatus(error.message);}
-            finally{startButton.disabled=false;startButton.textContent=label;}
-        },40);
+    startButton?.addEventListener("click",()=>startRealmFromForm(startButton));
+    document.getElementById("random-realm-btn")?.addEventListener("click",rollRandomStart);
+    document.getElementById("random-realm-reroll")?.addEventListener("click",rollRandomStart);
+    document.getElementById("random-realm-cancel")?.addEventListener("click",cancelRandomStart);
+    document.getElementById("random-realm-accept")?.addEventListener("click",event=>startRealmFromForm(event.currentTarget));
+    document.getElementById("random-realm-confirm")?.addEventListener("keydown",event=>{
+        if(event.key==="Escape")cancelRandomStart();
+    });
+    // A manual edit while the offer is open must be reflected in the summary
+    // the player is about to confirm. This only touches presentation.
+    const refreshRandomSummary=()=>{
+        const panel=document.getElementById("random-realm-confirm");
+        if(panel&&!panel.hidden)renderRandomStartSummary();
+    };
+    START_FORM_IDS.forEach(id=>{
+        const control=document.getElementById(id);
+        control?.addEventListener("input",refreshRandomSummary);
+        control?.addEventListener("change",refreshRandomSummary);
     });
     drawForgePreview();
     continueButton?.addEventListener("click",loadCurrentGame);

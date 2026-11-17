@@ -5,6 +5,19 @@
 
 /* ── World Forge ───────────────────────────────────────────── */
 
+.random-realm-btn{width:100%;margin-top:0;border-color:rgba(185,154,89,.62);background:linear-gradient(180deg,#f3e6ca,#ddcba5);color:#4b351f}
+.random-realm-btn:hover{background:linear-gradient(180deg,#fff1d5,#e7d6b1)}
+.random-realm-confirm{display:grid;gap:10px;margin-top:10px;padding:13px;border:1px solid rgba(185,154,89,.68);border-radius:7px;background:linear-gradient(145deg,rgba(31,28,21,.96),rgba(56,43,30,.94));color:#f2e5c7;box-shadow:inset 0 0 0 1px rgba(255,246,215,.14),0 8px 20px rgba(0,0,0,.22)}
+.random-realm-confirm[hidden]{display:none}
+.random-realm-confirm__head{display:flex;flex-direction:column;gap:3px}
+.random-realm-confirm__head span{color:#bda777;font:900 8px/1.3 "Trebuchet MS",sans-serif;letter-spacing:.14em}
+.random-realm-confirm__head h2{margin:0;color:#f7e6b9;font:700 20px/1.15 Georgia,"Palatino Linotype",serif;letter-spacing:.04em}
+.random-realm-summary{margin:0;padding:9px 10px;border:1px solid rgba(185,154,89,.25);border-radius:5px;background:rgba(0,0,0,.2);color:#eadfc8;font:10px/1.65 "Trebuchet MS",sans-serif;white-space:pre-line;overflow-wrap:anywhere}
+.random-realm-confirm__actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.random-realm-confirm__actions .primary-button{grid-column:1/-1;margin-top:0}
+.random-realm-confirm__actions .secondary-button{min-height:36px}
+@media(max-width:480px){.random-realm-confirm__actions{grid-template-columns:1fr}.random-realm-confirm__actions .primary-button{grid-column:auto}}
+
 .forge-preview-wrap {
   margin: 10px 0 12px;
   border: 1px solid rgba(92, 72, 42, 0.45);
