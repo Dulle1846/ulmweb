@@ -2,20 +2,20 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "72ddb769e90bfade38f1d269b1b7bfd82160ff36",
-  "sourceHash": "d4c30099ae850f571383f1682685f3d9da7a9df7355764eaa594833fa3298220",
+  "commit": "3d90618f06d3c01b8ecbcaa9f876958fbacce412",
+  "sourceHash": "0206981a0edc462005535df3ee32743cb3b8165bd6f45e0898c493ce9d6db453",
   "totals": {
     "total": 1312,
-    "implemented": 1300,
-    "open": 12,
+    "implemented": 1302,
+    "open": 10,
     "sections": 34
   },
   "nextSection": {
-    "id": "3.8",
-    "title": "Royal court, advisor and living nobility",
+    "id": "3.9",
+    "title": "Dynasty, constitution and diplomacy",
     "open": 2,
-    "total": 12,
-    "firstOpen": "3.8.11"
+    "total": 8,
+    "firstOpen": "3.9.2"
   },
   "collisions": [
     {
@@ -600,8 +600,8 @@ export const SPEC_COVERAGE = Object.freeze({
       "id": "3.8",
       "title": "Royal court, advisor and living nobility",
       "total": 12,
-      "implemented": 10,
-      "open": 2,
+      "implemented": 12,
+      "open": 0,
       "source": "system registry"
     },
     {
@@ -630,24 +630,6 @@ export const SPEC_COVERAGE = Object.freeze({
     }
   ],
   "openPoints": [
-    {
-      "id": "3.8.11",
-      "section": "3.8",
-      "title": "Royal court, advisor and living nobility",
-      "label": "Noble land armies and autonomous military commands",
-      "missing": [
-        "Nobility has household levies but no persistent land army, command staff or autonomous marching/quartering consumer."
-      ]
-    },
-    {
-      "id": "3.8.12",
-      "section": "3.8",
-      "title": "Royal court, advisor and living nobility",
-      "label": "Noble feuds and autonomous conflict between houses",
-      "missing": [
-        "No feud state, escalation cadence, mediation or autonomous house-versus-house conflict consumer exists."
-      ]
-    },
     {
       "id": "3.9.2",
       "section": "3.9",

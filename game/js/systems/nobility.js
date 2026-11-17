@@ -9,6 +9,7 @@ import { addLog } from "../core/event-log.js";
 import { addResource } from "./resources.js";
 import { applyPoliticalEffects } from "./politics.js";
 import { addPersonMemory, ensurePersonProfile, PERSON_SPECIES } from "./people.js";
+import { normalizeNobleFeuds, normalizeNobleHost } from "./noble-state.js";
 
 export const NOBILITY_HOUSE_LIMIT = 4;
 export const NOBILITY_HISTORY_LIMIT = 24;
@@ -107,9 +108,24 @@ function wealthTarget(house, members, head, offices) {
     );
 }
 
-function levyFor(members, power, charter) {
+function levyFor(members, power, charter, feudPenalty = 0) {
     const adults = members.filter(entity => isAdult(entity.person)).length;
-    return Math.round(clamp(1.5 + adults * 1.2 + power * 0.08 + (charter ? 1.5 : 0), 1, 30));
+    return Math.round(clamp((1.5 + adults * 1.2 + power * 0.08 + (charter ? 1.5 : 0)) *
+        (1 - clamp(feudPenalty, 0, 0.5)), 1, 30));
+}
+
+function activeFeudSeverity(houseId) {
+    let severity = 0;
+    for (const feud of Array.isArray(state.nobility?.feuds) ? state.nobility.feuds : []) {
+        if (feud?.status === "active" && Array.isArray(feud.houses) && feud.houses.includes(String(houseId))) {
+            severity = Math.max(severity, clamp(Number(feud.severity) || 0, 0, 5));
+        }
+    }
+    return severity;
+}
+
+function activeFeudPenalty(house) {
+    return activeFeudSeverity(house?.id) * 0.036;
 }
 
 function powerFor(members, wealth, levy, offices, charter) {
@@ -127,7 +143,8 @@ function powerFor(members, wealth, levy, offices, charter) {
 function duesFor(house, members, offices) {
     const adults = members.filter(entity => isAdult(entity.person)).length;
     const gross = adults * 1.6 + Number(house.wealth || 0) * 0.12 + offices * 3 + (house.charter ? 4 : 0);
-    return Math.max(0, Math.min(30, Math.round(gross * (0.45 + clamp(house.loyalty) / 100 * 0.55))));
+    return Math.max(0, Math.min(30, Math.round(gross * (0.45 + clamp(house.loyalty) / 100 * 0.55) *
+        (1 - activeFeudPenalty(house)))));
 }
 
 function normalizeHistoryEntry(entry) {
@@ -162,6 +179,8 @@ function normalizeHouse(saved, index) {
         musteredUntilYear: integer(saved.musteredUntilYear, 0),
         duesLastYear: integer(saved.duesLastYear, 0, 30),
         lastUpdateYear: integer(saved.lastUpdateYear, 0),
+        host: normalizeNobleHost(saved.host),
+        hostDisbanded: saved.hostDisbanded === true,
         history: (Array.isArray(saved.history) ? saved.history : []).map(normalizeHistoryEntry)
             .filter(Boolean).slice(0, NOBILITY_HOUSE_HISTORY_LIMIT)
     };
@@ -179,7 +198,18 @@ export function createNobilityState() {
         duesThisYear: 0,
         duesCollected: 0,
         withheldHouses: 0,
-        leviesCalled: 0
+        leviesCalled: 0,
+        feuds: [],
+        feudPenalty: 0,
+        activeFeuds: 0,
+        hostDefenseBonus: 0,
+        hostUpkeepThisYear: 0,
+        hostsActive: 0,
+        warHosts: 0,
+        revolts: 0,
+        lastFeudYear: 0,
+        hostAudit: null,
+        hostHistory: []
     };
 }
 
@@ -192,6 +222,7 @@ export function normalizeNobilityState(input = state.nobility) {
         seen.add(house.id);
         return true;
     }).slice(0, NOBILITY_HOUSE_LIMIT);
+    const feuds = normalizeNobleFeuds(source.feuds);
     const normalized = {
         version: 1,
         lastUpdateYear: integer(source.lastUpdateYear, 0),
@@ -214,7 +245,40 @@ export function normalizeNobilityState(input = state.nobility) {
         duesThisYear: integer(source.duesThisYear, 0),
         duesCollected: integer(source.duesCollected, 0),
         withheldHouses: integer(source.withheldHouses, 0, 8),
-        leviesCalled: integer(source.leviesCalled, 0)
+        leviesCalled: integer(source.leviesCalled, 0),
+        feuds,
+        feudPenalty: Math.max(0, ...feuds.filter(feud => feud.status === "active")
+            .map(feud => (Number(feud.severity) || 0) * 0.036), 0),
+        activeFeuds: feuds.filter(feud => feud.status === "active").length,
+        hostDefenseBonus: Math.max(0, Math.min(0.11, Number(source.hostDefenseBonus) || 0)),
+        hostUpkeepThisYear: integer(source.hostUpkeepThisYear, 0),
+        hostsActive: integer(source.hostsActive, 0, NOBILITY_HOUSE_LIMIT),
+        warHosts: integer(source.warHosts, 0, NOBILITY_HOUSE_LIMIT),
+        revolts: integer(source.revolts, 0),
+        lastFeudYear: integer(source.lastFeudYear, 0),
+        hostAudit: source.hostAudit && typeof source.hostAudit === "object" && !Array.isArray(source.hostAudit)
+            ? {
+                year: integer(source.hostAudit.year, 0),
+                hosts: integer(source.hostAudit.hosts, 0, NOBILITY_HOUSE_LIMIT),
+                strength: integer(source.hostAudit.strength, 0, 240),
+                wages: integer(source.hostAudit.wages, 0),
+                supplies: integer(source.hostAudit.supplies, 0),
+                joinedWar: integer(source.hostAudit.joinedWar, 0, NOBILITY_HOUSE_LIMIT),
+                revolts: integer(source.hostAudit.revolts, 0, NOBILITY_HOUSE_LIMIT)
+            }
+            : null,
+        hostHistory: (Array.isArray(source.hostHistory) ? source.hostHistory : [])
+            .filter(entry => entry && typeof entry === "object" && !Array.isArray(entry))
+            .slice(0, 12)
+            .map(entry => ({
+                year: integer(entry.year, 0),
+                hosts: integer(entry.hosts, 0, NOBILITY_HOUSE_LIMIT),
+                strength: integer(entry.strength, 0, 240),
+                wages: integer(entry.wages, 0),
+                supplies: integer(entry.supplies, 0),
+                joinedWar: integer(entry.joinedWar, 0, NOBILITY_HOUSE_LIMIT),
+                revolts: integer(entry.revolts, 0, NOBILITY_HOUSE_LIMIT)
+            }))
     };
     if (state.nobility === input || input === undefined) state.nobility = normalized;
     return normalized;
@@ -266,6 +330,8 @@ function seedHouses(nobility) {
             musteredUntilYear: 0,
             duesLastYear: 0,
             lastUpdateYear: 0,
+            host: null,
+            hostDisbanded: false,
             history: [{
                 year,
                 kind: "founded",
@@ -306,7 +372,9 @@ function refreshDefense(nobility, year = yearNow()) {
             (0.5 + clamp(house.loyalty) / 100 * 0.7) *
             (mustered ? 1.5 : 1);
     }
-    nobility.defenseBonus = Math.max(1, Math.min(1.16, 1 + effectiveLevy / 280));
+    const hostBonus = Math.max(0, Number(nobility.hostDefenseBonus) || 0);
+    const feudPenalty = Math.max(0, Number(nobility.feudPenalty) || 0);
+    nobility.defenseBonus = Math.max(1, Math.min(1.2, 1 + effectiveLevy / 280 + hostBonus - feudPenalty * 0.35));
     return nobility.defenseBonus;
 }
 
@@ -356,7 +424,11 @@ function viewHouse(house, year) {
         status: dormant ? "dormant" : house.loyalty < 30 ? "withholding" : house.charter ? "chartered" : "watching",
         dues: dormant ? 0 : duesFor(house, members, offices),
         mustered,
-        levyActive: Math.round(house.levy * (mustered ? 1.5 : 1))
+        feudSeverity: activeFeudSeverity(house.id),
+        feudPenalty: Math.round(activeFeudPenalty(house) * 1000) / 1000,
+        host: normalizeNobleHost(house.host),
+        levyActive: Math.round(house.levy * (mustered ? 1.5 : 1) * (1 - activeFeudPenalty(house)))
+
     };
 }
 
@@ -379,6 +451,12 @@ export function getNobilitySnapshot() {
         duesCollected: nobility.duesCollected,
         withheldHouses: nobility.withheldHouses,
         leviesCalled: nobility.leviesCalled,
+        activeFeuds: (nobility.feuds || []).filter(feud => feud.status === "active").length,
+        feudPenalty: Number(nobility.feudPenalty) || 0,
+        hostDefenseBonus: Number(nobility.hostDefenseBonus) || 0,
+        hostsActive: Number(nobility.hostsActive) || 0,
+        warHosts: Number(nobility.warHosts) || 0,
+        revolts: Number(nobility.revolts) || 0,
         lastUpdateYear: nobility.lastUpdateYear,
         lastAudit: nobility.lastAudit ? { ...nobility.lastAudit } : null,
         history: nobility.history.slice(0, 10),
@@ -391,7 +469,7 @@ export function getNobilitySnapshot() {
 
 export function getNobilityDefenseMultiplier() {
     const value = Number(state.nobility?.defenseBonus);
-    return Number.isFinite(value) ? Math.max(1, Math.min(1.16, value)) : 1;
+    return Number.isFinite(value) ? Math.max(1, Math.min(1.2, value)) : 1;
 }
 
 export function grantNobleCharter(houseId) {
@@ -437,6 +515,7 @@ export function callNobleLevy(houseId) {
     const nextYear = Math.max(year, Number(house.lastLevyYear || 0) + NOBILITY_LEVY_COOLDOWN_YEARS);
     if (house.lastLevyYear && year < nextYear) return { ok: false, reason: "levy-cooldown-until-year-" + nextYear };
     if (house.loyalty < 35) return { ok: false, reason: "house-refuses-the-levy" };
+    if (activeFeudSeverity(house.id) >= 4) return { ok: false, reason: "feud-blocks-the-levy" };
     house.lastLevyYear = year;
     house.musteredUntilYear = year + 2;
     house.loyalty = clamp(house.loyalty - 7);
@@ -505,7 +584,7 @@ export function updateNobility() {
         house.wealth = clamp(Math.round(house.wealth * 0.72 + targetWealth * 0.28));
         const targetLoyalty = loyaltyTarget(house, members, head, offices);
         house.loyalty = clamp(Math.round(house.loyalty * 0.70 + targetLoyalty * 0.30));
-        house.levy = levyFor(members, house.power, house.charter);
+        house.levy = levyFor(members, house.power, house.charter, activeFeudPenalty(house));
         house.power = powerFor(members, house.wealth, house.levy, offices, house.charter);
         if (house.musteredUntilYear && house.musteredUntilYear <= year) house.musteredUntilYear = 0;
         if (house.musteredUntilYear > year) levies++;
@@ -575,6 +654,12 @@ export function validateNobilityState(value) {
     }
     if (value.history !== undefined && (!Array.isArray(value.history) || value.history.length > NOBILITY_HISTORY_LIMIT)) {
         throw new Error("Save data contains an invalid noble-house chronicle.");
+    }
+    if (value.feuds !== undefined && (!Array.isArray(value.feuds) || value.feuds.length > 8)) {
+        throw new Error("Save data contains an invalid noble-feud list.");
+    }
+    if (value.hostHistory !== undefined && (!Array.isArray(value.hostHistory) || value.hostHistory.length > 12)) {
+        throw new Error("Save data contains an invalid noble-host history.");
     }
     return true;
 }

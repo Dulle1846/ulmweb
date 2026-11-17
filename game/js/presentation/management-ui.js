@@ -5,6 +5,8 @@ import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getCourtSnapshot, appointMinister, dismissMinister, addressFactionDemand } from "../systems/court.js";
 import { getAdvisorSnapshot, appointRoyalAdvisor, resolveAdvisorAdvice } from "../systems/advisor.js";
 import { getNobilitySnapshot, grantNobleCharter, callNobleLevy } from "../systems/nobility.js";
+import { getNobleHostSnapshot, orderNobleHost } from "../systems/noble-host.js";
+import { getNobleFeudSnapshot, mediateFeud, inflameFeud, ignoreFeud } from "../systems/noble-feuds.js";
 import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, declareWar, sueForPeace, appointEnvoy, recallEnvoy } from "../systems/diplomacy.js";
 import { startExpedition } from "../systems/expeditions.js";
 import { attuneSpecialBiome, cleanseSpecialBiome, sellSpecialGood } from "../systems/special-biome-state.js";
@@ -273,32 +275,44 @@ function realmCycleSection(){
   (c.lastResolution?'<p class="command-note"><strong>LAST CROWN ANSWER</strong> '+esc(c.lastResolution)+'</p>':'');
 }
 function nobleRealmNote(){
- const n=getNobilitySnapshot();
+ const n=getNobilitySnapshot(),hosts=getNobleHostSnapshot(),feuds=getNobleFeudSnapshot();
  const houses=n.houses.filter(h=>h.memberCount>0).sort((a,b)=>b.loyalty-a.loyalty||a.familyName.localeCompare(b.familyName)).slice(0,3).map(h=>esc(h.familyName)+" "+Math.round(h.loyalty)).join(" · ");
- return '<div class="command-note"><strong>NOBLE HOUSES · '+n.houseCount+'</strong> '+(houses?houses+" loyalty":'No living noble house is recorded yet.')+' · defence +'+Math.round((n.defenseBonus-1)*100)+'% · '+n.duesThisYear+' gold dues in the last audit. Charters cost gold and timber; high taxes, low legitimacy and withheld charters erode loyalty, while court office and a loyal house strengthen it.</div>';
+ return '<div class="command-note"><strong>NOBLE HOUSES · '+n.houseCount+'</strong> '+(houses?houses+" loyalty":'No living noble house is recorded yet.')+' · defence +'+Math.round((n.defenseBonus-1)*100)+'% · '+hosts.activeHosts+' land host'+(hosts.activeHosts===1?'':'s')+' ('+hosts.totalStrength+' men, '+hosts.upkeep.wages+'G/'+hosts.upkeep.supplies+'F upkeep) · '+feuds.active+' active feud'+(feuds.active===1?'':'s')+' · '+n.duesThisYear+' gold dues in the last audit. Charters cost gold and timber; feuds and withheld charters erode loyalty and dues, while court office, loyalty and a paid host strengthen the house.</div>';
 }
 function nobilityPanel(){
  if(!state.hasStarted)return intro("THE NOBLE HOUSES","Awaiting their founding","Noble houses emerge from the named residents of a living realm.")+'<div class="command-note">Begin a campaign to record its families, estates, dues and levies.</div>';
- const n=getNobilitySnapshot(),gold=Number(state.resources?.gold)||0,wood=Number(state.resources?.wood)||0;
+ const n=getNobilitySnapshot(),hostSnapshot=getNobleHostSnapshot(),feuds=getNobleFeudSnapshot(),gold=Number(state.resources?.gold)||0,wood=Number(state.resources?.wood)||0,food=Number(state.resources?.food)||0;
+ const hostByHouse=new Map(hostSnapshot.hosts.map(host=>[host.houseId,host]));
  const cards=n.houses.map(h=>{
   const cost=n.charterCost,canCharter=!h.charter&&Boolean(h.head)&&gold>=cost.gold&&wood>=cost.wood;
   const cooldown=h.lastLevyYear?Math.max(0,h.lastLevyYear+n.levyCooldownYears-state.year):0;
-  const canLevy=Boolean(h.head)&&h.loyalty>=35&&cooldown===0;
+  const canLevy=Boolean(h.head)&&h.loyalty>=35&&cooldown===0&&h.feudSeverity<4;
   const people=h.memberNames.length?h.memberNames.slice(0,5).join(" · ")+(h.memberCount>5?" · +"+(h.memberCount-5):""):"No living members";
   const latest=h.history[0]?h.history[0].summary:"No house record yet.";
-  return '<article class="noble-house" data-noble-house="'+esc(h.id)+'"><header class="noble-house__head"><div><span class="command-ribbon">'+esc(String(h.status).toUpperCase())+(h.mustered?' · LEVY MUSTERED':'')+'</span><h4>HOUSE '+esc(h.familyName.toUpperCase())+'</h4><p>'+esc(h.seat)+' · founded year '+number(h.foundedYear)+'</p></div><div class="noble-house__power"><strong>'+Math.round(h.power)+'</strong><small>POWER</small></div></header>'+
+  const host=hostByHouse.get(h.id);
+  const hostBlock=host
+   ?'<div class="command-note"><strong>LAND HOST · '+esc(String(host.status).toUpperCase())+'</strong> '+host.strength+' retainers · readiness '+host.readiness+'/100 · equipment '+Math.round(host.equipment)+' · morale '+Math.round(host.morale)+' · '+host.wages+'G / '+host.supplies+'F per year'+(host.joinedWar?' · AT WAR':'')+(host.feudSeverity?' · FEUD '+host.feudSeverity+'/5':'')+'<br><small>COMMANDER '+esc(host.commanderName||"VACANT")+' · '+(host.status==="mustering"?'MUSTERING '+host.readyIn+' TICKS':host.status==="returning"?'RETURNING IN '+host.returnIn+' TICKS':host.status==="revolted"?'IN REVOLT':'QUARTERED')+'</small></div><div class="noble-house__actions"><button type="button" data-command="noble-host-order" data-order="march" data-value="'+esc(h.id)+'"'+((host.canMarch&&gold>=hostSnapshot.marchCost.gold&&food>=hostSnapshot.marchCost.food)?'':' disabled')+'>MARCH · '+hostSnapshot.marchCost.gold+'G / '+hostSnapshot.marchCost.food+'F</button><button type="button" data-command="noble-host-order" data-order="quarter" data-value="'+esc(h.id)+'">RETURN HOME</button><button type="button" data-command="noble-host-order" data-order="disband" data-value="'+esc(h.id)+'">DISBAND</button></div>'
+   :'<div class="command-note"><strong>NO LAND HOST</strong> This house has not raised retainers. A host draws its size, equipment and upkeep from real adults, levy, wealth, power, offices and charter. Loyalty below '+hostSnapshot.loyaltyFloor+' or a severe feud blocks it.</div><div class="noble-house__actions"><button type="button" data-command="noble-host-order" data-order="raise" data-value="'+esc(h.id)+'"'+((h.head&&h.loyalty>=hostSnapshot.loyaltyFloor&&gold>=hostSnapshot.raiseCost.gold)?'':' disabled')+'>RAISE LAND HOST · '+hostSnapshot.raiseCost.gold+'G</button></div>';
+  return '<article class="noble-house" data-noble-house="'+esc(h.id)+'"><header class="noble-house__head"><div><span class="command-ribbon">'+esc(String(h.status).toUpperCase())+(h.mustered?' · LEVY MUSTERED':'')+(h.feudSeverity?' · FEUD '+h.feudSeverity+'/5':'')+'</span><h4>HOUSE '+esc(h.familyName.toUpperCase())+'</h4><p>'+esc(h.seat)+' · founded year '+number(h.foundedYear)+'</p></div><div class="noble-house__power"><strong>'+Math.round(h.power)+'</strong><small>POWER</small></div></header>'+
    meter("LOYALTY",h.loyalty)+'<div class="noble-house__stats"><span>HEAD<b>'+esc(h.head?.name||"VACANT")+'</b></span><span>MEMBERS<b>'+h.memberCount+'</b></span><span>WEALTH<b>'+Math.round(h.wealth)+'</b></span><span>LEVY<b>'+h.levyActive+'</b></span><span>COURT OFFICES<b>'+h.heldOffices+'</b></span><span>DUES / YEAR<b>'+h.dues+'G</b></span></div>'+
-   '<p class="noble-house__people"><strong>NOBLE MEMBERS</strong> '+esc(people)+'</p><p class="command-note">'+esc(latest)+'</p><div class="noble-house__actions"><button type="button" data-command="noble-charter" data-value="'+esc(h.id)+'"'+(canCharter?'':' disabled')+'>'+(h.charter?'CHARTER GRANTED':'GRANT CHARTER · '+cost.gold+'G / '+cost.wood+' WOOD')+'</button><button type="button" data-command="noble-levy" data-value="'+esc(h.id)+'"'+(canLevy?'':' disabled')+'>'+(cooldown?'LEVY COOLDOWN · '+cooldown+'Y':'CALL THE LEVY · 2 YEARS')+'</button></div></article>';
+   '<p class="noble-house__people"><strong>NOBLE MEMBERS</strong> '+esc(people)+'</p><p class="command-note">'+esc(latest)+'</p>'+hostBlock+'<div class="noble-house__actions"><button type="button" data-command="noble-charter" data-value="'+esc(h.id)+'"'+(canCharter?'':' disabled')+'>'+(h.charter?'CHARTER GRANTED':'GRANT CHARTER · '+cost.gold+'G / '+cost.wood+' WOOD')+'</button><button type="button" data-command="noble-levy" data-value="'+esc(h.id)+'"'+(canLevy?'':' disabled')+'>'+(h.feudSeverity>=4?'FEUD BLOCKS THE LEVY':cooldown?'LEVY COOLDOWN · '+cooldown+'Y':'CALL THE LEVY · 2 YEARS')+'</button></div></article>';
  }).join("");
+ const feudCards=feuds.feuds.length?feuds.feuds.map(f=>{
+  const active=f.status==="active",names=f.houses.map(house=>house.familyName).join(" vs ");
+  return '<article class="command-policy" data-noble-feud="'+esc(f.id)+'"><div><span class="command-ribbon">'+esc(String(f.status).toUpperCase())+' · SEVERITY '+f.severity+'/5</span><strong>'+esc(names)+'</strong><p>'+esc(f.cause)+' · opened year '+number(f.startedYear)+(f.settledYear?' · settled year '+number(f.settledYear):'')+'</p><small>Dues penalty '+Math.round(f.penalty*100)+'% · host size reduced while the feud burns · loyalty '+f.houses.map(house=>house.loyalty).join(" / ")+'</small></div>'+(active?'<div class="noble-house__actions"><button type="button" data-command="noble-feud-mediate" data-value="'+esc(f.id)+'"'+(gold>=feuds.mediationCost?'':' disabled')+'>MEDIATE · '+feuds.mediationCost+'G</button><button type="button" data-command="noble-feud-inflame" data-value="'+esc(f.id)+'"'+(gold>=feuds.inflameCost?'':' disabled')+'>INFLAME · '+feuds.inflameCost+'G</button><button type="button" data-command="noble-feud-ignore" data-value="'+esc(f.id)+'">IGNORE</button></div>':'<small>Settled feuds remain in the bounded court memory.</small>')+'</article>';
+ }).join(""):'<p class="command-note">No noble feud is burning. Competing claims, inheritance disputes, old insults and resource conflicts can open one; unresolved disputes escalate and reduce dues, loyalty and the house host.</p>';
  const audit=n.lastAudit?'<p class="command-note">Last audit year '+n.lastAudit.year+' · '+n.lastAudit.houses+' living houses · '+n.lastAudit.dues+' gold dues · '+n.lastAudit.withheld+' withheld · defence multiplier '+n.lastAudit.defenseBonus.toFixed(2)+'.</p>':'';
+ const hostAudit=hostSnapshot.lastAudit?'<p class="command-note">Last host audit year '+hostSnapshot.lastAudit.year+' · '+hostSnapshot.lastAudit.hosts+' hosts · '+hostSnapshot.lastAudit.strength+' effective strength · '+hostSnapshot.lastAudit.wages+'G / '+hostSnapshot.lastAudit.supplies+'F upkeep · '+hostSnapshot.lastAudit.joinedWar+' at war · '+hostSnapshot.lastAudit.revolts+' revolt(s).</p>':'';
  const history=n.history.length?n.history.slice(0,6).map(entry=>'<div class="command-history"><strong>YEAR '+entry.year+' · '+esc(String(entry.kind).toUpperCase())+'</strong><p>'+esc(entry.summary)+'</p></div>').join(""):'<p class="command-note">No noble audit has been recorded yet.</p>';
- return intro("THE NOBLE HOUSES","Estates, loyalty & levies","Houses are drawn from the realm's real families. Their heads hold estates, pay annual dues, answer the crown's call to arms and react to taxes, legitimacy, charters and court office.")+
-  '<div class="command-summary"><div><small>LIVING HOUSES</small><strong>'+n.houseCount+' / '+n.houses.length+'</strong></div><div><small>AVERAGE LOYALTY</small><strong>'+Math.round(n.averageLoyalty)+'/100</strong></div><div><small>FIELD LEVY</small><strong>'+n.totalLevy+'</strong></div><div><small>DEFENCE BONUS</small><strong>+'+Math.round((n.defenseBonus-1)*100)+'%</strong></div><div><small>DUES LAST AUDIT</small><strong>'+n.duesThisYear+'G</strong></div><div><small>TOTAL DUES</small><strong>'+number(n.duesCollected)+'G</strong></div></div>'+
-  '<p class="command-note"><strong>LIVING LINK</strong> Annual dues reach the treasury; loyalty feeds the nobility faction and legitimacy; a called levy raises the realm’s combat defence; and members who hold court office add to their house’s standing. Houses with no living member become dormant instead of inventing a new family.</p>'+audit+
+ return intro("THE NOBLE HOUSES","Estates, loyalty, hosts & feuds","Houses are drawn from the realm's real families. Their heads hold estates, pay annual dues, raise land hosts and can fall into feuds that change taxes, loyalty and who marches for the crown.")+
+  '<div class="command-summary"><div><small>LIVING HOUSES</small><strong>'+n.houseCount+' / '+n.houses.length+'</strong></div><div><small>AVERAGE LOYALTY</small><strong>'+Math.round(n.averageLoyalty)+'/100</strong></div><div><small>FIELD LEVY</small><strong>'+n.totalLevy+'</strong></div><div><small>LAND HOSTS</small><strong>'+hostSnapshot.activeHosts+' · '+hostSnapshot.totalStrength+' MEN</strong></div><div><small>ACTIVE FEUDS</small><strong>'+feuds.active+'</strong></div><div><small>DEFENCE BONUS</small><strong>+'+Math.round((n.defenseBonus-1)*100)+'%</strong></div><div><small>DUES LAST AUDIT</small><strong>'+n.duesThisYear+'G</strong></div><div><small>TOTAL DUES</small><strong>'+number(n.duesCollected)+'G</strong></div></div>'+
+  '<p class="command-note"><strong>LIVING LINK</strong> Annual dues reach the treasury; feuds cut dues and loyalty; loyalty determines whether a house raises, marches or revolts; called levies and land hosts raise real combat defence; host wages and supplies leave the same treasury. Houses with no living member become dormant instead of inventing a new family.</p>'+audit+hostAudit+
   '<div class="command-section-title">THE GREAT HOUSES</div><div class="noble-house-grid">'+(cards||'<p class="command-note">No named family has yet crossed the threshold into a noble house.</p>')+'</div>'+
+  '<div class="command-section-title">FEUDS BETWEEN HOUSES · '+feuds.active+' ACTIVE / '+feuds.feuds.length+' REMEMBERED</div><div class="command-policy-list">'+feudCards+'</div>'+
   '<div class="command-section-title">NOBLE CHRONICLE</div><div class="command-history-list">'+history+'</div>'+
-  '<p class="command-note">Charters permanently raise wealth and loyalty at a cost of '+n.charterCost.gold+' gold and '+n.charterCost.wood+' wood. A called levy lasts through the following year, adds defence in combat and lowers the house’s loyalty by 7. Each house can muster again after '+n.levyCooldownYears+' years. All noble work is annual and bounded to four houses.</p>';
+  '<p class="command-note">Charters permanently raise wealth and loyalty at a cost of '+n.charterCost.gold+' gold and '+n.charterCost.wood+' wood. A called levy lasts through the following year, adds defence in combat and lowers the house’s loyalty by 7. Each house can muster again after '+n.levyCooldownYears+' years. Hosts cost '+hostSnapshot.raiseCost.gold+'G to raise and '+hostSnapshot.marchCost.gold+'G / '+hostSnapshot.marchCost.food+'F to march. All noble work is annual and bounded to four houses and '+feuds.feudLimit+' remembered feuds.</p>';
 }
+
 function politics(){
  const p=getPoliticalSnapshot(),court=getCourtSnapshot(),f=Object.entries(p.factions).map(([k,v])=>meter(k,v)).join(""),policies=Object.entries(GOVERNMENT_POLICIES).map(([id,x])=>'<article class="command-policy"><div><strong>'+esc(x.label)+'</strong><p>'+esc(x.description)+'</p></div><button data-command="policy" data-value="'+id+'">ENACT</button></article>').join("");
  const petition=court.demand?'<p class="command-note"><strong>COURT PETITION</strong><br>'+esc(court.demand.factionLabel)+' asks: '+esc(court.demand.title)+'. Grant or ignore it in Government → Royal Court.</p>':'';
@@ -1135,6 +1149,10 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  if(a==="realm-cycle")r=resolveRealmCyclePetition(v);
  else if(a==="noble-charter")r=grantNobleCharter(v);
  else if(a==="noble-levy")r=callNobleLevy(v);
+ else if(a==="noble-host-order")r=orderNobleHost(v,b.dataset.order);
+ else if(a==="noble-feud-mediate")r=mediateFeud(v);
+ else if(a==="noble-feud-inflame")r=inflameFeud(v);
+ else if(a==="noble-feud-ignore")r=ignoreFeud(v);
  else if(a==="special-biome-attune")r=attuneSpecialBiome(v);
  else if(a==="special-biome-cleanse")r=cleanseSpecialBiome(v);
  else if(a==="special-biome-quest")r=resolveBiomeQuest(v,b.dataset.choice);
@@ -1162,6 +1180,8 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a.startsWith("research-"))toast(String(r.message||"RESEARCH UPDATED").toUpperCase());
   else if(a.startsWith("endeavour-"))toast(String(r.message||"CROWN WORK UPDATED").toUpperCase());
   else if(a.startsWith("crown-"))toast(String(r.message||"CROWN SUPPLY UPDATED").toUpperCase());
+  else if(a.startsWith("noble-host"))toast(String(r.message||"NOBLE LAND HOST UPDATED").toUpperCase());
+  else if(a.startsWith("noble-feud"))toast(String(r.message||"NOBLE FEUD UPDATED").toUpperCase());
   else if(a==="realm-cycle")toast(String(r.message||"PETITION ANSWERED").toUpperCase());
   else if(a.startsWith("noble-"))toast(String(r.message||"NOBLE HOUSE UPDATED").toUpperCase());
   else if(a.startsWith("expedition-"))toast(String(r.message||"ROYAL EXPEDITION UPDATED").toUpperCase());

@@ -2,13 +2,13 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "72ddb769e90bfade38f1d269b1b7bfd82160ff36",
-  "sourceHash": "d4c30099ae850f571383f1682685f3d9da7a9df7355764eaa594833fa3298220",
-  "generatedAt": "2026-11-16T23:54:34+00:00",
+  "commit": "3d90618f06d3c01b8ecbcaa9f876958fbacce412",
+  "sourceHash": "0206981a0edc462005535df3ee32743cb3b8165bd6f45e0898c493ce9d6db453",
+  "generatedAt": "2026-11-17T01:02:24+00:00",
   "totals": {
     "total": 1312,
-    "implemented": 1300,
-    "open": 12,
+    "implemented": 1302,
+    "open": 10,
     "sections": 34
   },
   "collisions": [
@@ -350,31 +350,13 @@
     }
   ],
   "nextSection": {
-    "id": "3.8",
-    "title": "Royal court, advisor and living nobility",
+    "id": "3.9",
+    "title": "Dynasty, constitution and diplomacy",
     "open": 2,
-    "total": 12,
-    "firstOpen": "3.8.11"
+    "total": 8,
+    "firstOpen": "3.9.2"
   },
   "openPoints": [
-    {
-      "id": "3.8.11",
-      "section": "3.8",
-      "title": "Royal court, advisor and living nobility",
-      "label": "Noble land armies and autonomous military commands",
-      "missing": [
-        "Nobility has household levies but no persistent land army, command staff or autonomous marching/quartering consumer."
-      ]
-    },
-    {
-      "id": "3.8.12",
-      "section": "3.8",
-      "title": "Royal court, advisor and living nobility",
-      "label": "Noble feuds and autonomous conflict between houses",
-      "missing": [
-        "No feud state, escalation cadence, mediation or autonomous house-versus-house conflict consumer exists."
-      ]
-    },
     {
       "id": "3.9.2",
       "section": "3.9",
@@ -27320,6 +27302,8 @@
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -27327,6 +27311,8 @@
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
             "js/systems/advisor.js#ensureRoyalAdvisor (point)",
             "js/systems/advisor.js#getAdvisorSnapshot (point)"
           ],
@@ -27344,6 +27330,8 @@
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -27351,6 +27339,8 @@
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
             "js/systems/advisor.js#updateAdvisor (point)"
           ],
           "probe": null
@@ -27367,6 +27357,8 @@
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -27374,6 +27366,8 @@
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
             "js/systems/advisor.js#buildAdvisorAdvice (point)"
           ],
           "probe": null
@@ -27394,6 +27388,8 @@
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -27401,6 +27397,8 @@
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
             "js/systems/advisor.js#resolveAdvisorAdvice (point)",
             "js/presentation/management-ui.js#advisor (point)"
           ],
@@ -27418,6 +27416,8 @@
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -27425,6 +27425,8 @@
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
             "js/systems/advisor.js#buildAdvisorAdvice (point)"
           ],
           "probe": null
@@ -27441,6 +27443,8 @@
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -27448,6 +27452,8 @@
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
             "js/systems/advisor.js#recordAdvisorMemory (point)"
           ],
           "probe": null
@@ -27464,6 +27470,8 @@
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -27471,6 +27479,8 @@
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
             "js/systems/advisor.js#ADVISOR_SIGNAL_LIMIT (point)"
           ],
           "probe": null
@@ -27491,6 +27501,8 @@
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
             "tests/systems/court-diplomacy.test.js"
           ],
           "status": "implemented",
@@ -27498,6 +27510,8 @@
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
             "js/systems/court.js#COURT_OFFICES (point)",
             "js/systems/court.js#getCourtModifiers (point)"
           ],
@@ -27515,6 +27529,8 @@
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
             "tests/systems/court-diplomacy.test.js"
           ],
           "status": "implemented",
@@ -27522,6 +27538,8 @@
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
             "js/systems/court.js#updateCourt (point)"
           ],
           "probe": null
@@ -27542,6 +27560,8 @@
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
             "tests/systems/nobility.test.js"
           ],
           "status": "implemented",
@@ -27549,6 +27569,8 @@
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
             "js/systems/nobility.js#getNobilitySnapshot (point)",
             "js/systems/nobility.js#callNobleLevy (point)"
           ],
@@ -27557,36 +27579,74 @@
         {
           "id": "3.8.11",
           "label": "Noble land armies and autonomous military commands",
-          "status": "open",
-          "missing": [
-            "Nobility has household levies but no persistent land army, command staff or autonomous marching/quartering consumer."
+          "evidence": [
+            {
+              "file": "js/systems/noble-host.js",
+              "symbol": "updateNobleHosts"
+            },
+            {
+              "file": "js/systems/noble-host.js",
+              "symbol": "orderNobleHost"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "nobilityPanel"
+            }
           ],
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
-            "tests/systems/nobility.test.js"
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
+            "tests/systems/noble-host.test.js"
           ],
+          "status": "implemented",
+          "missing": [],
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
-            "js/systems/nobility.js#getNobilitySnapshot (gameplay)"
+            "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/noble-host.js#updateNobleHosts (point)",
+            "js/systems/noble-host.js#orderNobleHost (point)",
+            "js/presentation/management-ui.js#nobilityPanel (point)"
           ],
           "probe": null
         },
         {
           "id": "3.8.12",
           "label": "Noble feuds and autonomous conflict between houses",
-          "status": "open",
-          "missing": [
-            "No feud state, escalation cadence, mediation or autonomous house-versus-house conflict consumer exists."
+          "evidence": [
+            {
+              "file": "js/systems/noble-feuds.js",
+              "symbol": "updateNobleFeuds"
+            },
+            {
+              "file": "js/systems/noble-feuds.js",
+              "symbol": "mediateFeud"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "nobilityPanel"
+            }
           ],
           "tests": [
             "tests/systems/court-diplomacy.test.js",
             "tests/systems/nobility.test.js",
-            "tests/systems/nobility.test.js"
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
+            "tests/systems/noble-feuds.test.js"
           ],
+          "status": "implemented",
+          "missing": [],
           "consumers": [
             "js/systems/court.js#updateCourt (simulation)",
-            "js/systems/nobility.js#getNobilitySnapshot (gameplay)"
+            "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (point)",
+            "js/systems/noble-feuds.js#mediateFeud (point)",
+            "js/presentation/management-ui.js#nobilityPanel (point)"
           ],
           "probe": null
         }
@@ -27603,6 +27663,18 @@
           "symbol": "getNobilitySnapshot",
           "role": "gameplay",
           "valid": true
+        },
+        {
+          "file": "js/systems/noble-host.js",
+          "symbol": "updateNobleHosts",
+          "role": "military",
+          "valid": true
+        },
+        {
+          "file": "js/systems/noble-feuds.js",
+          "symbol": "updateNobleFeuds",
+          "role": "conflict",
+          "valid": true
         }
       ],
       "tests": [
@@ -27613,6 +27685,14 @@
         {
           "file": "tests/systems/nobility.test.js",
           "valid": true
+        },
+        {
+          "file": "tests/systems/noble-host.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/systems/noble-feuds.test.js",
+          "valid": true
         }
       ],
       "source": "",
@@ -27620,8 +27700,8 @@
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
-      "implemented": 10,
-      "open": 2,
+      "implemented": 12,
+      "open": 0,
       "total": 12
     },
     {

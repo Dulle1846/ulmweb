@@ -538,11 +538,24 @@ const SYSTEM_SPECS = [
         { id: "3.8.8", label: "Six named court offices with real effects", evidence: [{ file: "js/systems/court.js", symbol: "COURT_OFFICES" }, { file: "js/systems/court.js", symbol: "getCourtModifiers" }], tests: ["tests/systems/court-diplomacy.test.js"] },
         { id: "3.8.9", label: "Office salaries, corruption, petitions and vacancies", evidence: [{ file: "js/systems/court.js", symbol: "updateCourt" }], tests: ["tests/systems/court-diplomacy.test.js"] },
         { id: "3.8.10", label: "Noble houses have identity, wealth, troops and loyalty", evidence: [{ file: "js/systems/nobility.js", symbol: "getNobilitySnapshot" }, { file: "js/systems/nobility.js", symbol: "callNobleLevy" }], tests: ["tests/systems/nobility.test.js"] },
-        { id: "3.8.11", label: "Noble land armies and autonomous military commands", status: "open", missing: "Nobility has household levies but no persistent land army, command staff or autonomous marching/quartering consumer.", tests: ["tests/systems/nobility.test.js"] },
-        { id: "3.8.12", label: "Noble feuds and autonomous conflict between houses", status: "open", missing: "No feud state, escalation cadence, mediation or autonomous house-versus-house conflict consumer exists.", tests: ["tests/systems/nobility.test.js"] }
+        { id: "3.8.11", label: "Noble land armies and autonomous military commands", evidence: [
+            { file: "js/systems/noble-host.js", symbol: "updateNobleHosts" },
+            { file: "js/systems/noble-host.js", symbol: "orderNobleHost" },
+            { file: "js/presentation/management-ui.js", symbol: "nobilityPanel" }
+        ], tests: ["tests/systems/noble-host.test.js"] },
+        { id: "3.8.12", label: "Noble feuds and autonomous conflict between houses", evidence: [
+            { file: "js/systems/noble-feuds.js", symbol: "updateNobleFeuds" },
+            { file: "js/systems/noble-feuds.js", symbol: "mediateFeud" },
+            { file: "js/presentation/management-ui.js", symbol: "nobilityPanel" }
+        ], tests: ["tests/systems/noble-feuds.test.js"] }
     ], {
-        consumers: [{ file: "js/systems/court.js", symbol: "updateCourt", role: "simulation" }, { file: "js/systems/nobility.js", symbol: "getNobilitySnapshot", role: "gameplay" }],
-        tests: ["tests/systems/court-diplomacy.test.js", "tests/systems/nobility.test.js"]
+        consumers: [
+            { file: "js/systems/court.js", symbol: "updateCourt", role: "simulation" },
+            { file: "js/systems/nobility.js", symbol: "getNobilitySnapshot", role: "gameplay" },
+            { file: "js/systems/noble-host.js", symbol: "updateNobleHosts", role: "military" },
+            { file: "js/systems/noble-feuds.js", symbol: "updateNobleFeuds", role: "conflict" }
+        ],
+        tests: ["tests/systems/court-diplomacy.test.js", "tests/systems/nobility.test.js", "tests/systems/noble-host.test.js", "tests/systems/noble-feuds.test.js"]
     }),
     section("3.9", "Dynasty, constitution and diplomacy", [
         { id: "3.9.1", label: "Succession law drives the actual succession path", evidence: [{ file: "js/systems/government.js", symbol: "setSuccessionLaw" }, { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession" }], tests: ["tests/systems/succession-law.test.js"] },

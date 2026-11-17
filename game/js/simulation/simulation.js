@@ -9,6 +9,8 @@ import { updateDiplomacy } from "../systems/diplomacy.js";
 import { updateCourt } from "../systems/court.js";
 import { updateAdvisor } from "../systems/advisor.js";
 import { updateNobility } from "../systems/nobility.js";
+import { updateNobleFeuds } from "../systems/noble-feuds.js";
+import { updateNobleHosts } from "../systems/noble-host.js";
 import { updateCivic } from "../systems/civic.js";
 import { updateEconomy } from "../systems/economy.js";
 import { updateEdicts } from "../systems/edicts.js";
@@ -79,6 +81,11 @@ const ANNUAL_TASKS = [
     { name: "court", run() { updateCourt(); } },
     { name: "advisor", run() { updateAdvisor(); } },
     { name: "nobility", run() { updateNobility(); } },
+    // Feuds resolve before the hosts so a new dispute immediately changes who
+    // will march. Host upkeep then reaches the same treasury as every other
+    // annual system.
+    { name: "nobleFeuds", run() { updateNobleFeuds(); } },
+    { name: "nobleHosts", run() { updateNobleHosts(); } },
     { name: "civic", run() { updateCivic(); } },
     { name: "endeavours", run() { updateEndeavours(); } },
     { name: "crownSupply", run() { settleCrownSupply(); } },

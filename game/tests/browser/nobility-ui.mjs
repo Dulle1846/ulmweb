@@ -150,12 +150,52 @@ try {
     assert.equal(annual.goldAfter, annual.goldBefore + annual.dues);
     assert.ok(annual.mustered, "the mustered levy must survive the annual audit");
 
+    const newSystems = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        const { updateNobleFeuds } = await import("./js/systems/noble-feuds.js");
+        const { updateNobleHosts } = await import("./js/systems/noble-host.js");
+        const feuds = updateNobleFeuds();
+        const hosts = updateNobleHosts();
+        return {
+            activeFeuds: feuds.active,
+            hostCount: hosts.activeHosts,
+            strength: hosts.totalStrength,
+            feudId: feuds.feuds.find(feud => feud.status === "active")?.id || null,
+            gold: state.resources.gold,
+            food: state.resources.food
+        };
+    });
+    assert.ok(newSystems.hostCount >= 1, "the annual noble audit must create visible land hosts");
+    assert.ok(newSystems.strength > 0);
+    assert.ok(newSystems.activeFeuds >= 1, "the noble feud consumer must create an active dispute");
+
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="nobility"]').click();
     await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("DUES LAST AUDIT"), null, { timeout: 10000 });
     const panelText = await page.locator("#command-panel-content").innerText();
     assert.match(panelText, /Last audit year 2/);
     assert.match(panelText, /gold dues/);
+    assert.match(panelText, /LAND HOST/);
+    assert.match(panelText, /FEUDS BETWEEN HOUSES/);
+
+    await page.locator('[data-noble-house="' + selected.id + '"] [data-command="noble-host-order"][data-order="march"]').click();
+    await page.waitForFunction(async id => {
+        const { state } = await import("./js/core/state.js");
+        return state.nobility?.houses?.find(house => house.id === id)?.host?.status === "mustering";
+    }, selected.id, { timeout: 10000 });
+    const hostText = await page.locator("#command-panel-content").innerText();
+    assert.match(hostText, /MUSTERING/);
+
+    if (newSystems.feudId) {
+        await page.locator('[data-noble-feud="' + newSystems.feudId + '"] [data-command="noble-feud-mediate"]').click();
+        await page.waitForFunction(async id => {
+            const { state } = await import("./js/core/state.js");
+            const feud = state.nobility?.feuds?.find(entry => entry.id === id);
+            return !feud || feud.status === "settled";
+        }, newSystems.feudId, { timeout: 10000 });
+        const feudText = await page.locator("#command-panel-content").innerText();
+        assert.match(feudText, /SETTLED/);
+    }
 
     await page.locator("#command-close").click();
     await page.locator("#save-btn").click();
@@ -191,6 +231,8 @@ try {
             houses: snapshot.houses.map(house => ({ id: house.id, charter: house.charter, mustered: house.mustered, loyalty: house.loyalty })),
             dues: snapshot.duesThisYear,
             defense: snapshot.defenseBonus,
+            hosts: (await import("./js/systems/noble-host.js")).getNobleHostSnapshot().hosts.map(host => ({ houseId: host.houseId, status: host.status })),
+            activeFeuds: (await import("./js/systems/noble-feuds.js")).getNobleFeudSnapshot().active,
             text: document.querySelector("#command-panel-content")?.textContent || ""
         };
     });
@@ -198,9 +240,11 @@ try {
     assert.equal(restored.houses.find(house => house.id === selected.id)?.charter, true, "the charter must survive save/load");
     assert.equal(restored.houses.find(house => house.id === selected.id)?.mustered, true, "the mustered levy must survive save/load");
     assert.equal(restored.dues, annual.dues);
-    assert.equal(restored.defense, annual.defense);
+    assert.ok(restored.defense >= annual.defense && restored.defense <= 1.2, "the restored defence must include the persisted land-host bonus");
     assert.match(restored.text, /CHARTER GRANTED/);
     assert.match(restored.text, /LEVY MUSTERED/);
+    assert.ok(restored.hosts.some(host => host.status === "mustering"), "the mustering land host must survive save/load");
+    assert.equal(restored.activeFeuds, 0, "the settled feud must survive save/load");
 
     assert.deepEqual(pageErrors, [], "the noble-house browser run must not raise page errors");
     assert.deepEqual(consoleErrors, [], "the noble-house browser run must not raise console errors");
