@@ -843,6 +843,22 @@ try{
     await page.locator("#command-panel-content .creature-record:not(.is-memorial) > summary").first().click();
     assert.ok((await page.locator("#command-panel-content .creature-dossier").innerText()).includes("PERSONAL MEMORIES"));
 
+    await page.locator("#creature-summon-select").selectOption("wyvern");
+    await page.locator('[data-command="summon-creature"]').click();
+    await page.waitForFunction(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return state.entities.some(entity=>!entity.dead&&entity.creature?.species==="wyvern");
+    },null,{timeout:5000});
+    const speciesFixture=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return state.entities.filter(entity=>!entity.dead&&entity.isRoyalCreature).map(entity=>({
+            species:entity.creature?.species,isDragon:Boolean(entity.isDragon),icon:entity.creature?.icon
+        }));
+    });
+    console.log("Creature species fixture:",JSON.stringify(speciesFixture));
+    assert.ok(speciesFixture.some(creature=>creature.species==="wyvern"&&!creature.isDragon&&creature.icon==="🦇"),"the species selector must create a real non-dragon creature");
+    assert.ok((await page.locator("#command-panel-content").innerText()).includes("WYVERN"),"the bestiary must expose the new species");
+
     await page.locator('[data-command-tab="economy"]').click();
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("LATEST FINANCIAL SETTLEMENT"));
     assert.ok(await page.locator("#command-panel-content .ledger-grid").isVisible(),"economy must render the real ledger section");

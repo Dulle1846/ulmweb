@@ -2,20 +2,20 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "fd839d180a59f95a173410b016961117cccb427a",
-  "sourceHash": "38da2cbe38f9acb21bbf97f0825c6c5cc6ca6b25458e4eb1468b967659453bcf",
+  "commit": "69a820a084574a3d25cfb434f9b1de34bf9ef52c",
+  "sourceHash": "8a036dc3dca1f7c092db8ef4af34d6d5d50e2282c55368c08949bb83bfde649c",
   "totals": {
     "total": 1396,
-    "implemented": 1388,
-    "open": 8,
+    "implemented": 1392,
+    "open": 4,
     "sections": 35
   },
   "nextSection": {
-    "id": "3.10",
-    "title": "Full creature ecosystem and comic-art expansion",
+    "id": "4.0",
+    "title": "Great World and long-running history",
     "open": 4,
-    "total": 7,
-    "firstOpen": "3.10.1"
+    "total": 6,
+    "firstOpen": "4.0.1"
   },
   "collisions": [
     {
@@ -624,8 +624,8 @@ export const SPEC_COVERAGE = Object.freeze({
       "id": "3.10",
       "title": "Full creature ecosystem and comic-art expansion",
       "total": 7,
-      "implemented": 3,
-      "open": 4,
+      "implemented": 7,
+      "open": 0,
       "source": "system registry"
     },
     {
@@ -638,42 +638,6 @@ export const SPEC_COVERAGE = Object.freeze({
     }
   ],
   "openPoints": [
-    {
-      "id": "3.10.1",
-      "section": "3.10",
-      "title": "Full creature ecosystem and comic-art expansion",
-      "label": "Dragons, wyverns, trolls and additional species",
-      "missing": [
-        "Only a single dragon species is implemented in creatures.js; wyverns, trolls and additional species have no spawn, profile or consumer."
-      ]
-    },
-    {
-      "id": "3.10.2",
-      "section": "3.10",
-      "title": "Full creature ecosystem and comic-art expansion",
-      "label": "Species-specific habitat, food, territory and temperament",
-      "missing": [
-        "The dragon has hunger, bond and temperament, but there is no per-species habitat, territory or diet table for a creature ecosystem."
-      ]
-    },
-    {
-      "id": "3.10.3",
-      "section": "3.10",
-      "title": "Full creature ecosystem and comic-art expansion",
-      "label": "Eggs, nesting, maturity, breeding and mortality",
-      "missing": [
-        "Dragon maturity and mortality exist, but eggs, nests and breeding are not implemented."
-      ]
-    },
-    {
-      "id": "3.10.4",
-      "section": "3.10",
-      "title": "Full creature ecosystem and comic-art expansion",
-      "label": "Predation, scavenging, migration and competition",
-      "missing": [
-        "No predation, scavenging, seasonal migration or competition consumer exists."
-      ]
-    },
     {
       "id": "4.0.1",
       "section": "4.0",

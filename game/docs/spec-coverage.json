@@ -2,13 +2,13 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "fd839d180a59f95a173410b016961117cccb427a",
-  "sourceHash": "38da2cbe38f9acb21bbf97f0825c6c5cc6ca6b25458e4eb1468b967659453bcf",
-  "generatedAt": "2026-11-17T10:52:45+00:00",
+  "commit": "69a820a084574a3d25cfb434f9b1de34bf9ef52c",
+  "sourceHash": "8a036dc3dca1f7c092db8ef4af34d6d5d50e2282c55368c08949bb83bfde649c",
+  "generatedAt": "2026-11-17T12:22:14+00:00",
   "totals": {
     "total": 1396,
-    "implemented": 1388,
-    "open": 8,
+    "implemented": 1392,
+    "open": 4,
     "sections": 35
   },
   "collisions": [
@@ -350,49 +350,13 @@
     }
   ],
   "nextSection": {
-    "id": "3.10",
-    "title": "Full creature ecosystem and comic-art expansion",
+    "id": "4.0",
+    "title": "Great World and long-running history",
     "open": 4,
-    "total": 7,
-    "firstOpen": "3.10.1"
+    "total": 6,
+    "firstOpen": "4.0.1"
   },
   "openPoints": [
-    {
-      "id": "3.10.1",
-      "section": "3.10",
-      "title": "Full creature ecosystem and comic-art expansion",
-      "label": "Dragons, wyverns, trolls and additional species",
-      "missing": [
-        "Only a single dragon species is implemented in creatures.js; wyverns, trolls and additional species have no spawn, profile or consumer."
-      ]
-    },
-    {
-      "id": "3.10.2",
-      "section": "3.10",
-      "title": "Full creature ecosystem and comic-art expansion",
-      "label": "Species-specific habitat, food, territory and temperament",
-      "missing": [
-        "The dragon has hunger, bond and temperament, but there is no per-species habitat, territory or diet table for a creature ecosystem."
-      ]
-    },
-    {
-      "id": "3.10.3",
-      "section": "3.10",
-      "title": "Full creature ecosystem and comic-art expansion",
-      "label": "Eggs, nesting, maturity, breeding and mortality",
-      "missing": [
-        "Dragon maturity and mortality exist, but eggs, nests and breeding are not implemented."
-      ]
-    },
-    {
-      "id": "3.10.4",
-      "section": "3.10",
-      "title": "Full creature ecosystem and comic-art expansion",
-      "label": "Predation, scavenging, migration and competition",
-      "missing": [
-        "No predation, scavenging, seasonal migration or competition consumer exists."
-      ]
-    },
     {
       "id": "4.0.1",
       "section": "4.0",
@@ -29745,68 +29709,128 @@
         {
           "id": "3.10.1",
           "label": "Dragons, wyverns, trolls and additional species",
-          "status": "open",
-          "missing": [
-            "Only a single dragon species is implemented in creatures.js; wyverns, trolls and additional species have no spawn, profile or consumer."
+          "evidence": [
+            {
+              "file": "js/world/creature-species-data.js",
+              "symbol": "CREATURE_SPECIES"
+            },
+            {
+              "file": "js/systems/creatures.js",
+              "symbol": "summonCreature"
+            },
+            {
+              "file": "js/presentation/rendering/entities.js",
+              "symbol": "getEmoji"
+            }
           ],
           "tests": [
             "tests/systems/depth.test.js",
-            "tests/systems/depth.test.js"
+            "tests/systems/creature-ecology.test.js"
           ],
+          "status": "implemented",
+          "missing": [],
           "consumers": [
             "js/systems/creatures.js#updateCreatures (simulation)",
-            "js/presentation/rendering/entities.js#drawEntity (renderer)"
+            "js/presentation/rendering/entities.js#drawEntity (renderer)",
+            "js/world/creature-species-data.js#CREATURE_SPECIES (point)",
+            "js/systems/creatures.js#summonCreature (point)",
+            "js/presentation/rendering/entities.js#getEmoji (point)"
           ],
           "probe": null
         },
         {
           "id": "3.10.2",
           "label": "Species-specific habitat, food, territory and temperament",
-          "status": "open",
-          "missing": [
-            "The dragon has hunger, bond and temperament, but there is no per-species habitat, territory or diet table for a creature ecosystem."
+          "evidence": [
+            {
+              "file": "js/world/creature-species-data.js",
+              "symbol": "creatureProfile"
+            },
+            {
+              "file": "js/systems/creatures.js",
+              "symbol": "updateCreatures"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "creatureGlyph"
+            }
           ],
           "tests": [
             "tests/systems/depth.test.js",
-            "tests/systems/depth.test.js"
+            "tests/systems/creature-ecology.test.js"
           ],
+          "status": "implemented",
+          "missing": [],
           "consumers": [
             "js/systems/creatures.js#updateCreatures (simulation)",
-            "js/presentation/rendering/entities.js#drawEntity (renderer)"
+            "js/presentation/rendering/entities.js#drawEntity (renderer)",
+            "js/world/creature-species-data.js#creatureProfile (point)",
+            "js/systems/creatures.js#updateCreatures (point)",
+            "js/presentation/management-ui.js#creatureGlyph (point)"
           ],
           "probe": null
         },
         {
           "id": "3.10.3",
           "label": "Eggs, nesting, maturity, breeding and mortality",
-          "status": "open",
-          "missing": [
-            "Dragon maturity and mortality exist, but eggs, nests and breeding are not implemented."
+          "evidence": [
+            {
+              "file": "js/systems/creatures.js",
+              "symbol": "awakenCreature"
+            },
+            {
+              "file": "js/systems/creatures.js",
+              "symbol": "hatchNest"
+            },
+            {
+              "file": "js/systems/creatures.js",
+              "symbol": "breedCreature"
+            }
           ],
           "tests": [
             "tests/systems/depth.test.js",
-            "tests/systems/depth.test.js"
+            "tests/systems/creature-ecology.test.js"
           ],
+          "status": "implemented",
+          "missing": [],
           "consumers": [
             "js/systems/creatures.js#updateCreatures (simulation)",
-            "js/presentation/rendering/entities.js#drawEntity (renderer)"
+            "js/presentation/rendering/entities.js#drawEntity (renderer)",
+            "js/systems/creatures.js#awakenCreature (point)",
+            "js/systems/creatures.js#hatchNest (point)",
+            "js/systems/creatures.js#breedCreature (point)"
           ],
           "probe": null
         },
         {
           "id": "3.10.4",
           "label": "Predation, scavenging, migration and competition",
-          "status": "open",
-          "missing": [
-            "No predation, scavenging, seasonal migration or competition consumer exists."
+          "evidence": [
+            {
+              "file": "js/systems/creatures.js",
+              "symbol": "forageCreature"
+            },
+            {
+              "file": "js/systems/creatures.js",
+              "symbol": "migrateCreature"
+            },
+            {
+              "file": "js/systems/creatures.js",
+              "symbol": "competeCreature"
+            }
           ],
           "tests": [
             "tests/systems/depth.test.js",
-            "tests/systems/depth.test.js"
+            "tests/systems/creature-ecology.test.js"
           ],
+          "status": "implemented",
+          "missing": [],
           "consumers": [
             "js/systems/creatures.js#updateCreatures (simulation)",
-            "js/presentation/rendering/entities.js#drawEntity (renderer)"
+            "js/presentation/rendering/entities.js#drawEntity (renderer)",
+            "js/systems/creatures.js#forageCreature (point)",
+            "js/systems/creatures.js#migrateCreature (point)",
+            "js/systems/creatures.js#competeCreature (point)"
           ],
           "probe": null
         },
@@ -29912,8 +29936,8 @@
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
-      "implemented": 3,
-      "open": 4,
+      "implemented": 7,
+      "open": 0,
       "total": 7
     },
     {
