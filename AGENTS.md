@@ -1,6 +1,6 @@
 # Kings & Cards — Agent Mission
 
-Develop **Kings & Cards** into a high-performance browser game that runs smoothly even on low-end devices, featuring an incredibly deep, interconnected living-world simulation. Combine grand strategy, city building, kingdom management, RPG, economy, diplomacy, warfare, and exploration into one immersive, dynamic, and highly replayable sandbox where every system influences every other.
+Develop **Kings & Cards** into a high-performance browser game that runs smoothly even on low-end devices, featuring an incredibly deep, interconnected living-world simulation. Combine grand strategy, city building, kingdom management, RPG, economy, diplomacy, warfare, and exploration into one immersive, dynamic, and highly replayable sandbox where every system influences every other. Always deploy everything
 
 ## Working rules
 
