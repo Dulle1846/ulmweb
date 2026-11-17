@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "76fe1d74617e48b2cae30e592c4955cf52c6217f",
-  "sourceHash": "6b1a1fb22e9c9499598672ba38959620e13c0f3424f55ca55ddf76ad41818cae",
+  "commit": "11a92195df2055b32bb51a6ea27281db312e822b",
+  "sourceHash": "86eb1f7e713782dec507e648a7df5a26e6bd2585101269ee9805d37b4a87965d",
   "totals": {
-    "total": 1312,
-    "implemented": 1304,
+    "total": 1396,
+    "implemented": 1388,
     "open": 8,
-    "sections": 34
+    "sections": 35
   },
   "nextSection": {
     "id": "3.10",
@@ -515,6 +515,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 70,
       "open": 0,
       "source": "js/world/vegetation-density.js"
+    },
+    {
+      "id": "1.2.19",
+      "title": "Biomes with their own resources and wildlife",
+      "total": 84,
+      "implemented": 84,
+      "open": 0,
+      "source": "js/world/biome-resource-data.js"
     },
     {
       "id": "2.1",

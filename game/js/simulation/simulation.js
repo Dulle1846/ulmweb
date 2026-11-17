@@ -31,6 +31,7 @@ import { updateFields } from "../systems/fields.js";
 import { updateForestFauna } from "../systems/forest-fauna.js";
 import { updateForestSuccession } from "../systems/forest-succession.js";
 import { updateForestPannage } from "../systems/forest-pannage.js";
+import { syncBiomeDiscovery, updateBiomeAtlasAnnual } from "../systems/biome-resource-state.js";
 import { updateLogistics } from "../systems/logistics.js";
 import { updateSettlement } from "../systems/settlement.js";
 import { updateCombat } from "./combat.js";
@@ -103,7 +104,11 @@ const ANNUAL_TASKS = [
     // 1.2.16 winter economy: one bounded annual hazard and caravan pass. It
     // returns immediately outside Snowlands, so other climates keep their
     // exact annual sequence and tick budget.
-    { name: "winterAnnual", run(annual) { annual.winterAnnual = updateWinterAnnual(); } }
+    { name: "winterAnnual", run(annual) { annual.winterAnnual = updateWinterAnnual(); } },
+    // 1.2.19 settles the bounded 36-region atlas once per year: seasonal
+    // regeneration, extraction pressure, pollination, predation, migration and
+    // regional trade. The pass is skipped entirely when no atlas is present.
+    { name: "biomeAtlas", run(annual) { annual.biomeAtlas = updateBiomeAtlasAnnual(); } }
 ];
 
 let annualSlicingEnabled = false;
@@ -132,7 +137,8 @@ function createAnnualMaintenance() {
         royalCrisis: null,
         volcanoHazards: null,
         coastHazards: null,
-        winterAnnual: null
+        winterAnnual: null,
+        biomeAtlas: null
     };
 }
 
@@ -222,6 +228,10 @@ function finishSimulationTick(newborn) {
     // Rare-biome discovery is checked every 200 ticks; yields and hazards
     // settle once per year. The call itself is a couple of integer reads.
     updateSpecialBiomes();
+    // 1.2.19 region discovery follows real explored tiles. Four coarse samples
+    // per season are enough to unlock a region without scanning the full map
+    // on every tick; the annual pass always fixes any borderline coverage.
+    if (state.tick % 100 === 0) syncBiomeDiscovery();
     // Procedural chronicle events are independent of the decision-bearing
     // issue inbox. They never open a modal or wait for the player; the bounded
     // timeline and presentation queue keep them off the simulation hot path.

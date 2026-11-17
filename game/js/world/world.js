@@ -15,6 +15,7 @@ import { distance } from '../core/utils.js';
 import { generateResourceGeography } from '../systems/resource-geography.js';
 import { ensureForestSuccession, resetForestSuccession } from '../systems/forest-succession.js';
 import { generateSpecialBiomes, paintSpecialBiomeTint } from '../systems/special-biome-state.js';
+import { generateBiomeAtlas, syncBiomeDiscovery } from '../systems/biome-resource-state.js';
 
 export { normalizeWorldOptions, resolveWorldDimensions, seaLevelFor };
 
@@ -78,6 +79,18 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions, 
         pixH: state.terrainPixH,
         W, H, sea: state.seaLevel,
     });
+    // 1.2.19 builds one bounded 6×6 region atlas from the same terrain samples.
+    // It is generated after the rare-biome atlas so both systems read the same
+    // world, and it stores only compact region/resource rows.
+    generateBiomeAtlas(worldSeed, {
+        heights: state.heightMap,
+        moistures: state.moistureMap,
+        temperatures: state.temperatureMap,
+        resolution: state.terrainResolution,
+        pixW: state.terrainPixW,
+        pixH: state.terrainPixH,
+        W, H, sea: state.seaLevel,
+    });
 
     state.explored = [];
     for (let x = 0; x < W; x++) {
@@ -85,6 +98,9 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions, 
         for (let y = 0; y < H; y++) state.explored[x][y] = false;
     }
     revealArea(Math.floor(W / 2), Math.floor(H / 2), Math.max(18, Math.round(W * 0.13)));
+    // The starting clearing is real exploration and therefore reveals the
+    // regions it actually covers. Rare deposits stay hidden until surveyed.
+    syncBiomeDiscovery({ silent: true });
     prerenderTerrain();
 }
 

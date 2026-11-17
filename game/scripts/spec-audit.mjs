@@ -281,6 +281,19 @@ const MANIFEST_SPECS = [
             { file: "js/presentation/expeditions-panel.js", symbol: "getVegetationDensitySurvey", role: "survey" }
         ],
         tests: ["tests/world/vegetation-density.test.js"]
+    },
+    {
+        id: "1.2.19", title: "Biomes with their own resources and wildlife",
+        file: "js/world/biome-resource-data.js",
+        manifest: "BIOME_RESOURCE_REQUIREMENTS",
+        consumers: [
+            { file: "js/world/biome-resource-data.js", symbol: "BIOME_RESOURCES", role: "catalog" },
+            { file: "js/systems/biome-resource-state.js", symbol: "updateBiomeAtlasAnnual", role: "simulation" },
+            { file: "js/presentation/biome-panel.js", symbol: "renderBiomePanel", role: "ui" },
+            { file: "js/presentation/rendering/renderer.js", symbol: "drawMapLayer", role: "renderer" },
+            { file: "js/core/save-runtime.js", symbol: "serializeBiomeAtlasState", role: "persistence" }
+        ],
+        tests: ["tests/systems/biome-resource-atlas.test.js"]
     }
 ];
 

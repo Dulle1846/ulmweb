@@ -455,3 +455,67 @@ html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
 .skip-to-game{position:fixed;top:8px;left:8px;z-index:10000;transform:translateY(-180%);padding:10px 16px;border:2px solid #e1c47e;border-radius:3px;background:#24221f;color:#f0e3c7;font:700 11px var(--ui-title-font);letter-spacing:.08em;text-decoration:none;box-shadow:0 6px 18px #000a;transition:transform .14s ease}
 .skip-to-game:focus,.skip-to-game:focus-visible{transform:translateY(0);outline:3px solid #f0d99f;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){.skip-to-game{transition:none}}
+
+/* 1.2.19 biome atlas management and map survey */
+.map-swatch--biome{background:#47764f;border-radius:50%}
+.map-swatch--forest-point{background:#5f9b54;border-radius:50%;box-shadow:0 0 0 1px #315e41}
+.map-swatch--rare{background:#e4bd72;transform:rotate(45deg);border-radius:0}
+.biome-season{padding:11px 13px;border:1px solid #b99a59;border-radius:3px;background:linear-gradient(145deg,#302a22,#211e19);margin:10px 0}
+.biome-season p{margin:6px 0 0;color:#cdbd9e;font:12px/1.5 var(--ui-body-font)}
+.biome-economy-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:8px 0}
+.biome-economy-grid>div{display:grid;gap:3px;padding:9px;border:1px solid #b69a68;border-radius:3px;background:linear-gradient(145deg,#f6ecd7,#e3d1ad);color:#4b3927}
+.biome-economy-grid small,.biome-chip-line small,.biome-region-summary small{color:#806d52;font:700 9px var(--ui-title-font);letter-spacing:.08em}
+.biome-economy-grid strong{color:#3d2d20;font:700 14px var(--ui-title-font)}
+.biome-economy-grid span{color:#806d52;font-size:10px}
+.biome-chip-line{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:7px 0;color:#cdbd9e}
+.biome-badge{display:inline-flex;align-items:center;padding:3px 6px;border:1px solid #8f7b59;border-radius:2px;background:#3a3226;color:#e8d7b2;font:700 8px var(--ui-title-font);letter-spacing:.07em}
+.biome-badge.is-rare{border-color:#c8a24e;background:#4b3c20;color:#efd28d}
+.biome-badge.is-danger{border-color:#a44739;background:#3d2521;color:#e7a697}
+.biome-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.biome-region-list{display:grid;gap:8px}
+.biome-region{overflow:hidden;border:1px solid #b99a59;border-radius:4px;background:linear-gradient(145deg,#302a22,#211e19)}
+.biome-region>summary{display:flex;align-items:center;gap:10px;padding:9px 11px;cursor:pointer;list-style:none;color:#ead9b5}
+.biome-region>summary::-webkit-details-marker{display:none}
+.biome-region>summary::after{content:"+";margin-left:2px;color:#d1b476;font:700 17px var(--ui-title-font)}
+.biome-region[open]>summary::after{content:"−"}
+.biome-region>summary:hover{background:#b99a5912}
+.biome-region-mark{width:18px;height:18px;flex:0 0 18px;border:1px solid #e8d7b266;border-radius:50%}
+.biome-region-title{display:grid;min-width:0;flex:1;gap:2px}
+.biome-region-title strong{overflow:hidden;color:#f0e3c7;font:700 12px var(--ui-title-font);text-overflow:ellipsis;white-space:nowrap}
+.biome-region-title small{color:#a89572;font-size:9px}
+.biome-region-stats{display:grid;gap:1px;min-width:44px;text-align:right}
+.biome-region-stats b{color:#e8c77b;font:700 13px var(--ui-title-font)}
+.biome-region-stats small{color:#a89572;font-size:7px;letter-spacing:.08em}
+.biome-region-body{padding:11px;border-top:1px solid var(--ui-line);background:#17151255}
+.biome-region-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:8px}
+.biome-region-summary>span{display:grid;gap:2px;padding:7px;border:1px solid #6f5c41;border-radius:2px;background:#241f18}
+.biome-region-summary strong{color:#e7d4ab;font:700 10px var(--ui-title-font)}
+.biome-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0}
+.biome-actions button,.biome-row-actions button{min-height:30px;padding:5px 8px;border:1px solid #b99a59;border-radius:2px;background:#e3d1ad;color:#3d2d20;font:700 8px var(--ui-title-font);letter-spacing:.04em;cursor:pointer}
+.biome-actions button:hover,.biome-row-actions button:hover{border-color:#762f35;background:#f0e1c2}
+.biome-actions button:disabled,.biome-row-actions button:disabled{opacity:.46;cursor:not-allowed}
+.biome-choice-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:8px}
+.biome-choice{display:grid;gap:2px;padding:7px;border:1px solid #6f5c41;border-radius:2px;background:#241f18;color:#cdbd9e;text-align:left;cursor:pointer}
+.biome-choice strong{color:#e7d4ab;font:700 9px var(--ui-title-font)}
+.biome-choice small{color:#9f8d6c;font-size:8px;line-height:1.25}
+.biome-choice.is-current{border-color:#d1b476;background:#4a3c26}
+.biome-choice.is-current strong{color:#f3d996}
+.biome-table{display:grid;gap:5px}
+.biome-resource-row,.biome-fauna-row{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(170px,1.4fr) auto;align-items:center;gap:9px;padding:7px 8px;border:1px solid #5e4d37;border-radius:2px;background:#1d1914}
+.biome-resource-name,.biome-fauna-name{display:grid;min-width:0;gap:2px}
+.biome-resource-name strong,.biome-fauna-name strong{color:#ead9b5;font:700 10px var(--ui-title-font)}
+.biome-resource-name small,.biome-fauna-name small{overflow:hidden;color:#9f8d6c;font-size:8px;text-overflow:ellipsis}
+.biome-store{color:#e8c77b;font:700 8px var(--ui-body-font)}
+.biome-stock{display:grid;gap:3px;min-width:0}
+.biome-stock>span{display:block;height:6px;overflow:hidden;border:1px solid #5e4d37;border-radius:2px;background:#100e0b}
+.biome-stock>span>i{display:block;height:100%;background:#71934d}
+.biome-stock>span>i.is-mid{background:#c0a052}
+.biome-stock>span>i.is-low{background:#a65b47}
+.biome-stock small{color:#9f8d6c;font-size:8px}
+.biome-row-actions{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:800px){
+ .biome-economy-grid,.biome-region-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .biome-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .biome-resource-row,.biome-fauna-row{grid-template-columns:1fr}
+ .biome-row-actions{justify-content:flex-start}
+}

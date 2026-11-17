@@ -52,6 +52,7 @@
     "test:nobility-ui": "node tests/browser/nobility-ui.mjs",
     "test:royal-crisis-ui": "node tests/browser/royal-crisis-ui.mjs",
     "test:diplomacy-guarantees-ui": "node tests/browser/diplomacy-guarantees-ui.mjs",
+    "test:biome-ui": "node tests/browser/biome-atlas-ui.mjs",
     "test:jungle-understory": "JUNGLE_PROOF_ZOOM=2.4 JUNGLE_PROOF_OUT=artifacts/jungle-understory-2.4 node tests/browser/jungle-proof.mjs",
     "test:campaign:coast": "CAMPAIGN_CLIMATE=coastal node scripts/long-campaign.mjs",
     "test:campaign:snow": "CAMPAIGN_SEED=20261215 CAMPAIGN_CLIMATE=snow CAMPAIGN_ERA=royal-ascendancy node scripts/long-campaign.mjs",

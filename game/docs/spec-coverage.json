@@ -2,14 +2,14 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "76fe1d74617e48b2cae30e592c4955cf52c6217f",
-  "sourceHash": "6b1a1fb22e9c9499598672ba38959620e13c0f3424f55ca55ddf76ad41818cae",
-  "generatedAt": "2026-11-17T08:48:13+00:00",
+  "commit": "11a92195df2055b32bb51a6ea27281db312e822b",
+  "sourceHash": "86eb1f7e713782dec507e648a7df5a26e6bd2585101269ee9805d37b4a87965d",
+  "generatedAt": "2026-11-17T09:31:03+00:00",
   "totals": {
-    "total": 1312,
-    "implemented": 1304,
+    "total": 1396,
+    "implemented": 1388,
     "open": 8,
-    "sections": 34
+    "sections": 35
   },
   "collisions": [
     {
@@ -25168,6 +25168,1740 @@
       "implemented": 70,
       "open": 0,
       "total": 70
+    },
+    {
+      "id": "1.2.19",
+      "title": "Biomes with their own resources and wildlife",
+      "points": [
+        {
+          "id": "1.2.19.1",
+          "label": "Every resource has preferred biomes",
+          "key": "preferred-biomes",
+          "group": "habitat",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.2",
+          "label": "Resources occur in several biomes",
+          "key": "multi-biome",
+          "group": "habitat",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.3",
+          "label": "Different resource abundance per biome",
+          "key": "biome-abundance",
+          "group": "habitat",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.4",
+          "label": "Rare resources in specific regions",
+          "key": "rare-regions",
+          "group": "habitat",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.5",
+          "label": "Distribution depends on soil, climate, moisture and elevation",
+          "key": "distribution",
+          "group": "habitat",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.6",
+          "label": "Resource quality depends on location",
+          "key": "location-quality",
+          "group": "habitat",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.7",
+          "label": "Seasonal resource availability",
+          "key": "seasonality",
+          "group": "habitat",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.8",
+          "label": "Resource stock depletion and regeneration",
+          "key": "depletion",
+          "group": "habitat",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.9",
+          "label": "Strategically valuable rare deposits",
+          "key": "strategic-deposits",
+          "group": "habitat",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.10",
+          "label": "Timber species depend on the tree stand",
+          "key": "timber-stand",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.11",
+          "label": "Fruit, berries and nuts",
+          "key": "fruit",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.12",
+          "label": "Medicinal plants and herbs",
+          "key": "herbs",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.13",
+          "label": "Spices",
+          "key": "spices",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.14",
+          "label": "Fibre plants",
+          "key": "fibre",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.15",
+          "label": "Dye plants",
+          "key": "dyes",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.16",
+          "label": "Poisonous plants",
+          "key": "poisons",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.17",
+          "label": "Mushrooms",
+          "key": "fungi",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.18",
+          "label": "Resins and tree products",
+          "key": "resins",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.19",
+          "label": "Rare and fantastic plants",
+          "key": "fantastic-flora",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.20",
+          "label": "Stone types depend on geology",
+          "key": "stone",
+          "group": "minerals",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.21",
+          "label": "Ores and metals",
+          "key": "ores",
+          "group": "minerals",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.22",
+          "label": "Salt",
+          "key": "salt",
+          "group": "minerals",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.23",
+          "label": "Sulfur",
+          "key": "sulfur",
+          "group": "minerals",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.24",
+          "label": "Gemstones",
+          "key": "gems",
+          "group": "minerals",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.25",
+          "label": "Clay and loam",
+          "key": "clay",
+          "group": "minerals",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.26",
+          "label": "Sand and gravel",
+          "key": "sand",
+          "group": "minerals",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.27",
+          "label": "Volcanic rock",
+          "key": "volcanic",
+          "group": "minerals",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.28",
+          "label": "Rare crystals",
+          "key": "crystals",
+          "group": "minerals",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.29",
+          "label": "Special mineral deposits",
+          "key": "special-minerals",
+          "group": "minerals",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.30",
+          "label": "Meat",
+          "key": "meat",
+          "group": "fauna-products",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.31",
+          "label": "Fells and pelts",
+          "key": "fur",
+          "group": "fauna-products",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.32",
+          "label": "Hides and leather",
+          "key": "hides",
+          "group": "fauna-products",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.33",
+          "label": "Wool",
+          "key": "wool",
+          "group": "fauna-products",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.34",
+          "label": "Feathers",
+          "key": "feathers",
+          "group": "fauna-products",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.35",
+          "label": "Bone",
+          "key": "bone",
+          "group": "fauna-products",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.36",
+          "label": "Horn",
+          "key": "horn",
+          "group": "fauna-products",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.37",
+          "label": "Fish",
+          "key": "fish",
+          "group": "fauna-products",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.38",
+          "label": "Honey and beeswax",
+          "key": "honey",
+          "group": "fauna-products",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.39",
+          "label": "Eggs and other animal products",
+          "key": "animal-products",
+          "group": "fauna-products",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.40",
+          "label": "Every animal species has a preferred habitat",
+          "key": "habitat",
+          "group": "wildlife",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.41",
+          "label": "Animals need suitable food and water",
+          "key": "food-water",
+          "group": "wildlife",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.42",
+          "label": "Populations depend on vegetation density and climate",
+          "key": "vegetation-climate",
+          "group": "wildlife",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.43",
+          "label": "Predators need suitable prey populations",
+          "key": "predator-prey",
+          "group": "wildlife",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.44",
+          "label": "Some species live only in limited climate zones",
+          "key": "climate-zones",
+          "group": "wildlife",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.45",
+          "label": "Seasonal migrations",
+          "key": "migration",
+          "group": "wildlife",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.46",
+          "label": "Different breeding seasons",
+          "key": "breeding",
+          "group": "wildlife",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.47",
+          "label": "Refuges and breeding grounds",
+          "key": "refuge",
+          "group": "wildlife",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.48",
+          "label": "Rare and endangered species",
+          "key": "rare-species",
+          "group": "wildlife",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.49",
+          "label": "Fantastic species with ecological needs",
+          "key": "fantastic-species",
+          "group": "wildlife",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.50",
+          "label": "Plants as food for herbivores",
+          "key": "plants-food",
+          "group": "ecology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.51",
+          "label": "Herbivores affect vegetation density",
+          "key": "grazing",
+          "group": "ecology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.52",
+          "label": "Predators affect prey populations",
+          "key": "predation",
+          "group": "ecology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.53",
+          "label": "Pollinators and plant reproduction",
+          "key": "pollination",
+          "group": "ecology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.54",
+          "label": "Scavengers remove carcasses",
+          "key": "scavenging",
+          "group": "ecology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.55",
+          "label": "Beavers and other landscape engineers",
+          "key": "engineering",
+          "group": "ecology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.56",
+          "label": "Soil organisms and soil quality",
+          "key": "soil-life",
+          "group": "ecology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.57",
+          "label": "Insects as pollinators and pests",
+          "key": "insects",
+          "group": "ecology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.58",
+          "label": "Timber regrowth",
+          "key": "timber-regrowth",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.59",
+          "label": "Long-term forest damage from logging",
+          "key": "logging-damage",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.60",
+          "label": "Wildlife recovery depends on habitat and hunting pressure",
+          "key": "wildlife-recovery",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.61",
+          "label": "Fish stock decline from overfishing",
+          "key": "overfishing",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.62",
+          "label": "Local extinction of rare plants",
+          "key": "plant-extinction",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.63",
+          "label": "Plant recovery after disturbance",
+          "key": "plant-recovery",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.64",
+          "label": "Seasonal resource fluctuations",
+          "key": "seasonal-fluctuation",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.65",
+          "label": "Non-renewable mineral deposits",
+          "key": "non-renewable",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.66",
+          "label": "Long-term ecological change with economic consequences",
+          "key": "ecological-economy",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.67",
+          "label": "Different production priorities per biome",
+          "key": "biome-production",
+          "group": "economy",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.68",
+          "label": "Regional settlement specialisation",
+          "key": "specialisation",
+          "group": "economy",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.69",
+          "label": "Trade in rare regional goods",
+          "key": "rare-trade",
+          "group": "economy",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.70",
+          "label": "Different production costs",
+          "key": "production-costs",
+          "group": "economy",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.71",
+          "label": "Regional supply advantages",
+          "key": "supply-advantage",
+          "group": "economy",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.72",
+          "label": "Dependence on imported raw materials",
+          "key": "imports",
+          "group": "economy",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.73",
+          "label": "Hunting and forestry",
+          "key": "hunting-forestry",
+          "group": "economy",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.74",
+          "label": "Fishing and coastal economy",
+          "key": "fishing",
+          "group": "economy",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.75",
+          "label": "Mining and quarries",
+          "key": "mining",
+          "group": "economy",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.76",
+          "label": "Special crafts from local resources",
+          "key": "crafts",
+          "group": "economy",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.77",
+          "label": "Visually recognisable resources",
+          "key": "visual-resources",
+          "group": "presentation",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.78",
+          "label": "Plants and animals suited to their environment",
+          "key": "visual-habitat",
+          "group": "presentation",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.79",
+          "label": "Legible resource abundance on the world map",
+          "key": "map-abundance",
+          "group": "presentation",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.80",
+          "label": "Rare deposits are not visible everywhere",
+          "key": "hidden-rare",
+          "group": "presentation",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.81",
+          "label": "Resource discovery through exploration",
+          "key": "discovery",
+          "group": "presentation",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.82",
+          "label": "Understandable resource information in the UI",
+          "key": "ui-info",
+          "group": "presentation",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.83",
+          "label": "Recognisable regional economic profiles",
+          "key": "regional-profile",
+          "group": "presentation",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        },
+        {
+          "id": "1.2.19.84",
+          "label": "Forest is condensed as green dots at detail level 3",
+          "key": "forest-points",
+          "group": "presentation",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-resource-data.js#BIOME_RESOURCES (catalog)",
+            "js/systems/biome-resource-state.js#updateBiomeAtlasAnnual (simulation)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/biome-resource-atlas.test.js"
+          ]
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/world/biome-resource-data.js",
+          "symbol": "BIOME_RESOURCES",
+          "role": "catalog",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-resource-state.js",
+          "symbol": "updateBiomeAtlasAnnual",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/biome-panel.js",
+          "symbol": "renderBiomePanel",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/rendering/renderer.js",
+          "symbol": "drawMapLayer",
+          "role": "renderer",
+          "valid": true
+        },
+        {
+          "file": "js/core/save-runtime.js",
+          "symbol": "serializeBiomeAtlasState",
+          "role": "persistence",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/systems/biome-resource-atlas.test.js",
+          "valid": true
+        }
+      ],
+      "source": "js/world/biome-resource-data.js",
+      "note": "84 runtime requirements from BIOME_RESOURCE_REQUIREMENTS.",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "probeAvailable": false,
+      "probeObserved": 0,
+      "implemented": 84,
+      "open": 0,
+      "total": 84
     },
     {
       "id": "2.1",

@@ -25,6 +25,7 @@ import { validatePopulationState } from "../systems/population-register.js";
 import { validateRealmCycleState } from "../systems/realm-cycle.js";
 import { validateExpeditionsState } from "../systems/expeditions.js";
 import { validateSpecialBiomeState } from "../systems/special-biome-state.js";
+import { validateBiomeAtlasSnapshot } from "../systems/biome-resource-state.js";
 import { validateAiChronicleState } from "./ai-chronicle-state.js";
 import { validateEventTimelineState } from "./event-timeline.js";
 import { validateCraftedItems } from "../systems/item-lexicon.js";
@@ -201,6 +202,7 @@ export function validateSaveSnapshot(snapshot) {
         validateDomainSnapshot(snapshot.resourceGeography, "resourceGeography",
             value => validateResourceGeographySnapshot(value, { count: savedCellCount }));
     }
+    if (snapshot.biomeAtlas !== undefined) validateDomainSnapshot(snapshot.biomeAtlas, "biomeAtlas", validateBiomeAtlasSnapshot);
     if (snapshot.forestFauna !== undefined) validateDomainSnapshot(snapshot.forestFauna, "forestFauna", validateForestFaunaSnapshot);
     if (snapshot.forestGathering !== undefined) validateDomainSnapshot(snapshot.forestGathering, "forestGathering", validateForestGatheringSnapshot);
     if (snapshot.forestSuccession !== undefined) validateDomainSnapshot(snapshot.forestSuccession, "forestSuccession", validateForestSuccessionSnapshot);

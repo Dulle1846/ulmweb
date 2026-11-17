@@ -51,6 +51,7 @@ import { normalizeRoyalState } from "../systems/royal-dynasty.js";
 import { restoreWinterState, serializeWinterState } from "../world/winter-economy.js";
 import { normalizeEndlessState } from "../systems/endless.js";
 import { restoreSpecialBiomeState, serializeSpecialBiomeState } from "../systems/special-biome-state.js";
+import { restoreBiomeAtlasState, serializeBiomeAtlasState } from "../systems/biome-resource-state.js";
 import { restoreHand } from "../systems/cards.js";
 import { resolveSavedTerrainVersion } from "../world/terrain-model.js";
 import { initWorld } from "../world/world.js";
@@ -232,6 +233,7 @@ export function createSaveSnapshot() {
         winter: serializeWinterState(),
         endless: JSON.parse(JSON.stringify(state.endless || {})),
         specialBiomes: serializeSpecialBiomeState(),
+        biomeAtlas: serializeBiomeAtlasState(),
         realmCycle: JSON.parse(JSON.stringify(state.realmCycle || createRealmCycleState())),
         court: JSON.parse(JSON.stringify(state.court || createCourtState())),
         nobility: JSON.parse(JSON.stringify(state.nobility || createNobilityState())),
@@ -468,6 +470,10 @@ export function restoreSaveSnapshot(snapshot) {
     // the player's discoveries, rare goods and blight pressure; restore those
     // over the generated baseline so older saves still get a complete atlas.
     restoreSpecialBiomeState(snapshot.specialBiomes);
+    // initWorld has generated this seed's atlas. The save overlays the player's
+    // discoveries, stocks, populations, policies and trade record. Old saves
+    // without the field keep the deterministic generated baseline.
+    restoreBiomeAtlasState(snapshot.biomeAtlas);
     if (Array.isArray(snapshot.explored) && snapshot.explored.length === (Number(state.worldW) || WORLD_W)) {
         state.explored = snapshot.explored;
     }

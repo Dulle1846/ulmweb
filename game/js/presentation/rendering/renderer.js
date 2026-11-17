@@ -6,6 +6,7 @@ import { CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
 import { TYPE } from '../../core/types.js';
 import { drawTerrain, drawForestVisibility, updateForestSightOrigin, isForestSightVisible } from './terrain.js';
+import { getBiomeOverlayCells, shouldDrawForestPoints } from '../../systems/biome-resource-state.js';
 import { drawEntity } from './entities.js';
 import { drawPlacementPreview } from './placement-preview.js';
 import { getRoadTiles,getRoadAt,ROAD_TYPES } from '../../systems/roads.js';
@@ -218,6 +219,53 @@ function drawMapLayer(ctx,zoom,camera,canvas){
                 drawFieldTile(ctx,entity,zoom,camera,0.72);
             }
         }
+        ctx.restore();
+        return;
+    }
+    if(layer==="biomes"){
+        const cells=getBiomeOverlayCells();
+        const showForestPoints=shouldDrawForestPoints(state.zoomLevel,layer);
+        for(const cell of cells){
+            const left=cell.x*tileSize-camera.x,top=cell.y*tileSize-camera.y;
+            const width=cell.width*tileSize,height=cell.height*tileSize;
+            if(left+width<0||top+height<0||left>canvas.width||top>canvas.height)continue;
+            ctx.globalAlpha=.1+Math.max(0,Math.min(100,Number(cell.health)||0))/400;
+            ctx.fillStyle=cell.color;
+            ctx.fillRect(left,top,width,height);
+            ctx.globalAlpha=.48;
+            ctx.strokeStyle=cell.color;
+            ctx.lineWidth=Math.max(1,tileSize*.04);
+            ctx.strokeRect(left,top,width,height);
+            for(const rare of cell.rare){
+                const hash=rare.length*31+cell.id.length*17;
+                ctx.globalAlpha=.9;
+                ctx.fillStyle="#e4bd72";
+                ctx.beginPath();
+                ctx.arc(left+width*(.24+(hash%5)*.12),top+height*(.24+((hash>>3)%5)*.12),Math.max(2,tileSize*.12),0,Math.PI*2);
+                ctx.fill();
+            }
+        }
+        ctx.globalAlpha=1;
+        if(showForestPoints){
+            const sample=Math.max(1,Math.ceil(2/Math.max(.35,zoom)));
+            for(let y=minY;y<=maxY;y+=sample){
+                for(let x=minX;x<=maxX;x+=sample){
+                    if(!state.explored?.[x]?.[y])continue;
+                    let node;
+                    try{node=getResourceNodeAt(x,y);}catch{continue;}
+                    if(!node?.forestCapacity||node.forestStock/node.forestCapacity<.08)continue;
+                    const px=x*tileSize-camera.x+tileSize*.5;
+                    const py=y*tileSize-camera.y+tileSize*.5;
+                    const share=Math.max(0,Math.min(1,node.forestStock/node.forestCapacity));
+                    ctx.globalAlpha=.35+share*.5;
+                    ctx.fillStyle="#5f9b54";
+                    ctx.beginPath();
+                    ctx.arc(px,py,Math.max(1.6,tileSize*sample*.17),0,Math.PI*2);
+                    ctx.fill();
+                }
+            }
+        }
+        ctx.globalAlpha=1;
         ctx.restore();
         return;
     }
