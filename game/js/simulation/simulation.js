@@ -42,6 +42,7 @@ import { updatePersonalAgency } from "../systems/agency.js";
 import { updateMortality } from "../systems/mortality.js";
 import { updateGuardianships } from "../systems/guardianship.js";
 import { updateRoyalSuccession } from "../systems/royal-dynasty.js";
+import { updateRoyalCrisis } from "../systems/royal-crisis.js";
 import { updateCreatures } from "../systems/creatures.js";
 import { updateAmbitions } from "../systems/ambitions.js";
 import { updateEndeavours } from "../systems/endeavours.js";
@@ -73,6 +74,7 @@ const ANNUAL_TASKS = [
     { name: "mortality", run(annual) { annual.deaths = updateMortality(); } },
     { name: "guardianships", run(annual) { annual.guardianships = updateGuardianships(); } },
     { name: "succession", run(annual) { annual.succession = updateRoyalSuccession(); } },
+    { name: "royalCrisis", run(annual) { annual.royalCrisis = updateRoyalCrisis(); } },
     { name: "creatures", run() { updateCreatures(); } },
     { name: "social", run(annual) { annual.socialResult = updateSocialLife(); } },
     { name: "agency", run() { updatePersonalAgency(); } },
@@ -127,6 +129,7 @@ function createAnnualMaintenance() {
         socialResult: null,
         newborn: null,
         succession: null,
+        royalCrisis: null,
         volcanoHazards: null,
         coastHazards: null,
         winterAnnual: null

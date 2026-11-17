@@ -5,6 +5,7 @@ import {ensurePersonProfile,addPersonMemory} from "./people.js";
 import {linkParentChild,setPartnership,getFamilySnapshot} from "./families.js";
 import {recordResourceMovement} from "./goods-book.js";
 import {addResource} from "./resources.js";
+import {normalizeRoyalCrisisState} from "./royal-crisis-state.js";
 const MAX_HISTORY=48,personId=e=>String(e?.personId||e?.person?.id||e?.id||""),alive=e=>Boolean(e&&!e.dead);
 function royalState(){
  const s=state.royal&&typeof state.royal==="object"&&!Array.isArray(state.royal)?state.royal:{};
@@ -16,10 +17,12 @@ function royalState(){
  s.heirId=typeof s.heirId==="string"?s.heirId:null;
  s.lastBirthYear=Math.max(0,Math.floor(Number(s.lastBirthYear)||0));
  s.history=Array.isArray(s.history)?s.history.filter(x=>x&&typeof x==="object").slice(-MAX_HISTORY):[];
+ normalizeRoyalCrisisState(s);
  state.royal=s;
  return s;
 }
 function adultAge(e){const p=ensurePersonProfile(e);return ({human:16,elf:35,dwarf:24,orc:14,goblin:10,halfling:20,gnome:24,dragonkin:22,fae:28,revenant:0})[p.species]??16;}
+export function royalAdultAge(e){return adultAge(e);}
 function closeKinIds(king){const family=getFamilySnapshot(personId(king));return new Set([...(family?.parents||[]),...(family?.children||[]),...(family?.siblings||[])].map(x=>String(x.personId)));}
 function hasActivePartner(entity){return ensurePersonProfile(entity).kinship.partners.some(x=>["partner","married"].includes(x.status));}
 function record(kind,detail){const s=royalState();s.history.push({year:Math.max(1,Number(state.year)||1),kind,detail:String(detail).slice(0,160)});s.history=s.history.slice(-MAX_HISTORY);}
@@ -69,12 +72,18 @@ export function updateRoyalSuccession(){
  if(getSovereign())return {changed:false,king:getSovereign()};
  const s=royalState();
  const law=["primogeniture","elective","designated"].includes(state.government?.succession)?state.government.succession:"primogeniture";
- const memorial=(state.personArchive||[]).find(x=>x.isKing),children=memorial?.person?.kinship?.children||[];
+ const memorials=(state.personArchive||[]).filter(x=>x&&x.isKing);
+ const memorial=memorials.length?memorials[memorials.length-1]:null;
+ const children=memorial?.person?.kinship?.children||[];
+ const lateKing=state.entities.find(entity=>entity&&entity.isKing)||null;
+ const familyChildren=lateKing?getFamilySnapshot(personId(lateKing)).children||[]:[];
  const isAdult=entity=>{if(!entity)return false;const p=ensurePersonProfile(entity);return p.ageYears>=adultAge(entity);};
  const designated=getRoyalPerson(s.heirId);
  let successor=null;
  if(law==="designated"){
-  successor=isAdult(designated)?designated:null;
+  // A designated minor is a lawful heir. The crisis pass opens a regency for
+  // the child instead of silently passing over the named heir.
+  successor=designated||null;
  }else if(law==="elective"){
   const pool=state.entities
    .filter(entity=>!entity.dead&&!entity.isKing&&entity.type===TYPE.VILLAGER&&entity.personId&&isAdult(entity))
@@ -82,15 +91,28 @@ export function updateRoyalSuccession(){
   const score=entity=>{const p=ensurePersonProfile(entity);return (Number(p.traits?.ambition)||0)*0.35+(Number(p.traits?.discipline)||0)*0.25+(Number(p.traits?.compassion)||0)*0.20+(Number(p.traits?.piety)||0)*0.10+Math.min(80,Number(p.ageYears)||0)*0.10;};
   successor=pool.sort((a,b)=>score(b)-score(a)||ensurePersonProfile(a).name.localeCompare(ensurePersonProfile(b).name))[0]||null;
  }else{
-  successor=isAdult(designated)?designated:null;
-  if(!successor)successor=children.map(x=>getRoyalPerson(x.personId)).find(isAdult)||null;
+  successor=designated||null;
+  if(!successor){
+   const childIds=[...new Set([...children,...familyChildren].map(x=>String(x.personId)))];
+   successor=childIds.map(id=>getRoyalPerson(id)).filter(Boolean)
+    .sort((a,b)=>(Number(ensurePersonProfile(b).ageYears)||0)-(Number(ensurePersonProfile(a).ageYears)||0)||ensurePersonProfile(a).name.localeCompare(ensurePersonProfile(b).name)||personId(a).localeCompare(personId(b)))[0]||null;
+  }
  }
  if(!successor)return {changed:false,king:null,reason:"no-living-heir",law};
  for(const e of state.entities)if(e.isKing)e.isKing=false;
- successor.isKing=true;successor.isRoyalFamily=true;const p=ensurePersonProfile(successor,{role:"king"});p.role="king";s.heirId=null;
+ successor.isKing=true;successor.isRoyalFamily=true;successor.isAbdicated=false;
+ const p=ensurePersonProfile(successor,{role:"king"});p.role="king";s.heirId=null;
  state.kingHp=Math.max(1,Math.min(successor.maxHp||300,successor.hp||300));
- record("succession","The crown passed to "+p.name+" under "+law+" law.");
- addPersonMemory(successor,{id:"succession:"+successor.id+":"+state.year,type:"dynasty",text:"I inherited the crown under "+law+" law and became sovereign in year "+state.year+".",tick:state.tick,importance:100});
- return {changed:true,king:successor,law};
+ const minor=!isAdult(successor);
+ // A fresh succession begins a clean crisis record. The crisis runtime opens
+ // the actual regency and seeds claims once the new sovereign is installed.
+ s.regency={...s.regency,active:false,regentId:null,minorKingId:minor?personId(successor):null,sinceYear:minor?Math.max(1,Number(state.year)||1):0,reason:minor?"minor-heir":"",councilSupport:0,lastUpdateYear:0,claimsSeeded:false,regentPriorRole:null,history:Array.isArray(s.regency?.history)?s.regency.history:[]};
+ s.claims=Array.isArray(s.claims)?s.claims.map(claim=>({...claim,status:claim.status==="pressing"?"settled":claim.status})):[];
+ s.civilConflict={...s.civilConflict,active:false,phase:"resolved",severity:0,resolvedYear:Math.max(1,Number(state.year)||1),lastUpdateYear:0};
+ record("succession","The crown passed to "+p.name+" under "+law+" law."+(minor?" A regency is required.":""));
+ addPersonMemory(successor,{id:"succession:"+successor.id+":"+state.year,type:"dynasty",text:"I inherited the crown under "+law+" law and became sovereign in year "+state.year+"."+(minor?" I am still a minor; a regent will rule in my name.":""),tick:state.tick,importance:100});
+ if(minor)record("regency-required",p.name+" is a minor; the crown must appoint a regent.");
+ return {changed:true,king:successor,law,minor,regencyRequired:minor};
 }
+
 export function normalizeRoyalState(input=state.royal){state.royal={...(input&&typeof input==="object"?input:{})};return royalState();}

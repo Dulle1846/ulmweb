@@ -559,7 +559,15 @@ const SYSTEM_SPECS = [
     }),
     section("3.9", "Dynasty, constitution and diplomacy", [
         { id: "3.9.1", label: "Succession law drives the actual succession path", evidence: [{ file: "js/systems/government.js", symbol: "setSuccessionLaw" }, { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession" }], tests: ["tests/systems/succession-law.test.js"] },
-        { id: "3.9.2", label: "Regency, contested claims, abdication, usurpation and civil conflict", status: "open", missing: "Minor-heir regency is explicitly a future system in mortality.js; no abdication, contested claim or civil-conflict consumer exists.", tests: ["tests/systems/strategy-management.test.js"] },
+        { id: "3.9.2", label: "Regency, contested claims, abdication, usurpation and civil conflict", evidence: [
+            { file: "js/systems/royal-crisis.js", symbol: "updateRoyalCrisis" },
+            { file: "js/systems/royal-crisis.js", symbol: "startRegency" },
+            { file: "js/systems/royal-crisis.js", symbol: "pressClaim" },
+            { file: "js/systems/royal-crisis.js", symbol: "abdicateThrone" },
+            { file: "js/systems/royal-crisis.js", symbol: "getRoyalCrisisSnapshot" },
+            { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession" },
+            { file: "js/presentation/management-ui.js", symbol: "royalCrisisPanel" }
+        ], tests: ["tests/systems/royal-crisis.test.js"] },
         { id: "3.9.3", label: "Parliament/council, rights, taxes and decrees", evidence: [{ file: "js/systems/government.js", symbol: "GOVERNMENT_FORMS" }, { file: "js/systems/government.js", symbol: "setTaxRate" }], tests: ["tests/systems/court-diplomacy.test.js"] },
         { id: "3.9.4", label: "Laws have supporters, opponents, costs and enforcement", evidence: [{ file: "js/systems/justice.js", symbol: "LAW_CODES" }, { file: "js/systems/justice.js", symbol: "setLawCode" }], tests: ["tests/systems/faith-justice.test.js"] },
         { id: "3.9.5", label: "Neighbouring realms have rulers, economies and military strength", evidence: [{ file: "js/systems/diplomacy.js", symbol: "getDiplomacySnapshot" }, { file: "js/systems/diplomacy-config.js", symbol: "DIPLOMATIC_REALMS" }], tests: ["tests/systems/diplomacy.test.js"] },
@@ -567,7 +575,12 @@ const SYSTEM_SPECS = [
         { id: "3.9.7", label: "Guarantees and long-term diplomatic consequences", status: "open", missing: "Trade pacts, alliances, wars and peace exist, but guarantees and their obligation/response consumer do not.", tests: ["tests/systems/diplomacy.test.js"] },
         { id: "3.9.8", label: "Dynastic marriage, heir designation and succession record", evidence: [{ file: "js/systems/royal-dynasty.js", symbol: "designateHeir" }, { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession" }], tests: ["tests/systems/families.test.js"] }
     ], {
-        consumers: [{ file: "js/systems/diplomacy.js", symbol: "getDiplomacySnapshot", role: "diplomacy" }, { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession", role: "dynasty" }],
+        consumers: [
+            { file: "js/systems/diplomacy.js", symbol: "getDiplomacySnapshot", role: "diplomacy" },
+            { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession", role: "dynasty" },
+            { file: "js/systems/royal-crisis.js", symbol: "updateRoyalCrisis", role: "dynasty-crisis" },
+            { file: "js/presentation/management-ui.js", symbol: "royalCrisisPanel", role: "gameplay" }
+        ],
         tests: ["tests/systems/diplomacy.test.js"]
     }),
     section("3.10", "Full creature ecosystem and comic-art expansion", [

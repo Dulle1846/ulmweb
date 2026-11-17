@@ -2,20 +2,20 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "3d90618f06d3c01b8ecbcaa9f876958fbacce412",
-  "sourceHash": "0206981a0edc462005535df3ee32743cb3b8165bd6f45e0898c493ce9d6db453",
+  "commit": "69efdd087d4beef919fd21bc2de9ea336befe7e1",
+  "sourceHash": "099b972667e0a92277915cf5a055f71bb8d8dfb9acd02de9f0d9b5cfffbd95be",
   "totals": {
     "total": 1312,
-    "implemented": 1302,
-    "open": 10,
+    "implemented": 1303,
+    "open": 9,
     "sections": 34
   },
   "nextSection": {
     "id": "3.9",
     "title": "Dynasty, constitution and diplomacy",
-    "open": 2,
+    "open": 1,
     "total": 8,
-    "firstOpen": "3.9.2"
+    "firstOpen": "3.9.7"
   },
   "collisions": [
     {
@@ -608,8 +608,8 @@ export const SPEC_COVERAGE = Object.freeze({
       "id": "3.9",
       "title": "Dynasty, constitution and diplomacy",
       "total": 8,
-      "implemented": 6,
-      "open": 2,
+      "implemented": 7,
+      "open": 1,
       "source": "system registry"
     },
     {
@@ -630,15 +630,6 @@ export const SPEC_COVERAGE = Object.freeze({
     }
   ],
   "openPoints": [
-    {
-      "id": "3.9.2",
-      "section": "3.9",
-      "title": "Dynasty, constitution and diplomacy",
-      "label": "Regency, contested claims, abdication, usurpation and civil conflict",
-      "missing": [
-        "Minor-heir regency is explicitly a future system in mortality.js; no abdication, contested claim or civil-conflict consumer exists."
-      ]
-    },
     {
       "id": "3.9.7",
       "section": "3.9",
