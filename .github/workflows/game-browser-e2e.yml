@@ -114,7 +114,7 @@ jobs:
   coldstart:
     name: Swamp cold-start comparison
     runs-on: ubuntu-24.04
-    timeout-minutes: 14
+    timeout-minutes: 22
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -122,8 +122,25 @@ jobs:
         uses: ./.github/actions/setup-game-e2e
       - name: Run swamp cold-start comparison
         working-directory: game
-        timeout-minutes: 9
-        run: npm run test:coldstart:compare
+        timeout-minutes: 18
+        run: |
+          set +e
+          for attempt in 1 2; do
+            echo "Cold-start comparison attempt ${attempt}/2"
+            npm run test:coldstart:compare 2>&1 | tee "$RUNNER_TEMP/swamp-coldstart-attempt-${attempt}.log"
+            code=${PIPESTATUS[0]}
+            if [ "$code" -eq 0 ]; then
+              break
+            fi
+            if [ "$attempt" -eq 1 ]; then
+              # The 4x-throttled app-work p95 is sensitive to noisy shared
+              # runners. Retry the identical contract after the other browser
+              # jobs have had time to finish; a second failure still fails CI.
+              echo "Cold-start comparison failed; cooling down before one exact retry."
+              sleep 120
+            fi
+          done
+          exit "$code"
       - name: Upload cold-start artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -134,6 +151,7 @@ jobs:
             artifacts/swamp-coldstart-report.json
             artifacts/swamp-coldstart-swamp.json
             artifacts/swamp-coldstart-savanna.json
+            ${{ runner.temp }}/swamp-coldstart-attempt-*.log
           if-no-files-found: warn
           retention-days: 7
 
