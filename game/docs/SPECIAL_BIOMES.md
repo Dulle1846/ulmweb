@@ -337,7 +337,8 @@ coordinates, out-of-range radii and negative/unknown rare goods.
   legacy load without the block. Measured **1.076 ms/tick**, population **74**,
   all campaign requirements green.
 - Browser E2E and the production build are recorded in the release changelog.
-  The browser endurance gate is now a resumable **60-year** audit.
+  The browser endurance gate is a resumable audit: **20 years** run on every
+  push, while the full **60-year** soak runs nightly.
 
 ## Known limits
 

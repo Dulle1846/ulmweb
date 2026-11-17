@@ -10,6 +10,7 @@
     "test:e2e:setup": "node tests/browser/setup-e2e.mjs",
     "test:e2e": "node tests/browser/run-e2e.mjs",
     "test:endurance": "node tests/browser/endurance-60y.mjs",
+    "test:endurance:smoke": "ENDURANCE_YEARS=20 node tests/browser/endurance-60y.mjs",
     "test:swamp-live": "node tests/browser/swamp-live-proof.mjs",
     "test:mountain-live": "node tests/browser/mountain-live-proof.mjs",
     "test:performance:swamp": "PERF_SOFTWARE_CANVAS=1 PERF_CLIMATE=swamp PERF_FORESTS=85 PERF_SEED=20261152 PERF_YEARS=2 PERF_RENDER_SCALE=70 node tests/browser/low-end-performance.mjs",

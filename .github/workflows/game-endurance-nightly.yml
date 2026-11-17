@@ -1,0 +1,55 @@
+name: Game Endurance Nightly
+
+# The full 60-year browser endurance audit is intentionally not on every push.
+# It is a deep soak test, while game-browser-e2e.yml runs a 20-year audit with
+# real saves, loads, UI probes and the final FPS sample on every commit.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-endurance-60y-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  endurance-60y:
+    name: 60-year endurance audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up cached browser dependencies
+        uses: ./.github/actions/setup-game-e2e
+      - name: Run 60-year endurance audit
+        working-directory: game
+        timeout-minutes: 42
+        env:
+          ENDURANCE_YEARS: 60
+          ENDURANCE_STATE_DIR: ${{ runner.temp }}/endurance-60y-state
+        run: |
+          python3 -m http.server 3000 --bind 127.0.0.1 > "$RUNNER_TEMP/endurance-http.log" 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          npm run test:endurance
+      - name: Upload endurance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-endurance-60y
+          path: |
+            game/reports/endurance-60y.json
+            game/reports/endurance-60y.md
+            artifacts/browser-endurance-60y-failure.json
+          if-no-files-found: warn
+          retention-days: 7

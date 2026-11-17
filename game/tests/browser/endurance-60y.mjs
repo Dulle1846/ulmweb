@@ -5,15 +5,19 @@
 // with Playwright's fake clock, verifies the complete save against the state
 // it loaded, saves through the visible SAVE control and atomically writes a
 // checkpoint (including the browser storage state and the saved snapshot).
+// ENDURANCE_YEARS defaults to 60 for the nightly soak; the per-push audit uses
+// 20 years, which still covers four exact save/load cycles and the final FPS
+// sample. Set ENDURANCE_MAX_BLOCKS to cap a resumed run.
 //
 // A runner restart therefore resumes at the first block after the last
 // checkpoint instead of discarding the run. The final block runs the exact
 // save/load audit through the schema-8 legacy adapter and measures FPS in a
 // fresh real-time browser context. The final report is written to
-// `reports/endurance-60y.json` and `reports/endurance-60y.md`.
+// `reports/endurance-<years>y.json` and `reports/endurance-<years>y.md`.
 //
 // This is deliberately not part of `npm test`: it needs Chromium and is a
-// long-running hardware check. Use `npm run test:endurance`.
+// long-running hardware check. Use `npm run test:endurance` for the 60-year
+// soak or `npm run test:endurance:smoke` for the 20-year per-push audit.
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
 import {mkdir, readFile, rename, writeFile} from "node:fs/promises";
@@ -30,7 +34,7 @@ const BASE = process.env.E2E_BASE_URL || "http://127.0.0.1:3000";
 const ORIGIN = new URL(BASE).origin;
 const SEED = Number(process.env.ENDURANCE_SEED || 20261108);
 const SAVE_YEARS = Math.max(5, Number(process.env.ENDURANCE_SAVE_YEARS || 25));
-const YEARS = Math.max(60, Number(process.env.ENDURANCE_YEARS || 60));
+const YEARS = Math.max(5, Number(process.env.ENDURANCE_YEARS || 60));
 const REPORT_SUFFIX = YEARS + "y";
 const BLOCK_YEARS = Math.max(1, Number(process.env.ENDURANCE_BLOCK_YEARS || 5));
 const FRAME_LIMIT = Number(process.env.ENDURANCE_FRAME_LIMIT || 30);
@@ -1055,7 +1059,7 @@ function currentCommit() {
 
 function reportMarkdown(report) {
     const lines = [
-        "# Kings & Cards — 60-Year Endurance Report",
+        `# Kings & Cards — ${YEARS}-Year Endurance Report`,
         "",
         `- Generated: **${report.generatedAt}**`,
         `- Source commit: \`${report.sourceCommit || "unknown"}\``,

@@ -1,7 +1,9 @@
 name: Game Browser E2E
 
-# Stability sample 2: repeat the identical browser suite after the one-off failure.
-# Stability sample 3: final repeated run for the same browser suite.
+# The browser checks are independent of each other. Keep them in separate
+# jobs so a slow cold-start or terrain audit cannot serialize the whole suite.
+# The full 60-year endurance run lives in game-endurance-nightly.yml; every
+# push still runs a 20-year browser audit with real saves, loads and FPS checks.
 on:
   push:
     branches:
@@ -9,6 +11,7 @@ on:
     paths:
       - "game/**"
       - ".github/workflows/game-browser-e2e.yml"
+      - ".github/actions/setup-game-e2e/**"
   pull_request:
     branches:
       - ulmweb-branch
@@ -17,13 +20,12 @@ on:
     paths:
       - "game/**"
       - ".github/workflows/game-browser-e2e.yml"
+      - ".github/actions/setup-game-e2e/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-# Each commit gets its own E2E group. A later push must not cancel an in-flight
-# E2E run: a cancelled check is a red X on the earlier commit even when its code
-# is healthy. The job keeps its own 30-minute timeout.
 concurrency:
   group: game-browser-e2e-${{ github.sha }}
   cancel-in-progress: false
@@ -32,36 +34,23 @@ jobs:
   browser-e2e:
     name: Chromium gameplay smoke test
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     outputs:
       started_at: ${{ steps.timing.outputs.started_at }}
       finished_at: ${{ steps.finish.outputs.finished_at }}
       e2e_exit_code: ${{ steps.browser-e2e.outputs.exit_code }}
-      forester_exit_code: ${{ steps.forester_longrun.outputs.exit_code }}
     steps:
       - name: Record test start time
         id: timing
         run: echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install browser test dependency
-        working-directory: game
-        run: npm install --no-audit --no-fund --package-lock=false
-      - name: Cache Playwright Chromium
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-chromium-1.56.1
-      - name: Install Chromium, system libraries and fonts
-        working-directory: game
-        run: npm run test:e2e:setup -- --with-deps
+      - name: Set up cached browser dependencies
+        uses: ./.github/actions/setup-game-e2e
       - name: Run local browser end-to-end test
         id: browser-e2e
         working-directory: game
+        timeout-minutes: 15
         run: |
           set +e
           set -o pipefail
@@ -69,41 +58,98 @@ jobs:
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit "$code"
+      - name: Upload browser E2E log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-browser-e2e-log
+          path: ${{ runner.temp }}/browser-e2e.log
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Upload responsive UI review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-ui-viewport-review
+          path: /tmp/kac-ui-viewport-review/*.png
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Record test finish time
+        id: finish
+        if: always()
+        run: echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+  live-proofs:
+    name: Live swamp and mountain proofs
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up cached browser dependencies
+        uses: ./.github/actions/setup-game-e2e
       - name: Run swamp 1.2.11 live browser proof
-        id: swamp_live
         working-directory: game
         timeout-minutes: 5
-        run: |
-          set +e
-          set -o pipefail
-          npm run test:swamp-live 2>&1 | tee "$RUNNER_TEMP/swamp-live-proof.log"
-          code=$?
-          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
-          exit "$code"
+        run: npm run test:swamp-live
       - name: Run mountain 1.2.12 live browser proof
-        id: mountain_live
         working-directory: game
         timeout-minutes: 5
-        run: |
-          set +e
-          set -o pipefail
-          npm run test:mountain-live 2>&1 | tee "$RUNNER_TEMP/mountain-live-proof.log"
-          code=$?
-          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
-          exit "$code"
+        run: npm run test:mountain-live
+      - name: Upload live proof artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-swamp-live-proof
+          path: |
+            artifacts/swamp-live-proof.png
+            artifacts/swamp-live-proof-map.png
+            artifacts/swamp-live-proof.json
+            artifacts/mountain-live-proof.png
+            artifacts/mountain-live-proof-map.png
+            artifacts/mountain-live-proof.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  coldstart:
+    name: Swamp cold-start comparison
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up cached browser dependencies
+        uses: ./.github/actions/setup-game-e2e
       - name: Run swamp cold-start comparison
-        id: swamp_performance
         working-directory: game
         timeout-minutes: 9
-        run: |
-          set +e
-          set -o pipefail
-          npm run test:coldstart:compare 2>&1 | tee "$RUNNER_TEMP/swamp-coldstart.log"
-          code=$?
-          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
-          exit "$code"
+        run: npm run test:coldstart:compare
+      - name: Upload cold-start artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-coldstart
+          path: |
+            artifacts/low-end-performance.json
+            artifacts/swamp-coldstart-report.json
+            artifacts/swamp-coldstart-swamp.json
+            artifacts/swamp-coldstart-savanna.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  forester:
+    name: Forester stewardship audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    outputs:
+      exit_code: ${{ steps.forester-longrun.outputs.exit_code }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up cached browser dependencies
+        uses: ./.github/actions/setup-game-e2e
       - name: Run three-seed Forester stewardship audit
-        id: forester_longrun
+        id: forester-longrun
         working-directory: game
         timeout-minutes: 6
         env:
@@ -116,6 +162,27 @@ jobs:
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit "$code"
+      - name: Upload Forester stewardship audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kings-and-cards-forester-stewardship-longrun
+          path: |
+            ${{ runner.temp }}/forester-stewardship-longrun/forester-stewardship-longrun.json
+            ${{ runner.temp }}/forester-stewardship-longrun/*.png
+            ${{ runner.temp }}/forester-stewardship-longrun.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  terrain:
+    name: Terrain and climate visual reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up cached browser dependencies
+        uses: ./.github/actions/setup-game-e2e
       - name: Generate terrain visual reference
         if: always()
         working-directory: game
@@ -161,62 +228,50 @@ jobs:
             ${{ runner.temp }}/terrain-reference/forest-reference.json
           if-no-files-found: warn
           retention-days: 7
-      - name: Upload swamp live proof
+
+  endurance-20y:
+    name: 20-year browser endurance audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up cached browser dependencies
+        uses: ./.github/actions/setup-game-e2e
+      - name: Run 20-year browser endurance audit
+        working-directory: game
+        timeout-minutes: 22
+        env:
+          ENDURANCE_YEARS: 20
+          ENDURANCE_STATE_DIR: ${{ runner.temp }}/endurance-20y-state
+        run: |
+          python3 -m http.server 3000 --bind 127.0.0.1 > "$RUNNER_TEMP/endurance-http.log" 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          npm run test:endurance
+      - name: Upload endurance report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kings-and-cards-swamp-live-proof
+          name: kings-and-cards-endurance-20y
           path: |
-            artifacts/swamp-live-proof.png
-            artifacts/swamp-live-proof-map.png
-            artifacts/swamp-live-proof.json
-            artifacts/mountain-live-proof.png
-            artifacts/mountain-live-proof-map.png
-            artifacts/mountain-live-proof.json
-            artifacts/low-end-performance.json
-            artifacts/swamp-coldstart-report.json
-            artifacts/swamp-coldstart-swamp.json
-            artifacts/swamp-coldstart-savanna.json
-            ${{ runner.temp }}/swamp-live-proof.log
-            ${{ runner.temp }}/mountain-live-proof.log
-            ${{ runner.temp }}/swamp-coldstart.log
+            game/reports/endurance-20y.json
+            game/reports/endurance-20y.md
+            artifacts/browser-endurance-20y-failure.json
           if-no-files-found: warn
           retention-days: 7
-      - name: Upload browser E2E log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kings-and-cards-browser-e2e-log
-          path: ${{ runner.temp }}/browser-e2e.log
-          if-no-files-found: warn
-          retention-days: 7
-      - name: Upload Forester stewardship audit
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kings-and-cards-forester-stewardship-longrun
-          path: |
-            ${{ runner.temp }}/forester-stewardship-longrun/forester-stewardship-longrun.json
-            ${{ runner.temp }}/forester-stewardship-longrun/*.png
-            ${{ runner.temp }}/forester-stewardship-longrun.log
-          if-no-files-found: warn
-          retention-days: 7
-      - name: Upload responsive UI review screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kings-and-cards-ui-viewport-review
-          path: /tmp/kac-ui-viewport-review/*.png
-          if-no-files-found: warn
-          retention-days: 7
-      - name: Record test finish time
-        id: finish
-        if: always()
-        run: echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
   record-run:
     name: Record workflow run receipt
-    needs: browser-e2e
+    needs:
+      - browser-e2e
+      - forester
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -240,7 +295,7 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           JOB_RESULT: ${{ needs.browser-e2e.result }}
           E2E_EXIT_CODE: ${{ needs.browser-e2e.outputs.e2e_exit_code }}
-          FORESTER_EXIT_CODE: ${{ needs.browser-e2e.outputs.forester_exit_code }}
+          FORESTER_EXIT_CODE: ${{ needs.forester.outputs.exit_code || 'not-run' }}
           STARTED_AT: ${{ needs.browser-e2e.outputs.started_at }}
           FINISHED_AT: ${{ needs.browser-e2e.outputs.finished_at }}
         run: |
@@ -284,55 +339,3 @@ jobs:
           git add ci/game-browser-e2e.json
           git commit -m "Record workflow run ${GITHUB_RUN_ID}"
           git push --force origin HEAD:refs/heads/ci-run-receipts
-
-
-  endurance-60y:
-    name: 60-year endurance audit
-    runs-on: ubuntu-latest
-    timeout-minutes: 55
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install browser test dependency
-        working-directory: game
-        run: npm install --no-audit --no-fund --package-lock=false
-      - name: Cache Playwright Chromium
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-chromium-1.56.1
-      - name: Install Chromium, system libraries and fonts
-        working-directory: game
-        run: npm run test:e2e:setup -- --with-deps
-      - name: Run 60-year endurance audit
-        working-directory: game
-        timeout-minutes: 42
-        env:
-          ENDURANCE_YEARS: 60
-          ENDURANCE_STATE_DIR: ${{ runner.temp }}/endurance-60y-state
-        run: |
-          python3 -m http.server 3000 --bind 127.0.0.1 > "$RUNNER_TEMP/endurance-http.log" 2>&1 &
-          server=$!
-          trap 'kill "$server" 2>/dev/null || true' EXIT
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null; then
-              break
-            fi
-            sleep 1
-          done
-          npm run test:endurance
-      - name: Upload endurance report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kings-and-cards-endurance-60y
-          path: |
-            game/reports/endurance-60y.json
-            game/reports/endurance-60y.md
-            artifacts/browser-endurance-60y-failure.json
-          if-no-files-found: warn
-          retention-days: 7
