@@ -29,6 +29,10 @@ The repository also isolates the deploy environment. The new workflow uses `prod
 
 The runtime build writes `version.json` into the package root with `commit`, `branch` and `builtAt`. The workflow verifies that the artifact's `commit` equals the workflow commit before upload, and after the Wrangler upload it fetches `https://kings-and-cards.pages.dev/version.json?commit=<sha>` and fails unless the served `commit` and timestamp match. It then holds the marker for three further ten-second checks so a late competing deployment makes the release job fail instead of silently overwriting the tested commit. A plain HTTP 200 is not accepted as proof of the release.
 
+### Guarded release evidence
+
+On 2026-11-17 the first guarded deploy observed `production_deployments_enabled=true` for the Git-integrated project. The guard changed it to `false`, a fresh GET confirmed the change, and three post-upload stability checks plus a later fetch all returned the deployed commit as `application/json`. The Git auto-build could no longer replace the tested Direct Upload.
+
 A workflow run is not proof of a live release by itself. After a successful Wrangler upload, also confirm the deployment in the Pages project. The marker proves that the canonical URL serves the built commit; it does not prove that Cloudflare's dashboard deployment metadata names the same deployment.
 
 ## Repository facts
