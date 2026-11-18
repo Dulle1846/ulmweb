@@ -65,8 +65,8 @@ function politicalDeltas(before, after) {
 function compactPoliticalDeltas(delta) {
     return Object.fromEntries(Object.entries(delta).filter(([, value]) => Math.abs(value) > 0.00001));
 }
-async function realmSnapshot() {
-    return page.evaluate(async () => {
+async function realmSnapshot(target = page) {
+    return target.evaluate(async () => {
         const [{state}, {getPoliticalSnapshot}] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/systems/politics.js")
@@ -87,7 +87,8 @@ async function realmSnapshot() {
                 family: state.activeEvent.family,
                 title: state.activeEvent.title,
                 thread: state.activeEvent.thread || null,
-                choices: state.activeEvent.choices.map(choice => choice.label)
+                choices: state.activeEvent.choices.map(choice => choice.label),
+                moraleEffects: state.activeEvent.choices.map(choice => Number.isFinite(choice.effects?.morale) ? choice.effects.morale : null)
             } : null,
             activeThreads: (state.hiddenRealm?.activeThreads || []).map(thread => ({id: thread.id, stage: thread.stage})),
             completedThreads: (state.hiddenRealm?.completedThreads || []).map(thread => ({...thread}))
@@ -136,12 +137,12 @@ async function advanceToNextStage(chain) {
     }, chain);
     await page.locator("#realm-event-modal").waitFor({state: "visible", timeout: 10000});
 }
-async function clickFirstChoice() {
-    const button = page.locator('[data-event-choice="0"]');
+async function clickFirstChoice(target = page) {
+    const button = target.locator('[data-event-choice="0"]');
     await button.waitFor({state: "visible", timeout: 10000});
     const label = (await button.locator("strong").textContent())?.trim();
     await button.click();
-    await page.waitForTimeout(120);
+    await target.waitForTimeout(120);
     return label;
 }
 async function drawQueuedRewards() {
@@ -159,6 +160,85 @@ async function drawQueuedRewards() {
         }
         return {queued, drawn, hand: state.hand.map(card => ({category: card.category, name: card.name}))};
     });
+}
+async function proveMoraleBoundaries() {
+    const boundaryPage = await browser.newPage({viewport: {width: 1600, height: 1000}, reducedMotion: "reduce"});
+    boundaryPage.on("pageerror", error => pageErrors.push(error.message));
+    boundaryPage.on("console", message => { if (message.type() === "error") consoleErrors.push(message.text()); });
+    await boundaryPage.goto(BASE + "/", {waitUntil: "networkidle", timeout: 60000});
+    await boundaryPage.locator("#start-screen").waitFor({state: "visible", timeout: 30000});
+    await boundaryPage.locator("#world-seed-input").fill(String(SEED));
+    await boundaryPage.waitForFunction(seed => document.querySelector("#world-preview-status")?.textContent.includes("SEED " + seed), String(SEED), {timeout: 20000}).catch(() => {});
+    await boundaryPage.locator("#player-name-input").fill("Morale Boundary Audit");
+    await boundaryPage.locator("#start-new-game-btn").click();
+    await boundaryPage.locator("#start-screen").waitFor({state: "hidden", timeout: 30000});
+    await boundaryPage.waitForTimeout(900);
+    await boundaryPage.evaluate(async () => {
+        const {state} = await import("./js/core/state.js");
+        state.isPaused = true;
+        state.activeEvent = null;
+    });
+    const bigMessage = boundaryPage.locator("#big-message-close");
+    if (await bigMessage.isVisible().catch(() => false)) await bigMessage.click();
+
+    const trials = [
+        {name: "cap", startingMorale: 98, expectedApplied: 2},
+        {name: "headroom", startingMorale: 50, expectedApplied: 4}
+    ];
+    const results = [];
+    for (const trial of trials) {
+        await boundaryPage.evaluate(async ({startingMorale}) => {
+            const [{state}, {checkRandomEvents}, {renderUI}, {createEventParticipants}] = await Promise.all([
+                import("./js/core/state.js"),
+                import("./js/systems/events.js"),
+                import("./js/presentation/rendering/ui.js"),
+                import("./js/systems/people.js")
+            ]);
+            state.isPaused = true;
+            state.activeEvent = null;
+            state.morale = startingMorale;
+            state.nextIssueAtTick = Number.MAX_SAFE_INTEGER;
+            state.hiddenRealm = state.hiddenRealm || {tension: 0, prosperity: 0, mystery: 0, memories: [], activeThreads: [], completedThreads: []};
+            state.hiddenRealm.activeThreads = [{
+                id: "fishing",
+                stage: 2,
+                startedAtTick: state.tick,
+                nextAtTick: state.tick,
+                participants: createEventParticipants("fishing")
+            }];
+            state.hiddenRealm.completedThreads = [];
+            checkRandomEvents();
+            renderUI();
+        }, {startingMorale: trial.startingMorale});
+        await boundaryPage.waitForFunction(() => document.querySelector("#realm-event-title")?.textContent === "The River Compact", {timeout: 10000});
+        assert.equal(await boundaryPage.locator("#realm-event-modal").getAttribute("data-event-kind"), "chronicle", "boundary replay must open the chronicle modal");
+        assert.equal(await boundaryPage.locator("[data-event-choice]").count(), 2, "boundary replay must offer both choices");
+        const before = await realmSnapshot(boundaryPage);
+        assert.equal(before.activeEvent?.title, "The River Compact");
+        assert.equal(before.activeEvent?.moraleEffects?.[0], 4, "The River Compact must author a +4 morale effect");
+        assert.equal(round(before.morale), trial.startingMorale, "boundary fixture must start at the intended morale");
+        const label = await clickFirstChoice(boundaryPage);
+        assert.equal(label, "Renew the common fishery");
+        const after = await realmSnapshot(boundaryPage);
+        assert.equal(after.activeEvent, null, "boundary replay must close the event");
+        const applied = round(after.morale - before.morale);
+        const expectedApplied = round(Math.min(4, 100 - before.morale));
+        assert.equal(expectedApplied, trial.expectedApplied, "boundary fixture must exercise the intended cap condition");
+        assert.equal(applied, expectedApplied, "The River Compact morale gain must be the exact authored effect or its 100-point clamp");
+        assert.equal(after.completedThreads.length, 1, "boundary replay must complete the fishing chronicle");
+        results.push({
+            case: trial.name,
+            authored: 4,
+            before: round(before.morale),
+            after: round(after.morale),
+            applied,
+            expectedApplied,
+            capped: expectedApplied !== 4
+        });
+    }
+    assert.deepEqual(results.map(result => [result.case, result.applied]), [["cap", 2], ["headroom", 4]], "morale boundary results must prove both the clamp and the full effect");
+    await boundaryPage.close();
+    return results;
 }
 
 const report = {seed: SEED, chains: [], pageErrors, consoleErrors};
@@ -210,7 +290,12 @@ try {
                 gold: round(expected.resources[stage].gold || 0),
                 food: round(expected.resources[stage].food || 0)
             }, chain + " stage " + (stage + 1) + " resource delta");
-            assert.equal(round(after.morale - before.morale), expected.morale[stage], chain + " stage " + (stage + 1) + " morale delta");
+            const authoredMorale = expected.morale[stage];
+            assert.equal(before.activeEvent?.moraleEffects?.[0], authoredMorale, chain + " stage " + (stage + 1) + " authored morale effect");
+            const moraleDelta = round(after.morale - before.morale);
+            const moraleHeadroom = 100 - before.morale;
+            const expectedMoraleDelta = round(Math.max(-before.morale, Math.min(moraleHeadroom, authoredMorale)));
+            assert.equal(moraleDelta, expectedMoraleDelta, chain + " stage " + (stage + 1) + " morale delta (authored " + authoredMorale + ", 100-point cap applied)");
             assert.deepEqual({
                 prosperity: round(after.hidden.prosperity - before.hidden.prosperity),
                 tension: round(after.hidden.tension - before.hidden.tension)
@@ -246,7 +331,14 @@ try {
                 title: expected.titles[stage],
                 choice: label,
                 resources: resourceDelta,
-                morale: expected.morale[stage],
+                morale: authoredMorale,
+                moraleObserved: {
+                    before: round(before.morale),
+                    after: round(after.morale),
+                    applied: moraleDelta,
+                    headroom: round(moraleHeadroom),
+                    capped: expectedMoraleDelta !== authoredMorale
+                },
                 hidden: expected.hidden[stage],
                 politics: political,
                 queuedReward: reward || null
@@ -264,6 +356,8 @@ try {
         const modal = page.locator("#realm-event-modal");
         if (await modal.isVisible().catch(() => false)) assert.ok(await modal.evaluate(node => node.classList.contains("hidden")), "modal must be closed after completion");
     }
+
+    report.moraleBoundaries = await proveMoraleBoundaries();
 
     // The post-ambition fork is a real event, not a developer-only state flag.
     // Seed the completed royal ladder, let the normal event scheduler offer it,
