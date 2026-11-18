@@ -55,6 +55,7 @@ import { WAREHOUSE_PROFILES } from "../systems/city-config.js";
 import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
 import { foresterRangeSummary } from "../systems/fields.js";
 import { renderCityPanel, handleCityPanelClick } from "./city-panel.js";
+import { openBuildPanel } from "./build-ui.js";
 import { renderItemLexicon } from "./item-lexicon-panel.js";
 import { renderProgressive, cancelProgressiveRender } from "./progressive-render.js";
 let activePanel="kingdom",panelRevealToken=0,expandedBuildingId=null,expandedBuildingLogistics=false,dynastyStylesRequested=false,endeavourFunding=1,timelineRefreshFrame=0,timelineHydrationToken=0,chronicleProgressToken=0,chronicleSectionsToken=0,detailRefreshToken=0;
@@ -1340,7 +1341,11 @@ export function setupManagementUI(){
   setNavigationActive(target);
   if(target==="people"){$("people-btn")?.click();return;}
   if(target==="settings"){$("settings-btn")?.click();return;}
-  if(target==="build"){$("build-open-btn")?.click();return;}
+  if(target==="build"){
+   if(button.dataset.kacBuildCategory)openBuildPanel(button.dataset.kacBuildCategory,button.dataset.kacBuildType||null);
+   else $("build-open-btn")?.click();
+   return;
+  }
   if(target==="market"){$("tab-2")?.click();return;}
   if(["kingdom","government","politics","nobility","diplomacy","explore","biome","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
    if(target==="chronicle")resetTimelineView(state.year);

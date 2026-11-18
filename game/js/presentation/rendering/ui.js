@@ -144,11 +144,19 @@ function renderAmbition(){
     const progress=document.querySelector("#ambition-section .ambition-progress");
     if(progress)progress.setAttribute("aria-valuenow",String(Math.round(snapshot.progress*100)));
     setText("ambition-counsel-text",counsel.text);
+    setText("ambition-counsel-evidence",counsel.evidence||"");
     const counselAction=document.getElementById("ambition-counsel-action");
     if(counselAction){
         counselAction.textContent=counsel.actionLabel;
         counselAction.hidden=!counsel.panel;
         if(counsel.panel)counselAction.dataset.kacPanel=counsel.panel;
+        else delete counselAction.dataset.kacPanel;
+        if(counsel.buildCategory)counselAction.dataset.kacBuildCategory=counsel.buildCategory;
+        else delete counselAction.dataset.kacBuildCategory;
+        if(counsel.buildType)counselAction.dataset.kacBuildType=String(counsel.buildType);
+        else delete counselAction.dataset.kacBuildType;
+        const label=counsel.buildCategory?counsel.actionLabel+" · OPENS "+counsel.buildCategory.toUpperCase():counsel.actionLabel;
+        if(counselAction.getAttribute("aria-label")!==label)counselAction.setAttribute("aria-label",label);
     }
     section.classList.toggle("is-complete",snapshot.allComplete&&!snapshot.eternal&&!snapshot.agenda);
     section.classList.toggle("is-eternal",Boolean(snapshot.eternal||snapshot.agenda));
@@ -158,7 +166,7 @@ function renderFirstSession(){
     const section=document.getElementById("first-session-section");
     if(!section)return;
     const snapshot=getFirstSessionSnapshot();
-    const signature=snapshot.items.map(item=>item.done?1:0).join("")+"|"+snapshot.completed;
+    const signature=snapshot.items.map(item=>item.done?1:0).join("")+"|"+snapshot.completed+"|"+snapshot.currentId+"|"+(snapshot.currentDetail||"")+"|"+(snapshot.needText||"");
     if(signature===lastFirstSessionSignature)return;
     lastFirstSessionSignature=signature;
     setText("first-session-heading",snapshot.allComplete?"FIRST SESSION COMPLETE":"FIRST SESSION");
@@ -166,17 +174,23 @@ function renderFirstSession(){
     section.classList.toggle("is-complete",snapshot.allComplete);
     const list=document.getElementById("first-session-list");
     const complete=document.getElementById("first-session-complete");
+    const need=document.getElementById("first-session-need");
     if(complete)complete.hidden=!snapshot.allComplete;
+    if(need){
+        need.hidden=!snapshot.needText;
+        setText("first-session-need",snapshot.needText?"REALM NEED · "+snapshot.needText:"");
+    }
     if(!list)return;
     list.hidden=snapshot.allComplete;
     if(snapshot.allComplete)return;
-    const currentIndex=snapshot.items.findIndex(item=>!item.done);
     list.innerHTML=snapshot.items.map((item,index)=>{
-        const done=item.done,current=!done&&index===currentIndex;
+        const done=item.done,current=!done&&item.id===snapshot.currentId;
         return '<li class="first-session-step'+(done?' is-done':'')+(current?' is-current':'')+'"'+(current?' aria-current="step"':'')+'>'+
             '<span class="first-session-mark" aria-hidden="true">'+(done?'✓':index+1)+'</span>'+
-            '<span class="first-session-label">'+esc(item.label)+'</span>'+
-            '<span class="first-session-status">'+(done?'DONE':current?'NEXT':'OPEN')+'</span></li>';
+            '<span class="first-session-label" title="'+esc(item.detail||item.label)+'">'+esc(item.label)+'</span>'+
+            '<span class="first-session-status">'+(done?'DONE':current?'NEXT':'OPEN')+'</span>'+
+            (current&&snapshot.currentDetail?'<span class="first-session-detail">'+esc(snapshot.currentDetail)+'</span>':'')+
+            '</li>';
     }).join("");
 }
 

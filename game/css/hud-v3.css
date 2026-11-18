@@ -848,6 +848,7 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
 .ambition-counsel{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;margin-top:8px;padding-top:7px;border-top:1px solid #7d64412e}
 .ambition-counsel__label{font:700 6.5px var(--ui-number-font);letter-spacing:.08em;color:#d8bd82}
 .ambition-counsel p{margin:0;color:#bda987;font-size:7.5px;line-height:1.4}
+.ambition-counsel__evidence{grid-column:2;margin:0;padding:3px 6px;border-left:2px solid #7d6441;background:#00000024;color:#a99470;font:600 6.8px var(--ui-number-font);letter-spacing:.02em;line-height:1.45}
 .ambition-counsel__action{grid-column:1/-1;justify-self:start;border:1px solid #7d6441;border-radius:1px;background:#21180f;color:#d8bd82;font:700 7px var(--ui-number-font);letter-spacing:.06em;padding:4px 7px;cursor:pointer}
 .ambition-counsel__action:hover,.ambition-counsel__action:focus-visible{border-color:#c7a85f;color:#f0d99d;outline:none}
 
@@ -869,6 +870,9 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
 .first-session-step.is-done .first-session-status{color:#9fc48a}
 .first-session-step.is-current .first-session-status{color:#d8bd82}
 .first-session-step.is-done .first-session-label{color:#b9c49a}
+.first-session-detail{grid-column:2/-1;margin-top:-1px;color:#a99470;font:600 6.6px var(--ui-number-font);line-height:1.35;letter-spacing:.01em}
+.first-session-need{margin:6px 0 0;padding:5px 7px;border-left:2px solid #b06a4a;background:#3a2419;color:#e0b891;font:700 7px var(--ui-body-font);line-height:1.4;letter-spacing:.02em}
+.first-session-need[hidden]{display:none!important}
 .first-session-section.is-complete{background:linear-gradient(180deg,#2f2b1d,#211b15)}
 .first-session-section.is-complete .section-heading span:first-child{color:#d8bd82}
 .first-session-complete{margin:6px 0 0;padding:6px 8px;border:1px solid #7d6441;border-radius:2px;background:linear-gradient(180deg,#3b3220,#241d14);color:#e5d3a7;font:700 8px var(--ui-body-font);line-height:1.45;letter-spacing:.03em}

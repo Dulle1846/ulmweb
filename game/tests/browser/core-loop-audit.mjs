@@ -92,9 +92,13 @@ async function stateProbe() {
             cardRewards: Array.isArray(state.cardRewardQueue) ? state.cardRewardQueue.length : 0,
             counsel: {
                 id: counsel.id,
+                stepId: counsel.stepId,
                 text: counsel.text,
+                evidence: counsel.evidence,
                 action: counsel.actionLabel,
-                panel: counsel.panel
+                panel: counsel.panel,
+                buildCategory: counsel.buildCategory,
+                buildType: counsel.buildType
             },
             counselText: document.querySelector("#ambition-counsel-text")?.textContent?.trim() || "",
             counselAction: document.querySelector("#ambition-counsel-action")?.textContent?.trim() || "",
@@ -414,7 +418,9 @@ try {
     assert.equal(start.firstSession.count, "1 / 5", "founding must be the first completed checklist step");
     assert.equal(start.firstSession.items.length, 5, "the first-session checklist must render all five steps");
     assert.deepEqual(start.firstSession.items.map(item => item.done), [true, false, false, false, false]);
-    assert.equal(start.firstSession.items[1].current, true, "the first incomplete step must be marked current");
+    assert.equal(start.counsel.stepId, "road", "the fresh realm's live need is its missing road");
+    assert.equal(start.firstSession.items.find(item => item.label === "Lay your first road")?.current, true, "the checklist NEXT marker must match the live counsel");
+    assert.equal(start.firstSession.items.find(item => item.label === "Build your first house")?.current, false, "a later milestone must not compete with the live counsel");
 
     // A fresh player can use the recommendation itself to enter the real build flow.
     const nextTarget = await clickNextMove();

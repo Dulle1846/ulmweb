@@ -9,6 +9,10 @@ import { getCitySummary, getLogisticsSnapshot } from "../systems/logistics.js";
 import { getSettlementSnapshot } from "../systems/settlement.js";
 
 let activeCategory="roads";
+let recommendedBuild=null;
+function recommendMarkup(recommended){
+    return recommended?'<em class="build-option-recommend">NEXT MOVE</em>':'';
+}
 
 const ROAD_SYMBOLS={dirt:"dirt-road",gravel:"gravel-road",paved:"paved-road"};
 const BUILDING_SYMBOLS={
@@ -59,12 +63,13 @@ function renderBuildOptions(){
         button.setAttribute("aria-pressed",String(active));
     });
     if(activeCategory==="roads"){
-        container.innerHTML=Object.values(ROAD_TYPES).map(road=>(
-            '<button class="build-option" type="button" data-road-type="'+road.id+'">'+
+        container.innerHTML=Object.values(ROAD_TYPES).map(road=>{
+            const recommended=recommendedBuild?.category==="roads"&&recommendedBuild?.type===road.id;
+            return '<button class="build-option'+(recommended?' is-recommended':'')+'" type="button" data-road-type="'+road.id+'">'+
                 '<span class="build-option-art"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#'+ROAD_SYMBOLS[road.id]+'"></use></svg></span>'+
-                '<span class="build-option-copy"><strong>'+road.label+'</strong><small>'+road.speed.toFixed(2)+'× travel speed</small><small>Cost: '+formatCost(road.cost)+'</small><small>Daily upkeep: '+road.upkeep.toFixed(4)+' gold</small></span>'+
-            '</button>'
-        )).join("")+
+                '<span class="build-option-copy">'+recommendMarkup(recommended)+'<strong>'+road.label+'</strong><small>'+road.speed.toFixed(2)+'× travel speed</small><small>Cost: '+formatCost(road.cost)+'</small><small>Daily upkeep: '+road.upkeep.toFixed(4)+' gold</small></span>'+
+            '</button>';
+        }).join("")+
             '<button class="build-option bulldoze-option" type="button" data-road-remove="true">'+
                 '<span class="build-option-art" aria-hidden="true">🛠️</span>'+
                 '<span class="build-option-copy"><strong>Bulldoze road</strong><small>Remove a road tile and recover 25% of its materials</small><small>No demolition cost</small></span>'+
@@ -80,9 +85,10 @@ function renderBuildOptions(){
             const cost=getBuildingCost(type);
             const canPay=affordable(costShare(cost,CONSTRUCTION_SHARE));
             const name=BUILDING_LABELS[type]||("Building "+type);
-            return '<button class="build-option building-build-option" type="button" data-build-type="'+type+'"'+(canPay?'':' aria-disabled="true"')+'>'+
+            const recommended=recommendedBuild?.category===activeCategory&&Number(recommendedBuild?.type)===Number(type);
+            return '<button class="build-option building-build-option'+(recommended?' is-recommended':'')+'" type="button" data-build-type="'+type+'"'+(canPay?'':' aria-disabled="true"')+'>'+
                 '<span class="build-option-art"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+(BUILDING_SYMBOLS[type]||"cottage")+'"></use></svg></span>'+
-                '<span class="build-option-copy"><strong>'+name+'</strong><small>'+buildingDetail(type)+'</small><small>Cost: '+formatCost(cost)+'</small><small>Starts a site · first 25% charged now · rest delivered by carriers</small></span>'+
+                '<span class="build-option-copy">'+recommendMarkup(recommended)+'<strong>'+name+'</strong><small>'+buildingDetail(type)+'</small><small>Cost: '+formatCost(cost)+'</small><small>Starts a site · first 25% charged now · rest delivered by carriers</small></span>'+
             '</button>';
         }).join("");
         container.querySelectorAll("[data-build-type]").forEach(button=>{
@@ -150,18 +156,27 @@ export function cancelBuildPlacement(message="BUILD MODE CANCELLED"){
     renderBuildOptions();
     return active;
 }
+export function openBuildPanel(category,type=null){
+    const modal=document.getElementById("build-modal");
+    if(!modal)return;
+    if(category&&BUILD_MENU.some(entry=>entry.id===category))activeCategory=category;
+    recommendedBuild=category&&type!=null?{category,type}:null;
+    renderBuildOptions();
+    modal.classList.remove("hidden");
+}
 export function setupBuildUI(){
     const modal=document.getElementById("build-modal");
     const open=document.getElementById("build-open-btn");
     if(!modal||!open||modal.dataset.initialized==="true")return;
     modal.dataset.initialized="true";
-    open.addEventListener("click",()=>{renderBuildOptions();modal.classList.remove("hidden");});
+    open.addEventListener("click",()=>{recommendedBuild=null;renderBuildOptions();modal.classList.remove("hidden");});
     document.getElementById("build-close-btn")?.addEventListener("click",closeModal);
     modal.addEventListener("click",event=>{if(event.target===modal)closeModal();});
     modal.addEventListener("click",event=>{
         const category=event.target.closest("[data-build-category]");
         if(!category)return;
         activeCategory=category.dataset.buildCategory;
+        recommendedBuild=null;
         renderBuildOptions();
     });
     document.getElementById("road-build-cancel")?.addEventListener("click",()=>cancelBuildPlacement());

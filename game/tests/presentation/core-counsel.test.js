@@ -27,11 +27,16 @@ test("core counsel prioritizes food, housing, roads and cards", () => {
 test("core counsel points to the existing panels and stays quiet once the loop is steady", () => {
     const food = getCoreCounsel(realm({ resources: { food: 20, wood: 180, stone: 95, gold: 75 } }));
     assert.equal(food.panel, "build");
-    assert.equal(food.actionLabel, "BUILD");
+    assert.equal(food.actionLabel, "BUILD FARM");
+    assert.equal(food.buildCategory, "production");
+    assert.equal(food.buildType, TYPE.FARM);
+    assert.match(food.evidence, /Granary 20 food/);
 
     const cards = getCoreCounsel(realm({ hand: [] }));
     assert.equal(cards.panel, "cards");
     assert.equal(cards.actionLabel, "OPEN CARDS");
+    assert.equal(cards.stepId, "card");
+    assert.match(cards.evidence, /Hand 0 cards/);
 
     assert.equal(getCoreCounsel(realm()).id, "steady");
     assert.equal(getCoreCounsel(realm()).panel, "cards");
@@ -78,13 +83,25 @@ test("core counsel does not recommend an unaffordable cottage or road", () => {
     assert.equal(housing.id, "housing");
     assert.equal(housing.panel, "cards");
 
-    const roads = getCoreCounsel(realm({
-        resources: { food: 200, wood: 0, stone: 0, gold: 0 },
-        statistics: { totalRoadTilesBuilt: 0 },
-        hand: [{ id: "card" }]
-    }));
+        const roads = getCoreCounsel(realm({ resources: { food: 200, wood: 0, stone: 0, gold: 0 }, statistics: { totalRoadTilesBuilt: 0 }, hand: [{ id: "card" }] }));
     assert.equal(roads.id, "roads");
     assert.equal(roads.panel, "cards");
+    assert.match(roads.evidence, /short/);
+});
+
+test("core counsel carries the exact build target and measured evidence for an affordable step", () => {
+    const roads = getCoreCounsel(realm({ statistics: { totalRoadTilesBuilt: 0 } }));
+    assert.equal(roads.buildCategory, "roads");
+    assert.equal(roads.buildType, "dirt");
+    assert.equal(roads.stepId, "road");
+    assert.match(roads.evidence, /Road tiles 0/);
+
+    const villagers = Array.from({ length: 4 }, () => ({ dead: false, type: TYPE.VILLAGER }));
+    const housing = getCoreCounsel(realm({ entities: [...villagers, { dead: false, type: TYPE.HOUSE }] }));
+    assert.equal(housing.buildCategory, "housing");
+    assert.equal(housing.buildType, TYPE.HOUSE);
+    assert.equal(housing.stepId, "house");
+    assert.match(housing.evidence, /Beds 4 · 4 residents/);
 });
 
 test("core counsel does not recommend a step before the realm is founded", () => {
