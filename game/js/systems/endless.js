@@ -11,6 +11,10 @@
 // long-running realm is never silently stranded on a terminal save.
 import { state } from "../core/state.js";
 import { addLog } from "../core/event-log.js";
+import { TYPE } from "../core/types.js";
+import { spawnEntity, buildingOverlaps } from "../world/entities.js";
+import { addResource } from "./resources.js";
+import { depositGood } from "./logistics.js";
 
 export const ENDLESS_VERSION = 1;
 export const ENDLESS_AGE_YEARS = 25;
@@ -41,7 +45,7 @@ function ordinal(age) {
 
 function normalizeHistoryEntry(entry) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
-    const kind = entry.kind === "rescue" || entry.kind === "keep" || entry.kind === "age" ? entry.kind : null;
+    const kind = entry.kind === "rescue" || entry.kind === "keep" || entry.kind === "age" || entry.kind === "relief" ? entry.kind : null;
     if (!kind) return null;
     return {
         kind,
@@ -66,6 +70,8 @@ export function createEndlessState(input = {}) {
         rescues: Math.min(ENDLESS_COUNT_LIMIT, nonNegative(source.rescues)),
         keepHolds: Math.min(ENDLESS_COUNT_LIMIT, nonNegative(source.keepHolds)),
         lastRescueTick: nonNegative(source.lastRescueTick),
+        reliefs: Math.min(ENDLESS_COUNT_LIMIT, nonNegative(source.reliefs)),
+        lastReliefTick: nonNegative(source.lastReliefTick),
         history: Array.isArray(source.history)
             ? source.history.map(normalizeHistoryEntry).filter(Boolean).slice(0, ENDLESS_HISTORY_LIMIT)
             : []
@@ -174,6 +180,87 @@ export function holdEndlessKeep(target) {
     return true;
 }
 
+// Before an endless realm loses its last household, the crown can send one
+// bounded relief expedition. It restores only missing essentials, staffs them
+// with the returning settlers, and tops up the stores. Two years must pass
+// between expeditions; the normal city economy still has to carry the realm.
+export function updateEndlessRelief() {
+    const endless = ensureEndlessState();
+    if (!endless.enabled) return false;
+    const tick = nonNegative(state.tick);
+    if (tick < 800 || tick - nonNegative(endless.lastReliefTick) < 800) return false;
+    const living = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER).length;
+    const food = Number(state.resources?.food) || 0;
+    const firewood = Number(state.city?.needs?.summary?.firewoodStock) || 0;
+    if (living >= 12 && food >= 40 && firewood >= 2) return false;
+    const keep = state.entities.find(entity => !entity.dead && entity.type === TYPE.KEEP);
+    if (!keep) return false;
+
+    const findReliefSite = (type) => {
+        for (let radius = 3; radius <= 18; radius++) {
+            for (let dx = -radius; dx <= radius; dx++) {
+                for (let dy = -radius; dy <= radius; dy++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+                    const x = keep.x + dx, y = keep.y + dy;
+                    if (!buildingOverlaps(x, y, type)) return { x, y };
+                }
+            }
+        }
+        return null;
+    };
+    const restore = (type) => {
+        if (state.entities.some(entity => !entity.dead && entity.type === type &&
+            !(entity.construction && entity.construction.stage < 3))) return null;
+        const site = findReliefSite(type);
+        return site ? spawnEntity(site.x, site.y, type) : null;
+    };
+    const farm = restore(TYPE.FARM);
+    const mill = restore(TYPE.MILL);
+    const bakery = restore(TYPE.BAKERY);
+    const sawmill = restore(TYPE.SAWMILL);
+    const warehouse = restore(TYPE.WAREHOUSE);
+    const homes = state.entities.filter(entity => !entity.dead &&
+        [TYPE.HOUSE, TYPE.TENT, TYPE.STONE_HOUSE].includes(entity.type) &&
+        !(entity.construction && entity.construction.stage < 3));
+    const jobs = [
+        [farm, "farmer"], [mill, "miller"], [mill, "miller"],
+        [bakery, "baker"], [sawmill, "sawyer"], [warehouse, "hauler"]
+    ];
+    const settlers = Math.min(6, Math.max(0, 12 - living));
+    for (let index = 0; index < settlers; index++) {
+        const home = homes.length ? homes[index % homes.length] : keep;
+        const villager = spawnEntity(keep.x + (index % 3) - 1, keep.y + 1 + Math.floor(index / 3), TYPE.VILLAGER);
+        if (!villager) break;
+        villager.home = { x: home.x, y: home.y };
+        villager.anchor = { x: home.x, y: home.y };
+        villager.householdId = home === keep ? "keep:" + keep.x + ":" + keep.y : "house:" + home.x + ":" + home.y;
+        villager.lastAgedYear = state.year;
+        villager.jobRefreshTimer = 0;
+        villager.civicOrigin = "crown-relief";
+        const [workplace, job] = jobs[index] || [null, null];
+        if (workplace && !workplace.dead) {
+            villager.workplace = workplace;
+            villager.job = job;
+            villager.anchor = { x: workplace.x, y: workplace.y };
+            villager.jobRefreshTimer = 220;
+        }
+    }
+    const foodTarget = living === 0 ? 600 : 320;
+    const foodMissing = Math.max(0, foodTarget - food);
+    const woodMissing = Math.max(0, 200 - (Number(state.resources?.wood) || 0));
+    const stoneMissing = Math.max(0, 80 - (Number(state.resources?.stone) || 0));
+    if (foodMissing > 0) addResource("food", foodMissing);
+    if (woodMissing > 0) addResource("wood", woodMissing);
+    if (stoneMissing > 0) addResource("stone", stoneMissing);
+    if (firewood < 2 && warehouse) depositGood("firewood", 40, warehouse.x, warehouse.y);
+    state.morale = Math.max(state.morale, 35);
+    endless.reliefs = Math.min(ENDLESS_COUNT_LIMIT, nonNegative(endless.reliefs) + 1);
+    endless.lastReliefTick = tick;
+    pushHistory(endless, "relief");
+    addLog("THE CROWN SENDS RELIEF — THE HEARTH IS REKINDLED", "#e4bd72", "endless");
+    return true;
+}
+
 export function getEndlessSnapshot() {
     const endless = ensureEndlessState();
     const year = positiveYear(state.year);
@@ -192,7 +279,9 @@ export function getEndlessSnapshot() {
         collapses: endless.collapses,
         rescues: endless.rescues,
         keepHolds: endless.keepHolds,
+        reliefs: endless.reliefs,
         lastRescueTick: endless.lastRescueTick,
+        lastReliefTick: endless.lastReliefTick,
         historyLength: endless.history.length,
         label
     };

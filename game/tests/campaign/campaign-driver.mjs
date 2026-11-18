@@ -184,6 +184,14 @@ function inBuildSector(type, dx, dy) {
     return true;
 }
 
+function snowScarNear(x, y, radius = 6) {
+    const recovery = state.disasterRecovery;
+    if (!recovery) return false;
+    const wrecks = [...(recovery.pending || []), ...(recovery.history || [])];
+    return wrecks.some(entry => /snow|avalanche/i.test(String(entry.cause || entry.causeLabel || "")) &&
+        Math.hypot(Number(entry.x) - x, Number(entry.y) - y) <= radius);
+}
+
 function findSite(type, maxRadius) {
     const centre = keepPosition();
     const candidates = [];
@@ -196,6 +204,7 @@ function findSite(type, maxRadius) {
                 const y = centre.y + dy;
                 const check = canPlaceBuilding(type, x, y);
                 if (!check.ok) continue;
+                if (snowScarNear(x, y)) continue;
                 if (footprintTouches(type, x, y, corridorTiles())) continue;
                 candidates.push({ x, y, score: siteScore(type, x, y) });
             }
@@ -243,6 +252,12 @@ function nextBuilding() {
     if (countType(TYPE.BAKERY) < 2) return { type: TYPE.BAKERY, radius: 24 };
     if (countType(TYPE.MILL) < 2) return { type: TYPE.MILL, radius: 24 };
     if (countType(TYPE.HOUSE) < 16) return { type: TYPE.HOUSE, radius: 30 };
+    // Finish the food and fuel chains before optional coverage upgrades. A
+    // blocked well used to freeze the one-site pipeline; production is the
+    // part of the settlement that keeps residents alive through winter.
+    if (countType(TYPE.BAKERY) < 3) return { type: TYPE.BAKERY, radius: 28 };
+    if (countType(TYPE.MILL) < 3) return { type: TYPE.MILL, radius: 28 };
+    if (countType(TYPE.SAWMILL) < 2) return { type: TYPE.SAWMILL, radius: 28 };
     const agenda = getCrownEraSnapshot()?.agenda;
     // The campaign is a deliberate player: when the era agenda asks for housing,
     // it builds the next cottage instead of leaving the objective blocked by a

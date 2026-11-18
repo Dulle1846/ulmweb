@@ -56,7 +56,7 @@ import { updateCoastHazards } from "../world/coast-hazards.js";
 import { updateSnowHazards } from "../world/snow-hazards.js";
 import { updateDisasterRecovery } from "../systems/disaster-recovery.js";
 import { updateWinterAnnual, updateWinterEconomy } from "../world/winter-economy.js";
-import { isEndlessEnabled, recoverEndlessMorale, updateEndlessRealm } from "../systems/endless.js";
+import { isEndlessEnabled, recoverEndlessMorale, updateEndlessRealm, updateEndlessRelief } from "../systems/endless.js";
 import { updateSpecialBiomes } from "../systems/special-biome-state.js";
 import { updateRoadWear } from "../systems/roads.js";
 import { updateSettlementMaintenance } from "../systems/settlement-owners.js";
@@ -245,6 +245,7 @@ function finishSimulationTick(newborn) {
     // Endless ages advance once per 25 years. A collapse is a recoverable
     // setback in an endless realm rather than a terminal game-over.
     updateEndlessRealm();
+    updateEndlessRelief();
     // Rare-biome discovery is checked every 200 ticks; yields and hazards
     // settle once per year. The call itself is a couple of integer reads.
     updateSpecialBiomes();
