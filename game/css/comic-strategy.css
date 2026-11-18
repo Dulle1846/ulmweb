@@ -68,6 +68,33 @@
 .build-logistics-summary{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:-2px 0 12px;padding:8px 11px;background:#dfccaa;border:1px solid #b18a52;border-radius:6px;color:#5b4329;font-size:10px;letter-spacing:.05em}
 .build-logistics-summary b{color:#2f5f42}
 .build-logistics-summary small{flex:1 1 100%;color:#76583a}
+.road-condition{grid-column:1/-1;padding:11px 13px;border:2px solid #a98551;border-radius:9px;background:linear-gradient(145deg,#f7eed8,#ead6ad);color:#4a3322}
+.road-condition.is-worn{border-color:#b96b34;background:linear-gradient(145deg,#f8e6c6,#e8c896)}
+.road-condition.is-bad{border-color:#9a4232;background:linear-gradient(145deg,#f4d9bd,#dfb28e)}
+.road-condition-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.road-condition-head span{font-size:9px;font-weight:1000;letter-spacing:.12em;color:#6b4a2d}
+.road-condition-head strong{font-family:Georgia,serif;font-size:24px;color:#2f5f42}
+.road-condition.is-worn .road-condition-head strong{color:#9b4a2a}
+.road-condition.is-bad .road-condition-head strong{color:#8d3027}
+.road-condition-head em{margin-left:auto;padding:2px 7px;border:1px solid currentColor;border-radius:3px;color:#3e7a4f;font-size:8px;font-style:normal;font-weight:1000;letter-spacing:.09em}
+.road-condition.is-worn .road-condition-head em{color:#9b4a2a}
+.road-condition.is-bad .road-condition-head em{color:#8d3027}
+.road-condition-meter{height:8px;margin:7px 0 8px;overflow:hidden;border:1px solid #8d6b43;border-radius:6px;background:#b99b6d}
+.road-condition-meter i{display:block;height:100%;background:linear-gradient(90deg,#4f8b58,#87a95b)}
+.road-condition.is-worn .road-condition-meter i{background:linear-gradient(90deg,#b87932,#d5a44c)}
+.road-condition.is-bad .road-condition-meter i{background:linear-gradient(90deg,#913f30,#c16b43)}
+.road-condition-reason{margin:0;color:#5b4329;font-size:11px;line-height:1.45}
+.road-condition-reason b{color:#3d5d3f}
+.road-condition.is-worn .road-condition-reason b,.road-condition.is-bad .road-condition-reason b{color:#8f452a}
+.road-condition-types{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.road-condition-types span{padding:3px 6px;border:1px solid #b99a68;border-radius:4px;background:#f5e9d0;color:#6b4c2f;font-size:8px;font-weight:900;letter-spacing:.05em}
+.road-condition-types b{color:#2f5f42}
+.road-condition-last{margin:6px 0 0;color:#76583a;font-size:9px}
+.road-condition-action{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:8px;border-top:1px solid #c7aa79}
+.road-condition-action small{color:#6b4c2f;font-size:10px}
+.road-condition-action button{min-height:31px;padding:0 10px;border:2px solid #4e6d46;border-radius:5px;background:linear-gradient(#7fa361,#527a49);color:#fff6dc;font-size:9px;font-weight:1000;letter-spacing:.06em;cursor:pointer}
+.road-condition-action button:hover:not(:disabled){filter:brightness(1.08)}
+.road-condition-action button:disabled{border-color:#9d825b;background:#cbb78e;color:#745b3e;cursor:not-allowed;opacity:.8}
 .map-swatch--water{background:#548ca8}.map-swatch--social{background:#b57942}.map-swatch--safety{background:#7b8b57}.map-swatch--health{background:#9a6d7e}
 .map-swatch--carrier{background:#e4bd72}.map-swatch--warehouse{background:#8a6843}.map-swatch--job{background:#5d7c89}
 .map-swatch--fallow{background:#9b8156}.map-swatch--sown{background:#b9a45c}.map-swatch--growing{background:#71934d}.map-swatch--ripe{background:#d8ac45}

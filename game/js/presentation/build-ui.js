@@ -2,7 +2,7 @@
 // honest placement flow. Selecting a building creates a real construction
 // site; its first material share is charged only when the site is placed.
 import { state } from "../core/state.js";
-import { ROAD_TYPES,getRoadCount,setRoadBuildMode,clearRoadBuildMode,getRoadBuildMode } from "../systems/roads.js";
+import { ROAD_TYPES,getRoadCount,setRoadBuildMode,clearRoadBuildMode,getRoadBuildMode,getRoadConditionSnapshot,repairWornRoads } from "../systems/roads.js";
 import { BUILD_MENU, BUILDING_LABELS, HOUSING_TIERS, RECIPES, SERVICE_DEFINITIONS, CONSTRUCTION_SHARE, costShare, isHousingType } from "../systems/city-config.js";
 import { getBuildingCost } from "../systems/construction.js";
 import { getCitySummary, getLogisticsSnapshot } from "../systems/logistics.js";
@@ -12,6 +12,36 @@ let activeCategory="roads";
 let recommendedBuild=null;
 function recommendMarkup(recommended){
     return recommended?'<em class="build-option-recommend">NEXT MOVE</em>':'';
+}
+function esc(value){
+    return String(value).replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
+}
+function roadConditionMarkup(){
+    const condition=getRoadConditionSnapshot();
+    if(!condition.tiles){
+        return '<section class="road-condition is-empty" aria-label="Road condition">'+
+            '<div class="road-condition-head"><span>ROAD CONDITION</span><strong>NO ROADS</strong><em>UNSURVEYED</em></div>'+
+            '<p class="road-condition-reason">No road network yet. Lay a dirt path; the next annual survey will measure wear.</p>'+
+        '</section>';
+    }
+    const status=condition.average>=95?"SOUND":condition.average>=80?"WORN":"BADLY WORN";
+    const kind=status==="SOUND"?"is-sound":status==="WORN"?"is-worn":"is-bad";
+    const last=condition.lastWear;
+    const survey=last
+        ? "Year "+last.year+" survey: "+last.carriers+" active carrier"+(last.carriers===1?"":"s")+" on "+esc(last.climate)+" roads "+(last.changed?"wore "+last.changed+" tile"+(last.changed===1?"":"s")+" by "+last.loss+" condition points":"recorded no measurable wear")+"."
+        : "No annual survey has run yet; roads begin at 100%.";
+    const types=Object.values(ROAD_TYPES).filter(road=>condition.byType[road.id]).map(road=>'<span>'+esc(road.label.toUpperCase())+' <b>'+condition.byType[road.id].average.toFixed(1)+'%</b></span>').join("");
+    const lastRepair=condition.lastRepair?'<p class="road-condition-last">Last repair: year '+condition.lastRepair.year+' · '+condition.lastRepair.tiles+' tile'+(condition.lastRepair.tiles===1?'':'s')+' · '+formatCost(condition.lastRepair.cost)+'</p>':'';
+    const canRepair=condition.worn>0&&condition.repairAffordable;
+    const button=condition.worn===0?"ALL ROADS SOUND":condition.repairAffordable?"REPAIR "+condition.worn+" WORN TILE"+(condition.worn===1?"":"S"):"MATERIALS SHORT";
+    return '<section class="road-condition '+kind+'" aria-label="Road condition">'+
+        '<div class="road-condition-head"><span>ROAD CONDITION</span><strong>'+condition.average.toFixed(1)+'%</strong><em>'+status+'</em></div>'+
+        '<div class="road-condition-meter" role="meter" aria-label="Average road condition" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+condition.average+'"><i style="width:'+condition.average+'%"></i></div>'+
+        '<p class="road-condition-reason"><b>'+survey+'</b> Dirt paths wear fastest. Worn roads slow every carrier and raise emergency upkeep; repair restores full speed.</p>'+
+        '<div class="road-condition-types">'+types+'<span>WORST <b>'+condition.worst.toFixed(1)+'%</b></span></div>'+
+        lastRepair+
+        '<div class="road-condition-action"><small>'+(condition.worn>0?"Repair cost: "+formatCost(condition.repairCost):"No repair needed.")+'</small><button type="button" data-repair-roads'+(canRepair?'':' disabled')+'>'+button+'</button></div>'+
+    '</section>';
 }
 
 const ROAD_SYMBOLS={dirt:"dirt-road",gravel:"gravel-road",paved:"paved-road"};
@@ -63,11 +93,11 @@ function renderBuildOptions(){
         button.setAttribute("aria-pressed",String(active));
     });
     if(activeCategory==="roads"){
-        container.innerHTML=Object.values(ROAD_TYPES).map(road=>{
+        container.innerHTML=roadConditionMarkup()+Object.values(ROAD_TYPES).map(road=>{
             const recommended=recommendedBuild?.category==="roads"&&recommendedBuild?.type===road.id;
             return '<button class="build-option'+(recommended?' is-recommended':'')+'" type="button" data-road-type="'+road.id+'">'+
                 '<span class="build-option-art"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/city-builder-sprites.svg#'+ROAD_SYMBOLS[road.id]+'"></use></svg></span>'+
-                '<span class="build-option-copy">'+recommendMarkup(recommended)+'<strong>'+road.label+'</strong><small>'+road.speed.toFixed(2)+'× travel speed</small><small>Cost: '+formatCost(road.cost)+'</small><small>Daily upkeep: '+road.upkeep.toFixed(4)+' gold</small></span>'+
+                '<span class="build-option-copy">'+recommendMarkup(recommended)+'<strong>'+road.label+'</strong><small>'+road.speed.toFixed(2)+'× when new</small><small>Cost: '+formatCost(road.cost)+'</small><small>Base upkeep '+road.upkeep.toFixed(4)+' gold/day</small></span>'+
             '</button>';
         }).join("")+
             '<button class="build-option bulldoze-option" type="button" data-road-remove="true">'+
@@ -78,6 +108,12 @@ function renderBuildOptions(){
             button.addEventListener("click",()=>startRoad(button.dataset.roadType));
         });
         container.querySelector("[data-road-remove]")?.addEventListener("click",()=>startRoad("remove"));
+        container.querySelector("[data-repair-roads]")?.addEventListener("click",()=>{
+            const result=repairWornRoads();
+            if(result.ok)setStatus("REPAIRED "+result.repaired+" ROAD TILE"+(result.repaired===1?"":"S")+" · "+formatCost(result.cost));
+            else setStatus(String(result.reason).toUpperCase(),"error");
+            renderBuildOptions();
+        });
     }else{
         const category=BUILD_MENU.find(entry=>entry.id===activeCategory);
         const types=category?.types||[];
@@ -178,6 +214,9 @@ export function setupBuildUI(){
         activeCategory=category.dataset.buildCategory;
         recommendedBuild=null;
         renderBuildOptions();
+    });
+    window.addEventListener("kac:road-survey",()=>{
+        if(activeCategory==="roads"&&!modal.classList.contains("hidden"))renderBuildOptions();
     });
     document.getElementById("road-build-cancel")?.addEventListener("click",()=>cancelBuildPlacement());
     document.addEventListener("keydown",event=>{

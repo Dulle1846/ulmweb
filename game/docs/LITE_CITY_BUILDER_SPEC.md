@@ -206,6 +206,7 @@ Each event should have a warning/choice window where appropriate, a clear probab
 - Road-aware movement and A* routing.
 - Recurring road upkeep in the economy ledger.
 - Versioned road save/load, unit tests and browser E2E.
+- **Road condition (3.19.0):** every tile now carries a persisted condition. One bounded annual survey reads the existing carrier count and climate, wears at most 5,000 tiles, and writes a survey record. Dirt wears fastest, then gravel, then paved. Condition reduces the tile speed multiplier, raises A* travel cost and adds emergency upkeep; the Roads panel shows the average, worst tile, annual cause line and repair price. Repairs spend wood, stone or gold according to the missing condition and restore 100%. Missing conditions in legacy saves normalize to 100%, and explicit worn values clamp to 10%. No per-frame road scan is added.
 
 ### 3.4 — Resource geography (current implementation phase)
 - Deterministic forest stands, stone deposits, water access and soil fertility derived from seed and terrain.

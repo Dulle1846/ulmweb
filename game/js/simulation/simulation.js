@@ -58,6 +58,7 @@ import { updateDisasterRecovery } from "../systems/disaster-recovery.js";
 import { updateWinterAnnual, updateWinterEconomy } from "../world/winter-economy.js";
 import { isEndlessEnabled, recoverEndlessMorale, updateEndlessRealm } from "../systems/endless.js";
 import { updateSpecialBiomes } from "../systems/special-biome-state.js";
+import { updateRoadWear } from "../systems/roads.js";
 
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 const ANNUAL_SLICE_BUDGET_MS = 6;
@@ -93,6 +94,9 @@ const ANNUAL_TASKS = [
     { name: "civic", run() { updateCivic(); } },
     { name: "endeavours", run() { updateEndeavours(); } },
     { name: "crownSupply", run() { settleCrownSupply(); } },
+    // One bounded annual road survey reads the existing carrier count and
+    // climate once. It never scans entities, jobs or the map per tick.
+    { name: "roadSurvey", run(annual) { annual.roadSurvey = updateRoadWear(); } },
     // One bounded hazard pass at the year boundary: eruption, earthquake,
     // ashfall and real destruction on volcanic ground. Temperate worlds return
     // immediately, so the shared campaign keeps its existing tick cost.
@@ -142,6 +146,7 @@ function createAnnualMaintenance() {
         royalCrisis: null,
         volcanoHazards: null,
         coastHazards: null,
+        roadSurvey: null,
         winterAnnual: null,
         biomeAtlas: null
     };

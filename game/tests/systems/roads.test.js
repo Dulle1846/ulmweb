@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState,state } from "../../js/core/state.js";
-import { placeRoad,removeRoad,getRoadAt,getRoadCount,getRoadSpeedMultiplier,getRoadTravelCost,getRoadTiles,getRoadUpkeepTotal,restoreRoads,serializeRoads,setRoadBuildMode,getRoadBuildMode,clearRoadBuildMode } from "../../js/systems/roads.js";
+import { placeRoad,removeRoad,getRoadAt,getRoadCount,getRoadSpeedMultiplier,getRoadTravelCost,getRoadTiles,getRoadUpkeepTotal,getRoadConditionSnapshot,getRoadRepairCost,updateRoadWear,repairWornRoads,restoreRoads,serializeRoads,setRoadBuildMode,getRoadBuildMode,clearRoadBuildMode } from "../../js/systems/roads.js";
 import { findPath } from "../../js/simulation/villagers.js";
 import { calculateDailyLedger,updateEconomy } from "../../js/systems/economy.js";
 
@@ -138,4 +138,72 @@ test("road maintenance is included in the settlement treasury ledger",()=>{
     state.resources.gold=100;
     const settled=updateEconomy();
     assert.equal(settled.roadUpkeepAssessed,roadCost*20,"the live ledger must charge the actual road network");
+});
+
+test("the annual road survey wears road tiers, slows travel and raises emergency upkeep",()=>{
+    setup();
+    assert.equal(placeRoad(20,20,"dirt").ok,true);
+    assert.equal(placeRoad(21,20,"paved").ok,true);
+    state.year=2;
+    state.city.logistics={carriers:[{},{},{}]};
+    const initialSpeed=getRoadSpeedMultiplier(20.5,20.5);
+    const initialTravelCost=getRoadTravelCost(20.5,20.5);
+    const initialUpkeep=getRoadUpkeepTotal();
+    const survey=updateRoadWear();
+    const dirt=getRoadAt(20,20),paved=getRoadAt(21,20);
+    assert.equal(survey.year,2);
+    assert.equal(survey.changed,2,"both road tiles must be surveyed once");
+    assert.ok(dirt.condition<100&&dirt.condition>=10,"dirt wear must stay above the impassable floor");
+    assert.ok(paved.condition>dirt.condition,"a paved road must wear more slowly than a dirt path");
+    assert.ok(getRoadSpeedMultiplier(20.5,20.5)<initialSpeed,"worn roads must slow travel");
+    assert.ok(getRoadTravelCost(20.5,20.5)>initialTravelCost,"worn roads must cost more route time");
+    assert.ok(getRoadUpkeepTotal()>initialUpkeep,"worn roads must add emergency upkeep");
+    const snapshot=getRoadConditionSnapshot();
+    assert.equal(snapshot.tiles,2);
+    assert.equal(snapshot.worn,1,"only the dirt tile has crossed the worn threshold");
+    assert.ok(snapshot.average<100&&snapshot.average>90);
+    assert.ok(snapshot.repairCost.wood>0,"repairing a worn dirt path must cost real materials");
+    const condition=dirt.condition;
+    updateRoadWear();
+    assert.equal(getRoadAt(20,20).condition,condition,"one year must produce exactly one survey");
+});
+
+test("worn roads repair for materials and restore their full movement bonus",()=>{
+    setup();
+    placeRoad(30,30,"dirt");
+    state.year=3;
+    state.city.logistics={carriers:[{},{},{}]};
+    updateRoadWear();
+    const worn=getRoadAt(30,30).condition;
+    assert.ok(worn<100);
+    const cost=getRoadRepairCost();
+    const before={...state.resources};
+    const repaired=repairWornRoads();
+    assert.equal(repaired.ok,true);
+    assert.equal(repaired.repaired,1);
+    assert.equal(getRoadAt(30,30).condition,100);
+    assert.equal(getRoadSpeedMultiplier(30.5,30.5),1.08,"repair must restore the full dirt-path speed");
+    assert.equal(getRoadTravelCost(30.5,30.5),1);
+    assert.ok(state.resources.wood<before.wood,"repair must spend the quoted wood");
+    assert.deepEqual(repaired.cost,cost);
+    assert.equal(state.roads.lastRepair.year,3);
+    assert.equal(state.roads.lastRepair.tiles,1);
+    assert.equal(repairWornRoads().ok,false,"sound roads must not charge a second repair");
+    const saved=serializeRoads();
+    resetState();
+    setup();
+    assert.equal(restoreRoads(saved),1);
+    assert.equal(getRoadAt(30,30).condition,100,"the repaired condition must survive save and reload");
+    assert.equal(state.roads.lastRepair.year,3);
+    assert.equal(state.roads.lastWear.year,3);
+});
+
+test("legacy road tiles without condition normalize to sound roads",()=>{
+    setup();
+    assert.equal(restoreRoads({version:1,revision:2,tiles:{"1:1":{type:"dirt"},"2:2":{type:"gravel",condition:0}}}),2);
+    assert.equal(getRoadAt(1,1).condition,100,"a missing condition must mean a newly built road");
+    assert.equal(getRoadAt(2,2).condition,10,"an explicit zero must clamp to the wear floor, not reset to new");
+    const snapshot=getRoadConditionSnapshot();
+    assert.equal(snapshot.lastWear,null);
+    assert.equal(snapshot.lastRepair,null);
 });
