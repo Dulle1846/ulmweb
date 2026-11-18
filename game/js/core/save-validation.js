@@ -3,6 +3,7 @@
 // with new resource maps and must run before the snapshot is loaded.
 import { TYPE } from "./types.js";
 import { ROAD_TYPES } from "../systems/roads.js";
+import { validateSettlementOwnersSnapshot } from "../systems/settlement-owners.js";
 import { validateCitySnapshot } from "../systems/logistics.js";
 import { validateResourceGeographySnapshot } from "../systems/resource-geography.js";
 import { validateForestFaunaSnapshot } from "../systems/forest-fauna.js";
@@ -32,7 +33,7 @@ import { validateEventTimelineState } from "./event-timeline.js";
 import { validateCraftedItems } from "../systems/item-lexicon.js";
 import { resolveWorldDimensions } from "../world/terrain-model.js";
 
-export const SAVE_SCHEMA_VERSION = 11;
+export const SAVE_SCHEMA_VERSION = 12;
 
 const RESOURCE_KEYS = Object.freeze(["wood", "stone", "gold", "food"]);
 const RESOURCE_KEY_SET = new Set(RESOURCE_KEYS);
@@ -212,6 +213,7 @@ export function validateSaveSnapshot(snapshot) {
     if (snapshot.volcanoWorks !== undefined) validateDomainSnapshot(snapshot.volcanoWorks, "volcanoWorks", validateVolcanoWorksSnapshot);
     if (snapshot.coastWorks !== undefined) validateDomainSnapshot(snapshot.coastWorks, "coastWorks", validateCoastWorksSnapshot);
     if (snapshot.city !== undefined) validateDomainSnapshot(snapshot.city, "city", validateCitySnapshot);
+    if (snapshot.settlements !== undefined) validateDomainSnapshot(snapshot.settlements, "settlements", validateSettlementOwnersSnapshot);
     if (snapshot.diplomacy !== undefined) {
         const diplomacy = snapshot.diplomacy;
         if (!diplomacy || typeof diplomacy !== "object" || Array.isArray(diplomacy) || !Array.isArray(diplomacy.realms) || diplomacy.realms.length > 8) {

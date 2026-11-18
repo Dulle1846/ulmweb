@@ -59,6 +59,7 @@ import { updateWinterAnnual, updateWinterEconomy } from "../world/winter-economy
 import { isEndlessEnabled, recoverEndlessMorale, updateEndlessRealm } from "../systems/endless.js";
 import { updateSpecialBiomes } from "../systems/special-biome-state.js";
 import { updateRoadWear } from "../systems/roads.js";
+import { updateSettlementMaintenance } from "../systems/settlement-owners.js";
 
 const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
 const ANNUAL_SLICE_BUDGET_MS = 6;
@@ -94,8 +95,10 @@ const ANNUAL_TASKS = [
     { name: "civic", run() { updateCivic(); } },
     { name: "endeavours", run() { updateEndeavours(); } },
     { name: "crownSupply", run() { settleCrownSupply(); } },
-    // One bounded annual road survey reads the existing carrier count and
-    // climate once. It never scans entities, jobs or the map per tick.
+    // Settlement seats first receive their bounded annual crown allotment, then
+    // the one bounded road survey wears the network and assesses each owner's
+    // obligation. Neither pass touches the per-tick hot path.
+    { name: "settlementMaintenance", run(annual) { annual.settlementMaintenance = updateSettlementMaintenance(); } },
     { name: "roadSurvey", run(annual) { annual.roadSurvey = updateRoadWear(); } },
     // One bounded hazard pass at the year boundary: eruption, earthquake,
     // ashfall and real destruction on volcanic ground. Temperate worlds return
@@ -147,6 +150,7 @@ function createAnnualMaintenance() {
         volcanoHazards: null,
         coastHazards: null,
         roadSurvey: null,
+        settlementMaintenance: null,
         winterAnnual: null,
         biomeAtlas: null
     };

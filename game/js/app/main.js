@@ -55,7 +55,7 @@ import {serializeCity,restoreCity,initializeCityForRealm,openGoodsBookForNewReal
 import {SAVE_SCHEMA_VERSION,normalizeSaveSnapshot,validateSaveSnapshot} from "../core/save-validation.js";
 import {migrateSaveSnapshot} from "../core/save-migrations.js";
 import {createSaveSnapshot,prepareSaveSnapshot,restoreSaveSnapshot} from "../core/save-runtime.js";
-import {initializeSettlementForRealm} from "../systems/settlement.js";import { normalizeAmbitions } from "../systems/ambitions.js";
+import {initializeSettlementForRealm} from "../systems/settlement.js";import { initializeSettlementOwners } from "../systems/settlement-owners.js";import { normalizeAmbitions } from "../systems/ambitions.js";
 import { createCrownSupplyState, normalizeCrownSupplyState } from "../systems/crown-supply.js";
 import { setupWorkshopUI } from "../presentation/build-mode.js";
 import {setupModalAccessibility} from "../presentation/modal-accessibility.js";
@@ -656,6 +656,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     initializeCityForRealm();
     normalizeHouseholdAssignments();
     initializeSettlementForRealm();
+    initializeSettlementOwners();
     initializeWinterForRealm();
     initializePopulationRegister();
     openGoodsBookForNewRealm();

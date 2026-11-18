@@ -14,6 +14,7 @@ import { normalizeExpeditionsState } from "../systems/expeditions.js";
 import { normalizeEventTimelineState, serializeEventTimelineState } from "./event-timeline.js";
 import { normalizeLayout, serializeLayout } from "../presentation/building-layout.js";
 import { restoreRoads, serializeRoads } from "../systems/roads.js";
+import { restoreSettlementOwners, serializeSettlementOwners } from "../systems/settlement-owners.js";
 import { restoreResourceGeography, serializeResourceGeography } from "../systems/resource-geography.js";
 import { restoreForestFauna, serializeForestFauna } from "../systems/forest-fauna.js";
 import { restoreForestGathering, serializeForestGathering } from "../systems/forest-gathering.js";
@@ -195,6 +196,7 @@ export function createSaveSnapshot() {
         volcanoWorks: serializeVolcanoWorks(),
         coastWorks: serializeCoastWorks(),
         city: serializeCity(),
+        settlements: serializeSettlementOwners(),
         tick: state.tick,
         year: state.year,
         dayOfYear: state.dayOfYear,
@@ -479,6 +481,9 @@ export function restoreSaveSnapshot(snapshot) {
     // discoveries, stocks, populations, policies and trade record. Old saves
     // without the field keep the deterministic generated baseline.
     restoreBiomeAtlasState(snapshot.biomeAtlas);
+    // Seats are reconciled against the restored buildings. A legacy save gets
+    // its existing keep as a zero-balance seat without moving any resources.
+    restoreSettlementOwners(snapshot.settlements);
     if (Array.isArray(snapshot.explored) && snapshot.explored.length === (Number(state.worldW) || WORLD_W)) {
         state.explored = snapshot.explored;
     }

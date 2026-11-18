@@ -4,6 +4,8 @@ import { resetState,state } from "../../js/core/state.js";
 import { placeRoad,removeRoad,getRoadAt,getRoadCount,getRoadSpeedMultiplier,getRoadTravelCost,getRoadTiles,getRoadUpkeepTotal,getRoadConditionSnapshot,getRoadRepairCost,updateRoadWear,repairWornRoads,restoreRoads,serializeRoads,setRoadBuildMode,getRoadBuildMode,clearRoadBuildMode } from "../../js/systems/roads.js";
 import { findPath } from "../../js/simulation/villagers.js";
 import { calculateDailyLedger,updateEconomy } from "../../js/systems/economy.js";
+import { TYPE } from "../../js/core/types.js";
+import { initializeSettlementOwners,getSettlementSeats,registerSettlementSeat,serializeSettlementOwners,restoreSettlementOwners } from "../../js/systems/settlement-owners.js";
 
 function setup(){
     resetState();
@@ -12,6 +14,12 @@ function setup(){
     state.heightMap=new Float32Array(160*160).fill(0.5);
     state.resources={wood:100,stone:100,gold:100,food:100};
     state.statistics={};
+}
+function addSeat(id,x,y,type=TYPE.KEEP){
+    state.entities.push({id,x,y,type,dead:false,isBuilding:()=>true});
+}
+function seatById(id){
+    return getSettlementSeats().find(seat=>seat.buildingId===id)||null;
 }
 
 test("road placement validates bounds, exploration, water and building footprints",()=>{
@@ -196,6 +204,143 @@ test("worn roads repair for materials and restore their full movement bonus",()=
     assert.equal(getRoadAt(30,30).condition,100,"the repaired condition must survive save and reload");
     assert.equal(state.roads.lastRepair.year,3);
     assert.equal(state.roads.lastWear.year,3);
+});
+
+test("each settlement pays for the worn roads inside its own territory",()=>{
+    setup();
+    addSeat("e-seat-a",40,40);
+    addSeat("e-seat-b",60,60);
+    assert.equal(placeRoad(40,45,"dirt").ok,true);
+    assert.equal(placeRoad(60,65,"dirt").ok,true);
+    assert.equal(placeRoad(90,90,"dirt").ok,true,"the remote road is wilderness");
+    state.year=2;
+    state.city.logistics={carriers:[{},{},{}]};
+    initializeSettlementOwners();
+    assert.equal(getSettlementSeats().length,2);
+    for(const seat of getSettlementSeats()){seat.stores.wood=1;seat.stores.stone=1;seat.treasury.gold=1;}
+    updateRoadWear();
+    state.year=3;
+    updateRoadWear();
+    const snapshot=getRoadConditionSnapshot();
+    assert.equal(snapshot.settlements.length,2,"both settlements must expose their own obligation");
+    assert.equal(snapshot.wilderness.worn,1,"the remote road belongs to the crown pool");
+    const a=snapshot.settlements.find(row=>row.id.includes("e-seat-a"));
+    const b=snapshot.settlements.find(row=>row.id.includes("e-seat-b"));
+    assert.equal(a.worn,1);assert.equal(b.worn,1);
+    assert.ok(a.cost.wood>0&&a.affordable);
+    const crownBefore={...state.resources};
+    const result=repairWornRoads();
+    assert.equal(result.ok,true);
+    assert.equal(result.repaired,3);
+    assert.equal(result.groups.length,3,"two seats and the crown must each settle their own bill");
+    assert.equal(getRoadAt(40,45).condition,100);
+    assert.equal(getRoadAt(60,65).condition,100);
+    assert.equal(getRoadAt(90,90).condition,100);
+    assert.ok(seatById("e-seat-a").stores.wood<1,"seat A must spend its own wood");
+    assert.ok(seatById("e-seat-b").stores.wood<1,"seat B must spend its own wood");
+    assert.ok(state.resources.wood<crownBefore.wood,"the wilderness tile must spend the crown pool");
+    assert.deepEqual(result.shortfalls,[]);
+});
+
+test("an unaffordable settlement leaves its road worn and names the shortfall",()=>{
+    setup();
+    addSeat("e-seat-a",40,40);
+    addSeat("e-seat-b",60,60);
+    placeRoad(40,45,"dirt");
+    placeRoad(60,65,"dirt");
+    state.year=2;
+    initializeSettlementOwners();
+    const a=seatById("e-seat-a"),b=seatById("e-seat-b");
+    a.stores.wood=1;a.stores.stone=1;a.treasury.gold=1;
+    b.stores.wood=0;b.stores.stone=0;b.treasury.gold=0;
+    updateRoadWear();
+    updateRoadWear();
+    state.year=3;
+    updateRoadWear();
+    const wornB=getRoadAt(60,65).condition;
+    const snapshot=getRoadConditionSnapshot();
+    const rowB=snapshot.settlements.find(row=>row.id.includes("e-seat-b"));
+    assert.equal(rowB.affordable,false,"a settlement without materials must not be quoted as covered");
+    assert.ok(rowB.shortfall.wood>0,"the panel must name the amount it is short");
+    assert.equal(rowB.worn,1);
+    assert.deepEqual(snapshot.obligation.shortSeats,[rowB.name]);
+    const crownBefore={...state.resources};
+    const result=repairWornRoads();
+    assert.equal(result.ok,true,"the affordable settlement still repairs");
+    assert.equal(result.repaired,1);
+    assert.equal(getRoadAt(40,45).condition,100);
+    assert.equal(getRoadAt(60,65).condition,wornB,"the short settlement's road must stay worn");
+    assert.equal(seatById("e-seat-b").stores.wood,0,"nothing may be spent beyond the settlement's stores");
+    assert.equal(seatById("e-seat-b").stores.stone,0);
+    assert.equal(seatById("e-seat-b").treasury.gold,0);
+    assert.equal(result.shortfalls.length,1);
+    assert.equal(result.shortfalls[0].name,rowB.name);
+    assert.ok(result.shortfalls[0].shortfall.wood>0);
+    assert.deepEqual(state.resources,crownBefore,"a settlement bill must not fall through to the crown");
+    assert.equal(repairWornRoads().ok,false,"the remaining worn tile is still an obligation, not a silent pass");
+});
+
+test("roads beyond every settlement territory fall back to the crown pool",()=>{
+    setup();
+    addSeat("e-seat-a",40,40);
+    placeRoad(90,90,"dirt");
+    state.year=2;
+    initializeSettlementOwners();
+    const seat=seatById("e-seat-a");
+    seat.stores.wood=1;seat.stores.stone=1;seat.treasury.gold=1;
+    updateRoadWear();
+    state.year=3;
+    updateRoadWear();
+    const snapshot=getRoadConditionSnapshot();
+    assert.equal(snapshot.settlements.length,0,"the seat owns no worn tile here");
+    assert.equal(snapshot.wilderness.worn,1);
+    const seatBefore={...seat.stores};
+    const crownBefore={...state.resources};
+    const result=repairWornRoads();
+    assert.equal(result.ok,true);
+    assert.equal(result.groups.length,1);
+    assert.equal(result.groups[0].kind,"crown");
+    assert.equal(getRoadAt(90,90).condition,100);
+    assert.deepEqual(seat.stores,seatBefore,"wilderness work must not touch a settlement's stores");
+    assert.ok(state.resources.wood<crownBefore.wood);
+});
+
+test("settlement seats and their maintenance balances survive save normalization",()=>{
+    setup();
+    addSeat("e-seat-a",40,40);
+    placeRoad(40,45,"dirt");
+    state.year=2;
+    initializeSettlementOwners();
+    const seat=seatById("e-seat-a");
+    seat.stores.wood=0.75;seat.stores.stone=0.5;seat.treasury.gold=2.25;
+    updateRoadWear();
+    state.year=3;
+    updateRoadWear();
+    const saved=serializeSettlementOwners();
+    const obligation=JSON.parse(JSON.stringify(seatById("e-seat-a").lastObligation));
+    assert.ok(obligation&&obligation.tiles===1,"the survey must assess the seat's worn tile");
+    setup();
+    addSeat("e-seat-a",40,40);
+    assert.equal(restoreSettlementOwners(saved),1);
+    const restored=seatById("e-seat-a");
+    assert.equal(restored.stores.wood,0.75);
+    assert.equal(restored.stores.stone,0.5);
+    assert.equal(restored.treasury.gold,2.25);
+    assert.deepEqual(restored.lastObligation,obligation,"the assessed obligation must survive the save");
+    // Malformed legacy values clamp instead of producing NaN or debt.
+    state.entities=state.entities.filter(entity=>entity.id!=="e-seat-a");
+    addSeat("e-hall",70,70,TYPE.TOWN_HALL);
+    assert.equal(restoreSettlementOwners({version:1,seats:[{buildingId:"e-hall",name:"Hall",x:70,y:70,stores:{wood:-4,stone:"bad"},treasury:{gold:NaN},lastRepair:{year:2,tiles:-3,cost:{wood:-1}}}]}),1);
+    const hall=seatById("e-hall");
+    assert.equal(hall.stores.wood,0);
+    assert.equal(hall.stores.stone,0);
+    assert.equal(hall.treasury.gold,0);
+    assert.equal(hall.lastRepair.tiles,0);
+    assert.equal(hall.lastRepair.cost.wood,0);
+    // A completed town hall registers itself through the construction path.
+    const registered=registerSettlementSeat({id:"e-hall-2",type:TYPE.TOWN_HALL,x:72,y:72,dead:false,isBuilding:()=>true});
+    assert.ok(registered,"a completed seat building must become an owner immediately");
+    assert.equal(getSettlementSeats().length,2);
 });
 
 test("legacy road tiles without condition normalize to sound roads",()=>{

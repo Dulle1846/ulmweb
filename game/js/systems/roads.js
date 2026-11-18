@@ -3,6 +3,7 @@ import { state } from "../core/state.js";
 import { BUILDING_SIZE } from "../core/config.js";
 import { isWaterAt, worldWidth, worldHeight } from "../world/world.js";
 import { addResource } from "./resources.js";
+import { SETTLEMENT_TERRITORY_RADIUS, getSettlementSeats, setSettlementObligationSummary } from "./settlement-owners.js";
 
 export const ROAD_TYPES = Object.freeze({
     dirt: Object.freeze({ id:"dirt", label:"Dirt path", speed:1.08, travelCost:1.0, upkeep:0.0004, wear:4.2, repair:Object.freeze({wood:0.06,stone:0,gold:0}), cost:Object.freeze({wood:0.15,stone:0,gold:0}), color:"#a97849", edge:"#4e3526" }),
@@ -32,6 +33,93 @@ function conditionFactor(value){
 function normalizeYear(value){
     const n=Math.floor(Number(value));
     return Number.isFinite(n)?Math.max(0,Math.min(ROAD_YEAR_LIMIT,n)):0;
+}
+function emptyCost(){return {wood:0,stone:0,gold:0};}
+function roundedCost(cost){
+    const result=emptyCost();
+    for(const key of Object.keys(result))result[key]=Math.round(Math.max(0,Number(cost[key])||0)*1000)/1000;
+    return result;
+}
+function tileRepairCost(tile){
+    const condition=conditionPercent(tile.condition);
+    if(condition>=ROAD_CONDITION_SOUND)return null;
+    const missing=(100-condition)/100;
+    const repair=ROAD_TYPES[tile.type]?.repair;
+    if(!repair)return null;
+    return {wood:(repair.wood||0)*missing,stone:(repair.stone||0)*missing,gold:(repair.gold||0)*missing};
+}
+// The nearest active settlement seat inside its bounded territory owns the
+// tile. Equal distances resolve to the lower building id, never to iteration
+// order, so the split is deterministic.
+function seatForTile(tile,seats){
+    let best=null,bestDistance=Infinity;
+    for(const seat of seats){
+        const distance=Math.hypot(seat.x-tile.x,seat.y-tile.y);
+        if(distance>SETTLEMENT_TERRITORY_RADIUS+1e-9)continue;
+        if(distance<bestDistance-1e-9||(Math.abs(distance-bestDistance)<=1e-9&&best&&seat.buildingId<best.buildingId)){
+            best=seat;bestDistance=distance;
+        }
+    }
+    return best;
+}
+function heldBySeat(seat){
+    return {wood:Number(seat.stores?.wood)||0,stone:Number(seat.stores?.stone)||0,gold:Number(seat.treasury?.gold)||0};
+}
+function heldByCrown(){
+    return {wood:Number(state.resources?.wood)||0,stone:Number(state.resources?.stone)||0,gold:Number(state.resources?.gold)||0};
+}
+function coversCost(held,cost){
+    return Object.keys(cost).every(key=>(cost[key]||0)<=0||(Number(held[key])||0)+1e-9>=(cost[key]||0));
+}
+function shortfallOf(cost,held){
+    const result=emptyCost();
+    for(const key of Object.keys(result))result[key]=Math.round(Math.max(0,(cost[key]||0)-(Number(held[key])||0))*1000)/1000;
+    return result;
+}
+function coveredOf(cost,held){
+    const result=emptyCost();
+    for(const key of Object.keys(result))result[key]=Math.round(Math.min(cost[key]||0,Number(held[key])||0)*1000)/1000;
+    return result;
+}
+function groupRow(group){
+    return {
+        id:group.id,name:group.name,kind:group.kind,worn:group.tiles.length,
+        cost:{...group.cost},held:{...group.held},covered:{...group.covered},
+        shortfall:{...group.shortfall},affordable:group.affordable,
+        lastRepair:group.seat?.lastRepair||null
+    };
+}
+// One bounded walk over the worn tiles (already capped at the save limit)
+// resolves every tile to its owning seat or to the crown wilderness pool.
+function getRepairGroups(){
+    const seats=getSettlementSeats();
+    const bySeat=new Map();
+    for(const seat of seats){
+        bySeat.set(seat.buildingId,{kind:"settlement",id:seat.id,name:seat.name,seat,tiles:[],cost:emptyCost()});
+    }
+    const crown={kind:"crown",id:"crown",name:"Crown (wilderness)",seat:null,tiles:[],cost:emptyCost()};
+    for(const tile of getRoadTiles().slice(0,ROAD_WEAR_TILE_LIMIT)){
+        const perTile=tileRepairCost(tile);
+        if(!perTile)continue;
+        const seat=seatForTile(tile,seats);
+        const group=seat?bySeat.get(seat.buildingId):crown;
+        group.tiles.push(tile);
+        for(const key of Object.keys(group.cost))group.cost[key]+=perTile[key];
+    }
+    const groups=[...bySeat.values()].filter(group=>group.tiles.length);
+    if(crown.tiles.length)groups.push(crown);
+    const totalCost=emptyCost();
+    let totalTiles=0;
+    for(const group of groups){
+        group.cost=roundedCost(group.cost);
+        group.held=group.kind==="crown"?heldByCrown():heldBySeat(group.seat);
+        group.covered=coveredOf(group.cost,group.held);
+        group.shortfall=shortfallOf(group.cost,group.held);
+        group.affordable=coversCost(group.held,group.cost);
+        for(const key of Object.keys(totalCost))totalCost[key]+=group.cost[key];
+        totalTiles+=group.tiles.length;
+    }
+    return {groups,totalCost:roundedCost(totalCost),totalTiles};
 }
 function normalizeSurvey(source){
     if(!source||typeof source!=="object"||Array.isArray(source))return null;
@@ -148,17 +236,17 @@ export function getRoadUpkeepTotal(){
 }
 
 export function getRoadRepairCost(){
-    const cost={wood:0,stone:0,gold:0};
-    for(const tile of getRoadTiles().slice(0,ROAD_WEAR_TILE_LIMIT)){
-        const condition=conditionPercent(tile.condition);
-        if(condition>=ROAD_CONDITION_SOUND)continue;
-        const missing=(100-condition)/100;
-        const repair=ROAD_TYPES[tile.type]?.repair;
-        if(!repair)continue;
-        for(const resource of Object.keys(cost))cost[resource]+=(repair[resource]||0)*missing;
-    }
-    for(const resource of Object.keys(cost))cost[resource]=Math.round(cost[resource]*1000)/1000;
-    return cost;
+    return getRepairGroups().totalCost;
+}
+
+export function getRoadOwnershipSnapshot(){
+    const repair=getRepairGroups();
+    return {
+        totalCost:repair.totalCost,
+        totalTiles:repair.totalTiles,
+        settlements:repair.groups.filter(group=>group.kind==="settlement").map(groupRow),
+        wilderness:repair.groups.some(group=>group.kind==="crown")?groupRow(repair.groups.find(group=>group.kind==="crown")):null
+    };
 }
 
 export function getRoadConditionSnapshot(){
@@ -177,7 +265,10 @@ export function getRoadConditionSnapshot(){
         if(condition<ROAD_CONDITION_SOUND)entry.worn++;
     }
     for(const entry of Object.values(byType))entry.average=roundCondition(entry.sum/Math.max(1,entry.tiles));
-    const repairCost=getRoadRepairCost();
+    const repair=getRepairGroups();
+    const settlements=repair.groups.filter(group=>group.kind==="settlement").map(groupRow);
+    const wildernessGroup=repair.groups.find(group=>group.kind==="crown");
+    const repairAffordable=repair.groups.some(group=>group.affordable);
     return {
         tiles:tiles.length,
         average:tiles.length?roundCondition(sum/tiles.length):null,
@@ -185,8 +276,18 @@ export function getRoadConditionSnapshot(){
         worn,
         sound:Math.max(0,tiles.length-worn),
         byType,
-        repairCost,
-        repairAffordable:canAfford(repairCost),
+        repairCost:repair.totalCost,
+        repairAffordable,
+        affordableTiles:repair.groups.filter(group=>group.affordable).reduce((total,group)=>total+group.tiles.length,0),
+        settlements,
+        wilderness:wildernessGroup?groupRow(wildernessGroup):null,
+        obligation:{
+            tiles:repair.totalTiles,
+            owed:repair.totalCost,
+            covered:roundedCost(repair.groups.reduce((total,group)=>{for(const key of Object.keys(total))total[key]+=group.covered[key];return total;},emptyCost())),
+            shortfall:roundedCost(repair.groups.reduce((total,group)=>{for(const key of Object.keys(total))total[key]+=group.shortfall[key];return total;},emptyCost())),
+            shortSeats:repair.groups.filter(group=>group.kind==="settlement"&&!group.affordable).map(group=>group.name)
+        },
         lastWear:normalizeSurvey(roads.lastWear),
         lastRepair:normalizeRepair(roads.lastRepair)
     };
@@ -206,6 +307,7 @@ export function updateRoadWear(){
     if(!tiles.length){
         roads.lastWearYear=year;
         roads.lastWear={year,tiles:0,changed:0,worn:0,average:null,loss:0,carriers,climate};
+        assessRoadObligations(year);
         return roads.lastWear;
     }
     let sum=0,changed=0,worn=0,loss=0;
@@ -225,33 +327,73 @@ export function updateRoadWear(){
     roads.lastWearYear=year;
     roads.lastWear={year,tiles:tiles.length,changed,worn,average:roundCondition(sum/tiles.length),loss:Math.round(loss*10)/10,carriers,climate};
     if(changed)bumpRevision();
-    if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("kac:road-survey",{detail:{...roads.lastWear}}));
+    const obligation=assessRoadObligations(year);
+    if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("kac:road-survey",{detail:{...roads.lastWear,obligation}}));
     return roads.lastWear;
 }
 
+// One click resolves every owner's obligation in a fixed order: settlement
+// seats by building id, then the crown wilderness pool. An owner that cannot
+// cover its full bill repairs nothing, so no road is silently patched with
+// materials that owner does not hold.
 export function repairWornRoads(){
     const roads=ensureRoadState();
-    const repairs=[];
-    const cost={wood:0,stone:0,gold:0};
-    for(const tile of getRoadTiles().slice(0,ROAD_WEAR_TILE_LIMIT)){
-        const condition=conditionPercent(tile.condition);
-        if(condition>=ROAD_CONDITION_SOUND)continue;
-        const missing=(100-condition)/100;
-        const repair=ROAD_TYPES[tile.type]?.repair;
-        if(!repair)continue;
-        for(const resource of Object.keys(cost))cost[resource]+=(repair[resource]||0)*missing;
-        repairs.push(tile);
-    }
-    for(const resource of Object.keys(cost))cost[resource]=Math.round(cost[resource]*1000)/1000;
-    if(!repairs.length)return {ok:false,reason:"All roads are sound",cost};
-    if(!canAfford(cost))return {ok:false,reason:"Not enough materials to repair the roads",cost};
-    applyCost(cost);
-    for(const tile of repairs)roads.tiles[tile.x+":"+tile.y].condition=100;
     const year=Math.max(1,Math.min(ROAD_YEAR_LIMIT,Math.floor(Number(state.year)||1)));
+    const repair=getRepairGroups();
+    if(!repair.totalTiles)return {ok:false,reason:"All roads are sound",cost:repair.totalCost,repaired:0,groups:[],shortfalls:[],obligation:repair.totalCost};
+    const paid=emptyCost();
+    const repairedGroups=[];
+    const shortfalls=[];
+    let repaired=0;
+    for(const group of repair.groups){
+        if(!group.tiles.length)continue;
+        if(!group.affordable){
+            shortfalls.push({id:group.id,name:group.name,kind:group.kind,tiles:group.tiles.length,cost:{...group.cost},shortfall:{...group.shortfall}});
+            continue;
+        }
+        if(group.kind==="settlement"){
+            group.seat.stores.wood=Math.round(Math.max(0,group.seat.stores.wood-group.cost.wood)*1e6)/1e6;
+            group.seat.stores.stone=Math.round(Math.max(0,group.seat.stores.stone-group.cost.stone)*1e6)/1e6;
+            group.seat.treasury.gold=Math.round(Math.max(0,group.seat.treasury.gold-group.cost.gold)*1e6)/1e6;
+            group.seat.lastRepairYear=year;
+            group.seat.lastRepair={year,tiles:group.tiles.length,cost:{...group.cost}};
+        }else{
+            applyCost(group.cost);
+        }
+        for(const tile of group.tiles)roads.tiles[tile.x+":"+tile.y].condition=100;
+        for(const key of Object.keys(paid))paid[key]+=group.cost[key];
+        repaired+=group.tiles.length;
+        repairedGroups.push({id:group.id,name:group.name,kind:group.kind,tiles:group.tiles.length,cost:{...group.cost}});
+    }
+    if(!repaired){
+        return {ok:false,reason:"No settlement can cover its worn roads",cost:repair.totalCost,repaired:0,groups:[],shortfalls,obligation:repair.totalCost};
+    }
+    const totalPaid=roundedCost(paid);
     roads.lastRepairYear=year;
-    roads.lastRepair={year,tiles:repairs.length,cost:{...cost}};
+    roads.lastRepair={year,tiles:repaired,cost:{...totalPaid}};
     bumpRevision();
-    return {ok:true,repaired:repairs.length,cost};
+    return {ok:true,repaired,cost:totalPaid,groups:repairedGroups,shortfalls,obligation:repair.totalCost};
+}
+
+export function assessRoadObligations(surveyYear=null){
+    const repair=getRepairGroups();
+    const year=normalizeYear(surveyYear)||Math.max(1,Math.min(ROAD_YEAR_LIMIT,Math.floor(Number(state.year)||1)));
+    const summary={year,tiles:repair.totalTiles,owed:repair.totalCost,covered:emptyCost(),shortfall:emptyCost(),settlements:0,shortSeats:[]};
+    for(const group of repair.groups){
+        if(group.kind==="settlement"){
+            group.seat.lastObligation={year,tiles:group.tiles.length,cost:{...group.cost},covered:{...group.covered},shortfall:{...group.shortfall}};
+            summary.settlements++;
+            if(!group.affordable)summary.shortSeats.push(group.name);
+        }
+        for(const key of Object.keys(summary.covered)){
+            summary.covered[key]+=group.covered[key];
+            summary.shortfall[key]+=group.shortfall[key];
+        }
+    }
+    summary.covered=roundedCost(summary.covered);
+    summary.shortfall=roundedCost(summary.shortfall);
+    setSettlementObligationSummary(summary);
+    return summary;
 }
 
 export function getRoadTiles(){

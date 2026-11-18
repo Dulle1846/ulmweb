@@ -30,6 +30,11 @@ export const SAVE_SCHEMA_MIGRATIONS = Object.freeze({
         // Schema 11 adds the persistent living-event timeline. Existing realms
         // keep their short event log and begin the new archive on the next day.
         if(snapshot.eventTimeline===undefined)snapshot.eventTimeline=null;
+    },
+    11:snapshot=>{
+        // Schema 12 adds settlement maintenance ownership. Older realms keep
+        // every road and building; the restore pass derives their seats.
+        if(snapshot.settlements===undefined)snapshot.settlements=null;
     }
 });
 

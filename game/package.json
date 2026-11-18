@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.19.0",
+  "version": "3.20.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -43,6 +43,7 @@
     "test:core-loop": "node tests/browser/core-loop-audit.mjs",
     "test:first-session-guidance": "node tests/browser/first-session-guidance.mjs",
     "test:road-condition": "node tests/browser/road-condition.mjs",
+    "test:road-owners": "node tests/browser/road-owners.mjs",
     "test:chronicles": "node tests/browser/chronicle-audit.mjs",
     "test:campaign": "node scripts/long-campaign.mjs",
     "test:endless": "node scripts/endless-campaign.mjs",

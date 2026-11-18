@@ -16,6 +16,20 @@ function recommendMarkup(recommended){
 function esc(value){
     return String(value).replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
 }
+function formatHeld(held){
+    const cost=formatCost(held);
+    return cost==="No material cost"?"empty stores":cost;
+}
+function ownerRowMarkup(row){
+    const short=!row.affordable;
+    const lastRepair=row.lastRepair?'<small>Last fixed year '+row.lastRepair.year+' · '+row.lastRepair.tiles+' tile'+(row.lastRepair.tiles===1?'':'s')+'</small>':'';
+    return '<div class="road-owner'+(short?' is-short':'')+'" data-road-owner="'+esc(row.id)+'">'+
+        '<div class="road-owner-head"><strong>'+esc(row.name)+'</strong><span>'+row.worn+' WORN</span></div>'+
+        '<div class="road-owner-bill"><small>Needs '+formatCost(row.cost)+'</small><small>Holds '+formatHeld(row.held)+'</small>'+
+        '<b>'+(short?'SHORT '+formatCost(row.shortfall):'COVERED')+'</b></div>'+
+        lastRepair+
+    '</div>';
+}
 function roadConditionMarkup(){
     const condition=getRoadConditionSnapshot();
     if(!condition.tiles){
@@ -32,15 +46,22 @@ function roadConditionMarkup(){
         : "No annual survey has run yet; roads begin at 100%.";
     const types=Object.values(ROAD_TYPES).filter(road=>condition.byType[road.id]).map(road=>'<span>'+esc(road.label.toUpperCase())+' <b>'+condition.byType[road.id].average.toFixed(1)+'%</b></span>').join("");
     const lastRepair=condition.lastRepair?'<p class="road-condition-last">Last repair: year '+condition.lastRepair.year+' · '+condition.lastRepair.tiles+' tile'+(condition.lastRepair.tiles===1?'':'s')+' · '+formatCost(condition.lastRepair.cost)+'</p>':'';
-    const canRepair=condition.worn>0&&condition.repairAffordable;
-    const button=condition.worn===0?"ALL ROADS SOUND":condition.repairAffordable?"REPAIR "+condition.worn+" WORN TILE"+(condition.worn===1?"":"S"):"MATERIALS SHORT";
+    const ownerRows=[...condition.settlements, ...(condition.wilderness?[condition.wilderness]:[])];
+    const ownerBlock=ownerRows.length
+        ? '<div class="road-owners" aria-label="Maintenance by owner"><div class="road-owners-title"><span>MAINTENANCE BY OWNER</span><small>'+condition.obligation.tiles+' WORN · '+formatCost(condition.obligation.owed)+' OWED</small></div>'+ownerRows.map(ownerRowMarkup).join("")+'</div>'
+        : '<p class="road-owners-none">Every owner is square; no settlement owes road repairs this year.</p>';
+    const affordableTiles=condition.affordableTiles;
+    const canRepair=condition.worn>0&&affordableTiles>0;
+    const button=condition.worn===0?"ALL ROADS SOUND":affordableTiles===0?"STORES SHORT":affordableTiles>=condition.worn?"REPAIR "+condition.worn+" WORN TILE"+(condition.worn===1?"":"S"):"REPAIR AFFORDABLE ("+affordableTiles+")";
+    const actionNote=condition.worn===0?"No repair needed.":"Owed "+formatCost(condition.obligation.owed)+(condition.obligation.shortSeats.length?" · "+condition.obligation.shortSeats.length+" OWNER SHORT":" · ALL OWNERS COVERED");
     return '<section class="road-condition '+kind+'" aria-label="Road condition">'+
         '<div class="road-condition-head"><span>ROAD CONDITION</span><strong>'+condition.average.toFixed(1)+'%</strong><em>'+status+'</em></div>'+
         '<div class="road-condition-meter" role="meter" aria-label="Average road condition" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+condition.average+'"><i style="width:'+condition.average+'%"></i></div>'+
         '<p class="road-condition-reason"><b>'+survey+'</b> Dirt paths wear fastest. Worn roads slow every carrier and raise emergency upkeep; repair restores full speed.</p>'+
         '<div class="road-condition-types">'+types+'<span>WORST <b>'+condition.worst.toFixed(1)+'%</b></span></div>'+
+        ownerBlock+
         lastRepair+
-        '<div class="road-condition-action"><small>'+(condition.worn>0?"Repair cost: "+formatCost(condition.repairCost):"No repair needed.")+'</small><button type="button" data-repair-roads'+(canRepair?'':' disabled')+'>'+button+'</button></div>'+
+        '<div class="road-condition-action"><small>'+actionNote+'</small><button type="button" data-repair-roads'+(canRepair?'':' disabled')+'>'+button+'</button></div>'+
     '</section>';
 }
 
@@ -110,8 +131,11 @@ function renderBuildOptions(){
         container.querySelector("[data-road-remove]")?.addEventListener("click",()=>startRoad("remove"));
         container.querySelector("[data-repair-roads]")?.addEventListener("click",()=>{
             const result=repairWornRoads();
-            if(result.ok)setStatus("REPAIRED "+result.repaired+" ROAD TILE"+(result.repaired===1?"":"S")+" · "+formatCost(result.cost));
-            else setStatus(String(result.reason).toUpperCase(),"error");
+            if(result.ok){
+                const owners=result.groups.map(group=>group.name+" "+formatCost(group.cost)).join(" · ");
+                const short=result.shortfalls.length?" · "+result.shortfalls.length+" OWNER"+(result.shortfalls.length===1?"":"S")+" SHORT":"";
+                setStatus("REPAIRED "+result.repaired+" ROAD TILE"+(result.repaired===1?"":"S")+" · "+owners+short);
+            }else setStatus(String(result.reason).toUpperCase(),"error");
             renderBuildOptions();
         });
     }else{
@@ -215,9 +239,11 @@ export function setupBuildUI(){
         recommendedBuild=null;
         renderBuildOptions();
     });
-    window.addEventListener("kac:road-survey",()=>{
+    const refreshRoadPanel=()=>{
         if(activeCategory==="roads"&&!modal.classList.contains("hidden"))renderBuildOptions();
-    });
+    };
+    window.addEventListener("kac:road-survey",refreshRoadPanel);
+    window.addEventListener("kac:settlement-maintenance",refreshRoadPanel);
     document.getElementById("road-build-cancel")?.addEventListener("click",()=>cancelBuildPlacement());
     document.addEventListener("keydown",event=>{
         if(event.key!=="Escape")return;

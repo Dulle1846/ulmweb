@@ -199,7 +199,7 @@ test("schema 7 saves identity, research and legacy and validates each block", ()
     state.research.reserve = 100;
     startResearch("masonry");
     recordLegacy("realm", "A recorded deed");
-    assert.equal(SAVE_SCHEMA_VERSION, 11, "schema 11 keeps the civilization layer and adds the living event timeline");
+    assert.equal(SAVE_SCHEMA_VERSION, 12, "schema 12 keeps the civilization layer and adds settlement maintenance ownership");
 
     const snapshot = {
         worldSeed: 9917,

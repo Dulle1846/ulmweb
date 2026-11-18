@@ -95,6 +95,21 @@
 .road-condition-action button{min-height:31px;padding:0 10px;border:2px solid #4e6d46;border-radius:5px;background:linear-gradient(#7fa361,#527a49);color:#fff6dc;font-size:9px;font-weight:1000;letter-spacing:.06em;cursor:pointer}
 .road-condition-action button:hover:not(:disabled){filter:brightness(1.08)}
 .road-condition-action button:disabled{border-color:#9d825b;background:#cbb78e;color:#745b3e;cursor:not-allowed;opacity:.8}
+.road-owners{display:grid;gap:5px;margin-top:8px;padding-top:8px;border-top:1px dashed #c7aa79}
+.road-owners-title{display:flex;justify-content:space-between;gap:8px;color:#6b4a2d;font-size:8px;font-weight:1000;letter-spacing:.09em}
+.road-owners-title small{font-weight:900;color:#76583a;letter-spacing:.04em}
+.road-owner{padding:5px 7px;border:1px solid #c3a574;border-radius:5px;background:#f8efd9}
+.road-owner.is-short{border-color:#b56a3c;background:#f6e0c4}
+.road-owner-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.road-owner-head strong{color:#3d5d3f;font-size:10px}
+.road-owner.is-short .road-owner-head strong{color:#8f452a}
+.road-owner-head span{color:#76583a;font-size:8px;font-weight:1000;letter-spacing:.07em}
+.road-owner-bill{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:2px;color:#6b4c2f;font-size:9px}
+.road-owner-bill small{font-size:9px}
+.road-owner-bill b{margin-left:auto;color:#2f5f42;font-size:8px;letter-spacing:.06em}
+.road-owner.is-short .road-owner-bill b{color:#8f2f27}
+.road-owner>small{display:block;margin-top:2px;color:#76583a;font-size:8px}
+.road-owners-none{margin:7px 0 0;color:#76583a;font-size:9px}
 .map-swatch--water{background:#548ca8}.map-swatch--social{background:#b57942}.map-swatch--safety{background:#7b8b57}.map-swatch--health{background:#9a6d7e}
 .map-swatch--carrier{background:#e4bd72}.map-swatch--warehouse{background:#8a6843}.map-swatch--job{background:#5d7c89}
 .map-swatch--fallow{background:#9b8156}.map-swatch--sown{background:#b9a45c}.map-swatch--growing{background:#71934d}.map-swatch--ripe{background:#d8ac45}

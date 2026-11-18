@@ -58,8 +58,8 @@ function bookEntry(overrides = {}) {
     };
 }
 
-test("schema 11 carries a bounded, normalized AI chronicle", () => {
-    assert.equal(SAVE_SCHEMA_VERSION, 11);
+test("schema 12 still carries a bounded, normalized AI chronicle", () => {
+    assert.equal(SAVE_SCHEMA_VERSION, 12);
     const empty = createAiChronicleState();
     assert.deepEqual(empty.books, []);
     assert.equal(empty.lastSource, "none");

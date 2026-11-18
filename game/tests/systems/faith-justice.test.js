@@ -384,7 +384,7 @@ test("faith and justice normalize, validate and survive a JSON save/load round t
     assert.equal(restored.justice.lawCode, justiceBefore.lawCode);
     assert.equal(restored.faith.festival.lastKind, "harvest");
 
-    assert.equal(SAVE_SCHEMA_VERSION, 11, "schema 11 adds the living event timeline on top of the AI chronicle");
+    assert.equal(SAVE_SCHEMA_VERSION, 12, "schema 12 adds settlement maintenance ownership on top of the living timeline");
     const snapshot = normalizeSaveSnapshot({
         worldSeed: 9917,
         entities: [],

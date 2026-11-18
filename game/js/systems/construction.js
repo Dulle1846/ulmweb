@@ -5,6 +5,7 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { WORLD_W, WORLD_H, BUILDING_SIZE } from "../core/config.js";
 import { addResource } from "./resources.js";
+import { registerSettlementSeat } from "./settlement-owners.js";
 import { recordResourceMovement } from "./goods-book.js";
 import { spawnEntity, canSpawnEntity, buildingOverlaps } from "../world/entities.js";
 import { isWaterAt, worldWidth, worldHeight, revealArea, getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
@@ -278,6 +279,9 @@ function advanceStage(site) {
         state.statistics.totalBuildingsBuilt = (state.statistics.totalBuildingsBuilt || 0) + 1;
         state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
         state.city.constructionVersion = (state.city.constructionVersion || 0) + 1;
+        // A completed keep or town hall becomes a maintenance seat immediately,
+        // so the Roads panel never waits for the next year boundary.
+        registerSettlementSeat(site);
         return true;
     }
     return false;
