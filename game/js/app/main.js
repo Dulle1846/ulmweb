@@ -1085,6 +1085,26 @@ function bindMenu(){
     });
 }
 
+// The banner grows to two or three rows on tablets and phones. Anchor the
+// transient event toast below the real header and horizontal admin rail so it
+// can never cover the crown's controls. This is a resize-only measurement, not
+// per-frame work.
+function syncHudAnchors(){
+    const topbar=document.querySelector(".topbar");
+    if(!topbar)return;
+    const topbarHeight=Math.round(topbar.getBoundingClientRect().height);
+    const nav=document.querySelector(".realm-nav");
+    const stacked=window.matchMedia("(max-width: 900px)").matches;
+    const navHeight=stacked&&nav?Math.round(nav.getBoundingClientRect().height):0;
+    document.documentElement.style.setProperty("--kac-topbar-height",topbarHeight+"px");
+    document.documentElement.style.setProperty("--kac-event-top",(topbarHeight+navHeight+10)+"px");
+}
+let hudAnchorFrame=0;
+function scheduleHudAnchors(){
+    if(hudAnchorFrame)return;
+    hudAnchorFrame=requestAnimationFrame(()=>{hudAnchorFrame=0;syncHudAnchors();});
+}
+
 function init(){
     bindCanvas();
     setupInput();
@@ -1122,6 +1142,13 @@ setupBuildUI();
     setupWorkshopUI();
     bindMenu();
     applySoundtrackSettings(settings);
+    syncHudAnchors();
+    window.addEventListener("resize",scheduleHudAnchors);
+    if(typeof ResizeObserver!=="undefined"){
+        const hudObserver=new ResizeObserver(scheduleHudAnchors);
+        hudObserver.observe(document.querySelector(".topbar"));
+        hudObserver.observe(document.querySelector(".realm-nav"));
+    }
     window.addEventListener("resize",resize);
     const ctx=state.ctx;
     ctx.fillStyle="#0a120a";ctx.fillRect(0,0,state.canvas.width,state.canvas.height);

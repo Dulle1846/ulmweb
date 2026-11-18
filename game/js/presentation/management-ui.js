@@ -58,7 +58,7 @@ import { renderCityPanel, handleCityPanelClick } from "./city-panel.js";
 import { openBuildPanel } from "./build-ui.js";
 import { renderItemLexicon } from "./item-lexicon-panel.js";
 import { renderProgressive, cancelProgressiveRender } from "./progressive-render.js";
-let activePanel="kingdom",panelRevealToken=0,expandedBuildingId=null,expandedBuildingLogistics=false,dynastyStylesRequested=false,endeavourFunding=1,timelineRefreshFrame=0,timelineHydrationToken=0,chronicleProgressToken=0,chronicleSectionsToken=0,detailRefreshToken=0;
+let activePanel="kingdom",panelRevealToken=0,expandedBuildingId=null,expandedBuildingLogistics=false,buildingShowAll=false,courtShowAll=false,dynastyStylesRequested=false,endeavourFunding=1,timelineRefreshFrame=0,timelineHydrationToken=0,chronicleProgressToken=0,chronicleSectionsToken=0,detailRefreshToken=0;
 const FRAME_WORK_BUDGET=7;
 let frameWorkQueue=[],frameWorkFrame=0;
 // At phone width the court and diplomacy selects contain the same long list of
@@ -230,7 +230,8 @@ function advisorSection(){
 function courtSection(){
  const c=getCourtSnapshot(),gold=Number(state.resources?.gold)||0;
  const courtLazy=narrowViewport();
- const visibleOffices=courtLazy?c.offices.slice(0,1):c.offices;
+ const courtCollapsed=courtLazy&&!courtShowAll;
+ const visibleOffices=courtCollapsed?c.offices.slice(0,1):c.offices;
  const offices=visibleOffices.map(office=>{
   if(office.holder){
    const h=office.holder;
@@ -249,7 +250,7 @@ function courtSection(){
  const effects='<div class="court-effect-grid"><span>TAX EFFICIENCY<b>+'+Math.round((m.taxEfficiency-1)*100)+'%</b></span><span>DIPLOMATIC GAIN<b>+'+Math.round((m.diplomacyGain-1)*100)+'%</b></span><span>TRADE TERMS<b>+'+(m.tradeBonus*100).toFixed(1)+'%</b></span><span>INCIDENT REDUCTION<b>'+Math.round(m.incidentReduction*100)+'%</b></span><span>MILITARY READINESS<b>+'+Math.round((m.militaryReadiness-1)*100)+'%</b></span><span>DISEASE CONTAINMENT<b>-'+Math.round(m.healthContainment*100)+'%</b></span><span>ANNUAL LEGITIMACY<b>+'+m.legitimacyGain.toFixed(2)+'</b></span><span>CORRUPTION RESISTANCE<b>'+Math.round(m.corruptionResistance*100)+'%</b></span></div>';
  const audit=c.lastAudit?'<p class="command-note">Last audit · year '+c.lastAudit.year+' · '+c.lastAudit.paid+'/'+c.lastAudit.salaries+' gold salaries · '+c.lastAudit.corruption+' gold lost to corruption · '+c.lastAudit.vacancies+' vacancies · '+c.lastAudit.estateSavings+' gold estate savings.</p>':'<p class="command-note">No annual court audit has been completed yet.</p>';
  const history=c.history.length?'<div class="court-history">'+c.history.map(entry=>'<div><span>'+esc(String(entry.kind).toUpperCase())+' · YEAR '+entry.year+'</span><p>'+esc(entry.summary)+'</p></div>').join("")+'</div>':'<p class="command-note">No court record has been written yet.</p>';
- return '<div class="command-section-title">ROYAL COURT · '+m.officesFilled+' OF '+c.offices.length+' OFFICES FILLED</div><p class="command-note">Appoint named residents to six offices. Competence, loyalty and integrity come from their real traits, needs and relationship with the crown. Salaries and corruption settle once per year; every office changes a live system, not only a label.</p><div class="court-office-grid">'+offices+'</div>'+(courtLazy&&c.offices.length>visibleOffices.length?'<p class="command-note">Showing the first '+visibleOffices.length+' of '+c.offices.length+' crown offices on this screen. Salaries, vacancies and court effects still count every office.</p>':'')+'<div class="command-section-title">THE ANNUAL PETITION</div>'+demand+advisorSection()+'<div class="command-section-title">COURT EFFECTS</div>'+effects+'<div class="command-section-title">LAST AUDIT</div>'+audit+'<div class="command-section-title">COURT RECORD</div>'+history;
+ return '<div class="command-section-title">ROYAL COURT · '+m.officesFilled+' OF '+c.offices.length+' OFFICES FILLED</div><p class="command-note">Appoint named residents to six offices. Competence, loyalty and integrity come from their real traits, needs and relationship with the crown. Salaries and corruption settle once per year; every office changes a live system, not only a label.</p><div class="court-office-grid">'+offices+'</div>'+(courtCollapsed&&c.offices.length>visibleOffices.length?'<p class="command-note">Showing the first '+visibleOffices.length+' of '+c.offices.length+' crown offices on this screen. Salaries, vacancies and court effects still count every office.</p><button type="button" class="command-choice" data-court-show-all>SHOW ALL '+c.offices.length+' CROWN OFFICES</button>':'')+'<div class="command-section-title">THE ANNUAL PETITION</div>'+demand+advisorSection()+'<div class="command-section-title">COURT EFFECTS</div>'+effects+'<div class="command-section-title">LAST AUDIT</div>'+audit+'<div class="command-section-title">COURT RECORD</div>'+history;
 }
 function government(){
  const g=getGovernmentSnapshot(),f=GOVERNMENT_FORMS[g.form],identity=getIdentitySnapshot(),forms=Object.entries(GOVERNMENT_FORMS).map(([id,x])=>'<button class="command-choice'+(id===g.form?' is-current':'')+'" data-command="government-form" data-value="'+id+'"><strong>'+esc(x.label)+'</strong><small>Tax baseline '+x.tax+'% · Research ×'+((1+Number(x.research||0)).toFixed(2))+' · Trade ×'+((1+Number(x.trade||0)).toFixed(2))+' · Cost 20 gold</small></button>').join("");
@@ -489,7 +490,7 @@ function buildings(){
   const an=CARD_DECK.find(card=>card.type===a.type)?.name||BUILDING_LABELS[a.type]||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||BUILDING_LABELS[b.type]||String(b.type);
   return an.localeCompare(bn)||String(a.id).localeCompare(String(b.id));
  });
- const records=narrowViewport()?allRecords.slice(0,8):allRecords;
+ const records=narrowViewport()&&!buildingShowAll?allRecords.slice(0,8):allRecords;
  const counts=new Map();
  for(const building of allRecords)counts.set(building.type,(counts.get(building.type)||0)+1);
  const typeSummary=[...counts.entries()].map(([type,count])=>{
@@ -609,7 +610,7 @@ function buildings(){
  return intro("SETTLEMENT ARCHITECTURE","Building register","Inspect every surviving structure using its actual simulation entity, health, footprint, staffing and site data.")+
  '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+allRecords.length+'</strong></div><div><small>CONSTRUCTION SITES</small><strong>'+city.construction+'</strong></div><div><small>CARRIERS</small><strong>'+city.carriers+'</strong></div><div><small>ACTIVE HAULS</small><strong>'+city.activeJobs+'</strong></div><div><small>BLOCKED HAULS</small><strong>'+number(city.blockedJobs||0)+'</strong></div><div><small>WAREHOUSE SPACE USED</small><strong>'+number(city.warehouses?.used||0)+' / '+number(city.warehouses?.capacity||0)+'</strong></div><div><small>WAREHOUSE RESERVED</small><strong>'+number(city.warehouses?.reservedIn||0)+' in · '+number(city.warehouses?.reservedOut||0)+' out</strong></div><div><small>WATER COVERAGE</small><strong>'+(settlement.needs?Math.round(settlement.needs.water*100)+'%':'—')+'</strong></div></div>'+
  logisticsSections+
- '<div class="building-type-summary">'+typeSummary+'</div>'+(records.length<allRecords.length?'<p class="command-note">Showing the first '+records.length+' of '+allRecords.length+' structures on this screen. Counts above include every structure.</p>':'')+'<label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">'+
+ '<div class="building-type-summary">'+typeSummary+'</div>'+(records.length<allRecords.length?'<p class="command-note">Showing the first '+records.length+' of '+allRecords.length+' structures on this screen. Counts above include every structure.</p><button type="button" class="command-choice" data-building-show-all>SHOW ALL '+allRecords.length+' STRUCTURES</button>':'')+'<label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">'+
  '<div class="building-register">'+(rows||'<p class="command-note">No buildings are recorded in this realm yet.</p>')+'</div>'+
  '<p class="command-note">Construction, local stores, field stages and active hauls are read from live simulation state. Site resource values are taken from the structure centre tile only; they are not a production rate. Construction and demolition remain in the build interface.</p>';
 }
@@ -1442,6 +1443,19 @@ export function setupManagementUI(){
   else toast(String(result.reason||"PROFILE CHANGE FAILED").replaceAll("-"," ").toUpperCase());
  });
  $("command-panel-content")?.addEventListener("click",e=>{
+  const buildingShowAllButton=e.target.closest("[data-building-show-all]");
+  if(buildingShowAllButton){buildingShowAll=true;const panel=$("command-panel-content");const scrollTop=panel?.scrollTop||0;render();if(panel)panel.scrollTop=scrollTop;return;}
+  const courtShowAllButton=e.target.closest("[data-court-show-all]");
+  if(courtShowAllButton){
+   courtShowAll=true;const panel=$("command-panel-content");render();let tries=0;
+   const showCourt=()=>{
+    if(activePanel!=="government"||tries++>180)return;
+    const grid=panel?.querySelector(".court-office-grid");
+    if(!grid){requestAnimationFrame(showCourt);return;}
+    grid.scrollIntoView({block:"start"});
+   };
+   requestAnimationFrame(showCourt);return;
+  }
   const logisticsButton=e.target.closest("[data-building-logistics]");
   if(logisticsButton){
    expandedBuildingLogistics=true;

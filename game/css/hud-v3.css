@@ -487,6 +487,7 @@
       "status form"
       "footer form";
     align-items:start;column-gap:clamp(22px,3vw,44px);
+    grid-template-rows:repeat(5,max-content) 1fr max-content;
     max-height:calc(100dvh - 24px);text-align:left;
   }
   .start-panel .start-emblem{grid-area:emblem;margin:0;justify-self:start;width:58px;height:58px;font-size:32px}
@@ -670,16 +671,22 @@
   .realm-resource-strip{justify-content:space-between;padding-bottom:6px}
   .realm-resource-chip{flex:1 1 0;min-width:0}
   .game-layout{flex-direction:column}
+  /* Fourteen destinations wrap into two balanced rows. The previous
+     horizontal strip pushed Build and Options off-screen with no cue that
+     the rail could be scrolled. */
   .realm-nav{
-    flex:0 0 auto;flex-direction:row;gap:2px;padding:5px 6px;
-    overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid #8f7448;
+    flex:0 0 auto;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));
+    gap:2px;padding:5px 6px;overflow:visible;
+    border-right:0;border-bottom:1px solid #8f7448;
   }
   .realm-nav-heading,.realm-nav-divider,.realm-nav-spacer{display:none}
-  .realm-nav-button{flex:0 0 62px;min-height:46px}
-  .realm-nav-button span{font-size:7px}
-  .world-stage{min-height:280px}
+  .realm-nav-button{width:100%;min-height:32px;padding:2px 1px;gap:1px}
+  .realm-nav-button svg{width:18px;height:18px}
+  .realm-nav-button span{font-size:6.5px;letter-spacing:.01em;white-space:normal;text-align:center}
+  .world-stage{min-height:240px}
   .side-panel{
     flex:1 1 auto;width:100%;min-width:0;max-height:44%;
+    overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
     border-left:0;border-top:2px solid #8f7448;
   }
   .stage-compass{display:none}

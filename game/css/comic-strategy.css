@@ -191,40 +191,6 @@
 .city-codex[open] > summary::after { content: "−"; }
 .city-codex > [data-city-codex-body] { padding: 0 9px 10px; }
 
-/* On a throttled phone, content-visibility:auto still lays out a whole group
-   of archive cards to discover its size. The low-end pass therefore parks
-   repeated cards in a zero-cost hidden state and lets the panel observer
-   reveal them just before they enter the scrollport. Desktop is untouched. */
-@media (max-width: 640px) {
-    #command-panel-content .command-policy,
-    #command-panel-content .command-card,
-    #command-panel-content .command-resource,
-    #command-panel-content .court-office,
-    #command-panel-content .court-history>div,
-    #command-panel-content .city-policy,
-    #command-panel-content .city-service-card,
-    #command-panel-content .city-codex-card,
-    #command-panel-content .population-citizen,
-    #command-panel-content .population-household,
-    #command-panel-content .building-record,
-    #command-panel-content .diplomacy-realm,
-    #command-panel-content .military-soldier,
-    #command-panel-content .health-healer,
-    #command-panel-content .creature-record,
-    #command-panel-content .dynasty-person,
-    #command-panel-content .endeavour-card,
-    #command-panel-content .item-lexicon__entry {
-        content-visibility: hidden;
-        contain-intrinsic-size: auto 64px;
-    }
-    #command-panel-content .item-lexicon__group {
-        content-visibility: visible;
-    }
-    #command-panel-content .is-cv-ready {
-        content-visibility: visible;
-    }
-}
-
 /* The lexicon's category rail becomes one native select on a phone. It keeps
    every category available while avoiding a grid of two dozen buttons. */
 .item-lexicon__category-select { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 12px; color: #87613a; font-size: 8px; font-weight: 1000; letter-spacing: .12em; }

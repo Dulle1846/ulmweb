@@ -198,8 +198,9 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .building-type-summary{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
 .building-type-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 8px;border:1px solid var(--ui-line);border-radius:2px;background:#17151266;color:#d9c49a;font:600 9px var(--ui-body-font)}
 .building-type-chip strong{color:#f0e3c7}
-.building-search-label{display:block;margin:12px 0 5px;color:#cdbd9e;font:700 9px var(--ui-title-font);letter-spacing:.1em}
+.building-search-label{display:block;margin:12px 0 5px;color:#7c5a36;font:700 9px var(--ui-title-font);letter-spacing:.1em}
 .building-search{width:100%;min-height:34px;padding:7px 9px;border:1px solid var(--ui-line-strong);border-radius:3px;background:#171512;color:#f0e3c7;font:12px var(--ui-body-font)}
+.building-search::placeholder{color:#b9a98a;opacity:1}
 .building-search:focus-visible{outline:2px solid #d1b476;outline-offset:2px}
 .building-register{display:grid;gap:6px;margin-top:9px}
 .building-record{overflow:hidden;border:1px solid var(--ui-line);border-radius:3px;background:linear-gradient(145deg,#302a22,#211e19)}

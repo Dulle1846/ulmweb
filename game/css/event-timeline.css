@@ -70,7 +70,7 @@
 .timeline-empty-year p { margin: 3px 0 0; }
 
 /* Centre notice, deliberately not a modal: the realm keeps moving. */
-.event-notification { position: fixed; z-index: 1600; top: 82px; left: 50%; width: min(480px, calc(100vw - 28px)); transform: translate(-50%, -8px); opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .16s ease; }
+.event-notification { position: fixed; z-index: 980; top: var(--kac-event-top, 82px); left: calc(50% + (var(--hud-rail-width, 0px) - var(--hud-panel-width, 0px)) / 2); width: min(480px, calc(100vw - 28px)); transform: translate(-50%, -8px); opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .16s ease; }
 .event-notification.hidden { display: none; }
 .event-notification.is-visible { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 .event-notification-card { position: relative; overflow: hidden; padding: 13px 15px 11px; border: 2px solid #a47c42; background: radial-gradient(ellipse at 50% 0, #fff7d9, transparent 66%), linear-gradient(145deg, #f4e3bb, #d3b47c); color: #3d2a1b; box-shadow: 0 0 0 3px #22150c, 0 0 0 4px #c6a263, 0 14px 32px #000a; }
@@ -86,6 +86,11 @@
 .event-notification button { padding: 3px 7px; border: 1px solid #896339; background: #5c3a26; color: #f7e5bb; font: 700 7px Georgia, serif; letter-spacing: .08em; cursor: pointer; }
 .event-notification button:hover { background: #7c3829; }
 .event-notification .event-notification-close { background: transparent; color: #613d27; }
+@media (max-width: 900px) {
+    /* The administration rail is horizontal here, so the map spans the full
+       viewport and the toast belongs on the true centre line. */
+    .event-notification { left: 50%; }
+}
 @media (max-width: 860px) {
     .timeline-layout { grid-template-columns: 1fr; }
     .timeline-events { max-height: 360px; }
@@ -98,7 +103,6 @@
     .timeline-scrubber { grid-template-columns: 1fr auto; }
     .timeline-scrubber label { grid-column: 1 / -1; }
     .timeline-event-card { padding: 7px; }
-    .event-notification { top: 68px; }
 }
 
 /* Narrow management panels: keep the command header inside the 360 px viewport. */
