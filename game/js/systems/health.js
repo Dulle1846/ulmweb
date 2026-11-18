@@ -15,6 +15,11 @@ export const HEALTH_HISTORY_LIMIT = 24;
 export const MAX_HEALERS_PER_FACILITY = 2;
 export const MEDICINE_MAX_STOCK = 60;
 export const SANITATION_MAX = 100;
+export const FIELD_MEDICINE_LIMIT = 24;
+export const FIELD_MEDICINE_DECAY = 0.72;
+export const FIELD_MEDICINE_GAIN = 8;
+export const FIELD_MEDICINE_RISK_RELIEF = 0.012;
+export const FIELD_MEDICINE_MORTALITY_RELIEF = 0.006;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
 const round = value => Math.max(0, Math.round(Number(value) || 0));
@@ -33,6 +38,9 @@ function defaultHealth() {
         outbreaks: 0,
         herbalDoses: 0,
         herbalTreated: 0,
+        fieldMedicine: 0,
+        fieldTreatedSeen: 0,
+        fieldTreatedLastYear: 0,
         treatedTotal: 0,
         lastUpdateTick: 0,
         startedAtTick: 0,
@@ -102,7 +110,9 @@ export function normalizeHealthState(value = {}) {
             outbreak: String(entry.outbreak || "none").slice(0, 48),
             healers: round(entry.healers),
             medicineStock: round(entry.medicineStock),
-            medicinePrice: clamp(entry.medicinePrice, 0.5, 50)
+            medicinePrice: clamp(entry.medicinePrice, 0.5, 50),
+            fieldMedicine: clamp(entry.fieldMedicine ?? 0, 0, FIELD_MEDICINE_LIMIT),
+            fieldTreated: round(entry.fieldTreated)
         }));
     const byOccupation = {};
     if (mortality.byOccupation && typeof mortality.byOccupation === "object" && !Array.isArray(mortality.byOccupation)) {
@@ -131,6 +141,12 @@ export function normalizeHealthState(value = {}) {
         outbreaks: round(source.outbreaks),
         herbalDoses: round(source.herbalDoses),
         herbalTreated: round(source.herbalTreated),
+        // Legacy saves have no field-medicine record. Start from their current
+        // treated total so past cases cannot be replayed as a free annual gain.
+        fieldMedicine: clamp(source.fieldMedicine ?? 0, 0, FIELD_MEDICINE_LIMIT),
+        fieldTreatedSeen: Math.min(round(source.herbalTreated),
+            source.fieldTreatedSeen === undefined ? round(source.herbalTreated) : round(source.fieldTreatedSeen)),
+        fieldTreatedLastYear: round(source.fieldTreatedLastYear),
         treatedTotal: round(source.treatedTotal),
         lastUpdateTick: round(source.lastUpdateTick),
         startedAtTick: round(source.startedAtTick),
@@ -267,14 +283,28 @@ export function getHealthEconomicEffects() {
     };
 }
 
+export function getFieldMedicineRelief() {
+    const memory = clamp(ensureHealth().fieldMedicine, 0, FIELD_MEDICINE_LIMIT);
+    return {
+        memory: Math.round(memory * 1000) / 1000,
+        outbreakRiskFactor: Math.round((1 - memory * FIELD_MEDICINE_RISK_RELIEF) * 1000) / 1000,
+        mortalityRelief: Math.round((1 - memory * FIELD_MEDICINE_MORTALITY_RELIEF) * 1000) / 1000,
+        severityRelief: memory >= 18 ? 1 : 0
+    };
+}
+
 export function getMortalityContext() {
+    const health = ensureHealth();
+    const field = getFieldMedicineRelief();
     return {
         sanitation: getSanitationScore(),
         healerCoverage: getHealerCoverage(),
-        medicineStock: Number(ensureHealth().medicineStock) || 0,
+        medicineStock: Number(health.medicineStock) || 0,
         quarantineLevel: getQuarantineLevel(),
-        outbreakActive: Boolean(ensureHealth().outbreakActive),
-        severity: Number(ensureHealth().severity) || 0
+        outbreakActive: Boolean(health.outbreakActive),
+        severity: Number(health.severity) || 0,
+        fieldMedicineMemory: field.memory,
+        fieldMedicineRelief: field.mortalityRelief
     };
 }
 
@@ -287,6 +317,8 @@ export function getHealthSnapshot() {
         ? people.reduce((sum, person) => sum + clamp(person.immunity, 0, 100), 0) / people.length
         : 0;
     const quarantine = getQuarantineLevel();
+    const field = getFieldMedicineRelief();
+    const fieldStock = medicinalStock();
     return {
         population: people.length,
         sick: sick.length,
@@ -299,6 +331,13 @@ export function getHealthSnapshot() {
         containment: health.containment,
         herbalDoses: health.herbalDoses,
         herbalTreated: health.herbalTreated,
+        fieldMedicine: Math.round(Number(health.fieldMedicine) * 100) / 100,
+        fieldMedicineLimit: FIELD_MEDICINE_LIMIT,
+        fieldTreatedLastYear: health.fieldTreatedLastYear,
+        fieldStock,
+        fieldOutbreakReduction: Math.round((1 - field.outbreakRiskFactor) * 1000) / 10,
+        fieldMortalityReduction: Math.round((1 - field.mortalityRelief) * 1000) / 10,
+        fieldSeverityRelief: field.severityRelief,
         treatedTotal: health.treatedTotal,
         sanitation: Math.round(getSanitationScore()),
         sanitationInvestments: health.sanitation.investments,
@@ -339,6 +378,13 @@ const MEDICINAL_GOODS = Object.freeze([
     Object.freeze({ id: "cat-claw", potency: 1.05 }),
     Object.freeze({ id: "copaiba-oil", potency: 1.1 }),
 ]);
+
+function medicinalStock() {
+    const stock = state.forestGathering?.stock;
+    if (!stock || typeof stock !== "object") return 0;
+    return MEDICINAL_GOODS.reduce((sum, medicine) =>
+        sum + Math.max(0, Math.floor(Number(stock[medicine.id]) || 0)), 0);
+}
 
 export function applyHerbalRemedy(maxDoses = 2) {
     const health = ensureHealth();
@@ -382,16 +428,18 @@ export function applyHerbalRemedy(maxDoses = 2) {
     health.herbalDoses += used.reduce((sum, entry) => sum + entry.amount, 0);
     health.herbalTreated += sick.length;
     health.treatedTotal += sick.length;
-    return { ok: true, used, treated: sick.length, strength, reliefTicks };
+    return { ok: true, used, treated: sick.length, strength, reliefTicks, message: "field remedies administered" };
 }
 
 export function startOutbreak({ severity = 1, containment = 0, disease = "common-fever" } = {}) {
     const health = ensureHealth();
     const people = residents();
     const alreadyActive = health.outbreakActive && people.some(person => isSick(person));
+    const field = getFieldMedicineRelief();
+    const effectiveSeverity = clamp(severity - field.severityRelief, 1, 3);
     health.outbreakActive = true;
     health.disease = String(disease).slice(0, 48) || "common-fever";
-    health.severity = Math.max(health.severity, clamp(severity, 1, 3));
+    health.severity = Math.max(health.severity, effectiveSeverity);
     health.containment = Math.max(health.containment, clamp(containment, 0, 3));
     if (!alreadyActive) {
         health.startedAtTick = state.tick;
@@ -678,6 +726,25 @@ export function recordHealthMortality(entity, person, cause = "illness") {
     return health.mortality.lastDeaths[0];
 }
 
+// The annual audit is the one bounded place where the realm turns cases that
+// were actually treated into remembered field practice. It reads only the
+// two saved counters and the current resident count; it never scans a new
+// ledger or runs on a frame. Old saves start with the current total as their
+// baseline, so previously treated cases cannot be replayed as a free gain.
+function foldFieldMedicine(health) {
+    const treated = Math.max(0, round(health.herbalTreated));
+    const seen = Math.min(treated, Math.max(0, round(health.fieldTreatedSeen)));
+    const cases = Math.max(0, treated - seen);
+    const population = residents().length;
+    const practice = population > 0 ? clamp(cases / Math.max(1, population * 0.5), 0, 1) : 0;
+    health.fieldTreatedSeen = treated;
+    health.fieldTreatedLastYear = cases;
+    health.fieldMedicine = Math.round(clamp(
+        health.fieldMedicine * FIELD_MEDICINE_DECAY + practice * FIELD_MEDICINE_GAIN,
+        0, FIELD_MEDICINE_LIMIT
+    ) * 1000) / 1000;
+}
+
 function auditHealthYear() {
     const health = ensureHealth();
     const year = yearNow();
@@ -696,6 +763,7 @@ function auditHealthYear() {
     const waste = Math.max(0, population - wells * 5) * 0.35 + crowding * 14;
     health.sanitation.waste = clamp(health.sanitation.waste * 0.55 + waste, 0, 100);
     health.sanitation.score = clamp(health.sanitation.score - 2 - health.sanitation.waste * 0.12, 0, SANITATION_MAX);
+    foldFieldMedicine(health);
     const sick = residents().filter(isSick).length;
     const demand = sick * 1.3 + (health.outbreakActive ? 6 : 0) + getQuarantineLevel() * 2;
     health.medicinePrice = clamp(
@@ -706,10 +774,11 @@ function auditHealthYear() {
     const sanitation = getSanitationScore();
     const coverage = getHealerCoverage();
     const foodShortage = Math.max(0, Number(state.economy?.lastLedger?.foodShortage) || 0);
+    const field = getFieldMedicineRelief();
     if (population > 0 && !health.outbreakActive) {
         const risk = clamp(
-            0.018 + Math.max(0, 58 - sanitation) / 100 * 0.26 + crowding * 0.12 +
-            Math.min(0.08, foodShortage * 0.01) - coverage * 0.06,
+            (0.018 + Math.max(0, 58 - sanitation) / 100 * 0.26 + crowding * 0.12 +
+                Math.min(0.08, foodShortage * 0.01) - coverage * 0.06) * field.outbreakRiskFactor,
             0, 0.62
         );
         if (random("health") < risk) {
@@ -728,10 +797,13 @@ function auditHealthYear() {
         healers: health.healers.length,
         medicineStock: health.medicineStock,
         medicinePrice: health.medicinePrice,
+        fieldMedicine: Math.round(Number(health.fieldMedicine) * 100) / 100,
+        fieldTreated: health.fieldTreatedLastYear,
         outbreak: health.outbreakActive ? health.disease : "none"
     };
     health.lastAudit = audit;
     health.history.unshift(audit);
+    health.fieldTreatedSeen = Math.max(0, round(health.fieldTreatedSeen));
     health.history = health.history.slice(0, HEALTH_HISTORY_LIMIT);
     addLog("PUBLIC HEALTH AUDIT · YEAR " + year + " · SANITATION " + audit.sanitation + " · " + sick + " ILL · " + health.healers.length + " HEALERS · MEDICINE " + health.medicineStock, "#9ab7a1", "health");
 }

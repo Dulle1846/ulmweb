@@ -27,7 +27,8 @@ function deathRisk(entity, person) {
     const immunity = Math.max(0, Math.min(100, Number(entity.immunity) || 0)) / 100;
     const illnessRisk = Number(entity.illnessSeverity) > 0
         ? Math.min(0.32, (0.018 + Number(entity.illnessSeverity) * 0.016 + context.severity * 0.008) *
-            (1 - immunity * 0.55) * (1 - context.healerCoverage * 0.22))
+            (1 - immunity * 0.55) * (1 - context.healerCoverage * 0.22) *
+            Math.max(0.7, Number(context.fieldMedicineRelief) || 1))
         : 0;
     const sanitationRisk = Math.max(0, 55 - context.sanitation) / 100 * 0.018;
     const occupation = String(person.role || entity.job || "resident").toLowerCase();
