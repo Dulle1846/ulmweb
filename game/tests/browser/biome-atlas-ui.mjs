@@ -242,7 +242,85 @@ try {
     }, craftTarget.regionId, { timeout: 15000 });
     assert.match(await craftRegionCard.innerText(), /PROTECTED HABITAT|LIFT PROTECTION/);
 
+    // 1.2.20 frontier exchange: a real harvest reduces surveyed stock and
+    // extraction health, and the next market pass must quote the same pressure
+    // the Trade tab explains to the player.
+    const frontierTarget = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        const { getBiomeMarketCategory } = await import("./js/systems/biome-market-link.js");
+        const { getBiomeRegionSnapshot } = await import("./js/systems/biome-resource-state.js");
+        // Pick the best-stocked commodity that is actually in season: the
+        // reference must harvest several times without hitting an empty row.
+        // Seasonal availability lives on the computed snapshot, not the raw row.
+        const candidates = [];
+        for (const region of state.biomeAtlas.regions) {
+            if (!region.discovered) continue;
+            for (const row of getBiomeRegionSnapshot(region.id).resources) {
+                if (!row.discovered || row.locallyExtinct || row.stock <= 0 || !row.seasonal) continue;
+                const market = getBiomeMarketCategory(row.category);
+                if (market) candidates.push({ regionId: region.id, resourceId: row.id, market, stock: Math.round(row.stock) });
+            }
+        }
+        candidates.sort((left, right) => right.stock - left.stock);
+        return candidates[0] || null;
+    });
+    assert.ok(frontierTarget, "the opening realm needs one discovered commodity for the frontier link");
+    const frontierBefore = await page.evaluate(async market => {
+        const { getBiomeFrontierSupply } = await import("./js/systems/biome-market-link.js");
+        return getBiomeFrontierSupply().categories[market];
+    }, frontierTarget.market);
+    const frontierCard = page.locator('[data-biome-region="' + frontierTarget.regionId + '"]');
+    if (!await frontierCard.evaluate(details => details.open)) await frontierCard.locator("summary").click();
+    const frontierHarvest = frontierCard.locator('[data-command="biome-harvest"][data-biome-resource="' + frontierTarget.resourceId + '"]');
+    let frontierHarvests = 0;
+    for (let index = 0; index < 3; index++) {
+        // Each harvest re-renders the panel, so re-open the card and re-read the
+        // button instead of holding a handle that may now be disabled.
+        if (!await frontierCard.evaluate(details => details.open)) await frontierCard.locator("summary").click();
+        if (await frontierHarvest.count() === 0) break;
+        if (await frontierHarvest.isDisabled()) break;
+        const harvestsBefore = await page.evaluate(async () => Number((await import("./js/core/state.js")).state.biomeAtlas.stats.harvests) || 0);
+        await frontierHarvest.click();
+        await page.waitForFunction(async before =>
+            Number((await import("./js/core/state.js")).state.biomeAtlas.stats.harvests) >= before,
+        harvestsBefore + 1, { timeout: 15000 });
+        frontierHarvests++;
+    }
+    assert.ok(frontierHarvests >= 2, "the frontier proof needs at least two real harvests; got " + frontierHarvests);
+    const frontierAfter = await page.evaluate(async ({ market, before }) => {
+        const { state } = await import("./js/core/state.js");
+        const { getBiomeFrontierSupply } = await import("./js/systems/biome-market-link.js");
+        const { updateMarket } = await import("./js/systems/market.js");
+        const live = getBiomeFrontierSupply().categories[market];
+        if (live.pressure <= before.pressure) throw new Error("three harvests did not tighten the frontier");
+        state.market.lastUpdateTick = 0;
+        state.tick = Math.max(90, Number(state.tick) || 0);
+        updateMarket();
+        return {
+            live,
+            quoted: state.market.frontierSupply.categories[market],
+            price: state.market.prices[market],
+            gold: state.resources.gold
+        };
+    }, { market: frontierTarget.market, before: frontierBefore });
+    assert.ok(frontierAfter.live.pressure > frontierBefore.pressure);
+    assert.ok(frontierAfter.quoted.priceFactor > 1, "the next exchange quote must carry frontier pressure");
+    assert.ok(frontierAfter.price > 0);
+
     await page.locator("#command-close").click();
+    await page.locator("#tab-2").click();
+    await page.waitForFunction(() => {
+        const text = document.querySelector("#tab-content")?.textContent || "";
+        return text.includes("FRONTIER SUPPLY") && text.includes("CHARTED BIOMES");
+    }, null, { timeout: 10000 });
+    const frontierPanel = await page.locator("#tab-content").innerText();
+    assert.match(frontierPanel, /FRONTIER SUPPLY/);
+    assert.match(frontierPanel, /NEXT QUOTE/);
+    assert.match(frontierPanel, new RegExp(frontierTarget.market.toUpperCase()));
+    assert.match(frontierPanel, /STOCK ·/);
+    // The proof shot must show the block itself, not the top of a long tab.
+    await page.locator(".frontier-supply").scrollIntoViewIfNeeded();
+    await page.screenshot({ path: "artifacts/biome-market-link.png", fullPage: false });
     await page.locator("#map-layer-select").selectOption("biomes");
     await page.locator('[data-zoom-level="3"]').click();
     await page.waitForFunction(async () => {
@@ -299,7 +377,7 @@ try {
     assert.match(legendText, /Density bars/);
     assert.match(legendText, /hidden occurrences never appear/);
 
-    const beforeSave = await page.evaluate(async ({ regionId, craftRegionId }) => {
+    const beforeSave = await page.evaluate(async ({ regionId, craftRegionId, market }) => {
         const { state } = await import("./js/core/state.js");
         const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
         const craftRegion = state.biomeAtlas.regions.find(entry => entry.id === craftRegionId);
@@ -314,9 +392,12 @@ try {
                 crafts: Number(state.biomeAtlas.stats.crafts) || 0,
                 craftsSold: Number(state.biomeAtlas.stats.craftsSold) || 0,
                 gold: state.resources.gold
-            }
+            },
+            frontier: (await import("./js/systems/biome-market-link.js")).getBiomeFrontierSupply().categories[market],
+            marketFrontier: state.market.frontierSupply.categories[market],
+            marketPrice: state.market.prices[market]
         };
-    }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId });
+    }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId, market: frontierTarget.market });
     await page.locator("#save-btn").click();
     await page.waitForFunction(() => (document.querySelector("#save-status")?.textContent || "").startsWith("LAST SAVED"), null, { timeout: 20000 });
     await page.reload({ waitUntil: "networkidle", timeout: 60000 });
@@ -335,12 +416,20 @@ try {
     await page.evaluate(async () => { (await import("./js/core/state.js")).state.isPaused = true; });
 
     // Give the save pipeline a beat to finish any sliced annual work before the
-    // panel reads its restored records.
+    // panel reads its restored records. Then prove the frontier quote is
+    // legible in the same Trade tab a player uses after reload.
     await page.waitForTimeout(250);
+    await page.locator("#tab-2").click();
+    await page.waitForFunction(() => (document.querySelector("#tab-content")?.textContent || "").includes("FRONTIER SUPPLY"), null, { timeout: 10000 });
+    const restoredTrade = await page.locator("#tab-content").innerText();
+    assert.match(restoredTrade, /FRONTIER SUPPLY/);
+    assert.match(restoredTrade, /STOCK ·/);
+    await page.locator(".frontier-supply").scrollIntoViewIfNeeded();
+    await page.screenshot({ path: "artifacts/biome-market-link-restored.png", fullPage: false });
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="biome"]').click();
     await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").toLowerCase().includes("biome resources & wildlife"), null, { timeout: 15000 });
-    const restored = await page.evaluate(async ({ regionId, craftRegionId }) => {
+    const restored = await page.evaluate(async ({ regionId, craftRegionId, market }) => {
         const { state } = await import("./js/core/state.js");
         const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
         const craftRegion = state.biomeAtlas.regions.find(entry => entry.id === craftRegionId);
@@ -356,15 +445,21 @@ try {
                 craftsSold: Number(state.biomeAtlas.stats.craftsSold) || 0,
                 gold: state.resources.gold
             },
+            frontier: (await import("./js/systems/biome-market-link.js")).getBiomeFrontierSupply().categories[market],
+            marketFrontier: state.market.frontierSupply.categories[market],
+            marketPrice: state.market.prices[market],
             text: document.querySelector("#command-panel-content")?.textContent || ""
         };
-    }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId });
+    }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId, market: frontierTarget.market });
     assert.equal(restored.policy, "conservation");
     assert.equal(restored.protectedArea, true, "protected-habitat status must survive reload");
     assert.ok(restored.surveyLevel >= 1);
     assert.deepEqual(restored.stock, beforeSave.stock);
     assert.deepEqual(restored.fauna, beforeSave.fauna);
     assert.deepEqual(restored.craft, beforeSave.craft, "crafted stock, counters and gold must survive reload");
+    assert.deepEqual(restored.frontier, beforeSave.frontier, "the frontier reading must survive reload");
+    assert.deepEqual(restored.marketFrontier, beforeSave.marketFrontier, "the saved market quote must survive reload");
+    assert.equal(restored.marketPrice, beforeSave.marketPrice);
     assert.equal(restored.craft.crafts, 2);
     assert.equal(restored.craft.craftsSold, 1);
     assert.deepEqual(restored.craft.crafted, { ["craft-" + craftTarget.recipeId]: 1 });
@@ -391,6 +486,11 @@ try {
         markers: mapProof.markers,
         refuges: mapProof.refuges,
         densityFamilies: densityProof.families.map(family => family.id),
+        frontier: {
+            market: frontierTarget.market, resource: frontierTarget.resourceId,
+            beforePressure: frontierBefore.pressure, afterPressure: restored.frontier.pressure,
+            band: restored.frontier.band, quotedPrice: restored.marketPrice
+        },
         protectedArea: restored.protectedArea,
         loaded: loadStatus,
         pageErrors: pageErrors.length,

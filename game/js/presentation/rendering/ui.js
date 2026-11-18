@@ -2,6 +2,7 @@
 import { SEASONS } from "../../core/config.js";
 import { state } from "../../core/state.js";
 import { getTradePartners,MARKET_RESOURCES } from "../../systems/market.js";
+import { getBiomeFrontierSupply } from "../../systems/biome-market-link.js";
 import { getHousingSnapshot } from "../../systems/population.js";
 import { getRoomBonusSnapshot, roomBonusSignature } from "../../systems/rooms.js";
 import { getSovereign } from "../../systems/royal-dynasty.js";
@@ -216,7 +217,8 @@ function tabSignature(){
         JSON.stringify(state.hiddenRealm?.activeThreads||[]),state.hiddenRealm?.completedThreads?.length,
         ...Object.values(state.resources)].join("|");
     return "trade:"+state.tick+":"+JSON.stringify(state.market?.prices||{})+":"+
-        (state.market?.partners||[]).map(p=>p.id+":"+JSON.stringify(p.stock)+":"+p.treasury).join("|");
+        (state.market?.partners||[]).map(p=>p.id+":"+JSON.stringify(p.stock)+":"+p.treasury).join("|")+
+        ":frontier:"+Number(state.biomeAtlas?.stats?.harvests||0)+":"+Number(state.biomeAtlas?.stats?.crafts||0);
 }
 
 function renderEvents(container){
@@ -234,6 +236,16 @@ function renderStatistics(container){
 
 function renderTrade(container){
     const partners=getTradePartners(),prices=state.market?.prices||{wood:2,stone:3,food:2};
+    const frontier=getBiomeFrontierSupply();
+    const frontierRows=MARKET_RESOURCES.map(resource=>{
+        const row=frontier.categories?.[resource];
+        if(!row?.known){
+            return '<div class="price-chart-row"><strong>'+resource.toUpperCase()+'</strong><small>NO SURVEYED SUPPLY</small><b>—</b></div>';
+        }
+        const effect=Math.round((Number(row.priceFactor||1)-1)*100);
+        const stock=Math.round(Number(row.cover||0)*100);
+        return '<div class="price-chart-row"><strong>'+resource.toUpperCase()+'</strong><small>'+stock+'% STOCK · '+row.regions+' REGION'+(row.regions===1?'':'S')+' · '+esc(row.band)+'</small><b class="'+(effect>0?'is-up':'')+'">'+(effect>0?'+':'')+effect+'%</b></div>';
+    }).join("");
     const chart=MARKET_RESOURCES.map(resource=>{
         const values=state.market?.priceHistory?.[resource]||[prices[resource]];
         const max=Math.max(...values,1),min=Math.min(...values,0);
@@ -253,9 +265,16 @@ function renderTrade(container){
         return '<article class="trade-partner"><div class="trade-partner-head"><div><strong>'+esc(partner.name)+'</strong>'+
             '<small>'+esc(partner.region)+' · '+esc(partner.specialty)+'</small></div><span class="trade-treasury">✦ '+partner.treasury+' gold</span></div>'+rows+'</article>';
     }).join("");
+    // The frontier reading leads the tab: it is the explanation for the prices
+    // below it, and the player must not have to scroll past the chart to find
+    // out why the exchange repriced.
     container.innerHTML='<div class="trade-summary"><span>REGIONAL EXCHANGE</span><strong>YOUR GOLD: '+Math.floor(state.resources.gold)+'</strong></div>'+
+        '<div class="trade-summary"><span>FRONTIER SUPPLY</span><strong>CHARTED BIOMES → NEXT QUOTE</strong></div>'+
+        '<div class="price-chart frontier-supply">'+frontierRows+'</div>'+
+        '<div class="trade-note">Harvesting lowers a region\'s stock and extraction health, so the next 90-day quote rises; protection and regrowth ease it. Stored frontier goods sell at the current quote.</div>'+
         '<div class="trade-note">Seasonal prices and regional stock fluctuate. Selling pays 82% of the listed price.</div>'+
-        '<div class="price-chart">'+chart+'</div><div class="trade-partners">'+markup+'</div>';
+        '<div class="price-chart">'+chart+'</div>'+
+        '<div class="trade-partners">'+markup+'</div>';
 }
 
 function renderTabContent(){

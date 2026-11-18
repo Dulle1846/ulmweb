@@ -5,7 +5,8 @@
 // collapsed by default so a late-game atlas remains a bounded DOM cost.
 import { state } from "../core/state.js";
 import { getBiomeEconomySnapshot } from "../systems/biome-resource-state.js";
-import { BIOME_FOCUSES, BIOME_POLICIES, BIOME_RESOURCE_CATEGORIES } from "../world/biome-resource-data.js";
+import { getBiomeFrontierSupply } from "../systems/biome-market-link.js";
+import { BIOME_FOCUSES, BIOME_MARKET_CATEGORIES, BIOME_POLICIES, BIOME_RESOURCE_CATEGORIES } from "../world/biome-resource-data.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -101,6 +102,14 @@ export function renderBiomePanel() {
     const regions = atlas.regions.slice().sort((a, b) => a.index - b.index);
     const importList = atlas.imports.length ? atlas.imports.map(value => '<span class="biome-badge is-danger">' + esc(value.toUpperCase()) + '</span>').join("") : '<span class="biome-badge">SELF-SUFFICIENT</span>';
     const exportList = atlas.exports.length ? atlas.exports.slice(0, 10).map(value => '<span class="biome-badge is-rare">' + esc(value.toUpperCase()) + '</span>').join("") : '<span class="command-note">No export good is known yet.</span>';
+    const frontier = getBiomeFrontierSupply();
+    const frontierList = BIOME_MARKET_CATEGORIES.map(category => {
+        const row = frontier.categories?.[category];
+        if (!row?.known) return '<span class="biome-badge">' + category.toUpperCase() + ' · UNCHARTED</span>';
+        const effect = Math.round((Number(row.priceFactor || 1) - 1) * 100);
+        return '<span class="biome-badge' + (effect > 0 ? ' is-rare' : '') + '">' + category.toUpperCase() + ' '
+            + Math.round(Number(row.cover || 0) * 100) + '% STOCK · ' + (effect > 0 ? '+' : '') + effect + '% QUOTE</span>';
+    }).join("");
     const specialisations = atlas.specialisations.length ? atlas.specialisations.map(value => '<span class="biome-badge">' + esc(value.toUpperCase()) + '</span>').join("") : '<span class="command-note">No regional specialisation has emerged.</span>';
     const stats = atlas.stats || {};
     return intro("THE LIVING LAND", "Biome resources & wildlife", "Every discovered region has its own soil, climate, timber, minerals, plants and animal populations. Production, hunting, rare deposits and ecological recovery are simulated together; the map overlay draws the same saved atlas.") +
@@ -108,6 +117,8 @@ export function renderBiomePanel() {
         '<div class="biome-season"><span class="command-ribbon">' + esc(season.toUpperCase()) + ' SURVEY · YEAR ' + number(state.year) + '</span><p>Seasonal resources are marked in season or dormant. Annual regeneration, breeding, migration, predation, pollination and erosion settle at the year boundary; player actions affect the following year.</p></div>' +
         '<div class="command-section-title">REGIONAL ECONOMY</div><div class="biome-economy-grid"><div><small>PRODUCTION COST</small><strong>×' + Number(atlas.productionCost || 1).toFixed(2) + '</strong><span>Average of surveyed policies</span></div><div><small>TRADE REVENUE</small><strong>' + number(atlas.trade?.gold || 0) + ' G</strong><span>Goods actually sold</span></div><div><small>IMPORT DEPENDENCE</small><strong>' + (100 - Number(atlas.supplySecurity || 0)) + '%</strong><span>Core categories not found locally</span></div><div><small>POTENTIAL OUTPUT</small><strong>' + number(stats.potentialYield || 0) + '</strong><span>Raw goods available per year</span></div><div><small>CARAVAN SPEND</small><strong>' + number(atlas.trade?.caravanSpend || 0) + ' G</strong><span>Import substitution paid for</span></div></div>' +
         '<div class="biome-chip-line"><small>IMPORTED RAW MATERIALS</small>' + importList + '</div><div class="biome-chip-line"><small>REGIONAL EXPORTS</small>' + exportList + '</div><div class="biome-chip-line"><small>SPECIALISATIONS</small>' + specialisations + '</div>' +
+        '<div class="biome-chip-line"><small>FRONTIER MARKET</small>' + frontierList + '</div>' +
+        '<p class="command-note">The Regional Exchange reads these surveyed stocks on its next 90-day quote. Harvesting lowers stock and raises the quote; protection, fallow years and annual regrowth ease it. Stored frontier goods sell at the current market quote.</p>' +
         '<div class="command-section-title">DISCOVERED REGIONS · ' + regions.length + '</div><div class="biome-region-list">' + (regions.map(regionCard).join("") || '<p class="command-note">No region has been explored yet. Send expeditions or reveal the map to discover the first biome.</p>') + '</div>' +
         '<div class="command-section-title">ECOLOGICAL RECORD</div><div class="command-history-list">' + ((atlas.history || []).map(historyEntry).join("") || '<p class="command-note">No ecological event has been recorded yet.</p>') + '</div>' +
         '<p class="command-note">The atlas is bounded to 36 regions and is saved with the realm. Rare deposits are not shown until explored and surveyed; every stock, population and policy survives a save and reload.</p>';

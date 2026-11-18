@@ -9,6 +9,7 @@
 import { state } from "../core/state.js";
 import { addLog } from "../core/event-log.js";
 import { addResource } from "./resources.js";
+import { getBiomeFrontierCategory, getBiomeMarketQuote } from "./biome-market-link.js";
 import { classifyTerrain } from "../world/terrain-model.js";
 import {
     BIOME_DIET_CATEGORIES, BIOME_FOCUSES, BIOME_FOCUS_IDS, BIOME_POLICIES, BIOME_POLICY_IDS,
@@ -1099,12 +1100,24 @@ export function harvestBiomeResource(regionId, resourceId) {
         stored = taken;
         row.stored = Math.min(BIOME_RESOURCE_STORE_LIMIT, (Number(row.stored) || 0) + taken);
     }
+    // This is the return edge from extraction to the regional exchange. The
+    // reading is recomputed only after a player action, never per tick.
+    const frontier = getBiomeFrontierCategory(resource.category);
+    const marketEffect = frontier?.known ? Math.round((frontier.priceFactor - 1) * 100) : 0;
+    const marketSuffix = frontier?.known
+        ? " · MARKET " + (marketEffect > 0 ? "+" : "") + marketEffect + "%"
+        : "";
     return {
         ok: true,
-        message: "HARVESTED " + taken + " " + resource.label.toUpperCase() + (ledger ? "" : " · STORED FOR TRADE") + " · " + actionCost + "G",
+        message: "HARVESTED " + taken + " " + resource.label.toUpperCase() + (ledger ? "" : " · STORED FOR TRADE") + " · " + actionCost + "G" + marketSuffix,
         amount: taken, ledger, stored, region: region.id, resource: resource.id, cost: actionCost,
         seasonalStock: Math.round(available), clearCut: Math.round(region.clearCut * 100) / 100,
         diseasePressure: Math.round(region.diseasePressure * 100) / 100,
+        frontier: frontier ? {
+            market: frontier.category, band: frontier.band, pressure: frontier.pressure,
+            priceFactor: frontier.priceFactor, cover: frontier.cover, stock: frontier.stock,
+            capacity: frontier.capacity
+        } : null,
         tileQuality: tile.quality, tileSuitability: tile.suitability,
         focusMatch: focusMatchesCategories(region, [resource.category]), supplyBonus: supplyBonusFor(region)
     };
@@ -1210,8 +1223,12 @@ export function sellBiomeGoods(regionId, resourceId) {
     const focusPremium = focusMatchesCategories(region, [resource.category]) ? 1.1 : 0.95;
     const importMargin = 1 - importDependencyFor(region) / 100 * 0.22;
     const supplyPremium = 1 + supplyBonusFor(region) / 300;
+    // Market to atlas: a stored frontier good settles at the same commodity
+    // quote the trade panel shows. Without this edge the atlas would only ever
+    // send prices outward, never receive the realm's demand signal back.
+    const marketQuote = getBiomeMarketQuote(resource.category);
     const unitPrice = resource.tradeValue * (0.7 + region.quality / 180)
-        * scarcity * surplus * focusPremium * importMargin * supplyPremium;
+        * scarcity * surplus * focusPremium * importMargin * supplyPremium * marketQuote.factor;
     const value = Math.max(1, Math.round(stored * unitPrice));
     row.stored = 0;
     addResource("gold", value);
@@ -1225,7 +1242,8 @@ export function sellBiomeGoods(regionId, resourceId) {
         gold: value, amount: stored,
         market: { scarcity: Math.round(scarcity * 100) / 100, surplus: Math.round(surplus * 100) / 100,
             focusPremium: Math.round(focusPremium * 100) / 100, importMargin: Math.round(importMargin * 100) / 100,
-            supplyPremium: Math.round(supplyPremium * 100) / 100, unitPrice: Math.round(unitPrice * 100) / 100 }
+            supplyPremium: Math.round(supplyPremium * 100) / 100, unitPrice: Math.round(unitPrice * 100) / 100,
+            marketQuote }
     };
 }
 
@@ -1299,8 +1317,9 @@ export function sellBiomeCraft(regionId, recipeId) {
     const focusPremium = focusMatchesCategories(region, [recipe.focusCategory]) ? 1.1 : 0.95;
     const importMargin = 1 - importDependencyFor(region) / 100 * 0.15;
     const supplyPremium = 1 + supplyBonusFor(region) / 400;
+    const marketQuote = getBiomeMarketQuote(recipe.focusCategory);
     const unitPrice = recipe.value * recipe.demand * (0.8 + region.quality / 250)
-        * focusPremium * importMargin * supplyPremium;
+        * focusPremium * importMargin * supplyPremium * marketQuote.factor;
     const value = Math.max(1, Math.round(stored * unitPrice));
     region.crafted[recipe.outputId] = 0;
     addResource("gold", value);
@@ -1317,7 +1336,7 @@ export function sellBiomeCraft(regionId, recipeId) {
         ok: true,
         message: "SOLD " + stored + " " + recipe.outputLabel.toUpperCase() + " · +" + value + " GOLD",
         gold: value, amount: stored, output: recipe.outputId, recipe: recipe.id,
-        market: { unitPrice: Math.round(unitPrice * 100) / 100, focusPremium, importMargin, supplyPremium }
+        market: { unitPrice: Math.round(unitPrice * 100) / 100, focusPremium, importMargin, supplyPremium, marketQuote }
     };
 }
 

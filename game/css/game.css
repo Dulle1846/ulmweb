@@ -1044,6 +1044,10 @@ kbd {padding:4px 6px;border:1px solid rgba(221,190,126,.2);border-radius:5px;bac
 .price-chart-row {display:grid;grid-template-columns:44px 1fr 42px;align-items:end;gap:8px}
 .price-chart-row>strong {align-self:center;color:#9ba79d;font-size:8px;letter-spacing:.1em}
 .price-chart-row>b {align-self:center;color:#e4c78d;font-family:Georgia,serif;font-size:10px;text-align:right}
+.frontier-supply .price-chart-row {grid-template-columns:50px minmax(0,1fr) 44px;align-items:center}
+.frontier-supply .price-chart-row>small {align-self:center;color:#84938b;font-size:8px;line-height:1.35}
+.frontier-supply .price-chart-row>b.is-up {color:#d9a879}
+.frontier-supply {margin-top:0}
 .price-bars {display:flex;align-items:end;gap:3px;height:50px;padding:3px 0 0;border-bottom:1px solid rgba(221,190,126,.15)}
 .price-bar {flex:1;min-width:3px;border-radius:2px 2px 0 0;background:linear-gradient(180deg,#e2c182,#8b7246);opacity:.78}
 .price-bar:last-child {background:linear-gradient(180deg,#f1d79f,#b68d4e);opacity:1}

@@ -13,6 +13,7 @@ import { getJusticeModifiers } from "./justice.js";
 import { getResearchModifiers } from "./research.js";
 import { getEndeavourModifiers } from "./endeavours.js";
 import { getDebtMarketFactor, getDebtPressure, getFoodCrisisSnapshot } from "./economy-cycle.js";
+import { getBiomeFrontierSupply, normalizeBiomeFrontierSupply } from "./biome-market-link.js";
 
 export const MARKET_RESOURCES = Object.freeze(["wood","stone","food"]);
 export const BASE_PRICES = Object.freeze({ wood:2, stone:3, food:2 });
@@ -25,6 +26,10 @@ export function createMarketState() {
         priceTrend:{wood:0,stone:0,food:0},
         lastUpdateTick:0,
         priceHistory:{wood:[BASE_PRICES.wood],stone:[BASE_PRICES.stone],food:[BASE_PRICES.food]},
+        // The latest quote is written from the biome atlas. It is saved with
+        // the market so a load keeps the same explanation the player saw.
+        frontierSupply:getBiomeFrontierSupply(),
+        lastFrontierNoticeTick:0,
         totalTrades:0,
         totalGoldTraded:0
     };
@@ -84,6 +89,13 @@ function ensureMarket() {
         ? Math.max(0, Number(state.market.totalTrades)) : 0;
     state.market.totalGoldTraded = Number.isFinite(Number(state.market.totalGoldTraded))
         ? Math.max(0, Number(state.market.totalGoldTraded)) : 0;
+    if (!state.market.frontierSupply || typeof state.market.frontierSupply !== "object"
+        || state.market.frontierSupply.version !== 1 || !state.market.frontierSupply.categories) {
+        state.market.frontierSupply = normalizeBiomeFrontierSupply(state.market.frontierSupply);
+    }
+    const lastFrontierNoticeTick = Number(state.market.lastFrontierNoticeTick);
+    state.market.lastFrontierNoticeTick = Number.isFinite(lastFrontierNoticeTick)
+        ? Math.max(0, lastFrontierNoticeTick) : 0;
 }
 
 export function updateMarket() {
@@ -91,6 +103,9 @@ export function updateMarket() {
     if (state.tick - state.market.lastUpdateTick < 90) return;
     state.market.lastUpdateTick = state.tick;
     const seasonFactor = [0.92,1.08,1.22,1.38][state.seasonIndex] || 1;
+    const previousFrontier = state.market.frontierSupply;
+    const frontier = getBiomeFrontierSupply();
+    state.market.frontierSupply = frontier;
     // Trade partners are producers, not finite loot chests. Without a bounded
     // restock, repeated food purchases drained every route to zero and left a
     // rich realm unable to buy grain at any price. The replenishment is small,
@@ -118,11 +133,27 @@ export function updateMarket() {
         // 1.2.16: firewood scarcity is priced into the wood market. The winter
         // ledger writes the pressure; the regular market pass carries it.
         const fuelPressure = resource === "wood" ? Math.max(0,Math.min(0.4,Number(state.winter?.values?.fuelPricePressure)||0))*0.35 : 0;
-        state.market.priceTrend[resource] = Math.max(-0.45,Math.min(0.55,(state.market.priceTrend[resource]||0)*0.68+drift+scarcityPressure*0.12+hungerPressure*0.04+civicPressure*0.04+fuelPressure*0.05));
-        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource]+scarcityPressure+hungerPressure+civicPressure+fuelPressure)*100)/100);
+        // The frontier is the third real supply ledger beside partner stock and
+        // crown stores. Its pressure is a saved atlas reading, not a parallel
+        // price formula: the same quote is shown in the Trade tab and paid when
+        // a stored biome good is sold.
+        const frontierPressure = Math.max(0, Math.min(0.30,
+            Number(frontier.categories?.[resource]?.priceFactor || 1) - 1));
+        state.market.priceTrend[resource] = Math.max(-0.45,Math.min(0.55,(state.market.priceTrend[resource]||0)*0.68+drift+scarcityPressure*0.12+hungerPressure*0.04+civicPressure*0.04+fuelPressure*0.05+frontierPressure*0.04));
+        state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource]+scarcityPressure+hungerPressure+civicPressure+fuelPressure+frontierPressure)*100)/100);
         const history = state.market.priceHistory[resource] || (state.market.priceHistory[resource] = []);
         history.push(state.market.prices[resource]);
         if (history.length > 16) history.shift();
+    }
+    const warnings = MARKET_RESOURCES.filter(resource => {
+        const next = frontier.categories?.[resource];
+        const before = previousFrontier?.categories?.[resource];
+        return next?.known && next.band === "SCARCE" && before?.band !== "SCARCE";
+    });
+    if (warnings.length && state.tick - (Number(state.market.lastFrontierNoticeTick) || 0) >= 360) {
+        state.market.lastFrontierNoticeTick = state.tick;
+        addLog("FRONTIER " + warnings.map(resource => resource.toUpperCase()).join(" & ")
+            + " SCARCE · THE REGIONAL EXCHANGE REPRICES", "#d9b26f", "market");
     }
 }
 

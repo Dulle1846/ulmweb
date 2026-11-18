@@ -712,6 +712,15 @@ export const BIOME_RESOURCE_FAMILY_BY_CATEGORY = freeze(Object.fromEntries(
     Object.values(BIOME_RESOURCE_MAP_FAMILIES).flatMap(family => family.categories.map(category => [category, family.id]))
 ));
 
+// The regional exchange only quotes three commodity ledgers. Biome resource
+// categories are mapped explicitly so the atlas and market cannot drift apart
+// when a new food or mineral family is added.
+export const BIOME_MARKET_CATEGORY_BY_RESOURCE_CATEGORY = freeze({
+    wood: "wood", stone: "stone",
+    fruit: "food", fish: "food", meat: "food", dairy: "food", egg: "food", honey: "food", fungus: "food"
+});
+export const BIOME_MARKET_CATEGORIES = freeze(["wood", "stone", "food"]);
+
 export const BIOME_RESOURCE_CATEGORIES = freeze({
     wood: "Timber", fruit: "Fruit & nuts", fungus: "Fungi", herb: "Herbs & medicine",
     "fantastic-plant": "Fantastic flora", spice: "Spices", fiber: "Fibre", dye: "Dyes",
