@@ -6,6 +6,7 @@ import { getCivicSnapshot, enactCivicPolicy, repealCivicPolicy, resolveCivicChoi
 import { getSettlementSnapshot } from "../systems/settlement.js";
 import { getCitySummary } from "../systems/logistics.js";
 import { getWorkforceSnapshot } from "../systems/economy.js";
+import { getDisasterRecoverySnapshot } from "../systems/disaster-recovery.js";
 import { CITY_CODEX } from "../systems/city-codex.js";
 import { TYPE } from "../core/types.js";
 
@@ -113,6 +114,23 @@ export function renderCityPanel() {
     const active = civic.activePolicies.length;
     const modifiers = civic.modifiers;
     const policies = civic.policies.map(policy => policyCard(policy, civic, gold)).join("");
+    const recovery = getDisasterRecoverySnapshot();
+    const lastWreck = recovery.lastWreck
+        ? esc(String(recovery.lastWreck.label).toUpperCase()) + ' · ' + esc(recovery.lastWreck.causeLabel) + ' · YEAR ' + recovery.lastWreck.year
+        : 'NO WRECK RECORDED';
+    const lastSalvage = recovery.lastSalvage.wrecks
+        ? 'YEAR ' + recovery.lastSalvage.year + ' · ' + number(recovery.lastSalvage.wood) + ' WOOD · ' + number(recovery.lastSalvage.stone) + ' STONE'
+        : 'NONE RECORDED';
+    const disasterSection = '<div class="command-section-title">DISASTER RECOVERY</div>' +
+        '<div class="command-summary">' +
+        '<div><small>WRECKS AWAITING REBUILD</small><strong>' + (recovery.pendingCount ? number(recovery.pendingCount) : 'NONE') + '</strong></div>' +
+        '<div><small>LAST SALVAGE</small><strong>' + lastSalvage + '</strong></div>' +
+        '<div><small>REBUILD DISCOUNT</small><strong>' + recovery.discountPercent + '% NEAR A WRECK</strong></div>' +
+        '<div><small>LAST WRECK</small><strong>' + lastWreck + '</strong></div></div>' +
+        '<p class="command-note">Coastal surges, snowslides and eruptions record the wreck\'s cause, year and site. ' +
+        'The next annual audit salvages a quarter of its timber and stone. Direct construction of the same structure within ' +
+        recovery.radius + ' tiles of a wreck saves ' + recovery.discountPercent + '% of the material cost and clears that wreck from the register. ' +
+        'A fresh realm has no wrecks; once one is recorded, this is where its recovery is decided.</p>';
     const history = civic.history.length
         ? '<div class="court-history">' + civic.history.map(entry =>
             '<div><span>' + esc(String(entry.kind).toUpperCase()) + ' · YEAR ' + entry.year + '</span><p>' +
@@ -150,6 +168,7 @@ export function renderCityPanel() {
         '<div><small>BUILDINGS</small><strong>' + number(summary.buildings || state.entities.filter(entity => !entity.dead && entity.isBuilding()).length) + '</strong></div>' +
         '<div><small>TOWN HALLS</small><strong>' + civic.townHalls + '</strong></div>' +
         '<div><small>ACTIVE EVENTS</small><strong>' + (civic.pendingEvent ? "1" : "0") + '</strong></div></div>' +
+        disasterSection +
         '<div class="command-section-title">THE CITY EVENT</div>' + eventCard(civic.pendingEvent) +
         '<div class="command-section-title">LIVE CIVIC EFFECTS</div><div class="court-effect-grid">' +
         '<span>TAX YIELD<b>' + percent(modifiers.tax) + '</b></span>' +

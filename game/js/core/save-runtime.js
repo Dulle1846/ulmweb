@@ -37,6 +37,7 @@ import { createDiplomacyState, normalizeDiplomacySnapshot } from "../systems/dip
 import { createCrownSupplyState, normalizeCrownSupplyState } from "../systems/crown-supply.js";
 import { createMarketState } from "../systems/market.js";
 import { createRealmCycleState, normalizeRealmCycleState } from "../systems/realm-cycle.js";
+import { normalizeDisasterRecoveryState } from "../systems/disaster-recovery.js";
 import { restoreEconomyCycleState } from "../systems/economy-cycle.js";
 import { normalizeIdentity } from "../systems/identity.js";
 import { normalizeResearchState } from "../systems/research.js";
@@ -240,6 +241,7 @@ export function createSaveSnapshot() {
         nobility: JSON.parse(JSON.stringify(state.nobility || createNobilityState())),
         diplomacy: JSON.parse(JSON.stringify(state.diplomacy || createDiplomacyState())),
         expeditions: JSON.parse(JSON.stringify(normalizeExpeditionsState(state.expeditions))),
+        disasterRecovery: JSON.parse(JSON.stringify(normalizeDisasterRecoveryState(state.disasterRecovery))),
         identity: JSON.parse(JSON.stringify(state.identity || {})),
         research: JSON.parse(JSON.stringify(state.research || {})),
         legacy: JSON.parse(JSON.stringify(state.legacy || {})),
@@ -468,6 +470,7 @@ export function restoreSaveSnapshot(snapshot) {
     state.nobility = normalizeNobilityState(snapshot.nobility);
     state.diplomacy = normalizeDiplomacySnapshot(snapshot.diplomacy);
     state.expeditions = normalizeExpeditionsState(snapshot.expeditions);
+    state.disasterRecovery = normalizeDisasterRecoveryState(snapshot.disasterRecovery);
     // initWorld has already generated the atlas for this seed. A save may carry
     // the player's discoveries, rare goods and blight pressure; restore those
     // over the generated baseline so older saves still get a complete atlas.

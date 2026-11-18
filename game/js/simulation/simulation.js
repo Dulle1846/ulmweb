@@ -54,6 +54,7 @@ import { updateExpeditions } from "../systems/expeditions.js";
 import { updateVolcanoHazards } from "../world/volcano-hazards.js";
 import { updateCoastHazards } from "../world/coast-hazards.js";
 import { updateSnowHazards } from "../world/snow-hazards.js";
+import { updateDisasterRecovery } from "../systems/disaster-recovery.js";
 import { updateWinterAnnual, updateWinterEconomy } from "../world/winter-economy.js";
 import { isEndlessEnabled, recoverEndlessMorale, updateEndlessRealm } from "../systems/endless.js";
 import { updateSpecialBiomes } from "../systems/special-biome-state.js";
@@ -101,6 +102,10 @@ const ANNUAL_TASKS = [
     // their existing tick cost and event sequence.
     { name: "coastHazards", run(annual) { annual.coastHazards = updateCoastHazards(); } },
     { name: "snowHazards", run(annual) { annual.snowHazards = updateSnowHazards(); } },
+    // One bounded annual read of the destruction tags: the capped entity list
+    // is read once, new wrecks are recorded, and wrecks from an earlier year
+    // yield their salvage once. No per-tick work is added.
+    { name: "disasterRecovery", run(annual) { annual.disasterRecovery = updateDisasterRecovery(); } },
     // 1.2.16 winter economy: one bounded annual hazard and caravan pass. It
     // returns immediately outside Snowlands, so other climates keep their
     // exact annual sequence and tick budget.

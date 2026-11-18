@@ -24,6 +24,7 @@ import { validateLegacyState } from "../systems/legacy.js";
 import { validatePopulationState } from "../systems/population-register.js";
 import { validateRealmCycleState } from "../systems/realm-cycle.js";
 import { validateExpeditionsState } from "../systems/expeditions.js";
+import { validateDisasterRecoveryState } from "../systems/disaster-recovery.js";
 import { validateSpecialBiomeState } from "../systems/special-biome-state.js";
 import { validateBiomeAtlasSnapshot } from "../systems/biome-resource-state.js";
 import { validateAiChronicleState } from "./ai-chronicle-state.js";
@@ -225,6 +226,9 @@ export function validateSaveSnapshot(snapshot) {
     }
     if (snapshot.expeditions !== undefined && snapshot.expeditions !== null) {
         validateDomainSnapshot(snapshot.expeditions, "expeditions", validateExpeditionsState);
+    }
+    if (snapshot.disasterRecovery !== undefined && snapshot.disasterRecovery !== null) {
+        validateDomainSnapshot(snapshot.disasterRecovery, "disasterRecovery", validateDisasterRecoveryState);
     }
     if (snapshot.specialBiomes !== undefined && snapshot.specialBiomes !== null) {
         validateDomainSnapshot(snapshot.specialBiomes, "specialBiomes", validateSpecialBiomeState);

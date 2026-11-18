@@ -15,6 +15,7 @@ import { transitionGameplayAt } from "../world/transition-biomes.js";
 import { getWorkforceSnapshot } from "./economy.js";
 import { getResearchModifiers } from "./research.js";
 import { getCivicModifiers } from "./civic.js";
+import { consumeRebuildRuin, rebuildDiscountFor, REBUILD_DISCOUNT } from "./disaster-recovery.js";
 import {
     BUILDING_COSTS, CONSTRUCTION_STAGES, CONSTRUCTION_SHARE, buildingLabel,
     constructionMaterialNeed, costShare, isHousingType
@@ -53,18 +54,21 @@ function refundResources(cost, ratio) {
 function entityById(id) { return state.entities.find(entity => !entity.dead && entity.id === id) || null; }
 function distanceTo(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
-export function getBuildingCost(type) {
+export function getBuildingCost(type, tx = null, ty = null) {
     const base = BUILDING_COSTS[type] || {};
     // Completed craft technologies lower the material bill of every new site.
     // The discount is read from the same modifier block the rest of the realm
     // uses, so a displayed price is exactly what the treasury is charged.
     const discount = Math.min(0.30, Math.max(0, Number(getResearchModifiers().buildDiscount) || 0) + Math.max(0, Number(getCivicModifiers().buildDiscount) || 0));
-    if (discount <= 0) return { ...base };
+    const ruin = Number.isFinite(Number(tx)) && Number.isFinite(Number(ty))
+        ? rebuildDiscountFor(type, Number(tx), Number(ty)) : null;
+    const totalDiscount = Math.min(0.55, discount + (ruin ? REBUILD_DISCOUNT : 0));
+    if (totalDiscount <= 0) return { ...base };
     const cost = {};
     for (const [key, value] of Object.entries(base)) {
         const amount = Number(value);
         if (!Number.isFinite(amount) || amount <= 0) { cost[key] = value; continue; }
-        cost[key] = Math.max(1, Math.round(amount * (1 - discount)));
+        cost[key] = Math.max(1, Math.round(amount * (1 - totalDiscount)));
     }
     return cost;
 }
@@ -375,7 +379,7 @@ export function placeDirectBuilding(type, tx, ty) {
     if (!Number.isInteger(type)) return { ok: false, reason: "UNKNOWN STRUCTURE" };
     const site = canPlaceBuilding(type, tx, ty);
     if (!site.ok) return site;
-    const cost = getBuildingCost(type);
+    const cost = getBuildingCost(type, tx, ty);
     if (!affordable(costShare(cost, CONSTRUCTION_SHARE))) return { ok: false, reason: "CANNOT AFFORD OPENING SHARE" };
     if (!canSpawnEntity(type)) return { ok: false, reason: "REALM CAPACITY REACHED" };
     const entity = spawnEntity(tx, ty, type);
@@ -389,6 +393,7 @@ export function placeDirectBuilding(type, tx, ty) {
     }
     ensureInventory(entity);
     revealArea(tx, ty, 7);
+    consumeRebuildRuin(type, tx, ty);
     return { ok: true, entity, construction: started.construction, cost };
 }
 
