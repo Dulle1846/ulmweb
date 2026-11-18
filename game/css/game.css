@@ -784,7 +784,9 @@ button:focus-visible, [role="button"]:focus-visible {
 
 .big-message {
     position: fixed;
-    z-index: 120;
+    /* Realm-wide announcements (including crown relief) must stay legible
+       even when a randomly triggered realm issue is open behind them. */
+    z-index: 1150;
     inset: 0;
     display: grid;
     place-items: center;
