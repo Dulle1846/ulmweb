@@ -11,6 +11,7 @@ import { addPersonMemory, ensurePersonProfile, PERSON_SPECIES } from "./people.j
 import { TYPE } from "../core/types.js";
 import { getEndeavourModifiers } from "./endeavours.js";
 import { getSpecialBiomeInfluence } from "./special-biome-couplings.js";
+import { getCrownDread, getFrontierPressure } from "./crown-dread.js";
 
 export const DIPLOMACY_COSTS = Object.freeze({ gift:12, tradePact:15, alliance:25, peaceGold:20, peaceFood:15, envoy:8, guarantee:12, guaranteeAidGold:18, guaranteeAidFood:12 });
 export const TRADE_PACT_RELATION = 45;
@@ -364,6 +365,8 @@ export function getDiplomacySnapshot() {
             termYears:GUARANTEE_TERM_YEARS
         },
         averageRelation:realms.length ? Math.round((relationTotal / realms.length) * 10) / 10 : 0,
+        dread:getCrownDread(),
+        pressure:getFrontierPressure(),
         lastUpdateYear:diplomacy.lastUpdateYear,
         history:diplomacy.history.slice(0, 12),
         costs:DIPLOMACY_COSTS,
@@ -895,6 +898,9 @@ export function updateDiplomacy() {
     const diplomacy = ensureDiplomacy();
     const year = currentYear();
     if (diplomacy.lastUpdateYear >= year) return getDiplomacySnapshot();
+    // One bounded reading of the standing army. It drifts fear, deters border
+    // incidents and shortens a war the crown is visibly winning.
+    const dread = getCrownDread();
     updateGuarantees(diplomacy, year);
     const court = getCourtModifiers();
     const biome = getSpecialBiomeInfluence().diplomacy;
@@ -920,7 +926,7 @@ export function updateDiplomacy() {
             settleTradeAgreement(diplomacy, realm, definition, year, effects);
         }
         if (realm.treaty === "war") {
-            realm.warExhaustion = clamp(realm.warExhaustion + 2);
+            realm.warExhaustion = clamp(realm.warExhaustion + 2 + Math.min(2, Math.max(0, dread.dread - 50) * 0.04));
             realm.relation = clamp(realm.relation - 1.2 - realm.warExhaustion * 0.01);
             realm.trust = clamp(realm.trust - 0.2);
             realm.fear = clamp(realm.fear + 0.8);
@@ -968,7 +974,10 @@ export function updateDiplomacy() {
         // Charted rare goods, attunement and blight all colour the neighbouring
         // courts. This is one cached scalar, not a scan of the atlas per realm.
         realm.relation = clamp(realm.relation + biome.relationDrift);
-        if (realm.treaty !== "war" && realm.relation < 20 && year - realm.lastIncidentYear >= 3) {
+        // A court tests a crown it does not fear. This threshold is the only
+        // place the garrison changes how often the border is probed.
+        const incidentThreshold = 20 + Math.max(0, 50 - dread.dread) * 0.12;
+        if (realm.treaty !== "war" && realm.relation < incidentThreshold && year - realm.lastIncidentYear >= 3) {
             const incidentScale = Math.max(0.2, 1 - court.incidentReduction);
             realm.lastIncidentYear = year;
             realm.relation = clamp(realm.relation - 2 * incidentScale);
@@ -979,6 +988,11 @@ export function updateDiplomacy() {
             addLog("BORDER TENSION WITH " + definition.name.toUpperCase(), "#d8a38a", "diplomacy");
         }
 
+        // Fear finally has a reader: it drifts toward the crown's measured dread
+        // once a year, and a crown feared past 60 pays for it in trust. Trade
+        // terms read the same value in diplomacy-trade.js.
+        realm.fear = clamp(realm.fear + Math.max(-2.5, Math.min(2.5, (dread.dread - realm.fear) * 0.35)));
+        if (realm.fear > 60) realm.trust = clamp(realm.trust - (realm.fear - 60) * 0.02);
         const relationHistory = Array.isArray(realm.relationHistory) ? realm.relationHistory : [];
         relationHistory.push(Math.round(realm.relation * 10) / 10);
         if (relationHistory.length > 12) relationHistory.shift();

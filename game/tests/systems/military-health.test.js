@@ -205,11 +205,18 @@ test("mortality is recorded by age and occupation and old saves normalize", () =
     const payroll = {
         year: 12, soldiers: 7, horses: 3, goldNeed: 24, goldNeedBeforeKind: 40,
         kindPayment: 16, goldPaid: 24, foodNeed: 21, foodPaid: 21,
-        pannageDays: 5, desertions: 1, morale: 68.5
+        pannageDays: 5, desertions: 1, levyFactor: 1.18, dread: 46, morale: 68.5
     };
     const normalized = normalizeMilitaryState({ lastPayroll: payroll, history: [payroll] });
     assert.deepEqual(normalized.lastPayroll, payroll);
     assert.deepEqual(normalized.history[0], payroll);
+    // A muster settled before the border levy existed must normalize to neutral
+    // terms instead of inventing a levy or a dread reading.
+    const legacyPayroll = normalizeMilitaryState({
+        lastPayroll: { year: 9, soldiers: 4, goldNeed: 12, foodNeed: 8 }
+    }).lastPayroll;
+    assert.equal(legacyPayroll.levyFactor, 1);
+    assert.equal(legacyPayroll.dread, 0);
 });
 
 test("health update consumes medicine and raises immunity after recovery", () => {

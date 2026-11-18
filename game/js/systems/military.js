@@ -19,6 +19,7 @@ import { getJusticeModifiers } from "./justice.js";
 import { getEndeavourModifiers } from "./endeavours.js";
 import { getResearchModifiers } from "./research.js";
 import { getCitizenModifiers } from "./population-register.js";
+import { getCrownDread, getFrontierPressure, normalizeCrownDreadReading } from "./crown-dread.js";
 import { spawnEntity, canSpawnEntity } from "../world/entities.js";
 import { WORLD_WIDTH, WORLD_HEIGHT } from "../core/config.js";
 
@@ -54,6 +55,12 @@ export function createMilitaryState() {
         lastUpdateTick: 0,
         lastMusterYear: yearNow(),
         lastWarRaidYear: 0,
+        // The army's total power is measured once per annual muster and stored
+        // here. Diplomacy and the HUD read this one scalar instead of walking
+        // the entity list, and a legacy save simply has no reading yet.
+        strengthPower: 0,
+        strengthSoldiers: 0,
+        strengthYear: 0,
         lastPayroll: null,
         history: [],
         recentCasualties: []
@@ -80,6 +87,8 @@ export function normalizeMilitaryState(value = {}) {
             foodPaid: clamp(entry.foodPaid, 0, 1000000),
             pannageDays: round(entry.pannageDays),
             desertions: round(entry.desertions),
+            levyFactor: clamp(entry.levyFactor ?? 1, 0, 2),
+            dread: clamp(entry.dread, 0, 100),
             morale: clamp(entry.morale, 0, 100)
         }));
     const recentCasualties = (Array.isArray(source.recentCasualties) ? source.recentCasualties : [])
@@ -103,6 +112,8 @@ export function normalizeMilitaryState(value = {}) {
             foodPaid: clamp(source.lastPayroll.foodPaid, 0, 1000000),
             pannageDays: round(source.lastPayroll.pannageDays),
             desertions: round(source.lastPayroll.desertions),
+            levyFactor: clamp(source.lastPayroll.levyFactor ?? 1, 0, 2),
+            dread: clamp(source.lastPayroll.dread, 0, 100),
             morale: clamp(source.lastPayroll.morale, 0, 100)
         } : null;
     return {
@@ -114,6 +125,7 @@ export function normalizeMilitaryState(value = {}) {
         lastUpdateTick: round(source.lastUpdateTick),
         lastMusterYear: clamp(source.lastMusterYear || yearNow(), 1, 1000000),
         lastWarRaidYear: clamp(source.lastWarRaidYear || 0, 0, 1000000),
+        ...normalizeCrownDreadReading(source),
         lastPayroll,
         history,
         recentCasualties
@@ -476,14 +488,28 @@ function resolveMilitaryYear() {
     registerExistingGarrison();
     const soldiers = allSoldierEntities();
     const unassignedHorses = Math.max(0, military.horses);
-    let goldNeed = 0, foodNeed = 0;
+    let goldNeed = 0, foodNeed = 0, strengthPower = 0;
     for (const entity of soldiers) {
         const record = ensureSoldierRecord(entity);
         const rankCost = [3, 5, 8, 12][rankIndex(record.rank)] || 3;
         goldNeed += rankCost + (record.mounted ? 5 : 0);
         foodNeed += 2 + (record.mounted ? 2 : 0);
+        strengthPower += getSoldierPower(entity);
     }
     foodNeed += unassignedHorses * 2;
+    // The muster is measured before the levy is priced. This single saved
+    // reading is what the neighbouring courts fear and the HUD explains.
+    military.strengthPower = Math.round(strengthPower * 10) / 10;
+    military.strengthSoldiers = soldiers.length;
+    military.strengthYear = year;
+    // Diplomacy reaches the payroll: war, hostile courts, border incidents and
+    // a garrison too thin to deter all raise the same annual border levy.
+    const pressure = getFrontierPressure();
+    const levyFactor = pressure.factor;
+    if (levyFactor > 1) {
+        goldNeed = Math.ceil(goldNeed * levyFactor);
+        foodNeed = Math.ceil(foodNeed * levyFactor);
+    }
     const pannageDays = consumePannage(Math.ceil(foodNeed * 0.5));
     foodNeed = Math.max(0, foodNeed - pannageDays);
     // A full granary is part of a soldier's pay. When the reserve can cover
@@ -540,6 +566,8 @@ function resolveMilitaryYear() {
         foodPaid,
         pannageDays,
         desertions,
+        levyFactor: Math.round(levyFactor * 1000) / 1000,
+        dread: getCrownDread().dread,
         morale: soldiers.length ? soldiers.reduce((sum, entity) => sum + (Number(entity.military?.morale) || 0), 0) / soldiers.length : 0
     };
     military.lastPayroll = payroll;
@@ -750,6 +778,14 @@ export function getMilitarySnapshot() {
             };
         })
         .sort((a, b) => a.name.localeCompare(b.name));
+    // A fresh or legacy realm has a garrison but no muster reading yet. Measure
+    // it once here so the HUD and the courts never claim zero soldiers when the
+    // barracks is visibly staffed; the next annual muster re-measures exactly.
+    if (!(Number(military.strengthYear) > 0)) {
+        military.strengthPower = Math.round(soldiers.reduce((sum, soldier) => sum + soldier.power, 0) * 10) / 10;
+        military.strengthSoldiers = soldiers.length;
+        military.strengthYear = Math.max(0, Math.floor(Number(state.year) || 0));
+    }
     const capacity = getMilitaryCapacity();
     const barracks = completedBarracks();
     const stables = completedStables();
@@ -775,6 +811,8 @@ export function getMilitarySnapshot() {
         readiness: Math.round(clamp((averageMorale * 0.55 + averageEquipment * 0.45) * (atWar() ? 1.05 : 1), 0, 100)),
         marshal: getMarshal(),
         atWar: atWar(),
+        dread: getCrownDread(),
+        pressure: getFrontierPressure(),
         lastPayroll: military.lastPayroll,
         history: military.history,
         recentCasualties: military.recentCasualties,

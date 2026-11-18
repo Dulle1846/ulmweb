@@ -19,9 +19,14 @@ export function getDiplomaticTradeTerms(diplomacy, partnerId, courtTradeBonus = 
     const treatyBonus = treaty === "alliance" ? 0.10 : treaty === "trade" ? 0.05 : 0;
     const envoyBonus = clamp((Number(realm?.envoySkill) || 0) / 100 * 0.04, 0, 0.04);
     const courtBonus = clamp(courtTradeBonus, 0, 0.08);
-    const bonus = clamp(relationBonus + treatyBonus + envoyBonus + courtBonus, -0.20, 0.34);
+    // A feared crown trades on worse terms: the court arms itself instead of
+    // buying. Neutral below 55 fear, so an ordinary relationship is unchanged.
+    const dreadPenalty = clamp((Number(realm?.fear) || 0) - 55, 0, 45) / 100 * 0.15;
+    const bonus = clamp(relationBonus + treatyBonus + envoyBonus + courtBonus - dreadPenalty, -0.20, 0.34);
     return {
         partnerId, treaty, relation, blocked:false, bonus,
+        fear:clamp(Number(realm?.fear) || 0, 0, 100),
+        dreadPenalty: Math.round(dreadPenalty * 1000) / 1000,
         buyFactor:clamp(1 - bonus, 0.72, 1.22),
         sellFactor:clamp(1 + bonus, 0.78, 1.30)
     };
