@@ -102,9 +102,61 @@ test("endless relief restores a household, essential production and stores befor
     assert.ok(state.entities.some(entity => !entity.dead && entity.type === TYPE.FARM));
     assert.ok(state.entities.some(entity => !entity.dead && entity.type === TYPE.BAKERY));
     assert.ok(state.entities.some(entity => !entity.dead && entity.type === TYPE.SAWMILL));
+    assert.ok(state.entities.some(entity => !entity.dead && entity.type === TYPE.HOUSE));
+
+    // The player must be told what was restored and who arrived through the
+    // same event log and notification channels every other realm event uses.
+    assert.match(state.eventLog[0].text, /6 SETTLERS ARRIVED/);
+    assert.match(state.eventLog[0].text, /FARM/);
+    assert.match(state.eventLog[0].text, /2 COTTAGES RESTORED/);
+    assert.match(state.eventLog[0].text, /STORES REPLENISHED/);
+    const notification = state.pendingPresentationEffects.find(effect => effect.type === "message");
+    assert.equal(notification.title, "CROWN RELIEF");
+    assert.match(notification.subtitle, /6 SETTLERS ARRIVED/);
 
     assert.equal(updateEndlessRelief(), false, "the two-year cooldown must bound relief");
     assert.equal(endless.reliefs, 1);
+});
+
+test("endless relief adds beds for settlers when some housing already exists", () => {
+    const endless = realmAt(2, 800);
+    state.city = { needs: { summary: { firewoodStock: 0 } } };
+    state.resources.food = 0;
+    state.resources.wood = 0;
+    state.resources.stone = 0;
+    state.entities = [
+        { type: TYPE.KEEP, x: 80, y: 80, dead: false, hp: 100, maxHp: 100, isBuilding: () => true },
+        { type: TYPE.HOUSE, x: 84, y: 80, dead: false, hp: 100, maxHp: 100, isBuilding: () => true },
+        ...Array.from({ length: 6 }, (_, index) => ({
+            type: TYPE.VILLAGER, x: 76 + index, y: 84, dead: false, hp: 10, maxHp: 10,
+            isBuilding: () => false
+        }))
+    ];
+
+    assert.equal(updateEndlessRelief(), true);
+    const homes = state.entities.filter(entity => !entity.dead && entity.type === TYPE.HOUSE);
+    assert.equal(homes.length, 3, "one existing and two relief cottages must cover twelve residents");
+    assert.equal(state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER).length, 12);
+    assert.match(state.eventLog[0].text, /6 SETTLERS ARRIVED/);
+    assert.match(state.eventLog[0].text, /2 COTTAGES RESTORED/);
+    assert.equal(endless.reliefs, 1);
+});
+
+test("endless relief cannot return before its two-year cadence", () => {
+    const endless = realmAt(2, 1599);
+    endless.lastReliefTick = 800;
+    endless.reliefs = 1;
+    state.city = { needs: { summary: { firewoodStock: 0 } } };
+    state.resources.food = 0;
+    state.resources.wood = 0;
+    state.resources.stone = 0;
+    state.entities = [{ type: TYPE.KEEP, x: 80, y: 80, dead: false, hp: 100, maxHp: 100, isBuilding: () => true }];
+
+    assert.equal(updateEndlessRelief(), false, "799 ticks after relief is too soon");
+    state.tick = 1600;
+    assert.equal(updateEndlessRelief(), true, "the relief must be available exactly 800 ticks later");
+    assert.equal(endless.reliefs, 2);
+    assert.equal(endless.lastReliefTick, 1600);
 });
 
 test("classic realms never receive endless relief", () => {

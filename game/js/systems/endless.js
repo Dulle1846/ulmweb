@@ -11,10 +11,12 @@
 // long-running realm is never silently stranded on a terminal save.
 import { state } from "../core/state.js";
 import { addLog } from "../core/event-log.js";
+import { queueMessage } from "../core/presentation-effects.js";
 import { TYPE } from "../core/types.js";
 import { spawnEntity, buildingOverlaps } from "../world/entities.js";
 import { addResource } from "./resources.js";
 import { depositGood } from "./logistics.js";
+import { housingCapacityFor } from "./city-config.js";
 
 export const ENDLESS_VERSION = 1;
 export const ENDLESS_AGE_YEARS = 25;
@@ -208,11 +210,18 @@ export function updateEndlessRelief() {
         }
         return null;
     };
+    const restored = [];
+    const reliefNames = new Map([
+        [TYPE.FARM, "farm"], [TYPE.MILL, "mill"], [TYPE.BAKERY, "bakery"],
+        [TYPE.SAWMILL, "sawmill"], [TYPE.WAREHOUSE, "storehouse"], [TYPE.HOUSE, "cottage"]
+    ]);
     const restore = (type) => {
         if (state.entities.some(entity => !entity.dead && entity.type === type &&
             !(entity.construction && entity.construction.stage < 3))) return null;
         const site = findReliefSite(type);
-        return site ? spawnEntity(site.x, site.y, type) : null;
+        const building = site ? spawnEntity(site.x, site.y, type) : null;
+        if (building) restored.push(reliefNames.get(type) || "building");
+        return building;
     };
     const farm = restore(TYPE.FARM);
     const mill = restore(TYPE.MILL);
@@ -222,11 +231,25 @@ export function updateEndlessRelief() {
     const homes = state.entities.filter(entity => !entity.dead &&
         [TYPE.HOUSE, TYPE.TENT, TYPE.STONE_HOUSE].includes(entity.type) &&
         !(entity.construction && entity.construction.stage < 3));
+    const settlers = Math.min(6, Math.max(0, 12 - living));
+    // A household without a bed is not a recovery. Raise enough emergency
+    // cottages to cover the people already here and the settlers on their way;
+    // this also handles a second relief arriving into a crowded district.
+    let housingCapacity = homes.reduce((sum, home) => sum + housingCapacityFor(home.type), 0);
+    for (let index = 0; index < 6 && housingCapacity < living + settlers; index++) {
+        const site = findReliefSite(TYPE.HOUSE);
+        if (!site) break;
+        const cottage = spawnEntity(site.x, site.y, TYPE.HOUSE);
+        if (!cottage) break;
+        restored.push("cottage");
+        homes.push(cottage);
+        housingCapacity += housingCapacityFor(TYPE.HOUSE);
+    }
     const jobs = [
         [farm, "farmer"], [mill, "miller"], [mill, "miller"],
         [bakery, "baker"], [sawmill, "sawyer"], [warehouse, "hauler"]
     ];
-    const settlers = Math.min(6, Math.max(0, 12 - living));
+    let arrived = 0;
     for (let index = 0; index < settlers; index++) {
         const home = homes.length ? homes[index % homes.length] : keep;
         const villager = spawnEntity(keep.x + (index % 3) - 1, keep.y + 1 + Math.floor(index / 3), TYPE.VILLAGER);
@@ -244,6 +267,7 @@ export function updateEndlessRelief() {
             villager.anchor = { x: workplace.x, y: workplace.y };
             villager.jobRefreshTimer = 220;
         }
+        arrived += 1;
     }
     const foodTarget = living === 0 ? 600 : 320;
     const foodMissing = Math.max(0, foodTarget - food);
@@ -257,7 +281,19 @@ export function updateEndlessRelief() {
     endless.reliefs = Math.min(ENDLESS_COUNT_LIMIT, nonNegative(endless.reliefs) + 1);
     endless.lastReliefTick = tick;
     pushHistory(endless, "relief");
-    addLog("THE CROWN SENDS RELIEF — THE HEARTH IS REKINDLED", "#e4bd72", "endless");
+    const restoredCounts = new Map();
+    for (const name of restored) restoredCounts.set(name, (restoredCounts.get(name) || 0) + 1);
+    const restoredPhrases = [...restoredCounts].map(([name, count]) => count > 1 ? count + " " + name + "s" : name);
+    const listPhrase = (items) => items.length < 2
+        ? (items[0] || "")
+        : items.slice(0, -1).join(", ") + " and " + items[items.length - 1];
+    const details = [];
+    if (arrived > 0) details.push(arrived + (arrived === 1 ? " SETTLER ARRIVED" : " SETTLERS ARRIVED"));
+    if (restoredPhrases.length) details.push(listPhrase(restoredPhrases).toUpperCase() + " RESTORED");
+    if (foodMissing > 0 || woodMissing > 0 || stoneMissing > 0 || firewood < 2) details.push("STORES REPLENISHED");
+    const reliefText = details.length ? details.join(" · ") : "THE HEARTH IS REKINDLED";
+    addLog("CROWN RELIEF — " + reliefText, "#e4bd72", "endless");
+    queueMessage("CROWN RELIEF", reliefText, 9000);
     return true;
 }
 
