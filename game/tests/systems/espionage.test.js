@@ -4,9 +4,9 @@ import { readFile } from "node:fs/promises";
 import { Entity, TYPE } from "../../js/core/types.js";
 import { resetState, state } from "../../js/core/state.js";
 import {
-    AGENT_LIMIT, AGENT_RECRUIT_COST, AGENT_WAGE, assignAgent, dismissAgent,
+    AGENT_LIMIT, AGENT_RECRUIT_COST, AGENT_WAGE, SCREEN_COST, assignAgent, dismissAgent,
     getEspionageEffects, getEspionageMarketTerms, getEspionageSnapshot,
-    getEspionageWarModifiers, normalizeEspionageState, recruitAgent, updateEspionage
+    getEspionageWarModifiers, normalizeEspionageState, recruitAgent, screenCourt, updateEspionage
 } from "../../js/systems/espionage.js";
 
 function resident(index, skills = { learning: 70, trade: 60, command: 50 }) {
@@ -159,9 +159,9 @@ test("espionage state survives a save-style normalization round-trip", () => {
             year: 4, agents: 1, paid: 1, missions: 1, successes: 1, captured: 0,
             seizedGold: 7, suspicion: 12, foreignInsight: 20, marketInsight: 15, nobleInsight: 0
         }],
-        suspicion: 12, foreignInsight: 20, marketInsight: 15, nobleInsight: 4, watchStrength: 6,
-        lastUpdateYear: 4,
-        totals: { recruited: 1, missions: 3, successes: 2, captures: 0, seizedGold: 7, plotsExposed: 1 }
+        suspicion: 12, rivalPressure: 34, foreignInsight: 20, marketInsight: 15, nobleInsight: 4, watchStrength: 6,
+        lastUpdateYear: 4, screenedYear: 4, lastScreen: { year: 4, revealed: 1, clean: false },
+        totals: { recruited: 1, missions: 3, successes: 2, captures: 0, seizedGold: 7, plotsExposed: 1, turned: 1, screened: 1, goldLost: 4, falseReports: 2 }
     });
     const restored = normalizeEspionageState(JSON.parse(JSON.stringify(saved)));
     assert.equal(restored.agents[0].guile, 72);
@@ -170,7 +170,13 @@ test("espionage state survives a save-style normalization round-trip", () => {
     assert.equal(restored.reports[0].gold, 7);
     assert.equal(restored.history[0].seizedGold, 7);
     assert.equal(restored.foreignInsight, 20);
+    assert.equal(restored.rivalPressure, 34);
     assert.equal(restored.totals.plotsExposed, 1);
+    assert.equal(restored.totals.turned, 1);
+    assert.equal(restored.totals.goldLost, 4);
+    assert.equal(restored.lastScreen.revealed, 1);
+    assert.equal(restored.screenedYear, 4);
+    assert.equal(restored.agents[0].cover, 70, "a legacy agent without cover normalizes to solid cover");
     assert.equal(restored.lastUpdateYear, 4);
 });
 
@@ -185,6 +191,56 @@ test("a legacy save without espionage normalizes to a neutral court", () => {
     assert.equal(legacy.lastUpdateYear, 0);
 });
 
+test("rival pressure can turn an agent, and a turned agent leaks gold instead of insight", () => {
+    setup();
+    const agent = recruit();
+    assignAgent(agent.id, "foreign", "northmere");
+    state.diplomacy.realms[0].fear = 100;
+    state.espionage.rivalPressure = 80;
+    state.espionage.agents[0].loyalty = 10;
+    state.espionage.agents[0].cover = 70;
+    for (let year = 2; year <= 14 && state.espionage.totals.turned === 0; year++) {
+        state.year = year;
+        updateEspionage();
+    }
+    assert.ok(state.espionage.totals.turned > 0, "rival courts must eventually turn a pressured agent");
+    assert.ok(state.espionage.lastScreen === null, "turning must not reveal itself as a screening result");
+
+    const goldBefore = state.resources.gold;
+    state.year += 1;
+    updateEspionage();
+    assert.ok(state.espionage.totals.falseReports > 0, "a turned agent must file a false report");
+    assert.ok(state.espionage.totals.goldLost > 0, "a turned agent must leak gold");
+    assert.ok(state.resources.gold < goldBefore, "the leaked gold must leave the treasury");
+    assert.ok(getEspionageSnapshot().agents.every(entry => entry.turned === undefined),
+        "the panel must not hand the player the hidden turned flag");
+});
+
+test("screening the court unmasks turned agents, costs gold and is limited to once a year", () => {
+    setup();
+    const agent = recruit();
+    state.espionage.agents[0].turned = true;
+    state.espionage.agents[0].cover = 15;
+    state.espionage.rivalPressure = 60;
+    const goldBefore = state.resources.gold;
+    const result = screenCourt();
+    assert.equal(result.ok, true);
+    assert.equal(result.revealed, 1);
+    assert.equal(state.resources.gold, goldBefore - SCREEN_COST);
+    assert.equal(state.espionage.agents[0].turned, false);
+    assert.equal(state.espionage.agents[0].cover, 55);
+    assert.equal(state.espionage.lastScreen.revealed, 1);
+    assert.equal(state.espionage.lastScreen.clean, false);
+    assert.ok(state.espionage.reports.some(report => report.kind === "screened"));
+
+    const again = screenCourt();
+    assert.equal(again.ok, false);
+    assert.equal(again.reason, "already-screened-this-year");
+    state.year += 1;
+    assert.equal(screenCourt().ok, true, "a new year must allow a new screening");
+    assert.equal(state.espionage.lastScreen.clean, true);
+});
+
 test("the save, simulation and UI contracts include the Whisper Court", async () => {
     const html = await readFile(new URL("../../index.html", import.meta.url), "utf8");
     const ui = await readFile(new URL("../../js/presentation/management-ui.js", import.meta.url), "utf8");
@@ -194,6 +250,7 @@ test("the save, simulation and UI contracts include the Whisper Court", async ()
     const market = await readFile(new URL("../../js/systems/market.js", import.meta.url), "utf8");
     assert.ok(html.includes('data-command-tab="espionage"'), "the command deck must expose the Whisper Court");
     assert.ok(ui.includes("espionage:espionagePanel") && ui.includes("spy-recruit") && ui.includes("spy-assign"), "the panel and its actions must be wired");
+    assert.ok(ui.includes("spy-screen") && ui.includes("COURT SCREENED"), "the counter-intelligence action must be wired");
     assert.ok(saveRuntime.includes("espionage:JSON.parse") && saveRuntime.includes("state.espionage=normalizeEspionageState"), "saves must persist and normalize the court");
     assert.ok(simulation.includes("updateEspionage()"), "the court must run from the annual simulation");
     assert.ok(combat.includes("getEspionageWarModifiers") && market.includes("getEspionageMarketTerms"), "combat and trade must read the court's insight");

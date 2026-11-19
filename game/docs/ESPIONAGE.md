@@ -33,6 +33,20 @@ itself. Each field agent attempts one mission per year.
   diplomatic incident: the target realm's relation with the crown falls.
 - Unpaid wages lower loyalty and can drive an agent out of the court.
 
+## Rival counter-intelligence
+
+The court is not invisible. Active missions and suspicion build **rival
+pressure**; counter-intelligence agents reduce it. Once pressure passes 25, a
+foreign court may turn a field agent. A turned agent stays on the roster but
+files false reports, leaks gold and raises rival pressure further. Cover grows
+with successes and falls after failures; a report that cannot be corroborated
+is the warning.
+
+**SCREEN THE COURT** costs 18 gold, can be ordered once a year, and unmasks
+every turned agent, restoring cover and a little loyalty. The panel shows rival
+pressure, the last screening result, false reports and gold leaked, but never
+reveals which agent is turned until the player screens.
+
 ## Insight
 
 Foreign, market, noble and watch insight are capped at 100 and fade by 12% each

@@ -195,6 +195,45 @@ try {
     await scrollSpySection("AGENT ROSTER");
     await page.screenshot({ path: "artifacts/whisper-court-grown.png", fullPage: false });
 
+    // Stage a turned agent and clear it through the panel's screening action.
+    const beforeScreen = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        state.resources.gold = Math.max(300, Number(state.resources.gold) || 0);
+        state.espionage.agents[0].turned = true;
+        state.espionage.agents[0].cover = 15;
+        state.espionage.rivalPressure = 60;
+        state.espionage.screenedYear = 0;
+        return { gold: Number(state.resources.gold) };
+    });
+    await closePanel();
+    await openPanel("espionage");
+    await page.waitForFunction(() => {
+        const button = document.querySelector('[data-command="spy-screen"]');
+        return Boolean(button && !button.disabled);
+    }, null, { timeout: 10000 });
+    await page.locator('[data-command="spy-screen"]').click();
+    await page.waitForFunction(async () => {
+        const { getEspionageSnapshot } = await import("./js/systems/espionage.js");
+        return getEspionageSnapshot().lastScreen?.revealed === 1;
+    }, null, { timeout: 10000 });
+    const screened = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        const { getEspionageSnapshot } = await import("./js/systems/espionage.js");
+        const snapshot = getEspionageSnapshot();
+        return {
+            revealed: snapshot.lastScreen.revealed,
+            clean: snapshot.lastScreen.clean,
+            gold: Number(state.resources.gold),
+            turned: state.espionage.agents[0].turned,
+            text: document.querySelector("#command-panel-content")?.textContent || ""
+        };
+    });
+    assert.equal(screened.revealed, 1, "screening must unmask the turned agent");
+    assert.equal(screened.clean, false);
+    assert.equal(screened.turned, false, "screening must turn the agent back");
+    assert.equal(screened.gold, beforeScreen.gold - 18, "screening must cost 18 gold");
+    assert.match(screened.text, /unmasked 1 turned agent/);
+
     // Save and reload the realm through the normal player controls.
     const beforeSave = await page.evaluate(async () => {
         const { state } = await import("./js/core/state.js");
@@ -261,6 +300,7 @@ try {
         recruited: { name: recruited.agent.name, guile: recruited.agent.guile, goldSpent: goldBefore - recruited.gold },
         assigned: { desk: "foreign", target: firstRealm.name },
         grown,
+        screened: { revealed: screened.revealed, clean: screened.clean, cost: beforeScreen.gold - screened.gold },
         restored: {
             agents: restored.agents, foreignInsight: restored.foreignInsight,
             suspicion: restored.suspicion, reports: restored.reports

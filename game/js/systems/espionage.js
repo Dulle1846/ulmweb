@@ -13,6 +13,7 @@ export const ESPIONAGE_VERSION = 1;
 export const AGENT_LIMIT = 6;
 export const AGENT_RECRUIT_COST = Object.freeze({ gold: 14 });
 export const AGENT_WAGE = 3;
+export const SCREEN_COST = 18;
 export const INSIGHT_LIMIT = 100;
 export const REPORT_LIMIT = 14;
 export const ESPIONAGE_HISTORY_LIMIT = 12;
@@ -45,15 +46,19 @@ export function createEspionageState() {
         reports: [],
         history: [],
         suspicion: 0,
+        rivalPressure: 0,
         foreignInsight: 0,
         marketInsight: 0,
         nobleInsight: 0,
         watchStrength: 0,
         lastUpdateYear: 0,
+        screenedYear: 0,
+        lastScreen: null,
         lastAudit: null,
         totals: {
             recruited: 0, dismissed: 0, missions: 0, successes: 0, captures: 0,
-            seizedGold: 0, plotsExposed: 0, incidents: 0, wagesPaid: 0
+            seizedGold: 0, plotsExposed: 0, incidents: 0, wagesPaid: 0,
+            turned: 0, screened: 0, goldLost: 0, falseReports: 0
         }
     };
 }
@@ -69,6 +74,9 @@ function normalizeAgent(value) {
         name,
         guile: Math.round(clamp(value.guile, 10, 95)),
         loyalty: Math.round(clamp(value.loyalty, 0, 100)),
+        cover: Math.round(clamp(value.cover === undefined ? 70 : value.cover, 0, 100)),
+        turned: value.turned === true || Number(value.turned) === 1,
+        turnedYear: integer(value.turnedYear, 0),
         desk: deskOf(value.desk),
         targetId: cleanText(value.targetId, 80),
         targetName: cleanText(value.targetName, 120),
@@ -84,7 +92,7 @@ function normalizeReport(value) {
     return {
         year: integer(value.year, 1),
         desk: deskOf(value.desk),
-        kind: ["success", "failure", "incident", "capture", "wage"].includes(String(value.kind))
+        kind: ["success", "failure", "incident", "capture", "wage", "misdirection", "screened"].includes(String(value.kind))
             ? String(value.kind) : "success",
         targetId: cleanText(value.targetId, 80),
         targetName: cleanText(value.targetName, 120),
@@ -102,8 +110,10 @@ function normalizeHistory(value) {
         missions: integer(value.missions, 0, AGENT_LIMIT),
         successes: integer(value.successes, 0, AGENT_LIMIT),
         captured: integer(value.captured, 0, AGENT_LIMIT),
+        turned: integer(value.turned, 0, AGENT_LIMIT),
         seizedGold: integer(value.seizedGold, 0, 1_000_000),
         suspicion: Math.round(clamp(value.suspicion, 0, 100)),
+        rivalPressure: Math.round(clamp(value.rivalPressure, 0, 100)),
         foreignInsight: Math.round(clamp(value.foreignInsight, 0, INSIGHT_LIMIT)),
         marketInsight: Math.round(clamp(value.marketInsight, 0, INSIGHT_LIMIT)),
         nobleInsight: Math.round(clamp(value.nobleInsight, 0, INSIGHT_LIMIT))
@@ -132,11 +142,20 @@ export function normalizeEspionageState(input = state.espionage) {
         history: (Array.isArray(source.history) ? source.history : []).map(normalizeHistory)
             .filter(Boolean).slice(0, ESPIONAGE_HISTORY_LIMIT),
         suspicion: Math.round(clamp(source.suspicion, 0, 100)),
+        rivalPressure: Math.round(clamp(source.rivalPressure, 0, 100)),
         foreignInsight: Math.round(clamp(source.foreignInsight, 0, INSIGHT_LIMIT)),
         marketInsight: Math.round(clamp(source.marketInsight, 0, INSIGHT_LIMIT)),
         nobleInsight: Math.round(clamp(source.nobleInsight, 0, INSIGHT_LIMIT)),
         watchStrength: Math.round(clamp(source.watchStrength, 0, INSIGHT_LIMIT)),
         lastUpdateYear: integer(source.lastUpdateYear, 0),
+        screenedYear: integer(source.screenedYear, 0),
+        lastScreen: source.lastScreen && typeof source.lastScreen === "object" && !Array.isArray(source.lastScreen)
+            ? {
+                year: integer(source.lastScreen.year, 0),
+                revealed: integer(source.lastScreen.revealed, 0, AGENT_LIMIT),
+                clean: source.lastScreen.clean === true
+            }
+            : null,
         lastAudit: normalizeHistory(source.lastAudit),
         totals: {
             recruited: integer(rawTotals.recruited, 0),
@@ -147,7 +166,11 @@ export function normalizeEspionageState(input = state.espionage) {
             seizedGold: integer(rawTotals.seizedGold, 0),
             plotsExposed: integer(rawTotals.plotsExposed, 0),
             incidents: integer(rawTotals.incidents, 0),
-            wagesPaid: integer(rawTotals.wagesPaid, 0)
+            wagesPaid: integer(rawTotals.wagesPaid, 0),
+            turned: integer(rawTotals.turned, 0),
+            screened: integer(rawTotals.screened, 0),
+            goldLost: integer(rawTotals.goldLost, 0),
+            falseReports: integer(rawTotals.falseReports, 0)
         }
     };
 }
@@ -175,7 +198,10 @@ export function validateEspionageState(value) {
     if (value.history !== undefined && (!Array.isArray(value.history) || value.history.length > ESPIONAGE_HISTORY_LIMIT)) {
         throw new Error("Espionage history exceeds the supported limit.");
     }
-    for (const key of ["suspicion", "foreignInsight", "marketInsight", "nobleInsight", "watchStrength"]) {
+    if (value.screenedYear !== undefined && (!Number.isSafeInteger(Number(value.screenedYear)) || Number(value.screenedYear) < 0)) {
+        throw new Error("Espionage screened year is invalid.");
+    }
+    for (const key of ["suspicion", "rivalPressure", "foreignInsight", "marketInsight", "nobleInsight", "watchStrength"]) {
         if (value[key] !== undefined && (!Number.isFinite(Number(value[key])) || Number(value[key]) < 0 || Number(value[key]) > 100)) {
             throw new Error("Espionage " + key + " is invalid.");
         }
@@ -241,7 +267,8 @@ function houseView(house) {
 function missionChance(agent) {
     const espionage = ensureEspionage();
     const difficulty = agent.desk === "foreign" ? 0.06 : agent.desk === "nobles" ? 0.04 : agent.desk === "market" ? 0.02 : 0;
-    return clamp(0.30 + (Number(agent.guile) - 50) / 150 - Number(espionage.suspicion) / 300 - difficulty, 0.10, 0.92);
+    return clamp(0.30 + (Number(agent.guile) - 50) / 150 + (Number(agent.cover) - 50) / 500
+        - Number(espionage.suspicion) / 300 - difficulty, 0.10, 0.92);
 }
 
 export function getEspionageEffects() {
@@ -254,7 +281,8 @@ export function getEspionageEffects() {
         marketBuyFactor: Math.round((1 - Math.min(0.035, market * 0.00035)) * 1000) / 1000,
         marketSellFactor: Math.round((1 + Math.min(0.035, market * 0.00035)) * 1000) / 1000,
         marketTermPercent: Math.round(Math.min(0.035, market * 0.00035) * 1000) / 10,
-        incidentRisk: Math.round(clamp(espionage.suspicion, 0, 100))
+        incidentRisk: Math.round(clamp(espionage.suspicion, 0, 100)),
+        rivalPressure: Math.round(clamp(espionage.rivalPressure, 0, 100))
     };
 }
 
@@ -298,11 +326,12 @@ export function getEspionageSnapshot() {
         year,
         capacity: AGENT_LIMIT,
         agentCount: espionage.agents.length,
-        agents: espionage.agents.map(agent => ({
+        agents: espionage.agents.map(({ turned, ...agent }) => ({
             ...agent,
             deskLabel: ESPIONAGE_DESK_LABELS[agent.desk] || "UNASSIGNED",
             targetLabel: agent.targetName || (agent.desk === "foreign" ? "No realm chosen"
                 : agent.desk === "nobles" ? "No house chosen" : "No target needed"),
+            coverLabel: agent.cover < 30 ? "THIN" : agent.cover >= 60 ? "SOLID" : "UNSTEADY",
             successRate: successRateFor(agent)
         })),
         candidates,
@@ -313,6 +342,12 @@ export function getEspionageSnapshot() {
         recruitCost: { ...AGENT_RECRUIT_COST },
         suspicion: Math.round(clamp(espionage.suspicion, 0, 100)),
         suspicionLabel: espionage.suspicion >= 70 ? "EXPOSED" : espionage.suspicion >= 40 ? "WATCHED" : "QUIET",
+        rivalPressure: Math.round(clamp(espionage.rivalPressure, 0, 100)),
+        screenedYear: espionage.screenedYear,
+        screenCost: SCREEN_COST,
+        canScreen: espionage.agents.length > 0 && espionage.screenedYear < year &&
+            (Number(state.resources?.gold) || 0) >= SCREEN_COST,
+        lastScreen: espionage.lastScreen ? { ...espionage.lastScreen } : null,
         foreignInsight: Math.round(clamp(espionage.foreignInsight, 0, INSIGHT_LIMIT)),
         marketInsight: Math.round(clamp(espionage.marketInsight, 0, INSIGHT_LIMIT)),
         nobleInsight: Math.round(clamp(espionage.nobleInsight, 0, INSIGHT_LIMIT)),
@@ -365,6 +400,9 @@ export function recruitAgent(personId) {
         name: cleanText(entity.person.name || "Resident", 80),
         guile: guileOf(entity),
         loyalty: 58,
+        cover: 70,
+        turned: false,
+        turnedYear: 0,
         desk: "",
         targetId: "",
         targetName: "",
@@ -416,6 +454,38 @@ export function assignAgent(agentId, desk, targetId = "") {
     return {ok: true, snapshot: getEspionageSnapshot()};
 }
 
+export function screenCourt() {
+    const espionage = ensureEspionage();
+    const year = yearNow();
+    if (!espionage.agents.length) return {ok: false, reason: "no-agents-to-screen"};
+    if (espionage.screenedYear >= year) return {ok: false, reason: "already-screened-this-year"};
+    if ((Number(state.resources?.gold) || 0) < SCREEN_COST) return {ok: false, reason: "not-enough-gold"};
+    addResource("gold", -SCREEN_COST);
+    let revealed = 0;
+    for (const agent of espionage.agents) {
+        if (!agent.turned) continue;
+        agent.turned = false;
+        agent.turnedYear = 0;
+        agent.cover = 55;
+        agent.loyalty = Math.round(clamp(Number(agent.loyalty) + 5, 0, 100));
+        revealed += 1;
+    }
+    espionage.totals.screened += 1;
+    espionage.screenedYear = year;
+    espionage.rivalPressure = Math.round(clamp(Number(espionage.rivalPressure) - 8, 0, 100));
+    espionage.lastScreen = {year, revealed, clean: revealed === 0};
+    recordReport(espionage, {
+        desk: "counter", kind: "screened", targetName: "Counter-intelligence",
+        detail: revealed
+            ? revealed + " agent" + (revealed === 1 ? "" : "s") + " were working for another court and have been turned back."
+            : "The court was screened; no turned agents were found."
+    });
+    addLog(revealed
+        ? "COURT SCREENED · " + revealed + " TURNED AGENT" + (revealed === 1 ? "" : "S") + " UNMASKED"
+        : "COURT SCREENED · NO TURNED AGENTS FOUND", "#9b8ec4", "espionage");
+    return {ok: true, revealed, snapshot: getEspionageSnapshot()};
+}
+
 export function updateEspionage() {
     const espionage = ensureEspionage();
     const year = yearNow();
@@ -432,6 +502,7 @@ export function updateEspionage() {
     let missions = 0;
     let successes = 0;
     let captured = 0;
+    let turnedNow = 0;
     let seizedGold = 0;
     const paidAgents = [];
     for (const agent of espionage.agents.slice()) {
@@ -457,6 +528,31 @@ export function updateEspionage() {
     const missionAgents = espionage.agents.filter(agent => agent.desk && agent.desk !== "counter");
     espionage.suspicion = Math.round(clamp(Number(espionage.suspicion) + missionAgents.length * 2.5 - counterGuile * 0.09, 0, 100));
 
+    // Rival courts watch the crown's network. Pressure builds from active
+    // missions and suspicion, falls with counter-intelligence, and can turn a
+    // field agent before this year's reports are written.
+    espionage.rivalPressure = Math.round(clamp(
+        Number(espionage.rivalPressure) * 0.85 + missionAgents.length * 2 + Number(espionage.suspicion) * 0.08
+        - counterGuile * 0.04, 0, 100));
+    for (const agent of missionAgents) {
+        if (agent.turned || Number(espionage.rivalPressure) < 25) continue;
+        const targetRealm = agent.desk === "foreign"
+            ? realmRecords().find(realm => String(realm.id) === agent.targetId) : null;
+        const fear = Number(targetRealm?.fear) || 0;
+        const chance = clamp((Number(espionage.rivalPressure) - 20) / 260 + fear / 600
+            - Number(agent.loyalty) / 700 - counterGuile / 1500, 0, 0.35);
+        if (random("espionage") >= chance) continue;
+        agent.turned = true;
+        agent.turnedYear = year;
+        agent.cover = 15;
+        turnedNow += 1;
+        espionage.totals.turned += 1;
+        recordReport(espionage, {
+            desk: agent.desk, kind: "misdirection", targetId: agent.targetId, targetName: agent.targetName,
+            detail: agent.name + "'s last report could not be corroborated. The court suspects another hand at work."
+        });
+    }
+
     for (const agent of missionAgents) {
         const targetRealm = agent.desk === "foreign"
             ? realmRecords().find(realm => String(realm.id) === agent.targetId) : null;
@@ -479,10 +575,25 @@ export function updateEspionage() {
         missions += 1;
         agent.missions += 1;
         agent.lastMissionYear = year;
+        if (agent.turned) {
+            const available = Math.max(0, Number(state.resources?.gold) || 0);
+            const loss = Math.min(available, 1 + Math.round(Number(agent.guile) / 25));
+            if (loss > 0) addResource("gold", -loss);
+            espionage.totals.goldLost += loss;
+            espionage.totals.falseReports += 1;
+            espionage.rivalPressure = Math.round(clamp(Number(espionage.rivalPressure) + 4, 0, 100));
+            recordReport(espionage, {
+                desk: agent.desk, kind: "misdirection", targetId: agent.targetId, targetName: agent.targetName,
+                detail: agent.name + "'s report echoed the target court's own story; " + loss + " gold left the treasury.",
+                gold: loss
+            });
+            continue;
+        }
         const chance = missionChance(agent);
         if (random("espionage") <= chance) {
             successes += 1;
             agent.successes += 1;
+            agent.cover = Math.round(clamp(Number(agent.cover) + 2, 0, 100));
             espionage.totals.successes += 1;
             const gain = 5 + Math.round(Number(agent.guile) / 14);
             if (agent.desk === "foreign") {
@@ -528,6 +639,7 @@ export function updateEspionage() {
                 });
             }
         } else {
+            agent.cover = Math.round(clamp(Number(agent.cover) - 8, 0, 100));
             espionage.suspicion = Math.round(clamp(Number(espionage.suspicion) + (agent.desk === "foreign" ? 6 : 4), 0, 100));
             recordReport(espionage, {
                 desk: agent.desk, kind: "failure", targetId: agent.targetId, targetName: agent.targetName,
@@ -570,8 +682,10 @@ export function updateEspionage() {
         missions,
         successes,
         captured,
+        turned: turnedNow,
         seizedGold,
         suspicion: Math.round(Number(espionage.suspicion) || 0),
+        rivalPressure: Math.round(Number(espionage.rivalPressure) || 0),
         foreignInsight: Math.round(Number(espionage.foreignInsight) || 0),
         marketInsight: Math.round(Number(espionage.marketInsight) || 0),
         nobleInsight: Math.round(Number(espionage.nobleInsight) || 0)
