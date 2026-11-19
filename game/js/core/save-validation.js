@@ -15,6 +15,7 @@ import { validateVolcanoWorksSnapshot } from "../world/volcano-works.js";
 import { validateCoastWorksSnapshot } from "../world/coast-works.js";
 import { validatePannage } from "../systems/forest-pannage.js";
 import { validateMilitaryState } from "../systems/military.js";
+import { validateEspionageState } from "../systems/espionage.js";
 import { validateNobilityState } from "../systems/nobility.js";
 import { validateHealthState } from "../systems/health.js";
 import { validateFaithState } from "../systems/faith.js";
@@ -222,6 +223,9 @@ export function validateSaveSnapshot(snapshot) {
     }
     if (snapshot.military !== undefined && snapshot.military !== null) {
         validateDomainSnapshot(snapshot.military, "military", validateMilitaryState);
+    }
+    if (snapshot.espionage !== undefined && snapshot.espionage !== null) {
+        validateDomainSnapshot(snapshot.espionage, "espionage", validateEspionageState);
     }
     if (snapshot.nobility !== undefined && snapshot.nobility !== null) {
         validateDomainSnapshot(snapshot.nobility, "nobility", validateNobilityState);

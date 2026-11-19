@@ -11,6 +11,7 @@ import { updateAdvisor } from "../systems/advisor.js";
 import { updateNobility } from "../systems/nobility.js";
 import { updateNobleFeuds } from "../systems/noble-feuds.js";
 import { updateNobleHosts } from "../systems/noble-host.js";
+import { updateEspionage } from "../systems/espionage.js";
 import { updateCivic } from "../systems/civic.js";
 import { updateEconomy } from "../systems/economy.js";
 import { updateEdicts } from "../systems/edicts.js";
@@ -92,6 +93,9 @@ const ANNUAL_TASKS = [
     // annual system.
     { name: "nobleFeuds", run() { updateNobleFeuds(); } },
     { name: "nobleHosts", run() { updateNobleHosts(); } },
+    // The Whisper Court reads the houses and realms settled above, pays its
+    // agents once a year and writes the insight combat and trade then read.
+    { name: "espionage", run() { updateEspionage(); } },
     { name: "civic", run() { updateCivic(); } },
     { name: "endeavours", run() { updateEndeavours(); } },
     { name: "crownSupply", run() { settleCrownSupply(); } },

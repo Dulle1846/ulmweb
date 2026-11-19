@@ -6,6 +6,7 @@ import { rand as seededRand } from "../core/random.js";
 import { getRaidDamageMultiplier } from "../systems/rooms.js";
 import { getCourtModifiers } from "../systems/court.js";
 import { getNobilityDefenseMultiplier } from "../systems/nobility.js";
+import { getEspionageWarModifiers } from "../systems/espionage.js";
 import { getSoldierPower,getSoldierArmor,recordMilitaryVictory,recordMilitaryWound,recordMilitaryCasualty } from "../systems/military.js";
 import { getJungleTacticsAt, getMountainTacticsAt, getVolcanoTacticsAt } from "../systems/resource-geography.js";
 import { holdEndlessKeep, isEndlessEnabled } from "../systems/endless.js";
@@ -56,6 +57,9 @@ export function updateCombat(){
  // Loyal noble houses put their retainers on the walls. The multiplier is
  // cached by the annual noble audit; combat only reads one bounded number.
  const nobleDefense=getNobilityDefenseMultiplier();
+ // A paid Whisper Court warns the garrison of raids before they land. The
+ // reading is one bounded number, refreshed by the annual audit.
+ const espionageWarning=getEspionageWarModifiers().raidDamageFactor;
  const biomeMilitary=getSpecialBiomeInfluence().military;
  const defenders=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER,TYPE.TOWER].includes(e.type));
  const enemyBuckets=indexEntities(enemies),defenderBuckets=indexEntities(defenders);
@@ -147,7 +151,7 @@ export function updateCombat(){
    const targetBiome=getBiomeCombatModifiersAt(target.x,target.y);
    const biomeCover=1-Math.min(.30,targetBiome.defenderCover+biomeMilitary.defenderCover);
    const biomeDefense=Math.max(1,targetBiome.defenderPower+biomeMilitary.defenderPower-1);
-   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier/(readiness*nobleDefense)*(1-armor)*coverMultiplier*heightMultiplier*volcanoMultiplier*biomeCover/biomeDefense));
+   target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier*espionageWarning/(readiness*nobleDefense)*(1-armor)*coverMultiplier*heightMultiplier*volcanoMultiplier*biomeCover/biomeDefense));
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
    if(target.hp<=0){
     if(target.type===TYPE.KEEP&&isEndlessEnabled()){

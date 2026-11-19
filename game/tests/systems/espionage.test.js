@@ -1,0 +1,211 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { Entity, TYPE } from "../../js/core/types.js";
+import { resetState, state } from "../../js/core/state.js";
+import {
+    AGENT_LIMIT, AGENT_RECRUIT_COST, AGENT_WAGE, assignAgent, dismissAgent,
+    getEspionageEffects, getEspionageMarketTerms, getEspionageSnapshot,
+    getEspionageWarModifiers, normalizeEspionageState, recruitAgent, updateEspionage
+} from "../../js/systems/espionage.js";
+
+function resident(index, skills = { learning: 70, trade: 60, command: 50 }) {
+    const entity = new Entity(index, 1, TYPE.VILLAGER);
+    entity.id = "entity-" + index;
+    entity.person = {
+        id: "person-" + index,
+        name: "Resident " + index,
+        ageYears: 30,
+        lifeStage: "adult",
+        skills: { ...skills }
+    };
+    return entity;
+}
+
+function setup({ gold = 300, count = 7, houseLoyalty = 24 } = {}) {
+    resetState();
+    state.hasStarted = true;
+    state.year = 2;
+    state.tick = 100;
+    state.resources.gold = gold;
+    state.entities = Array.from({ length: count }, (_, index) => resident(index + 1));
+    state.diplomacy = {
+        realms: [{ id: "northmere", name: "Northmere Guild", treaty: "none", relation: 55, trust: 50, fear: 20 }]
+    };
+    state.nobility = {
+        version: 1,
+        houses: [{ id: "house-vane", familyName: "Vane", loyalty: houseLoyalty, members: ["person-1"] }],
+        history: []
+    };
+    return state;
+}
+
+function recruit(personId = "person-1") {
+    const result = recruitAgent(personId);
+    assert.equal(result.ok, true, result.reason);
+    return result.agent;
+}
+
+test("recruiting a resident spends gold, records guile and respects the roster limit", () => {
+    setup();
+    const agent = recruit();
+    assert.equal(agent.personId, "person-1");
+    assert.equal(agent.name, "Resident 1");
+    assert.equal(agent.guile, 60);
+    assert.equal(state.resources.gold, 300 - AGENT_RECRUIT_COST.gold);
+    assert.equal(getEspionageSnapshot().agentCount, 1);
+
+    const duplicate = recruitAgent("person-1");
+    assert.equal(duplicate.ok, false);
+    assert.equal(duplicate.reason, "that-resident-already-serves");
+
+    for (let index = 2; index <= AGENT_LIMIT; index++) recruit("person-" + index);
+    assert.equal(getEspionageSnapshot().agentCount, AGENT_LIMIT);
+    const overflow = recruitAgent("person-7");
+    assert.equal(overflow.ok, false);
+    assert.equal(overflow.reason, "the-whisper-court-is-full");
+});
+
+test("a foreign or noble desk requires a real target; market and watch work the realm", () => {
+    setup();
+    const agent = recruit();
+    assert.equal(assignAgent(agent.id, "foreign", "").ok, false);
+    assert.equal(assignAgent(agent.id, "foreign", "northmere").ok, true);
+    assert.equal(getEspionageSnapshot().agents[0].targetName, "Northmere Guild");
+
+    assert.equal(assignAgent(agent.id, "nobles", "missing-house").ok, false);
+    assert.equal(assignAgent(agent.id, "nobles", "house-vane").ok, true);
+    assert.equal(getEspionageSnapshot().agents[0].targetName, "Vane");
+
+    assert.equal(assignAgent(agent.id, "market").ok, true);
+    assert.equal(getEspionageSnapshot().agents[0].targetLabel, "No target needed");
+    assert.equal(assignAgent(agent.id, "nowhere").ok, false);
+});
+
+test("the annual audit pays wages, runs one mission per field agent and builds insight", () => {
+    setup();
+    const agent = recruit();
+    assignAgent(agent.id, "foreign", "northmere");
+    state.year = 2;
+    updateEspionage();
+    assert.equal(state.espionage.lastUpdateYear, 2);
+    assert.equal(state.espionage.totals.missions, 1);
+    assert.equal(state.resources.gold, 300 - AGENT_RECRUIT_COST.gold - AGENT_WAGE);
+    assert.ok(state.espionage.suspicion > 0, "a field mission must raise suspicion");
+
+    for (let year = 3; year <= 12 && state.espionage.foreignInsight === 0; year++) {
+        state.year = year;
+        updateEspionage();
+    }
+    assert.ok(state.espionage.foreignInsight > 0, "repeated missions must eventually build foreign insight");
+    assert.ok(getEspionageEffects().raidDamageFactor < 1);
+    assert.ok(getEspionageWarModifiers().raidDamageFactor < 1);
+});
+
+test("insight changes real combat and market readings", () => {
+    setup();
+    state.espionage = normalizeEspionageState({ foreignInsight: 100, marketInsight: 100 });
+    const effects = getEspionageEffects();
+    assert.equal(effects.raidDamageFactor, 0.82, "full foreign insight must cut raid damage by 18%");
+    assert.equal(effects.raidReductionPercent, 18);
+    assert.equal(effects.marketBuyFactor, 0.965);
+    assert.equal(effects.marketSellFactor, 1.035);
+    const terms = getEspionageMarketTerms();
+    assert.equal(terms.buyFactor, 0.965);
+    assert.equal(terms.sellFactor, 1.035);
+});
+
+test("a noble report can expose a plot and return a wavering house to the peace", () => {
+    setup({ houseLoyalty: 20 });
+    const agent = recruit();
+    assignAgent(agent.id, "nobles", "house-vane");
+    for (let year = 2; year <= 16 && state.espionage.totals.plotsExposed === 0; year++) {
+        state.year = year;
+        updateEspionage();
+    }
+    assert.ok(state.espionage.totals.plotsExposed > 0, "the noble desk must eventually expose a plot");
+    assert.ok(state.nobility.houses[0].loyalty > 20, "an exposed plot must raise the house's loyalty");
+    assert.ok(state.espionage.nobleInsight > 0);
+});
+
+test("the same realm and orders produce the same intelligence audit", () => {
+    const run = () => {
+        setup();
+        const first = recruit("person-1");
+        const second = recruit("person-3");
+        assignAgent(first.id, "foreign", "northmere");
+        assignAgent(second.id, "market");
+        state.year = 2;
+        updateEspionage();
+        return JSON.stringify({ espionage: state.espionage, gold: state.resources.gold });
+    };
+    const firstRun = run();
+    const secondRun = run();
+    assert.equal(firstRun, secondRun);
+});
+
+test("espionage state survives a save-style normalization round-trip", () => {
+    const saved = normalizeEspionageState({
+        agents: [{
+            id: "agent-2-1", personId: "person-1", name: "Resident 1", guile: 72, loyalty: 55,
+            desk: "foreign", targetId: "northmere", targetName: "Northmere Guild",
+            joinedYear: 2, missions: 3, successes: 2
+        }],
+        reports: [{
+            year: 4, desk: "market", kind: "success", targetName: "Market contraband",
+            detail: "A smuggling ring was uncovered.", gold: 7
+        }],
+        history: [{
+            year: 4, agents: 1, paid: 1, missions: 1, successes: 1, captured: 0,
+            seizedGold: 7, suspicion: 12, foreignInsight: 20, marketInsight: 15, nobleInsight: 0
+        }],
+        suspicion: 12, foreignInsight: 20, marketInsight: 15, nobleInsight: 4, watchStrength: 6,
+        lastUpdateYear: 4,
+        totals: { recruited: 1, missions: 3, successes: 2, captures: 0, seizedGold: 7, plotsExposed: 1 }
+    });
+    const restored = normalizeEspionageState(JSON.parse(JSON.stringify(saved)));
+    assert.equal(restored.agents[0].guile, 72);
+    assert.equal(restored.agents[0].desk, "foreign");
+    assert.equal(restored.agents[0].targetName, "Northmere Guild");
+    assert.equal(restored.reports[0].gold, 7);
+    assert.equal(restored.history[0].seizedGold, 7);
+    assert.equal(restored.foreignInsight, 20);
+    assert.equal(restored.totals.plotsExposed, 1);
+    assert.equal(restored.lastUpdateYear, 4);
+});
+
+test("a legacy save without espionage normalizes to a neutral court", () => {
+    const legacy = normalizeEspionageState({});
+    assert.deepEqual(legacy.agents, []);
+    assert.deepEqual(legacy.reports, []);
+    assert.equal(legacy.suspicion, 0);
+    assert.equal(legacy.foreignInsight, 0);
+    assert.equal(legacy.marketInsight, 0);
+    assert.equal(legacy.nobleInsight, 0);
+    assert.equal(legacy.lastUpdateYear, 0);
+});
+
+test("the save, simulation and UI contracts include the Whisper Court", async () => {
+    const html = await readFile(new URL("../../index.html", import.meta.url), "utf8");
+    const ui = await readFile(new URL("../../js/presentation/management-ui.js", import.meta.url), "utf8");
+    const saveRuntime = (await readFile(new URL("../../js/core/save-runtime.js", import.meta.url), "utf8")).replace(/\s+/g, "");
+    const simulation = await readFile(new URL("../../js/simulation/simulation.js", import.meta.url), "utf8");
+    const combat = await readFile(new URL("../../js/simulation/combat.js", import.meta.url), "utf8");
+    const market = await readFile(new URL("../../js/systems/market.js", import.meta.url), "utf8");
+    assert.ok(html.includes('data-command-tab="espionage"'), "the command deck must expose the Whisper Court");
+    assert.ok(ui.includes("espionage:espionagePanel") && ui.includes("spy-recruit") && ui.includes("spy-assign"), "the panel and its actions must be wired");
+    assert.ok(saveRuntime.includes("espionage:JSON.parse") && saveRuntime.includes("state.espionage=normalizeEspionageState"), "saves must persist and normalize the court");
+    assert.ok(simulation.includes("updateEspionage()"), "the court must run from the annual simulation");
+    assert.ok(combat.includes("getEspionageWarModifiers") && market.includes("getEspionageMarketTerms"), "combat and trade must read the court's insight");
+});
+
+test("dismissing an agent removes the post without refunding the recruit cost", () => {
+    setup();
+    const agent = recruit();
+    const goldAfterRecruit = state.resources.gold;
+    const result = dismissAgent(agent.id);
+    assert.equal(result.ok, true);
+    assert.equal(getEspionageSnapshot().agentCount, 0);
+    assert.equal(state.resources.gold, goldAfterRecruit);
+    assert.equal(dismissAgent("missing").ok, false);
+});

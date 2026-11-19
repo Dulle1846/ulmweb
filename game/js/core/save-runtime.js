@@ -46,6 +46,7 @@ import { normalizeLegacyState } from "../systems/legacy.js";
 import { normalizeEndeavoursState } from "../systems/endeavours.js";
 import { normalizeHealthState } from "../systems/health.js";
 import { normalizeMilitaryState } from "../systems/military.js";
+import { createEspionageState, normalizeEspionageState } from "../systems/espionage.js";
 import { normalizeAmbitions } from "../systems/ambitions.js";
 import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeGovernment } from "../systems/government.js";
@@ -178,6 +179,7 @@ export function createSaveSnapshot() {
         hiddenRealm: JSON.parse(JSON.stringify(state.hiddenRealm || {})),
         health: JSON.parse(JSON.stringify(state.health || {})),
         military: JSON.parse(JSON.stringify(state.military || {})),
+        espionage: JSON.parse(JSON.stringify(state.espionage || createEspionageState())),
         faith: JSON.parse(JSON.stringify(state.faith || createFaithState())),
         justice: JSON.parse(JSON.stringify(state.justice || createJusticeState())),
         camera: {
@@ -425,6 +427,7 @@ export function restoreSaveSnapshot(snapshot) {
     };
     state.health = normalizeHealthState(snapshot.health || {});
     state.military = normalizeMilitaryState(snapshot.military || {});
+    state.espionage = normalizeEspionageState(snapshot.espionage || {});
     state.faith = normalizeFaithState(snapshot.faith || {});
     state.justice = normalizeJusticeState(snapshot.justice || {});
     state.hiddenRealm.memories = Array.isArray(state.hiddenRealm.memories) ? state.hiddenRealm.memories : [];

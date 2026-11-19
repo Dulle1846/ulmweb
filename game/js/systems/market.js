@@ -14,6 +14,7 @@ import { getResearchModifiers } from "./research.js";
 import { getEndeavourModifiers } from "./endeavours.js";
 import { getDebtMarketFactor, getDebtPressure, getFoodCrisisSnapshot } from "./economy-cycle.js";
 import { getBiomeFrontierSupply, normalizeBiomeFrontierSupply } from "./biome-market-link.js";
+import { getEspionageMarketTerms } from "./espionage.js";
 
 export const MARKET_RESOURCES = Object.freeze(["wood","stone","food"]);
 export const BASE_PRICES = Object.freeze({ wood:2, stone:3, food:2 });
@@ -192,8 +193,11 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     // A crown living on arrears pays more for grain and receives less for what
     // it sells. The penalty is bounded by the same debt pressure the ledger uses.
     const debtFactor = getDebtMarketFactor();
-    const buyFactor = terms.buyFactor * (1 + healthTerms.tradePenalty) * debtFactor / tradeFactor;
-    const sellFactor = terms.sellFactor * (1 - healthTerms.tradePenalty) * tradeFactor * demandFactor / debtFactor;
+    // Market-watch reports are real commercial intelligence: a bribed clerk
+    // tells the crown which caravan is overstocked before the price moves.
+    const spyTerms = getEspionageMarketTerms();
+    const buyFactor = terms.buyFactor * (1 + healthTerms.tradePenalty) * debtFactor / tradeFactor * spyTerms.buyFactor;
+    const sellFactor = terms.sellFactor * (1 - healthTerms.tradePenalty) * tradeFactor * demandFactor / debtFactor * spyTerms.sellFactor;
     if (direction === "buy") {
         const cost = Math.ceil(price*amount*buyFactor);
         if ((partner.stock[resource]||0)<amount) return {ok:false,reason:"PARTNER OUT OF STOCK"};
