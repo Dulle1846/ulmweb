@@ -4,6 +4,8 @@ let masterGain = null;
 let loopTimer = null;
 let enabled = true;
 let volume = 0.22;
+let unlockBound = false;
+const activeOscillators = new Set();
 
 const BPM = 82;
 const BEAT = 60 / BPM;
@@ -22,14 +24,51 @@ const MELODY = [
 ];
 
 function getContext() {
-    if (audioContext) return audioContext;
+    if (audioContext && audioContext.state !== "closed") return audioContext;
     const Context = window.AudioContext || window.webkitAudioContext;
     if (!Context) return null;
     audioContext = new Context();
     masterGain = audioContext.createGain();
     masterGain.gain.value = volume;
     masterGain.connect(audioContext.destination);
+    audioContext.addEventListener("statechange", () => {
+        if (audioContext?.state === "running" && enabled && !loopTimer) scheduleLoop();
+    });
     return audioContext;
+}
+
+function primeContext(context) {
+    // iOS/Safari sometimes keeps a freshly resumed context silent until one
+    // real buffer has been started inside the gesture. A one-sample silent
+    // source is the standard unlock and costs effectively nothing.
+    try {
+        const buffer = context.createBuffer(1, 1, context.sampleRate || 22050);
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(context.destination);
+        source.start(0);
+    } catch { /* the context may still resume from its statechange */ }
+}
+
+// Browsers that require a user gesture (notably Safari) will leave a context
+// created after an awaited warm-up suspended forever. Keep one capture-phase
+// listener alive until the context is actually running, so the first real
+// click or key press unlocks it instead of silently losing the soundtrack.
+function bindUnlock() {
+    if (unlockBound || typeof window === "undefined") return;
+    unlockBound = true;
+    const unlock = () => {
+        startSoundtrack().then(ok => {
+            if (!ok) return;
+            window.removeEventListener("pointerdown", unlock, true);
+            window.removeEventListener("keydown", unlock, true);
+            window.removeEventListener("touchend", unlock, true);
+            unlockBound = false;
+        }).catch(() => {});
+    };
+    window.addEventListener("pointerdown", unlock, true);
+    window.addEventListener("keydown", unlock, true);
+    window.addEventListener("touchend", unlock, true);
 }
 
 function tone(frequency, start, duration, type, gainValue, destination, attack = 0.08) {
@@ -44,6 +83,12 @@ function tone(frequency, start, duration, type, gainValue, destination, attack =
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
     oscillator.connect(gain);
     gain.connect(destination);
+    activeOscillators.add(oscillator);
+    oscillator.addEventListener("ended", () => {
+        activeOscillators.delete(oscillator);
+        try { oscillator.disconnect(); } catch { /* already disconnected */ }
+        try { gain.disconnect(); } catch { /* already disconnected */ }
+    });
     oscillator.start(start);
     oscillator.stop(start + duration + 0.03);
 }
@@ -67,17 +112,42 @@ function scheduleLoop() {
     loopTimer = window.setTimeout(scheduleLoop, Math.max(100, loopDuration * 1000 - 120));
 }
 
-export async function startSoundtrack() {
-    if (!enabled) return;
+export function startSoundtrack() {
+    if (!enabled) return Promise.resolve(false);
     const context = getContext();
-    if (!context) return;
-    if (context.state === "suspended") await context.resume();
-    if (!loopTimer) scheduleLoop();
+    if (!context) return Promise.resolve(false);
+    if (context.state === "running") {
+        if (!loopTimer) scheduleLoop();
+        return Promise.resolve(true);
+    }
+    // Do not await resume(): a blocked context can leave that promise pending
+    // forever, which used to swallow every later click and key press. Prime the
+    // context, ask it to resume, and let the statechange listener schedule the
+    // loop when the browser actually allows playback. Keep the gesture listener
+    // installed until then so the next interaction can unlock it.
+    primeContext(context);
+    bindUnlock();
+    context.resume().catch(() => {});
+    return Promise.resolve(false);
 }
 
 export function stopSoundtrack() {
     if (loopTimer !== null) window.clearTimeout(loopTimer);
     loopTimer = null;
+    // Re-enabling immediately used to layer a fresh eight-bar phrase over the
+    // still-sounding old one. Stop the scheduled voices so the toggle is a
+    // clean restart, not two soundtracks in counterpoint.
+    for (const oscillator of activeOscillators) {
+        try { oscillator.stop(); } catch { /* already stopped */ }
+    }
+    activeOscillators.clear();
+}
+
+if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) startSoundtrack().catch(() => {});
+    });
+    window.addEventListener("pageshow", () => { startSoundtrack().catch(() => {}); });
 }
 
 export function setMusicEnabled(value) {

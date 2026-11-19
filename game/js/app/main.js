@@ -465,6 +465,10 @@ function cancelRandomStart(){
 
 function startRealmFromForm(trigger){
     closeRandomStartConfirm(false);
+    // Unlock audio while the click is still a live user gesture. The realm
+    // warm-up below is deliberately asynchronous and can outlive Safari's
+    // transient activation window.
+    startSoundtrack().catch(()=>{});
     const label=trigger.textContent;
     const randomButton=document.getElementById("random-realm-btn");
     trigger.disabled=true;
@@ -755,6 +759,7 @@ function loadSnapshotIntoGame(profile,snapshot){
 }
 
 function loadCurrentGame(){
+    startSoundtrack().catch(()=>{});
     const profile=getActiveProfile();
     if(!profile){showStatus("Create or select a local player profile first.");return false;}
     const save=readLocalSave(profile.id);
@@ -1029,6 +1034,17 @@ function bindMenu(){
     const volume=document.getElementById("settings-music-volume");
     if(musicToggle)musicToggle.checked=settings.musicEnabled;
     if(volume)volume.value=String(Math.round(settings.musicVolume*100));
+    // The help sheet advertises M as the music shortcut; keep that shortcut
+    // wired to the same persisted setting as the settings toggle.
+    window.addEventListener("keydown",event=>{
+        if(String(event.key).toLowerCase()!=="m"||event.repeat||event.ctrlKey||event.metaKey||event.altKey)return;
+        const target=event.target;
+        if(target instanceof HTMLElement&&(target.isContentEditable||["INPUT","TEXTAREA","SELECT"].includes(target.tagName)))return;
+        settings.musicEnabled=!settings.musicEnabled;
+        setMusicEnabled(settings.musicEnabled);
+        if(musicToggle)musicToggle.checked=settings.musicEnabled;
+        saveSettings(settings);
+    });
     const deltasToggle=document.getElementById("settings-deltas-toggle");
     const tooltipsToggle=document.getElementById("settings-tooltips-toggle");
     if(tooltipsToggle){tooltipsToggle.checked=settings.showTooltips!==false;tooltipsToggle.addEventListener("change",event=>{settings.showTooltips=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
