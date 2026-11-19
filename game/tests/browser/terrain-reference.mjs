@@ -109,7 +109,9 @@ try {
         content: `
             body.terrain-reference .topbar,
             body.terrain-reference .realm-nav,
-            body.terrain-reference .side-panel { display: none !important; }
+            body.terrain-reference .side-panel,
+            body.terrain-reference #event-notification,
+            body.terrain-reference .event-notification { display: none !important; }
             body.terrain-reference .game-shell,
             body.terrain-reference .game-layout { display: block !important; height: 100vh !important; }
             body.terrain-reference #canvas-wrapper {

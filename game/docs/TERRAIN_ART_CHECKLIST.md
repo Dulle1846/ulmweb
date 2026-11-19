@@ -15,6 +15,20 @@ This is the current implementation audit for **1.1 Grundlegende Terrain-Grafik**
 | 1.1.9 Abnutzung durch menschliche Aktivität | **Implemented** | A persistent wear field is stamped by roads and building footprints, builds up while they exist and recovers slowly. Roads, fields and buildings are drawn from the same world data. | `terrain-wear.js`; four wear tests; shader wear tint. |
 | 1.1.10 Jahreszeitenabhängige Optik | **Implemented** | Continuous season curves drive palette, sun and effects: snow accumulates through late autumn, peaks in winter and melts through early spring; leaf litter and green-up follow their own ramps. Palette colours are anchored mid-season, trees turn and drop per tree and species (oaks hold brown leaves, conifers stay green), and weather is season-gated so summer cannot snow. Five climate profiles shift the same curves: northern snow arrives earlier and melts later, mediterranean and arid winters hold less snow, and per-species snow retention lets conifers keep their load while birches shed it early. Bare crowns use tapered limbs and snow-tipped twigs; conifers use four snow-bearing tiers. | `world/season.js`, `terrain-palette.js`, `seasonal-foliage.js`, `weather.js`; season, weather and foliage tests; `season-year.json`; `climate-reference.json`, `climate-live.json`; transition, grove and both climate sheets. |
 
+## Canvas woodland close-up — 3.30.0
+
+The 1.1 surface checklist is joined by a dedicated close-view woodland pass.
+It affects the Canvas detail layer at rooftop/interior zoom, not the simulated
+stand data or the WebGL ground.
+
+| Item | Status | Implementation | Evidence / remaining limit |
+|---|---|---|---|
+| Colour pipeline validity | **Implemented** | `rgbTriplet` parses `rgb()`/`rgba()` as well as hex and returns black for malformed input. `mixHex` can therefore be chained on its own output; the previous NaN triplet kept the last Canvas `fillStyle` and produced ghost crowns. | `terrain.js` `rgbTriplet` / `mixHex`; terrain reference sheets and spec audit. |
+| Broadleaf crowns and trunks | **Implemented** | Deterministic `crownSilhouette` / `traceCrown` build irregular, layered washes with internal lobes, leaf tips and a broken ink rim. Limbs remain visible outside the wash. Trunks taper, with bark ridges, roots, hollows, broken limbs and separate lit/shadow faces. | `drawBroadleaf`; `tree-seasons.png`, `forest-seasons.png`. Crowns remain procedural, not authored bitmaps. |
+| Birch and conifer silhouettes | **Implemented** | Birch gets a slimmer curved bole, subtle dark fissures and an airy crown. Conifer tiers droop unevenly, carry needle clumps and have broken lower rims rather than geometric triangles. | `drawBirch`, `drawConifer`; forest and season sheets. |
+| Winter snow | **Implemented** | Snow on bare twigs and marcescent leaf masses is a thin, broken ridge. It no longer forms round white caps that hide the branch silhouette. Conifers retain species-specific tier snow. | `drawBareCrown`, `drawSnowCaps`; `tree-seasons.png`, `forest-seasons.png`. |
+| Forest floor and spacing | **Implemented** | Humus and moss washes, bigger leaf drifts, species leaves, twig strokes and moss cushions replace the flat green carpet. Trees are deterministically jittered per tile; added grass tufts were removed because they read as a lawn grid. | `drawForestGround`, `drawLeafCarpet`; `forest-reference.png`, `contact-sheet.png`. The detail is cached, not rebuilt every frame. |
+
 ## Biomes — 1.2.1 Laubwälder
 
 The broader biome work is tracked in [FOREST_ECOLOGY.md](FOREST_ECOLOGY.md). It maps all sixty items of **1.2.1 Laubwälder** to the shared deterministic stand model, the renderer, resource geography, the management survey and the dedicated `forest-reference.png` / `forest-seasons.png` sheets. The 1.1 checklist above remains authoritative for the terrain surface itself.

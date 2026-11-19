@@ -139,7 +139,9 @@ try {
         content: `
             body.forest-reference .topbar,
             body.forest-reference .realm-nav,
-            body.forest-reference .side-panel { display: none !important; }
+            body.forest-reference .side-panel,
+            body.forest-reference #event-notification,
+            body.forest-reference .event-notification { display: none !important; }
             body.forest-reference .game-shell,
             body.forest-reference .game-layout { display: block !important; height: 100vh !important; }
             body.forest-reference #canvas-wrapper {

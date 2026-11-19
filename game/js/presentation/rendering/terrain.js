@@ -1662,9 +1662,14 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                         const r1 = (s1 + copy * 0.31) % 1;
                         const r2 = (s2 + copy * 0.27) % 1;
                         const r3 = (s3 + copy * 0.43) % 1;
+                        // Nudge the primary tree inside its tile. A perfect lattice
+                        // reads as a plantation at rooftop zoom; the offset is a pure
+                        // function of the tile, so panning cannot make a tree jump.
+                        const jitterX = copy === 0 ? (s3 - 0.5) * cellPx * 0.16 : 0;
+                        const jitterY = copy === 0 ? (s2 - 0.5) * cellPx * 0.1 : 0;
                         state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + 1;
-                        if (distant) drawDistantTree(ctx, px + ox, py + oy, cellPx, tick, r2, r3, stand, climate, dayOfYear, sun);
-                        else drawTree(ctx, px + ox, py + oy, cellPx, tick, r1, r2, r3, zoom, temp, m, dayOfYear, climateKey, shoreDir, stand, sun);
+                        if (distant) drawDistantTree(ctx, px + ox + jitterX, py + oy + jitterY, cellPx, tick, r2, r3, stand, climate, dayOfYear, sun);
+                        else drawTree(ctx, px + ox + jitterX, py + oy + jitterY, cellPx, tick, r1, r2, r3, zoom, temp, m, dayOfYear, climateKey, shoreDir, stand, sun);
                     }
                     // Jungle thickets live below and between crowns. The normal
                     // tree branch skips understorey entirely, which would hide
@@ -2092,16 +2097,30 @@ function drawShoreFoam(ctx, px, py, cellPx, tick, s2, zoom) {
 
 const COLOR_CACHE = new Map();
 
-function rgbTriplet(hex) {
-    let value = COLOR_CACHE.get(hex);
+function rgbTriplet(color) {
+    const key = String(color);
+    let value = COLOR_CACHE.get(key);
     if (value) return value;
-    const raw = hex.replace("#", "");
-    value = [
-        parseInt(raw.slice(0, 2), 16),
-        parseInt(raw.slice(2, 4), 16),
-        parseInt(raw.slice(4, 6), 16),
-    ];
-    COLOR_CACHE.set(hex, value);
+    const text = key.trim();
+    // mixHex feeds its own rgb(...) output back in for tint layering. Parsing
+    // that as hex turned the red channel into NaN, and Canvas kept whatever
+    // fillStyle happened to be active before the crown — the source of the
+    // large pale/dark ghost crowns around every tree.
+    const functional = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/i.exec(text);
+    if (functional) {
+        value = [Number(functional[1]), Number(functional[2]), Number(functional[3])];
+    } else {
+        const raw = text.replace("#", "");
+        value = raw.length === 3
+            ? [...raw].map(channel => parseInt(channel + channel, 16))
+            : [
+                parseInt(raw.slice(0, 2), 16),
+                parseInt(raw.slice(2, 4), 16),
+                parseInt(raw.slice(4, 6), 16),
+            ];
+    }
+    if (!value.every(Number.isFinite)) value = [0, 0, 0];
+    COLOR_CACHE.set(key, value);
     return value;
 }
 
@@ -2117,14 +2136,22 @@ function mixHex(from, to, amount) {
 function drawSnowCaps(ctx, px, py, s, sway, seed, snow, topY, spread) {
     if (snow <= 0.12) return;
     ctx.save();
-    ctx.globalAlpha = Math.min(0.95, snow * 1.05);
-    ctx.fillStyle = "#eef6fb";
-    const caps = 1 + Math.floor(seed * 2);
+    ctx.globalAlpha = Math.min(0.9, snow * 0.95);
+    ctx.strokeStyle = "#eef6fb";
+    ctx.lineCap = "round";
+    ctx.lineWidth = Math.max(0.55, 0.72 * s);
+    const caps = 2 + Math.floor(seed * 3);
     for (let i = 0; i < caps; i++) {
-        const ox = (i - (caps - 1) / 2) * spread * 0.45 * s + sway;
+        const ox = (i - (caps - 1) / 2) * spread * 0.34 * s + sway;
+        const ridge = topY + (i % 2) * 1.15 * s;
+        const span = (2.1 + ((i * 7) % 3) * 0.35) * s;
         ctx.beginPath();
-        ctx.ellipse(px + ox, topY + i * 1.7 * s, (3.8 - i * 0.7) * s, (1.8 - i * 0.25) * s, -0.18, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(px + ox - span, ridge + 0.25 * s);
+        ctx.quadraticCurveTo(px + ox - span * 0.2, ridge - 0.85 * s,
+            px + ox + span * 0.18, ridge - 0.25 * s);
+        ctx.quadraticCurveTo(px + ox + span * 0.52, ridge + 0.15 * s,
+            px + ox + span, ridge - 0.1 * s);
+        ctx.stroke();
     }
     ctx.restore();
 }
@@ -2206,14 +2233,20 @@ function drawBareCrown(ctx, px, py, s, sway, seed, foliage, ink = "#6b5138", sca
 
     // Snow rests on the upper twigs before it covers the whole crown.
     if (foliage.snow > 0.18) {
+        // Snow lies on the upper side of a twig as a thin broken line. Round
+        // caps here read as cotton buds and hid the winter branch silhouette.
         ctx.save();
-        ctx.globalAlpha = Math.min(0.85, foliage.snow * 0.9);
-        ctx.fillStyle = "#edf6fb";
+        ctx.globalAlpha = Math.min(0.8, foliage.snow * 0.82);
+        ctx.strokeStyle = "#edf6fb";
+        ctx.lineWidth = Math.max(0.55, 0.72 * s);
+        ctx.lineCap = "round";
         for (let i = 0; i < tips.length; i++) {
             const tip = tips[i];
+            const span = (1.3 + (i % 3) * 0.35) * s;
             ctx.beginPath();
-            ctx.ellipse(tip.x, tip.y - 0.5 * s, (1.7 + (i % 2) * 0.5) * s, 0.62 * s, tip.angle, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.moveTo(tip.x - span, tip.y - 0.2 * s);
+            ctx.quadraticCurveTo(tip.x, tip.y - 0.8 * s, tip.x + span, tip.y - 0.15 * s);
+            ctx.stroke();
         }
         ctx.restore();
     }
@@ -2301,6 +2334,64 @@ function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, d
     drawBroadleaf(ctx, px, py, s, sway, tick, s2, dayOfYear, Math.floor(s3 * 4) % 4, species, climateKey, ageScale, stand, treeForm);
 }
 
+// An irregular, closed crown outline. The old code stacked perfect ellipses,
+// which read as a lollipop at rooftop zoom. These points carry a low-frequency
+// scallop from the species' lobe count plus a fine grain, and are smoothed into
+// one silhouette rather than stamped as a circle.
+function crownSilhouette(seed, variant, lobes, rx, ry, irregularity = 1) {
+    const count = 15 + (variant % 2);
+    const phase = seed * Math.PI * 2 + variant * 0.83;
+    const points = [];
+    for (let i = 0; i < count; i++) {
+        const angle = -Math.PI / 2 + (i / count) * Math.PI * 2;
+        const scallop = Math.sin(angle * (2.4 + lobes * 0.7) + phase * 1.35) * 0.095 * irregularity;
+        const grain = Math.cos(angle * 5.1 - phase * 0.9 + i * 0.11) * 0.05 * irregularity;
+        const radial = 0.92 + scallop + grain;
+        points.push({
+            x: Math.cos(angle) * rx * radial,
+            y: Math.sin(angle) * ry * radial,
+        });
+    }
+    return points;
+}
+
+function traceCrown(ctx, cx, cy, points) {
+    if (!points.length) return;
+    const count = points.length;
+    const first = points[0];
+    const last = points[count - 1];
+    ctx.beginPath();
+    ctx.moveTo(cx + (last.x + first.x) * 0.5, cy + (last.y + first.y) * 0.5);
+    for (let i = 0; i < count; i++) {
+        const point = points[i];
+        const next = points[(i + 1) % count];
+        ctx.quadraticCurveTo(cx + point.x, cy + point.y,
+            cx + (point.x + next.x) * 0.5, cy + (point.y + next.y) * 0.5);
+    }
+    ctx.closePath();
+}
+
+// A few gaps keep the rim from becoming a clean vector outline. These are pen
+// breaks, not erased pixels, so they work on the shared cached surface.
+function strokeCrownContour(ctx, cx, cy, points, ink, width, seed, gapRate = 0.3) {
+    const count = points.length;
+    const offset = Math.floor(seed * 17) % 7;
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    for (let i = 0; i < count; i++) {
+        if ((i + offset) % 2 !== 0) continue;
+        if (((i * 7 + offset) % 11) / 11 < gapRate) continue;
+        const point = points[i];
+        const next = points[(i + 1) % count];
+        ctx.beginPath();
+        ctx.moveTo(cx + point.x * 0.992, cy + point.y * 0.992);
+        ctx.quadraticCurveTo(cx + point.x * 1.014, cy + point.y * 1.014,
+            cx + next.x * 0.992, cy + next.y * 0.992);
+        ctx.stroke();
+    }
+}
+
 function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0, species = "oak", climateKey = "temperate", ageScale = 1, stand = null, treeForm = null) {
     const definition = FOREST_SPECIES[species] || FOREST_SPECIES.oak;
     const heightScale = (treeForm?.heightScale || 1)
@@ -2314,16 +2405,23 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
     // no longer looks like isolated green trees floating in a brown wood.
     const turn = Math.min(1, foliage.turn + seasonal.foliageTurn * 0.12);
     const trunkH = (10 + definition.height * 3) * s * ageScale * heightScale;
-    const trunkW = Math.max(1.3, 4.2 * definition.trunk * s * (0.72 + ageScale * 0.28) * trunkScale);
+    const trunkW = Math.max(1.3, 4.0 * definition.trunk * s * (0.72 + ageScale * 0.28) * trunkScale);
     const baseY = py + 8 * s;
-    const crownY = py - (7 + definition.height * 4.6) * s * ageScale * heightScale;
+    // Raise the crown enough to expose the fork and a working trunk. The old
+    // crown sat almost on the ground, so every mature tree read as a mushroom.
+    const crownY = py - (9 + definition.height * 5.2) * s * ageScale * heightScale;
+    const trunkTopY = crownY + 5 * s;
     const lean = sway * 0.35;
+    const barkInk = mixHex(definition.bark, "#2d2117", 0.4);
+    const barkBase = mixHex(definition.bark, "#33271d", 0.18);
+    const bend = (seed - 0.5) * trunkW * 1.1;
 
     // Exposed roots anchor old trees to the humus instead of leaving a stick on
     // top of the ground.
     if (ageScale > 0.82) {
-        ctx.strokeStyle = mixHex(definition.bark, "#3e2c1d", 0.25);
-        ctx.lineWidth = Math.max(0.8, 1.05 * s);
+        ctx.strokeStyle = mixHex(barkInk, "#241a12", 0.3);
+        ctx.globalAlpha = 0.82;
+        ctx.lineWidth = Math.max(0.9, 1.18 * s);
         ctx.lineCap = "round";
         for (let i = 0; i < (ageScale > 1.1 ? 4 : 2); i++) {
             const side = i % 2 === 0 ? -1 : 1;
@@ -2333,22 +2431,71 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
             ctx.stroke();
         }
         ctx.lineCap = "butt";
+        ctx.globalAlpha = 1;
     }
 
-    // Trunk with a lit edge and a darker heart. Beech and birch get a smoother,
-    // cooler bark than oak and chestnut.
-    ctx.fillStyle = definition.bark;
+    // Trunk with a tapered lit edge and a darker heart. The old rectangular
+    // highlight read as a white stake at the base of pale-barked trees; this
+    // follows the trunk taper and fades into the crown.
+    ctx.fillStyle = barkBase;
     ctx.beginPath();
     ctx.moveTo(px - trunkW * 0.5, baseY);
-    ctx.quadraticCurveTo(px - trunkW * 0.42 + lean, py + 2 * s, px - trunkW * 0.3 + lean, crownY + 5 * s);
-    ctx.lineTo(px + trunkW * 0.3 + lean, crownY + 5 * s);
-    ctx.quadraticCurveTo(px + trunkW * 0.48 + lean, py + 2 * s, px + trunkW * 0.5, baseY);
+    ctx.quadraticCurveTo(px - trunkW * 0.42 + lean + bend, py + 2 * s, px - trunkW * 0.26 + lean, trunkTopY);
+    ctx.lineTo(px + trunkW * 0.26 + lean, trunkTopY);
+    ctx.quadraticCurveTo(px + trunkW * 0.48 + lean + bend, py + 2 * s, px + trunkW * 0.5, baseY);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = "rgba(28,20,13,0.26)";
+    ctx.lineWidth = Math.max(0.45, 0.48 * s);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalAlpha = 0.42;
+    ctx.fillStyle = mixHex(barkBase, "#1f150e", 0.42);
+    ctx.beginPath();
+    ctx.moveTo(px + trunkW * 0.06, baseY);
+    ctx.quadraticCurveTo(px + trunkW * 0.16 + lean + bend, py + 2 * s, px + trunkW * 0.16 + lean, trunkTopY);
+    ctx.lineTo(px + trunkW * 0.26 + lean, trunkTopY);
+    ctx.quadraticCurveTo(px + trunkW * 0.44 + lean + bend, py + 2 * s, px + trunkW * 0.5, baseY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.28;
     ctx.fillStyle = definition.barkLight;
-    ctx.globalAlpha = 0.52;
-    ctx.fillRect(px - trunkW * 0.38 + lean * 0.4, py + 1.5 * s, Math.max(0.7, trunkW * 0.2), trunkH * 0.78);
-    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(px - trunkW * 0.46, baseY);
+    ctx.quadraticCurveTo(px - trunkW * 0.34 + lean + bend, py + 2 * s, px - trunkW * 0.2 + lean, trunkTopY);
+    ctx.lineTo(px - trunkW * 0.13 + lean, trunkTopY);
+    ctx.quadraticCurveTo(px - trunkW * 0.22 + lean + bend, py + 2 * s, px - trunkW * 0.28, baseY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Bark ridges and a couple of knots keep the cylinder from reading as a
+    // clean flat shape. They are cheap strokes in the cached detail raster.
+    ctx.save();
+    ctx.globalAlpha = 0.34;
+    ctx.strokeStyle = mixHex(barkBase, "#1c120c", 0.4);
+    ctx.lineWidth = Math.max(0.6, 0.66 * s);
+    ctx.lineCap = "round";
+    for (let i = 0; i < 3; i++) {
+        const x = px + (i - 1) * trunkW * 0.2;
+        ctx.beginPath();
+        ctx.moveTo(x, baseY - 1.5 * s);
+        ctx.quadraticCurveTo(x + trunkW * 0.08 + lean * 0.5 + bend * 0.6, py - trunkH * 0.28, x + lean * 0.7, trunkTopY + 2 * s);
+        ctx.stroke();
+    }
+    if (ageScale > 0.75) {
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = mixHex(definition.bark, "#120c08", 0.5);
+        ctx.beginPath();
+        ctx.ellipse(px + trunkW * 0.08 + lean * 0.45, py - trunkH * 0.38,
+            Math.max(0.7, 0.75 * s), Math.max(0.5, 0.55 * s), 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
 
     // Ancient trees carry hollows and broken limbs; these also become nesting
     // sites in the fauna layer. Keep the hollow on the clear lower trunk: any
@@ -2377,7 +2524,6 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
     if (foliage.bare) {
         drawBareCrown(ctx, px, py, s, sway, seed, foliage, definition.bark, ageScale);
         if (ageScale > 1.05 && seed > 0.58) drawNest(ctx, px + lean + 5 * s, crownY + 9 * s, s, seed);
-        drawSnowCaps(ctx, px, py, s * ageScale, sway, seed, foliage.snow, py - 12 * s * ageScale, 10);
         return;
     }
 
@@ -2397,61 +2543,152 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
     }
 
     const cover = Math.max(0.18, foliage.leaf) * (stand?.disturbance === 'diseased' ? 0.78 : 1);
-    const radius = (9 + seed * 4) * s * definition.crown * ageScale * crownScale * (0.62 + 0.38 * cover);
+    const radius = (11 + seed * 4) * s * definition.crown * ageScale * crownScale * (0.62 + 0.38 * cover);
     // Crown aspect is species-readable at a glance: oak and chestnut spread,
     // elm and linden rise, birch is airy, and maple fills a rounded dome.
     const aspect = definition.form === 'spreading' ? 0.76 : definition.form === 'vase' ? 1.18
         : definition.form === 'oval' ? 1.1 : definition.form === 'airy' ? 1.04 : 0.9;
-    // A few limbs show through the crown edge. They make an old tree read as a
-    // tree rather than a green circle, especially against the pale autumn sky.
+    // Limbs fan out of the fork and reach past the crown edge. They make an old
+    // tree read as a tree rather than a green circle, especially against the
+    // pale autumn sky.
+    const forkY = crownY + 9 * s;
     ctx.save();
-    ctx.strokeStyle = mixHex(definition.bark, "#32261c", 0.36);
-    ctx.globalAlpha = 0.62;
-    ctx.lineWidth = Math.max(0.8, 1.05 * s);
+    ctx.strokeStyle = barkInk;
+    ctx.globalAlpha = 0.68;
+    ctx.lineWidth = Math.max(0.8, 0.95 * s);
     ctx.lineCap = "round";
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
         const side = i % 2 === 0 ? -1 : 1;
+        const tier = Math.floor(i / 2);
+        const reach = radius * (0.66 + tier * 0.07 + (i % 3) * 0.035);
+        const startY = forkY + (2.4 - tier * 2.4) * s;
+        const endY = crownY - radius * aspect * (0.06 + tier * 0.2) + (i % 2) * radius * 0.06;
         ctx.beginPath();
-        ctx.moveTo(px + lean, crownY + 9 * s);
-        ctx.quadraticCurveTo(px + side * radius * 0.38, crownY + radius * 0.18, px + side * radius * (0.62 + i * 0.1), crownY + (i % 2 ? -1 : 1) * radius * 0.12);
+        ctx.moveTo(px + lean * 0.8, startY);
+        ctx.quadraticCurveTo(px + side * radius * 0.3, startY - radius * 0.22,
+            px + side * reach + sway, endY);
         ctx.stroke();
+        if (i < 4) {
+            ctx.lineWidth = Math.max(0.55, 0.62 * s);
+            ctx.beginPath();
+            ctx.moveTo(px + side * radius * 0.48 + sway * 0.7, crownY + radius * aspect * 0.02);
+            ctx.lineTo(px + side * radius * 0.74 + sway, crownY - radius * aspect * (0.2 + tier * 0.08));
+            ctx.stroke();
+            ctx.lineWidth = Math.max(0.8, 0.95 * s);
+        }
     }
     ctx.restore();
 
+    const crownPoints = crownSilhouette(seed, variant, definition.lobes || 3,
+        radius, radius * aspect, definition.form === 'airy' ? 1.35 : 1);
+    const darkCrown = mixHex(crown, "#17231a", 0.46);
+    const deepCrown = mixHex(crown, "#101a12", 0.64);
+    const crownX = px + sway;
+
     ctx.save();
-    ctx.globalAlpha = 0.36 + 0.64 * cover;
+    ctx.globalAlpha = 0.66 + 0.26 * cover;
     ctx.fillStyle = crown;
-    // Layered lobes form a rounded, irregular crown. The old single circle is
-    // still underneath so a sparse tree never turns into a floating ring.
-    ctx.beginPath();
-    ctx.ellipse(px + sway, crownY, radius, radius * aspect, 0, 0, Math.PI * 2);
+    traceCrown(ctx, crownX, crownY, crownPoints);
     ctx.fill();
-    for (let i = 0; i < definition.lobes; i++) {
-        const angle = i * 2.399 + seed * 4 + variant * 0.42;
-        const ox = Math.cos(angle) * radius * 0.44;
-        const oy = Math.sin(angle) * radius * 0.3;
-        ctx.fillStyle = i % 2 === 0 ? crown : light;
-        ctx.beginPath();
-        ctx.ellipse(px + ox + sway, crownY + oy, radius * (0.48 + (i % 3) * 0.08), radius * aspect * (0.38 + (i % 2) * 0.09), angle * 0.18, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    // Small edge clumps break the silhouette into leaves and give each species
-    // a different outline without turning the canopy into a repeated stamp.
-    for (let i = 0; i < 5; i++) {
-        const angle = i * 1.79 + seed * 6 + variant;
-        const edge = 0.62 + (i % 3) * 0.1;
-        ctx.fillStyle = i % 2 === 0 ? light : crown;
-        ctx.globalAlpha = (0.28 + 0.33 * cover) * (0.78 + (i % 2) * 0.2);
-        ctx.beginPath();
-        ctx.ellipse(px + sway + Math.cos(angle) * radius * edge, crownY + Math.sin(angle) * radius * aspect * edge * 0.74,
-            radius * (0.18 + (i % 2) * 0.06), radius * (0.13 + (i % 3) * 0.03), angle * 0.3, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    ctx.globalAlpha = 0.36 + 0.64 * cover;
+
+    // A cool under-wash and a sunlit upper-left wash give the crown volume
+    // without the single bright oval that used to read as a plastic shine.
+    ctx.globalAlpha = 0.27 + 0.14 * cover;
+    ctx.fillStyle = darkCrown;
+    ctx.save();
+    ctx.translate(radius * 0.1, radius * aspect * 0.14);
+    traceCrown(ctx, crownX, crownY, crownSilhouette(seed + 0.17, variant + 1,
+        definition.lobes || 3, radius * 0.9, radius * aspect * 0.88, 1.1));
+    ctx.fill();
+    ctx.restore();
+
+    ctx.globalAlpha = 0.2 + 0.12 * cover;
     ctx.fillStyle = light;
-    ctx.beginPath();
-    ctx.ellipse(px - radius * 0.28 + sway, crownY - radius * 0.25, radius * 0.48 * (0.7 + 0.3 * cover), radius * 0.36 * (0.7 + 0.3 * cover), -0.15, 0, Math.PI * 2);
+    ctx.save();
+    ctx.translate(-radius * 0.15, -radius * aspect * 0.18);
+    traceCrown(ctx, crownX, crownY, crownSilhouette(seed + 0.31, variant + 2,
+        definition.lobes || 3, radius * 0.64, radius * aspect * 0.58, 1.2));
     ctx.fill();
+    ctx.restore();
+
+    // Irregular lobe patches, dappled leaf clusters and a few darker hollows
+    // build the canopy as a wash rather than a stack of identical ellipses.
+    for (let i = 0; i < definition.lobes + 2; i++) {
+        const angle = i * 2.399 + seed * 5 + variant * 0.42;
+        ctx.fillStyle = i % 3 === 0 ? light : i % 3 === 1 ? crown : darkCrown;
+        ctx.globalAlpha = 0.13 + (i % 2) * 0.055 + cover * 0.05;
+        ctx.beginPath();
+        ctx.ellipse(crownX + Math.cos(angle) * radius * 0.38,
+            crownY + Math.sin(angle) * radius * aspect * 0.3,
+            radius * (0.31 + (i % 3) * 0.055), radius * aspect * (0.23 + (i % 2) * 0.055),
+            angle * 0.24, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    // A cluster of small light catches on the sun side and a deeper shoulder
+    // under the shaded side give the wash volume without a plastic highlight.
+    for (let i = 0; i < 3; i++) {
+        const angle = -2.45 + i * 0.42;
+        ctx.fillStyle = light;
+        ctx.globalAlpha = 0.14 + i * 0.02;
+        ctx.beginPath();
+        ctx.ellipse(crownX + Math.cos(angle) * radius * 0.42,
+            crownY + Math.sin(angle) * radius * aspect * 0.37,
+            radius * (0.25 + i * 0.02), radius * aspect * 0.18,
+            angle * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    for (let i = 0; i < 2; i++) {
+        const angle = 0.45 + i * 0.55;
+        ctx.fillStyle = darkCrown;
+        ctx.globalAlpha = 0.13;
+        ctx.beginPath();
+        ctx.ellipse(crownX + Math.cos(angle) * radius * 0.46,
+            crownY + Math.sin(angle) * radius * aspect * 0.4,
+            radius * 0.3, radius * aspect * 0.2, angle * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    for (let i = 0; i < 16; i++) {
+        const angle = i * 2.399 + seed * 8 + variant * 0.7;
+        const edge = 0.48 + ((i * 7) % 9) / 9 * 0.46;
+        ctx.fillStyle = i % 3 === 0 ? light : i % 3 === 1 ? crown : darkCrown;
+        ctx.globalAlpha = 0.17 + ((i * 5) % 4) * 0.035 + cover * 0.11;
+        ctx.beginPath();
+        ctx.ellipse(crownX + Math.cos(angle) * radius * edge,
+            crownY + Math.sin(angle) * radius * aspect * edge * 0.82,
+            radius * (0.12 + (i % 4) * 0.024), radius * aspect * (0.09 + (i % 3) * 0.02),
+            angle * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 0.16 + 0.08 * cover;
+    ctx.fillStyle = deepCrown;
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(crownX + (i - 1) * radius * 0.26, crownY + radius * aspect * (0.3 + i * 0.08),
+            radius * (0.17 + i * 0.03), radius * aspect * 0.14, -0.2 + i * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Leaf tips outside the main wash break the balloon edge into foliage.
+    for (let i = 0; i < 9; i++) {
+        const angle = i * 2.399 + seed * 4 + variant * 0.5;
+        const tip = 0.95 + (i % 3) * 0.035;
+        ctx.fillStyle = i % 2 === 0 ? light : darkCrown;
+        ctx.globalAlpha = 0.28 + (i % 3) * 0.04;
+        ctx.beginPath();
+        ctx.ellipse(crownX + Math.cos(angle) * radius * tip,
+            crownY + Math.sin(angle) * radius * aspect * tip * 0.84,
+            radius * (0.16 + (i % 2) * 0.045), radius * aspect * 0.11,
+            angle * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // The rim is a sequence of short pen strokes with deliberate gaps. This is
+    // the hand-drawn break between the wash and the ground that a vector circle
+    // can never give.
+    ctx.globalAlpha = 0.36 + 0.12 * cover;
+    strokeCrownContour(ctx, crownX, crownY, crownPoints, mixHex(crown, "#0f160f", 0.7),
+        Math.max(0.6, 0.7 * s), seed, 0.2);
+
     ctx.restore();
 
     // Thinning crowns drop visible leaves around the trunk; this is the local
@@ -2497,32 +2734,129 @@ function drawBirch(ctx, px, py, s, sway, seed, dayOfYear, climateKey = "temperat
     const heightScale = treeForm?.heightScale || 1;
     const trunkScale = treeForm?.trunkScale || 1;
     const crownScale = treeForm?.crownScale || 1;
-    const trunkW = Math.max(1.1, 3.6 * s * (0.72 + ageScale * 0.28) * trunkScale);
-    const trunkH = 13 * s * ageScale * heightScale;
-    ctx.fillStyle = "#e9e3d4";
-    ctx.fillRect(px - trunkW * 0.5, py + 1 * s, trunkW, trunkH);
-    ctx.fillStyle = "#4a4136";
-    for (let i = 0; i < 3; i++) {
-        ctx.fillRect(px - trunkW * 0.5, py + (3 + i * 3.4) * s, (trunkW * 0.44 + (i % 2) * 0.8) * s, 0.9 * s);
-    }
-    if (foliage.bare) {
-        drawBareCrown(ctx, px, py, s, sway, seed, foliage, "#8a7f6e", ageScale);
-        drawSnowCaps(ctx, px, py, s * ageScale, sway, seed, foliage.snow, py - 12 * s * ageScale, 9);
-        return;
-    }
-    ctx.save();
-    ctx.globalAlpha = 0.35 + 0.65 * foliage.leaf;
-    const crownY = py - (5 + 2 * ageScale) * s * heightScale;
-    const radius = (8.5 + seed * 3) * s * (0.68 + 0.32 * foliage.leaf) * Math.max(0.7, ageScale) * crownScale;
-    ctx.fillStyle = mixHex("#6a9e3e", "#c9a83a", foliage.turn);
+    const trunkW = Math.max(1.05, 3.1 * s * (0.72 + ageScale * 0.28) * trunkScale);
+    const trunkH = 14 * s * ageScale * heightScale;
+    const baseY = py + 8 * s;
+    const topY = baseY - trunkH;
+    const topW = Math.max(0.75, trunkW * 0.44);
+    const lean = sway * 0.45;
+
+    // A tapered, slightly leaning bole instead of a rectangular white post.
+    ctx.fillStyle = "#c8bca5";
+    const birchBend = (seed - 0.5) * trunkW * 1.4;
     ctx.beginPath();
-    ctx.ellipse(px + sway, crownY, radius * 0.82, radius, 0, 0, Math.PI * 2);
+    ctx.moveTo(px - trunkW * 0.5, baseY);
+    ctx.quadraticCurveTo(px - trunkW * 0.4 + lean * 0.5 + birchBend, py + 1 * s, px - topW * 0.5 + lean, topY);
+    ctx.lineTo(px + topW * 0.5 + lean, topY);
+    ctx.quadraticCurveTo(px + trunkW * 0.42 + lean * 0.5 + birchBend, py + 1 * s, px + trunkW * 0.5, baseY);
+    ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = mixHex("#a3c463", "#e0c25a", foliage.turn);
+    ctx.strokeStyle = "rgba(74,65,54,0.4)";
+    ctx.lineWidth = Math.max(0.45, 0.42 * s);
+    ctx.stroke();
+    ctx.save();
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = "#8f836d";
     ctx.beginPath();
-    ctx.ellipse(px - 3 * s + sway, crownY - 3 * s, radius * 0.44, radius * 0.5, -0.2, 0, Math.PI * 2);
+    ctx.moveTo(px + trunkW * 0.08, baseY);
+    ctx.quadraticCurveTo(px + trunkW * 0.2 + lean * 0.5 + birchBend, py + 1 * s, px + topW * 0.02 + lean, topY);
+    ctx.lineTo(px + topW * 0.5 + lean, topY);
+    ctx.quadraticCurveTo(px + trunkW * 0.42 + lean * 0.5, py + 1 * s, px + trunkW * 0.5, baseY);
+    ctx.closePath();
     ctx.fill();
     ctx.restore();
+
+    // Black birch fissures are short and irregular; a row of equal bars was
+    // what made the old trunk read as a fence post.
+    ctx.save();
+    ctx.fillStyle = "#38322a";
+    for (let i = 0; i < 3; i++) {
+        ctx.globalAlpha = 0.62 - i * 0.1;
+        const y = baseY - (2.4 + i * 3.1) * s * Math.max(0.8, ageScale);
+        ctx.beginPath();
+        ctx.ellipse(px - trunkW * (0.14 - i * 0.06) + lean * 0.25 + birchBend * 0.4,
+            y, trunkW * (0.17 + (i % 2) * 0.06), Math.max(0.24, 0.3 * s),
+            -0.1 + (i % 2) * 0.16, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    if (foliage.bare) {
+        drawBareCrown(ctx, px, py, s, sway, seed, foliage, "#8a7f6e", ageScale);
+        return;
+    }
+
+    const crownY = py - (9 + 3 * ageScale) * s * heightScale;
+    const leaf = foliage.leaf;
+    const radiusX = (8.5 + seed * 3) * s * (0.66 + 0.34 * leaf) * Math.max(0.7, ageScale) * crownScale * 0.9;
+    const radiusY = radiusX * 1.08;
+    const base = mixHex("#5d963f", "#c9a83a", foliage.turn);
+    const light = mixHex("#86ba5b", "#e0c25a", foliage.turn);
+    const dark = mixHex(base, "#1b2a1b", 0.48);
+    const crownX = px + sway;
+    const points = crownSilhouette(seed, 3, 2, radiusX, radiusY, 1.5);
+
+    // Two fine limbs reach into the airy crown and remain visible at its edge.
+    ctx.save();
+    ctx.strokeStyle = "#6b5d4c";
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = Math.max(0.55, 0.62 * s);
+    ctx.lineCap = "round";
+    for (let i = 0; i < 2; i++) {
+        const side = i === 0 ? -1 : 1;
+        ctx.beginPath();
+        ctx.moveTo(px + lean, topY + 1 * s);
+        ctx.quadraticCurveTo(px + lean + side * radiusX * 0.28, crownY + radiusY * 0.32,
+            px + lean + side * radiusX * 0.74, crownY - radiusY * 0.08 + i * radiusY * 0.16);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.46 + 0.3 * leaf;
+    ctx.fillStyle = base;
+    traceCrown(ctx, crownX, crownY, points);
+    ctx.fill();
+
+    ctx.globalAlpha = 0.15 + 0.12 * leaf;
+    ctx.fillStyle = dark;
+    ctx.save();
+    ctx.translate(radiusX * 0.08, radiusY * 0.12);
+    traceCrown(ctx, crownX, crownY, crownSilhouette(seed + 0.23, 4, 2, radiusX * 0.85, radiusY * 0.84, 1.4));
+    ctx.fill();
+    ctx.restore();
+
+    // Birch is airy: several small leaf masses with ground showing between them,
+    // not one solid dome with a highlight stamped on top.
+    for (let i = 0; i < 6; i++) {
+        const angle = i * 2.1 + seed * 6;
+        const edge = 0.22 + (i % 3) * 0.15;
+        ctx.fillStyle = i % 2 === 0 ? light : base;
+        ctx.globalAlpha = 0.18 + (i % 3) * 0.05 + leaf * 0.08;
+        ctx.beginPath();
+        ctx.ellipse(crownX + Math.cos(angle) * radiusX * edge,
+            crownY + Math.sin(angle) * radiusY * (edge + 0.05),
+            radiusX * (0.24 + (i % 2) * 0.05), radiusY * (0.19 + (i % 3) * 0.04),
+            angle * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    for (let i = 0; i < 11; i++) {
+        const angle = i * 2.399 + seed * 7;
+        const edge = i < 7 ? 0.44 + ((i * 5) % 7) / 7 * 0.42 : 0.96 + (i % 2) * 0.05;
+        ctx.fillStyle = i % 3 === 0 ? light : i % 3 === 1 ? base : dark;
+        ctx.globalAlpha = 0.22 + (i % 4) * 0.04;
+        ctx.beginPath();
+        ctx.ellipse(crownX + Math.cos(angle) * radiusX * edge,
+            crownY + Math.sin(angle) * radiusY * edge * 0.84,
+            radiusX * (0.09 + (i % 3) * 0.025), radiusY * (0.07 + (i % 2) * 0.02),
+            angle * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 0.24 + 0.08 * leaf;
+    strokeCrownContour(ctx, crownX, crownY, points, mixHex(base, "#1f2a18", 0.58),
+        Math.max(0.45, 0.54 * s), seed, 0.3);
+    ctx.restore();
+
     drawSnowCaps(ctx, px, py, s * ageScale, sway, seed, foliage.snow, py - 10 * s * ageScale, 9);
 }
 
@@ -3237,6 +3571,27 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, cli
     const palette = gloom > 0.01
         ? tintedPalette.map(color => mixHex(color, "#17251b", gloom))
         : tintedPalette;
+    // Broad, offset humus and moss stains sit under the leaf litter. They are
+    // low-contrast and cross tile edges, so the forest floor reads as a painted
+    // wash rather than a green lawn with isolated dots on it.
+    ctx.globalAlpha = 0.1 + (stand.ground.humus || 0) * 0.08;
+    ctx.fillStyle = mixHex(palette[1], "#3b2e1e", 0.16);
+    for (let i = 0; i < 2; i++) {
+        const angle = s1 * 6.283 + i * 2.4;
+        ctx.beginPath();
+        ctx.ellipse(px + Math.cos(angle) * cellPx * 0.2,
+            py + cellPx * (0.02 + i * 0.045) + Math.sin(angle) * cellPx * 0.12,
+            cellPx * (0.3 + i * 0.09), cellPx * (0.14 + i * 0.03),
+            angle * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 0.14 + (stand.ground.moss || 0) * 0.12;
+    ctx.fillStyle = turn > 0.55 ? "#6a5732" : "#466435";
+    ctx.beginPath();
+    ctx.ellipse(px + (s2 - 0.5) * cellPx * 0.34, py + cellPx * 0.075,
+        cellPx * 0.27, cellPx * 0.12, (s2 - 0.5) * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
     // Fifteen, not nineteen, litter marks: the removed four were always covered
     // by neighbours at normal zoom and cost a path fill per tile.
     for (let i = 0; i < 15; i++) {
@@ -3246,17 +3601,63 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, cli
         ctx.fillStyle = palette[(i + Math.floor(s2 * 4)) % palette.length];
         ctx.beginPath();
         ctx.ellipse(px + ox, py + 2.5 * s + oy,
-            (1.1 + (i % 3) * 0.45) * s, (0.5 + (i % 2) * 0.18) * s, angle + i * 0.17, 0, Math.PI * 2);
+            (1.4 + (i % 3) * 0.5) * s, (0.62 + (i % 2) * 0.2) * s, angle + i * 0.17, 0, Math.PI * 2);
         ctx.fill();
     }
+
+    // Leaf clusters, not just isolated specks. Three overlapping leaves catch
+    // the eye at rooftop zoom while still sitting low in the litter layer.
+    ctx.globalAlpha = 0.5 + (stand.ground.litter || 0) * 0.2;
+    for (let cluster = 0; cluster < 2; cluster++) {
+        const cx0 = px + (s2 - 0.5) * cellPx * 0.52 + (cluster - 0.5) * cellPx * 0.22;
+        const cy0 = py + cellPx * (0.03 + cluster * 0.045) + (s3 - 0.5) * cellPx * 0.1;
+        for (let leaf = 0; leaf < 3; leaf++) {
+            const angle = leaf * 2.1 + s2 * 6 + cluster;
+            ctx.fillStyle = palette[(leaf + cluster + 1) % palette.length];
+            ctx.beginPath();
+            ctx.ellipse(cx0 + Math.cos(angle) * 2.7 * s, cy0 + Math.sin(angle) * 1.5 * s,
+                (2.2 + leaf * 0.42) * s, (1.0 + leaf * 0.12) * s, angle * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // Recognisable species leaves in the litter, not only anonymous flecks.
+    const floorSpecies = FOREST_SPECIES[stand.dominantSpecies];
+    if (floorSpecies?.leafShape) {
+        for (let i = 0; i < 2; i++) {
+            const angle = i * 2.7 + s2 * 5;
+            drawSpeciesLeaf(ctx, px + Math.cos(angle) * 3.1 * s,
+                py + cellPx * 0.035 + Math.sin(angle) * 2.2 * s,
+                (2.1 + i * 0.5) * s, angle * 0.8, floorSpecies.leafShape,
+                palette[(i + 2) % palette.length]);
+        }
+    }
+
+    // Three bent pen strokes per tile: exposed twigs, root hairs and the tooth
+    // of the paper. Without them the close-up floor stays unnaturally smooth.
+    ctx.globalAlpha = 0.3 + (stand.ground.litter || 0) * 0.12;
+    ctx.strokeStyle = turn > 0.5 ? "#452d18" : "#24351b";
+    ctx.lineWidth = Math.max(0.6, 0.66 * s);
+    ctx.lineCap = "round";
+    for (let i = 0; i < 2; i++) {
+        const angle = i * 2.9 + s1 * 5;
+        const ox = px + Math.cos(angle) * cellPx * (0.2 + i * 0.07);
+        const oy = py + cellPx * 0.02 + Math.sin(angle) * cellPx * 0.12;
+        ctx.beginPath();
+        ctx.moveTo(ox - cellPx * (0.075 + i * 0.02), oy + cellPx * 0.02);
+        ctx.quadraticCurveTo(ox + cellPx * 0.015, oy - cellPx * (0.025 + i * 0.01), ox + cellPx * (0.06 + i * 0.025), oy - cellPx * 0.005);
+        ctx.stroke();
+    }
+    ctx.lineCap = "butt";
+
     // Darker pockets of wet humus and bright moss give the litter depth without
     // introducing another large stamp.
-    ctx.globalAlpha = 0.24 + stand.ground.moss * 0.12;
-    ctx.fillStyle = turn > 0.55 ? "#7b6538" : "#607c42";
+    ctx.globalAlpha = 0.26 + stand.ground.moss * 0.14;
+    ctx.fillStyle = turn > 0.55 ? "#7b6538" : "#56743c";
     for (let i = 0; i < 4; i++) {
         ctx.beginPath();
         ctx.ellipse(px + ((i * 17) % 15 - 7) * s + (s1 - 0.5) * 8 * s,
-            py + ((i * 11) % 9 - 4) * s + (s2 - 0.5) * 8 * s, 1.8 * s, 0.8 * s, i * 0.3, 0, Math.PI * 2);
+            py + ((i * 11) % 9 - 4) * s + (s2 - 0.5) * 8 * s, 2.6 * s, 1.05 * s, i * 0.3, 0, Math.PI * 2);
         ctx.fill();
     }
     ctx.restore();
@@ -4185,17 +4586,59 @@ export function drawConifer(ctx, px, py, s, sway, seed, dayOfYear, climateKey = 
         const top = layerBase - height * (0.3 - t * 0.055);
         const width = (11.4 - t * (shape === 'crown' ? 4 : shape === 'yew' ? 5.5 : 7.2)) * s * widthScale * definition.crown * ageScale * crownScale;
         const droop = (definition.branchDrop || 0.1) * s * (1 - t * 0.55);
+        const layerX = px + lean * 0.4;
+        const branchY = layerBase + droop;
+        const edgeJitter = ((seed * 31 + tier * 17 + 0.5) % 1 - 0.5) * width * 0.06;
         ctx.fillStyle = tier % 2 === 0 ? crown : light;
         ctx.globalAlpha = 0.58 + cover * 0.42;
+        // Each tier is a drooping branch skirt with shoulders and two low
+        // notches, not a clean triangle. Straight triangular tiers read as a
+        // paper cut-out beside the new broadleaf washes.
         ctx.beginPath();
         ctx.moveTo(px + lean * (0.4 + t * 0.6), top);
-        ctx.lineTo(px + lean * 0.4 - width, layerBase + droop);
-        ctx.lineTo(px + lean * 0.4 - width * 0.55, layerBase + 2.4 * s + droop);
-        ctx.lineTo(px + lean * 0.4, layerBase - 1.4 * s);
-        ctx.lineTo(px + lean * 0.4 + width * 0.55, layerBase + 2.4 * s + droop);
-        ctx.lineTo(px + lean * 0.4 + width, layerBase + droop);
+        ctx.lineTo(layerX - width * 0.52, layerBase - (layerBase - top) * 0.2 + edgeJitter);
+        ctx.lineTo(layerX - width * 0.84, branchY - 1.2 * s + edgeJitter);
+        ctx.lineTo(layerX - width, branchY + edgeJitter);
+        ctx.lineTo(layerX - width * 0.7, branchY + 1.8 * s);
+        ctx.lineTo(layerX - width * 0.36, layerBase + 2.4 * s + droop);
+        ctx.lineTo(layerX, layerBase - 1.4 * s);
+        ctx.lineTo(layerX + width * 0.36, layerBase + 2.4 * s + droop);
+        ctx.lineTo(layerX + width * 0.7, branchY + 1.8 * s);
+        ctx.lineTo(layerX + width, branchY + edgeJitter);
+        ctx.lineTo(layerX + width * 0.84, branchY - 1.2 * s - edgeJitter);
+        ctx.lineTo(layerX + width * 0.52, layerBase - (layerBase - top) * 0.2 - edgeJitter);
         ctx.closePath();
         ctx.fill();
+
+        if (s >= 0.9) {
+            // Needle clumps and a broken lower rim keep the tier from becoming a
+            // flat filled polygon at close zoom.
+            ctx.save();
+            ctx.globalAlpha = 0.26;
+            for (let side = -1; side <= 1; side += 2) {
+                ctx.fillStyle = side < 0 ? light : crown;
+                ctx.beginPath();
+                ctx.ellipse(layerX + side * width * 0.58, branchY - 0.9 * s,
+                    Math.max(1, 2.2 * s), Math.max(0.55, 0.7 * s), side * 0.28, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(layerX + side * width * 0.8, branchY + 0.9 * s,
+                    Math.max(0.8, 1.7 * s), Math.max(0.45, 0.58 * s), -side * 0.24, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 0.32;
+            ctx.strokeStyle = mixHex(crown, "#0d1a12", 0.5);
+            ctx.lineWidth = Math.max(0.5, 0.55 * s);
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(layerX - width * 0.7, branchY + 1.7 * s);
+            ctx.lineTo(layerX - width * 0.36, layerBase + 2.25 * s + droop);
+            ctx.lineTo(layerX, layerBase - 1.6 * s);
+            ctx.lineTo(layerX + width * 0.36, layerBase + 2.25 * s + droop);
+            ctx.lineTo(layerX + width * 0.7, branchY + 1.7 * s);
+            ctx.stroke();
+            ctx.restore();
+        }
 
         if (foliage.snow > 0.1) {
             const snow = Math.min(1, foliage.snow * (1.02 - t * 0.08));

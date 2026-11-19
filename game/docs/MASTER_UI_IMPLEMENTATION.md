@@ -247,7 +247,7 @@ Do not mark the remaining work complete by replacing it with a static mockup.
 - Visual inspection of the seven-viewport screenshot artifact found that the top status/actions row was clipped or crowded at 390×844, 1280×720 and 1600×900 even though the document itself did not horizontally overflow.
 - Added responsive header wrapping: at intermediate desktop widths the action controls move to a dedicated second row; at narrow widths they wrap below the resource strip rather than being clipped off-screen.
 - Extended Chromium E2E to assert topbar intrinsic width, pairwise non-overlap of header groups and visibility of every rendered header action at all seven viewport sizes.
-- This corrects the header only. The screenshot review still shows placeholder-like map/building shapes and a relatively sparse world stage; those belong to the separate world-art production backlog, not this layout fix.
+- This corrects the header only. The screenshot review still showed placeholder-like map/building shapes and a relatively sparse world stage; the 3.30.0 woodland pass replaces the placeholder tree crowns and forest floor, while authored building and landmark shapes remain in the separate world-art backlog.
 
 
 ## Phase 5 — mobile management-column scroll containment

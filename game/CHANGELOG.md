@@ -1,13 +1,45 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.29.0`
-**Next development line:** `3.30.0-dev`
+**Current production version:** `3.30.0`
+**Next development line:** `3.31.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-16 (UTC)
+**Last repository verification:** 2026-11-19 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.30.0 — Hand-Drawn Forest Canopies
+
+The Canvas close view now paints woodland as layered ink and wash instead of
+flat “lollipop” trees.
+
+- `rgbTriplet` now parses `rgb()` and `rgba()` and fails closed to black on
+  invalid input. `mixHex` receives its own output repeatedly; the second mix
+  used to produce `rgb(NaN,…)`, Canvas kept the previous `fillStyle`, and
+  large pale or dark ghost crowns appeared across the wood.
+- Broadleaf crowns use deterministic irregular silhouettes, layered washes,
+  broken ink contours, leaf tips and visible fork limbs. Trunks taper, with
+  bark ridges, exposed roots, hollows, broken limbs and separate light and
+  shadow edges. Birches use slimmer, darker, curved boles with subtle
+  fissures; conifers use drooping asymmetric tiers, needle clumps and broken
+  lower rims instead of plain triangles.
+- Winter snow on bare twigs is a thin broken ridge rather than round cotton
+  caps. Marcescent crowns that still hold leaves carry the same thin snow
+  ridges on their leaf masses, and canopies keep species-specific snow.
+- The forest floor gains broad humus and moss washes, larger leaf drifts,
+  recognisable species leaves, twig strokes and small moss cushions. Grass
+  tufts were removed because they formed a lawn grid. Tree copies are
+  deterministically jittered per tile so the plantation raster no longer
+  dominates the close view.
+- All of this is painted into the existing cached Canvas detail layer. No
+  per-frame or per-tick work was added, and the deterministic simulation,
+  save format and gameplay data are unchanged. The refreshed terrain and
+  forest reference sheets document the result.
+- The measured advanced profile on the loaded 25-year realm is frame p95
+  16.7 / 16.7 ms, zero frames over 50 ms in either loaded-realm phase, zero
+  long tasks, 665 ms save and 2,254 ms load. The 25-year campaign and the
+  complete suite (1,265 tests) remain green.
 
 ## 3.29.0 — Advanced Realm Low-End Budget
 
