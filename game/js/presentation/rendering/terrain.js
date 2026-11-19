@@ -121,9 +121,9 @@ export function drawTerrain(ctx) {
 }
 
 function drawBakedGround(ctx, zoom, cam, canvas, quality = "high") {
-    // Safety net for browsers without WebGL2. Smoothing stays on even at the
-    // closest zoom; the old hard nearest-neighbour switch was the main source
-    // of the visible block pattern. The transient jump underlay can use low
+    // The Canvas field is the production ground. Smoothing stays on even at
+    // the closest zoom; a hard nearest-neighbour switch was the main source of
+    // the visible block pattern. The transient jump underlay can use low
     // quality because it is replaced by the full detail layer shortly after.
     const tc = state.terrainCanvas;
     ctx.save();
@@ -405,6 +405,7 @@ function beginDetailBuild(zoom, cam, canvas, key, worldKey, surfaceCtx = null) {
     // upscaling keeps the synchronous setup below a long-task frame while the
     // finished layer still carries the full detail pass.
     drawBakedGround(stagingCtx, zoom, cam, canvas, "low");
+    paintPaperTooth(stagingCtx, width, height);
     if (visible) {
         // Fog must cover unexplored tiles from the first progressive frame.
         // Decorations skip those tiles, so it can be painted before the slices.
@@ -424,6 +425,8 @@ function beginDetailBuild(zoom, cam, canvas, key, worldKey, surfaceCtx = null) {
         cursor: { x: null, y: null },
         grainCursor: { x: null, y: null },
         grainDone: false,
+        inkCursor: { x: null, y: null },
+        inkDone: false,
         visible,
         startedAt: setupStart,
         workMs: setupMs,
@@ -476,6 +479,19 @@ function advanceDetailBuild(surfaceCtx, canvas) {
             sliceStart + DETAIL_BUILD_SLICE_MS,
             stepStart + DETAIL_BUILD_FRAME_MS
         );
+        if (!build.inkDone) {
+            build.inkDone = drawGroundInk(
+                build.stagingCtx,
+                build.zoom,
+                { x: build.camX, y: build.camY },
+                canvas,
+                build.inkCursor,
+                sliceDeadline
+            );
+            build.steps += 1;
+            build.workMs += performance.now() - sliceStart;
+            continue;
+        }
         if (!build.grainDone) {
             build.grainDone = drawGroundGrain(
                 build.stagingCtx,
@@ -1657,6 +1673,220 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
     return true;
 }
 
+// A paper tooth sits under every painted layer. The baked ground is smooth
+// after upscaling; without this grain the Canvas2D path reads as a flat
+// gradient even though the authored colours are sound. The tile is generated
+// once and reused, so there is no per-frame noise work.
+let paperToothTile = null;
+function paperToothPattern(ctx) {
+    if (!paperToothTile) {
+        const size = 160;
+        paperToothTile = document.createElement("canvas");
+        paperToothTile.width = size;
+        paperToothTile.height = size;
+        const pctx = paperToothTile.getContext("2d");
+        const image = pctx.createImageData(size, size);
+        let seed = 0x9e3779b9;
+        for (let i = 0; i < image.data.length; i += 4) {
+            seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+            const shade = 58 + (seed >>> 24) * 0.55;
+            image.data[i] = shade;
+            image.data[i + 1] = shade;
+            image.data[i + 2] = shade;
+            image.data[i + 3] = 40;
+        }
+        pctx.putImageData(image, 0, 0);
+    }
+    return ctx.createPattern(paperToothTile, "repeat");
+}
+
+function paintPaperTooth(ctx, width, height) {
+    const pattern = paperToothPattern(ctx);
+    if (!pattern) return;
+    ctx.save();
+    ctx.globalCompositeOperation = "soft-light";
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+}
+
+// A single coast cell as a marching-squares segment. Drawing tile-edge steps
+// made the shoreline read as pixel art; interpolating the sea crossing on each
+// tile edge gives a continuous pen line at map scale. The pale stroke under
+// the ink is the beach rim and surf wash.
+function drawCoastCell(ctx, x, y, stride, cellPx, cam, sea) {
+    const xs = [x, x + stride, x + stride, x];
+    const ys = [y, y, y + stride, y + stride];
+    const hs = [
+        getHeightAt(x + 0.5, y + 0.5),
+        getHeightAt(x + stride + 0.5, y + 0.5),
+        getHeightAt(x + stride + 0.5, y + stride + 0.5),
+        getHeightAt(x + 0.5, y + stride + 0.5),
+    ];
+    const land = hs.map(h => h >= sea);
+    const count = land.reduce((sum, value) => sum + (value ? 1 : 0), 0);
+    if (count === 0 || count === 4) return;
+    const px = x * cellPx - cam.x;
+    const py = y * cellPx - cam.y;
+    const points = [];
+    const edge = (a, b) => {
+        if (land[a] === land[b]) return;
+        const t = Math.max(0, Math.min(1, (sea - hs[a]) / (hs[b] - hs[a])));
+        points.push({
+            x: (xs[a] + (xs[b] - xs[a]) * t) * cellPx - cam.x,
+            y: (ys[a] + (ys[b] - ys[a]) * t) * cellPx - cam.y,
+        });
+    };
+    edge(0, 1); edge(1, 2); edge(2, 3); edge(3, 0);
+    if (points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    ctx.lineTo(points[1].x, points[1].y);
+    if (points.length === 4) {
+        ctx.moveTo(points[2].x, points[2].y);
+        ctx.lineTo(points[3].x, points[3].y);
+    }
+    ctx.strokeStyle = "rgba(226,214,174,0.20)";
+    ctx.lineWidth = Math.max(1.6, cellPx * 0.11);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(31,45,31,0.52)";
+    ctx.lineWidth = Math.max(0.8, cellPx * 0.06);
+    ctx.stroke();
+}
+
+// Map-scale ink: a dark coastal edge with a pale beach rim, plus short
+// contour dashes wherever the height crosses a topographic band. Both are
+// drawn into the cached detail layer, so the cost is paid once per settled
+// view and never per frame. The loop is resumable and bounded by the screen.
+function drawGroundInk(ctx, zoom, cam, canvas, cursor = null, deadline = Infinity) {
+    if (!state.heightMap) return true;
+    const cellPx = CELL * zoom;
+    if (!(cellPx > 0)) return true;
+    const showContours = zoom <= 0.72;
+    const showCoast = zoom <= 0.8;
+    if (!showContours && !showCoast) return true;
+    const W = worldW(), H = worldH();
+    const sea = state.seaLevel ?? 0.33;
+    const stride = cellPx < 5 ? 2 : 1;
+    const startX = Math.max(0, Math.floor(cam.x / cellPx) - 2);
+    const startY = Math.max(0, Math.floor(cam.y / cellPx) - 2);
+    const endX = Math.min(W, Math.ceil((cam.x + canvas.width) / cellPx) + 2);
+    const endY = Math.min(H, Math.ceil((cam.y + canvas.height) / cellPx) + 2);
+    let x = Number.isInteger(cursor?.x) ? cursor.x : startX;
+    let y = Number.isInteger(cursor?.y) ? cursor.y : startY;
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (; x < endX; x += stride) {
+        for (; y < endY; y += stride) {
+            if (deadline !== Infinity && performance.now() >= deadline) {
+                if (cursor) { cursor.x = x; cursor.y = y; }
+                ctx.restore();
+                return false;
+            }
+            if (!state.explored[x]?.[y]) continue;
+            const h = getHeightAt(x + 0.5, y + 0.5);
+            const px = x * cellPx - cam.x;
+            const py = y * cellPx - cam.y;
+
+            if (showCoast) drawCoastCell(ctx, x, y, stride, cellPx, cam, sea);
+
+            if (showContours) {
+                const band = Math.floor((h - sea) * 28);
+                const right = getHeightAt(x + stride + 0.5, y + 0.5);
+                const down = getHeightAt(x + 0.5, y + stride + 0.5);
+                if (band !== Math.floor((right - sea) * 28) || band !== Math.floor((down - sea) * 28)) {
+                    const dx = right - h;
+                    const dy = down - h;
+                    if (Math.abs(dx) + Math.abs(dy) > 0.0001) {
+                        const angle = Math.atan2(dy, dx) + Math.PI * 0.5;
+                        const length = Math.min(cellPx * stride * (band % 4 === 0 ? 1.5 : 1.1), 12);
+                        const cx = px + cellPx * stride * 0.5;
+                        const cy = py + cellPx * stride * 0.5;
+                        ctx.strokeStyle = band % 4 === 0 ? "rgba(42,54,33,0.30)" : "rgba(48,64,40,0.16)";
+                        ctx.lineWidth = band % 4 === 0 ? 1.4 : 0.9;
+                        ctx.beginPath();
+                        ctx.moveTo(cx - Math.cos(angle) * length * 0.5, cy - Math.sin(angle) * length * 0.5);
+                        ctx.lineTo(cx + Math.cos(angle) * length * 0.5, cy + Math.sin(angle) * length * 0.5);
+                        ctx.stroke();
+                    }
+                }
+                // Sparse downhill hachures give a slope a readable direction
+                // even where the contour bands are far apart. They are short
+                // pen ticks, not another full-screen line layer.
+                if (Math.abs(right - h) + Math.abs(down - h) > 0.016) {
+                    const cx = px + cellPx * stride * 0.5;
+                    const cy = py + cellPx * stride * 0.5;
+                    const angle = Math.atan2(down - h, right - h);
+                    const length = Math.min(cellPx * stride * 0.7, 7);
+                    ctx.strokeStyle = "rgba(39,55,33,0.13)";
+                    ctx.lineWidth = 0.8;
+                    ctx.beginPath();
+                    ctx.moveTo(cx - Math.cos(angle) * length * 0.5, cy - Math.sin(angle) * length * 0.5);
+                    ctx.lineTo(cx + Math.cos(angle) * length * 0.5, cy + Math.sin(angle) * length * 0.5);
+                    ctx.stroke();
+                }
+            }
+        }
+        if (cursor) cursor.x = x + stride;
+        y = startY;
+    }
+    ctx.restore();
+    return true;
+}
+
+// Close-up pen work on the meadow. Three short curved blades per sampled tile
+// give the green wash an authored hand-drawn texture; occasional flowers and
+// stones break up the lattice. Everything is deterministic and only drawn in
+// the cached detail raster.
+function drawGroundPen(ctx, px, py, cellPx, a, b, moisture, temperature) {
+    const cold = temperature < 0.3;
+    const dry = moisture < 0.4;
+    const lush = moisture > 0.68;
+    const ink = cold ? "76,102,110" : dry ? "112,96,52" : lush ? "24,52,26" : "42,70,34";
+    const light = cold ? "226,240,246" : dry ? "206,190,132" : "154,184,112";
+    const clusters = cellPx >= 30 ? 2 : 1;
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (let cluster = 0; cluster < clusters; cluster++) {
+        const cs = ((a * 131 + b * 67 + cluster * 43) % 1 + 1) % 1;
+        const bx = px + cellPx * (0.18 + cs * 0.62);
+        const by = py + cellPx * (0.38 + ((cs * 7) % 1) * 0.40);
+        for (let i = 0; i < 3; i++) {
+            const s = ((a * 97 + b * 57 + cluster * 19 + i * 31) % 1 + 1) % 1;
+            const rx = bx + (s - 0.5) * cellPx * 0.16;
+            const ry = by + (s - 0.5) * cellPx * 0.06;
+            const height = cellPx * (0.14 + ((s * 13) % 1) * 0.17);
+            const lean = (s - 0.5) * cellPx * 0.34;
+            ctx.strokeStyle = i === 0
+                ? `rgba(${ink},0.38)`
+                : `rgba(${light},0.26)`;
+            ctx.lineWidth = Math.max(0.8, cellPx * 0.022);
+            ctx.beginPath();
+            ctx.moveTo(rx, ry);
+            ctx.quadraticCurveTo(rx + lean * 0.35, ry - height * 0.58, rx + lean, ry - height);
+            ctx.stroke();
+        }
+    }
+    if (a > 0.80) {
+        const fx = px + cellPx * (0.25 + b * 0.5);
+        const fy = py + cellPx * (0.25 + a * 0.45);
+        ctx.fillStyle = "rgba(245,238,202,0.48)";
+        ctx.beginPath(); ctx.arc(fx, fy, Math.max(0.9, cellPx * 0.035), 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(216,172,62,0.52)";
+        ctx.beginPath(); ctx.arc(fx, fy, Math.max(0.35, cellPx * 0.013), 0, Math.PI * 2); ctx.fill();
+    }
+    if (b > 0.90) {
+        ctx.fillStyle = "rgba(126,126,112,0.32)";
+        ctx.beginPath();
+        ctx.ellipse(px + cellPx * (0.2 + a * 0.6), py + cellPx * (0.3 + b * 0.4),
+            cellPx * 0.055, cellPx * 0.035, a * 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
 // High-frequency ground grain: the baked texture carries the broad colour
 // field, this adds tile-scale variation so close inspection never reads as
 // one blurred gradient.
@@ -1699,6 +1929,7 @@ function drawGroundGrain(ctx, zoom, cam, canvas, cursor = null, deadline = Infin
             const size = cellPx * (0.14 + b * 0.24);
             ctx.fillRect(px + a * cellPx * 0.62, py + b * cellPx * 0.52, size, size * (0.65 + a * 0.6));
 
+            if (zoom >= 0.55) drawGroundPen(ctx, px, py, cellPx, a, b, m, temp);
             if (zoom >= 0.9 && a > 0.55) {
                 ctx.fillStyle = `rgba(${cold ? "250,252,255" : "14,32,16"},${0.05 + b * 0.06})`;
                 for (let i = 0; i < 2; i++) {
