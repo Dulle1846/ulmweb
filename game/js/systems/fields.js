@@ -302,6 +302,25 @@ function foresterUpdate(building, workforce) {
     building.foresterReason = planted ? "Planting saplings" : candidates.length ? "Waiting for planting space" : "Forest is fully grown";
 }
 
+// The autumn harvest is the only daily field path that samples the terrain
+// transition and vegetation profile for every farm. Warm that pure path while
+// a save loads, so the first harvest day reuses compiled code instead of
+// paying its one-off compilation inside a visible low-end frame.
+export function warmFieldHarvestFactors() {
+    let warmed = 0;
+    for (const entity of state.entities) {
+        if (!entity || entity.dead || entity.type !== TYPE.FARM) continue;
+        try {
+            ecotoneHarvestFactor(entity);
+            warmed++;
+        } catch {
+            // A partial legacy fixture may lack terrain data; the harvest path
+            // itself keeps its safe fallback of 1.
+        }
+    }
+    return warmed;
+}
+
 export function updateFields() {
     if (!state.hasStarted || state.isPaused || state.gameOver) return null;
     const workforce = getWorkforceSnapshot();

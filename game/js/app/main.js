@@ -24,6 +24,7 @@ import { restoreEconomyCycleState } from "../systems/economy-cycle.js";
 import { resetAnnualMaintenance, setAnnualMaintenanceSlicing, updateSimulation } from "../simulation/simulation.js";
 import { warmLogisticsRoutes } from "../systems/logistics.js";
 import { warmEconomyCaches } from "../systems/economy.js";
+import { warmFieldHarvestFactors } from "../systems/fields.js";
 import { warmForestFaunaCaches } from "../systems/forest-fauna.js";
 import { warmMicroEventContext } from "../systems/micro-events.js";
 import { warmHealthCaches } from "../systems/health.js";
@@ -681,6 +682,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     // same values as their lazy first use.
     getRoomBonusSnapshot();
     warmEconomyCaches();
+    warmFieldHarvestFactors();
     warmForestFaunaCaches();
     warmMicroEventContext();
     warmHealthCaches();
@@ -755,6 +757,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     // multi-millisecond rebuilds and can exceed the low-end frame budget.
     getRoomBonusSnapshot();
     warmEconomyCaches();
+    warmFieldHarvestFactors();
     warmForestFaunaCaches();
     warmMicroEventContext();
     warmHealthCaches();
