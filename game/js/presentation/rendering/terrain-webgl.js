@@ -117,21 +117,31 @@ float ridged3(vec2 p) {
 // Seamless detail tiles from the deterministic atlas, four variants per
 // material selected by region so a meadow or rock field is not one repeated
 // stamp. textureLod keeps the fetch legal inside material branches, which are
-// not uniformly taken across a quad.
+// not uniformly taken across a quad, so the sample uses explicit gradients.
 
-float atlasDetail(float tile, vec2 world, float scale) {
+vec2 atlasDetail(float tile, vec2 world, float scale) {
     float column = mod(tile, uAtlasGrid.x);
     float row = floor(tile / uAtlasGrid.x);
-    vec2 local = fract(world * scale);
+    // A low-frequency domain warp curves the detail field, breaking the
+    // rectilinear tile edge and making the marks follow the land a little.
+    vec2 warp = vec2(
+        vnoise(world * 0.55 + vec2(3.7, 1.2)),
+        vnoise(world * 0.55 + vec2(6.2, 8.1))
+    ) - 0.5;
+    vec2 local = fract(world * scale + warp * 0.085);
     vec2 uv = (vec2(column, row) + local) / uAtlasGrid;
-    vec4 texel = textureLod(uAtlas, uv, 0.0);
-    // Red is surface relief; green adds macro contrast and blue a fine crust.
-    // Using only red left two thirds of the atlas data unused and made close
-    // surfaces look softer than the authored tiles.
-    return clamp(texel.r * (0.80 + 0.40 * texel.g) + (texel.b - 0.5) * 0.06, 0.0, 1.2);
+    // Explicit gradients give the atlas correct mip filtering even inside the
+    // non-uniform material branches. Forcing LOD 0 aliased the fine strokes
+    // into wool at rooftops and moss at map zoom.
+    vec4 texel = textureGrad(uAtlas, uv, dFdx(uv), dFdy(uv));
+    // Red is surface relief, green is macro contrast and blue is the authored
+    // pen hatch. The hatch is deliberately broken and sparse so it reads as
+    // drawn linework rather than another layer of noise.
+    float relief = clamp(texel.r * (0.80 + 0.40 * texel.g), 0.0, 1.2);
+    return vec2(relief, texel.b);
 }
 
-float groundDetail(vec2 world, float base, float scale) {
+vec2 groundDetail(vec2 world, float base, float scale) {
     // Walk a ring of variants and cross-fade neighbours. A hard pick draws a
     // straight seam across a meadow wherever the noise crosses its threshold;
     // the ring keeps the transition continuous, including at the wrap.
@@ -141,6 +151,15 @@ float groundDetail(vec2 world, float base, float scale) {
     float variantA = base + mod(index, uAtlasVariants);
     float variantB = base + mod(index + 1.0, uAtlasVariants);
     return mix(atlasDetail(variantA, world, scale), atlasDetail(variantB, world, scale), blend);
+}
+
+// Hand-drawn hatch: only the top of the sparse atlas stroke field is inked,
+// and the line is tinted with the material's own dark pigment instead of a
+// uniform black. The final argument controls how strongly the pen shows through.
+vec3 penHatch(vec3 color, float hatch, vec3 pigment, float amount) {
+    float line = smoothstep(0.52, 0.90, hatch) * amount;
+    vec3 ink = mix(pigment * 0.18, vec3(0.055, 0.060, 0.050), 0.50);
+    return mix(color, ink, line);
 }
 
 // ── smooth height field ─────────────────────────────────────────
@@ -288,20 +307,49 @@ float heightBilinear(vec2 world) {
 vec3 grassMaterial(vec2 world, float moisture, float macro, float meso, float fine, float micro, float detail) {
     float clumps = smoothstep(0.40, 0.66, meso + (micro - 0.5) * 0.30);
     float tuft = smoothstep(0.40, 0.80, vnoise(world * 3.6 + vec2(1.7, 8.4)));
-    float blades = sin(world.x * 15.0 + world.y * 2.2 + micro * 11.0 + sin(world.y * 5.4 + macro * 6.0) * 2.4) * 0.5 + 0.5;
-    float bladesFine = sin(world.x * 37.0 - world.y * 5.0 + micro * 17.0) * 0.5 + 0.5;
     float fleck = vnoise(world * 22.0 + vec2(4.2, 7.9));
 
     vec3 color = mix(uGrass, uLush, (0.22 + clumps * 0.24 + tuft * 0.08) * smoothstep(0.26, 0.86, moisture));
     color = mix(color, uForest * 1.10, uCloseDetail * smoothstep(0.62, 0.9, fbm2(world * 7.3 + 11.0)) * 0.12);
     color *= 0.88 + 0.14 * meso + 0.08 * micro;
-    color += vec3(0.100, 0.130, 0.035) * (blades - 0.5) * detail;
-    color += vec3(0.050, 0.065, 0.018) * (bladesFine - 0.5) * uCloseDetail;
 
     color = mix(color, uLush * 0.80, smoothstep(0.56, 0.80, fleck) * 0.14 * uCloseDetail);
     color = mix(color, color * 0.72, smoothstep(0.90, 0.99, fine) * 0.22 * detail);
-    float detailMap = groundDetail(world, 0.0, 0.42);
-    color *= mix(1.0, 0.84 + 0.34 * detailMap, uAtlasStrength * (0.45 + 0.55 * uCloseDetail));
+    // Broad wet-in-wet pasture patches: a hand-painted meadow is never one
+    // flat green. The patch is deliberately low-frequency so it survives the
+    // distance and does not fight the atlas strokes up close.
+    float washPatch = smoothstep(0.38, 0.72, fbm2(world * 0.55 + vec2(6.1, 2.8)));
+    color = mix(color, mix(uDry * 0.92, uLush * 0.92, 0.34), washPatch * 0.11);
+    // Sparse spring flowers and summer seed heads, drawn as pigment dots.
+    vec2 bloomCell = floor(world * 8.0) + vec2(uSeed * 17.0, uSeed * 9.0);
+    float bloomPick = hash21(bloomCell);
+    vec2 bloomLocal = fract(world * 8.0) - 0.5;
+    float bloomShape = 1.0 - smoothstep(0.20, 0.34, length(bloomLocal + vec2(0.10, -0.06)));
+    float bloomPatch = smoothstep(0.42, 0.74,
+        vnoise(world * 0.70 + vec2(3.3, 8.8)));
+    float bloom = step(0.950, bloomPick) * bloomShape * bloomPatch
+        * smoothstep(0.20, 0.65, moisture)
+        * uSpring * (0.55 + 0.45 * uCloseDetail);
+    vec3 bloomColor = mix(vec3(0.46, 0.40, 0.15), vec3(0.50, 0.48, 0.39), hash21(bloomCell + 3.0));
+    color += bloomColor * bloom;
+    float bloomCore = 1.0 - smoothstep(0.03, 0.10, length(bloomLocal + vec2(0.10, -0.06)));
+    color += vec3(0.24, 0.18, 0.035) * bloomCore * bloom * 1.6;
+    float seedHead = step(0.991, hash21(bloomCell + 11.0)) * uSummer * uCloseDetail;
+    color += vec3(0.10, 0.085, 0.035) * seedHead;
+
+    // A few small stones and bare-earth flecks up close, so the meadow has
+    // near-field structure instead of only an even wash.
+    vec2 stoneCell = floor(world * 24.0) + vec2(uSeed * 5.0, uSeed * 13.0);
+    vec2 stoneLocal = fract(world * 24.0) - 0.5;
+    float stone = step(0.982, hash21(stoneCell))
+        * (1.0 - smoothstep(0.10, 0.24, length(stoneLocal + vec2(0.16, -0.12))))
+        * uCloseDetail * smoothstep(0.30, 0.80, moisture);
+    color = mix(color, mix(uRock * 0.72, vec3(0.20, 0.20, 0.16), 0.38), stone * 0.45);
+    vec2 detailMap = groundDetail(world, 0.0, 0.24);
+    color *= mix(1.0, 0.86 + 0.28 * detailMap.x, uAtlasStrength * (0.45 + 0.55 * uCloseDetail));
+    float hatchGate = 0.30 + 0.70 * smoothstep(0.36, 0.62,
+        vnoise(world * 0.19 + vec2(uSeed * 5.0, 2.1)));
+    color = penHatch(color, detailMap.y, uLush, (0.22 + 0.26 * uCloseDetail) * uAtlasStrength * hatchGate);
     // Seasonal ground cover changes the surface itself, not just its palette:
     // fallen leaves, spring blossom, scorched summer patches and winter frost.
     float leafLitter = smoothstep(0.46, 0.88, fbm2(world * 2.6 + vec2(3.1, 8.7)) + (micro - 0.5) * 0.24);
@@ -328,10 +376,24 @@ vec3 forestMaterial(vec2 world, float macro, float meso, float fine, float micro
     float canopy = vnoise(world * 5.2 + vec2(9.1, 3.3));
     color = mix(color, uForest * 0.92, smoothstep(0.55, 0.86, canopy) * 0.26 * detail);
     color = mix(color, color * 1.12, smoothstep(0.36, 0.12, canopy) * 0.14 * detail);
+    // A screen-sized canopy stipple turns a dark green patch into a drawn wood
+    // at map zoom, and keeps reading as leaf litter up close.
+    float treePixels = max(1.0, uCell * uZoom);
+    float treeFreq = clamp(treePixels / 4.5, 0.8, 28.0);
+    vec2 treeCell = floor(world * treeFreq + vec2(uSeed * 3.0, uSeed * 5.0));
+    vec2 treeLocal = fract(world * treeFreq) - 0.5;
+    vec2 treeOffset = vec2(hash21(treeCell + 1.0), hash21(treeCell + 2.0)) - 0.5;
+    float treeDot = step(0.68, hash21(treeCell))
+        * (1.0 - smoothstep(0.14, 0.34, length(treeLocal - treeOffset * 0.45)));
+    color = mix(color, color * 0.58, treeDot * (0.36 + 0.18 * uDetail));
+    color += vec3(0.010, 0.018, 0.008) * treeDot * uDetail;
     color += vec3(0.030, 0.038, 0.012) * (fine - 0.5) * detail;
     color = mix(color, color * 0.70, smoothstep(0.86, 0.99, fine) * 0.26 * detail);
-    float detailMap = groundDetail(world, 4.0, 0.55);
-    color *= mix(1.0, 0.80 + 0.42 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
+    vec2 detailMap = groundDetail(world, 4.0, 0.30);
+    color *= mix(1.0, 0.86 + 0.24 * detailMap.x, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
+    float forestGate = 0.18 + 0.82 * smoothstep(0.36, 0.62,
+        vnoise(world * 0.22 + vec2(uSeed * 3.0, 7.4)));
+    color = penHatch(color, detailMap.y, uForest, (0.22 + 0.20 * uCloseDetail) * uAtlasStrength * forestGate);
     color = mix(color, uForest * 1.18 + vec3(0.060, 0.020, 0.0), uAutumn * 0.38);
     float leafCarpet = smoothstep(0.42, 0.86, fbm2(world * 3.1 + vec2(5.7, 2.2)) + (micro - 0.5) * 0.22);
     color = mix(color, mix(uEarth * 1.25, uDry, 0.42), leafCarpet * uAutumn * 0.46 * detail);
@@ -345,8 +407,9 @@ vec3 earthMaterial(vec2 world, float meso, float fine, float micro, float detail
     vec3 color = mix(uEarth, uDry, meso * 0.38);
     color *= 0.76 + 0.24 * micro + 0.20 * fine - grit;
     color = mix(color, color * 0.64, smoothstep(0.60, 0.84, micro) * 0.20);
-    float detailMap = groundDetail(world, 20.0, 0.75);
-    color *= mix(1.0, 0.80 + 0.42 * detailMap, uAtlasStrength * (0.45 + 0.55 * detail));
+    vec2 detailMap = groundDetail(world, 20.0, 0.45);
+    color *= mix(1.0, 0.86 + 0.26 * detailMap.x, uAtlasStrength * (0.45 + 0.55 * detail));
+    color = penHatch(color, detailMap.y, uEarth, (0.15 + 0.12 * uCloseDetail) * uAtlasStrength);
     return color;
 }
 
@@ -359,8 +422,9 @@ vec3 rockMaterial(vec2 world, float meso, float micro, float detail) {
     color = mix(color, color * 0.62, crack * 0.22);
     color = mix(color, color * 1.10, strata * 0.12 * detail);
     color = mix(color, color * 1.10, step(0.80, micro) * 0.10 * detail);
-    float detailMap = groundDetail(world, 8.0, 0.30);
-    color *= mix(1.0, 0.78 + 0.46 * detailMap, uAtlasStrength * (0.50 + 0.50 * uCloseDetail));
+    vec2 detailMap = groundDetail(world, 8.0, 0.24);
+    color *= mix(1.0, 0.84 + 0.30 * detailMap.x, uAtlasStrength * (0.50 + 0.50 * uCloseDetail));
+    color = penHatch(color, detailMap.y, uRock, (0.20 + 0.14 * uCloseDetail) * uAtlasStrength);
     return color;
 }
 
@@ -371,8 +435,9 @@ vec3 wetlandMaterial(vec2 world, float macro, float meso, float micro) {
     color *= 0.70 + 0.28 * meso + 0.18 * micro;
     color = mix(color, color * 0.72, smoothstep(0.62, 0.9, moss) * 0.26);
     color = mix(color, color * 1.20, step(0.76, micro) * 0.18);
-    float detailMap = groundDetail(world, 24.0, 0.45);
-    color *= mix(1.0, 0.82 + 0.36 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
+    vec2 detailMap = groundDetail(world, 24.0, 0.32);
+    color *= mix(1.0, 0.86 + 0.26 * detailMap.x, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
+    color = penHatch(color, detailMap.y, uSwamp, (0.14 + 0.12 * uCloseDetail) * uAtlasStrength);
     return color;
 }
 
@@ -383,8 +448,9 @@ vec3 sandMaterial(vec2 world, float meso, float fine, float micro, float detail)
     color += vec3(0.052, 0.040, 0.019) * (ripple - 0.5) * detail;
     color = mix(color, color * 0.74, step(0.70, fine) * 0.36 * detail);
     color = mix(color, color * 1.12, step(0.76, grit) * 0.22 * uCloseDetail);
-    float detailMap = groundDetail(world, 12.0, 0.90);
-    color *= mix(1.0, 0.86 + 0.28 * detailMap, uAtlasStrength * uCloseDetail);
+    vec2 detailMap = groundDetail(world, 12.0, 0.55);
+    color *= mix(1.0, 0.90 + 0.18 * detailMap.x, uAtlasStrength * uCloseDetail);
+    color = penHatch(color, detailMap.y, uEarth, (0.10 + 0.12 * uCloseDetail) * uAtlasStrength);
     return color;
 }
 
@@ -394,8 +460,9 @@ vec3 snowMaterial(vec2 world, float micro, float detail) {
     vec3 color = mix(uSnow, uSnow * 0.86, drift * 0.32);
     color = mix(color, color * 1.06, step(0.68, micro) * 0.16);
     color = mix(color, color * 0.78, smoothstep(0.60, 0.80, vnoise(world * 6.2)) * 0.24);
-    float detailMap = groundDetail(world, 16.0, 0.50);
-    color *= mix(1.0, 0.90 + 0.20 * detailMap, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
+    vec2 detailMap = groundDetail(world, 16.0, 0.35);
+    color *= mix(1.0, 0.92 + 0.15 * detailMap.x, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
+    color = penHatch(color, detailMap.y, mix(uRock, uWaterDeep, 0.28), (0.05 + 0.07 * uCloseDetail) * uAtlasStrength);
     // Spring melt opens dark ground under the crust instead of only recolouring.
     float melt = smoothstep(0.46, 0.86, vnoise(world * 1.7 + vec2(6.4, 2.8))) * uSpring;
     color = mix(color, uEarth * 1.15, melt * 0.34 * detail);
@@ -407,18 +474,63 @@ vec3 waterMaterial(vec2 world, float sd, float micro) {
     // height: the carve is one flat pixel step and would band the lakebed.
     float depth = smoothstep(0.02, 0.65, -sd);
     vec3 color = mix(uWaterShallow, uWaterDeep * 1.30, depth * 0.62);
-    color = mix(color, uLush * 0.55, (1.0 - uDetail) * 0.28);
+    // Keep the sea blue at map scale. A strong green land tint made the coast
+    // edge mushy and stole the contrast the ink shoreline needs.
+    color = mix(color, uLush * 0.55, (1.0 - uDetail) * 0.06);
+    float shoreLift = exp(-max(0.0, -sd) * 0.9);
+    color = mix(color, uWaterShallow * 1.06, shoreLift * 0.48);
 
     float wave = sin(world.x * 2.1 + uTime * 0.42 + world.y * 1.35) * 0.50
         + sin(world.y * 4.6 - uTime * 0.31 + world.x * 0.8) * 0.30
         + sin((world.x - world.y) * 8.5 + uTime * 0.55) * 0.14;
     color += vec3(0.010, 0.018, 0.021) * wave;
 
+    // Watercolour wash: broad pigment pools and a granulated edge. The wash is
+    // low-frequency so it never competes with the readable depth contour.
+    float wash = fbm2(world * 1.25 + vec2(4.1, 2.7));
+    color *= 0.91 + 0.14 * wash;
+    color = mix(color, color * vec3(0.92, 0.97, 0.96),
+        smoothstep(0.58, 0.88, fbm2(world * 2.7 + vec2(1.7, 6.3))) * 0.10);
+
+    // Broken ink ripples. They are sparse lines, not a uniform sine texture;
+    // the noise gate keeps the pen from combing the whole lake.
+    float inkWave = sin(world.y * 6.2 + world.x * 0.9 + uTime * 0.24 + wash * 3.2);
+    float rippleInk = smoothstep(0.935, 0.998, inkWave)
+        * (0.35 + 0.65 * vnoise(world * 4.7 + vec2(3.1, 8.4)))
+        * (0.30 + 0.70 * uDetail);
+    color = mix(color, vec3(0.055, 0.115, 0.120), rippleInk * 0.20);
+
+    // The shallow shelf picks up a little bank colour, as a wash would.
+    float shallow = 1.0 - smoothstep(0.0, 0.85, sd);
+    color = mix(color, mix(uWaterShallow, uLush, 0.28), shallow * 0.13);
+
     float crest = smoothstep(0.55, 0.95, wave * 0.5 + 0.52) * smoothstep(0.38, 0.85, micro);
     // A broken crest catches the low sun at close zoom. A complete surf ring
     // made small ponds read as stamped outlines, so this stays a highlight
     // instead of a shoreline outline.
     color += uFoam * crest * (0.035 + 0.075 * uDetail);
+    // A few foam dabs around the shelf, drawn rather than stamped.
+    float dab = step(0.986, hash21(floor(world * 18.0))) * shallow * (0.35 + 0.65 * micro);
+    color += uFoam * dab * 0.10;
+
+    // A pale shelf just inside the coast, then a second broken waterline.
+    // Together with the dark shoreline they read as a drawn coast rather than
+    // a single cut-out edge.
+    float tilePerPixel = 1.0 / max(0.001, uCell * uZoom);
+    float shelf = 1.0 - smoothstep(0.0, 1.1, -sd);
+    color = mix(color, mix(uWaterShallow * 1.16, uSand * 0.72, 0.14), shelf * 0.30);
+    float shelfLine = 1.0 - smoothstep(0.0, tilePerPixel * 1.5,
+        abs(-sd - (0.38 + 0.16 * wash)));
+    color = mix(color, vec3(0.095, 0.165, 0.170), shelfLine * 0.20);
+    // Two broken bathymetric ink lines further out. They follow the shore and
+    // give the sea the same drawn depth language as the contours on land.
+    float bathNoise = vnoise(world * 3.2 + vec2(2.6, 7.9));
+    float bath1 = 1.0 - smoothstep(0.0, tilePerPixel * 2.0,
+        abs(-sd - (0.95 + 0.32 * bathNoise)));
+    float bath2 = 1.0 - smoothstep(0.0, tilePerPixel * 1.7,
+        abs(-sd - (2.10 + 0.45 * bathNoise)));
+    float bathBreak = 0.55 + 0.45 * vnoise(world * 1.5 + vec2(5.4, 3.2));
+    color = mix(color, vec3(0.060, 0.118, 0.125), (bath1 * 0.22 + bath2 * 0.16) * bathBreak);
 
     // Weighted instead of thresholded: the water surface fades into the next
     // season on the same days as the land instead of switching overnight.
@@ -562,6 +674,29 @@ void main() {
         if (bare > 0.02) material += earthMaterial(world, meso, fine, micro, detail) * bare;
         landColor = material / max(0.0001, weight);
 
+        // A thin ink edge where the material weights cross. fwidth sees the
+        // discontinuity between grass, forest, rock, sand and snow, so the
+        // border is drawn on the actual ecological edge instead of a guessed
+        // elevation contour. It is a wash-edge, not a black cartoon outline.
+        float materialId = grass * 1.0 + forest * 2.0 + rock * 3.0 + wet * 4.0
+            + sand * 5.0 + snow * 6.0 + bare * 7.0;
+        float ecoEdge = smoothstep(0.020, 0.120, fwidth(materialId));
+        vec3 ecoInk = mix(landColor * 0.34, vec3(0.085, 0.090, 0.078), 0.38);
+        landColor = mix(landColor, ecoInk, ecoEdge * (0.09 + 0.09 * uDetail));
+
+        // Second, finer wash scale. Broad patches alone read as a soft blur at
+        // 2.4x; this settles pigment into 20-50 px flocs without adding noise.
+        float nearWash = fbm2(world * 2.25 + vec2(1.3, 8.8));
+        landColor *= 0.965 + 0.055 * nearWash;
+        landColor = mix(landColor, landColor * vec3(0.93, 0.975, 0.945),
+            smoothstep(0.58, 0.88, fbm2(world * 3.4 + vec2(7.7, 2.9))) * 0.07);
+        // A pale, broken beach rim gives the coastline a drawn edge and keeps
+        // the green wash from bleeding straight into the sea.
+        float inkBeachNoise = vnoise(world * 2.9 + vec2(3.4, 8.6));
+        float inkBeach = (1.0 - smoothstep(0.04, 0.16 + 0.13 * inkBeachNoise, sd))
+            * (1.0 - smoothstep(0.04, 0.18, slope));
+        landColor = mix(landColor, mix(uSand * 1.04, uDry, 0.24), inkBeach * 0.45);
+
         // Broad pasture patches keep large meadows from reading as one flat wash.
         float pasture = smoothstep(0.40, 0.72, vnoise(world * 0.33 + vec2(3.3, 8.1)));
         landColor = mix(landColor, landColor * vec3(1.08, 1.03, 0.86), pasture * 0.10);
@@ -589,12 +724,16 @@ void main() {
         vec2 grade = vec2(wx, wy);
         float grain = (1.0 - shoreCalm) * (1.0 - water);
         grade *= 1.0 - flatBank;
+        // Fine noise perturbs the surface only once the camera is close enough
+        // to resolve it. At map zoom the same term aliased into a mossy
+        // high-frequency shimmer across the whole island.
+        float bump = 0.055 * smoothstep(0.25, 0.85, uDetail);
         vec3 normal = normalize(vec3(
-            -grade.x * 90.0 - (micro - 0.5) * 0.12 * grain,
-            -grade.y * 90.0 - (fine - 0.5) * 0.12 * grain,
+            -grade.x * 90.0 - (fine - 0.5) * bump * grain,
+            -grade.y * 90.0 - (micro - 0.5) * bump * grain,
             1.0));
         float diffuse = clamp(dot(normal, uSunDirection), 0.0, 1.0);
-        landColor *= mix(0.84, 1.16, diffuse);
+        landColor *= mix(0.78, 1.22, diffuse);
         // A low winter sun warms the light less than a high summer one.
         landColor *= 1.0 + (uSunDirection.z - 0.62) * 0.10;
 
@@ -616,25 +755,69 @@ void main() {
         // Contour lines and slope hachures make height legible at map zoom, then
         // fade out before rooftop scale where the shading already reads.
         if (uContourStrength > 0.001) {
-            float contour = elevation * uContourScale;
+            // The contour is drawn with a hand wobble and broken by a second
+            // noise, so it reads as a pen line rather than a CAD isoline. Flat
+            // meadows stay clean: the pen only describes real rises, and the
+            // lines fade out near a shore instead of ringing a pond like a
+            // target.
+            float wobble = (vnoise(world * 0.55 + vec2(3.1, 7.4)) - 0.5) * 0.006;
+            float contour = (elevation + wobble) * uContourScale;
             float band = contour - floor(contour);
+            float bandIndex = floor(contour);
             float aa = max(fwidth(contour), 0.0001);
-            float line = 1.0 - smoothstep(0.0, aa * 1.7, min(band, 1.0 - band));
+            float line = 1.0 - smoothstep(0.0, aa * 3.2, min(band, 1.0 - band));
+            line *= 0.76 + 0.24 * vnoise(world * 0.82 + vec2(8.1, 2.7));
+            // Every third contour is a darker index line, as on a drawn map.
+            // Index lines survive on gentle ground; minor contours only appear
+            // where there is a real rise, so flat meadows stay clean.
+            float major = 1.0 - step(0.5, mod(bandIndex, 2.0));
+            line *= mix(0.42, 1.0, major);
+            line *= mix(smoothstep(0.002, 0.018, slope), 1.0, major);
+            line *= smoothstep(1.00, 4.20, sd);
             vec2 downhill = normalize(vec2(hx, hy) + vec2(0.0001, 0.0001));
             // Hachures are short strokes along the fall line, not more contour
-            // lines: dashes run downhill and repeat across the slope.
+            // lines: dashes run downhill and repeat across the slope. Their
+            // spacing is derived from screen pixels, so map view does not turn
+            // into a field of subpixel noise at 0.1x zoom.
             vec2 across = vec2(-downhill.y, downhill.x);
             float along = dot(world, downhill);
-            float lane = abs(fract(dot(world, across) * 7.0 + macro * 1.7) - 0.5) * 2.0;
-            float dash = abs(fract(along * 4.5) - 0.5) * 2.0;
-            float steep = smoothstep(0.045, 0.150, slope);
-            float hachure = smoothstep(0.55, 0.95, dash) * smoothstep(0.30, 0.85, lane) * steep;
-            landColor = mix(landColor, landColor * (0.84 - 0.12 * steep), (line * 0.55 + hachure * 0.50) * uContourStrength);
+            float pixelsPerTile = max(1.0, uCell * uZoom);
+            float laneFreq = clamp(pixelsPerTile / 14.0, 0.18, 3.0);
+            float dashFreq = clamp(pixelsPerTile / 16.0, 0.15, 2.8);
+            float lane = abs(fract(dot(world, across) * laneFreq + macro * 1.7) - 0.5) * 2.0;
+            float dash = abs(fract(along * dashFreq) - 0.5) * 2.0;
+            float steep = smoothstep(0.015, 0.070, slope);
+            float hachure = smoothstep(0.38, 0.84, dash)
+                * smoothstep(0.38, 0.88, lane) * steep
+                * (0.58 + 0.42 * vnoise(world * 1.25 + vec2(2.2, 9.3)))
+                * smoothstep(0.40, 2.40, sd)
+                * (1.0 - smoothstep(0.55, 0.85, uZoom))
+                * (1.0 - 0.85 * uCloseDetail);
+            vec3 contourInk = mix(landColor * 0.42, vec3(0.105, 0.110, 0.094), 0.44);
+            landColor = mix(landColor, contourInk, (line * 0.50 + hachure * 0.32) * uContourStrength);
         }
     }
 
     vec3 waterColor = waterMaterial(world, sd, micro);
     vec3 color = mix(waterColor, landColor, 1.0 - water);
+
+    // Inked shoreline. The width is measured in screen pixels and converted
+    // back into tile units, so the pen stays about 1.5 px wide at every zoom
+    // instead of disappearing at map scale or becoming a wall up close.
+    float tilePerPixel = 1.0 / max(0.001, uCell * uZoom);
+    float inkNoise = vnoise(world * 5.7 + vec2(2.3, 8.1)) * 0.65
+        + vnoise(world * 17.0 + vec2(4.7, 1.3)) * 0.35;
+    float inkWidth = tilePerPixel * (2.10 + 1.55 * inkNoise);
+    float coastInk = 1.0 - smoothstep(0.0, inkWidth, abs(sd + 0.012));
+    coastInk *= 0.62 + 0.38 * vnoise(world * 27.0 + vec2(1.9, 5.3));
+    color = mix(color, vec3(0.042, 0.056, 0.050), coastInk * 0.64);
+    float innerInk = 1.0 - smoothstep(0.0, tilePerPixel * 1.1, abs(sd - 0.16));
+    color = mix(color, vec3(0.070, 0.080, 0.068), innerInk * 0.20);
+    float shoreHalo = 1.0 - smoothstep(0.0, tilePerPixel * 2.2, abs(sd - 0.10));
+    color = mix(color, mix(uFoam, uSand, 0.42), shoreHalo * 0.13);
+    float waterLine = 1.0 - smoothstep(0.0, tilePerPixel * 0.9,
+        abs(sd + 0.20 + (inkNoise - 0.5) * 0.10));
+    color = mix(color, vec3(0.060, 0.115, 0.120), waterLine * water * 0.20);
 
     float cloud = vnoise(world * 0.10 + vec2(uTime * 0.004, uSeed));
     color *= 1.0 - smoothstep(0.55, 0.90, cloud) * 0.03;
@@ -643,8 +826,27 @@ void main() {
     float grain = vnoise(world * 43.0 + vec2(2.2, 6.4));
     color *= 0.98 + 0.04 * grain * uCloseDetail;
     color = mix(color, color * 1.05, smoothstep(0.0, 0.40, elevation) * 0.08);
-    // A touch of desaturation keeps the meadows from reading as pure pigment.
-    color = mix(vec3(dot(color, vec3(0.299, 0.587, 0.114))), color, 0.92);
+
+    // Paper tooth stays in screen space, like a sheet under the drawing. It is
+    // deliberately tiny and low-contrast; its job is to stop the washes from
+    // looking like a plastic satellite render, not to announce itself.
+    float paperA = vnoise(screen * 0.060 + uSeed * 3.0);
+    float paperB = vnoise(screen * 0.19 + vec2(4.2, 1.7));
+    float paper = paperA * 0.60 + paperB * 0.40;
+    color *= 0.983 + 0.030 * paper;
+    float fibre = vnoise(screen * 0.54 + vec2(7.2, 1.4));
+    color = mix(color, color * vec3(0.986, 0.972, 0.930),
+        smoothstep(0.72, 0.96, fibre) * 0.040);
+    // Pigment granulation in world space: the wash settles in soft flocs.
+    float pigment = fbm2(world * 1.9 + vec2(4.3, 7.7));
+    color = mix(color, color * vec3(0.940, 0.965, 0.955),
+        smoothstep(0.56, 0.87, pigment) * 0.04);
+
+    // One muted grade over the whole sheet: less pure pigment, warmer paper
+    // highlights and darker ink shadows.
+    float finalLuma = dot(color, vec3(0.299, 0.587, 0.114));
+    color = mix(vec3(finalLuma), color, 0.83);
+    color = color * vec3(1.012, 1.000, 0.958) + vec3(0.010, 0.006, 0.0);
 
     outColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }
@@ -1202,7 +1404,7 @@ function setPalette() {
     gl.uniform1f(uniforms.sunShadowSlope, sun.slope);
     gl.uniform1f(uniforms.sunShadowStrength, sun.strength);
     gl.uniform1f(uniforms.contourStrength, sun.contour);
-    gl.uniform1f(uniforms.contourScale, 14.0);
+    gl.uniform1f(uniforms.contourScale, 9.0);
 }
 
 // A realm year is 400 days, so the sun turns once per year while its elevation
@@ -1249,7 +1451,7 @@ function sunState(phase) {
         slope: tanElevation,
         step: solar.step,
         strength: strength * weatherFactor,
-        contour: Math.max(0, Math.min(1, (1.15 - zoom) / 0.85)) * 0.75,
+        contour: Math.max(0, Math.min(1, (0.95 - zoom) / 0.65)) * 0.75,
     };
 }
 

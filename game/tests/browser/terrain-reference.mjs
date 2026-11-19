@@ -326,6 +326,9 @@ try {
     console.log("Renderer: " + (webgl.renderer || "unknown") + " · canvas " + webgl.width + "×" + webgl.height);
     if (diagnostics.length) console.log("Diagnostics: " + JSON.stringify(diagnostics, null, 2));
     if (fatal.length) throw new Error("Terrain rendering diagnostics were emitted:\n" + fatal.join("\n"));
+} catch (error) {
+    if (diagnostics.length) console.log("Diagnostics before failure: " + JSON.stringify(diagnostics, null, 2));
+    throw error;
 } finally {
     await browser.close().catch(() => {});
     await new Promise(resolve => server.close(resolve));
