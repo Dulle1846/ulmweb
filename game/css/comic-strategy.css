@@ -240,6 +240,11 @@
 .spy-agent-target{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:8px 0;padding:6px;border:1px solid #cfb47f;border-radius:5px;font-size:7px;color:#756445}
 .spy-agent-target strong{color:#8f3f31;text-align:right}
 .spy-agent .command-inline{margin-top:6px}
+.spy-play .command-inline{display:grid;grid-template-columns:1fr;gap:6px}
+.spy-play .command-inline button{width:100%}
+.spy-play .command-inline strong{text-align:left}
+.spy-play-note,.spy-play-last{display:block;margin-top:5px;font-size:7px;line-height:1.35;color:#756445}
+.spy-play-last{color:#203c58;font-weight:700}
 .spy-report-list,.spy-history{display:grid;gap:5px}
 .spy-report,.spy-history>div{display:grid;gap:2px;padding:7px;border-bottom:1px solid #c8ad7d;font-size:8px;color:#554a3a}
 .spy-report span,.spy-history span{color:#806d52;font-size:7px;font-weight:1000;letter-spacing:.08em}

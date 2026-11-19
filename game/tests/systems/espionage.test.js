@@ -4,9 +4,11 @@ import { readFile } from "node:fs/promises";
 import { Entity, TYPE } from "../../js/core/types.js";
 import { resetState, state } from "../../js/core/state.js";
 import {
-    AGENT_LIMIT, AGENT_RECRUIT_COST, AGENT_WAGE, SCREEN_COST, assignAgent, dismissAgent,
+    AGENT_LIMIT, AGENT_RECRUIT_COST, AGENT_WAGE, SCREEN_COST, WARN_HOUSE_COST, CONCESSION_COST,
+    FALSE_TRAIL_COST, FALSE_TRAIL_BONUS, assignAgent, demandConcession, dismissAgent,
     getEspionageEffects, getEspionageMarketTerms, getEspionageSnapshot,
-    getEspionageWarModifiers, normalizeEspionageState, recruitAgent, screenCourt, updateEspionage
+    getEspionageWarModifiers, normalizeEspionageState, plantFalseTrail, recruitAgent,
+    screenCourt, updateEspionage, warnHouse
 } from "../../js/systems/espionage.js";
 
 function resident(index, skills = { learning: 70, trade: 60, command: 50 }) {
@@ -35,7 +37,11 @@ function setup({ gold = 300, count = 7, houseLoyalty = 24 } = {}) {
     state.nobility = {
         version: 1,
         houses: [{ id: "house-vane", familyName: "Vane", loyalty: houseLoyalty, members: ["person-1"] }],
+        feuds: [],
         history: []
+    };
+    state.market = {
+        partners: [{ id: "northmere", name: "Northmere Guild", treasury: 120, stock: { food: 30, wood: 20, stone: 20 } }]
     };
     return state;
 }
@@ -161,7 +167,13 @@ test("espionage state survives a save-style normalization round-trip", () => {
         }],
         suspicion: 12, rivalPressure: 34, foreignInsight: 20, marketInsight: 15, nobleInsight: 4, watchStrength: 6,
         lastUpdateYear: 4, screenedYear: 4, lastScreen: { year: 4, revealed: 1, clean: false },
-        totals: { recruited: 1, missions: 3, successes: 2, captures: 0, seizedGold: 7, plotsExposed: 1, turned: 1, screened: 1, goldLost: 4, falseReports: 2 }
+        plays: { warnHouse: 4, concession: 0, falseTrail: 3 },
+        lastPlays: {
+            warnHouse: { year: 4, play: "warnHouse", targetId: "house-vane", targetName: "Vane", detail: "Vane loyalty 24 -> 30.", costInsight: WARN_HOUSE_COST },
+            falseTrail: { year: 3, play: "falseTrail", targetId: "rival-courts", targetName: "Rival courts", detail: "A false trail cut rival pressure.", costInsight: FALSE_TRAIL_COST }
+        },
+        missionBonus: FALSE_TRAIL_BONUS, missionBonusYear: 5,
+        totals: { recruited: 1, missions: 3, successes: 2, captures: 0, seizedGold: 7, plotsExposed: 1, turned: 1, screened: 1, goldLost: 4, falseReports: 2, plays: 2, insightSpent: 38, goldGained: 17, foodGained: 5 }
     });
     const restored = normalizeEspionageState(JSON.parse(JSON.stringify(saved)));
     assert.equal(restored.agents[0].guile, 72);
@@ -176,6 +188,12 @@ test("espionage state survives a save-style normalization round-trip", () => {
     assert.equal(restored.totals.goldLost, 4);
     assert.equal(restored.lastScreen.revealed, 1);
     assert.equal(restored.screenedYear, 4);
+    assert.equal(restored.plays.warnHouse, 4);
+    assert.equal(restored.lastPlays.warnHouse.targetName, "Vane");
+    assert.equal(restored.lastPlays.falseTrail.costInsight, FALSE_TRAIL_COST);
+    assert.equal(restored.missionBonus, FALSE_TRAIL_BONUS);
+    assert.equal(restored.totals.insightSpent, 38);
+    assert.equal(restored.totals.goldGained, 17);
     assert.equal(restored.agents[0].cover, 70, "a legacy agent without cover normalizes to solid cover");
     assert.equal(restored.lastUpdateYear, 4);
 });
@@ -189,6 +207,10 @@ test("a legacy save without espionage normalizes to a neutral court", () => {
     assert.equal(legacy.marketInsight, 0);
     assert.equal(legacy.nobleInsight, 0);
     assert.equal(legacy.lastUpdateYear, 0);
+    assert.deepEqual(legacy.plays, { warnHouse: 0, concession: 0, falseTrail: 0 });
+    assert.deepEqual(legacy.lastPlays, { warnHouse: null, concession: null, falseTrail: null });
+    assert.equal(legacy.missionBonus, 0);
+    assert.equal(legacy.missionBonusYear, 0);
 });
 
 test("rival pressure can turn an agent, and a turned agent leaks gold instead of insight", () => {
@@ -241,6 +263,98 @@ test("screening the court unmasks turned agents, costs gold and is limited to on
     assert.equal(state.espionage.lastScreen.clean, true);
 });
 
+test("warning a threatened house spends noble insight, raises loyalty and eases its feud", () => {
+    setup();
+    state.nobility.houses.push({ id: "house-other", familyName: "Other", loyalty: 60, members: ["person-2"] });
+    state.nobility.feuds = [{ id: "feud-1", houses: ["house-vane", "house-other"], status: "active", severity: 2, history: [] }];
+    state.espionage = normalizeEspionageState({ nobleInsight: WARN_HOUSE_COST + 5 });
+
+    const result = warnHouse("house-vane");
+    assert.equal(result.ok, true, result.reason);
+    assert.equal(state.nobility.houses[0].loyalty, 30);
+    assert.equal(state.nobility.feuds[0].severity, 1);
+    assert.equal(state.espionage.nobleInsight, 5);
+    assert.equal(state.espionage.plays.warnHouse, 2);
+    assert.equal(state.espionage.lastPlays.warnHouse.targetName, "Vane");
+    assert.match(state.espionage.lastPlays.warnHouse.detail, /loyalty 24 -> 30/);
+    assert.ok(state.espionage.reports.some(report => report.kind === "play" && report.desk === "nobles"));
+    assert.equal(getEspionageSnapshot().canWarn, false, "the play is once per year");
+
+    const again = warnHouse("house-vane");
+    assert.equal(again.ok, false);
+    assert.equal(again.reason, "already-warned-this-year");
+    state.year = 3;
+    state.espionage.nobleInsight = WARN_HOUSE_COST;
+    assert.equal(warnHouse("house-vane").ok, true, "a new year allows another warning");
+});
+
+ test("insight plays refuse to spend when the pool is short and leave the world untouched", () => {
+    setup();
+    state.espionage = normalizeEspionageState({ nobleInsight: 0, foreignInsight: 0, marketInsight: 0 });
+    const goldBefore = state.resources.gold;
+    const foodBefore = state.resources.food;
+    assert.equal(warnHouse("house-vane").reason, "not-enough-noble-insight");
+    assert.equal(demandConcession("northmere").reason, "not-enough-foreign-insight");
+    assert.equal(plantFalseTrail().reason, "not-enough-market-insight");
+    assert.equal(state.nobility.houses[0].loyalty, 24);
+    assert.equal(state.market.partners[0].treasury, 120);
+    assert.equal(state.resources.gold, goldBefore);
+    assert.equal(state.resources.food, foodBefore);
+    assert.equal(state.espionage.totals.plays, 0);
+});
+
+test("demanding a concession transfers real treasury and stock through the trade partner", () => {
+    setup();
+    state.espionage = normalizeEspionageState({ foreignInsight: CONCESSION_COST + 10 });
+    const goldBefore = state.resources.gold;
+    const foodBefore = state.resources.food;
+    const result = demandConcession("northmere");
+    assert.equal(result.ok, true, result.reason);
+    assert.equal(result.gold, 17);
+    assert.equal(result.food, 5);
+    assert.equal(state.resources.gold, goldBefore + 17);
+    assert.equal(state.resources.food, foodBefore + 5);
+    assert.equal(state.market.partners[0].treasury, 103);
+    assert.equal(state.market.partners[0].stock.food, 25);
+    assert.equal(state.diplomacy.realms[0].relation, 51);
+    assert.equal(state.diplomacy.realms[0].fear, 23);
+    assert.equal(state.espionage.foreignInsight, 10);
+    assert.equal(state.espionage.totals.goldGained, 17);
+    assert.equal(state.espionage.totals.foodGained, 5);
+    assert.match(state.espionage.lastPlays.concession.detail, /relation 55 -> 51/);
+    assert.equal(demandConcession("northmere").reason, "already-demanded-this-year");
+    state.year = 3;
+    state.espionage.foreignInsight = CONCESSION_COST;
+    assert.equal(demandConcession("northmere").ok, true, "a new year allows another demand");
+});
+
+test("a false trail cuts rival pressure and raises the next audit's mission odds once", () => {
+    setup();
+    const agent = recruit();
+    assignAgent(agent.id, "foreign", "northmere");
+    state.espionage.marketInsight = FALSE_TRAIL_COST;
+    state.espionage.rivalPressure = 50;
+    state.espionage.suspicion = 40;
+    const before = getEspionageSnapshot().agents[0].successRate;
+    const result = plantFalseTrail();
+    assert.equal(result.ok, true, result.reason);
+    assert.equal(state.espionage.rivalPressure, 32);
+    assert.equal(state.espionage.suspicion, 36);
+    assert.equal(state.espionage.marketInsight, 0);
+    assert.equal(state.espionage.missionBonus, FALSE_TRAIL_BONUS);
+    assert.equal(state.espionage.missionBonusYear, 3);
+    assert.equal(state.espionage.plays.falseTrail, 2);
+    const after = getEspionageSnapshot();
+    assert.equal(after.missionBonusActive, true);
+    assert.ok(after.agents[0].successRate >= before + 8, "next year's mission odds must visibly improve");
+    assert.equal(plantFalseTrail().reason, "already-planted-this-year");
+
+    state.year = 3;
+    updateEspionage();
+    assert.equal(state.espionage.missionBonus, 0, "the trail bonus is consumed by the next audit");
+    assert.equal(state.espionage.missionBonusYear, 0);
+});
+
 test("the save, simulation and UI contracts include the Whisper Court", async () => {
     const html = await readFile(new URL("../../index.html", import.meta.url), "utf8");
     const ui = await readFile(new URL("../../js/presentation/management-ui.js", import.meta.url), "utf8");
@@ -251,6 +365,8 @@ test("the save, simulation and UI contracts include the Whisper Court", async ()
     assert.ok(html.includes('data-command-tab="espionage"'), "the command deck must expose the Whisper Court");
     assert.ok(ui.includes("espionage:espionagePanel") && ui.includes("spy-recruit") && ui.includes("spy-assign"), "the panel and its actions must be wired");
     assert.ok(ui.includes("spy-screen") && ui.includes("COURT SCREENED"), "the counter-intelligence action must be wired");
+    assert.ok(ui.includes("spy-warn") && ui.includes("spy-concession") && ui.includes("spy-false-trail"), "all three intelligence plays must be wired");
+    assert.ok(ui.includes("ACTIONABLE INTELLIGENCE") && ui.includes("DEMAND A CONCESSION") && ui.includes("PLANT A FALSE TRAIL"), "the panel must expose costs and last results");
     assert.ok(saveRuntime.includes("espionage:JSON.parse") && saveRuntime.includes("state.espionage=normalizeEspionageState"), "saves must persist and normalize the court");
     assert.ok(simulation.includes("updateEspionage()"), "the court must run from the annual simulation");
     assert.ok(combat.includes("getEspionageWarModifiers") && market.includes("getEspionageMarketTerms"), "combat and trade must read the court's insight");

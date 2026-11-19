@@ -8,12 +8,18 @@ import { addLog } from "../core/event-log.js";
 import { addResource } from "./resources.js";
 import { random } from "../core/random.js";
 import { DIPLOMATIC_REALMS } from "./diplomacy-config.js";
+import { ensureNobility } from "./nobility.js";
 
 export const ESPIONAGE_VERSION = 1;
 export const AGENT_LIMIT = 6;
 export const AGENT_RECRUIT_COST = Object.freeze({ gold: 14 });
 export const AGENT_WAGE = 3;
 export const SCREEN_COST = 18;
+export const WARN_HOUSE_COST = 8;
+export const CONCESSION_COST = 10;
+export const FALSE_TRAIL_COST = 8;
+export const FALSE_TRAIL_BONUS = 0.08;
+export const FALSE_TRAIL_PRESSURE_RELIEF = 18;
 export const INSIGHT_LIMIT = 100;
 export const REPORT_LIMIT = 14;
 export const ESPIONAGE_HISTORY_LIMIT = 12;
@@ -54,11 +60,16 @@ export function createEspionageState() {
         lastUpdateYear: 0,
         screenedYear: 0,
         lastScreen: null,
+        plays: { warnHouse: 0, concession: 0, falseTrail: 0 },
+        lastPlays: { warnHouse: null, concession: null, falseTrail: null },
+        missionBonus: 0,
+        missionBonusYear: 0,
         lastAudit: null,
         totals: {
             recruited: 0, dismissed: 0, missions: 0, successes: 0, captures: 0,
             seizedGold: 0, plotsExposed: 0, incidents: 0, wagesPaid: 0,
-            turned: 0, screened: 0, goldLost: 0, falseReports: 0
+            turned: 0, screened: 0, goldLost: 0, falseReports: 0,
+            plays: 0, insightSpent: 0, goldGained: 0, foodGained: 0
         }
     };
 }
@@ -92,12 +103,28 @@ function normalizeReport(value) {
     return {
         year: integer(value.year, 1),
         desk: deskOf(value.desk),
-        kind: ["success", "failure", "incident", "capture", "wage", "misdirection", "screened"].includes(String(value.kind))
+        kind: ["success", "failure", "incident", "capture", "wage", "misdirection", "screened", "play"].includes(String(value.kind))
             ? String(value.kind) : "success",
         targetId: cleanText(value.targetId, 80),
         targetName: cleanText(value.targetName, 120),
         detail: cleanText(value.detail, 220),
         gold: integer(value.gold, 0, 1_000_000)
+    };
+}
+
+function normalizeLastPlay(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const play = ["warnHouse", "concession", "falseTrail"].includes(String(value.play)) ? String(value.play) : null;
+    if (!play) return null;
+    return {
+        year: integer(value.year, 1),
+        play,
+        targetId: cleanText(value.targetId, 80),
+        targetName: cleanText(value.targetName, 120),
+        detail: cleanText(value.detail, 220),
+        costInsight: integer(value.costInsight, 0, INSIGHT_LIMIT),
+        gold: integer(value.gold, 0, 1_000_000),
+        food: integer(value.food, 0, 1_000_000)
     };
 }
 
@@ -149,6 +176,18 @@ export function normalizeEspionageState(input = state.espionage) {
         watchStrength: Math.round(clamp(source.watchStrength, 0, INSIGHT_LIMIT)),
         lastUpdateYear: integer(source.lastUpdateYear, 0),
         screenedYear: integer(source.screenedYear, 0),
+        plays: {
+            warnHouse: integer(source.plays?.warnHouse, 0),
+            concession: integer(source.plays?.concession, 0),
+            falseTrail: integer(source.plays?.falseTrail, 0)
+        },
+        lastPlays: {
+            warnHouse: normalizeLastPlay(source.lastPlays?.warnHouse),
+            concession: normalizeLastPlay(source.lastPlays?.concession),
+            falseTrail: normalizeLastPlay(source.lastPlays?.falseTrail)
+        },
+        missionBonus: Math.round(clamp(source.missionBonus, 0, 0.2) * 1000) / 1000,
+        missionBonusYear: integer(source.missionBonusYear, 0),
         lastScreen: source.lastScreen && typeof source.lastScreen === "object" && !Array.isArray(source.lastScreen)
             ? {
                 year: integer(source.lastScreen.year, 0),
@@ -170,7 +209,11 @@ export function normalizeEspionageState(input = state.espionage) {
             turned: integer(rawTotals.turned, 0),
             screened: integer(rawTotals.screened, 0),
             goldLost: integer(rawTotals.goldLost, 0),
-            falseReports: integer(rawTotals.falseReports, 0)
+            falseReports: integer(rawTotals.falseReports, 0),
+            plays: integer(rawTotals.plays, 0),
+            insightSpent: integer(rawTotals.insightSpent, 0),
+            goldGained: integer(rawTotals.goldGained, 0),
+            foodGained: integer(rawTotals.foodGained, 0)
         }
     };
 }
@@ -200,6 +243,9 @@ export function validateEspionageState(value) {
     }
     if (value.screenedYear !== undefined && (!Number.isSafeInteger(Number(value.screenedYear)) || Number(value.screenedYear) < 0)) {
         throw new Error("Espionage screened year is invalid.");
+    }
+    if (value.missionBonus !== undefined && (!Number.isFinite(Number(value.missionBonus)) || Number(value.missionBonus) < 0 || Number(value.missionBonus) > 0.2)) {
+        throw new Error("Espionage mission bonus is invalid.");
     }
     for (const key of ["suspicion", "rivalPressure", "foreignInsight", "marketInsight", "nobleInsight", "watchStrength"]) {
         if (value[key] !== undefined && (!Number.isFinite(Number(value[key])) || Number(value[key]) < 0 || Number(value[key]) > 100)) {
@@ -238,7 +284,8 @@ function realmRecords() {
 }
 
 function houseRecords() {
-    return (Array.isArray(state.nobility?.houses) ? state.nobility.houses : [])
+    const nobility = ensureNobility();
+    return (Array.isArray(nobility.houses) ? nobility.houses : [])
         .filter(house => house && house.id);
 }
 
@@ -254,11 +301,22 @@ function realmView(realm) {
     };
 }
 
+function feudSeverityFor(houseId) {
+    let severity = 0;
+    const feuds = Array.isArray(state.nobility?.feuds) ? state.nobility.feuds : [];
+    for (const feud of feuds) {
+        if (!feud || feud.status !== "active" || !Array.isArray(feud.houses)) continue;
+        if (feud.houses.map(String).includes(String(houseId))) severity = Math.max(severity, Number(feud.severity) || 0);
+    }
+    return severity;
+}
+
 function houseView(house) {
     return {
         id: String(house.id),
         familyName: cleanText(house.familyName || house.id, 80),
         loyalty: Math.round(Number(house.loyalty) || 0),
+        feudSeverity: feudSeverityFor(house.id),
         memberCount: Array.isArray(house.members) ? house.members.length : integer(house.memberCount, 0),
         status: cleanText(house.status || (Number(house.loyalty) < 30 ? "withholding" : "watching"), 24)
     };
@@ -267,8 +325,9 @@ function houseView(house) {
 function missionChance(agent) {
     const espionage = ensureEspionage();
     const difficulty = agent.desk === "foreign" ? 0.06 : agent.desk === "nobles" ? 0.04 : agent.desk === "market" ? 0.02 : 0;
+    const trailBonus = Number(espionage.missionBonusYear) >= yearNow() ? Number(espionage.missionBonus) || 0 : 0;
     return clamp(0.30 + (Number(agent.guile) - 50) / 150 + (Number(agent.cover) - 50) / 500
-        - Number(espionage.suspicion) / 300 - difficulty, 0.10, 0.92);
+        - Number(espionage.suspicion) / 300 - difficulty + trailBonus, 0.10, 0.92);
 }
 
 export function getEspionageEffects() {
@@ -353,6 +412,21 @@ export function getEspionageSnapshot() {
         nobleInsight: Math.round(clamp(espionage.nobleInsight, 0, INSIGHT_LIMIT)),
         watchStrength: Math.round(clamp(espionage.watchStrength, 0, INSIGHT_LIMIT)),
         totals: { ...espionage.totals },
+        plays: { ...espionage.plays },
+        lastPlays: {
+            warnHouse: espionage.lastPlays.warnHouse ? { ...espionage.lastPlays.warnHouse } : null,
+            concession: espionage.lastPlays.concession ? { ...espionage.lastPlays.concession } : null,
+            falseTrail: espionage.lastPlays.falseTrail ? { ...espionage.lastPlays.falseTrail } : null
+        },
+        costs: { warnHouse: WARN_HOUSE_COST, concession: CONCESSION_COST, falseTrail: FALSE_TRAIL_COST },
+        missionBonus: espionage.missionBonus,
+        missionBonusYear: espionage.missionBonusYear,
+        missionBonusActive: espionage.missionBonus > 0 && espionage.missionBonusYear >= year,
+        canWarn: espionage.plays.warnHouse < year && espionage.nobleInsight >= WARN_HOUSE_COST &&
+            houses.some(house => house.loyalty < 75 || house.feudSeverity > 0),
+        canConcession: espionage.plays.concession < year && espionage.foreignInsight >= CONCESSION_COST && realms.length > 0,
+        canFalseTrail: espionage.plays.falseTrail < year && espionage.marketInsight >= FALSE_TRAIL_COST,
+        warnCandidates: houses.filter(house => house.loyalty < 75 || house.feudSeverity > 0),
         reports: espionage.reports.map(report => ({ ...report })),
         history: espionage.history.map(entry => ({ ...entry })),
         lastAudit: espionage.lastAudit ? { ...espionage.lastAudit } : null,
@@ -486,6 +560,139 @@ export function screenCourt() {
     return {ok: true, revealed, snapshot: getEspionageSnapshot()};
 }
 
+function activeFeudFor(houseId) {
+    let strongest = null;
+    const feuds = Array.isArray(state.nobility?.feuds) ? state.nobility.feuds : [];
+    for (const feud of feuds) {
+        if (!feud || feud.status !== "active" || !Array.isArray(feud.houses)) continue;
+        if (!feud.houses.map(String).includes(String(houseId))) continue;
+        if (!strongest || Number(feud.severity) > Number(strongest.severity)) strongest = feud;
+    }
+    return strongest;
+}
+
+function spendInsight(espionage, key, cost) {
+    if (key === "noble") espionage.nobleInsight = Math.max(0, espionage.nobleInsight - cost);
+    else if (key === "market") espionage.marketInsight = Math.max(0, espionage.marketInsight - cost);
+    else espionage.foreignInsight = Math.max(0, espionage.foreignInsight - cost);
+    espionage.totals.plays += 1;
+    espionage.totals.insightSpent += cost;
+}
+
+function finishPlay(espionage, key, play) {
+    espionage.plays[key] = yearNow();
+    espionage.lastPlays[key] = {
+        year: play.year, play: play.play, targetId: play.targetId, targetName: play.targetName,
+        detail: play.detail, costInsight: play.costInsight, gold: play.gold || 0, food: play.food || 0
+    };
+    recordReport(espionage, {
+        desk: key === "warnHouse" ? "nobles" : key === "concession" ? "foreign" : "market",
+        kind: "play",
+        targetId: play.targetId,
+        targetName: play.targetName || "Whisper Court",
+        detail: play.detail,
+        gold: play.gold
+    });
+    addLog(play.headline, "#d8c18a", "espionage");
+    return {ok: true, ...play, snapshot: getEspionageSnapshot()};
+}
+
+/** Spend noble insight to warn a house: loyalty rises and its worst feud eases by one step. */
+export function warnHouse(houseId) {
+    const espionage = ensureEspionage();
+    const year = yearNow();
+    if (espionage.plays.warnHouse >= year) return {ok: false, reason: "already-warned-this-year"};
+    if (espionage.nobleInsight < WARN_HOUSE_COST) return {ok: false, reason: "not-enough-noble-insight"};
+    const house = houseRecords().find(entry => String(entry.id) === String(houseId));
+    if (!house) return {ok: false, reason: "no-such-house"};
+    const severity = feudSeverityFor(house.id);
+    if (Number(house.loyalty) >= 75 && severity <= 0) return {ok: false, reason: "house-is-not-threatened"};
+    const beforeLoyalty = Math.round(Number(house.loyalty) || 0);
+    house.loyalty = Math.round(clamp(beforeLoyalty + 6, 0, 100));
+    const feud = activeFeudFor(house.id);
+    if (feud) {
+        const beforeSeverity = Math.round(Number(feud.severity) || 0);
+        feud.severity = Math.round(clamp(beforeSeverity - 1, 0, 5));
+        feud.lastEscalationYear = year;
+        if (Array.isArray(feud.history)) {
+            feud.history.unshift({
+                year, kind: "warned",
+                summary: "The crown warned " + cleanText(house.familyName || house.id, 80) + "; severity " + beforeSeverity + " -> " + feud.severity + "."
+            });
+            feud.history = feud.history.slice(0, 12);
+        }
+    }
+    spendInsight(espionage, "noble", WARN_HOUSE_COST);
+    const name = cleanText(house.familyName || house.id, 80);
+    const detail = feud
+        ? name + " loyalty " + beforeLoyalty + " -> " + house.loyalty + "; feud severity " + Math.round(Number(feud.severity) || 0) + "."
+        : name + " loyalty " + beforeLoyalty + " -> " + house.loyalty + "; no active feud to ease.";
+    return finishPlay(espionage, "warnHouse", {
+        year, play: "warnHouse", targetId: String(house.id), targetName: name,
+        detail, costInsight: WARN_HOUSE_COST, gold: 0, food: 0,
+        headline: "HOUSE WARNED · " + name.toUpperCase() + " LOYALTY " + beforeLoyalty + " -> " + house.loyalty
+    });
+}
+
+/** Spend foreign insight to demand tribute from a realm through the existing trade partner. */
+export function demandConcession(realmId) {
+    const espionage = ensureEspionage();
+    const year = yearNow();
+    if (espionage.plays.concession >= year) return {ok: false, reason: "already-demanded-this-year"};
+    if (espionage.foreignInsight < CONCESSION_COST) return {ok: false, reason: "not-enough-foreign-insight"};
+    const realm = realmRecords().find(entry => String(entry.id) === String(realmId));
+    if (!realm) return {ok: false, reason: "no-such-realm"};
+    const partner = (Array.isArray(state.market?.partners) ? state.market.partners : [])
+        .find(entry => String(entry.id) === String(realm.id));
+    if (!partner) return {ok: false, reason: "no-trade-partner"};
+    const relation = Number(realm.relation) || 0;
+    const fear = Number(realm.fear) || 0;
+    const treasury = Math.max(0, integer(partner.treasury, 0));
+    const foodStock = Math.max(0, integer(partner.stock?.food, 0));
+    const gold = Math.min(treasury, Math.max(4, 8 + Math.round(relation / 8) + Math.round(fear / 12)));
+    const food = Math.min(foodStock, Math.max(2, 3 + Math.round(relation / 25)));
+    if (gold <= 0 && food <= 0) return {ok: false, reason: "nothing-left-to-concede"};
+    partner.treasury = treasury - gold;
+    if (!partner.stock || typeof partner.stock !== "object") partner.stock = {};
+    partner.stock.food = foodStock - food;
+    if (gold > 0) addResource("gold", gold);
+    if (food > 0) addResource("food", food);
+    realm.relation = Math.round(clamp(relation - 4, -100, 100));
+    realm.fear = Math.round(clamp(fear + 3, 0, 100));
+    spendInsight(espionage, "foreign", CONCESSION_COST);
+    espionage.totals.goldGained += gold;
+    espionage.totals.foodGained += food;
+    const name = realmNameOf(realm);
+    return finishPlay(espionage, "concession", {
+        year, play: "concession", targetId: String(realm.id), targetName: name,
+        detail: name + " yielded " + gold + " gold and " + food + " food; relation " + Math.round(relation) +
+            " -> " + realm.relation + ", fear " + Math.round(fear) + " -> " + realm.fear + ".",
+        costInsight: CONCESSION_COST, gold, food,
+        headline: "CONCESSION DEMANDED · +" + gold + " GOLD, +" + food + " FOOD"
+    });
+}
+
+/** Spend market insight on a false trail: rival pressure falls and next year's missions gain odds. */
+export function plantFalseTrail() {
+    const espionage = ensureEspionage();
+    const year = yearNow();
+    if (espionage.plays.falseTrail >= year) return {ok: false, reason: "already-planted-this-year"};
+    if (espionage.marketInsight < FALSE_TRAIL_COST) return {ok: false, reason: "not-enough-market-insight"};
+    const beforePressure = Math.round(Number(espionage.rivalPressure) || 0);
+    espionage.rivalPressure = Math.round(clamp(beforePressure - FALSE_TRAIL_PRESSURE_RELIEF, 0, 100));
+    espionage.suspicion = Math.round(clamp(Number(espionage.suspicion) - 4, 0, 100));
+    espionage.missionBonus = Math.max(Number(espionage.missionBonus) || 0, FALSE_TRAIL_BONUS);
+    espionage.missionBonusYear = year + 1;
+    spendInsight(espionage, "market", FALSE_TRAIL_COST);
+    return finishPlay(espionage, "falseTrail", {
+        year, play: "falseTrail", targetId: "rival-courts", targetName: "Rival courts",
+        detail: "A false trail cut rival pressure " + beforePressure + " -> " + espionage.rivalPressure +
+            "; next year's missions gain +" + Math.round(FALSE_TRAIL_BONUS * 100) + "% success.",
+        costInsight: FALSE_TRAIL_COST, gold: 0, food: 0,
+        headline: "FALSE TRAIL PLANTED · RIVAL PRESSURE " + beforePressure + " -> " + espionage.rivalPressure
+    });
+}
+
 export function updateEspionage() {
     const espionage = ensureEspionage();
     const year = yearNow();
@@ -526,7 +733,7 @@ export function updateEspionage() {
         .filter(agent => agent.desk === "counter")
         .reduce((sum, agent) => sum + Number(agent.guile || 0), 0);
     const missionAgents = espionage.agents.filter(agent => agent.desk && agent.desk !== "counter");
-    espionage.suspicion = Math.round(clamp(Number(espionage.suspicion) + missionAgents.length * 2.5 - counterGuile * 0.09, 0, 100));
+    espionage.suspicion = Math.round(clamp(Number(espionage.suspicion) + missionAgents.length * 2.5 - counterGuile * 0.16, 0, 100));
 
     // Rival courts watch the crown's network. Pressure builds from active
     // missions and suspicion, falls with counter-intelligence, and can turn a
@@ -674,6 +881,10 @@ export function updateEspionage() {
 
     espionage.totals.missions += missions;
     espionage.suspicion = Math.round(clamp(Number(espionage.suspicion) - 1, 0, 100));
+    if (espionage.missionBonusYear && year >= espionage.missionBonusYear) {
+        espionage.missionBonus = 0;
+        espionage.missionBonusYear = 0;
+    }
     espionage.lastUpdateYear = year;
     const audit = {
         year,

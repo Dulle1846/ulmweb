@@ -28,7 +28,8 @@ itself. Each field agent attempts one mission per year.
 ## Suspicion and exposure
 
 - Every field mission adds suspicion; failures add more.
-- Counter-intelligence agents subtract suspicion before missions resolve.
+- Counter-intelligence agents subtract suspicion before missions resolve; a
+  heavy counter desk can hold a working network at low suspicion.
 - At 50 or more suspicion, a failed mission can cost the agent and trigger a
   diplomatic incident: the target realm's relation with the crown falls.
 - Unpaid wages lower loyalty and can drive an agent out of the court.
@@ -54,10 +55,28 @@ year (watch strength fades by 10%). Missions add to the faded base, so an idle
 court slowly loses its edge. The player sees the exact effect of each reading in
 the WHISPERS panel: raid warning, market terms, plots exposed and street calm.
 
+## Actionable intelligence
+
+Insight is a resource, not only a passive modifier. The panel spends one pool on
+one concrete play; every play is limited to once per year and records its last
+result on its card.
+
+| Play | Cost | Real effect |
+| --- | --- | --- |
+| **Warn a threatened house** | 8 noble insight | Raises the house's loyalty by 6 and eases its worst active feud by one step. Available for a house below 75 loyalty or already in a feud. |
+| **Demand a concession** | 10 foreign insight | Moves gold and food out of the target realm's existing trade treasury and stock into the crown's stores. The realm resents it: relation falls 4 and fear rises 3. |
+| **Plant a false trail** | 8 market insight | Cuts rival pressure by 18, lowers suspicion by 4 and gives every mission in the next annual audit +8% success odds. |
+
+Plays refuse to run when the pool is short, when the target is missing or when
+the play was already used this year. The mission bonus is consumed by the next
+annual audit. Effects flow through the existing nobility, diplomacy, market and
+resource systems; no parallel economy is created.
+
 ## Persistence
 
-`state.espionage` stores agents, reports, annual history, insight, suspicion and
-totals. It is additive and optional: current saves keep schema 12. A save
+`state.espionage` stores agents, reports, annual history, insight, suspicion,
+totals, play cooldowns (`plays`), the last result of each play (`lastPlays`) and
+the pending false-trail mission bonus. It is additive and optional: current saves keep schema 12. A save
 without the block normalizes to a quiet empty court with zero insight, so legacy
 realms gain no retroactive agents or effects.
 
