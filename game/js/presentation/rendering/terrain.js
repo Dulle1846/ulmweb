@@ -120,6 +120,88 @@ export function drawTerrain(ctx) {
     drawSpecialBiomeOverlay(ctx, zoom, cam, canvas);
 }
 
+// Seasonal land tint over the baked colour field. The base raster is authored
+// once; a tiny low-resolution wash keeps the terrain colours in step with the
+// calendar without touching the height field, save data or simulation. It is
+// drawn over the visible crop instead of baking a second full-size canvas, so
+// the software path never pays for a 500k-pixel copy on a season boundary.
+let seasonalOverlay = null;
+let seasonalOverlayBase = null;
+let seasonalOverlayKey = "";
+function seasonalTintOverlay() {
+    const base = state.terrainCanvas;
+    if (!base) return null;
+    const day = Number.isFinite(Number(state.dayOfYear))
+        ? Number(state.dayOfYear)
+        : (Number(state.seasonIndex) || 0) * 100;
+    const climateKey = state.worldOptions?.climate || "temperate";
+    const season = seasonalState(day, climateKey);
+    const dayBucket = Math.floor(day / 40);
+    const key = [state.worldEpoch, state.terrainVersion, base.width, base.height,
+        dayBucket, climateKey, season.season].join("|");
+    if (base !== seasonalOverlayBase) {
+        seasonalOverlayBase = base;
+        seasonalOverlayKey = "";
+    }
+    if (seasonalOverlayKey === key) return seasonalOverlay;
+    seasonalOverlayKey = key;
+    seasonalOverlay = null;
+
+    const heights = state.heightMap;
+    const sea = state.seaLevel ?? 0.33;
+    const pixW = Number(state.terrainPixW) || base.width;
+    const snow = season.snowCover;
+    const turn = season.foliageTurn;
+    const warmth = season.warmth;
+    const green = season.greenUp;
+    const tint = snow > 0.02
+        ? [218, 228, 236]
+        : turn > 0.02
+            ? [154, 96, 38]
+            : warmth > 0.02 ? [176, 148, 64] : [104, 136, 62];
+    const strength = snow > 0.02
+        ? snow * 0.34
+        : turn > 0.02
+            ? turn * 0.36
+            : warmth > 0.02 ? warmth * 0.15 : green * 0.07;
+    if (strength <= 0.001 || !heights) return null;
+
+    const scale = 4;
+    const ow = Math.max(1, Math.ceil(base.width / scale));
+    const oh = Math.max(1, Math.ceil(base.height / scale));
+    if (!seasonalOverlay || seasonalOverlay.width !== ow || seasonalOverlay.height !== oh) {
+        seasonalOverlay = document.createElement("canvas");
+        seasonalOverlay.width = ow;
+        seasonalOverlay.height = oh;
+    }
+    const octx = seasonalOverlay.getContext("2d");
+    const image = octx.createImageData(ow, oh);
+    const pixels = image.data;
+    for (let ty = 0; ty < oh; ty++) {
+        const py = Math.min(base.height - 1, Math.floor((ty + 0.5) * base.height / oh));
+        for (let tx = 0; tx < ow; tx++) {
+            const px = Math.min(base.width - 1, Math.floor((tx + 0.5) * base.width / ow));
+            const h = heights[py * pixW + px];
+            if (h === undefined || h < sea) continue;
+            // Frost settles first on high, exposed ground; the low meadow keeps
+            // a little green under the wash so winter is not a flat white disc.
+            const altitude = Math.max(0, Math.min(1, (h - sea - 0.03) * 7));
+            const drift = snow > 0.02
+                ? 0.62 + 0.38 * (0.5 + 0.5 * Math.sin(px * 0.024 + py * 0.018))
+                : 1;
+            const amount = strength * drift * (snow > 0.02 ? 0.55 + altitude * 0.75 : 1);
+            const alpha = Math.min(0.42, amount);
+            const i = (ty * ow + tx) * 4;
+            pixels[i] = tint[0];
+            pixels[i + 1] = tint[1];
+            pixels[i + 2] = tint[2];
+            pixels[i + 3] = Math.round(alpha * 255);
+        }
+    }
+    octx.putImageData(image, 0, 0);
+    return seasonalOverlay;
+}
+
 function drawBakedGround(ctx, zoom, cam, canvas, quality = "high") {
     // The Canvas field is the production ground. Smoothing stays on even at
     // the closest zoom; a hard nearest-neighbour switch was the main source of
@@ -154,14 +236,19 @@ function drawBakedGround(ctx, zoom, cam, canvas, quality = "high") {
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = quality;
-    ctx.drawImage(
-        tc,
-        sx, sy, sw, sh,
-        Math.floor((sx / res) * pxPerWorld - cam.x),
-        Math.floor((sy / res) * pxPerWorld - cam.y),
-        Math.ceil((sw / res) * pxPerWorld),
-        Math.ceil((sh / res) * pxPerWorld)
-    );
+    const destX = Math.floor((sx / res) * pxPerWorld - cam.x);
+    const destY = Math.floor((sy / res) * pxPerWorld - cam.y);
+    const destW = Math.ceil((sw / res) * pxPerWorld);
+    const destH = Math.ceil((sh / res) * pxPerWorld);
+    ctx.drawImage(tc, sx, sy, sw, sh, destX, destY, destW, destH);
+    const tint = seasonalTintOverlay();
+    if (tint) {
+        const ox = sx * tint.width / tc.width;
+        const oy = sy * tint.height / tc.height;
+        const ow = sw * tint.width / tc.width;
+        const oh = sh * tint.height / tc.height;
+        ctx.drawImage(tint, ox, oy, ow, oh, destX, destY, destW, destH);
+    }
     ctx.restore();
 }
 
@@ -1677,15 +1764,20 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
 // after upscaling; without this grain the Canvas2D path reads as a flat
 // gradient even though the authored colours are sound. The tile is generated
 // once and reused, so there is no per-frame noise work.
-let paperToothTile = null;
-function paperToothPattern(ctx) {
-    if (!paperToothTile) {
-        const size = 160;
-        paperToothTile = document.createElement("canvas");
-        paperToothTile.width = size;
-        paperToothTile.height = size;
-        const pctx = paperToothTile.getContext("2d");
-        const image = pctx.createImageData(size, size);
+// The tooth is generated once at viewport size instead of tiled. A repeating
+// 160px pattern left a visible straight seam every tile boundary when it was
+// composited with soft-light; a full-view image cannot seam at all and is
+// cached until the backing canvas changes size.
+let paperToothCanvas = null;
+let paperToothW = 0;
+let paperToothH = 0;
+function paintPaperTooth(ctx, width, height) {
+    if (!paperToothCanvas || paperToothW !== width || paperToothH !== height) {
+        paperToothCanvas = document.createElement("canvas");
+        paperToothCanvas.width = width;
+        paperToothCanvas.height = height;
+        const pctx = paperToothCanvas.getContext("2d");
+        const image = pctx.createImageData(width, height);
         let seed = 0x9e3779b9;
         for (let i = 0; i < image.data.length; i += 4) {
             seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
@@ -1696,17 +1788,12 @@ function paperToothPattern(ctx) {
             image.data[i + 3] = 40;
         }
         pctx.putImageData(image, 0, 0);
+        paperToothW = width;
+        paperToothH = height;
     }
-    return ctx.createPattern(paperToothTile, "repeat");
-}
-
-function paintPaperTooth(ctx, width, height) {
-    const pattern = paperToothPattern(ctx);
-    if (!pattern) return;
     ctx.save();
     ctx.globalCompositeOperation = "soft-light";
-    ctx.fillStyle = pattern;
-    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(paperToothCanvas, 0, 0);
     ctx.restore();
 }
 
@@ -1746,28 +1833,70 @@ function drawCoastCell(ctx, x, y, stride, cellPx, cam, sea) {
         ctx.moveTo(points[2].x, points[2].y);
         ctx.lineTo(points[3].x, points[3].y);
     }
-    ctx.strokeStyle = "rgba(226,214,174,0.20)";
-    ctx.lineWidth = Math.max(1.6, cellPx * 0.11);
+    ctx.strokeStyle = "rgba(226,214,174,0.18)";
+    ctx.lineWidth = Math.max(1.8, cellPx * 0.10);
     ctx.stroke();
-    ctx.strokeStyle = "rgba(31,45,31,0.52)";
-    ctx.lineWidth = Math.max(0.8, cellPx * 0.06);
+    ctx.strokeStyle = "rgba(26,40,27,0.66)";
+    ctx.lineWidth = Math.max(1.05, cellPx * 0.065);
     ctx.stroke();
 }
 
-// Map-scale ink: a dark coastal edge with a pale beach rim, plus short
-// contour dashes wherever the height crosses a topographic band. Both are
+// A contour-cell segment at one exact height level. Neighbouring cells share
+// their corner heights, so the endpoints meet and the cached layer carries a
+// continuous ink line instead of a field of disconnected dashes.
+function drawContourCell(ctx, x, y, stride, cellPx, cam, level, major, corners) {
+    const xs = [x, x + stride, x + stride, x];
+    const ys = [y, y, y + stride, y + stride];
+    const hs = corners || [
+        getHeightAt(x + 0.5, y + 0.5),
+        getHeightAt(x + stride + 0.5, y + 0.5),
+        getHeightAt(x + stride + 0.5, y + stride + 0.5),
+        getHeightAt(x + 0.5, y + stride + 0.5),
+    ];
+    const above = hs.map(h => h >= level);
+    const count = above.reduce((sum, value) => sum + (value ? 1 : 0), 0);
+    if (count === 0 || count === 4) return;
+    const points = [];
+    const edge = (a, b) => {
+        if (above[a] === above[b]) return;
+        const t = Math.max(0, Math.min(1, (level - hs[a]) / (hs[b] - hs[a])));
+        points.push({
+            x: (xs[a] + (xs[b] - xs[a]) * t) * cellPx - cam.x,
+            y: (ys[a] + (ys[b] - ys[a]) * t) * cellPx - cam.y,
+        });
+    };
+    edge(0, 1); edge(1, 2); edge(2, 3); edge(3, 0);
+    if (points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    ctx.lineTo(points[1].x, points[1].y);
+    if (points.length === 4) {
+        ctx.moveTo(points[2].x, points[2].y);
+        ctx.lineTo(points[3].x, points[3].y);
+    }
+    ctx.strokeStyle = major ? "rgba(37,36,26,0.32)" : "rgba(40,44,28,0.15)";
+    ctx.lineWidth = major ? 1.45 : 0.9;
+    ctx.stroke();
+}
+
+// Map-scale ink: a dark coastal edge with a pale beach rim, plus contour
+// segments wherever the height crosses an exact topographic level. Both are
 // drawn into the cached detail layer, so the cost is paid once per settled
 // view and never per frame. The loop is resumable and bounded by the screen.
 function drawGroundInk(ctx, zoom, cam, canvas, cursor = null, deadline = Infinity) {
     if (!state.heightMap) return true;
     const cellPx = CELL * zoom;
     if (!(cellPx > 0)) return true;
-    const showContours = zoom <= 0.72;
+    const showContours = zoom <= 0.55;
     const showCoast = zoom <= 0.8;
     if (!showContours && !showCoast) return true;
     const W = worldW(), H = worldH();
     const sea = state.seaLevel ?? 0.33;
-    const stride = cellPx < 5 ? 2 : 1;
+    // One tile per sample is what keeps the interpolated coast smooth at the
+    // whole-kingdom view. Skipping every other tile made the far shoreline
+    // visibly stepped; inland cells are cheap to reject below without paying
+    // for four corner samples.
+    const stride = 1;
     const startX = Math.max(0, Math.floor(cam.x / cellPx) - 2);
     const startY = Math.max(0, Math.floor(cam.y / cellPx) - 2);
     const endX = Math.min(W, Math.ceil((cam.x + canvas.width) / cellPx) + 2);
@@ -1786,45 +1915,29 @@ function drawGroundInk(ctx, zoom, cam, canvas, cursor = null, deadline = Infinit
             }
             if (!state.explored[x]?.[y]) continue;
             const h = getHeightAt(x + 0.5, y + 0.5);
-            const px = x * cellPx - cam.x;
-            const py = y * cellPx - cam.y;
+            const right = getHeightAt(x + stride + 0.5, y + 0.5);
+            const down = getHeightAt(x + 0.5, y + stride + 0.5);
+            const downRight = getHeightAt(x + stride + 0.5, y + stride + 0.5);
+            const nearSea = Math.abs(h - sea) < 0.08
+                || ((h >= sea) !== (right >= sea))
+                || ((h >= sea) !== (down >= sea));
 
-            if (showCoast) drawCoastCell(ctx, x, y, stride, cellPx, cam, sea);
+            if (showCoast && nearSea) drawCoastCell(ctx, x, y, stride, cellPx, cam, sea);
+
+            // Bathymetry is already painted into the baked sea. Drawing land
+            // contours over water turned the whole ocean into a scribbled
+            // topographic sheet; keep the paper sea clean.
+            if (h < sea) continue;
 
             if (showContours) {
-                const band = Math.floor((h - sea) * 28);
-                const right = getHeightAt(x + stride + 0.5, y + 0.5);
-                const down = getHeightAt(x + 0.5, y + stride + 0.5);
-                if (band !== Math.floor((right - sea) * 28) || band !== Math.floor((down - sea) * 28)) {
-                    const dx = right - h;
-                    const dy = down - h;
-                    if (Math.abs(dx) + Math.abs(dy) > 0.0001) {
-                        const angle = Math.atan2(dy, dx) + Math.PI * 0.5;
-                        const length = Math.min(cellPx * stride * (band % 4 === 0 ? 1.5 : 1.1), 12);
-                        const cx = px + cellPx * stride * 0.5;
-                        const cy = py + cellPx * stride * 0.5;
-                        ctx.strokeStyle = band % 4 === 0 ? "rgba(42,54,33,0.30)" : "rgba(48,64,40,0.16)";
-                        ctx.lineWidth = band % 4 === 0 ? 1.4 : 0.9;
-                        ctx.beginPath();
-                        ctx.moveTo(cx - Math.cos(angle) * length * 0.5, cy - Math.sin(angle) * length * 0.5);
-                        ctx.lineTo(cx + Math.cos(angle) * length * 0.5, cy + Math.sin(angle) * length * 0.5);
-                        ctx.stroke();
-                    }
-                }
-                // Sparse downhill hachures give a slope a readable direction
-                // even where the contour bands are far apart. They are short
-                // pen ticks, not another full-screen line layer.
-                if (Math.abs(right - h) + Math.abs(down - h) > 0.016) {
-                    const cx = px + cellPx * stride * 0.5;
-                    const cy = py + cellPx * stride * 0.5;
-                    const angle = Math.atan2(down - h, right - h);
-                    const length = Math.min(cellPx * stride * 0.7, 7);
-                    ctx.strokeStyle = "rgba(39,55,33,0.13)";
-                    ctx.lineWidth = 0.8;
-                    ctx.beginPath();
-                    ctx.moveTo(cx - Math.cos(angle) * length * 0.5, cy - Math.sin(angle) * length * 0.5);
-                    ctx.lineTo(cx + Math.cos(angle) * length * 0.5, cy + Math.sin(angle) * length * 0.5);
-                    ctx.stroke();
+                const bands = 22;
+                const minH = Math.min(h, right, down, downRight);
+                const maxH = Math.max(h, right, down, downRight);
+                const first = Math.max(0, Math.floor((minH - sea) * bands) + 1);
+                const last = Math.min(bands - 1, Math.floor((maxH - sea) * bands));
+                const corners = [h, right, downRight, down];
+                for (let band = first; band <= last && band - first < 3; band++) {
+                    drawContourCell(ctx, x, y, stride, cellPx, cam, sea + band / bands, band % 5 === 0, corners);
                 }
             }
         }
@@ -1839,33 +1952,51 @@ function drawGroundInk(ctx, zoom, cam, canvas, cursor = null, deadline = Infinit
 // give the green wash an authored hand-drawn texture; occasional flowers and
 // stones break up the lattice. Everything is deterministic and only drawn in
 // the cached detail raster.
-function drawGroundPen(ctx, px, py, cellPx, a, b, moisture, temperature) {
-    const cold = temperature < 0.3;
-    const dry = moisture < 0.4;
-    const lush = moisture > 0.68;
-    const ink = cold ? "76,102,110" : dry ? "112,96,52" : lush ? "24,52,26" : "42,70,34";
-    const light = cold ? "226,240,246" : dry ? "206,190,132" : "154,184,112";
-    const clusters = cellPx >= 30 ? 2 : 1;
+function drawGroundPen(ctx, px, py, cellPx, a, b, moisture, temperature, snowCover = 0) {
+    const cold = snowCover > 0.2 || temperature < 0.3;
+    const dry = moisture < 0.28;
+    const lush = moisture > 0.58;
+    const ink = cold ? "62,88,98" : dry ? "104,84,42" : lush ? "18,42,19" : "34,58,26";
+    const light = cold ? "226,240,246" : dry ? "206,190,132" : "142,176,96";
+    const clusters = cellPx >= 30 ? 3 : 1;
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     for (let cluster = 0; cluster < clusters; cluster++) {
         const cs = ((a * 131 + b * 67 + cluster * 43) % 1 + 1) % 1;
-        const bx = px + cellPx * (0.18 + cs * 0.62);
-        const by = py + cellPx * (0.38 + ((cs * 7) % 1) * 0.40);
-        for (let i = 0; i < 3; i++) {
+        const bx = px + cellPx * (0.16 + cs * 0.66);
+        const by = py + cellPx * (0.40 + ((cs * 7) % 1) * 0.38);
+        ctx.fillStyle = `rgba(${ink},0.10)`;
+        ctx.beginPath();
+        ctx.ellipse(bx, by + cellPx * 0.035, cellPx * 0.11, cellPx * 0.035, 0, 0, Math.PI * 2);
+        ctx.fill();
+        for (let i = 0; i < 4; i++) {
             const s = ((a * 97 + b * 57 + cluster * 19 + i * 31) % 1 + 1) % 1;
-            const rx = bx + (s - 0.5) * cellPx * 0.16;
-            const ry = by + (s - 0.5) * cellPx * 0.06;
-            const height = cellPx * (0.14 + ((s * 13) % 1) * 0.17);
-            const lean = (s - 0.5) * cellPx * 0.34;
+            const rx = bx + (s - 0.5) * cellPx * 0.10;
+            const ry = by + (s - 0.5) * cellPx * 0.04;
+            const height = cellPx * (0.07 + ((s * 13) % 1) * 0.09);
+            const lean = (s - 0.5) * cellPx * 0.22;
             ctx.strokeStyle = i === 0
-                ? `rgba(${ink},0.38)`
-                : `rgba(${light},0.26)`;
-            ctx.lineWidth = Math.max(0.8, cellPx * 0.022);
+                ? `rgba(${ink},0.62)`
+                : i === 1 ? `rgba(${ink},0.46)`
+                    : i === 2 ? `rgba(${ink},0.28)` : `rgba(${light},0.40)`;
+            ctx.lineWidth = Math.max(1.05, cellPx * 0.030);
             ctx.beginPath();
             ctx.moveTo(rx, ry);
             ctx.quadraticCurveTo(rx + lean * 0.35, ry - height * 0.58, rx + lean, ry - height);
+            ctx.stroke();
+        }
+        // A settled drift of snow lies across the winter stubble. Two pale
+        // strokes per cluster keep the cold ground from flattening into a
+        // single mint wash while still reading as pen, not texture noise.
+        if (cold && cellPx >= 22) {
+            const sx = px + cellPx * (0.14 + ((cs * 11) % 1) * 0.62);
+            const sy = py + cellPx * (0.55 + ((cs * 17) % 1) * 0.25);
+            ctx.strokeStyle = "rgba(232,242,246,0.34)";
+            ctx.lineWidth = Math.max(0.9, cellPx * 0.018);
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.quadraticCurveTo(sx + cellPx * 0.10, sy - cellPx * 0.02, sx + cellPx * 0.22, sy + cellPx * 0.01);
             ctx.stroke();
         }
     }
@@ -1893,9 +2024,17 @@ function drawGroundPen(ctx, px, py, cellPx, a, b, moisture, temperature) {
 function drawGroundGrain(ctx, zoom, cam, canvas, cursor = null, deadline = Infinity) {
     if (!state.heightMap) return true;
     const cellPx = CELL * zoom;
+    // The pen is a close-range layer. At district zoom the grass and object
+    // passes already carry the detail; skipping this loop keeps the dense
+    // mature-realm slice inside the long-task budget.
+    if (zoom < 0.85) return true;
     if (cellPx < 14) return true;
     const W = worldW(), H = worldH();
     const sea = state.seaLevel ?? 0.33;
+    const snowCover = seasonalState(
+        Number.isFinite(Number(state.dayOfYear)) ? Number(state.dayOfYear) : 40,
+        state.worldOptions?.climate || "temperate",
+    ).snowCover;
     const startX = Math.max(0, Math.floor(cam.x / cellPx) - 1);
     const startY = Math.max(0, Math.floor(cam.y / cellPx) - 1);
     const endX = Math.min(W, Math.ceil((cam.x + canvas.width) / cellPx) + 1);
@@ -1922,22 +2061,7 @@ function drawGroundGrain(ctx, zoom, cam, canvas, cursor = null, deadline = Infin
             const px = x * cellPx - cam.x;
             const py = y * cellPx - cam.y;
 
-            const dry = m < 0.42;
-            const cold = temp < 0.3;
-            const tone = cold ? "235,242,246" : dry ? "226,206,150" : m > 0.66 ? "22,50,26" : "42,74,38";
-            ctx.fillStyle = `rgba(${tone},${0.028 + a * 0.04})`;
-            const size = cellPx * (0.14 + b * 0.24);
-            ctx.fillRect(px + a * cellPx * 0.62, py + b * cellPx * 0.52, size, size * (0.65 + a * 0.6));
-
-            if (zoom >= 0.55) drawGroundPen(ctx, px, py, cellPx, a, b, m, temp);
-            if (zoom >= 0.9 && a > 0.55) {
-                ctx.fillStyle = `rgba(${cold ? "250,252,255" : "14,32,16"},${0.05 + b * 0.06})`;
-                for (let i = 0; i < 2; i++) {
-                    const sx = px + ((a * 13 + i * 7) % 10) / 10 * cellPx;
-                    const sy = py + ((b * 17 + i * 11) % 10) / 10 * cellPx;
-                    ctx.fillRect(sx, sy, Math.max(1, cellPx * 0.05), Math.max(1, cellPx * 0.03));
-                }
-            }
+            if (zoom >= 0.85) drawGroundPen(ctx, px, py, cellPx, a, b, m, temp, snowCover);
         }
         if (cursor) cursor.x = x + 1;
         y = startY;
