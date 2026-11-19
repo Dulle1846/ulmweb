@@ -1,7 +1,7 @@
 // Build the runtime-only static package consumed by the Pages deployment.
 // The game is intentionally static: no bundler or Worker runtime is involved.
 import { execFileSync } from "node:child_process";
-import { cp, mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,7 +22,9 @@ function gitValue(args) {
     }
 }
 
+const packageInfo = JSON.parse(await readFile(join(GAME_ROOT, "package.json"), "utf8"));
 const buildInfo = {
+    version: packageInfo.version,
     commit: process.env.GITHUB_SHA || process.env.CF_PAGES_COMMIT_SHA || process.env.BUILD_COMMIT || gitValue(["rev-parse", "HEAD"]) || "unknown",
     branch: process.env.GITHUB_REF_NAME || process.env.CF_PAGES_BRANCH || process.env.BUILD_BRANCH || gitValue(["rev-parse", "--abbrev-ref", "HEAD"]) || "unknown",
     builtAt: new Date().toISOString(),
