@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.30.0`
+**Current production version:** `3.30.1`
 **Next development line:** `3.31.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,32 @@
 **Last repository verification:** 2026-11-19 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.30.1 — Bounded Seasonal Rollover
+
+A season change on the loaded 25-year realm no longer lands as one long task.
+
+- The true spike was the first winter settlement pass: `updateSettlement`
+  resolved a warehouse path for every household at once (31.5 ms alone), and
+  the seasonal crown grain settlement added another block on the same tick.
+  A normal day could also combine fields, forest fauna, building income and
+  logistics into a 50.8 ms frame.
+- Every presented daily tick now runs in bounded slices at the existing annual
+  maintenance frame boundary: service coverage, household needs, winter/crown,
+  population, land, economy and realm. The exact original call order is kept;
+  empty slices collapse in the same frame so ordinary days keep their previous
+  pace. Headless callers still execute one complete synchronous tick.
+- The seasonal atlas revision and `kac:season-change` event still fire in the
+  first frame, so the new season is visible immediately. No render path,
+  terrain/forest reference, save field or deterministic random draw changed.
+- The advanced performance gate now requires the loaded quiet phase to cross
+  at least one season boundary and uses a 40 s window so the proof cannot pass
+  without a rollover. The 4x CPU-throttled, 70 % scale, speed-4 run completed
+  three consecutive times with zero long tasks and zero frames over 50 ms;
+  the quiet phase crossed two seasons and the dense phase one.
+- The deterministic 25-year campaign is unchanged: 10,040 ticks, year 26,
+  74 residents, all requirements true. The complete suite passes 1,265/1,265,
+  and the regenerated specification audit remains green.
 
 ## 3.30.0 — Hand-Drawn Forest Canopies
 

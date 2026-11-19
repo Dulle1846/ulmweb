@@ -30,6 +30,10 @@ const RENDER_SCALE = Number(process.env.PERF_RENDER_SCALE || 70);
 const GAME_SPEED = Number(process.env.PERF_GAME_SPEED || 4);
 const TARGET_YEARS = Number(process.env.PERF_YEARS || 2);
 const QUIET_MS = Number(process.env.PERF_QUIET_MS || 8000);
+// The mature realm needs a longer window to cross a season boundary after the
+// daily tick was sliced into bounded phases. This is a stronger sample, not a
+// relaxed gate: every extra frame still has to meet the same budgets.
+const ADVANCED_QUIET_MS = Number(process.env.PERF_QUIET_MS || 40000);
 const DENSE_MS = Number(process.env.PERF_DENSE_MS || 10000);
 const PANEL_MS = Number(process.env.PERF_PANEL_MS || 8000);
 const WAR_MS = Number(process.env.PERF_WAR_MS || 8000);
@@ -251,7 +255,12 @@ page.on("console", message => {
 // frames while a management dialog suppresses world drawing. It only stores
 // timestamps, so it cannot affect layout or gameplay.
 await page.addInitScript(() => {
-    window.__KAC_PERF = { raf: [], longTasks: [], tickMs: [], uiChunkMs: [], friendlyMs: [], logisticsMs: [], workMs: [], draws: [] };
+    window.__KAC_PERF = { raf: [], longTasks: [], tickMs: [], uiChunkMs: [], friendlyMs: [], logisticsMs: [], workMs: [], draws: [], seasons: [] };
+    window.addEventListener("kac:season-change", event => {
+        if (window.__KAC_PERF.seasons.length < 1000) {
+            window.__KAC_PERF.seasons.push({ at: performance.now(), ...(event.detail || {}) });
+        }
+    });
     window.__KAC_SIM_TIMES = {};
     window.__KAC_SIM_SAMPLES = {};
     window.__KAC_SIM_ROWS = {};
@@ -646,6 +655,8 @@ function summarizePhase(name, payload) {
         over50Pct: intervals.length ? Math.round(intervals.filter(value => value > 50).length / intervals.length * 100000) / 1000 : null,
         longTasks: payload.longTasks.length,
         longTaskMaxMs: payload.longTasks.length ? Math.round(Math.max(...payload.longTasks.map(entry => entry.duration)) * 1000) / 1000 : 0,
+        seasonChanges: Array.isArray(payload.seasons) ? payload.seasons.length : 0,
+        seasonDays: Array.isArray(payload.seasons) ? payload.seasons.map(entry => entry.day) : [],
         tickSamples: tickSorted.length,
         medianTickMs: percentile(tickSorted, 0.5),
         p95TickMs: percentile(tickSorted, 0.95),
@@ -719,6 +730,7 @@ async function samplePhase(name, durationMs) {
         perf.workMs.length = 0;
         perf.draws.length = 0;
         perf.longTasks.length = 0;
+        perf.seasons.length = 0;
         if (state.performanceProbe) {
             state.performanceProbe.frames.length = 0;
             state.performanceProbe.lastPresentedAt = 0;
@@ -741,6 +753,7 @@ async function samplePhase(name, durationMs) {
             draws: perf.draws.slice(),
             probeFrames: state.performanceProbe?.frames?.slice() || [],
             longTasks: perf.longTasks.filter(entry => entry.startTime >= phaseStarted),
+            seasons: perf.seasons.filter(entry => entry.at >= phaseStarted),
             state: {
                 year: Number(state.year) || 0,
                 tick: Number(state.tick) || 0,
@@ -1117,7 +1130,7 @@ try {
         await cdp.send("Profiler.setSamplingInterval", { interval: 100 });
         await cdp.send("Profiler.start");
     }
-    const quiet = await samplePhase(advancedFixture ? "quiet-loaded-advanced-realm" : "quiet-early-realm", QUIET_MS);
+    const quiet = await samplePhase(advancedFixture ? "quiet-loaded-advanced-realm" : "quiet-early-realm", advancedFixture ? ADVANCED_QUIET_MS : QUIET_MS);
     const simBreakdown = process.env.PERF_SIM_BREAKDOWN === "1"
         ? await page.evaluate(() => {
             const out = {};
@@ -1138,6 +1151,26 @@ try {
                 out[name] = rows.filter(row => row.ms >= 4).slice(-30);
             }
             return out;
+        })
+        : null;
+    const simTickTotals = process.env.PERF_SIM_BREAKDOWN === "1"
+        ? await page.evaluate(() => {
+            const ticks = new Map();
+            for (const [name, rows] of Object.entries(globalThis.__KAC_SIM_ROWS || {})) {
+                for (const row of rows) {
+                    const tick = Number(row.tick) || 0;
+                    const entry = ticks.get(tick) || { tick, totalMs: 0, parts: {} };
+                    entry.totalMs += Number(row.ms) || 0;
+                    if (Number(row.ms) >= 1) {
+                        entry.parts[name] = Math.round((entry.parts[name] || 0) * 100 + Number(row.ms) * 100) / 100;
+                    }
+                    ticks.set(tick, entry);
+                }
+            }
+            return [...ticks.values()]
+                .sort((a, b) => b.totalMs - a.totalMs)
+                .slice(0, 12)
+                .map(entry => ({ ...entry, totalMs: Math.round(entry.totalMs * 100) / 100, day: entry.tick % 400, season: Math.floor((entry.tick % 400) / 100) }));
         })
         : null;
     if (profileSession) {
@@ -1299,6 +1332,7 @@ try {
         simBreakdown,
         simMaxBreakdown,
         simRows,
+        simTickTotals,
         denseSimRows,
         saveLoad,
         pageErrors: errors,
@@ -1323,6 +1357,9 @@ if (summary) {
         if (phase.over33Pct === null || phase.over33Pct > BUDGET.over33Pct * 100) failures.push(phase.name + " frames over 33ms " + phase.over33Pct + "% exceeds " + (BUDGET.over33Pct * 100) + "%");
         if (phase.over50Pct === null || phase.over50Pct > BUDGET.over50Pct * 100) failures.push(phase.name + " frames over 50ms " + phase.over50Pct + "% exceeds " + (BUDGET.over50Pct * 100) + "%");
         if (phase.longTasks > BUDGET.longTasks) failures.push(phase.name + " has " + phase.longTasks + " long tasks");
+        if (advancedFixture && phase.name === "quiet-loaded-advanced-realm" && phase.seasonChanges < 1) {
+            failures.push(phase.name + " did not cross a season boundary");
+        }
         if (TAIGA_SCENES && phase.name.startsWith("taiga-")) {
             if (phase.drawCallsP95 === null || phase.drawCallsP95 > BUDGET.taigaDrawCalls) failures.push(phase.name + " draw calls p95 " + phase.drawCallsP95 + " exceeds " + BUDGET.taigaDrawCalls);
             if (phase.entitiesP95 === null || phase.entitiesP95 > BUDGET.taigaEntities) failures.push(phase.name + " visible entities p95 " + phase.entitiesP95 + " exceeds " + BUDGET.taigaEntities);

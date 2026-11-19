@@ -34,7 +34,7 @@ import { updateForestSuccession } from "../systems/forest-succession.js";
 import { updateForestPannage } from "../systems/forest-pannage.js";
 import { syncBiomeDiscovery, updateBiomeAtlasAnnual, updateBiomeAtlasSeason } from "../systems/biome-resource-state.js";
 import { updateLogistics } from "../systems/logistics.js";
-import { updateSettlement } from "../systems/settlement.js";
+import { SETTLEMENT_INTERVAL, updateServices, updateSettlementNeeds } from "../systems/settlement.js";
 import { updateCombat } from "./combat.js";
 import { queueMessage } from "../core/presentation-effects.js";
 import { updatePeople } from "../systems/people.js";
@@ -133,10 +133,15 @@ let annualPending = null;
 // otherwise healthy low-end frame over 50 ms. No simulation time passes while
 // these flags are set, so the order and the resulting state are unchanged.
 let annualFinishPending = null;
-// 1 = the year-start day still needs population/citizen work; 2 = it still
-// needs fields, production, health and the remaining daily systems.
-let annualDayPhase = 0;
-let annualDayNewborn = null;
+// A daily tick is split into bounded deterministic slices in the presented
+// loop: settlement services, household needs, winter/crown, population/citizen,
+// land, economy/labour, then the remaining realm systems. A heavy autumn
+// harvest, a season atlas pass and a cold JIT path can no longer stack into one
+// low-end frame. Headless callers keep the whole tick in one call, so campaign
+// determinism and save order are unchanged.
+let pendingDayPhase = 0;
+let pendingDayNewborn = null;
+let pendingSettlementNeeds = false;
 
 export function setAnnualMaintenanceSlicing(enabled) {
     annualSlicingEnabled = enabled === true;
@@ -145,12 +150,12 @@ export function setAnnualMaintenanceSlicing(enabled) {
 export function resetAnnualMaintenance() {
     annualPending = null;
     annualFinishPending = null;
-    annualDayPhase = 0;
-    annualDayNewborn = null;
+    pendingDayPhase = 0;
+    pendingDayNewborn = null;
 }
 
 export function hasPendingAnnualMaintenance() {
-    return annualPending !== null || annualFinishPending !== null || annualDayPhase !== 0;
+    return annualPending !== null || annualFinishPending !== null || pendingDayPhase !== 0;
 }
 
 function createAnnualMaintenance() {
@@ -208,8 +213,8 @@ function completeAnnualMaintenance(annual, splitDaily = true) {
     annualPending = null;
     annualFinishPending = null;
     logAnnualResults(annual);
-    // In the presented loop the year-start day is split across three frames:
-    // season/settlement first, population/citizen second, then fields,
+    // In the presented loop the year-start day uses the same bounded slices as
+    // every other day: season/atlas first, then settlement, population, land,
     // production, health and the rest. Headless callers and saves keep the
     // complete synchronous tick.
     finishSimulationTick(annual.newborn, splitDaily);
@@ -219,32 +224,63 @@ function completeAnnualMaintenance(annual, splitDaily = true) {
 // simulation time, so the clock cannot build a catch-up backlog while the realm
 // is paused for a few frames at the year boundary.
 export function advanceAnnualMaintenance() {
-    if (annualDayPhase === 1) {
-        annualDayPhase = 2;
-        finishDailyMiddle(annualDayNewborn);
-        annualDayNewborn = null;
+    // Empty settlement/winter slices collapse into the next slice in the same
+    // frame. Only a slice that actually ran a system stops the frame, so a
+    // normal day still takes the same number of frames as before while the
+    // two settlement slices and the seasonal crown settlement stay isolated.
+    while (true) {
+        if (pendingDayPhase === 1) {
+            pendingDayPhase = 2;
+            if (finishDailyServices()) return false;
+            continue;
+        }
+        if (pendingDayPhase === 2) {
+            pendingDayPhase = 3;
+            if (finishDailySettlementNeeds()) return false;
+            continue;
+        }
+        if (pendingDayPhase === 3) {
+            pendingDayPhase = 4;
+            if (finishDailyWinterAndCrown()) return false;
+            continue;
+        }
+        if (pendingDayPhase === 4) {
+            pendingDayPhase = 5;
+            finishDailyMiddle(pendingDayNewborn);
+            pendingDayNewborn = null;
+            return false;
+        }
+        if (pendingDayPhase === 5) {
+            pendingDayPhase = 6;
+            finishDailyLand();
+            return false;
+        }
+        if (pendingDayPhase === 6) {
+            pendingDayPhase = 7;
+            finishDailyEconomy();
+            return false;
+        }
+        if (pendingDayPhase === 7) {
+            pendingDayPhase = 0;
+            finishDailyRealm();
+            return true;
+        }
+        if (annualFinishPending) {
+            completeAnnualMaintenance(annualFinishPending);
+            return false;
+        }
+        if (!annualPending) return false;
+        if (!runAnnualTasks(annualPending)) return false;
+        scheduleAnnualCompletion(annualPending);
         return false;
     }
-    if (annualDayPhase === 2) {
-        annualDayPhase = 0;
-        finishDailyRemainder();
-        return true;
-    }
-    if (annualFinishPending) {
-        completeAnnualMaintenance(annualFinishPending);
-        return false;
-    }
-    if (!annualPending) return false;
-    if (!runAnnualTasks(annualPending)) return false;
-    scheduleAnnualCompletion(annualPending);
-    return false;
 }
 
 // Saving from inside a maintenance window must capture a complete tick. This
 // path is deliberately allowed to take the full annual cost once, outside the
 // presented frame budget, instead of persisting a half-updated year.
 export function finishAnnualMaintenanceForSave() {
-    if (annualDayPhase) {
+    if (pendingDayPhase) {
         completeAnnualDay();
         return true;
     }
@@ -259,8 +295,9 @@ export function finishAnnualMaintenanceForSave() {
 }
 
 function finishSimulationTick(newborn, splitDaily = false) {
-    annualDayPhase = 0;
-    annualDayNewborn = newborn;
+    pendingDayPhase = 0;
+    pendingDayNewborn = newborn;
+    pendingSettlementNeeds = false;
     const previousSeason = Number(state.seasonIndex) || 0;
     state.seasonIndex = Math.floor(state.dayOfYear / 100) % 4;
     // A live Explore survey must not keep displaying last season's density.
@@ -278,20 +315,62 @@ function finishSimulationTick(newborn, splitDaily = false) {
         }
     }
     if ((state.worldOptions?.climate || "temperate") === "tropical") spoilForestGoods(1);
-    resetIncome();
-    updateSettlement();
-    // Twenty-day winter ledger. It is a no-op on other ticks and other climates.
-    updateWinterEconomy();
-    // The standing grain contract delivers once per season. This is a single
-    // bounded call four times a year, not a new per-tick system.
-    if (state.tick % 100 === 0 && (state.crownSupply?.grainLevel || 0) >= 4) settleCrownSupply();
     if (splitDaily) {
-        annualDayPhase = 1;
+        // Phase 1 is the settlement/winter/crown pass; seasons and the atlas
+        // revision stay in this first frame so the new season is visible at
+        // once, while the expensive household and logistics work follows on
+        // later frames in the original order.
+        pendingDayPhase = 1;
         return;
     }
+    finishDailyPrework();
     finishDailyMiddle(newborn);
-    annualDayNewborn = null;
+    pendingDayNewborn = null;
     finishDailyRemainder();
+}
+
+function settlementIsDue() {
+    return state.hasStarted && !state.isPaused && !state.gameOver &&
+        state.tick > 0 && state.tick % SETTLEMENT_INTERVAL === 0;
+}
+
+// The settlement pass is deliberately split over two frames. Service coverage
+// is cheap; the household heating pass can resolve a path per house on the
+// first winter day. Both still run at the same tick boundary, in the original
+// order, with no simulation work between them.
+function finishDailyServices() {
+    resetIncome();
+    if (!settlementIsDue()) return false;
+    updateServices();
+    pendingSettlementNeeds = true;
+    return true;
+}
+
+function finishDailySettlementNeeds() {
+    if (!pendingSettlementNeeds) return false;
+    pendingSettlementNeeds = false;
+    updateSettlementNeeds();
+    return true;
+}
+
+function finishDailyWinterAndCrown() {
+    let didWork = false;
+    // Twenty-day winter ledger. It is a no-op outside the snow climate and
+    // outside its cadence.
+    if (updateWinterEconomy()) didWork = true;
+    // The standing grain contract delivers once per season. This is a single
+    // bounded call four times a year.
+    if (state.tick % 100 === 0 && (state.crownSupply?.grainLevel || 0) >= 4) {
+        settleCrownSupply();
+        didWork = true;
+    }
+    return didWork;
+}
+
+function finishDailyPrework() {
+    finishDailyServices();
+    finishDailySettlementNeeds();
+    finishDailyWinterAndCrown();
 }
 
 function finishDailyMiddle(newborn) {
@@ -301,15 +380,29 @@ function finishDailyMiddle(newborn) {
     else if (newcomer) addLog("A NEW RESIDENT HAS JOINED THE REALM", "#a3d6a7", "population");
 }
 
-function completeAnnualDay() {
-    if (annualDayPhase === 1) finishDailyMiddle(annualDayNewborn);
-    annualDayNewborn = null;
-    finishDailyRemainder();
-    annualDayPhase = 0;
+// One bounded group of the daily tick. The groups preserve the exact original
+// call order; only the frame boundary between them changes.
+function finishDailyLand() {
+    updateFields();
+    updateForestSuccession();
+    if (state.resourceGeography) regrowForests(400, { slice: state.tick % 400, slices: 400 });
+    updateForestFauna();
+    updateForestPannage();
 }
 
-function finishDailyRemainder() {
-    updateFields(); updateForestSuccession(); if (state.resourceGeography) regrowForests(400, { slice: state.tick % 400, slices: 400 }); updateForestFauna(); updateForestPannage(); updateBuildingIncome(); updateCraftProduction(annualSlicingEnabled ? { supply: 5, craft: 1 } : 0); updateLogistics(); updateConstruction(); updateVillagers(); updateMilitary(); updateCombat(); updateExpeditions(); checkRandomEvents();
+function finishDailyEconomy() {
+    updateBuildingIncome();
+    updateCraftProduction(annualSlicingEnabled ? { supply: 5, craft: 1 } : 0);
+    updateLogistics();
+    updateConstruction();
+    updateVillagers();
+    updateMilitary();
+    updateCombat();
+    updateExpeditions();
+}
+
+function finishDailyRealm() {
+    checkRandomEvents();
     updateWeather(); updateMorale(); updateMarket(); updateEconomy(); updateRealmCycle(); updateHealth(); updateAmbitions();
     // Endless ages advance once per 25 years. A collapse is a recoverable
     // setback in an endless realm rather than a terminal game-over.
@@ -346,12 +439,31 @@ function finishDailyRemainder() {
     }
 }
 
+function finishDailyRemainder() {
+    finishDailyLand();
+    finishDailyEconomy();
+    finishDailyRealm();
+}
+
+function completeAnnualDay() {
+    if (pendingDayPhase <= 1) finishDailyServices();
+    if (pendingDayPhase <= 2) finishDailySettlementNeeds();
+    if (pendingDayPhase <= 3) finishDailyWinterAndCrown();
+    if (pendingDayPhase <= 4) finishDailyMiddle(pendingDayNewborn);
+    if (pendingDayPhase <= 5) finishDailyLand();
+    if (pendingDayPhase <= 6) finishDailyEconomy();
+    finishDailyRealm();
+    pendingDayNewborn = null;
+    pendingSettlementNeeds = false;
+    pendingDayPhase = 0;
+}
+
 export function updateSimulation() {
     if (state.isPaused || state.gameOver || !state.hasStarted) return;
     // Defensive path for callers that invoke updateSimulation directly while
     // the presented loop owns an in-flight rollover. The game loop itself
     // advances maintenance without consuming simulation time.
-    if (annualPending || annualFinishPending || annualDayPhase) {
+    if (annualPending || annualFinishPending || pendingDayPhase) {
         advanceAnnualMaintenance();
         return;
     }
@@ -372,5 +484,5 @@ export function updateSimulation() {
         completeAnnualMaintenance(annualPending, false);
         return;
     }
-    finishSimulationTick(null);
+    finishSimulationTick(null, annualSlicingEnabled);
 }
