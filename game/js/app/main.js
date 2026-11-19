@@ -749,6 +749,18 @@ function loadSnapshotIntoGame(profile,snapshot){
     // chronicle, active issue) silently returns and the loaded realm can never
     // open or dismiss a realm issue.
     state.hasStarted=true;
+    // A saved mature realm has the same cold derived caches as a freshly
+    // founded one. Warm them through the existing startup helpers before the
+    // first visible tick; otherwise the first day pays several one-off
+    // multi-millisecond rebuilds and can exceed the low-end frame budget.
+    getRoomBonusSnapshot();
+    warmEconomyCaches();
+    warmForestFaunaCaches();
+    warmMicroEventContext();
+    warmHealthCaches();
+    warmMilitaryCaches();
+    warmLogisticsRoutes();
+    warmVillagerPaths();
     const savedSpeed=Number(state.gameSpeed);
     document.querySelectorAll(".speed-button").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.speed)===savedSpeed));
     if(restored.hasSavedCamera)clampCamera();else centerCamera();

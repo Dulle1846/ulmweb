@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.28.1",
+  "version": "3.29.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -33,6 +33,7 @@
     "test:terrain-stability": "node tests/browser/terrain-stability.mjs",
     "test:device-benchmark": "node tests/browser/device-benchmark.mjs",
     "test:performance:low-end": "PERF_SOFTWARE_CANVAS=1 node tests/browser/low-end-performance.mjs",
+    "test:performance:advanced": "PERF_SOFTWARE_CANVAS=1 PERF_ADVANCED_SAVE=1 PERF_SEED=20261152 PERF_CLIMATE=savanna PERF_FORESTS=85 PERF_YEARS=1 PERF_RENDER_SCALE=70 node tests/browser/low-end-performance.mjs",
     "test:performance:eight-climate": "PERF_SOFTWARE_CANVAS=1 PERF_CLIMATE=savanna PERF_FORESTS=85 PERF_SEED=20261152 PERF_YEARS=2 PERF_RENDER_SCALE=70 node tests/browser/low-end-performance.mjs",
     "test:performance:taiga": "PERF_SOFTWARE_CANVAS=1 PERF_CLIMATE=taiga PERF_FORESTS=75 PERF_SEED=20261108 PERF_YEARS=2 PERF_RENDER_SCALE=70 PERF_TAIGA_SCENES=1 PERF_WARMUP_MS=5000 PERF_QUIET_MS=10000 PERF_DENSE_MS=8000 PERF_TAIGA_SCENE_MS=8000 node tests/browser/low-end-performance.mjs",
     "test:atmosphere-reference": "node tests/browser/daylight-reference.mjs",

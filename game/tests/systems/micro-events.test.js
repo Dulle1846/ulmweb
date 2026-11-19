@@ -119,8 +119,9 @@ test("a full archive renders a bounded card window", () => {
     resetTimelineView(1);
     const html = renderLivingTimeline();
     assert.equal((html.match(/data-timeline-event="/g) || []).length, MAX_VISIBLE_TIMELINE_CARDS);
-    assert.match(html, /2,400 RETAINED/);
-    assert.match(html, /Showing the newest 160 of 2,400 events/);
+    const retained = MAX_TIMELINE_EVENTS.toLocaleString("en-US");
+    assert.ok(html.includes(retained + " RETAINED"));
+    assert.ok(html.includes("Showing the newest " + MAX_VISIBLE_TIMELINE_CARDS + " of " + retained + " events"));
     assert.equal(state.eventTimeline.events.length, MAX_TIMELINE_EVENTS);
 });
 

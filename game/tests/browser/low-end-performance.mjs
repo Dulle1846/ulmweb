@@ -12,6 +12,12 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { chromium } from "playwright";
 import { browserLaunchOptions, checkBrowser, printBrowserHelp } from "./browser-preflight.mjs";
+import { runCampaign } from "../campaign/campaign-driver.mjs";
+import { state as campaignState } from "../../js/core/state.js";
+import { createSaveSnapshot } from "../../js/core/save-runtime.js";
+import { createLocalProfile, writeLocalSave } from "../../js/core/persistence.js";
+import { createIdentityState } from "../../js/systems/identity.js";
+import { createLegacyState } from "../../js/systems/legacy.js";
 
 const ROOT = resolve(process.cwd());
 const SEED = Number(process.env.PERF_SEED || 20261108);
@@ -39,6 +45,9 @@ const TAIGA_ENTITY_BUDGET = Number(process.env.PERF_BUDGET_ENTITIES || 120);
 const TAIGA_DRAW_MS_BUDGET = Number(process.env.PERF_BUDGET_DRAW_MS || 16.7);
 const OUT = resolve(ROOT, "..", "artifacts", "low-end-performance.json");
 const EXTERNAL_BASE = process.env.PERF_BASE_URL ? new URL(process.env.PERF_BASE_URL).origin : "";
+const ADVANCED_SAVE = process.env.PERF_ADVANCED_SAVE === "1";
+const ADVANCED_YEARS = Math.max(1, Number(process.env.PERF_ADVANCED_YEARS || 25));
+const ADVANCED_PROFILE_ID = "low-end-advanced-audit";
 
 // A 60 Hz presentation target on a low-end desktop. The budget is intentionally
 // expressed in wall-clock frame intervals, not renderer draw time: a slow main
@@ -91,6 +100,112 @@ function serveGame() {
     });
 }
 
+class MemoryStorage {
+    #values = new Map();
+    get length() { return this.#values.size; }
+    key(index) { return [...this.#values.keys()][index] ?? null; }
+    getItem(key) { return this.#values.has(String(key)) ? this.#values.get(String(key)) : null; }
+    setItem(key, value) { this.#values.set(String(key), String(value)); }
+    removeItem(key) { this.#values.delete(String(key)); }
+    clear() { this.#values.clear(); }
+    entries() { return [...this.#values.entries()]; }
+}
+
+function campaignCanvasStub() {
+    return {
+        width: 0,
+        height: 0,
+        getContext() {
+            return {
+                createImageData(width, height) {
+                    return { width, height, data: new Uint8ClampedArray(width * height * 4) };
+                },
+                putImageData() {}
+            };
+        }
+    };
+}
+
+function initializeAdvancedRealm() {
+    campaignState.activeProfileId = ADVANCED_PROFILE_ID;
+    campaignState.playerName = "Low-End Advanced Audit";
+    campaignState.identity = createIdentityState({
+        kingdomName: "Advanced Performance Realm",
+        dynastyName: "Royal House",
+        foundedYear: 1
+    });
+    campaignState.kingdomName = campaignState.identity.kingdomName;
+    campaignState.royal.dynastyName = campaignState.identity.dynastyName;
+    campaignState.legacy = createLegacyState({ foundedYear: 1 });
+}
+
+// Build the same kind of mature save the endurance suite uses, with the real
+// campaign driver. The browser then loads it through the visible CONTINUE
+// control; no state is injected into the running game after startup.
+function buildAdvancedSaveFixture(origin, seed, climate, years) {
+    const previousDocument = globalThis.document;
+    const previousStorage = globalThis.localStorage;
+    try {
+        globalThis.document = { createElement: () => campaignCanvasStub() };
+        globalThis.localStorage = new MemoryStorage();
+        createLocalProfile("Low-End Advanced Audit", ADVANCED_PROFILE_ID);
+        const campaign = runCampaign({
+            seed,
+            years,
+            profile: "builder",
+            era: "common-weal",
+            worldOptions: { climate },
+            onInitialized: initializeAdvancedRealm
+        });
+        assert.equal(campaign.ok, true, "the advanced performance campaign must be healthy");
+        assert.equal(campaign.gameOver, false, "the advanced performance campaign must not end in defeat");
+        const snapshot = createSaveSnapshot();
+        writeLocalSave(ADVANCED_PROFILE_ID, snapshot);
+        const entries = [...globalThis.localStorage.entries()];
+        const storageState = {
+            cookies: [],
+            origins: [{
+                origin,
+                localStorage: entries.map(([name, value]) => ({ name, value }))
+            }]
+        };
+        const population = Number(campaign.final?.population ?? snapshot.totalPopulation) || 0;
+        const buildings = Number(campaign.final?.buildings) || 0;
+        assert.ok(population >= 50, "advanced fixture must contain a populated realm, got " + population);
+        assert.ok(buildings >= 40, "advanced fixture must contain a built realm, got " + buildings);
+        return {
+            campaignYears: years,
+            campaignSeed: seed,
+            climate,
+            profileId: ADVANCED_PROFILE_ID,
+            year: snapshot.year,
+            tick: snapshot.tick,
+            population,
+            buildings,
+            entities: snapshot.entities.filter(entity => !entity.dead).length,
+            saveBytes: JSON.stringify(snapshot).length,
+            storageState
+        };
+    } finally {
+        globalThis.document = previousDocument;
+        globalThis.localStorage = previousStorage;
+    }
+}
+
+async function readLoadedRealm() {
+    return page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return {
+            started: state.hasStarted === true,
+            year: Number(state.year) || 0,
+            tick: Number(state.tick) || 0,
+            population: state.entities.filter(entity => !entity.dead && entity.type === 20).length,
+            buildings: state.entities.filter(entity => !entity.dead && entity.isBuilding?.()).length,
+            entities: state.entities.filter(entity => !entity.dead).length
+        };
+    });
+}
+
 const probe = await checkBrowser();
 if (!probe.ok) {
     printBrowserHelp(probe.error);
@@ -100,6 +215,9 @@ if (!probe.ok) {
 const server = EXTERNAL_BASE ? null : serveGame();
 if (server) await new Promise(resolveListen => server.listen(0, "127.0.0.1", resolveListen));
 const baseUrl = EXTERNAL_BASE || ("http://127.0.0.1:" + server.address().port);
+const advancedFixture = ADVANCED_SAVE
+    ? buildAdvancedSaveFixture(new URL(baseUrl).origin, SEED, CLIMATE, ADVANCED_YEARS)
+    : null;
 const browser = await chromium.launch({
     ...browserLaunchOptions(),
     args: [
@@ -114,7 +232,8 @@ const browser = await chromium.launch({
 const page = await browser.newPage({
     viewport: VIEWPORT,
     deviceScaleFactor: 1,
-    reducedMotion: "reduce"
+    reducedMotion: "reduce",
+    ...(advancedFixture ? { storageState: advancedFixture.storageState } : {})
 });
 const cdp = await page.context().newCDPSession(page);
 await cdp.send("Performance.enable");
@@ -123,9 +242,9 @@ await cdp.send("Emulation.setCPUThrottlingRate", { rate: CPU_THROTTLE });
 
 const errors = [];
 const consoleErrors = [];
-page.on("pageerror", error => errors.push(error.message));
+page.on("pageerror", error => { errors.push(error.message); console.error("PAGEERROR", error.message); });
 page.on("console", message => {
-    if (message.type() === "error") consoleErrors.push(message.text());
+    if (message.type() === "error") { consoleErrors.push(message.text()); console.error("CONSOLE", message.text()); }
 });
 
 // Independent rAF sampler: unlike the game's render probe it also records
@@ -135,6 +254,7 @@ await page.addInitScript(() => {
     window.__KAC_PERF = { raf: [], longTasks: [], tickMs: [], uiChunkMs: [], friendlyMs: [], logisticsMs: [], workMs: [], draws: [] };
     window.__KAC_SIM_TIMES = {};
     window.__KAC_SIM_SAMPLES = {};
+    window.__KAC_SIM_ROWS = {};
     window.__KAC_LOAD_TIMES = {};
     const sample = timestamp => {
         const frames = window.__KAC_PERF.raf;
@@ -228,11 +348,23 @@ if (process.env.PERF_SIM_BREAKDOWN === "1") {
             "updateMilitary", "updateCombat", "updateExpeditions",
             "checkRandomEvents", "updateWeather", "updateMorale", "updateMarket",
             "updateEconomy", "updateRealmCycle", "updateHealth", "updateAmbitions",
-            "updateMicroEvents"
+            "updateMicroEvents", "updateDiplomacy", "updateCourt", "updateAdvisor",
+            "updateNobility", "updateNobleFeuds", "updateNobleHosts", "updateEspionage",
+            "updateCivic", "updateEdicts", "updateFaith", "updateJustice", "updateResearch",
+            "updatePopulation", "updatePeople", "updateBirths", "updateSocialLife",
+            "updatePersonalAgency", "updateMortality", "updateGuardianships",
+            "updateRoyalSuccession", "updateRoyalCrisis", "updateCreatures",
+            "updateWinterEconomy", "updateWinterAnnual", "updateBiomeAtlasSeason",
+            "updateBiomeAtlasAnnual", "syncBiomeDiscovery", "updateEndlessRealm",
+            "updateEndlessRelief", "updateSpecialBiomes", "updateSettlementMaintenance",
+            "updateRoadWear", "updateVolcanoHazards", "updateCoastHazards", "updateSnowHazards",
+            "updateDisasterRecovery", "settleCrownSupply", "spoilForestGoods"
         ];
-        const helper = "const __kacSimT=(name,fn)=>{const t=performance.now();fn();" +
+        const helper = "const __kacSimT=(name,fn)=>{const t=performance.now();const result=fn();" +
             "const d=performance.now()-t;globalThis.__KAC_SIM_TIMES[name]=Math.max(globalThis.__KAC_SIM_TIMES[name]||0,d);" +
-            "(globalThis.__KAC_SIM_SAMPLES[name]||(globalThis.__KAC_SIM_SAMPLES[name]=[])).push(d);};\n";
+            "(globalThis.__KAC_SIM_MAX||(globalThis.__KAC_SIM_MAX={}))[name]=Math.max(globalThis.__KAC_SIM_MAX[name]||0,d);" +
+            "(globalThis.__KAC_SIM_ROWS[name]||(globalThis.__KAC_SIM_ROWS[name]=[])).push({tick:state.tick,ms:d});" +
+            "(globalThis.__KAC_SIM_SAMPLES[name]||(globalThis.__KAC_SIM_SAMPLES[name]=[])).push(d);return result;};\n";
         source = source.replace("export function updateSimulation()", helper + "export function updateSimulation()");
         for (const name of names) {
             const re = new RegExp("(?<![A-Za-z0-9_.])" + name + "\\(\\)", "g");
@@ -479,7 +611,11 @@ function summarizePhase(name, payload) {
                 drawMs: Number(frame.drawMs) || 0,
                 worldDrawMs: Number(frame.worldDrawMs) || 0,
                 simMs: Number(frame.simMs) || 0,
-                uiMs: Number(frame.uiMs) || 0
+                uiMs: Number(frame.uiMs) || 0,
+                tick: Number(frame.tick) || 0,
+                day: Number(frame.day) || 0,
+                season: Number(frame.season) || 0,
+                presentedAt: Number(frame.presentedAt) || 0
             }));
         const frameCost = frame => Math.max(0, Number(frame.drawMs) || 0) + Math.max(0, Number(frame.simMs) || 0) + Math.max(0, Number(frame.uiMs) || 0);
     // A long wall-clock frame with almost no main-thread work is a browser or
@@ -863,22 +999,62 @@ try {
     }, { renderScale: RENDER_SCALE, frameLimit: FRAME_LIMIT });
     await page.goto(baseUrl + "/", { waitUntil: "networkidle", timeout: 120000 });
     assert.equal(await page.title(), "KINGS & CARDS • Eternal Realm");
-    await page.locator("#world-seed-input").fill(String(SEED));
-    await page.selectOption("#world-climate", CLIMATE);
-    await page.evaluate(value => {
-        const slider = document.getElementById("world-forests");
-        if (!slider) return;
-        slider.value = String(value);
-        slider.dispatchEvent(new Event("input", { bubbles: true }));
-        slider.dispatchEvent(new Event("change", { bubbles: true }));
-    }, FORESTS);
-    await page.locator("#player-name-input").fill("Low-End Performance");
-    await page.locator("#start-new-game-btn").click();
-    await page.locator("#start-screen").waitFor({ state: "hidden", timeout: 120000 });
-    await page.waitForFunction(async () => {
-        const { state } = await import("./js/core/state.js");
-        return state.hasStarted === true;
-    }, null, { timeout: 120000 });
+    let advancedLoaded = null;
+    if (advancedFixture) {
+        // The fixture is a real 25-year campaign save. Loading it through the
+        // production CONTINUE control is the player path this audit must
+        // measure, not a fresh two-year-old starting village.
+        const continueButton = page.locator("#continue-game-btn");
+        await continueButton.waitFor({ state: "visible", timeout: 120000 });
+        try {
+            await page.waitForFunction(() => {
+                const button = document.getElementById("continue-game-btn");
+                return Boolean(button && !button.disabled && (button.textContent || "").includes("CONTINUE"));
+            }, null, { timeout: 120000 });
+        } catch (error) {
+            const diagnostic = await page.evaluate(() => {
+                const button = document.getElementById("continue-game-btn");
+                return {
+                    button: button ? { disabled: button.disabled, text: button.textContent } : null,
+                    storage: Object.keys(localStorage),
+                    startScreen: document.getElementById("start-screen")?.hidden ?? null,
+                    simReady: Boolean(globalThis.__KAC_SIM_TIMES)
+                };
+            });
+            console.error("CONTINUE DIAGNOSTIC", JSON.stringify(diagnostic));
+            throw error;
+        }
+        await continueButton.click();
+        await page.locator("#start-screen").waitFor({ state: "hidden", timeout: 120000 });
+        await page.waitForFunction(async () => {
+            const { state } = await import("./js/core/state.js");
+            return state.hasStarted === true;
+        }, null, { timeout: 120000 });
+        advancedLoaded = await readLoadedRealm();
+        assert.equal(advancedLoaded.started, true, "the advanced save must finish loading");
+        assert.equal(advancedLoaded.year, advancedFixture.year, "the loaded realm must retain the saved year");
+        assert.ok(advancedLoaded.population >= 50,
+            "the loaded realm must still contain its mature population, got " + advancedLoaded.population);
+        assert.ok(advancedLoaded.buildings >= 40,
+            "the loaded realm must still contain its built city, got " + advancedLoaded.buildings);
+    } else {
+        await page.locator("#world-seed-input").fill(String(SEED));
+        await page.selectOption("#world-climate", CLIMATE);
+        await page.evaluate(value => {
+            const slider = document.getElementById("world-forests");
+            if (!slider) return;
+            slider.value = String(value);
+            slider.dispatchEvent(new Event("input", { bubbles: true }));
+            slider.dispatchEvent(new Event("change", { bubbles: true }));
+        }, FORESTS);
+        await page.locator("#player-name-input").fill("Low-End Performance");
+        await page.locator("#start-new-game-btn").click();
+        await page.locator("#start-screen").waitFor({ state: "hidden", timeout: 120000 });
+        await page.waitForFunction(async () => {
+            const { state } = await import("./js/core/state.js");
+            return state.hasStarted === true;
+        }, null, { timeout: 120000 });
+    }
     await installAutoResolver();
     await applyLowEndSettings();
     // Applying settings invalidates the terrain detail cache. Let the one-time
@@ -890,6 +1066,7 @@ try {
     }, null, { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(1200);
     await setLiveSettings();
+    if (process.env.PERF_GC_BEFORE_SAMPLE === "1") await cdp.send("HeapProfiler.collectGarbage");
     if (WARMUP_MS > 0) await page.waitForTimeout(WARMUP_MS);
     await page.evaluate(({ skipWorld, skipUi, skipStatic, skipEntities, skipScreen, skipVignette }) => {
         globalThis.__KAC_PERF_SKIP_WORLD = skipWorld;
@@ -940,13 +1117,25 @@ try {
         await cdp.send("Profiler.setSamplingInterval", { interval: 100 });
         await cdp.send("Profiler.start");
     }
-    const quiet = await samplePhase("quiet-early-realm", QUIET_MS);
+    const quiet = await samplePhase(advancedFixture ? "quiet-loaded-advanced-realm" : "quiet-early-realm", QUIET_MS);
     const simBreakdown = process.env.PERF_SIM_BREAKDOWN === "1"
         ? await page.evaluate(() => {
             const out = {};
             for (const [name, values] of Object.entries(globalThis.__KAC_SIM_SAMPLES || {})) {
                 const sorted = values.slice().sort((a, b) => a - b);
                 out[name] = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] || 0;
+            }
+            return out;
+        })
+        : null;
+    const simMaxBreakdown = process.env.PERF_SIM_BREAKDOWN === "1"
+        ? await page.evaluate(() => ({ ...(globalThis.__KAC_SIM_MAX || {}) }))
+        : null;
+    const simRows = process.env.PERF_SIM_BREAKDOWN === "1"
+        ? await page.evaluate(() => {
+            const out = {};
+            for (const [name, rows] of Object.entries(globalThis.__KAC_SIM_ROWS || {})) {
+                out[name] = rows.filter(row => row.ms >= 4).slice(-30);
             }
             return out;
         })
@@ -981,9 +1170,21 @@ try {
         await page.evaluate(() => document.body.classList.remove("ui-modal-open"));
     }
     const advanceStarted = Date.now();
-    await waitForYear(1 + TARGET_YEARS);
-    console.log("advanced to target year in " + (Date.now() - advanceStarted) + "ms");
-    const dense = await samplePhase("dense-mature-realm", DENSE_MS);
+    const targetYear = advancedFixture && advancedLoaded
+        ? advancedLoaded.year + TARGET_YEARS
+        : 1 + TARGET_YEARS;
+    await waitForYear(targetYear);
+    console.log("advanced to target year " + targetYear + " in " + (Date.now() - advanceStarted) + "ms");
+    const dense = await samplePhase(advancedFixture ? "dense-loaded-advanced-realm" : "dense-mature-realm", DENSE_MS);
+    const denseSimRows = process.env.PERF_SIM_BREAKDOWN === "1"
+        ? await page.evaluate(() => {
+            const out = {};
+            for (const [name, rows] of Object.entries(globalThis.__KAC_SIM_ROWS || {})) {
+                out[name] = rows.filter(row => row.ms >= 4).slice(-30);
+            }
+            return out;
+        })
+        : null;
     // Caches (forest habitat, terrain detail, pathing) are part of the warm
     // realm. Measure leak growth after that bounded warm-up instead of charging
     // one-time cache fill to the steady-state heap budget. The cold-start
@@ -1070,6 +1271,17 @@ try {
         renderScale: RENDER_SCALE,
         gameSpeed: GAME_SPEED,
         targetYears: TARGET_YEARS,
+        advanced: advancedFixture ? {
+            campaignYears: advancedFixture.campaignYears,
+            campaignSeed: advancedFixture.campaignSeed,
+            climate: advancedFixture.climate,
+            year: advancedFixture.year,
+            population: advancedFixture.population,
+            buildings: advancedFixture.buildings,
+            entities: advancedFixture.entities,
+            saveBytes: advancedFixture.saveBytes,
+            loaded: advancedLoaded
+        } : null,
         budget: BUDGET,
         war,
         trace: trace?.groups || null,
@@ -1085,6 +1297,9 @@ try {
         taiga: taigaInfo ? { ...taigaInfo, phases: taigaPhases.map(phase => phase.name) } : null,
         phases: [...(simOnly ? [simOnly] : []), quiet, dense, ...taigaPhases, panel, nobilityPanel, warPhase],
         simBreakdown,
+        simMaxBreakdown,
+        simRows,
+        denseSimRows,
         saveLoad,
         pageErrors: errors,
         consoleErrors,

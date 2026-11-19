@@ -1,13 +1,44 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.16.0`
-**Next development line:** `3.20.0-dev`
+**Current production version:** `3.29.0`
+**Next development line:** `3.30.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-16 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.29.0 — Advanced Realm Low-End Budget
+
+A loaded 25-year realm now holds the documented low-end frame budget across
+the year rollover, not just a fresh opening village.
+
+- The browser reference now builds a real 25-year campaign save with the
+existing campaign driver, injects it through the normal storage path and loads
+it through the visible CONTINUE control. It verifies the restored year,
+population, buildings and entities before sampling, and advances another year
+so the sample includes the deterministic rollover.
+- The loaded path runs the same economy, fauna, health, military, logistics and
+villager path warm-up helpers as a new realm. A mature save no longer pays the
+one-time compilation and cache-fill cost in its first playable ticks.
+- Annual maintenance runs exactly one system per frame. A byte budget could
+still stack a second system onto the first, cold-JIT annual call; the frame
+boundary now prevents that. The first daily tick after the rollover is split
+into season/settlement, population/citizen and daily-world frames, with a save
+flush that keeps a complete tick. No simulation time, random draw or other
+system runs between the slices.
+- Building production and logistics stay on their existing cadence. The
+presented craft calendar is offset away from the economy, production and
+logistics ticks; headless campaigns retain the synchronous calendar. The
+settlement calendar is unchanged.
+- The event chronicle retention cap is 1,200 records. A 25-year save had grown
+to 2,400 records and a 5.03 MB localStorage envelope, which exceeded the
+browser origin quota and made the save disappear. The smaller bounded history
+keeps older archives loadable and leaves headroom for the realm itself.
+- The measured advanced profile is frame p95 16.8 / 16.7 ms, 0.84 / 0.17 % of
+frames over 33 ms, zero long tasks, 499 ms save and 2275 ms load. The 25-year
+campaign and the complete test suite remain green.
 
 ## 1.2.18 — Vegetation Density (development line)
 

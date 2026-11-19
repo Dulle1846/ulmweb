@@ -204,6 +204,7 @@ function gameLoop(timestamp){
        simMs:Math.round((Number(state.lastSimulationMs)||0)*1000)/1000,
        uiMs:Math.round((Number(state.lastUiRenderMs)||0)*1000)/1000,
        terrainBuildMs:Math.round((Number(state.terrainBuildThisFrame)||0)*1000)/1000,
+       tick:Number(state.tick)||0,
        day:Number(state.dayOfYear)||0,season:Number(state.seasonIndex)||0,
        zoom:Math.round((Number(state.zoom)||0)*1000)/1000,
       });

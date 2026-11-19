@@ -62,14 +62,13 @@ import { updateSpecialBiomes } from "../systems/special-biome-state.js";
 import { updateRoadWear } from "../systems/roads.js";
 import { updateSettlementMaintenance } from "../systems/settlement-owners.js";
 
-const nowMs = () => globalThis.performance?.now?.() ?? Date.now();
-const ANNUAL_SLICE_BUDGET_MS = 6;
-
 // The annual rollover is deep but its systems are independent in strict order.
 // Headless callers run all of them in one call; the presented game loop runs
-// one small slice per frame so no low-end device gets a yearly long task. No
-// daily system, random draw or tick runs between slices, so the resulting state
-// is identical to the synchronous sequence.
+// exactly one system per frame. A byte budget was not enough: the first annual
+// call on a loaded mature realm can spend most of its time in JIT compilation
+// inside one system, so the loop must not stack a second system onto that
+// frame. No daily system, random draw or tick runs between slices, so the
+// resulting state is identical to the synchronous sequence.
 const ANNUAL_TASKS = [
     { name: "faith", run() { updateFaith(); } },
     { name: "justice", run() { updateJustice(); } },
@@ -129,6 +128,15 @@ const ANNUAL_TASKS = [
 
 let annualSlicingEnabled = false;
 let annualPending = null;
+// The last maintenance slice and the first daily tick are separate frames. A
+// mature year boundary used to finish both in one frame, which pushed an
+// otherwise healthy low-end frame over 50 ms. No simulation time passes while
+// these flags are set, so the order and the resulting state are unchanged.
+let annualFinishPending = null;
+// 1 = the year-start day still needs population/citizen work; 2 = it still
+// needs fields, production, health and the remaining daily systems.
+let annualDayPhase = 0;
+let annualDayNewborn = null;
 
 export function setAnnualMaintenanceSlicing(enabled) {
     annualSlicingEnabled = enabled === true;
@@ -136,10 +144,13 @@ export function setAnnualMaintenanceSlicing(enabled) {
 
 export function resetAnnualMaintenance() {
     annualPending = null;
+    annualFinishPending = null;
+    annualDayPhase = 0;
+    annualDayNewborn = null;
 }
 
 export function hasPendingAnnualMaintenance() {
-    return annualPending !== null;
+    return annualPending !== null || annualFinishPending !== null || annualDayPhase !== 0;
 }
 
 function createAnnualMaintenance() {
@@ -160,14 +171,13 @@ function createAnnualMaintenance() {
     };
 }
 
-function runAnnualTasks(annual, budgetMs, forceAll = false) {
-    const started = nowMs();
+function runAnnualTasks(annual, forceAll = false) {
     for (;;) {
         const task = ANNUAL_TASKS[annual.index];
         task.run(annual);
         annual.index++;
         if (annual.index >= ANNUAL_TASKS.length) return true;
-        if (forceAll || !annualSlicingEnabled || nowMs() - started < budgetMs) continue;
+        if (forceAll || !annualSlicingEnabled) continue;
         return false;
     }
 }
@@ -189,33 +199,68 @@ function logAnnualResults(annual) {
     }
 }
 
-function completeAnnualMaintenance(annual) {
+function scheduleAnnualCompletion(annual) {
     annualPending = null;
+    annualFinishPending = annual;
+}
+
+function completeAnnualMaintenance(annual, splitDaily = true) {
+    annualPending = null;
+    annualFinishPending = null;
     logAnnualResults(annual);
-    finishSimulationTick(annual.newborn);
+    // In the presented loop the year-start day is split across three frames:
+    // season/settlement first, population/citizen second, then fields,
+    // production, health and the rest. Headless callers and saves keep the
+    // complete synchronous tick.
+    finishSimulationTick(annual.newborn, splitDaily);
 }
 
 // Run the next maintenance slice. The game loop calls this without consuming
 // simulation time, so the clock cannot build a catch-up backlog while the realm
 // is paused for a few frames at the year boundary.
 export function advanceAnnualMaintenance() {
+    if (annualDayPhase === 1) {
+        annualDayPhase = 2;
+        finishDailyMiddle(annualDayNewborn);
+        annualDayNewborn = null;
+        return false;
+    }
+    if (annualDayPhase === 2) {
+        annualDayPhase = 0;
+        finishDailyRemainder();
+        return true;
+    }
+    if (annualFinishPending) {
+        completeAnnualMaintenance(annualFinishPending);
+        return false;
+    }
     if (!annualPending) return false;
-    if (!runAnnualTasks(annualPending, ANNUAL_SLICE_BUDGET_MS)) return false;
-    completeAnnualMaintenance(annualPending);
-    return true;
+    if (!runAnnualTasks(annualPending)) return false;
+    scheduleAnnualCompletion(annualPending);
+    return false;
 }
 
 // Saving from inside a maintenance window must capture a complete tick. This
 // path is deliberately allowed to take the full annual cost once, outside the
 // presented frame budget, instead of persisting a half-updated year.
 export function finishAnnualMaintenanceForSave() {
+    if (annualDayPhase) {
+        completeAnnualDay();
+        return true;
+    }
+    if (annualFinishPending) {
+        completeAnnualMaintenance(annualFinishPending, false);
+        return true;
+    }
     if (!annualPending) return false;
-    runAnnualTasks(annualPending, Number.POSITIVE_INFINITY, true);
-    completeAnnualMaintenance(annualPending);
+    runAnnualTasks(annualPending, true);
+    completeAnnualMaintenance(annualPending, false);
     return true;
 }
 
-function finishSimulationTick(newborn) {
+function finishSimulationTick(newborn, splitDaily = false) {
+    annualDayPhase = 0;
+    annualDayNewborn = newborn;
     const previousSeason = Number(state.seasonIndex) || 0;
     state.seasonIndex = Math.floor(state.dayOfYear / 100) % 4;
     // A live Explore survey must not keep displaying last season's density.
@@ -240,11 +285,31 @@ function finishSimulationTick(newborn) {
     // The standing grain contract delivers once per season. This is a single
     // bounded call four times a year, not a new per-tick system.
     if (state.tick % 100 === 0 && (state.crownSupply?.grainLevel || 0) >= 4) settleCrownSupply();
+    if (splitDaily) {
+        annualDayPhase = 1;
+        return;
+    }
+    finishDailyMiddle(newborn);
+    annualDayNewborn = null;
+    finishDailyRemainder();
+}
+
+function finishDailyMiddle(newborn) {
     const newcomer = newborn ? null : updatePopulation();
     updateCitizenRegister();
     if (newborn) addLog("A CHILD WAS BORN: " + newborn.person.name, "#e8c77b", "family");
     else if (newcomer) addLog("A NEW RESIDENT HAS JOINED THE REALM", "#a3d6a7", "population");
-    updateFields(); updateForestSuccession(); if (state.resourceGeography) regrowForests(400, { slice: state.tick % 400, slices: 400 }); updateForestFauna(); updateForestPannage(); updateBuildingIncome(); updateCraftProduction(); updateLogistics(); updateConstruction(); updateVillagers(); updateMilitary(); updateCombat(); updateExpeditions(); checkRandomEvents();
+}
+
+function completeAnnualDay() {
+    if (annualDayPhase === 1) finishDailyMiddle(annualDayNewborn);
+    annualDayNewborn = null;
+    finishDailyRemainder();
+    annualDayPhase = 0;
+}
+
+function finishDailyRemainder() {
+    updateFields(); updateForestSuccession(); if (state.resourceGeography) regrowForests(400, { slice: state.tick % 400, slices: 400 }); updateForestFauna(); updateForestPannage(); updateBuildingIncome(); updateCraftProduction(annualSlicingEnabled ? { supply: 5, craft: 1 } : 0); updateLogistics(); updateConstruction(); updateVillagers(); updateMilitary(); updateCombat(); updateExpeditions(); checkRandomEvents();
     updateWeather(); updateMorale(); updateMarket(); updateEconomy(); updateRealmCycle(); updateHealth(); updateAmbitions();
     // Endless ages advance once per 25 years. A collapse is a recoverable
     // setback in an endless realm rather than a terminal game-over.
@@ -286,7 +351,7 @@ export function updateSimulation() {
     // Defensive path for callers that invoke updateSimulation directly while
     // the presented loop owns an in-flight rollover. The game loop itself
     // advances maintenance without consuming simulation time.
-    if (annualPending) {
+    if (annualPending || annualFinishPending || annualDayPhase) {
         advanceAnnualMaintenance();
         return;
     }
@@ -295,8 +360,16 @@ export function updateSimulation() {
     if (state.dayOfYear >= 400) { state.dayOfYear = 0; state.year++; }
     if (state.year > previousYear) {
         annualPending = createAnnualMaintenance();
-        if (!runAnnualTasks(annualPending, ANNUAL_SLICE_BUDGET_MS)) return;
-        completeAnnualMaintenance(annualPending);
+        // Headless callers keep the synchronous campaign order. The presented
+        // loop always defers the first daily tick to the next frame, even when
+        // every annual task happened to fit into this first slice.
+        if (annualSlicingEnabled) {
+            if (!runAnnualTasks(annualPending)) return;
+            scheduleAnnualCompletion(annualPending);
+            return;
+        }
+        runAnnualTasks(annualPending, true);
+        completeAnnualMaintenance(annualPending, false);
         return;
     }
     finishSimulationTick(null);

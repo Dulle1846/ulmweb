@@ -13,10 +13,9 @@ import { getResearchModifiers } from "./research.js";
 export const MAX_NATURAL_DEATHS_PER_YEAR = 8;
 export const MORTALITY_START_LIFESPAN_RATIO = 0.72;
 
-function deathRisk(entity, person) {
+function deathRisk(entity, person, context, faithRelief, researchRelief) {
     const species = PERSON_SPECIES[person.species];
     if (!species || species.lifespan <= 0) return 0;
-    const context = getMortalityContext();
     const ratio = Math.max(0, Number(person.ageYears) || 0) / species.lifespan;
     const ageProgress = Math.max(0, (ratio - MORTALITY_START_LIFESPAN_RATIO) /
         (1 - MORTALITY_START_LIFESPAN_RATIO));
@@ -37,9 +36,7 @@ function deathRisk(entity, person) {
     const healerMitigation = 1 - context.healerCoverage * 0.12;
     // The congregation's comfort reaches every household: mystics, the culture
     // budget and a crowded temple lower the yearly risk of death.
-    const faithComfort = getFaithModifiers().mortalityRelief;
-    const researchComfort = getResearchModifiers().mortalityRelief;
-    return Math.max(0, Math.min(0.92, risk * healerMitigation * faithComfort * researchComfort));
+    return Math.max(0, Math.min(0.92, risk * healerMitigation * faithRelief * researchRelief));
 }
 
 function hasFamilyTie(person, personId) {
@@ -121,11 +118,17 @@ export function updateMortality() {
         .filter(entity => !entity.dead && entity.personId &&
             (entity.type === TYPE.VILLAGER || (entity.isRoyalFamily && !entity.isKing) || (entity.isKing && hasLivingRoyalSuccessor)))
         .sort((a, b) => String(a.personId).localeCompare(String(b.personId)));
+    // Every resident reads the same yearly health, faith and research context.
+    // Rebuilding those modifiers per person was the first-rollover long task on
+    // a mature realm; it scans the whole settlement for no changing input.
+    let context = getMortalityContext();
+    let faithRelief = getFaithModifiers().mortalityRelief;
+    let researchRelief = getResearchModifiers().mortalityRelief;
     const deaths = [];
     for (const entity of residents) {
         if (deaths.length >= MAX_NATURAL_DEATHS_PER_YEAR) break;
         const person = ensurePersonProfile(entity);
-        const risk = deathRisk(entity, person);
+        const risk = deathRisk(entity, person, context, faithRelief, researchRelief);
         if (risk <= 0 || random("mortality") >= risk) continue;
         const maxHp = Math.max(1, Number(entity.maxHp) || 1);
         const hpRatio = Math.max(0, Math.min(1, (Number.isFinite(Number(entity.hp)) ? Number(entity.hp) : maxHp) / maxHp));
@@ -136,6 +139,12 @@ export function updateMortality() {
         if (death) {
             recordHealthMortality(entity, person, cause);
             deaths.push(death);
+            // A death changes the population, healer coverage and faith
+            // signature. The next resident must see the new yearly context,
+            // exactly as the original per-resident reads did.
+            context = getMortalityContext();
+            faithRelief = getFaithModifiers().mortalityRelief;
+            researchRelief = getResearchModifiers().mortalityRelief;
         }
     }
     return deaths;

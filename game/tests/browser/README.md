@@ -297,6 +297,40 @@ growth instead of one-time cache fill. Override seeds, climate, scale or budget
 with the `PERF_*` environment variables documented at the top of
 `tests/browser/low-end-performance.mjs`.
 
+### Advanced loaded realm
+
+`npm run test:performance:advanced` loads a real 25-year campaign save through
+the visible CONTINUE control. The realm has a mature population and city, not
+the opening village, and the harness refuses it unless the fixture reached at
+least 50 residents and 40 buildings. It then advances another year at the same
+low-end profile, so the sample crosses the deterministic year rollover and the
+first daily tick after it.
+
+The fixture is a real save, including its event chronicle, which is why the
+chronicle retention cap is part of the save budget: 2,400 records made the
+localStorage envelope exceed Chromium's origin quota and silently removed the
+save. The cap is now 1,200 records; older and larger archives normalize on
+load without breaking save compatibility.
+
+| Metric | Budget | 3.29.0 advanced measurement |
+| --- | ---: | ---: |
+| Frame p95, quiet / dense | ≤ 33 ms | **16.8 / 16.7 ms** |
+| Frames > 33 ms, quiet / dense | ≤ 15 % | **0.84 / 0.17 %** |
+| Long tasks | 0 | **0 / 0** |
+| Save | ≤ 1000 ms | **499 ms** |
+| Load | ≤ 2500 ms | **2275 ms** |
+| Warm heap growth | ≤ 25 % | **within budget** |
+
+The loaded save is 62 residents, 54 buildings and 120 live entities at year
+26. Its 25-year campaign fixture is built with the same campaign driver as the
+endurance suite, then loaded only through the production UI. Annual maintenance
+runs one system per frame; the year-start day is split into season/settlement,
+population/citizen and daily-world frames, with a save flush that still
+captures one complete tick. The craft calendar is offset only in the presented loop so the 90-day
+workshop batch no longer lands on the same tick as economy, production and
+logistics; headless campaigns keep the exact synchronous calendar.
+
+
 ### Taiga scenes
 
 `npm run test:performance:taiga` sets `PERF_TAIGA_SCENES=1` and samples a real

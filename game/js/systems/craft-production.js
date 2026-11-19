@@ -125,11 +125,17 @@ function recordCraft(item, recipe) {
  * finished items are created only every ninety ticks. A call outside either
  * cadence is a single modulo check and does no world scanning.
  */
-export function updateCraftProduction() {
+export function updateCraftProduction(phase = 0) {
     if (!state.hasStarted || state.isPaused || state.gameOver || state.tick <= 0) return 0;
     const tick = state.tick;
-    const supplyTick = tick % CRAFT_SUPPLY_INTERVAL === 0;
-    const craftTick = tick % CRAFT_INTERVAL === 0;
+    const supplyOffset = typeof phase === "object"
+        ? Number(phase.supply) || 0
+        : Number(phase) || 0;
+    const craftOffset = typeof phase === "object"
+        ? Number(phase.craft) || 0
+        : Number(phase) || 0;
+    const supplyTick = (tick - supplyOffset) % CRAFT_SUPPLY_INTERVAL === 0;
+    const craftTick = (tick - craftOffset) % CRAFT_INTERVAL === 0;
     if (!supplyTick && !craftTick) return 0;
 
     const workshops = state.entities

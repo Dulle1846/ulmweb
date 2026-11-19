@@ -134,7 +134,7 @@ test("the simulation and UI contracts expose the real craft loop", async () => {
         readFile(new URL("../../js/systems/craft-production.js", import.meta.url), "utf8"),
         readFile(new URL("../../js/world/entities.js", import.meta.url), "utf8"),
     ]);
-    assert.ok(simulation.includes("updateCraftProduction()"));
+    assert.ok(simulation.includes("updateCraftProduction("));
     assert.ok(craft.includes("CRAFT_INTERVAL") && craft.includes("appendCraftedItem"));
     assert.ok(source.includes("TYPE.SMITHY") && source.includes("TYPE.SCRIPTORIUM"));
 });

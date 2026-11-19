@@ -2,7 +2,12 @@
 // This module is DOM-free: the simulation appends records, the presentation
 // layer reads them, and the save pipeline stores a compact normalized copy.
 
-export const MAX_TIMELINE_EVENTS = 2400;
+// The chronicle is presentation history, not simulation state. A mature realm
+// generated roughly 2,400 records by year 25 (1.1 MB of JSON alone), which
+// pushes the complete localStorage envelope past Chromium's 5 MB origin quota
+// and makes the save silently unavailable on the next visit. Keep a generous
+// multi-year reading window while leaving headroom for the actual realm data.
+export const MAX_TIMELINE_EVENTS = 1200;
 export const TIMELINE_CATEGORIES = Object.freeze([
     "COURT", "WAR", "DISASTER", "NATURE", "ECONOMY", "FAITH", "PEOPLE", "OMENS", "EXPLORATION"
 ]);

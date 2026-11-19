@@ -158,6 +158,7 @@ export function getBuildingEfficiency(building, workforce = null) {
 // screen covers the realm only moves their first allocation off the first
 // visible settlement tick.
 export function warmEconomyCaches() {
+    getWorkforceSnapshot();
     getEdictModifiers();
     getCourtModifiers();
     getFaithModifiers();
