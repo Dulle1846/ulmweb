@@ -577,7 +577,13 @@ function applyImpact(effects) {
 // classifies the opening realm; the first chronicle tick reuses the warmed
 // templates and entity arrays instead of allocating them during play.
 export function warmMicroEventContext() {
+    // Selecting the opening cast consumes five draws from the persisted
+    // micro-events stream. Warm-up must be observationally pure, otherwise a
+    // loaded save no longer matches its snapshot and later events shift.
+    const streams = state.randomStreams;
+    const saved = streams && typeof streams === "object" && !Array.isArray(streams) ? { ...streams } : null;
     buildContext();
+    if (saved) state.randomStreams = saved;
     return true;
 }
 
