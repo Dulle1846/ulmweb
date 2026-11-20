@@ -3,11 +3,19 @@
 .command-deck button{display:flex;align-items:center;gap:7px;min-width:112px;min-height:43px;padding:5px 12px;border:2px solid #172536;border-radius:10px;background:linear-gradient(#fff3cb,#e9c57e);color:#1b3045;box-shadow:0 4px 0 #26394b;font-size:9px;font-weight:1000;cursor:pointer}
 .command-deck button:hover{transform:translateY(-2px);filter:brightness(1.08)}
 .command-deck svg{width:24px;height:24px;fill:#b84d32;stroke:#26394b;stroke-width:1.6}
-.command-overlay{z-index:1050}.command-panel{width:min(940px,95vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;padding:22px;border:3px solid #172536;border-radius:17px;background:linear-gradient(145deg,#fff1cb,#e4c78e);color:#26384b;box-shadow:0 6px 0 #102338,0 24px 70px #0009}
+.command-overlay{z-index:1050;contain:strict;width:100vw;height:100vh}
+.command-panel{width:min(940px,95vw);height:88vh;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;padding:22px;border:3px solid #172536;border-radius:17px;background:linear-gradient(145deg,#fff1cb,#e4c78e);color:#26384b;box-shadow:0 6px 0 #102338,0 24px 70px #0009;contain:strict}
 .command-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:104px;padding:12px 16px;background:linear-gradient(90deg,#fff1cbf2 0%,#fff1cbc9 48%,#fff1cb22 100%),url("../assets/comic-realm-banner.svg") right center/auto 100% no-repeat;border:2px solid #a77b42;border-radius:11px;border-bottom:4px solid #b38b4e}
 .command-panel-header h2{margin:4px 0;color:#243d57;font: bold 25px Georgia,serif}
 .command-ribbon,.command-panel-intro>span{color:#9b4a2a;font-size:8px;font-weight:1000;letter-spacing:.2em}
-.command-panel-content{min-height:0;overflow:auto;padding:16px 4px 8px}
+.command-panel-content{flex:1 1 0;min-height:0;overflow:auto;padding:16px 4px 8px;contain:strict}
+/* A progressive insert must not re-layout the sections already painted. */
+.command-panel-content>*{contain:content}
+.command-panel-content .command-history-list>*,
+.command-panel-content .population-citizen-list>*,
+.command-panel-content .population-household-list>*,
+.command-panel-content .noble-house-grid>*,
+.command-panel-content .command-policy-list>*{contain:content}
 .command-panel-intro h3{margin:5px 0;color:#203c58;font: bold 26px Georgia,serif}
 .command-panel-intro p{margin:0 0 15px;color:#4f473b;font-size:11px;line-height:1.5}
 .command-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:13px 0}

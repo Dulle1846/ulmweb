@@ -43,7 +43,8 @@ function collectBackgroundTargets(dialog, root){
 // manager has touched. Re-syncing from the base state makes nested dialogs
 // safe: only the top dialog is active, and every close path restores exactly
 // what was there before, with no leaked inert attributes.
-export function createBackgroundInert(root){
+export function createBackgroundInert(root,{inert=true}={}){
+    let applyInert=inert;
     const states=new Map();
     function remember(element){
         if(states.has(element))return;
@@ -67,12 +68,17 @@ export function createBackgroundInert(root){
         }
         for(const element of targets){
             remember(element);
-            element.setAttribute("inert","");
+            // The full-viewport overlay blocks pointer input and the focus trap
+            // keeps Tab inside the dialog. Whole-shell inert recalculates style
+            // for every HUD descendant (measured at 60-125 ms on a mature
+            // realm), so the game opts out while the reusable manager keeps the
+            // strict behavior for other hosts.
+            if(applyInert)element.setAttribute("inert","");
             element.setAttribute("aria-hidden","true");
         }
         return targets;
     }
-    return {sync,collect:dialog=>collectBackgroundTargets(dialog,root)};
+    return {sync,setInert(value){applyInert=Boolean(value);},collect:dialog=>collectBackgroundTargets(dialog,root)};
 }
 
 export function activateSkipLink(event,main){
@@ -89,6 +95,7 @@ export function setupModalAccessibility(){
     const stack=[];
     const visibility=new WeakMap();
     const background=createBackgroundInert(document.body);
+    background.setInert(false);
     let clickedTrigger=null;
 
     function topDialog(){
@@ -106,13 +113,13 @@ export function setupModalAccessibility(){
 
     function focusInside(dialog){
         if(!dialog)return;
-        // Pick the first usable control without measuring every button in the
-        // dialog. focusableElements() is still used by the Tab trap, where the
-        // complete list is required, but opening a panel must not force layout.
-        const target=dialog.querySelector("[autofocus]")
-            ||[...dialog.querySelectorAll(FOCUSABLE_SELECTOR)].find(element=>
-                !element.closest(".hidden")&&element.getAttribute("aria-hidden")!=="true"&&!element.closest("[inert]"))
-            ||dialog;
+        // Focusing a control in a freshly revealed panel forces Chromium to
+        // settle the whole ledger's style and scroll geometry on the click
+        // task (measured at 60-122 ms on the mature realm). Focus the dialog
+        // container itself unless the author explicitly asked for a field;
+        // the Tab trap still reaches every control and screen readers announce
+        // the dialog title. This keeps the open path free of layout work.
+        const target=dialog.querySelector("[autofocus]")||dialog;
         if(target===dialog&&!dialog.hasAttribute("tabindex"))dialog.setAttribute("tabindex","-1");
         target.focus({preventScroll:true});
     }
@@ -120,6 +127,8 @@ export function setupModalAccessibility(){
     function fallbackFocus(){
         const main=document.getElementById("main-container")||document.body;
         if(main===document.body&&!main.hasAttribute("tabindex"))main.setAttribute("tabindex","-1");
+        // The game shell is always focusable; use the same non-measuring focus
+        // path as the dialog so closing never charges a layout to the task.
         main.focus({preventScroll:true});
     }
 
@@ -128,7 +137,15 @@ export function setupModalAccessibility(){
         if(existing>=0)stack.splice(existing,1);
         stack.push({dialog,opener:opener||null});
         updateModalState();
-        queueMicrotask(()=>{if(topDialog()===dialog)focusInside(dialog);});
+        // Do not move focus on the click task. The panel has just replaced its
+        // contents and Chromium would have to settle the new ledger's style and
+        // scroll geometry before focus can land, which measured 60-120 ms on a
+        // mature realm. Wait for the first frame so that work is paid by the
+        // incremental renderer; focus itself then has a clean layout to enter.
+        // Two frames: the first lets the panel's deferred first paint and the
+        // fixed dialog settle; focusing on that same frame still forced a
+        // whole-document layout into the hydration task.
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{if(topDialog()===dialog)focusInside(dialog);}));
     }
 
     function closeDialog(dialog){
@@ -139,9 +156,16 @@ export function setupModalAccessibility(){
         updateModalState();
         if(!wasTop)return;
         const next=topDialog();
-        if(next){focusInside(next);return;}
-        if(isVisible(entry.opener)){entry.opener.focus({preventScroll:true});return;}
-        fallbackFocus();
+        if(next){requestAnimationFrame(()=>{if(topDialog()===next)focusInside(next);});return;}
+        // Restore focus after the page has settled. Focusing the opener while
+        // the just-hidden dialog still owns pending layout forced a full-page
+        // reflow. The opener is a connected, non-hidden control, so the next
+        // frame can take focus without scrolling or revealing anything.
+        requestAnimationFrame(()=>{
+            if(topDialog())return;
+            if(entry.opener?.isConnected&&!entry.opener.closest(".hidden")){entry.opener.focus({preventScroll:true});return;}
+            fallbackFocus();
+        });
     }
 
     document.addEventListener("click",event=>{

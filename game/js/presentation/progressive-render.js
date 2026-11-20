@@ -3,9 +3,25 @@
 // far outside the 259px scrollport. Desktop still renders synchronously; on a
 // phone the parsed tree is attached in small shallow chunks across animation
 // frames, so every task stays inside the low-end budget.
-const FRAME_BUDGET_MS = 3;
-const NODES_PER_FRAME = 2;
+const FRAME_BUDGET_MS = 4;
+const NODES_PER_FRAME = 3;
 const activeRuns = new WeakMap();
+
+function cancelScheduled(run) {
+    if (!run) return;
+    if (run.idle && run.frame) cancelIdleCallback(run.frame);
+    else if (run.frame) cancelAnimationFrame(run.frame);
+    run.frame = 0;
+    run.idle = false;
+}
+
+function schedule(run, callback) {
+    // Hydration stays on the existing frame scheduler. One small chunk per
+    // frame keeps the next frame on the 60 Hz cadence; idle callbacks were
+    // measured landing after a full layout and stretching frames to 50 ms.
+    run.idle = false;
+    run.frame = requestAnimationFrame(callback);
+}
 
 function isSimple(node) {
     if (node.nodeType === 3) return true;
@@ -39,18 +55,17 @@ function enqueueTree(parent, node, queue, token, run) {
     for (const child of [...node.childNodes]) enqueueTree(shell, child, queue, token, run);
 }
 
-export function renderProgressive(container, markup, { immediate = 1, onDone = null } = {}) {
+export function renderProgressive(container, markup, { immediate = 1, resetScroll = false, deferStart = false, nodesPerFrame = NODES_PER_FRAME, onDone = null } = {}) {
     if (!container) return;
     const previous = activeRuns.get(container);
-    if (previous?.frame) cancelAnimationFrame(previous.frame);
-    const run = { token: (previous?.token || 0) + 1, frame: 0, done: false };
+    cancelScheduled(previous);
+    const run = { token: (previous?.token || 0) + 1, frame: 0, done: false, nodesPerFrame: Math.max(1, Math.trunc(nodesPerFrame) || NODES_PER_FRAME) };
     const finish = () => {
         if (run.done || run.token !== activeRuns.get(container)?.token) return;
         run.done = true;
         try { onDone?.(); } catch (error) { console.error(error); }
     };
     activeRuns.set(container, run);
-    container.replaceChildren();
     const __t0 = performance.now();
     const template = document.createElement("template");
     template.innerHTML = markup;
@@ -58,12 +73,29 @@ export function renderProgressive(container, markup, { immediate = 1, onDone = n
     const queue = [];
     const roots = [...template.content.childNodes];
     for (const root of roots) enqueueTree(container, root, queue, run.token, run);
+    const start = () => {
+        run.frame = 0;
+        if (run.token !== activeRuns.get(container)?.token || !container.isConnected) return;
+        container.replaceChildren();
+        // Reset the previous archive's scroll only after its nodes are gone.
+        // Doing it before replacement forces layout of the panel being left.
+        if (resetScroll) container.scrollTop = 0;
+        // Keep the panel title immediate when not deferring; hydrate the rest
+        // next frame. Deferred starts keep replacement and first-paint layout
+        // out of the input task entirely.
+        const firstWork = queue.shift();
+        if (firstWork && immediate > 0) {
+            try { firstWork(); } catch (error) { console.error(error); }
+        }
+        if (queue.length) schedule(run, take);
+        else finish();
+    };
     const take = () => {
         run.frame = 0;
         if (run.token !== activeRuns.get(container)?.token || !container.isConnected) return;
         const started = performance.now();
         let count = 0;
-        while (queue.length && count < NODES_PER_FRAME && performance.now() - started < FRAME_BUDGET_MS) {
+        while (queue.length && count < run.nodesPerFrame && performance.now() - started < FRAME_BUDGET_MS) {
             const work = queue.shift();
             try {
                 if (!work()) return;
@@ -73,22 +105,17 @@ export function renderProgressive(container, markup, { immediate = 1, onDone = n
             }
             count++;
         }
-        if (queue.length) run.frame = requestAnimationFrame(take);
+        if (queue.length) schedule(run, take);
         else finish();
     };
-    // Keep the panel title immediate; hydrate the archive below it next frame.
-    const firstWork = queue.shift();
-    if (firstWork && immediate > 0) {
-        try { firstWork(); } catch (error) { console.error(error); }
-    }
-    if (queue.length) run.frame = requestAnimationFrame(take);
-    else finish();
+    if (deferStart) { run.idle = false; run.frame = requestAnimationFrame(start); }
+    else start();
 }
 
 export function cancelProgressiveRender(container) {
     if (!container) return;
     const run = activeRuns.get(container);
-    if (run?.frame) cancelAnimationFrame(run.frame);
+    cancelScheduled(run);
     if (run) run.token++;
     activeRuns.delete(container);
 }

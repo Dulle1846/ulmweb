@@ -33,7 +33,7 @@ import { feedStableFromMast, pannageSummary } from "../systems/forest-pannage.js
 import { suppressNearestForestDisturbance } from "../systems/forest-succession.js";
 import { renderUI, cardSprite } from "./rendering/ui.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
-import { renderPopulationPanel, setPopulationFilter, setPopulationQuery, applyPopulationSearch } from "./population-panel.js";
+import { renderPopulationPanel, setPopulationFilter, setPopulationQuery, stepPopulationPage } from "./population-panel.js";
 import { renderAiChroniclePanel, renderAiArchiveSection } from "./ai-chronicle-panel.js";
 import { renderLivingTimeline, renderLivingTimelineChunks, renderTimelineDetailCard, renderTimelineCardBatch, MAX_VISIBLE_TIMELINE_CARDS, TIMELINE_INITIAL_CARDS, TIMELINE_CARD_BATCH, focusTimelineEvent, resetTimelineView, setTimelineFilter, setTimelineYear, stepTimelineYear, clearTimelineSelection, getTimelineView } from "./event-timeline-panel.js";
 import { performAiAction } from "../systems/ai-chronicle.js";
@@ -1219,32 +1219,43 @@ function render(resetScroll=false){
  // panel. Reset the old, already-laid-out view before inserting the new DOM:
  // assigning scrollTop after innerHTML forces a synchronous layout of the
  // entire incoming panel on the click task.
- if(resetScroll)panel.scrollTop=0;
  let progressiveDynasty=false;
  if(activePanel==="items")renderItemLexicon(panel);
  else {
   const __t0=performance.now();
   const markup=(renderers[activePanel]||kingdom)();
   window.__panelTiming={panel:activePanel,renderMs:Math.round((performance.now()-__t0)*10)/10};
-  // Chronicle already has its own chunked timeline hydration; it must render
-  // its slots synchronously so that hydrator can find them.
-  if(narrowViewport()&&activePanel!=="chronicle"){
+  // Opening a ledger on a mature realm used to insert the whole archive in
+  // one click task. The markup itself is small; font, style and layout for
+  // hundreds of rows were the 60-170 ms task. Reuse the existing chunked
+  // renderer for every opened tab, not only phones. Chronicle already owns a
+  // timeline hydrator and needs its slots synchronously.
+  if(resetScroll&&activePanel!=="chronicle"){
    progressiveDynasty=false;
-   renderProgressive(panel,markup,{onDone:()=>{
+   renderProgressive(panel,markup,{resetScroll,deferStart:true,nodesPerFrame:activePanel==="nobility"?3:2,onDone:()=>{
     if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
    }});
-  }else {cancelProgressiveRender(panel);panel.innerHTML=markup;}
+  }else {
+   cancelProgressiveRender(panel);
+   panel.innerHTML=markup;
+   if(resetScroll)requestAnimationFrame(()=>{if(panel.isConnected)panel.scrollTop=0;});
+  }
  }
  if(activePanel==="dynasty"&&!narrowViewport())requestAnimationFrame(drawDynastyConnectors);
  if(activePanel==="chronicle")startProgressiveTimeline();
- if(!narrowViewport())document.querySelectorAll("[data-command-tab]").forEach(b=>{
-  const active=b.dataset.commandTab===activePanel;
-  b.classList.toggle("is-active",active);
-  if(active)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");
- });
- const tabSelect=$("command-tab-select");
- if(tabSelect)tabSelect.value=activePanel;
- setNavigationActive(activePanel);
+ const syncTabState=()=>{
+  if(!narrowViewport())document.querySelectorAll("[data-command-tab]").forEach(b=>{
+   const active=b.dataset.commandTab===activePanel;
+   if(b.classList.contains("is-active")!==active)b.classList.toggle("is-active",active);
+   if(active){if(b.getAttribute("aria-current")!=="page")b.setAttribute("aria-current","page");}
+   else if(b.hasAttribute("aria-current"))b.removeAttribute("aria-current");
+  });
+  const tabSelect=$("command-tab-select");
+  if(tabSelect&&tabSelect.value!==activePanel)tabSelect.value=activePanel;
+  setNavigationActive(activePanel);
+ };
+ if(resetScroll)requestAnimationFrame(syncTabState);
+ else syncTabState();
  // Compact narrow renderers already cap rows or fold heavy sections, so a
  // second IntersectionObserver reveal pass only adds per-frame class writes.
  if(splitPanelPaint){
@@ -1385,11 +1396,23 @@ export function setupManagementUI(){
   if(target==="market"){$("tab-2")?.click();return;}
   if(["kingdom","government","politics","nobility","diplomacy","espionage","explore","biome","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
    if(target==="chronicle")resetTimelineView(state.year);
-   activePanel=target;$("command-modal")?.classList.remove("hidden");render(true);
+   activePanel=target;render(true);$("command-modal")?.classList.remove("hidden");
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));
   }
  }));
- $("command-open-btn")?.addEventListener("click",()=>{$("command-modal")?.classList.remove("hidden");render(true);});
+ $("command-open-btn")?.addEventListener("click",()=>{
+  const modal=$("command-modal");
+  if(modal?.classList.contains("hidden")){
+   // Reveal the empty shell first, then let the next frame build the panel.
+   // Settling the fixed dialog and laying out a full ledger in one task was a
+   // 60-90 ms block on a throttled device; these are separate tasks now.
+   $("command-panel-content")?.replaceChildren();
+   modal.classList.remove("hidden");
+   requestAnimationFrame(()=>render(true));
+   return;
+  }
+  render(true);
+ });
  const commandContent=$("command-panel-content");
  commandContent?.addEventListener("focusin",e=>hydrateLazySelect(e.target.closest("select[data-lazy-options]")));
  commandContent?.addEventListener("pointerdown",e=>hydrateLazySelect(e.target.closest("select[data-lazy-options]")));
@@ -1398,7 +1421,7 @@ export function setupManagementUI(){
   if(records.some(record=>record.addedNodes.length||record.removedNodes.length))schedulePanelCulling();
  }).observe(commandContent,{childList:true,subtree:true});
 
- document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{const nextPanel=b.dataset.commandTab||"government";if(nextPanel==="chronicle")resetTimelineView(state.year);activePanel=nextPanel;$("command-modal")?.classList.remove("hidden");render(true);}));
+ document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{const nextPanel=b.dataset.commandTab||"government";if(nextPanel==="chronicle")resetTimelineView(state.year);activePanel=nextPanel;render(true);$("command-modal")?.classList.remove("hidden");}));
  const commandTabSelect=$("command-tab-select");
  if(commandTabSelect&&!commandTabSelect.options.length){
   document.querySelectorAll("[data-command-tab]").forEach(b=>{
@@ -1411,7 +1434,7 @@ export function setupManagementUI(){
   commandTabSelect.addEventListener("change",()=>{
    const nextPanel=commandTabSelect.value||"government";
    if(nextPanel==="chronicle")resetTimelineView(state.year);
-   activePanel=nextPanel;$("command-modal")?.classList.remove("hidden");render(true);
+   activePanel=nextPanel;render(true);$("command-modal")?.classList.remove("hidden");
   });
  }
  $("command-panel-content")?.addEventListener("click",e=>{
@@ -1443,7 +1466,7 @@ export function setupManagementUI(){
  });
  document.addEventListener("kac:open-timeline",e=>{
   if(!focusTimelineEvent(e.detail?.eventId))return;
-  activePanel="chronicle";$("command-modal")?.classList.remove("hidden");render(true);
+  activePanel="chronicle";render(true);$("command-modal")?.classList.remove("hidden");
  });
  $("command-close")?.addEventListener("click",()=>$("command-modal")?.classList.add("hidden"));
  $("command-modal")?.addEventListener("click",e=>{if(e.target===$("command-modal"))$("command-modal").classList.add("hidden");});
@@ -1464,8 +1487,14 @@ export function setupManagementUI(){
    document.querySelectorAll(".chronicle-entry").forEach(record=>record.classList.toggle("is-filtered",(kind!=="all"&&record.dataset.kind!==kind)||(query&&!record.dataset.search.includes(query))));
   }
   if(e.target.id==="population-search"){
+   const selectionStart=e.target.selectionStart,selectionEnd=e.target.selectionEnd;
    setPopulationQuery(e.target.value);
-   applyPopulationSearch();
+   const scrollTop=$("command-panel-content")?.scrollTop||0;
+   render();
+   const panel=$("command-panel-content");
+   if(panel)panel.scrollTop=scrollTop;
+   const input=$("population-search");
+   if(input){input.focus({preventScroll:true});input.setSelectionRange(selectionStart,selectionEnd);}
   }
  });
  $("command-panel-content")?.addEventListener("change",e=>{
@@ -1503,6 +1532,14 @@ export function setupManagementUI(){
    expandedBuildingId=details?.dataset.buildingId||null;
    const panel=$("command-panel-content");
    const scrollTop=panel?.scrollTop||0;
+   render();
+   if(panel)panel.scrollTop=scrollTop;
+   return;
+  }
+  const populationPageButton=e.target.closest("[data-population-page]");
+  if(populationPageButton){
+   stepPopulationPage(populationPageButton.dataset.populationPage,populationPageButton.dataset.populationPageStep);
+   const panel=$("command-panel-content");const scrollTop=panel?.scrollTop||0;
    render();
    if(panel)panel.scrollTop=scrollTop;
    return;
@@ -1608,8 +1645,8 @@ export function setupManagementUI(){
  document.querySelectorAll("[data-kac-dock-action]").forEach(button=>button.addEventListener("click",()=>{
   const action=button.dataset.kacDockAction;
   if(action==="people")$("people-btn")?.click();
-  else if(action==="dynasty"){activePanel="dynasty";$("command-modal")?.classList.remove("hidden");render();}
-  else if(action==="cards"){activePanel="cards";$("command-modal")?.classList.remove("hidden");render();}
+  else if(action==="dynasty"){activePanel="dynasty";render();$("command-modal")?.classList.remove("hidden");}
+  else if(action==="cards"){activePanel="cards";render();$("command-modal")?.classList.remove("hidden");}
   else if(action==="events")$("tab-0")?.click();
   else if(action==="save")$("save-btn")?.click();
  }));

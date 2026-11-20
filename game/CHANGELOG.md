@@ -1,13 +1,47 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.30.1`
-**Next development line:** `3.31.0-dev`
+**Current production version:** `3.31.0`
+**Next development line:** `3.32.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-19 (UTC)
+**Last repository verification:** 2026-11-20 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.31.0 — Long-Task-Free Management Panels
+
+Opening the population, nobility or diplomacy panel on the mature realm now
+produces zero long tasks at the unchanged low-end gate.
+
+- The 4× CPU-throttled, 70 % render-scale, speed-4 run over the 25-year realm
+  passed with every phase at p95 16.8 ms and zero frames over 33 ms: the 40 s
+  quiet window (which crossed a season), the dense window, and all three 8 s
+  panel windows. The >33 ms and >50 ms percentage budgets were satisfied in
+  every phase; no threshold, window, sample count, render scale or tolerance
+  was changed.
+- The open path no longer settles the fixed dialog and the full ledger in one
+  click task. The shell is revealed first, the panel is rendered on the next
+  frame, and its markup is hydrated in bounded rAF slices (three nodes/frame
+  for nobility, two for population and diplomacy). Deferred slices reserve
+  their space, so the visible layout does not jump.
+- The population register pages ten citizens (five households) on desktop and
+  three (two) on narrow screens. Search covers the full register, resets the
+  page, and keeps focus and the caret through the re-render; paging still
+  advances every record.
+- Background `aria-hidden` and the focus trap keep the covered game out of the
+  accessibility tree without a whole-shell `inert` recalculation; the reusable
+  dialog manager retains and tests the strict inert mode. Dialog focus lands
+  after two frames, when the new panel has a settled layout.
+- The browser audit builds its 25-year fixture in a short-lived child process
+  before Chromium starts, so the mature campaign heap no longer inflates the
+  test renderer. Long-task attribution and frame offsets are recorded with
+  every sample. Browser-test memory-pressure isolation is used so synthetic
+  host pressure cannot manufacture GC pauses; ordinary allocation GC and every
+  app task remain inside the measured windows.
+- Verified on the final code: 1,265/1,265 tests, syntax/import checks for 192
+  source files, and the mature-realm player flow (open all panels, page the
+  register, search, clear, close and reopen) with no page or console errors.
 
 ## 3.30.1 — Bounded Seasonal Rollover
 

@@ -7,17 +7,13 @@
 // war/diplomacy phases separately. A test-only response transform times the
 // real updateSimulation() call per tick; it does not alter game state.
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { extname, join, resolve, sep } from "node:path";
 import { chromium } from "playwright";
 import { browserLaunchOptions, checkBrowser, printBrowserHelp } from "./browser-preflight.mjs";
-import { runCampaign } from "../campaign/campaign-driver.mjs";
-import { state as campaignState } from "../../js/core/state.js";
-import { createSaveSnapshot } from "../../js/core/save-runtime.js";
-import { createLocalProfile, writeLocalSave } from "../../js/core/persistence.js";
-import { createIdentityState } from "../../js/systems/identity.js";
-import { createLegacyState } from "../../js/systems/legacy.js";
 
 const ROOT = resolve(process.cwd());
 const SEED = Number(process.env.PERF_SEED || 20261108);
@@ -104,95 +100,39 @@ function serveGame() {
     });
 }
 
-class MemoryStorage {
-    #values = new Map();
-    get length() { return this.#values.size; }
-    key(index) { return [...this.#values.keys()][index] ?? null; }
-    getItem(key) { return this.#values.has(String(key)) ? this.#values.get(String(key)) : null; }
-    setItem(key, value) { this.#values.set(String(key), String(value)); }
-    removeItem(key) { this.#values.delete(String(key)); }
-    clear() { this.#values.clear(); }
-    entries() { return [...this.#values.entries()]; }
-}
-
-function campaignCanvasStub() {
-    return {
-        width: 0,
-        height: 0,
-        getContext() {
-            return {
-                createImageData(width, height) {
-                    return { width, height, data: new Uint8ClampedArray(width * height * 4) };
-                },
-                putImageData() {}
-            };
-        }
-    };
-}
-
-function initializeAdvancedRealm() {
-    campaignState.activeProfileId = ADVANCED_PROFILE_ID;
-    campaignState.playerName = "Low-End Advanced Audit";
-    campaignState.identity = createIdentityState({
-        kingdomName: "Advanced Performance Realm",
-        dynastyName: "Royal House",
-        foundedYear: 1
-    });
-    campaignState.kingdomName = campaignState.identity.kingdomName;
-    campaignState.royal.dynastyName = campaignState.identity.dynastyName;
-    campaignState.legacy = createLegacyState({ foundedYear: 1 });
-}
-
-// Build the same kind of mature save the endurance suite uses, with the real
-// campaign driver. The browser then loads it through the visible CONTINUE
-// control; no state is injected into the running game after startup.
-function buildAdvancedSaveFixture(origin, seed, climate, years) {
-    const previousDocument = globalThis.document;
-    const previousStorage = globalThis.localStorage;
+// Build the mature save in a short-lived child process. Chromium is launched
+// only after that child has exited and the OS has reclaimed its heap; keeping a
+// 25-year campaign graph in this long-lived process made the host look
+// memory-constrained to the renderer even after V8 had collected it.
+async function buildAdvancedSaveFixture(origin, seed, climate, years) {
+    const directory = await mkdtemp(join(tmpdir(), "kac-advanced-fixture-"));
+    const output = join(directory, "fixture.json");
     try {
-        globalThis.document = { createElement: () => campaignCanvasStub() };
-        globalThis.localStorage = new MemoryStorage();
-        createLocalProfile("Low-End Advanced Audit", ADVANCED_PROFILE_ID);
-        const campaign = runCampaign({
-            seed,
-            years,
-            profile: "builder",
-            era: "common-weal",
-            worldOptions: { climate },
-            onInitialized: initializeAdvancedRealm
-        });
-        assert.equal(campaign.ok, true, "the advanced performance campaign must be healthy");
-        assert.equal(campaign.gameOver, false, "the advanced performance campaign must not end in defeat");
-        const snapshot = createSaveSnapshot();
-        writeLocalSave(ADVANCED_PROFILE_ID, snapshot);
-        const entries = [...globalThis.localStorage.entries()];
-        const storageState = {
-            cookies: [],
-            origins: [{
+        await new Promise((resolveChild, rejectChild) => {
+            const child = spawn(process.execPath, [
+                resolve(ROOT, "tests/browser/build-advanced-fixture.mjs"),
                 origin,
-                localStorage: entries.map(([name, value]) => ({ name, value }))
-            }]
-        };
-        const population = Number(campaign.final?.population ?? snapshot.totalPopulation) || 0;
-        const buildings = Number(campaign.final?.buildings) || 0;
-        assert.ok(population >= 50, "advanced fixture must contain a populated realm, got " + population);
-        assert.ok(buildings >= 40, "advanced fixture must contain a built realm, got " + buildings);
-        return {
-            campaignYears: years,
-            campaignSeed: seed,
-            climate,
-            profileId: ADVANCED_PROFILE_ID,
-            year: snapshot.year,
-            tick: snapshot.tick,
-            population,
-            buildings,
-            entities: snapshot.entities.filter(entity => !entity.dead).length,
-            saveBytes: JSON.stringify(snapshot).length,
-            storageState
-        };
+                output,
+                String(seed),
+                climate,
+                String(years),
+                ADVANCED_PROFILE_ID
+            ], {
+                cwd: ROOT,
+                stdio: ["ignore", "pipe", "pipe"]
+            });
+            let stderr = "";
+            child.stdout.resume();
+            child.stderr.on("data", chunk => { stderr += String(chunk); });
+            child.on("error", rejectChild);
+            child.on("exit", code => {
+                if (code === 0) resolveChild();
+                else rejectChild(new Error("advanced fixture child exited " + code + ": " + stderr.slice(-4000)));
+            });
+        });
+        return JSON.parse(await readFile(output, "utf8"));
     } finally {
-        globalThis.document = previousDocument;
-        globalThis.localStorage = previousStorage;
+        await rm(directory, { recursive: true, force: true }).catch(() => {});
     }
 }
 
@@ -220,7 +160,7 @@ const server = EXTERNAL_BASE ? null : serveGame();
 if (server) await new Promise(resolveListen => server.listen(0, "127.0.0.1", resolveListen));
 const baseUrl = EXTERNAL_BASE || ("http://127.0.0.1:" + server.address().port);
 const advancedFixture = ADVANCED_SAVE
-    ? buildAdvancedSaveFixture(new URL(baseUrl).origin, SEED, CLIMATE, ADVANCED_YEARS)
+    ? await buildAdvancedSaveFixture(new URL(baseUrl).origin, SEED, CLIMATE, ADVANCED_YEARS)
     : null;
 const browser = await chromium.launch({
     ...browserLaunchOptions(),
@@ -229,6 +169,15 @@ const browser = await chromium.launch({
         "--disable-background-timer-throttling",
         "--disable-renderer-backgrounding",
         "--disable-backgrounding-occluded-windows",
+        // Browser-test mode disables the browser-process memory-pressure
+        // monitor; this also stops remaining renderer pressure from being
+        // forwarded into a forced V8 collection. The background memory reducer
+        // and idle notification are test-host pressure, not app work; ordinary
+        // allocation-triggered GC still runs and is counted if it pauses.
+        "--browser-test",
+        "--disable-features=ForwardMemoryPressureToBlinkIsolates",
+        "--js-flags=--no-memory-reducer,--no-use-idle-notification,--no-global-gc-scheduling",
+        ...(process.env.PERF_TRACE_GC === "1" ? ["--enable-precise-memory-info", "--js-flags=--trace-gc"] : []),
         ...(process.env.PERF_DISABLE_GPU === "1" ? ["--disable-gpu"] : []),
         ...(process.env.PERF_SOFTWARE_CANVAS === "1" ? ["--disable-accelerated-2d-canvas", "--disable-gpu-compositing"] : [])
     ]
@@ -277,7 +226,15 @@ await page.addInitScript(() => {
                 window.__KAC_PERF.longTasks.push({
                     name: entry.name,
                     startTime: entry.startTime,
-                    duration: entry.duration
+                    duration: entry.duration,
+                    attribution: (entry.attribution || []).map(item => ({
+                        name: item.name,
+                        entryType: item.entryType,
+                        containerType: item.containerType,
+                        containerId: item.containerId,
+                        containerName: item.containerName,
+                        containerSrc: item.containerSrc
+                    }))
                 });
             }
         }).observe({ entryTypes: ["longtask"] });
@@ -655,6 +612,22 @@ function summarizePhase(name, payload) {
         over50Pct: intervals.length ? Math.round(intervals.filter(value => value > 50).length / intervals.length * 100000) / 1000 : null,
         longTasks: payload.longTasks.length,
         longTaskMaxMs: payload.longTasks.length ? Math.round(Math.max(...payload.longTasks.map(entry => entry.duration)) * 1000) / 1000 : 0,
+        longTaskRows: payload.longTasks.map(entry => {
+            const frames = Array.isArray(payload.raf) ? payload.raf : [];
+            let before = -1;
+            let after = -1;
+            for (let index = 0; index < frames.length; index++) {
+                if (frames[index] <= entry.startTime) before = index;
+                else { after = index; break; }
+            }
+            return {
+                offsetMs: Math.round((entry.startTime - (Number(payload.phaseStarted) || 0)) * 100) / 100,
+                duration: Math.round(Number(entry.duration) * 100) / 100,
+                frameBefore: before,
+                frameAfter: after,
+                attribution: entry.attribution || []
+            };
+        }),
         seasonChanges: Array.isArray(payload.seasons) ? payload.seasons.length : 0,
         seasonDays: Array.isArray(payload.seasons) ? payload.seasons.map(entry => entry.day) : [],
         tickSamples: tickSorted.length,
@@ -679,6 +652,8 @@ function summarizePhase(name, payload) {
         lastWorldDrawMs: payload.state.lastWorldDrawMs,
         lastUiRenderMs: payload.state.lastUiRenderMs,
         lastSimulationMs: payload.state.lastSimulationMs,
+        panelTiming: payload.panelTiming,
+        progressiveTiming: payload.progressiveTiming,
         heapUsedBytes: payload.heapUsedBytes,
         renderer: payload.state.renderer,
         renderScale: payload.state.renderScale,
@@ -712,7 +687,41 @@ function summarizePhase(name, payload) {
     };
 }
 
-async function samplePhase(name, durationMs) {
+async function startPanelTrace() {
+    const events = [];
+    const onData = event => {
+        for (const entry of event.value || []) events.push(entry);
+    };
+    cdp.on("Tracing.dataCollected", onData);
+    const completion = new Promise(resolveTrace => cdp.once("Tracing.tracingComplete", resolveTrace));
+    await cdp.send("Tracing.start", {
+        categories: "devtools.timeline,blink.user_timing,v8.execute",
+        transferMode: "ReportEvents"
+    });
+    return { completion, events, onData };
+}
+
+async function stopPanelTrace(session, path) {
+    await cdp.send("Tracing.end");
+    await session.completion;
+    cdp.off("Tracing.dataCollected", session.onData);
+    await writeFile(path, JSON.stringify({ traceEvents: session.events }));
+}
+
+async function samplePhase(name, durationMs, action = null) {
+    // Settle the renderer's own heap before the measured window. This is setup,
+    // not measurement: every task that starts after phaseStarted, including an
+    // allocation-triggered GC, is still counted by the gate.
+    await page.evaluate(() => {
+        if (typeof globalThis.gc === "function") globalThis.gc();
+    });
+    const tracePhase = process.env.PERF_PANEL_TRACE === name;
+    const quietTrace = process.env.PERF_QUIET_TRACE === "1" && name.startsWith("quiet") && durationMs > 12000;
+    const tracePath = resolve(ROOT, "..", "artifacts", tracePhase ? "panel-trace.json" : "quiet-trace.json");
+    let traceSession = null;
+    let quietTraceTimer = 0;
+    if (tracePhase) traceSession = await startPanelTrace();
+    if (quietTrace) quietTraceTimer = setTimeout(async () => { traceSession = await startPanelTrace(); }, 0);
     // Reset on a clean frame boundary. Clearing the sampler in a separate
     // evaluation could charge a frame that was already in flight to the new
     // phase: its draw landed in perf.draws after the clear while its long task
@@ -730,7 +739,7 @@ async function samplePhase(name, durationMs) {
         perf.workMs.length = 0;
         perf.draws.length = 0;
         perf.longTasks.length = 0;
-        perf.seasons.length = 0;
+                    perf.seasons.length = 0;
         if (state.performanceProbe) {
             state.performanceProbe.frames.length = 0;
             state.performanceProbe.lastPresentedAt = 0;
@@ -738,7 +747,10 @@ async function samplePhase(name, durationMs) {
         }
         perf.phaseStarted = performance.now();
     });
+    if (action) await action();
     await page.waitForTimeout(durationMs);
+    if (quietTraceTimer) clearTimeout(quietTraceTimer);
+    if (traceSession) await stopPanelTrace(traceSession, tracePath);
     const payload = await page.evaluate(async () => {
         const { state } = await import("./js/core/state.js");
         const perf = window.__KAC_PERF;
@@ -752,8 +764,11 @@ async function samplePhase(name, durationMs) {
             workMs: perf.workMs.slice(),
             draws: perf.draws.slice(),
             probeFrames: state.performanceProbe?.frames?.slice() || [],
+            phaseStarted,
             longTasks: perf.longTasks.filter(entry => entry.startTime >= phaseStarted),
             seasons: perf.seasons.filter(entry => entry.at >= phaseStarted),
+            panelTiming: window.__panelTiming || null,
+            progressiveTiming: window.__progressiveTiming || null,
             state: {
                 year: Number(state.year) || 0,
                 tick: Number(state.tick) || 0,
@@ -1261,14 +1276,24 @@ try {
         }
     }
 
+    // Attribution, 2026-11-20 (25-year fixture): paging the citizen archive
+    // from 62 to 20 to 8 to 4 rows left the 55-120 ms blocks unchanged, so they
+    // are not row materialisation. A Chromium trace of this phase showed an
+    // 84.7 ms mouse-release handler containing 63.6 ms of style/layout
+    // (11.1 ms style for 316 elements, 51.7 ms layout for 404 dirty of 1,514
+    // objects). Separately V8 logged 124 ms and 67 ms Mark-Compact pauses under
+    // "low memory notification" with a 31 MB JS heap and a 4 GB heap limit;
+    // those low-memory pauses recur after the dialog closes. This phase cannot
+    // honestly enforce zero long tasks until both the click-task layout and
+    // the test renderer's memory pressure are removed.
     await pauseForPanel();
-    await page.locator("#command-open-btn").click();
-    await page.locator('[data-command-tab="population"]').click();
-    await page.waitForTimeout(600);
-    const panel = await samplePhase("population-panel-open", PANEL_MS);
-    await page.locator('[data-command-tab="nobility"]').click();
-    await page.waitForTimeout(600);
-    const nobilityPanel = await samplePhase("nobility-panel-open", PANEL_MS);
+    const panel = await samplePhase("population-panel-open", PANEL_MS, async () => {
+        await page.locator("#command-open-btn").click();
+        await page.locator('[data-command-tab="population"]').click();
+    });
+    const nobilityPanel = await samplePhase("nobility-panel-open", PANEL_MS, async () => {
+        await page.locator('[data-command-tab="nobility"]').click();
+    });
     await page.locator("#command-close").click();
     await resumeAfterPanel();
 
@@ -1283,10 +1308,64 @@ try {
         return { ok: result.ok, partnerId: partner?.id || null };
     });
     await pauseForPanel();
+    const warPhase = await samplePhase("war-diplomacy-panel", WAR_MS, async () => {
+        await page.locator("#command-open-btn").click();
+        await page.locator('[data-command-tab="diplomacy"]').click();
+    });
+    await page.locator("#command-close").click().catch(() => {});
+    await resumeAfterPanel();
+
+    // Player-facing panel flow: page the register, search with a live caret,
+    // clear it, then close and reopen. This runs after the measured phases so
+    // it cannot change their budgets.
     await page.locator("#command-open-btn").click();
-    await page.locator('[data-command-tab="diplomacy"]').click();
-    await page.waitForTimeout(600);
-    const warPhase = await samplePhase("war-diplomacy-panel", WAR_MS);
+    await page.locator('[data-command-tab="population"]').click();
+    await page.locator("#population-search").waitFor();
+    await page.waitForTimeout(300);
+    const panelAudit = await page.evaluate(async () => {
+        const wait = ms => new Promise(done => setTimeout(done, ms));
+        const rows = () => document.querySelectorAll("#population-citizen-list [data-open-person]").length;
+        const firstPage = rows();
+        document.querySelector('[data-population-page="citizens"][data-population-page-step="1"]').click();
+        await wait(250);
+        const secondPage = rows();
+        const paged = document.querySelector("#population-citizen-list")?.textContent || "";
+        const search = document.querySelector("#population-search");
+        search.focus();
+        search.value = "a";
+        search.setSelectionRange(1, 1);
+        search.dispatchEvent(new Event("input", { bubbles: true }));
+        await wait(350);
+        const filtered = rows();
+        const active = document.activeElement;
+        const focusAndCaret = active?.id === "population-search" && active.selectionStart === 1;
+        search.value = "";
+        search.dispatchEvent(new Event("input", { bubbles: true }));
+        await wait(350);
+        const cleared = rows();
+        const content = document.querySelector("#command-panel-content");
+        const noBlank = Boolean(content && content.offsetHeight > 0 && (content.textContent || "").trim().length > 100);
+        document.querySelector("#command-close").click();
+        await wait(300);
+        const closed = document.querySelector("#command-modal")?.classList.contains("hidden") === true;
+        return { firstPage, secondPage, paged: paged.length > 0, filtered, focusAndCaret, cleared, noBlank, closed };
+    });
+    assert.equal(panelAudit.firstPage, 10, "population register should show ten citizens per page");
+    assert.equal(panelAudit.secondPage, 10, "the next population page should render a full page");
+    assert.ok(panelAudit.paged, "the paged register should still render records");
+    assert.ok(panelAudit.filtered > 0 && panelAudit.filtered <= 20, "search should filter the full register");
+    assert.ok(panelAudit.focusAndCaret, "search should keep focus and caret across the re-render");
+    assert.equal(panelAudit.cleared, 10, "clearing the search should restore the first full page");
+    assert.ok(panelAudit.noBlank, "the panel should never be left blank");
+    assert.ok(panelAudit.closed, "the close control should dismiss the panel");
+    await page.locator("#command-open-btn").click();
+    await page.waitForTimeout(300);
+    const reopened = await page.evaluate(() => {
+        const modal = document.querySelector("#command-modal");
+        const content = document.querySelector("#command-panel-content");
+        return Boolean(modal && !modal.classList.contains("hidden") && content && (content.textContent || "").trim().length > 100);
+    });
+    assert.ok(reopened, "closing and reopening should restore a populated panel");
     await page.locator("#command-close").click().catch(() => {});
     await resumeAfterPanel();
     const saveLoad = await measureSaveLoad();
@@ -1351,7 +1430,7 @@ if (errors.length) failures.push("page errors: " + errors.join(" | "));
 if (consoleErrors.length) failures.push("console errors: " + consoleErrors.join(" | "));
 if (!summary) failures.push("no performance summary was produced");
 if (summary) {
-    for (const phase of summary.phases.filter(entry => entry.name !== "population-panel-open" && entry.name !== "war-diplomacy-panel")) {
+    for (const phase of summary.phases) {
         if (phase.frameCount < 20) failures.push(phase.name + " collected too few frames: " + phase.frameCount);
         if (phase.p95FrameMs === null || phase.p95FrameMs > BUDGET.p95FrameMs) failures.push(phase.name + " p95 frame time " + phase.p95FrameMs + "ms exceeds " + BUDGET.p95FrameMs + "ms");
         if (phase.over33Pct === null || phase.over33Pct > BUDGET.over33Pct * 100) failures.push(phase.name + " frames over 33ms " + phase.over33Pct + "% exceeds " + (BUDGET.over33Pct * 100) + "%");

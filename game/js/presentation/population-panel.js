@@ -15,20 +15,42 @@ const intro = (kicker, title, body) => '<div class="command-panel-intro"><span>'
 
 let populationFilter = "all";
 let populationQuery = "";
+let populationCitizenPage = 0;
+let populationHouseholdPage = 0;
 
 export function setPopulationFilter(value) {
     populationFilter = ["all", "children", "adults", "elders", "workers", "soldiers", "unemployed", "royal", "unhoused"].includes(value) ? value : "all";
+    populationCitizenPage = 0;
+    populationHouseholdPage = 0;
 }
 
 export function setPopulationQuery(value) {
     populationQuery = String(value || "").slice(0, 80);
+    populationCitizenPage = 0;
+    populationHouseholdPage = 0;
 }
 
-export function applyPopulationSearch() {
-    const query = populationQuery.trim().toLowerCase();
-    document.querySelectorAll(".population-citizen").forEach(record => {
-        record.classList.toggle("is-filtered", Boolean(query) && !String(record.dataset.populationSearch || "").includes(query));
-    });
+export function stepPopulationPage(kind, step) {
+    const delta = Math.trunc(Number(step) || 0);
+    if (kind === "citizens") populationCitizenPage = Math.max(0, populationCitizenPage + delta);
+    else if (kind === "households") populationHouseholdPage = Math.max(0, populationHouseholdPage + delta);
+}
+
+function pageWindow(total, size, requested) {
+    const pages = Math.max(1, Math.ceil(total / size));
+    const current = Math.min(Math.max(0, Math.trunc(requested) || 0), pages - 1);
+    const start = current * size;
+    return { pages, current, start, end: Math.min(total, start + size) };
+}
+
+function pagerMarkup(kind, page) {
+    if (page.pages <= 1) return "";
+    const previous = page.current <= 0 ? " disabled" : "";
+    const next = page.current >= page.pages - 1 ? " disabled" : "";
+    return '<div class="command-actions population-pager" data-population-pager="' + kind + '">' +
+        '<button type="button" class="command-choice" data-population-page="' + kind + '" data-population-page-step="-1"' + previous + '>PREVIOUS</button>' +
+        '<span class="command-note">PAGE ' + (page.current + 1) + ' / ' + page.pages + '</span>' +
+        '<button type="button" class="command-choice" data-population-page="' + kind + '" data-population-page-step="1"' + next + '>NEXT</button></div>';
 }
 
 function reliefAction() {
@@ -98,7 +120,9 @@ export function renderPopulationPanel() {
     const snapshot = getPopulationSnapshot();
     const visible = filterPopulationCitizens(snapshot.citizens, populationFilter, populationQuery);
     const narrow = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
-    const shown = visible.slice(0, narrow ? 3 : 160);
+    const citizenPage = pageWindow(visible.length, narrow ? 3 : 10, populationCitizenPage);
+    populationCitizenPage = citizenPage.current;
+    const shown = visible.slice(citizenPage.start, citizenPage.end);
     const byId = new Map(snapshot.citizens.map(citizen => [citizen.id, citizen]));
     const filters = [
         ["all", "ALL"], ["children", "CHILDREN"], ["adults", "ADULTS"], ["elders", "ELDERS"],
@@ -109,15 +133,17 @@ export function renderPopulationPanel() {
         '<button type="button" class="population-filter' + (id === populationFilter ? " is-active" : "") + '" data-population-filter="' + esc(id) + '" aria-pressed="' + (id === populationFilter) + '">' + esc(label) + '</button>'
     ).join("");
     const citizens = shown.map(citizenRow).join("");
-    const householdLimit = narrow ? 2 : 120;
-    const households = snapshot.households.slice(0, householdLimit).map(household => householdRow(household, byId)).join("");
+    const householdPage = pageWindow(snapshot.households.length, narrow ? 2 : 5, populationHouseholdPage);
+    populationHouseholdPage = householdPage.current;
+    const householdRows = snapshot.households.slice(householdPage.start, householdPage.end);
+    const households = householdRows.map(household => householdRow(household, byId)).join("");
     const effects = snapshot.modifiers;
     return intro("THE LIVING REALM", "People, households & livelihoods", "Every named resident has a household, a profession, a faith, a talent and a civic life. Births, maturation, work, partnership, illness, ageing, death and migration are resolved once per year from these same records; the economy, politics and garrison read the result.") +
         '<div id="population-overview" class="command-summary"><div><small>CITIZENS</small><strong>' + number(snapshot.population) + '</strong></div><div><small>HOUSEHOLDS</small><strong>' + number(snapshot.households.length) + '</strong></div><div><small>AVERAGE AGE</small><strong>' + snapshot.avgAge + '</strong></div><div><small>EMPLOYED</small><strong>' + number(snapshot.employed) + ' / ' + number(snapshot.civilians) + '</strong></div><div><small>LOYALTY</small><strong>' + snapshot.avgLoyalty + '</strong></div><div><small>HAPPINESS</small><strong>' + snapshot.avgHappiness + '</strong></div><div><small>BIRTHS</small><strong>' + number(snapshot.births) + '</strong></div><div><small>DEATHS</small><strong>' + number(snapshot.deaths) + '</strong></div></div>' +
         growthGateNote() + '<div class="population-effects"><span>TAX YIELD<b>×' + amount(effects.taxEfficiency) + '</b></span><span>BUILDING OUTPUT<b>×' + amount(effects.productivity) + '</b></span><span>LEGITIMACY PRESSURE<b>' + (effects.legitimacyPressure >= 0 ? "+" : "") + amount(effects.legitimacyPressure) + '</b></span><span>SOLDIER QUALITY<b>×' + amount(effects.militaryQuality) + '</b></span><span>HOUSEHOLD WEALTH<b>' + amount(snapshot.wealth) + ' GOLD</b></span><span>AVG TALENT<b>' + snapshot.avgTalent + '</b></span></div>' +
         '<p class="command-note">Annual census year ' + (snapshot.lastCensusYear || "—") + ' · ' + (snapshot.civilians || 0) + ' civilians + ' + (snapshot.soldiers || 0) + ' soldiers · ' + number(snapshot.unhoused) + ' unhoused · ' + number(snapshot.emigration) + ' departures recorded. The panel updates as the simulation advances; no value is forecast or synthesized.</p>' +
-        '<div class="command-section-title">CITIZEN REGISTER · ' + number(snapshot.population) + ' RECORDED</div><div id="population-filter-bar" class="population-filter-bar">' + filterBar + '</div><div class="command-inline"><input id="population-search" type="search" value="' + esc(populationQuery) + '" placeholder="Search name, profession, household, faith…" aria-label="Search the citizen register"><span class="command-note">' + visible.length + ' matching · showing ' + shown.length + '</span></div><div id="population-citizen-list" class="population-citizen-list">' + (citizens || '<p class="command-note">No citizen matches this filter.</p>') + '</div>' +
-        '<div class="command-section-title">HOUSEHOLDS · ' + number(snapshot.households.length) + ' RECORDED' + (snapshot.households.length > householdLimit ? ' · SHOWING ' + householdLimit : '') + '</div><div id="population-household-list" class="population-household-list">' + (households || '<p class="command-note">No household has been established yet. A campaign starts with its founding cottages.</p>') + '</div>' +
+        '<div class="command-section-title">CITIZEN REGISTER · ' + number(snapshot.population) + ' RECORDED</div><div id="population-filter-bar" class="population-filter-bar">' + filterBar + '</div><div class="command-inline"><input id="population-search" type="search" value="' + esc(populationQuery) + '" placeholder="Search name, profession, household, faith…" aria-label="Search the citizen register"><span class="command-note">' + visible.length + ' matching · showing ' + (shown.length ? (citizenPage.start + 1) + '–' + citizenPage.end : '0') + ' of ' + visible.length + '</span></div><div id="population-citizen-list" class="population-citizen-list">' + (citizens || '<p class="command-note">No citizen matches this filter.</p>') + '</div>' + pagerMarkup("citizens", citizenPage) +
+        '<div class="command-section-title">HOUSEHOLDS · ' + number(snapshot.households.length) + ' RECORDED</div><div class="command-inline"><span class="command-note">SHOWING ' + (householdRows.length ? (householdPage.start + 1) + '–' + householdPage.end : '0') + ' of ' + snapshot.households.length + '</span></div><div id="population-household-list" class="population-household-list">' + (households || '<p class="command-note">No household has been established yet. A campaign starts with its founding cottages.</p>') + '</div>' + pagerMarkup("households", householdPage) +
         '<p class="command-note">Household wealth accumulates from employed members and their vocational talent, then is shared by the household. Loyalty and happiness feed the tax yield, political legitimacy and garrison quality. Departures happen only in a collapsing, hungry realm.</p>' +
         renderAiContactSummary();
 }

@@ -34,7 +34,8 @@
   --ui-body-font:"Segoe UI",Tahoma,Arial,sans-serif;
   --ui-number-font:"Segoe UI",Tahoma,Arial,sans-serif;
 }
-body{font-family:var(--ui-body-font);background:#171512;color:#eee4d0}
+html{height:100%;overflow:hidden}
+body{height:100%;overflow:hidden;font-family:var(--ui-body-font);background:#171512;color:#eee4d0}
 button,input,select,textarea{font-family:var(--ui-body-font)}
 button{border-radius:var(--ui-radius-sm);transition:background-color .14s ease,border-color .14s ease,box-shadow .14s ease,transform .14s ease}
 button:disabled{cursor:not-allowed;filter:grayscale(.45);opacity:.55}
