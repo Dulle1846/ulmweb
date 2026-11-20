@@ -527,3 +527,23 @@ html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
  .biome-resource-row,.biome-fauna-row{grid-template-columns:1fr}
  .biome-row-actions{justify-content:flex-start}
 }
+
+/* Phone summaries keep region names and their ecology numbers on separate
+   lines instead of clipping "Galehollow" beside three stat columns. */
+@media(max-width:520px){
+ .biome-region>summary{flex-wrap:wrap;align-items:flex-start;gap:6px 8px}
+ .biome-region-title{flex:1 1 calc(100% - 54px);min-width:0}
+ .biome-region-title strong{overflow:visible;text-overflow:clip;white-space:normal}
+ .biome-region-stats{min-width:44px;text-align:left}
+}
+
+/* The people browser keeps filters fixed while the roster scrolls, and gives
+   the list enough height to show more than a single clipped row at 360 px. */
+@media(max-width:720px){
+ .people-roster{max-height:min(48dvh,360px)}
+ .people-list{flex:1 1 auto;overflow-y:auto;align-content:start}
+}
+@media(max-width:480px){
+ .people-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ .people-filter select{min-height:30px;padding:5px;font-size:9px}
+}

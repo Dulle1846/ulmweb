@@ -135,3 +135,12 @@
     .screen-overlay[role="dialog"] > .command-panel { width: calc(100vw - 32px); max-width: calc(100vw - 32px); }
     .command-crest { width: 44px; height: 44px; flex: 0 0 44px; }
 }
+
+/* At 360 px the command title has 170 px beside the crest and close control.
+   Give it a little more room and a slightly smaller face so MANAGEMENT never
+   leaves a lone final letter on a third line. */
+@media (max-width: 380px) {
+    .command-header-brand { gap: 6px; }
+    .command-crest { width: 36px; height: 36px; flex: 0 0 36px; }
+    .command-panel-header h2 { font-size: 18px; line-height: 1.05; letter-spacing: .04em; }
+}

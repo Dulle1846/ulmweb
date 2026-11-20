@@ -967,6 +967,8 @@ function bindMenu(){
     if(profile&&nameInput)nameInput.value=profile.displayName;
     const saved=profile?readLocalSave(profile.id):null;
     const continueButton=document.getElementById("continue-game-btn");
+    const resumePanel=document.getElementById("start-resume");
+    if(resumePanel)resumePanel.hidden=!saved;
     if(continueButton){
         continueButton.disabled=!saved;
         continueButton.textContent=saved?"CONTINUE LAST REALM":"NO SAVED REALM";

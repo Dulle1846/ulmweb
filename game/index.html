@@ -50,7 +50,7 @@
             <button id="workshop-open-btn" class="control-button" type="button" title="Realm workshop · B" aria-controls="workshop-panel">WORKSHOP</button>
             <button id="road-build-cancel" class="control-button hidden" type="button">EXIT BUILD</button>
             <button id="command-open-btn" class="control-button" type="button" aria-haspopup="dialog" aria-controls="command-modal">MANAGEMENT</button>
-            <button id="settings-btn" class="control-button" type="button" title="Settings">⚙</button>
+            <button id="settings-btn" class="control-button settings-button" type="button" title="Settings" aria-label="Settings"><svg class="settings-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.09A1.7 1.7 0 0 0 4.6 8.96a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.56V3h4v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 8.96 1.7 1.7 0 0 0 20.96 10H21v4h-.04A1.7 1.7 0 0 0 19.4 15Z"/></svg></button>
             <button id="pause-btn" class="control-button" type="button" aria-label="Pause simulation"><span id="pause-text">PAUSE</span></button>
             <div class="speed-group" role="group" aria-label="Simulation speed">
                 <button id="speed-0-5" class="speed-button" data-speed="0.5" type="button">0.5×</button>
@@ -265,6 +265,11 @@
         <h1 id="start-title">KINGS <span>&amp;</span> CARDS</h1>
         <p id="start-description" class="start-lead">Build a settlement. Shape its fortunes. Discover what the cards bring.</p>
         <div class="start-form">
+            <div id="start-resume" class="start-resume" hidden>
+                <div class="start-resume-copy"><span>RETURNING RULER</span><strong>Your last realm is saved in this browser.</strong></div>
+                <button id="continue-game-btn" class="ui-button ui-button--secondary secondary-button" type="button" disabled>NO SAVED REALM</button>
+                <button id="load-game-btn" class="text-button" type="button">LOAD LOCAL SAVE</button>
+            </div>
             <label for="player-name-input">PLAYER PROFILE</label>
             <input id="player-name-input" type="text" maxlength="32" placeholder="Enter your player name" autocomplete="nickname" autofocus>
             <div class="profile-note">Local profile for this browser. Online accounts and secure admin roles will be connected to a server backend in a later infrastructure step.</div>
@@ -418,8 +423,6 @@
                     <button id="random-realm-cancel" class="ui-button ui-button--secondary secondary-button" type="button">CANCEL</button>
                 </div>
             </section>
-            <button id="continue-game-btn" class="ui-button ui-button--secondary secondary-button" type="button" disabled>NO SAVED REALM</button>
-            <button id="load-game-btn" class="text-button" type="button">LOAD LOCAL SAVE</button>
             <button id="start-settings-btn" class="text-button" type="button">SETTINGS</button>
         </div>
         <div id="status-message" class="status-message"></div>

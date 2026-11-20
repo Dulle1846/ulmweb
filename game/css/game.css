@@ -796,7 +796,7 @@ button:focus-visible, [role="button"]:focus-visible {
 }
 .big-message.hidden { display: none; }
 .big-message-card {
-    width: min(520px, 92vw);
+    width: min(520px, 100%);
     padding: 38px 35px;
     border: 1px solid rgba(221,190,126,0.6);
     border-radius: 18px;
@@ -818,6 +818,10 @@ button:focus-visible, [role="button"]:focus-visible {
     color: #b5beb6;
     font-size: 13px;
     line-height: 1.5;
+}
+@media (max-width: 480px) {
+    .big-message { padding: 12px; }
+    .big-message-card { padding: 30px 22px; }
 }
 .message-button {
     min-height: 40px;
@@ -949,6 +953,13 @@ button:focus-visible, [role="button"]:focus-visible {
 .start-panel h1 span {color:#b49a6e}
 .start-lead {margin:8px 0 23px;color:#b1bdb5;font-size:12px;line-height:1.5}
 .start-form {display:flex;flex-direction:column;gap:9px;max-width:410px;margin:0 auto;text-align:left}
+.start-resume{display:grid;gap:6px;margin:0 0 5px;padding:10px 12px;border:1px solid rgba(221,190,126,.34);border-radius:8px;background:rgba(8,15,16,.46)}
+.start-resume[hidden]{display:none!important}
+.start-resume-copy{display:grid;gap:2px}
+.start-resume-copy span{color:#c9ad75;font-size:7px;font-weight:900;letter-spacing:.16em}
+.start-resume-copy strong{color:#e7ddc9;font-size:10px;line-height:1.4}
+.start-resume .secondary-button{width:100%;margin-top:2px}
+.start-resume .text-button{min-height:28px;font-size:8px}
 .start-form label {margin-top:6px;color:#c7b893;font-size:8px;font-weight:900;letter-spacing:.16em}
 .start-form input {
     width:100%;min-height:39px;padding:0 12px;border:1px solid rgba(221,190,126,.28);border-radius:7px;

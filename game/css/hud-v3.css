@@ -126,6 +126,8 @@
   box-shadow:inset 0 1px #fff8,0 0 0 1px #392b1c;
 }
 .speed-group{display:flex;gap:2px;padding:2px;border:1px solid #8b7047;border-radius:2px;background:#191410}
+.header-actions .settings-button{display:inline-flex;align-items:center;justify-content:center;min-width:31px}
+.settings-glyph{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 
 /* ── 2. Administration rail ───────────────────────────────────────── */
 
@@ -606,10 +608,10 @@
 .save-slot-list{display:grid;gap:4px}
 .save-slot{display:flex;align-items:center;gap:8px;padding:6px 7px;border:1px solid #b69a68;border-radius:2px;background:#fff7e588;color:#4b3927;text-align:left}
 .save-slot.is-active{border-color:#806d52;background:#f8edcf}
-.save-slot__copy{display:grid;gap:1px;min-width:0}
+.save-slot__copy{display:grid;flex:1 1 auto;gap:1px;min-width:0}
 .save-slot__copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 9px var(--ui-title-font);letter-spacing:.05em}
 .save-slot__copy small{font-size:7px;color:#806d52}
-.save-slot__copy em{font-size:6.5px;font-style:normal;color:#9b6a42;letter-spacing:.04em}
+.save-slot__copy em{font-size:6.5px;font-style:normal;line-height:1.35;color:#9b6a42;letter-spacing:.04em;white-space:normal;overflow-wrap:anywhere}
 .save-slot button{margin-left:auto;flex:0 0 auto;min-height:25px;padding:0 7px;border:1px solid #9d7d50;border-radius:2px;background:#efe3c8;color:#4b3927;font:700 7px var(--ui-title-font);letter-spacing:.05em;cursor:pointer}
 .save-slot button:hover{background:#e3d1ad}.save-slot button:disabled{cursor:default;opacity:.5}
 .settings-action-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
@@ -656,7 +658,7 @@
 
 @media(max-width:1320px){
   .player-chip{display:none}
-  .ruler-copy strong{max-width:104px}
+  .ruler-copy strong{max-width:110px}
   .ruler-copy em{display:none}
   .ruler-trend{font-size:6px}
 }
@@ -1024,3 +1026,22 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
 .endeavour-active .command-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;margin-top:8px}
 .endeavour-effect-grid span{min-width:110px}
 @media(max-width:620px){.endeavour-paths{grid-template-columns:1fr}.endeavour-path-head{flex-direction:column;gap:4px}}
+
+/* The citizen register is read as a dossier, not four squeezed columns.
+   Wrapping keeps talent, faith and status legible on narrow panels. */
+@media(max-width:900px){
+  .population-citizen strong,
+  .population-citizen small,
+  .population-citizen em{white-space:normal;overflow:visible;text-overflow:clip}
+}
+@media(max-width:430px){
+  .population-citizen{grid-template-columns:minmax(0,1fr);align-items:start;gap:6px}
+  .population-citizen__health{text-align:left;align-items:flex-start}
+}
+
+/* At 360 px eight administration cells leave barely a hair between labels
+   such as DIPLOMACY and ECONOMY. Five balanced cells per row keep every
+   destination readable without shrinking the text further. */
+@media(max-width:400px){
+  .realm-nav{grid-template-columns:repeat(5,minmax(0,1fr))}
+}

@@ -235,7 +235,7 @@ function paint(container, { force = false } = {}) {
                 '<strong class="item-lexicon__total">' + catalog.total.toLocaleString("en-US") + ' ITEMS</strong></div>' +
                 '<span class="item-lexicon__coverage">' + catalog.baseCount.toLocaleString("en-US") + ' BASE · ' + catalog.craftedCount.toLocaleString("en-US") + ' CRAFTED · ' + catalog.categories.filter(entry => entry.count > 0 && entry.id !== "all" && entry.id !== "crafted").length + ' CATEGORIES</span>' +
             '</div>' +
-            '<label class="item-lexicon__search"><span>SEARCH THE WHOLE LEXICON</span><input id="item-lexicon-query" type="search" inputmode="search" autocomplete="off" spellcheck="false" placeholder="Timber, physic, sword, book, maker, workshop…" value="' + esc(query) + '" aria-label="Search all items"></label>' +
+            '<label class="item-lexicon__search"><span>SEARCH THE WHOLE LEXICON</span><input id="item-lexicon-query" type="search" inputmode="search" autocomplete="off" spellcheck="false" placeholder="Timber, sword, book, workshop…" value="' + esc(query) + '" aria-label="Search all items"></label>' +
             categoryControl +
             '<div class="item-lexicon__meta"><span>' + resultLabel + '</span><span>SHOWING ' + visible.length.toLocaleString("en-US") + ' / ' + rows.length.toLocaleString("en-US") + '</span></div>' +
             '<div class="item-lexicon__groups">' + (visible.length ? renderGroups(visible) : empty) + '</div>' +
