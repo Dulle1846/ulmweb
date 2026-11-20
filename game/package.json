@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.31.0",
+  "version": "3.32.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -60,6 +60,7 @@
     "test:random-start-ui": "node tests/browser/random-start-ui.mjs",
     "test:biome-ui": "node tests/browser/biome-atlas-ui.mjs",
     "test:crown-dread-ui": "node tests/browser/crown-dread-ui.mjs",
+    "test:diplomacy-standing-ui": "node tests/browser/diplomacy-standing-ui.mjs",
     "test:disaster-recovery-ui": "node tests/browser/disaster-recovery-ui.mjs",
     "test:jungle-understory": "JUNGLE_PROOF_ZOOM=2.4 JUNGLE_PROOF_OUT=artifacts/jungle-understory-2.4 node tests/browser/jungle-proof.mjs",
     "test:campaign:coast": "CAMPAIGN_CLIMATE=coastal node scripts/long-campaign.mjs",

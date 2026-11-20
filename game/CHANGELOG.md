@@ -1,13 +1,44 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.31.0`
-**Next development line:** `3.32.0-dev`
+**Current production version:** `3.32.0`
+**Next development line:** `3.33.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-20 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.32.0 — Treaty Standing
+
+A twenty-year alliance now behaves like a twenty-year alliance.
+
+- `realm.treatySinceYear` was written by every trade pact, alliance, war and
+  peace deal, but no system read it. A treaty signed last spring and one kept
+  for a generation produced the same aid, prices, trust and border risk, so a
+  player could not build a durable peace.
+- One bounded reading turns that saved year into a 0–20 year standing. It is a
+  subtraction per realm, read by the existing annual court; there is no new
+  per-frame or per-tick pass and no entity loop.
+- Standing now changes four existing outcomes: a non-war treaty gains up to
+  +0.6 trust at each annual court, buys and sells on terms up to 3 % better,
+  and faces up to 4 points less border-incident pressure; an alliance's
+  existing annual aid rises by up to +3 gold and +4 food.
+- The diplomacy panel shows the treaty age in each realm's badge and a plain
+  “TREATY STANDING · N YEARS · TIER” line with the exact trust, price and
+  incident effects, plus an ENTENTE STANDING summary naming the oldest pact.
+  The text says what the player controls: keeping the treaty in force deepens
+  it, while declaring war resets that court's clock to zero.
+- The year is already in the save schema. A legacy treaty without a recorded
+  year reads as neutral zero and starts its clock at the next annual court, so
+  old saves and fixtures normalize without a fabricated bonus.
+- Browser proof: two identical alliances at the same relation, one sixteen
+  years old and one a year old, gained 1.13 vs 0.68 trust in the same court,
+  quoted 0.836/1.164 vs 0.859/1.142 buy/sell factors, and paid 5/7 vs 3/4 in
+  aid; both readings were identical after save and reload, with zero page or
+  console errors. The screenshots were inspected at 1440×960.
+- Verified: 1,273/1,273 tests, syntax/import checks for 193 source files, the
+  deterministic 25-year campaign, and the regenerated specification audit.
 
 ## 3.31.0 — Long-Task-Free Management Panels
 

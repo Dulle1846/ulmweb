@@ -1,6 +1,7 @@
 // Trade-facing diplomatic rules. Kept free of market imports so executeTrade can
 // apply a treaty without creating a circular dependency through diplomacy.
 import { normalizeTreaty } from "./diplomacy-config.js";
+import { getDiplomaticStanding } from "./diplomatic-standing.js";
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : 0));
 
@@ -11,7 +12,7 @@ export function getDiplomaticTradeTerms(diplomacy, partnerId, courtTradeBonus = 
     const treaty = normalizeTreaty(realm?.treaty);
     const relation = Number.isFinite(Number(realm?.relation)) ? clamp(realm.relation, 0, 100) : 50;
     if (treaty === "war") {
-        return { partnerId, treaty, relation, blocked:true, bonus:0, buyFactor:1, sellFactor:1 };
+        return { partnerId, treaty, relation, blocked:true, bonus:0, buyFactor:1, sellFactor:1, standingYears:0, standingBonus:0 };
     }
     // Better relations shave the purchase price and raise the sale payout. A
     // trade pact adds a small premium; an alliance is the strongest terms.
@@ -22,9 +23,14 @@ export function getDiplomaticTradeTerms(diplomacy, partnerId, courtTradeBonus = 
     // A feared crown trades on worse terms: the court arms itself instead of
     // buying. Neutral below 55 fear, so an ordinary relationship is unchanged.
     const dreadPenalty = clamp((Number(realm?.fear) || 0) - 55, 0, 45) / 100 * 0.15;
-    const bonus = clamp(relationBonus + treatyBonus + envoyBonus + courtBonus - dreadPenalty, -0.20, 0.34);
+    // The age of the treaty is the price-side reader of treatySinceYear: a
+    // court that has traded in peace for years offers better buy and sell
+    // terms. This is one bounded scalar per trade, not a scan.
+    const standing = getDiplomaticStanding(realm);
+    const bonus = clamp(relationBonus + treatyBonus + envoyBonus + courtBonus + standing.tradeBonus - dreadPenalty, -0.20, 0.34);
     return {
         partnerId, treaty, relation, blocked:false, bonus,
+        standingYears:standing.years, standingBonus:standing.tradeBonus, standingTier:standing.tier,
         fear:clamp(Number(realm?.fear) || 0, 0, 100),
         dreadPenalty: Math.round(dreadPenalty * 1000) / 1000,
         buyFactor:clamp(1 - bonus, 0.72, 1.22),

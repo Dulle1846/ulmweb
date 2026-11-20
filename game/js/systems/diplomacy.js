@@ -12,6 +12,7 @@ import { TYPE } from "../core/types.js";
 import { getEndeavourModifiers } from "./endeavours.js";
 import { getSpecialBiomeInfluence } from "./special-biome-couplings.js";
 import { getCrownDread, getFrontierPressure } from "./crown-dread.js";
+import { getDiplomaticStanding } from "./diplomatic-standing.js";
 
 export const DIPLOMACY_COSTS = Object.freeze({ gift:12, tradePact:15, alliance:25, peaceGold:20, peaceFood:15, envoy:8, guarantee:12, guaranteeAidGold:18, guaranteeAidFood:12 });
 export const TRADE_PACT_RELATION = 45;
@@ -273,6 +274,7 @@ function foreignMarriageBond(realmId) {
 function realmSnapshot(realm) {
     const definition = REALM_BY_ID.get(realm.id);
     const year = currentYear();
+    const standing = getDiplomaticStanding(realm, year);
     const bond = foreignMarriageBond(realm.id);
     const marriageBond = bond ? {
         house:String(bond.house || definition?.royalHouse?.house || "Foreign house"),
@@ -325,6 +327,7 @@ function realmSnapshot(realm) {
         tradeAgreement,
         treatyLabel:DIPLOMATIC_TREATIES[realm.treaty]?.label || "Neutral",
         treatyTone:DIPLOMATIC_TREATIES[realm.treaty]?.tone || "neutral",
+        standing,
         relationLabel:relationLabel(realm.relation),
         envoyLabel:realm.envoyId ? (realm.envoyName || "Envoy appointed") : "No envoy",
         envoyActive:Boolean(realm.envoyId),
@@ -339,10 +342,29 @@ export function getDiplomacySnapshot() {
     let relationTotal = 0;
     let envoys = 0;
     const tradeAgreements = { active:0, imports:0, exports:0, goldPaid:0, goldEarned:0 };
+    let standingTotal = 0;
+    let standingRealms = 0;
+    let ententes = 0;
+    let longestStanding = null;
     for (const realm of realms) {
         counts[realm.treaty] = (counts[realm.treaty] || 0) + 1;
         relationTotal += realm.relation;
         if (realm.envoyId) envoys++;
+        const standing = realm.standing;
+        if (standing && standing.treaty !== "war" && standing.years > 0) {
+            standingTotal += standing.years;
+            standingRealms++;
+            if (standing.tier === "entente") ententes++;
+            if (!longestStanding || standing.years > longestStanding.years) {
+                longestStanding = {
+                    realmId: realm.id,
+                    name: realm.name,
+                    years: standing.years,
+                    tier: standing.tier,
+                    tierLabel: standing.tierLabel
+                };
+            }
+        }
         if (realm.tradeAgreement?.active) {
             tradeAgreements.active++;
             tradeAgreements.imports += realm.tradeAgreement.imports;
@@ -365,6 +387,13 @@ export function getDiplomacySnapshot() {
             termYears:GUARANTEE_TERM_YEARS
         },
         averageRelation:realms.length ? Math.round((relationTotal / realms.length) * 10) / 10 : 0,
+        standing:{
+            realms:standingRealms,
+            averageYears:standingRealms ? Math.round((standingTotal / standingRealms) * 10) / 10 : 0,
+            ententes,
+            longest:longestStanding,
+            yearLimit:20
+        },
         dread:getCrownDread(),
         pressure:getFrontierPressure(),
         lastUpdateYear:diplomacy.lastUpdateYear,
@@ -916,6 +945,10 @@ export function updateDiplomacy() {
     for (const realm of diplomacy.realms) {
         const definition = REALM_BY_ID.get(realm.id);
         if (!definition) continue;
+        // A treaty saved before the clock existed starts its clock here instead
+        // of reading as an ancient pact the first time it is loaded.
+        if (realm.treaty !== "none" && Number(realm.treatySinceYear) <= 0) realm.treatySinceYear = year;
+        const standing = getDiplomaticStanding(realm, year);
         const envoy = livingEnvoy(realm);
         if (realm.treaty === "war") {
             if (realm.tradeAgreement) breakTradeAgreement(diplomacy, realm, definition, "war");
@@ -940,8 +973,10 @@ export function updateDiplomacy() {
             realm.fear = clamp(realm.fear - 0.4);
             effects.legitimacy += 0.08;
             effects.guilds += 0.04;
-            addResource("gold", 3);
-            addResource("food", 4);
+            // Standing raises the same annual aid rather than adding a second
+            // reward loop: a long alliance is simply worth more each year.
+            addResource("gold", 3 + standing.allianceGold);
+            addResource("food", 4 + standing.allianceFood);
         } else if (realm.treaty === "trade") {
             realm.relation = clamp(realm.relation + 0.7 + (envoy ? 0.5 : 0));
             realm.trust = clamp(realm.trust + 0.4);
@@ -968,6 +1003,12 @@ export function updateDiplomacy() {
             realm.relation = clamp(realm.relation + 0.4);
             realm.trust = clamp(realm.trust + 0.2);
         }
+        // The age of the treaty itself is the second reader of treatySinceYear.
+        // A court that has kept faith for years trusts the crown more each
+        // annual court; a war reads zero standing and never gains this.
+        if (realm.treaty !== "war" && standing.trustGain > 0) {
+            realm.trust = clamp(realm.trust + standing.trustGain);
+        }
         // Standing is a long-term asset: honoured guarantees make every court
         // slightly more willing to trust the crown, while broken ones decay it.
         if (realm.treaty !== "war") realm.trust = clamp(realm.trust + credibilityDelta);
@@ -976,7 +1017,7 @@ export function updateDiplomacy() {
         realm.relation = clamp(realm.relation + biome.relationDrift);
         // A court tests a crown it does not fear. This threshold is the only
         // place the garrison changes how often the border is probed.
-        const incidentThreshold = 20 + Math.max(0, 50 - dread.dread) * 0.12;
+        const incidentThreshold = 20 + Math.max(0, 50 - dread.dread) * 0.12 - standing.incidentRelief;
         if (realm.treaty !== "war" && realm.relation < incidentThreshold && year - realm.lastIncidentYear >= 3) {
             const incidentScale = Math.max(0.2, 1 - court.incidentReduction);
             realm.lastIncidentYear = year;
