@@ -1,0 +1,80 @@
+name: Deploy Kings & Cards to GitHub Pages
+
+on:
+  push:
+    branches:
+      - ulmweb-branch
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: kings-cards-github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Test and build GitHub Pages package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run full game tests
+        working-directory: game
+        run: npm test
+
+      - name: Build runtime-only Pages package
+        working-directory: game
+        run: npm run build:runtime
+
+      - name: Verify runtime marker
+        working-directory: game
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const marker = JSON.parse(fs.readFileSync("artifacts/kings-and-cards-deploy/public/version.json", "utf8"));
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            if (marker.commit !== process.env.GITHUB_SHA) {
+              console.error(`Runtime marker commit ${marker.commit} does not match ${process.env.GITHUB_SHA}`);
+              process.exit(1);
+            }
+            if (marker.version !== pkg.version) {
+              console.error(`Runtime marker version ${marker.version} does not match package ${pkg.version}`);
+              process.exit(1);
+            }
+            if (!marker.builtAt || Number.isNaN(Date.parse(marker.builtAt))) {
+              console.error("Runtime marker has no valid builtAt timestamp");
+              process.exit(1);
+            }
+            console.log(`Runtime marker version=${marker.version} commit=${marker.commit} builtAt=${marker.builtAt}`);
+          '
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: game/artifacts/kings-and-cards-deploy/public
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
