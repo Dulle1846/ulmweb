@@ -29,10 +29,11 @@ produces zero long tasks at the unchanged low-end gate.
   three (two) on narrow screens. Search covers the full register, resets the
   page, and keeps focus and the caret through the re-render; paging still
   advances every record.
-- Background `aria-hidden` and the focus trap keep the covered game out of the
-  accessibility tree without a whole-shell `inert` recalculation; the reusable
-  dialog manager retains and tests the strict inert mode. Dialog focus lands
-  after two frames, when the new panel has a settled layout.
+- The dialog's `aria-modal="true"` contract and the Tab focus trap keep the
+  covered game unavailable to assistive technology without a whole-shell
+  `inert`/`aria-hidden` style recalculation; the reusable dialog manager
+  retains and tests the strict inert mode. Dialog focus lands after two frames,
+  when the new panel has a settled layout.
 - The browser audit builds its 25-year fixture in a short-lived child process
   before Chromium starts, so the mature campaign heap no longer inflates the
   test renderer. Long-task attribution and frame offsets are recorded with

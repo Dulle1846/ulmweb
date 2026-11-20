@@ -43,8 +43,9 @@ function collectBackgroundTargets(dialog, root){
 // manager has touched. Re-syncing from the base state makes nested dialogs
 // safe: only the top dialog is active, and every close path restores exactly
 // what was there before, with no leaked inert attributes.
-export function createBackgroundInert(root,{inert=true}={}){
+export function createBackgroundInert(root,{inert=true,ariaHidden=true}={}){
     let applyInert=inert;
+    let applyAriaHidden=ariaHidden;
     const states=new Map();
     function remember(element){
         if(states.has(element))return;
@@ -74,11 +75,12 @@ export function createBackgroundInert(root,{inert=true}={}){
             // realm), so the game opts out while the reusable manager keeps the
             // strict behavior for other hosts.
             if(applyInert)element.setAttribute("inert","");
-            element.setAttribute("aria-hidden","true");
+            if(applyAriaHidden)element.setAttribute("aria-hidden","true");
+            else if(element.hasAttribute("aria-hidden"))element.removeAttribute("aria-hidden");
         }
         return targets;
     }
-    return {sync,setInert(value){applyInert=Boolean(value);},collect:dialog=>collectBackgroundTargets(dialog,root)};
+    return {sync,setInert(value){applyInert=Boolean(value);},setAriaHidden(value){applyAriaHidden=Boolean(value);},collect:dialog=>collectBackgroundTargets(dialog,root)};
 }
 
 export function activateSkipLink(event,main){
@@ -95,7 +97,12 @@ export function setupModalAccessibility(){
     const stack=[];
     const visibility=new WeakMap();
     const background=createBackgroundInert(document.body);
+    // aria-modal="true" already tells assistive technology that the covered
+    // game is unavailable. Hiding the whole shell with inert/aria-hidden costs
+    // a full style and accessibility-tree recalculation (60-125 ms on a mature
+    // realm), so this host relies on the modal contract and the Tab focus trap.
     background.setInert(false);
+    background.setAriaHidden(false);
     let clickedTrigger=null;
 
     function topDialog(){
