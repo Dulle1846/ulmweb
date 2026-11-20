@@ -266,17 +266,22 @@ async function refreshBuildingRegister() {
     }
     await page.locator('[data-command-tab="buildings"]').click();
     await page.locator("#command-panel-content .building-register").waitFor({timeout: 10000});
+    // The register hydrates its rows across frames; an empty register shell is
+    // not evidence that the Forester row is absent.
+    await page.waitForFunction(() => document.querySelectorAll("#command-panel-content .building-record").length > 0, null, {timeout: 10000});
 }
 
 async function readForesterRecord(foresterId) {
     await refreshBuildingRegister();
     const record = page.locator("#command-panel-content .building-record").filter({hasText: foresterId});
+    await record.first().waitFor({state: "attached", timeout: 10000});
     assert.equal(await record.count(), 1, "the Forester must have exactly one building-register row");
     await record.scrollIntoViewIfNeeded();
     if (!await record.evaluate(element => element.open)) await record.locator("summary").click();
     await page.waitForTimeout(80);
     const recordText = (await record.innerText()).replace(/\s+/g, " ").trim();
     const block = record.locator("[data-forester-stewardship]");
+    await block.waitFor({state: "attached", timeout: 10000});
     assert.equal(await block.count(), 1, "the Forester record must contain a dedicated stewardship block");
     const values = await block.evaluate(element => ({
         stock: Number(element.dataset.forestStock),

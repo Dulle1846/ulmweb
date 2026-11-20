@@ -886,7 +886,9 @@ try{
     assert.ok(await page.locator("#command-panel-content .ledger-grid").isVisible(),"economy must render the real ledger section");
     await page.locator('[data-command-tab="buildings"]').click();
     await waitForPanelText("Building register");
-    await waitForPanelSelector("#command-panel-content .building-record");
+    // The management panel hydrates rows across frames. Wait for a finished
+    // record with its atlas art, not the empty shell that arrives first.
+    await waitForPanelSelector("#command-panel-content .building-record-art");
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Building register"));
     assert.ok(await page.locator("#command-panel-content .building-record").count()>=1,"starting realm structures must be listed");
     assert.ok(await page.locator("#command-panel-content .building-record-art").count()>=1,"building register must show original sprite artwork");
