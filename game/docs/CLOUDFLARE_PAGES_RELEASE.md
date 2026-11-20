@@ -98,7 +98,7 @@ The workers.dev endpoint is not the same deployment target as Pages. The reposit
 1. In Cloudflare Dashboard → Workers & Pages → select the Pages project.
 2. Open Deployments → failed deployment → View details → Build log.
 3. Confirm the root directory, build command, output directory and production branch against the table above.
-4. If the error is in repository cloning, inspect the GitHub Pages app installation and repository permissions.
+4. If the error is in repository cloning, inspect the Cloudflare Pages GitHub App installation and repository permissions.
 5. If the failure is in the build step, check whether a stale npm run build or wrong output directory is configured.
 6. If the Pages build succeeds but the public site is stale, inspect the deployment stage and the active production alias.
 7. For workers.dev email alerts, open the separate Worker project and inspect its logs independently. Do not infer a Pages failure from a Worker failure.
