@@ -1212,6 +1212,11 @@ function render(resetScroll=false){
  chronicleSectionsToken++;
  cancelTimelineRefresh();
  const panel=$("command-panel-content");if(!panel)return;
+ // A previous tab may still be hydrating across frames. Cancel it before the
+ // incoming renderer replaces the panel, otherwise late chunks can append the
+ // old ledger over the newly selected tab (most visible when returning to the
+ // Lexicon from a large management view).
+ cancelProgressiveRender(panel);
  // Split style/layout from paint when a tab changes on a narrow screen. The
  // incoming panel is laid out while visibility:hidden, then revealed on the
  // next task. Both halves stay well below the long-task threshold at 6x CPU,
@@ -1241,7 +1246,6 @@ function render(resetScroll=false){
     if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
    }});
   }else {
-   cancelProgressiveRender(panel);
    panel.innerHTML=markup;
    if(resetScroll)requestAnimationFrame(()=>{if(panel.isConnected)panel.scrollTop=0;});
   }

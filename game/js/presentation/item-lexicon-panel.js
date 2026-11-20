@@ -314,6 +314,11 @@ function bind(container) {
 export function renderItemLexicon(container) {
     if (!container) return;
     bind(container);
+    // Tab switches replace the panel without changing the catalog signature.
+    // Drop the cached signature only when the Lexicon DOM is gone; automatic
+    // tick/search repaints keep their early-out while a return to the tab
+    // always renders live content again.
+    if (!container.querySelector(".item-lexicon")) delete container.dataset.itemLexiconSignature;
     const catalog = getCatalog();
     if (activeCategory !== "all" && activeCategory !== "crafted" && !catalog.categoryCounts[activeCategory]) {
         activeCategory = "all";
