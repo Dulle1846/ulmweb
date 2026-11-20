@@ -179,7 +179,10 @@ jobs:
         timeout-minutes: 6
         env:
           FORESTER_LONGTERM_OUT: ${{ runner.temp }}/forester-stewardship-longrun
-          FORESTER_TIME_BUDGET_MS: 240000
+          # Wall-clock ceiling for the shared runner, not a simulation
+          # tolerance: all three seeds still run ten full years with every
+          # assertion unchanged. The previous ceiling cut a completed 264 s run.
+          FORESTER_TIME_BUDGET_MS: 330000
         run: |
           set +e
           set -o pipefail

@@ -1096,9 +1096,22 @@ try{
     assert.ok(await page.locator("#command-panel-content .logistics-audit").count()>=10,"the audit must expose every physical good and royal food");
     const blockedAudit=await page.locator("#command-panel-content .logistics-audit.is-blocked").evaluateAll(nodes=>nodes.map(node=>node.innerText));
     assert.equal(blockedAudit.length,0,"a fresh realm must reconcile every physical good and royal food: "+JSON.stringify(blockedAudit));
-    await page.waitForFunction(()=>document.querySelectorAll("#command-panel-content .logistics-movement").length>0,null,{timeout:15000});
-    const movementTypes=await page.locator("#command-panel-content .logistics-movement").evaluateAll(nodes=>nodes.map(node=>node.dataset.movementType));
-    assert.ok(movementTypes.length>0&&movementTypes.length<=40,"the movement archive must stay bounded to the newest 40 records");
+    // The archive hydrates across animation frames and can be replaced by a
+    // second tab render. Sample only after several consecutive frames agree;
+    // the bound itself is still asserted at full strength.
+    const movementTypes=await page.evaluate(async()=>{
+        const read=()=>[...document.querySelectorAll("#command-panel-content .logistics-movement")].map(node=>node.dataset.movementType);
+        let previous=read(), stable=0;
+        for(let frame=0;frame<300;frame++){
+            await new Promise(resolve=>requestAnimationFrame(resolve));
+            const current=read();
+            if(current.length>0&&current.length===previous.length&&current.every((type,index)=>type===previous[index])) stable++;
+            else { previous=current; stable=0; }
+            if(stable>=4) return current;
+        }
+        return previous;
+    });
+    assert.ok(movementTypes.length>0&&movementTypes.length<=40,"the movement archive must stay bounded to the newest 40 records (count="+movementTypes.length+")");
     assert.ok(movementTypes.every(type=>["produced","consumed","deposited","withdrawn","evacuated","reserved","picked","delivered"].includes(type)),"every ledger row must expose a known movement type: "+movementTypes.join(","));
     await page.waitForFunction(async()=>{
         const {state}=await import("./js/core/state.js");
