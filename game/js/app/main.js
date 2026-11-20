@@ -708,6 +708,10 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     document.getElementById("start-screen").classList.add("hidden");
     document.getElementById("settings-modal").classList.add("hidden");
+    // The founding form scrolls internally on phones; once it closes, return
+    // the document to the map instead of leaving the player halfway down the
+    // management panel.
+    window.scrollTo(0, 0);
     if(!loopStarted){loopStarted=true;startGameLoop();}
     // The full HUD was already rendered behind the start overlay. Starting a
     // second refresh chain on the first visible frame only competes with it.
@@ -768,6 +772,7 @@ function loadSnapshotIntoGame(profile,snapshot){
     document.querySelectorAll(".speed-button").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.speed)===savedSpeed));
     if(restored.hasSavedCamera)clampCamera();else centerCamera();
     document.getElementById("start-screen").classList.add("hidden");
+    window.scrollTo(0, 0);
     if(!loopStarted){loopStarted=true;startGameLoop();}
     renderUI();
     startSoundtrack().catch(()=>{});
@@ -943,6 +948,7 @@ async function importRealm(file){
         syncWorldForge(state.worldOptions);
         document.getElementById("start-screen")?.classList.add("hidden");
         document.getElementById("settings-modal")?.classList.add("hidden");
+        window.scrollTo(0, 0);
         setSaveStatus("IMPORTED · "+new Date(savedAt).toLocaleTimeString(),"saved");
         setArchiveStatus("Imported realm saved to "+(profile.displayName||"this profile")+".");
         showStatus("Realm imported · "+new Date(savedAt).toLocaleTimeString());

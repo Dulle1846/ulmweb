@@ -139,6 +139,20 @@
             <div id="hint-box" class="hint-box hidden" role="button" tabindex="0" aria-label="Dismiss tip">
                 <div class="hint-title"><span>FIELD NOTE</span><span>×</span></div><div id="hint-text">Scroll to move through the realm's four levels of detail.</div>
             </div>
+            <aside id="event-notification" class="event-notification hidden" role="status" aria-live="polite" aria-atomic="true" aria-label="Living chronicle event">
+                <div class="event-notification-card">
+                    <span id="event-notification-category" class="event-notification-kicker"></span>
+                    <h3 id="event-notification-title" class="event-notification-title"></h3>
+                    <p id="event-notification-text" class="event-notification-text"></p>
+                    <div class="event-notification-footer">
+                        <time id="event-notification-date"></time>
+                        <div class="event-notification-actions">
+                            <button id="event-notification-open" type="button">VIEW IN CHRONICLE</button>
+                            <button id="event-notification-close" class="event-notification-close" type="button" aria-label="Dismiss event notice">×</button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </section>
 
         <aside class="side-panel" aria-label="Kingdom management">
@@ -252,7 +266,7 @@
         <p id="start-description" class="start-lead">Build a settlement. Shape its fortunes. Discover what the cards bring.</p>
         <div class="start-form">
             <label for="player-name-input">PLAYER PROFILE</label>
-            <input id="player-name-input" type="text" maxlength="32" placeholder="Enter your player name" autocomplete="nickname">
+            <input id="player-name-input" type="text" maxlength="32" placeholder="Enter your player name" autocomplete="nickname" autofocus>
             <div class="profile-note">Local profile for this browser. Online accounts and secure admin roles will be connected to a server backend in a later infrastructure step.</div>
             <section class="realm-identity" aria-label="Realm identity and culture">
                 <div class="forge-heading"><span>THE REALM &amp; ITS HOUSE</span><span>NAME THE CROWN</span></div>
@@ -505,7 +519,7 @@
 </div>
 
 
-<div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="ui-panel ui-window ui-window--large modal-panel command-panel"><header class="ui-window__header ui-panel__header command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close management">×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management">
+<div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="ui-panel ui-window ui-window--large modal-panel command-panel"><header class="ui-window__header ui-panel__header command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close management" autofocus>×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management">
 <button type="button" class="ui-button ui-button--tab" data-command-tab="kingdom"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>REALM</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="population"><svg aria-hidden="true"><use href="assets/command-emblems.svg#people"></use></svg><span>PEOPLE</span></button>
 <button type="button" class="ui-button ui-button--tab" data-command-tab="government"><svg aria-hidden="true"><use href="assets/command-emblems.svg#crown"></use></svg><span>GOVERNMENT</span></button>
@@ -534,20 +548,6 @@
 <button type="button" class="ui-button ui-button--tab" data-command-tab="chronicle"><svg aria-hidden="true"><use href="assets/command-emblems.svg#book"></use></svg><span>CHRONICLE</span></button>
 </nav><label class="command-tab-select" for="command-tab-select"><span>OPEN MANAGEMENT PANEL</span><select id="command-tab-select" aria-label="Choose management panel"></select></label><div id="command-panel-content" class="ui-window__body command-panel-content"></div></section></div>
 <div id="card-drag-ghost" aria-hidden="true"><span id="drag-ghost-icon" class="drag-ghost-icon"></span><span id="drag-ghost-name" class="drag-ghost-name"></span></div>
-<aside id="event-notification" class="event-notification hidden" role="status" aria-live="polite" aria-atomic="true" aria-label="Living chronicle event">
-    <div class="event-notification-card">
-        <span id="event-notification-category" class="event-notification-kicker"></span>
-        <h3 id="event-notification-title" class="event-notification-title"></h3>
-        <p id="event-notification-text" class="event-notification-text"></p>
-        <div class="event-notification-footer">
-            <time id="event-notification-date"></time>
-            <div class="event-notification-actions">
-                <button id="event-notification-open" type="button">VIEW IN CHRONICLE</button>
-                <button id="event-notification-close" class="event-notification-close" type="button" aria-label="Dismiss event notice">×</button>
-            </div>
-        </div>
-    </div>
-</aside>
 <div id="action-toast" class="action-toast" role="status"></div>
 <div id="big-message" class="big-message hidden" role="dialog" aria-modal="true" aria-labelledby="big-title">
     <div class="big-message-card"><div id="big-title"></div><div id="big-subtitle"></div><button id="big-message-close" class="message-button" type="button">CONTINUE</button></div>

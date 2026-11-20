@@ -209,6 +209,9 @@
   color:#cbbb98;font:700 8px var(--ui-title-font);letter-spacing:.16em;
   box-shadow:0 3px 10px #0008;
 }
+/* The idle banner repeated the card instruction across the map. Keep it only
+   while a card drag, road tool or direct build is actually active. */
+#placement-status:not([data-valid]):not([data-road-mode]):not([data-build-kind]){display:none}
 .placement-status[data-valid="true"]{border-color:#8dae6f;color:#dcecc4}
 .placement-status[data-valid="false"]{border-color:#b96a5b;color:#ffd3c8}
 .stage-compass{
@@ -311,6 +314,10 @@
     repeating-linear-gradient(0deg,#ffffff04 0 1px,transparent 1px 3px),
     linear-gradient(165deg,#33291f,#1b1611 74%);
 }
+/* The banner already owns the live resource ledger. The side-panel copy is a
+   second, non-interactive rendering of the same four values; keeping it pushed
+   the event log and card inspector below the fold. */
+.side-panel>.resource-section{display:none}
 .section-heading{
   padding-bottom:7px;border-bottom:1px solid #b99a5940;
   font-size:9px;letter-spacing:.15em;
@@ -589,7 +596,10 @@
 .event-participants button{padding:3px 6px;border:1px solid #b69a68;border-radius:2px;background:#f8edcf;color:#4b3927;font:700 7px var(--ui-body-font);letter-spacing:.04em;cursor:pointer}
 .event-participants button:hover{border-color:#806d52;background:#efe3c8}
 .event-participants em{font-size:8px;color:#806d52}
-.event-panel-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid #b69a68;font:700 6.5px var(--ui-title-font);letter-spacing:.08em;color:#806d52}
+.event-panel{display:flex;flex-direction:column;max-height:calc(100dvh - 24px);overflow:hidden}
+.event-panel-topline{flex:0 0 auto}
+.event-panel-body{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.event-panel-footer{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid #b69a68;font:700 6.5px var(--ui-title-font);letter-spacing:.08em;color:#806d52}
 .settings-archive{margin-top:16px;padding-top:12px;border-top:1px solid #9d7d5044}
 .settings-section-heading{font:700 9px var(--ui-title-font);letter-spacing:.14em;color:#4b3927}
 .settings-archive-note{margin:3px 0 8px;font-size:8px;line-height:1.45;color:#806d52}
@@ -814,6 +824,55 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
   .performance-benchmark__run{width:100%}
   .benchmark-live__panel{gap:5px 8px;padding:7px 8px}
   .benchmark-live__copy span{white-space:normal}
+}
+
+/* ── Responsive play shell ──────────────────────────────────────────
+   Below 900px the app used to compress the map and the management panel
+   into one fixed viewport. At 360x640 that left 92px of map and 142px of
+   panel. The page now scrolls as one document: the map keeps a real height
+   and the panel grows to its content instead of hiding it behind a 120px
+   internal scrollport. */
+@media(max-width:900px){
+  html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
+  .game-shell{height:auto;min-height:100dvh}
+  .game-layout{flex:1 1 auto;overflow:visible}
+  .world-stage{flex:0 0 auto;height:clamp(260px,48dvh,520px);min-height:260px}
+  .side-panel{flex:0 0 auto;max-height:none;min-height:0;overflow:visible;padding-bottom:14px}
+  .realm-action-dock{position:sticky;bottom:0;z-index:45}
+}
+
+/* Phone map chrome: keep the layer picker clear of the zoom panel. The world
+   title is secondary to the controls and is dropped before it can overlap. */
+@media(max-width:1180px){
+  /* The 610-750px map cannot fit the world title, pan hint, layer picker and
+     zoom panel on one line. Keep the layer picker and drop the two passive
+     labels so the picker is never covered by the zoom controls. */
+  .stage-topline{max-width:calc(100% - 236px)}
+  .stage-topline .stage-chip{display:none}
+}
+@media(max-width:560px){
+  .stage-topline{max-width:calc(100% - 176px)}
+  /* The minimap owns the lower-left corner on phones; keep the field note
+     clear of it instead of stacking two overlays on the same tile. */
+  .hint-box{left:auto;right:10px;bottom:10px;width:min(240px,calc(100% - 122px))}
+  .zoom-panel{top:8px;right:8px;gap:2px;padding:4px}
+  .zoom-button{width:24px;height:24px;font-size:14px}
+  .zoom-presets{gap:1px;padding-left:2px}
+  .zoom-preset{min-width:22px;height:24px;padding:0 2px;font-size:7px}
+  .topbar{padding:6px 8px 0;gap:3px}
+  .brand-mark{width:34px;height:34px}
+  .brand-mark img{width:24px;height:24px}
+  .brand-title{font-size:15px;letter-spacing:.08em}
+  .brand-subtitle{font-size:7px;letter-spacing:.14em}
+  .header-actions{gap:3px;padding:2px 0 4px}
+  .header-actions .control-button,.header-actions .speed-button{min-height:28px;padding:0 6px;font-size:7px}
+  .header-actions .speed-button{min-width:30px}
+  .warning-inbox span{display:none}
+  .warning-inbox{padding-right:5px}
+  .speed-group{gap:1px;padding:1px}
+  .stage-topline{max-width:calc(100% - 150px)}
+  .stage-topline .stage-chip:first-child{display:none}
+  .placement-status{display:none}
 }
 
 /* ── Hand hotbar removed: corner controls use the freed space ─────── */

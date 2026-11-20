@@ -69,27 +69,42 @@
 .timeline-empty-year strong { display: block; color: #5c3b25; font: 700 11px Georgia, serif; }
 .timeline-empty-year p { margin: 3px 0 0; }
 
-/* Centre notice, deliberately not a modal: the realm keeps moving. */
-.event-notification { position: fixed; z-index: 980; top: var(--kac-event-top, 82px); left: calc(50% + (var(--hud-rail-width, 0px) - var(--hud-panel-width, 0px)) / 2); width: min(480px, calc(100vw - 28px)); transform: translate(-50%, -8px); opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .16s ease; }
+/* Realm notice, deliberately not a modal: the realm keeps moving. It sits
+   above the action dock rather than across the top of the map, so it never
+   covers the world title, layer picker, zoom controls or event modal. */
+.event-notification { position: absolute; z-index: 980; top: auto; bottom: 16px; left: calc(var(--hud-rail-width, 0px) + 18px); width: min(420px, calc(100vw - 32px)); transform: translateY(8px); opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .16s ease; }
 .event-notification.hidden { display: none; }
-.event-notification.is-visible { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-.event-notification-card { position: relative; overflow: hidden; padding: 13px 15px 11px; border: 2px solid #a47c42; background: radial-gradient(ellipse at 50% 0, #fff7d9, transparent 66%), linear-gradient(145deg, #f4e3bb, #d3b47c); color: #3d2a1b; box-shadow: 0 0 0 3px #22150c, 0 0 0 4px #c6a263, 0 14px 32px #000a; }
-.event-notification-card::before, .event-notification-card::after { content: "✦"; position: absolute; top: 7px; color: #9b743c; font-size: 10px; }
-.event-notification-card::before { left: 8px; }
-.event-notification-card::after { right: 8px; }
-.event-notification-kicker { display: block; color: #7a4d2e; text-align: center; font: 700 8px Georgia, serif; letter-spacing: .16em; }
-.event-notification-title { margin: 4px 0 3px; color: #512b1c; text-align: center; font: 700 15px/1.15 Georgia, serif; letter-spacing: .045em; }
-.event-notification-text { margin: 0 auto; max-width: 410px; color: #4a3826; text-align: center; font: 12px/1.4 Georgia, serif; }
-.event-notification-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 9px; padding-top: 7px; border-top: 1px solid #b18b54; }
+.event-notification.is-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.event-notification-card { position: relative; overflow: hidden; padding: 10px 13px 9px; border: 2px solid #a47c42; background: radial-gradient(ellipse at 50% 0, #fff7d9, transparent 66%), linear-gradient(145deg, #f4e3bb, #d3b47c); color: #3d2a1b; box-shadow: 0 0 0 2px #22150c, 0 0 0 3px #c6a263, 0 10px 24px #000a; }
+.event-notification-card::before, .event-notification-card::after { content: "✦"; position: absolute; top: 6px; color: #9b743c; font-size: 9px; }
+.event-notification-card::before { left: 7px; }
+.event-notification-card::after { right: 7px; }
+.event-notification-kicker { display: block; color: #7a4d2e; text-align: center; font: 700 7.5px Georgia, serif; letter-spacing: .15em; }
+.event-notification-title { margin: 3px 0 2px; color: #512b1c; text-align: center; font: 700 14px/1.15 Georgia, serif; letter-spacing: .04em; }
+.event-notification-text { margin: 0 auto; max-width: 390px; max-height: 4.2em; overflow-y: auto; color: #4a3826; text-align: center; font: 11.5px/1.35 Georgia, serif; scrollbar-width: thin; }
+.event-notification-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 7px; padding-top: 6px; border-top: 1px solid #b18b54; }
 .event-notification-footer time { overflow: hidden; color: #74573a; font-size: 7px; letter-spacing: .07em; text-overflow: ellipsis; white-space: nowrap; }
 .event-notification-actions { display: flex; gap: 5px; }
-.event-notification button { padding: 3px 7px; border: 1px solid #896339; background: #5c3a26; color: #f7e5bb; font: 700 7px Georgia, serif; letter-spacing: .08em; cursor: pointer; }
+.event-notification button { min-height: 25px; padding: 4px 8px; border: 1px solid #896339; background: #5c3a26; color: #f7e5bb; font: 700 7.5px Georgia, serif; letter-spacing: .07em; cursor: pointer; }
 .event-notification button:hover { background: #7c3829; }
-.event-notification .event-notification-close { background: transparent; color: #613d27; }
+.event-notification .event-notification-close { min-width: 25px; background: transparent; color: #613d27; }
 @media (max-width: 900px) {
     /* The administration rail is horizontal here, so the map spans the full
-       viewport and the toast belongs on the true centre line. */
-    .event-notification { left: 50%; }
+       viewport and the notice belongs on the true centre line above the dock. */
+    .event-notification { left: 50%; bottom: 12px; width: min(420px, calc(100vw - 24px)); transform: translate(-50%, 8px); }
+    .event-notification.is-visible { transform: translate(-50%, 0); }
+}
+@media (max-width: 560px) {
+    /* On phones the notice stays inside the lower map instead of covering the
+       management panel. It is a compact one-line bulletin; the chronicle holds
+       the full record. */
+    .event-notification { left: auto; right: 8px; bottom: 10px; width: min(300px, calc(100vw - 120px)); transform: translateY(8px); }
+    .event-notification.is-visible { transform: translateY(0); }
+    .event-notification-card { padding: 8px 10px 7px; }
+    .event-notification-title { font-size: 13px; }
+    .event-notification-text { display: block; max-height: 1.4em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .event-notification-footer { justify-content: flex-end; margin-top: 5px; padding-top: 5px; }
+    .event-notification-footer time { display: none; }
 }
 @media (max-width: 860px) {
     .timeline-layout { grid-template-columns: 1fr; }

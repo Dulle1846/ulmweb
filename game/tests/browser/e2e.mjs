@@ -214,6 +214,10 @@ try{
     });
     page.on("pageerror",error=>errors.push(error.message));
     page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text());});
+    // Management panels hydrate progressively. Wait for the selected panel's
+    // content instead of sampling the previous panel during the hand-off.
+    const waitForPanelText=async(text,timeout=15000)=>page.waitForFunction(expected=>(document.querySelector("#command-panel-content")?.textContent||"").includes(expected),text,{timeout});
+    const waitForPanelSelector=async(selector,minimum=1,timeout=15000)=>page.waitForFunction(({selector,minimum})=>document.querySelectorAll(selector).length>=minimum,{selector,minimum},{timeout});
     await page.goto(baseUrl+"/",{waitUntil:"networkidle"});
     assert.equal(await page.title(),"KINGS & CARDS • Eternal Realm");
     assert.equal(await page.locator("#start-screen").isVisible(),true);
@@ -508,6 +512,7 @@ try{
     await page.locator("#command-open-btn").click();
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
     assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),26,"all twenty-six management tabs, including Explore, Biomes, the Atelier, city charter, noble houses, item lexicon and the Whisper Court, must live inside the dialog");
+    await waitForPanelText("Kingdom overview");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Kingdom overview","management must open on the live kingdom overview");
     await page.locator('[data-command-tab="kingdom"]').click();
     assert.equal(await page.locator("body > .command-deck").count(),0,"there must be no obscured duplicate navigation outside the dialog");
@@ -560,6 +565,9 @@ try{
         ledger.stock.lichen=Math.max(6,Number(ledger.stock.lichen)||0);
     });
     await page.locator('[data-command-tab="military"]').click();
+    // Management panels hydrate progressively; wait for the selected panel's
+    // heading before inspecting its live controls.
+    await page.waitForFunction(()=>document.querySelector("#command-panel-content")?.innerText.includes("Barracks & stables"),null,{timeout:10000});
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Barracks & stables"));
     const militaryBefore=await page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");
@@ -583,6 +591,7 @@ try{
     });
     assert.ok(drill&&drill.remaining>0,"training must start a real timed drill for a named soldier");
     await page.locator('[data-command-tab="health"]').click();
+    await waitForPanelText("Sanitation, healers & medicine");
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Sanitation, healers & medicine"));
     await page.locator('[data-command="health-sanitation"]').click();
     const sanitationAfter=await page.evaluate(async()=>{
@@ -674,6 +683,7 @@ try{
     await clearRealmEvent();
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="faith"]').click();
+    await waitForPanelText("Faith & culture");
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Faith & culture"),"faith panel must render its own introduction");
     await page.locator("#faith-clergy-select").selectOption({index:1});
     await page.locator('[data-command="faith-appoint"]').click();
@@ -690,6 +700,7 @@ try{
 
     await clearRealmEvent();
     await page.locator('[data-command-tab="justice"]').click();
+    await waitForPanelText("Justice & order");
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Justice & order"),"justice panel must render its own introduction");
     await page.locator("#justice-judge-select").selectOption({index:1});
     await page.locator('[data-command="justice-appoint"]').click();
@@ -705,6 +716,7 @@ try{
     assert.ok(caseFixture.cases>=1,"the annual justice audit must open at least one real case");
     await clearRealmEvent();
     await page.locator('[data-command-tab="justice"]').click();
+    await waitForPanelSelector("#command-panel-content .justice-case");
     assert.ok(await page.locator("#command-panel-content .justice-case").count()>=1,"pending cases must render as individual records");
     await clearRealmEvent();
     const goldBeforeVerdict=await page.evaluate(async()=>Number((await import("./js/core/state.js")).state.resources.gold)||0);
@@ -722,6 +734,7 @@ try{
     assert.equal(justiceBeforeSave.judges.length,1,"the appointed judge must hold a named seat");
     await clearRealmEvent();
     await page.locator('[data-command-tab="research"]').click();
+    await waitForPanelText("Research & knowledge");
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Research & knowledge"),"research panel must render its own introduction");
     const researchStart=await page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");
@@ -735,6 +748,7 @@ try{
     assert.ok(researchStart.count>=1,"a completed technology must feed the shared modifier block");
     await clearRealmEvent();
     await page.locator('[data-command-tab="research"]').click();
+    await waitForPanelSelector("[data-research-tech]",24);
     assert.equal(await page.locator("[data-research-tech]").count(),24,"all twenty-four technologies must render");
     assert.ok(await page.locator('[data-research-tech][data-research-status="complete"]').count()>=1,"the completed technology must render as complete");
     const civilizationBeforeSave=await page.evaluate(async()=>{
@@ -790,6 +804,7 @@ try{
     await page.locator('[data-command-tab="politics"]').click();
     await page.locator('[data-command="policy"][data-value="bread"]').click();
     await page.locator('[data-command-tab="diplomacy"]').click();
+    await waitForPanelSelector("#command-panel-content [data-diplomacy-realm]",4);
     assert.equal(await page.locator("#command-panel-content [data-diplomacy-realm]").count(),4,"the diplomatic court must render all four neighbouring realms");
     await page.locator('[data-command-tab="decisions"]').click();
     await page.locator("#royal-consort-select").selectOption({index:1});
@@ -799,6 +814,7 @@ try{
 
     // The dynasty panel draws a connected network from persisted kinship edges.
     await page.locator('[data-command-tab="dynasty"]').click();
+    await waitForPanelSelector("#command-panel-content .dynasty-lineage-graph");
     const dynastyGraphFixture=await page.evaluate(async()=>{
         const {getRoyalHouse}=await import("./js/systems/royal-dynasty.js");
         const house=getRoyalHouse();
@@ -806,6 +822,7 @@ try{
     });
     assert.ok(dynastyGraphFixture.heirId,"royal birth should leave a designated heir for the graph test");
     assert.equal(await page.locator("#command-panel-content .dynasty-lineage-graph").count(),1);
+    await waitForPanelSelector("#command-panel-content .dynasty-lineage-graph [data-lineage-node-id]",3);
     assert.ok(await page.locator("#command-panel-content .dynasty-lineage-graph [data-lineage-node-id]").count()>=3,"lineage graph must render the sovereign, consort and recorded child");
     await page.waitForFunction(()=>[...document.querySelectorAll(".dynasty-lineage-graph .dynasty-lineage-edge")].some(path=>path.getAttribute("d")?.length>0),null,{timeout:5000});
     const lineageNodeCount=await page.locator("#command-panel-content .dynasty-lineage-graph [data-lineage-node-id]").count();
@@ -829,6 +846,7 @@ try{
         if(foodDelta!==0)recordResourceMovement("food",foodDelta,"test-fixture");
     });
     await page.locator('[data-command="summon-dragon"]').click();
+    await waitForPanelSelector("#command-panel-content .creature-record:not(.is-memorial)");
     const creatureFixture=await page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");
         return {gold:state.resources.gold,food:state.resources.food,dragons:state.entities.filter(entity=>!entity.dead&&entity.isDragon).map(entity=>entity.creature?.name||entity.id)};
@@ -862,9 +880,13 @@ try{
     assert.equal(await wyvernPortrait.getAttribute("href"),"assets/royal-creature-atlas.svg#wyvern","the wyvern must use its authored species portrait");
 
     await page.locator('[data-command-tab="economy"]').click();
+    await waitForPanelText("LATEST FINANCIAL SETTLEMENT");
+    await page.locator("#command-panel-content .ledger-grid").waitFor({state:"visible",timeout:15000});
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("LATEST FINANCIAL SETTLEMENT"));
     assert.ok(await page.locator("#command-panel-content .ledger-grid").isVisible(),"economy must render the real ledger section");
     await page.locator('[data-command-tab="buildings"]').click();
+    await waitForPanelText("Building register");
+    await waitForPanelSelector("#command-panel-content .building-record");
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Building register"));
     assert.ok(await page.locator("#command-panel-content .building-record").count()>=1,"starting realm structures must be listed");
     assert.ok(await page.locator("#command-panel-content .building-record-art").count()>=1,"building register must show original sprite artwork");
@@ -928,6 +950,7 @@ try{
     });
     assert.ok(forestFixture.goods.some(id=>["timber","firewood","charcoal"].includes(id)),"the fixture must select a real wood product");
     const forestGatherButton=page.locator('#command-panel-content [data-gather-forest="'+forestFixture.buildingId+'"]');
+    await waitForPanelSelector('#command-panel-content [data-gather-forest="'+forestFixture.buildingId+'"]',1,15000);
     assert.equal(await forestGatherButton.count(),1,"the selected forest building must expose one gather action");
     await forestGatherButton.evaluate(element=>{const record=element.closest("details");if(record)record.open=true;});
     await forestGatherButton.scrollIntoViewIfNeeded();
@@ -1063,6 +1086,8 @@ try{
     // a static explanation. Production runs every six ticks, so wait for it.
     if(await page.locator("#realm-event-modal").isVisible())await page.locator("#realm-event-dismiss").click();
     await page.locator('[data-command-tab="buildings"]').click();
+    await waitForPanelText("MOVEMENT ARCHIVE");
+    await waitForPanelSelector("#command-panel-content .logistics-audit",10);
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("MOVEMENT ARCHIVE"),"transport overview must expose the movement archive");
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("GOODS AUDIT"),"transport overview must expose the goods audit");
     assert.ok(await page.locator("#command-panel-content .warehouse-row").count()>=1,"the store overview must list every warehouse");
@@ -1153,6 +1178,7 @@ try{
     });
     await page.locator('.realm-nav-button[data-kac-panel="buildings"]').click();
     const warehouseSelect=page.locator('[data-warehouse-profile="'+warehouseFixture.id+'"]');
+    await waitForPanelSelector('[data-warehouse-profile="'+warehouseFixture.id+'"]',1,15000);
     assert.equal(await warehouseSelect.count(),1,"a warehouse must expose its profile selector");
     const warehouseRecord=page.locator(".building-record").filter({has:warehouseSelect});
     if(!(await warehouseRecord.evaluate(record=>record.open)))await warehouseRecord.locator("summary").click();
@@ -1201,6 +1227,7 @@ try{
     assert.ok(await page.locator("#realm-event-modal").isVisible(),"chronicle must reopen a dismissed active issue");
     await page.locator("#realm-event-choices .event-choice").first().click();
     await page.locator('[data-command-tab="cards"]').click();
+    await waitForPanelText("Card management");
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Card management"));
     await page.locator("#command-close").click();
 
@@ -2126,50 +2153,71 @@ try{
                 scrollRange:Math.max(0,el.scrollHeight-el.clientHeight),
                 overflowY:getComputedStyle(el).overflowY
             }));
-            assert.ok(["auto","scroll"].includes(before.overflowY),"mobile management column must expose vertical scrolling when needed at "+width+"x"+height+": "+JSON.stringify(before));
-            if(width<=480)assert.ok(before.scrollRange>2,"narrow mobile management column must retain scrollable content at "+width+"x"+height+": "+JSON.stringify(before));
-            const reachability=await panel.evaluate(el=>{
-                const card=el.querySelector("#card-container");
-                const original=el.scrollTop;
-                const panelRect=el.getBoundingClientRect();
-                const cardRect=card.getBoundingClientRect();
-                const cardTopInScroll=cardRect.top-panelRect.top+el.scrollTop;
-                const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
-                const visibleBottom=Math.min(panelRect.bottom,dock.top);
-                const visibleHeight=Math.max(0,visibleBottom-panelRect.top);
-                const maxScroll=Math.max(0,el.scrollHeight-el.clientHeight);
-                const initiallyReachable=cardRect.top>=panelRect.top-1&&cardRect.bottom<=visibleBottom+1;
-                const targetScroll=initiallyReachable?el.scrollTop:Math.max(0,cardTopInScroll+cardRect.height-visibleHeight);
-                el.scrollTop=Math.min(maxScroll,targetScroll);
-                const finalPanel=el.getBoundingClientRect();
-                const finalCard=card.getBoundingClientRect();
-                const result={
-                    scrollTop:el.scrollTop,
-                    scrollRange:maxScroll,
-                    initiallyReachable,
-                    cardTop:finalCard.top,
-                    cardBottom:finalCard.bottom,
-                    panelTop:finalPanel.top,
-                    panelBottom:finalPanel.bottom,
-                    visibleBottom,
-                    cardReachable:finalCard.top>=finalPanel.top-1&&finalCard.bottom<=visibleBottom+1
-                };
-                el.scrollTop=original;
-                return result;
-            });
-            if(!reachability.initiallyReachable&&before.scrollRange>2)assert.ok(reachability.scrollTop>0,"mobile management column must use its available scroll range when the selected card is initially obscured at "+width+"x"+height+": "+JSON.stringify(reachability));
-            assert.ok(reachability.cardReachable,"selected card must be fully reachable without being covered by the action dock at "+width+"x"+height+": "+JSON.stringify(reachability));
-            await panel.evaluate(el=>{
-                const card=el.querySelector("#card-container");
-                const panelRect=el.getBoundingClientRect();
-                const cardRect=card.getBoundingClientRect();
-                const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
-                const visibleHeight=Math.max(0,Math.min(panelRect.bottom,dock.top)-panelRect.top);
-                const target=cardRect.top-panelRect.top+el.scrollTop+cardRect.height-visibleHeight;
-                el.scrollTop=Math.min(Math.max(0,el.scrollHeight-el.clientHeight),Math.max(0,target));
-            });
-            await page.screenshot({path:resolve(screenshotDir,"sidepanel-card-reachable-"+width+"x"+height+".png"),animations:"disabled"});
-            await panel.evaluate(el=>{el.scrollTop=0});
+            const documentFlow=!["auto","scroll"].includes(before.overflowY);
+            if(documentFlow){
+                // Phones and tablets keep the map at a real height and scroll
+                // the whole realm document instead of squeezing the panel into
+                // a 100vh shell. The card must still be reachable above the
+                // sticky action dock.
+                const pageScroll=await page.evaluate(()=>({docH:document.documentElement.scrollHeight,clientH:document.documentElement.clientHeight,overflowY:getComputedStyle(document.documentElement).overflowY}));
+                assert.ok(pageScroll.docH>pageScroll.clientH+2,"narrow layout must scroll as a document at "+width+"x"+height+": "+JSON.stringify(pageScroll));
+                assert.ok(["auto","scroll"].includes(pageScroll.overflowY),"narrow document must expose vertical scrolling at "+width+"x"+height+": "+JSON.stringify(pageScroll));
+                const cardReachability=await page.evaluate(()=>{
+                    const card=document.querySelector("#card-container");
+                    card.scrollIntoView({block:"center"});
+                    const rect=card.getBoundingClientRect();
+                    const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+                    const visibleBottom=Math.min(innerHeight,dock.top);
+                    return {top:Math.round(rect.top),bottom:Math.round(rect.bottom),visibleBottom:Math.round(visibleBottom),reachable:rect.top>=-1&&rect.bottom<=visibleBottom+1};
+                });
+                assert.ok(cardReachability.reachable,"selected card must be fully reachable without being covered by the action dock at "+width+"x"+height+": "+JSON.stringify(cardReachability));
+                await page.screenshot({path:resolve(screenshotDir,"sidepanel-card-reachable-"+width+"x"+height+".png"),animations:"disabled"});
+                await page.evaluate(()=>window.scrollTo(0,0));
+            }else{
+                if(width<=480)assert.ok(before.scrollRange>2,"narrow mobile management column must retain scrollable content at "+width+"x"+height+": "+JSON.stringify(before));
+                const reachability=await panel.evaluate(el=>{
+                    const card=el.querySelector("#card-container");
+                    const original=el.scrollTop;
+                    const panelRect=el.getBoundingClientRect();
+                    const cardRect=card.getBoundingClientRect();
+                    const cardTopInScroll=cardRect.top-panelRect.top+el.scrollTop;
+                    const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+                    const visibleBottom=Math.min(panelRect.bottom,dock.top);
+                    const visibleHeight=Math.max(0,visibleBottom-panelRect.top);
+                    const maxScroll=Math.max(0,el.scrollHeight-el.clientHeight);
+                    const initiallyReachable=cardRect.top>=panelRect.top-1&&cardRect.bottom<=visibleBottom+1;
+                    const targetScroll=initiallyReachable?el.scrollTop:Math.max(0,cardTopInScroll+cardRect.height-visibleHeight);
+                    el.scrollTop=Math.min(maxScroll,targetScroll);
+                    const finalPanel=el.getBoundingClientRect();
+                    const finalCard=card.getBoundingClientRect();
+                    const result={
+                        scrollTop:el.scrollTop,
+                        scrollRange:maxScroll,
+                        initiallyReachable,
+                        cardTop:finalCard.top,
+                        cardBottom:finalCard.bottom,
+                        panelTop:finalPanel.top,
+                        panelBottom:finalPanel.bottom,
+                        visibleBottom,
+                        cardReachable:finalCard.top>=finalPanel.top-1&&finalCard.bottom<=visibleBottom+1
+                    };
+                    el.scrollTop=original;
+                    return result;
+                });
+                if(!reachability.initiallyReachable&&before.scrollRange>2)assert.ok(reachability.scrollTop>0,"mobile management column must use its available scroll range when the selected card is initially obscured at "+width+"x"+height+": "+JSON.stringify(reachability));
+                assert.ok(reachability.cardReachable,"selected card must be fully reachable without being covered by the action dock at "+width+"x"+height+": "+JSON.stringify(reachability));
+                await panel.evaluate(el=>{
+                    const card=el.querySelector("#card-container");
+                    const panelRect=el.getBoundingClientRect();
+                    const cardRect=card.getBoundingClientRect();
+                    const dock=document.querySelector("#realm-action-dock").getBoundingClientRect();
+                    const visibleHeight=Math.max(0,Math.min(panelRect.bottom,dock.top)-panelRect.top);
+                    const target=cardRect.top-panelRect.top+el.scrollTop+cardRect.height-visibleHeight;
+                    el.scrollTop=Math.min(Math.max(0,el.scrollHeight-el.clientHeight),Math.max(0,target));
+                });
+                await page.screenshot({path:resolve(screenshotDir,"sidepanel-card-reachable-"+width+"x"+height+".png"),animations:"disabled"});
+                await panel.evaluate(el=>{el.scrollTop=0});
+            }
         }
         const assertOverlayFits=async(selector,label,screenshotName)=>{
             const audit=await page.evaluate(selector=>{
