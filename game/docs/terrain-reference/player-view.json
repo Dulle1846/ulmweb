@@ -1,9 +1,15 @@
 {
   "reference": "player-terrain-view",
-  "source": "local",
-  "url": "http://127.0.0.1:39045/",
-  "version": null,
-  "generatedAt": "2026-11-21T16:22:29.839Z",
+  "source": "deployed",
+  "url": "https://kings-and-cards.pages.dev/",
+  "version": {
+    "version": "3.32.2",
+    "commit": "19dc0ba64b721e204d3f5b561dcde405a5a594d2",
+    "branch": "ulmweb-branch",
+    "builtAt": "2026-11-21T16:34:27.505Z",
+    "source": "github-actions"
+  },
+  "generatedAt": "2026-11-21T16:35:54.132Z",
   "seed": 20261104,
   "focus": {
     "x": 112,
