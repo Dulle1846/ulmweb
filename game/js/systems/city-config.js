@@ -208,7 +208,7 @@ export const CONSTRUCTION_SHARE = 0.25;
 export const SERVICE_DEFINITIONS = Object.freeze({
     water: Object.freeze({ label: "Water", types: Object.freeze([TYPE.WELL]), radius: 8, color: "#548ca8" }),
     social: Object.freeze({ label: "Social life", types: Object.freeze([TYPE.TAVERN, TYPE.TEMPLE, TYPE.SHRINE, TYPE.MARKET]), radius: 7, color: "#b57942" }),
-    safety: Object.freeze({ label: "Safety", types: Object.freeze([TYPE.TOWER, TYPE.WALL, TYPE.BARRACKS, TYPE.COURT, TYPE.PRISON]), radius: 7, color: "#7b8b57" }),
+    safety: Object.freeze({ label: "Safety", types: Object.freeze([TYPE.TOWER, TYPE.WALL, TYPE.BARRACKS, TYPE.WATCHHOUSE, TYPE.COURT, TYPE.PRISON]), radius: 7, color: "#7b8b57" }),
     justice: Object.freeze({ label: "Justice", types: Object.freeze([TYPE.COURT, TYPE.PRISON]), radius: 8, color: "#8c7f6a" }),
     health: Object.freeze({ label: "Health", types: Object.freeze([TYPE.CLINIC, TYPE.TEMPLE, TYPE.SHRINE, TYPE.BATHHOUSE]), radius: 6, color: "#9a6d7e" }),
     civic: Object.freeze({ label: "Civic order", types: Object.freeze([TYPE.TOWN_HALL, TYPE.COURT, TYPE.PRISON]), radius: 10, color: "#8b7757" }),

@@ -4,7 +4,7 @@ import { resetState, state } from "../../js/core/state.js";
 import { TYPE } from "../../js/core/types.js";
 import { spawnEntity } from "../../js/world/entities.js";
 import { initializeCityForRealm, serializeCity, restoreCity, validateCitySnapshot } from "../../js/systems/logistics.js";
-import { placeDirectBuilding, constructionSnapshot, cancelConstruction } from "../../js/systems/construction.js";
+import { canPlaceBuilding, placeDirectBuilding, constructionSnapshot, cancelConstruction } from "../../js/systems/construction.js";
 import { updateFields } from "../../js/systems/fields.js";
 import { updateBuildingIncome } from "../../js/simulation/buildings.js";
 import { initializeSettlementForRealm, getSettlementSnapshot } from "../../js/systems/settlement.js";
@@ -79,6 +79,35 @@ test("direct construction opens a site, charges only the opening share and remai
     assert.equal(snapshot.percent, 0);
     assert.equal(snapshot.status, "SITE PREPARATION");
     assert.equal(result.entity.inventory.input.wood||0, 0);
+});
+
+test("a site with no walkable approach is rejected before any materials are charged", () => {
+    foundedFixture();
+    for (let x = 19; x <= 21; x++) {
+        for (let y = 19; y <= 21; y++) {
+            if (x !== 20 || y !== 20) state.heightMap[y * 160 + x] = 0;
+        }
+    }
+    const result = canPlaceBuilding(TYPE.TOWER, 20, 20);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, "NO WALKABLE APPROACH");
+    assert.equal(state.resources.wood, 200, "a rejected site must not consume an opening share");
+});
+
+test("an accessible island with no carrier route is rejected and fully refunded", () => {
+    foundedFixture();
+    for (let x = 19; x <= 21; x++) {
+        for (let y = 19; y <= 21; y++) {
+            if ((x === 20 && y === 20) || (x === 20 && y === 19)) continue;
+            state.heightMap[y * 160 + x] = 0;
+        }
+    }
+    const result = placeDirectBuilding(TYPE.TOWER, 20, 20);
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, "NO DELIVERY ROUTE");
+    assert.equal(state.resources.wood, 200, "a site that cannot be supplied must return its opening share");
+    assert.equal(state.resources.stone, 200);
+    assert.equal(state.resources.gold, 100);
 });
 
 test("cancelling a site removes it and refunds part of the paid materials", () => {

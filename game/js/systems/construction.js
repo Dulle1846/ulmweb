@@ -16,6 +16,7 @@ import { transitionGameplayAt } from "../world/transition-biomes.js";
 import { getWorkforceSnapshot } from "./economy.js";
 import { getResearchModifiers } from "./research.js";
 import { getCivicModifiers } from "./civic.js";
+import { isWalkable, rebuildBlockedBuildingTiles } from "../simulation/villagers.js";
 import { consumeRebuildRuin, rebuildDiscountFor, REBUILD_DISCOUNT } from "./disaster-recovery.js";
 import {
     BUILDING_COSTS, CONSTRUCTION_STAGES, CONSTRUCTION_SHARE, buildingLabel,
@@ -23,7 +24,7 @@ import {
 } from "./city-config.js";
 import {
     ensureCityState, ensureInventory, requestConstructionDelivery, cancelJobsForEntity,
-    markConstructionDelivered, getWarehouseStock
+    markConstructionDelivered, getWarehouseStock, getWarehouses, hasOverlandRoute
 } from "./logistics.js";
 
 export const CONSTRUCTION_RESOURCE_KEYS = Object.freeze(["wood", "stone", "gold", "food"]);
@@ -368,6 +369,24 @@ export function constructionSnapshot(entity) {
     };
 }
 
+function footprintHasApproach(type, x, y) {
+    const base = BUILDING_SIZE[type] || { w: 1, h: 1 };
+    const left = x + 0.5 - base.w / 2;
+    const right = x + 0.5 + base.w / 2;
+    const top = y + 0.5 - base.h / 2;
+    const bottom = y + 0.5 + base.h / 2;
+    const minX = Math.floor(left), maxX = Math.ceil(right) - 1;
+    const minY = Math.floor(top), maxY = Math.ceil(bottom) - 1;
+    rebuildBlockedBuildingTiles();
+    for (let py = minY - 1; py <= maxY + 1; py++) {
+        for (let px = minX - 1; px <= maxX + 1; px++) {
+            if (px >= minX && px <= maxX && py >= minY && py <= maxY) continue;
+            if (isWalkable(px + 0.5, py + 0.5)) return true;
+        }
+    }
+    return false;
+}
+
 export function canPlaceBuilding(type, tx, ty) {
     const x = Math.floor(Number(tx)), y = Math.floor(Number(ty));
     if (!Number.isInteger(x) || !Number.isInteger(y)) return { ok: false, reason: "INVALID SITE" };
@@ -376,6 +395,10 @@ export function canPlaceBuilding(type, tx, ty) {
     if (x + 0.5 - base.w / 2 < 0 || y + 0.5 - base.h / 2 < 0 || x + 0.5 + base.w / 2 > W || y + 0.5 + base.h / 2 > H) return { ok: false, reason: "OUTSIDE THE REALM" };
     if (isWaterAt(x + 0.5, y + 0.5)) return { ok: false, reason: "NEEDS DRY GROUND" };
     if (buildingOverlaps(x, y, type)) return { ok: false, reason: "SPACE OCCUPIED" };
+    // A site walled in by other buildings can never receive planks or builders.
+    // Reject it at placement instead of charging an opening share for a site
+    // that would wait forever and then be cancelled.
+    if (!footprintHasApproach(type, x, y)) return { ok: false, reason: "NO WALKABLE APPROACH" };
     return siteSuitability(type, x, y);
 }
 
@@ -396,6 +419,17 @@ export function placeDirectBuilding(type, tx, ty) {
         return started;
     }
     ensureInventory(entity);
+    // The site now blocks its own footprint, so this is the exact route a
+    // carrier must use. A site that cannot be reached from any store would
+    // wait forever for its first planks; reject it and return the full opening
+    // share instead of leaving the player with an unrecoverable stall.
+    if (!getWarehouses().some(warehouse => !warehouse.dead && hasOverlandRoute(entity, warehouse))) {
+        refundResources(started.construction.paid, 1);
+        entity.dead = true;
+        state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
+        state.city.constructionVersion = (state.city.constructionVersion || 0) + 1;
+        return { ok: false, reason: "NO DELIVERY ROUTE" };
+    }
     revealArea(tx, ty, 7);
     consumeRebuildRuin(type, tx, ty);
     return { ok: true, entity, construction: started.construction, cost };

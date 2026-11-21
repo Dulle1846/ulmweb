@@ -10,9 +10,11 @@ export const SKILL_LABELS = Object.freeze({
 export const JOB_SKILL = Object.freeze({
     farmer: "farming", forester: "farming",
     woodcutter: "labour", miner: "labour", goldminer: "labour", hauler: "labour", wellkeeper: "labour",
-    builder: "crafting", miller: "crafting", sawyer: "crafting", mason: "crafting", baker: "crafting",
+    builder: "crafting", miller: "crafting", sawyer: "crafting", mason: "crafting", baker: "crafting", brewer: "crafting",
     smith: "crafting", scribe: "learning",
-    innkeeper: "trade", merchant: "trade",
+    innkeeper: "trade", merchant: "trade", guildmaster: "trade",
+    clerk: "learning", teacher: "learning",
+    bathkeeper: "care", watchman: "command",
     healer: "care", stablehand: "care",
     acolyte: "learning", scholar: "learning",
     soldier: "command", guard: "command", archer: "command", knight: "command"

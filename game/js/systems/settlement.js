@@ -32,7 +32,8 @@ function serviceIsStaffed(building, workforce = null) {
     // Walls, towers and barracks are manned by the crown's guard rather than
     // the villager job pool. Treating them as unstaffed made the safety need
     // impossible to satisfy, which silently blocked all immigration.
-    if (building.type === TYPE.WALL || building.type === TYPE.TOWER || building.type === TYPE.BARRACKS) return true;
+    if (building.type === TYPE.WALL || building.type === TYPE.TOWER || building.type === TYPE.BARRACKS ||
+        building.type === TYPE.COURT || building.type === TYPE.PRISON || building.type === TYPE.SHRINE) return true;
     return getBuildingEfficiency(building, workforce) > 0;
 }
 function serviceIsSupplied(building) {

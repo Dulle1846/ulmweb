@@ -23,6 +23,7 @@ import { AMBITIONS, getAmbitionSnapshot, getCrownEraSnapshot } from "../../js/sy
 import { placeDirectBuilding, canPlaceBuilding, isUnderConstruction, cancelConstruction } from "../../js/systems/construction.js";
 import { placeRoad } from "../../js/systems/roads.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild } from "../../js/systems/royal-dynasty.js";
+import { addressFactionDemand } from "../../js/systems/court.js";
 
 export const CAMPAIGN_YEAR_DAYS = 400;
 export const CAMPAIGN_SEED = 20261108;
@@ -30,7 +31,9 @@ export const CAMPAIGN_YEARS = 25;
 const LOGISTICS_STEPS = 4;
 const LOGISTICS_DT = 0.1875;
 const MAX_ACTIVE_SITES = 1;
+const CIVIC_BUILDINGS = Object.freeze([TYPE.TOWN_HALL, TYPE.SCHOOL, TYPE.CLINIC, TYPE.BATHHOUSE, TYPE.GUILDHALL, TYPE.WATCHHOUSE]);
 let campaignProfile = "builder";
+let campaignSkippedTypes = new Set();
 let campaignEra = "common-weal";
 let campaignMinAgendaStages = 1;
 
@@ -192,7 +195,7 @@ function snowScarNear(x, y, radius = 6) {
         Math.hypot(Number(entry.x) - x, Number(entry.y) - y) <= radius);
 }
 
-function findSite(type, maxRadius) {
+function findSite(type, maxRadius, excluded = null) {
     const centre = keepPosition();
     const candidates = [];
     for (let radius = 2; radius <= maxRadius; radius++) {
@@ -202,6 +205,7 @@ function findSite(type, maxRadius) {
                 if (!inBuildSector(type, dx, dy)) continue;
                 const x = centre.x + dx;
                 const y = centre.y + dy;
+                if (excluded?.has(type + ":" + x + ":" + y)) continue;
                 const check = canPlaceBuilding(type, x, y);
                 if (!check.ok) continue;
                 if (snowScarNear(x, y)) continue;
@@ -258,6 +262,14 @@ function nextBuilding() {
     if (countType(TYPE.BAKERY) < 3) return { type: TYPE.BAKERY, radius: 28 };
     if (countType(TYPE.MILL) < 3) return { type: TYPE.MILL, radius: 28 };
     if (countType(TYPE.SAWMILL) < 2) return { type: TYPE.SAWMILL, radius: 28 };
+    // A mature realm also builds the service and civic buildings whose jobs
+    // make the staffing, coverage and court systems observable over decades.
+    // Leave the first 25-year gate untouched: these are post-ambition works.
+    if (state.year >= 30) {
+        for (const type of CIVIC_BUILDINGS) {
+            if (!campaignSkippedTypes.has(type) && countType(type) < 1) return { type, radius: 36 };
+        }
+    }
     const agenda = getCrownEraSnapshot()?.agenda;
     // The campaign is a deliberate player: when the era agenda asks for housing,
     // it builds the next cottage instead of leaving the objective blocked by a
@@ -469,6 +481,7 @@ export function runCampaign({
     era = "common-weal",
     minAgendaStages = 1,
     worldOptions = null,
+    answerCourtPetitions = false,
     onTick = null,
     onInitialized = null
 } = {}) {
@@ -485,6 +498,7 @@ export function runCampaign({
     state.victory = false;
 
     campaignProfile = ["builder", "settler", "ignorer"].includes(profile) ? profile : "builder";
+    campaignSkippedTypes = new Set();
     campaignEra = ["common-weal", "guild-compact", "royal-ascendancy"].includes(era) ? era : "common-weal";
     campaignMinAgendaStages = Math.max(1, Math.min(3, Math.floor(Number(minAgendaStages) || 1)));
     const started = performance.now();
@@ -509,11 +523,17 @@ export function runCampaign({
     let lastBuildCheck = 0;
     let lastHeirYear = 0;
     const siteHistory = new Map();
+    const unreachableSites = new Set();
+    const noSiteAttempts = new Map();
 
     for (let index = 0; index < totalTicks; index++) {
         updateSimulation();
         observeFuelBackfill(fuelBackfillActive, fuelBackfillPhases, diagnostics.fuelBackfill);
         resolveActiveEvent();
+        // A deliberate player answers the court's annual faction petition.
+        // Retry periodically while it is affordable; an unaffordable petition
+        // still expires through the shipped court path.
+        if (answerCourtPetitions && state.tick % 40 === 0 && state.court?.demand) addressFactionDemand(state.court.demand.faction);
         for (let step = 0; step < LOGISTICS_STEPS; step++) updateLogisticsMovement(LOGISTICS_DT);
 
         // Player decisions are deliberately sparse: one construction site at
@@ -543,11 +563,16 @@ export function runCampaign({
             if (sites.length < MAX_ACTIVE_SITES) {
                 const wanted = nextBuilding();
                 if (wanted) {
-                    const site = findSite(wanted.type, wanted.radius);
+                    const site = findSite(wanted.type, wanted.radius, unreachableSites);
                     diagnostics.buildAttempts++;
                     if (!site) {
                         const key = "no-site:" + wanted.type;
                         diagnostics.buildFailures[key] = (diagnostics.buildFailures[key] || 0) + 1;
+                        if (CIVIC_BUILDINGS.includes(wanted.type)) {
+                            const attempts = (noSiteAttempts.get(wanted.type) || 0) + 1;
+                            noSiteAttempts.set(wanted.type, attempts);
+                            if (attempts >= 3) campaignSkippedTypes.add(wanted.type);
+                        }
                     } else {
                         const result = placeDirectBuilding(wanted.type, site.x, site.y);
                         if (result.ok) {
@@ -555,6 +580,7 @@ export function runCampaign({
                         } else {
                             const key = result.reason || "placement-rejected";
                             diagnostics.buildFailures[key] = (diagnostics.buildFailures[key] || 0) + 1;
+                            if (result.reason === "NO DELIVERY ROUTE") unreachableSites.add(wanted.type + ":" + site.x + ":" + site.y);
                         }
                     }
                 }

@@ -6,7 +6,6 @@ import { getExpeditionSnapshot } from "../systems/expeditions.js";
 import { getSpecialBiomeSnapshot } from "../systems/special-biome-state.js";
 import { getTransitionSurvey, transitionAt, transitionGameplayFor } from "../world/transition-biomes.js";
 import { getVegetationDensitySurvey, VEGETATION_REQUIREMENTS, vegetationStructureFacets } from "../world/vegetation-density.js";
-import { SPEC_COVERAGE } from "../generated/spec-coverage.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -299,12 +298,6 @@ function specialBiomeSection() {
 }
 
 
-function specCoverageStatus() {
-    const totals = SPEC_COVERAGE?.totals || { total: 0, implemented: 0, open: 0 };
-    const next = SPEC_COVERAGE?.nextSection;
-    const nextLabel = next ? next.id + " · " + next.title : "all audited sections closed";
-    return '<div class="command-summary" data-spec-coverage><div><small>SPEC AUDIT · REPRODUCIBLE</small><strong>' + totals.implemented + " / " + totals.total + '</strong></div><div><small>OPEN POINTS</small><strong>' + totals.open + '</strong></div><div><small>NEXT SECTION</small><strong>' + esc(nextLabel) + '</strong></div><div><small>CONSUMER PROOF</small><strong>SOURCE + TEST</strong></div></div>';
-}
 
 export function renderExpeditionsPanel() {
     if (!state.hasStarted) {
@@ -322,7 +315,7 @@ export function renderExpeditionsPanel() {
     const lore = snapshot.lore.length
         ? snapshot.lore.slice(0, 5).map(entry => '<article class="expedition-lore" data-expedition-lore="' + esc(entry.id) + '"><span class="expedition-kicker">' + esc(entry.siteName) + ' · YEAR ' + entry.year + '</span><h4>' + esc(entry.title) + '</h4><p>' + esc(entry.text) + '</p></article>').join("")
         : '<p class="command-note">No written discovery has been recovered. Successful expeditions bring back a fragment for the royal archive.</p>';
-    return specCoverageStatus() + intro("THE WILDS BEYOND THE WALLS", "Royal expeditions", "Eight seeded landmarks lie outside the settlement. A named resident leads one party at a time; their command, learning, care and trade skills, the supply level and the site's danger decide what returns. The party reveals the map when it arrives, can be wounded, and feeds real resources, prestige, memories and the chronicle.") +
+    return intro("THE WILDS BEYOND THE WALLS", "Royal expeditions", "Eight seeded landmarks lie outside the settlement. A named resident leads one party at a time; their command, learning, care and trade skills, the supply level and the site's danger decide what returns. The party reveals the map when it arrives, can be wounded, and feeds real resources, prestige, memories and the chronicle.") +
         '<div class="command-summary"><div><small>LANDMARKS</small><strong>' + snapshot.stats.sites + '</strong></div><div><small>SURVEYED</small><strong>' + snapshot.stats.known + '</strong></div><div><small>PARTIES RETURNED</small><strong>' + snapshot.stats.completed + '</strong></div><div><small>FRAGMENTS RECOVERED</small><strong>' + snapshot.stats.discoveries + '</strong></div></div>' +
         '<div class="command-section-title">THE ROYAL SURVEY</div>' + activeCard(snapshot.active) +
         '<div class="command-section-title">EQUIP THE NEXT PARTY</div><div class="expedition-controls"><label>NAMED LEADER<select id="expedition-leader-select" aria-label="Choose the expedition leader"><option value="">Choose an adult resident…</option>' + leaderOptions + '</select></label><label>SUPPLY LEVEL<select id="expedition-supply-select" aria-label="Choose expedition supplies">' + supplyOptions + '</select></label><p>Food and gold are paid on departure; distance adds a small food surcharge. A light pack is cheaper but riskier. A grand equipage carries rope, medicine, mules and a surveyor.</p></div>' +

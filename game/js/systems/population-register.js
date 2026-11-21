@@ -55,6 +55,7 @@ const JOB_LABELS = Object.freeze({
     quarryman: "Quarryman", miner: "Miner", miller: "Miller", baker: "Baker",
     mason: "Mason", soldier: "Soldier", healer: "Healer", priest: "Cleric",
     scholar: "Scholar", merchant: "Merchant", innkeeper: "Innkeeper", courtier: "Courtier",
+    clerk: "Clerk", teacher: "Teacher", bathkeeper: "Bathkeeper", guildmaster: "Guildmaster", watchman: "Watchman", brewer: "Brewer",
     smith: "Smith", scribe: "Scribe",
     wanderer: "Resident", resident: "Resident"
 });
@@ -63,6 +64,8 @@ const BUILDING_PROFESSIONS = Object.freeze({
     [TYPE.GOLDMINE]: "Miner", [TYPE.MILL]: "Miller", [TYPE.BAKERY]: "Baker",
     [TYPE.TAVERN]: "Innkeeper", [TYPE.TEMPLE]: "Cleric", [TYPE.MARKET]: "Merchant",
     [TYPE.MASON]: "Mason", [TYPE.FORESTER]: "Forester", [TYPE.CLINIC]: "Healer",
+    [TYPE.TOWN_HALL]: "Clerk", [TYPE.SCHOOL]: "Teacher", [TYPE.BATHHOUSE]: "Bathkeeper",
+    [TYPE.GUILDHALL]: "Guildmaster", [TYPE.WATCHHOUSE]: "Watchman", [TYPE.BREWERY]: "Brewer",
     [TYPE.KEEP]: "Courtier", [TYPE.SMITHY]: "Smith", [TYPE.SCRIPTORIUM]: "Scribe"
 });
 const STATUS_LABELS = Object.freeze({

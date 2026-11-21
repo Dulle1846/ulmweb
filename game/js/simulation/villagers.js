@@ -57,7 +57,7 @@ export function rebuildBlockedBuildingTiles(){
     blockedBuildingVersion=version;
 }
 
-const JOB_MAP = [
+export const JOB_MAP = [
     { building: TYPE.FARM,    job: "farmer" },
     { building: TYPE.LUMBER,  job: "woodcutter" },
     { building: TYPE.QUARRY,  job: "miner" },
@@ -74,6 +74,12 @@ const JOB_MAP = [
     { building: TYPE.WAREHOUSE, job: "hauler" },
     { building: TYPE.CLINIC,  job: "healer" },
     { building: TYPE.MARKET,   job: "merchant" },
+    { building: TYPE.TOWN_HALL, job: "clerk" },
+    { building: TYPE.SCHOOL,   job: "teacher" },
+    { building: TYPE.BATHHOUSE, job: "bathkeeper" },
+    { building: TYPE.GUILDHALL, job: "guildmaster" },
+    { building: TYPE.WATCHHOUSE, job: "watchman" },
+    { building: TYPE.BREWERY,  job: "brewer" },
     { building: TYPE.SMITHY,   job: "smith" },
     { building: TYPE.SCRIPTORIUM, job: "scribe" },
 ];

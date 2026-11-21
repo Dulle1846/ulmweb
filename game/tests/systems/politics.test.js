@@ -48,7 +48,25 @@ test("well-provisioned full employment gradually strengthens the realm",()=>{
     );
     assert.ok(after.legitimacy>before.legitimacy);
     assert.ok(after.factions.commons>before.factions.commons);
+    assert.ok(after.factions.nobility>before.factions.nobility);
     assert.ok(after.factions.guilds>before.factions.guilds);
+    assert.ok(after.factions.clergy>before.factions.clergy);
+});
+
+test("a long healthy peace restores every faction instead of two one-way ratchets",()=>{
+    resetState();
+    state.politics={legitimacy:100,factions:{commons:0,nobility:0,guilds:0,clergy:0},settlements:0};
+    for(let index=0;index<400;index++){
+        updatePolitics(
+            {foodShortage:0,unpaidWages:0,unpaidUpkeep:0,debt:0},
+            {population:74,unemployed:0}
+        );
+    }
+    const politics=getPoliticalSnapshot();
+    assert.ok(politics.factions.commons>10);
+    assert.ok(politics.factions.nobility>10);
+    assert.ok(politics.factions.guilds>10);
+    assert.ok(politics.factions.clergy>10);
 });
 
 test("legacy and malformed faction data is normalized without losing settlement history",()=>{

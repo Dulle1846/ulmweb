@@ -55,10 +55,22 @@ export function updatePolitics(ledger,workforce){
         pressure.commons-=0.25;
         pressure.legitimacy-=0.35;
     }
-    if(unpaidUpkeep>0){
+    if (unpaidUpkeep>0){
         pressure.nobility-=0.2;
         pressure.legitimacy-=0.15;
+    }else if (debtPressure===0){
+        // A paid estate is the normal noble expectation. Without this bounded
+        // recovery, event-driven losses were permanent while every other
+        // faction could recover under good governance.
+        pressure.nobility+=0.04;
     }
+    // Clergy support recovers slowly in a fed, legitimate realm. The annual
+    // festival, appointment and petition paths remain the faster levers.
+    if (shortage===0 && politics.legitimacy>=50) pressure.clergy+=0.04;
+    // A solvent court keeps the guilds' routine confidence even when the
+    // mature city carries some surplus labour. Full employment is still the
+    // stronger signal below.
+    if (unpaidWages===0 && unpaidUpkeep===0 && debtPressure===0) pressure.guilds+=0.03;
     // Arrears are visible in every quarter. The guilds lose confidence first,
     // then the commons; the crown's legitimacy carries the longest scar.
     if(debtPressure>0){

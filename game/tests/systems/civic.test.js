@@ -4,6 +4,9 @@ import fs from "node:fs";
 import { resetState, state } from "../../js/core/state.js";
 import { TYPE } from "../../js/core/types.js";
 import { BUILDING_LABELS, BUILD_MENU, GOODS, RECIPES, SERVICE_DEFINITIONS } from "../../js/systems/city-config.js";
+import { BUILDING_WORKFORCE } from "../../js/systems/economy.js";
+import { JOB_MAP } from "../../js/simulation/villagers.js";
+import { updateServices } from "../../js/systems/settlement.js";
 import { CITY_CODEX } from "../../js/systems/city-codex.js";
 import { serializeCity, restoreCity, validateCitySnapshot } from "../../js/systems/logistics.js";
 import {
@@ -47,6 +50,49 @@ test("the city content pack exposes six civic buildings, ale and four new servic
     assert.ok(CITY_CODEX.length >= 34);
     assert.equal(CIVIC_POLICIES.length, 24);
     assert.equal(CIVIC_EVENTS.length, 40);
+});
+
+test("every staffed service building has a real job and can cover an occupied home", () => {
+    const covered = new Set(JOB_MAP.map(entry => entry.building));
+    const crownMaintained = new Set([TYPE.COURT, TYPE.PRISON, TYPE.SHRINE]);
+    for (const [rawType, capacity] of Object.entries(BUILDING_WORKFORCE)) {
+        const type = Number(rawType);
+        if (crownMaintained.has(type)) continue;
+        assert.ok(capacity > 0);
+        assert.ok(covered.has(type), "no villager job can staff building type " + type);
+    }
+
+    const house = { id: "service-house", type: TYPE.HOUSE, x: 40, y: 40, occupants: 1, dead: false, construction: { stage: 3 }, isBuilding: () => true };
+    state.entities.push(house);
+    const services = [
+        { id: "service-hall", type: TYPE.TOWN_HALL, x: 41, y: 40 },
+        { id: "service-school", type: TYPE.SCHOOL, x: 42, y: 40 },
+        { id: "service-bath", type: TYPE.BATHHOUSE, x: 43, y: 40, inventory: { output: { water: 10 } } },
+        { id: "service-guild", type: TYPE.GUILDHALL, x: 44, y: 40 },
+        { id: "service-watch", type: TYPE.WATCHHOUSE, x: 45, y: 40 }
+    ];
+    const built = services.map(entry => ({ ...entry, dead: false, construction: { stage: 3 }, isBuilding: () => true }));
+    state.entities.push(...built);
+    for (const building of built) {
+        for (let index = 0; index < BUILDING_WORKFORCE[building.type]; index++) {
+            state.entities.push({ id: "worker-" + building.id + "-" + index, type: TYPE.VILLAGER, x: building.x, y: building.y + 0.5, dead: false, workplace: building, isBuilding: () => false });
+        }
+    }
+    const summary = updateServices();
+    for (const category of ["civic", "education", "sanitation", "trade", "safety"]) {
+        assert.ok(summary[category] > 0, "a staffed " + category + " service must cover the occupied home");
+    }
+});
+
+test("courts, prisons and shrines are crown-maintained services without a villager job", () => {
+    state.entities.push({ id: "crown-house", type: TYPE.HOUSE, x: 40, y: 40, occupants: 1, dead: false, construction: { stage: 3 }, isBuilding: () => true });
+    for (const [id, type] of [["crown-court", TYPE.COURT], ["crown-prison", TYPE.PRISON], ["crown-shrine", TYPE.SHRINE]]) {
+        state.entities.push({ id, type, x: 41 + state.entities.length, y: 40, dead: false, construction: { stage: 3 }, isBuilding: () => true });
+    }
+    const summary = updateServices();
+    for (const category of ["justice", "safety", "civic", "social", "health"]) {
+        assert.ok(summary[category] > 0, "crown-maintained " + category + " coverage must be active without a villager job");
+    }
 });
 
 test("a town hall expands ordinance slots and enacted laws change live modifiers", () => {

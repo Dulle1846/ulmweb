@@ -1,13 +1,45 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.33.0`
-**Next development line:** `3.34.0-dev`
+**Current production version:** `3.34.0`
+**Next development line:** `3.35.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-21 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.34.0 — Staffed City, Reachable Builds, Living Politics
+
+A live systems audit found three classes of content that looked integrated but
+had no functioning consumer, plus a long-run political ratchet.
+
+- Civic service buildings can now actually be staffed. Town Halls employ
+  clerks, Schools teachers, Bathhouses bathkeepers, Guildhalls guildmasters,
+  Watchhouses watchmen and Breweries brewers, with matching profession labels,
+  icons and skill families. Watchhouses are part of the real safety coverage,
+  and courts, prisons and shrines are correctly treated as crown-maintained
+  services rather than silently unstaffed buildings.
+- Construction sites are validated against the physical settlement. A site
+  with no walkable approach is rejected before materials are charged, and a
+  site that cannot reach any store is rejected and fully refunded instead of
+  consuming an opening share and waiting forever for planks. This closes the
+  silent town-hall/school construction stall seen in long campaigns.
+- Politics now has a bounded recovery path for every faction: paid upkeep and
+  a debt-free court restore noble confidence, a fed and legitimate realm
+  restores the clergy, and solvent wages restore the guilds. A long healthy
+  peace no longer ratchets two factions permanently toward zero.
+- The Explore panel no longer shows the developer-only SPEC AUDIT card above
+  the player’s expedition content.
+- The campaign driver can answer annual court petitions (enabled for the
+  long-form release playtest), and after the 25-year gate it builds the civic
+  service district so the new staffing and coverage paths are exercised.
+- Verification: full `npm test` (1282/1282), syntax/import and local-asset
+  checks. The deterministic 25-year gate is green at 0.835 ms/tick. The
+  100-year playtest is green across 40,040 ticks at 1.323 ms/tick with 74
+  residents, 55 buildings, zero active sites and factions 100 / 98.26 / 100 /
+  100 (commons / nobility / guilds / clergy); no stalls, game over or food
+  shortage.
 
 ## 3.33.0 — Grove Scatter and Canopy LOD
 

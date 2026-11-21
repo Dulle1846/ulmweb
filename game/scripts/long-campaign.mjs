@@ -49,7 +49,7 @@ try {
     for (const seed of SWEEP_SEEDS) {
         const result = runCampaign({
             seed, years: YEARS, era: ERA, minAgendaStages: MIN_AGENDA_STAGES,
-            worldOptions: { climate: CLIMATE },
+            worldOptions: { climate: CLIMATE }, answerCourtPetitions: true,
         });
         results.push(result);
         const fuel = result.diagnostics?.fuelBackfill || null;
