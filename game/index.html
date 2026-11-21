@@ -588,9 +588,12 @@
 <aside id="workshop-panel" class="workshop-panel hidden" aria-label="Realm workshop">
     <header class="workshop-header">
         <div><span class="command-ribbon">BUILD MODE</span><h2 id="workshop-title">REALM WORKSHOP</h2></div>
-        <button id="workshop-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close workshop">×</button>
+        <div class="workshop-header-tools">
+            <button id="workshop-pick" class="workshop-pick" type="button" aria-controls="canvas">SELECT ON MAP</button>
+            <button id="workshop-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close workshop">×</button>
+        </div>
     </header>
-    <p id="workshop-meta" class="workshop-meta">Click any structure on the map to inspect and reshape it.</p>
+    <p id="workshop-meta" class="workshop-meta">Select any structure on the map to inspect and reshape it.</p>
     <div id="workshop-actions" class="workshop-actions">
         <button type="button" data-build-action="move">MOVE</button>
         <button type="button" data-build-action="rotate">ROTATE 90°</button>

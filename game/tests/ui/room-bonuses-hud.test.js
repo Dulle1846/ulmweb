@@ -53,3 +53,15 @@ test("the workshop assigns, buys and maintains furniture per room", () => {
     assert.ok(workshopCss.includes(".workshop-room.is-active"));
     assert.ok(workshopCss.includes(".workshop-upkeep"));
 });
+
+test("the phone workshop keeps the map selectable and explains unavailable actions", () => {
+    assert.ok(html.includes('id="workshop-pick"'));
+    assert.ok(workshop.includes("beginPickFromMap"));
+    assert.ok(workshop.includes("is-picking"));
+    assert.ok(workshop.includes("NO STRUCTURE HERE"));
+    assert.ok(workshop.includes("aria-disabled"));
+    assert.ok(workshop.includes("SITE CONTROLS APPLY TO CONSTRUCTION SITES"));
+    assert.ok(workshopCss.includes(".workshop-panel.is-picking"));
+    assert.ok(workshopCss.includes(".workshop-panel.is-picking .workshop-actions"));
+    assert.ok(workshopCss.includes(".workshop-pick"));
+});

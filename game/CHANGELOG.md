@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.34.1`
+**Current production version:** `3.34.2`
 **Next development line:** `3.35.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,28 @@
 **Last repository verification:** 2026-11-21 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.34.2 — Phone Workshop
+
+The workshop's “select a structure” step still assumed the map and the panel
+could share a phone screen. At 390×844 the fixed bottom sheet began at y=346
+while the map ended at y=728, leaving a 24px strip, so a phone player could not
+select any structure and every editor action stayed out of reach.
+
+- The unselected phone workshop is now a compact picker row. The whole map
+  stays tappable; selecting a structure expands the full sheet, and SELECT ON
+  MAP returns to the picker. Desktop and tablet keep the side panel unchanged.
+- Unavailable actions now answer with the actual reason instead of a natively
+  disabled button that silently swallowed the tap. An empty map tap reports
+  that no structure is there.
+- A browser regression drives the real touch path at 390×844 with a coarse
+  pointer: it opens the workshop, taps a construction site, reads its details,
+  checks the unavailable-action reason, cancels with the 35% refund toast, and
+  restores the desktop viewport. A static UI test in `npm test` also guards the
+  picker layout and reason copy.
+- Verification: full `npm test`, browser E2E at full strength, and a
+  cache-busted live check on all four deploy targets. This is a presentation
+  change, so the deterministic campaign was not rerun.
 
 ## 3.34.1 — Touch Placement and Paused Inspection
 

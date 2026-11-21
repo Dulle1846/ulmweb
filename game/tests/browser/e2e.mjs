@@ -1344,6 +1344,171 @@ try{
     await page.locator("#pause-btn").click();
     await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="PAUSE",null,{timeout:3000});
 
+    // ── Phone workshop ─────────────────────────────────────────────
+    // At 390x844 the full editor covered the map down to a 24px sliver, so a
+    // player could not tap any structure. The unselected state is now a compact
+    // picker; selecting expands the sheet. Drive the real touch path with a
+    // coarse pointer and verify selection, details, reasons and cancellation.
+    const phoneClient=await context.newCDPSession(page);
+    await phoneClient.send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:true,screenWidth:390,screenHeight:844});
+    await phoneClient.send("Emulation.setTouchEmulationEnabled",{enabled:true,maxTouchPoints:5});
+    await phoneClient.send("Emulation.setEmulatedMedia",{features:[{name:"pointer",value:"coarse"},{name:"hover",value:"none"}]});
+    await page.evaluate(()=>scrollTo(0,0));
+    await page.waitForTimeout(200);
+    assert.equal(await page.evaluate(()=>matchMedia("(pointer: coarse)").matches),true,"the phone workshop test must run with a coarse pointer");
+    if(await page.locator("#event-notification").isVisible())await page.locator("#event-notification-close").click();
+    if(!(await page.evaluate(async()=>(await import("./js/core/state.js")).state.isPaused))){
+        await page.locator("#pause-btn").click();
+        await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
+    }
+    const phoneWorkshopFixture=await page.evaluate(async()=>{
+        const [{state},{TYPE},{spawnEntity},{isWaterAt},{BUILDING_SIZE},{clampCamera}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/core/types.js"),import("./js/world/entities.js"),
+            import("./js/world/world.js"),import("./js/core/config.js"),import("./js/presentation/camera.js")
+        ]);
+        const occupied=(x,y)=>state.entities.some(entity=>{
+            if(entity.dead||!entity.isBuilding?.())return false;
+            const size=BUILDING_SIZE[entity.type]||{w:1,h:1};
+            const scale=Math.max(.25,Math.min(6,Number(entity.footprintScale)||1));
+            return Math.abs(x+.5-(entity.x+.5))<size.w*scale/2+1&&Math.abs(y+.5-(entity.y+.5))<size.h*scale/2+1;
+        });
+        const centerX=Math.round(state.worldW/2),centerY=Math.round(state.worldH/2);
+        let spot=null;
+        for(let radius=3;radius<=24&&!spot;radius++){
+            for(let oy=-radius;oy<=radius&&!spot;oy++){
+                for(let ox=-radius;ox<=radius;ox++){
+                    if(Math.max(Math.abs(ox),Math.abs(oy))!==radius)continue;
+                    const x=centerX+ox,y=centerY+oy;
+                    if(!state.explored?.[x]?.[y]||isWaterAt(x+.5,y+.5)||occupied(x,y))continue;
+                    spot={x,y};break;
+                }
+            }
+        }
+        if(!spot)throw new Error("the phone workshop fixture found no dry tile");
+        const entity=spawnEntity(spot.x,spot.y,TYPE.HOUSE);
+        if(!entity)throw new Error("the phone workshop fixture could not create a structure");
+        entity.construction={
+            stage:0,progress:0,totalCost:{wood:10,stone:4},paid:{wood:10,stone:4},
+            delivered:{},materialNeed:{},reason:"FOUNDATIONS",startedTick:state.tick,
+            completedTick:null,paused:false
+        };
+        state.buildingCollisionVersion=(state.buildingCollisionVersion||0)+1;
+        const rect=document.querySelector("#canvas").getBoundingClientRect();
+        state.camera.x=(entity.x+.5)*48*state.zoom-rect.width/2;
+        state.camera.y=(entity.y+.5)*48*state.zoom-rect.height/2;
+        clampCamera();
+        return {id:entity.id,x:entity.x,y:entity.y,wood:state.resources.wood,stone:state.resources.stone};
+    });
+    const phoneTap=async(x,y)=>{
+        await phoneClient.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x,y,id:1}]});
+        await page.waitForTimeout(25);
+        await phoneClient.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});
+    };
+    const openWorkshopBox=await page.locator("#workshop-open-btn").boundingBox();
+    assert.ok(openWorkshopBox,"the phone header must expose the workshop button");
+    await phoneTap(openWorkshopBox.x+openWorkshopBox.width/2,openWorkshopBox.y+openWorkshopBox.height/2);
+    await page.waitForFunction(async()=>(await import("./js/core/state.js")).state.workshopOpen,null,{timeout:3000});
+    await page.waitForTimeout(200);
+    const phonePicker=await page.evaluate(()=>{
+        const panel=document.querySelector("#workshop-panel").getBoundingClientRect();
+        const canvas=document.querySelector("#canvas").getBoundingClientRect();
+        return {
+            visible:!document.querySelector("#workshop-panel").classList.contains("hidden"),
+            picking:document.querySelector("#workshop-panel").classList.contains("is-picking"),
+            panelTop:panel.top,canvasBottom:canvas.bottom,
+            meta:document.querySelector("#workshop-meta").textContent
+        };
+    });
+    assert.equal(phonePicker.visible,true,"a phone tap must open the workshop");
+    assert.equal(phonePicker.picking,true,"an unselected phone workshop must be a compact picker");
+    assert.ok(phonePicker.panelTop>=phonePicker.canvasBottom-1,"the phone picker must not cover the map: panel "+phonePicker.panelTop+" vs canvas "+phonePicker.canvasBottom);
+    assert.match(phonePicker.meta,/Select any structure/i,"the picker must explain the map gesture");
+    const emptyMapPoint=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        const {buildingAtTile}=await import("./js/presentation/build-mode.js");
+        const canvas=document.querySelector("#canvas"),rect=canvas.getBoundingClientRect();
+        const panelTop=document.querySelector("#workshop-panel").getBoundingClientRect().top;
+        const bottom=Math.min(rect.bottom,panelTop)-6;
+        for(let sy=rect.top+40;sy<bottom;sy+=10){
+            for(let sx=rect.left+16;sx<rect.right-16;sx+=10){
+                if(document.elementFromPoint(sx,sy)!==canvas)continue;
+                const wx=(sx-rect.left+state.camera.x)/(48*state.zoom);
+                const wy=(sy-rect.top+state.camera.y)/(48*state.zoom);
+                if(buildingAtTile(Math.floor(wx),Math.floor(wy)))continue;
+                return {x:sx,y:sy};
+            }
+        }
+        return null;
+    });
+    assert.ok(emptyMapPoint,"the phone picker must leave an empty map tile reachable");
+    await phoneTap(emptyMapPoint.x,emptyMapPoint.y);
+    await page.waitForFunction(()=>document.querySelector("#action-toast")?.textContent.includes("NO STRUCTURE HERE"),null,{timeout:3000});
+    const phoneSitePoint=await page.evaluate(async({id})=>{
+        const {state}=await import("./js/core/state.js");
+        const entity=state.entities.find(candidate=>candidate.id===id);
+        const canvas=document.querySelector("#canvas"),rect=canvas.getBoundingClientRect();
+        const x=(entity.x+.5)*48*state.zoom-state.camera.x+rect.left;
+        const y=(entity.y+.5)*48*state.zoom-state.camera.y+rect.top;
+        return {x,y,hit:document.elementFromPoint(x,y)?.id||null};
+    },{id:phoneWorkshopFixture.id});
+    assert.equal(phoneSitePoint.hit,"canvas","the phone fixture must be reachable through the map");
+    await phoneTap(phoneSitePoint.x,phoneSitePoint.y);
+    await page.waitForFunction(async({id})=>(await import("./js/core/state.js")).state.selectedBuildingId===id,{id:phoneWorkshopFixture.id},{timeout:3000});
+    const phoneSelected=await page.evaluate(async({id})=>{
+        const {state}=await import("./js/core/state.js");
+        const panel=document.querySelector("#workshop-panel");
+        return {
+            selected:state.selectedBuildingId,
+            picking:panel.classList.contains("is-picking"),
+            title:document.querySelector("#workshop-title").textContent,
+            meta:document.querySelector("#workshop-meta").textContent,
+            detail:document.querySelector("#workshop-items").innerText,
+            resumeUnavailable:document.querySelector('[data-build-action="resume"]').dataset.unavailable,
+            demolishUnavailable:document.querySelector('[data-build-action="demolish"]').dataset.unavailable
+        };
+    },{id:phoneWorkshopFixture.id});
+    assert.equal(phoneSelected.selected,phoneWorkshopFixture.id,"a phone map tap must select the structure");
+    assert.equal(phoneSelected.picking,false,"selecting a structure must expand the phone workshop");
+    assert.match(phoneSelected.title,/COTTAGE/i,"the phone workshop must show the selected structure");
+    assert.ok(phoneSelected.meta.includes("TILE "+phoneWorkshopFixture.x+", "+phoneWorkshopFixture.y),"the details must show the structure tile: "+phoneSelected.meta);
+    assert.match(phoneSelected.detail,/construction site/i,"the details must explain the construction site");
+    assert.equal(phoneSelected.resumeUnavailable,"true","an inapplicable site action must be marked unavailable");
+    assert.equal(phoneSelected.demolishUnavailable,"false","cancelling a site must be available");
+    const phoneResumeBox=await page.locator('[data-build-action="resume"]').boundingBox();
+    assert.ok(phoneResumeBox,"the phone sheet must expose the unavailable action");
+    await phoneTap(phoneResumeBox.x+phoneResumeBox.width/2,phoneResumeBox.y+phoneResumeBox.height/2);
+    await page.waitForFunction(()=>/NOT PAUSED|CONSTRUCTION SITES/.test(document.querySelector("#action-toast")?.textContent||""),null,{timeout:3000});
+    const phoneDemolishBox=await page.locator('[data-build-action="demolish"]').boundingBox();
+    assert.ok(phoneDemolishBox,"the phone sheet must expose the cancel action");
+    await phoneTap(phoneDemolishBox.x+phoneDemolishBox.width/2,phoneDemolishBox.y+phoneDemolishBox.height/2);
+    await page.waitForFunction(()=>document.querySelector("#action-toast")?.textContent.includes("SITE CANCELLED"),null,{timeout:3000});
+    const phoneCancellation=await page.evaluate(async({id})=>{
+        const {state}=await import("./js/core/state.js");
+        const entity=state.entities.find(candidate=>candidate.id===id);
+        return {
+            dead:Boolean(entity?.dead),
+            wood:state.resources.wood,
+            stone:state.resources.stone,
+            picking:document.querySelector("#workshop-panel").classList.contains("is-picking")
+        };
+    },{id:phoneWorkshopFixture.id});
+    assert.equal(phoneCancellation.dead,true,"the phone cancel action must remove the site");
+    assert.ok(Math.abs((phoneCancellation.wood-phoneWorkshopFixture.wood)-3.5)<0.05,"cancelling must refund 35% of paid wood, got "+(phoneCancellation.wood-phoneWorkshopFixture.wood));
+    assert.ok(Math.abs((phoneCancellation.stone-phoneWorkshopFixture.stone)-1.4)<0.05,"cancelling must refund 35% of paid stone, got "+(phoneCancellation.stone-phoneWorkshopFixture.stone));
+    assert.equal(phoneCancellation.picking,true,"an empty selection must return the phone panel to the picker");
+    if(await page.locator("#workshop-panel").isVisible()){
+        const closeBox=await page.locator("#workshop-close").boundingBox();
+        await phoneTap(closeBox.x+closeBox.width/2,closeBox.y+closeBox.height/2);
+        await page.locator("#workshop-panel").waitFor({state:"hidden",timeout:3000});
+    }
+    await phoneClient.send("Emulation.clearDeviceMetricsOverride");
+    await phoneClient.send("Emulation.setTouchEmulationEnabled",{enabled:false});
+    await phoneClient.send("Emulation.setEmulatedMedia",{features:[]});
+    await page.setViewportSize({width:1600,height:1000});
+    await page.evaluate(()=>scrollTo(0,0));
+    await page.waitForTimeout(200);
+    await page.locator("#pause-btn").click();
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="PAUSE",null,{timeout:3000});
 
     // Create deterministic guardian/ward records so the dossier UI can be tested
     // independently of random world population.

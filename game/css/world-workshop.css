@@ -157,6 +157,34 @@
   color: #8a6a38;
 }
 
+.workshop-header-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.workshop-pick {
+  display: none;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid rgba(92, 72, 42, 0.5);
+  border-radius: 4px;
+  background: rgba(255, 251, 238, 0.85);
+  color: #3b2d1c;
+  font: 700 8px/1.2 "Trebuchet MS", sans-serif;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.workshop-pick:hover { background: #f2dfb8; }
+
+.workshop-actions button.is-unavailable {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .workshop-meta {
   margin: 8px 0 10px;
   font-size: 11px;
@@ -487,4 +515,26 @@
     max-height: 58vh;
   }
   .workshop-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workshop-pick { display: inline-flex; }
+  /* The full editor is a bottom sheet. On a phone it covers the map, so the
+     no-selection state is a compact picker row: the map stays tappable and a
+     structure tap expands the sheet. SELECT ON MAP returns to this state. */
+  .workshop-panel.is-picking {
+    max-height: none;
+    overflow: hidden;
+    padding: 10px 12px 12px;
+  }
+  .workshop-panel.is-picking .workshop-pick,
+  .workshop-panel.is-picking .workshop-actions,
+  .workshop-panel.is-picking .workshop-subtitle,
+  .workshop-panel.is-picking .workshop-items,
+  .workshop-panel.is-picking .workshop-divider,
+  .workshop-panel.is-picking .plan-tools,
+  .workshop-panel.is-picking .plan-editor,
+  .workshop-panel.is-picking .plan-rooms,
+  .workshop-panel.is-picking #building-bonus-rooms,
+  .workshop-panel.is-picking #building-bonus-furniture,
+  .workshop-panel.is-picking .workshop-hint { display: none; }
+  .workshop-panel.is-picking .workshop-meta { margin-bottom: 0; }
+  .workshop-panel.is-picking .workshop-header h2 { font-size: 17px; }
 }

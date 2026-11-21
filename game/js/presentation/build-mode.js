@@ -139,7 +139,17 @@ export function selectBuilding(entity) {
     state.selectedBuildingId = entity ? entity.id : null;
     state.selectedRoom = null;
     state.buildTool = null;
+    if (!entity) state.buildMoveFrom = null;
     renderWorkshop();
+}
+
+// On a phone the expanded workshop panel covers the map. Collapsing back to
+// the picker row is a real mode, not a second selection path: the same map tap
+// that selects a structure on desktop clears the selection here.
+export function beginPickFromMap() {
+    if (!state.workshopOpen) return;
+    selectBuilding(null);
+    toast('TAP A STRUCTURE ON THE MAP');
 }
 
 export function openWorkshop() {
@@ -193,9 +203,26 @@ export function handleWorkshopClick(tx, ty) {
     }
 
     const building = buildingAtTile(tx, ty);
-    if (building) selectBuilding(building);
-    else selectBuilding(null);
+    if (building) {
+        selectBuilding(building);
+    } else {
+        selectBuilding(null);
+        toast('NO STRUCTURE HERE · TAP A BUILDING');
+    }
     return true;
+}
+
+// Unavailable actions stay pressable so the player gets the reason. A natively
+// disabled button silently swallows the tap, which on a phone is indistinguishable
+// from a broken control.
+function actionReason(action, entity) {
+    if (!entity) return 'SELECT A STRUCTURE FIRST';
+    if (action === 'pause' || action === 'resume') {
+        if (!isUnderConstruction(entity)) return 'SITE CONTROLS APPLY TO CONSTRUCTION SITES';
+        if (action === 'pause' && entity.construction?.paused) return 'THIS SITE IS ALREADY PAUSED';
+        if (action === 'resume' && !entity.construction?.paused) return 'THIS SITE IS NOT PAUSED';
+    }
+    return 'THAT ACTION IS UNAVAILABLE';
 }
 
 export function rotateSelected() {
@@ -380,7 +407,7 @@ export function renderWorkshop() {
                 : [...Object.entries(inventory.input || {}).map(([good, value]) => value + ' ' + good + ' in'), ...Object.entries(inventory.output || {}).map(([good, value]) => value + ' ' + good + ' out')].join(' · ') || 'local store empty';
             meta.textContent = `TILE ${entity.x}, ${entity.y} · ${site.status.toUpperCase()}${site.percent < 100 ? ' · ' + site.percent + '%' : ''} · ${stored}`;
         } else {
-            meta.textContent = 'Click any structure on the map to inspect and reshape it.';
+            meta.textContent = 'Select any structure on the map to inspect and reshape it.';
         }
     }
     if (actions) actions.classList.toggle('is-disabled', !entity);
@@ -433,12 +460,18 @@ export function renderWorkshop() {
             : entity ? 'MOVE, ROTATE, REBUILD OR FURNISH THIS STRUCTURE' : 'SELECT A STRUCTURE TO BEGIN';
     }
     panel.classList.toggle('is-moving', state.buildTool === 'move');
+    // With no selection the phone panel is a compact picker row so the map
+    // stays tappable; a selected structure expands it into the full editor.
+    panel.classList.toggle('is-picking', !entity);
     document.querySelectorAll('[data-build-action]').forEach(button => {
         const action = button.dataset.buildAction;
         let disabled = !entity && action !== 'undo' && action !== 'close';
         if (action === 'pause') disabled = !entity || !isUnderConstruction(entity) || Boolean(entity.construction?.paused);
         if (action === 'resume') disabled = !entity || !isUnderConstruction(entity) || !entity.construction?.paused;
-        button.disabled = disabled;
+        button.removeAttribute('disabled');
+        button.dataset.unavailable = String(disabled);
+        button.setAttribute('aria-disabled', String(disabled));
+        button.classList.toggle('is-unavailable', disabled);
         button.classList.toggle('is-active', action === 'move' && state.buildTool === 'move');
     });
     renderPlanEditor();
@@ -450,10 +483,15 @@ export function setupWorkshopUI() {
 
     document.getElementById('workshop-open-btn')?.addEventListener('click', toggleWorkshop);
     document.getElementById('workshop-close')?.addEventListener('click', closeWorkshop);
+    document.getElementById('workshop-pick')?.addEventListener('click', beginPickFromMap);
 
     document.getElementById('workshop-actions')?.addEventListener('click', event => {
         const button = event.target.closest('[data-build-action]');
         if (!button) return;
+        if (button.dataset.unavailable === 'true') {
+            toast(actionReason(button.dataset.buildAction, selectedBuilding()));
+            return;
+        }
         switch (button.dataset.buildAction) {
             case 'move': beginMoveSelected(); break;
             case 'rotate': rotateSelected(); break;
