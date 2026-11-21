@@ -68,6 +68,15 @@ let frameWorkQueue=[],frameWorkFrame=0;
 // initial innerHTML and append them on first focus or pointer contact.
 const lazyOptionSets=new Map();
 const narrowViewport=()=>typeof window!=="undefined"&&window.matchMedia("(max-width: 640px)").matches;
+function setCommandModalOpen(open){
+ const modal=document.getElementById("command-modal");
+ if(!modal)return;
+ modal.classList.toggle("hidden",!open);
+ // The shell stays laid out while closed; visibility is the only state that
+ // changes. Set it inline in the same task as the class so Chromium cannot
+ // serve the previous hidden style to an immediate open assertion.
+ modal.style.setProperty("visibility",open?"visible":"hidden","important");
+}
 function hydrateLazySelect(select){
  if(!select||!select.dataset.lazyOptions||select.dataset.lazyOptionsReady)return;
  const options=lazyOptionSets.get(select.dataset.lazyOptions);
@@ -1232,19 +1241,26 @@ function render(resetScroll=false){
  let progressiveDynasty=false;
  if(activePanel==="items")renderItemLexicon(panel);
  else {
-  const __t0=performance.now();
-  const markup=(renderers[activePanel]||kingdom)();
-  window.__panelTiming={panel:activePanel,renderMs:Math.round((performance.now()-__t0)*10)/10};
   // Opening a ledger on a mature realm used to insert the whole archive in
   // one click task. The markup itself is small; font, style and layout for
   // hundreds of rows were the 60-170 ms task. Reuse the existing chunked
   // renderer for every opened tab, not only phones. Chronicle already owns a
   // timeline hydrator and needs its slots synchronously.
+  const __t0=performance.now();
+  const markup=(renderers[activePanel]||kingdom)();
+  window.__panelTiming={panel:activePanel,renderMs:Math.round((performance.now()-__t0)*10)/10};
   if(resetScroll&&activePanel!=="chronicle"){
    progressiveDynasty=false;
-   renderProgressive(panel,markup,{resetScroll,deferStart:true,nodesPerFrame:activePanel==="nobility"?3:2,onDone:()=>{
-    if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
-   }});
+   // Building a mature ledger and parsing it in one frame left a 50-57 ms
+   // task at 4x CPU throttle. Let the markup generation settle in this task;
+   // parse and mount the first chunk in the next one.
+   const mountToken=revealToken;
+   requestAnimationFrame(()=>{
+    if(mountToken!==panelRevealToken)return;
+    renderProgressive(panel,markup,{resetScroll,nodesPerFrame:activePanel==="nobility"?3:2,onDone:()=>{
+     if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
+    }});
+   });
   }else {
    panel.innerHTML=markup;
    if(resetScroll)requestAnimationFrame(()=>{if(panel.isConnected)panel.scrollTop=0;});
@@ -1308,7 +1324,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="endeavour-reassign")r=setEndeavourOverseer($("endeavour-active-overseer")?.value);
  else if(a==="research-start")r=startResearch(v);
  else if(a==="research-funding")r=setResearchFunding(Number(v));
- else if(a==="research-appoint")r=appointScholar($("research-scholar-select")?.value);else if(a==="research-dismiss")r=dismissScholar(v);else if(a==="crown-relief")r=applyCrownRelief();else if(a==="crown-grain")r=setGrainContract(Number(v));else if(a==="crown-water")r=setWaterworks(Number(v));else if(a==="crown-housing")r=upgradeHousingStock();else if(a==="crown-provision")r=provisionGranary();else if(a==="government-form")r=setGovernmentForm(v);else if(a==="government-tax")r=setTaxRate(Number(v));else if(a==="government-succession")r=setSuccessionLaw(v);else if(a==="policy")r=enactPolicy(v);else if(a==="foreign-marriage")r=marryForeignRealm(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-creature")r=summonCreature($("creature-summon-select")?.value);else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="royal-appoint-regent")r=appointRegent($("royal-regent-select")?.value);else if(a==="royal-abdicate")r=abdicateThrone();else if(a==="royal-concede")r=concedeCrown(v);else if(a==="royal-press-claim")r=pressClaim(v);else if(a==="royal-settle-claim")r=settleClaim(v);else if(a==="royal-suppress")r=suppressCivilConflict();else if(a==="draw-card")r=drawPlayerCard();else if(a==="select-card"){r=selectCard(v)?{ok:true}:{ok:false,reason:"card not found"};if(r.ok)$("command-modal")?.classList.add("hidden");}else if(a==="show-active-event"&&state.activeEvent){state.activeEvent.dismissed=false;renderUI();r={ok:true};}else if(a==="open-atelier"){activePanel="atelier";r={ok:true};}else if(a==="diplomacy-gift")r=sendGift(v);else if(a==="diplomacy-pact")r=proposeTradePact(v);else if(a==="diplomacy-trade-agreement")r=signTradeAgreement(v);else if(a==="diplomacy-cancel-agreement")r=cancelTradeAgreement(v);else if(a==="diplomacy-alliance")r=proposeAlliance(v);else if(a==="diplomacy-war")r=declareWar(v);else if(a==="diplomacy-peace")r=sueForPeace(v);else if(a==="diplomacy-envoy")r=appointEnvoy(v,$("envoy-"+v)?.value);else if(a==="diplomacy-recall")r=recallEnvoy(v);else if(a==="diplomacy-guarantee")r=grantGuarantee(v);else if(a==="diplomacy-withdraw")r=withdrawGuarantee(v);else if(a==="diplomacy-honor")r=honorGuaranteeCall(v);else if(a==="diplomacy-refuse")r=refuseGuaranteeCall(v);else if(a==="court-appoint")r=appointMinister(v,$("court-office-"+v)?.value);else if(a==="court-dismiss")r=dismissMinister(v);else if(a==="court-demand")r=addressFactionDemand(v);else if(a==="advisor-appoint")r=appointRoyalAdvisor($("advisor-select")?.value);else if(a==="advisor-action")r=resolveAdvisorAdvice(v);else if(a==="military-recruit")r=recruitVillager($("military-recruit-select")?.value);else if(a==="military-train")r=trainSoldier(v);else if(a==="military-equip")r=equipSoldier(v);else if(a==="military-mount")r=mountSoldier(v);else if(a==="military-horse")r=buyHorse();else if(a==="military-demobilize")r=demobilizeSoldier(v);else if(a==="health-sanitation")r=improveSanitation();else if(a==="health-appoint")r=appointHealer($("health-healer-select")?.value);else if(a==="health-dismiss")r=dismissHealer(v);else if(a==="health-brew")r=brewMedicine();else if(a==="health-field")r=applyHerbalRemedy(2);else if(a==="health-treat")r=treatSick();else if(a==="health-sell")r=sellMedicine(2);else if(a==="health-quarantine")r=setQuarantine(Number(v));else if(a==="spy-recruit")r=recruitAgent($("spy-recruit-select")?.value);else if(a==="spy-assign")r=assignAgent(v,$("spy-desk-"+v)?.value,$("spy-target-"+v)?.value);else if(a==="spy-dismiss")r=dismissAgent(v);else if(a==="spy-screen")r=screenCourt();else if(a==="spy-warn")r=warnHouse($("spy-warn-house")?.value);else if(a==="spy-concession")r=demandConcession($("spy-concession-realm")?.value);else if(a==="spy-false-trail")r=plantFalseTrail();else if(a==="faith-appoint")r=appointClergy($("faith-clergy-select")?.value);else if(a==="faith-dismiss")r=dismissClergy(v);else if(a==="faith-festival")r=holdFestival(v);else if(a==="faith-pilgrimage")r=fundPilgrimage();else if(a==="faith-budget")r=setCultureBudget(Number(v));else if(a==="faith-heresy")r=addressHeresy(v);else if(a==="justice-appoint")r=appointJudge($("justice-judge-select")?.value);else if(a==="justice-dismiss")r=dismissJudge(v);else if(a==="justice-law")r=setLawCode(v);else if(a==="justice-charter")r=grantCharter(v);else if(a==="justice-verdict")r=tryCase(v,$("justice-sentence-"+v)?.value);else if(a==="justice-investigate")r=investigateCorruption(v);
+ else if(a==="research-appoint")r=appointScholar($("research-scholar-select")?.value);else if(a==="research-dismiss")r=dismissScholar(v);else if(a==="crown-relief")r=applyCrownRelief();else if(a==="crown-grain")r=setGrainContract(Number(v));else if(a==="crown-water")r=setWaterworks(Number(v));else if(a==="crown-housing")r=upgradeHousingStock();else if(a==="crown-provision")r=provisionGranary();else if(a==="government-form")r=setGovernmentForm(v);else if(a==="government-tax")r=setTaxRate(Number(v));else if(a==="government-succession")r=setSuccessionLaw(v);else if(a==="policy")r=enactPolicy(v);else if(a==="foreign-marriage")r=marryForeignRealm(v);else if(a==="consort")r=appointRoyalConsort($("royal-consort-select")?.value);else if(a==="royal-birth")r=createRoyalChild();else if(a==="summon-creature")r=summonCreature($("creature-summon-select")?.value);else if(a==="summon-dragon")r=summonDragon();else if(a==="heir")r=designateHeir(v);else if(a==="royal-appoint-regent")r=appointRegent($("royal-regent-select")?.value);else if(a==="royal-abdicate")r=abdicateThrone();else if(a==="royal-concede")r=concedeCrown(v);else if(a==="royal-press-claim")r=pressClaim(v);else if(a==="royal-settle-claim")r=settleClaim(v);else if(a==="royal-suppress")r=suppressCivilConflict();else if(a==="draw-card")r=drawPlayerCard();else if(a==="select-card"){r=selectCard(v)?{ok:true}:{ok:false,reason:"card not found"};if(r.ok)setCommandModalOpen(false);}else if(a==="show-active-event"&&state.activeEvent){state.activeEvent.dismissed=false;renderUI();r={ok:true};}else if(a==="open-atelier"){activePanel="atelier";r={ok:true};}else if(a==="diplomacy-gift")r=sendGift(v);else if(a==="diplomacy-pact")r=proposeTradePact(v);else if(a==="diplomacy-trade-agreement")r=signTradeAgreement(v);else if(a==="diplomacy-cancel-agreement")r=cancelTradeAgreement(v);else if(a==="diplomacy-alliance")r=proposeAlliance(v);else if(a==="diplomacy-war")r=declareWar(v);else if(a==="diplomacy-peace")r=sueForPeace(v);else if(a==="diplomacy-envoy")r=appointEnvoy(v,$("envoy-"+v)?.value);else if(a==="diplomacy-recall")r=recallEnvoy(v);else if(a==="diplomacy-guarantee")r=grantGuarantee(v);else if(a==="diplomacy-withdraw")r=withdrawGuarantee(v);else if(a==="diplomacy-honor")r=honorGuaranteeCall(v);else if(a==="diplomacy-refuse")r=refuseGuaranteeCall(v);else if(a==="court-appoint")r=appointMinister(v,$("court-office-"+v)?.value);else if(a==="court-dismiss")r=dismissMinister(v);else if(a==="court-demand")r=addressFactionDemand(v);else if(a==="advisor-appoint")r=appointRoyalAdvisor($("advisor-select")?.value);else if(a==="advisor-action")r=resolveAdvisorAdvice(v);else if(a==="military-recruit")r=recruitVillager($("military-recruit-select")?.value);else if(a==="military-train")r=trainSoldier(v);else if(a==="military-equip")r=equipSoldier(v);else if(a==="military-mount")r=mountSoldier(v);else if(a==="military-horse")r=buyHorse();else if(a==="military-demobilize")r=demobilizeSoldier(v);else if(a==="health-sanitation")r=improveSanitation();else if(a==="health-appoint")r=appointHealer($("health-healer-select")?.value);else if(a==="health-dismiss")r=dismissHealer(v);else if(a==="health-brew")r=brewMedicine();else if(a==="health-field")r=applyHerbalRemedy(2);else if(a==="health-treat")r=treatSick();else if(a==="health-sell")r=sellMedicine(2);else if(a==="health-quarantine")r=setQuarantine(Number(v));else if(a==="spy-recruit")r=recruitAgent($("spy-recruit-select")?.value);else if(a==="spy-assign")r=assignAgent(v,$("spy-desk-"+v)?.value,$("spy-target-"+v)?.value);else if(a==="spy-dismiss")r=dismissAgent(v);else if(a==="spy-screen")r=screenCourt();else if(a==="spy-warn")r=warnHouse($("spy-warn-house")?.value);else if(a==="spy-concession")r=demandConcession($("spy-concession-realm")?.value);else if(a==="spy-false-trail")r=plantFalseTrail();else if(a==="faith-appoint")r=appointClergy($("faith-clergy-select")?.value);else if(a==="faith-dismiss")r=dismissClergy(v);else if(a==="faith-festival")r=holdFestival(v);else if(a==="faith-pilgrimage")r=fundPilgrimage();else if(a==="faith-budget")r=setCultureBudget(Number(v));else if(a==="faith-heresy")r=addressHeresy(v);else if(a==="justice-appoint")r=appointJudge($("justice-judge-select")?.value);else if(a==="justice-dismiss")r=dismissJudge(v);else if(a==="justice-law")r=setLawCode(v);else if(a==="justice-charter")r=grantCharter(v);else if(a==="justice-verdict")r=tryCase(v,$("justice-sentence-"+v)?.value);else if(a==="justice-investigate")r=investigateCorruption(v);
  if(r.ok){
   if(a==="foreign-marriage")toast(String(r.message||"FOREIGN MARRIAGE SEALED").toUpperCase());
   else if(a==="draw-card")toast(r.card.name+" DRAWN · SELECT IT TO PLACE IT");
@@ -1405,7 +1421,7 @@ export function setupManagementUI(){
   if(target==="market"){$("tab-2")?.click();return;}
   if(["kingdom","government","politics","nobility","diplomacy","espionage","explore","biome","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
    if(target==="chronicle")resetTimelineView(state.year);
-   activePanel=target;render(true);$("command-modal")?.classList.remove("hidden");
+   activePanel=target;render(true);setCommandModalOpen(true);
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));
   }
  }));
@@ -1414,9 +1430,10 @@ export function setupManagementUI(){
   if(modal?.classList.contains("hidden")){
    // Reveal the empty shell first, then let the next frame build the panel.
    // Settling the fixed dialog and laying out a full ledger in one task was a
-   // 60-90 ms block on a throttled device; these are separate tasks now.
-   $("command-panel-content")?.replaceChildren();
-   modal.classList.remove("hidden");
+   // 60-90 ms block on a throttled device; these are separate tasks now. Keep
+   // the warm height spacer until the renderer replaces it, so revealing the
+   // shell does not collapse and re-grow the flex pane in the click task.
+   setCommandModalOpen(true);
    requestAnimationFrame(()=>render(true));
    return;
   }
@@ -1430,7 +1447,7 @@ export function setupManagementUI(){
   if(records.some(record=>record.addedNodes.length||record.removedNodes.length))schedulePanelCulling();
  }).observe(commandContent,{childList:true,subtree:true});
 
- document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{const nextPanel=b.dataset.commandTab||"government";if(nextPanel==="chronicle")resetTimelineView(state.year);activePanel=nextPanel;render(true);$("command-modal")?.classList.remove("hidden");}));
+ document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{const nextPanel=b.dataset.commandTab||"government";if(nextPanel==="chronicle")resetTimelineView(state.year);activePanel=nextPanel;render(true);setCommandModalOpen(true);}));
  const commandTabSelect=$("command-tab-select");
  if(commandTabSelect&&!commandTabSelect.options.length){
   document.querySelectorAll("[data-command-tab]").forEach(b=>{
@@ -1443,7 +1460,7 @@ export function setupManagementUI(){
   commandTabSelect.addEventListener("change",()=>{
    const nextPanel=commandTabSelect.value||"government";
    if(nextPanel==="chronicle")resetTimelineView(state.year);
-   activePanel=nextPanel;render(true);$("command-modal")?.classList.remove("hidden");
+   activePanel=nextPanel;render(true);setCommandModalOpen(true);
   });
  }
  $("command-panel-content")?.addEventListener("click",e=>{
@@ -1475,10 +1492,10 @@ export function setupManagementUI(){
  });
  document.addEventListener("kac:open-timeline",e=>{
   if(!focusTimelineEvent(e.detail?.eventId))return;
-  activePanel="chronicle";render(true);$("command-modal")?.classList.remove("hidden");
+  activePanel="chronicle";render(true);setCommandModalOpen(true);
  });
- $("command-close")?.addEventListener("click",()=>$("command-modal")?.classList.add("hidden"));
- $("command-modal")?.addEventListener("click",e=>{if(e.target===$("command-modal"))$("command-modal").classList.add("hidden");});
+ $("command-close")?.addEventListener("click",()=>setCommandModalOpen(false));
+ $("command-modal")?.addEventListener("click",e=>{if(e.target===$("command-modal"))setCommandModalOpen(false);});
  $("command-panel-content")?.addEventListener("input",e=>{
   if(e.target.id==="building-search"){
    const query=e.target.value.trim().toLowerCase();
@@ -1647,17 +1664,45 @@ export function setupManagementUI(){
    return;
   }
   const person=e.target.closest("[data-open-person]");
-  if(person){window.dispatchEvent(new CustomEvent("kac:open-person",{detail:{personId:person.dataset.openPerson}}));$("command-modal")?.classList.add("hidden");return;}
+  if(person){window.dispatchEvent(new CustomEvent("kac:open-person",{detail:{personId:person.dataset.openPerson}}));setCommandModalOpen(false);return;}
   if(handleCityPanelClick(e,{onChanged:()=>{renderUI();render();},toast}))return;
   const b=e.target.closest("[data-command]");if(b&&!b.disabled)act(b);
  });
  document.querySelectorAll("[data-kac-dock-action]").forEach(button=>button.addEventListener("click",()=>{
   const action=button.dataset.kacDockAction;
   if(action==="people")$("people-btn")?.click();
-  else if(action==="dynasty"){activePanel="dynasty";render();$("command-modal")?.classList.remove("hidden");}
-  else if(action==="cards"){activePanel="cards";render();$("command-modal")?.classList.remove("hidden");}
+  else if(action==="dynasty"){activePanel="dynasty";render();setCommandModalOpen(true);}
+  else if(action==="cards"){activePanel="cards";render();setCommandModalOpen(true);}
   else if(action==="events")$("tab-0")?.click();
   else if(action==="save")$("save-btn")?.click();
  }));
- document.addEventListener("keydown",e=>{if(e.key==="Escape")$("command-modal")?.classList.add("hidden");});
+ document.addEventListener("keydown",e=>{if(e.key==="Escape")setCommandModalOpen(false);});
+ // The closed shell is kept in the layout tree, but Chromium still defers some
+ // of its first style/layout work while it is invisible: opening the empty
+ // dialog then cost 55-60 ms on a 4x-throttled device. Pay that layout once
+ // during idle startup, fully transparent and non-interactive, so a player's
+ // first open only flips visibility.
+ const warmCommandModal=()=>{
+  const modal=$("command-modal");
+  if(!modal||!modal.classList.contains("hidden"))return;
+  const content=$("command-panel-content");
+  // Give the empty scroll pane its real flex height while it is still
+  // invisible. Otherwise the first panel insert also relaid out the whole
+  // dialog to grow this pane from zero, a 40-50 ms tail on the open task.
+  if(content&&!content.childElementCount){
+   const spacer=document.createElement("div");
+   spacer.className="command-panel-warm-spacer";
+   spacer.setAttribute("aria-hidden","true");
+   spacer.style.cssText="height:100%;min-height:100%;pointer-events:none";
+   content.append(spacer);
+  }
+  modal.style.setProperty("visibility","visible","important");
+  modal.style.setProperty("opacity","0","important");
+  modal.getBoundingClientRect();
+  modal.style.setProperty("visibility","hidden","important");
+  modal.style.removeProperty("opacity");
+ };
+ // Run before the player can start a campaign, never on an idle callback that
+ // could land inside a measured cold-start window.
+ warmCommandModal();
 }

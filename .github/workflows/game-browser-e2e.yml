@@ -205,9 +205,9 @@ jobs:
   terrain:
     name: Terrain and seasonal reference
     runs-on: ubuntu-24.04
-    # Software WebGL captures vary with runner load (observed 4:36-6:32). The
-    # eight-minute step budget prevents a false timeout; all assertions stay.
-    timeout-minutes: 14
+    # Software WebGL captures vary with runner load (observed 4:36-8:00+). The
+    # generous step budget prevents a false timeout; all assertions stay.
+    timeout-minutes: 18
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -215,7 +215,7 @@ jobs:
         uses: ./.github/actions/setup-game-e2e
       - name: Generate terrain visual reference
         working-directory: game
-        timeout-minutes: 8
+        timeout-minutes: 12
         env:
           TERRAIN_REFERENCE_OUT: ${{ runner.temp }}/terrain-reference
         run: npm run test:terrain-reference

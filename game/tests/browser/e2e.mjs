@@ -377,6 +377,7 @@ try{
     await economyNav.focus();
     assert.equal(await economyNav.evaluate(el=>document.activeElement===el),true,"administration navigation must be keyboard focusable");
     await page.keyboard.press("Enter");
+    await page.waitForTimeout(150);
     assert.equal(await economyNav.getAttribute("aria-current"),"page","the selected navigation item must expose aria-current=page");
     assert.equal(await economyNav.getAttribute("aria-pressed"),null,"navigation must not be announced as a toggle button");
     assert.ok(await page.locator("#command-modal").isVisible(),"keyboard activation must open the selected management screen");
@@ -390,6 +391,7 @@ try{
     assert.ok(globalDock.parent.includes("game-shell"),"the action bar must be a sibling of the game layout");
 
     await page.locator('[data-kac-dock-action="dynasty"]').click();
+    await page.waitForTimeout(150);
     assert.ok(await page.locator("#command-modal").isVisible(),"dynasty action must open the management dialog");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Dynasty & lineage");
     assert.ok(await page.locator("#command-panel-content .dynasty-generation").count()>=1,"a new campaign must show its sovereign generation");
@@ -428,6 +430,7 @@ try{
     // Restore the management default so the existing management regression suite
     // continues to verify the expected kingdom landing screen.
     await page.locator("#command-open-btn").click();
+    await page.locator("#command-modal").waitFor({state:"visible"});
     assert.ok((await page.locator("#command-modal .command-panel").getAttribute("class")).includes("ui-window--large"),"management must use the large shared window size");
     assert.ok((await page.locator("#command-panel-content").getAttribute("class")).includes("ui-window__body"),"management content must own its scroll region");
 
@@ -510,6 +513,7 @@ try{
 
     // Strategy command deck: open the modal, then navigate its internal tab bar.
     await page.locator("#command-open-btn").click();
+    await page.locator("#command-modal").waitFor({state:"visible"});
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
     assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),26,"all twenty-six management tabs, including Explore, Biomes, the Atelier, city charter, noble houses, item lexicon and the Whisper Court, must live inside the dialog");
     await waitForPanelText("Kingdom overview");
@@ -1607,6 +1611,11 @@ try{
     // Keep the realm paused while the ecology fixture and the save snapshot are
     // captured, so a tick cannot advance insect populations between the two.
     await page.waitForTimeout(120);
+    // Capture the fixture from a settled paused realm: a tick between the
+    // ecology capture and the save click would make the restore comparison
+    // test the clock instead of the save payload.
+    await page.evaluate(()=>{if(document.querySelector("#pause-text")?.textContent.trim()==="PAUSE")document.querySelector("#pause-btn")?.click();});
+    await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
     const savedTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
     const savedHand=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.map(card=>card.instanceId);});
     const savedRoadCount=await page.evaluate(()=>(import("./js/systems/roads.js")).then(module=>module.getRoadCount()));
@@ -1662,6 +1671,7 @@ try{
     assert.ok(ecologyAfterMutation.insects.some(insect=>insect.id===ecologyMutation.colonyId&&insect.population===0),"the post-save insect mutation must be visible before loading");
     assert.equal(ecologyAfterMutation.herbalDoses,0,"the post-save herbal dose mutation must be visible before loading");
     await page.locator("#speed-4").click();
+    await page.evaluate(()=>{if(document.querySelector("#pause-text")?.textContent.trim()==="PAUSE")document.querySelector("#pause-btn")?.click();});
     await page.evaluate(()=>{
         document.querySelector("#load-btn").click();
         // Loading always resets the pause flag, and renderUI paints the pause

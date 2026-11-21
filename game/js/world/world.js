@@ -19,6 +19,12 @@ import { generateBiomeAtlas, syncBiomeDiscovery } from '../systems/biome-resourc
 
 export { normalizeWorldOptions, resolveWorldDimensions, seaLevelFor };
 
+// The baked ground layer only depends on the seed, world options and terrain
+// version. Loading the same realm must not re-run the per-pixel palette and
+// hillshade loop; cache the untinted pixels and repaint the save's rare-biome
+// tint over an exact copy. One entry is enough: a new seed replaces it.
+let terrainBaseCache = null;
+
 // ── dimensions ────────────────────────────────────────────────
 
 export function worldWidth() {
@@ -32,6 +38,11 @@ export function worldHeight() {
 // ═══════════════════════════════════════════════════════════════
 //  GENERATION
 // ═══════════════════════════════════════════════════════════════
+
+function markWorldTime(name, startedAt) {
+    const times = globalThis.__KAC_LOAD_TIMES;
+    if (times && Number.isFinite(startedAt)) times[name] = Math.round((performance.now() - startedAt) * 10) / 10;
+}
 
 export function initWorld(seed = state.worldSeed, options = state.worldOptions, terrainVersion = TERRAIN_GENERATION_VERSION) {
     state.worldOptions = normalizeWorldOptions(options);
@@ -52,7 +63,9 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions, 
 
     // One shared, cached world data set backs both the forge preview and the
     // live realm. Starting the displayed world reuses its exact terrain arrays.
+    const worldDataStarted = performance.now();
     const worldData = getWorldData(worldSeed, state.worldOptions, terrainVersion);
+    markWorldTime("worldDataMs", worldDataStarted);
     state.heightMap = worldData.heights;
     state.moistureMap = worldData.moistures;
     state.temperatureMap = worldData.temperatures;
@@ -64,12 +77,17 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions, 
     const W = dims.w;
     const H = dims.h;
 
+    const resourceStarted = performance.now();
     generateResourceGeography(worldSeed);
+    markWorldTime("resourceMs", resourceStarted);
+    const forestStarted = performance.now();
     resetForestSuccession();
     ensureForestSuccession();
+    markWorldTime("forestMs", forestStarted);
     // The rare atlas is generated from the same seed and terrain samples as
     // the normal biomes. It is a handful of regions plus one byte per tile, not
     // a second tile-object graph.
+    const specialStarted = performance.now();
     generateSpecialBiomes(worldSeed, state.worldOptions, {
         heights: state.heightMap,
         moistures: state.moistureMap,
@@ -79,6 +97,8 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions, 
         pixH: state.terrainPixH,
         W, H, sea: state.seaLevel,
     });
+    markWorldTime("specialMs", specialStarted);
+    const atlasStarted = performance.now();
     // 1.2.19 builds one bounded 6×6 region atlas from the same terrain samples.
     // It is generated after the rare-biome atlas so both systems read the same
     // world, and it stores only compact region/resource rows.
@@ -91,7 +111,9 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions, 
         pixH: state.terrainPixH,
         W, H, sea: state.seaLevel,
     });
+    markWorldTime("atlasMs", atlasStarted);
 
+    const exploreStarted = performance.now();
     state.explored = [];
     for (let x = 0; x < W; x++) {
         state.explored[x] = [];
@@ -101,7 +123,10 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions, 
     // The starting clearing is real exploration and therefore reveals the
     // regions it actually covers. Rare deposits stay hidden until surveyed.
     syncBiomeDiscovery({ silent: true });
+    markWorldTime("exploreMs", exploreStarted);
+    const prerenderStarted = performance.now();
     prerenderTerrain();
+    markWorldTime("prerenderMs", prerenderStarted);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -118,43 +143,52 @@ export function prerenderTerrain() {
     tc.width = pixW;
     tc.height = pixH;
     const tctx = tc.getContext('2d');
-    const imageData = tctx.createImageData(pixW, pixH);
-    const data = imageData.data;
-    const sea = state.seaLevel;
-    const climate = state.worldOptions?.climate || 'temperate';
+    const baseKey = [state.worldSeed, state.terrainVersion, pixW, pixH, JSON.stringify(state.worldOptions || {})].join('|');
+    const cached = terrainBaseCache?.key === baseKey ? terrainBaseCache : null;
+    let imageData;
+    if (cached) {
+        imageData = tctx.createImageData(pixW, pixH);
+        imageData.data.set(cached.data);
+    } else {
+        imageData = tctx.createImageData(pixW, pixH);
+        const data = imageData.data;
+        const sea = state.seaLevel;
+        const climate = state.worldOptions?.climate || 'temperate';
 
-    for (let py = 0; py < pixH; py++) {
-        for (let px = 0; px < pixW; px++) {
-            const idx = py * pixW + px;
-            const h = state.heightMap[idx];
-            const m = state.moistureMap[idx] ?? 0.5;
-            const temperature = state.temperatureMap?.[idx] ?? 0.55;
+        for (let py = 0; py < pixH; py++) {
+            for (let px = 0; px < pixW; px++) {
+                const idx = py * pixW + px;
+                const h = state.heightMap[idx];
+                const m = state.moistureMap[idx] ?? 0.5;
+                const temperature = state.temperatureMap?.[idx] ?? 0.55;
 
-            // Hillshade from the height gradient: light comes from the north-west,
-            // so south-east facing slopes fall into shade. Baked during prerender.
-            const west = terrainHeight(px - 1, py, h);
-            const north = terrainHeight(px, py - 1, h);
-            const northWest = terrainHeight(px - 1, py - 1, h);
-            const slope = h - (west + north + northWest) / 3;
-            // Mountain relief needs a harder key light than pasture: the same
-            // height step can be a 30-degree ridge or a gentle field. Increase
-            // only the mountain bake, leaving every other climate's goldens and
-            // illumination contract untouched.
-            const highRelief = climate === 'mountain' || climate === 'volcanic';
-            const reliefScale = highRelief ? 5600 : 2400;
-            const hillshade = highRelief
-                ? Math.max(-52, Math.min(58, slope * reliefScale))
-                : Math.max(-30, Math.min(32, slope * reliefScale));
+                // Hillshade from the height gradient: light comes from the north-west,
+                // so south-east facing slopes fall into shade. Baked during prerender.
+                const west = terrainHeight(px - 1, py, h);
+                const north = terrainHeight(px, py - 1, h);
+                const northWest = terrainHeight(px - 1, py - 1, h);
+                const slope = h - (west + north + northWest) / 3;
+                // Mountain relief needs a harder key light than pasture: the same
+                // height step can be a 30-degree ridge or a gentle field. Increase
+                // only the mountain bake, leaving every other climate's goldens and
+                // illumination contract untouched.
+                const highRelief = climate === 'mountain' || climate === 'volcanic';
+                const reliefScale = highRelief ? 5600 : 2400;
+                const hillshade = highRelief
+                    ? Math.max(-52, Math.min(58, slope * reliefScale))
+                    : Math.max(-30, Math.min(32, slope * reliefScale));
 
-            const color = terrainColor(h, m, temperature, px, py, climate, sea, hillshade, state.worldSeed);
-            const pi = idx * 4;
-            data[pi] = color[0] < 0 ? 0 : color[0] > 255 ? 255 : color[0];
-            data[pi + 1] = color[1] < 0 ? 0 : color[1] > 255 ? 255 : color[1];
-            data[pi + 2] = color[2] < 0 ? 0 : color[2] > 255 ? 255 : color[2];
-            data[pi + 3] = 255;
+                const color = terrainColor(h, m, temperature, px, py, climate, sea, hillshade, state.worldSeed);
+                const pi = idx * 4;
+                data[pi] = color[0] < 0 ? 0 : color[0] > 255 ? 255 : color[0];
+                data[pi + 1] = color[1] < 0 ? 0 : color[1] > 255 ? 255 : color[1];
+                data[pi + 2] = color[2] < 0 ? 0 : color[2] > 255 ? 255 : color[2];
+                data[pi + 3] = 255;
+            }
         }
     }
 
+    if (!cached) terrainBaseCache = { key: baseKey, data: imageData.data.slice() };
     tctx.putImageData(imageData, 0, 0);
     // The rare biome tint is a low-resolution atlas stretched over the baked
     // ground. It adds no per-pixel branch to the normal terrain palette.

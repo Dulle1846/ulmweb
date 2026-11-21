@@ -175,6 +175,7 @@ const browser = await chromium.launch({
         // and idle notification are test-host pressure, not app work; ordinary
         // allocation-triggered GC still runs and is counted if it pauses.
         "--browser-test",
+        "--memory-pressure-off",
         "--disable-features=ForwardMemoryPressureToBlinkIsolates",
         "--js-flags=--no-memory-reducer,--no-use-idle-notification,--no-global-gc-scheduling",
         ...(process.env.PERF_TRACE_GC === "1" ? ["--enable-precise-memory-info", "--js-flags=--trace-gc"] : []),

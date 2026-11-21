@@ -735,8 +735,14 @@ function saveCurrentGame(){
     }
 }
 
+function markLoadTime(name,startedAt){
+    const times=globalThis.__KAC_LOAD_TIMES;
+    if(times&&Number.isFinite(startedAt))times[name]=Math.round((performance.now()-startedAt)*10)/10;
+}
+
 function loadSnapshotIntoGame(profile,snapshot){
     let prepared;
+    const prepareStarted=performance.now();
     try{
         prepared=prepareSaveSnapshot(snapshot);
     }catch(error){
@@ -745,10 +751,16 @@ function loadSnapshotIntoGame(profile,snapshot){
         if(error&&typeof error==="object")error.preStateChange=true;
         throw error;
     }
+    markLoadTime("prepareMs",prepareStarted);
+    const resetStarted=performance.now();
     resetForRun(profile);
+    markLoadTime("resetMs",resetStarted);
+    const restoreStarted=performance.now();
     const restored=restoreSaveSnapshot(prepared);
+    markLoadTime("restoreMs",restoreStarted);
     refreshWinterSnapshot();
     setAnnualMaintenanceSlicing(true);
+    const warmStarted=performance.now();
     // resetForRun clears readiness before the snapshot is applied. Restoring a
     // prepared snapshot rebuilds the realm and resumes the loop, so it must
     // mark the realm started again; otherwise every renderUI() call (HUD,
@@ -768,28 +780,38 @@ function loadSnapshotIntoGame(profile,snapshot){
     warmMilitaryCaches();
     warmLogisticsRoutes();
     warmVillagerPaths();
+    markLoadTime("warmMs",warmStarted);
     const savedSpeed=Number(state.gameSpeed);
     document.querySelectorAll(".speed-button").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.speed)===savedSpeed));
     if(restored.hasSavedCamera)clampCamera();else centerCamera();
     document.getElementById("start-screen").classList.add("hidden");
     window.scrollTo(0, 0);
     if(!loopStarted){loopStarted=true;startGameLoop();}
+    const renderStarted=performance.now();
     renderUI();
+    markLoadTime("uiMs",renderStarted);
     startSoundtrack().catch(()=>{});
 }
 
 function loadCurrentGame(){
+    if(globalThis.__KAC_LOAD_TIMES)globalThis.__KAC_LOAD_TIMES={};
+    const loadStarted=performance.now();
     startSoundtrack().catch(()=>{});
     const profile=getActiveProfile();
     if(!profile){showStatus("Create or select a local player profile first.");return false;}
+    const readStarted=performance.now();
     const save=readLocalSave(profile.id);
+    markLoadTime("readMs",readStarted);
     if(!save){showStatus("No valid saved realm or recovery backup exists for "+profile.displayName+".");return false;}
     const rollbackProfile=state.hasStarted&&state.activeProfileId
         ?{id:state.activeProfileId,displayName:state.playerName}
         :null;
+    const rollbackStarted=performance.now();
     const rollbackSnapshot=rollbackProfile?createSaveSnapshot():null;
+    markLoadTime("rollbackMs",rollbackStarted);
     try{
         loadSnapshotIntoGame(profile,save.snapshot);
+        markLoadTime("totalMs",loadStarted);
         syncWorldForge(state.worldOptions);
         showStatus("Loaded realm"+(save.migratedFrom!=null?" · save migrated from schema "+save.migratedFrom:"")+(save.restoredFromBackup?" · previous backup restored":"")+" · "+new Date(save.savedAt).toLocaleString());
         setSaveStatus("LOADED · "+new Date(save.savedAt).toLocaleTimeString(),"saved");

@@ -76,7 +76,9 @@ export function renderProgressive(container, markup, { immediate = 1, resetScrol
     const start = () => {
         run.frame = 0;
         if (run.token !== activeRuns.get(container)?.token || !container.isConnected) return;
+        const __started = performance.now();
         container.replaceChildren();
+        const __replaced = performance.now();
         // Reset the previous archive's scroll only after its nodes are gone.
         // Doing it before replacement forces layout of the panel being left.
         if (resetScroll) container.scrollTop = 0;
@@ -87,6 +89,12 @@ export function renderProgressive(container, markup, { immediate = 1, resetScrol
         if (firstWork && immediate > 0) {
             try { firstWork(); } catch (error) { console.error(error); }
         }
+        window.__progressiveTiming = {
+            ...(window.__progressiveTiming || {}),
+            startMs: Math.round((performance.now() - __started) * 10) / 10,
+            replaceMs: Math.round((__replaced - __started) * 10) / 10,
+            firstNodeMs: Math.round((performance.now() - __replaced) * 10) / 10
+        };
         if (queue.length) schedule(run, take);
         else finish();
     };
