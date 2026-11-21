@@ -6,6 +6,10 @@
 
 ![The same grove through the year](terrain-reference/tree-seasons.png)
 
+![A player's view of a woodland edge at default zoom, zoomed out and zoomed in across four seasons](terrain-reference/player-view.png)
+
+![The real game at the default 1.00× camera, with HUD and map controls visible](terrain-reference/player-view-hero.png)
+
 ![The same grove under all five climate profiles](terrain-reference/climate-reference.png)
 
 ![Five real climate realms after a 400-day weather audit](terrain-reference/climate-live.png)
@@ -24,6 +28,7 @@ These sheets are the committed visual baseline for the terrain surface. They are
 
 ## What it shows
 
+- **The player's seat:** `player-view.png` is the missing normal-play proof. It starts a real game with seed `20261104`, keeps the HUD and map controls, and captures one dense woodland edge at `112,48` on days 50, 150, 250 and 350. Columns are the actual player default `1.00×`, a modest `0.78×` zoom-out and a `1.35×` zoom-in. `player-view-hero.png` shows the full default screen, including the HUD. At `1.00×` the crowns keep irregular overlapping silhouettes, broken dark ink contours and internal pen hatching; the floor is brown humus and leaf litter rather than lawn; the right side opens into grass. `player-view.json` records the camera, canvas, focus and a three-tile pan rebuild check. This sheet is intentionally not a 2.4× inspection capture.
 - **Four seasons at their peak:** spring (day 50), summer (day 150), autumn (day 250) and winter (day 350). Days 0, 100, 200 and 300 are transition days between two anchored season palettes, so the old 0/100/200/300 captures were no longer the peak.
 - **Four zoom presets:** landscape (0.09×), districts (0.30×), rooftops (0.95×), interiors (2.40×).
 - **Autumn → winter → spring strip:** district zoom, days 210, 240, 270, 300, 330, 360, 0, 15, 30 and 50. It shows the ground browning through autumn, whitening as snow accumulates, and melting back to green through early spring.
@@ -34,8 +39,8 @@ These sheets are the committed visual baseline for the terrain surface. They are
 - **Twelve Nadelwald and twelve Mischwald formations:** `conifer-reference.png` shows the twelve 1.2.2 formations and `mixed-reference.png` the twelve 1.2.3 formations. Every mixed frame records its actual species ratio, group/mosaic pattern, canopy layers, understorey and silviculture in `mixed-reference.json`; `mixed-seasons.png` follows one oak–beech–spruce stand through days 50, 150, 250 and 350.
 - **Twelve tropical rainforest formations:** `tropical-reference.png` shows emergent, lowland, floodplain, palm grove, swamp, cloud, bamboo brake, treefall gap, secondary regrowth, old-growth, riverbank and abandoned plantation. Every frame is a real generated tropical tile with its sixty-five-point profile and its fifty-five-point jungle interior profile in `tropical-reference.json`; `tropical-seasons.png` follows the same emergent stand through four seasons under an evergreen canopy, and `jungle-interior.png` shows the same renderer at 2.40× where thickets, bamboo, vines, ravines and hidden water are readable.
 - **One wood through the year:** `forest-seasons.png` follows the same ancient woodland at days 50, 150, 250 and 350: fresh leaf-out, closed summer canopy, autumn turn and bare winter crowns with snow and leaf carpet.
-- **Canvas woodland finish:** broadleaf crowns are irregular layered washes with a broken ink rim, internal pen hatching and visible fork limbs, not stamped ellipses. Trunks taper with roots, ridges and light/shadow faces; birches have curved pale boles and airy crowns, and conifers droop in uneven needle tiers with broken lower rims. The floor carries humus and moss washes, larger leaf drifts, species leaves, twigs and short green blades, with deterministic per-tile jitter that breaks the plantation grid. At 2.40× dense ancient stands also receive the extra overlapping crown copy that closes the canopy.
-- **Bare crowns, snow and conifers:** the grove strip shows tapered bare branches, twigs and thin broken snow ridges resting on the upper sides of limbs; marcescent crowns use the same ridge treatment on held leaves. Conifers keep four needle tiers with snow accumulated and shed per tier.
+- **Canvas woodland finish:** broadleaf crowns are irregular layered washes with a broken ink rim, internal pen hatching and visible fork limbs, not stamped ellipses. At gameplay zoom the crown gets a larger silhouette, a dark under-print and a stronger rim so the ink survives at roughly 30 pixels across. Dense stands receive overlapping crown copies from `0.75×`, not only at 2.40×. Trunks taper with roots, ridges and light/shadow faces; birches have curved pale boles and airy crowns, and conifers droop in uneven needle tiers with broken lower rims. The floor carries a broad soil wash, humus and moss washes, larger leaf drifts, species leaves, twigs and short green blades, with deterministic per-tile jitter that breaks the plantation grid. A snowy stand keeps exposed brown leaf patches under the canopy.
+- **Bare crowns, snow and conifers:** the grove strip and player sheet show tapered bare branches, second-order gameplay-distance twigs and thin broken snow ridges resting on the upper sides of limbs; marcescent crowns use the same ridge treatment on held leaves. Conifers keep four needle tiers with snow accumulated and shed per tier.
 - **The full-year log:** `season-year.json` covers days 0–399 with the real seeded weather stream. It records every day's weather and remaining spell length, ground snow cover, and the leaf, turn, snow, bare and holding state of broadleaf, birch, oak, beech, conifer and shrub samples across seven tree seeds. A climate comparison block places all five profiles on the same timeline.
 - Fixed seed `20261104`, a paused simulation and a centred camera. The sheets use the temperate baseline; the log also compares the northern, mediterranean, arid and enchanted profiles.
 - HUD, entities, fog of war and weather are hidden so only the terrain surface and its decorations remain.
@@ -58,6 +63,15 @@ The script:
 3. Captures each season at each zoom preset, the transition strip at district zoom and the grove strip at rooftops zoom on a real inland forest stand. The production Canvas2D renderer is used unless `TERRAIN_REFERENCE_RENDERER=webgl` is set.
 4. Writes `contact-sheet.png`, `season-transition.png`, `tree-seasons.png` and `reference.json` into `docs/terrain-reference/`.
 5. Writes the sixteen individual season frames to `$TMPDIR/kac-terrain-reference-frames` by default. The transition and grove frames are composited directly into their sheets. Set `TERRAIN_REFERENCE_FRAMES` to keep frames somewhere else; set `TERRAIN_REFERENCE_OUT` to redirect the reference artifacts. Set `TERRAIN_REFERENCE_RENDERER=webgl` to build the optional WebGL ground audit instead of the production Canvas2D baseline.
+
+The player-view reference is a separate command:
+
+```sh
+npm run test:player-reference
+PLAYER_VIEW_URL=https://kings-and-cards.pages.dev/ npm run test:player-reference  # capture the deployed build
+```
+
+It starts the game normally, keeps the HUD and map controls visible, and uses the real `1.00×` camera at the seeded woodland edge `112,48` rather than the inspection camera. It captures `0.78×`, `1.00×` and `1.35×` on days 50, 150, 250 and 350, runs a three-tile pan rebuild check, and writes `player-view.png`, `player-view-hero.png` and `player-view.json` into `docs/terrain-reference/`. `PLAYER_VIEW_FOCUS=x,y` points the run at another woodland for review; `PLAYER_VIEW_URL` records the deployed origin and its `version.json` marker. The script waits for the sliced detail cache to finish before every frame, so it cannot commit a half-built wood.
 
 The full-year audit is a separate command:
 
@@ -102,4 +116,5 @@ The Playwright environment variables described in [tests/browser/README.md](../t
 - The full-year log samples seven fixed tree seeds per species and pauses the simulation, so it measures the seasonal system rather than a specific live realm's full tree population. It does not render weather particles.
 - The forest sheet selects one real tile per formation from the fixed realm; it is a formation reference, not a census. The cut-over frame is a deliberate zero-stock manipulation of a wooded tile, documented in the JSON. Large mammals and resident birds come from the deterministic herd simulation; insects and the remaining birds are ambient habitat marks.
 - The climate matrix reuses one generated world and camera; it is a direct seasonal comparison, not a population sample. The live sheet uses one realm per climate at the fixed seed and captures clear weather after the audit so the ground snow stays legible; falling-snow particles are not part of these images. Neither climate sheet measures frame time or proves real-GPU appearance.
+- The player-view sheet is a single seeded woodland edge, not a census of every realm. It proves the production Canvas2D route at the actual default zoom and modest zoom steps; it is not a frame-time benchmark. The HUD is real, but transient event overlays are hidden so they cannot cover the terrain.
 - The reference does not record frame time. Use [TERRAIN_PERFORMANCE.md](TERRAIN_PERFORMANCE.md) for performance measurements.

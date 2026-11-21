@@ -24,10 +24,22 @@ stand data or the WebGL ground.
 | Item | Status | Implementation | Evidence / remaining limit |
 |---|---|---|---|
 | Colour pipeline validity | **Implemented** | `rgbTriplet` parses `rgb()`/`rgba()` as well as hex and returns black for malformed input. `mixHex` can therefore be chained on its own output; the previous NaN triplet kept the last Canvas `fillStyle` and produced ghost crowns. | `terrain.js` `rgbTriplet` / `mixHex`; terrain reference sheets and spec audit. |
-| Broadleaf crowns and trunks | **Implemented** | Deterministic `crownSilhouette` / `traceCrown` build irregular, layered washes with internal lobes, leaf tips, darker under-washes, short pen hatching and a broken ink rim. Limbs remain visible outside the wash. Trunks taper, with bark ridges, roots, hollows, broken limbs and separate lit/shadow faces. | `drawBroadleaf`; `tree-seasons.png` (real inland ancient stand at 2.40×), `forest-seasons.png` and the native-resolution grove check. Crowns remain procedural, not authored bitmaps. |
+| Broadleaf crowns and trunks | **Implemented** | Deterministic `crownSilhouette` / `traceCrown` build irregular, layered washes with internal lobes, leaf tips, darker under-washes, short pen hatching and a broken ink rim. At gameplay distance the crown gets a larger silhouette and a dark under-print; dense stands overlap crowns from `0.75×`. Limbs remain visible outside the wash. Trunks taper, with bark ridges, roots, hollows, broken limbs and separate lit/shadow faces. | `drawBroadleaf`; `player-view.png` (real `1.00×` player camera), `player-view-hero.png`, `tree-seasons.png` (2.40× inspection) and `forest-seasons.png`. Crowns remain procedural, not authored bitmaps. |
 | Birch and conifer silhouettes | **Implemented** | Birch gets a slimmer curved bole, subtle dark fissures and an airy crown. Conifer tiers droop unevenly, carry needle clumps and have broken lower rims rather than geometric triangles. | `drawBirch`, `drawConifer`; forest and season sheets. |
-| Winter snow | **Implemented** | Snow on bare twigs and marcescent leaf masses is a thin, broken ridge. It no longer forms round white caps that hide the branch silhouette. Conifers retain species-specific tier snow. | `drawBareCrown`, `drawSnowCaps`; `tree-seasons.png`, `forest-seasons.png`. |
-| Forest floor and spacing | **Implemented** | Layered humus and moss washes, larger leaf drifts, species leaves, twig strokes, moss cushions and a few short green blades replace the flat green carpet. Trees are deterministically jittered per tile, and dense stands receive an extra overlapping crown copy at interior zoom. | `drawForestGround`, `drawLeafCarpet`, `drawBroadleaf`; `tree-seasons.png`, `forest-reference.png`, `contact-sheet.png`. The detail is cached, not rebuilt every frame. |
+| Winter snow | **Implemented** | Snow on bare twigs and marcescent leaf masses is a thin, broken ridge. It no longer forms round white caps that hide the branch silhouette. At gameplay distance bare crowns get a larger branch envelope and second-order twigs, so they read as trees rather than dots on snow. Conifers retain species-specific tier snow. | `drawBareCrown`, `drawSnowCaps`; `player-view.png`, `tree-seasons.png`, `forest-seasons.png`. |
+| Forest floor and spacing | **Implemented** | A broad soil wash, layered humus and moss washes, larger leaf drifts, species leaves, twig strokes, moss cushions and a few short green blades replace the flat green carpet. A soft canopy shadow darkens the interior; winter keeps brown litter, and snowy stands show exposed leaf patches. Trees are deterministically jittered per tile, and dense stands receive overlapping crown copies from `0.75×`. | `drawForestGround`, `drawLeafCarpet`, `drawBroadleaf`; `player-view.png`, `tree-seasons.png`, `forest-reference.png`, `contact-sheet.png`. The detail is cached, not rebuilt every frame. |
+
+## Player zoom — 3.32.2
+
+The final acceptance frame is the normal game at `state.zoom = 1`, not a 2.4×
+inspection capture. `npm run test:player-reference` runs the production Canvas2D
+path with the HUD visible, chooses the seeded woodland edge at `112,48`, and
+captures default, `0.78×` and `1.35×` on all four seasons. The cached detail
+layer is allowed to finish before each frame. At the default camera the broken
+ink contours, overlapping crown silhouettes, brown leaf-litter floor and the
+transition into grass all remain legible; the winter panel keeps readable bare
+branches and snow-covered litter. The same script records a three-tile pan
+rebuild. `PLAYER_VIEW_URL` reproduces the sheet against a deployed origin.
 
 ## Biomes — 1.2.1 Laubwälder
 
@@ -45,6 +57,7 @@ The broader biome work is tracked in [FOREST_ECOLOGY.md](FOREST_ECOLOGY.md). It 
 cd game
 npm test
 npm run test:terrain-reference
+npm run test:player-reference
 npm run test:season-year
 npm run test:climate-reference
 ```

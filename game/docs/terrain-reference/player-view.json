@@ -1,0 +1,252 @@
+{
+  "reference": "player-terrain-view",
+  "source": "local",
+  "url": "http://127.0.0.1:39045/",
+  "version": null,
+  "generatedAt": "2026-11-21T16:22:29.839Z",
+  "seed": 20261104,
+  "focus": {
+    "x": 112,
+    "y": 48,
+    "count": 30,
+    "grass": 5,
+    "score": 319.2164144464278,
+    "avgChance": 0.45180345372023173,
+    "avgAge": 1,
+    "ancient": 15,
+    "edgeX": 112,
+    "edgeOffsetTiles": 0,
+    "edgeChosen": true,
+    "forced": false,
+    "selection": "seeded edge"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "canvas": [
+    832,
+    731
+  ],
+  "mapCss": [
+    832,
+    731
+  ],
+  "renderer": "canvas",
+  "defaultZoom": 1,
+  "zooms": [
+    {
+      "key": "out",
+      "label": "ZOOM OUT",
+      "scale": 0.78
+    },
+    {
+      "key": "default",
+      "label": "PLAYER DEFAULT",
+      "scale": 1
+    },
+    {
+      "key": "in",
+      "label": "ZOOM IN",
+      "scale": 1.35
+    }
+  ],
+  "seasons": [
+    {
+      "key": "spring",
+      "label": "SPRING",
+      "day": 50
+    },
+    {
+      "key": "summer",
+      "label": "SUMMER",
+      "day": 150
+    },
+    {
+      "key": "autumn",
+      "label": "AUTUMN",
+      "day": 250
+    },
+    {
+      "key": "winter",
+      "label": "WINTER",
+      "day": 350
+    }
+  ],
+  "frames": [
+    {
+      "season": "spring",
+      "zoom": "out",
+      "scale": 0.78,
+      "day": 50,
+      "camera": {
+        "x": 3796,
+        "y": 1450.3400000000001,
+        "zoom": 0.78,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "spring",
+      "zoom": "default",
+      "scale": 1,
+      "day": 50,
+      "camera": {
+        "x": 4984,
+        "y": 1962.5,
+        "zoom": 1,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "spring",
+      "zoom": "in",
+      "scale": 1.35,
+      "day": 50,
+      "camera": {
+        "x": 6874.000000000001,
+        "y": 2777.3,
+        "zoom": 1.35,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "summer",
+      "zoom": "out",
+      "scale": 0.78,
+      "day": 150,
+      "camera": {
+        "x": 3796,
+        "y": 1450.3400000000001,
+        "zoom": 0.78,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "summer",
+      "zoom": "default",
+      "scale": 1,
+      "day": 150,
+      "camera": {
+        "x": 4984,
+        "y": 1962.5,
+        "zoom": 1,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "summer",
+      "zoom": "in",
+      "scale": 1.35,
+      "day": 150,
+      "camera": {
+        "x": 6874.000000000001,
+        "y": 2777.3,
+        "zoom": 1.35,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "autumn",
+      "zoom": "out",
+      "scale": 0.78,
+      "day": 250,
+      "camera": {
+        "x": 3796,
+        "y": 1450.3400000000001,
+        "zoom": 0.78,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "autumn",
+      "zoom": "default",
+      "scale": 1,
+      "day": 250,
+      "camera": {
+        "x": 4984,
+        "y": 1962.5,
+        "zoom": 1,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "autumn",
+      "zoom": "in",
+      "scale": 1.35,
+      "day": 250,
+      "camera": {
+        "x": 6874.000000000001,
+        "y": 2777.3,
+        "zoom": 1.35,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "winter",
+      "zoom": "out",
+      "scale": 0.78,
+      "day": 350,
+      "camera": {
+        "x": 3796,
+        "y": 1450.3400000000001,
+        "zoom": 0.78,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "winter",
+      "zoom": "default",
+      "scale": 1,
+      "day": 350,
+      "camera": {
+        "x": 4984,
+        "y": 1962.5,
+        "zoom": 1,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "season": "winter",
+      "zoom": "in",
+      "scale": 1.35,
+      "day": 350,
+      "camera": {
+        "x": 6874.000000000001,
+        "y": 2777.3,
+        "zoom": 1.35,
+        "zoomLevel": 3
+      }
+    }
+  ],
+  "heroCamera": {
+    "x": 4984,
+    "y": 1962.5,
+    "zoom": 1,
+    "zoomLevel": 3
+  },
+  "panCheck": {
+    "tilesEast": 3,
+    "zoom": 1,
+    "cameraAfter": {
+      "x": 5128,
+      "y": 1962.5,
+      "zoom": 1,
+      "zoomLevel": 3
+    },
+    "detailRebuilt": true,
+    "note": "The same default view after a three-tile pan; trees and floor are rebuilt on the world lattice rather than sliding or blanking."
+  },
+  "artifacts": {
+    "sheet": "player-view.png",
+    "hero": "player-view-hero.png",
+    "pan": "not committed; pan check recorded above"
+  },
+  "observations": [
+    "At the real 1.00x camera the canopy keeps a broken dark ink rim, overlapping irregular crowns and visible internal pen hatching.",
+    "The forest floor carries humus, moss and leaf litter across the tile gaps, so closed woodland is distinct from open grass at normal play distance.",
+    "The stand opens into meadow at its edge; canopy density and floor litter fall away together instead of ending on a straight biome border.",
+    "Spring green-up, summer density, autumn leaf turn and winter bare crowns remain readable without switching renderers or rebuilding the full terrain layer per frame."
+  ],
+  "note": "Real game canvas and HUD. Transient event overlays are hidden so they cannot cover the wood; simulation is paused after the detail layer settles. Not a GPU performance benchmark."
+}

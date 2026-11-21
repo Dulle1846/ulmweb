@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.32.1`
+**Current production version:** `3.32.2`
 **Next development line:** `3.33.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,37 @@
 **Last repository verification:** 2026-11-21 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.32.2 — Player-Zoom Woodland Proof
+
+The 3.32.1 woodland was reviewed against a 2.4× inspection frame, not the
+camera a player uses. At the real 1.00× view the crowns still read as small
+stamps, the ink rim disappeared and the floor blended into grass. This release
+fixes that view and commits the missing proof.
+
+- The existing cached Canvas terrain pass now scales broadleaf crowns for
+  gameplay distance, adds a dark under-print, strengthens the broken ink rim
+  and internal hatching, and starts overlapping crown copies at 0.75× instead
+  of reserving them for close inspection.
+- Forest floor: a broad soil wash, stronger humus and a soft canopy shadow
+  cover the baked meadow green between trees. Leaf litter is retained through
+  winter, and snowy stands keep exposed brown leaf patches instead of becoming
+  an undifferentiated snowfield.
+- Bare winter crowns get a larger gameplay-distance branch envelope and a
+  second order of twigs, so they read as trees rather than brown dots. The
+  extra work is inside the cached detail layer; no simulation, save schema or
+  economy value changes and no parallel renderer was added.
+- New `npm run test:player-reference` starts a normal game with the real HUD,
+  finds a wooded edge, and captures seed `20261104` at the 1.00× player camera
+  plus 0.78× and 1.35× across all four seasons. It records a three-tile pan
+  check and writes `docs/terrain-reference/player-view.png`,
+  `player-view-hero.png` and `player-view.json`.
+- The player evidence uses the dense edge at `112,48`: crown clusters and
+  brown leaf litter on the left, real grass opening on the right. Set
+  `PLAYER_VIEW_URL` to capture the same sheet from a deployed origin.
+- Verified: full `npm test`, syntax/import checks, the regenerated Canvas2D
+  terrain and forest references, the player-view run, and all four live
+  targets serving version `3.32.2` at the release commit.
 
 ## 3.32.1 — Hand-Drawn Canvas Woodland Finish
 
