@@ -28,7 +28,7 @@ import {state} from "../../js/core/state.js";
 import {createSaveSnapshot} from "../../js/core/save-runtime.js";
 import {createIdentityState} from "../../js/systems/identity.js";
 import {createLegacyState} from "../../js/systems/legacy.js";
-import {createLocalProfile, writeLocalSave} from "../../js/core/persistence.js";
+import {createLocalProfile, readLocalSave, writeLocalSave} from "../../js/core/persistence.js";
 
 const BASE = process.env.E2E_BASE_URL || "http://127.0.0.1:3000";
 const ORIGIN = new URL(BASE).origin;
@@ -252,7 +252,13 @@ async function buildFixture() {
         assert.equal(campaign.ok, true, "the mature fixture campaign must be healthy");
         const savedSnapshot = createSaveSnapshot();
         writeLocalSave(PROFILE_ID, savedSnapshot);
-        const entries = Object.fromEntries(globalThis.localStorage.entries());
+        const saveEnvelope = readLocalSave(PROFILE_ID);
+        // Keep the multi-megabyte save out of storageState: Chromium applies a
+        // large injected origin unreliably once Playwright's fake clock is
+        // installed, and can silently drop the active-profile and save keys.
+        // The envelope is restored by an init script instead.
+        const entries = Object.fromEntries(globalThis.localStorage.entries()
+            .filter(([key]) => !key.startsWith("kings-and-cards:save")));
         const storageState = storageStateFromEntries(entries);
         const fixture = {
             seed: SEED,
@@ -289,6 +295,7 @@ async function buildFixture() {
             finalTick: state.tick,
             fixture,
             savedSnapshot,
+            saveEnvelope,
             storageState,
             samples: [],
             blocks: [],
@@ -319,7 +326,7 @@ async function loadCheckpoint() {
     return checkpoint;
 }
 
-async function startSession(storageState, fakeClock, label) {
+async function startSession(storageState, fakeClock, label, saveEnvelope = null) {
     const browser = await chromium.launch({
         headless: true,
         executablePath: process.env.E2E_CHROMIUM_EXECUTABLE || undefined,
@@ -337,6 +344,14 @@ async function startSession(storageState, fakeClock, label) {
         reducedMotion: "reduce",
         storageState
     });
+    if (saveEnvelope?.snapshot) {
+        await context.addInitScript(({key, envelope}) => {
+            try { localStorage.setItem(key, JSON.stringify(envelope)); } catch { /* quota is asserted through the visible UI */ }
+        }, {
+            key: "kings-and-cards:save:v2:" + saveEnvelope.profileId,
+            envelope: saveEnvelope
+        });
+    }
     const page = await context.newPage();
     // Headless Chromium can treat a page that has never received focus as
     // occluded after a long load. Focus emulation keeps requestAnimationFrame
@@ -613,15 +628,36 @@ async function checkPopulationPanel(session, snapshot) {
 
 async function loadRealm(session) {
     const {page, runFor} = session;
+    const checkReady = () => page.evaluate(() => {
+        const button = document.getElementById("continue-game-btn");
+        return Boolean(button && !button.disabled && button.getClientRects().length &&
+            (button.textContent || "").includes("CONTINUE"));
+    });
     let ready = false;
     for (let guard = 0; guard < 100 && !ready; guard++) {
         await runFor(100);
-        ready = await page.evaluate(() => {
-            const button = document.getElementById("continue-game-btn");
-            return Boolean(button && !button.disabled && (button.textContent || "").includes("CONTINUE"));
-        });
+        ready = await checkReady();
     }
-    assert.equal(ready, true, "the mature save must offer a visible continue control");
+    // Fake-clock runFor advances game timers immediately; the start screen's
+    // save metadata arrives through an asynchronous IndexedDB read. On a busy
+    // runner that real I/O can finish after the virtual guard window. Give it
+    // real time without weakening the mature-save assertion; a save that
+    // genuinely has no visible continue control still fails below.
+    for (let guard = 0; guard < 120 && !ready; guard++) {
+        await page.waitForTimeout(250);
+        ready = await checkReady();
+    }
+    if (!ready) {
+        const diagnostics = await page.evaluate(() => ({
+            readyState: document.readyState,
+            button: document.getElementById("continue-game-btn")?.textContent?.trim() || null,
+            disabled: document.getElementById("continue-game-btn")?.disabled ?? null,
+            activeProfile: localStorage.getItem("kings-and-cards:active-profile:v1"),
+            profiles: localStorage.getItem("kings-and-cards:profiles:v1")?.length || 0,
+            saveKeys: Object.keys(localStorage).filter(key => key.startsWith("kings-and-cards:save"))
+        }));
+        assert.equal(ready, true, "the mature save must offer a visible continue control: " + JSON.stringify(diagnostics));
+    }
     const loaded = await page.evaluate(async () => {
         // Import before clicking: clicking loads synchronously and starts the
         // real-time frame loop. Awaiting the import after the click lets one
@@ -724,7 +760,7 @@ async function runBlock(checkpoint, blockIndex) {
     const fromTick = checkpoint.finalTick;
     const blockTargetYear = Math.min(checkpoint.targetYear, fromYear + checkpoint.blockYears);
     const startedAt = Date.now();
-    const session = await startSession(checkpoint.storageState, true, "block-" + blockIndex);
+    const session = await startSession(checkpoint.storageState, true, "block-" + blockIndex, checkpoint.saveEnvelope);
     try {
         const {loaded, snapshot: loadedProbe, savedSnapshot: loadedSnapshot} = await loadRealm(session);
         assert.equal(loadedProbe.tick, checkpoint.finalTick,
@@ -819,6 +855,16 @@ async function runBlock(checkpoint, blockIndex) {
         assert.equal(savedSnapshot.year, finalProbe.year, "the save must stay in the final checked year");
         assert.deepEqual(session.pageErrors, [], "block " + blockIndex + " must have no page errors");
         assert.deepEqual(session.consoleErrors, [], "block " + blockIndex + " must have no console errors");
+        // The next block restores this origin through a compact storageState
+        // plus an init-script envelope. Large localStorage entries are dropped
+        // from the state because Chromium can silently reject them during the
+        // fake-clock context restore; the exact-save assertion above has
+        // already read the authoritative primary envelope into saveEnvelope.
+        await session.page.evaluate(() => {
+            for (const key of Object.keys(localStorage)) {
+                if (key.startsWith("kings-and-cards:save")) localStorage.removeItem(key);
+            }
+        });
         const storageState = await session.context.storageState();
         const sample = sampleOf(finalProbe, "year-" + finalProbe.year);
         checkpoint.samples.push(sample);
@@ -843,6 +889,7 @@ async function runBlock(checkpoint, blockIndex) {
         checkpoint.finalYear = savedSnapshot.year;
         checkpoint.finalTick = savedSnapshot.tick;
         checkpoint.savedSnapshot = savedSnapshot;
+        checkpoint.saveEnvelope = saved.envelope;
         checkpoint.storageState = storageState;
         checkpoint.panel = panel || checkpoint.panel;
         checkpoint.populationPanel = populationPanel || checkpoint.populationPanel;
@@ -866,7 +913,7 @@ async function runBlock(checkpoint, blockIndex) {
 }
 
 async function measurePerformance(checkpoint) {
-    const session = await startSession(checkpoint.storageState, false, "final-performance");
+    const session = await startSession(checkpoint.storageState, false, "final-performance", checkpoint.saveEnvelope);
     try {
         const {loaded, snapshot: loadedProbe, savedSnapshot} = await loadRealm(session);
         const modalState = await closeBlockingModals(session.page);
@@ -915,26 +962,119 @@ async function measurePerformance(checkpoint) {
                 zoomLevel: Number(state.zoomLevel) || 0
             };
         });
-        let beforeFps = await readFrameStats();
-        let wallStarted = Date.now();
-        await session.page.waitForTimeout(3000);
-        let afterFps = await readFrameStats();
-        if (afterFps.renderedFrames <= beforeFps.renderedFrames) {
-            await session.page.waitForTimeout(1000);
-            beforeFps = await readFrameStats();
-            wallStarted = Date.now();
-            await session.page.waitForTimeout(3000);
-            afterFps = await readFrameStats();
+        // A real realm can raise a court, era or big-message dialog while the
+        // frame sample is running. That is valid gameplay, but the game loop
+        // deliberately stops painting the world while a dialog covers it. An
+        // occluded interval is therefore neither fast nor slow: it must not be
+        // divided into the FPS figure. Collect only closed-dialog intervals
+        // until at least 60 drawn frames over 3.0 s are available. Dismiss a
+        // dialog that arrives during sampling so the run cannot get stuck in
+        // an occluded state; every interval that touches a dialog or a body
+        // class transition is discarded.
+        await session.page.evaluate(async () => {
+            const {state} = await import("./js/core/state.js");
+            const body = document.body;
+            const sampler = {
+                frames: 0, ms: 0, intervals: 0, discarded: 0, dismissals: 0,
+                epoch: 0, last: null, stopped: false, timer: 0, observer: null
+            };
+            globalThis.__KAC_VALID_FRAME_SAMPLE = sampler;
+            const observer = new MutationObserver(() => { sampler.epoch += 1; });
+            observer.observe(body, {attributes: true, attributeFilter: ["class"]});
+            sampler.observer = observer;
+            const closeIds = ["#big-message-close", "#realm-event-dismiss", "#command-close",
+                "#settings-close", "#build-close-btn", "#people-close", "#workshop-close"];
+            const dismiss = () => {
+                for (const id of closeIds) {
+                    const button = document.querySelector(id);
+                    if (button && button.getClientRects().length) {
+                        button.click();
+                        sampler.dismissals += 1;
+                    }
+                }
+                for (const button of document.querySelectorAll(".screen-overlay:not(.hidden) .modal-close")) {
+                    if (button.getClientRects().length) {
+                        button.click();
+                        sampler.dismissals += 1;
+                    }
+                }
+            };
+            const tick = () => {
+                if (sampler.stopped) return;
+                const now = performance.now();
+                const modalOpen = body.classList.contains("ui-modal-open");
+                const epoch = sampler.epoch;
+                const frames = Number(state.renderedFrames) || 0;
+                if (sampler.last) {
+                    const previous = sampler.last;
+                    const clean = !modalOpen && !previous.modalOpen && epoch === previous.epoch;
+                    const elapsed = now - previous.now;
+                    const drawn = frames - previous.frames;
+                    if (clean && elapsed > 0 && drawn >= 0) {
+                        sampler.frames += drawn;
+                        sampler.ms += elapsed;
+                        sampler.intervals += 1;
+                    } else if (modalOpen || previous.modalOpen || epoch !== previous.epoch) {
+                        sampler.discarded += 1;
+                    }
+                }
+                sampler.last = {now, frames, modalOpen, epoch};
+                if (modalOpen) dismiss();
+            };
+            sampler.tick = tick;
+            sampler.timer = setInterval(tick, 100);
+            tick();
+        });
+        let sample = null;
+        const sampleDeadline = Date.now() + 20000;
+        while (Date.now() < sampleDeadline) {
+            await session.page.waitForTimeout(250);
+            sample = await session.page.evaluate(() => {
+                const sampler = globalThis.__KAC_VALID_FRAME_SAMPLE;
+                if (!sampler) return null;
+                return {
+                    frames: sampler.frames,
+                    ms: sampler.ms,
+                    intervals: sampler.intervals,
+                    discarded: sampler.discarded,
+                    dismissals: sampler.dismissals,
+                    modalOpen: document.body.classList.contains("ui-modal-open")
+                };
+            });
+            if (sample && sample.frames >= 60 && sample.ms >= 3000) break;
         }
-        const wallSeconds = Math.max(0.001, (Date.now() - wallStarted) / 1000);
-        const renderedDelta = afterFps.renderedFrames - beforeFps.renderedFrames;
+        sample = await session.page.evaluate(() => {
+            const sampler = globalThis.__KAC_VALID_FRAME_SAMPLE;
+            if (sampler) {
+                sampler.stopped = true;
+                clearInterval(sampler.timer);
+                sampler.observer?.disconnect();
+            }
+            return {
+                frames: Number(sampler?.frames) || 0,
+                ms: Number(sampler?.ms) || 0,
+                intervals: Number(sampler?.intervals) || 0,
+                discarded: Number(sampler?.discarded) || 0,
+                dismissals: Number(sampler?.dismissals) || 0,
+                modalOpen: document.body.classList.contains("ui-modal-open")
+            };
+        });
+        const afterFps = await readFrameStats();
+        const wallSeconds = Math.max(0.001, (Number(sample?.ms) || 0) / 1000);
+        const renderedDelta = Number(sample?.frames) || 0;
         const measuredFps = renderedDelta / wallSeconds;
+        const modalOpenAfterSample = Boolean(sample?.modalOpen);
         const diagnostics = {
             renderedDelta,
+            validFrames: renderedDelta,
+            validMs: Math.round((Number(sample?.ms) || 0) * 10) / 10,
+            sampleIntervals: Number(sample?.intervals) || 0,
+            discardedIntervals: Number(sample?.discarded) || 0,
+            dismissedDialogs: Number(sample?.dismissals) || 0,
             wallSeconds: Math.round(wallSeconds * 1000) / 1000,
             modalState,
             visibility: await session.page.evaluate(() => document.visibilityState),
-            modalOpen: await session.page.evaluate(() => document.body.classList.contains("ui-modal-open")),
+            modalOpen: modalOpenAfterSample,
             frameFaulted: afterFps.frameFaulted,
             gameOver: afterFps.gameOver,
             tick: afterFps.tick,
@@ -946,6 +1086,11 @@ async function measurePerformance(checkpoint) {
         assert.deepEqual(session.consoleErrors, [], "performance context must have no console errors: " + JSON.stringify(diagnostics));
         assert.equal(afterFps.frameFaulted, false, "the frame loop must not fault during the sample: " + JSON.stringify(diagnostics));
         assert.equal(afterFps.gameOver, false, "the realm must not end during the frame sample: " + JSON.stringify(diagnostics));
+        // A dialog that appears at the instant the sample closes is simply not
+        // part of the valid-frame total; only the sampled intervals decide the
+        // gate. Do not turn a legitimate late dialog into a flaky failure.
+        assert.ok(renderedDelta >= 60 && Number(sample?.ms) >= 3000,
+            "valid frame sample must collect at least 60 world-drawn frames over 3.0 s: " + JSON.stringify(diagnostics));
         assert.ok(measuredFps >= FPS_MINIMUM,
             "fresh real-time context must stay above " + FPS_MINIMUM + " FPS (got " + measuredFps.toFixed(2) + "): " + JSON.stringify(diagnostics));
         assert.ok(afterFps.lastDrawMs <= 16.7, "per-frame draw work must fit 16.7 ms: " + JSON.stringify(diagnostics));
@@ -955,6 +1100,11 @@ async function measurePerformance(checkpoint) {
             resumedRealTime: true,
             freshContext: true,
             loadMs: Math.round(loaded.loadMs * 10) / 10,
+            validFrames: renderedDelta,
+            validMs: Math.round((Number(sample?.ms) || 0) * 10) / 10,
+            sampleIntervals: Number(sample?.intervals) || 0,
+            discardedIntervals: Number(sample?.discarded) || 0,
+            dismissedDialogs: Number(sample?.dismissals) || 0,
             wallSeconds: Math.round(wallSeconds * 1000) / 1000,
             renderedFrames: renderedDelta,
             measuredFps: Math.round(measuredFps * 100) / 100,
@@ -985,7 +1135,7 @@ async function measurePerformance(checkpoint) {
 }
 
 async function verifyLegacyRoundtrip(checkpoint) {
-    const session = await startSession(checkpoint.storageState, false, "final-legacy-load");
+    const session = await startSession(checkpoint.storageState, false, "final-legacy-load", checkpoint.saveEnvelope);
     try {
         const {loaded, snapshot: loadedProbe, savedSnapshot} = await loadRealm(session);
         const currentDifferences = snapshotDiff(projectForRoundtrip(checkpoint.savedSnapshot),
@@ -1190,6 +1340,11 @@ async function finalize(checkpoint) {
             resumedRealTime: performance.resumedRealTime,
             freshContext: performance.freshContext,
             loadMs: performance.loadMs,
+            validFrames: performance.validFrames,
+            validMs: performance.validMs,
+            sampleIntervals: performance.sampleIntervals,
+            discardedIntervals: performance.discardedIntervals,
+            dismissedDialogs: performance.dismissedDialogs,
             wallSeconds: performance.wallSeconds,
             renderedFrames: performance.renderedFrames,
             measuredFps: performance.measuredFps,

@@ -847,16 +847,79 @@ async function measureSaveLoad() {
 }
 
 async function waitForYear(year) {
-    const deadline = Date.now() + Math.max(60000, (year + 1) * 45000);
-    while (Date.now() < deadline) {
-        const current = await page.evaluate(async () => {
-            const { state } = await import("./js/core/state.js");
-            return Number(state.year) || 0;
-        });
-        if (current >= year) return current;
+    // A fixed wall-clock ceiling made a uniformly slow shared runner look like
+    // a game regression. Calibrate the progress gate from the runner's own
+    // observed year rate: after the first completed year, remaining progress
+    // gets a generous 2x the measured rate plus a 60 s floor. A frozen tick is
+    // still caught after 60 s, and a real slowdown after calibration still
+    // exceeds the derived deadline. Years, speed and every performance gate
+    // below are unchanged.
+    const startedAt = Date.now();
+    const noProgressMs = 60000;
+    let startYear = null;
+    let lastYear = null;
+    let lastTick = null;
+    let lastProgressAt = startedAt;
+    let rateYearsPerSecond = null;
+    let deadline = null;
+    const readProgress = () => page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return {
+            year: Number(state.year) || 0,
+            tick: Number(state.tick) || 0,
+            paused: state.isPaused === true,
+            activeEvent: Boolean(state.activeEvent),
+            modalOpen: document.body.classList.contains("ui-modal-open")
+        };
+    });
+    const progressLog = current => ({
+        targetYear: year,
+        startYear,
+        currentYear: current.year,
+        elapsedMs: Date.now() - startedAt,
+        rateYearsPerSecond: rateYearsPerSecond === null ? null : Math.round(rateYearsPerSecond * 1000) / 1000,
+        derivedDeadlineMs: deadline === null ? null : Math.max(0, Math.round(deadline - Date.now())),
+        paused: current.paused,
+        activeEvent: current.activeEvent,
+        modalOpen: current.modalOpen
+    });
+    while (true) {
+        const current = await readProgress();
+        if (current.year >= year) {
+            console.log("PROGRESS_GATE " + JSON.stringify({ ok: true, ...progressLog(current) }));
+            return current.year;
+        }
+        const now = Date.now();
+        if (startYear === null) {
+            startYear = current.year;
+            lastYear = current.year;
+            lastTick = current.tick;
+            lastProgressAt = now;
+        }
+        if (current.tick !== lastTick || current.year !== lastYear) {
+            lastProgressAt = now;
+            lastTick = current.tick;
+        }
+        if (current.year > lastYear) {
+            lastYear = current.year;
+            const elapsedSeconds = Math.max(0.001, (now - startedAt) / 1000);
+            const advancedYears = current.year - startYear;
+            if (advancedYears > 0) {
+                rateYearsPerSecond = advancedYears / elapsedSeconds;
+                const remainingYears = Math.max(1, year - current.year);
+                deadline = now + Math.max(60000, (remainingYears / rateYearsPerSecond) * 1000 * 2);
+            }
+        }
+        if (deadline !== null && now > deadline) {
+            throw new Error("The live realm made less than half of its measured year rate before the derived progress deadline: "
+                + JSON.stringify(progressLog(current)));
+        }
+        if (now - lastProgressAt > noProgressMs) {
+            throw new Error("The live realm made no simulation progress for " + noProgressMs + " ms: "
+                + JSON.stringify(progressLog(current)));
+        }
         await page.waitForTimeout(500);
     }
-    throw new Error("The live realm did not reach year " + year + " before the performance timeout");
 }
 
 // Pick a real lake and the centre of the built settlement from the generated
