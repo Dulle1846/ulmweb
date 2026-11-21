@@ -1584,29 +1584,42 @@ try{
     assert.ok(mobileCardIndex>=0,"the mobile tap fixture needs one affordable card");
     await page.locator("#command-panel-content .command-card button").nth(mobileCardIndex).click();
     await page.waitForFunction(async()=>Boolean((await import("./js/core/state.js")).state.currentCard),null,{timeout:3000});
+    await page.evaluate(()=>scrollTo(0,0));
+    if(await page.locator("#realm-event-modal").isVisible()){
+        await page.locator("#realm-event-choices button").first().click();
+        await page.locator("#realm-event-modal").waitFor({state:"hidden",timeout:3000});
+    }
     const mobileHandBefore=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.length;});
     if(await page.evaluate(async()=>(await import("./js/core/state.js")).state.isPaused))await page.locator("#pause-btn").click();
-    const mobileTarget=await page.evaluate(async()=>{
+    const findMobileTarget=()=>page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");
         const {getCardPlacementPreview}=await import("./js/systems/cards.js");
-        const rect=document.querySelector("#canvas").getBoundingClientRect();
-        for(let radius=1;radius<30;radius++){
+        const canvas=document.querySelector("#canvas"),rect=canvas.getBoundingClientRect();
+        for(let radius=1;radius<36;radius++){
             for(let x=80-radius;x<=80+radius;x++)for(let y=80-radius;y<=80+radius;y++){
                 if(Math.abs(x-80)!==radius&&Math.abs(y-80)!==radius)continue;
                 if(!getCardPlacementPreview(x,y)?.valid)continue;
                 const sx=(x+.5)*48*state.zoom-state.camera.x+rect.left;
                 const sy=(y+.5)*48*state.zoom-state.camera.y+rect.top;
                 if(sx<rect.left+20||sx>rect.right-20||sy<rect.top+20||sy>rect.bottom-20)continue;
+                if(document.elementFromPoint(sx,sy)!==canvas)continue;
                 return {x,y,sx,sy};
             }
         }
         return null;
     });
+    let mobileTarget=await findMobileTarget();
+    for(let attempt=0;!mobileTarget&&attempt<2;attempt++){
+        // A phone map is small; widen the visible field before giving up.
+        await page.locator("#zoom-out").click();
+        await page.waitForTimeout(500);
+        mobileTarget=await findMobileTarget();
+    }
     assert.ok(mobileTarget,"a mobile tap must have a visible legal card tile");
     await page.mouse.click(mobileTarget.sx,mobileTarget.sy);
     await page.waitForTimeout(180);
-    const mobileAfter=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return {hand:state.hand.length,selected:state.selectedCardInstanceId,current:state.currentCard?state.currentCard.instanceId:null};});
-    assert.equal(mobileAfter.hand,mobileHandBefore-1,"a mobile map tap must consume exactly the selected card");
+    const mobileAfter=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return {hand:state.hand.length,selected:state.selectedCardInstanceId,current:state.currentCard?state.currentCard.instanceId:null,toast:document.querySelector("#action-toast")?.textContent,paused:state.isPaused,event:!document.querySelector("#realm-event-modal")?.classList.contains("hidden")};});
+    assert.equal(mobileAfter.hand,mobileHandBefore-1,"a mobile map tap must consume exactly the selected card: "+JSON.stringify({mobileTarget,mobileAfter}));
     assert.deepEqual({selected:mobileAfter.selected,current:mobileAfter.current},{selected:null,current:null},"mobile tap placement must clear the armed card");
     await page.setViewportSize({width:1600,height:1000});
     await page.evaluate(()=>scrollTo(0,0));
