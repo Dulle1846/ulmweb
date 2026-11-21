@@ -1,13 +1,35 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.32.0`
+**Current production version:** `3.32.1`
 **Next development line:** `3.33.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-20 (UTC)
+**Last repository verification:** 2026-11-21 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.32.1 — Hand-Drawn Canvas Woodland Finish
+
+The hand-drawn woodland now reads as ink on paper at the zoom where the player
+actually sees it, and the committed reference sheets finally show the production
+renderer instead of the optional WebGL ground.
+
+- The Canvas2D crown pass keeps its deterministic silhouette, but now carries a
+  stronger broken ink rim, internal pen hatching, darker under-washes and
+  brighter leaf tips. Dense stands receive one extra overlapping crown copy at
+  interior zoom, so the canopy closes instead of reading as isolated stamps.
+- The forest floor keeps its bounded cached pass, with larger humus and moss
+  washes, more leaf clusters, species leaves, twigs, moss pockets and a few
+  short green blades. Tree bases get two low blades; no simulation, save or
+  ecology value changes.
+- `terrain-reference.mjs` and `forest-reference.mjs` now default to the
+  production Canvas2D surface. `TERRAIN_REFERENCE_RENDERER=webgl` still produces
+  the optional WebGL audit. The grove strip now selects a real inland ancient
+  woodland rather than a meadow with scattered trees, so the hand-drawn canopy
+  and floor are the actual production passes.
+Verified: full `npm test`, the regenerated specification audit, and the
+Canvas2D terrain and forest references.
 
 ## 3.32.0 — Treaty Standing
 

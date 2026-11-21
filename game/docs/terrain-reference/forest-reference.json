@@ -9,9 +9,10 @@
     "width": 800,
     "height": 800
   },
-  "renderer": "WebKit WebGL",
-  "maxTextureSize": 8192,
-  "generatedAt": "2026-11-19T20:45:50.384Z",
+  "renderer": "Canvas2D",
+  "rendererMode": "canvas",
+  "maxTextureSize": 0,
+  "generatedAt": "2026-11-21T15:09:40.550Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -1374,8 +1375,8 @@
     }
   ],
   "artifactHashes": {
-    "formation": "fac9c4feab10023a679624da568f057a77eec6c4b18a73cdb26b5c86172b4694",
-    "seasonal": "04589d65086351091ec6a61f6d3024b33689ec287c683fd8879317fc371c4ee5"
+    "formation": "0552a3ecd4a7f040e2d21ca44db6018cb1dc09e1d868cea73893f578701ad2c1",
+    "seasonal": "9cf5ad5fe0372d4c80ce1b35458920ed5075b1084743d9fac717e8d9d104bcc7"
   },
   "note": "HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level. Forest formations are real generated tiles, not hand-placed demo props. The cutover frame uses a wooded tile with stock set to zero. Not a GPU performance benchmark."
 }

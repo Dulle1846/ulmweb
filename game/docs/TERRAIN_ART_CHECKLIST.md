@@ -1,6 +1,6 @@
 # Terrain art checklist 1.1
 
-This is the current implementation audit for **1.1 Grundlegende Terrain-Grafik**. It maps each checklist item to the code and the evidence that protects it. The visual baseline is [TERRAIN_VISUAL_REFERENCE.md](TERRAIN_VISUAL_REFERENCE.md).
+This is the current implementation audit for **1.1 Grundlegende Terrain-Grafik**. It maps each checklist item to the code and the evidence that protects it. The visual baseline is [TERRAIN_VISUAL_REFERENCE.md](TERRAIN_VISUAL_REFERENCE.md), generated with the production Canvas2D renderer; the optional WebGL atlas path is covered by its own contract and atlas tests.
 
 | Item | Status | Implementation | Evidence / remaining limit |
 |---|---|---|---|
@@ -24,10 +24,10 @@ stand data or the WebGL ground.
 | Item | Status | Implementation | Evidence / remaining limit |
 |---|---|---|---|
 | Colour pipeline validity | **Implemented** | `rgbTriplet` parses `rgb()`/`rgba()` as well as hex and returns black for malformed input. `mixHex` can therefore be chained on its own output; the previous NaN triplet kept the last Canvas `fillStyle` and produced ghost crowns. | `terrain.js` `rgbTriplet` / `mixHex`; terrain reference sheets and spec audit. |
-| Broadleaf crowns and trunks | **Implemented** | Deterministic `crownSilhouette` / `traceCrown` build irregular, layered washes with internal lobes, leaf tips and a broken ink rim. Limbs remain visible outside the wash. Trunks taper, with bark ridges, roots, hollows, broken limbs and separate lit/shadow faces. | `drawBroadleaf`; `tree-seasons.png`, `forest-seasons.png`. Crowns remain procedural, not authored bitmaps. |
+| Broadleaf crowns and trunks | **Implemented** | Deterministic `crownSilhouette` / `traceCrown` build irregular, layered washes with internal lobes, leaf tips, darker under-washes, short pen hatching and a broken ink rim. Limbs remain visible outside the wash. Trunks taper, with bark ridges, roots, hollows, broken limbs and separate lit/shadow faces. | `drawBroadleaf`; `tree-seasons.png` (real inland ancient stand at 2.40×), `forest-seasons.png` and the native-resolution grove check. Crowns remain procedural, not authored bitmaps. |
 | Birch and conifer silhouettes | **Implemented** | Birch gets a slimmer curved bole, subtle dark fissures and an airy crown. Conifer tiers droop unevenly, carry needle clumps and have broken lower rims rather than geometric triangles. | `drawBirch`, `drawConifer`; forest and season sheets. |
 | Winter snow | **Implemented** | Snow on bare twigs and marcescent leaf masses is a thin, broken ridge. It no longer forms round white caps that hide the branch silhouette. Conifers retain species-specific tier snow. | `drawBareCrown`, `drawSnowCaps`; `tree-seasons.png`, `forest-seasons.png`. |
-| Forest floor and spacing | **Implemented** | Humus and moss washes, bigger leaf drifts, species leaves, twig strokes and moss cushions replace the flat green carpet. Trees are deterministically jittered per tile; added grass tufts were removed because they read as a lawn grid. | `drawForestGround`, `drawLeafCarpet`; `forest-reference.png`, `contact-sheet.png`. The detail is cached, not rebuilt every frame. |
+| Forest floor and spacing | **Implemented** | Layered humus and moss washes, larger leaf drifts, species leaves, twig strokes, moss cushions and a few short green blades replace the flat green carpet. Trees are deterministically jittered per tile, and dense stands receive an extra overlapping crown copy at interior zoom. | `drawForestGround`, `drawLeafCarpet`, `drawBroadleaf`; `tree-seasons.png`, `forest-reference.png`, `contact-sheet.png`. The detail is cached, not rebuilt every frame. |
 
 ## Biomes — 1.2.1 Laubwälder
 
@@ -35,7 +35,7 @@ The broader biome work is tracked in [FOREST_ECOLOGY.md](FOREST_ECOLOGY.md). It 
 
 ## Remaining limits
 
-- **Real-GPU validation is still open.** The cloud workspace renders with software WebGL. The contact sheet proves the shader paths, seasonal states and zoom bands, but not the final colour response or frame time on target hardware. See [TERRAIN_PERFORMANCE.md](TERRAIN_PERFORMANCE.md).
+- **Real-GPU validation of the optional WebGL path is still open.** The committed sheets use the production Canvas2D renderer and are deterministic at the fixed viewport and seed. They prove the production artwork and seasonal states, not a hardware-GPU colour response or frame time. The WebGL shader is covered by its contract and atlas tests; set `TERRAIN_REFERENCE_RENDERER=webgl` for a separate visual audit. See [TERRAIN_PERFORMANCE.md](TERRAIN_PERFORMANCE.md).
 - The terrain is procedurally painted and textured. A future fully hand-painted bitmap/sprite pack could add authored landmarks, but it is not required for the current deterministic art direction.
 - The height field is intentionally compact (2–5 samples per tile). The bicubic reconstruction, noise and wear layers are display-side enhancements; gameplay height and water remain authoritative.
 
@@ -49,4 +49,4 @@ npm run test:season-year
 npm run test:climate-reference
 ```
 
-`npm test` covers atlas seams, channel variance, season curves and blending, weather season-gating, climate shifts, per-tree foliage timing, occlusion, wear, the resolution-independent shore-distance encoding and the sand/crest shader paths. The Playwright reference produces the 16-cell season sheet, the autumn-to-spring transition strip and the grove strip. The full-year audit drives 400 real weather updates and writes `season-year.json`, then checks that summer stays snow-free, conifers never go bare, oaks hold leaves and the northern/arid climates differ from the temperate baseline. The climate run adds the 5 × 4 same-grove matrix, five live day-330 screenshots from separate 400-day weather audits, and assertions on summer snow, weather variability, oak marcescence, northern/arid snow timing and conifer-versus-birch snow retention.
+`npm test` covers atlas seams, channel variance, season curves and blending, weather season-gating, climate shifts, per-tree foliage timing, occlusion, wear, the resolution-independent shore-distance encoding and the sand/crest shader paths. The Playwright reference produces the 16-cell season sheet, the autumn-to-spring transition strip and the actual-woodland grove strip with the production Canvas2D renderer; `TERRAIN_REFERENCE_RENDERER=webgl` builds the optional shader audit instead. The full-year audit drives 400 real weather updates and writes `season-year.json`, then checks that summer stays snow-free, conifers never go bare, oaks hold leaves and the northern/arid climates differ from the temperate baseline. The climate run adds the 5 × 4 same-grove matrix, five live day-330 screenshots from separate 400-day weather audits, and assertions on summer snow, weather variability, oak marcescence, northern/arid snow timing and conifer-versus-birch snow retention.

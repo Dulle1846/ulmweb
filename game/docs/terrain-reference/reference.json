@@ -8,9 +8,10 @@
     "width": 800,
     "height": 800
   },
-  "renderer": "WebKit WebGL",
-  "maxTextureSize": 8192,
-  "generatedAt": "2026-11-19T20:41:38.615Z",
+  "renderer": "Canvas2D",
+  "rendererMode": "canvas",
+  "maxTextureSize": 0,
+  "generatedAt": "2026-11-21T15:07:28.592Z",
   "seasons": [
     {
       "key": "spring",
@@ -112,9 +113,12 @@
   ],
   "transitionNote": "Autumn to spring at district zoom (0.30×); one frame every 15–30 days across the darkest and the greenest month.",
   "treeFocus": {
-    "x": 90,
-    "y": 22,
-    "score": 49
+    "x": 86,
+    "y": 116,
+    "score": 102.47632995095866,
+    "type": "ancient",
+    "treeChance": 0.6987632995095866,
+    "ageScale": 1.26
   },
   "treeDays": [
     220,

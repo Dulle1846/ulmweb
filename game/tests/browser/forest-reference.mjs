@@ -5,6 +5,8 @@
 // rooftop view for every formation, and then follows one woodland through the
 // four seasons. The profile selects the 15 broadleaf, 12 conifer or 12 mixed
 // formations; the camera, seed and renderer are recorded in the JSON file.
+// The committed sheets use Canvas2D, the production renderer. Set
+// TERRAIN_REFERENCE_RENDERER=webgl to audit the optional WebGL ground.
 //
 // Usage: npm run test:forest-reference
 // Output: docs/terrain-reference/forest-reference.png
@@ -22,6 +24,7 @@ const gameRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 process.chdir(gameRoot);
 
 const outputDir = path.resolve(process.env.FOREST_REFERENCE_OUT || path.join(gameRoot, "docs/terrain-reference"));
+const rendererMode = process.env.TERRAIN_REFERENCE_RENDERER === "webgl" ? "webgl" : "canvas";
 const seed = 20261104;
 const coniferMode = process.env.FOREST_REFERENCE_PROFILE === "conifer";
 const mixedMode = process.env.FOREST_REFERENCE_PROFILE === "mixed";
@@ -141,7 +144,8 @@ try {
             body.forest-reference .realm-nav,
             body.forest-reference .side-panel,
             body.forest-reference #event-notification,
-            body.forest-reference .event-notification { display: none !important; }
+            body.forest-reference .event-notification,
+            body.forest-reference #realm-action-dock { display: none !important; }
             body.forest-reference .game-shell,
             body.forest-reference .game-layout { display: block !important; height: 100vh !important; }
             body.forest-reference #canvas-wrapper {
@@ -155,7 +159,7 @@ try {
         `,
     });
 
-    const webgl = await page.evaluate(async () => {
+    const surface = await page.evaluate(async ({ rendererMode }) => {
         document.body.classList.add("forest-reference");
         const { state } = await import("./js/core/state.js");
         state.isPaused = true;
@@ -170,18 +174,6 @@ try {
         const { resize, centerCamera } = await import("./js/presentation/camera.js");
         resize();
         centerCamera();
-        // This reference specifically audits the WebGL ground and its Canvas
-        // decoration overlay. On a software renderer the automatic setting may
-        // have chosen Canvas2D and locked the original surface to a 2D context;
-        // force the renderer and replace that surface with a fresh one before
-        // asking for WebGL2. Without this, a valid SwiftShader browser looks
-        // like it has no WebGL support.
-        const { resetTerrainWebGL } = await import("./js/presentation/rendering/terrain-webgl.js");
-        resetTerrainWebGL();
-        state.terrainRenderer = "webgl";
-        state.terrainAutoMode = "webgl";
-        state.terrainMode = "webgl";
-        state.terrainFallback = false;
         const previousCanvas = document.getElementById("terrain-canvas");
         const canvas = previousCanvas.cloneNode(false);
         canvas.width = state.canvas.width;
@@ -191,18 +183,49 @@ try {
         previousCanvas.replaceWith(canvas);
         state.terrainCanvasEl = canvas;
         state.terrainCacheRevision = (Number(state.terrainCacheRevision) || 0) + 1;
-        const gl = canvas.getContext("webgl2");
+        if (rendererMode === "webgl") {
+            // This audit deliberately exercises the optional WebGL ground. A
+            // software renderer may have already locked the original surface
+            // to Canvas2D, so force the renderer and use a fresh canvas.
+            const { resetTerrainWebGL } = await import("./js/presentation/rendering/terrain-webgl.js");
+            resetTerrainWebGL();
+            state.terrainRenderer = "webgl";
+            state.terrainAutoMode = "webgl";
+            state.terrainMode = "webgl";
+            state.terrainFallback = false;
+            const gl = canvas.getContext("webgl2");
+            return {
+                hasSurface: Boolean(gl),
+                mode: "webgl",
+                width: canvas.width,
+                height: canvas.height,
+                worldWidth: width,
+                worldHeight: height,
+                renderer: gl ? gl.getParameter(gl.RENDERER) : null,
+                maxTextureSize: gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 0,
+            };
+        }
+        state.terrainRenderer = "canvas";
+        state.terrainAutoMode = "canvas";
+        state.terrainMode = "canvas";
+        state.terrainFallback = false;
+        const ctx = canvas.getContext("2d", { alpha: false });
         return {
-            hasGl: Boolean(gl),
+            hasSurface: Boolean(ctx),
+            mode: "canvas",
             width: canvas.width,
             height: canvas.height,
             worldWidth: width,
             worldHeight: height,
-            renderer: gl ? gl.getParameter(gl.RENDERER) : null,
-            maxTextureSize: gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 0,
+            renderer: "Canvas2D",
+            maxTextureSize: 0,
         };
-    });
-    if (!webgl.hasGl) throw new Error("The forest reference requires WebGL2; the terrain fell back to Canvas2D.");
+    }, { rendererMode });
+    if (!surface.hasSurface) {
+        throw new Error(surface.mode === "webgl"
+            ? "The forest reference requires WebGL2; the terrain fell back to Canvas2D."
+            : "The forest reference requires a Canvas2D terrain surface.");
+    }
 
     const scan = await page.evaluate(async ({ targets }) => {
         const { state } = await import("./js/core/state.js");
@@ -437,7 +460,7 @@ try {
     const speciesPlate = coniferMode ? await captureConiferSpecies(page) : null;
 
     const formationSheet = await renderFormationSheet(context, frames, {
-        seed, renderer: webgl.renderer, world: scan.world,
+        seed, renderer: surface.renderer, rendererMode, world: scan.world,
         conifer: coniferMode, mixed: mixedMode, tropical: tropicalMode, columns: coniferMode || mixedMode || tropicalMode ? 4 : 5,
         generatedAt: new Date().toISOString(),
     });
@@ -445,7 +468,7 @@ try {
     await fs.writeFile(formationPath, formationSheet);
 
     const seasonSheet = await renderSeasonSheet(context, seasonal, {
-        seed, renderer: webgl.renderer, tile: seasonalTile, jungleInterior, conifer: coniferMode, mixed: mixedMode, tropical: tropicalMode,
+        seed, renderer: surface.renderer, rendererMode, tile: seasonalTile, jungleInterior, conifer: coniferMode, mixed: mixedMode, tropical: tropicalMode,
         generatedAt: new Date().toISOString(),
     });
     const seasonPath = path.join(outputDir, outputNames.seasonal);
@@ -456,7 +479,7 @@ try {
     if (speciesPlate) {
         speciesPath = path.join(outputDir, outputNames.species);
         speciesSheet = await renderSpeciesSheet(context, speciesPlate, {
-            seed, renderer: webgl.renderer, generatedAt: new Date().toISOString(),
+            seed, renderer: surface.renderer, rendererMode, generatedAt: new Date().toISOString(),
         });
         await fs.writeFile(speciesPath, speciesSheet);
     }
@@ -466,9 +489,10 @@ try {
         seed,
         viewport,
         timeOfDay: 12,
-        canvas: { width: webgl.width, height: webgl.height },
-        renderer: webgl.renderer,
-        maxTextureSize: webgl.maxTextureSize,
+        canvas: { width: surface.width, height: surface.height },
+        renderer: surface.renderer,
+        rendererMode,
+        maxTextureSize: surface.maxTextureSize,
         generatedAt: new Date().toISOString(),
         world: scan.world,
         formations: frames.map(frame => ({
@@ -508,7 +532,7 @@ try {
     console.log("Seasonal forest: " + path.relative(gameRoot, seasonPath));
     if (speciesPath) console.log("Conifer species plate: " + path.relative(gameRoot, speciesPath));
     console.log("Forest metadata: " + path.relative(gameRoot, path.join(outputDir, outputNames.metadata)));
-    console.log("Renderer: " + (webgl.renderer || "unknown") + " · canvas " + webgl.width + "×" + webgl.height);
+    console.log("Renderer: " + (surface.renderer || "unknown") + " · canvas " + surface.width + "×" + surface.height);
     if (diagnostics.length) console.log("Diagnostics: " + JSON.stringify(diagnostics, null, 2));
     if (fatal.length) throw new Error("Forest rendering diagnostics were emitted:\n" + fatal.join("\n"));
 } finally {

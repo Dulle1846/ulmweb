@@ -1,8 +1,10 @@
 // Deterministic visual reference for the terrain surface.
 //
-// This is a human-review artifact, not a pixel-diff test: WebGL rasterization
-// can differ between GPUs. It captures the same seed at four season peaks and
-// all four zoom presets with the HUD, entities, fog and weather hidden.
+// This is a human-review artifact, not a pixel-diff test. It captures the same
+// seed at four season peaks and all four zoom presets with the HUD, entities,
+// fog and weather hidden. The committed sheets use Canvas2D, the production
+// renderer. Set TERRAIN_REFERENCE_RENDERER=webgl to audit the optional WebGL
+// ground instead; WebGL rasterization can differ between GPUs.
 //
 // Usage: npm run test:terrain-reference
 // Output: docs/terrain-reference/contact-sheet.png and reference.json
@@ -21,6 +23,7 @@ process.chdir(gameRoot);
 
 const outputDir = path.resolve(process.env.TERRAIN_REFERENCE_OUT || path.join(gameRoot, "docs/terrain-reference"));
 const frameDir = path.resolve(process.env.TERRAIN_REFERENCE_FRAMES || path.join(os.tmpdir(), "kac-terrain-reference-frames"));
+const rendererMode = process.env.TERRAIN_REFERENCE_RENDERER === "webgl" ? "webgl" : "canvas";
 const seed = 20261104;
 const viewport = { width: 800, height: 800 };
 
@@ -111,7 +114,8 @@ try {
             body.terrain-reference .realm-nav,
             body.terrain-reference .side-panel,
             body.terrain-reference #event-notification,
-            body.terrain-reference .event-notification { display: none !important; }
+            body.terrain-reference .event-notification,
+            body.terrain-reference #realm-action-dock { display: none !important; }
             body.terrain-reference .game-shell,
             body.terrain-reference .game-layout { display: block !important; height: 100vh !important; }
             body.terrain-reference #canvas-wrapper {
@@ -130,7 +134,7 @@ try {
         `,
     });
 
-    const webgl = await page.evaluate(async () => {
+    const surface = await page.evaluate(async ({ rendererMode }) => {
         document.body.classList.add("terrain-reference");
         const { state } = await import("./js/core/state.js");
         state.isPaused = true;
@@ -147,15 +151,6 @@ try {
         const { resize, centerCamera } = await import("./js/presentation/camera.js");
         resize();
         centerCamera();
-        // A software renderer makes the automatic choice fall back to Canvas2D
-        // and locks the original surface to a 2D context. This reference audits
-        // the WebGL ground, so force it and use a fresh surface.
-        const { resetTerrainWebGL } = await import("./js/presentation/rendering/terrain-webgl.js");
-        resetTerrainWebGL();
-        state.terrainRenderer = "webgl";
-        state.terrainAutoMode = "webgl";
-        state.terrainMode = "webgl";
-        state.terrainFallback = false;
         const previousCanvas = document.getElementById("terrain-canvas");
         const canvas = previousCanvas.cloneNode(false);
         canvas.width = state.canvas.width;
@@ -165,21 +160,51 @@ try {
         previousCanvas.replaceWith(canvas);
         state.terrainCanvasEl = canvas;
         state.terrainCacheRevision = (Number(state.terrainCacheRevision) || 0) + 1;
-        const gl = canvas.getContext("webgl2");
+        if (rendererMode === "webgl") {
+            // A software renderer makes the automatic choice fall back to
+            // Canvas2D and locks the original surface to a 2D context. The
+            // optional WebGL audit forces it and uses a fresh surface.
+            const { resetTerrainWebGL } = await import("./js/presentation/rendering/terrain-webgl.js");
+            resetTerrainWebGL();
+            state.terrainRenderer = "webgl";
+            state.terrainAutoMode = "webgl";
+            state.terrainMode = "webgl";
+            state.terrainFallback = false;
+            const gl = canvas.getContext("webgl2");
+            return {
+                hasSurface: Boolean(gl),
+                mode: "webgl",
+                width: canvas.width,
+                height: canvas.height,
+                renderer: gl ? gl.getParameter(gl.RENDERER) : null,
+                maxTextureSize: gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 0,
+            };
+        }
+        state.terrainRenderer = "canvas";
+        state.terrainAutoMode = "canvas";
+        state.terrainMode = "canvas";
+        state.terrainFallback = false;
+        const ctx = canvas.getContext("2d", { alpha: false });
         return {
-            hasGl: Boolean(gl),
+            hasSurface: Boolean(ctx),
+            mode: "canvas",
             width: canvas.width,
             height: canvas.height,
-            renderer: gl ? gl.getParameter(gl.RENDERER) : null,
-            maxTextureSize: gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 0,
+            renderer: "Canvas2D",
+            maxTextureSize: 0,
         };
-    });
-    if (!webgl.hasGl) throw new Error("The reference requires WebGL2; the terrain fell back to Canvas2D.");
+    }, { rendererMode });
+    if (!surface.hasSurface) {
+        throw new Error(surface.mode === "webgl"
+            ? "The reference requires WebGL2; the terrain fell back to Canvas2D."
+            : "The reference requires a Canvas2D terrain surface.");
+    }
     await page.waitForTimeout(300);
 
     const frames = [];
     for (const season of seasons) {
         for (const zoom of zooms) {
+            const missesBeforeMove = await terrainCacheMisses(page);
             await page.evaluate(async ({ day, seasonIndex, level }) => {
                 const { state } = await import("./js/core/state.js");
                 const { centerCamera, setZoomLevel } = await import("./js/presentation/camera.js");
@@ -187,12 +212,15 @@ try {
                 state.weather = "clear";
                 state.seasonIndex = seasonIndex;
                 state.dayOfYear = day;
+                // Canvas batches its seasonal cache in 40-day buckets. The
+                // reference needs the exact captured day, not a nearby bucket.
+                state.terrainCacheRevision = (Number(state.terrainCacheRevision) || 0) + 1;
                 setZoomLevel(level);
                 state.zoom = state.zoomTarget;
                 state.zoomAnchor = null;
                 centerCamera();
             }, { day: season.day, seasonIndex: seasons.indexOf(season), level: zoom.level });
-            await page.waitForTimeout(180);
+            await waitForTerrainDetail(page, missesBeforeMove);
             const file = path.join(frameDir, season.key + "-" + zoom.key + ".png");
             const buffer = await page.locator("#terrain-canvas").screenshot({ path: file, type: "png", animations: "disabled" });
             frames.push({ season, zoom, buffer, file });
@@ -202,6 +230,7 @@ try {
 
     const transitions = [];
     for (const day of transitionDays) {
+        const missesBeforeMove = await terrainCacheMisses(page);
         await page.evaluate(async ({ day }) => {
             const { state } = await import("./js/core/state.js");
             const { centerCamera, setZoomLevel } = await import("./js/presentation/camera.js");
@@ -209,12 +238,13 @@ try {
             state.weather = "clear";
             state.dayOfYear = day;
             state.seasonIndex = Math.floor(day / 100) % 4;
+            state.terrainCacheRevision = (Number(state.terrainCacheRevision) || 0) + 1;
             setZoomLevel(2);
             state.zoom = state.zoomTarget;
             state.zoomAnchor = null;
             centerCamera();
         }, { day });
-        await page.waitForTimeout(180);
+        await waitForTerrainDetail(page, missesBeforeMove);
         const buffer = await page.locator("#terrain-canvas").screenshot({ type: "png", animations: "disabled" });
         transitions.push({ day, buffer });
         console.log("Captured transition day " + day);
@@ -225,31 +255,60 @@ try {
     const forestFocus = await page.evaluate(async () => {
         const { state } = await import("./js/core/state.js");
         const { getHeightAt, getMoistureAt, getTemperatureAt } = await import("./js/world/world.js");
+        const { forestStandAt } = await import("./js/world/forest-ecology.js");
         const width = Number(state.worldW) || 160;
         const height = Number(state.worldH) || 160;
         const sea = state.seaLevel ?? 0.33;
-        let best = { x: Math.floor(width / 2), y: Math.floor(height / 2), score: -1 };
-        for (let y = 6; y < height - 6; y += 2) {
-            for (let x = 6; x < width - 6; x += 2) {
-                let score = 0;
-                for (let dy = -3; dy <= 3; dy++) {
+        const climate = state.worldOptions?.climate || "temperate";
+        const forests = state.worldOptions?.forests ?? 52;
+        const seed = Number(state.worldSeed) || 1;
+        let best = { x: Math.floor(width / 2), y: Math.floor(height / 2), score: -1, type: "meadow" };
+        for (let y = 8; y < height - 8; y += 3) {
+            for (let x = 8; x < width - 8; x += 3) {
+                // The grove strip must show real woodland, not a meadow that
+                // happens to carry scattered trees: only a forest stand feeds
+                // the hand-drawn canopy and forest-floor passes. Keep the whole
+                // 7×7 close-up inland so a coastal stand does not fill half the
+                // plate with sea and snow.
+                const h = getHeightAt(x + 0.5, y + 0.5);
+                const m = getMoistureAt(x + 0.5, y + 0.5);
+                const t = getTemperatureAt(x + 0.5, y + 0.5);
+                if (h <= sea + 0.12 || h >= 0.68 || m <= 0.52 || t <= 0.42) continue;
+                let coast = false;
+                for (let dy = -3; dy <= 3 && !coast; dy++) {
                     for (let dx = -3; dx <= 3; dx++) {
-                        const h = getHeightAt(x + dx + 0.5, y + dy + 0.5);
-                        const m = getMoistureAt(x + dx + 0.5, y + dy + 0.5);
-                        const t = getTemperatureAt(x + dx + 0.5, y + dy + 0.5);
-                        if (h > sea + 0.04 && h < 0.76 && m > 0.5 && t > 0.4) score++;
+                        const nh = getHeightAt(x + dx + 0.5, y + dy + 0.5);
+                        if (nh <= sea + 0.07 || nh >= 0.78) { coast = true; break; }
                     }
                 }
-                if (score > best.score) best = { x, y, score };
+                if (coast) continue;
+                const stand = forestStandAt(x + 0.5, y + 0.5, {
+                    seed, moisture: m, temperature: t, height: h,
+                    climate, forests, stockRatio: 1, rockLine: 0.92,
+                });
+                if (!stand?.forest) continue;
+                let score = (Number(stand.treeChance) || 0) * 100
+                    + (Number(stand.vegetation?.density) || 0) * 30
+                    + (Number(stand.ageScale) || 1) * 10;
+                if (stand.type === "ancient") score += 20;
+                if (score > best.score) {
+                    best = {
+                        x, y, score, type: stand.type,
+                        treeChance: Number(stand.treeChance) || 0,
+                        ageScale: Number(stand.ageScale) || 1,
+                    };
+                }
             }
         }
         return best;
     });
 
+    console.log("Grove focus: " + forestFocus.type + " at " + forestFocus.x + ", " + forestFocus.y);
     await page.evaluate(() => document.body.classList.add("terrain-tree"));
     const treeDays = [220, 250, 280, 310, 340, 0, 30, 60];
     const treeFrames = [];
     for (const day of treeDays) {
+        const missesBeforeMove = await terrainCacheMisses(page);
         await page.evaluate(async ({ day, x, y }) => {
             const { state } = await import("./js/core/state.js");
             const { clampCamera, setZoomLevel } = await import("./js/presentation/camera.js");
@@ -258,6 +317,7 @@ try {
             state.weather = "clear";
             state.dayOfYear = day;
             state.seasonIndex = Math.floor(day / 100) % 4;
+            state.terrainCacheRevision = (Number(state.terrainCacheRevision) || 0) + 1;
             setZoomLevel(4);
             state.zoom = state.zoomTarget;
             state.zoomLevel = 4;
@@ -266,8 +326,8 @@ try {
             state.camera.y = (y + 0.5) * CELL * state.zoom - state.canvas.height / 2;
             clampCamera();
         }, { day, x: forestFocus.x, y: forestFocus.y });
-        await page.waitForTimeout(180);
-        // The wrapper composites the WebGL ground and the decoration canvas.
+        await waitForTerrainDetail(page, missesBeforeMove);
+        // The wrapper composites the ground and the decoration canvas.
         const buffer = await page.locator("#canvas-wrapper").screenshot({ type: "png", animations: "disabled" });
         treeFrames.push({ day, buffer });
         console.log("Captured grove day " + day);
@@ -276,14 +336,16 @@ try {
     const generatedAt = new Date().toISOString();
     const contactSheet = await renderContactSheet(context, frames, {
         generatedAt,
-        renderer: webgl.renderer,
-        width: webgl.width,
-        height: webgl.height,
+        renderer: surface.renderer,
+        rendererMode,
+        width: surface.width,
+        height: surface.height,
     });
     const contactPath = path.join(outputDir, "contact-sheet.png");
     await fs.writeFile(contactPath, contactSheet);
     const transitionSheet = await renderTransitionSheet(context, transitions, {
-        renderer: webgl.renderer,
+        renderer: surface.renderer,
+        rendererMode,
         title: "Autumn browns, winter whitens, spring greens again",
         deck: "Seed " + seed + " · district zoom 0.30× · one frame every 15–30 days · weather, HUD, entities and fog hidden",
         note: "Snow accumulates through late autumn, peaks in winter and melts through early spring.",
@@ -291,7 +353,8 @@ try {
     const transitionPath = path.join(outputDir, "season-transition.png");
     await fs.writeFile(transitionPath, transitionSheet);
     const treeSheet = await renderTransitionSheet(context, treeFrames, {
-        renderer: webgl.renderer,
+        renderer: surface.renderer,
+        rendererMode,
         title: "The same grove through the year",
         deck: "Seed " + seed + " · wooded tile " + forestFocus.x + ", " + forestFocus.y + " · rooftops zoom 2.40× · weather, HUD, entities and fog hidden",
         note: "Each tree has its own timing; oaks keep brown leaves into winter while conifers stay green.",
@@ -302,9 +365,10 @@ try {
     const metadata = {
         seed,
         viewport,
-        canvas: { width: webgl.width, height: webgl.height },
-        renderer: webgl.renderer,
-        maxTextureSize: webgl.maxTextureSize,
+        canvas: { width: surface.width, height: surface.height },
+        renderer: surface.renderer,
+        rendererMode,
+        maxTextureSize: surface.maxTextureSize,
         generatedAt,
         seasons: seasons.map(season => ({ key: season.key, label: season.label, day: season.day })),
         zooms: zooms.map(zoom => ({ key: zoom.key, label: zoom.label, level: zoom.level, scale: zoom.scale })),
@@ -319,13 +383,13 @@ try {
     };
     await fs.writeFile(path.join(outputDir, "reference.json"), JSON.stringify(metadata, null, 2) + "\n");
 
-    const fatal = diagnostics.filter(text => /Terrain WebGL|atlas upload|shader compilation/i.test(text));
+    const fatal = diagnostics.filter(text => /Terrain WebGL|atlas upload|shader compilation|pageerror/i.test(text));
     console.log("Contact sheet: " + path.relative(gameRoot, contactPath));
     console.log("Season transition: " + path.relative(gameRoot, transitionPath));
     console.log("Tree seasons: " + path.relative(gameRoot, treePath));
     console.log("Reference metadata: " + path.relative(gameRoot, path.join(outputDir, "reference.json")));
     console.log("Frames: " + frameDir);
-    console.log("Renderer: " + (webgl.renderer || "unknown") + " · canvas " + webgl.width + "×" + webgl.height);
+    console.log("Renderer: " + (surface.renderer || "unknown") + " · canvas " + surface.width + "×" + surface.height);
     if (diagnostics.length) console.log("Diagnostics: " + JSON.stringify(diagnostics, null, 2));
     if (fatal.length) throw new Error("Terrain rendering diagnostics were emitted:\n" + fatal.join("\n"));
 } catch (error) {
@@ -334,6 +398,33 @@ try {
 } finally {
     await browser.close().catch(() => {});
     await new Promise(resolve => server.close(resolve));
+}
+
+async function terrainCacheMisses(page) {
+    return page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return Number(state.terrainCacheMisses) || 0;
+    });
+}
+
+// A camera or season change starts a sliced detail rebuild. A fixed wait can
+// capture the old layer (or a blank first frame) on a slow renderer, so wait
+// for the completed cache pass and two composited frames instead.
+async function waitForTerrainDetail(page, baselineMisses) {
+    await page.evaluate(async (baseline) => {
+        const { state } = await import("./js/core/state.js");
+        const deadline = performance.now() + 10000;
+        while ((Number(state.terrainCacheMisses) || 0) <= baseline) {
+            if (performance.now() > deadline) {
+                throw new Error("The terrain detail layer did not rebuild after the view change. misses="
+                    + (Number(state.terrainCacheMisses) || 0)
+                    + " treeDraws=" + (Number(state.terrainTreeDraws) || 0)
+                    + " lastBuildMs=" + (Number(state.terrainDecorationBuildMs) || 0));
+            }
+            await new Promise(resolve => requestAnimationFrame(resolve));
+        }
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }, baselineMisses);
 }
 
 function seasonalCaption(season, zoom) {
@@ -406,7 +497,9 @@ async function renderContactSheet(browserContext, frames, meta) {
     </div>
     <footer>
         <span><strong>Generated</strong> ${meta.generatedAt} · <strong>Renderer</strong> ${escapeHtml(meta.renderer || "unknown")}</span>
-        <span>Human-review reference, not a pixel-diff test. WebGL colors may differ on real GPUs.</span>
+        <span>${meta.rendererMode === "webgl"
+            ? "Optional WebGL audit; colors may differ on real GPUs."
+            : "Production Canvas2D route; deterministic at this fixed viewport and seed."}</span>
     </footer>
 </div>
 </body></html>`;
@@ -459,7 +552,7 @@ async function renderTransitionSheet(browserContext, frames, meta) {
     <p class="deck">${escapeHtml(meta.deck || "Season transition")} · simulation paused</p>
     <div class="strip">${cells}</div>
     <footer>
-        <span><strong>Generated</strong> ${new Date().toISOString()} · <strong>Renderer</strong> ${escapeHtml(meta.renderer || "software WebGL")}</span>
+        <span><strong>Generated</strong> ${new Date().toISOString()} · <strong>Renderer</strong> ${escapeHtml(meta.renderer || "unknown")}</span>
         <span>${escapeHtml(meta.note || "Snow accumulates through late autumn, peaks in winter and melts through early spring.")}</span>
     </footer>
 </div>
