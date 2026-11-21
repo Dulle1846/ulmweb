@@ -1863,6 +1863,12 @@ try{
     // test the clock instead of the save payload.
     await page.evaluate(()=>{if(document.querySelector("#pause-text")?.textContent.trim()==="PAUSE")document.querySelector("#pause-btn")?.click();});
     await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
+    // A tick queued before the pause can still land after the label flips. Wait
+    // for the clock to settle before sampling ecology, or the save can capture
+    // a newer tick than the fixture and report a false ecology mismatch.
+    const savePauseTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
+    await page.waitForTimeout(500);
+    assert.equal(await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick),savePauseTick,"the save fixture must pause on a settled tick");
     const savedTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
     const savedHand=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.map(card=>card.instanceId);});
     const savedRoadCount=await page.evaluate(()=>(import("./js/systems/roads.js")).then(module=>module.getRoadCount()));
