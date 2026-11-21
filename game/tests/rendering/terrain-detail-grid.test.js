@@ -5,6 +5,12 @@ import {
     detailLayerTransform,
     detailStepForZoom,
     transformedLayerRect,
+    treeClusterCount,
+    treeClusterLayout,
+    treeClusterLodForZoom,
+    treeClusterSeed,
+    treeClusterStepForZoom,
+    treeScatterChance,
     treeStepForZoom,
     visibleTileBounds,
 } from "../../js/presentation/rendering/terrain-detail-grid.js";
@@ -63,6 +69,82 @@ test("tree lattice is world-anchored and denser at district zoom", () => {
     const first = alignToWorldGrid(bounds.startX, 2);
     assert.equal(first % 2, 0);
     assert.equal(alignToWorldGrid(first + 2, 2), first + 2);
+});
+
+test("grove cells snap to the detail lattice and only reach the canopy at rooftop zoom", () => {
+    assert.equal(treeClusterStepForZoom(0.09), 9);
+    assert.equal(treeClusterStepForZoom(0.3), 4);
+    assert.equal(treeClusterStepForZoom(0.55), 1);
+    assert.equal(treeClusterStepForZoom(0.95), 1);
+    assert.equal(treeClusterStepForZoom(2.4), 1);
+    assert.equal(treeClusterLodForZoom(0.3), "mass");
+    assert.equal(treeClusterLodForZoom(0.55), "canopy");
+    assert.equal(treeClusterLodForZoom(0.95), "canopy");
+    assert.equal(treeClusterLodForZoom(2.4), "canopy");
+});
+
+test("grove density stays bounded and responds to clearing, distance and damage", () => {
+    const dense = treeClusterCount({
+        zoom: 2.4, copies: 3, canopy: 0.86, clearing: 0, roll: 0.4, cellTiles: 2,
+    });
+    const edge = treeClusterCount({
+        zoom: 2.4, copies: 1, canopy: 0.38, clearing: 0.34, edge: 0.8, roll: 0.4, cellTiles: 2,
+    });
+    const burned = treeClusterCount({
+        zoom: 2.4, copies: 2, canopy: 0.7, clearing: 0, disturbance: "burned", roll: 0.4, cellTiles: 2,
+    });
+    const sampled = treeClusterCount({
+        zoom: 2.4, copies: 3, canopy: 0.86, clearing: 0, roll: 0.4, cellTiles: 1,
+    });
+    const far = treeClusterCount({ zoom: 0.3, copies: 3, canopy: 0.9, roll: 0.4 });
+    assert.ok(dense >= 7, "a dense ancient grove must keep a closed canopy, got " + dense);
+    assert.ok(dense <= 9, "the grove count must stay bounded, got " + dense);
+    assert.ok(edge < dense, "an edge clearing must not draw as many trees as the interior");
+    assert.ok(burned < dense, "a damaged stand must be thinner than a closed canopy");
+    assert.ok(far >= 3 && far <= 10, "landscape groves must use a bounded stipple count, got " + far);
+    assert.equal(treeClusterCount({ zoom: 2.4, copies: 3, canopy: 1, clearing: 0.8 }), 1);
+    assert.equal(sampled, 2, "a closed canopy tile should show two sampled crowns, not every stem");
+    assert.equal(treeClusterCount({ zoom: 2.4, copies: 1, canopy: 0.3 }), 1);
+});
+
+test("close canopy scatter keeps a sampled subset and thins at the edge", () => {
+    const denseRoof = treeScatterChance({ zoom: 0.95, treeChance: 0.86 });
+    const denseInterior = treeScatterChance({ zoom: 2.4, treeChance: 0.86 });
+    const edge = treeScatterChance({ zoom: 0.95, treeChance: 0.4, clearing: 0.34 });
+    const burned = treeScatterChance({ zoom: 0.95, treeChance: 0.7, disturbance: "burned" });
+    assert.ok(denseRoof > edge, "a dense stand must sample more candidates than an ecotone");
+    assert.ok(denseInterior > denseRoof, "interior zoom may sample a little more of the same stand");
+    assert.ok(burned < denseRoof, "a damaged stand must thin the whole scatter");
+    assert.ok(denseRoof < 0.92, "even a dense roof must skip some candidate stems");
+    assert.equal(treeScatterChance({ zoom: 2.4, treeChance: 0 }), 0);
+});
+
+test("grove scatter is deterministic but not a single tile-centred lattice", () => {
+    const seed = treeClusterSeed(12, 7, 20261104);
+    assert.equal(seed, treeClusterSeed(12, 7, 20261104));
+    assert.notEqual(seed, treeClusterSeed(13, 7, 20261104));
+    assert.notEqual(seed, treeClusterSeed(12, 7, 20261105));
+    const first = treeClusterLayout({
+        centerX: 480, centerY: 360, stepPx: 96, seed, count: 5, spread: 0.42,
+    });
+    const replay = treeClusterLayout({
+        centerX: 480, centerY: 360, stepPx: 96, seed, count: 5, spread: 0.42,
+    });
+    assert.deepEqual(first, replay, "the same grove must replay exactly after a pan or reload");
+    assert.equal(first.length, 5);
+    const offsets = new Set();
+    for (const point of first) {
+        assert.ok(Number.isFinite(point.x) && Number.isFinite(point.y));
+        assert.ok(Math.hypot(point.x - 480, point.y - 360) <= 96 * 0.42 + 0.001);
+        assert.ok(point.size >= 0.84 && point.size <= 1.12);
+        offsets.add(point.x.toFixed(2) + ":" + point.y.toFixed(2));
+    }
+    assert.equal(offsets.size, first.length, "crowns must not all land on one repeated offset");
+    const other = treeClusterLayout({
+        centerX: 480, centerY: 360, stepPx: 96, seed: treeClusterSeed(13, 7, 20261104),
+        count: 5, spread: 0.42,
+    });
+    assert.notDeepEqual(first, other);
 });
 
 test("zoom steps stay stable and do not introduce a camera phase", () => {

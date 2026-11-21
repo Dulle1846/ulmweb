@@ -1,15 +1,9 @@
 {
   "reference": "player-terrain-view",
-  "source": "deployed",
-  "url": "https://kings-and-cards.pages.dev/",
-  "version": {
-    "version": "3.32.2",
-    "commit": "19dc0ba64b721e204d3f5b561dcde405a5a594d2",
-    "branch": "ulmweb-branch",
-    "builtAt": "2026-11-21T16:34:27.505Z",
-    "source": "github-actions"
-  },
-  "generatedAt": "2026-11-21T16:35:54.132Z",
+  "source": "local",
+  "url": "http://127.0.0.1:33873/",
+  "version": null,
+  "generatedAt": "2026-11-21T17:36:25.805Z",
   "seed": 20261104,
   "focus": {
     "x": 112,
@@ -55,6 +49,11 @@
       "key": "in",
       "label": "ZOOM IN",
       "scale": 1.35
+    },
+    {
+      "key": "interior",
+      "label": "INTERIOR",
+      "scale": 2.4
     }
   ],
   "seasons": [
@@ -117,6 +116,18 @@
       }
     },
     {
+      "season": "spring",
+      "zoom": "interior",
+      "scale": 2.4,
+      "day": 50,
+      "camera": {
+        "x": 12544,
+        "y": 5221.7,
+        "zoom": 2.4,
+        "zoomLevel": 4
+      }
+    },
+    {
       "season": "summer",
       "zoom": "out",
       "scale": 0.78,
@@ -150,6 +161,18 @@
         "y": 2777.3,
         "zoom": 1.35,
         "zoomLevel": 3
+      }
+    },
+    {
+      "season": "summer",
+      "zoom": "interior",
+      "scale": 2.4,
+      "day": 150,
+      "camera": {
+        "x": 12544,
+        "y": 5221.7,
+        "zoom": 2.4,
+        "zoomLevel": 4
       }
     },
     {
@@ -189,6 +212,18 @@
       }
     },
     {
+      "season": "autumn",
+      "zoom": "interior",
+      "scale": 2.4,
+      "day": 250,
+      "camera": {
+        "x": 12544,
+        "y": 5221.7,
+        "zoom": 2.4,
+        "zoomLevel": 4
+      }
+    },
+    {
       "season": "winter",
       "zoom": "out",
       "scale": 0.78,
@@ -222,6 +257,18 @@
         "y": 2777.3,
         "zoom": 1.35,
         "zoomLevel": 3
+      }
+    },
+    {
+      "season": "winter",
+      "zoom": "interior",
+      "scale": 2.4,
+      "day": 350,
+      "camera": {
+        "x": 12544,
+        "y": 5221.7,
+        "zoom": 2.4,
+        "zoomLevel": 4
       }
     }
   ],
@@ -246,12 +293,70 @@
   "artifacts": {
     "sheet": "player-view.png",
     "hero": "player-view-hero.png",
+    "lod": "tree-lod.png",
     "pan": "not committed; pan check recorded above"
   },
+  "lod": [
+    {
+      "level": 1,
+      "label": "LANDSCAPE",
+      "scale": 0.09,
+      "treeDraws": 1118,
+      "buildMs": 421,
+      "camera": {
+        "x": -35.84000000000003,
+        "y": 0,
+        "zoom": 0.09,
+        "zoomLevel": 1
+      }
+    },
+    {
+      "level": 2,
+      "label": "DISTRICTS",
+      "scale": 0.3,
+      "treeDraws": 788,
+      "buildMs": 184,
+      "camera": {
+        "x": 1204,
+        "y": 332.9,
+        "zoom": 0.3,
+        "zoomLevel": 2
+      }
+    },
+    {
+      "level": 3,
+      "label": "ROOFTOPS",
+      "scale": 0.95,
+      "treeDraws": 396,
+      "buildMs": 117,
+      "camera": {
+        "x": 4714,
+        "y": 1846.1,
+        "zoom": 0.95,
+        "zoomLevel": 3
+      }
+    },
+    {
+      "level": 4,
+      "label": "INTERIORS",
+      "scale": 2.4,
+      "treeDraws": 153,
+      "buildMs": 39,
+      "camera": {
+        "x": 12544,
+        "y": 5221.7,
+        "zoom": 2.4,
+        "zoomLevel": 4
+      }
+    }
+  ],
   "observations": [
     "At the real 1.00x camera the canopy keeps a broken dark ink rim, overlapping irregular crowns and visible internal pen hatching.",
     "The forest floor carries humus, moss and leaf litter across the tile gaps, so closed woodland is distinct from open grass at normal play distance.",
     "The stand opens into meadow at its edge; canopy density and floor litter fall away together instead of ending on a straight biome border.",
+    "Rooftop woods are a deterministic half-tile crown scatter: four candidates per tile, independently skipped, jittered and sized. Interiors sample the same lattice with larger crowns and real gaps, so no tile centre or repeated per-tile stamp survives.",
+    "Landscape and district views collapse the same groves to conifer spires and broadleaf canopy masses, so woodland reads as a wood before individual trees become resolvable.",
+    "Forest floor, understorey and tree species stay tied to the stand: meadow, wetland, desert, taiga and tropical profiles keep their own trees and ground cover instead of receiving a generic forest layer.",
     "Spring green-up, summer density, autumn leaf turn and winter bare crowns remain readable without switching renderers or rebuilding the full terrain layer per frame."
   ],
   "note": "Real game canvas and HUD. Transient event overlays are hidden so they cannot cover the wood; simulation is paused after the detail layer settles. Not a GPU performance benchmark."

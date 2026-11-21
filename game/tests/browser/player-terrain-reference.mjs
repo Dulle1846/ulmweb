@@ -39,6 +39,13 @@ const zooms = Object.freeze([
     { key: "out", label: "ZOOM OUT", scale: 0.78 },
     { key: "default", label: "PLAYER DEFAULT", scale: 1.00 },
     { key: "in", label: "ZOOM IN", scale: 1.35 },
+    { key: "interior", label: "INTERIOR", scale: 2.40 },
+]);
+const lodZooms = Object.freeze([
+    { key: "landscape", label: "LANDSCAPE", scale: 0.09, level: 1 },
+    { key: "districts", label: "DISTRICTS", scale: 0.30, level: 2 },
+    { key: "rooftops", label: "ROOFTOPS", scale: 0.95, level: 3 },
+    { key: "interiors", label: "INTERIORS", scale: 2.40, level: 4 },
 ]);
 
 const mimeTypes = {
@@ -327,6 +334,31 @@ try {
         }
     }
 
+    // One summer view at each player-facing zoom preset. This is the LOD
+    // ladder: landscape and district are overlapping canopy texture, rooftops
+    // and interiors sample a half-tile crown lattice with interior gaps, not a
+    // tree on every tile and not a separate renderer.
+    const lodFrames = [];
+    for (const zoom of lodZooms) {
+        const misses = await cacheMisses();
+        await setFrame(150, zoom.scale);
+        await waitForDetail(misses);
+        await page.waitForTimeout(800);
+        await freezeFrame();
+        await page.waitForTimeout(120);
+        const buffer = await page.locator("#canvas-wrapper").screenshot({ type: "png", animations: "disabled" });
+        const metrics = await page.evaluate(async () => {
+            const { state } = await import("./js/core/state.js");
+            return {
+                x: state.camera.x, y: state.camera.y, zoom: state.zoom, zoomLevel: state.zoomLevel,
+                treeDraws: Number(state.terrainTreeDraws) || 0,
+                buildMs: Number(state.terrainDecorationBuildMs) || 0,
+            };
+        });
+        lodFrames.push({ zoom, buffer, metrics });
+        console.log("Captured LOD " + zoom.label + " · " + zoom.scale.toFixed(2) + "x · " + metrics.treeDraws + " tree draws");
+    }
+
     // A pan must not leave the old lattice shifted or blank. Move the same
     // default view three tiles east, rebuild once, and record a second frame.
     const missesBeforePan = await cacheMisses();
@@ -387,7 +419,7 @@ try {
     const sheet = await context.newPage();
     await sheet.setViewportSize({ width: 1900, height: 1900 });
     const dataUrl = buffer => "data:image/png;base64," + buffer.toString("base64");
-    const headers = zooms.map(zoom => `<div class="head"><strong>${zoom.label}</strong><small>${zoom.scale.toFixed(2)}× · ${zoom.scale === 1 ? "normal play" : "modest " + (zoom.scale < 1 ? "zoom out" : "zoom in")}</small></div>`).join("");
+    const headers = zooms.map(zoom => `<div class="head"><strong>${zoom.label}</strong><small>${zoom.scale.toFixed(2)}× · ${zoom.scale === 1 ? "normal play" : zoom.scale === 2.4 ? "interior detail" : "modest " + (zoom.scale < 1 ? "zoom out" : "zoom in")}</small></div>`).join("");
     const rows = seasons.map(season => {
         const cells = zooms.map(zoom => {
             const frame = frames.find(candidate => candidate.season.key === season.key && candidate.zoom.key === zoom.key);
@@ -409,7 +441,7 @@ try {
     .eyebrow { color: #b6935b; font: 700 11px/1.2 Arial, sans-serif; letter-spacing: .24em; }
     h1 { margin: 10px 0 8px; color: #f3e7ce; font-size: 34px; font-weight: 400; letter-spacing: .01em; }
     .deck { margin: 0; color: #a8b4a8; font: 14px/1.5 Arial, sans-serif; }
-    .grid { display: grid; grid-template-columns: 96px repeat(3, 1fr); gap: 14px; margin-top: 22px; align-items: stretch; }
+    .grid { display: grid; grid-template-columns: 96px repeat(4, 1fr); gap: 14px; margin-top: 22px; align-items: stretch; }
     .head, .row-head { display: flex; flex-direction: column; justify-content: flex-end; padding: 0 0 9px 2px; border-bottom: 1px solid #4d3e29; }
     .head strong, .row-head strong { color: #e3c88f; font: 800 10px/1.3 Arial, sans-serif; letter-spacing: .16em; }
     .head small, .row-head small { margin-top: 4px; color: #8d9b90; font: 10px/1.3 Arial, sans-serif; letter-spacing: .08em; }
@@ -442,6 +474,41 @@ try {
     }))));
     const sheetPath = path.join(outputDir, "player-view.png");
     await fs.writeFile(sheetPath, await sheet.locator(".sheet").screenshot({ animations: "disabled" }));
+
+    // A separate ladder makes the LOD decision reviewable without asking a
+    // reader to compare four seasons or infer a zoom threshold from metadata.
+    const lodCells = lodFrames.map(frame => `<figure><img src="${dataUrl(frame.buffer)}" alt="${frame.zoom.label}"><figcaption><strong>${frame.zoom.label} · LEVEL ${frame.zoom.level}</strong><small>${frame.zoom.scale.toFixed(2)}× · ${frame.metrics.treeDraws} tree draws</small></figcaption></figure>`).join("");
+    const lodHtml = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #080e10; color: #eadfc7; font-family: Georgia, "Times New Roman", serif; }
+    .sheet { width: 1840px; padding: 34px 42px 28px; background: radial-gradient(circle at 50% 0%, rgba(170, 137, 79, .12), transparent 46%), linear-gradient(180deg, #0d1719, #081012); }
+    .eyebrow { color: #b6935b; font: 700 11px/1.2 Arial, sans-serif; letter-spacing: .24em; }
+    h1 { margin: 10px 0 8px; color: #f3e7ce; font-size: 34px; font-weight: 400; letter-spacing: .01em; }
+    .deck { margin: 0; color: #a8b4a8; font: 14px/1.5 Arial, sans-serif; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 22px; }
+    figure { margin: 0; padding: 7px; border: 1px solid #4d3e29; border-radius: 4px; background: #101b1d; box-shadow: 0 8px 20px rgba(0,0,0,.28); }
+    figure img { display: block; width: 100%; height: auto; border: 1px solid #263330; }
+    figcaption { display: flex; justify-content: space-between; gap: 8px; padding: 8px 2px 2px; }
+    figcaption strong { color: #e3c88f; font: 800 10px/1.2 Arial, sans-serif; letter-spacing: .12em; }
+    figcaption small { color: #8d9b90; font: 10px/1.2 Arial, sans-serif; letter-spacing: .07em; }
+    footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid #4d3e29; color: #87958b; font: 11px/1.5 Arial, sans-serif; letter-spacing: .04em; }
+    footer strong { color: #c9ab73; }
+</style></head><body><div class="sheet">
+    <div class="eyebrow">KINGS &amp; CARDS · TERRAIN VISUAL REFERENCE · GROVE LOD</div>
+    <h1>One wood at every player zoom</h1>
+    <p class="deck">Seed ${seed} · woodland edge ${focus.edgeX}, ${focus.y} · day 150 · real game canvas with map controls · Canvas2D</p>
+    <div class="grid">${lodCells}</div>
+    <footer><strong>LOD</strong> landscape and districts use overlapping species-shaped canopy masses; rooftops scatter four candidate crowns per tile on a half-tile lattice; interiors keep the same scatter with larger crowns and real gaps, so a player never sees every stem. <strong>Renderer</strong> ${escapeHtml(mapMetrics.renderer || "unknown")}</footer>
+</div></body></html>`;
+    await sheet.setContent(lodHtml, { waitUntil: "load" });
+    await sheet.evaluate(() => Promise.all([...document.images].map(image => image.complete ? Promise.resolve() : new Promise(resolve => {
+        image.addEventListener("load", resolve, { once: true });
+        image.addEventListener("error", resolve, { once: true });
+    }))));
+    const lodPath = path.join(outputDir, "tree-lod.png");
+    await fs.writeFile(lodPath, await sheet.locator(".sheet").screenshot({ animations: "disabled" }));
     await sheet.close();
 
     const metadata = {
@@ -471,12 +538,24 @@ try {
         artifacts: {
             sheet: "player-view.png",
             hero: "player-view-hero.png",
+            lod: "tree-lod.png",
             pan: "not committed; pan check recorded above",
         },
+        lod: lodFrames.map(frame => ({
+            level: frame.zoom.level,
+            label: frame.zoom.label,
+            scale: frame.zoom.scale,
+            treeDraws: frame.metrics.treeDraws,
+            buildMs: frame.metrics.buildMs,
+            camera: { x: frame.metrics.x, y: frame.metrics.y, zoom: frame.metrics.zoom, zoomLevel: frame.metrics.zoomLevel },
+        })),
         observations: [
             "At the real 1.00x camera the canopy keeps a broken dark ink rim, overlapping irregular crowns and visible internal pen hatching.",
             "The forest floor carries humus, moss and leaf litter across the tile gaps, so closed woodland is distinct from open grass at normal play distance.",
             "The stand opens into meadow at its edge; canopy density and floor litter fall away together instead of ending on a straight biome border.",
+            "Rooftop woods are a deterministic half-tile crown scatter: four candidates per tile, independently skipped, jittered and sized. Interiors sample the same lattice with larger crowns and real gaps, so no tile centre or repeated per-tile stamp survives.",
+            "Landscape and district views collapse the same groves to conifer spires and broadleaf canopy masses, so woodland reads as a wood before individual trees become resolvable.",
+            "Forest floor, understorey and tree species stay tied to the stand: meadow, wetland, desert, taiga and tropical profiles keep their own trees and ground cover instead of receiving a generic forest layer.",
             "Spring green-up, summer density, autumn leaf turn and winter bare crowns remain readable without switching renderers or rebuilding the full terrain layer per frame.",
         ],
         note: "Real game canvas and HUD. Transient event overlays are hidden so they cannot cover the wood; simulation is paused after the detail layer settles. Not a GPU performance benchmark."
@@ -486,6 +565,7 @@ try {
     const fatal = diagnostics.filter(text => /pageerror|terrain|WebGL|shader/i.test(text));
     console.log("Player sheet: " + path.relative(gameRoot, sheetPath));
     console.log("Player hero: " + path.relative(gameRoot, heroPath));
+    console.log("Grove LOD sheet: " + path.relative(gameRoot, lodPath));
     console.log("Player metadata: " + path.relative(gameRoot, path.join(outputDir, "player-view.json")));
     console.log("Map canvas: " + mapMetrics.canvas.join(" × ") + " · CSS " + (mapMetrics.mapCss || []).join(" × "));
     console.log("Version marker: " + (marker ? marker.commit + " / " + marker.version : "local build"));

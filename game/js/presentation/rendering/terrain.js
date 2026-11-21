@@ -42,7 +42,9 @@ import { drawSnowDetails, drawSnowGround, drawSnowTree, drawSnowWater } from './
 import { grasslandUseAt } from '../../systems/grassland-use.js';
 import {
     DETAIL_SETTLE_MS, alignToWorldGrid, detailLayerTransform, detailStepForZoom,
-    transformedLayerRect, treeStepForZoom, visibleTileBounds,
+    transformedLayerRect, treeClusterCount, treeClusterLayout, treeClusterLodForZoom,
+    treeClusterRoll, treeClusterSeed, treeClusterStepForZoom, treeScatterChance, treeStepForZoom,
+    visibleTileBounds,
 } from './terrain-detail-grid.js';
 import { getResourceNodeAt } from '../../systems/resource-geography.js';
 import { forestFaunaAt, forestFaunaSignAt, forestInsectAt } from '../../systems/forest-fauna.js';
@@ -1184,8 +1186,60 @@ function drawDetailLayerGaps(ctx, zoom, cam, canvas, transform) {
 // few pixels. This impostor keeps the tree's position, species colour and
 // silhouette, but avoids thousands of invisible path operations. It is still
 // a tree at that tile: it never fades out because the camera moved.
-function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayOfYear, sun = null) {
-    const s = Math.max(0.35, cellPx / 48);
+// Landscape/district LOD for a closed wood. These are canopy silhouettes, not
+// another tree renderer: the same stand species and seasonal palette drive
+// them, and the close LOD takes over at the rooftops threshold.
+function drawMassCanopy(ctx, px, py, radius, stand, climate, seed, lightSeed, sizeScale = 1) {
+    const definition = FOREST_SPECIES[stand?.forest ? pickSpecies(stand, seed) : "oak"] || FOREST_SPECIES.oak;
+    const turn = Math.max(0, Math.min(1, climate.foliageTurn));
+    const crown = mixHex(definition.summer[0], definition.autumn[0], turn);
+    const light = mixHex(definition.summer[1], definition.autumn[1], turn);
+    const r = Math.max(1.1, Number(radius) || 1);
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    if (definition.conifer) {
+        const tiers = definition.crownShape === 'crown' ? 3 : 4;
+        for (let tier = 0; tier < tiers; tier++) {
+            const base = py + r * (0.38 - tier * 0.2);
+            const half = r * (1 - tier * 0.18) * (definition.crown || 1);
+            ctx.fillStyle = tier % 2 ? light : crown;
+            ctx.beginPath();
+            ctx.moveTo(px + (lightSeed - 0.5) * r * 0.12, base - r * 0.95);
+            ctx.lineTo(px - half, base);
+            ctx.lineTo(px + half, base);
+            ctx.closePath();
+            ctx.fill();
+        }
+    } else {
+        const points = crownSilhouette(seed, Math.floor(lightSeed * 7), definition.lobes || 4,
+            r, r * 0.84, 0.86);
+        // A dark under-print keeps the small silhouette readable on a dark
+        // forest floor; it is not a second renderer or a per-frame effect.
+        ctx.fillStyle = "rgba(16, 31, 20, 0.28)";
+        ctx.beginPath();
+        ctx.ellipse(px, py + r * 0.18, r * 0.98, r * 0.58, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = crown;
+        traceCrown(ctx, px, py, points);
+        ctx.fill();
+        ctx.globalAlpha = 0.62;
+        ctx.fillStyle = light;
+        ctx.beginPath();
+        ctx.ellipse(px - r * 0.2, py - r * 0.2, r * 0.5, r * 0.34, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    if (climate.snowCover > 0.24) {
+        ctx.globalAlpha = Math.min(0.8, climate.snowCover * 0.72);
+        ctx.fillStyle = "#eef6fb";
+        ctx.beginPath();
+        ctx.ellipse(px, py - r * 0.5, r * 0.55, r * 0.16, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayOfYear, sun = null, sizeScale = 1) {
+    const s = Math.max(0.35, cellPx / 48) * Math.max(0.6, Math.min(1.6, Number(sizeScale) || 1));
     const definition = FOREST_SPECIES[stand?.forest ? pickSpecies(stand, s3) : 'oak'] || FOREST_SPECIES.oak;
     const treeForm = stand?.forest ? forestTreeForm(stand, s2) : null;
     const ageScale = treeForm?.ageScale ?? (stand?.forest ? Math.max(0.55, Number(stand.ageScale) || 1) : 1);
@@ -1301,6 +1355,75 @@ function drawDistantTree(ctx, px, py, cellPx, tick, s2, s3, stand, climate, dayO
     ctx.restore();
 }
 
+// One grove at one world-anchored cell. The crowns are deliberately not all
+// the same size or centred on a tile: a mature tree, smaller neighbours and a
+// gap belong to the same deterministic scatter. At landscape and district
+// distance the same grove collapses to a few species-coloured impostors; at
+// rooftop and interior distance the authored crowns carry the bark, ink and
+// seasonal foliage.
+function drawForestGrove({
+    ctx, stand, clusterSeed, clusterStep, cellPx, zoom, clusterLod,
+    centerX, centerY, count, spread, temp, moisture, dayOfYear, climateKey, climate, sun, shoreDir,
+}) {
+    const points = treeClusterLayout({
+        centerX, centerY, stepPx: cellPx * clusterStep, seed: clusterSeed,
+        count, spread,
+    });
+    const mass = clusterLod === "mass";
+    for (const point of points) {
+        state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + 1;
+        if (mass) {
+            // A landscape wood is a canopy mass, not a field of tiny lollipop
+            // trunks. Keep the same deterministic grove points as the close
+            // LOD, but collapse each crown to a species-shaped silhouette.
+            // District distance still needs actual canopy overlap. At 0.30x
+            // a crown half a tile wide left isolated dots between grove
+            // centres; a mass crown is deliberately wider than one tile so
+            // neighbouring groves close into woodland.
+            drawMassCanopy(ctx, point.x, point.y, cellPx * 1.35 * point.size,
+                stand, climate, point.r3, point.r2, point.size);
+        } else {
+            drawTree(ctx, point.x, point.y, cellPx, state.tick, point.r1, point.r2, point.r3,
+                zoom, temp, moisture, dayOfYear, climateKey, shoreDir, stand, sun, point.size * 1.05);
+        }
+    }
+}
+
+// A canopy wood is sampled on a half-tile world lattice. Four candidate
+// positions per tile are independently accepted, jittered and sized; the tile
+// centre is never a tree anchor, and some tiles show two or three crowns while
+// their neighbour shows none. At roof/interior distance this is the layer that
+// replaces the old "one tree per tile" stamp without opening holes in the wood.
+function drawCanopyScatter({
+    ctx, cam, x, y, cellPx, stand, zoom, temp, moisture, dayOfYear, climateKey, climate, sun, shoreDir,
+}) {
+    const worldSeed = Number(state.worldSeed) || 1;
+    // Roof view samples a little less aggressively than the interior; both are
+    // deterministic subsets of the stand, never every stem. The off-centre
+    // candidate lattice is sparse enough at an ecotone that a very low roof
+    // fraction read as a lawn with isolated stamps, so stage 3 stays generous
+    // while stage 4 samples a denser subset of the same stand.
+    const chance = treeScatterChance({
+        zoom, treeChance: stand.treeChance, clearing: stand.clearing,
+        disturbance: stand.disturbance,
+    });
+    for (let sy = 0; sy < 2; sy++) {
+        for (let sx = 0; sx < 2; sx++) {
+            const seed = treeClusterSeed(x * 2 + sx, y * 2 + sy, worldSeed);
+            if (treeClusterRoll(seed, 0) >= chance) continue;
+            const fx = 0.15 + treeClusterRoll(seed, 1) * 0.70;
+            const fy = 0.15 + treeClusterRoll(seed, 2) * 0.70;
+            const px = (x + (sx + fx) * 0.5) * cellPx - cam.x;
+            const py = (y + (sy + fy) * 0.5) * cellPx - cam.y;
+            const size = 0.80 + treeClusterRoll(seed, 3) * 0.36;
+            state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + 1;
+            drawTree(ctx, px, py, cellPx, state.tick,
+                treeClusterRoll(seed, 4), treeClusterRoll(seed, 5), treeClusterRoll(seed, 6),
+                zoom, temp, moisture, dayOfYear, climateKey, shoreDir, stand, sun, size);
+        }
+    }
+}
+
 function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline = Infinity) {
     if (!state.heightMap) return;
     const cellPx = CELL * zoom;
@@ -1332,13 +1455,20 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
     const treeStep = treeStepForZoom(zoom);
     const treeGridX = alignToWorldGrid(bounds.startX, treeStep);
     const treeGridY = alignToWorldGrid(bounds.startY, treeStep);
-    const distant = cellPx < 19;
+    // A wood is a scatter of groves, not a tree on every tile. The grove grid
+    // is world-anchored and aligned to the detail lattice, so a sliced rebuild
+    // visits each grove exactly once and panning cannot shift a crown.
+    const clusterStep = treeClusterStepForZoom(zoom);
+    const clusterGridX = alignToWorldGrid(bounds.startX, clusterStep);
+    const clusterGridY = alignToWorldGrid(bounds.startY, clusterStep);
+    const clusterLod = treeClusterLodForZoom(zoom);
 
     let x = Number.isInteger(cursor?.x) ? cursor.x : bounds.startX;
     let y = Number.isInteger(cursor?.y) ? cursor.y : bounds.startY;
     for (; x < bounds.endX; x++) {
         const detailColumn = x >= gridX && (x - gridX) % step === 0;
         const treeColumn = x >= treeGridX && (x - treeGridX) % treeStep === 0;
+        const clusterColumn = x >= clusterGridX && (x - clusterGridX) % clusterStep === 0;
         for (; y < bounds.endY; y++) {
             // Resume at a tile boundary. The expensive work for one tile stays
             // inside this frame; the next chunk starts exactly here.
@@ -1349,6 +1479,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             if (!state.explored[x]?.[y]) continue;
             const detail = detailColumn && y >= gridY && (y - gridY) % step === 0;
             const treeSample = treeColumn && y >= treeGridY && (y - treeGridY) % treeStep === 0;
+            const clusterAnchor = clusterColumn && y >= clusterGridY
+                && (y - clusterGridY) % clusterStep === 0;
             // Most tiles are neither on the coarse ground lattice nor on the
             // tree lattice. Do not pay for three world samples, four hashes and
             // an ecosystem query only to discard the tile afterwards.
@@ -1635,7 +1767,6 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             // A forest is an ecosystem, not a tree sprinkle: floor, understorey,
             // gaps, deadwood and fauna are drawn from the same stand definition.
             if (stand?.forest) {
-                const tree = treeSample && s1 < stand.treeChance;
                 if (detail && zoom >= 0.55) {
                     drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey);
                     drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom);
@@ -1648,46 +1779,22 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                     const mist = forestMistFactor(Number.isFinite(hour) ? hour : 12, m, seasonName, state.weather);
                     if (zoom >= 0.85 && mist > 0.04) drawForestMist(ctx, px, py, cellPx, stand, s2, tick, mist);
                 }
-                if (tree) {
-                    // Dense stands need overlapping crowns to read as a wood. The
-                    // extra copies are deterministic per tile and stay inside the
-                    // tile, so panning cannot reveal or hide a tree. The overlap
-                    // starts at gameplay zoom, not only in the close-up capture:
-                    // isolated crowns read as stamps even when each one is drawn
-                    // correctly. At landscape distance a single LOD tree is enough
-                    // and much cheaper.
-                    const copies = distant ? 1 : Math.max(1, Math.min(3,
-                        Math.round(forestTreeCopies(stand) * (0.82 + (stand.vegetation?.lod || 1) * 0.24)
-                            + (zoom >= 0.75 && stand.forest ? 0.55 : 0))));
-                    for (let copy = 0; copy < copies; copy++) {
-                        const spread = copy === 0 ? 0 : cellPx * 0.24;
-                        const ox = copy === 0 ? 0 : (copy === 1 ? (s2 - 0.5) * spread : (s3 - 0.5) * -spread);
-                        const oy = copy === 0 ? 0 : (copy === 1 ? (s3 - 0.5) * spread * 0.7 : (s1 - 0.5) * -spread * 0.6);
-                        const r1 = (s1 + copy * 0.31) % 1;
-                        const r2 = (s2 + copy * 0.27) % 1;
-                        const r3 = (s3 + copy * 0.43) % 1;
-                        // Nudge the primary tree inside its tile. A perfect lattice
-                        // reads as a plantation at rooftop zoom; the offset is a pure
-                        // function of the tile, so panning cannot make a tree jump.
-                        const jitterX = copy === 0 ? (s3 - 0.5) * cellPx * 0.4 : 0;
-                        const jitterY = copy === 0 ? (s2 - 0.5) * cellPx * 0.26 : 0;
-                        state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + 1;
-                        if (distant) drawDistantTree(ctx, px + ox + jitterX, py + oy + jitterY, cellPx, tick, r2, r3, stand, climate, dayOfYear, sun);
-                        else drawTree(ctx, px + ox + jitterX, py + oy + jitterY, cellPx, tick, r1, r2, r3, zoom, temp, m, dayOfYear, climateKey, shoreDir, stand, sun);
-                    }
-                    // Jungle thickets live below and between crowns. The normal
-                    // tree branch skips understorey entirely, which would hide
-                    // walls, bamboo and thorn scrub on the densest tiles. Draw
-                    // this one bounded foreground pass after the trunks so the
-                    // interior still reads as jungle rather than lawn.
-                    if (stand.jungle && detail && zoom >= 0.5) {
-                        // Optional browser-proof timing. This is the bounded
-                        // foreground pass that runs after the crowns; it is
-                        // deliberately measured at the call site so the cost
-                        // cannot hide inside the whole-world draw timer.
+                // Close LOD samples a half-tile crown lattice; far LOD draws
+                // one canopy grove per world-anchored 2x2 (or coarser) cell.
+                // Neither path stamps one tree at the centre of every tile. The
+                // same stand, species mix and season feed both, so a conifer
+                // cell stays a conifer wood and a rainforest cell stays wet,
+                // broad-leaved and multi-storey.
+                if (clusterLod === "canopy") {
+                    drawCanopyScatter({
+                        ctx, cam, x, y, cellPx, stand, zoom, temp, moisture: m,
+                        dayOfYear, climateKey, climate, sun, shoreDir,
+                    });
+                    if (stand.jungle && zoom >= 0.5 && s1 > 0.42) {
                         const jungleProbe = state.performanceProbe?.jungle;
                         const jungleStarted = jungleProbe ? performance.now() : 0;
-                        drawJungleUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3);
+                        drawJungleUnderstory(ctx, px - cellPx * 0.12, py - cellPx * 0.12,
+                            cellPx * 1.2, stand, s1, s2, s3);
                         if (jungleStarted) {
                             const elapsed = performance.now() - jungleStarted;
                             jungleProbe.understoryCalls += 1;
@@ -1696,18 +1803,44 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                             if (elapsed > jungleProbe.understoryMaxMs) jungleProbe.understoryMaxMs = elapsed;
                         }
                     }
-                    if (detail && zoom >= 0.9 && s3 > 0.7) drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s2, zoom, x, y, tick);
-                    // A shaft belongs between trunks too, not only in an empty
-                    // clearing. Dense stands still lose most of it to the canopy.
-                    if (detail && zoom >= 0.8 && s2 > 0.62) drawCanopyLight(ctx, px, py, cellPx, stand, s1, tick, sun);
-                    continue;
+                    if (zoom >= 0.9 && s3 > 0.7) {
+                        drawForestFaunaScene(ctx, px + cellPx * 0.5, py + cellPx * 0.5, cellPx, stand,
+                            dayOfYear, climateKey, s2, zoom, x, y, tick);
+                    }
+                    if (zoom >= 0.8 && s2 > 0.62) {
+                        drawCanopyLight(ctx, px + cellPx * 0.5, py + cellPx * 0.5, cellPx, stand, s1, tick, sun);
+                    }
+                } else if (clusterAnchor) {
+                    const clusterSeed = treeClusterSeed(x, y, Number(state.worldSeed) || 1);
+                    const count = treeClusterCount({
+                        zoom,
+                        copies: forestTreeCopies(stand),
+                        canopy: stand.canopy,
+                        clearing: stand.clearing,
+                        disturbance: stand.disturbance || null,
+                        roll: treeClusterRoll(clusterSeed, 3),
+                        cellTiles: clusterStep,
+                    });
+                    const clusterCenterX = (x + clusterStep * (0.15 + treeClusterRoll(clusterSeed, 0) * 0.70)) * cellPx - cam.x;
+                    const clusterCenterY = (y + clusterStep * (0.15 + treeClusterRoll(clusterSeed, 1) * 0.70)) * cellPx - cam.y;
+                    if (count > 0) drawForestGrove({
+                        ctx, stand, clusterSeed, clusterStep, cellPx, zoom, clusterLod,
+                        centerX: clusterCenterX, centerY: clusterCenterY,
+                        count,
+                        spread: stand.tropical ? 0.68 : stand.conifer ? 0.48 : 0.62,
+                        temp, moisture: m, dayOfYear, climateKey, climate, sun, shoreDir,
+                    });
                 }
                 if (!detail) continue;
                 if (stand.clearing > 0.28) {
                     if (zoom >= 0.34) drawForestClearing(ctx, px, py, cellPx, stand, s1, s2, dayOfYear, climateKey);
                     if (zoom >= 0.8 && s2 > 0.55) drawCanopyLight(ctx, px, py, cellPx, stand, s1, tick, sun);
-                } else if (zoom >= 0.5) {
-                    drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey);
+                } else if (zoom >= 0.5 && s1 > 0.42 && !stand.jungle) {
+                    // Sampled crowns do not occupy every tile. The stand's own
+                    // fern/shrub/berry layer fills the spaces between them
+                    // without planting another tree on every tile.
+                    drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey,
+                        stand.type === "regenerating" || stand.type === "cutover");
                 }
                 if (clearingMeadow && grass && zoom >= 0.34) {
                     drawGrassland(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
@@ -2301,8 +2434,8 @@ function drawBareCrown(ctx, px, py, s, sway, seed, foliage, ink = "#6b5138", sca
     }
 }
 
-function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, dayOfYear, climateKey = "temperate", shore = null, stand = null, sun = null) {
-    const s = cellPx / 48;
+function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, dayOfYear, climateKey = "temperate", shore = null, stand = null, sun = null, sizeScale = 1) {
+    const s = cellPx / 48 * Math.max(0.6, Math.min(1.6, Number(sizeScale) || 1));
     const treeForm = stand?.forest ? forestTreeForm(stand, s2) : null;
     const sway = Math.sin(tick * 0.045 + s1 * 10 + s2 * 7) * 1.6 * s * windMultiplier()
         + (treeForm?.lean || 0) * s * 0.35;
@@ -3478,24 +3611,22 @@ function drawSoilWash(ctx, px, py, cellPx, stand, seed) {
             (5.8 + seed * 2.2) * s, (1.8 + seed * 0.8) * s, 0.08, 0, Math.PI * 2);
         ctx.fill();
     }
-    // A broad low-alpha soil wash beneath the leaf marks carries the forest
-    // floor across the whole tile. Without this base the baked meadow green
-    // survives between the litter and the wood still reads as grass with trees.
-    ctx.globalAlpha = 0.5 + (stand.ground?.humus || 0) * 0.16;
-    ctx.fillStyle = palette[0];
-    ctx.beginPath();
-    ctx.ellipse(px + (seed - 0.5) * cellPx * 0.24, py + 4 * s,
-        cellPx * 0.7, cellPx * 0.3, (seed - 0.5) * 0.18, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 0.46 + (stand.ground?.humus || 0) * 0.22;
-    for (let i = 0; i < 4; i++) {
-        const angle = i * 2.3 + seed * 5;
-        ctx.fillStyle = palette[i % palette.length];
+    // Soil is a mottled wash, not one ellipse stamped on every tile. Several
+    // smaller overlapping stains cross the tile edge and interlock with their
+    // neighbours; the old cell-sized disc left a visible row of brown pools at
+    // interior zoom even when the trees themselves were scattered.
+    ctx.globalAlpha = 0.24 + (stand.ground?.humus || 0) * 0.12;
+    for (let i = 0; i < 7; i++) {
+        const angle = i * 2.399963 + seed * 6.283 + i * 0.41;
+        const reach = cellPx * (0.12 + ((i * 37 + Math.floor(seed * 100)) % 9) * 0.027);
+        ctx.fillStyle = palette[(i + Math.floor(seed * 3)) % palette.length];
         ctx.beginPath();
         ctx.ellipse(
-            px + Math.cos(angle) * cellPx * (0.12 + i * 0.055),
-            py + 3.5 * s + Math.sin(angle) * cellPx * 0.1,
-            (7.4 + i * 1.7) * s, (2.2 + i * 0.55) * s, angle * 0.2, 0, Math.PI * 2
+            px + Math.cos(angle) * reach,
+            py + 4 * s + Math.sin(angle) * reach * 0.43,
+            cellPx * (0.27 + (i % 3) * 0.045),
+            cellPx * (0.11 + (i % 2) * 0.025),
+            angle * 0.24, 0, Math.PI * 2
         );
         ctx.fill();
     }
@@ -3700,18 +3831,18 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, cli
     // Broad, offset humus and moss stains sit under the leaf litter. They are
     // low-contrast and cross tile edges, so the forest floor reads as a painted
     // wash rather than a green lawn with isolated dots on it.
-    ctx.globalAlpha = 0.4 + (stand.ground.humus || 0) * 0.16;
+    ctx.globalAlpha = 0.22 + (stand.ground.humus || 0) * 0.1;
     ctx.fillStyle = mixHex(palette[1], "#3b2e1e", 0.28);
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
         const angle = s1 * 6.283 + i * 2.4;
         ctx.beginPath();
-        ctx.ellipse(px + Math.cos(angle) * cellPx * (0.16 + i * 0.035),
-            py + cellPx * (0.02 + i * 0.04) + Math.sin(angle) * cellPx * 0.12,
-            cellPx * (0.46 + i * 0.08), cellPx * (0.22 + i * 0.04),
-            angle * 0.12, 0, Math.PI * 2);
+        ctx.ellipse(px + Math.cos(angle) * cellPx * (0.18 + i * 0.05),
+            py + cellPx * (0.04 + i * 0.035) + Math.sin(angle) * cellPx * 0.1,
+            cellPx * (0.29 + i * 0.035), cellPx * (0.14 + i * 0.022),
+            angle * 0.18, 0, Math.PI * 2);
         ctx.fill();
     }
-    ctx.globalAlpha = 0.28 + (stand.ground.moss || 0) * 0.16;
+    ctx.globalAlpha = 0.22 + (stand.ground.moss || 0) * 0.12;
     ctx.fillStyle = turn > 0.55 ? "#6a5732" : "#466435";
     ctx.beginPath();
     ctx.ellipse(px + (s2 - 0.5) * cellPx * 0.34, py + cellPx * 0.075,
@@ -3721,11 +3852,11 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, cli
     // shadow (not a hard disc under each stem) makes the wood's interior
     // darker than the meadow even when the individual crowns are separated.
     const canopyCover = Math.max(0, Math.min(1, Number(stand.canopy) || 0));
-    ctx.globalAlpha = 0.12 + canopyCover * 0.18;
+    ctx.globalAlpha = 0.06 + canopyCover * 0.08;
     ctx.fillStyle = "#26331b";
     ctx.beginPath();
     ctx.ellipse(px + (s3 - 0.5) * cellPx * 0.18, py + 5 * s,
-        cellPx * 0.64, cellPx * 0.27, (s3 - 0.5) * 0.22, 0, Math.PI * 2);
+        cellPx * 0.46, cellPx * 0.21, (s3 - 0.5) * 0.22, 0, Math.PI * 2);
     ctx.fill();
 
     // Litter marks are cheap path fills on the cached layer. Twenty-four keeps
@@ -3877,9 +4008,10 @@ function drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clim
     else drawGrassTufts(ctx, px, py, cellPx, s1, s2, season.foliageTurn > 0.55, season.foliageTurn, season.snowCover);
 }
 
-function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey) {
+function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, allowSapling = true) {
     const season = seasonalState(dayOfYear, climateKey);
     const s = cellPx / 48;
+    const canSapling = allowSapling || stand.type === "regenerating" || stand.type === "cutover";
     if (stand.tropical) {
         // A third of the floor stays low herb and leaf litter. Without the
         // gaps the dense understorey competed with the giant crowns and the
@@ -3893,7 +4025,7 @@ function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clima
             ['fern', stand.understory.fern], ['berry', stand.understory.berry],
             ['lichen', stand.understory.lichen], ['heather', stand.understory.heather],
             ['shrub', stand.understory.shrub], ['grass', stand.understory.grass],
-            ['sapling', 0.26 + (stand.type === 'regenerating' ? 0.3 : 0)],
+            ['sapling', canSapling ? 0.26 + (stand.type === 'regenerating' ? 0.3 : 0) : 0],
         ];
         const total = coniferOptions.reduce((sum, [, weight]) => sum + Math.max(0, weight), 0) || 1;
         let cursor = s1 * total;
@@ -3915,7 +4047,9 @@ function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clima
         ['fern', stand.understory.fern], ['bramble', stand.understory.bramble],
         ['shrub', stand.understory.shrub], ['heather', stand.understory.heather],
         ['grass', stand.understory.grass],
-        ['sapling', stand.type === 'regenerating' || stand.type === 'cutover' ? 0.65 : 0.18],
+        ['sapling', canSapling
+            ? (stand.type === 'regenerating' || stand.type === 'cutover' ? 0.65 : 0.18)
+            : 0],
     ];
     const total = options.reduce((sum, [, weight]) => sum + Math.max(0, weight), 0);
     let cursor = s1 * total;

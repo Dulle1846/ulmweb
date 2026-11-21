@@ -1,13 +1,45 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.32.2`
-**Next development line:** `3.33.0-dev`
+**Current production version:** `3.33.0`
+**Next development line:** `3.34.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-21 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.33.0 — Grove Scatter and Canopy LOD
+
+The 3.32 woodland still planted its crowns on a tile-shaped rhythm: one stand
+sample per tile, copied or centred inside that tile. Zooming in made the lattice
+obvious, and the district view broke the same wood into isolated dots.
+
+- Close canopy LOD now samples a deterministic half-tile world lattice. Every
+  tile has four candidate positions; each is independently skipped, jittered
+  and sized from the stand, so a tile can show zero to four crowns (usually one
+  to three) and no crown is anchored to the tile centre. Rooftop zoom samples
+  82% of the candidate chance and interior zoom 90%, so neither level shows
+  every stem.
+- Clearings and damaged stands thin the whole scatter through
+  `treeScatterChance`; the chance is bounded and never grows with zoom. The
+  sampling is stable under panning, caching and reloads.
+- District and landscape woods now collapse the same groves to wider,
+  overlapping species-shaped canopy masses instead of a field of isolated
+  dots. Conifer and broadleaf silhouettes still come from the stand's own
+  species mix.
+- Understory saplings are reserved for regenerating and cut-over stands;
+  mature woods keep ferns, shrubs, berries, lichen and grass in the spaces
+  between sampled crowns. The forest floor, understory and tree species remain
+  tied to the stand, while meadow, wetland, desert, taiga and tropical profiles
+  keep their own ground and trees.
+- New player evidence: `tree-lod.png` shows one real wood at 0.09×, 0.30×,
+  0.95× and 2.40×. The regenerated `player-view.png`, `player-view-hero.png`
+  and `player-view.json` use the real 1.00× HUD camera and record the half-tile
+  scatter, the four-zoom LOD tree counts and the three-tile pan rebuild.
+- Local verification: full `npm test`, syntax/import checks, the focused LOD
+  tests and the player reference with the production Canvas2D renderer. No
+  simulation, save schema or economy value changed.
 
 ## 3.32.2 — Player-Zoom Woodland Proof
 
