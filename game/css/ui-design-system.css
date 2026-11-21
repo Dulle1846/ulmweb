@@ -169,7 +169,7 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .realm-action-dock button{min-width:0;min-height:31px;padding:4px 3px;border:1px solid #80633f;border-radius:3px;background:linear-gradient(#514333,#332a20);color:#e6d7b8;font:700 8px var(--ui-title-font);letter-spacing:.06em;cursor:pointer}
 .realm-action-dock button:hover{border-color:#d1b476;background:linear-gradient(#69553a,#403326);color:#fff0c9}
 .realm-action-dock button:active{transform:translateY(1px)}
-.save-status{grid-column:1/-1;overflow:hidden;text-align:center;color:#bba984;font:600 8px var(--ui-body-font);letter-spacing:.09em;text-overflow:ellipsis;white-space:nowrap}
+.save-status{grid-column:1/-1;overflow:hidden;pointer-events:none;text-align:center;color:#bba984;font:600 8px var(--ui-body-font);letter-spacing:.09em;text-overflow:ellipsis;white-space:nowrap}
 .save-status.is-saved{color:#a9c69a}
 .save-status.is-error{color:#e0a09a}
 .dynasty-root-grid,.dynasty-generation-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}

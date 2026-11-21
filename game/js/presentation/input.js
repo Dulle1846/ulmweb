@@ -179,7 +179,7 @@ export function setupInput(){
         cardContainer?.classList.remove("is-dragging");
         document.body.classList.remove("card-dragging");
         dragGhost?.classList.remove("is-visible");
-        if(placementStatus){placementStatus.textContent="DRAG THE SELECTED CARD ONTO THE MAP";delete placementStatus.dataset.valid;}
+        if(placementStatus){placementStatus.textContent="DRAG OR TAP THE SELECTED CARD ONTO THE MAP";delete placementStatus.dataset.valid;}
     }
 
     // Escape is the only gameplay-independent key the page still listens for:
@@ -257,12 +257,26 @@ export function setupInput(){
         }
     }
     function clickOnCanvas(event){
-        if(state.gameOver||state.isPaused||!state.hasStarted)return;
+        if(state.gameOver||!state.hasStarted)return;
         const rect=canvas.getBoundingClientRect();
         const world=screenToWorld(event.clientX-rect.left,event.clientY-rect.top);
         const tx=Math.floor(world.x),ty=Math.floor(world.y);
         const boundsW=Number(state.worldW)||WORLD_W,boundsH=Number(state.worldH)||WORLD_H;
         if(tx<0||ty<0||tx>=boundsW||ty>=boundsH)return;
+        // A paused realm must explain why a touch placement tap did nothing.
+        // Desktop keeps its established behavior of ignoring map clicks while
+        // paused because the Selected Card panel remains visible there.
+        if(state.isPaused){
+            // Inspecting a structure is not simulation work, so the workshop
+            // stays usable while the realm is paused. Placement and combat are
+            // still gated below.
+            if(isWorkshopOpen()){handleWorkshopClick(tx,ty);return;}
+            if(state.currentCard&&window.matchMedia?.("(max-width: 640px), (pointer: coarse)").matches){
+                showToast("RESUME THE REALM TO PLACE THE SELECTED CARD");
+                if(placementStatus){placementStatus.textContent="RESUME THE REALM TO PLACE THE SELECTED CARD";delete placementStatus.dataset.valid;}
+            }
+            return;
+        }
         if(isWorkshopOpen()){handleWorkshopClick(tx,ty);return;}
         if(state.directBuildType){
             const result=placeDirectBuilding(state.directBuildType,tx,ty);
@@ -277,6 +291,26 @@ export function setupInput(){
         }
         const roadType=getRoadBuildMode();
         if(roadType){paintRoadAtScreen(event);return;}
+        // A touch player cannot hold the Selected Card panel and the map on
+        // screen at once: the panel lives below the map on a phone, so a drag
+        // has no possible gesture. On a narrow or coarse-pointer viewport the
+        // same tap that would pan or inspect can place the armed card. Desktop
+        // keeps drag-only placement, where both surfaces are visible together.
+        if(state.currentCard&&window.matchMedia?.("(max-width: 640px), (pointer: coarse)").matches){
+            const preview=getCardPlacementPreview(tx,ty);
+            if(!preview?.valid){
+                const reason=preview?.reason||"CANNOT BUILD HERE";
+                showToast(reason);
+                if(placementStatus){placementStatus.textContent=reason;placementStatus.dataset.valid="false";}
+                return;
+            }
+            if(placeCurrentCard(tx,ty)){
+                showToast("CARD PLACED");
+                if(placementStatus){placementStatus.textContent="CARD PLACED · SELECT ANOTHER CARD TO PLACE";delete placementStatus.dataset.valid;}
+                renderUI();
+            }
+            return;
+        }
         const enemy=state.entities.find(entity=>!entity.dead&&entity.isEnemy()&&distance(entity.x,entity.y,world.x,world.y)<0.8);
         if(enemy){
             enemy.hp-=60;
@@ -301,7 +335,7 @@ function setSpeed(speed){state.gameSpeed=speed;document.querySelectorAll(".speed
 function switchTab(tab){state.selectedTab=tab;document.querySelectorAll(".tab-button").forEach((button,index)=>button.classList.toggle("is-active",index===tab));renderUI();}
 function showHelp(){
     showBigMessage("HOW TO PLAY",
-        "• Drag anywhere on the map to pan; scroll to change detail level<br>• Open the Cards tab and draw a card when you want one<br>• Select it, then drag it from the Selected Card panel onto the map<br>• Use the zoom presets and the pause button; no keyboard is needed<br><br><strong>Build. Protect. Prosper.</strong>",0);
+        "• Drag anywhere on the map to pan; scroll to change detail level<br>• Open the Cards tab and draw a card when you want one<br>• Select it, then drag it from the Selected Card panel onto the map, or tap a map tile on a touch device<br>• Use the zoom presets and the pause button; no keyboard is needed<br><br><strong>Build. Protect. Prosper.</strong>",0);
 }
 function showToast(message){
     const el=document.getElementById("action-toast");if(!el)return;

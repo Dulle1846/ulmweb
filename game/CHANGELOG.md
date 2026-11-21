@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.34.0`
+**Current production version:** `3.34.1`
 **Next development line:** `3.35.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,30 @@
 **Last repository verification:** 2026-11-21 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.34.1 — Touch Placement and Paused Inspection
+
+A live player audit on the 3.34.0 production build found two surface defects
+that only appeared when the viewport or pause state changed.
+
+- A phone cannot show the Selected Card panel and the map together, so the
+  documented drag gesture had no possible path. A narrow or coarse-pointer
+  map tap now places the armed card, with a visible paused or rejected-tile
+  reason; desktop map clicks keep drag-only placement. The Cards panel, help
+  copy and card ARIA label now name both gestures.
+- The workshop's “click a structure” step was swallowed by the pause gate,
+  leaving pause-time inspection and cancellation unusable with no feedback.
+  Map clicks now reach the workshop while paused; placement and combat remain
+  blocked. A browser regression selects a structure through the real pointer
+  path with the realm paused.
+- `.save-status` is pointer-transparent so its thin overlay can no longer
+  intercept map drags or panel clicks at 1400×900.
+- Verification: full `npm test` at full strength, deterministic 25-year
+  campaign, browser E2E including the new mobile tap and paused workshop paths,
+  and a fresh-session production clickthrough covering cards, builds and
+  staffing, trade, diplomacy gifts, court petitions, expedition departure,
+  return, loot and lore, army recruitment and training, construction refunds,
+  and save/load.
 
 ## 3.34.0 — Staffed City, Reachable Builds, Living Politics
 

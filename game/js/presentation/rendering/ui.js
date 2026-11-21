@@ -385,7 +385,7 @@ function renderCardHud(){
         ["wood","stone","gold","food"].forEach(key=>updateCost("card-cost-"+key,card.cost?.[key]||0));
         const affordable=Object.entries(card.cost||{}).every(([key,value])=>(state.resources[key]||0)>=value);
         cardPanel?.classList.toggle("is-unavailable",!affordable);
-        if(cardPanel&&cardPanel.getAttribute("aria-label")!=="Drag "+card.name+" onto a valid map tile")cardPanel.setAttribute("aria-label","Drag "+card.name+" onto a valid map tile");
+        if(cardPanel&&cardPanel.getAttribute("aria-label")!=="Drag or tap "+card.name+" onto a valid map tile")cardPanel.setAttribute("aria-label","Drag or tap "+card.name+" onto a valid map tile");
     }else{
         cardPanel?.classList.add("is-empty");
         cardPanel?.classList.remove("is-unavailable");

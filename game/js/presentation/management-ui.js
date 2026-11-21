@@ -447,7 +447,7 @@ function decisions(){
 function cards(){
  const hand=state.hand||[],selected=state.selectedCardInstanceId,full=hand.length>=5;
  const rows=hand.map(c=>'<article class="command-card'+(c.instanceId===selected?' is-selected':'')+'"><span class="command-card-art"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-card-atlas.svg#'+esc(cardSprite(c.group))+'"></use></svg></span><div><strong>'+esc(c.name)+'</strong><small>'+esc(c.categoryName||c.group||"Card")+' · '+esc(c.rarity||"common")+'</small><p>'+esc(c.desc||"")+'</p></div><button data-command="select-card" data-value="'+esc(c.instanceId)+'">'+(c.instanceId===selected?'SELECTED':'SELECT')+'</button></article>').join("");
- return intro("ROYAL DECK","Card management","Draw a card only when you want one. Select it here, then drag it from the Selected Card panel onto the map.")+'<div class="command-summary"><div><small>HAND</small><strong>'+hand.length+' / 5</strong></div><div><small>DRAW PILE</small><strong>'+number(state.availableCards?.length)+'</strong></div><div><small>REWARDS QUEUED</small><strong>'+number(state.cardRewardQueue?.length)+'</strong></div></div><div class="command-actions"><button type="button" data-command="draw-card"'+(full?' disabled':'')+'>DRAW RANDOM CARD</button></div><div class="command-card-list">'+(rows||'<p class="command-note">Your hand is empty. Draw a card when you want one.</p>')+'</div>';
+ return intro("ROYAL DECK","Card management","Draw a card only when you want one. Select it here, then drag it from the Selected Card panel onto the map, or tap a map tile on a touch device.")+'<div class="command-summary"><div><small>HAND</small><strong>'+hand.length+' / 5</strong></div><div><small>DRAW PILE</small><strong>'+number(state.availableCards?.length)+'</strong></div><div><small>REWARDS QUEUED</small><strong>'+number(state.cardRewardQueue?.length)+'</strong></div></div><div class="command-actions"><button type="button" data-command="draw-card"'+(full?' disabled':'')+'>DRAW RANDOM CARD</button></div><div class="command-card-list">'+(rows||'<p class="command-note">Your hand is empty. Draw a card when you want one.</p>')+'</div>';
 }
 function crownSupplyPanel(){
  const s=getCrownSupplySnapshot();
@@ -1328,7 +1328,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  if(r.ok){
   if(a==="foreign-marriage")toast(String(r.message||"FOREIGN MARRIAGE SEALED").toUpperCase());
   else if(a==="draw-card")toast(r.card.name+" DRAWN · SELECT IT TO PLACE IT");
-  else if(a==="select-card")toast("CARD SELECTED — DRAG IT ONTO THE MAP");
+  else if(a==="select-card")toast("CARD SELECTED — DRAG OR TAP IT ONTO THE MAP");
   else if(a.startsWith("diplomacy-"))toast(String(r.message||"DIPLOMACY UPDATED").toUpperCase());
   else if(a.startsWith("court-"))toast("COURT DECISION RECORDED");
   else if(a.startsWith("advisor-"))toast(String(r.message||"ROYAL COUNSEL RECORDED").toUpperCase());

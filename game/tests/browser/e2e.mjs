@@ -1250,6 +1250,33 @@ try{
     assert.ok((await page.locator("#command-panel-content").innerText()).includes("Card management"));
     await page.locator("#command-close").click();
 
+    // A paused realm may still be inspected: clicking a structure with the
+    // workshop open must select it instead of being swallowed by the pause
+    // gate. Placement and combat remain blocked while paused.
+    if(!(await page.evaluate(async()=>(await import("./js/core/state.js")).state.isPaused))){
+        await page.locator("#pause-btn").click();
+        await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
+    }
+    if(!(await page.locator("#workshop-panel").isVisible()))await page.locator("#workshop-open-btn").click();
+    await page.locator("#workshop-panel").waitFor({state:"visible",timeout:3000});
+    const pausedSelection=await page.evaluate(async({id})=>{
+        const [{state},{isWorkshopOpen}]=await Promise.all([
+            import("./js/core/state.js"),import("./js/presentation/build-mode.js")
+        ]);
+        const entity=state.entities.find(entity=>entity.id===id);
+        const canvas=document.querySelector("#canvas"),rect=canvas.getBoundingClientRect();
+        if(!entity||!isWorkshopOpen())return {selected:null,reason:"fixture unavailable"};
+        const clientX=(entity.x+.5)*48*state.zoom-state.camera.x+rect.left;
+        const clientY=(entity.y+.5)*48*state.zoom-state.camera.y+rect.top;
+        for(const type of ["pointerdown","pointerup"]){
+            canvas.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,button:0,pointerId:71,pointerType:"mouse",clientX,clientY}));
+        }
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        return {selected:state.selectedBuildingId,paused:state.isPaused};
+    },{id:warehouseFixture.id});
+    assert.equal(pausedSelection.paused,true,"the paused-selection fixture must keep the realm paused");
+    assert.equal(pausedSelection.selected,warehouseFixture.id,"a paused realm must still let the workshop select a structure");
+
     // Demolition must report a full store and keep it intact, then demolish the
     // same store once evacuation space is available without losing its goods.
     const demolitionFixture=await page.evaluate(async({warehouseId})=>{
@@ -1541,6 +1568,48 @@ try{
     }));
     assert.equal(handAfterDrag,countBeforeClick-1,"a valid drag must consume exactly the selected card");
     assert.deepEqual(selectionAfterDrag,{selected:null,current:null},"placing a card must not auto-select the next one");
+
+    // At phone width the Selected Card panel sits below the map, so the two
+    // surfaces cannot be on screen together and a drag has no possible gesture.
+    // The same armed card must be placeable by tapping a legal map tile.
+    await page.setViewportSize({width:390,height:844});
+    await page.evaluate(()=>scrollTo(0,0));
+    await page.locator('[data-kac-dock-action="cards"]').click();
+    await page.locator('[data-command="draw-card"]').click();
+    await page.waitForFunction(()=>document.querySelectorAll('#command-panel-content .command-card').length===5,null,{timeout:3000});
+    const mobileCardIndex=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        return state.hand.findIndex(card=>Object.entries(card.cost||{}).every(([key,value])=>(state.resources[key]||0)>=value));
+    });
+    assert.ok(mobileCardIndex>=0,"the mobile tap fixture needs one affordable card");
+    await page.locator("#command-panel-content .command-card button").nth(mobileCardIndex).click();
+    await page.waitForFunction(async()=>Boolean((await import("./js/core/state.js")).state.currentCard),null,{timeout:3000});
+    const mobileHandBefore=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.length;});
+    if(await page.evaluate(async()=>(await import("./js/core/state.js")).state.isPaused))await page.locator("#pause-btn").click();
+    const mobileTarget=await page.evaluate(async()=>{
+        const {state}=await import("./js/core/state.js");
+        const {getCardPlacementPreview}=await import("./js/systems/cards.js");
+        const rect=document.querySelector("#canvas").getBoundingClientRect();
+        for(let radius=1;radius<30;radius++){
+            for(let x=80-radius;x<=80+radius;x++)for(let y=80-radius;y<=80+radius;y++){
+                if(Math.abs(x-80)!==radius&&Math.abs(y-80)!==radius)continue;
+                if(!getCardPlacementPreview(x,y)?.valid)continue;
+                const sx=(x+.5)*48*state.zoom-state.camera.x+rect.left;
+                const sy=(y+.5)*48*state.zoom-state.camera.y+rect.top;
+                if(sx<rect.left+20||sx>rect.right-20||sy<rect.top+20||sy>rect.bottom-20)continue;
+                return {x,y,sx,sy};
+            }
+        }
+        return null;
+    });
+    assert.ok(mobileTarget,"a mobile tap must have a visible legal card tile");
+    await page.mouse.click(mobileTarget.sx,mobileTarget.sy);
+    await page.waitForTimeout(180);
+    const mobileAfter=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return {hand:state.hand.length,selected:state.selectedCardInstanceId,current:state.currentCard?state.currentCard.instanceId:null};});
+    assert.equal(mobileAfter.hand,mobileHandBefore-1,"a mobile map tap must consume exactly the selected card");
+    assert.deepEqual({selected:mobileAfter.selected,current:mobileAfter.current},{selected:null,current:null},"mobile tap placement must clear the armed card");
+    await page.setViewportSize({width:1600,height:1000});
+    await page.evaluate(()=>scrollTo(0,0));
     await page.locator('[data-kac-dock-action="cards"]').click();
     assert.equal(await page.locator("#command-panel-content .command-card").count(),countBeforeClick-1,"successful placement must remove the consumed card from the hand");
     await page.locator("#command-close").click();
