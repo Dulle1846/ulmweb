@@ -355,6 +355,14 @@ export function getHazardProfile() {
         if (key === "spoiled-food" && (Number(state.resources?.food) || 0) > 160) weight += 0.06;
         weight -= mitigation.score * 0.22;
         weight += Number(state.environmentalHazards?.chronic?.climateDrift || 0) * 0.004;
+        const arcane = state.environmentalHazards?.magic || {};
+        if (row.magical) weight -= clamp01(arcane.wards) * 0.12;
+        if (["storm", "wind", "rain", "flood", "snowstorm"].includes(key)) {
+            weight += clamp01(arcane.unnaturalWeather) * 0.10;
+        }
+        if (["predator", "epizootic", "parasite", "vector-disease"].includes(key)) {
+            weight += clamp01(arcane.animalShift) * 0.10;
+        }
         if (weight > 0.02) hazards.push({ ...row, weight: clamp01(weight) });
     }
     hazards.sort((a, b) => b.weight - a.weight || a.spec.localeCompare(b.spec));

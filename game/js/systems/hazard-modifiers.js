@@ -82,8 +82,9 @@ export function getHazardSimulationEffects() {
         ? state.environmentalHazards.partners.filter(partner => partner?.outbreak).length : 0;
     const raw = Object.freeze({
         ...base,
-        movement: clamp01(base.movement + clamp01(magic.fog) * 0.18),
+        movement: clamp01(base.movement + clamp01(magic.fog) * 0.18 + clamp01(magic.unnaturalWeather) * 0.10),
         extraction: clamp01(base.extraction + clamp01(magic.forbidden) * 0.12),
+        pasture: clamp01(base.pasture + clamp01(magic.animalShift) * 0.20),
         diseaseRisk: clamp01(base.diseaseRisk + clamp01(magic.corruption) * 0.12),
         trade: clamp01(base.trade + partnerOutbreaks * 0.035)
     });

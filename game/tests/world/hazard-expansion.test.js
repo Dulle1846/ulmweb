@@ -13,6 +13,7 @@ import {
     recordFloodScar
 } from "../../js/systems/hazard-scars.js";
 import { createEnvironmentalHazardState, getHazardMitigation, normalizeEnvironmentalHazardState } from "../../js/systems/environmental-hazards.js";
+import { getHazardSimulationEffects, invalidateHazardModifierCache } from "../../js/systems/hazard-modifiers.js";
 
 const SEED = 20261122;
 
@@ -176,6 +177,16 @@ test("1.2.20 a partner outbreak can be answered with aid and changes the relatio
     assert.ok(state.resources.food < food);
     assert.equal(entry.partners[0].outbreak, false);
     assert.equal(entry.partners[0].relation, 45);
+});
+
+test("1.2.20 unnatural weather and changed animal populations are real burdens", () => {
+    const entry = prepareRealm();
+    entry.magic.unnaturalWeather = 0.8;
+    entry.magic.animalShift = 0.8;
+    invalidateHazardModifierCache();
+    const effects = getHazardSimulationEffects();
+    assert.ok(effects.raw.movement > 0, "unnatural weather must slow movement");
+    assert.ok(effects.pasture < 1, "changed animal populations must reduce pasture");
 });
 
 test("1.2.20 the expanded hazard state normalises and round-trips without losing new fields", () => {
