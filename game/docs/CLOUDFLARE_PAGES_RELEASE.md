@@ -4,6 +4,21 @@
 
 Production is Cloudflare Pages at https://kings-and-cards.pages.dev/. The production Git branch is ulmweb-branch. Vercel is not used. The workers.dev hostname is a separate/legacy Worker endpoint and must not be treated as the Pages production deployment.
 
+## Retired deploy targets: Freebuff Sites
+
+The two Freebuff Sites origins (preview `https://site-79c6673d168e4265a2d5609f9d77a1cb.freebuff.page`, production `https://site-4652b62d6d624022a45a118e0782bcb1.freebuff.page`, site `054512f6-1fcf-489c-8406-3ab4e49022e3`) were unpublished on 2026-11-22 at the owner's request and have answered HTTP 404 since. The saved deployments, code and data remain in the site record; nothing was deleted.
+
+Before retirement all four origins served the same runtime. 371 of the 372 shipped files matched by SHA-256, and the only difference was `version.json`, which records each deployment's own source, branch and `builtAt`. Game version `3.34.2` and commit `8001734a838351049ec70f586cf3b49eae8bca38` were served on every origin.
+
+Only the two GitHub-driven targets are published from now on:
+
+| Target | URL | Deploy path |
+|---|---|---|
+| Production (main) | https://kings-and-cards.pages.dev/ | `.github/workflows/deploy-kings-cards-after-tests.yml` |
+| Mirror | https://dulle1846.github.io/ulmweb/ | `.github/workflows/deploy-github-pages.yml` |
+
+Do not recreate Sites deployments for Kings & Cards. A push to `ulmweb-branch` deploys both remaining targets, so "deploy everything" means those two origins and a cache-busted `version.json` fetch as proof. Development browser checks use the local dev server or the live Pages deployment instead of a Sites preview.
+
 ## Automatic deployment after green tests
 
 `.github/workflows/deploy-kings-cards-after-tests.yml` is the production deployment path. It runs on every push to `ulmweb-branch` and on manual dispatch, runs the full `npm test` in `game/`, builds a runtime-only package with `npm run build:runtime`, and only then uploads that package to the existing Pages project `kings-and-cards` on branch `ulmweb-branch` with Wrangler Direct Upload. Running on every push is deliberate: a CI-only or documentation commit must also move the production marker to that exact HEAD instead of leaving an older runtime live.
