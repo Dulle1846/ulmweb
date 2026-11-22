@@ -1,6 +1,6 @@
 # Biomes with special hazards and diseases (1.2.20)
 
-**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22.
+**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.38.0).
 **Spec:** 1.2.20.1–1.2.20.102, all 102 points implemented.
 **Panel:** `HAZARDS` tab in the realm management deck.
 **Code:** `js/world/hazard-data.js`, `js/world/hazard-expansion-data.js`,
@@ -75,11 +75,11 @@ Every factor is exactly `1` when no rolled hazard is active.
 
 | Modifier | Live consumer | Full-severity effect before adaptation |
 |---|---|---|
-| `needs` | `calculateDailyLedger` household demand | food and water draw +45% |
+| `needs` | `calculateDailyLedger` household demand and `updateSettlementNeeds` water draw | food demand +45%; extra stored water is drawn at the bounded settlement cadence |
 | `work` | `getBuildingEfficiency`, `updateConstruction` | production and build progress −40% |
-| `movement` | villager travel/flight, expedition departure | speed and expedition progress −45% |
+| `movement` | villager travel/flight, expedition departure and logistics caravan carriers | people and expeditions −45%; caravan haulage −23% (the same reading cushioned by carts) |
 | `extraction` | lumber, quarry and gold-mine yields | raw extraction −40% |
-| `pasture` | forest-fauna carrying capacity | herd capacity −35% |
+| `pasture` | forest-fauna carrying capacity and `harvestForestGameAt` | herd capacity −35%; the same hunt takes fewer animals |
 | `trade` | `executeTrade` caravan terms | buys +30%, sales −30% |
 | `adaptation` | every factor above | takes back `adaptation × 60%` of the penalty |
 
@@ -88,6 +88,18 @@ CONSEQUENCES block, so a player sees the food/water draw, work and building
 loss, movement, extraction, pasture, caravan buy/sell and adaptation relief
 next to the hazards causing them. With no rolled hazard the block reads
 NEUTRAL and every value is `0%`.
+
+The 3.38 pass closes the last silent gaps. Household water demand now consumes
+stored water through the existing logistics booking (keyed per house and
+tick-window, so a reload cannot double-charge it); movement slows villager
+travel and expeditions at full strength, while the derived CARAVAN SPEED factor
+cushions half of that penalty for pack animals and carts on the real logistics
+route; and pasture stress lowers both carrying capacity and the animals a
+successful hunt actually takes. Calm realms return before any of these
+branches, so their stores, carrier timings and hunt yields remain exactly at
+the pre-hazard baseline. A three-part save test restores a real hazard block and
+re-reads every consumer factor, the food ledger, building efficiency and a live
+caravan deal.
 
 Protection is measured from real objects: wells and bathhouses, mills and worked
 farms, walls, foresters, sanitation, roads, warehouses, clinics, healers,

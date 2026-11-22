@@ -37,7 +37,7 @@ export const HAZARD_MODIFIER_EFFECT = Object.freeze({
 });
 
 const NEUTRAL_EFFECTS = Object.freeze({
-    foodDemand: 1, work: 1, movement: 1, extraction: 1, pasture: 1,
+    foodDemand: 1, work: 1, movement: 1, caravanMovement: 1, extraction: 1, pasture: 1,
     tradeBuy: 1, tradeSell: 1, adaptationRelief: 0, raw: NEUTRAL_MODIFIERS
 });
 
@@ -89,10 +89,16 @@ export function getHazardSimulationEffects() {
         trade: clamp01(base.trade + partnerOutbreaks * 0.035)
     });
     const relief = 1 - clamp01(raw.adaptation) * HAZARD_MODIFIER_EFFECT.adaptationRelief;
+    const movement = bounded(1 - raw.movement * HAZARD_MODIFIER_EFFECT.movement * relief, 0.50, 1);
+    // Pack animals and carts buffer part of a person's travel penalty. The
+    // haulage factor is derived from the same movement reading, so it is still
+    // real weather and never a second, independent hazard system.
+    const caravanMovement = bounded(1 - (1 - movement) * 0.5, 0.75, 1);
     effects = Object.freeze({
         foodDemand: bounded(1 + raw.needs * HAZARD_MODIFIER_EFFECT.foodDemand * relief, 0.75, 1.60),
         work: bounded(1 - raw.work * HAZARD_MODIFIER_EFFECT.work * relief, 0.55, 1),
-        movement: bounded(1 - raw.movement * HAZARD_MODIFIER_EFFECT.movement * relief, 0.50, 1),
+        movement,
+        caravanMovement,
         extraction: bounded(1 - raw.extraction * HAZARD_MODIFIER_EFFECT.extraction * relief, 0.55, 1),
         pasture: bounded(1 - raw.pasture * HAZARD_MODIFIER_EFFECT.pasture * relief, 0.60, 1),
         tradeBuy: bounded(1 + raw.trade * HAZARD_MODIFIER_EFFECT.tradeBuy * relief, 1, 1.35),
@@ -114,6 +120,10 @@ export function getHazardWorkFactor() {
 
 export function getHazardMovementFactor() {
     return getHazardSimulationEffects().movement;
+}
+
+export function getHazardCaravanMovementFactor() {
+    return getHazardSimulationEffects().caravanMovement;
 }
 
 export function getHazardExtractionFactor() {

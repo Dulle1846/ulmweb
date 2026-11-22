@@ -1,13 +1,49 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.37.0`
-**Next development line:** `3.38.0-dev`
+**Current production version:** `3.38.0`
+**Next development line:** `3.39.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.38.0 — The hazard modifiers reach the last economic paths
+
+3.37 turned the hazard layer into a living system. This release closes the
+remaining places where a saved modifier was read by the panel but not by the
+world, so the numbers in DERIVED CONSEQUENCES describe the running economy.
+Save schema stays at 13 and calm weather stays byte-identical.
+
+- **Real household water draw.** `needs` already raised food demand; it now
+  also draws an extra load of water from the nearest real store at the bounded
+  settlement cadence. The booking is keyed and idempotent, so a repeated pass
+  or a reload cannot charge the same household twice. With no rolled hazard the
+  function returns before touching logistics.
+- **Caravan carriers slow down.** The `movement` factor now reaches the
+  physical logistics carriers that haul goods between producers and stores,
+  alongside villager travel and expedition departure. Pack animals and carts
+  cushion half of the personal penalty, so the panel prints a separate
+  CARAVAN SPEED value derived from the same movement reading. Clear weather
+  leaves the old carrier timing unchanged.
+- **Pasture lowers today's hunt as well as tomorrow's herd.** Stressed browse
+  still lowers carrying capacity, and the same hunt now takes fewer animals.
+  A successful hunt keeps at least one animal and a calm hunt keeps its exact
+  old take.
+- **Save/load coverage for every consumer.** A real hazard-state round-trip is
+  tested against food demand, work, movement, extraction, pasture, caravan
+  buy/sell and adaptation relief; the restored factors still drive the ledger,
+  production and a live market trade.
+- **Player-visible values stay honest.** The HAZARDS panel reads the same
+  factors the settlement, construction, logistics, forest, market and
+  expedition paths use. The food/water row now stands for an actual water sink,
+  the movement row covers people and expeditions, and CARAVAN SPEED shows the
+  cushioned haulage factor the carriers read.
+- **Verification.** Full `npm test`, the focused hazard/settlement/logistics
+  tests, the deterministic 25-year campaign with unchanged thresholds, the
+  browser hazard reference and both production deploy gates are part of this
+  release.
 
 ## 3.37.0 — The hazard layer becomes a living system
 

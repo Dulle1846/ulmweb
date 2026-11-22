@@ -10,6 +10,7 @@ import { getLocalWarehouseStock, findLocalWarehouse, consumeFromWarehouse, getWa
 import { HOUSING_TIERS, SERVICE_DEFINITIONS, isHousingType } from "./city-config.js";
 import { getCrownWaterCoverage } from "./crown-supply.js";
 import { getCivicModifiers } from "./civic.js";
+import { getHazardFoodDemandFactor } from "./hazard-modifiers.js";
 
 export const SETTLEMENT_INTERVAL = 10;
 export const NEED_WEIGHTS = Object.freeze({ food: 1.25, water: 1.1, warmth: 0.9, safety: 0.8, social: 0.65, health: 0.6 });
@@ -184,6 +185,26 @@ function housingComfort(house) {
     return HOUSING_TIERS[house.type]?.comfort || 0.5;
 }
 
+// Hazard demand is not only a larger number in the ledger. A hot or dry season
+// makes households draw an extra load of water from the nearest real store at
+// the same bounded settlement cadence; the key makes a repeated pass in one
+// tick idempotent. Calm weather returns before touching logistics, so a quiet
+// realm keeps its old stores exactly.
+const HAZARD_WATER_INTERVAL = 20;
+function drawHazardWater(house, needFactor) {
+    const extra = Math.max(0, Math.min(0.6, (Number(needFactor) || 1) - 1));
+    if (extra < 0.01) return 0;
+    const window = Math.floor((Number(state.tick) || 0) / HAZARD_WATER_INTERVAL);
+    const key = "hazard-water:" + house.id + ":" + (Number(state.year) || 0) + ":"
+        + (Number(state.seasonIndex) || 0) + ":" + window;
+    const amount = Math.max(1, Math.min(3, Math.ceil(extra * 3)));
+    const warehouse = findLocalWarehouse("water", house.x, house.y, HOUSEHOLD_SUPPLY_RADIUS);
+    if (!warehouse) return 0;
+    return consumeFromWarehouse(warehouse, "water", amount, {
+        cause: "hazard-water-draw", key, houseId: house.id
+    });
+}
+
 export function updateSettlementNeeds() {
     const city = ensureSettlementState();
     const population = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER).length;
@@ -192,6 +213,7 @@ export function updateSettlementNeeds() {
     // average down. Only inhabited houses create household demand.
     const occupiedHomes = houseRows.filter(houseIsOccupied);
     const services = city.services.summary || updateServices();
+    const hazardNeedFactor = getHazardFoodDemandFactor();
     const season = Math.max(0, Math.min(3, Math.floor(number(state.seasonIndex))));
     // Civic unrest is a real household condition, not a separate HUD number.
     // It erodes safety and social trust so a sustained political crisis slows
@@ -206,6 +228,7 @@ export function updateSettlementNeeds() {
     const householdRows = {};
     for (const house of occupiedHomes) {
         const coverage = city.services.byHouse[house.id] || {};
+        if (coverage.water) drawHazardWater(house, hazardNeedFactor);
         const comfort = housingComfort(house);
         const row = {
             id: house.id,

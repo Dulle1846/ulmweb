@@ -235,13 +235,14 @@ export function renderHazardPanel() {
         '<div><small>FOOD & WATER DRAW</small><strong>' + gain(simulation.foodDemand) + '</strong></div>' +
         '<div><small>WORK & BUILDING</small><strong>' + loss(simulation.work) + '</strong></div>' +
         '<div><small>MOVEMENT & EXPEDITIONS</small><strong>' + loss(simulation.movement) + '</strong></div>' +
+        '<div><small>CARAVAN SPEED</small><strong>' + loss(simulation.caravanMovement) + '</strong></div>' +
         '<div><small>EXTRACTION</small><strong>' + loss(simulation.extraction) + '</strong></div>' +
         '<div><small>PASTURE & HERDS</small><strong>' + loss(simulation.pasture) + '</strong></div>' +
         '<div><small>CARAVAN BUY</small><strong>' + gain(simulation.tradeBuy) + '</strong></div>' +
         '<div><small>CARAVAN SELL</small><strong>' + loss(simulation.tradeSell) + '</strong></div>' +
         '<div><small>ADAPTATION RELIEF</small><strong>' + Math.round(simulation.adaptationRelief * 100) + '%</strong></div></div>' +
         '<p class="command-note">' + (pressure.length
-            ? 'These multipliers are live in household demand, production and building, movement and expeditions, extraction, herds and caravan terms. Regional adaptation takes back ' + Math.round(simulation.adaptationRelief * 100) + '% of every penalty.'
+            ? 'These multipliers are live in household demand, production and building, movement and expeditions, caravan haulage, extraction, herds and market terms. Regional adaptation takes back ' + Math.round(simulation.adaptationRelief * 100) + '% of every penalty.'
             : 'No rolled hazard is pressing. Demand, work, movement, extraction, pasture and caravan terms are at their baseline; the climate\'s regional character is standing, not a modifier.') + '</p>' +
         '<div class="command-section-title">PROTECTION · READINESS ' + pct(mitigation.score) + '%</div><div class="hazard-work-grid">' +
         workRow("Wells & reservoirs", mitigation.well, "Wells and bathhouses keep water clean") +

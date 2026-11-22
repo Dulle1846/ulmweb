@@ -586,7 +586,12 @@ export function harvestForestGameAt(x, y, requested = 1) {
     if (!herd) return null;
     const before = Math.max(1, Number(herd.population) || 0);
     const camouflagePenalty = CAMOUFLAGED_SPECIES.has(herd.species) ? 1 : 0;
-    const wanted = Math.max(1, Math.min(3, Math.floor(number(requested, 1))) - camouflagePenalty);
+    const baseWanted = Math.max(0, Math.min(3, Math.floor(number(requested, 1))) - camouflagePenalty);
+    // Stressed pasture does not merely lower tomorrow's carrying capacity; the
+    // same hunting trip finds less to take today. Keep a successful hunt at one
+    // animal and leave calm weather at exactly the old take.
+    const pastureYield = Math.max(0.1, Math.min(1, Number(getHazardPastureCapacityFactor()) || 1));
+    const wanted = baseWanted <= 0 ? 0 : Math.max(1, Math.round(baseWanted * pastureYield));
     const taken = Math.min(wanted, Math.max(0, Math.floor(before - 0.8)));
     if (taken <= 0) return null;
     const after = Math.round((before - taken) * 10) / 10;

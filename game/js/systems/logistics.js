@@ -15,6 +15,7 @@ import { findPath, isWalkable, rebuildBlockedBuildingTiles } from "../simulation
 import { getRoadSpeedMultiplier } from "./roads.js";
 import { GOOD_KEYS, GOODS, CITY_VERSION, NEW_BUILDING_TYPES, RECIPES, WAREHOUSE_PROFILES, WAREHOUSE_PROFILE_IDS } from "./city-config.js";
 import { GOODS_LEDGER_LIMIT, ensureGoodsBook, findGoodsMovementByKey, recordGoodsMovement, setAuditOpening, readAuditTotals, recordResourceMovement } from "./goods-book.js";
+import { getHazardCaravanMovementFactor } from "./hazard-modifiers.js";
 export { recordResourceMovement };
 
 export const WAREHOUSE_CAPACITY = Object.freeze({ [TYPE.KEEP]: 320, [TYPE.WAREHOUSE]: 180 });
@@ -1262,6 +1263,11 @@ export function updateLogisticsMovement(deltaSeconds) {
     if (!city.enabled || deltaSeconds <= 0 || deltaSeconds > 0.2) return;
     const logistics = city.logistics;
     const version = (state.buildingCollisionVersion || 0) + ":" + (state.roads?.revision || 0);
+    // A closed pass or a storm slows the same caravan that hauls goods between
+    // real stores. Pack animals and carts cushion part of the personal travel
+    // penalty; the factor is cached by the hazard layer and is exactly 1 in
+    // calm weather, so existing carrier timings do not move.
+    const hazardMovement = getHazardCaravanMovementFactor();
     for (const carrier of [...logistics.carriers]) {
         const job = logistics.jobs.find(item => item.id === carrier.jobId);
         if (!job || !isActive(job)) {
@@ -1309,7 +1315,7 @@ export function updateLogisticsMovement(deltaSeconds) {
             }
         }
         let remaining = carrier.speed * getRoadSpeedMultiplier(carrier.x, carrier.y)
-            * getForestMovementFactorAt(carrier.x, carrier.y) * deltaSeconds;
+            * getForestMovementFactorAt(carrier.x, carrier.y) * hazardMovement * deltaSeconds;
         while (remaining > 0 && carrier.pathIndex < carrier.path.length) {
             const node = carrier.path[carrier.pathIndex];
             const dx = node.x - carrier.x, dy = node.y - carrier.y, distance = Math.hypot(dx, dy);

@@ -86,6 +86,7 @@ try {
     assert.match(panel, /REGIONAL DANGERS/);
     assert.match(panel, /DERIVED CONSEQUENCES/);
     assert.match(panel, /FOOD & WATER DRAW/);
+    assert.match(panel, /CARAVAN SPEED/);
     assert.match(panel, /CARAVAN BUY/);
     assert.match(panel, /ADAPTATION RELIEF/);
     assert.match(panel, /SEASONAL FORECAST/);
