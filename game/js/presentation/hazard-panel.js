@@ -5,7 +5,8 @@
 // the season, treat casualties, cleanse corruption.
 import { state } from "../core/state.js";
 import { getHazardSnapshot } from "../systems/environmental-hazards.js";
-import { HAZARD_CATEGORIES, HAZARD_CLIMATES } from "../world/hazard-data.js";
+import { HAZARD_CATEGORIES, HAZARD_CLIMATES, HAZARD_EFFECTS } from "../world/hazard-data.js";
+import { getHazardSimulationEffects } from "../systems/hazard-modifiers.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -27,12 +28,43 @@ function categoryLabel(id) {
     return HAZARD_CATEGORIES[id]?.label || id;
 }
 
+// The concrete drag of one hazard, printed directly under its name so the
+// player can connect the season's danger with the numbers the realm feels.
+function impactLine(hazard) {
+    const effects = HAZARD_EFFECTS[hazard.mechanic];
+    if (!effects) {
+        return hazard.category === "magic" ? "ARCANE BURDEN"
+            : hazard.category === "regional" ? "STANDING REGIONAL DANGER" : "";
+    }
+    const severity = Math.max(0, Math.min(1, Number(hazard.severity) || 0));
+    const parts = [];
+    if (effects.work) parts.push("WORK −" + Math.round(effects.work * severity * 100) + "%");
+    if (effects.field) parts.push("FIELDS −" + Math.round(effects.field * severity * 100) + "%");
+    if (effects.food) parts.push("FOOD −" + Math.max(1, Math.round(effects.food * severity)));
+    else if (effects.water) parts.push("WATER −" + Math.max(1, Math.round(effects.water * severity)));
+    if (effects.illness) parts.push("ILLNESS " + Math.round(effects.illness * severity * 100) + "%");
+    else if (effects.injury) parts.push("INJURY " + Math.round(effects.injury * severity * 100) + "%");
+    if (effects.destroy) parts.push("DAMAGE " + Math.round(effects.destroy * severity * 100) + "%");
+    return parts.slice(0, 3).join(" · ");
+}
+
+const gain = value => {
+    const percent = Math.round((Number(value) - 1) * 100);
+    if (!percent) return "0%";
+    return (percent > 0 ? "+" : "−") + Math.abs(percent) + "%";
+};
+const loss = value => {
+    const percent = Math.round((1 - Number(value)) * 100);
+    return percent > 0 ? "−" + percent + "%" : "0%";
+};
+
 function activeRow(hazard) {
     const severity = pct(hazard.severity);
     const tone = severity >= 66 ? "is-danger" : severity >= 33 ? "is-mid" : "";
     return '<div class="hazard-row" data-hazard-active="' + esc(hazard.mechanic) + '">' +
         '<div class="hazard-row-name"><strong>' + esc(hazard.label) + '</strong><small>' +
-        esc(categoryLabel(hazard.category)) + ' · ' + esc(hazard.spec) + '</small></div>' +
+        esc(categoryLabel(hazard.category)) + ' · ' + esc(hazard.spec) +
+        (impactLine(hazard) ? ' · ' + esc(impactLine(hazard)) : '') + '</small></div>' +
         '<div class="hazard-row-meter"><span><i class="' + tone + '" style="width:' + severity + '%"></i></span><small>SEVERITY ' + severity + '%</small></div>' +
         '<div class="hazard-row-actions">' + badge(hazard.category === "disease" ? "DISEASE" : hazard.category === "geology" ? "GEOLOGICAL" : hazard.category === "magic" ? "ARCANE" : "ENVIRONMENT", tone) + '</div>' +
         '</div>';
@@ -56,6 +88,8 @@ export function renderHazardPanel() {
     const active = snapshot.active.slice().sort((a, b) => b.severity - a.severity);
     const climate = state.worldOptions?.climate || "temperate";
     const rare = snapshot.rare;
+    const simulation = getHazardSimulationEffects();
+    const pressure = active.filter(hazard => hazard.category !== "regional");
 
     const activeRows = active.map(activeRow).join("");
     const diseases = snapshot.diseases.length
@@ -111,6 +145,19 @@ export function renderHazardPanel() {
         '<div class="command-section-title">ACTIVE HAZARDS · ' + active.length + '</div><div class="hazard-table">' +
         (activeRows || '<p class="command-note">The season is quiet. No hazard is currently pressing on the realm.</p>') + '</div>' +
         '<p class="command-note">The chronicle names every hazard that hurt a resident, a field, a road or the stores. Weather, season and the local climate decide which ones can appear; your works decide how hard they land.</p>' +
+        '<div class="command-section-title">DERIVED CONSEQUENCES · ' + (pressure.length ? "APPLIED TO THE REALM" : "NEUTRAL") + '</div>' +
+        '<div class="command-summary">' +
+        '<div><small>FOOD & WATER DRAW</small><strong>' + gain(simulation.foodDemand) + '</strong></div>' +
+        '<div><small>WORK & BUILDING</small><strong>' + loss(simulation.work) + '</strong></div>' +
+        '<div><small>MOVEMENT & EXPEDITIONS</small><strong>' + loss(simulation.movement) + '</strong></div>' +
+        '<div><small>EXTRACTION</small><strong>' + loss(simulation.extraction) + '</strong></div>' +
+        '<div><small>PASTURE & HERDS</small><strong>' + loss(simulation.pasture) + '</strong></div>' +
+        '<div><small>CARAVAN BUY</small><strong>' + gain(simulation.tradeBuy) + '</strong></div>' +
+        '<div><small>CARAVAN SELL</small><strong>' + loss(simulation.tradeSell) + '</strong></div>' +
+        '<div><small>ADAPTATION RELIEF</small><strong>' + Math.round(simulation.adaptationRelief * 100) + '%</strong></div></div>' +
+        '<p class="command-note">' + (pressure.length
+            ? 'These multipliers are live in household demand, production and building, movement and expeditions, extraction, herds and caravan terms. Regional adaptation takes back ' + Math.round(simulation.adaptationRelief * 100) + '% of every penalty.'
+            : 'No rolled hazard is pressing. Demand, work, movement, extraction, pasture and caravan terms are at their baseline; the climate\'s regional character is standing, not a modifier.') + '</p>' +
         '<div class="command-section-title">PROTECTION · READINESS ' + pct(mitigation.score) + '%</div><div class="hazard-work-grid">' +
         workRow("Wells & reservoirs", mitigation.well, "Wells and bathhouses keep water clean") +
         workRow("Irrigation", mitigation.irrigation, "Mills and worked farmland carry water to the fields") +

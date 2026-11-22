@@ -1,13 +1,56 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.35.1`
-**Next development line:** `3.36.0-dev`
+**Current production version:** `3.36.0`
+**Next development line:** `3.37.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.36.0 — Hazard modifiers now shape the realm
+
+Hazard state was visible but inert: `getHazardModifiers()` produced needs, work,
+movement, extraction, pasture, trade and adaptation values that no system read.
+The 102-row catalogue, protection works and panel worked; the numbers behind
+them did not reach a single household, build site, caravan or herd.
+
+- **One dependency-light multiplier layer.** `js/systems/hazard-modifiers.js`
+  turns the saved 0..1 modifier block into bounded multipliers. Every factor is
+  exactly `1` with no rolled hazard, so calm-weather economy, expedition timing
+  and save round-trips are bit-for-bit unchanged.
+- **Household demand.** `calculateDailyLedger` accepts the hazard food-demand
+  factor; extreme conditions raise demand and can turn adequate stores into a
+  real shortage.
+- **Production and building.** `getBuildingEfficiency` and construction progress
+  are multiplied by the work factor, so staffed buildings produce less and the
+  same builder takes longer on the same site.
+- **Movement and expeditions.** Villager travel and flight speed slow, and an
+  expedition's departure `travelDays` stretch, throttling real progress.
+- **Extraction.** Lumber, quarry and gold-mine yields fall; the existing
+  extraction budgets are unchanged.
+- **Pasture.** Forest-fauna carrying capacity shrinks, so herds cannot grow past
+  what the hazardous season feeds.
+- **Caravans.** `executeTrade` applies the trade factors to what a purchase costs
+  and what a sale pays, on top of the existing relation and price terms.
+- **Adaptation.** Regional adaptation relief (`adaptation × 0.60`) takes back
+  part of every penalty without erasing it.
+- **Exposed work.** Environmental casualties are now drawn mostly from field,
+  forest and mine crews rather than uniformly from the population, so a bad
+  season can genuinely empty a lumber camp and trigger the fuel-backfill order.
+- **Player-visible consequences.** The HAZARDS panel prints the concrete drag
+  under each active hazard and a DERIVED CONSEQUENCES block reading the same
+  multipliers the simulation uses; calm weather shows neutral `0%` values.
+- **No save schema bump.** The modifier block already existed in schema 13; no
+  new state was introduced. The regional bundle remains standing colour and does
+  not enter the seasonal modifier average, so it cannot make calm seasons
+  permanently modified.
+- Tests prove calm factors are exactly neutral (ledger demand `3`, building
+  efficiency `0.5`, construction `50`) while a hazard changes household demand,
+  production, construction, extraction, pasture, caravan buy/sell and adaptation
+  relief. The browser reference reads both calm and hazard panels and requires
+  the displayed numbers to differ.
 
 ## 3.35.1 — Hazard treatment spends real medicine
 

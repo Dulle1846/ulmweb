@@ -43,7 +43,9 @@ never scan the tile grid and never run inside the frame loop.
 
 Hazards act on systems that already exist:
 
-- illness and injury on real villagers (`illnessUntilTick`, `hp`),
+- illness and injury on real villagers (`illnessUntilTick`, `hp`); most
+  environmental casualties are drawn from exposed field, forest and mine crews,
+  while the crown and noble households remain shielded,
 - treatment paid from the real medicine store and gathered remedies
   (`health.medicineStock`, forest medicinal goods); the `herbalDoses` ledger
   records doses given and is never spent,
@@ -55,6 +57,31 @@ Hazards act on systems that already exist:
   protected so a hazard cannot invalidate another system's save invariants),
 - morale,
 - trade partners from the live diplomacy state for plague spread.
+
+### Derived modifiers
+
+The saved `needs`, `work`, `movement`, `extraction`, `pasture`, `trade` and
+`adaptation` values are converted once per season by
+`js/systems/hazard-modifiers.js` and read by the systems the player already
+uses. A penalty is `1 - value × coefficient × relief`, a cost is
+`1 + value × coefficient × relief`, and `relief = 1 - adaptation × 0.60`.
+Every factor is exactly `1` when no rolled hazard is active.
+
+| Modifier | Live consumer | Full-severity effect before adaptation |
+|---|---|---|
+| `needs` | `calculateDailyLedger` household demand | food and water draw +45% |
+| `work` | `getBuildingEfficiency`, `updateConstruction` | production and build progress −40% |
+| `movement` | villager travel/flight, expedition departure | speed and expedition progress −45% |
+| `extraction` | lumber, quarry and gold-mine yields | raw extraction −40% |
+| `pasture` | forest-fauna carrying capacity | herd capacity −35% |
+| `trade` | `executeTrade` caravan terms | buys +30%, sales −30% |
+| `adaptation` | every factor above | takes back `adaptation × 60%` of the penalty |
+
+The HAZARDS panel reads the same factors and prints them as a DERIVED
+CONSEQUENCES block, so a player sees the food/water draw, work and building
+loss, movement, extraction, pasture, caravan buy/sell and adaptation relief
+next to the hazards causing them. With no rolled hazard the block reads
+NEUTRAL and every value is `0%`.
 
 Protection is measured from real objects: wells and bathhouses, mills and worked
 farms, walls, foresters, sanitation, roads, warehouses, clinics, healers,
@@ -101,9 +128,12 @@ change.
   (catalogue completeness, determinism, bounded passes, health/store/morale
   effects, field damage, destruction protection, the sanitation floor, shielded
   households, chronic processes, arcane burden, actions, save round trip and
-  migration).
+  migration) and `tests/world/hazard-modifiers.test.js` (neutral baselines,
+  household demand, production, construction, extraction, pasture, caravan
+  terms and adaptation relief).
 - `npm run test:hazard-ui` — real browser reference: panel render, prepare
-  action, a settled hazard row, save/reload and no console errors.
+  action, a settled hazard row, save/reload, the calm NEUTRAL consequences
+  block, the hazard-on consequences and no console errors.
 - `npm run spec:audit` — 102 / 102 points implemented.
 - Deterministic 25-year campaign and the browser E2E reference run for the
   release that introduced the system.

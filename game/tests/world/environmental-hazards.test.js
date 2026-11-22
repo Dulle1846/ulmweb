@@ -16,6 +16,7 @@ import {
     HAZARD_CATALOG, HAZARD_CLIMATES, HAZARD_EFFECTS, HAZARD_MECHANICS,
     HAZARD_LIMITS, REGIONAL_BUNDLES, hazardRowsForClimate
 } from "../../js/world/hazard-data.js";
+import { getHazardModifiers, getHazardWorkFactor } from "../../js/systems/hazard-modifiers.js";
 
 const SEED = 20261122;
 
@@ -341,6 +342,24 @@ test("1.2.20 exposure fouls the water but never declares a plague by itself", ()
         assert.equal(state.health.outbreakActive, false,
             "seed " + seed + " must not let a hazard declare an outbreak on its own");
     }
+});
+
+test("1.2.20 a rolled hazard leaves operative modifiers behind", () => {
+    let found = false;
+    for (let seed = 1; seed <= 40 && !found; seed++) {
+        prepareRealm({ climate: "arid", season: 1 });
+        state.worldSeed = seed;
+        updateEnvironmentalHazards({ force: true });
+        const pressure = state.environmentalHazards.active.filter(hazard => hazard.category !== "regional");
+        if (!pressure.length) continue;
+        found = true;
+        const modifiers = getHazardModifiers();
+        assert.ok(Object.values(modifiers).some(value => value > 0),
+            "the season must write a non-neutral modifier block");
+        assert.ok(getHazardWorkFactor() < 1,
+            "the written block must reach the production multiplier");
+    }
+    assert.ok(found, "the fixture must produce at least one rolled hazard");
 });
 
 test("1.2.20 the crown and noble households are never hazard casualties", () => {

@@ -14,6 +14,7 @@ import {
     findLocalWarehouse, consumeFromWarehouse
 } from "../systems/logistics.js";
 import { findNearestResourceNode, harvestForest, extractStone } from "../systems/resource-geography.js";
+import { getHazardExtractionFactor } from "../systems/hazard-modifiers.js";
 
 import { recordResourceMovement } from "../systems/goods-book.js";
 
@@ -126,7 +127,7 @@ function canStoreOutput(building, output) {
     return outputSpace(building) >= required;
 }
 
-function produceRecipe(building, workforce, production, knownEfficiency = null) {
+function produceRecipe(building, workforce, production, knownEfficiency = null, extractionFactor = 1) {
     const recipe = RECIPES[building.type];
     if (!recipe || recipe.field) return;
     // Unique workshops have no bulk output. Their inputs, workers and finished
@@ -178,13 +179,16 @@ function produceRecipe(building, workforce, production, knownEfficiency = null) 
             return;
         }
         if (recipe.site === "forest") {
-            const taken = harvestForest(node.x, node.y, recipe.batch);
+            // Weather sets how much timber a crew can actually bring out.
+            const batch = Math.max(1, Math.round(recipe.batch * extractionFactor));
+            const taken = harvestForest(node.x, node.y, batch);
             if (taken <= 0) { building.productionReason = "Forest stand is depleted"; return; }
             finishOutput(building, { logs: taken }, production);
             return;
         }
         if (recipe.site === "stone") {
-            const taken = extractStone(node.x, node.y, recipe.batch * 2);
+            const batch = Math.max(1, Math.round(recipe.batch * 2 * extractionFactor));
+            const taken = extractStone(node.x, node.y, batch);
             if (taken <= 0) { building.productionReason = "Stone deposit is depleted"; return; }
             production.stoneExtracted += taken;
             finishOutput(building, { stoneBlocks: Math.max(1, Math.floor(taken / 2)) }, production);
@@ -265,19 +269,20 @@ export function updateBuildingIncome() {
         }
     }
     const staggerProduction = producerCount > 10;
+    const extraction = getHazardExtractionFactor();
     const workforce = getWorkforceSnapshot();
     const production = ledger();
     if (productionTick) {
         for (const building of state.entities) {
             if (!building.dead && building.isBuilding() && RECIPES[building.type] && productionDue(tick, building, staggerProduction)) {
                 const efficiency = getBuildingEfficiency(building, workforce);
-                produceRecipe(building, workforce, production, efficiency);
+                produceRecipe(building, workforce, production, efficiency, extraction);
                 requestStoredHauls(building);
                 // Construction is paid from the royal wood and stone stores,
                 // not from the physical log/block chain. Without this income,
                 // a direct-build campaign spends its opening stock and then
                 // permanently dead-ends, no matter how much timber is sawn.
-                const constructionYield = efficiency;
+                const constructionYield = efficiency * extraction;
                 if (constructionYield > 0) {
                     if (building.type === TYPE.LUMBER) addResource("wood", constructionYield);
                     else if (building.type === TYPE.QUARRY) addResource("stone", constructionYield);
@@ -290,7 +295,7 @@ export function updateBuildingIncome() {
         }
         if (fullProductionTick) for (const mine of getEntitiesOfType(TYPE.GOLDMINE)) {
             if (mine.construction && mine.construction.stage < 3) continue;
-            addResource("gold", (state.seasonIndex === 3 ? 1 : 2) * getBuildingEfficiency(mine, workforce));
+            addResource("gold", (state.seasonIndex === 3 ? 1 : 2) * getBuildingEfficiency(mine, workforce) * extraction);
         }
         bookFarmSubsistence(production);
     }

@@ -24,6 +24,7 @@ import {
 } from "./economy-cycle.js";
 import { recordNaturalDeath } from "./mortality.js";
 import { getSpecialBiomeInfluence } from "./special-biome-couplings.js";
+import { getHazardFoodDemandFactor, getHazardWorkFactor } from "./hazard-modifiers.js";
 
 export const ECONOMY_INTERVAL = 20;
 export const DAYS_PER_LEDGER = 20;
@@ -61,15 +62,18 @@ export const BUILDING_WORKFORCE = Object.freeze({
 
 const clampNonNegative = value => Math.max(0, Number.isFinite(value) ? value : 0);
 
-export function calculateDailyLedger({ population, employed, buildings, foodAvailable, goldAvailable, taxRate = 10, roadUpkeep = 0, furnitureUpkeep = 0, households = 0, livestock = 0 }) {
+export function calculateDailyLedger({ population, employed, buildings, foodAvailable, goldAvailable, taxRate = 10, roadUpkeep = 0, furnitureUpkeep = 0, households = 0, livestock = 0, hazardFoodDemandFactor = 1 }) {
     const people = Math.floor(clampNonNegative(population));
     const workers = Math.min(people, Math.floor(clampNonNegative(employed)));
     const buildingCount = Math.floor(clampNonNegative(buildings));
     // Residents, hearths and livestock all eat. The extra terms are zero by
     // default so the pure ledger remains useful to isolated balance tests.
-    const foodDemand = people * ECONOMY_TUNING.foodPerResident +
+    // The hazard factor is exactly 1 when no hazard is active, so every
+    // existing caller and baseline test keeps its old numbers.
+    const demandFactor = Math.max(0.5, Math.min(2, Number.isFinite(Number(hazardFoodDemandFactor)) ? Number(hazardFoodDemandFactor) : 1));
+    const foodDemand = (people * ECONOMY_TUNING.foodPerResident +
         clampNonNegative(households) * ECONOMY_TUNING.foodPerHousehold +
-        clampNonNegative(livestock) * ECONOMY_TUNING.foodPerLivestock;
+        clampNonNegative(livestock) * ECONOMY_TUNING.foodPerLivestock) * demandFactor;
     const foodConsumed = Math.min(clampNonNegative(foodAvailable), foodDemand);
     const foodShortage = Math.max(0, foodDemand - foodConsumed);
     const effectiveTaxRate = Math.max(0, Math.min(35, Number.isFinite(Number(taxRate)) ? Number(taxRate) : 10));
@@ -150,7 +154,7 @@ export function getBuildingEfficiency(building, workforce = null) {
     const biomeProduction = 1 + getSpecialBiomeInfluence().city.production;
     return Math.max(0, Math.min(1.15, Math.min(1, workers / capacity) * biomeProduction)) * productivity * getCitizenModifiers().productivity * skillFactor *
         Math.max(0.7, Math.min(1.30, 1 + Number(civicModifiers.production || 0))) *
-        getFoodCrisisProductivity() * getDebtProductivity();
+        getFoodCrisisProductivity() * getDebtProductivity() * getHazardWorkFactor();
 }
 
 // Startup warm-up for the modifier caches used by the first settlement
@@ -173,6 +177,8 @@ export function warmEconomyCaches() {
     getFoodStorageCapacity();
     getRoadUpkeepTotal();
     getFurnitureUpkeepTotal();
+    getHazardFoodDemandFactor();
+    getHazardWorkFactor();
     return true;
 }
 
@@ -192,6 +198,7 @@ export function updateEconomy() {
         taxRate: Number(state.government?.taxRate ?? 10),
         households: foodInputs.households,
         livestock: foodInputs.livestock,
+        hazardFoodDemandFactor: getHazardFoodDemandFactor(),
         roadUpkeep: getRoadUpkeepTotal() * DAYS_PER_LEDGER,
         furnitureUpkeep: getFurnitureUpkeepTotal()
     });

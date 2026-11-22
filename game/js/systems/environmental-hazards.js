@@ -19,6 +19,7 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { addResource } from "../systems/resources.js";
 import { consumeMedicine, getMedicineAvailability, startOutbreak } from "../systems/health.js";
+import { getHazardModifiers as readHazardModifiers, invalidateHazardModifierCache } from "./hazard-modifiers.js";
 import { destroyRoad, getRoadAt } from "../systems/roads.js";
 import {
     HAZARD_CATALOG, HAZARD_EFFECTS, HAZARD_LIMITS, HAZARD_MECHANICS, REGIONAL_BUNDLES,
@@ -26,6 +27,11 @@ import {
 } from "../world/hazard-data.js";
 
 export const HAZARD_STATE_VERSION = 1;
+export {
+    getHazardSimulationEffects, getHazardFoodDemandFactor, getHazardWorkFactor,
+    getHazardMovementFactor, getHazardExtractionFactor, getHazardPastureCapacityFactor,
+    getHazardTradeBuyFactor, getHazardTradeSellFactor
+} from "./hazard-modifiers.js";
 const SEASON_NAMES = ["spring", "summer", "autumn", "winter"];
 
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
@@ -341,13 +347,26 @@ function shieldedResidentIds() {
     return ids;
 }
 
+// Field, forest and mine work takes the weather first. Most hazard casualties
+// are drawn from exposed crews; a minority still falls on the household, so
+// shelter, medicine and a warm hearth keep mattering.
+const EXPOSED_HAZARD_WORKPLACES = new Set([
+    TYPE.FARM, TYPE.LUMBER, TYPE.QUARRY, TYPE.GOLDMINE, TYPE.SAWMILL, TYPE.FORESTER, TYPE.MASON
+]);
+
 function harmResident({ kind = "illness", disease = "environmental illness", severity = 1 } = {}) {
     const shielded = shieldedResidentIds();
     const people = residents().filter(person => !(Number(person.illnessUntilTick) > state.tick)
         && !shielded.has(String(person.personId || person.id)));
     if (!people.length) return null;
-    const index = hash32(Number(state.worldSeed) || 1, 0x4841524d, people.length, state.year) % people.length;
-    const victim = people[index];
+    const exposed = people.filter(person => {
+        const workplace = person.workplace;
+        return workplace && !workplace.dead && EXPOSED_HAZARD_WORKPLACES.has(workplace.type);
+    });
+    const exposureRoll = hash32(Number(state.worldSeed) || 1, 0x48455850, state.tick, state.year) % 100;
+    const pool = exposed.length && exposureRoll < 65 ? exposed : people;
+    const index = hash32(Number(state.worldSeed) || 1, 0x4841524d, pool.length, state.year) % pool.length;
+    const victim = pool[index];
     const ticks = 40 + Math.round(severity * 40);
     victim.illnessStartedTick = state.tick;
     victim.illnessUntilTick = Math.max(Number(victim.illnessUntilTick) || 0, state.tick + ticks);
@@ -588,6 +607,7 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
     entry.season = state.seasonIndex;
     entry.year = state.year;
     entry.lastUpdateTick = state.tick;
+    invalidateHazardModifierCache();
     entry.mitigation = getHazardMitigation();
     entry.modifiers = emptyModifiers();
     entry.warnings = [];
@@ -640,10 +660,13 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
     // the cap is enforced after both so the panel and the state never exceed it.
     entry.active = entry.active.slice(0, HAZARD_LIMITS.maxActive);
 
-    // Standing modifiers the hazards imply, derived from the active set so a
-    // quiet season really is quiet.
-    const has = category => entry.active.some(hazard => hazard.category === category);
-    const total = entry.active.reduce((sum, hazard) => sum + hazard.severity, 0) / Math.max(1, entry.active.length);
+    // Standing modifiers the rolled hazards imply. The regional bundle is the
+    // climate's standing identity, not a separate event: counting it here made
+    // every climate permanently "hazardous" and shifted the baseline economy
+    // even in a quiet season. Only rolled hazards carry a modifier.
+    const pressure = entry.active.filter(hazard => hazard.category !== "regional");
+    const has = category => pressure.some(hazard => hazard.category === category);
+    const total = pressure.reduce((sum, hazard) => sum + hazard.severity, 0) / Math.max(1, pressure.length);
     entry.modifiers.work = clamp01(entry.modifiers.work + total * 0.12);
     entry.modifiers.movement = clamp01(total * 0.3 + (has("geology") ? 0.15 : 0));
     entry.modifiers.needs = clamp01(total * 0.35);
@@ -668,6 +691,7 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
     }
 
     if (events.length) addHistory(entry, "season", events.slice(0, HAZARD_LIMITS.maxEventsPerSeason).join(" · "));
+    invalidateHazardModifierCache();
     state.environmentalHazards = entry;
     return { skipped: false, season: entry.season, active: entry.active, events, profile };
 }
@@ -930,7 +954,7 @@ export function getHazardSnapshot() {
 
 /** Modifiers other systems may read. Values are 0..1. */
 export function getHazardModifiers() {
-    return { ...normalizeEnvironmentalHazardState(state.environmentalHazards).modifiers };
+    return readHazardModifiers();
 }
 
 export function serializeEnvironmentalHazardState() {
@@ -938,6 +962,7 @@ export function serializeEnvironmentalHazardState() {
 }
 
 export function restoreEnvironmentalHazardState(value) {
+    invalidateHazardModifierCache();
     state.environmentalHazards = normalizeEnvironmentalHazardState(value);
     return state.environmentalHazards;
 }

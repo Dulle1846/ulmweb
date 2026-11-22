@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "40a399901afacfd6a1132983b1328e1873e77752",
-  "sourceHash": "f70577487fcf9c1a8b4ed4d8b723889b17a2e88a064016402edcf0e0322829ba",
-  "generatedAt": "2026-11-22T09:52:31+00:00",
+  "commit": "33f4a3d8ebe7da8aacde62743cf86a3737976b19",
+  "sourceHash": "338902cdc95cb29133ed88b16044d8e525d7bdfb3a1d13a56bab88e65ee60234",
+  "generatedAt": "2026-11-22T10:21:53+00:00",
   "totals": {
     "total": 1498,
     "implemented": 1494,
@@ -26886,11 +26886,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -26908,11 +26918,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -26930,11 +26950,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -26952,11 +26982,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -26974,11 +27014,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -26996,11 +27046,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27018,11 +27078,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27040,11 +27110,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27062,11 +27142,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27084,11 +27174,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27106,11 +27206,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27128,11 +27238,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27150,11 +27270,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27172,11 +27302,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27194,11 +27334,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27216,11 +27366,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27238,11 +27398,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27260,11 +27430,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27282,11 +27462,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27304,11 +27494,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27326,11 +27526,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27348,11 +27558,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27370,11 +27590,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27392,11 +27622,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27414,11 +27654,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27436,11 +27686,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27458,11 +27718,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27480,11 +27750,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27502,11 +27782,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27524,11 +27814,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27546,11 +27846,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27568,11 +27878,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27590,11 +27910,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27612,11 +27942,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27634,11 +27974,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27656,11 +28006,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27678,11 +28038,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27700,11 +28070,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27722,11 +28102,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27744,11 +28134,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27766,11 +28166,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27788,11 +28198,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27810,11 +28230,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27832,11 +28262,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27854,11 +28294,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27876,11 +28326,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27898,11 +28358,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27920,11 +28390,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27942,11 +28422,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27964,11 +28454,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -27986,11 +28486,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28008,11 +28518,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28030,11 +28550,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28052,11 +28582,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28074,11 +28614,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28096,11 +28646,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28118,11 +28678,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28140,11 +28710,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28162,11 +28742,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28184,11 +28774,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28206,11 +28806,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28228,11 +28838,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28250,11 +28870,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28272,11 +28902,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28294,11 +28934,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28316,11 +28966,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28338,11 +28998,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28360,11 +29030,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28382,11 +29062,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28404,11 +29094,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28426,11 +29126,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28448,11 +29158,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28470,11 +29190,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28492,11 +29222,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28514,11 +29254,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28536,11 +29286,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28558,11 +29318,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28580,11 +29350,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28602,11 +29382,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28624,11 +29414,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28646,11 +29446,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28668,11 +29478,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28690,11 +29510,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28712,11 +29542,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28734,11 +29574,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28756,11 +29606,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28778,11 +29638,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28800,11 +29670,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28822,11 +29702,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28844,11 +29734,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28866,11 +29766,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28888,11 +29798,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28910,11 +29830,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28932,11 +29862,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28954,11 +29894,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28976,11 +29926,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -28998,11 +29958,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -29020,11 +29990,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -29042,11 +30022,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -29064,11 +30054,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -29086,11 +30086,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         },
         {
@@ -29108,11 +30118,21 @@
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/economy.js#calculateDailyLedger (demand)",
+            "js/systems/economy.js#getBuildingEfficiency (production)",
+            "js/systems/construction.js#updateConstruction (construction)",
+            "js/simulation/villagers.js#updateVillagers (movement)",
+            "js/systems/expeditions.js#startExpedition (expedition)",
+            "js/simulation/buildings.js#updateBuildingIncome (extraction)",
+            "js/systems/forest-fauna.js#updateForestFauna (pasture)",
+            "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
-            "tests/world/environmental-hazards.test.js"
+            "tests/world/environmental-hazards.test.js",
+            "tests/world/hazard-modifiers.test.js"
           ]
         }
       ],
@@ -29148,6 +30168,60 @@
           "valid": true
         },
         {
+          "file": "js/systems/hazard-modifiers.js",
+          "symbol": "getHazardSimulationEffects",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/systems/economy.js",
+          "symbol": "calculateDailyLedger",
+          "role": "demand",
+          "valid": true
+        },
+        {
+          "file": "js/systems/economy.js",
+          "symbol": "getBuildingEfficiency",
+          "role": "production",
+          "valid": true
+        },
+        {
+          "file": "js/systems/construction.js",
+          "symbol": "updateConstruction",
+          "role": "construction",
+          "valid": true
+        },
+        {
+          "file": "js/simulation/villagers.js",
+          "symbol": "updateVillagers",
+          "role": "movement",
+          "valid": true
+        },
+        {
+          "file": "js/systems/expeditions.js",
+          "symbol": "startExpedition",
+          "role": "expedition",
+          "valid": true
+        },
+        {
+          "file": "js/simulation/buildings.js",
+          "symbol": "updateBuildingIncome",
+          "role": "extraction",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-fauna.js",
+          "symbol": "updateForestFauna",
+          "role": "pasture",
+          "valid": true
+        },
+        {
+          "file": "js/systems/market.js",
+          "symbol": "executeTrade",
+          "role": "trade",
+          "valid": true
+        },
+        {
           "file": "js/presentation/hazard-panel.js",
           "symbol": "renderHazardPanel",
           "role": "ui",
@@ -29163,6 +30237,10 @@
       "tests": [
         {
           "file": "tests/world/environmental-hazards.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/world/hazard-modifiers.test.js",
           "valid": true
         }
       ],

@@ -8,6 +8,7 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { addLog } from "../core/event-log.js";
 import { addResource } from "./resources.js";
+import { getHazardMovementFactor } from "./hazard-modifiers.js";
 import { ensurePersonProfile, addPersonMemory } from "./people.js";
 import { recordLegacy } from "./legacy.js";
 import { isWaterAt, revealArea, worldWidth, worldHeight } from "../world/world.js";
@@ -522,7 +523,9 @@ export function startExpedition(siteId, leaderId, supplyId = "standard") {
     if ((Number(state.resources.gold) || 0) < goldCost) return { ok: false, reason: "not-enough-gold" };
     addResource("food", -foodCost);
     addResource("gold", -goldCost);
-    const travelDays = Math.max(3, Math.round((6 + Math.ceil(site.distance / 2.4)) * routeFactor));
+    // Extreme weather closes passes and slows the column. The factor is 1 in
+    // calm weather, so existing expedition timings are unchanged.
+    const travelDays = Math.max(3, Math.round((6 + Math.ceil(site.distance / 2.4)) * routeFactor / Math.max(0.5, getHazardMovementFactor())));
     const departTick = Number(state.tick) || 0;
     const id = "expedition-" + expeditions.nextId++;
     const active = {

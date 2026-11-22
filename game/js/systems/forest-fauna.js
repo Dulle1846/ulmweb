@@ -19,6 +19,7 @@ import { forestStandAt, FOREST_FAUNA } from "../world/forest-ecology.js";
 import { getForestHabitatAt } from "./resource-geography.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { seasonalState } from "../world/season.js";
+import { getHazardPastureCapacityFactor } from "./hazard-modifiers.js";
 
 const VERSION = 1;
 const MAX_HERDS = 240;
@@ -370,7 +371,10 @@ function carryingCapacity(herd, stand, node, day) {
     const season = seasonFor(day);
     const seasonal = season === "winter" ? 0.62 : season === "spring" ? 0.94 : season === "autumn" ? 1.06 : 1;
     const score = preferenceScore(stand, herd.species, day);
-    const capacity = spec.base * (0.52 + score * 0.88) * (0.72 + stock * 0.28) * seasonal;
+    // Drought, frost and lost pasture lower the browse the wood can carry. The
+    // factor is exactly 1 when no hazard is active.
+    const capacity = spec.base * (0.52 + score * 0.88) * (0.72 + stock * 0.28) * seasonal
+        * getHazardPastureCapacityFactor();
     return Math.max(1, capacity);
 }
 

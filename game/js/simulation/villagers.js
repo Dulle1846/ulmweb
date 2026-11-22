@@ -19,6 +19,7 @@ import { BUILDING_WORKFORCE } from '../systems/economy.js';
 import { getRoadSpeedMultiplier,getRoadTravelCost } from '../systems/roads.js';
 import { getForestMovementFactorAt } from '../systems/resource-geography.js';
 import { skillForJob } from '../systems/skills.js';
+import { getHazardMovementFactor } from '../systems/hazard-modifiers.js';
 
 const MOVING_TYPES = new Set([
     TYPE.VILLAGER, TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT, TYPE.PRIEST,
@@ -26,6 +27,9 @@ const MOVING_TYPES = new Set([
 const LEISURE_TYPES = new Set([TYPE.TAVERN, TYPE.MARKET, TYPE.TEMPLE, TYPE.WELL, TYPE.SHRINE]);
 
 const blockedBuildingTiles=new Set();
+// Read once per simulation tick; extreme weather slows every journey by the
+// same bounded factor. Calm weather leaves it at exactly 1.
+let hazardTravelFactor=1;
 let blockedTileWorldWidth=0;
 let blockedTileWorldHeight=0;
 let blockedEntityCount=-1,blockedWorldSeed=-1,blockedWorldEpoch=-1,blockedBuildingVersion=-1;
@@ -91,6 +95,7 @@ export const JOB_MAP = [
 export function updateVillagers() {
     if (state.isPaused || state.gameOver) return;
 
+    hazardTravelFactor=getHazardMovementFactor();
     rebuildBlockedBuildingTiles();
     const villagers=[];
     const workplaces=new Map(JOB_MAP.map(job=>[job,[]]));
@@ -435,7 +440,7 @@ function handleFlee(unit, threat, dt, keep=null) {
     const dy = target.y - unit.y;
     const dist = Math.hypot(dx, dy);
     if (dist > 2) {
-        const speed = (UNIT_SPEED[unit.type] || 1.0) * FLEE_SPEED_MULT;
+        const speed = (UNIT_SPEED[unit.type] || 1.0) * FLEE_SPEED_MULT * hazardTravelFactor;
         const s = Math.min(1, dt * 5);
         unit.velocityX += ((dx / dist) * speed - unit.velocityX) * s;
         unit.velocityY += ((dy / dist) * speed - unit.velocityY) * s;
@@ -526,7 +531,7 @@ function moveToward(unit, dt, avoid = { x: 0, y: 0 }) {
 
     const targetTileX=Math.floor(unit.targetX),targetTileY=Math.floor(unit.targetY);
     if(unit.path&&(unit.pathTargetX!==targetTileX||unit.pathTargetY!==targetTileY||unit.pathVersion!==((state.buildingCollisionVersion||0)+':'+(state.roads?.revision||0))))unit.path=null;
-    const travelSpeed = (UNIT_SPEED[unit.type] || 1)*getRoadSpeedMultiplier(unit.x,unit.y)*getForestMovementFactorAt(unit.x,unit.y);
+    const travelSpeed = (UNIT_SPEED[unit.type] || 1)*getRoadSpeedMultiplier(unit.x,unit.y)*getForestMovementFactorAt(unit.x,unit.y)*hazardTravelFactor;
     if(unit.path&&followCachedPath(unit,dt,travelSpeed,avoid))return;
 
     const dx = unit.targetX - unit.x;

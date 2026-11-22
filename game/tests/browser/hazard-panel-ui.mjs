@@ -84,6 +84,10 @@ try {
     assert.match(panel, /LONG-TERM CONSEQUENCES/);
     assert.match(panel, /ARCANE BURDEN/);
     assert.match(panel, /REGIONAL DANGERS/);
+    assert.match(panel, /DERIVED CONSEQUENCES/);
+    assert.match(panel, /FOOD & WATER DRAW/);
+    assert.match(panel, /CARAVAN BUY/);
+    assert.match(panel, /ADAPTATION RELIEF/);
 
     const prepare = page.locator('#command-panel-content [data-command="hazard-prepare"]');
     assert.equal(await prepare.isDisabled(), false, "a fresh season can be prepared");
@@ -158,6 +162,49 @@ try {
     assert.deepEqual(restored.active, settled.active, "the reloaded realm must keep the same hazards");
     assert.equal(restored.history, settled.history, "the hazard record must survive the reload");
     assert.deepEqual(restored.losses, settled.losses, "the loss ledger must survive the reload");
+
+    // The panel must show the player the same multipliers the simulation uses,
+    // and the numbers must move between calm weather and an active hazard.
+    const readConsequences = async () => {
+        if (!(await page.locator("#command-modal").isVisible().catch(() => false))) {
+            await page.locator("#command-open-btn").click();
+        }
+        await page.locator('[data-command-tab="kingdom"]').click();
+        await page.locator('[data-command-tab="hazards"]').click();
+        await page.waitForFunction(() => {
+            const text = document.querySelector("#command-panel-content")?.textContent || "";
+            return text.includes("DERIVED CONSEQUENCES") && text.includes("a reload in the middle of a drought keeps the drought");
+        }, null, { timeout: 15000 });
+        return page.locator("#command-panel-content").evaluate(element => element.textContent || "");
+    };
+    await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        state.environmentalHazards.active = [];
+        state.environmentalHazards.modifiers = {
+            diseaseRisk: 0, work: 0, movement: 0, needs: 0, morale: 0,
+            resistance: 0, adaptation: 0, medical: 0, trade: 0, extraction: 0, pasture: 0
+        };
+    });
+    const calmPanel = await readConsequences();
+    assert.match(calmPanel, /DERIVED CONSEQUENCES · NEUTRAL/);
+    assert.match(calmPanel, /FOOD & WATER DRAW[\s\S]*?0%/);
+    await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        state.environmentalHazards.active = [{
+            id: "heatwave", mechanic: "hazard:heatwave", label: "Heatwaves", category: "weather",
+            spec: "1.2.20.4", severity: 0.8, startedYear: state.year, effects: {}
+        }];
+        state.environmentalHazards.modifiers = {
+            diseaseRisk: 0, work: 0.5, movement: 0.5, needs: 0.5, morale: 0,
+            resistance: 0, adaptation: 0, medical: 0, trade: 0.5, extraction: 0.5, pasture: 0.5
+        };
+    });
+    const hazardPanel = await readConsequences();
+    assert.match(hazardPanel, /DERIVED CONSEQUENCES · APPLIED TO THE REALM/);
+    assert.match(hazardPanel, /FOOD & WATER DRAW[\s\S]*?\+23%/);
+    assert.match(hazardPanel, /WORK & BUILDING[\s\S]*?−20%/);
+    assert.match(hazardPanel, /WORK −21%/);
+    assert.notEqual(calmPanel, hazardPanel, "the player must see the numbers change with the hazard");
 
     assert.deepEqual(pageErrors, [], "no page errors");
     assert.deepEqual(consoleErrors, [], "no console errors");

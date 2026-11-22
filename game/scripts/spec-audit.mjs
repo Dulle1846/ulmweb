@@ -308,10 +308,19 @@ const MANIFEST_SPECS = [
             { file: "js/systems/environmental-hazards.js", symbol: "updateEnvironmentalHazards", role: "simulation" },
             { file: "js/systems/environmental-hazards.js", symbol: "updateEnvironmentalHazardYear", role: "simulation" },
             { file: "js/systems/environmental-hazards.js", symbol: "getHazardMitigation", role: "simulation" },
+            { file: "js/systems/hazard-modifiers.js", symbol: "getHazardSimulationEffects", role: "simulation" },
+            { file: "js/systems/economy.js", symbol: "calculateDailyLedger", role: "demand" },
+            { file: "js/systems/economy.js", symbol: "getBuildingEfficiency", role: "production" },
+            { file: "js/systems/construction.js", symbol: "updateConstruction", role: "construction" },
+            { file: "js/simulation/villagers.js", symbol: "updateVillagers", role: "movement" },
+            { file: "js/systems/expeditions.js", symbol: "startExpedition", role: "expedition" },
+            { file: "js/simulation/buildings.js", symbol: "updateBuildingIncome", role: "extraction" },
+            { file: "js/systems/forest-fauna.js", symbol: "updateForestFauna", role: "pasture" },
+            { file: "js/systems/market.js", symbol: "executeTrade", role: "trade" },
             { file: "js/presentation/hazard-panel.js", symbol: "renderHazardPanel", role: "ui" },
             { file: "js/core/save-runtime.js", symbol: "serializeEnvironmentalHazardState", role: "persistence" }
         ],
-        tests: ["tests/world/environmental-hazards.test.js"]
+        tests: ["tests/world/environmental-hazards.test.js", "tests/world/hazard-modifiers.test.js"]
     }
 ];
 

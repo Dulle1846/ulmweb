@@ -16,6 +16,7 @@ import { transitionGameplayAt } from "../world/transition-biomes.js";
 import { getWorkforceSnapshot } from "./economy.js";
 import { getResearchModifiers } from "./research.js";
 import { getCivicModifiers } from "./civic.js";
+import { getHazardWorkFactor } from "./hazard-modifiers.js";
 import { isWalkable, rebuildBlockedBuildingTiles } from "../simulation/villagers.js";
 import { consumeRebuildRuin, rebuildDiscountFor, REBUILD_DISCOUNT } from "./disaster-recovery.js";
 import {
@@ -291,6 +292,9 @@ function advanceStage(site) {
 export function updateConstruction() {
     const city = ensureCityState();
     if (!city.enabled || state.tick <= 0 || state.isPaused || state.gameOver) return null;
+    // Extreme seasons cost builder-days. Read the one bounded scalar once per
+    // construction pass; it is exactly 1 in calm weather.
+    const hazardWork = getHazardWorkFactor();
     const sites = state.entities.filter(entity => !entity.dead && entity.isBuilding() && entity.construction && entity.construction.stage < 3);
     for (const site of sites) {
         const construction = site.construction;
@@ -314,7 +318,7 @@ export function updateConstruction() {
         const definition = CONSTRUCTION_STAGES[construction.stage] || CONSTRUCTION_STAGES[0];
         const requiredDays = Math.max(1, definition.days || 1);
         const winterWorkFactor = Math.max(0.8, 1 - (Number(state.winter?.values?.clearancePenalty) || 0) * 0.5);
-        construction.progress = Math.min(100, (Number(construction.progress) || 0) + (100 / requiredDays) * Math.min(2, builders) * winterWorkFactor);
+        construction.progress = Math.min(100, (Number(construction.progress) || 0) + (100 / requiredDays) * Math.min(2, builders) * winterWorkFactor * hazardWork);
         construction.reason = definition.label;
         if (construction.progress >= 100) advanceStage(site);
     }
