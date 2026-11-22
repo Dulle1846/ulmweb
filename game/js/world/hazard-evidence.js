@@ -69,6 +69,11 @@ const COVERAGE_RARE = testRef(COVERAGE, "1.2.20 magic rare pressure seeds a real
 const COVERAGE_WORKS = testRef(COVERAGE, "1.2.20 targeted works change their own risk and loss path");
 const COVERAGE_MAGIC = testRef(COVERAGE, "1.2.20 cursed and forbidden burdens reach real consumers");
 const COVERAGE_VOLCANO = testRef(COVERAGE, "1.2.20 volcanic ash and long-term debt reach the annual state");
+// This is the executable state-delta proof. Every row is run through the real
+// simulator and again with that row's effect neutralized; the second run must
+// stop moving state. The evidence contract names it so a row cannot claim a
+// proof that the release did not actually run.
+const EXECUTABLE_PROOF = testRef("hazard-effect-proofs", "1.2.20 all 102 catalogue points produce measured state deltas");
 
 function eventTestFor(row) {
     const effects = HAZARD_EFFECTS[row.mechanic] || {};
@@ -187,7 +192,15 @@ export const HAZARD_EVIDENCE_BY_MECHANIC = Object.freeze(Object.fromEntries(HAZA
 
 export const HAZARD_EVIDENCE = Object.freeze(Object.fromEntries(HAZARD_CATALOG.map(row => {
     const proof = HAZARD_EVIDENCE_BY_MECHANIC[row.mechanic] || UNKNOWN;
-    return [row.spec, Object.freeze({ ...proof, spec: row.spec, id: row.id, mechanic: row.mechanic, label: row.label })];
+    return [row.spec, Object.freeze({
+        ...proof,
+        tests: Object.freeze([...(proof.tests || []), EXECUTABLE_PROOF]),
+        executableProof: EXECUTABLE_PROOF.name,
+        spec: row.spec,
+        id: row.id,
+        mechanic: row.mechanic,
+        label: row.label
+    })];
 })));
 
 export function hazardEvidenceFor(spec) {

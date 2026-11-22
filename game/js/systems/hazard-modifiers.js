@@ -10,6 +10,7 @@
 // second simulation, and is cached by object identity: a seasonal pass replaces
 // the block and therefore invalidates the cache naturally.
 import { state } from "../core/state.js";
+import { HAZARD_EFFECT_MODIFIER, isHazardProofNeutralized } from "./hazard-proof.js";
 
 export const HAZARD_MODIFIER_KEYS = Object.freeze([
     "diseaseRisk", "work", "movement", "needs", "morale",
@@ -81,14 +82,18 @@ export function getHazardSimulationEffects() {
     const partnerCrises = Array.isArray(state.environmentalHazards?.partners)
         ? state.environmentalHazards.partners.filter(partner => partner?.outbreak
             || (partner?.crisis && partner.crisis !== "none")).length : 0;
-    const raw = Object.freeze({
+    const rawBase = {
         ...base,
         movement: clamp01(base.movement + clamp01(magic.fog) * 0.18 + clamp01(magic.unnaturalWeather) * 0.10),
         extraction: clamp01(base.extraction + clamp01(magic.forbidden) * 0.12),
         pasture: clamp01(base.pasture + clamp01(magic.animalShift) * 0.20),
         diseaseRisk: clamp01(base.diseaseRisk + clamp01(magic.corruption) * 0.12),
         trade: clamp01(base.trade + partnerCrises * 0.035)
-    });
+    };
+    for (const [spec, field] of Object.entries(HAZARD_EFFECT_MODIFIER)) {
+        if (isHazardProofNeutralized(spec)) rawBase[field] = 0;
+    }
+    const raw = Object.freeze(rawBase);
     const relief = 1 - clamp01(raw.adaptation) * HAZARD_MODIFIER_EFFECT.adaptationRelief;
     const movement = bounded(1 - raw.movement * HAZARD_MODIFIER_EFFECT.movement * relief, 0.50, 1);
     // Pack animals and carts buffer part of a person's travel penalty. The

@@ -1,13 +1,44 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.41.0`
-**Next development line:** `3.42.0-dev`
+**Current production version:** `3.42.0`
+**Next development line:** `3.43.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.42.0 — The 102/102 claim is executed, not declared
+
+3.41.0 added an evidence record per catalogue row, but that record could still
+be satisfied by strings, panel markers and test titles. This release makes the
+claim falsifiable: every row now runs through the real simulator and must move
+measured state, and the same proof is re-run with exactly that row neutralized.
+
+- **Executable state-delta suite.** `tests/world/hazard-effect-proofs.test.js`
+  contains one proof for each catalogue row. Events use the real
+  `applyHazard`/resource/health/field/herd/terrain path, bundles compare
+  `getHazardProfile().exposure`, effects reach the derived modifier or event
+  primitive, works raise their own mitigation field, chronic rows move the
+  annual pass and magic rows move their saved burden, disease or rare chain.
+- **Neutralization is a real run.** `js/systems/hazard-proof.js` is an empty
+  production seam; the test fills one row at a time and requires the proof to
+  collapse. Result: **102/102** proofs pass normally, **102** neutralization
+  runs, **0/102** survivors (all 102 proofs fail as required).
+- **Honest active/passive split.** **102 active, 0 passive.** No row is a
+  flavour-only label; a future passive row must declare `passive: true` and a
+  reason and is excluded from the count. Every active row keeps a non-empty
+  HAZARDS/EVENT LOG surface in `hazard-evidence.js`.
+- **No new simulation loop or save burden.** The seam is a module-level set
+  lookup on existing hazard/season paths, never frame work. Save schema 13,
+  deterministic rolls and old saves are unchanged; the proof roll override and
+  neutralized set are test-only and never saved.
+
+Verification: focused hazard/terrain/save tests, one full `npm test`, the
+deterministic 25-year campaign and the hazard/terrain browser reference.
+
+---
 
 ## 3.41.0 — Every 1.2.20 point has a proven chain
 

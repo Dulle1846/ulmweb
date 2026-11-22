@@ -1,7 +1,7 @@
 # Biomes with special hazards and diseases (1.2.20)
 
-**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.41.0).
-**Spec:** 1.2.20.1–1.2.20.102, all 102 points implemented and evidenced.
+**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.42.0).
+**Spec:** 1.2.20.1–1.2.20.102, all 102 points active with executable state-delta proofs.
 **Panel:** `HAZARDS` tab in the realm management deck.
 **Code:** `js/world/hazard-data.js`, `js/world/hazard-expansion-data.js`,
 `js/world/hazard-evidence.js`, `js/systems/environmental-hazards.js`,
@@ -9,13 +9,21 @@
 `js/systems/hazard-modifiers.js`, `js/presentation/hazard-panel.js`,
 `css/hazard-panel.css`.
 
-Every catalogue point now carries the same three-part proof in
+Every catalogue point now carries a three-part evidence record in
 `js/world/hazard-evidence.js`: the simulation rule that consumes it, the
 player-facing surface that reports it, and the focused test that pins it. The
-contract is enforced by `tests/world/hazard-coverage.test.js`, which fails if a
-row has no effect, no existing panel marker, no existing test title, or an
-`applyHazard` primitive without a real branch. A passive/flavour row would have
-to declare `passive: true` and a reason; there are none in 1.2.20.
+static contract is enforced by `tests/world/hazard-coverage.test.js`. Since
+3.42.0 it is backed by an executed proof in
+`tests/world/hazard-effect-proofs.test.js`: the real `applyHazard`, annual,
+modifier, work, scar and magic paths must move measurable state, and the same
+proof must stop moving when that row is neutralized through
+`js/systems/hazard-proof.js`. The production seam starts empty and is never
+saved, so live determinism and save schema 13 are unchanged.
+
+**Active/passive split:** **102 active, 0 passive.** No 1.2.20 row is a
+flavour-only label. A row that is deliberately passive in a future release must
+set `passive: true` with a reason and is excluded from the proof count; the
+current audit found none, and every one of the 102 rows has a measured delta.
 
 ## What the player sees
 
@@ -75,6 +83,37 @@ coordinates and the fire/flood/lava conversion shield.
   tile mark when the deterministic roll is below the shield, and existing
   works also narrow the converted area. A zero-firebreak realm keeps the exact
   pre-3.40 readiness and hazard pressure.
+
+### 3.42 executable proof pass
+
+The 3.41 evidence contract could still be green while an effect did nothing,
+because it compared strings, panel markers and test titles. This pass replaces
+the declaration with a run:
+
+- **One proof per row.** `tests/world/hazard-effect-proofs.test.js` registers
+  exactly 102 proofs: 42 event applications, 9 bundle exposure checks, 19 effect
+  modifier/relief/primitive checks, 12 work protection checks, 9 annual chronic
+  processes and 11 magic burdens. Each captures state before and after the real
+  call and requires a strictly positive delta.
+- **Neutralization is exercised, not assumed.** The test sets one catalogue row
+  at a time in `js/systems/hazard-proof.js` (both its spec and mechanic id),
+  runs the same proof and requires the delta to collapse. The production set is
+  empty, so this seam has no live effect.
+- **Measured result:** `102/102` proofs pass normally; `102` single-row
+  neutralization runs produce `0/102` survivors (all 102 proofs fail as
+  required). The test prints `HAZARD PROOF PASS`, `HAZARD ACTIVE/PASSIVE` and
+  `HAZARD NEUTRALIZATION FAILURES` so CI and release reports quote numbers, not
+  a claim.
+- **Events** go through `applyHazard` with the real field, herd, health,
+  building, resource and terrain consumers. **Bundles** must change
+  `getHazardProfile().exposure`; **effects** must reach the derived modifier or
+  the event primitive; **works** must raise their own mitigation field;
+  **chronic** rows must move annual state; **magic** rows must move their saved
+  burden, disease or rare chain.
+- **Visibility stays attached.** Every proof asserts that its catalogue row has
+  a non-empty HAZARDS/EVENT LOG surface in the evidence record, and the existing
+  browser reference still checks the rendered HAZARDS panel. No new UI marker
+  was invented for the test seam.
 
 ### 3.41 evidence-contract pass
 
