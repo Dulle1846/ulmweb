@@ -5,6 +5,7 @@
 import { WORLD_W, WORLD_H, CELL, BIOME } from '../../core/config.js';
 import { TYPE } from '../../core/types.js';
 import { state } from '../../core/state.js';
+import { getHazardTerrainAt } from '../../systems/hazard-scars.js';
 
 // The terrain half of the minimap only changes when the world or explored
 // mask changes. Redrawing ~7,700 sampled cells every 400 ms was real main-
@@ -33,6 +34,7 @@ function minimapTerrain(W, H, scaleX, scaleY, sea, step) {
         Number(state.terrainResolution) || 0,
         Number(state.terrainPixW) || 0,
         Number(state.terrainPixH) || 0,
+        Number(state.environmentalHazards?.scars?.revision) || 0,
     ].join("|");
     if (key === minimapTerrainKey) return minimapTerrainCanvas;
     minimapTerrainKey = key;
@@ -51,6 +53,13 @@ function minimapTerrain(W, H, scaleX, scaleY, sea, step) {
             else if (h < BIOME.FOREST) mctx.fillStyle = '#365314';
             else if (h < BIOME.ROCK) mctx.fillStyle = '#166534';
             else mctx.fillStyle = '#6e6e6e';
+            const hazard = getHazardTerrainAt(x, y);
+            if (hazard) {
+                mctx.fillStyle = hazard.kind === 'lava' ? '#5b211b'
+                    : hazard.kind === 'burnt' ? '#5a3e27'
+                        : hazard.kind === 'flooded' ? '#3f6e7a'
+                            : hazard.kind === 'lost' ? '#332f29' : '#5b3d67';
+            }
 
             mctx.fillRect(
                 Math.floor(x * scaleX),

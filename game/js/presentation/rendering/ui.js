@@ -448,6 +448,11 @@ export function renderUI() {
     uiHudFrame = setTimeout(runHudRefresh, 0);
 }
 const resourceFamilyLegendItems=Object.values(BIOME_RESOURCE_MAP_FAMILIES).map(family=>["map-swatch--res-"+family.id,family.label]);
+const HAZARD_MAP_LEGEND=Object.freeze({
+    label:"HAZARD TERRAIN",
+    items:[["map-swatch--hazard-burnt","Burnt woodland"],["map-swatch--hazard-flooded","Flooded ground"],["map-swatch--hazard-lava","Lava field"],["map-swatch--hazard-lost","Lost ground"],["map-swatch--hazard-corruption","Corrupted ground"]],
+    note:"Saved terrain conversion. Lava and lost ground are permanently impassable; floodwater blocks for the year and cuts roads; burnt tiles lose timber capacity. The same marks drive movement, gathering and the resource survey."
+});
 const MAP_LAYER_LEGENDS=Object.freeze({
     resources:{
         label:"RESOURCE SURVEY",
@@ -489,9 +494,10 @@ let lastMapLayerLegend="";
 function renderMapLayerLegend(){
     const legend=document.getElementById("map-layer-legend");
     if(!legend)return;
-    if(lastMapLayerLegend===state.mapLayer)return;
-    lastMapLayerLegend=state.mapLayer;
-    const data=MAP_LAYER_LEGENDS[state.mapLayer];
+    const key=(state.hazardOverlay?"hazard|":"")+state.mapLayer;
+    if(lastMapLayerLegend===key)return;
+    lastMapLayerLegend=key;
+    const data=state.hazardOverlay?HAZARD_MAP_LEGEND:MAP_LAYER_LEGENDS[state.mapLayer];
     if(!data){legend.classList.add("hidden");legend.innerHTML="";return;}
     legend.classList.remove("hidden");
     legend.innerHTML='<strong>'+esc(data.label)+'</strong>'+data.items.map(([swatch,label])=>'<span class="map-legend-item"><i class="map-swatch '+swatch+'"></i>'+esc(label)+'</span>').join("")+'<small>'+esc(data.note)+'</small>';

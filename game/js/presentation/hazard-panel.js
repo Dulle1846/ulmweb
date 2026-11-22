@@ -4,7 +4,7 @@
 // saved state or the live protection survey. Buttons are real actions: prepare
 // the season, treat casualties, cleanse corruption.
 import { state } from "../core/state.js";
-import { getHazardSnapshot } from "../systems/environmental-hazards.js";
+import { getHazardSnapshot, getHazardTerrainShield } from "../systems/environmental-hazards.js";
 import { HAZARD_CATEGORIES, HAZARD_CLIMATES, HAZARD_EFFECTS } from "../world/hazard-data.js";
 import { getHazardSimulationEffects } from "../systems/hazard-modifiers.js";
 import { getDisasterRecoverySnapshot } from "../systems/disaster-recovery.js";
@@ -153,13 +153,26 @@ export function renderHazardPanel() {
             '</strong><small>' + esc(crew.note) + '</small></div>' +
             '<div class="hazard-actions">' + actionButton("hazard-crew-" + id, "TRAIN · " + costText(crew.cost), { disabled: level >= crew.max }) + '</div></div>';
     }).join("");
+    const lastScarAt = kind => {
+        const marks = Array.isArray(scars[kind]) ? scars[kind] : [];
+        const last = marks[marks.length - 1];
+        return last ? " · last at " + num(last.x) + "," + num(last.y) : "";
+    };
     const scarRows = [
-        ["BURNT WOODLAND", scars.counts.burnt, "trees and forage removed"],
-        ["FLOOD SCARS", scars.counts.flooded, "roads and fields cut"],
-        ["LAVA", scars.counts.lava, "permanent, impassable"],
-        ["LOST GROUND", scars.counts.lost, "permanent, impassable"],
+        ["BURNT WOODLAND", scars.counts.burnt, "charred vegetation, timber capacity cut"],
+        ["FLOODED GROUND", scars.counts.flooded, "moisture raised, roads and nodes washed out"],
+        ["LAVA", scars.counts.lava, "permanent basalt, impassable"],
+        ["LOST GROUND", scars.counts.lost, "permanent broken ground, impassable"],
         ["CORRUPTION", scars.counts.corruption, "forage blocked, taint spreads"]
-    ].map(([label, count, note]) => chronicRow(label, num(count), note)).join("");
+    ].map(([label, count, note], index) => chronicRow(label, num(count), note + lastScarAt(["burnt", "flooded", "lava", "lost", "corruption"][index]))).join("");
+    const changedTerrain = '<div class="command-summary">' +
+        '<div><small>CONVERTED TILES</small><strong>' + num(chronic.terrainTiles) + '</strong></div>' +
+        '<div><small>RESOURCE NODES LOST</small><strong>' + num(chronic.nodesLost) + '</strong></div>' +
+        '<div><small>ROADS CUT</small><strong>' + num(chronic.roadsCut) + '</strong></div>' +
+        '<div><small>VISIBLE SCAR TILES</small><strong>' + num(scars.terrainTiles) + '</strong></div></div>' +
+        '<p class="command-note">Conversion shield — fire ' + pct(getHazardTerrainShield("wildfire")) +
+        ' · flood ' + pct(getHazardTerrainShield("flood")) + ' · lava ' + pct(getHazardTerrainShield("lava")) +
+        '. Firebreaks, dams and drainage, avalanche barriers and safe siting turn aside new tile conversions; the same works narrow the seasonal forecast.</p>';
     const rareChoices = rareChain && rare && !rare.resolved
         ? '<div class="hazard-actions">' + rareChain.choices.map(choice =>
             actionButton("hazard-rare-" + choice.id, choice.label.toUpperCase() + " · " + costText(choice.cost), { value: choice.id })).join("") + '</div>'
@@ -250,6 +263,7 @@ export function renderHazardPanel() {
         workRow("Irrigation", mitigation.irrigation, "Mills and worked farmland carry water to the fields") +
         workRow("Walls & dams", mitigation.dam, "Walls hold floodwater and slides") +
         workRow("Avalanche protection", mitigation.avalanche, "Foresters stabilise slopes, walls stop the run") +
+        workRow("Firebreaks", mitigation.firebreak, "Cleared belts stop a wildfire converting new tiles") +
         workRow("Drainage", mitigation.drainage, "Sanitation drains the wet ground") +
         workRow("Roads & bridges", mitigation.roads, "Built roads keep caravans moving") +
         workRow("Warehouses", mitigation.warehouse, "Stores keep grain dry and safe") +
@@ -262,6 +276,8 @@ export function renderHazardPanel() {
         '<p class="command-note">Readiness is the average of these works plus this season\'s plan. A high readiness lowers severity, injuries and destruction; it cannot remove a hazard. Dams, avalanche barriers, drainage, firebreaks, weatherproof houses, quarantine houses, granaries and warding stones are real buildings in the PROTECTION build menu.</p>' +
         '<div class="command-section-title">SPECIALIST CREWS & EQUIPMENT</div><div class="hazard-work-grid">' + crewRows + '</div>' +
         '<div class="command-section-title">HAZARD SCARS ON THE MAP</div><div class="command-history-list">' + scarRows + '</div>' +
+        changedTerrain +
+        '<p class="command-note">Lava and lost ground are permanent. Burnt ground keeps its reduced timber capacity. Flooded ground blocks movement for the year, raises the tile moisture, and cuts the roads actually crossed by the flood. The same saved marks paint the terrain canvas and drive movement, gathering and the resource survey.</p>' +
         actionButton("hazard-overlay", state.hazardOverlay ? "HIDE HAZARD MAP" : "SHOW HAZARD MAP") +
         '<div class="command-section-title">REBUILD ECONOMY</div><div class="command-summary">' +
         '<div><small>EMERGENCY FUND</small><strong>' + num(response.insurance) + ' / ' + num(INSURANCE_CAP) + 'G</strong></div>' +

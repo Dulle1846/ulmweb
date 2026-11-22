@@ -28,7 +28,7 @@ function createInitialState() {
         frameFaulted:false,frameErrorCount:0,worldEpoch:0,buildingCollisionVersion:0,
         selectedTab:0,eventLog:[],activeEvent:null,eventSequence:0,
         entities:[],personArchive:[],creatureArchive:[],craftedItems:[],population:null,aiChronicle:createAiChronicleState(),eventTimeline:createEventTimelineState(),aiBusy:false,particles:[],floaters:[],pendingPresentationEffects:[],
-        heightMap:null,moistureMap:null,terrainCanvas:null,terrainDirty:true,explored:[],
+        heightMap:null,moistureMap:null,terrainCanvas:null,terrainCleanCanvas:null,hazardTerrainDirty:false,hazardMoisture:null,hazardOverlay:false,terrainDirty:true,explored:[],
         fogCanvas:null,fogDirty:true,fogExploredRef:null,
         terrainResolution:0,terrainPixW:0,terrainPixH:0,
         terrainRenderer:"canvas",terrainAutoMode:"canvas",terrainMode:"canvas",terrainRendererName:"",terrainFallback:false,

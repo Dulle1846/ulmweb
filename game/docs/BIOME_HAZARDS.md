@@ -1,6 +1,6 @@
 # Biomes with special hazards and diseases (1.2.20)
 
-**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.39.0).
+**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.40.0).
 **Spec:** 1.2.20.1–1.2.20.102, all 102 points implemented.
 **Panel:** `HAZARDS` tab in the realm management deck.
 **Code:** `js/world/hazard-data.js`, `js/world/hazard-expansion-data.js`,
@@ -34,6 +34,38 @@ resettlement, disease treatment, rare-event decisions and the hazard map
 toggle. The original three actions remain: prepare the season (12 wood, 8 gold,
 once per season), treat casualties (spends herbal doses) and cleanse corrupted
 ground (10 stone, 12 gold).
+
+### 3.40 terrain-conversion pass
+
+Lava, wildfire and flood now alter the playable map itself, not only their
+ledger rows:
+
+- **Conversion is spatial.** The bounded annual hazard pass writes real tile
+  marks: lava and lost ground are permanent and impassable, wildfire leaves
+  burnt woodland with reduced vegetation, and fresh floodwater raises moisture,
+  blocks movement for the year and cuts crossed roads. The existing seed/year
+  hash chooses the bounded area; no per-tick conversion work was added.
+- **Nodes carry the damage.** `js/systems/resource-geography.js` lowers sparse
+  `forestCapacity`/`stoneCapacity` baselines as well as stock. Lava and lost
+  ground zero both resources, fire removes timber and most future capacity,
+  flood washes out stock/capacity and marks the tile as water-accessible. A
+  converted node cannot regrow back through normal forest regrowth.
+- **Saves are exact and backward-compatible.** New saves store optional sparse
+  capacity deltas in the existing version-1 resource snapshot; 3.39 snapshots
+  have no such arrays and are migrated once from the saved marks during
+  `restoreEnvironmentalHazardState()`. New snapshots skip re-damage on load.
+  The terrain, node, road and blockade round-trip is covered by
+  `tests/world/hazard-terrain.test.js`.
+- **The map shows it.** `world.js` keeps a clean tinted terrain raster and
+  repaints the hazard layer only when marks change. The renderer and minimap
+  read the same saved marks; the map legend names all five terrain states and
+the hazard panel lists converted tiles, lost nodes, cut roads, last scar
+coordinates and the fire/flood/lava conversion shield.
+- **Protection is measurable.** Firebreaks, dams, drainage, avalanche barriers
+  and safe siting feed `getHazardTerrainShield()`; the annual pass skips a new
+  tile mark when the deterministic roll is below the shield, and existing
+  works also narrow the converted area. A zero-firebreak realm keeps the exact
+  pre-3.40 readiness and hazard pressure.
 
 ### 3.39 depth pass
 

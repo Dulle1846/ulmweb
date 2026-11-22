@@ -44,9 +44,10 @@ function sampleTerrain(tx,ty){
     const px=Math.floor((tx+0.5)*res),py=Math.floor((ty+0.5)*res);
     if(!width||!height||px<0||py<0||px>=width||py>=height)return {height:0,moisture:0.5,temperature:0.55};
     const index=py*width+px;
+    const hazardMoisture=Number(state.hazardMoisture?.get(tileIndex(tx,ty)))||0;
     return {
         height:Number(state.heightMap?.[index])||0,
-        moisture:clamp(Number(state.moistureMap?.[index])||0,0,1),
+        moisture:clamp((Number(state.moistureMap?.[index])||0)+hazardMoisture,0,1),
         temperature:clamp(Number(state.temperatureMap?.[index] ?? 0.55)||0,0,1),
     };
 }
@@ -335,7 +336,10 @@ export function generateResourceGeography(seed=state.worldSeed){
             }
         }
     }
-    state.resourceGeography={version:VERSION,seed:worldSeed,forestCapacity,forestStock,forestKind,forestAge,stoneCapacity,stoneStock,fertility,waterAccess};
+    // The generated capacities are the baseline for sparse save deltas. Hazard
+    // terrain may permanently lower a tile's capacity; keeping the baseline in
+    // memory (never in the save) lets serialization write only changed tiles.
+    state.resourceGeography={version:VERSION,seed:worldSeed,forestCapacity,forestStock,forestKind,forestAge,stoneCapacity,stoneStock,fertility,waterAccess,forestCapacityBase:forestCapacity.slice(),stoneCapacityBase:stoneCapacity.slice(),capacitySnapshot:false};
     return state.resourceGeography;
 }
 
@@ -805,6 +809,58 @@ function extract(type,x,y,amount){
 export function harvestForest(x,y,amount){return extract("forest",x,y,amount);}
 export function extractStone(x,y,amount){return extract("stone",x,y,amount);}
 
+// A hazard converts the physical resource tile, not only a ledger counter.
+// Capacities are lowered as well as stock, so regrowth cannot quietly restore a
+// lava field or a washed-out quarry. The change is written as a sparse capacity
+// delta in the save and survives an exact load.
+export function damageHazardNodeAt(x,y,kind){
+    const point=readTile(x,y);
+    if(!point)return null;
+    let geo;
+    try{geo=ensureGeography();}catch{return null;}
+    const i=point.index;
+    const forestCapacityBefore=geo.forestCapacity[i]||0;
+    const forestStockBefore=geo.forestStock[i]||0;
+    const stoneCapacityBefore=geo.stoneCapacity[i]||0;
+    const stoneStockBefore=geo.stoneStock[i]||0;
+    const fertilityBefore=geo.fertility[i]||0;
+    let forestCapacity=forestCapacityBefore;
+    let forestStock=forestStockBefore;
+    let stoneCapacity=stoneCapacityBefore;
+    let stoneStock=stoneStockBefore;
+    let fertility=fertilityBefore;
+    if(kind==="lava"||kind==="lost"){
+        forestCapacity=0;forestStock=0;stoneCapacity=0;stoneStock=0;
+        fertility=0;geo.waterAccess[i]=0;
+    }else if(kind==="burnt"){
+        forestCapacity=Math.floor(forestCapacityBefore*0.18);
+        forestStock=0;
+        fertility=Math.max(0,Math.floor(fertilityBefore*0.42));
+    }else if(kind==="flooded"){
+        forestCapacity=Math.floor(forestCapacityBefore*0.55);
+        forestStock=0;
+        stoneCapacity=Math.floor(stoneCapacityBefore*0.55);
+        stoneStock=0;
+        fertility=Math.min(100,fertilityBefore+4);
+        geo.waterAccess[i]=1;
+    }else{
+        return null;
+    }
+    if(forestCapacity!==forestCapacityBefore){geo.forestCapacity[i]=forestCapacity;noteForestVisualChange(forestStockBefore,forestCapacityBefore,forestStock);}
+    geo.forestStock[i]=forestStock;
+    if(stoneCapacity!==stoneCapacityBefore)geo.stoneCapacity[i]=stoneCapacity;
+    geo.stoneStock[i]=stoneStock;
+    geo.fertility[i]=fertility;
+    return {
+        x:point.x,y:point.y,kind,
+        forestCapacityLost:Math.max(0,forestCapacityBefore-forestCapacity),
+        forestStockLost:Math.max(0,forestStockBefore-forestStock),
+        stoneCapacityLost:Math.max(0,stoneCapacityBefore-stoneCapacity),
+        stoneStockLost:Math.max(0,stoneStockBefore-stoneStock),
+        fertilityLost:Math.max(0,fertilityBefore-fertility),
+    };
+}
+
 export function plantForestAt(x,y,amount=1){
     const point=readTile(x,y);
     const requested=Math.floor(Number(amount));
@@ -864,13 +920,20 @@ export function regrowForests(days=1,options={}){
 
 export function serializeResourceGeography(){
     const geo=ensureGeography();
-    const forest=[],stone=[];
+    const forest=[],stone=[],forestCapacity=[],stoneCapacity=[];
     const count=cellCount();
     for(let i=0;i<count;i++){
-        if(geo.forestStock[i]!==geo.forestCapacity[i])forest.push([i,geo.forestStock[i]]);
-        if(geo.stoneStock[i]!==geo.stoneCapacity[i])stone.push([i,geo.stoneStock[i]]);
+        const forestCapacityChanged=Boolean(geo.forestCapacityBase&&geo.forestCapacity[i]!==geo.forestCapacityBase[i]);
+        const stoneCapacityChanged=Boolean(geo.stoneCapacityBase&&geo.stoneCapacity[i]!==geo.stoneCapacityBase[i]);
+        // A capacity reduction must also write its stock, even when both are
+        // zero: otherwise restore leaves the generated stock above the new
+        // capacity and the next save reports a phantom resource delta.
+        if(geo.forestStock[i]!==geo.forestCapacity[i]||forestCapacityChanged)forest.push([i,geo.forestStock[i]]);
+        if(geo.stoneStock[i]!==geo.stoneCapacity[i]||stoneCapacityChanged)stone.push([i,geo.stoneStock[i]]);
+        if(forestCapacityChanged)forestCapacity.push([i,geo.forestCapacity[i]]);
+        if(stoneCapacityChanged)stoneCapacity.push([i,geo.stoneCapacity[i]]);
     }
-    return {version:VERSION,forest,stone};
+    return {version:VERSION,forest,stone,forestCapacity,stoneCapacity};
 }
 
 export function validateResourceGeographySnapshot(snapshot, limits = {}){
@@ -881,8 +944,9 @@ export function validateResourceGeographySnapshot(snapshot, limits = {}){
     // caller can prove it; the live count remains correct after restore.
     const declaredCount=Number(limits?.count);
     const count=Number.isSafeInteger(declaredCount)&&declaredCount>0?declaredCount:cellCount();
-    for(const key of ["forest","stone"]){
+    for(const key of ["forest","stone","forestCapacity","stoneCapacity"]){
         const entries=snapshot[key];
+        if(entries===undefined&&(key==="forestCapacity"||key==="stoneCapacity"))continue;
         if(!Array.isArray(entries)||entries.length>count)throw new Error("Save data contains an invalid "+key+" resource delta.");
         const seen=new Set();
         for(const entry of entries){
@@ -900,6 +964,22 @@ export function restoreResourceGeography(snapshot){
     validateResourceGeographySnapshot(snapshot);
     if(!snapshot)return 0;
     let restored=0;
+    // Capacity deltas are optional: 3.39 snapshots only carried stock. A new
+    // snapshot writes them only for tiles a hazard permanently changed.
+    const hasCapacity=Array.isArray(snapshot.forestCapacity)||Array.isArray(snapshot.stoneCapacity);
+    geo.capacitySnapshot=hasCapacity;
+    if(Array.isArray(snapshot.forestCapacity)){
+        for(const [index,capacity] of snapshot.forestCapacity){
+            if(capacity>geo.forestCapacityBase[index])continue;
+            geo.forestCapacity[index]=capacity;restored++;
+        }
+    }
+    if(Array.isArray(snapshot.stoneCapacity)){
+        for(const [index,capacity] of snapshot.stoneCapacity){
+            if(capacity>geo.stoneCapacityBase[index])continue;
+            geo.stoneCapacity[index]=capacity;restored++;
+        }
+    }
     for(const [index,stock] of snapshot.forest){
         if(stock>geo.forestCapacity[index])continue;
         geo.forestStock[index]=stock;restored++;

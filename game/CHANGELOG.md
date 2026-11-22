@@ -1,13 +1,62 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.39.0`
-**Next development line:** `3.40.0-dev`
+**Current production version:** `3.40.0`
+**Next development line:** `3.41.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.40.0 — Hazards change the actual map
+
+This release turns lava, wildfire and flood from ledger entries and coloured
+scar marks into saved changes of the playable terrain. The map, movement,
+resource nodes, roads, the seasonal forecast and every save now read the same
+tile state. Save schema 13 is unchanged; a 3.39 save is migrated through the
+existing restore path without inventing tiles or leaving a quarry standing on
+fresh basalt.
+
+- **Real terrain conversion.** Lava and lost ground are permanent, impassable
+  basalt/rock. Wildfire converts a bounded area into burnt woodland with
+  sharply reduced timber capacity. Floodwater converts ground for the year,
+  raises its moisture and blocks movement while it is fresh. The existing
+  bounded annual hazard pass performs the conversion; there is no per-frame or
+  per-tick map scan.
+- **Resource nodes are damaged, not just counted.** The shared resource
+  geography now carries sparse `forestCapacity` and `stoneCapacity` deltas next
+to the existing stock arrays. Lava and lost ground zero a node, fire removes
+  standing timber and lowers future capacity, flood washes out stock and part
+  of its capacity, and fertility/water access change with the tile. Regrowth
+  cannot quietly restore a converted node.
+- **Roads are cut where the hazard actually crosses them.** Flood and lava
+  destroy the road tiles in their converted area; old 3.39 saves are migrated
+  once so a saved flood mark no longer leaves a usable road on top of it.
+- **The baked terrain canvas follows.** A clean tinted raster is retained and a
+  dirty hazard layer is repainted only when scar marks change. The renderer
+  draws the same saved marks over the map and the minimap, with a `Hazard terrain`
+  legend that names burnt, flooded, lava, lost and corrupted ground.
+  The hazard panel now reports converted tiles, lost nodes, cut roads, the last
+  coordinates of each scar kind and the current fire/flood/lava conversion
+  shield.
+- **Protection changes the outcome.** Firebreaks, dams, drainage, avalanche
+  barriers and safe siting feed a deterministic conversion shield. The annual
+  event can still cost stores and fields, but a strong work can prevent a new
+  tile mark entirely; weaker protection still reduces the converted area. The
+  zero-firebreak baseline keeps the exact pre-3.40 readiness and hazard
+  pressure.
+- **Determinism and compatibility.** Scar areas use the existing seed/year
+  hash, caps keep permanent marks, and a new save round-trips terrain, resource
+  capacity, stock, blockades and roads exactly. Legacy 3.39 saves with marks
+  but no capacity deltas run the migration path once; new saves with capacity
+  snapshots skip re-damage on load.
+
+Verification for this release: full `npm test` 1336/1336, a deterministic
+25-year campaign (10,040 ticks, final year 26, `ok: true`), the terrain/season
+browser reference and a live browser pass with all three terrain types visible
+in the map legend and in the hazard panel. The only browser diagnostics were
+the known AudioContext autoplay warnings.
 
 ## 3.39.0 — Climate drift, regional crises and real resettlement
 

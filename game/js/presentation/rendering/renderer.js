@@ -16,6 +16,7 @@ import { getLogisticsSnapshot, getCarriersForRender } from '../../systems/logist
 import { worldWidth,worldHeight } from '../../world/world.js';
 import { drawWeatherOverlay } from './weather-overlay.js';
 import { drawDaylightOverlay } from './daylight.js';
+import { HAZARD_TERRAIN_STYLES, refreshHazardTerrainBake } from '../../systems/hazard-scars.js';
 
 let visibleEntitiesCache=[];
 let visibleEntitiesUntil=0;
@@ -31,35 +32,81 @@ export function visibleCarrierIdsForTest(){return [...visibleCarrierIdsCache];}
 export function visibleParticleCountForTest(){return particleDrawCount;}
 export function visibleFloaterCountForTest(){return floaterDrawCount;}
 
-// Bounded hazard map layer: at most sixteen marks per kind, culled to the
-// viewport. The scars are also read by movement and gathering; the overlay is
-// the player's view of the same saved state, never a second map.
-const HAZARD_OVERLAY_COLORS = Object.freeze({
-    burnt: "rgba(156, 84, 38, 0.42)",
-    flooded: "rgba(62, 113, 145, 0.44)",
-    lava: "rgba(181, 63, 35, 0.62)",
-    lost: "rgba(55, 48, 42, 0.62)",
-    corruption: "rgba(133, 76, 158, 0.52)"
-});
-
-function drawHazardOverlay(ctx, zoom, camera, canvas) {
-    if (!state.hazardOverlay) return;
+// Bounded hazard map layer: the saved scar list is culled to the viewport.
+// The same marks drive the baked-canvas repaint, movement, gathering and the
+// resource survey, so the map is never a second source of truth. The base
+// damage tint is always visible; the toggle adds the strong survey treatment
+// and the legend.
+function drawHazardTerrainMarks(ctx, zoom, camera, canvas, highlight) {
     const scars = state.environmentalHazards?.scars;
     if (!scars || typeof scars !== "object") return;
     const cellPx = CELL * zoom;
-    for (const [kind, color] of Object.entries(HAZARD_OVERLAY_COLORS)) {
+    if (cellPx <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = highlight ? 1 : 0.72;
+    for (const kind of Object.keys(HAZARD_TERRAIN_STYLES)) {
+        const style = HAZARD_TERRAIN_STYLES[kind];
         const marks = Array.isArray(scars[kind]) ? scars[kind] : [];
+        ctx.fillStyle = style.fill;
         for (const mark of marks) {
             const sx = Number(mark.x) * cellPx - camera.x;
             const sy = Number(mark.y) * cellPx - camera.y;
             if (sx < -cellPx || sy < -cellPx || sx > canvas.width || sy > canvas.height) continue;
-            ctx.fillStyle = color;
-            ctx.fillRect(sx, sy, cellPx + 0.5, cellPx + 0.5);
-            ctx.strokeStyle = "rgba(255,255,255,0.22)";
-            ctx.lineWidth = Math.max(0.5, zoom * 0.5);
-            ctx.strokeRect(sx + 0.5, sy + 0.5, Math.max(1, cellPx - 1), Math.max(1, cellPx - 1));
+            const size = Math.max(1, cellPx + 0.5);
+            ctx.fillRect(sx, sy, size, size);
+            // A small deterministic mark tells the three terrain states apart
+            // even when the player is colour-blind or the view is very small.
+            if (cellPx >= 5) {
+                ctx.save();
+                ctx.strokeStyle = style.accent;
+                ctx.fillStyle = style.accent;
+                ctx.globalAlpha = highlight ? 0.95 : 0.58;
+                ctx.lineWidth = Math.max(0.7, cellPx * 0.055);
+                if (kind === "lava") {
+                    ctx.beginPath();
+                    ctx.moveTo(sx + cellPx * 0.18, sy + cellPx * 0.24);
+                    ctx.lineTo(sx + cellPx * 0.44, sy + cellPx * 0.56);
+                    ctx.lineTo(sx + cellPx * 0.34, sy + cellPx * 0.82);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(sx + cellPx * 0.62, sy + cellPx * 0.18);
+                    ctx.lineTo(sx + cellPx * 0.7, sy + cellPx * 0.46);
+                    ctx.stroke();
+                } else if (kind === "flooded") {
+                    ctx.beginPath();
+                    ctx.moveTo(sx + cellPx * 0.14, sy + cellPx * 0.42);
+                    ctx.quadraticCurveTo(sx + cellPx * 0.32, sy + cellPx * 0.3, sx + cellPx * 0.5, sy + cellPx * 0.42);
+                    ctx.quadraticCurveTo(sx + cellPx * 0.68, sy + cellPx * 0.54, sx + cellPx * 0.86, sy + cellPx * 0.42);
+                    ctx.stroke();
+                } else if (kind === "burnt") {
+                    for (let dot = 0; dot < 3; dot++) {
+                        ctx.beginPath();
+                        ctx.arc(sx + cellPx * (0.3 + dot * 0.2), sy + cellPx * (0.36 + (dot % 2) * 0.28), Math.max(0.6, cellPx * 0.035), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(sx + cellPx * 0.2, sy + cellPx * 0.3);
+                    ctx.lineTo(sx + cellPx * 0.8, sy + cellPx * 0.7);
+                    ctx.moveTo(sx + cellPx * 0.8, sy + cellPx * 0.3);
+                    ctx.lineTo(sx + cellPx * 0.2, sy + cellPx * 0.7);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+            if (highlight) {
+                ctx.strokeStyle = "rgba(255,255,255,0.32)";
+                ctx.lineWidth = Math.max(0.5, zoom * 0.5);
+                ctx.strokeRect(sx + 0.5, sy + 0.5, Math.max(1, cellPx - 1), Math.max(1, cellPx - 1));
+            }
         }
     }
+    ctx.restore();
+}
+
+function drawHazardOverlay(ctx, zoom, camera, canvas) {
+    if (!state.hazardOverlay) return;
+    drawHazardTerrainMarks(ctx, zoom, camera, canvas, true);
     const fog = Number(state.environmentalHazards?.magic?.fog) || 0;
     if (fog > 0.15) {
         ctx.fillStyle = "rgba(188, 196, 205, " + (Math.min(0.3, fog * 0.24)).toFixed(3) + ")";
@@ -73,6 +120,7 @@ function drawHazardOverlay(ctx, zoom, camera, canvas) {
 
 export function drawWorld() {
     const { ctx, canvas, camera, zoom, tick } = state;
+    if (state.hazardTerrainDirty) refreshHazardTerrainBake();
     // Sight is anchored to the camera centre. This is the world point the
     // player is actually looking from; panning the camera moves the anchor.
     updateForestSightOrigin(canvas, camera, zoom);
@@ -83,6 +131,7 @@ export function drawWorld() {
     drawFieldPatches(ctx,zoom,camera,canvas);
     drawMapLayer(ctx,zoom,camera,canvas);
     drawForesterStewardshipOverlay(ctx,zoom,camera,canvas);
+    drawHazardTerrainMarks(ctx,zoom,camera,canvas,false);
     drawHazardOverlay(ctx,zoom,camera,canvas);
     drawLogisticsRoutes(ctx,zoom,camera,canvas);
 

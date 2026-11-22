@@ -17,6 +17,7 @@ import { ensureForestSuccession, resetForestSuccession } from '../systems/forest
 import { generateSpecialBiomes, paintSpecialBiomeTint } from '../systems/special-biome-state.js';
 import { generateBiomeAtlas, syncBiomeDiscovery } from '../systems/biome-resource-state.js';
 import { getClimateMoistureOffset, getClimateTemperatureOffset } from '../systems/climate-drift.js';
+import { getHazardMoistureOffsetAt, paintHazardTerrain } from '../systems/hazard-scars.js';
 
 export { normalizeWorldOptions, resolveWorldDimensions, seaLevelFor };
 
@@ -194,6 +195,20 @@ export function prerenderTerrain() {
     // The rare biome tint is a low-resolution atlas stretched over the baked
     // ground. It adds no per-pixel branch to the normal terrain palette.
     paintSpecialBiomeTint(tctx, pixW, pixH);
+    // Keep the clean tinted raster so hazard scars can be repainted on top
+    // without baking the whole height/moisture field again.
+    const clean = document.createElement('canvas');
+    clean.width = pixW;
+    clean.height = pixH;
+    const cleanCtx = clean.getContext?.('2d');
+    if (cleanCtx && typeof cleanCtx.drawImage === 'function') {
+        cleanCtx.drawImage(tc, 0, 0);
+        state.terrainCleanCanvas = clean;
+    } else {
+        state.terrainCleanCanvas = null;
+    }
+    paintHazardTerrain(tctx, pixW, pixH);
+    state.hazardTerrainDirty = false;
     state.terrainCanvas = tc;
     state.terrainDirty = false;
 }
@@ -222,7 +237,7 @@ export function getMoistureAt(wx, wy) {
     const py = Math.floor(wy * res);
     if (px < 0 || py < 0 || px >= state.terrainPixW || py >= state.terrainPixH) return 0.5;
     const base = state.moistureMap?.[py * state.terrainPixW + px] ?? 0.5;
-    return Math.max(0, Math.min(1, base + getClimateMoistureOffset()));
+    return Math.max(0, Math.min(1, base + getClimateMoistureOffset() + getHazardMoistureOffsetAt(wx, wy)));
 }
 
 export function getTemperatureAt(wx, wy) {

@@ -45,8 +45,8 @@ export const STATISTICS_ARCHIVE_LIMIT = 120;
 const SKIPPED_KEYS = new Set([
     "id", "personid", "targetid", "seed", "worldseed", "version", "revision",
     "lasttick", "nextjobid", "nextcarrierid", "ctx", "canvas", "terraincanvas",
-    "fogcanvas", "terrainCanvasEl", "minimapCanvas", "minimapCtx", "heightMap",
-    "moistureMap", "temperatureMap", "terrainCanvas", "fogCanvas"
+    "fogcanvas", "terrainCanvasEl", "terrainCleanCanvas", "minimapCanvas", "minimapCtx", "heightMap",
+    "moistureMap", "temperatureMap", "terrainCanvas", "hazardMoisture", "fogCanvas"
 ].map(key => key.toLowerCase()));
 const PRIMITIVE = value => value === null || ["string", "number", "boolean"].includes(typeof value);
 const categoryOrder = new Map(STATISTICS_CATEGORIES.map((entry, index) => [entry.id, index]));

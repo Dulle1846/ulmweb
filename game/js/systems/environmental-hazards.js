@@ -23,8 +23,8 @@ import { consumeMedicine, getMedicineAvailability, startOutbreak } from "../syst
 import { getHazardModifiers as readHazardModifiers, invalidateHazardModifierCache } from "./hazard-modifiers.js";
 import { destroyRoad, getRoadAt } from "../systems/roads.js";
 import {
-    addHazardScar, getHazardScarSnapshot, normalizeHazardScars, recordFloodScar,
-    recordLavaScar, recordLostGround, recordWildfireScar
+    addHazardScar, applyHazardTerrainScars, getHazardScarSnapshot, normalizeHazardScars,
+    recordFloodScar, recordLavaScar, recordLostGround, recordWildfireScar
 } from "./hazard-scars.js";
 import {
     advanceHazardResponse, buildHazardForecast, consumeHazardStockpile,
@@ -103,7 +103,8 @@ function emptyChronic() {
     return {
         droughtYears: 0, droughtLevel: 0, plagueSpread: [], epizooticRegions: [],
         wildfireZones: [], floodScars: 0, volcanicYears: 0, climateDrift: 0,
-        economicDrag: 0, burntTiles: 0, lostGround: 0
+        economicDrag: 0, burntTiles: 0, lostGround: 0,
+        terrainTiles: 0, nodesLost: 0, roadsCut: 0
     };
 }
 
@@ -118,7 +119,7 @@ function emptyMitigation() {
     return {
         well: 0, irrigation: 0, dam: 0, avalanche: 0, drainage: 0, roads: 0,
         warehouse: 0, medical: 0, clothing: 0, research: 0, units: 0, siting: 0,
-        readiness: 0, score: 0
+        firebreak: 0, readiness: 0, score: 0
     };
 }
 
@@ -232,6 +233,9 @@ function normalizeChronic(value) {
     base.economicDrag = clamp01(value.economicDrag);
     base.burntTiles = Math.min(4096, positive(value.burntTiles));
     base.lostGround = Math.min(4096, positive(value.lostGround));
+    base.terrainTiles = Math.min(4096, positive(value.terrainTiles));
+    base.nodesLost = Math.min(4096, positive(value.nodesLost));
+    base.roadsCut = Math.min(4096, positive(value.roadsCut));
     return base;
 }
 
@@ -291,6 +295,35 @@ function countBuildings(type) {
     return count;
 }
 
+/** Cut roads actually crossed by a converted hazard area. */
+function cutHazardRoads(entry, marks, radius = 0) {
+    let cut = 0;
+    const list = Array.isArray(marks) ? marks : [];
+    for (const mark of list) {
+        const mx = int(mark?.x), my = int(mark?.y);
+        for (let dy = -radius; dy <= radius; dy++) {
+            for (let dx = -radius; dx <= radius; dx++) {
+                const tx = mx + dx, ty = my + dy;
+                if (!getRoadAt(tx, ty)) continue;
+                const result = destroyRoad(tx, ty);
+                if (result.ok) cut++;
+            }
+        }
+    }
+    if (cut && entry?.chronic) entry.chronic.roadsCut = Math.min(4096, positive(entry.chronic.roadsCut) + cut);
+    return cut;
+}
+
+// Old 3.39 saves stored a scar but no capacity delta. Their roads were not cut
+// by the old code, so the migration cuts them once from the saved marks.
+function restoreHazardRoadCuts(entry) {
+    const marks = [];
+    for (const kind of ["lava", "flooded", "burnt"]) {
+        for (const mark of entry?.scars?.[kind] || []) marks.push(mark);
+    }
+    return cutHazardRoads(entry, marks, 0);
+}
+
 /**
  * Protection that actually exists in the realm. Every value is read from a real
  * building, road, store or civic score; nothing is granted by naming a policy.
@@ -303,6 +336,7 @@ export function getHazardMitigation() {
     mitigation.dam = clamp01(countBuildings(TYPE.DAM) / 2 * 0.8 + countBuildings(TYPE.WALL) / 12);
     mitigation.avalanche = clamp01(countBuildings(TYPE.AVALANCHE_BARRIER) / 2 * 0.8
         + countBuildings(TYPE.FORESTER) / 4 * 0.35 + countBuildings(TYPE.WALL) / 24);
+    mitigation.firebreak = clamp01(countBuildings(TYPE.FIREBREAK) / 2 * 0.8);
     mitigation.drainage = clamp01(countBuildings(TYPE.DRAINAGE) / 2 * 0.65
         + (Number(state.health?.sanitation?.score) || 0) / 100 * 0.5);
     const roads = state.roads?.tiles ? Object.keys(state.roads.tiles).length : 0;
@@ -325,9 +359,42 @@ export function getHazardMitigation() {
     const prepared = preparedness && preparedness.season === state.seasonIndex && preparedness.year === state.year
         ? clamp01(Number(preparedness.spent) / 40) : 0;
     mitigation.readiness = clamp01(prepared + planReadiness(state.environmentalHazards));
-    const values = Object.entries(mitigation).filter(([key]) => key !== "score" && key !== "readiness").map(([, value]) => value);
+    // A cleared firebreak belt is a new work, not a missing baseline work. Keep
+    // it out of the average until the realm actually builds one, so a realm
+    // without firebreaks keeps the exact pre-3.40 readiness and hazard pressure.
+    const values = Object.entries(mitigation)
+        .filter(([key, value]) => key !== "score" && key !== "readiness" && (key !== "firebreak" || value > 0))
+        .map(([, value]) => value);
     mitigation.score = clamp01((values.reduce((sum, value) => sum + value, 0) / values.length) * 0.72 + mitigation.readiness * 0.28);
     return mitigation;
+}
+
+/**
+ * The terrain-conversion shield for one hazard. This is the small, testable
+ * bridge between the real protection works and the saved scar layer: when the
+ * deterministic roll is below the shield, the hazard still costs stores and
+ * fields but does not leave a new permanent tile mark.
+ */
+export function getHazardTerrainShield(kind) {
+    const mitigation = getHazardMitigation();
+    if (kind === "wildfire") {
+        return clamp01(mitigation.firebreak * 0.68 + mitigation.research * 0.12);
+    }
+    if (kind === "flood") {
+        return clamp01(mitigation.dam * 0.35 + mitigation.drainage * 0.30);
+    }
+    if (kind === "lava") {
+        return clamp01(mitigation.dam * 0.25 + mitigation.avalanche * 0.22 + mitigation.siting * 0.18);
+    }
+    if (kind === "lost") {
+        return clamp01(mitigation.siting * 0.18 + mitigation.avalanche * 0.12);
+    }
+    return 0;
+}
+
+/** True when the protection does not turn the conversion aside. */
+export function shouldHazardTerrainConvert(kind, roll = hazardRoll(kind + ":terrain")) {
+    return Number(roll) >= getHazardTerrainShield(kind);
 }
 
 /**
@@ -889,31 +956,37 @@ export function updateEnvironmentalHazardYear() {
         chronic.epizooticRegions = chronic.epizooticRegions.slice(-1);
     }
 
-    if (wildfire || chronic.burntTiles > 0) {
+    if (wildfire) {
         const W = Number(state.worldW) || 0, H = Number(state.worldH) || 0;
         if (W > 2 && H > 2) {
-            const x = hash32(Number(state.worldSeed) || 1, 0x57494c44, state.year, 1) % W;
-            const y = hash32(Number(state.worldSeed) || 1, 0x57494c44, state.year, 2) % H;
-            chronic.wildfireZones = [...chronic.wildfireZones, { x, y, year: state.year }].slice(-HAZARD_LIMITS.maxZones);
-            const burnt = recordWildfireScar(entry, x, y);
-            if (wildfire) events.push("FIRE SCARS THE WOODLAND AT " + x + "," + y
-                + (burnt.burnt ? " · " + burnt.burnt + " TIMBER LOST" : ""));
+            if (!shouldHazardTerrainConvert("wildfire")) {
+                events.push("FIREBREAKS HOLD THE WOODLAND · NO NEW TILE IS LOST");
+            } else {
+                const x = hash32(Number(state.worldSeed) || 1, 0x57494c44, state.year, 1) % W;
+                const y = hash32(Number(state.worldSeed) || 1, 0x57494c44, state.year, 2) % H;
+                chronic.wildfireZones = [...chronic.wildfireZones, { x, y, year: state.year }].slice(-HAZARD_LIMITS.maxZones);
+                const burnt = recordWildfireScar(entry, x, y, { spread: (Number(mitigation.firebreak) || 0) > 0 ? 1 : 2 });
+                cutHazardRoads(entry, burnt.marks, 0);
+                events.push("FIRE SCARS THE WOODLAND AT " + x + "," + y
+                    + (burnt.burnt ? " · " + burnt.burnt + " TILES CHANGED" : ""));
+            }
         }
     }
 
     if (flood) {
         damageFields(entry, 0.12 * (1 - mitigation.dam * 0.5), "flood scar");
         const drained = hazardRoll("flood:drainage") < mitigation.drainage * 0.7;
-        if (drained) {
-            events.push("DRAINAGE CARRIES THE FLOOD AWAY BEFORE IT SETTLES");
+        if (drained || !shouldHazardTerrainConvert("flood")) {
+            events.push("DAMS AND DRAINAGE HOLD THE CHANNEL · THE GROUND IS NOT CONVERTED");
         } else {
             chronic.floodScars = Math.min(40, chronic.floodScars + 1);
             const W = Math.max(3, Number(state.worldW) || 3), H = Math.max(3, Number(state.worldH) || 3);
             const x = hash32(Number(state.worldSeed) || 1, 0x464c4f44, state.year, 1) % W;
             const y = hash32(Number(state.worldSeed) || 1, 0x464c4f44, state.year, 2) % H;
-            recordFloodScar(entry, x, y);
-            if (getRoadAt(x, y)) destroyRoad(x, y);
-            events.push("THE FLOOD LEAVES A SCAR AT " + x + "," + y + " THAT OUTLASTS THE YEAR");
+            const flooded = recordFloodScar(entry, x, y, { spread: 2 });
+            cutHazardRoads(entry, flooded.marks, 1);
+            events.push("THE FLOOD CONVERTS " + Math.max(1, flooded.marks.length) + " TILE(S) AT " + x + "," + y
+                + " · FIELDS, ROADS AND NODES ARE WASHED OUT");
         }
     } else {
         chronic.floodScars = Math.max(0, chronic.floodScars - 1);
@@ -922,12 +995,17 @@ export function updateEnvironmentalHazardYear() {
     chronic.volcanicYears = volcanic ? 3 : Math.max(0, chronic.volcanicYears - 1);
     if (chronic.volcanicYears > 0 && !volcanic) events.push("ASH STILL LIES ON THE REGION");
     if (volcanic) {
-        const W = Math.max(3, Number(state.worldW) || 3), H = Math.max(3, Number(state.worldH) || 3);
-        const x = hash32(Number(state.worldSeed) || 1, 0x4c415641, state.year, 1) % W;
-        const y = hash32(Number(state.worldSeed) || 1, 0x4c415641, state.year, 2) % H;
-        recordLavaScar(entry, x, y);
-        if (getRoadAt(x, y)) destroyRoad(x, y);
-        events.push("LAVA COOLS AT " + x + "," + y + " · THE GROUND IS LOST TO THE REALM");
+        if (!shouldHazardTerrainConvert("lava")) {
+            events.push("BARRIERS DIVERT THE LAVA · THE GROUND IS NOT CONVERTED");
+        } else {
+            const W = Math.max(3, Number(state.worldW) || 3), H = Math.max(3, Number(state.worldH) || 3);
+            const x = hash32(Number(state.worldSeed) || 1, 0x4c415641, state.year, 1) % W;
+            const y = hash32(Number(state.worldSeed) || 1, 0x4c415641, state.year, 2) % H;
+            const lava = recordLavaScar(entry, x, y, { spread: 1 });
+            cutHazardRoads(entry, lava.marks, 1);
+            events.push("LAVA COOLS AT " + x + "," + y + " · " + Math.max(1, lava.marks.length)
+                + " TILE(S) ARE LOST TO THE REALM");
+        }
     }
 
     // The baseline drifts only when the realm has lived through real extremes.
@@ -1159,5 +1237,13 @@ export function restoreEnvironmentalHazardState(value) {
         restored.modifiers = emptyModifiers();
     }
     state.environmentalHazards = restored;
+    // A 3.40 save carries sparse resource-capacity deltas; the restored arrays
+    // are already authoritative, so only the terrain visual cache is rebuilt.
+    // A 3.39 save has marks but no capacity deltas and is converted here. This
+    // is the explicit migration backstop: old saves never keep lava on a tile
+    // that a quarry or forest still occupies.
+    const capacitySnapshot = Boolean(state.resourceGeography?.capacitySnapshot);
+    applyHazardTerrainScars(restored, { resources: !capacitySnapshot });
+    if (!capacitySnapshot) restoreHazardRoadCuts(restored);
     return state.environmentalHazards;
 }
