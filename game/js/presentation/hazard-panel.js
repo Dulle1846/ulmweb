@@ -94,6 +94,7 @@ export function renderHazardPanel() {
     const preparedThisSeason = snapshot.preparedness.season === state.seasonIndex && snapshot.preparedness.year === state.year;
     const casualties = (state.entities || []).filter(entity => !entity.dead && entity.type === 20
         && Number(entity.illnessUntilTick) > state.tick).length;
+    const medicine = Math.max(0, Math.floor(Number(snapshot.medicine?.available) || 0));
 
     return intro("WEATHER, DISEASE & DISASTER", "Hazards of the realm",
         "Every climate carries its own dangers: heat, frost, storm, rock, poison, parasites, plague and — where the land is old — magic. They change with the season, cost stores, health and morale, and answer to the works you build.") +
@@ -104,7 +105,7 @@ export function renderHazardPanel() {
         '<div><small>READINESS</small><strong>' + pct(mitigation.score) + '%</strong></div>' +
         '<div><small>CASUALTIES</small><strong>' + casualties + '</strong></div></div>' +
         '<div class="hazard-actions"><button type="button" data-command="hazard-prepare"' + (preparedThisSeason ? " disabled" : "") + '>PREPARE FOR THE SEASON · 12 WOOD · 8G</button>' +
-        '<button type="button" data-command="hazard-treat"' + (casualties && (state.health?.herbalDoses || 0) > 0 ? "" : " disabled") + '>TREAT CASUALTIES · ' + num(state.health?.herbalDoses || 0) + ' DOSES</button>' +
+        '<button type="button" data-command="hazard-treat"' + (casualties && medicine > 0 ? "" : " disabled") + '>TREAT CASUALTIES · ' + num(medicine) + ' DOSES</button>' +
         '<button type="button" data-command="hazard-cleanse"' + (magic.corruption >= 0.05 ? "" : " disabled") + '>CLEANSE CORRUPTION · 10 STONE · 12G</button></div>' +
         (rare ? '<p class="command-note"><strong>RARE EVENT</strong> · ' + esc(rare.label) + ' · year ' + num(rare.year) + ' · ' + num(rare.years) + ' years of consequences.</p>' : "") +
         '<div class="command-section-title">ACTIVE HAZARDS · ' + active.length + '</div><div class="hazard-table">' +

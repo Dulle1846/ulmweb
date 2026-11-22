@@ -253,13 +253,34 @@ test("1.2.20 preparation and treatment are real, limited actions", () => {
     assert.equal(prepareForHazardSeason().ok, false, "one preparation per season");
 
     state.entities[0].illnessUntilTick = state.tick + 100;
-    state.health.herbalDoses = 2;
+    // `herbalDoses` is a ledger of doses already given, not a store. It must
+    // never be treated as medicine that can be spent again.
+    state.health.herbalDoses = 4;
+    state.health.medicineStock = 0;
+    assert.equal(treatHazardCasualties().ok, false, "a used-dose counter is not a medicine store");
+    state.health.medicineStock = 2;
     const treated = treatHazardCasualties();
     assert.equal(treated.ok, true);
     assert.ok(treated.treated >= 1);
-    assert.ok(state.health.herbalDoses < 2);
+    assert.equal(state.health.medicineStock, 2 - treated.treated, "treatment must spend the real medicine store");
+    assert.equal(state.health.herbalDoses, 4 + treated.treated, "the dose ledger must grow by the doses given");
+    state.health.medicineStock = 0;
     state.health.herbalDoses = 0;
     assert.equal(treatHazardCasualties().ok, false);
+});
+
+test("1.2.20 treatment can draw on gathered medicinal goods", () => {
+    prepareRealm({ climate: "tropical", season: 2 });
+    state.entities[0].illnessUntilTick = state.tick + 100;
+    state.health.medicineStock = 0;
+    state.forestGathering = { stock: { herbs: 1, lichen: 1 } };
+    const beforeDoses = state.health.herbalDoses;
+    const treated = treatHazardCasualties();
+    assert.equal(treated.ok, true);
+    assert.equal(state.health.medicineStock, 0);
+    assert.equal(state.health.herbalDoses, beforeDoses + treated.treated);
+    assert.equal((state.forestGathering.stock.herbs || 0) + (state.forestGathering.stock.lichen || 0), 2 - treated.treated,
+        "gathered remedies must be spent after the brewed store is empty");
 });
 
 test("1.2.20 state normalises hostile input and survives a save round trip", () => {

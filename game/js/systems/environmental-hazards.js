@@ -18,7 +18,7 @@ import { addLog } from "../core/event-log.js";
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { addResource } from "../systems/resources.js";
-import { startOutbreak } from "../systems/health.js";
+import { consumeMedicine, getMedicineAvailability, startOutbreak } from "../systems/health.js";
 import { destroyRoad, getRoadAt } from "../systems/roads.js";
 import {
     HAZARD_CATALOG, HAZARD_EFFECTS, HAZARD_LIMITS, HAZARD_MECHANICS, REGIONAL_BUNDLES,
@@ -853,22 +853,27 @@ export function prepareForHazardSeason() {
     return { ok: true, cost, readiness: Math.round(entry.mitigation.score * 100), message: "season prepared" };
 }
 
-/** Treat the sick and injured the hazard pass left behind. */
+/**
+ * Treat the sick and injured the hazard pass left behind. Doses come from the
+ * real medicine store (brewed medicine first, then gathered herbs), not from
+ * `herbalDoses` — that field counts doses already given and must only grow.
+ */
 export function treatHazardCasualties() {
     const entry = ensureHazardState();
     const sick = residents().filter(person => Number(person.illnessUntilTick) > state.tick);
     if (!sick.length) return { ok: false, reason: "NO ONE NEEDS TREATMENT" };
-    const doses = Math.max(0, Number(state.health?.herbalDoses) || 0);
-    if (doses <= 0) return { ok: false, reason: "NO MEDICINE IN STORE" };
-    const treated = Math.min(2, doses);
-    state.health.herbalDoses = doses - treated;
-    state.health.herbalTreated = positive(state.health.herbalTreated) + treated;
-    for (const person of sick.slice(0, treated)) {
+    const availability = getMedicineAvailability();
+    if (availability.available <= 0) return { ok: false, reason: "NO MEDICINE IN STORE" };
+    const treated = Math.min(2, availability.available, sick.length);
+    const spent = consumeMedicine(treated);
+    if (spent.total <= 0) return { ok: false, reason: "NO MEDICINE IN STORE" };
+    state.health.herbalTreated = positive(state.health.herbalTreated) + spent.total;
+    for (const person of sick.slice(0, spent.total)) {
         person.illnessUntilTick = Math.max(state.tick + 20, person.illnessUntilTick - 30);
         person.immunity = Math.min(100, (Number(person.immunity) || 0) + 3);
     }
-    addLog("HAZARD CASUALTIES TREATED · " + treated + " DOSES USED", "#9ab7a1", "health");
-    return { ok: true, treated, message: "casualties treated" };
+    addLog("HAZARD CASUALTIES TREATED · " + spent.total + " DOSES USED", "#9ab7a1", "health");
+    return { ok: true, treated: spent.total, medicine: getMedicineAvailability().available, message: "casualties treated" };
 }
 
 /** Cleanse corrupted ground. Costs stone and gold and lowers the taint. */
@@ -911,6 +916,7 @@ export function getHazardSnapshot() {
         mitigation: entry.mitigation,
         preparedness: entry.preparedness,
         losses: entry.losses,
+        medicine: getMedicineAvailability(),
         history: entry.history,
         rare: entry.rare,
         catalog: {

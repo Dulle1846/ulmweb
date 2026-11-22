@@ -44,6 +44,9 @@ never scan the tile grid and never run inside the frame loop.
 Hazards act on systems that already exist:
 
 - illness and injury on real villagers (`illnessUntilTick`, `hp`),
+- treatment paid from the real medicine store and gathered remedies
+  (`health.medicineStock`, forest medicinal goods); the `herbalDoses` ledger
+  records doses given and is never spent,
 - disease pressure through the real sanitation score that `health.js`
   already reads before it declares an outbreak (`startOutbreak()`),
 - food, wood, stone and gold through the resource ledger,

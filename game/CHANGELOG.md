@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.35.0`
+**Current production version:** `3.35.1`
 **Next development line:** `3.36.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,25 @@
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.35.1 — Hazard treatment spends real medicine
+
+The production check for 1.2.20 found the hazard panel reading
+`health.herbalDoses` as if it were a medicine store. That field is the health
+system's ledger of doses already given: it only grows, and a fresh realm starts
+at zero, so TREAT CASUALTIES was permanently disabled in a real game and would
+have decremented a historical counter if it ever fired.
+
+- **Treatment now spends real medicine.** The hazard action draws from the
+  brewed public store first and then from gathered herbs, lichen and the other
+  medicinal goods in the forest ledger, through the same availability and
+  consumption helpers the health panel uses. The dose ledger grows by the doses
+  actually given instead of being spent as stock.
+- **The panel shows the true stock.** TREAT CASUALTIES prints the doses a realm
+  can actually hand out, and the button enables only when someone is sick and
+  that store is not empty.
+- Tests cover the store (spent), the gathered-goods fallback (spent in order)
+  and the regression that a non-zero used-dose ledger alone cannot treat anyone.
 
 ## 3.35.0 — Living Hazards and Regional Disease
 

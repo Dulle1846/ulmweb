@@ -386,6 +386,57 @@ function medicinalStock() {
         sum + Math.max(0, Math.floor(Number(stock[medicine.id]) || 0)), 0);
 }
 
+/**
+ * The medicine a realm can actually hand out right now: the brewed public
+ * store first, then the gathered medicinal goods in the forest ledger. The
+ * `herbalDoses` field is a historical counter of doses already given, never a
+ * stock, so nothing may spend it as one.
+ */
+export function getMedicineAvailability() {
+    const health = ensureHealth();
+    const stock = state.forestGathering?.stock;
+    const goods = MEDICINAL_GOODS.map(medicine => ({
+        id: medicine.id,
+        amount: Math.max(0, Math.floor(Number(stock?.[medicine.id]) || 0))
+    }));
+    const store = Math.max(0, Math.floor(Number(health.medicineStock) || 0));
+    const gathered = goods.reduce((sum, medicine) => sum + medicine.amount, 0);
+    return { store, gathered, available: store + gathered, goods };
+}
+
+/**
+ * Spend up to `maxDoses` real medicine, public store before gathered goods,
+ * and book the doses used in the health ledger (the same counter the health
+ * panel and the annual audit read).
+ */
+export function consumeMedicine(maxDoses = 2) {
+    const health = ensureHealth();
+    let remaining = Math.max(0, Math.min(8, Math.floor(Number(maxDoses) || 0)));
+    const used = [];
+    const fromStore = Math.min(remaining, Math.max(0, Math.floor(Number(health.medicineStock) || 0)));
+    if (fromStore > 0) {
+        health.medicineStock -= fromStore;
+        health.medicineUsed += fromStore;
+        remaining -= fromStore;
+        used.push({ id: "medicine", amount: fromStore });
+    }
+    const stock = state.forestGathering?.stock;
+    if (remaining > 0 && stock && typeof stock === "object") {
+        for (const medicine of MEDICINAL_GOODS) {
+            if (remaining <= 0) break;
+            const available = Math.max(0, Math.floor(Number(stock[medicine.id]) || 0));
+            const take = Math.min(remaining, available);
+            if (take <= 0) continue;
+            stock[medicine.id] = available - take;
+            remaining -= take;
+            used.push({ id: medicine.id, amount: take });
+        }
+    }
+    const total = used.reduce((sum, entry) => sum + entry.amount, 0);
+    if (total > 0) health.herbalDoses += total;
+    return { used, total };
+}
+
 export function applyHerbalRemedy(maxDoses = 2) {
     const health = ensureHealth();
     const people = residents();
