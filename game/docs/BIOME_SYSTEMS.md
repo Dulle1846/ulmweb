@@ -1,8 +1,9 @@
 # Cross-Biome Systems (1.2.21)
 
-**Status:** implemented in 3.44.0, visually accepted in 3.44.1 and coupled to
-the world in 3.45.0. The layer is a reader and a slow annual writer over the
-existing 6×6 biome atlas from 1.2.19; it is not a second world simulation.
+**Status:** implemented in 3.44.0, visually accepted in 3.44.1, coupled to the
+world in 3.45.0 and given seasonal consequences in 3.46.0. The layer is a reader
+and a slow annual writer over the existing 6×6 biome atlas from 1.2.19; it is
+not a second world simulation.
 
 ## What the player sees
 
@@ -42,7 +43,7 @@ after it. The atlas legend names the current season and states this paint order.
 The tint is one fill per discovered region, not a per-tile pass. Changing the
 season changes only the lookup and the next frame's 36 region fills.
 
-## World coupling (3.45.0)
+## World coupling (3.46.0)
 
 The ten readouts are not a separate dashboard. The three values that a player
 can feel are consumed by the existing simulation:
@@ -55,15 +56,32 @@ can feel are consumed by the existing simulation:
   pass is difficult, not impassable.
 - **Agriculture.** `getCrossBiomeFarmYieldFactorAt(x, y)` returns 0.84–1.14 from
   temperature, rainfall, nutrients, water capacity, salinity, compaction,
-  insolation, slope, legacy and frost. `ecotoneHarvestFactor` multiplies it into
-  the real `pendingHarvest`/`harvestTotal` of every existing farm. The panel
-  badge, readout detail and harvested grain therefore come from one value.
+  insolation, slope, legacy and frost. In 3.46.0 a derived seasonal water/frost
+  pressure factor (0.80–1.06) multiplies that base. `ecotoneHarvestFactor`
+  multiplies the result into the real `pendingHarvest`/`harvestTotal` of every
+  existing farm. The panel badge, readout detail and harvested grain therefore
+  come from one value.
+- **Seasonal pressure (3.46.0).** `getCrossBiomeProfile` derives one record from
+  floodplain, seasonal water level, water scarcity, snow cover and the frost
+  line. `pressure.yieldFactor` lowers the actual harvest; `pressure.floodRisk`
+  and `pressure.droughtRisk` raise the displayed severities; and
+  `pressure.hazard` names the strongest regional pressure when it clears 55%.
+  The pressure is cached by year, season and the same saved fields the rest of
+  the atlas reads, so it never becomes a per-frame scan.
 - **Seasonal danger.** A region's listed hazards use the existing 1.2.15
   catalogue, not a parallel system. `triggerBiomeHazard` selects the catalogue
   row, calls the same `applyHazard` path and filters field damage and building
   destruction to that region. The seasonal hazard pass matures at most one
   displayed regional danger per season (35% chance), and only if the region is
-  discovered and the danger is currently in its profile.
+  discovered and the danger is currently in its profile. From 3.46.0 it
+  prefers `pressure.hazard`, so a floodplain can send a real flood rather than
+  the generic top hazard.
+- **Winter frost (3.46.0).** In winter, a region above 55% frost risk cuts a
+  proportional share of `field.growth` for sown and growing fields before the
+  next harvest. It is applied once per field and year (the daily field pass
+  checks the optional `lastFrostYear`), so frost is a seasonal event rather
+  than a daily drain. This is the non-display consequence of the snow/frost
+  line; the existing field stage and the event log expose it to the player.
 
 | Regional danger | Existing 1.2.15 mechanic | Coupled regional state |
 | --- | --- | --- |

@@ -180,3 +180,137 @@ test("1.2.21 seasonal bridge matures one survey danger through the existing haza
     assert.ok(atlas.regions.some(region => region.systems?.lastHazard),
         "the struck region must record its hazard");
 });
+
+test("1.2.21 seasonal water scarcity changes the actual grain harvest and leaves a player note", () => {
+    function harvestWith(water, groundwater, drainage, pollution) {
+        const atlas = setup();
+        state.hasStarted = true;
+        state.isPaused = false;
+        state.gameOver = false;
+        state.seasonIndex = 2;
+        state.year = 10;
+        state.tick = 1000;
+        const region = atlas.regions[0];
+        region.water = water;
+        const system = region.systems;
+        system.groundwater = groundwater;
+        system.landUse.drainage = drainage;
+        system.pollution = pollution;
+        const profile = getCrossBiomeProfile(region);
+        const farm = addFarm(region);
+        updateFields();
+        return { profile, farm, harvest: farm.field.harvestTotal };
+    }
+
+    const wet = harvestWith(0.95, 0.95, 0, 0);
+    const dry = harvestWith(0.03, 0.05, 0.8, 0.5);
+    assert.ok(wet.profile.ecology.pressure.waterScarcity < dry.profile.ecology.pressure.waterScarcity - 20,
+        "the wet and dry season must expose a real scarcity difference");
+    assert.ok(wet.profile.ecology.pressure.yieldFactor > dry.profile.ecology.pressure.yieldFactor + 0.03,
+        "scarcity must lower the water/frost pressure factor");
+    assert.ok(wet.profile.ecology.agricultureFactor > dry.profile.ecology.agricultureFactor + 0.02,
+        "the panel agriculture multiplier must include that pressure");
+    assert.ok(wet.harvest > dry.harvest,
+        "the same farm with the same field must harvest less in the dry region: "
+        + wet.harvest + " vs " + dry.harvest);
+    assert.ok(state.eventLog.some(entry => /BIOME HARVEST/.test(entry.text) && /LESS GRAIN/.test(entry.text)),
+        "the player must see why the harvest is smaller");
+});
+
+test("1.2.21 snow/frost pressure lowers the shown yield and cuts the standing crop", () => {
+    const winterAtlas = setup();
+    state.year = 20;
+    let chosen = null;
+    for (const region of winterAtlas.regions) {
+        state.seasonIndex = 3;
+        const winter = getCrossBiomeProfile(region);
+        state.seasonIndex = 1;
+        const summer = getCrossBiomeProfile(region);
+        const difference = winter.ecology.pressure.frostRisk - summer.ecology.pressure.frostRisk;
+        if (winter.ecology.pressure.frostRisk > 55
+            && winter.ecology.pressure.yieldFactor < 0.99
+            && (!chosen || difference > chosen.difference)) {
+            chosen = { region, profile: winter, difference };
+        }
+    }
+    assert.ok(chosen, "at least one winter region must carry a real frost pressure");
+    state.seasonIndex = 3;
+    const pressure = chosen.profile.ecology.pressure;
+    const baseFactor = Math.max(0.84, Math.min(1.14,
+        0.80 + (chosen.profile.ecology.agriculture / 100) * 0.32));
+    assert.ok(Math.abs(chosen.profile.ecology.agricultureFactor - baseFactor * pressure.yieldFactor) < 0.01,
+        "the shown agriculture factor must actually multiply the frost pressure");
+
+    state.hasStarted = true;
+    state.isPaused = false;
+    state.gameOver = false;
+    state.tick = 1000;
+    const winterFarm = addFarm(chosen.region);
+    winterFarm.field.stage = "growing";
+    winterFarm.field.growth = 80;
+    const before = winterFarm.field.growth;
+    updateFields();
+    const afterFirstPass = winterFarm.field.growth;
+    assert.ok(afterFirstPass < before,
+        "winter frost must cut the real standing crop: " + before + " -> " + afterFirstPass);
+    updateFields();
+    assert.equal(winterFarm.field.growth, afterFirstPass,
+        "frost damage must be once per field and year, not once per daily tick");
+    assert.ok(state.eventLog.some(entry => /BIOME FROST/.test(entry.text) && /GROWTH LOST/.test(entry.text)),
+        "the player must see the frost damage note");
+});
+
+test("1.2.21 floodplain pressure selects a real flood and damages that region's fields", () => {
+    const atlas = setup();
+    state.seasonIndex = 1;
+    state.year = 12;
+    let chosen = null;
+    // Low ground plus river/lake margin creates a high floodplain readout. A
+    // deliberately saline soil keeps another hazard at the top of the generic
+    // list, so only the pressure bridge can select the flood.
+    for (const region of atlas.regions) {
+        region.engineered = 1;
+        region.water = 0.2;
+        region.sample = { ...(region.sample || {}), height: 0.335, moisture: 0.5 };
+        const system = region.systems;
+        system.salinity = 1;
+        system.hydrology.riverTiles = 80;
+        system.hydrology.lakeShare = 20;
+        system.landUse.drainage = 1;
+        const profile = getCrossBiomeProfile(region);
+        if (profile.ecology.pressure.hazard === "flood"
+            && profile.ecology.hazards.some(row => row.id === "flood")
+            && profile.ecology.hazards[0].id !== "flood") {
+            chosen = { region, profile };
+            break;
+        }
+    }
+    assert.ok(chosen, "the atlas must contain a floodplain where flood is not the generic top hazard");
+    assert.ok(chosen.profile.ecology.pressure.floodplain > 65,
+        "the chosen region must show a real floodplain exposure");
+    const farm = addFarm(chosen.region);
+    farm.field.stage = "growing";
+    farm.field.growth = 80;
+    farm.field.fertility = 55;
+    const before = farm.field.growth;
+    for (const region of atlas.regions) region.discovered = region === chosen.region;
+    setHazardProofRoll(0);
+    const result = updateEnvironmentalHazards({ force: true });
+    setHazardProofRoll(null);
+    assert.equal(chosen.region.systems.lastHazard?.id, "flood",
+        "the seasonal bridge must choose the pressure flood, not the generic top hazard");
+    assert.ok(result.active.some(row => row.source === "biome"
+        && row.regionId === chosen.region.id && row.mechanic === "hazard:flood"),
+        "the flood must reach the existing shared hazard state");
+    assert.ok(farm.field.growth < before,
+        "the seasonal flood must damage this region's real standing crop");
+    // The seasonal pass also rolls generic hazards with the proof roll; trigger
+    // the flood again on the same farm to prove the regional field damage path
+    // itself, independent of any generic damage that happened first.
+    farm.field.stage = "growing";
+    farm.field.growth = 80;
+    const direct = triggerBiomeHazard(chosen.region.id, "flood", { severity: 1 });
+    assert.equal(direct.ok, true, "the floodplain flood must be triggerable through the shared path");
+    assert.ok(farm.field.growth < 80,
+        "the shared flood path must cut this region's standing crop");
+});

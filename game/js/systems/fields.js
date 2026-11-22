@@ -11,7 +11,8 @@ import { getBuildingEfficiency, getWorkforceSnapshot } from "./economy.js";
 import { ECONOMY_TUNING, getHarvestYieldFactor } from "./economy-cycle.js";
 import { transitionGameplayAt } from "../world/transition-biomes.js";
 import { vegetationDensityAt } from "../world/vegetation-density.js";
-import { getCrossBiomeFarmYieldFactorAt } from "./cross-biome-state.js";
+import { getCrossBiomeFarmYieldFactorAt, getCrossBiomeHarvestPressureAt } from "./cross-biome-state.js";
+import { addLog } from "../core/event-log.js";
 
 export const FIELD_STAGES = Object.freeze(["fallow", "sown", "growing", "ripe", "harvested"]);
 export const FIELD_LABELS = Object.freeze({
@@ -30,6 +31,14 @@ const MANURE_RECOVERY = 0.05;
 const MANURE_RADIUS = 6;
 const BASE_DEPLETION = 6.5;
 const DEPLETION_PER_YIELD = 0.16;
+// One player-facing harvest-pressure note per region and year. The set is
+// derived bookkeeping, never saved; a year rollover clears it in O(1).
+let pressureNoteYear = 0;
+let pressureNoteEpoch = -1;
+const pressureNoteRegions = new Set();
+let frostNoteYear = 0;
+let frostNoteEpoch = -1;
+const frostNoteRegions = new Set();
 
 function number(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
 function ensureField(farm) {
@@ -38,7 +47,7 @@ function ensureField(farm) {
     if (!farm.field || typeof farm.field !== "object") {
         farm.field = {
             stage: "fallow", growth: 0, fertility: terrainFertility, harvests: 0,
-            lastHarvestYear: 0, sownYear: 0, pendingHarvest: 0, harvestTotal: 0,
+            lastHarvestYear: 0, lastFrostYear: 0, sownYear: 0, pendingHarvest: 0, harvestTotal: 0,
             maxFertility: terrainFertility, resting: false, lastDepletion: 0, lastReason: "Fallow"
         };
     }
@@ -54,6 +63,7 @@ function ensureField(farm) {
     farm.field.harvests = Math.max(0, Math.floor(number(farm.field.harvests)));
     farm.field.pendingHarvest = Math.max(0, Math.floor(number(farm.field.pendingHarvest)));
     farm.field.harvestTotal = Math.max(0, Math.floor(number(farm.field.harvestTotal)));
+    farm.field.lastFrostYear = Math.max(0, Math.floor(number(farm.field.lastFrostYear)));
     farm.field.resting = Boolean(farm.field.resting);
     farm.field.lastDepletion = Math.max(0, number(farm.field.lastDepletion));
     farm.field.lastReason = typeof farm.field.lastReason === "string" ? farm.field.lastReason : "Fallow";
@@ -88,6 +98,7 @@ export function restoreFields(snapshot) {
             fertility,
             harvests: Math.max(0, Math.floor(number(row.field.harvests))),
             lastHarvestYear: Math.max(0, Math.floor(number(row.field.lastHarvestYear))),
+            lastFrostYear: Math.max(0, Math.floor(number(row.field.lastFrostYear))),
             sownYear: Math.max(0, Math.floor(number(row.field.sownYear))),
             pendingHarvest: Math.max(0, Math.floor(number(row.field.pendingHarvest))),
             harvestTotal: Math.max(0, Math.floor(number(row.field.harvestTotal))),
@@ -214,6 +225,28 @@ function seasonalFieldUpdate(farm, stables) {
     } else if (field.stage === "fallow" || field.stage === "harvested") {
         recoverSoil(field, FALLOW_RECOVERY + (manure ? MANURE_RECOVERY : 0));
     }
+    if (season === 3 && field.lastFrostYear !== state.year
+        && (field.stage === "sown" || field.stage === "growing") && field.growth > 0) {
+        // 1.2.21 snow/frost boundary. Winter frost cuts the real standing crop
+        // before it can be harvested; it is not only a survey line.
+        const pressure = getCrossBiomeHarvestPressureAt(farm.x, farm.y);
+        const risk = pressure.pressure?.frostRisk || 0;
+        if (risk >= 0.55) {
+            const loss = Math.max(1, Math.round(field.growth * risk * 0.18));
+            field.growth = Math.max(0, field.growth - loss);
+            field.lastFrostYear = state.year;
+            if (frostNoteYear !== state.year || frostNoteEpoch !== state.worldEpoch) {
+                frostNoteYear = state.year;
+                frostNoteEpoch = state.worldEpoch;
+                frostNoteRegions.clear();
+            }
+            if (pressure.regionId && !frostNoteRegions.has(pressure.regionId)) {
+                frostNoteRegions.add(pressure.regionId);
+                addLog("BIOME FROST · " + pressure.regionName + " · " + Math.round(risk * 100)
+                    + "% FROST RISK · " + loss + "% GROWTH LOST", "#9ab7c9", "nature");
+            }
+        }
+    }
     if (season === 0) {
         if ((field.stage === "fallow" || field.stage === "harvested") && getPhysicalStock("grain") >= GRAIN_RESERVE) {
             field.lastReason = "Granary is full";
@@ -236,10 +269,25 @@ function seasonalFieldUpdate(farm, stables) {
         }
     } else if (season === 2) {
         if (field.stage === "ripe") {
+            const pressure = getCrossBiomeHarvestPressureAt(farm.x, farm.y);
             const yieldFactor = getHarvestYieldFactor() * ecotoneHarvestFactor(farm);
             field.lastYieldFactor = yieldFactor;
             field.pendingHarvest = Math.max(8, Math.round((10 + field.fertility / 8 + Math.min(12, field.growth / 10)) * yieldFactor));
             field.harvestTotal = field.pendingHarvest;
+            // The player sees why a crop is smaller instead of only a changed
+            // number. One note per region and year keeps the event log readable.
+            if (pressure.penalty >= 0.04 && pressure.regionId) {
+                if (pressureNoteYear !== state.year || pressureNoteEpoch !== state.worldEpoch) {
+                    pressureNoteYear = state.year;
+                    pressureNoteEpoch = state.worldEpoch;
+                    pressureNoteRegions.clear();
+                }
+                if (!pressureNoteRegions.has(pressure.regionId)) {
+                    pressureNoteRegions.add(pressure.regionId);
+                    addLog("BIOME HARVEST · " + pressure.regionName + " · " + pressure.reason
+                        + " · " + Math.round(pressure.penalty * 100) + "% LESS GRAIN", "#c9a27a", "nature");
+                }
+            }
             continueHarvest(farm, field);
         } else if (field.stage === "growing") {
             field.growth = Math.min(100, field.growth + 0.3);

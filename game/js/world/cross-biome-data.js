@@ -244,10 +244,22 @@ const requirementGroups = freeze({
 // repeating one blanket consumer list for every requirement.
 const coupledEvidence = freeze({
     "snow-frost-line": [
-        { file: "js/systems/environmental-hazards.js", symbol: "triggerBiomeHazard", role: "hazard" }
+        { file: "js/systems/environmental-hazards.js", symbol: "triggerBiomeHazard", role: "hazard" },
+        { file: "js/systems/fields.js", symbol: "ecotoneHarvestFactor", role: "harvest" }
     ],
     "water-levels": [
-        { file: "js/systems/environmental-hazards.js", symbol: "triggerBiomeHazard", role: "hazard" }
+        { file: "js/systems/environmental-hazards.js", symbol: "triggerBiomeHazard", role: "hazard" },
+        { file: "js/systems/fields.js", symbol: "ecotoneHarvestFactor", role: "harvest" }
+    ],
+    "floodplains": [
+        { file: "js/systems/environmental-hazards.js", symbol: "triggerBiomeHazard", role: "hazard" },
+        { file: "js/systems/environmental-hazards.js", symbol: "damageFields", role: "field-damage" }
+    ],
+    "seasonal-water": [
+        { file: "js/systems/fields.js", symbol: "ecotoneHarvestFactor", role: "harvest" }
+    ],
+    "water-scarcity": [
+        { file: "js/systems/fields.js", symbol: "ecotoneHarvestFactor", role: "harvest" }
     ],
     "seasonal-hazards": [
         { file: "js/systems/environmental-hazards.js", symbol: "triggerBiomeHazard", role: "hazard" }
@@ -267,6 +279,9 @@ const coupledEvidence = freeze({
 const coupledTests = freeze({
     "snow-frost-line": ["tests/systems/cross-biome-couplings.test.js"],
     "water-levels": ["tests/systems/cross-biome-couplings.test.js"],
+    "floodplains": ["tests/systems/cross-biome-couplings.test.js"],
+    "seasonal-water": ["tests/systems/cross-biome-couplings.test.js"],
+    "water-scarcity": ["tests/systems/cross-biome-couplings.test.js"],
     "seasonal-hazards": ["tests/systems/cross-biome-couplings.test.js"],
     "display-hazards": ["tests/systems/cross-biome-couplings.test.js"],
     "display-agriculture": ["tests/systems/cross-biome-couplings.test.js"],

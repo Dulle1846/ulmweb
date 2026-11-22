@@ -964,7 +964,11 @@ function applyBiomeHazardsForSeason(entry) {
     for (let step = 0; step < known.length; step++) {
         const region = known[(offset + step) % known.length];
         const profile = getCrossBiomeProfile(region);
-        const hazard = profile.ecology.hazards[0];
+        // The pressure model has already reconciled this id with the displayed
+        // hazard list. Selecting it is what turns the five readouts into a real
+        // regional event instead of always taking the first generic danger.
+        const hazard = profile.ecology.hazards.find(row => row.id === profile.ecology.pressure?.hazard)
+            || profile.ecology.hazards[0];
         if (!hazard) continue;
         const result = triggerBiomeHazard(region.id, hazard.id, {
             severity: hazard.severity / 100, entry

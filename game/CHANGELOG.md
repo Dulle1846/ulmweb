@@ -1,13 +1,48 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.45.0`
-**Next development line:** `3.46.0-dev`
+**Current production version:** `3.46.0`
+**Next development line:** `3.47.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.46.0 — Water, flood and frost now have consequences
+
+The five 1.2.21 readouts that were still mostly descriptive are now consumed by
+the existing farm and hazard paths. One derived seasonal pressure record feeds
+the panel, the field harvest and the regional hazard bridge, so a shown value
+and a real consequence cannot diverge.
+
+- **Floodplain becomes a regional flood.** `floodplains` raises the region's
+  displayed flood severity and supplies the pressure model's flood risk. The
+  seasonal hazard bridge now prefers that pressure hazard instead of always
+  taking the first generic danger, then calls the existing `triggerBiomeHazard`
+  and `applyHazard` path. Floods damage only that region's standing fields and
+  buildings; there is no parallel damage system.
+- **Seasonal water and scarcity reach the granary.** `seasonal-water` and
+  `water-scarcity` feed a bounded `yieldFactor` (0.80–1.06) inside
+  `getCrossBiomeFarmYieldFactorAt`. The same factor is multiplied into the real
+  `pendingHarvest`/`harvestTotal`, so a dry region harvests measurably less.
+- **Snow/frost line cuts the standing crop.** Winter frost above 55% risk
+  removes a proportional share of `field.growth` for sown and growing fields
+  once per field and year, and applies the same frost pressure to the shown
+  harvest multiplier. The player gets a `BIOME FROST` event with the region,
+  risk and growth lost.
+- **Water levels change both risks.** `water-levels` feeds flood and drought
+  severity and the harvest pressure, so high water is not only a blue number.
+- **Visible without a new screen.** The existing WORLD EFFECT line adds WATER,
+  SCARCITY, FLOODPLAIN and FROST badges. The affected ledger rows show flood
+  risk, harvest multiplier and field/building exposure, and harvest pressure
+  adds one `BIOME HARVEST` note per region and year.
+- **Compatibility and gates.** One optional field, `lastFrostYear`, is saved
+  and old fields normalize to `0`; no schema bump and no new hazard rows. The seven
+  coupling tests cover water-driven grain, frost-driven crop loss and a
+  floodplain-selected flood; the browser reference reads the four new badges
+  and the affected ledger rows back against the live profile. The 25-year
+  campaign remains deterministic on the same seed.
 
 ## 3.45.0 — The 1.2.21 survey now moves, feeds and strikes the realm
 

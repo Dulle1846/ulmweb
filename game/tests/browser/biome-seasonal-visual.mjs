@@ -266,11 +266,21 @@ try {
             panelMovement: badge("movement")?.dataset.biomeWorldValue || null,
             panelHarvest: badge("agriculture")?.dataset.biomeWorldValue || null,
             panelHazard: badge("hazard")?.dataset.biomeWorldValue || null,
+            panelWater: badge("water")?.dataset.biomeWorldValue || null,
+            panelScarcity: badge("scarcity")?.dataset.biomeWorldValue || null,
+            panelFloodplain: badge("floodplain")?.dataset.biomeWorldValue || null,
+            panelFrost: badge("frost")?.dataset.biomeWorldValue || null,
             worldMovement: profile.ecology.movement,
             worldHarvest: profile.ecology.agricultureFactor,
-            worldHazard: profile.ecology.hazards[0]?.id || "none",
+            worldHazard: profile.ecology.pressure?.hazard || profile.ecology.hazards[0]?.id || "none",
+            worldPressure: profile.ecology.pressure,
             movementReadout: readout("65")?.querySelector("strong")?.textContent || "",
             agricultureReadout: details("64").find(text => /harvest/i.test(text)) || "",
+            floodplainReadout: details("23").join(" "),
+            waterReadout: details("24").join(" "),
+            scarcityReadout: details("26").join(" "),
+            frostReadout: details("33").join(" "),
+            waterLevelsReadout: details("34").join(" "),
             hazardReadout: readout("63")?.querySelector("strong")?.textContent || "",
             lastHazard: profile.ecology.lastHazard || null
         };
@@ -282,8 +292,26 @@ try {
         "the panel harvest badge must equal the field-yield multiplier");
     assert.equal(coupling.panelHazard, coupling.worldHazard,
         "the panel danger badge must name the hazard the world can actually roll");
-    assert.match(coupling.agricultureReadout, /harvest ×/,
-        "the agricultural readout must explain the real harvest coupling");
+    assert.equal(coupling.panelWater, String(coupling.worldPressure.waterLevel),
+        "the panel water badge must equal the pressure model's water level");
+    assert.equal(coupling.panelScarcity, String(coupling.worldPressure.waterScarcity),
+        "the panel scarcity badge must equal the pressure model's scarcity");
+    assert.equal(coupling.panelFloodplain, String(coupling.worldPressure.floodplain),
+        "the panel floodplain badge must equal the pressure model's exposure");
+    assert.equal(coupling.panelFrost, String(coupling.worldPressure.frostRisk),
+        "the panel frost badge must equal the pressure model's frost risk");
+    assert.match(coupling.agricultureReadout, /harvest ×.*water\/frost ×/,
+        "the agricultural readout must explain the real harvest pressure coupling");
+    assert.match(coupling.floodplainReadout, /flood risk.*fields\/buildings exposed/i,
+        "the floodplain readout must name the real field/building consequence");
+    assert.match(coupling.waterReadout, /harvest ×/,
+        "seasonal water must show its harvest multiplier");
+    assert.match(coupling.scarcityReadout, /harvest ×/,
+        "water scarcity must show its harvest multiplier");
+    assert.match(coupling.frostReadout, /frost risk.*harvest ×/,
+        "the frost line must show its frost risk and harvest multiplier");
+    assert.match(coupling.waterLevelsReadout, /flood risk.*harvest ×/,
+        "water levels must show flood risk and harvest pressure");
     assert.ok(coupling.movementReadout.includes(coupling.panelMovement + "×"),
         "the movement readout must show the same multiplier as the badge");
     if (coupling.lastHazard) {
@@ -435,6 +463,55 @@ try {
     assert.equal(smallStats.modalOverflowX, 0, "the management modal must not overflow on a phone");
     assert.equal(smallStats.clippedButtons, 0, "phone action buttons must not clip their labels");
     assert.ok(smallStats.actionsVisible >= 8, "all biome actions must remain reachable on a phone");
+
+    // A real harvest in the dry panel region must produce the player-facing
+    // pressure note, not only change a number. The control is temporary and
+    // the realm is paused again immediately afterwards.
+    const playerNote = await page.evaluate(async regionId => {
+        const { state } = await import("./js/core/state.js");
+        const { spawnEntity } = await import("./js/world/entities.js");
+        const { TYPE } = await import("./js/core/types.js");
+        const { updateFields } = await import("./js/systems/fields.js");
+        const { getCrossBiomeProfile } = await import("./js/systems/cross-biome-state.js");
+        const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
+        const previousSeason = state.seasonIndex;
+        state.isPaused = false;
+        state.gameOver = false;
+        state.hasStarted = true;
+        state.seasonIndex = 2;
+        state.year = 33;
+        const profile = getCrossBiomeProfile(region);
+        const farm = spawnEntity(Math.floor(region.centerX), Math.floor(region.centerY), TYPE.FARM);
+        farm.construction = { stage: 3 };
+        farm.field = { stage: "ripe", growth: 100, fertility: 60, maxFertility: 100 };
+        const farmer = spawnEntity(Math.floor(region.centerX) + 1, Math.floor(region.centerY), TYPE.VILLAGER);
+        farmer.workplace = farm;
+        farmer.job = "farmer";
+        updateFields();
+        state.isPaused = true;
+        state.seasonIndex = previousSeason;
+        return {
+            note: state.eventLog.find(entry => /BIOME HARVEST/.test(entry.text))?.text || "",
+            pressure: profile.ecology.pressure,
+            harvestTotal: farm.field.harvestTotal
+        };
+    }, panelRegionId);
+    console.log("PLAYER_NOTE " + JSON.stringify(playerNote));
+    assert.ok(playerNote.pressure.waterScarcity > 55, "the message check needs a genuinely dry region");
+    assert.ok(playerNote.harvestTotal > 0, "the temporary farm must actually harvest");
+    assert.match(playerNote.note, /BIOME HARVEST · .*water scarcity.*LESS GRAIN/,
+        "a dry harvest must produce the player-facing pressure note");
+    // The sidebar EVENT LOG is the normal player path for this message. Close
+    // the management overlay so the log is visible, then use its real tab.
+    if (await page.locator("#command-modal").isVisible().catch(() => false)) {
+        await page.locator("#command-close").click();
+        await page.locator("#command-modal").waitFor({ state: "hidden", timeout: 5000 });
+    }
+    await page.evaluate(() => document.getElementById("tab-0")?.click());
+    await page.waitForFunction(() => (document.querySelector("#tab-content")?.textContent || "").includes("BIOME HARVEST"), null, { timeout: 5000 });
+    const visibleNote = await page.locator("#tab-content").textContent();
+    assert.match(visibleNote, /BIOME HARVEST · .*LESS GRAIN/,
+        "the player event log must render the harvest pressure note");
 
     const final = await page.evaluate(async () => {
         const { state } = await import("./js/core/state.js");

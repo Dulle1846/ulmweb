@@ -323,24 +323,31 @@ function movementProfile(region, climate, soil, vegetation, snowCover) {
     return { factor: round(factor, 3), terrainFactor: round(terrainFactor, 3), label, slope: round(slope, 2) };
 }
 
-function hazardsFor(region, climate, system, soil, season) {
+function hazardsFor(region, climate, system, soil, season, pressure = {}) {
     const spring = seasonIndex(season) === 0, summer = seasonIndex(season) === 1;
     const winter = seasonIndex(season) === 3;
     const dry = clamp(1 - climate.precipSuitability, 0, 1);
     const heat = clamp((climate.tempC - 18) / 22, 0, 1);
     const cold = clamp((0 - climate.tempC) / 25, 0, 1);
+    // Floodplain, water level, scarcity and snow cover move the displayed
+    // severity, so the annual hazard pass and the panel read the same risk.
     const flood = clamp((Number(region.engineered) ? 0.1 : 0.2) + finite(region.water) * 0.3
         + (spring ? 0.25 : 0) + Math.max(0, climate.precip - 900) / 2400
-        + (1 - system.landUse.drainage) * 0.08, 0, 1);
+        + (1 - system.landUse.drainage) * 0.08
+        + finite(pressure.floodplain) * 0.18
+        + Math.max(0, finite(pressure.waterLevel) - 0.6) * 0.10, 0, 1);
     const fire = clamp(dry * 0.55 + heat * 0.3 + climate.wind * 0.15
         + system.landUse.slashBurn * 0.25 - region.water * 0.2, 0, 1);
-    const frost = clamp(cold * 0.7 + (winter ? 0.22 : 0) + soil.frostProne * 0.16, 0, 1);
+    const frost = clamp(cold * 0.7 + (winter ? 0.22 : 0) + soil.frostProne * 0.16
+        + finite(pressure.snowCover) * 0.1, 0, 1);
     const disease = clamp(climate.humidity * 0.32 + (1 - system.waterQuality) * 0.36
         + finite(region.diseasePressure) * 0.3 + (spring ? 0.08 : 0), 0, 1);
     const erosion = clamp(region.erosion * 0.5 + terrainSlopeAt(region) * 0.24
         + climate.wind * 0.18 + (1 - region.vegetation) * 0.16, 0, 1);
     const drought = clamp(dry * 0.45 + (summer ? 0.24 : 0) + (1 - region.water) * 0.2
-        + Math.max(0, climate.evap - climate.precip) / 2400, 0, 1);
+        + Math.max(0, climate.evap - climate.precip) / 2400
+        + finite(pressure.waterScarcity) * 0.16
+        - finite(pressure.waterLevel) * 0.06, 0, 1);
     const rows = [
         ["flood", "Flood", flood],
         ["wildfire", "Wildfire", fire],
@@ -411,7 +418,14 @@ function factorKey(prefix, region, system) {
         Math.round(finite(region.soilHealth) * 100), Math.round(finite(region.erosion) * 100),
         system?.soilType, Math.round(finite(system?.nutrients) * 100),
         Math.round(finite(system?.salinity) * 100), Math.round(finite(system?.compaction) * 100),
-        Math.round(finite(system?.legacy) * 100)].join("|");
+        Math.round(finite(system?.legacy) * 100),
+        // The farm pressure reads these saved fields too; leaving them out let a
+        // cache entry survive an irrigation/drainage or groundwater change.
+        Math.round(finite(system?.groundwater) * 100), Math.round(finite(system?.pollution) * 100),
+        Math.round(finite(system?.landUse?.drainage) * 100),
+        Math.round(finite(system?.landUse?.irrigation) * 100),
+        Math.round(finite(system?.hydrology?.riverTiles)),
+        Math.round(finite(system?.hydrology?.lakeShare))].join("|");
 }
 
 function readCached(cache, key, compute) {
@@ -454,6 +468,63 @@ function farmYieldFactorFor(suitability) {
     return round(clamp(0.80 + clamp(suitability, 0, 1) * 0.32, 0.84, 1.14), 3);
 }
 
+// Surface water, groundwater and floodplain are one seasonal water budget.
+// The same numbers feed the panel, the harvest pressure and the flood event,
+// so the displayed water level cannot drift from the one the farm reads.
+function seasonalWaterFor(region, climate, system, seasonInfo) {
+    const sample = region.sample || { height: 0.5, moisture: 0.5 };
+    const waterLevel = clamp(region.water * seasonInfo.waterFactor
+        * (0.84 + system.groundwater * 0.16)
+        * (1 - system.landUse.drainage * 0.14 + system.landUse.irrigation * 0.08), 0.01, 1);
+    const waterScarcity = clamp(1 - (waterLevel * 0.5 + system.groundwater * 0.3
+        + climate.precipSuitability * 0.2) + system.pollution * 0.12, 0, 1);
+    const floodplain = clamp((1 - clamp((finite(sample.height, 0.5) - finite(state.seaLevel, 0.33)) / 0.3, 0, 1))
+        * 0.6 + region.water * 0.25 + Math.min(0.16, system.hydrology.riverTiles / 80)
+        + system.hydrology.lakeShare / 500, 0, 1);
+    return { floodplain, waterLevel, waterScarcity };
+}
+
+function seasonalPressureFor(water, snowCover, tempC, season) {
+    const frostRisk = clamp(snowCover * 0.58 + clamp((2 - tempC) / 20, 0, 1) * 0.42, 0, 1);
+    // Water scarcity and the frost boundary lower the actual harvest through
+    // getCrossBiomeFarmYieldFactorAt. The range is deliberately narrow: this
+    // is a seasonal pressure, not a second farm economy.
+    const yieldFactor = round(clamp(1 - water.waterScarcity * 0.12
+        - frostRisk * 0.08 + (water.waterLevel - 0.5) * 0.04, 0.80, 1.06), 3);
+    const floodRisk = clamp(water.floodplain * 0.72
+        + Math.max(0, water.waterLevel - 0.65) * 0.35 + (season === 0 ? 0.10 : 0), 0, 1);
+    const droughtRisk = clamp(water.waterScarcity * 0.85
+        + Math.max(0, 0.4 - water.waterLevel) * 0.15, 0, 1);
+    let hazard = null, score = 0.55;
+    if (floodRisk > score) { hazard = "flood"; score = floodRisk; }
+    if (droughtRisk > score) { hazard = "drought"; score = droughtRisk; }
+    if (frostRisk > score) { hazard = "frost"; score = frostRisk; }
+    return {
+        floodplain: round(water.floodplain, 3),
+        waterLevel: round(water.waterLevel, 3),
+        waterScarcity: round(water.waterScarcity, 3),
+        snowCover: round(snowCover, 3),
+        frostRisk: round(frostRisk, 3),
+        yieldFactor,
+        floodRisk: round(floodRisk, 3),
+        droughtRisk: round(droughtRisk, 3),
+        hazard
+    };
+}
+
+function farmPressureFor(region, system) {
+    const season = seasonIndex();
+    const seasonInfo = seasonRecord(season);
+    const climate = initialClimate(region, system.seed || state.worldSeed || 1, season);
+    const slope = terrainSlopeAt(region);
+    const snow = snowCoverFor(region, climate);
+    const water = seasonalWaterFor(region, climate, system, seasonInfo);
+    const pressure = seasonalPressureFor(water, snow, climate.tempC, season);
+    const factor = round(farmYieldFactorFor(farmSuitabilityFor(climate, system, snow, slope))
+        * pressure.yieldFactor, 3);
+    return { factor, pressure, regionId: region.id, regionName: region.name };
+}
+
 // The exact multiplier the seasonal field harvest applies. A dry, compacted,
 // saline or cold region yields less than a deep, moist, warm one, and the
 // panel prints this same value instead of only the abstract suitability score.
@@ -462,13 +533,26 @@ export function getCrossBiomeFarmYieldFactorAt(x, y) {
     if (!region) return 1;
     const system = systemFor(region);
     const key = factorKey("farm", region, system);
-    return readCached(farmFactorCache, key, () => {
-        const climate = initialClimate(region, system.seed || state.worldSeed || 1, state.seasonIndex);
-        const soil = BIOME_SOIL_TYPES[system.soilType] || BIOME_SOIL_TYPES.loam;
-        const slope = terrainSlopeAt(region);
-        const snow = snowCoverFor(region, climate);
-        return farmYieldFactorFor(farmSuitabilityFor(climate, system, snow, slope));
-    });
+    return readCached(farmFactorCache, key, () => farmPressureFor(region, system)).factor;
+}
+
+// The harvest uses the same cached pressure record for its player-facing note.
+// No new saved field is introduced; the note is derived from the current season.
+export function getCrossBiomeHarvestPressureAt(x, y) {
+    const region = getCrossBiomeRegionAt(x, y);
+    if (!region) return { factor: 1, pressure: null, penalty: 0, reason: "", regionId: null, regionName: "" };
+    const system = systemFor(region);
+    const key = factorKey("farm", region, system);
+    const entry = readCached(farmFactorCache, key, () => farmPressureFor(region, system));
+    const reasons = [];
+    if (entry.pressure.waterScarcity > 0.55) reasons.push("water scarcity");
+    if (entry.pressure.frostRisk > 0.55) reasons.push("frost boundary");
+    if (entry.pressure.floodplain > 0.65) reasons.push("floodplain");
+    return {
+        ...entry,
+        penalty: round(Math.max(0, 1 - entry.pressure.yieldFactor), 3),
+        reason: reasons.join(" + ") || "seasonal water"
+    };
 }
 
 // A regional hazard shock. This is called only by the existing 1.2.15 hazard
@@ -555,22 +639,19 @@ export function getCrossBiomeProfile(region) {
     const seasonInfo = seasonRecord(season);
     const climate = initialClimate(region, system.seed || state.worldSeed || 1, season);
     const soil = BIOME_SOIL_TYPES[system.soilType] || BIOME_SOIL_TYPES.loam;
-    const sample = region.sample || { height: 0.5, moisture: 0.5, temperature: 0.55 };
     const slope = terrainSlopeAt(region);
     const snowLine = Math.round(clamp((climate.tempC / 6.2) * 1000 + 500 + seasonInfo.snowLineShiftM, 0, 5000));
     const frostLine = Math.round(clamp(snowLine - 350 + (seasonInfo.id === "winter" ? -180 : 0), 0, 5000));
     const snowCover = clamp((2 - climate.tempC) / 12 + (seasonInfo.id === "winter" ? 0.25 : 0)
         + (1 - climate.insolation) * 0.12, 0, 1);
     const frostDays = Math.round(clamp((0 - climate.tempC) / 28, 0, 1) * 175 + snowCover * 35);
-    const waterLevel = clamp(region.water * seasonInfo.waterFactor
-        * (0.84 + system.groundwater * 0.16) * (1 - system.landUse.drainage * 0.14 + system.landUse.irrigation * 0.08), 0.01, 1);
-    const waterScarcity = clamp(1 - (waterLevel * 0.5 + system.groundwater * 0.3
-        + climate.precipSuitability * 0.2) + system.pollution * 0.12, 0, 1);
-    const floodplain = clamp((1 - clamp((finite(sample.height, 0.5) - finite(state.seaLevel, 0.33)) / 0.3, 0, 1))
-        * 0.6 + region.water * 0.25 + Math.min(0.16, system.hydrology.riverTiles / 80)
-        + system.hydrology.lakeShare / 500, 0, 1);
+    const water = seasonalWaterFor(region, climate, system, seasonInfo);
+    const pressure = seasonalPressureFor(water, snowCover, climate.tempC, season);
+    const { floodplain, waterLevel, waterScarcity } = water;
     const farmBase = farmSuitabilityFor(climate, system, snowCover, slope);
-    const agricultureFactor = farmYieldFactorFor(farmBase);
+    // The panel's agriculture factor includes the same water/frost pressure
+    // the field harvest reads, so a shown 0.92 is an actual 8% smaller crop.
+    const agricultureFactor = round(farmYieldFactorFor(farmBase) * pressure.yieldFactor, 3);
     const farmSeason = clamp(farmBase * seasonInfo.farmFactor, 0, 1);
     const plantGrowth = clamp(climate.tempSuitability * 0.24 + climate.precipSuitability * 0.22
         + climate.humidity * 0.12 + climate.insolation * 0.12 + system.nutrients * 0.15
@@ -580,7 +661,12 @@ export function getCrossBiomeProfile(region) {
         + climate.tempSuitability * 0.16 + system.soilLife * 0.12
         + (region.protectedArea ? 0.1 : 0) - system.legacy * 0.08, 0, 1);
     const movement = movementProfile(region, climate, soil, region.vegetation, snowCover);
-    const hazards = hazardsFor(region, climate, system, soil, season);
+    const hazards = hazardsFor(region, climate, system, soil, season, pressure);
+    // The seasonal hazard bridge uses this exact id, so the panel and the
+    // actual event cannot disagree about which pressure is strongest.
+    if (pressure.hazard && !hazards.some(row => row.id === pressure.hazard)) {
+        pressure.hazard = hazards[0]?.id || null;
+    }
     const recovery = recoveryFor(region, system);
     const animalBreeding = region.fauna.filter(row => row.breeding).length;
     const animalMigrating = region.fauna.filter(row => row.migrating).length;
@@ -647,19 +733,19 @@ export function getCrossBiomeProfile(region) {
         "surface-water": { value: pct(waterLevel) + "%", detail: "seasonal lakes, streams and ponds" },
         "groundwater": { value: pct(system.groundwater) + "%", detail: "recharged by rain, drawn by irrigation" },
         "rivers-lakes": { value: system.hydrology.riverTiles + " river tiles", detail: system.hydrology.lakeShare + "% lake / open water" },
-        "floodplains": { value: pct(floodplain) + "%", detail: "low ground and riparian margin" },
-        "seasonal-water": { value: pct(waterLevel) + "%", detail: seasonInfo.water },
+        "floodplains": { value: pct(floodplain) + "%", detail: "low ground and riparian margin · flood risk " + pct(pressure.floodRisk) + "% · fields/buildings exposed" },
+        "seasonal-water": { value: pct(waterLevel) + "%", detail: seasonInfo.water + " · harvest ×" + pressure.yieldFactor.toFixed(2) },
         "water-quality": { value: pct(system.waterQuality) + "%", detail: "drinking, fishing and irrigation quality" },
-        "water-scarcity": { value: pct(waterScarcity) + "%", detail: waterScarcity > 0.55 ? "scarcity limits farms and herds" : "water is not the limiting factor" },
+        "water-scarcity": { value: pct(waterScarcity) + "%", detail: (waterScarcity > 0.55 ? "scarcity limits farms and herds" : "water is not the limiting factor") + " · harvest ×" + pressure.yieldFactor.toFixed(2) },
         "moisture-gradients": { value: (moistureGradient >= 0 ? "+" : "") + moistureGradient + "%", detail: moistureGradient >= 0 ? "wetter than neighbouring regions" : "drier than neighbouring regions" },
         "plants-animals-agriculture": { value: "plants " + pct(plantGrowth) + "%", detail: "animals " + pct(animalHabitat) + "% · farms " + pct(farmBase) + "%" },
         "seasonal-appearance": { value: seasonInfo.label, detail: look },
         "plant-season-reactions": { value: seasonInfo.plants, detail: "growth " + pct(seasonInfo.growth) + "%" },
         "animal-activity": { value: seasonInfo.animals, detail: (animalBreeding + animalMigrating) + " species breeding or moving" },
         "seasonal-resources": { value: resources.length ? resources.join(" · ") : "none in season", detail: "live stocks and seasonal windows" },
-        "snow-frost-line": { value: snowLine + " m snow", detail: "frost line " + frostLine + " m · " + seasonInfo.label },
-        "water-levels": { value: pct(waterLevel) + "%", detail: "surface and groundwater response to the season" },
-        "farm-use": { value: pct(farmSeason) + "%", detail: seasonInfo.farm + " · " + fieldLabel },
+        "snow-frost-line": { value: snowLine + " m snow", detail: "frost line " + frostLine + " m · frost risk " + pct(pressure.frostRisk) + "% · harvest ×" + pressure.yieldFactor.toFixed(2) },
+        "water-levels": { value: pct(waterLevel) + "%", detail: "surface and groundwater response · flood risk " + pct(pressure.floodRisk) + "% · harvest ×" + pressure.yieldFactor.toFixed(2) },
+        "farm-use": { value: pct(farmSeason) + "%", detail: seasonInfo.farm + " · " + fieldLabel + " · pressure ×" + pressure.yieldFactor.toFixed(2) },
         "seasonal-hazards": { value: hazards.length ? hazards.map(row => row.label).join(" · ") : "none pressing", detail: seasonInfo.hazard },
         "clearing": { value: pct(region.clearCut) + "%", detail: "recent canopy removal and exposed ground" },
         "afforestation": { value: pct(system.landUse.reforestation) + "%", detail: "active replanting footprint" },
@@ -687,8 +773,8 @@ export function getCrossBiomeProfile(region) {
         "display-resources": { value: resources.length ? resources.join(" · ") : "none in season", detail: "typical local production" },
         "display-fauna": { value: fauna.length ? fauna.join(" · ") : "none recorded", detail: "most visible animal populations" },
         "display-climate": { value: climate.tempC.toFixed(1) + " °C · " + climate.precip + " mm", detail: precipitationLabel + " · humidity " + pct(climate.humidity) + "%" },
-        "display-hazards": { value: hazards.length ? hazards.map(row => row.label).join(" · ") : "none pressing", detail: seasonInfo.hazard + (system.lastHazard ? " · last " + system.lastHazard.label + " " + system.lastHazard.severity.toFixed(2) : " · no regional event yet") },
-        "display-agriculture": { value: pct(farmBase) + "%", detail: "harvest ×" + agricultureFactor.toFixed(2) + " · seasonal " + pct(farmSeason) + "% · limit " + farmLimit[0] },
+        "display-hazards": { value: hazards.length ? hazards.map(row => row.label).join(" · ") : "none pressing", detail: seasonInfo.hazard + " · pressure " + (pressure.hazard || "none") + (system.lastHazard ? " · last " + system.lastHazard.label + " " + system.lastHazard.severity.toFixed(2) : " · no regional event yet") },
+        "display-agriculture": { value: pct(farmBase) + "%", detail: "harvest ×" + agricultureFactor.toFixed(2) + " · water/frost ×" + pressure.yieldFactor.toFixed(2) + " · seasonal " + pct(farmSeason) + "% · limit " + farmLimit[0] },
         "display-movement": { value: movement.factor.toFixed(2) + "×", detail: movement.label + " · route/caravan multiplier" },
         "display-changes": { value: "trend " + (region.ecologyTrend >= 0 ? "+" : "") + round(region.ecologyTrend * 100, 1) + "%", detail: ecologicalChanges }
     };
@@ -741,6 +827,16 @@ export function getCrossBiomeProfile(region) {
             plantGrowth: pct(plantGrowth), animalHabitat: pct(animalHabitat),
             agriculture: pct(farmBase), agricultureFactor, movement: movement.factor,
             movementLabel: movement.label, movementTerrain: movement.terrainFactor,
+            pressure: {
+                floodplain: pct(pressure.floodplain),
+                waterLevel: pct(pressure.waterLevel),
+                waterScarcity: pct(pressure.waterScarcity),
+                frostRisk: pct(pressure.frostRisk),
+                yieldFactor: pressure.yieldFactor,
+                floodRisk: pct(pressure.floodRisk),
+                droughtRisk: pct(pressure.droughtRisk),
+                hazard: pressure.hazard
+            },
             hazards, lastHazard: system.lastHazard || null,
             trend: round(region.ecologyTrend * 100, 1), change: ecologicalChanges
         },

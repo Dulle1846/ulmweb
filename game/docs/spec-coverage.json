@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "bdd2c35e4d31b861052d7a3d201db3323bbb315d",
-  "sourceHash": "83172faad38f395f8045d787d99ce167502814fc4adf13e3eb055521a16f1bca",
-  "generatedAt": "2026-11-22T19:34:08+00:00",
+  "commit": "8faa9541c1c85fc91dd458c9e2723e0b2d53be98",
+  "sourceHash": "05b4dc33df38c8c9c48c39c32a5deaad653a1ca09c2ee2e6a1dabff981916cb1",
+  "generatedAt": "2026-11-22T20:25:47+00:00",
   "totals": {
     "total": 1564,
     "implemented": 1560,
@@ -35410,13 +35410,24 @@
               "role": "simulation"
             },
             {
+              "file": "js/systems/environmental-hazards.js",
+              "symbol": "triggerBiomeHazard",
+              "role": "hazard"
+            },
+            {
+              "file": "js/systems/environmental-hazards.js",
+              "symbol": "damageFields",
+              "role": "field-damage"
+            },
+            {
               "file": "js/presentation/biome-panel.js",
               "symbol": "renderBiomePanel",
               "role": "ui"
             }
           ],
           "tests": [
-            "tests/systems/cross-biome-systems.test.js"
+            "tests/systems/cross-biome-systems.test.js",
+            "tests/systems/cross-biome-couplings.test.js"
           ],
           "probe": "not-sampled",
           "missing": [],
@@ -35434,6 +35445,8 @@
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)",
             "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
             "js/systems/cross-biome-state.js#getCrossBiomeProfile (simulation)",
+            "js/systems/environmental-hazards.js#triggerBiomeHazard (hazard)",
+            "js/systems/environmental-hazards.js#damageFields (field-damage)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)"
           ]
         },
@@ -35456,13 +35469,19 @@
               "role": "simulation"
             },
             {
+              "file": "js/systems/fields.js",
+              "symbol": "ecotoneHarvestFactor",
+              "role": "harvest"
+            },
+            {
               "file": "js/presentation/biome-panel.js",
               "symbol": "renderBiomePanel",
               "role": "ui"
             }
           ],
           "tests": [
-            "tests/systems/cross-biome-systems.test.js"
+            "tests/systems/cross-biome-systems.test.js",
+            "tests/systems/cross-biome-couplings.test.js"
           ],
           "probe": "not-sampled",
           "missing": [],
@@ -35480,6 +35499,7 @@
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)",
             "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
             "js/systems/cross-biome-state.js#getCrossBiomeProfile (simulation)",
+            "js/systems/fields.js#ecotoneHarvestFactor (harvest)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)"
           ]
         },
@@ -35548,13 +35568,19 @@
               "role": "simulation"
             },
             {
+              "file": "js/systems/fields.js",
+              "symbol": "ecotoneHarvestFactor",
+              "role": "harvest"
+            },
+            {
               "file": "js/presentation/biome-panel.js",
               "symbol": "renderBiomePanel",
               "role": "ui"
             }
           ],
           "tests": [
-            "tests/systems/cross-biome-systems.test.js"
+            "tests/systems/cross-biome-systems.test.js",
+            "tests/systems/cross-biome-couplings.test.js"
           ],
           "probe": "not-sampled",
           "missing": [],
@@ -35572,6 +35598,7 @@
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)",
             "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
             "js/systems/cross-biome-state.js#getCrossBiomeProfile (simulation)",
+            "js/systems/fields.js#ecotoneHarvestFactor (harvest)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)"
           ]
         },
@@ -35875,6 +35902,11 @@
               "role": "hazard"
             },
             {
+              "file": "js/systems/fields.js",
+              "symbol": "ecotoneHarvestFactor",
+              "role": "harvest"
+            },
+            {
               "file": "js/presentation/biome-panel.js",
               "symbol": "renderBiomePanel",
               "role": "ui"
@@ -35901,6 +35933,7 @@
             "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
             "js/systems/cross-biome-state.js#getCrossBiomeProfile (simulation)",
             "js/systems/environmental-hazards.js#triggerBiomeHazard (hazard)",
+            "js/systems/fields.js#ecotoneHarvestFactor (harvest)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)"
           ]
         },
@@ -35928,6 +35961,11 @@
               "role": "hazard"
             },
             {
+              "file": "js/systems/fields.js",
+              "symbol": "ecotoneHarvestFactor",
+              "role": "harvest"
+            },
+            {
               "file": "js/presentation/biome-panel.js",
               "symbol": "renderBiomePanel",
               "role": "ui"
@@ -35954,6 +35992,7 @@
             "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
             "js/systems/cross-biome-state.js#getCrossBiomeProfile (simulation)",
             "js/systems/environmental-hazards.js#triggerBiomeHazard (hazard)",
+            "js/systems/fields.js#ecotoneHarvestFactor (harvest)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)"
           ]
         },
@@ -37539,7 +37578,7 @@
         }
       ],
       "source": "js/world/cross-biome-data.js",
-      "note": "66 runtime requirements from BIOME_SYSTEM_REQUIREMENTS; 6 carry point-specific coupling tests.",
+      "note": "66 runtime requirements from BIOME_SYSTEM_REQUIREMENTS; 9 carry point-specific coupling tests.",
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
