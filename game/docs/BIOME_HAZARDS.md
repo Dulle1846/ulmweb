@@ -3,7 +3,9 @@
 **Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22.
 **Spec:** 1.2.20.1–1.2.20.102, all 102 points implemented.
 **Panel:** `HAZARDS` tab in the realm management deck.
-**Code:** `js/world/hazard-data.js`, `js/systems/environmental-hazards.js`,
+**Code:** `js/world/hazard-data.js`, `js/world/hazard-expansion-data.js`,
+`js/systems/environmental-hazards.js`, `js/systems/hazard-response.js`,
+`js/systems/hazard-scars.js`, `js/systems/hazard-modifiers.js`,
 `js/presentation/hazard-panel.js`, `css/hazard-panel.css`.
 
 ## What the player sees
@@ -25,9 +27,13 @@ The `HAZARDS` panel reads the same saved state the simulation writes. It shows
 - the arcane burden with a cleanse action,
 - losses caused by hazards and a chronicle of every season that hurt the realm.
 
-Three real actions are available: prepare the season (12 wood, 8 gold, once per
-season), treat casualties (spends herbal doses) and cleanse corrupted ground
-(10 stone, 12 gold).
+The panel also carries the response layer: a seeded seasonal forecast with an
+uncertainty band, four plans (stockpile, evacuate, relief crews, fortify), real
+specialist crews, quarantine, neighbour aid, the emergency fund and loan,
+resettlement, disease treatment, rare-event decisions and the hazard map
+toggle. The original three actions remain: prepare the season (12 wood, 8 gold,
+once per season), treat casualties (spends herbal doses) and cleanse corrupted
+ground (10 stone, 12 gold).
 
 ## Simulation model
 
@@ -88,6 +94,53 @@ farms, walls, foresters, sanitation, roads, warehouses, clinics, healers,
 medicine, insulated homes, school and scriptorium, barracks and smithy, and the
 keep. Nothing is granted by declaring a policy.
 
+### Response layer
+
+`js/systems/hazard-response.js` owns the parts that turn preparedness into a
+choice instead of a number:
+
+- **Forecast.** A pure hash of seed, season and year produces the coming
+  season's risks and an uncertainty band. Confidence rises with real research
+  and the protection survey; nothing is rolled when the panel is opened.
+- **Plans.** Once per season the player pays for stockpiling (+2 protected
+  food losses), evacuation (casualties and destruction), relief crews (field
+  repair and reconstruction) or fortification (readiness). The plan expires at
+  the next season change and is saved.
+- **Disease model.** Every recorded disease has a route (`water`, `vector`,
+  `air`, `contact`), contagion, lethality, duration and case/death/recovered
+  counts. Progression is annual and bounded; treatment spends gold and food,
+  quarantine slows spread and closes the border, and the health system still
+  owns the actual outbreak declaration.
+- **Neighbouring realms.** Up to four diplomacy realms carry an outbreak and
+  animal-plague state. They can infect the realm along trade, request aid or
+  receive it, with relation, morale and caravan consequences.
+- **Rare chains.** Five rare events are multi-year rules with an annual effect
+  and a decision; a 3.36 rare record is migrated into a chain on its next year.
+- **Crews and equipment.** Fire, rescue, medical and equipment levels are
+  trained with real stores, saved, and read as mitigation and casualty relief.
+- **Rebuild economy.** The emergency fund, loan, resettlement and insurance
+  payout are saved state; wrecks stay in the existing disaster-recovery queue
+  and keep their 25% rebuild discount.
+
+### Spatial scars
+
+`js/systems/hazard-scars.js` keeps bounded lists (16 per kind) of burnt forest,
+floodwater, lava, lost ground and corruption. Wildfire removes real forest
+stock, flood scars cut roads, lava and lost ground are permanent impassable
+tiles for villagers and caravans, and corruption blocks forage. `renderer.js`
+draws the same lists when the HAZARDS panel's map overlay is enabled. No scar
+list grows without a cap and none is scanned inside the frame loop.
+
+### Protection works
+
+Eight real buildings are available in the PROTECTION build menu: flood dam,
+avalanche barrier, drainage ditch, firebreak, weatherproof house (also housing),
+quarantine house (health and sanitation service), granary (warehouse), and
+warding stone. They use the normal placement, material, construction and save
+pipeline. Their counts feed dams, avalanche protection, drainage, firebreak
+field relief, warehouses, medical care, adapted clothing and wards in the
+protection survey.
+
 ## Spec coverage
 
 `js/world/hazard-data.js` holds the 102-row catalogue. Every row names the
@@ -123,6 +176,24 @@ with a quiet hazard state and receives its first season pass on the next season
 change. A saved realm with no rolled hazard loads with an exactly neutral
 modifier block, even if a build before the modifiers had consumers left values
 from the standing regional bundle in the save.
+
+The 3.37 response layer stores `response`, `partners` and `scars` inside the
+same object, so no schema bump is needed. Old disease records load contained
+(`active: false`) and old rare records are migrated into a chain rather than
+remaining inert. The map overlay flag is presentation-only and intentionally
+not saved.
+
+### Verification for 3.37
+
+- `node --test tests/world/hazard-expansion.test.js` — 9 tests for the
+  catalogue, forecast, plans, disease progression, movement blockers, rare
+  chains, crews/economy and partner aid.
+- `node --test tests/systems/city-builder.test.js` — the eight protection works
+  pass through the real construction and save pipeline.
+- `npm run test:hazard-ui` — browser reference for forecast, plan, crew, scars,
+  rebuild, partner rows, overlay and save/reload persistence.
+- `npm run spec:audit` — 102 / 102 points implemented; source hash regenerated.
+- `npm test` and the deterministic 25-year campaign remain the release gate.
 
 ## Verification
 

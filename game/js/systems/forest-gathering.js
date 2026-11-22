@@ -43,6 +43,7 @@ import { harvestForestGameAt } from "./forest-fauna.js";
 import { addLocalOutput, outputSpace, requestHaul } from "./logistics.js";
 import { addResource } from "./resources.js";
 import { recordResourceMovement } from "./goods-book.js";
+import { isHazardForageBlocked } from "./hazard-scars.js";
 
 const VERSION = 1;
 const MAX_HISTORY = 32;
@@ -279,6 +280,9 @@ export function gatherForestProducts(x, y, options = {}) {
     const ledger = ensureForestGathering();
     const products = forestProductsAt(x, y, options.dayOfYear ?? state.dayOfYear);
     if (!products) return { ok: false, reason: "No living forest at this tile" };
+    if (isHazardForageBlocked(products.x, products.y)) {
+        return { ok: false, reason: "Forbidden or corrupted growth makes this wood unsafe to gather" };
+    }
     const day = Math.floor(number(options.dayOfYear, state.dayOfYear) || 0);
     const year = Math.floor(number(options.year, state.year) || 1);
     if (!isValidGather(ledger, products.x, products.y, day, year)) {

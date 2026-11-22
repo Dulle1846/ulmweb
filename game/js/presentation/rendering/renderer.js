@@ -31,6 +31,42 @@ export function visibleCarrierIdsForTest(){return [...visibleCarrierIdsCache];}
 export function visibleParticleCountForTest(){return particleDrawCount;}
 export function visibleFloaterCountForTest(){return floaterDrawCount;}
 
+// Bounded hazard map layer: at most sixteen marks per kind, culled to the
+// viewport. The scars are also read by movement and gathering; the overlay is
+// the player's view of the same saved state, never a second map.
+const HAZARD_OVERLAY_COLORS = Object.freeze({
+    burnt: "rgba(156, 84, 38, 0.42)",
+    flooded: "rgba(62, 113, 145, 0.44)",
+    lava: "rgba(181, 63, 35, 0.62)",
+    lost: "rgba(55, 48, 42, 0.62)",
+    corruption: "rgba(133, 76, 158, 0.52)"
+});
+
+function drawHazardOverlay(ctx, zoom, camera, canvas) {
+    if (!state.hazardOverlay) return;
+    const scars = state.environmentalHazards?.scars;
+    if (!scars || typeof scars !== "object") return;
+    const cellPx = CELL * zoom;
+    for (const [kind, color] of Object.entries(HAZARD_OVERLAY_COLORS)) {
+        const marks = Array.isArray(scars[kind]) ? scars[kind] : [];
+        for (const mark of marks) {
+            const sx = Number(mark.x) * cellPx - camera.x;
+            const sy = Number(mark.y) * cellPx - camera.y;
+            if (sx < -cellPx || sy < -cellPx || sx > canvas.width || sy > canvas.height) continue;
+            ctx.fillStyle = color;
+            ctx.fillRect(sx, sy, cellPx + 0.5, cellPx + 0.5);
+            ctx.strokeStyle = "rgba(255,255,255,0.22)";
+            ctx.lineWidth = Math.max(0.5, zoom * 0.5);
+            ctx.strokeRect(sx + 0.5, sy + 0.5, Math.max(1, cellPx - 1), Math.max(1, cellPx - 1));
+        }
+    }
+    const fog = Number(state.environmentalHazards?.magic?.fog) || 0;
+    if (fog > 0.15) {
+        ctx.fillStyle = "rgba(188, 196, 205, " + (Math.min(0.3, fog * 0.24)).toFixed(3) + ")";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  WELT ZEICHNEN
 // ═══════════════════════════════════════════════════════════════
@@ -47,6 +83,7 @@ export function drawWorld() {
     drawFieldPatches(ctx,zoom,camera,canvas);
     drawMapLayer(ctx,zoom,camera,canvas);
     drawForesterStewardshipOverlay(ctx,zoom,camera,canvas);
+    drawHazardOverlay(ctx,zoom,camera,canvas);
     drawLogisticsRoutes(ctx,zoom,camera,canvas);
 
     // ── Entities (sortiert nach Y für Pseudo-Tiefe) ──────────

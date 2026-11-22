@@ -20,6 +20,7 @@ import { getRoadSpeedMultiplier,getRoadTravelCost } from '../systems/roads.js';
 import { getForestMovementFactorAt } from '../systems/resource-geography.js';
 import { skillForJob } from '../systems/skills.js';
 import { getHazardMovementFactor } from '../systems/hazard-modifiers.js';
+import { isHazardTileBlocked } from '../systems/hazard-scars.js';
 
 const MOVING_TYPES = new Set([
     TYPE.VILLAGER, TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT, TYPE.PRIEST,
@@ -617,6 +618,7 @@ export function isWalkable(x, y) {
     const ty = Math.floor(y);
     if (tx < 0 || ty < 0 || tx >= worldWidth() || ty >= worldHeight()) return false;
     if (isWaterAt(x, y)) return false;
+    if (isHazardTileBlocked(tx, ty)) return false;
     return !blockedBuildingTiles.has(ty*blockedTileWorldWidth+tx);
 }
 

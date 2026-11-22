@@ -88,6 +88,27 @@ try {
     assert.match(panel, /FOOD & WATER DRAW/);
     assert.match(panel, /CARAVAN BUY/);
     assert.match(panel, /ADAPTATION RELIEF/);
+    assert.match(panel, /SEASONAL FORECAST/);
+    assert.match(panel, /CHOOSE A PLAN/);
+    assert.match(panel, /SPECIALIST CREWS & EQUIPMENT/);
+    assert.match(panel, /HAZARD SCARS ON THE MAP/);
+    assert.match(panel, /REBUILD ECONOMY/);
+    assert.match(panel, /NEIGHBOURING REALMS/);
+
+    // A plan and a crew are real player decisions, not display rows.
+    await page.locator('#command-panel-content [data-command="hazard-plan-stockpile"]').click();
+    await page.waitForFunction(async () => {
+        const { state } = await import("./js/core/state.js");
+        return state.environmentalHazards?.response?.plan === "stockpile"
+            && state.environmentalHazards.response.stockpile === 2;
+    }, null, { timeout: 15000 });
+    await page.locator('#command-panel-content [data-command="hazard-crew-fire"]').click();
+    await page.waitForFunction(async () => {
+        const { state } = await import("./js/core/state.js");
+        return state.environmentalHazards?.response?.crews?.fire === 1;
+    }, null, { timeout: 15000 });
+    await page.locator('#command-panel-content [data-command="hazard-overlay"]').first().click();
+    assert.equal(await page.evaluate(async () => (await import("./js/core/state.js")).state.hazardOverlay), true);
 
     const prepare = page.locator('#command-panel-content [data-command="hazard-prepare"]');
     assert.equal(await prepare.isDisabled(), false, "a fresh season can be prepared");
@@ -114,6 +135,7 @@ try {
             active: state.environmentalHazards.active.map(row => row.mechanic),
             history: state.environmentalHazards.history.length,
             losses: { ...state.environmentalHazards.losses },
+            stockpile: state.environmentalHazards.response?.stockpile,
             season: state.seasonIndex
         };
     });
@@ -155,13 +177,19 @@ try {
             active: state.environmentalHazards.active.map(row => row.mechanic),
             history: state.environmentalHazards.history.length,
             preparedness: state.environmentalHazards.preparedness.season,
-            losses: { ...state.environmentalHazards.losses }
+            losses: { ...state.environmentalHazards.losses },
+            plan: state.environmentalHazards.response?.plan,
+            stockpile: state.environmentalHazards.response?.stockpile,
+            fireCrew: state.environmentalHazards.response?.crews?.fire
         };
     });
     assert.equal(restored.season, settled.season);
     assert.deepEqual(restored.active, settled.active, "the reloaded realm must keep the same hazards");
     assert.equal(restored.history, settled.history, "the hazard record must survive the reload");
     assert.deepEqual(restored.losses, settled.losses, "the loss ledger must survive the reload");
+    assert.equal(restored.plan, "stockpile", "the chosen plan must survive the reload");
+    assert.equal(restored.stockpile, settled.stockpile, "the stockpiled supplies must survive the reload");
+    assert.equal(restored.fireCrew, 1, "the trained crew must survive the reload");
 
     // The panel must show the player the same multipliers the simulation uses,
     // and the numbers must move between calm weather and an active hazard.

@@ -10,7 +10,9 @@ export const NEW_BUILDING_TYPES = Object.freeze([
     TYPE.WELL, TYPE.MASON, TYPE.FORESTER, TYPE.CLINIC, TYPE.MARKET,
     TYPE.SHRINE, TYPE.COURT, TYPE.PRISON,
     TYPE.TOWN_HALL, TYPE.SCHOOL, TYPE.BATHHOUSE, TYPE.BREWERY, TYPE.GUILDHALL, TYPE.WATCHHOUSE,
-    TYPE.SMITHY, TYPE.SCRIPTORIUM
+    TYPE.SMITHY, TYPE.SCRIPTORIUM,
+    TYPE.DAM, TYPE.AVALANCHE_BARRIER, TYPE.DRAINAGE, TYPE.FIREBREAK,
+    TYPE.WEATHER_HOUSE, TYPE.QUARANTINE, TYPE.GRANARY, TYPE.WARD
 ]);
 
 export const BUILDING_LABELS = Object.freeze({
@@ -49,7 +51,15 @@ export const BUILDING_LABELS = Object.freeze({
     [TYPE.GUILDHALL]: "Guildhall",
     [TYPE.WATCHHOUSE]: "Watchhouse",
     [TYPE.SMITHY]: "Smithy",
-    [TYPE.SCRIPTORIUM]: "Scriptorium"
+    [TYPE.SCRIPTORIUM]: "Scriptorium",
+    [TYPE.DAM]: "Flood Dam",
+    [TYPE.AVALANCHE_BARRIER]: "Avalanche Barrier",
+    [TYPE.DRAINAGE]: "Drainage Ditch",
+    [TYPE.FIREBREAK]: "Firebreak",
+    [TYPE.WEATHER_HOUSE]: "Weatherproof House",
+    [TYPE.QUARANTINE]: "Quarantine House",
+    [TYPE.GRANARY]: "Granary",
+    [TYPE.WARD]: "Warding Stone"
 });
 
 // Direct construction uses the same material language as the card catalogue.
@@ -90,7 +100,15 @@ export const BUILDING_COSTS = Object.freeze({
     [TYPE.GUILDHALL]: Object.freeze({ wood: 32, stone: 22, gold: 12 }),
     [TYPE.WATCHHOUSE]: Object.freeze({ wood: 22, stone: 24, gold: 5 }),
     [TYPE.SMITHY]: Object.freeze({ wood: 36, stone: 24, gold: 12 }),
-    [TYPE.SCRIPTORIUM]: Object.freeze({ wood: 30, stone: 18, gold: 10 })
+    [TYPE.SCRIPTORIUM]: Object.freeze({ wood: 30, stone: 18, gold: 10 }),
+    [TYPE.DAM]: Object.freeze({ wood: 14, stone: 34, gold: 6 }),
+    [TYPE.AVALANCHE_BARRIER]: Object.freeze({ wood: 26, stone: 20, gold: 4 }),
+    [TYPE.DRAINAGE]: Object.freeze({ wood: 12, stone: 10 }),
+    [TYPE.FIREBREAK]: Object.freeze({ wood: 10, stone: 4 }),
+    [TYPE.WEATHER_HOUSE]: Object.freeze({ wood: 26, stone: 22, gold: 4 }),
+    [TYPE.QUARANTINE]: Object.freeze({ wood: 24, stone: 20, gold: 8 }),
+    [TYPE.GRANARY]: Object.freeze({ wood: 30, stone: 20, gold: 4 }),
+    [TYPE.WARD]: Object.freeze({ stone: 24, gold: 14 })
 });
 
 export const BUILD_MENU = Object.freeze([
@@ -103,7 +121,11 @@ export const BUILD_MENU = Object.freeze([
     Object.freeze({ id: "faith", label: "FAITH", types: Object.freeze([TYPE.SHRINE]) }),
     Object.freeze({ id: "justice", label: "JUSTICE", types: Object.freeze([TYPE.COURT, TYPE.PRISON]) }),
     Object.freeze({ id: "military", label: "MILITARY", types: Object.freeze([TYPE.TOWER, TYPE.WALL, TYPE.BARRACKS]) }),
-    Object.freeze({ id: "nature", label: "NATURE", types: Object.freeze([TYPE.FORESTER]) })
+    Object.freeze({ id: "nature", label: "NATURE", types: Object.freeze([TYPE.FORESTER]) }),
+    Object.freeze({ id: "protection", label: "PROTECTION", types: Object.freeze([
+        TYPE.DAM, TYPE.AVALANCHE_BARRIER, TYPE.DRAINAGE, TYPE.FIREBREAK,
+        TYPE.WEATHER_HOUSE, TYPE.QUARANTINE, TYPE.GRANARY, TYPE.WARD
+    ]) })
 ]);
 
 // Unique workshop commissions. The ordinary goods stay in the physical
@@ -194,7 +216,8 @@ export const RECIPES = Object.freeze({
 export const HOUSING_TIERS = Object.freeze({
     [TYPE.TENT]: Object.freeze({ label: "Tent", capacity: 2, comfort: 0.35, warmth: 0.35 }),
     [TYPE.HOUSE]: Object.freeze({ label: "Timber cottage", capacity: 4, comfort: 0.7, warmth: 0.65 }),
-    [TYPE.STONE_HOUSE]: Object.freeze({ label: "Stone house", capacity: 6, comfort: 0.95, warmth: 1 })
+    [TYPE.STONE_HOUSE]: Object.freeze({ label: "Stone house", capacity: 6, comfort: 0.95, warmth: 1 }),
+    [TYPE.WEATHER_HOUSE]: Object.freeze({ label: "Weatherproof house", capacity: 5, comfort: 0.86, warmth: 1.15 })
 });
 
 export const CONSTRUCTION_STAGES = Object.freeze([
@@ -210,10 +233,10 @@ export const SERVICE_DEFINITIONS = Object.freeze({
     social: Object.freeze({ label: "Social life", types: Object.freeze([TYPE.TAVERN, TYPE.TEMPLE, TYPE.SHRINE, TYPE.MARKET]), radius: 7, color: "#b57942" }),
     safety: Object.freeze({ label: "Safety", types: Object.freeze([TYPE.TOWER, TYPE.WALL, TYPE.BARRACKS, TYPE.WATCHHOUSE, TYPE.COURT, TYPE.PRISON]), radius: 7, color: "#7b8b57" }),
     justice: Object.freeze({ label: "Justice", types: Object.freeze([TYPE.COURT, TYPE.PRISON]), radius: 8, color: "#8c7f6a" }),
-    health: Object.freeze({ label: "Health", types: Object.freeze([TYPE.CLINIC, TYPE.TEMPLE, TYPE.SHRINE, TYPE.BATHHOUSE]), radius: 6, color: "#9a6d7e" }),
+    health: Object.freeze({ label: "Health", types: Object.freeze([TYPE.CLINIC, TYPE.TEMPLE, TYPE.SHRINE, TYPE.BATHHOUSE, TYPE.QUARANTINE]), radius: 6, color: "#9a6d7e" }),
     civic: Object.freeze({ label: "Civic order", types: Object.freeze([TYPE.TOWN_HALL, TYPE.COURT, TYPE.PRISON]), radius: 10, color: "#8b7757" }),
     education: Object.freeze({ label: "Education", types: Object.freeze([TYPE.SCHOOL]), radius: 8, color: "#6f7f9a" }),
-    sanitation: Object.freeze({ label: "Sanitation", types: Object.freeze([TYPE.BATHHOUSE, TYPE.WELL, TYPE.CLINIC]), radius: 7, color: "#5b8a87" }),
+    sanitation: Object.freeze({ label: "Sanitation", types: Object.freeze([TYPE.BATHHOUSE, TYPE.WELL, TYPE.CLINIC, TYPE.DRAINAGE]), radius: 7, color: "#5b8a87" }),
     trade: Object.freeze({ label: "Trade", types: Object.freeze([TYPE.MARKET, TYPE.GUILDHALL]), radius: 9, color: "#a4773e" })
 });
 

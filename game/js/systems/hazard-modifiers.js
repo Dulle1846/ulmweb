@@ -72,8 +72,21 @@ export function getHazardModifiers() {
  * share of each penalty a region's research and siting take back.
  */
 export function getHazardSimulationEffects() {
-    const raw = getHazardModifiers();
-    if (effectSource === raw) return effects;
+    const base = getHazardModifiers();
+    if (effectSource === base) return effects;
+    // Magic burdens and sick neighbours bend the same saved modifier block.
+    // Fog closes paths, forbidden growth makes extraction dangerous and an
+    // outbreak across the border raises caravan terms. Zero changes nothing.
+    const magic = state.environmentalHazards?.magic || {};
+    const partnerOutbreaks = Array.isArray(state.environmentalHazards?.partners)
+        ? state.environmentalHazards.partners.filter(partner => partner?.outbreak).length : 0;
+    const raw = Object.freeze({
+        ...base,
+        movement: clamp01(base.movement + clamp01(magic.fog) * 0.18),
+        extraction: clamp01(base.extraction + clamp01(magic.forbidden) * 0.12),
+        diseaseRisk: clamp01(base.diseaseRisk + clamp01(magic.corruption) * 0.12),
+        trade: clamp01(base.trade + partnerOutbreaks * 0.035)
+    });
     const relief = 1 - clamp01(raw.adaptation) * HAZARD_MODIFIER_EFFECT.adaptationRelief;
     effects = Object.freeze({
         foodDemand: bounded(1 + raw.needs * HAZARD_MODIFIER_EFFECT.foodDemand * relief, 0.75, 1.60),
@@ -86,7 +99,7 @@ export function getHazardSimulationEffects() {
         adaptationRelief: clamp01(raw.adaptation) * HAZARD_MODIFIER_EFFECT.adaptationRelief,
         raw
     });
-    effectSource = raw;
+    effectSource = base;
     return effects;
 }
 

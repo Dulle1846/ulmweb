@@ -45,6 +45,17 @@ export const TYPE = {
     SMITHY: 79,
     SCRIPTORIUM: 80,
 
+    // 1.2.20 protection works. Kept above the original city block so every
+    // older save id and every unit/enemy id keeps its established meaning.
+    DAM: 81,
+    AVALANCHE_BARRIER: 82,
+    DRAINAGE: 83,
+    FIREBREAK: 84,
+    WEATHER_HOUSE: 85,
+    QUARANTINE: 86,
+    GRANARY: 87,
+    WARD: 88,
+
     VILLAGER: 20,
     GUARD: 21,
     ARCHER: 22,
@@ -99,6 +110,14 @@ const MAX_HP = {
     [TYPE.WATCHHOUSE]: 240,
     [TYPE.SMITHY]: 220,
     [TYPE.SCRIPTORIUM]: 210,
+    [TYPE.DAM]: 420,
+    [TYPE.AVALANCHE_BARRIER]: 300,
+    [TYPE.DRAINAGE]: 160,
+    [TYPE.FIREBREAK]: 120,
+    [TYPE.WEATHER_HOUSE]: 300,
+    [TYPE.QUARANTINE]: 240,
+    [TYPE.GRANARY]: 280,
+    [TYPE.WARD]: 180,
     [TYPE.VILLAGER]: 35,
     [TYPE.GUARD]:    160,
     [TYPE.ARCHER]:   95,
@@ -195,7 +214,7 @@ export class Entity {
     }
 
     isBuilding() {
-        return this.type < 20 || (this.type >= 60 && this.type < 81);
+        return this.type < 20 || (this.type >= 60 && this.type < 90);
     }
 
     isUnit() {

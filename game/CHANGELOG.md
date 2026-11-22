@@ -1,13 +1,60 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.36.0`
-**Next development line:** `3.37.0-dev`
+**Current production version:** `3.37.0`
+**Next development line:** `3.38.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.37.0 — The hazard layer becomes a living system
+
+3.36 gave the 102 hazard points real economic multipliers. This release turns
+the rest of the layer into decisions, places and consequences instead of panel
+counters. The save schema stays at 13 and calm realms remain deterministic.
+
+- **Forecast and four plans.** The scriptorium produces a bounded, seeded
+  seasonal forecast with an uncertainty band; confidence comes from real
+  research and protection. Once per season the player chooses stockpiling,
+  evacuation, relief crews or fortification, each with a real cost and a real
+  effect on the next hazard pass.
+- **Buildable protection works.** Eight new city buildings join the PROTECTION
+  menu: flood dam, avalanche barrier, drainage ditch, firebreak, weatherproof
+  house, quarantine house, granary and warding stone. They use the normal
+  placement, material, construction and save pipeline, and feed the protection
+  survey that already lowered severity.
+- **Spatial scars.** Wildfire burns real forest stock, flood scars cut roads and
+  block crossings, lava and lost ground are permanent impassable tiles, and
+  corruption spreads into neighbouring forage. The hazard map draws all of it.
+- **A disease model.** Diseases now carry contagion, lethality, duration, a
+  water/vector route and real case progression; treatment, quarantine and
+  neighbouring outbreaks have costs and effects. Hazards still foul sanitation
+  without declaring an outbreak themselves.
+- **Neighbouring realms react.** Trade partners carry their own outbreak and
+  animal-plague state, ask for aid, receive relief, and can send a fever back
+  along the trade road. Relations and caravan terms move with those choices.
+- **Rare events are chains.** Each rare event is a multi-year regional rule with
+  an annual consequence and a player decision (cleanse, quarantine, treat,
+  resettle, extend or accept the bargain) instead of a label and a counter.
+- **Specialist crews and equipment.** Fire, rescue, medical and equipment crews
+  are trained with real stores, raise protection and reduce casualties; they
+  survive save and reload.
+- **Rebuild economy.** Wreck recovery now sits beside an emergency fund, a
+  three-year loan, resettlement of lost ground and permanent scars. Insurance
+  pays toward destroyed structures and rebuilding on the wreck keeps the
+  existing material discount.
+- **Magic reaches the map.** Toxic fog limits sight, forbidden growth blocks
+  gathering, corruption spreads across tiles, cursed animals become real
+  creatures, and warding stones are buildable protection.
+- **UI and save.** The HAZARDS panel exposes forecast, plans, crews, diseases,
+  partners, scars, rebuild economics and the map overlay. All new fields are
+  normalised under `environmentalHazards`; a 3.36 save loads neutral and gains
+  the new layer without a schema bump.
+- **Verification.** Full `npm test`, the 9 new hazard-expansion tests, the
+existing 26 hazard tests, the browser hazard reference and the deterministic
+25-year campaign are part of the release gate.
 
 ## 3.36.0 — Hazard modifiers now shape the realm
 

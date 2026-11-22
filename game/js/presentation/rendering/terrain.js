@@ -916,6 +916,13 @@ export function isForestSightVisible(x, y) {
     const W = worldW();
     const H = worldH();
     if (!Number.isInteger(tx) || !Number.isInteger(ty) || tx < 0 || ty < 0 || tx >= W || ty >= H) return true;
+    // Toxic fog swallows the middle distance. It is a real sight limit, not a
+    // tint: the same rule hides entities and forest cover beyond the radius.
+    const fog = Number(state.environmentalHazards?.magic?.fog) || 0;
+    if (fog > 0.25) {
+        const radius = Math.max(4, 12 - fog * 7);
+        if (Math.hypot(Number(x) - forestSightOriginX, Number(y) - forestSightOriginY) > radius) return false;
+    }
     if (!forestSightTileVisibility || forestSightTileW !== W || forestSightTileH !== H) {
         return !forestLineOfSightBlocked(
             forestSightOriginX, forestSightOriginY, Number(x), Number(y),

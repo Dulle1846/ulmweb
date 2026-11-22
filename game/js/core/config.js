@@ -150,6 +150,14 @@ export const BUILDING_SIZE = {
     78: { w: 1.8, h: 1.5 }, // WATCHHOUSE
     79: { w: 2, h: 1.7 },   // SMITHY
     80: { w: 2.2, h: 1.8 }, // SCRIPTORIUM
+    81: { w: 3.2, h: 1.8 }, // DAM
+    82: { w: 2.8, h: 1.3 }, // AVALANCHE BARRIER
+    83: { w: 2.6, h: 1.2 }, // DRAINAGE DITCH
+    84: { w: 3, h: 1.2 },   // FIREBREAK
+    85: { w: 1.8, h: 1.6 }, // WEATHERPROOF HOUSE
+    86: { w: 2, h: 1.8 },   // QUARANTINE HOUSE
+    87: { w: 2.4, h: 2 },   // GRANARY
+    88: { w: 1.4, h: 1.4 }, // WARDING STONE
 };
 
 // Gebäude-Dachfarben (für Level-1-Icons und Level-2-Top-Down)
@@ -190,6 +198,14 @@ export const BUILDING_ROOF_COLOR = {
     78: "#5e6b61",  // WATCHHOUSE — guard green
     79: "#6a4932",  // SMITHY — forge brick
     80: "#7b6270",  // SCRIPTORIUM — ink and slate
+    81: "#577785",  // DAM — wet stone
+    82: "#6e756c",  // AVALANCHE BARRIER — cold stone
+    83: "#5b6f58",  // DRAINAGE — wet earth
+    84: "#8a6538",  // FIREBREAK — turned soil
+    85: "#86745f",  // WEATHERPROOF HOUSE — insulated slate
+    86: "#7c6a67",  // QUARANTINE — clay and lime
+    87: "#a0834f",  // GRANARY — dry timber
+    88: "#75628c",  // WARDING STONE — ward light
 };
 
 // Gebäude-Icons für Level 1
@@ -204,6 +220,8 @@ export const BUILDING_ICON = {
     70: "🕯️", 71: "🏛️", 72: "🔒",
     73: "🏛️", 74: "📚", 75: "🛁", 76: "🍺", 77: "⚖️", 78: "🛡️",
     79: "⚒️", 80: "✒️",
+    81: "🌊", 82: "⛰️", 83: "🕳️", 84: "🔥",
+    85: "🏠", 86: "⛺", 87: "🌾", 88: "🔮",
 };
 
 // ═══════════════════════════════════════════════════════════════

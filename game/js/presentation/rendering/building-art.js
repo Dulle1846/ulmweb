@@ -47,6 +47,14 @@ export const REBUILD_COST = {
     [TYPE.WATCHHOUSE]: { wood: 22, stone: 24, gold: 5 },
     [TYPE.SMITHY]: { wood: 36, stone: 24, gold: 12 },
     [TYPE.SCRIPTORIUM]: { wood: 30, stone: 18, gold: 10 },
+    [TYPE.DAM]: { wood: 14, stone: 34, gold: 6 },
+    [TYPE.AVALANCHE_BARRIER]: { wood: 26, stone: 20, gold: 4 },
+    [TYPE.DRAINAGE]: { wood: 12, stone: 10 },
+    [TYPE.FIREBREAK]: { wood: 10, stone: 4 },
+    [TYPE.WEATHER_HOUSE]: { wood: 26, stone: 22, gold: 4 },
+    [TYPE.QUARANTINE]: { wood: 24, stone: 20, gold: 8 },
+    [TYPE.GRANARY]: { wood: 30, stone: 20, gold: 4 },
+    [TYPE.WARD]: { stone: 24, gold: 14 },
 };
 
 export const INTERIOR_ITEM_IDS = ['bed', 'table', 'chair', 'shelf', 'hearth', 'rug', 'statue', 'candle'];
@@ -152,6 +160,14 @@ const TYPE_NAMES = {
     [TYPE.WATCHHOUSE]: 'WATCHHOUSE',
     [TYPE.SMITHY]: 'SMITHY',
     [TYPE.SCRIPTORIUM]: 'SCRIPTORIUM',
+    [TYPE.DAM]: 'FLOOD DAM',
+    [TYPE.AVALANCHE_BARRIER]: 'AVALANCHE BARRIER',
+    [TYPE.DRAINAGE]: 'DRAINAGE DITCH',
+    [TYPE.FIREBREAK]: 'FIREBREAK',
+    [TYPE.WEATHER_HOUSE]: 'WEATHERPROOF HOUSE',
+    [TYPE.QUARANTINE]: 'QUARANTINE HOUSE',
+    [TYPE.GRANARY]: 'GRANARY',
+    [TYPE.WARD]: 'WARDING STONE',
 };
 
 const ROOF_STYLES = {
@@ -191,6 +207,14 @@ const ROOF_STYLES = {
     [TYPE.WATCHHOUSE]: { roof: '#5e6b61', wall: '#c2c1ad', trim: '#4c5b50' },
     [TYPE.SMITHY]: { roof: '#6a4932', wall: '#cbb38e', trim: '#8e3a2c' },
     [TYPE.SCRIPTORIUM]: { roof: '#7b6270', wall: '#ded0b8', trim: '#6f4c30' },
+    [TYPE.DAM]:      { roof: '#577785', wall: '#aeb9b6', trim: '#405d67' },
+    [TYPE.AVALANCHE_BARRIER]: { roof: '#6e756c', wall: '#c0c2b8', trim: '#4e554c' },
+    [TYPE.DRAINAGE]: { roof: '#5b6f58', wall: '#a99f86', trim: '#46523f' },
+    [TYPE.FIREBREAK]:{ roof: '#8a6538', wall: '#b99a6d', trim: '#5c4328' },
+    [TYPE.WEATHER_HOUSE]: { roof: '#86745f', wall: '#d7c7ac', trim: '#5f5040' },
+    [TYPE.QUARANTINE]: { roof: '#7c6a67', wall: '#e0d3c2', trim: '#9a6d7e' },
+    [TYPE.GRANARY]:  { roof: '#a0834f', wall: '#d8c59a', trim: '#6f5732' },
+    [TYPE.WARD]:     { roof: '#75628c', wall: '#c8bed4', trim: '#b08cc4' },
 };
 
 function sizeOf(e) {

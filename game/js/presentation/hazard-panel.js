@@ -7,6 +7,8 @@ import { state } from "../core/state.js";
 import { getHazardSnapshot } from "../systems/environmental-hazards.js";
 import { HAZARD_CATEGORIES, HAZARD_CLIMATES, HAZARD_EFFECTS } from "../world/hazard-data.js";
 import { getHazardSimulationEffects } from "../systems/hazard-modifiers.js";
+import { getDisasterRecoverySnapshot } from "../systems/disaster-recovery.js";
+import { HAZARD_CREWS, HAZARD_CREW_ORDER, RARE_CHAIN_BY_ID, RESPONSE_PLANS, RESPONSE_PLAN_ORDER } from "../world/hazard-expansion-data.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -79,6 +81,17 @@ function chronicRow(label, value, note) {
     return '<div class="command-history"><strong>' + esc(label) + '</strong><p>' + esc(value) + (note ? ' · ' + esc(note) : '') + '</p></div>';
 }
 
+const costText = cost => {
+    const entries = Object.entries(cost || {}).filter(([, amount]) => Number(amount) > 0);
+    return entries.length ? entries.map(([resource, amount]) => num(amount) + " " + resource.toUpperCase()).join(" · ") : "NO COST";
+};
+const actionButton = (command, label, { value = "", disabled = false, tone = "" } = {}) =>
+    '<button type="button" class="' + (tone || "") + '" data-command="' + esc(command) + '"' +
+    (value ? ' data-value="' + esc(value) + '"' : "") + (disabled ? " disabled" : "") + '>' + esc(label) + '</button>';
+const riskPercent = value => Math.max(0, Math.min(100, Math.round(Number(value) * 100)));
+const INSURANCE_CAP = 120;
+const LOAN_PAYMENT = 24;
+
 export function renderHazardPanel() {
     const snapshot = getHazardSnapshot();
     const profile = snapshot.profile;
@@ -90,13 +103,71 @@ export function renderHazardPanel() {
     const rare = snapshot.rare;
     const simulation = getHazardSimulationEffects();
     const pressure = active.filter(hazard => hazard.category !== "regional");
+    const response = snapshot.response;
+    const forecast = snapshot.forecast;
+    const scars = snapshot.scars;
+    const recovery = getDisasterRecoverySnapshot();
+    const planLocked = Boolean(response.plan && response.planSeason === state.seasonIndex && response.planYear === state.year);
+    const rareChain = rare?.chainId ? RARE_CHAIN_BY_ID[rare.chainId] : null;
+    const forecastSeasonLabel = ["spring", "summer", "autumn", "winter"][forecast?.season] || "spring";
+    const planButtons = RESPONSE_PLAN_ORDER.map(id => {
+        const plan = RESPONSE_PLANS[id];
+        const chosen = response.plan === id && planLocked;
+        return actionButton("hazard-plan-" + id,
+            (chosen ? "PLANNED · " : "") + plan.label.toUpperCase() + " · " + costText(plan.cost),
+            { disabled: planLocked });
+    }).join("");
+    const forecastRows = forecast?.risks?.length
+        ? forecast.risks.map(risk => '<div class="hazard-work-row"><div><strong>' + esc(risk.label) + '</strong><small>' +
+            esc(risk.spec) + ' · ' + riskPercent(risk.low) + '–' + riskPercent(risk.high) + '% band</small></div>' +
+            '<div class="hazard-row-meter"><span><i class="' + (riskPercent(risk.risk) >= 45 ? "is-mid" : "") +
+            '" style="width:' + riskPercent(risk.risk) + '%"></i></span><small>' + riskPercent(risk.risk) + '%</small></div></div>').join("")
+        : '<p class="command-note">The scriptorium has no clear signal for the coming season.</p>';
+    const partnerRows = snapshot.partners.length
+        ? snapshot.partners.map(partner => '<div class="command-history"><strong>' + esc(partner.name.toUpperCase()) +
+            ' · RELATION ' + num(partner.relation) + '</strong><p>' +
+            (partner.outbreak ? "OUTBREAK · " : "no outbreak · ") +
+            (partner.epizootic ? "ANIMAL PLAGUE · " : "") +
+            (partner.request ? "asks for aid" : "trade is open") + '</p>' +
+            (partner.outbreak ? '<div class="hazard-actions">' + actionButton("hazard-aid", "SEND AID · 10 FOOD · 8G", { value: partner.id }) + '</div>' : '') +
+            '</div>').join("")
+        : '<p class="command-note">No neighbouring realm is currently in the hazard ledger.</p>';
+    const diseaseRows = snapshot.diseases.length
+        ? snapshot.diseases.map(disease => '<div class="command-history"><strong>' + esc(disease.label.toUpperCase()) +
+            ' · YEAR ' + num(disease.year) + (disease.active ? " · ACTIVE" : " · CONTAINED") + '</strong><p>' +
+            num(disease.cases) + ' cases · ' + num(disease.deaths) + ' deaths · ' + num(disease.recovered) + ' recovered · ' +
+            esc(disease.vector || "exposure") + (disease.water ? " · water-borne" : "") + '</p>' +
+            (disease.active && disease.cases > 0 ? '<div class="hazard-actions">' +
+                actionButton("hazard-treat-disease", "TREAT · 10G · 4 FOOD", { value: disease.id }) + '</div>' : '') +
+            '</div>').join("")
+        : '<p class="command-note">No regional disease has been recorded. Contaminated water, insects and crowded housing can still start an outbreak.</p>';
 
     const activeRows = active.map(activeRow).join("");
-    const diseases = snapshot.diseases.length
-        ? snapshot.diseases.map(disease => '<div class="command-history"><strong>' + esc(disease.label.toUpperCase()) +
-            ' · YEAR ' + num(disease.year) + '</strong><p>' + num(disease.cases) + ' cases recorded · source ' +
-            esc(disease.source) + '</p></div>').join("")
-        : '<p class="command-note">No regional disease has been recorded. Contaminated water, insects and crowded housing can still start an outbreak.</p>';
+    const diseases = diseaseRows;
+
+    const crewRows = HAZARD_CREW_ORDER.map(id => {
+        const crew = HAZARD_CREWS[id];
+        const level = Number(response.crews?.[id]) || 0;
+        return '<div class="hazard-work-row"><div><strong>' + esc(crew.label.toUpperCase()) + ' · ' + level + '/' + crew.max +
+            '</strong><small>' + esc(crew.note) + '</small></div>' +
+            '<div class="hazard-actions">' + actionButton("hazard-crew-" + id, "TRAIN · " + costText(crew.cost), { disabled: level >= crew.max }) + '</div></div>';
+    }).join("");
+    const scarRows = [
+        ["BURNT WOODLAND", scars.counts.burnt, "trees and forage removed"],
+        ["FLOOD SCARS", scars.counts.flooded, "roads and fields cut"],
+        ["LAVA", scars.counts.lava, "permanent, impassable"],
+        ["LOST GROUND", scars.counts.lost, "permanent, impassable"],
+        ["CORRUPTION", scars.counts.corruption, "forage blocked, taint spreads"]
+    ].map(([label, count, note]) => chronicRow(label, num(count), note)).join("");
+    const rareChoices = rareChain && rare && !rare.resolved
+        ? '<div class="hazard-actions">' + rareChain.choices.map(choice =>
+            actionButton("hazard-rare-" + choice.id, choice.label.toUpperCase() + " · " + costText(choice.cost), { value: choice.id })).join("") + '</div>'
+        : '';
+    const rebuildRows = recovery.pending.length
+        ? recovery.pending.slice(0, 4).map(wreck => '<div class="command-history"><strong>' + esc(wreck.label.toUpperCase()) +
+            ' · ' + num(wreck.x) + ',' + num(wreck.y) + '</strong><p>' + esc(wreck.causeLabel) + ' · rebuild on site for ' +
+            num(recovery.discountPercent) + '% fewer materials</p></div>').join("")
+        : '<p class="command-note">No wreck is waiting for rebuilding. Insurance pays out when a hazard destroys a structure.</p>';
 
     const history = snapshot.history.length
         ? snapshot.history.slice().reverse().map(entry => '<article class="command-history"><strong>YEAR ' + num(entry.year) +
@@ -140,8 +211,22 @@ export function renderHazardPanel() {
         '<div><small>CASUALTIES</small><strong>' + casualties + '</strong></div></div>' +
         '<div class="hazard-actions"><button type="button" data-command="hazard-prepare"' + (preparedThisSeason ? " disabled" : "") + '>PREPARE FOR THE SEASON · 12 WOOD · 8G</button>' +
         '<button type="button" data-command="hazard-treat"' + (casualties && medicine > 0 ? "" : " disabled") + '>TREAT CASUALTIES · ' + num(medicine) + ' DOSES</button>' +
-        '<button type="button" data-command="hazard-cleanse"' + (magic.corruption >= 0.05 ? "" : " disabled") + '>CLEANSE CORRUPTION · 10 STONE · 12G</button></div>' +
-        (rare ? '<p class="command-note"><strong>RARE EVENT</strong> · ' + esc(rare.label) + ' · year ' + num(rare.year) + ' · ' + num(rare.years) + ' years of consequences.</p>' : "") +
+        '<button type="button" data-command="hazard-cleanse"' + (magic.corruption >= 0.05 ? "" : " disabled") + '>CLEANSE CORRUPTION · 10 STONE · 12G</button>' +
+        actionButton("hazard-overlay", state.hazardOverlay ? "HIDE HAZARD MAP" : "SHOW HAZARD MAP") + '</div>' +
+        '<div class="command-section-title">SEASONAL FORECAST · CONFIDENCE ' + pct(forecast?.confidence || 0) + '%</div>' +
+        '<p class="command-note">The scriptorium reads the coming ' + esc(forecastSeasonLabel) +
+        ' of year ' + num(forecast?.year) + '. The band is uncertainty, not a promise; protection works narrow it.</p>' +
+        '<div class="hazard-work-grid">' + forecastRows + '</div>' +
+        '<div class="command-section-title">CHOOSE A PLAN · ' + (planLocked ? esc((RESPONSE_PLANS[response.plan]?.label || "PLAN").toUpperCase()) : "ONE PER SEASON") + '</div>' +
+        '<div class="hazard-actions">' + planButtons + '</div>' +
+        '<div class="hazard-actions">' +
+        actionButton("hazard-quarantine", response.quarantine?.active ? "QUARANTINE ACTIVE" : "QUARANTINE · 14G · 6 FOOD", { disabled: Boolean(response.quarantine?.active) }) +
+        actionButton("hazard-quarantine-lift", "LIFT QUARANTINE", { disabled: !response.quarantine?.active }) +
+        actionButton("hazard-request-aid", "REQUEST NEIGHBOUR AID") + '</div>' +
+        (rare ? '<div class="command-section-title">RARE EVENT · ' + esc(rare.label.toUpperCase()) + '</div>' +
+            '<p class="command-note">Year ' + num(rare.year) + ' · ' + num(rare.years) + ' year' + (rare.years === 1 ? "" : "s") +
+            ' of consequences' + (rare.resolved ? " · SETTLED: " + esc(rare.outcome || rare.choice || "") : " · A DECISION IS OPEN") + '.</p>' +
+            (rareChain ? '<p class="command-note">' + esc(rareChain.summary) + '</p>' : "") + rareChoices : "") +
         '<div class="command-section-title">ACTIVE HAZARDS · ' + active.length + '</div><div class="hazard-table">' +
         (activeRows || '<p class="command-note">The season is quiet. No hazard is currently pressing on the realm.</p>') + '</div>' +
         '<p class="command-note">The chronicle names every hazard that hurt a resident, a field, a road or the stores. Weather, season and the local climate decide which ones can appear; your works decide how hard they land.</p>' +
@@ -172,11 +257,26 @@ export function renderHazardPanel() {
         workRow("Specialised units", mitigation.units, "Barracks and smithy equip relief crews") +
         workRow("Settlement siting", mitigation.siting, "The keep anchors the settlement on safe ground") +
         '</div>' +
-        '<p class="command-note">Readiness is the average of these works plus this season\'s preparation. A high readiness lowers severity, injuries and destruction; it cannot remove a hazard.</p>' +
+        '<p class="command-note">Readiness is the average of these works plus this season\'s plan. A high readiness lowers severity, injuries and destruction; it cannot remove a hazard. Dams, avalanche barriers, drainage, firebreaks, weatherproof houses, quarantine houses, granaries and warding stones are real buildings in the PROTECTION build menu.</p>' +
+        '<div class="command-section-title">SPECIALIST CREWS & EQUIPMENT</div><div class="hazard-work-grid">' + crewRows + '</div>' +
+        '<div class="command-section-title">HAZARD SCARS ON THE MAP</div><div class="command-history-list">' + scarRows + '</div>' +
+        actionButton("hazard-overlay", state.hazardOverlay ? "HIDE HAZARD MAP" : "SHOW HAZARD MAP") +
+        '<div class="command-section-title">REBUILD ECONOMY</div><div class="command-summary">' +
+        '<div><small>EMERGENCY FUND</small><strong>' + num(response.insurance) + ' / ' + num(INSURANCE_CAP) + 'G</strong></div>' +
+        '<div><small>LOAN</small><strong>' + (response.loan?.principal ? num(response.loan.principal) + 'G LEFT' : 'NONE') + '</strong></div>' +
+        '<div><small>RESETTLED</small><strong>' + num(response.resettled) + '</strong></div>' +
+        '<div><small>REBUILD QUEUE</small><strong>' + num(recovery.pendingCount) + '</strong></div></div>' +
+        '<div class="hazard-actions">' +
+        actionButton("hazard-insure", "FUND REPAIRS · 20G", { disabled: response.insurance >= INSURANCE_CAP }) +
+        actionButton("hazard-loan", response.loan?.principal ? "LOAN OPEN · " + num(LOAN_PAYMENT) + "G/YEAR" : "TAKE LOAN · +60G", { disabled: Boolean(response.loan?.principal) }) +
+        actionButton("hazard-resettle", "RESETTLE LOST GROUND · 12 WOOD · 10G", { disabled: scars.counts.lost <= 0 }) + '</div>' +
+        '<div class="hazard-table">' + rebuildRows + '</div>' +
+        '<p class="command-note">Insurance pays 12 gold toward a destroyed structure. A loan adds 60 gold now and costs 24 gold a year for three years. Rebuilding a wreck within three tiles earns the existing 25% material discount.</p>' +
         '<div class="command-section-title">REGIONAL DANGERS · ' + esc(String(climate).toUpperCase()) + '</div><div class="biome-chip-line">' + regionalCatalog + '</div>' +
         '<p class="command-note">' + esc(String(snapshot.catalog.total)) + ' hazards are modelled across ' + esc(String(HAZARD_CLIMATES.length)) + ' climates and ' +
         esc(String(snapshot.catalog.mechanics)) + ' rules; ' + esc(String(snapshot.catalog.climates)) + ' can occur in this climate.</p>' +
         '<div class="command-section-title">DISEASES & OUTBREAKS</div><div class="hazard-table">' + diseases + '</div>' +
+        '<div class="command-section-title">NEIGHBOURING REALMS · TRADE & OUTBREAKS</div><div class="hazard-table">' + partnerRows + '</div>' +
         '<div class="command-section-title">LONG-TERM CONSEQUENCES</div><div class="command-history-list">' + chronicRows + '</div>' +
         '<div class="command-section-title">ARCANE BURDEN</div><div class="hazard-work-grid">' + magicRows + '</div>' +
         (magic.corruption > 0.2 ? '<p class="command-note is-danger">Corruption is spreading. Cleanse the ground before it reaches the fields and the herd.</p>' : '<p class="command-note">The arcane burden is held back by wards and by cleansing. It grows where corrupted ground is left alone.</p>') +

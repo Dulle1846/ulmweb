@@ -30,6 +30,11 @@ import { craftBiomeGoods, harvestBiomeResource, huntBiomeSpecies, reintroduceBio
 import { renderBiomePanel } from "./biome-panel.js";
 import { renderHazardPanel } from "./hazard-panel.js";
 import { cleanseHazardCorruption, prepareForHazardSeason, treatHazardCasualties } from "../systems/environmental-hazards.js";
+import {
+    chooseHazardPlan, chooseRareEvent, fundHazardInsurance, requestHazardAid,
+    resettleHazardGround, sendHazardAid, setHazardQuarantine, takeHazardLoan,
+    trainHazardCrew, treatHazardDisease
+} from "../systems/hazard-response.js";
 import { deliverForestGoods, forestDeliveryAvailability, forestGatheringSummary, forestThinningAvailability, gatherNearestForestProducts, gatherNearestGrasslandProducts, performMountainWork, performSwampWork, performVolcanoWork, performCoastWork, processForestHunt, mountainWorkAvailability, swampWorkAvailability, volcanoWorkAvailability, coastWorkAvailability, thinNearestForest } from "../systems/forest-gathering.js";
 import { grasslandSiteSummaryAt } from "../systems/grassland-use.js";
 import { feedStableFromMast, pannageSummary } from "../systems/forest-pannage.js";
@@ -1310,6 +1315,18 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="hazard-prepare")r=prepareForHazardSeason();
  else if(a==="hazard-treat")r=treatHazardCasualties();
  else if(a==="hazard-cleanse")r=cleanseHazardCorruption();
+ else if(a==="hazard-overlay"){state.hazardOverlay=!state.hazardOverlay;r={ok:true,message:state.hazardOverlay?"hazard map shown":"hazard map hidden"};}
+ else if(a==="hazard-quarantine")r=setHazardQuarantine(true);
+ else if(a==="hazard-quarantine-lift")r=setHazardQuarantine(false);
+ else if(a==="hazard-request-aid")r=requestHazardAid();
+ else if(a==="hazard-insure")r=fundHazardInsurance();
+ else if(a==="hazard-loan")r=takeHazardLoan();
+ else if(a==="hazard-resettle")r=resettleHazardGround();
+ else if(a==="hazard-aid")r=sendHazardAid(v);
+ else if(a==="hazard-treat-disease")r=treatHazardDisease(v);
+ else if(a.startsWith("hazard-plan-"))r=chooseHazardPlan(a.slice("hazard-plan-".length));
+ else if(a.startsWith("hazard-crew-"))r=trainHazardCrew(a.slice("hazard-crew-".length));
+ else if(a.startsWith("hazard-rare-"))r=chooseRareEvent(a.slice("hazard-rare-".length));
  else if(a==="biome-survey")r=surveyBiomeRegion(v);
  else if(a==="biome-harvest")r=harvestBiomeResource(v,b.dataset.biomeResource);
  else if(a==="biome-hunt")r=huntBiomeSpecies(v,b.dataset.biomeSpecies);

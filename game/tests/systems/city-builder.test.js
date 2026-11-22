@@ -66,6 +66,23 @@ test("staffed lumber and quarry add royal construction materials", () => {
     assert.ok(state.resources.stone > stone, "staffed quarry must replenish royal stone");
 });
 
+test("1.2.20 protection works enter the same construction pipeline as city buildings", () => {
+    foundedFixture();
+    // The founded fixture disables the seeded warehouse. Give the realm a real
+    // store first so the protection sites have a delivery route to test.
+    assert.equal(placeDirectBuilding(TYPE.WAREHOUSE, 30, 60).ok, true);
+    const forType = [TYPE.DAM, TYPE.AVALANCHE_BARRIER, TYPE.DRAINAGE, TYPE.FIREBREAK,
+        TYPE.WEATHER_HOUSE, TYPE.QUARANTINE, TYPE.GRANARY, TYPE.WARD];
+    let y = 60;
+    for (const type of forType) {
+        const result = placeDirectBuilding(type, 60, y);
+        assert.equal(result.ok, true, "protection building " + type + " must be placeable: " + result.reason);
+        assert.equal(result.entity.type, type);
+        assert.equal(result.entity.construction.stage, 0);
+        y += 4;
+    }
+});
+
 test("direct construction opens a site, charges only the opening share and remains non-operational", () => {
     foundedFixture();
     const result = placeDirectBuilding(TYPE.WAREHOUSE, 20, 20);

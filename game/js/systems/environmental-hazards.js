@@ -22,6 +22,18 @@ import { consumeMedicine, getMedicineAvailability, startOutbreak } from "../syst
 import { getHazardModifiers as readHazardModifiers, invalidateHazardModifierCache } from "./hazard-modifiers.js";
 import { destroyRoad, getRoadAt } from "../systems/roads.js";
 import {
+    addHazardScar, getHazardScarSnapshot, normalizeHazardScars, recordFloodScar,
+    recordLavaScar, recordLostGround, recordWildfireScar
+} from "./hazard-scars.js";
+import {
+    advanceHazardResponse, buildHazardForecast, consumeHazardStockpile,
+    createDiseaseRecord, hazardEvacuationActive, isHazardQuarantined,
+    normalizeHazardPartners, normalizeHazardResponse, payHazardInsurance,
+    planReadiness, refreshHazardForecast, registerHazardDisease,
+    selectRareChain
+} from "./hazard-response.js";
+import { rareChainFor } from "../world/hazard-expansion-data.js";
+import {
     HAZARD_CATALOG, HAZARD_EFFECTS, HAZARD_LIMITS, HAZARD_MECHANICS, REGIONAL_BUNDLES,
     hazardRowsForClimate
 } from "../world/hazard-data.js";
@@ -71,7 +83,10 @@ export function createEnvironmentalHazardState() {
         preparedness: { season: -1, year: 0, spent: 0, history: [] },
         losses: { food: 0, wood: 0, stone: 0, gold: 0, buildings: 0, roads: 0, ill: 0, injured: 0, years: 0 },
         history: [],
-        rare: null
+        rare: null,
+        response: normalizeHazardResponse(null),
+        partners: [],
+        scars: normalizeHazardScars(null)
     };
 }
 
@@ -123,9 +138,22 @@ export function normalizeEnvironmentalHazardState(value) {
         label: String(entry?.label || entry?.id || "Regional fever").slice(0, 80),
         cases: positive(entry?.cases),
         year: positive(entry?.year),
-        source: String(entry?.source || "hazard").slice(0, 32)
+        source: String(entry?.source || "hazard").slice(0, 32),
+        profile: String(entry?.profile || "environmental").slice(0, 32),
+        vector: String(entry?.vector || "exposure").slice(0, 24),
+        water: Boolean(entry?.water),
+        contagion: clamp01(entry?.contagion),
+        lethality: clamp01(entry?.lethality),
+        duration: Math.min(12, positive(entry?.duration) || 1),
+        deaths: positive(entry?.deaths),
+        recovered: positive(entry?.recovered),
+        active: Boolean(entry?.active),
+        lastYear: positive(entry?.lastYear)
     })).filter(entry => entry.id) : [];
     base.mitigation = normalizeMitigation(value.mitigation);
+    base.response = normalizeHazardResponse(value.response);
+    base.partners = normalizeHazardPartners(value.partners);
+    base.scars = normalizeHazardScars(value.scars);
     const preparedness = value.preparedness && typeof value.preparedness === "object" ? value.preparedness : {};
     base.preparedness = {
         season: Number.isInteger(preparedness.season) ? preparedness.season : -1,
@@ -150,7 +178,14 @@ export function normalizeEnvironmentalHazardState(value) {
         id: String(value.rare.id || "rare-event").slice(0, 48),
         label: String(value.rare.label || "Rare event").slice(0, 90),
         year: positive(value.rare.year),
-        years: positive(value.rare.years)
+        years: positive(value.rare.years),
+        chainId: value.rare.chainId ? String(value.rare.chainId).slice(0, 48) : null,
+        stage: positive(value.rare.stage),
+        endsYear: positive(value.rare.endsYear),
+        choice: value.rare.choice ? String(value.rare.choice).slice(0, 32) : null,
+        resolved: Boolean(value.rare.resolved),
+        outcome: String(value.rare.outcome || "").slice(0, 140),
+        lastYear: positive(value.rare.lastYear)
     } : null;
     return base;
 }
@@ -260,26 +295,34 @@ function countBuildings(type) {
  */
 export function getHazardMitigation() {
     const mitigation = emptyMitigation();
+    const response = normalizeHazardResponse(state.environmentalHazards?.response);
     mitigation.well = clamp01((countBuildings(TYPE.WELL) + countBuildings(TYPE.BATHHOUSE) * 0.5) / 3);
     mitigation.irrigation = clamp01(countBuildings(TYPE.MILL) / 2 * 0.8 + countBuildings(TYPE.FARM) * 0.02);
-    mitigation.dam = clamp01(countBuildings(TYPE.WALL) / 8);
-    mitigation.avalanche = clamp01(countBuildings(TYPE.FORESTER) / 4 * 0.7 + countBuildings(TYPE.WALL) / 16);
-    mitigation.drainage = clamp01((Number(state.health?.sanitation?.score) || 0) / 100);
+    mitigation.dam = clamp01(countBuildings(TYPE.DAM) / 2 * 0.8 + countBuildings(TYPE.WALL) / 12);
+    mitigation.avalanche = clamp01(countBuildings(TYPE.AVALANCHE_BARRIER) / 2 * 0.8
+        + countBuildings(TYPE.FORESTER) / 4 * 0.35 + countBuildings(TYPE.WALL) / 24);
+    mitigation.drainage = clamp01(countBuildings(TYPE.DRAINAGE) / 2 * 0.65
+        + (Number(state.health?.sanitation?.score) || 0) / 100 * 0.5);
     const roads = state.roads?.tiles ? Object.keys(state.roads.tiles).length : 0;
     mitigation.roads = clamp01(roads / 40);
-    mitigation.warehouse = clamp01((countBuildings(TYPE.WAREHOUSE) + countBuildings(TYPE.MARKET) * 0.25) / 2);
-    mitigation.medical = clamp01((countBuildings(TYPE.CLINIC) * 0.5 + (Number(state.health?.healers?.length) || 0) * 0.25
-        + (Number(state.health?.medicine) || 0) / 40) / 1.5);
-    mitigation.clothing = clamp01(countBuildings(TYPE.BATHHOUSE) / 2 * 0.5
+    mitigation.warehouse = clamp01((countBuildings(TYPE.WAREHOUSE) + countBuildings(TYPE.GRANARY) * 1.2
+        + countBuildings(TYPE.MARKET) * 0.25) / 2.2);
+    mitigation.medical = clamp01((countBuildings(TYPE.CLINIC) * 0.5 + countBuildings(TYPE.QUARANTINE) * 0.6
+        + (Number(state.health?.healers?.length) || 0) * 0.25
+        + (Number(state.health?.medicine) || 0) / 40 + response.crews.medical * 0.25) / 2);
+    mitigation.clothing = clamp01(countBuildings(TYPE.BATHHOUSE) / 2 * 0.35
+        + countBuildings(TYPE.WEATHER_HOUSE) * 0.35
         + (state.entities || []).filter(entity => isBuilding(entity) && (entity.insulated || entity.winterised || entity.heated)).length / 8);
     mitigation.research = clamp01(countBuildings(TYPE.SCHOOL) / 2 * 0.6 + countBuildings(TYPE.SCRIPTORIUM) * 0.4
         + (Number(state.research?.completed?.length) || 0) / 10);
-    mitigation.units = clamp01(countBuildings(TYPE.BARRACKS) / 2 * 0.6 + countBuildings(TYPE.SMITHY) * 0.4);
+    mitigation.units = clamp01(countBuildings(TYPE.BARRACKS) / 2 * 0.45 + countBuildings(TYPE.SMITHY) * 0.3
+        + (response.crews.fire + response.crews.rescue + response.crews.medical + response.crews.equipment + response.crews.veterans) / 10);
     mitigation.siting = clamp01(countBuildings(TYPE.KEEP) > 0 ? 0.45 : 0);
-    mitigation.wards = 0;
+    mitigation.wards = clamp01(countBuildings(TYPE.WARD) / 2 * 0.8 + response.crews.veterans * 0.05);
     const preparedness = state.environmentalHazards?.preparedness;
-    mitigation.readiness = preparedness && preparedness.season === state.seasonIndex && preparedness.year === state.year
+    const prepared = preparedness && preparedness.season === state.seasonIndex && preparedness.year === state.year
         ? clamp01(Number(preparedness.spent) / 40) : 0;
+    mitigation.readiness = clamp01(prepared + planReadiness(state.environmentalHazards));
     const values = Object.entries(mitigation).filter(([key]) => key !== "score" && key !== "readiness").map(([, value]) => value);
     mitigation.score = clamp01((values.reduce((sum, value) => sum + value, 0) / values.length) * 0.72 + mitigation.readiness * 0.28);
     return mitigation;
@@ -449,13 +492,20 @@ function destroyHazardTarget(mechanic) {
 
 function applyHazard(entry, row, severity, budget) {
     const effects = HAZARD_EFFECTS[row.mechanic] || {};
+    entry.response = normalizeHazardResponse(entry.response);
+    const response = entry.response;
     const mitigation = entry.mitigation;
-    const resistance = 1 - (mitigation.score * 0.45 + (row.category === "disease" ? mitigation.medical * 0.25 : 0));
+    const crews = response.crews;
+    const resistance = 1 - (mitigation.score * 0.45 + (row.category === "disease" ? mitigation.medical * 0.25 : 0)
+        + crews.veterans * 0.04 + crews.equipment * 0.02);
     const scale = severity * Math.max(0.25, resistance);
+    const evacuated = hazardEvacuationActive(entry);
+    const quarantined = isHazardQuarantined(entry);
+    const reliefReady = response.relief > 0;
     let text = null;
 
     if (effects.outbreak && !budget.outbreak
-        && hazardRoll(row.mechanic + ":outbreak") < effects.outbreak * scale
+        && hazardRoll(row.mechanic + ":outbreak") < effects.outbreak * scale * (quarantined ? 0.45 : 1)
         && entry.diseases.length < HAZARD_LIMITS.maxDiseases) {
         budget.outbreak = true;
         const label = row.label + " in the realm";
@@ -470,12 +520,13 @@ function applyHazard(entry, row, severity, budget) {
             );
         }
         entry.diseases = entry.diseases.filter(disease => disease.id !== row.id);
-        entry.diseases.push({ id: row.id, label, cases: 1 + Math.round(severity * 4), year: state.year, source: "hazard" });
+        registerHazardDisease(entry, createDiseaseRecord(row.mechanic, label, severity, "hazard"));
         text = "REGIONAL DISEASE PRESSURE · " + row.label.toUpperCase();
     }
 
     if (effects.illness && !budget.casualty) {
-        const risk = effects.illness * scale * (1 + entry.modifiers.diseaseRisk * 0.5);
+        const risk = effects.illness * scale * (1 + entry.modifiers.diseaseRisk * 0.5)
+            * (evacuated ? 0.45 : 1) * (1 - crews.medical * 0.07);
         if (hazardRoll(row.mechanic + ":ill") < risk) {
             budget.casualty = true;
             const victim = harmResident({ kind: "illness", disease: row.label, severity });
@@ -486,7 +537,8 @@ function applyHazard(entry, row, severity, budget) {
         }
     }
     if (effects.injury && !budget.casualty) {
-        const risk = effects.injury * scale * (1 - entry.modifiers.resistance * 0.4);
+        const risk = effects.injury * scale * (1 - entry.modifiers.resistance * 0.4)
+            * (evacuated ? 0.42 : 1) * (1 - crews.rescue * 0.06);
         if (hazardRoll(row.mechanic + ":injury") < risk) {
             budget.casualty = true;
             const victim = harmResident({ kind: "injury", disease: row.label, severity });
@@ -499,7 +551,13 @@ function applyHazard(entry, row, severity, budget) {
     if (effects.food) {
         const room = Math.max(0, HAZARD_LIMITS.foodPerSeason - budget.food);
         const surplus = Math.max(0, (Number(state.resources?.food) || 0) - HAZARD_LIMITS.foodReserve);
-        const loss = recordLoss(entry, "food", Math.min(surplus, effects.food * scale, room));
+        let loss = Math.min(surplus, effects.food * scale, room) * (1 - mitigation.warehouse * 0.22);
+        if (loss > 0 && response.stockpile > 0 && !budget.stockpile) {
+            budget.stockpile = true;
+            response.stockpile -= 1;
+            loss *= 0.55;
+        }
+        loss = recordLoss(entry, "food", loss);
         budget.food += loss;
         if (loss > 0) {
             addResource("food", -loss);
@@ -519,7 +577,13 @@ function applyHazard(entry, row, severity, budget) {
         // carrying capacity, which is the resource the economy already moves.
         const room = Math.max(0, HAZARD_LIMITS.foodPerSeason - budget.food);
         const surplus = Math.max(0, (Number(state.resources?.food) || 0) - HAZARD_LIMITS.foodReserve);
-        const loss = recordLoss(entry, "food", Math.min(surplus, Math.max(1, effects.water * scale * 0.5), room));
+        let loss = Math.min(surplus, Math.max(1, effects.water * scale * 0.5), room) * (1 - mitigation.warehouse * 0.18);
+        if (loss > 0 && response.stockpile > 0 && !budget.stockpile) {
+            budget.stockpile = true;
+            response.stockpile -= 1;
+            loss *= 0.6;
+        }
+        loss = recordLoss(entry, "food", loss);
         budget.food += loss;
         if (loss > 0) { addResource("food", -loss); text = (text ? text + " · " : "") + ("WATER SHORT · FOOD -" + loss); }
     }
@@ -539,8 +603,17 @@ function applyHazard(entry, row, severity, budget) {
         }
     }
     if (effects.field) {
-        const damaged = damageFields(entry, effects.field * scale, row.label);
-        if (damaged > 0) text = (text ? text + " · " : "") + (damaged + " FIELD" + (damaged === 1 ? "" : "S") + " DAMAGED");
+        const firebreakRelief = 1 - Math.min(0.5, countBuildings(TYPE.FIREBREAK) * 0.14);
+        const reliefRelief = reliefReady ? 0.55 : 1;
+        const damaged = damageFields(entry, effects.field * scale * firebreakRelief * reliefRelief, row.label);
+        if (damaged > 0) {
+            if (reliefReady && !budget.relief) {
+                budget.relief = true;
+                response.relief -= 1;
+                text = (text ? text + " · " : "") + "RELIEF CREWS DEPLOYED";
+            }
+            text = (text ? text + " · " : "") + (damaged + " FIELD" + (damaged === 1 ? "" : "S") + " DAMAGED");
+        }
     }
     if (effects.pasture) {
         entry.modifiers.pasture = clamp01(entry.modifiers.pasture + effects.pasture * scale);
@@ -561,33 +634,46 @@ function applyHazard(entry, row, severity, budget) {
         text = (text ? text + " · " : "") + "ASH BLANKETS THE REGION";
     }
     if (effects.destroy && !budget.destroyed && severity > 0.45
-        && hazardRoll(row.mechanic + ":destroy") < effects.destroy * scale * 0.6 * (1 - mitigation.dam * 0.4 - mitigation.avalanche * 0.2)) {
+        && hazardRoll(row.mechanic + ":destroy") < effects.destroy * scale * 0.6
+            * (1 - mitigation.dam * 0.4 - mitigation.avalanche * 0.2
+                - crews.rescue * 0.035 - crews.equipment * 0.025 - (evacuated ? 0.2 : 0)
+                - (reliefReady ? 0.08 : 0))) {
         budget.destroyed = true;
         const destroyed = destroyHazardTarget(row.mechanic);
         if (destroyed) {
             recordLoss(entry, destroyed.kind === "road" ? "roads" : "buildings", 1);
-            text = (text ? text + " · " : "") + (destroyed.kind === "road" ? "A ROAD IS LOST" : "A STRUCTURE IS LOST");
+            const claim = destroyed.kind === "building" ? payHazardInsurance(entry, 12) : 0;
+            text = (text ? text + " · " : "") + (destroyed.kind === "road" ? "A ROAD IS LOST" : "A STRUCTURE IS LOST")
+                + (claim ? " · INSURANCE +" + claim + "G" : "");
         }
     }
     if (effects.permanent && hazardRoll(row.mechanic + ":permanent") < effects.permanent) {
+        const W = Math.max(1, Number(state.worldW) || 1), H = Math.max(1, Number(state.worldH) || 1);
+        const x = Math.floor(hazardRoll(row.mechanic + ":lost-x") * W);
+        const y = Math.floor(hazardRoll(row.mechanic + ":lost-y") * H);
+        recordLostGround(entry, x, y);
         entry.chronic.lostGround = Math.min(4096, positive(entry.chronic.lostGround) + 1);
         text = (text ? text + " · " : "") + "GROUND IS LOST FOR GOOD";
     }
     return text;
 }
 
-function applyMagic(row, severity) {
-    const magic = ensureHazardState().magic;
+function applyMagic(row, severity, entry = ensureHazardState()) {
+    const magic = entry.magic;
+    const keep = (state.entities || []).find(entity => !entity.dead && entity.type === TYPE.KEEP);
+    const W = Math.max(1, Number(state.worldW) || 1), H = Math.max(1, Number(state.worldH) || 1);
+    const scarX = keep ? Math.floor(keep.x) + 2 : Math.floor(hazardRoll(row.mechanic + ":scar-x") * W);
+    const scarY = keep ? Math.floor(keep.y) + 1 : Math.floor(hazardRoll(row.mechanic + ":scar-y") * H);
     const drifts = {
         "magic:burden": () => { magic.fog = clamp01(magic.fog + 0.08 * severity); magic.cursed = clamp01(magic.cursed + 0.06 * severity); },
-        "magic:corruption": () => { magic.corruption = clamp01(magic.corruption + 0.12 * severity); },
+        "magic:corruption": () => { magic.corruption = clamp01(magic.corruption + 0.12 * severity); addHazardScar(entry, "corruption", scarX, scarY); },
         "magic:cursed": () => { magic.cursed = clamp01(magic.cursed + 0.1 * severity); },
         "magic:fog": () => { magic.fog = clamp01(magic.fog + 0.14 * severity); },
         "magic:unnatural-weather": () => { magic.unnaturalWeather = clamp01(magic.unnaturalWeather + 0.12 * severity); },
         "magic:disease": () => { magic.magicDisease = clamp01(magic.magicDisease + 0.1 * severity); },
         "magic:animal-shift": () => { magic.animalShift = clamp01(magic.animalShift + 0.1 * severity); },
         "magic:forbidden": () => { magic.forbidden = clamp01(magic.forbidden + 0.08 * severity); },
-        "magic:spread": () => { magic.corruption = clamp01(magic.corruption + 0.2 * severity); },
+        "magic:spread": () => { magic.corruption = clamp01(magic.corruption + 0.2 * severity); addHazardScar(entry, "corruption", scarX, scarY); },
         "magic:wards": () => { magic.wards = clamp01(magic.wards + 0.15 * severity); },
         "magic:rare": () => { magic.rareYears = Math.min(80, magic.rareYears + 8); }
     };
@@ -606,6 +692,9 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
     }
     entry.season = state.seasonIndex;
     entry.year = state.year;
+    entry.response = normalizeHazardResponse(entry.response);
+    entry.partners = normalizeHazardPartners(entry.partners);
+    entry.scars = normalizeHazardScars(entry.scars);
     entry.lastUpdateTick = state.tick;
     invalidateHazardModifierCache();
     entry.mitigation = getHazardMitigation();
@@ -629,7 +718,7 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
         });
         entry.warnings.push(row.label.toUpperCase() + " · " + Math.round(severity * 100) + "%");
         if (row.magical) {
-            applyMagic(row, severity);
+            applyMagic(row, severity, entry);
             events.push(row.label.toUpperCase() + " STIRS");
         } else {
             const text = applyHazard(entry, row, severity, budget);
@@ -678,6 +767,11 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
     entry.modifiers.clothing = entry.mitigation.clothing;
     entry.modifiers.trade = clamp01(entry.modifiers.trade + (has("weather") ? 0.1 : 0));
     entry.modifiers.pasture = clamp01(entry.modifiers.pasture + (has("flora") ? 0.15 : 0));
+    // Fog closes paths and forbidden growth makes gathering costly. Both are
+    // real magic burdens, not panel counters: they enter the shared modifiers
+    // the movement and extraction systems already read.
+    entry.modifiers.movement = clamp01(entry.modifiers.movement + entry.magic.fog * 0.18);
+    entry.modifiers.extraction = clamp01(entry.modifiers.extraction + entry.magic.forbidden * 0.12);
 
     // A severe season costs real labour: one food unit of lost workdays per
     // point of work penalty above 25%, capped so the store cannot be emptied.
@@ -690,6 +784,7 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
         }
     }
 
+    refreshHazardForecast(entry);
     if (events.length) addHistory(entry, "season", events.slice(0, HAZARD_LIMITS.maxEventsPerSeason).join(" · "));
     invalidateHazardModifierCache();
     state.environmentalHazards = entry;
@@ -705,8 +800,12 @@ export function updateEnvironmentalHazardYear() {
     if (entry.lastYear === state.year) return { skipped: true };
     entry.lastYear = state.year;
     entry.losses.years = positive(entry.losses.years) + 1;
+    entry.response = normalizeHazardResponse(entry.response);
+    entry.partners = normalizeHazardPartners(entry.partners);
+    entry.scars = normalizeHazardScars(entry.scars);
     const chronic = entry.chronic;
     const magic = entry.magic;
+    const mitigation = getHazardMitigation();
     const events = [];
     const drought = entry.active.some(hazard => hazard.mechanic === "hazard:drought");
     const flood = entry.active.some(hazard => hazard.mechanic === "hazard:flood");
@@ -750,21 +849,40 @@ export function updateEnvironmentalHazardYear() {
             const x = hash32(Number(state.worldSeed) || 1, 0x57494c44, state.year, 1) % W;
             const y = hash32(Number(state.worldSeed) || 1, 0x57494c44, state.year, 2) % H;
             chronic.wildfireZones = [...chronic.wildfireZones, { x, y, year: state.year }].slice(-HAZARD_LIMITS.maxZones);
-            chronic.burntTiles = Math.min(4096, chronic.burntTiles + (wildfire ? 8 : 1));
-            if (wildfire) events.push("FIRE SCARS THE WOODLAND AT " + x + "," + y);
+            const burnt = recordWildfireScar(entry, x, y);
+            if (wildfire) events.push("FIRE SCARS THE WOODLAND AT " + x + "," + y
+                + (burnt.burnt ? " · " + burnt.burnt + " TIMBER LOST" : ""));
         }
     }
 
     if (flood) {
-        chronic.floodScars = Math.min(40, chronic.floodScars + 1);
-        damageFields(entry, 0.12, "flood scar");
-        events.push("THE FLOOD LEAVES A SCAR THAT OUTLASTS THE YEAR");
+        damageFields(entry, 0.12 * (1 - mitigation.dam * 0.5), "flood scar");
+        const drained = hazardRoll("flood:drainage") < mitigation.drainage * 0.7;
+        if (drained) {
+            events.push("DRAINAGE CARRIES THE FLOOD AWAY BEFORE IT SETTLES");
+        } else {
+            chronic.floodScars = Math.min(40, chronic.floodScars + 1);
+            const W = Math.max(3, Number(state.worldW) || 3), H = Math.max(3, Number(state.worldH) || 3);
+            const x = hash32(Number(state.worldSeed) || 1, 0x464c4f44, state.year, 1) % W;
+            const y = hash32(Number(state.worldSeed) || 1, 0x464c4f44, state.year, 2) % H;
+            recordFloodScar(entry, x, y);
+            if (getRoadAt(x, y)) destroyRoad(x, y);
+            events.push("THE FLOOD LEAVES A SCAR AT " + x + "," + y + " THAT OUTLASTS THE YEAR");
+        }
     } else {
         chronic.floodScars = Math.max(0, chronic.floodScars - 1);
     }
 
     chronic.volcanicYears = volcanic ? 3 : Math.max(0, chronic.volcanicYears - 1);
     if (chronic.volcanicYears > 0 && !volcanic) events.push("ASH STILL LIES ON THE REGION");
+    if (volcanic) {
+        const W = Math.max(3, Number(state.worldW) || 3), H = Math.max(3, Number(state.worldH) || 3);
+        const x = hash32(Number(state.worldSeed) || 1, 0x4c415641, state.year, 1) % W;
+        const y = hash32(Number(state.worldSeed) || 1, 0x4c415641, state.year, 2) % H;
+        recordLavaScar(entry, x, y);
+        if (getRoadAt(x, y)) destroyRoad(x, y);
+        events.push("LAVA COOLS AT " + x + "," + y + " · THE GROUND IS LOST TO THE REALM");
+    }
 
     // The baseline drifts only when the realm has lived through real extremes.
     if (drought || volcanic) chronic.climateDrift = Math.max(-20, Math.min(20, chronic.climateDrift + 1));
@@ -784,7 +902,7 @@ export function updateEnvironmentalHazardYear() {
     // Magical burdens grow while untreated and retreat when the player invests.
     if (magic.corruption > 0) {
         magic.corruption = clamp01(magic.corruption * 0.92 + entry.modifiers.diseaseRisk * 0.04);
-        magic.wards = clamp01(magic.wards * 0.85);
+        magic.wards = Math.max(getHazardMitigation().wards, clamp01(magic.wards * 0.85));
         magic.fog = clamp01(magic.fog * 0.8);
         magic.cursed = clamp01(magic.cursed * 0.85);
         magic.magicDisease = clamp01(magic.magicDisease * 0.8);
@@ -799,34 +917,46 @@ export function updateEnvironmentalHazardYear() {
     }
     if (magic.magicDisease > 0.4 && !state.health?.outbreakActive) {
         startOutbreak({ severity: 2, disease: "arcane wasting fever" });
-        entry.diseases.push({ id: "magic-disease", label: "Arcane wasting fever", cases: 3, year: state.year, source: "magic" });
+        registerHazardDisease(entry, createDiseaseRecord("magic:disease", "Arcane wasting fever", 0.6, "magic"));
         events.push("AN ARCANE FEVER TAKES HOLD");
     }
     if (magic.animalShift > 0.3) events.push("WILDLIFE BEHAVIOUR SHIFTS ACROSS THE REGION");
     if (magic.forbidden > 0.3) events.push("FORBIDDEN GROWTH APPEARS AT THE FOREST EDGE");
 
     // One rare event per decade at most, deterministic from the seed and year.
+    // It is a multi-year chain with an annual rule and a player decision. A
+    // legacy rare record from 3.36 is given a chain instead of staying inert.
+    if (entry.rare && !entry.rare.chainId) {
+        const chain = rareChainFor(hazardRoll("rare-legacy:" + entry.rare.year));
+        entry.rare.chainId = chain.id;
+        entry.rare.label = chain.label;
+        entry.rare.endsYear = Math.max(positive(entry.rare.year) + chain.years, state.year);
+        entry.rare.stage = Math.max(0, state.year - positive(entry.rare.year));
+        entry.rare.resolved = false;
+        entry.rare.choice = null;
+        entry.rare.outcome = "";
+    }
     if (!entry.rare || state.year - entry.rare.year >= 10) {
         if (hazardRoll("rare-event:year") < 0.12) {
-            const row = HAZARD_CATALOG.find(item => item.mechanic === "magic:rare");
-            entry.rare = {
-                id: "rare-" + state.year,
-                label: row ? row.label : "Rare regional event",
-                year: state.year,
-                years: 0
-            };
+            const chain = selectRareChain(entry, hazardRoll("rare-chain"));
             magic.rareYears = Math.min(80, magic.rareYears + 10);
-            events.push("A RARE EVENT SHAPES THE REGION · " + entry.rare.label.toUpperCase());
+            events.push("A RARE EVENT SHAPES THE REGION · " + chain.label.toUpperCase());
         }
     }
     if (entry.rare && entry.rare.year < state.year) entry.rare.years = state.year - entry.rare.year;
 
     entry.mitigation = getHazardMitigation();
-    entry.diseases = entry.diseases.filter(disease => state.year - disease.year <= 3).slice(-HAZARD_LIMITS.maxDiseases);
+    // Diseases, partner realms, rare chains, loans and the next forecast. The
+    // pass is capped and reads only the saved lists; it never scans the map.
+    advanceHazardResponse(entry, events, {
+        damageFields: (amount, reason) => damageFields(entry, amount, reason)
+    });
+    entry.diseases = entry.diseases.filter(disease => disease.active || state.year - disease.year <= 3).slice(-HAZARD_LIMITS.maxDiseases);
     if (events.length) {
         for (const line of events.slice(0, 4)) addLog(line, "#b08cc4", "hazard");
         addHistory(entry, "year", events.join(" · "));
     }
+    invalidateHazardModifierCache();
     state.environmentalHazards = entry;
     return { skipped: false, events, chronic, magic };
 }
@@ -912,7 +1042,14 @@ export function cleanseHazardCorruption() {
     entry.magic.corruption = clamp01(entry.magic.corruption - 0.25);
     entry.magic.fog = clamp01(entry.magic.fog - 0.2);
     entry.magic.cursed = clamp01(entry.magic.cursed - 0.2);
+    entry.magic.forbidden = clamp01(entry.magic.forbidden - 0.15);
     entry.magic.wards = clamp01(entry.magic.wards + 0.2);
+    const scars = normalizeHazardScars(entry.scars);
+    if (scars.corruption.length) {
+        scars.corruption.shift();
+        scars.revision += 1;
+        entry.scars = scars;
+    }
     entry.mitigation = getHazardMitigation();
     addLog("THE CORRUPTED GROUND IS CLEANSED · TAINT " + Math.round(entry.magic.corruption * 100) + "%", "#b08cc4", "hazard");
     return { ok: true, cost, corruption: Math.round(entry.magic.corruption * 100), message: "corruption cleansed" };
@@ -921,6 +1058,7 @@ export function cleanseHazardCorruption() {
 /** Read-only snapshot for the panel. */
 export function getHazardSnapshot() {
     const entry = normalizeEnvironmentalHazardState(state.environmentalHazards);
+    const response = normalizeHazardResponse(entry.response);
     const profile = getHazardProfile();
     const catalogByCategory = {};
     for (const row of HAZARD_CATALOG) catalogByCategory[row.category] = (catalogByCategory[row.category] || 0) + 1;
@@ -943,6 +1081,10 @@ export function getHazardSnapshot() {
         medicine: getMedicineAvailability(),
         history: entry.history,
         rare: entry.rare,
+        response,
+        forecast: response.forecast || buildHazardForecast(entry),
+        partners: normalizeHazardPartners(entry.partners),
+        scars: getHazardScarSnapshot(),
         catalog: {
             total: HAZARD_CATALOG.length,
             mechanics: HAZARD_MECHANICS.length,

@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "fba71ca8e712df004c6f3d54323dc9373b2fedf3",
-  "sourceHash": "d09421028d179794bf83dad59a3d551f95a50cc6291383fc4c0750cfa983dfbe",
-  "generatedAt": "2026-11-22T11:01:47+00:00",
+  "commit": "199866e2904460175285f2aa43feb698816fd9cb",
+  "sourceHash": "7b407a390968296979d5d627d27c2defb57b5a71ebcef7ffb1bf992770943996",
+  "generatedAt": "2026-11-22T11:11:49+00:00",
   "totals": {
     "total": 1498,
     "implemented": 1494,
@@ -26883,10 +26883,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -26896,11 +26902,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -26915,10 +26924,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -26928,11 +26943,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -26947,10 +26965,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -26960,11 +26984,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -26979,10 +27006,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -26992,11 +27025,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27011,10 +27047,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27024,11 +27066,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27043,10 +27088,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27056,11 +27107,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27075,10 +27129,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27088,11 +27148,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27107,10 +27170,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27120,11 +27189,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27139,10 +27211,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27152,11 +27230,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27171,10 +27252,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27184,11 +27271,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27203,10 +27293,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27216,11 +27312,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27235,10 +27334,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27248,11 +27353,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27267,10 +27375,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27280,11 +27394,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27299,10 +27416,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27312,11 +27435,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27331,10 +27457,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27344,11 +27476,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27363,10 +27498,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27376,11 +27517,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27395,10 +27539,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27408,11 +27558,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27427,10 +27580,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27440,11 +27599,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27459,10 +27621,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27472,11 +27640,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27491,10 +27662,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27504,11 +27681,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27523,10 +27703,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27536,11 +27722,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27555,10 +27744,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27568,11 +27763,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27587,10 +27785,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27600,11 +27804,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27619,10 +27826,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27632,11 +27845,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27651,10 +27867,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27664,11 +27886,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27683,10 +27908,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27696,11 +27927,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27715,10 +27949,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27728,11 +27968,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27747,10 +27990,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27760,11 +28009,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27779,10 +28031,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27792,11 +28050,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27811,10 +28072,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27824,11 +28091,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27843,10 +28113,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27856,11 +28132,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27875,10 +28154,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27888,11 +28173,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27907,10 +28195,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27920,11 +28214,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27939,10 +28236,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27952,11 +28255,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -27971,10 +28277,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -27984,11 +28296,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28003,10 +28318,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28016,11 +28337,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28035,10 +28359,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28048,11 +28378,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28067,10 +28400,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28080,11 +28419,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28099,10 +28441,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28112,11 +28460,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28131,10 +28482,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28144,11 +28501,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28163,10 +28523,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28176,11 +28542,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28195,10 +28564,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28208,11 +28583,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28227,10 +28605,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28240,11 +28624,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28259,10 +28646,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28272,11 +28665,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28291,10 +28687,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28304,11 +28706,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28323,10 +28728,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28336,11 +28747,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28355,10 +28769,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28368,11 +28788,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28387,10 +28810,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28400,11 +28829,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28419,10 +28851,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28432,11 +28870,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28451,10 +28892,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28464,11 +28911,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28483,10 +28933,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28496,11 +28952,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28515,10 +28974,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28528,11 +28993,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28547,10 +29015,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28560,11 +29034,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28579,10 +29056,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28592,11 +29075,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28611,10 +29097,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28624,11 +29116,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28643,10 +29138,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28656,11 +29157,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28675,10 +29179,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28688,11 +29198,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28707,10 +29220,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28720,11 +29239,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28739,10 +29261,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28752,11 +29280,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28771,10 +29302,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28784,11 +29321,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28803,10 +29343,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28816,11 +29362,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28835,10 +29384,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28848,11 +29403,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28867,10 +29425,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28880,11 +29444,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28899,10 +29466,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28912,11 +29485,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28931,10 +29507,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28944,11 +29526,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28963,10 +29548,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -28976,11 +29567,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -28995,10 +29589,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29008,11 +29608,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29027,10 +29630,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29040,11 +29649,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29059,10 +29671,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29072,11 +29690,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29091,10 +29712,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29104,11 +29731,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29123,10 +29753,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29136,11 +29772,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29155,10 +29794,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29168,11 +29813,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29187,10 +29835,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29200,11 +29854,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29219,10 +29876,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29232,11 +29895,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29251,10 +29917,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29264,11 +29936,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29283,10 +29958,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29296,11 +29977,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29315,10 +29999,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29328,11 +30018,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29347,10 +30040,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29360,11 +30059,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29379,10 +30081,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29392,11 +30100,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29411,10 +30122,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29424,11 +30141,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29443,10 +30163,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29456,11 +30182,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29475,10 +30204,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29488,11 +30223,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29507,10 +30245,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29520,11 +30264,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29539,10 +30286,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29552,11 +30305,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29571,10 +30327,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29584,11 +30346,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29603,10 +30368,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29616,11 +30387,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29635,10 +30409,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29648,11 +30428,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29667,10 +30450,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29680,11 +30469,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29699,10 +30491,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29712,11 +30510,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29731,10 +30532,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29744,11 +30551,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29763,10 +30573,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29776,11 +30592,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29795,10 +30614,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29808,11 +30633,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29827,10 +30655,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29840,11 +30674,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29859,10 +30696,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29872,11 +30715,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29891,10 +30737,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29904,11 +30756,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29923,10 +30778,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29936,11 +30797,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29955,10 +30819,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -29968,11 +30838,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -29987,10 +30860,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -30000,11 +30879,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -30019,10 +30901,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -30032,11 +30920,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -30051,10 +30942,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -30064,11 +30961,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -30083,10 +30983,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -30096,11 +31002,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         },
         {
@@ -30115,10 +31024,16 @@
           "consumers": [
             "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
             "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/world/hazard-expansion-data.js#RESPONSE_PLANS (response)",
+            "js/world/hazard-expansion-data.js#DISEASE_PROFILES (disease)",
+            "js/world/hazard-expansion-data.js#RARE_CHAINS (rare)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
             "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
             "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
             "js/systems/hazard-modifiers.js#getHazardSimulationEffects (simulation)",
+            "js/systems/hazard-response.js#advanceHazardResponse (response)",
+            "js/systems/hazard-response.js#chooseHazardPlan (plan)",
+            "js/systems/hazard-scars.js#isHazardTileBlocked (movement)",
             "js/systems/economy.js#calculateDailyLedger (demand)",
             "js/systems/economy.js#getBuildingEfficiency (production)",
             "js/systems/construction.js#updateConstruction (construction)",
@@ -30128,11 +31043,14 @@
             "js/systems/forest-fauna.js#updateForestFauna (pasture)",
             "js/systems/market.js#executeTrade (trade)",
             "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/systems/city-config.js#NEW_BUILDING_TYPES (buildings)",
             "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
           ],
           "tests": [
             "tests/world/environmental-hazards.test.js",
-            "tests/world/hazard-modifiers.test.js"
+            "tests/world/hazard-modifiers.test.js",
+            "tests/world/hazard-expansion.test.js",
+            "tests/systems/city-builder.test.js"
           ]
         }
       ],
@@ -30147,6 +31065,24 @@
           "file": "js/world/hazard-data.js",
           "symbol": "HAZARD_EFFECTS",
           "role": "rules",
+          "valid": true
+        },
+        {
+          "file": "js/world/hazard-expansion-data.js",
+          "symbol": "RESPONSE_PLANS",
+          "role": "response",
+          "valid": true
+        },
+        {
+          "file": "js/world/hazard-expansion-data.js",
+          "symbol": "DISEASE_PROFILES",
+          "role": "disease",
+          "valid": true
+        },
+        {
+          "file": "js/world/hazard-expansion-data.js",
+          "symbol": "RARE_CHAINS",
+          "role": "rare",
           "valid": true
         },
         {
@@ -30171,6 +31107,24 @@
           "file": "js/systems/hazard-modifiers.js",
           "symbol": "getHazardSimulationEffects",
           "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/systems/hazard-response.js",
+          "symbol": "advanceHazardResponse",
+          "role": "response",
+          "valid": true
+        },
+        {
+          "file": "js/systems/hazard-response.js",
+          "symbol": "chooseHazardPlan",
+          "role": "plan",
+          "valid": true
+        },
+        {
+          "file": "js/systems/hazard-scars.js",
+          "symbol": "isHazardTileBlocked",
+          "role": "movement",
           "valid": true
         },
         {
@@ -30228,6 +31182,12 @@
           "valid": true
         },
         {
+          "file": "js/systems/city-config.js",
+          "symbol": "NEW_BUILDING_TYPES",
+          "role": "buildings",
+          "valid": true
+        },
+        {
           "file": "js/core/save-runtime.js",
           "symbol": "serializeEnvironmentalHazardState",
           "role": "persistence",
@@ -30241,6 +31201,14 @@
         },
         {
           "file": "tests/world/hazard-modifiers.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/world/hazard-expansion.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/systems/city-builder.test.js",
           "valid": true
         }
       ],
