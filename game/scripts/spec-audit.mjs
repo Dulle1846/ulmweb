@@ -305,6 +305,7 @@ const MANIFEST_SPECS = [
         consumers: [
             { file: "js/world/hazard-data.js", symbol: "HAZARD_CATALOG", role: "catalog" },
             { file: "js/world/hazard-data.js", symbol: "HAZARD_EFFECTS", role: "rules" },
+            { file: "js/world/hazard-evidence.js", symbol: "HAZARD_EVIDENCE", role: "evidence" },
             { file: "js/world/hazard-expansion-data.js", symbol: "RESPONSE_PLANS", role: "response" },
             { file: "js/world/hazard-expansion-data.js", symbol: "DISEASE_PROFILES", role: "disease" },
             { file: "js/world/hazard-expansion-data.js", symbol: "RARE_CHAINS", role: "rare" },
@@ -313,6 +314,7 @@ const MANIFEST_SPECS = [
             { file: "js/systems/environmental-hazards.js", symbol: "getHazardMitigation", role: "simulation" },
             { file: "js/systems/hazard-modifiers.js", symbol: "getHazardSimulationEffects", role: "simulation" },
             { file: "js/systems/hazard-response.js", symbol: "advanceHazardResponse", role: "response" },
+            { file: "js/systems/hazard-response.js", symbol: "selectRareChain", role: "rare" },
             { file: "js/systems/hazard-response.js", symbol: "chooseHazardPlan", role: "plan" },
             { file: "js/systems/hazard-scars.js", symbol: "isHazardTileBlocked", role: "movement" },
             { file: "js/systems/economy.js", symbol: "calculateDailyLedger", role: "demand" },
@@ -322,12 +324,13 @@ const MANIFEST_SPECS = [
             { file: "js/systems/expeditions.js", symbol: "startExpedition", role: "expedition" },
             { file: "js/simulation/buildings.js", symbol: "updateBuildingIncome", role: "extraction" },
             { file: "js/systems/forest-fauna.js", symbol: "updateForestFauna", role: "pasture" },
+            { file: "js/systems/forest-fauna.js", symbol: "damageHazardHerds", role: "plague" },
             { file: "js/systems/market.js", symbol: "executeTrade", role: "trade" },
             { file: "js/presentation/hazard-panel.js", symbol: "renderHazardPanel", role: "ui" },
             { file: "js/systems/city-config.js", symbol: "NEW_BUILDING_TYPES", role: "buildings" },
             { file: "js/core/save-runtime.js", symbol: "serializeEnvironmentalHazardState", role: "persistence" }
         ],
-        tests: ["tests/world/environmental-hazards.test.js", "tests/world/hazard-modifiers.test.js", "tests/world/hazard-expansion.test.js", "tests/systems/city-builder.test.js"]
+        tests: ["tests/world/environmental-hazards.test.js", "tests/world/hazard-modifiers.test.js", "tests/world/hazard-expansion.test.js", "tests/world/hazard-terrain.test.js", "tests/world/hazard-coverage.test.js", "tests/systems/city-builder.test.js"]
     }
 ];
 

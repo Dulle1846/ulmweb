@@ -1,12 +1,21 @@
 # Biomes with special hazards and diseases (1.2.20)
 
-**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.40.0).
-**Spec:** 1.2.20.1–1.2.20.102, all 102 points implemented.
+**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.41.0).
+**Spec:** 1.2.20.1–1.2.20.102, all 102 points implemented and evidenced.
 **Panel:** `HAZARDS` tab in the realm management deck.
 **Code:** `js/world/hazard-data.js`, `js/world/hazard-expansion-data.js`,
-`js/systems/environmental-hazards.js`, `js/systems/hazard-response.js`,
-`js/systems/hazard-scars.js`, `js/systems/hazard-modifiers.js`,
-`js/presentation/hazard-panel.js`, `css/hazard-panel.css`.
+`js/world/hazard-evidence.js`, `js/systems/environmental-hazards.js`,
+`js/systems/hazard-response.js`, `js/systems/hazard-scars.js`,
+`js/systems/hazard-modifiers.js`, `js/presentation/hazard-panel.js`,
+`css/hazard-panel.css`.
+
+Every catalogue point now carries the same three-part proof in
+`js/world/hazard-evidence.js`: the simulation rule that consumes it, the
+player-facing surface that reports it, and the focused test that pins it. The
+contract is enforced by `tests/world/hazard-coverage.test.js`, which fails if a
+row has no effect, no existing panel marker, no existing test title, or an
+`applyHazard` primitive without a real branch. A passive/flavour row would have
+to declare `passive: true` and a reason; there are none in 1.2.20.
 
 ## What the player sees
 
@@ -66,6 +75,41 @@ coordinates and the fire/flood/lava conversion shield.
   tile mark when the deterministic roll is below the shield, and existing
   works also narrow the converted area. A zero-firebreak realm keeps the exact
   pre-3.40 readiness and hazard pressure.
+
+### 3.41 evidence-contract pass
+
+The 3.40 report said "102/102" while listing only 42 rollable hazards, 13
+disease profiles and 9 regional bundles. That counted catalogue rows, not
+proven effects. This pass makes the claim literal:
+
+- **Animal plague reaches real herds.** `damageHazardHerds()` in
+  `js/systems/forest-fauna.js` removes a bounded share from the saved herds the
+  hunt and predator systems already use, marks them declining, records deaths
+  and writes a plague history entry. The seasonal `hazard:epizootic` path and
+  the annual plague pass both call it; `losses.herds` and the panel's `HERDS`
+  row report the actual number. No per-frame or per-tick work was added.
+- **`magic:rare` seeds a real chain.** A charged `magic.rareYears` now calls
+  `selectRareChain()` in the annual pass, clears the pressure and publishes the
+  rare decision. It is no longer a number that only waited in the panel.
+- **Protection works change their own path.** `getHazardExposureRelief()`
+  applies wells, irrigation, drainage, roads, warehouses, medical care and
+  insulated clothing to water loss, field damage, outbreak pressure, movement,
+  caravan terms and illness. The readiness score still exists, but a well or a
+  drained lane now matters even when the general score is low.
+- **`odd` is no longer a dead primitive.** Poisoned harvests and strange
+  seasons lower work output and raise disease risk through the existing
+  modifiers, with a real event-log line.
+- **The player sees the evidence.** The HAZARDS panel now shows regional
+  weights in percent, `HERDS` losses, `RARE PRESSURE`, and a `REALM RESILIENCE`
+  block with disease pressure, injury resistance, medical care and adapted
+  clothing. Protection notes state the actual path each work protects.
+
+Evidence groups: **42 events** (every `HAZARD_EFFECTS` primitive has an
+`applyHazard` branch and a focused behavioural test), **9 bundles** (exposure
+multiplies the bundle's signature hazard weights), **19 effects** (each named
+modifier/consumer pair), **12 works** (each has a named risk/loss path),
+**9 chronic processes** (annual state, terrain scars or trade), **11 magic
+burdens** (modifiers, creatures, disease, scars or rare chains) = **102**.
 
 ### 3.39 depth pass
 
@@ -211,8 +255,11 @@ protection survey.
 `js/world/hazard-data.js` holds the 102-row catalogue. Every row names the
 mechanic that implements it, and the test suite compares the catalogue against
 the engine's mechanic list so a requirement cannot exist as a label without a
-rule. `npm run spec:audit` reads `HAZARD_REQUIREMENTS` and reports all 102
-points as implemented with their consumers and tests.
+rule. `js/world/hazard-evidence.js` adds the per-point chain
+`effect → surfaces → test`; `tests/world/hazard-coverage.test.js` checks all
+102 entries against the real source, the shipped panel/index markers and the
+exact test titles. `npm run spec:audit` reads `HAZARD_REQUIREMENTS` and reports
+all 102 points as implemented with their consumers and tests.
 
 ## Pacing and balance
 
@@ -262,6 +309,9 @@ not saved.
 
 ## Verification
 
+- `node --test tests/world/hazard-coverage.test.js` — the 102-point evidence
+  contract, real herd culls, `magic:rare` chains, targeted work relief,
+  cursed/forbidden consumers and volcanic/economic annual consequences.
 - `npm test` — full suite including `tests/world/environmental-hazards.test.js`
   (catalogue completeness, determinism, bounded passes, health/store/morale
   effects, field damage, destruction protection, the sanitation floor, shielded

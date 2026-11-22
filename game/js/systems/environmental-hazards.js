@@ -35,6 +35,7 @@ import {
 } from "./hazard-response.js";
 import { rareChainFor } from "../world/hazard-expansion-data.js";
 import { getClimateDrift } from "./climate-drift.js";
+import { damageHazardHerds } from "./forest-fauna.js";
 import {
     HAZARD_CATALOG, HAZARD_EFFECTS, HAZARD_LIMITS, HAZARD_MECHANICS, REGIONAL_BUNDLES,
     hazardRowsForClimate
@@ -83,7 +84,7 @@ export function createEnvironmentalHazardState() {
         diseases: [],
         mitigation: emptyMitigation(),
         preparedness: { season: -1, year: 0, spent: 0, history: [] },
-        losses: { food: 0, wood: 0, stone: 0, gold: 0, buildings: 0, roads: 0, ill: 0, injured: 0, years: 0 },
+        losses: { food: 0, wood: 0, stone: 0, gold: 0, buildings: 0, roads: 0, ill: 0, injured: 0, herds: 0, years: 0 },
         history: [],
         rare: null,
         response: normalizeHazardResponse(null),
@@ -170,7 +171,8 @@ export function normalizeEnvironmentalHazardState(value) {
     base.losses = {
         food: positive(losses.food), wood: positive(losses.wood), stone: positive(losses.stone),
         gold: positive(losses.gold), buildings: positive(losses.buildings), roads: positive(losses.roads),
-        ill: positive(losses.ill), injured: positive(losses.injured), years: positive(losses.years)
+        ill: positive(losses.ill), injured: positive(losses.injured), herds: positive(losses.herds),
+        years: positive(losses.years)
     };
     base.history = Array.isArray(value.history) ? value.history.slice(-HAZARD_LIMITS.maxHistory).map(entry => ({
         year: positive(entry?.year), season: int(entry?.season, -1),
@@ -367,6 +369,41 @@ export function getHazardMitigation() {
         .map(([, value]) => value);
     mitigation.score = clamp01((values.reduce((sum, value) => sum + value, 0) / values.length) * 0.72 + mitigation.readiness * 0.28);
     return mitigation;
+}
+
+/**
+ * Targeted relief from real works. The readiness score is a general dampener,
+ * but a well, an irrigated field, a drained lane, built roads and insulated
+ * clothing must also change their own path. `applyHazard` multiplies these
+ * factors into the exact risk/loss calculation; a calm realm with none of the
+ * works returns exactly 1 through every entry.
+ */
+export function getHazardExposureRelief(mechanic, mitigation = getHazardMitigation(), savedModifiers = null) {
+    const m = normalizeMitigation(mitigation);
+    // The saved modifier block is the hazard layer's own record. Use its care
+    // and clothing values as a floor so older saves and direct calls still
+    // fall back to the live protection survey.
+    const clothing = Math.max(m.clothing, clamp01(savedModifiers?.clothing));
+    const medical = Math.max(m.medical, clamp01(savedModifiers?.medical));
+    const coldOrHeat = [
+        "hazard:cold", "hazard:frost", "hazard:snowstorm", "hazard:frostbite",
+        "hazard:heat", "hazard:heatwave", "hazard:heat-illness", "hazard:swing"
+    ].includes(mechanic);
+    const waterborne = [
+        "hazard:water-disease", "hazard:parasite", "hazard:parasite-disease",
+        "hazard:hygiene-disease", "hazard:vector-disease", "hazard:spoiled-food"
+    ].includes(mechanic);
+    const drought = mechanic === "hazard:drought";
+    const flood = mechanic === "hazard:flood";
+    return {
+        illness: clamp01(1 - clothing * (coldOrHeat ? 0.28 : 0.06) - medical * 0.05),
+        outbreak: clamp01(1 - medical * 0.22 - m.well * 0.15 - (waterborne ? m.drainage * 0.12 : 0)),
+        foodLoss: clamp01(1 - m.warehouse * 0.22),
+        waterLoss: clamp01(1 - m.well * 0.30 - m.warehouse * 0.18),
+        field: clamp01(1 - (drought ? m.irrigation * 0.35 : 0) - (flood ? m.drainage * 0.30 : 0)),
+        trade: clamp01(1 - m.roads * 0.20),
+        movement: clamp01(1 - m.roads * 0.15)
+    };
 }
 
 /**
@@ -602,6 +639,7 @@ function applyHazard(entry, row, severity, budget) {
     entry.response = normalizeHazardResponse(entry.response);
     const response = entry.response;
     const mitigation = entry.mitigation;
+    const exposureRelief = getHazardExposureRelief(row.mechanic, mitigation, entry.modifiers);
     const crews = response.crews;
     const resistance = 1 - (mitigation.score * 0.45 + (row.category === "disease" ? mitigation.medical * 0.25 : 0)
         + crews.veterans * 0.04 + crews.equipment * 0.02);
@@ -612,7 +650,7 @@ function applyHazard(entry, row, severity, budget) {
     let text = null;
 
     if (effects.outbreak && !budget.outbreak
-        && hazardRoll(row.mechanic + ":outbreak") < effects.outbreak * scale * (quarantined ? 0.45 : 1)
+        && hazardRoll(row.mechanic + ":outbreak") < effects.outbreak * scale * (quarantined ? 0.45 : 1) * exposureRelief.outbreak
         && entry.diseases.length < HAZARD_LIMITS.maxDiseases) {
         budget.outbreak = true;
         const label = row.label + " in the realm";
@@ -633,7 +671,7 @@ function applyHazard(entry, row, severity, budget) {
 
     if (effects.illness && !budget.casualty) {
         const risk = effects.illness * scale * (1 + entry.modifiers.diseaseRisk * 0.5)
-            * (evacuated ? 0.45 : 1) * (1 - crews.medical * 0.07);
+            * (evacuated ? 0.45 : 1) * (1 - crews.medical * 0.07) * exposureRelief.illness;
         if (hazardRoll(row.mechanic + ":ill") < risk) {
             budget.casualty = true;
             const victim = harmResident({ kind: "illness", disease: row.label, severity });
@@ -658,7 +696,7 @@ function applyHazard(entry, row, severity, budget) {
     if (effects.food) {
         const room = Math.max(0, HAZARD_LIMITS.foodPerSeason - budget.food);
         const surplus = Math.max(0, (Number(state.resources?.food) || 0) - HAZARD_LIMITS.foodReserve);
-        let loss = Math.min(surplus, effects.food * scale, room) * (1 - mitigation.warehouse * 0.22);
+        let loss = Math.min(surplus, effects.food * scale, room) * exposureRelief.foodLoss;
         if (loss > 0 && response.stockpile > 0 && !budget.stockpile) {
             budget.stockpile = true;
             response.stockpile -= 1;
@@ -685,7 +723,8 @@ function applyHazard(entry, row, severity, budget) {
         // carrying capacity, which is the resource the economy already moves.
         const room = Math.max(0, HAZARD_LIMITS.foodPerSeason - budget.food);
         const surplus = Math.max(0, (Number(state.resources?.food) || 0) - HAZARD_LIMITS.foodReserve);
-        let loss = Math.min(surplus, Math.max(1, effects.water * scale * 0.5), room) * (1 - mitigation.warehouse * 0.18);
+        let loss = Math.min(surplus, Math.max(1, effects.water * scale * 0.5), room)
+            * exposureRelief.waterLoss;
         if (loss > 0 && response.stockpile > 0 && !budget.stockpile) {
             budget.stockpile = true;
             response.stockpile -= 1;
@@ -703,6 +742,13 @@ function applyHazard(entry, row, severity, budget) {
         entry.modifiers.work = clamp01(entry.modifiers.work + effects.work * scale);
         text = (text ? text + " · " : "") + ("WORK OUTPUT -" + Math.round(effects.work * scale * 100) + "%");
     }
+    if (effects.odd) {
+        // Poisoned harvests and strange weather leave people confused and
+        // unsteady. This is a real work/illness drag, not a flavour field.
+        entry.modifiers.work = clamp01(entry.modifiers.work + effects.odd * scale * 0.4);
+        entry.modifiers.diseaseRisk = clamp01(entry.modifiers.diseaseRisk + effects.odd * 0.12);
+        text = (text ? text + " · " : "") + "STRANGE AILMENT · WORK SLOWED";
+    }
     if (effects.morale && severity > 0.55) {
         // Only a severe season reaches the mood of the realm, and never more
         // than one point a season: a hazard is a hardship, not a morale drain.
@@ -717,7 +763,8 @@ function applyHazard(entry, row, severity, budget) {
     if (effects.field) {
         const firebreakRelief = 1 - Math.min(0.5, countBuildings(TYPE.FIREBREAK) * 0.14);
         const reliefRelief = reliefReady ? 0.55 : 1;
-        const damaged = damageFields(entry, effects.field * scale * firebreakRelief * reliefRelief, row.label);
+        const damaged = damageFields(entry,
+            effects.field * scale * firebreakRelief * reliefRelief * exposureRelief.field, row.label);
         if (damaged > 0) {
             if (reliefReady && !budget.relief) {
                 budget.relief = true;
@@ -732,13 +779,24 @@ function applyHazard(entry, row, severity, budget) {
         text = (text ? text + " · " : "") + "PASTURE FAILS";
     }
     if (effects.trade) {
-        const loss = recordLoss(entry, "gold", Math.min(Number(state.resources?.gold) || 0, Math.max(1, Math.round(effects.trade * scale * 4))));
-        entry.modifiers.trade = clamp01(entry.modifiers.trade + effects.trade * scale);
+        const loss = recordLoss(entry, "gold", Math.min(Number(state.resources?.gold) || 0,
+            Math.max(1, Math.round(effects.trade * scale * 4 * exposureRelief.trade))));
+        entry.modifiers.trade = clamp01(entry.modifiers.trade + effects.trade * scale * exposureRelief.trade);
         if (loss > 0) { addResource("gold", -loss); text = (text ? text + " · " : "") + ("TRADE -" + loss + "G"); }
     }
     if (effects.herd) {
         entry.chronic.epizooticRegions = [...new Set([...entry.chronic.epizooticRegions, "royal pasture"])].slice(0, HAZARD_LIMITS.maxZones);
-        text = (text ? text + " · " : "") + "HERDS AFFECTED";
+        // An animal plague reaches the real herd model, not only the region list
+        // in the panel. The cap keeps this to one bounded pass over the saved
+        // herd list; no map or frame work is added.
+        const cull = damageHazardHerds(effects.herd * scale * 0.35, row.mechanic);
+        if (cull.affected > 0) {
+            recordLoss(entry, "herds", cull.affected);
+            text = (text ? text + " · " : "") + "HERDS AFFECTED · " + cull.affected +
+                " HERD" + (cull.affected === 1 ? "" : "S") + " · " + cull.lost + " ANIMALS LOST";
+        } else {
+            text = (text ? text + " · " : "") + "HERDS AFFECTED";
+        }
     }
     if (effects.ash) {
         entry.chronic.volcanicYears = Math.max(entry.chronic.volcanicYears, 3);
@@ -869,7 +927,8 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
     const has = category => pressure.some(hazard => hazard.category === category);
     const total = pressure.reduce((sum, hazard) => sum + hazard.severity, 0) / Math.max(1, pressure.length);
     entry.modifiers.work = clamp01(entry.modifiers.work + total * 0.12);
-    entry.modifiers.movement = clamp01(total * 0.3 + (has("geology") ? 0.15 : 0));
+    entry.modifiers.movement = clamp01((total * 0.3 + (has("geology") ? 0.15 : 0))
+        * (1 - entry.mitigation.roads * 0.15));
     entry.modifiers.needs = clamp01(total * 0.35);
     entry.modifiers.diseaseRisk = clamp01(entry.modifiers.diseaseRisk + (has("disease") ? 0.3 : 0.08) + entry.magic.corruption * 0.2);
     entry.modifiers.resistance = clamp01(entry.mitigation.medical * 0.5 + entry.mitigation.clothing * 0.3 + entry.mitigation.units * 0.2);
@@ -877,7 +936,8 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
     entry.modifiers.medical = entry.mitigation.medical;
     entry.modifiers.extraction = clamp01(total * 0.25);
     entry.modifiers.clothing = entry.mitigation.clothing;
-    entry.modifiers.trade = clamp01(entry.modifiers.trade + (has("weather") ? 0.1 : 0));
+    entry.modifiers.trade = clamp01((entry.modifiers.trade + (has("weather") ? 0.1 : 0))
+        * (1 - entry.mitigation.roads * 0.20));
     entry.modifiers.pasture = clamp01(entry.modifiers.pasture + (has("flora") ? 0.15 : 0));
     // Fog closes paths and forbidden growth makes gathering costly. Both are
     // real magic burdens, not panel counters: they enter the shared modifiers
@@ -951,7 +1011,17 @@ export function updateEnvironmentalHazardYear() {
     if (entry.active.some(hazard => hazard.mechanic === "hazard:epizootic")) {
         const regions = ["royal pasture", ...tradePartners().slice(0, 2)];
         chronic.epizooticRegions = [...new Set([...chronic.epizooticRegions, ...regions])].slice(0, HAZARD_LIMITS.maxZones);
-        events.push("ANIMAL PLAGUE IN " + regions.join(", ").toUpperCase());
+        // A plague that lasts into the next year keeps taking animals from the
+        // same real herds. The seasonal event already culls once; this is the
+        // bounded year-over-year continuation, capped by the herd model.
+        const cull = damageHazardHerds(0.06, "hazard:epizootic:year");
+        if (cull.affected > 0) {
+            recordLoss(entry, "herds", cull.affected);
+            events.push("ANIMAL PLAGUE IN " + regions.join(", ").toUpperCase()
+                + " · " + cull.affected + " HERDS · " + cull.lost + " ANIMALS LOST");
+        } else {
+            events.push("ANIMAL PLAGUE IN " + regions.join(", ").toUpperCase());
+        }
     } else {
         chronic.epizooticRegions = chronic.epizooticRegions.slice(-1);
     }
@@ -1046,6 +1116,16 @@ export function updateEnvironmentalHazardYear() {
     }
     if (magic.animalShift > 0.3) events.push("WILDLIFE BEHAVIOUR SHIFTS ACROSS THE REGION");
     if (magic.forbidden > 0.3) events.push("FORBIDDEN GROWTH APPEARS AT THE FOREST EDGE");
+
+    // `magic:rare` is not a panel counter. A charged unnatural year seeds the
+    // next rare chain through the same response layer, so the magical catalogue
+    // row has a real multi-year consequence and a decision attached to it.
+    if (magic.rareYears > 0
+        && (!entry.rare || entry.rare.resolved || state.year > positive(entry.rare.endsYear))) {
+        const chain = selectRareChain(entry, hazardRoll("magic-rare-chain"));
+        magic.rareYears = 0;
+        events.push("THE OLD MAGIC CALLS A RARE EVENT · " + chain.label.toUpperCase());
+    }
 
     // One rare event per decade at most, deterministic from the seed and year.
     // It is a multi-year chain with an annual rule and a player decision. A

@@ -614,6 +614,41 @@ export function harvestForestGameAt(x, y, requested = 1) {
     };
 }
 
+// A hazard-borne animal plague is a real, bounded loss from the same herds the
+// player hunts and the forest model carries. It runs once per event (season or
+// year), never per frame, and only touches the existing capped herd list.
+// Returns the number of herds affected and the animals lost so the hazard
+// ledger and the player-facing log can report the actual consequence.
+export function damageHazardHerds(fraction = 0.1, key = "hazard-herd") {
+    const model = state.forestFauna;
+    if (!model || !Array.isArray(model.herds) || !model.herds.length) {
+        return { affected: 0, lost: 0 };
+    }
+    const share = Math.max(0, Math.min(0.4, Number(fraction) || 0));
+    if (share <= 0) return { affected: 0, lost: 0 };
+    let affected = 0;
+    let lost = 0;
+    for (const herd of model.herds) {
+        const before = Math.max(0, Number(herd.population) || 0);
+        if (before <= 0) continue;
+        const loss = Math.round(before * share * 10) / 10;
+        if (loss < 0.1) continue;
+        herd.population = Math.round(Math.max(0, before - loss) * 10) / 10;
+        herd.trend = "declining";
+        affected++;
+        lost += Math.min(before, loss);
+    }
+    lost = Math.round(lost * 10) / 10;
+    if (affected > 0) {
+        model.stats.deaths = Math.max(0, Math.floor(number(model.stats.deaths))) + Math.ceil(lost);
+        addHistory(model, {
+            day: model.day, kind: "plague", source: String(key).slice(0, 32),
+            herdsAffected: affected, lost
+        });
+    }
+    return { affected, lost };
+}
+
 // A bounded trophic pass. Prey biomass and predator pressure are aggregated by
 // tile once per update, so adding wolves does not turn every prey herd into a
 // full scan of all 240 herds on every day.

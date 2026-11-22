@@ -80,6 +80,11 @@ try {
     const panel = await page.locator("#command-panel-content").evaluate(element => element.textContent || "");
     assert.match(panel, /102 hazards are modelled/);
     assert.match(panel, /PROTECTION · READINESS/);
+    assert.match(panel, /REALM RESILIENCE/);
+    assert.match(panel, /DISEASE PRESSURE/);
+    assert.match(panel, /INJURY RESISTANCE/);
+    assert.match(panel, /RARE PRESSURE/);
+    assert.match(panel, /LOSSES[\s\S]*?HERDS/);
     assert.match(panel, /DISEASES & OUTBREAKS/);
     assert.match(panel, /LONG-TERM CONSEQUENCES/);
     assert.match(panel, /ARCANE BURDEN/);

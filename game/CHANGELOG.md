@@ -1,13 +1,43 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.40.0`
-**Next development line:** `3.41.0-dev`
+**Current production version:** `3.41.0`
+**Next development line:** `3.42.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.41.0 — Every 1.2.20 point has a proven chain
+
+This release makes the 102/102 claim auditable instead of repeating it. The
+catalogue still has 42 events, 9 regional bundles, 19 effects, 12 works,
+9 chronic processes and 11 magic burdens; each row now has a single evidence
+record in `js/world/hazard-evidence.js` naming the simulation consumer, the
+player-facing HAZARDS/EVENT LOG surface, and the focused test. A new test fails
+if any row has no effect branch, no shipped marker or no exact test title.
+
+- **Former label-only paths now act.** Animal plague reaches the real
+  `forestFauna` herds (bounded cull, declining trend, losses and history);
+  `magic:rare` seeds a real rare chain through `selectRareChain()`; the odd
+  poison-harvest primitive lowers work and raises disease risk; wells,
+  irrigation, drainage, roads, warehouses, medical care and clothing now change
+  their own loss/illness/outbreak/movement/caravan path instead of only the
+  readiness score.
+- **The player can see it.** The HAZARDS tab shows regional weights in percent,
+  `HERDS` losses, `RARE PRESSURE`, and a `REALM RESILIENCE` block with disease
+  pressure, injury resistance, medical care and adapted clothing. Each
+  protection work names the risk it reduces.
+- **No parallel system.** The existing bounded seasonal and annual passes do
+the work; the herd cull is one pass over the capped herd list and the rare
+chain uses the existing response layer. Save schema 13 and determinism are
+unchanged; `losses.herds` normalises to zero for old saves.
+
+Verification: focused hazard/terrain/save tests, one full `npm test`, the
+deterministic 25-year campaign and the hazard/terrain browser reference.
+
+---
 
 ## 3.40.0 — Hazards change the actual map
 

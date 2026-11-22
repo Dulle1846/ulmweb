@@ -46,8 +46,15 @@ function impactLine(hazard) {
     else if (effects.water) parts.push("WATER −" + Math.max(1, Math.round(effects.water * severity)));
     if (effects.illness) parts.push("ILLNESS " + Math.round(effects.illness * severity * 100) + "%");
     else if (effects.injury) parts.push("INJURY " + Math.round(effects.injury * severity * 100) + "%");
+    if (effects.outbreak) parts.push("OUTBREAK " + Math.round(effects.outbreak * severity * 100) + "%");
+    if (effects.trade) parts.push("TRADE −" + Math.round(effects.trade * severity * 100) + "%");
+    if (effects.pasture) parts.push("PASTURE −" + Math.round(effects.pasture * severity * 100) + "%");
+    if (effects.morale) parts.push("MORALE −" + Math.max(1, Math.round(effects.morale * severity * 0.5)));
+    if (effects.herd) parts.push("HERDS AFFECTED");
+    if (effects.ash) parts.push("ASH");
+    if (effects.permanent) parts.push("PERMANENT LOSS");
     if (effects.destroy) parts.push("DAMAGE " + Math.round(effects.destroy * severity * 100) + "%");
-    return parts.slice(0, 3).join(" · ");
+    return parts.slice(0, 6).join(" · ");
 }
 
 const gain = value => {
@@ -189,7 +196,7 @@ export function renderHazardPanel() {
         : '<p class="command-note">No hazard has struck this realm yet. The first season is being watched.</p>';
 
     const regionalCatalog = snapshot.profile.hazards.length
-        ? snapshot.profile.hazards.map(row => badge(row.label.toUpperCase(), row.weight > 0.5 ? "is-danger" : "")).join("")
+        ? snapshot.profile.hazards.map(row => badge(row.label.toUpperCase() + " " + pct(row.weight) + "%", row.weight > 0.5 ? "is-danger" : "")).join("")
         : '<span class="command-note">No hazard is currently favoured by this climate.</span>';
 
     const magicRows = [
@@ -206,6 +213,7 @@ export function renderHazardPanel() {
         chronicRow("FLOOD SCARS", chronic.floodScars > 0 ? chronic.floodScars + " unrecovered" : "None", "fields and channels"),
         chronicRow("VOLCANIC ASH", chronic.volcanicYears > 0 ? chronic.volcanicYears + " years remaining" : "None", "regional fallout"),
         chronicRow("CLIMATE DRIFT", (chronic.climateDrift >= 0 ? "+" : "") + chronic.climateDrift, "baseline hazard pressure"),
+        chronicRow("RARE PRESSURE", magic.rareYears > 0 ? magic.rareYears + " arcane years" : "None", "drawn rare events"),
         chronicRow("DISASTER DEBT", pct(chronic.economicDrag) + "%", "drag on the treasury"),
         chronicRow("LOST GROUND", chronic.lostGround > 0 ? chronic.lostGround + " tiles" : "None", "permanent")
     ].join("");
@@ -255,20 +263,26 @@ export function renderHazardPanel() {
         '<div><small>CARAVAN BUY</small><strong>' + gain(simulation.tradeBuy) + '</strong></div>' +
         '<div><small>CARAVAN SELL</small><strong>' + loss(simulation.tradeSell) + '</strong></div>' +
         '<div><small>ADAPTATION RELIEF</small><strong>' + Math.round(simulation.adaptationRelief * 100) + '%</strong></div></div>' +
+        '<div class="command-section-title">REALM RESILIENCE</div><div class="command-summary">' +
+        '<div><small>DISEASE PRESSURE</small><strong>' + pct(snapshot.modifiers.diseaseRisk) + '%</strong></div>' +
+        '<div><small>INJURY RESISTANCE</small><strong>' + pct(snapshot.modifiers.resistance) + '%</strong></div>' +
+        '<div><small>MEDICAL CARE</small><strong>' + pct(mitigation.medical) + '%</strong></div>' +
+        '<div><small>ADAPTED CLOTHING</small><strong>' + pct(mitigation.clothing) + '%</strong></div></div>' +
+        '<p class="command-note">Medical care and clean wells lower illness and outbreak pressure; insulated clothing specifically lowers cold and heat illness; irrigation and drainage protect fields; roads cushion the movement and caravan penalty of the same hazard season.</p>' +
         '<p class="command-note">' + (pressure.length
             ? 'These multipliers are live in household demand, production and building, movement and expeditions, caravan haulage, extraction, herds and market terms. Regional adaptation takes back ' + Math.round(simulation.adaptationRelief * 100) + '% of every penalty.'
             : 'No rolled hazard is pressing. Demand, work, movement, extraction, pasture and caravan terms are at their baseline; the climate\'s regional character is standing, not a modifier.') + '</p>' +
         '<div class="command-section-title">PROTECTION · READINESS ' + pct(mitigation.score) + '%</div><div class="hazard-work-grid">' +
-        workRow("Wells & reservoirs", mitigation.well, "Wells and bathhouses keep water clean") +
-        workRow("Irrigation", mitigation.irrigation, "Mills and worked farmland carry water to the fields") +
+        workRow("Wells & reservoirs", mitigation.well, "Lower water loss and water-borne outbreak pressure") +
+        workRow("Irrigation", mitigation.irrigation, "Mills and worked farmland cut drought field damage") +
         workRow("Walls & dams", mitigation.dam, "Walls hold floodwater and slides") +
         workRow("Avalanche protection", mitigation.avalanche, "Foresters stabilise slopes, walls stop the run") +
         workRow("Firebreaks", mitigation.firebreak, "Cleared belts stop a wildfire converting new tiles") +
-        workRow("Drainage", mitigation.drainage, "Sanitation drains the wet ground") +
-        workRow("Roads & bridges", mitigation.roads, "Built roads keep caravans moving") +
+        workRow("Drainage", mitigation.drainage, "Cuts flood field damage and water-borne outbreak pressure") +
+        workRow("Roads & bridges", mitigation.roads, "Cuts the movement and caravan penalty of a bad season") +
         workRow("Warehouses", mitigation.warehouse, "Stores keep grain dry and safe") +
-        workRow("Medical care", mitigation.medical, "Clinic, healers and medicine treat the sick") +
-        workRow("Adapted clothing", mitigation.clothing, "Bathhouse and insulated homes") +
+        workRow("Medical care", mitigation.medical, "Cuts illness and outbreak pressure; treats the sick") +
+        workRow("Adapted clothing", mitigation.clothing, "Insulated homes cut cold and heat illness") +
         workRow("Regional research", mitigation.research, "School and scriptorium record local danger") +
         workRow("Specialised units", mitigation.units, "Barracks and smithy equip relief crews") +
         workRow("Settlement siting", mitigation.siting, "The keep anchors the settlement on safe ground") +
@@ -308,7 +322,8 @@ export function renderHazardPanel() {
         '<div><small>STRUCTURES</small><strong>' + num(snapshot.losses.buildings) + '</strong></div>' +
         '<div><small>ROADS</small><strong>' + num(snapshot.losses.roads) + '</strong></div>' +
         '<div><small>ILL</small><strong>' + num(snapshot.losses.ill) + '</strong></div>' +
-        '<div><small>INJURED</small><strong>' + num(snapshot.losses.injured) + '</strong></div></div>' +
+        '<div><small>INJURED</small><strong>' + num(snapshot.losses.injured) + '</strong></div>' +
+        '<div><small>HERDS</small><strong>' + num(snapshot.losses.herds) + '</strong></div></div>' +
         '<div class="command-section-title">HAZARD RECORD</div><div class="command-history-list">' + history + '</div>' +
         '<p class="command-note">Hazards settle at the change of season and at the year boundary. The panel and the save hold the same state, so a reload in the middle of a drought keeps the drought.</p>';
 }
