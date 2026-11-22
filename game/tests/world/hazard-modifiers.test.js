@@ -9,6 +9,7 @@ import { resetState, state } from "../../js/core/state.js";
 import { Entity, TYPE } from "../../js/core/types.js";
 import { calculateDailyLedger, getBuildingEfficiency } from "../../js/systems/economy.js";
 import { updateConstruction } from "../../js/systems/construction.js";
+import { restoreEnvironmentalHazardState } from "../../js/systems/environmental-hazards.js";
 import { createMarketState, executeTrade } from "../../js/systems/market.js";
 import { spawnEntity } from "../../js/world/entities.js";
 import { generateResourceGeography, getResourceNodeAt } from "../../js/systems/resource-geography.js";
@@ -59,6 +60,28 @@ test("1.2.20 hazard multipliers are exactly neutral without an active hazard", (
     state.entities = [farm, new Entity(10, 11, TYPE.VILLAGER)];
     assert.equal(getBuildingEfficiency(farm, workforceFor(farm)), 0.5,
         "the existing production baseline must not move");
+});
+
+test("1.2.20 a quiet legacy save loads at exactly neutral", () => {
+    resetState();
+    restoreEnvironmentalHazardState({
+        active: [{
+            id: "coast-bundle", mechanic: "bundle:coast", label: "Coastal exposure",
+            category: "regional", spec: "1.2.20", severity: 0.8, startedYear: 1, effects: {}
+        }],
+        modifiers: {
+            diseaseRisk: 0.4, work: 0.9, movement: 0.9, needs: 0.9, morale: 0,
+            resistance: 0, adaptation: 0.2, medical: 0, trade: 0.9, extraction: 0.9, pasture: 0.9
+        }
+    });
+    const effects = getHazardSimulationEffects();
+    assert.equal(effects.foodDemand, 1);
+    assert.equal(effects.work, 1);
+    assert.equal(effects.movement, 1);
+    assert.equal(effects.extraction, 1);
+    assert.equal(effects.pasture, 1);
+    assert.equal(effects.tradeBuy, 1);
+    assert.equal(effects.tradeSell, 1);
 });
 
 test("1.2.20 an active hazard raises household food and water draw", () => {

@@ -45,7 +45,8 @@ them did not reach a single household, build site, caravan or herd.
 - **No save schema bump.** The modifier block already existed in schema 13; no
   new state was introduced. The regional bundle remains standing colour and does
   not enter the seasonal modifier average, so it cannot make calm seasons
-  permanently modified.
+  permanently modified. A legacy save with no rolled hazard loads with a neutral
+  block even if an older build had left regional values in it.
 - Tests prove calm factors are exactly neutral (ledger demand `3`, building
   efficiency `0.5`, construction `50`) while a hazard changes household demand,
   production, construction, extraction, pasture, caravan buy/sell and adaptation

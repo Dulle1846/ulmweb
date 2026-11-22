@@ -120,7 +120,9 @@ lordship's mood, and their people still fall ill.
 The state is stored under `environmentalHazards`, normalised on load and clamped
 against hostile input. Save schema 13 adds the field; a schema-12 realm loads
 with a quiet hazard state and receives its first season pass on the next season
-change.
+change. A saved realm with no rolled hazard loads with an exactly neutral
+modifier block, even if a build before the modifiers had consumers left values
+from the standing regional bundle in the save.
 
 ## Verification
 

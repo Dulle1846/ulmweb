@@ -963,6 +963,13 @@ export function serializeEnvironmentalHazardState() {
 
 export function restoreEnvironmentalHazardState(value) {
     invalidateHazardModifierCache();
-    state.environmentalHazards = normalizeEnvironmentalHazardState(value);
+    const restored = normalizeEnvironmentalHazardState(value);
+    // Saves written before modifiers had consumers could carry a non-zero block
+    // from the standing regional bundle alone. With no rolled hazard pressing,
+    // the realm must load at exactly neutral so a calm save keeps its baseline.
+    if (!restored.active.some(hazard => hazard.category !== "regional")) {
+        restored.modifiers = emptyModifiers();
+    }
+    state.environmentalHazards = restored;
     return state.environmentalHazards;
 }
