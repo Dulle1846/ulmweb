@@ -9,7 +9,7 @@
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import {
-    BIOME_CLIMATE_ENVELOPES, BIOME_CLIMATE_ZONES, BIOME_SEASONS,
+    BIOME_CLIMATE_ENVELOPES, BIOME_CLIMATE_ZONES, BIOME_HAZARD_MECHANICS, BIOME_SEASONS,
     BIOME_SEASONAL_APPEARANCE, BIOME_SEASONAL_TINTS, BIOME_SOIL_TYPES, BIOME_SYSTEM_REQUIREMENTS,
     BIOME_VARIANTS, CROSS_BIOME_VERSION, climateEnvelopeFor, climateZoneFor,
     seasonalAppearanceFor
@@ -220,7 +220,8 @@ function makeSystemState(region, seed, index) {
             grazing: 0, farming: 0, irrigation: 0, drainage: 0, reforestation: 0,
             restoration: 0, slashBurn: 0, mining: 0, settlement: 0, roads: 0, fields: 0
         },
-        lastActionYear: {}
+        lastActionYear: {},
+        lastHazard: null
     };
     const variant = chooseVariant(region, system, climate);
     system.variantId = variant.id;
@@ -309,10 +310,17 @@ function recentRegionChange(region) {
 
 function movementProfile(region, climate, soil, vegetation, snowCover) {
     const slope = terrainSlopeAt(region);
-    const factor = clamp(0.98 - slope * 0.28 - Math.max(0, region.water - 0.55) * 0.16
+    // Keep the raw terrain burden for diagnostics, then expose the bounded
+    // multiplier the route and carrier code actually applies. The old 0.30
+    // reading would have made a wet mountain pass 3.3x slower once it was
+    // multiplied into the existing terrain cost; the coupled route value is
+    // deliberately strong but still playable.
+    const terrainFactor = clamp(0.98 - slope * 0.28 - Math.max(0, region.water - 0.55) * 0.16
         - snowCover * 0.32 - (1 - soil.drainage) * 0.08 - vegetation * 0.07, 0.3, 1.05);
-    const label = factor > 0.86 ? "Open going" : factor > 0.68 ? "Soft ground" : factor > 0.5 ? "Difficult going" : "Impassable margins";
-    return { factor: round(factor, 2), label, slope: round(slope, 2) };
+    const factor = clamp(0.68 + terrainFactor * 0.38, 0.80, 1.06);
+    const label = factor > 0.98 ? "Open going" : factor > 0.90 ? "Soft ground"
+        : factor > 0.84 ? "Difficult going" : "Impassable margins";
+    return { factor: round(factor, 3), terrainFactor: round(terrainFactor, 3), label, slope: round(slope, 2) };
 }
 
 function hazardsFor(region, climate, system, soil, season) {
@@ -344,7 +352,10 @@ function hazardsFor(region, climate, system, soil, season) {
     ].filter(([, , severity]) => severity >= 0.28)
         .sort((a, b) => b[2] - a[2])
         .slice(0, 4)
-        .map(([id, label, severity]) => ({ id, label, severity: pct(severity) }));
+        .map(([id, label, severity]) => ({
+            id, label, severity: pct(severity),
+            mechanic: BIOME_HAZARD_MECHANICS[id] || "hazard:drought"
+        }));
     return rows;
 }
 
@@ -369,6 +380,150 @@ function recoveryFor(region, system) {
 
 function variantLabels(region) {
     return (BIOME_VARIANTS[region.rawBiome] || BIOME_VARIANTS.meadow).map(row => row.label);
+}
+
+const BIOME_HAZARD_LABELS = Object.freeze({
+    flood: "Flood", wildfire: "Wildfire", frost: "Frost", disease: "Disease",
+    erosion: "Erosion", drought: "Drought", salinity: "Salinity"
+});
+
+// The atlas is a 6x6 grid. This lookup is shared by route cost, farm yield and
+// the hazard bridge, so no second region index can drift from the atlas.
+export function getCrossBiomeRegionAt(x, y) {
+    const regions = state.biomeAtlas?.regions;
+    if (!regions?.length) return null;
+    const width = Math.max(1, Number(state.worldW) || 1);
+    const height = Math.max(1, Number(state.worldH) || 1);
+    const column = clamp(Math.floor(finite(x) / width * 6), 0, 5);
+    const row = clamp(Math.floor(finite(y) / height * 6), 0, 5);
+    return regions[row * 6 + column] || null;
+}
+
+const routeFactorCache = new Map();
+const farmFactorCache = new Map();
+const FACTOR_CACHE_LIMIT = 192;
+
+function factorKey(prefix, region, system) {
+    // worldEpoch changes on every reset/load, so a new realm can never read a
+    // factor cached for an older map with the same region id and season.
+    return [prefix, state.worldEpoch, state.worldSeed, region.id, state.year, state.seasonIndex,
+        Math.round(finite(region.water) * 100), Math.round(finite(region.vegetation) * 100),
+        Math.round(finite(region.soilHealth) * 100), Math.round(finite(region.erosion) * 100),
+        system?.soilType, Math.round(finite(system?.nutrients) * 100),
+        Math.round(finite(system?.salinity) * 100), Math.round(finite(system?.compaction) * 100),
+        Math.round(finite(system?.legacy) * 100)].join("|");
+}
+
+function readCached(cache, key, compute) {
+    if (cache.has(key)) return cache.get(key);
+    const value = compute();
+    if (cache.size >= FACTOR_CACHE_LIMIT) cache.clear();
+    cache.set(key, value);
+    return value;
+}
+
+function snowCoverFor(region, climate) {
+    return clamp((2 - climate.tempC) / 12 + (seasonIndex() === 3 ? 0.25 : 0)
+        + (1 - climate.insolation) * 0.12, 0, 1);
+}
+
+// The exact multiplier consumed by getRouteMovementFactorAt and the logistics
+// carrier loop. It is cached by year, season and the saved regional fields, so
+// a carrier reading it every frame is a Map hit, not a terrain scan.
+export function getCrossBiomeMovementFactorAt(x, y) {
+    const region = getCrossBiomeRegionAt(x, y);
+    if (!region) return 1;
+    const system = systemFor(region);
+    const key = factorKey("move", region, system);
+    return readCached(routeFactorCache, key, () => {
+        const climate = initialClimate(region, system.seed || state.worldSeed || 1, state.seasonIndex);
+        const soil = BIOME_SOIL_TYPES[system.soilType] || BIOME_SOIL_TYPES.loam;
+        return movementProfile(region, climate, soil, region.vegetation, snowCoverFor(region, climate)).factor;
+    });
+}
+
+function farmSuitabilityFor(climate, system, snowCover, slope) {
+    return clamp(climate.tempSuitability * 0.28 + climate.precipSuitability * 0.2
+        + system.nutrients * 0.22 + system.waterCapacity * 0.1 + (1 - system.salinity) * 0.12
+        + (1 - system.compaction) * 0.08 + climate.insolation * 0.1 - slope * 0.1
+        - system.legacy * 0.08 - clamp((6 - climate.tempC) / 28, 0, 0.32)
+        - snowCover * 0.12, 0, 1);
+}
+
+function farmYieldFactorFor(suitability) {
+    return round(clamp(0.80 + clamp(suitability, 0, 1) * 0.32, 0.84, 1.14), 3);
+}
+
+// The exact multiplier the seasonal field harvest applies. A dry, compacted,
+// saline or cold region yields less than a deep, moist, warm one, and the
+// panel prints this same value instead of only the abstract suitability score.
+export function getCrossBiomeFarmYieldFactorAt(x, y) {
+    const region = getCrossBiomeRegionAt(x, y);
+    if (!region) return 1;
+    const system = systemFor(region);
+    const key = factorKey("farm", region, system);
+    return readCached(farmFactorCache, key, () => {
+        const climate = initialClimate(region, system.seed || state.worldSeed || 1, state.seasonIndex);
+        const soil = BIOME_SOIL_TYPES[system.soilType] || BIOME_SOIL_TYPES.loam;
+        const slope = terrainSlopeAt(region);
+        const snow = snowCoverFor(region, climate);
+        return farmYieldFactorFor(farmSuitabilityFor(climate, system, snow, slope));
+    });
+}
+
+// A regional hazard shock. This is called only by the existing 1.2.15 hazard
+// pass (or its test seam), never by a frame loop. It changes the same saved
+// region fields the annual ecology and resource systems already read.
+const BIOME_HAZARD_EFFECTS = Object.freeze({
+    flood: {
+        region: { water: 0.05, erosion: 0.01, vegetation: -0.01 },
+        system: { groundwater: 0.04, waterQuality: -0.02, soilLife: -0.005 }
+    },
+    wildfire: {
+        region: { water: -0.02, vegetation: -0.06, erosion: 0.03, clearCut: 0.02 },
+        system: { soilLife: -0.02, legacy: 0.015, pollution: 0.01 }
+    },
+    frost: {
+        region: { vegetation: -0.03 },
+        system: { soilLife: -0.015, humus: -0.005 }
+    },
+    disease: {
+        region: { diseasePressure: 0.05 },
+        system: { waterQuality: -0.03, soilLife: -0.005 }
+    },
+    erosion: {
+        region: { erosion: 0.04, vegetation: -0.01 },
+        system: { nutrients: -0.015, soilLife: -0.01 }
+    },
+    drought: {
+        region: { water: -0.05, vegetation: -0.02 },
+        system: { groundwater: -0.03, salinity: 0.015 }
+    },
+    salinity: {
+        region: { vegetation: -0.01 },
+        system: { salinity: 0.04, nutrients: -0.015 }
+    }
+});
+
+export function applyCrossBiomeHazard(region, hazardId, severity = 0.5) {
+    const system = systemFor(region);
+    if (!system || !BIOME_HAZARD_EFFECTS[hazardId]) return null;
+    const amount = clamp(finite(severity, 0.5), 0, 1);
+    const definition = BIOME_HAZARD_EFFECTS[hazardId];
+    for (const [key, delta] of Object.entries(definition.region || {})) {
+        region[key] = clamp(finite(region[key]) + delta * amount, key === "water" ? 0.02 : 0, 1);
+    }
+    for (const [key, delta] of Object.entries(definition.system || {})) {
+        system[key] = clamp(finite(system[key]) + delta * amount, 0, 1);
+    }
+    system.lastHazard = {
+        id: hazardId,
+        label: BIOME_HAZARD_LABELS[hazardId] || hazardId,
+        year: Number(state.year) || 1,
+        season: seasonIndex(),
+        severity: round(amount, 3)
+    };
+    return { regionId: region.id, hazardId, severity: round(amount, 3), label: system.lastHazard.label };
 }
 
 // Cheap, allocation-light overlay data used by the biome map layer. It reads
@@ -414,11 +569,8 @@ export function getCrossBiomeProfile(region) {
     const floodplain = clamp((1 - clamp((finite(sample.height, 0.5) - finite(state.seaLevel, 0.33)) / 0.3, 0, 1))
         * 0.6 + region.water * 0.25 + Math.min(0.16, system.hydrology.riverTiles / 80)
         + system.hydrology.lakeShare / 500, 0, 1);
-    const farmBase = clamp(climate.tempSuitability * 0.28 + climate.precipSuitability * 0.2
-        + system.nutrients * 0.22 + system.waterCapacity * 0.1 + (1 - system.salinity) * 0.12
-        + (1 - system.compaction) * 0.08 + climate.insolation * 0.1 - slope * 0.1
-        - system.legacy * 0.08 - clamp((6 - climate.tempC) / 28, 0, 0.32)
-        - snowCover * 0.12, 0, 1);
+    const farmBase = farmSuitabilityFor(climate, system, snowCover, slope);
+    const agricultureFactor = farmYieldFactorFor(farmBase);
     const farmSeason = clamp(farmBase * seasonInfo.farmFactor, 0, 1);
     const plantGrowth = clamp(climate.tempSuitability * 0.24 + climate.precipSuitability * 0.22
         + climate.humidity * 0.12 + climate.insolation * 0.12 + system.nutrients * 0.15
@@ -535,9 +687,9 @@ export function getCrossBiomeProfile(region) {
         "display-resources": { value: resources.length ? resources.join(" · ") : "none in season", detail: "typical local production" },
         "display-fauna": { value: fauna.length ? fauna.join(" · ") : "none recorded", detail: "most visible animal populations" },
         "display-climate": { value: climate.tempC.toFixed(1) + " °C · " + climate.precip + " mm", detail: precipitationLabel + " · humidity " + pct(climate.humidity) + "%" },
-        "display-hazards": { value: hazards.length ? hazards.map(row => row.label).join(" · ") : "none pressing", detail: seasonInfo.hazard },
-        "display-agriculture": { value: pct(farmBase) + "%", detail: "seasonal " + pct(farmSeason) + "% · limit " + farmLimit[0] },
-        "display-movement": { value: movement.factor.toFixed(2) + "×", detail: movement.label },
+        "display-hazards": { value: hazards.length ? hazards.map(row => row.label).join(" · ") : "none pressing", detail: seasonInfo.hazard + (system.lastHazard ? " · last " + system.lastHazard.label + " " + system.lastHazard.severity.toFixed(2) : " · no regional event yet") },
+        "display-agriculture": { value: pct(farmBase) + "%", detail: "harvest ×" + agricultureFactor.toFixed(2) + " · seasonal " + pct(farmSeason) + "% · limit " + farmLimit[0] },
+        "display-movement": { value: movement.factor.toFixed(2) + "×", detail: movement.label + " · route/caravan multiplier" },
         "display-changes": { value: "trend " + (region.ecologyTrend >= 0 ? "+" : "") + round(region.ecologyTrend * 100, 1) + "%", detail: ecologicalChanges }
     };
     const requirements = BIOME_SYSTEM_REQUIREMENTS.map(requirement => ({
@@ -554,6 +706,7 @@ export function getCrossBiomeProfile(region) {
         relatedBiomes: [...zone.biomes],
         variant: system.variantLabel,
         variants: variantLabels(region),
+        lastHazard: system.lastHazard || null,
         climate: {
             tempC: climate.tempC, tempRange: [...climate.envelope.temp],
             precipitation: climate.precip, precipitationRange: [...climate.envelope.precip],
@@ -586,8 +739,10 @@ export function getCrossBiomeProfile(region) {
         },
         ecology: {
             plantGrowth: pct(plantGrowth), animalHabitat: pct(animalHabitat),
-            agriculture: pct(farmBase), movement: movement.factor, movementLabel: movement.label,
-            hazards, trend: round(region.ecologyTrend * 100, 1), change: ecologicalChanges
+            agriculture: pct(farmBase), agricultureFactor, movement: movement.factor,
+            movementLabel: movement.label, movementTerrain: movement.terrainFactor,
+            hazards, lastHazard: system.lastHazard || null,
+            trend: round(region.ecologyTrend * 100, 1), change: ecologicalChanges
         },
         landUse: {
             clearing: pct(region.clearCut), afforestation: pct(system.landUse.reforestation),
@@ -791,7 +946,8 @@ export function serializeCrossBiomeState(system) {
             lakeShare: clamp(Math.round(finite(system.hydrology?.lakeShare)), 0, 100)
         },
         landUse: Object.fromEntries(Object.entries(system.landUse || {}).map(([key, value]) => [key, round(value, 3)])),
-        lastActionYear: { ...(system.lastActionYear || {}) }
+        lastActionYear: { ...(system.lastActionYear || {}) },
+        lastHazard: system.lastHazard ? { ...system.lastHazard } : null
     };
 }
 
@@ -819,6 +975,14 @@ export function validateCrossBiomeState(saved) {
     }
     if (saved.lastActionYear !== undefined && (!saved.lastActionYear || typeof saved.lastActionYear !== "object" || Array.isArray(saved.lastActionYear))) {
         throw new Error("Save data contains an invalid biome action ledger.");
+    }
+    if (saved.lastHazard !== undefined && saved.lastHazard !== null) {
+        if (!saved.lastHazard || typeof saved.lastHazard !== "object" || Array.isArray(saved.lastHazard)) {
+            throw new Error("Save data contains an invalid biome hazard record.");
+        }
+        if (saved.lastHazard.severity !== undefined && (!Number.isFinite(Number(saved.lastHazard.severity)) || Number(saved.lastHazard.severity) < 0 || Number(saved.lastHazard.severity) > 1)) {
+            throw new Error("Save data contains an invalid biome hazard severity.");
+        }
     }
     return true;
 }
@@ -850,6 +1014,15 @@ export function normalizeCrossBiomeState(saved, region, seed) {
         for (const [key, value] of Object.entries(saved.lastActionYear)) {
             if (["slashBurn"].includes(key)) system.lastActionYear[key] = clamp(Math.round(finite(value, 0)), 0, 1000000);
         }
+    }
+    if (saved.lastHazard && typeof saved.lastHazard === "object" && !Array.isArray(saved.lastHazard)) {
+        system.lastHazard = {
+            id: String(saved.lastHazard.id || "drought").slice(0, 24),
+            label: String(saved.lastHazard.label || "Drought").slice(0, 48),
+            year: clamp(Math.round(finite(saved.lastHazard.year, 1)), 1, 1000000),
+            season: clamp(Math.round(finite(saved.lastHazard.season, 0)), 0, 3),
+            severity: clamp(finite(saved.lastHazard.severity, 0.5), 0, 1)
+        };
     }
     return system;
 }

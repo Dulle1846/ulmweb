@@ -11,6 +11,7 @@ import { getBuildingEfficiency, getWorkforceSnapshot } from "./economy.js";
 import { ECONOMY_TUNING, getHarvestYieldFactor } from "./economy-cycle.js";
 import { transitionGameplayAt } from "../world/transition-biomes.js";
 import { vegetationDensityAt } from "../world/vegetation-density.js";
+import { getCrossBiomeFarmYieldFactorAt } from "./cross-biome-state.js";
 
 export const FIELD_STAGES = Object.freeze(["fallow", "sown", "growing", "ripe", "harvested"]);
 export const FIELD_LABELS = Object.freeze({
@@ -168,7 +169,12 @@ export function ecotoneHarvestFactor(farm) {
     // The effect is deliberately small so the realm economy stays stable.
     const vegetation = vegetationDensityAt(Number(farm.x) + 0.5, Number(farm.y) + 0.5);
     const densityFactor = 0.995 + vegetation.agriculture * 0.01;
-    return Math.max(0.75, Math.min(1.30, (1 + (Number(gameplay?.farm) || 0)) * densityFactor));
+    // 1.2.21: the survey's agricultural suitability now changes the actual
+    // harvest. This is the same cached multiplier the biome panel reports, so
+    // a farm cannot display one value and harvest another.
+    const biomeYield = getCrossBiomeFarmYieldFactorAt(Number(farm.x) + 0.5, Number(farm.y) + 0.5);
+    return Math.max(0.70, Math.min(1.40,
+        (1 + (Number(gameplay?.farm) || 0)) * densityFactor * biomeYield));
 }
 
 function recoverSoil(field, amount) {

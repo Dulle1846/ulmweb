@@ -1,8 +1,8 @@
 # Cross-Biome Systems (1.2.21)
 
-**Status:** implemented in 3.44.0 and visually accepted in 3.44.1. The layer
-is a reader and a slow annual writer over the existing 6×6 biome atlas from
-1.2.19; it is not a second world simulation.
+**Status:** implemented in 3.44.0, visually accepted in 3.44.1 and coupled to
+the world in 3.45.0. The layer is a reader and a slow annual writer over the
+existing 6×6 biome atlas from 1.2.19; it is not a second world simulation.
 
 ## What the player sees
 
@@ -42,6 +42,46 @@ after it. The atlas legend names the current season and states this paint order.
 The tint is one fill per discovered region, not a per-tile pass. Changing the
 season changes only the lookup and the next frame's 36 region fills.
 
+## World coupling (3.45.0)
+
+The ten readouts are not a separate dashboard. The three values that a player
+can feel are consumed by the existing simulation:
+
+- **Movement.** `getCrossBiomeMovementFactorAt(x, y)` returns the same bounded
+  multiplier the panel prints, normalised to 0.80–1.06. It is multiplied into
+  `getRouteMovementFactorAt` (expeditions) and into the carrier speed in
+  `updateLogisticsMovement` (physical goods hauling). The raw terrain burden is
+  kept as a diagnostic, but the route/caravan value is capped so a wet mountain
+  pass is difficult, not impassable.
+- **Agriculture.** `getCrossBiomeFarmYieldFactorAt(x, y)` returns 0.84–1.14 from
+  temperature, rainfall, nutrients, water capacity, salinity, compaction,
+  insolation, slope, legacy and frost. `ecotoneHarvestFactor` multiplies it into
+  the real `pendingHarvest`/`harvestTotal` of every existing farm. The panel
+  badge, readout detail and harvested grain therefore come from one value.
+- **Seasonal danger.** A region's listed hazards use the existing 1.2.15
+  catalogue, not a parallel system. `triggerBiomeHazard` selects the catalogue
+  row, calls the same `applyHazard` path and filters field damage and building
+  destruction to that region. The seasonal hazard pass matures at most one
+  displayed regional danger per season (35% chance), and only if the region is
+  discovered and the danger is currently in its profile.
+
+| Regional danger | Existing 1.2.15 mechanic | Coupled regional state |
+| --- | --- | --- |
+| Flood | `hazard:flood` | surface water +, groundwater +, erosion +, water quality − |
+| Wildfire | `hazard:heatwave` | vegetation −, erosion +, soil life −, legacy/pollution + |
+| Frost | `hazard:frost` | vegetation −, soil life −, humus − |
+| Disease | `hazard:water-disease` | disease pressure +, water quality − |
+| Erosion | `hazard:landslide` | erosion +, nutrients −, soil life − |
+| Drought | `hazard:drought` | surface/groundwater −, salinity + |
+| Salinity | `hazard:drought` | salinity +, nutrients − |
+
+The active hazard keeps `source: "biome"`, `regionId` and `regionName`, so the
+hazard panel can distinguish a regional survey event from a realm-wide one. A
+last-struck record (`lastHazard`) is serialized with the region system; older
+saves normalise it to `null` without a schema bump. All factor reads are cached
+by year, season and the saved regional fields, and the hazard bridge runs only
+on the existing seasonal pass. No per-frame or per-tile scan was added.
+
 ## Player-view visual acceptance
 
 `npm run test:biome-seasonal` is the real-Chromium reference. It found and now
@@ -56,7 +96,10 @@ measures the issues fixed in 3.44.1:
 - after a paid action the same region, open ledger, scroll position and action
   focus are restored, and the new irrigation value is visible immediately;
 - the live seasonal legend and a 36/36 tinted-region count;
-- zero page errors and zero console errors.
+- zero page errors and zero console errors;
+- the WORLD EFFECT badges are read back against the live module profile: route
+  multiplier, harvest multiplier and the named hazard must match the simulation,
+  and the movement readout must print the same multiplier.
 
 The companion `npm run test:biome-ui` still proves save/reload continuity for
 stocks, fauna, crafted goods, market quotes and the whole serialized ecology

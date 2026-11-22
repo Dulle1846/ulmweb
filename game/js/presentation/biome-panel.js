@@ -93,8 +93,16 @@ function systemsSection(region) {
             : id === "63" ? "hazards" : id === "64" ? "agriculture" : id === "65" ? "movement" : "changes";
         return '<span data-biome-requirement="1.2.21.' + id + '"><small>' + label + '</small><strong>' + esc(systems.display[key]) + '</strong></span>';
     }).join("");
+    const topHazard = systems.ecology.hazards[0];
+    const lastHazard = systems.ecology.lastHazard;
     return '<div class="command-section-title">BIOME SYSTEM · ' + esc(systems.zone.toUpperCase()) + ' · ' + esc(systems.variant.toUpperCase()) + '</div>' +
         '<div class="biome-chip-line"><small>CLIMATE ENVELOPE</small><span class="biome-badge">' + esc(systems.climate.tempC + ' °C · ' + systems.climate.precipitation + ' mm') + '</span><span class="biome-badge">' + esc(systems.climate.label.toUpperCase()) + '</span><span class="biome-badge">HUMIDITY ' + systems.climate.humidity + '%</span><span class="biome-badge">SUN ' + systems.climate.insolation + '%</span><span class="biome-badge">WIND ' + systems.climate.wind + '%</span><span class="biome-badge">' + systems.climate.elevationM + ' M</span></div>' +
+        '<div class="biome-chip-line" data-biome-coupling="1.2.21"><small>WORLD EFFECT</small>' +
+        '<span class="biome-badge" data-biome-world-effect="movement" data-biome-world-value="' + esc(systems.ecology.movement.toFixed(2)) + '">ROUTE ×' + esc(systems.ecology.movement.toFixed(2)) + '</span>' +
+        '<span class="biome-badge" data-biome-world-effect="agriculture" data-biome-world-value="' + esc(systems.ecology.agricultureFactor.toFixed(2)) + '">HARVEST ×' + esc(systems.ecology.agricultureFactor.toFixed(2)) + '</span>' +
+        '<span class="biome-badge" data-biome-world-effect="hazard" data-biome-world-value="' + esc(topHazard?.id || "none") + '">HAZARD ' + esc(topHazard?.label?.toUpperCase() || "NONE PRESSING") + '</span>' +
+        (lastHazard ? '<span class="biome-badge" data-biome-world-effect="last-hazard" data-biome-world-value="' + esc(lastHazard.id) + '">LAST ' + esc(lastHazard.label.toUpperCase()) + ' · ' + esc(lastHazard.year) + '</span>' : '') +
+        '</div>' +
         '<div class="biome-system-readout">' + readout + '</div>' +
         '<div class="hazard-work-grid">' +
         systemMeter("SOIL NUTRIENTS", systems.soil.nutrients, "1.2.21.10") +

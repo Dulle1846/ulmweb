@@ -35,6 +35,9 @@ import {
 } from "./hazard-response.js";
 import { rareChainFor } from "../world/hazard-expansion-data.js";
 import { getClimateDrift } from "./climate-drift.js";
+import {
+    applyCrossBiomeHazard, getCrossBiomeProfile, getCrossBiomeRegionAt
+} from "./cross-biome-state.js";
 import { damageHazardHerds } from "./forest-fauna.js";
 import {
     HAZARD_EFFECT_PRIMITIVE, HAZARD_WORK_FIELD, isHazardProofNeutralized
@@ -219,7 +222,12 @@ function normalizeActive(entry) {
         spec: String(entry.spec || row?.spec || "").slice(0, 16),
         severity: clamp01(entry.severity),
         startedYear: positive(entry.startedYear),
-        effects: {}
+        effects: {},
+        ...(entry.source ? { source: String(entry.source).slice(0, 16) } : {}),
+        ...(entry.regionId ? {
+            regionId: String(entry.regionId).slice(0, 32),
+            regionName: String(entry.regionName || entry.regionId).slice(0, 60)
+        } : {})
     };
 }
 
@@ -608,11 +616,15 @@ function addHistory(entry, kind, text) {
     if (entry.history.length > HAZARD_LIMITS.maxHistory) entry.history.splice(0, entry.history.length - HAZARD_LIMITS.maxHistory);
 }
 
-function damageFields(entry, amount, reason) {
+function damageFields(entry, amount, reason, regionId = null) {
     let damaged = 0;
     for (const entity of state.entities || []) {
         if (damaged >= HAZARD_LIMITS.maxFieldsPerPass) break;
         if (!entity || entity.dead || entity.type !== TYPE.FARM || !entity.field) continue;
+        // A 1.2.21 regional hazard damages the farms the player can see on
+        // that region's survey, not every field in the realm. Global 1.2.15
+        // events still omit the filter and retain their old reach.
+        if (regionId && getCrossBiomeRegionAt(entity.x, entity.y)?.id !== regionId) continue;
         const field = entity.field;
         const growth = Number(field.growth) || 0;
         if (growth <= 0 && field.stage === "fallow") continue;
@@ -629,9 +641,13 @@ function damageFields(entry, amount, reason) {
 // targets. The same hazard always picks the same victim for a given seed.
 const HAZARD_PROTECTED_TYPES = new Set([TYPE.KEEP, TYPE.WONDER, TYPE.COURT, TYPE.PRISON]);
 
-function destroyHazardTarget(mechanic) {
-    const candidates = (state.entities || []).filter(entity => isBuilding(entity)
+function destroyHazardTarget(mechanic, regionId = null) {
+    let candidates = (state.entities || []).filter(entity => isBuilding(entity)
         && !entity.dead && !HAZARD_PROTECTED_TYPES.has(entity.type));
+    if (regionId) {
+        candidates = candidates.filter(entity => getCrossBiomeRegionAt(entity.x, entity.y)?.id === regionId);
+        if (!candidates.length) return null;
+    }
     const building = candidates.length
         ? candidates[Math.floor(hazardRoll(mechanic + ":destroy") * candidates.length)]
         : null;
@@ -795,7 +811,8 @@ function applyHazard(entry, row, severity, budget = {}) {
         const firebreakRelief = 1 - Math.min(0.5, countBuildings(TYPE.FIREBREAK) * 0.14);
         const reliefRelief = reliefReady ? 0.55 : 1;
         const damaged = damageFields(entry,
-            effects.field * scale * firebreakRelief * reliefRelief * exposureRelief.field, row.label);
+            effects.field * scale * firebreakRelief * reliefRelief * exposureRelief.field,
+            row.label, row.regionId || null);
         if (damaged > 0) {
             if (reliefReady && !budget.relief) {
                 budget.relief = true;
@@ -840,7 +857,7 @@ function applyHazard(entry, row, severity, budget = {}) {
                 - crews.rescue * 0.035 - crews.equipment * 0.025 - (evacuated ? 0.2 : 0)
                 - (reliefReady ? 0.08 : 0))) {
         budget.destroyed = true;
-        const destroyed = destroyHazardTarget(row.mechanic);
+        const destroyed = destroyHazardTarget(row.mechanic, row.regionId || null);
         if (destroyed) {
             recordLoss(entry, destroyed.kind === "road" ? "roads" : "buildings", 1);
             const claim = destroyed.kind === "building" ? payHazardInsurance(entry, 12) : 0;
@@ -881,6 +898,80 @@ function applyMagic(row, severity, entry = ensureHazardState()) {
     };
     const apply = drifts[row.mechanic];
     if (apply) apply();
+}
+
+export const BIOME_HAZARD_LIMITS = Object.freeze({ perSeason: 1, chance: 0.35 });
+
+// The 1.2.21 bridge. A survey value becomes an event only if the existing
+// catalogue has a matching mechanic and the region's own seasonal profile says
+// the danger is possible now. The panel and the world therefore cannot
+// disagree: a hazard that is not on the region's list cannot be triggered.
+export function triggerBiomeHazard(regionId, hazardId = null, { severity = null, entry = null } = {}) {
+    const target = entry || ensureHazardState();
+    const region = (state.biomeAtlas?.regions || []).find(row => row.id === String(regionId));
+    if (!region) return { ok: false, reason: "unknown-region" };
+    if (!region.discovered) return { ok: false, reason: "undiscovered-region" };
+    const profile = getCrossBiomeProfile(region);
+    const hazard = profile.ecology.hazards.find(row => row.id === hazardId)
+        || (hazardId ? null : profile.ecology.hazards[0]);
+    if (!hazard) return { ok: false, reason: "hazard-not-possible" };
+    const row = HAZARD_CATALOG.find(item => item.mechanic === hazard.mechanic);
+    if (!row) return { ok: false, reason: "no-catalogue-mechanic" };
+
+    target.response = normalizeHazardResponse(target.response);
+    target.partners = normalizeHazardPartners(target.partners);
+    target.scars = normalizeHazardScars(target.scars);
+    target.mitigation = target.mitigation || getHazardMitigation();
+    target.modifiers = target.modifiers || emptyModifiers();
+    target.warnings = Array.isArray(target.warnings) ? target.warnings : [];
+    target.active = Array.isArray(target.active) ? target.active : [];
+    const amount = clamp01(severity ?? hazard.severity / 100);
+    const active = {
+        id: "biome-" + region.id + "-" + hazard.id,
+        mechanic: row.mechanic,
+        label: hazard.label + " · " + region.name,
+        category: row.category,
+        spec: row.spec,
+        severity: amount,
+        startedYear: state.year,
+        effects: HAZARD_EFFECTS[row.mechanic] || {},
+        source: "biome",
+        regionId: region.id,
+        regionName: region.name
+    };
+    target.active = [...target.active.filter(item => !(item.source === "biome" && item.regionId === region.id)), active]
+        .slice(0, HAZARD_LIMITS.maxActive);
+    target.warnings.push(active.label.toUpperCase() + " · " + Math.round(amount * 100) + "%");
+    const budget = { casualty: false, outbreak: false, destroyed: false, food: 0, morale: 0 };
+    const text = applyHazard(target, { ...row, regionId: region.id }, amount, budget);
+    const regional = applyCrossBiomeHazard(region, hazard.id, amount);
+    const line = active.label.toUpperCase() + (text ? " · " + text : "")
+        + (regional ? " · BIOME " + regional.label.toUpperCase() : "");
+    addLog(line, row.category === "disease" ? "#c48a8a" : row.category === "geology" ? "#c9a27a" : "#8ab4c9", "hazard");
+    addHistory(target, "biome", line);
+    invalidateHazardModifierCache();
+    state.environmentalHazards = target;
+    return { ok: true, active, text, line, regional, regionId: region.id };
+}
+
+function applyBiomeHazardsForSeason(entry) {
+    const regions = state.biomeAtlas?.regions;
+    if (!Array.isArray(regions) || !regions.length) return [];
+    if (hazardRoll("biome-season:" + state.year + ":" + state.seasonIndex) > BIOME_HAZARD_LIMITS.chance) return [];
+    const known = regions.filter(region => region.discovered);
+    if (!known.length) return [];
+    const offset = Math.floor(hazardRoll("biome-region:" + state.year + ":" + state.seasonIndex) * known.length);
+    for (let step = 0; step < known.length; step++) {
+        const region = known[(offset + step) % known.length];
+        const profile = getCrossBiomeProfile(region);
+        const hazard = profile.ecology.hazards[0];
+        if (!hazard) continue;
+        const result = triggerBiomeHazard(region.id, hazard.id, {
+            severity: hazard.severity / 100, entry
+        });
+        if (result.ok) return [result.line];
+    }
+    return [];
 }
 
 /**
@@ -946,6 +1037,13 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
             });
         }
     }
+
+    // 1.2.21: at most one regional survey danger can mature into a real event
+    // per season. It uses the same catalogue row and the same applyHazard pass
+    // as a realm-wide hazard; only its field/destruction reach is filtered to
+    // the region whose panel showed the danger.
+    const biomeEvents = applyBiomeHazardsForSeason(entry);
+    if (biomeEvents.length) events.push(...biomeEvents);
 
     // A climate can name its regional bundle in addition to the rolled hazards;
     // the cap is enforced after both so the panel and the state never exceed it.

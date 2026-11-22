@@ -16,6 +16,7 @@ import { getRoadSpeedMultiplier } from "./roads.js";
 import { GOOD_KEYS, GOODS, CITY_VERSION, NEW_BUILDING_TYPES, RECIPES, WAREHOUSE_PROFILES, WAREHOUSE_PROFILE_IDS } from "./city-config.js";
 import { GOODS_LEDGER_LIMIT, ensureGoodsBook, findGoodsMovementByKey, recordGoodsMovement, setAuditOpening, readAuditTotals, recordResourceMovement } from "./goods-book.js";
 import { getHazardCaravanMovementFactor } from "./hazard-modifiers.js";
+import { getCrossBiomeMovementFactorAt } from "./cross-biome-state.js";
 export { recordResourceMovement };
 
 export const WAREHOUSE_CAPACITY = Object.freeze({ [TYPE.KEEP]: 320, [TYPE.WAREHOUSE]: 180 });
@@ -1314,8 +1315,13 @@ export function updateLogisticsMovement(deltaSeconds) {
                 continue;
             }
         }
+        // A caravan pays the same regional going as an expedition. The helper
+        // is a cached scalar, so ten carriers do not turn this into a terrain
+        // scan on every frame.
+        const biomeMovement = getCrossBiomeMovementFactorAt(carrier.x, carrier.y);
         let remaining = carrier.speed * getRoadSpeedMultiplier(carrier.x, carrier.y)
-            * getForestMovementFactorAt(carrier.x, carrier.y) * hazardMovement * deltaSeconds;
+            * getForestMovementFactorAt(carrier.x, carrier.y) * biomeMovement
+            * hazardMovement * deltaSeconds;
         while (remaining > 0 && carrier.pathIndex < carrier.path.length) {
             const node = carrier.path[carrier.pathIndex];
             const dx = node.x - carrier.x, dy = node.y - carrier.y, distance = Math.hypot(dx, dy);

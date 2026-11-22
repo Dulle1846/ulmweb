@@ -14,6 +14,7 @@ import { volcanoProfileAt } from "../world/volcano-ecology.js";
 import { snowProfileAt } from "../world/snow-ecology.js";
 import { transitionMovementFactorAt } from "../world/transition-biomes.js";
 import { vegetationMovementFactorAt } from "../world/vegetation-density.js";
+import { getCrossBiomeMovementFactorAt } from "./cross-biome-state.js";
 
 const VERSION=1;
 
@@ -575,7 +576,11 @@ export function getRouteMovementFactorAt(x, y) {
     // small additional multiplier, so household errands and the long campaign
     // remain stable.
     const vegetation = vegetationMovementFactorAt(x, y);
-    return clamp(base * transition * vegetation, 0.25, 1.08);
+    // 1.2.21: the regional survey's movement multiplier is the same number
+    // the biome panel prints. It is cached by year/season/region state, so an
+    // expedition path read does not scan terrain per tile.
+    const biome = getCrossBiomeMovementFactorAt(x, y);
+    return clamp(base * transition * vegetation * biome, 0.2, 1.08);
 }
 
 // Combat and tactical travel ask for the compact jungle navigation profile.

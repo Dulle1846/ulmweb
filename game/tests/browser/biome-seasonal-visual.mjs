@@ -249,6 +249,48 @@ try {
     await page.waitForTimeout(250);
     await shot("panel-system-readout");
 
+    // The player must be able to trust that the panel's movement, harvest and
+    // danger badges are the same values the simulation just computed. This is
+    // not a canvas-only check: it reads the live module profile behind the DOM.
+    const coupling = await page.evaluate(async regionId => {
+        const { state } = await import("./js/core/state.js");
+        const { getCrossBiomeProfile } = await import("./js/systems/cross-biome-state.js");
+        const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
+        const profile = getCrossBiomeProfile(region);
+        const node = document.querySelector('[data-biome-region="' + regionId + '"]');
+        const badge = key => node?.querySelector('[data-biome-world-effect="' + key + '"]');
+        const readout = id => node?.querySelector('[data-biome-requirement="1.2.21.' + id + '"]');
+        const details = id => [...(node?.querySelectorAll('[data-biome-requirement="1.2.21.' + id + '"] small') || [])]
+            .map(entry => entry.textContent || "");
+        return {
+            panelMovement: badge("movement")?.dataset.biomeWorldValue || null,
+            panelHarvest: badge("agriculture")?.dataset.biomeWorldValue || null,
+            panelHazard: badge("hazard")?.dataset.biomeWorldValue || null,
+            worldMovement: profile.ecology.movement,
+            worldHarvest: profile.ecology.agricultureFactor,
+            worldHazard: profile.ecology.hazards[0]?.id || "none",
+            movementReadout: readout("65")?.querySelector("strong")?.textContent || "",
+            agricultureReadout: details("64").find(text => /harvest/i.test(text)) || "",
+            hazardReadout: readout("63")?.querySelector("strong")?.textContent || "",
+            lastHazard: profile.ecology.lastHazard || null
+        };
+    }, panelRegionId);
+    console.log("COUPLING " + JSON.stringify(coupling));
+    assert.equal(coupling.panelMovement, coupling.worldMovement.toFixed(2),
+        "the panel movement badge must equal the route/caravan multiplier");
+    assert.equal(coupling.panelHarvest, coupling.worldHarvest.toFixed(2),
+        "the panel harvest badge must equal the field-yield multiplier");
+    assert.equal(coupling.panelHazard, coupling.worldHazard,
+        "the panel danger badge must name the hazard the world can actually roll");
+    assert.match(coupling.agricultureReadout, /harvest ×/,
+        "the agricultural readout must explain the real harvest coupling");
+    assert.ok(coupling.movementReadout.includes(coupling.panelMovement + "×"),
+        "the movement readout must show the same multiplier as the badge");
+    if (coupling.lastHazard) {
+        assert.match(coupling.hazardReadout, new RegExp(coupling.lastHazard.label, "i"),
+            "a struck region must name its last regional hazard");
+    }
+
     const ledger = page.locator('[data-biome-region="' + panelRegionId + '"] .biome-system-ledger');
     await ledger.locator("summary").click();
     await page.waitForTimeout(250);

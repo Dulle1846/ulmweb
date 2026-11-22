@@ -774,8 +774,11 @@ function buildManifestSection(def, module) {
         key: entry.key || "",
         group: entry.group || "",
         status: "implemented",
-        docEvidence: ""
+        docEvidence: "",
+        evidence: entry.evidence || [],
+        tests: entry.tests || []
     }));
+    const coupled = points.filter(point => point.tests.length > 0).length;
     return section(def.id, def.title, points, {
         consumers: def.consumers,
         tests: def.tests,
@@ -783,7 +786,7 @@ function buildManifestSection(def, module) {
         probeFunction: def.profile,
         probeClimate: def.climate,
         probeExtra: def.probeExtra,
-        note: `${manifest.length} runtime requirements from ${def.manifest}.`
+        note: `${manifest.length} runtime requirements from ${def.manifest}; ${coupled} carry point-specific coupling tests.`
     });
 }
 

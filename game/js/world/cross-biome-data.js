@@ -189,6 +189,19 @@ export const BIOME_SEASONAL_APPEARANCE = freeze({
     "dense-forest": freeze(["orchid flush and canopy gap", "humid green cathedral and fruit", "heavy mast and mist", "saturated shade and evergreen dark"])
 });
 
+// 1.2.21 regional dangers are descriptions of the same weather, geology and
+// disease events the 1.2.15 hazard pass already rolls. This is the single
+// bridge; a regional hazard cannot name a mechanic the realm cannot produce.
+export const BIOME_HAZARD_MECHANICS = freeze({
+    flood: "hazard:flood",
+    wildfire: "hazard:heatwave",
+    frost: "hazard:frost",
+    disease: "hazard:water-disease",
+    erosion: "hazard:landslide",
+    drought: "hazard:drought",
+    salinity: "hazard:drought"
+});
+
 export const BIOME_SEASONS = freeze([
     freeze({
         id: "spring", label: "Spring", sun: 0.55, growth: 1, snowLineShiftM: 0, waterFactor: 1.14, farmFactor: 1,
@@ -224,6 +237,40 @@ const requirementGroups = freeze({
     "land-use": "Land use",
     recovery: "Recovery",
     display: "Player readout"
+});
+
+// Deep coupling evidence is attached to the rows that have a real consumer
+// outside the atlas reader. The spec audit prints these per point instead of
+// repeating one blanket consumer list for every requirement.
+const coupledEvidence = freeze({
+    "snow-frost-line": [
+        { file: "js/systems/environmental-hazards.js", symbol: "triggerBiomeHazard", role: "hazard" }
+    ],
+    "water-levels": [
+        { file: "js/systems/environmental-hazards.js", symbol: "triggerBiomeHazard", role: "hazard" }
+    ],
+    "seasonal-hazards": [
+        { file: "js/systems/environmental-hazards.js", symbol: "triggerBiomeHazard", role: "hazard" }
+    ],
+    "display-hazards": [
+        { file: "js/systems/environmental-hazards.js", symbol: "triggerBiomeHazard", role: "hazard" }
+    ],
+    "display-agriculture": [
+        { file: "js/systems/fields.js", symbol: "ecotoneHarvestFactor", role: "harvest" }
+    ],
+    "display-movement": [
+        { file: "js/systems/resource-geography.js", symbol: "getRouteMovementFactorAt", role: "movement" },
+        { file: "js/systems/logistics.js", symbol: "updateLogisticsMovement", role: "caravan" }
+    ]
+});
+
+const coupledTests = freeze({
+    "snow-frost-line": ["tests/systems/cross-biome-couplings.test.js"],
+    "water-levels": ["tests/systems/cross-biome-couplings.test.js"],
+    "seasonal-hazards": ["tests/systems/cross-biome-couplings.test.js"],
+    "display-hazards": ["tests/systems/cross-biome-couplings.test.js"],
+    "display-agriculture": ["tests/systems/cross-biome-couplings.test.js"],
+    "display-movement": ["tests/systems/cross-biome-couplings.test.js"]
 });
 
 const requirementRows = [
@@ -299,8 +346,10 @@ const requirementRows = [
     evidence: [
         { file: "js/world/cross-biome-data.js", symbol: "BIOME_SYSTEM_REQUIREMENTS", role: "catalog" },
         { file: "js/systems/cross-biome-state.js", symbol: "getCrossBiomeProfile", role: "simulation" },
+        ...(coupledEvidence[key] || []),
         { file: "js/presentation/biome-panel.js", symbol: "renderBiomePanel", role: "ui" }
-    ]
+    ],
+    tests: coupledTests[key] || []
 }));
 
 export const BIOME_SYSTEM_REQUIREMENTS = freeze(requirementRows);

@@ -1,13 +1,47 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.44.1`
-**Next development line:** `3.45.0-dev`
+**Current production version:** `3.45.0`
+**Next development line:** `3.46.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.45.0 — The 1.2.21 survey now moves, feeds and strikes the realm
+
+The seasonal biome survey no longer ends at a readout. Its three player-facing
+values now drive the systems a player already operates, inside the existing
+bounded annual/seasonal cadence.
+
+- **Movement is real.** The panel's route multiplier (0.80–1.06) is multiplied
+  into `getRouteMovementFactorAt` for expeditions and into carrier speed in
+  `updateLogisticsMovement`. The same caravan covers measurably more ground in
+  an open region than in a wet, snowy or broken one. The multiplier is cached
+  by year, season and saved region state, so the carrier loop stays a Map hit.
+- **Farm suitability is real.** The survey's harvest multiplier (0.84–1.14) is
+  applied by `ecotoneHarvestFactor` to the actual `pendingHarvest` and
+  `harvestTotal` of every existing farm. Two identical farms in different
+  regions now produce visibly different amounts, and the panel prints the same
+  `harvest ×` value the field uses.
+- **Seasonal dangers are real events.** A displayed regional flood, wildfire,
+  frost, disease, erosion, drought or salinity value is bridged to the existing
+  1.2.15 hazard catalogue and applied through `applyHazard`; field damage and
+  structural destruction are filtered to that region. At most one regional
+  danger matures per season (35% chance), only if it is currently possible and
+  the region is discovered. The active hazard carries `source: "biome"`,
+  `regionId` and `regionName`, and the region stores its `lastHazard`.
+- **Saves stay compatible.** `lastHazard` is optional, validated and normalised;
+  old realms load with `null`. No save-schema bump and no new hazard catalogue
+  rows (the 102-row 1.2.20 contract is unchanged).
+- **Panel and world agree.** The new WORLD EFFECT badges show route, harvest and
+  the currently possible danger, plus the last regional event. The browser
+  reference reads those badges back against the live profile, not just the DOM.
+
+Verification: `npm test` (all files), the deterministic 25-year campaign twice
+with identical output, and the seasonal biome Chromium reference with the new
+coupling assertions.
 
 ## 3.44.1 — Seasonal biome layer survives real player review
 
