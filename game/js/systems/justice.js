@@ -645,7 +645,10 @@ function generateCases(justice, context) {
     if (allowance <= 0) return [];
     const expected = context.crimeRate * 8;
     let count = Math.min(allowance, Math.floor(expected));
-    if (random("justice") < expected - Math.floor(expected)) count++;
+    // The fractional case may only fill the remaining allowance; before this
+    // guard a busy court could reach MAX_PENDING_CASES + 1 and produce a save
+    // the loader rejects.
+    if (count < allowance && random("justice") < expected - Math.floor(expected)) count++;
     if (count <= 0) return [];
     const occupied = new Set(justice.judges.map(entry => String(entry.personId)));
     const clergy = new Set((state.faith?.clergy || []).map(entry => String(entry.personId)));

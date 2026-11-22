@@ -28,6 +28,8 @@ import { getResourceNodeAt } from "../systems/resource-geography.js";
 import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
 import { craftBiomeGoods, harvestBiomeResource, huntBiomeSpecies, reintroduceBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, setBiomeProtection, surveyBiomeRegion } from "../systems/biome-resource-state.js";
 import { renderBiomePanel } from "./biome-panel.js";
+import { renderHazardPanel } from "./hazard-panel.js";
+import { cleanseHazardCorruption, prepareForHazardSeason, treatHazardCasualties } from "../systems/environmental-hazards.js";
 import { deliverForestGoods, forestDeliveryAvailability, forestGatheringSummary, forestThinningAvailability, gatherNearestForestProducts, gatherNearestGrasslandProducts, performMountainWork, performSwampWork, performVolcanoWork, performCoastWork, processForestHunt, mountainWorkAvailability, swampWorkAvailability, volcanoWorkAvailability, coastWorkAvailability, thinNearestForest } from "../systems/forest-gathering.js";
 import { grasslandSiteSummaryAt } from "../systems/grassland-use.js";
 import { feedStableFromMast, pannageSummary } from "../systems/forest-pannage.js";
@@ -1233,7 +1235,7 @@ function render(resetScroll=false){
  const splitPanelPaint=resetScroll&&narrowViewport();
  const revealToken=++panelRevealToken;
  if(splitPanelPaint)panel.style.visibility="hidden";
- const renderers={kingdom,government,politics,nobility:nobilityPanel,diplomacy,espionage:espionagePanel,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,biome:renderBiomePanel,chronicle,atelier:renderAiChroniclePanel,explore:renderExpeditionsPanel};
+ const renderers={kingdom,government,politics,nobility:nobilityPanel,diplomacy,espionage:espionagePanel,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,biome:renderBiomePanel,hazards:renderHazardPanel,chronicle,atelier:renderAiChroniclePanel,explore:renderExpeditionsPanel};
  // A new tab starts at its title, not at the scroll offset of the previous
  // panel. Reset the old, already-laid-out view before inserting the new DOM:
  // assigning scrollTop after innerHTML forces a synchronous layout of the
@@ -1305,6 +1307,9 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="special-biome-quest")r=resolveBiomeQuest(v,b.dataset.choice);
  else if(a==="special-blight-choice")r=resolveBlightDecision(v);
  else if(a==="special-good-sell")r=sellSpecialGood(v);
+ else if(a==="hazard-prepare")r=prepareForHazardSeason();
+ else if(a==="hazard-treat")r=treatHazardCasualties();
+ else if(a==="hazard-cleanse")r=cleanseHazardCorruption();
  else if(a==="biome-survey")r=surveyBiomeRegion(v);
  else if(a==="biome-harvest")r=harvestBiomeResource(v,b.dataset.biomeResource);
  else if(a==="biome-hunt")r=huntBiomeSpecies(v,b.dataset.biomeSpecies);
@@ -1355,6 +1360,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a==="special-blight-choice")toast("BLIGHT DECREE ANSWERED · "+String(r.choice||"CHOICE").toUpperCase());
   else if(a.startsWith("special-biome-"))toast("RARE BIOME UPDATED");
   else if(a.startsWith("biome-"))toast(String(r.message||"BIOME ATLAS UPDATED").toUpperCase());
+  else if(a.startsWith("hazard-"))toast(String(r.message||"HAZARD RESPONSE RECORDED").toUpperCase());
   else if(a==="open-atelier")toast("ATELIER OPEN");
   else toast("DECISION RECORDED");
   if(a.startsWith("special-"))window.dispatchEvent(new CustomEvent("kac:special-biome-change"));
@@ -1419,7 +1425,7 @@ export function setupManagementUI(){
    return;
   }
   if(target==="market"){$("tab-2")?.click();return;}
-  if(["kingdom","government","politics","nobility","diplomacy","espionage","explore","biome","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
+  if(["kingdom","government","politics","nobility","diplomacy","espionage","explore","biome","hazards","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
    if(target==="chronicle")resetTimelineView(state.year);
    activePanel=target;render(true);setCommandModalOpen(true);
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));

@@ -1,0 +1,122 @@
+/* 1.2.20 hazard and disease panel.
+   Rows reuse the command-meter and biome-badge language; only the grid and the
+   severity bar are new, so the panel inherits the existing theme. */
+
+.hazard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0 14px;
+}
+
+.hazard-table {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.hazard-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(120px, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid rgba(228, 189, 114, 0.18);
+    border-radius: 6px;
+    background: rgba(12, 18, 24, 0.35);
+}
+
+.hazard-row-name strong {
+    display: block;
+    font-size: 0.86rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.hazard-row-name small {
+    display: block;
+    font-size: 0.68rem;
+    opacity: 0.65;
+}
+
+.hazard-row-meter {
+    display: grid;
+    gap: 3px;
+}
+
+.hazard-row-meter span {
+    display: block;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.09);
+    overflow: hidden;
+}
+
+.hazard-row-meter i {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: #7fb69a;
+    transition: width 180ms ease-out;
+}
+
+.hazard-row-meter i.is-mid {
+    background: #d6b36a;
+}
+
+.hazard-row-meter i.is-danger {
+    background: #d1655c;
+}
+
+.hazard-row-meter small {
+    font-size: 0.66rem;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+}
+
+.hazard-row-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.hazard-work-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.hazard-work-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 96px;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    border: 1px solid rgba(228, 189, 114, 0.14);
+    border-radius: 6px;
+    background: rgba(12, 18, 24, 0.28);
+}
+
+.hazard-work-row strong {
+    display: block;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+}
+
+.hazard-work-row small {
+    display: block;
+    font-size: 0.66rem;
+    opacity: 0.6;
+}
+
+@media (max-width: 720px) {
+    .hazard-row {
+        grid-template-columns: minmax(0, 1fr) 88px;
+    }
+    .hazard-row-actions {
+        display: none;
+    }
+    .hazard-work-grid {
+        grid-template-columns: 1fr;
+    }
+}

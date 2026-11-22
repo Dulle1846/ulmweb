@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "d195086b8e82bb3162c9d04d6c090aa51adf839f",
-  "sourceHash": "f853beb916ed6b7976a13478245e5013f37855f4629bccfd8f5c5b5224b712a3",
+  "commit": "c176d36c3e22cbf0fa44f8dfeeb23c48c290abca",
+  "sourceHash": "8e05f0be438ecafa903bd0eda0a4a6f8c74648f408ede962c47505a7beb747de",
   "totals": {
-    "total": 1396,
-    "implemented": 1392,
+    "total": 1498,
+    "implemented": 1494,
     "open": 4,
-    "sections": 35
+    "sections": 36
   },
   "nextSection": {
     "id": "4.0",
@@ -523,6 +523,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 84,
       "open": 0,
       "source": "js/world/biome-resource-data.js"
+    },
+    {
+      "id": "1.2.20",
+      "title": "Biomes with special hazards and diseases",
+      "total": 102,
+      "implemented": 102,
+      "open": 0,
+      "source": "js/world/hazard-data.js"
     },
     {
       "id": "2.1",

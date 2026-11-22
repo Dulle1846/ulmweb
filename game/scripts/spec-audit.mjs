@@ -294,6 +294,24 @@ const MANIFEST_SPECS = [
             { file: "js/core/save-runtime.js", symbol: "serializeBiomeAtlasState", role: "persistence" }
         ],
         tests: ["tests/systems/biome-resource-atlas.test.js"]
+    },
+    {
+        id: "1.2.20",
+        title: "Biomes with special hazards and diseases",
+        file: "js/world/hazard-data.js",
+        manifest: "HAZARD_REQUIREMENTS",
+        profile: null,
+        climate: "temperate",
+        consumers: [
+            { file: "js/world/hazard-data.js", symbol: "HAZARD_CATALOG", role: "catalog" },
+            { file: "js/world/hazard-data.js", symbol: "HAZARD_EFFECTS", role: "rules" },
+            { file: "js/systems/environmental-hazards.js", symbol: "updateEnvironmentalHazards", role: "simulation" },
+            { file: "js/systems/environmental-hazards.js", symbol: "updateEnvironmentalHazardYear", role: "simulation" },
+            { file: "js/systems/environmental-hazards.js", symbol: "getHazardMitigation", role: "simulation" },
+            { file: "js/presentation/hazard-panel.js", symbol: "renderHazardPanel", role: "ui" },
+            { file: "js/core/save-runtime.js", symbol: "serializeEnvironmentalHazardState", role: "persistence" }
+        ],
+        tests: ["tests/world/environmental-hazards.test.js"]
     }
 ];
 

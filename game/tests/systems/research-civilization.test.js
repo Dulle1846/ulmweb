@@ -199,7 +199,7 @@ test("schema 7 saves identity, research and legacy and validates each block", ()
     state.research.reserve = 100;
     startResearch("masonry");
     recordLegacy("realm", "A recorded deed");
-    assert.equal(SAVE_SCHEMA_VERSION, 12, "schema 12 keeps the civilization layer and adds settlement maintenance ownership");
+    assert.equal(SAVE_SCHEMA_VERSION, 13, "schema 13 keeps the civilization layer and adds the hazard and disease layer");
 
     const snapshot = {
         worldSeed: 9917,
@@ -228,7 +228,7 @@ test("the save, load, simulation and UI source contracts include the civilizatio
     assert.ok(saveRuntime.includes("state.identity=normalizeIdentity") && saveRuntime.includes("state.research=normalizeResearchState") && saveRuntime.includes("state.legacy=normalizeLegacyState"), "loading must normalize all three blocks");
     assert.ok(migrations.includes("6:snapshot=>") && main.includes("applyIdentityForNewRealm"), "schema 6 saves must migrate and a new realm must record its identity");
     assert.ok(validation.includes("validateIdentity") && validation.includes("validateResearchState") && validation.includes("validateLegacyState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 26, "the command deck must expose twenty-six tabs, including the biome atlas, Explore survey, Atelier, city charter, item lexicon, noble houses and the Whisper Court");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 27, "the command deck must expose twenty-seven tabs, including the biome atlas, the hazard panel, Explore survey, Atelier, city charter, item lexicon, noble houses and the Whisper Court");
     assert.ok(html.includes('data-command-tab="research"') && html.includes('id="realm-culture"'), "the founding form and research tab must exist");
     assert.ok(ui.includes("research:researchPanel") && ui.includes("research-start") && ui.includes("research-appoint"), "the research panel and its actions must be wired");
     assert.ok(ui.includes("getLegacySnapshot()") && ui.includes("LEGACY ·"), "the chronicle must show the legacy record");

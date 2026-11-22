@@ -384,7 +384,7 @@ test("faith and justice normalize, validate and survive a JSON save/load round t
     assert.equal(restored.justice.lawCode, justiceBefore.lawCode);
     assert.equal(restored.faith.festival.lastKind, "harvest");
 
-    assert.equal(SAVE_SCHEMA_VERSION, 12, "schema 12 adds settlement maintenance ownership on top of the living timeline");
+    assert.equal(SAVE_SCHEMA_VERSION, 13, "schema 13 adds the hazard and disease layer on top of settlement maintenance ownership");
     const snapshot = normalizeSaveSnapshot({
         worldSeed: 9917,
         entities: [],
@@ -413,7 +413,7 @@ test("the save, load and UI source contracts include both annual systems", async
     assert.ok(saveRuntime.includes("state.justice=normalizeJusticeState"), "loading must normalize justice");
     assert.ok(migrations.includes("4:snapshot=>") && migrations.includes("5:snapshot=>"), "schema 4 and 5 saves must migrate into schema 6");
     assert.ok(validation.includes("validateFaithState") && validation.includes("validateJusticeState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 26, "the command deck must expose twenty-six tabs, including the biome atlas, Explore survey, Atelier, city charter, item lexicon, noble houses and the Whisper Court");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 27, "the command deck must expose twenty-seven tabs, including the biome atlas, the hazard panel, Explore survey, Atelier, city charter, item lexicon, noble houses and the Whisper Court");
     assert.ok(ui.includes("faith:faithPanel") && ui.includes("justice:justicePanel"));
     assert.ok(ui.includes("faith-festival") && ui.includes("justice-verdict"));
     const faith = await readFile(new URL("../../js/systems/faith.js", import.meta.url), "utf8");

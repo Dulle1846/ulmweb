@@ -60,7 +60,7 @@ function draft(overrides = {}) {
 }
 
 test("schema 12 still carries a bounded, normalized living timeline", () => {
-    assert.equal(SAVE_SCHEMA_VERSION, 12);
+    assert.equal(SAVE_SCHEMA_VERSION, 13);
     const timeline = createEventTimelineState();
     for (let index = 0; index < MAX_TIMELINE_EVENTS + 7; index++) {
         appendTimelineEvent(timeline, draft({ tick: index + 1, year: Math.floor(index / 400) + 1, day: (index % 400) + 1, title: "RECORD " + index }));
@@ -75,7 +75,7 @@ test("schema 12 still carries a bounded, normalized living timeline", () => {
     assert.equal(validateEventTimelineState(timeline), true);
     assert.equal(serializeEventTimelineState(timeline).events.length, MAX_TIMELINE_EVENTS);
     const migrated = migrateSaveSnapshot({ saveSchemaVersion: 10, eventTimeline: undefined });
-    assert.equal(migrated.saveSchemaVersion, 12);
+    assert.equal(migrated.saveSchemaVersion, 13);
     assert.equal(migrated.eventTimeline, null);
 });
 

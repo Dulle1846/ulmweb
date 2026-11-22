@@ -2,14 +2,14 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "d195086b8e82bb3162c9d04d6c090aa51adf839f",
-  "sourceHash": "f853beb916ed6b7976a13478245e5013f37855f4629bccfd8f5c5b5224b712a3",
-  "generatedAt": "2026-11-21T20:19:56+00:00",
+  "commit": "c176d36c3e22cbf0fa44f8dfeeb23c48c290abca",
+  "sourceHash": "8e05f0be438ecafa903bd0eda0a4a6f8c74648f408ede962c47505a7beb747de",
+  "generatedAt": "2026-11-22T07:18:59+00:00",
   "totals": {
-    "total": 1396,
-    "implemented": 1392,
+    "total": 1498,
+    "implemented": 1494,
     "open": 4,
-    "sections": 35
+    "sections": 36
   },
   "collisions": [
     {
@@ -26866,6 +26866,2316 @@
       "implemented": 84,
       "open": 0,
       "total": 84
+    },
+    {
+      "id": "1.2.20",
+      "title": "Biomes with special hazards and diseases",
+      "points": [
+        {
+          "id": "1.2.20.1",
+          "label": "Extreme heat",
+          "key": "extreme-heat",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.2",
+          "label": "Extreme cold",
+          "key": "extreme-cold",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.3",
+          "label": "Frost periods",
+          "key": "frost-periods",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.4",
+          "label": "Heatwaves",
+          "key": "heatwaves",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.5",
+          "label": "Drought",
+          "key": "drought",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.6",
+          "label": "Snowstorms",
+          "key": "snowstorms",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.7",
+          "label": "Sandstorms",
+          "key": "sandstorms",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.8",
+          "label": "Heavy rain",
+          "key": "heavy-rain",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.9",
+          "label": "Floods",
+          "key": "floods",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.10",
+          "label": "Thunderstorms",
+          "key": "thunderstorms",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.11",
+          "label": "High altitude winds",
+          "key": "high-winds",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.12",
+          "label": "Sudden temperature swings",
+          "key": "temperature-swings",
+          "group": "weather",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.13",
+          "label": "Landslides",
+          "key": "landslides",
+          "group": "geology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.14",
+          "label": "Rockfalls",
+          "key": "rockfalls",
+          "group": "geology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.15",
+          "label": "Avalanches",
+          "key": "avalanches",
+          "group": "geology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.16",
+          "label": "Earthquakes",
+          "key": "earthquakes",
+          "group": "geology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.17",
+          "label": "Volcanic eruptions",
+          "key": "eruptions",
+          "group": "geology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.18",
+          "label": "Lava flows",
+          "key": "lava-flows",
+          "group": "geology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.19",
+          "label": "Ground subsidence",
+          "key": "subsidence",
+          "group": "geology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.20",
+          "label": "Unstable rock formations",
+          "key": "unstable-rock",
+          "group": "geology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.21",
+          "label": "Cave-ins",
+          "key": "cave-ins",
+          "group": "geology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.22",
+          "label": "Geothermal hazards",
+          "key": "geothermal",
+          "group": "geology",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.23",
+          "label": "Poisonous plants",
+          "key": "poisonous-plants",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.24",
+          "label": "Poisonous mushrooms",
+          "key": "poisonous-mushrooms",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.25",
+          "label": "Poisonous snakes",
+          "key": "poisonous-snakes",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.26",
+          "label": "Poisonous insects",
+          "key": "poisonous-insects",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.27",
+          "label": "Dangerous predators",
+          "key": "predators",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.28",
+          "label": "Parasites",
+          "key": "parasites",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.29",
+          "label": "Pathogens",
+          "key": "pathogens",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.30",
+          "label": "Animal plagues",
+          "key": "animal-plagues",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.31",
+          "label": "Plant diseases",
+          "key": "plant-diseases",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.32",
+          "label": "Pests and insect plagues",
+          "key": "pests",
+          "group": "flora",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.33",
+          "label": "Insect-borne diseases",
+          "key": "vector-disease",
+          "group": "disease",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.34",
+          "label": "Water-borne diseases",
+          "key": "water-disease",
+          "group": "disease",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.35",
+          "label": "Parasitic diseases",
+          "key": "parasite-disease",
+          "group": "disease",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.36",
+          "label": "Damp and unhygienic infections",
+          "key": "hygiene-disease",
+          "group": "disease",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.37",
+          "label": "Dust and ash respiratory illness",
+          "key": "respiratory",
+          "group": "disease",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.38",
+          "label": "Frostbite and cold illness",
+          "key": "frostbite",
+          "group": "disease",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.39",
+          "label": "Heat illness",
+          "key": "heat-illness",
+          "group": "disease",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.40",
+          "label": "Deficiency diseases",
+          "key": "deficiency",
+          "group": "disease",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.41",
+          "label": "Illness from spoiled food",
+          "key": "spoiled-food",
+          "group": "disease",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.42",
+          "label": "Regional diseases",
+          "key": "regional-disease",
+          "group": "disease",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.43",
+          "label": "Swamp dangers",
+          "key": "swamp-dangers",
+          "group": "regional",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.44",
+          "label": "Desert dangers",
+          "key": "desert-dangers",
+          "group": "regional",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.45",
+          "label": "Mountain dangers",
+          "key": "mountain-dangers",
+          "group": "regional",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.46",
+          "label": "Tundra dangers",
+          "key": "tundra-dangers",
+          "group": "regional",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.47",
+          "label": "Rainforest dangers",
+          "key": "rainforest-dangers",
+          "group": "regional",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.48",
+          "label": "Taiga dangers",
+          "key": "taiga-dangers",
+          "group": "regional",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.49",
+          "label": "Steppe dangers",
+          "key": "steppe-dangers",
+          "group": "regional",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.50",
+          "label": "Volcano dangers",
+          "key": "volcano-dangers",
+          "group": "regional",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.51",
+          "label": "Coast dangers",
+          "key": "coast-dangers",
+          "group": "regional",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.52",
+          "label": "Magical burdens and curses",
+          "key": "magic-burden",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.53",
+          "label": "Higher disease chance in some environments",
+          "key": "disease-risk",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.54",
+          "label": "Resistance from equipment and experience",
+          "key": "resistance",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.55",
+          "label": "Higher food and water demand",
+          "key": "needs",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.56",
+          "label": "Restricted movement",
+          "key": "movement",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.57",
+          "label": "Losses from environmental hazards",
+          "key": "losses",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.58",
+          "label": "Lower work output in extreme climate",
+          "key": "work",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.59",
+          "label": "Clothing and shelter requirements",
+          "key": "clothing",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.60",
+          "label": "Regional adaptation",
+          "key": "adaptation",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.61",
+          "label": "Effects on morale and contentment",
+          "key": "morale",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.62",
+          "label": "Need for supply and medical facilities",
+          "key": "medical",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.63",
+          "label": "Harvest failure through drought",
+          "key": "crop-failure",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.64",
+          "label": "Frost damage",
+          "key": "frost-damage",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.65",
+          "label": "Flood damage",
+          "key": "flood-damage",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.66",
+          "label": "Plant disease in the fields",
+          "key": "crop-disease",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.67",
+          "label": "Pest infestation",
+          "key": "crop-pest",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.68",
+          "label": "Loss of pasture",
+          "key": "pasture-loss",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.69",
+          "label": "Animal plague",
+          "key": "herd-plague",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.70",
+          "label": "Damaged trade routes",
+          "key": "trade-damage",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.71",
+          "label": "Harder raw material extraction",
+          "key": "extraction",
+          "group": "effect",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.72",
+          "label": "Adapted clothing",
+          "key": "work-clothing",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.73",
+          "label": "Medical care",
+          "key": "work-medical",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.74",
+          "label": "Wells and water reservoirs",
+          "key": "work-well",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.75",
+          "label": "Irrigation systems",
+          "key": "work-irrigation",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.76",
+          "label": "Protective walls and dams",
+          "key": "work-dam",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.77",
+          "label": "Avalanche protection",
+          "key": "work-avalanche",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.78",
+          "label": "Drainage",
+          "key": "work-drainage",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.79",
+          "label": "Roads and bridges",
+          "key": "work-roads",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.80",
+          "label": "Warehouses and storage",
+          "key": "work-warehouse",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.81",
+          "label": "Regional research and knowledge",
+          "key": "work-research",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.82",
+          "label": "Specialised units and equipment",
+          "key": "work-units",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.83",
+          "label": "Adapted settlement siting",
+          "key": "work-siting",
+          "group": "works",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.84",
+          "label": "Hazards change with season and weather",
+          "key": "seasonal-dynamics",
+          "group": "chronic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.85",
+          "label": "Multi-year droughts",
+          "key": "multi-year-drought",
+          "group": "chronic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.86",
+          "label": "Disease spreads along trade routes",
+          "key": "plague-trade",
+          "group": "chronic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.87",
+          "label": "Animal plagues across settlements",
+          "key": "epizootic-regions",
+          "group": "chronic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.88",
+          "label": "Wildfires and new danger zones",
+          "key": "wildfire-zones",
+          "group": "chronic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.89",
+          "label": "Floods reshape land and infrastructure",
+          "key": "flood-scars",
+          "group": "chronic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.90",
+          "label": "Regional volcanic effects",
+          "key": "volcanic-region",
+          "group": "chronic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.91",
+          "label": "Climate change and new hazards",
+          "key": "climate-trend",
+          "group": "chronic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.92",
+          "label": "Long-term economic consequences",
+          "key": "long-term-economy",
+          "group": "chronic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.93",
+          "label": "Magically contaminated ground",
+          "key": "magic-contamination",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.94",
+          "label": "Cursed plants and animals",
+          "key": "cursed-life",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.95",
+          "label": "Toxic magical fog",
+          "key": "toxic-fog",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.96",
+          "label": "Unnatural weather",
+          "key": "unnatural-weather",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.97",
+          "label": "Magical diseases",
+          "key": "magic-disease",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.98",
+          "label": "Changed animal populations",
+          "key": "animal-shift",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.99",
+          "label": "Spreading corruption",
+          "key": "corruption-spread",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.100",
+          "label": "Forbidden or dangerous plants",
+          "key": "forbidden-plants",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.101",
+          "label": "Special protections and antidotes",
+          "key": "wards",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        },
+        {
+          "id": "1.2.20.102",
+          "label": "Rare events with lasting regional consequences",
+          "key": "rare-events",
+          "group": "magic",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/hazard-data.js#HAZARD_CATALOG (catalog)",
+            "js/world/hazard-data.js#HAZARD_EFFECTS (rules)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazards (simulation)",
+            "js/systems/environmental-hazards.js#updateEnvironmentalHazardYear (simulation)",
+            "js/systems/environmental-hazards.js#getHazardMitigation (simulation)",
+            "js/presentation/hazard-panel.js#renderHazardPanel (ui)",
+            "js/core/save-runtime.js#serializeEnvironmentalHazardState (persistence)"
+          ],
+          "tests": [
+            "tests/world/environmental-hazards.test.js"
+          ]
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/world/hazard-data.js",
+          "symbol": "HAZARD_CATALOG",
+          "role": "catalog",
+          "valid": true
+        },
+        {
+          "file": "js/world/hazard-data.js",
+          "symbol": "HAZARD_EFFECTS",
+          "role": "rules",
+          "valid": true
+        },
+        {
+          "file": "js/systems/environmental-hazards.js",
+          "symbol": "updateEnvironmentalHazards",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/systems/environmental-hazards.js",
+          "symbol": "updateEnvironmentalHazardYear",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/systems/environmental-hazards.js",
+          "symbol": "getHazardMitigation",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/hazard-panel.js",
+          "symbol": "renderHazardPanel",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/core/save-runtime.js",
+          "symbol": "serializeEnvironmentalHazardState",
+          "role": "persistence",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/world/environmental-hazards.test.js",
+          "valid": true
+        }
+      ],
+      "source": "js/world/hazard-data.js",
+      "note": "102 runtime requirements from HAZARD_REQUIREMENTS.",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "probeAvailable": false,
+      "probeObserved": 0,
+      "implemented": 102,
+      "open": 0,
+      "total": 102
     },
     {
       "id": "2.1",

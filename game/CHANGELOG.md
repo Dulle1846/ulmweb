@@ -1,13 +1,68 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.34.2`
-**Next development line:** `3.35.0-dev`
+**Current production version:** `3.35.0`
+**Next development line:** `3.36.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-21 (UTC)
+**Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.35.0 — Living Hazards and Regional Disease
+
+The world had biomes, weather and three separate hazard modules, but no shared
+answer to what a climate actually does to the people living in it. Spec 1.2.20
+asks for 102 connected dangers and countermeasures; the realm now has all of
+them in one system instead of a fourth parallel module.
+
+- **Every climate carries its own dangers.** Heat and drought in arid and
+  savanna realms, frost and avalanche in snow, mountain and tundra realms,
+  parasites and fever in rainforest and swamp, erosion and storm surge on the
+  coast, ash, gas and lava in volcanic realms, corruption, fog and magical
+  disease in the Enchanted realms. A new HAZARDS tab names the active dangers of
+  the season, their severity and what they are costing.
+- **Hazards act on the real realm.** Illness and injury land on real villagers,
+  outbreaks go through the existing health model, food, wood, stone and gold
+  leave the ledger, farm growth and fertility fall, roads and buildings can be
+  lost (the keep and the wonder never are), morale drops and trade is disrupted.
+- **Protection is built, not declared.** Wells, mills, walls, foresters,
+  sanitation, roads, warehouses, clinics, healers, medicine, insulated homes,
+  schools, barracks, the smithy and the keep each raise readiness; readiness
+  lowers severity, injuries and destruction. Three actions are real and
+  limited: prepare the season, treat casualties with stored doses and cleanse
+  corrupted ground.
+- **Paced like weather, not like a schedule.** Each danger rolls its own
+  occurrence against its weight, so quiet seasons exist and at most three act
+  at once. Seasons budget one casualty, one structure, six food and one morale
+  point, and losses take the surplus above a 30-unit reserve rather than the
+  seed grain. Hazard disease lowers the real sanitation score but stops at 46,
+  so only accumulated neglect reaches the health system's outbreak threshold.
+- **The crown and the noble houses are not hazard casualties.** They have
+  shelter, stores and care; their people still fall ill, their dues and mood
+  still suffer, but a bad season cannot erase a house. Civic anchors (keep,
+  wonder, court, prison) are never destroyed, so a hazard cannot produce a save
+  another system rejects.
+- **Busy courts stay loadable.** While wiring the crime pressure, a latent
+  justice bug surfaced: the fractional case roll could push the pending roll
+  to `MAX_PENDING_CASES + 1`, and the loader rejects that save. The roll now
+  fills only the remaining allowance.
+- **Long-term processes.** Multi-year drought, plague spread along the trade
+  partners of the live diplomacy state, animal plague across several places,
+  wildfire zones and burnt ground, flood scars, lingering volcanic ash, a slow
+  climate drift, disaster debt and permanently lost ground. In Enchanted realms
+  corruption grows while untreated, curses the flora and fauna, brings toxic fog
+  and arcane fever, shifts wildlife, and can be cleansed.
+- **Bounded and deterministic.** The seasonal pass runs on a season change only
+  (four times a year) and the long-term pass once at the year boundary, inside
+  the existing annual slices. Every roll is a pure hash of seed, year, season
+  and hazard id, so replays match and the shared random streams are untouched.
+  The passes read caps and counters, never the tile grid, and nothing is added
+  to the frame loop.
+- **102 / 102 spec points.** `js/world/hazard-data.js` holds the catalogue, each
+  row naming the mechanic that implements it; the test suite compares catalogue
+  and engine so no requirement can be a label without a rule. Save schema 13
+  stores the state; a schema-12 realm loads with a quiet hazard state.
 
 ## 3.34.2 — Phone Workshop
 

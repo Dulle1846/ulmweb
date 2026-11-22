@@ -35,6 +35,11 @@ export const SAVE_SCHEMA_MIGRATIONS = Object.freeze({
         // Schema 12 adds settlement maintenance ownership. Older realms keep
         // every road and building; the restore pass derives their seats.
         if(snapshot.settlements===undefined)snapshot.settlements=null;
+    },
+    12:snapshot=>{
+        // Schema 13 adds the 1.2.20 hazard and disease layer. A realm saved
+        // before it starts with a quiet state; the first season pass fills it.
+        if(snapshot.environmentalHazards===undefined)snapshot.environmentalHazards=null;
     }
 });
 

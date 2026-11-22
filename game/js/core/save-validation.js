@@ -34,7 +34,7 @@ import { validateEventTimelineState } from "./event-timeline.js";
 import { validateCraftedItems } from "../systems/item-lexicon.js";
 import { resolveWorldDimensions } from "../world/terrain-model.js";
 
-export const SAVE_SCHEMA_VERSION = 12;
+export const SAVE_SCHEMA_VERSION = 13;
 
 const RESOURCE_KEYS = Object.freeze(["wood", "stone", "gold", "food"]);
 const RESOURCE_KEY_SET = new Set(RESOURCE_KEYS);

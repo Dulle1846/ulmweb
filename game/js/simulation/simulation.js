@@ -57,6 +57,7 @@ import { updateCoastHazards } from "../world/coast-hazards.js";
 import { updateSnowHazards } from "../world/snow-hazards.js";
 import { updateDisasterRecovery } from "../systems/disaster-recovery.js";
 import { updateWinterAnnual, updateWinterEconomy } from "../world/winter-economy.js";
+import { updateEnvironmentalHazardYear, updateEnvironmentalHazards } from "../systems/environmental-hazards.js";
 import { isEndlessEnabled, recoverEndlessMorale, updateEndlessRealm, updateEndlessRelief } from "../systems/endless.js";
 import { updateSpecialBiomes } from "../systems/special-biome-state.js";
 import { updateRoadWear } from "../systems/roads.js";
@@ -106,6 +107,11 @@ const ANNUAL_TASKS = [
     // One bounded hazard pass at the year boundary: eruption, earthquake,
     // ashfall and real destruction on volcanic ground. Temperate worlds return
     // immediately, so the shared campaign keeps its existing tick cost.
+    // 1.2.20 settles the long-lived hazard processes once per year: multi-year
+    // drought, plague spread along trade routes, wildfire zones, flood scars,
+    // climate drift and the arcane burden. The seasonal pass below handles the
+    // four in-year hazard seasons, so neither adds per-tick work.
+    { name: "environmentalHazards", run(annual) { annual.environmentalHazards = updateEnvironmentalHazardYear(); } },
     { name: "volcanoHazards", run(annual) { annual.volcanoHazards = updateVolcanoHazards(); } },
     // One bounded coastal hazard pass at the same annual boundary. It returns
     // immediately outside the Coastlands climate, so inland campaigns keep
@@ -172,6 +178,7 @@ function createAnnualMaintenance() {
         roadSurvey: null,
         settlementMaintenance: null,
         winterAnnual: null,
+        environmentalHazards: null,
         biomeAtlas: null
     };
 }
@@ -411,6 +418,10 @@ function finishDailyRealm() {
     // Rare-biome discovery is checked every 200 ticks; yields and hazards
     // settle once per year. The call itself is a couple of integer reads.
     updateSpecialBiomes();
+    // 1.2.20 hazard layer. The call is a constant-time guard on the current
+    // season; the real work happens at most four times a year, plus the one
+    // annual task above.
+    updateEnvironmentalHazards();
     // 1.2.19 region discovery follows real explored tiles. Four coarse samples
     // per season are enough to unlock a region without scanning the full map
     // on every tick; the annual pass always fixes any borderline coverage.
