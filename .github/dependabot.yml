@@ -8,3 +8,12 @@ updates:
     directory: "/game"
     schedule:
       interval: "daily"
+    # Playwright pins the exact Chromium build used by the performance and
+    # endurance gates. A minor jump changes that browser, so it needs a manual
+    # benchmark run rather than an unattended dependency PR. Patch updates are
+    # still proposed.
+    ignore:
+      - dependency-name: "playwright"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
