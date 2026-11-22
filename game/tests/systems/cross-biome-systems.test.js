@@ -211,7 +211,13 @@ test("1.2.21 seasons change appearance, plant and animal activity, resources, sn
     assert.notEqual(springOverlay.seasonTint, autumnOverlay.seasonTint, "the map overlay must change with the season");
     assert.equal(springOverlay.seasonLook, BIOME_SEASONAL_APPEARANCE[region.rawBiome][0]);
     assert.equal(autumnOverlay.seasonLook, BIOME_SEASONAL_APPEARANCE[region.rawBiome][2]);
-    assert.ok(springOverlay.seasonTintAlpha > 0 && springOverlay.seasonTintAlpha <= 0.2);
+    assert.ok(springOverlay.seasonTintAlpha >= 0.3 && springOverlay.seasonTintAlpha <= 0.36,
+        "the seasonal wash must read on the real map without hiding terrain");
+    state.seasonIndex = 3;
+    const winterOverlay = getBiomeOverlayCells().find(cell => cell.id === region.id);
+    assert.ok(winterOverlay.seasonTintAlpha > 0 && winterOverlay.seasonTintAlpha < springOverlay.seasonTintAlpha,
+        "winter uses a lower alpha because its pale tint already lifts the ground");
+    state.seasonIndex = 0;
 });
 
 test("1.2.21 irrigation, drainage, afforestation, water cleanup and slash-and-burn are real paid actions", () => {

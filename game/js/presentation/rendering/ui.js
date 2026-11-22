@@ -13,6 +13,7 @@ import { renderStatisticsExplorer } from "../statistics-panel.js";
 import { renderWinterHud } from "../winter-panel.js";
 import { getEndlessSnapshot } from "../../systems/endless.js";
 import { BIOME_RESOURCE_MAP_FAMILIES } from "../../world/biome-resource-data.js";
+import { BIOME_SEASONAL_TINTS } from "../../world/cross-biome-data.js";
 
 let messageTimeout=null,lastTabSignature="",lastRoomBonusSignature="",lastAmbitionSignature="",lastFirstSessionSignature="",lastRenderedIssueId=null,lastCardSprite="",lastTickTextAt=0;
 function setText(id,value){const el=document.getElementById(id);const next=String(value);if(el&&el.textContent!==next)el.textContent=next;}
@@ -487,20 +488,24 @@ const MAP_LAYER_LEGENDS=Object.freeze({
     biomes:{
         label:"BIOME ATLAS",
         items:[["map-swatch--biome","Surveyed region"],["map-swatch--forest-point","Forest point"],["map-swatch--rare","Rare deposit"],...resourceFamilyLegendItems],
-        note:"Density bars count only discovered resource rows; detail level 3 adds clustered sample points. Forest points and rare deposits obey the same survey visibility, so hidden occurrences never appear in the density reading."
+        note:"Region colour is washed with the current season. Survey bars, resources, refuges, units, cities and selection rings stay above the wash. Forest points and rare deposits obey survey visibility."
     }
 });
 let lastMapLayerLegend="";
 function renderMapLayerLegend(){
     const legend=document.getElementById("map-layer-legend");
     if(!legend)return;
-    const key=(state.hazardOverlay?"hazard|":"")+state.mapLayer;
+    const season=Math.max(0,Math.min(3,Number(state.seasonIndex)||0));
+    const key=(state.hazardOverlay?"hazard|":"")+state.mapLayer+(state.mapLayer==="biomes"?"|"+season:"");
     if(lastMapLayerLegend===key)return;
     lastMapLayerLegend=key;
     const data=state.hazardOverlay?HAZARD_MAP_LEGEND:MAP_LAYER_LEGENDS[state.mapLayer];
     if(!data){legend.classList.add("hidden");legend.innerHTML="";return;}
     legend.classList.remove("hidden");
-    legend.innerHTML='<strong>'+esc(data.label)+'</strong>'+data.items.map(([swatch,label])=>'<span class="map-legend-item"><i class="map-swatch '+swatch+'"></i>'+esc(label)+'</span>').join("")+'<small>'+esc(data.note)+'</small>';
+    const seasonItem=state.mapLayer==="biomes"&&!state.hazardOverlay
+        ?'<span class="map-legend-item map-legend-season" title="The whole atlas takes this seasonal tint; markers and selection stay above it"><i class="map-swatch" style="background:'+esc((BIOME_SEASONAL_TINTS.meadow||[])[season]||"#8fbf6a")+'"></i>'+esc(SEASONS[season])+' SEASONAL FACE</span>'
+        :"";
+    legend.innerHTML='<strong>'+esc(data.label)+'</strong>'+seasonItem+data.items.map(([swatch,label])=>'<span class="map-legend-item"><i class="map-swatch '+swatch+'"></i>'+esc(label)+'</span>').join("")+'<small>'+esc(data.note)+'</small>';
 }
 export function setupMapViewControls(){
     const select=document.getElementById("map-layer-select");

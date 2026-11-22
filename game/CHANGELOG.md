@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.44.0`
+**Current production version:** `3.44.1`
 **Next development line:** `3.45.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,36 @@
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.44.1 — Seasonal biome layer survives real player review
+
+A real Chromium review of the 1.2.21 map and panel found four presentation
+problems and fixed them without changing the save shape or the annual economy.
+
+- **The seasonal wash now reads at a glance.** The previous 8–13% tint was
+  almost invisible against the terrain and region fill. The per-biome palette
+  now has clearly separated spring green, summer straw, autumn rust and winter
+  blue faces, drawn at 30–35% (winter 26–31%) over the region colour. Survey
+  bars, resource markers, refuges, units, buildings and selection rings are
+  still painted above it, so terrain and map symbols remain legible.
+- **The map legend names the live season.** The BIOME ATLAS legend now includes
+  a coloured `SPRING/SUMMER/AUTUMN/WINTER SEASONAL FACE` chip and refreshes
+  when the season changes. Its note explains the paint order explicitly.
+- **The panel keeps the player's place after an action.** Irrigating, draining,
+  reforesting, cleaning water or burning a region no longer closes the region
+  card and its 66-row ledger. The panel restores the open region, open ledger,
+  scroll position and keyboard focus after the live re-render, so the new
+  values appear where the player clicked.
+- **The ecology ledger is readable at phone width.** Row text is slightly
+  larger and higher contrast; long player-readout values wrap instead of being
+  ellipsized. At 390 px the panel has no horizontal overflow, no clipped action
+  labels and no nested scroll trap.
+
+A new `test:biome-seasonal` Chromium reference captures four whole-map seasons,
+coast/desert/forest close-ups, a selected city, an autumn/winter mountain realm
+and desktop/phone panel states. It also asserts all 66 ledger rows, the live
+legend, zero page/console errors, preserved panel state after an action, and
+save/reload ecology continuity through the existing `test:biome-ui` reference.
 
 ## 3.44.0 — Cross-biome systems connect climate, soil, water, seasons, land use and recovery
 

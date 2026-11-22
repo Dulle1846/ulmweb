@@ -558,6 +558,8 @@
 .map-layer-legend strong{font:700 7px var(--ui-title-font);letter-spacing:.14em;color:#f0d9a8}
 .map-layer-legend small{flex-basis:100%;color:#b9a47c;font:400 7px/1.4 var(--ui-body-font);letter-spacing:.02em}
 .map-legend-item{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.map-legend-season{padding:2px 6px;border:1px solid #a98a52;border-radius:2px;background:#17151299;color:#f0d9a8}
+.map-legend-season .map-swatch{width:12px;height:12px;flex-basis:12px;border-color:#e8d7b2aa}
 .map-swatch{width:10px;height:10px;flex:0 0 10px;border:1px solid #e8d7b266;border-radius:1px;display:inline-block}
 .map-swatch--forest{background:#5f8f54}.map-swatch--stone{background:#a9a39a;transform:rotate(45deg);border-radius:0}.map-swatch--fertile{background:#d2b262;border-radius:50%}
 .map-swatch--low{background:#5d6b4a}.map-swatch--mid{background:#9c8b55}.map-swatch--high{background:#c9a65f}

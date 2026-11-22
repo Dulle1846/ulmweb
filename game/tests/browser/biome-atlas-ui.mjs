@@ -421,8 +421,10 @@ try {
         return text.includes("Timber & resin") && text.includes("Fish & coast");
     }, null, { timeout: 5000 });
     const legendText = await page.locator("#map-layer-legend").innerText();
-    assert.match(legendText, /Density bars/);
-    assert.match(legendText, /hidden occurrences never appear/);
+    assert.match(legendText, /SEASONAL FACE/);
+    assert.match(legendText, /Survey bars/);
+    assert.match(legendText, /stay above the wash/);
+    assert.match(legendText, /obey survey visibility/);
 
     const beforeSave = await page.evaluate(async ({ regionId, craftRegionId, market }) => {
         const { state } = await import("./js/core/state.js");

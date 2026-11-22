@@ -158,18 +158,18 @@ export const BIOME_VARIANTS = freeze({
 // over the existing biome overlay, so the map changes face without replacing
 // the region colour or adding per-tile work.
 export const BIOME_SEASONAL_TINTS = freeze({
-    water: freeze(["#8fb9c9", "#6fa8c0", "#7c9bab", "#c4dbe6"]),
-    beach: freeze(["#d8c98c", "#e6d39a", "#c9ad82", "#b8c9d2"]),
-    snow: freeze(["#dfeef5", "#e8f3f7", "#d5e3ea", "#f2f8fb"]),
-    rock: freeze(["#aaa69a", "#b8b09d", "#9e9488", "#d6dde4"]),
-    tundra: freeze(["#9fae82", "#b8b78a", "#b58a5c", "#d8e4ea"]),
-    taiga: freeze(["#6f9560", "#5d8a57", "#8a7b4e", "#c9dce4"]),
-    swamp: freeze(["#7f9b65", "#6f9862", "#9b8b55", "#b7c6c7"]),
-    desert: freeze(["#d8b978", "#e3c47c", "#c99a62", "#d8d2c1"]),
-    steppe: freeze(["#b8b877", "#c9bf76", "#b88f55", "#c5c2b0"]),
-    meadow: freeze(["#8fbf6a", "#c9c56b", "#c28a4f", "#c4d5dc"]),
-    forest: freeze(["#6fa35f", "#5d8f55", "#a66f3f", "#c4d3d7"]),
-    "dense-forest": freeze(["#4f8a4f", "#3f7f48", "#8a6f3e", "#b7c8c2"])
+    water: freeze(["#7fc7d8", "#57b3d1", "#7c9dab", "#cfe6f2"]),
+    beach: freeze(["#ddce9c", "#efce78", "#cc9560", "#c6d9e3"]),
+    snow: freeze(["#eef5f8", "#f3f1e6", "#e0e6e8", "#f8fbfe"]),
+    rock: freeze(["#b2b3a2", "#d3bd8c", "#ad7c58", "#dfe8ee"]),
+    tundra: freeze(["#a3c88a", "#d0c467", "#b97643", "#c8dce8"]),
+    taiga: freeze(["#75ae68", "#c0b45a", "#ab6c3b", "#b9d3e2"]),
+    swamp: freeze(["#86aa70", "#b9b45e", "#a76f3f", "#bad2dd"]),
+    desert: freeze(["#ddc492", "#f0c566", "#c9884b", "#d4dadd"]),
+    steppe: freeze(["#bcc98a", "#e0c45d", "#bd7d45", "#c8d5df"]),
+    meadow: freeze(["#7ecb78", "#dec254", "#c17638", "#bcd5e4"]),
+    forest: freeze(["#72bd6a", "#c0b050", "#b46534", "#b5d1df"]),
+    "dense-forest": freeze(["#5baa64", "#989b43", "#965e33", "#abc8d8"])
 });
 
 // Each biome has four own seasonal faces. The indices are spring, summer,

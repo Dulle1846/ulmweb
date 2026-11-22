@@ -1,8 +1,8 @@
 # Cross-Biome Systems (1.2.21)
 
-**Status:** implemented in 3.44.0. The layer is a reader and a slow annual
-writer over the existing 6×6 biome atlas from 1.2.19; it is not a second world
-simulation.
+**Status:** implemented in 3.44.0 and visually accepted in 3.44.1. The layer
+is a reader and a slow annual writer over the existing 6×6 biome atlas from
+1.2.19; it is not a second world simulation.
 
 ## What the player sees
 
@@ -32,10 +32,36 @@ The ledger is deliberately an ordinary `<details>` element. It is present in the
 real panel DOM, so keyboard and screen-reader users get the same evidence as a
 player who opens it with a click.
 
-On the **biome map layer**, every discovered region now receives a low-alpha
-seasonal tint from its 48-face palette. Spring, summer, autumn and winter each
-change the visible biome face without replacing the region identity colour or
-adding a per-tile draw pass.
+On the **biome map layer**, every discovered region receives a seasonal tint
+from its 48-face palette: fresh green in spring, straw in summer, rust in
+autumn and blue-white in winter. The wash is strong enough to read at landscape
+zoom (30–35%, winter 26–31%) but stays below every survey mark: density bars,
+resource deposits, refuges, units, buildings and selection rings are painted
+after it. The atlas legend names the current season and states this paint order.
+
+The tint is one fill per discovered region, not a per-tile pass. Changing the
+season changes only the lookup and the next frame's 36 region fills.
+
+## Player-view visual acceptance
+
+`npm run test:biome-seasonal` is the real-Chromium reference. It found and now
+measures the issues fixed in 3.44.1:
+
+- four full-map captures at the same camera for spring, summer, autumn and
+  winter, plus a labelled contact sheet in `artifacts/biome-seasonal/`;
+- coast, true desert, forest and mountain/snow close-ups, a selected city inside
+  the tint and separate autumn/winter mountain frames;
+- all 66 ledger rows present with no empty values or clipped details;
+- no horizontal overflow or clipped labels at 1600 px and 390 px;
+- after a paid action the same region, open ledger, scroll position and action
+  focus are restored, and the new irrigation value is visible immediately;
+- the live seasonal legend and a 36/36 tinted-region count;
+- zero page errors and zero console errors.
+
+The companion `npm run test:biome-ui` still proves save/reload continuity for
+stocks, fauna, crafted goods, market quotes and the whole serialized ecology
+record. Winter intentionally uses a slightly lower alpha because its pale blue
+already lifts the ground more than the other three seasons.
 
 ## Real actions, real costs
 

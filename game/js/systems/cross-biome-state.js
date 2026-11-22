@@ -384,7 +384,11 @@ export function getCrossBiomeSeasonOverlay(region) {
         label: seasonRecord(season).label,
         look: seasonalAppearanceFor(region?.rawBiome, season),
         tint: tints[season],
-        tintAlpha: round(0.08 + (1 - finite(region?.vegetation, 0.5)) * 0.05, 3),
+        // The map wash has to survive the biome fill, terrain raster and the
+        // region grid at landscape zoom. Winter is stronger at a lower alpha
+        // because its pale blue already lifts the ground; the other three
+        // seasons need enough saturation to read as distinct faces.
+        tintAlpha: round((season === 3 ? 0.26 : 0.3) + (1 - finite(region?.vegetation, 0.5)) * 0.05, 3),
         snowCover: pct(snow)
     };
 }

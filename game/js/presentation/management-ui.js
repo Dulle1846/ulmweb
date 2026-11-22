@@ -1220,6 +1220,39 @@ function scheduleTimelineResultsRefresh(){
  if(timelineRefreshFrame)return;
  timelineRefreshFrame=requestAnimationFrame(()=>{timelineRefreshFrame=0;refreshTimelineResults();});
 }
+// A biome action re-renders the panel with fresh values. Preserve the player's
+// open region, expanded 66-row ledger, scroll position and keyboard focus so
+// the update never throws them back into the closed region list.
+function captureBiomePanelState(panel){
+ if(!panel)return null;
+ const openRegions=[];
+ const openLedgers=[];
+ panel.querySelectorAll("[data-biome-region]").forEach(node=>{
+  if(!node.open)return;
+  const id=node.dataset.biomeRegion;
+  openRegions.push(id);
+  if(node.querySelector(".biome-system-ledger[open]"))openLedgers.push(id);
+ });
+ const active=document.activeElement;
+ const focus=active&&panel.contains(active)&&active.dataset?.command
+  ?{command:active.dataset.command,value:active.dataset.value||null}:null;
+ return {openRegions,openLedgers,scrollTop:panel.scrollTop,focus};
+}
+function restoreBiomePanelState(panel,saved){
+ if(!panel||!saved)return;
+ panel.querySelectorAll("[data-biome-region]").forEach(node=>{
+  const id=node.dataset.biomeRegion;
+  node.open=saved.openRegions.includes(id);
+  const ledger=node.querySelector(".biome-system-ledger");
+  if(ledger)ledger.open=saved.openLedgers.includes(id);
+ });
+ panel.scrollTop=saved.scrollTop;
+ if(saved.focus){
+  const selector='[data-biome-region] [data-command="'+saved.focus.command+'"]'+(saved.focus.value?'[data-value="'+saved.focus.value+'"]':"");
+  const next=panel.querySelector(selector);
+  next?.focus({preventScroll:true});
+ }
+}
 function render(resetScroll=false){
  clearFrameWork();
  lowEndRevealQueue=[];
@@ -1246,6 +1279,7 @@ function render(resetScroll=false){
  // assigning scrollTop after innerHTML forces a synchronous layout of the
  // entire incoming panel on the click task.
  let progressiveDynasty=false;
+ const biomePanelState=activePanel==="biome"&&!resetScroll?captureBiomePanelState(panel):null;
  if(activePanel==="items")renderItemLexicon(panel);
  else {
   // Opening a ledger on a mature realm used to insert the whole archive in
@@ -1270,6 +1304,7 @@ function render(resetScroll=false){
    });
   }else {
    panel.innerHTML=markup;
+   if(biomePanelState)restoreBiomePanelState(panel,biomePanelState);
    if(resetScroll)requestAnimationFrame(()=>{if(panel.isConnected)panel.scrollTop=0;});
   }
  }
