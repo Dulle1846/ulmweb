@@ -12,8 +12,8 @@ import { addResource } from "./resources.js";
 import { getBiomeFrontierCategory, getBiomeMarketQuote } from "./biome-market-link.js";
 import {
     advanceCrossBiomeAnnual, applyCrossBiomeAction, createCrossBiomeState,
-    getCrossBiomeProfile, normalizeCrossBiomeState, serializeCrossBiomeState,
-    validateCrossBiomeState
+    getCrossBiomeProfile, getCrossBiomeSeasonOverlay, normalizeCrossBiomeState,
+    serializeCrossBiomeState, validateCrossBiomeState
 } from "./cross-biome-state.js";
 import { classifyTerrain } from "../world/terrain-model.js";
 import {
@@ -1740,6 +1740,7 @@ export function getBiomeOverlayCells() {
     if (!atlas) return [];
     return atlas.regions.filter(region => region.discovered).map(region => {
         const profile = BIOME_PROFILES[region.rawBiome] || BIOME_PROFILES.meadow;
+        const seasonal = getCrossBiomeSeasonOverlay(region);
         const rare = region.resources.filter(row => row.discovered && row.rare).slice(0, 3).map(row => row.id);
         const markers = [];
         for (const row of region.resources) {
@@ -1761,7 +1762,10 @@ export function getBiomeOverlayCells() {
             id: region.id, x: region.x, y: region.y, width: region.width, height: region.height,
             color: profile.color, label: profile.short, rare, quality: region.quality,
             health: ecologyHealth(region), rareCount: rare.length, markers, refuges,
-            protectedArea: Boolean(region.protectedArea)
+            protectedArea: Boolean(region.protectedArea),
+            season: seasonal.season, seasonLabel: seasonal.label,
+            seasonLook: seasonal.look, seasonTint: seasonal.tint,
+            seasonTintAlpha: seasonal.tintAlpha, snowCover: seasonal.snowCover
         };
     });
 }

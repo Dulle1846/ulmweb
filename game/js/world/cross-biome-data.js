@@ -153,6 +153,25 @@ export const BIOME_VARIANTS = freeze({
     ])
 });
 
+// Map-visible seasonal tints share the same spring/summer/autumn/winter
+// indices as BIOME_SEASONAL_APPEARANCE. They are drawn as a low-alpha wash
+// over the existing biome overlay, so the map changes face without replacing
+// the region colour or adding per-tile work.
+export const BIOME_SEASONAL_TINTS = freeze({
+    water: freeze(["#8fb9c9", "#6fa8c0", "#7c9bab", "#c4dbe6"]),
+    beach: freeze(["#d8c98c", "#e6d39a", "#c9ad82", "#b8c9d2"]),
+    snow: freeze(["#dfeef5", "#e8f3f7", "#d5e3ea", "#f2f8fb"]),
+    rock: freeze(["#aaa69a", "#b8b09d", "#9e9488", "#d6dde4"]),
+    tundra: freeze(["#9fae82", "#b8b78a", "#b58a5c", "#d8e4ea"]),
+    taiga: freeze(["#6f9560", "#5d8a57", "#8a7b4e", "#c9dce4"]),
+    swamp: freeze(["#7f9b65", "#6f9862", "#9b8b55", "#b7c6c7"]),
+    desert: freeze(["#d8b978", "#e3c47c", "#c99a62", "#d8d2c1"]),
+    steppe: freeze(["#b8b877", "#c9bf76", "#b88f55", "#c5c2b0"]),
+    meadow: freeze(["#8fbf6a", "#c9c56b", "#c28a4f", "#c4d5dc"]),
+    forest: freeze(["#6fa35f", "#5d8f55", "#a66f3f", "#c4d3d7"]),
+    "dense-forest": freeze(["#4f8a4f", "#3f7f48", "#8a6f3e", "#b7c8c2"])
+});
+
 // Each biome has four own seasonal faces. The indices are spring, summer,
 // autumn and winter, matching the game's 400-day calendar.
 export const BIOME_SEASONAL_APPEARANCE = freeze({

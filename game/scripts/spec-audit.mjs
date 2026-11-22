@@ -349,6 +349,7 @@ const MANIFEST_SPECS = [
             { file: "js/systems/biome-resource-state.js", symbol: "reforestBiomeRegion", role: "gameplay" },
             { file: "js/presentation/biome-panel.js", symbol: "renderBiomePanel", role: "ui" },
             { file: "js/presentation/management-ui.js", symbol: "act", role: "ui" },
+            { file: "js/presentation/rendering/renderer.js", symbol: "drawMapLayer", role: "renderer" },
             { file: "js/core/save-runtime.js", symbol: "serializeBiomeAtlasState", role: "persistence" }
         ],
         tests: ["tests/systems/cross-biome-systems.test.js"]

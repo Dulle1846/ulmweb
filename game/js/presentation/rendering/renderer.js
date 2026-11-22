@@ -322,6 +322,13 @@ function drawMapLayer(ctx,zoom,camera,canvas){
             ctx.globalAlpha=.08+Math.max(0,Math.min(100,Number(cell.health)||0))/600;
             ctx.fillStyle=cell.color;
             ctx.fillRect(left,top,width,height);
+            if(cell.seasonTint){
+                // A low-alpha seasonal wash changes the biome face without
+                // replacing the region colour or adding per-tile draw work.
+                ctx.globalAlpha=Math.max(0,Math.min(.2,Number(cell.seasonTintAlpha)||.08));
+                ctx.fillStyle=cell.seasonTint;
+                ctx.fillRect(left,top,width,height);
+            }
             ctx.globalAlpha=.48;
             ctx.strokeStyle=cell.color;
             ctx.lineWidth=Math.max(1,tileSize*.04);

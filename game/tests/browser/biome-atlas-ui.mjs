@@ -377,10 +377,12 @@ try {
     const mapProof = await page.evaluate(async regionId => {
         const { getBiomeOverlayCells } = await import("./js/systems/biome-resource-state.js");
         const cell = getBiomeOverlayCells().find(entry => entry.id === regionId);
-        return { markers: cell?.markers?.length || 0, refuges: cell?.refuges?.length || 0 };
+        return { markers: cell?.markers?.length || 0, refuges: cell?.refuges?.length || 0, seasonTint: cell?.seasonTint || "", seasonLook: cell?.seasonLook || "" };
     }, craftTarget.regionId);
     assert.ok(mapProof.markers >= 1, "the biome layer needs resource markers for the surveyed region");
     assert.ok(mapProof.refuges >= 1, "the biome layer needs refuge markers for the surveyed region");
+    assert.match(mapProof.seasonTint, /^#[0-9a-f]{6}$/i, "the biome layer needs a real seasonal tint");
+    assert.ok(mapProof.seasonLook.length > 4, "the biome layer needs a seasonal face label");
 
     const densityProof = await page.evaluate(async regionId => {
         const atlas = await import("./js/systems/biome-resource-state.js");

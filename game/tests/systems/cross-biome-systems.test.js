@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import {
     BIOME_CLIMATE_ENVELOPES, BIOME_CLIMATE_ZONES, BIOME_SEASONS,
-    BIOME_SEASONAL_APPEARANCE, BIOME_SOIL_TYPES, BIOME_SYSTEM_REQUIREMENTS,
-    BIOME_VARIANTS
+    BIOME_SEASONAL_APPEARANCE, BIOME_SEASONAL_TINTS, BIOME_SOIL_TYPES,
+    BIOME_SYSTEM_REQUIREMENTS, BIOME_VARIANTS
 } from "../../js/world/cross-biome-data.js";
 import {
     BIOME_PROFILES, BIOME_RESOURCE_BY_ID
@@ -14,8 +14,9 @@ import {
     serializeCrossBiomeState, validateCrossBiomeState
 } from "../../js/systems/cross-biome-state.js";
 import {
-    cleanBiomeWater, drainBiomeRegion, generateBiomeAtlas, getBiomeRegionSnapshot,
-    irrigateBiomeRegion, reforestBiomeRegion, restoreBiomeAtlasState, restoreBiomeRegion,
+    cleanBiomeWater, drainBiomeRegion, generateBiomeAtlas, getBiomeOverlayCells,
+    getBiomeRegionSnapshot, irrigateBiomeRegion, reforestBiomeRegion,
+    restoreBiomeAtlasState, restoreBiomeRegion,
     serializeBiomeAtlasState, slashAndBurnBiomeRegion, updateBiomeAtlasAnnual,
     validateBiomeAtlasSnapshot
 } from "../../js/systems/biome-resource-state.js";
@@ -93,6 +94,8 @@ test("1.2.21 catalog has all 66 points, 8 climate zones, 12 envelopes and comple
         assert.ok(envelope.soils.length >= 2 && envelope.soils.every(id => BIOME_SOIL_TYPES[id]));
         assert.ok(BIOME_VARIANTS[biome].length >= 3, biome + " needs local variants");
         assert.equal(BIOME_SEASONAL_APPEARANCE[biome].length, 4, biome + " needs four seasonal faces");
+        assert.equal(BIOME_SEASONAL_TINTS[biome].length, 4, biome + " needs four map-visible seasonal tints");
+        assert.ok(BIOME_SEASONAL_TINTS[biome].every(color => /^#[0-9a-f]{6}$/i.test(color)));
     }
     for (const requirement of BIOME_SYSTEM_REQUIREMENTS) {
         assert.ok(requirement.label && requirement.groupLabel && requirement.evidence.length >= 2);
@@ -200,6 +203,15 @@ test("1.2.21 seasons change appearance, plant and animal activity, resources, sn
     assert.equal(looks.size, 4, "every season needs its own visible face");
     assert.equal(new Set(waterLevels).size, 4, "water level must respond to the season");
     assert.equal(new Set(farmUse).size, 4, "farm use must respond to the season");
+    state.seasonIndex = 0;
+    const springOverlay = getBiomeOverlayCells().find(cell => cell.id === region.id);
+    state.seasonIndex = 2;
+    const autumnOverlay = getBiomeOverlayCells().find(cell => cell.id === region.id);
+    assert.ok(springOverlay?.seasonTint && autumnOverlay?.seasonTint);
+    assert.notEqual(springOverlay.seasonTint, autumnOverlay.seasonTint, "the map overlay must change with the season");
+    assert.equal(springOverlay.seasonLook, BIOME_SEASONAL_APPEARANCE[region.rawBiome][0]);
+    assert.equal(autumnOverlay.seasonLook, BIOME_SEASONAL_APPEARANCE[region.rawBiome][2]);
+    assert.ok(springOverlay.seasonTintAlpha > 0 && springOverlay.seasonTintAlpha <= 0.2);
 });
 
 test("1.2.21 irrigation, drainage, afforestation, water cleanup and slash-and-burn are real paid actions", () => {

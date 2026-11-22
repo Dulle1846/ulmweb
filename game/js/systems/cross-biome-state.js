@@ -10,7 +10,7 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import {
     BIOME_CLIMATE_ENVELOPES, BIOME_CLIMATE_ZONES, BIOME_SEASONS,
-    BIOME_SEASONAL_APPEARANCE, BIOME_SOIL_TYPES, BIOME_SYSTEM_REQUIREMENTS,
+    BIOME_SEASONAL_APPEARANCE, BIOME_SEASONAL_TINTS, BIOME_SOIL_TYPES, BIOME_SYSTEM_REQUIREMENTS,
     BIOME_VARIANTS, CROSS_BIOME_VERSION, climateEnvelopeFor, climateZoneFor,
     seasonalAppearanceFor
 } from "../world/cross-biome-data.js";
@@ -369,6 +369,24 @@ function recoveryFor(region, system) {
 
 function variantLabels(region) {
     return (BIOME_VARIANTS[region.rawBiome] || BIOME_VARIANTS.meadow).map(row => row.label);
+}
+
+// Cheap, allocation-light overlay data used by the biome map layer. It reads
+// the season and the region sample only, so drawing the layer stays bounded
+// and never recalculates the full 66-row profile on a frame.
+export function getCrossBiomeSeasonOverlay(region) {
+    const season = seasonIndex();
+    const tints = BIOME_SEASONAL_TINTS[region?.rawBiome] || BIOME_SEASONAL_TINTS.meadow;
+    const height = finite(region?.sample?.height, 0.5);
+    const snow = clamp((season === 3 ? 0.34 : 0) + Math.max(0, height - 0.62) * 1.4, 0, 1);
+    return {
+        season,
+        label: seasonRecord(season).label,
+        look: seasonalAppearanceFor(region?.rawBiome, season),
+        tint: tints[season],
+        tintAlpha: round(0.08 + (1 - finite(region?.vegetation, 0.5)) * 0.05, 3),
+        snowCover: pct(snow)
+    };
 }
 
 export function getCrossBiomeProfile(region) {
@@ -832,4 +850,4 @@ export function normalizeCrossBiomeState(saved, region, seed) {
     return system;
 }
 
-export { BIOME_CLIMATE_ZONES, BIOME_CLIMATE_ENVELOPES, BIOME_SEASONS, BIOME_SEASONAL_APPEARANCE };
+export { BIOME_CLIMATE_ZONES, BIOME_CLIMATE_ENVELOPES, BIOME_SEASONS, BIOME_SEASONAL_APPEARANCE, BIOME_SEASONAL_TINTS };

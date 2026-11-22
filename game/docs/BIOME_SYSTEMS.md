@@ -32,6 +32,11 @@ The ledger is deliberately an ordinary `<details>` element. It is present in the
 real panel DOM, so keyboard and screen-reader users get the same evidence as a
 player who opens it with a click.
 
+On the **biome map layer**, every discovered region now receives a low-alpha
+seasonal tint from its 48-face palette. Spring, summer, autumn and winter each
+change the visible biome face without replacing the region identity colour or
+adding a per-tile draw pass.
+
 ## Real actions, real costs
 
 The following buttons are in the region card and go through the normal
@@ -60,8 +65,8 @@ region. Repeating it in the same year is refused before gold is spent.
 - 14 `BIOME_SOIL_TYPES` with nutrients, water capacity, drainage, erosion,
   organic matter, compaction, salt tolerance, frost risk and acidity;
 - 48 local variants (four per biome);
-- four seasonal appearances per biome (48 faces total) and four season
-  behaviour records;
+- four seasonal appearance labels per biome (48 faces total), four matching
+  map tints per biome and four season behaviour records;
 - `BIOME_SYSTEM_REQUIREMENTS`, the 66-row manifest used by the UI, tests and
   spec audit.
 
@@ -123,8 +128,10 @@ and climate. No save envelope version bump is required.
 
 Focused coverage lives in `tests/systems/cross-biome-systems.test.js`:
 
-1. 66 ids, 8 zones, 12 envelopes, 14 soils, 48 variants and 48 seasonal faces;
-2. live profiles expose all 66 values and ten readouts;
+1. 66 ids, 8 zones, 12 envelopes, 14 soils, 48 variants, 48 seasonal faces and
+   48 map tints;
+2. live profiles expose all 66 values and ten readouts, and the overlay tint
+   changes with the season;
 3. elevation, humidity, wind and local deviation change regional form;
 4. annual soil/water movement and bounds;
 5. all four seasons change look, activity, water level and farm use;

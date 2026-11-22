@@ -21,7 +21,8 @@ only the fields the rest of the game already uses.
   elevation, humidity, insolation and wind feed plant growth, soil life and
   erosion. Fourteen real soil types model nutrients, water capacity,
   compaction, humus, organisms, salinity and frost. Four local variants per
-  biome plus four seasonal faces per biome make regional deviation visible.
+  biome plus four seasonal faces and four seasonal map tints per biome make
+  regional deviation visible on the panel and on the biome map layer.
 - **A real annual ecology step.** The existing year boundary now moves
   groundwater, pollution, water quality, nutrients, humus, soil life,
   compaction, salinity and legacy from rainfall, irrigation, drainage, farming,

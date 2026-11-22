@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "e3994894de3809252453b31e37045cc1dd8c62a0",
-  "sourceHash": "6c24f5e9980c35df3330a351ad8b21434c436cb33634b9a14c9ab277cecd41da",
-  "generatedAt": "2026-11-22T18:04:12+00:00",
+  "commit": "da1a523428085d0cb8e8fd2b9afa18994e9c85f7",
+  "sourceHash": "b538540424b33b5b8bb1c09f120a697c71d53689cf23e4faa4bfea6979f85989",
+  "generatedAt": "2026-11-22T18:49:15+00:00",
   "totals": {
     "total": 1564,
     "implemented": 1560,
@@ -31782,6 +31782,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -31807,6 +31808,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -31832,6 +31834,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -31857,6 +31860,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -31882,6 +31886,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -31907,6 +31912,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -31932,6 +31938,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -31957,6 +31964,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -31982,6 +31990,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32007,6 +32016,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32032,6 +32042,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32057,6 +32068,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32082,6 +32094,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32107,6 +32120,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32132,6 +32146,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32157,6 +32172,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32182,6 +32198,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32207,6 +32224,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32232,6 +32250,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32257,6 +32276,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32282,6 +32302,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32307,6 +32328,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32332,6 +32354,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32357,6 +32380,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32382,6 +32406,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32407,6 +32432,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32432,6 +32458,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32457,6 +32484,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32482,6 +32510,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32507,6 +32536,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32532,6 +32562,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32557,6 +32588,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32582,6 +32614,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32607,6 +32640,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32632,6 +32666,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32657,6 +32692,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32682,6 +32718,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32707,6 +32744,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32732,6 +32770,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32757,6 +32796,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32782,6 +32822,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32807,6 +32848,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32832,6 +32874,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32857,6 +32900,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32882,6 +32926,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32907,6 +32952,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32932,6 +32978,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32957,6 +33004,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -32982,6 +33030,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33007,6 +33056,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33032,6 +33082,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33057,6 +33108,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33082,6 +33134,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33107,6 +33160,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33132,6 +33186,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33157,6 +33212,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33182,6 +33238,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33207,6 +33264,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33232,6 +33290,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33257,6 +33316,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33282,6 +33342,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33307,6 +33368,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33332,6 +33394,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33357,6 +33420,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33382,6 +33446,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33407,6 +33472,7 @@
             "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/presentation/management-ui.js#act (ui)",
+            "js/presentation/rendering/renderer.js#drawMapLayer (renderer)",
             "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
           ],
           "tests": [
@@ -33467,6 +33533,12 @@
           "file": "js/presentation/management-ui.js",
           "symbol": "act",
           "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/rendering/renderer.js",
+          "symbol": "drawMapLayer",
+          "role": "renderer",
           "valid": true
         },
         {
