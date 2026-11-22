@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "1f6723bed710706d2c8d9a8a4a513e344b94c280",
-  "sourceHash": "82b041d507ecc304360ece47d6d7c4a124f36d54f133822c7455778003af6e04",
+  "commit": "e3994894de3809252453b31e37045cc1dd8c62a0",
+  "sourceHash": "6c24f5e9980c35df3330a351ad8b21434c436cb33634b9a14c9ab277cecd41da",
   "totals": {
-    "total": 1498,
-    "implemented": 1494,
+    "total": 1564,
+    "implemented": 1560,
     "open": 4,
-    "sections": 36
+    "sections": 37
   },
   "nextSection": {
     "id": "4.0",
@@ -531,6 +531,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 102,
       "open": 0,
       "source": "js/world/hazard-data.js"
+    },
+    {
+      "id": "1.2.21",
+      "title": "Cross-biome systems: climate, soil, water, seasons, land use and recovery",
+      "total": 66,
+      "implemented": 66,
+      "open": 0,
+      "source": "js/world/cross-biome-data.js"
     },
     {
       "id": "2.1",

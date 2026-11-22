@@ -331,6 +331,27 @@ const MANIFEST_SPECS = [
             { file: "js/core/save-runtime.js", symbol: "serializeEnvironmentalHazardState", role: "persistence" }
         ],
         tests: ["tests/world/environmental-hazards.test.js", "tests/world/hazard-modifiers.test.js", "tests/world/hazard-expansion.test.js", "tests/world/hazard-terrain.test.js", "tests/world/hazard-coverage.test.js", "tests/systems/city-builder.test.js"]
+    },
+    {
+        id: "1.2.21",
+        title: "Cross-biome systems: climate, soil, water, seasons, land use and recovery",
+        file: "js/world/cross-biome-data.js",
+        manifest: "BIOME_SYSTEM_REQUIREMENTS",
+        profile: null,
+        climate: "temperate",
+        consumers: [
+            { file: "js/world/cross-biome-data.js", symbol: "BIOME_SYSTEM_REQUIREMENTS", role: "catalog" },
+            { file: "js/world/cross-biome-data.js", symbol: "BIOME_CLIMATE_ZONES", role: "climate" },
+            { file: "js/world/cross-biome-data.js", symbol: "BIOME_SOIL_TYPES", role: "soil" },
+            { file: "js/systems/cross-biome-state.js", symbol: "getCrossBiomeProfile", role: "profile" },
+            { file: "js/systems/biome-resource-state.js", symbol: "advanceCrossBiomeAnnual", role: "simulation" },
+            { file: "js/systems/biome-resource-state.js", symbol: "irrigateBiomeRegion", role: "gameplay" },
+            { file: "js/systems/biome-resource-state.js", symbol: "reforestBiomeRegion", role: "gameplay" },
+            { file: "js/presentation/biome-panel.js", symbol: "renderBiomePanel", role: "ui" },
+            { file: "js/presentation/management-ui.js", symbol: "act", role: "ui" },
+            { file: "js/core/save-runtime.js", symbol: "serializeBiomeAtlasState", role: "persistence" }
+        ],
+        tests: ["tests/systems/cross-biome-systems.test.js"]
     }
 ];
 

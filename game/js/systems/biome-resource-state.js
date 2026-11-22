@@ -10,6 +10,11 @@ import { state } from "../core/state.js";
 import { addLog } from "../core/event-log.js";
 import { addResource } from "./resources.js";
 import { getBiomeFrontierCategory, getBiomeMarketQuote } from "./biome-market-link.js";
+import {
+    advanceCrossBiomeAnnual, applyCrossBiomeAction, createCrossBiomeState,
+    getCrossBiomeProfile, normalizeCrossBiomeState, serializeCrossBiomeState,
+    validateCrossBiomeState
+} from "./cross-biome-state.js";
 import { classifyTerrain } from "../world/terrain-model.js";
 import {
     BIOME_DIET_CATEGORIES, BIOME_FOCUSES, BIOME_FOCUS_IDS, BIOME_POLICIES, BIOME_POLICY_IDS,
@@ -672,6 +677,7 @@ function makeRegion(index, seed, context) {
     const selectedFauna = pickWildlife(region, seed, index);
     region.fauna = selectedFauna.map(species => makeFaunaRow(species, region, index, seed, false));
     addFaunaProducts(region, selectedFauna, seed, index, false);
+    region.systems = createCrossBiomeState(region, index, seed);
     return region;
 }
 
@@ -1204,9 +1210,81 @@ export function restoreBiomeRegion(regionId) {
         row.health = clamp(row.health + 8, 0, 100);
         row.pressure = clamp(row.pressure * 0.4, 0, 2);
     }
+    applyCrossBiomeAction(region, "restore");
     addHistory(atlas, { regionId: region.id, kind: "restoration", text: "Crown works restored habitat and breeding cover in " + region.name + "." });
     invalidateBiomeTileCache();
     return { ok: true, message: "HABITAT RESTORATION COMPLETE · " + region.name };
+}
+
+function spendBiomeAction(region, gold, wood = 0) {
+    if ((Number(state.resources.gold) || 0) < gold) return { ok: false, reason: "not-enough-gold" };
+    if (wood > 0 && (Number(state.resources.wood) || 0) < wood) return { ok: false, reason: "not-enough-wood" };
+    addResource("gold", -gold);
+    if (wood > 0) addResource("wood", -wood);
+    return { ok: true };
+}
+
+export function irrigateBiomeRegion(regionId) {
+    const atlas = ensureBiomeAtlas();
+    const region = regionById(regionId);
+    if (!atlas || !region) return { ok: false, reason: "unknown-region" };
+    if (!region.discovered) return { ok: false, reason: "region-not-explored" };
+    const paid = spendBiomeAction(region, 8);
+    if (!paid.ok) return paid;
+    applyCrossBiomeAction(region, "irrigate");
+    addHistory(atlas, { regionId: region.id, kind: "irrigation", text: "Irrigation channels were opened in " + region.name + "; the water table and salt balance will answer." });
+    return { ok: true, message: "IRRIGATION OPENED · " + region.name };
+}
+
+export function drainBiomeRegion(regionId) {
+    const atlas = ensureBiomeAtlas();
+    const region = regionById(regionId);
+    if (!atlas || !region) return { ok: false, reason: "unknown-region" };
+    if (!region.discovered) return { ok: false, reason: "region-not-explored" };
+    const paid = spendBiomeAction(region, 8);
+    if (!paid.ok) return paid;
+    applyCrossBiomeAction(region, "drain");
+    addHistory(atlas, { regionId: region.id, kind: "drainage", text: "Drainage ditches lowered the water table in " + region.name + "; wet ground and salt will recede." });
+    return { ok: true, message: "DRAINAGE OPENED · " + region.name };
+}
+
+export function reforestBiomeRegion(regionId) {
+    const atlas = ensureBiomeAtlas();
+    const region = regionById(regionId);
+    if (!atlas || !region) return { ok: false, reason: "unknown-region" };
+    if (!region.discovered) return { ok: false, reason: "region-not-explored" };
+    const paid = spendBiomeAction(region, 10, 6);
+    if (!paid.ok) return paid;
+    applyCrossBiomeAction(region, "reforest");
+    addHistory(atlas, { regionId: region.id, kind: "afforestation", text: "A new planting was laid out in " + region.name + "; canopy, humus and erosion cover will follow in later years." });
+    return { ok: true, message: "AFFORESTATION STARTED · " + region.name };
+}
+
+export function cleanBiomeWater(regionId) {
+    const atlas = ensureBiomeAtlas();
+    const region = regionById(regionId);
+    if (!atlas || !region) return { ok: false, reason: "unknown-region" };
+    if (!region.discovered) return { ok: false, reason: "region-not-explored" };
+    const paid = spendBiomeAction(region, 10);
+    if (!paid.ok) return paid;
+    applyCrossBiomeAction(region, "clean-water");
+    addHistory(atlas, { regionId: region.id, kind: "water", text: "Silt traps and clean channels were built in " + region.name + "; water quality is recovering." });
+    return { ok: true, message: "WATER CLEANUP STARTED · " + region.name };
+}
+
+export function slashAndBurnBiomeRegion(regionId) {
+    const atlas = ensureBiomeAtlas();
+    const region = regionById(regionId);
+    if (!atlas || !region) return { ok: false, reason: "unknown-region" };
+    if (!region.discovered) return { ok: false, reason: "region-not-explored" };
+    if ((Number(state.resources.gold) || 0) < 4) return { ok: false, reason: "not-enough-gold" };
+    const applied = applyCrossBiomeAction(region, "slash-burn");
+    if (!applied.ok) return applied;
+    addResource("gold", -4);
+    addResource("food", 10);
+    addResource("wood", 5);
+    addHistory(atlas, { regionId: region.id, kind: "burn", text: "A slash-and-burn clearing in " + region.name + " bought a short harvest at the cost of canopy, soil life and future regeneration." });
+    return { ok: true, message: "BURNT CLEARING · +10 FOOD · +5 WOOD · " + region.name };
 }
 
 export function sellBiomeGoods(regionId, resourceId) {
@@ -1563,7 +1641,8 @@ export function getBiomeRegionSnapshot(regionId) {
         recipes: snapshotRecipes(region),
         resources: region.resources.map(row => snapshotResource(row, region)).filter(Boolean),
         fauna: region.fauna.map(row => snapshotFauna(row, region)).filter(Boolean),
-        economy: regionEconomy(region)
+        economy: regionEconomy(region),
+        systems: getCrossBiomeProfile(region)
     };
 }
 
@@ -1819,6 +1898,7 @@ export function updateBiomeAtlasAnnual() {
         region.erosion = clamp(region.erosion + region.clearCut * 0.008 - region.vegetation * 0.004
             - (region.protectedArea ? 0.003 : 0), 0, 1);
         region.engineered = Boolean(engineerService > 0.18);
+        advanceCrossBiomeAnnual(region, { year, season });
         for (const row of region.resources) {
             const resource = BIOME_RESOURCE_BY_ID[row.id];
             if (!resource) continue;
@@ -2018,6 +2098,7 @@ export function serializeBiomeAtlasState() {
             clearCut: Math.round(region.clearCut * 1000) / 1000,
             erosion: Math.round(region.erosion * 1000) / 1000,
             engineered: Boolean(region.engineered),
+            systems: serializeCrossBiomeState(region.systems),
             importCoverage: (region.importCoverage || []).map(entry => ({ category: entry.category, untilYear: entry.untilYear })),
             caravanImports: Math.round(Number(region.caravanImports) || 0),
             ecologyTrend: Math.round(region.ecologyTrend * 1000) / 1000,
@@ -2060,6 +2141,7 @@ export function validateBiomeAtlasSnapshot(snapshot) {
         if (!Array.isArray(region.resources) || region.resources.length > 24) throw new Error("Save data contains an invalid biome resource list.");
         if (!Array.isArray(region.fauna) || region.fauna.length > 12) throw new Error("Save data contains an invalid biome wildlife list.");
         if (region.protectedArea !== undefined && typeof region.protectedArea !== "boolean") throw new Error("Save data contains an invalid protected-area flag.");
+        validateCrossBiomeState(region.systems);
         for (const field of ["clearCut", "erosion"]) {
             if (region[field] !== undefined && (!Number.isFinite(Number(region[field])) || Number(region[field]) < 0 || Number(region[field]) > 1)) {
                 throw new Error("Save data contains an invalid biome landscape field.");
@@ -2136,6 +2218,7 @@ export function normalizeBiomeAtlasState(snapshot) {
         region.clearCut = clamp(finite(saved.clearCut, 0), 0, 1);
         region.erosion = clamp(finite(saved.erosion, 0), 0, 1);
         region.engineered = Boolean(saved.engineered);
+        region.systems = normalizeCrossBiomeState(saved.systems, region, atlas.seed);
         region.importCoverage = Array.isArray(saved.importCoverage)
             ? saved.importCoverage.slice(0, 8).map(entry => ({
                 category: text(entry?.category, "", 24), untilYear: boundedInt(entry?.untilYear, 0, 1000000)

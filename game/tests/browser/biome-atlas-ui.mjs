@@ -76,7 +76,7 @@ try {
 
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="biome"]').click();
-    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").toLowerCase().includes("biome resources & wildlife"), null, { timeout: 15000 });
+    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("ECOLOGICAL RECORD"), null, { timeout: 20000 });
     const panel = await page.locator("#command-panel-content").evaluate(element => element.textContent || "");
     assert.match(panel, /REGIONS SURVEYED/);
     assert.match(panel, /REGIONAL ECONOMY/);
@@ -84,6 +84,51 @@ try {
     assert.match(panel, /WILDLIFE/);
 
     const firstRegion = page.locator("[data-biome-region]").first();
+    const ecoRegion = page.locator('[data-biome-region="' + initial.regionId + '"]');
+    if (!await ecoRegion.evaluate(details => details.open)) await ecoRegion.locator("summary").first().click();
+    const firstRegionText = await ecoRegion.innerText();
+    assert.match(firstRegionText, /BIOME SYSTEM/);
+    assert.match(firstRegionText, /FULL ECOLOGY LEDGER · 66 PARAMETERS/);
+    assert.match(firstRegionText, /PREVAILING BIOME/);
+    assert.match(firstRegionText, /ECOLOGICAL CHANGE/);
+    const ledgerProof = await ecoRegion.evaluate(element => {
+        const rows = [...element.querySelectorAll("[data-biome-requirement]")];
+        const unique = new Set(rows.map(row => row.dataset.biomeRequirement));
+        const required = Array.from({ length: 66 }, (_, index) => "1.2.21." + (index + 1));
+        return {
+            unique: unique.size,
+            missing: required.filter(id => !unique.has(id)),
+            empty: [...element.querySelectorAll(".biome-system-row[data-biome-requirement]")].filter(row => row.dataset.biomeValue === "" || row.dataset.biomeValue === "—").length,
+            readout: [...element.querySelectorAll(".biome-system-readout [data-biome-requirement]")].map(row => row.textContent)
+        };
+    });
+    assert.equal(ledgerProof.unique, 66, "the player panel must show all 66 point IDs");
+    assert.deepEqual(ledgerProof.missing, []);
+    assert.equal(ledgerProof.empty, 0, "no player-facing requirement may render an empty value");
+    assert.equal(ledgerProof.readout.length, 10);
+
+    const ecoBefore = await page.evaluate(async regionId => {
+        const { state } = await import("./js/core/state.js");
+        const { serializeCrossBiomeState } = await import("./js/systems/cross-biome-state.js");
+        const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
+        return { gold: state.resources.gold, systems: serializeCrossBiomeState(region.systems) };
+    }, initial.regionId);
+    await ecoRegion.locator('[data-command="biome-irrigate"]').click();
+    await page.waitForFunction(async regionId => (await import("./js/core/state.js")).state.biomeAtlas.regions.find(entry => entry.id === regionId)?.systems.landUse.irrigation > 0, initial.regionId, { timeout: 15000 });
+    await ecoRegion.locator('[data-command="biome-reforest"]').click();
+    await page.waitForFunction(async regionId => (await import("./js/core/state.js")).state.biomeAtlas.regions.find(entry => entry.id === regionId)?.systems.landUse.reforestation > 0, initial.regionId, { timeout: 15000 });
+    await ecoRegion.locator('[data-command="biome-clean-water"]').click();
+    await ecoRegion.locator('[data-command="biome-slash-burn"]').click();
+    const ecoAfter = await page.evaluate(async regionId => {
+        const { state } = await import("./js/core/state.js");
+        const { serializeCrossBiomeState } = await import("./js/systems/cross-biome-state.js");
+        const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
+        return { gold: state.resources.gold, systems: serializeCrossBiomeState(region.systems), text: document.querySelector("#command-panel-content")?.textContent || "" };
+    }, initial.regionId);
+    assert.ok(ecoAfter.gold < ecoBefore.gold, "ecological actions must cost real gold");
+    assert.ok(ecoAfter.systems.legacy > ecoBefore.systems.legacy, "slash-and-burn must leave a lasting legacy");
+    assert.match(ecoAfter.text, /FULL ECOLOGY LEDGER/);
+
     await firstRegion.locator('[data-command="biome-survey"]').click();
     await page.waitForFunction(async regionId => {
         const { state } = await import("./js/core/state.js");
@@ -124,7 +169,7 @@ try {
 
     const craftRegionCard = page.locator('[data-biome-region="' + craftTarget.regionId + '"]');
     if (!await craftRegionCard.evaluate(details => details.open)) {
-        await craftRegionCard.locator("summary").click();
+        await craftRegionCard.locator("summary").first().click();
     }
     const focusBefore = await page.evaluate(async regionId =>
         (await import("./js/core/state.js")).state.biomeAtlas.regions.find(entry => entry.id === regionId)?.focus,
@@ -270,13 +315,13 @@ try {
         return getBiomeFrontierSupply().categories[market];
     }, frontierTarget.market);
     const frontierCard = page.locator('[data-biome-region="' + frontierTarget.regionId + '"]');
-    if (!await frontierCard.evaluate(details => details.open)) await frontierCard.locator("summary").click();
+    if (!await frontierCard.evaluate(details => details.open)) await frontierCard.locator("summary").first().click();
     const frontierHarvest = frontierCard.locator('[data-command="biome-harvest"][data-biome-resource="' + frontierTarget.resourceId + '"]');
     let frontierHarvests = 0;
     for (let index = 0; index < 3; index++) {
         // Each harvest re-renders the panel, so re-open the card and re-read the
         // button instead of holding a handle that may now be disabled.
-        if (!await frontierCard.evaluate(details => details.open)) await frontierCard.locator("summary").click();
+        if (!await frontierCard.evaluate(details => details.open)) await frontierCard.locator("summary").first().click();
         if (await frontierHarvest.count() === 0) break;
         if (await frontierHarvest.isDisabled()) break;
         const harvestsBefore = await page.evaluate(async () => Number((await import("./js/core/state.js")).state.biomeAtlas.stats.harvests) || 0);
@@ -395,7 +440,8 @@ try {
             },
             frontier: (await import("./js/systems/biome-market-link.js")).getBiomeFrontierSupply().categories[market],
             marketFrontier: state.market.frontierSupply.categories[market],
-            marketPrice: state.market.prices[market]
+            marketPrice: state.market.prices[market],
+            ecology: (await import("./js/systems/cross-biome-state.js")).serializeCrossBiomeState(region.systems)
         };
     }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId, market: frontierTarget.market });
     await page.locator("#save-btn").click();
@@ -428,7 +474,7 @@ try {
     await page.screenshot({ path: "artifacts/biome-market-link-restored.png", fullPage: false });
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="biome"]').click();
-    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").toLowerCase().includes("biome resources & wildlife"), null, { timeout: 15000 });
+    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("ECOLOGICAL RECORD"), null, { timeout: 20000 });
     const restored = await page.evaluate(async ({ regionId, craftRegionId, market }) => {
         const { state } = await import("./js/core/state.js");
         const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
@@ -448,7 +494,8 @@ try {
             frontier: (await import("./js/systems/biome-market-link.js")).getBiomeFrontierSupply().categories[market],
             marketFrontier: state.market.frontierSupply.categories[market],
             marketPrice: state.market.prices[market],
-            text: document.querySelector("#command-panel-content")?.textContent || ""
+            text: document.querySelector("#command-panel-content")?.textContent || "",
+            ecology: (await import("./js/systems/cross-biome-state.js")).serializeCrossBiomeState(region.systems)
         };
     }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId, market: frontierTarget.market });
     assert.equal(restored.policy, "conservation");
@@ -460,13 +507,14 @@ try {
     assert.deepEqual(restored.frontier, beforeSave.frontier, "the frontier reading must survive reload");
     assert.deepEqual(restored.marketFrontier, beforeSave.marketFrontier, "the saved market quote must survive reload");
     assert.equal(restored.marketPrice, beforeSave.marketPrice);
+    assert.deepEqual(restored.ecology, beforeSave.ecology, "soil, water, land-use and legacy state must survive reload");
     assert.equal(restored.craft.crafts, 2);
     assert.equal(restored.craft.craftsSold, 1);
     assert.deepEqual(restored.craft.crafted, { ["craft-" + craftTarget.recipeId]: 1 });
     assert.match(restored.text, /CONSERVE/);
     assert.match(restored.text, /LOCAL CRAFTS/);
     const restoredCraftCard = page.locator('[data-biome-region="' + craftTarget.regionId + '"]');
-    if (!await restoredCraftCard.evaluate(details => details.open)) await restoredCraftCard.locator("summary").click();
+    if (!await restoredCraftCard.evaluate(details => details.open)) await restoredCraftCard.locator("summary").first().click();
     const restoredCraftText = await restoredCraftCard.innerText();
     assert.match(restoredCraftText, /LOCAL CRAFT RECIPES/);
     assert.match(restoredCraftText, /SELL · 1/);

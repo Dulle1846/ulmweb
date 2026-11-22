@@ -475,6 +475,20 @@ html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
 .biome-economy-grid small,.biome-chip-line small,.biome-region-summary small{color:#806d52;font:700 9px var(--ui-title-font);letter-spacing:.08em}
 .biome-economy-grid strong{color:#3d2d20;font:700 14px var(--ui-title-font)}
 .biome-economy-grid span{color:#806d52;font-size:10px}
+.biome-system-readout{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:8px 0}
+.biome-system-readout>span{display:grid;gap:2px;min-width:0;padding:6px;border:1px solid #6f5c41;border-radius:2px;background:#241f18}
+.biome-system-readout small{color:#9f8d6c;font:700 7px var(--ui-title-font);letter-spacing:.07em}
+.biome-system-readout strong{overflow:hidden;color:#e7d4ab;font:700 9px var(--ui-body-font);text-overflow:ellipsis;white-space:nowrap}
+.biome-system-ledger{margin:8px 0;border:1px solid #5e4d37;border-radius:2px;background:#17151255}
+.biome-system-ledger>summary{padding:7px 8px;color:#d1b476;font:700 8px var(--ui-title-font);letter-spacing:.06em;cursor:pointer}
+.biome-system-grid{display:grid;gap:3px;padding:0 7px 7px}
+.biome-system-group{padding:5px 2px 2px;color:#c8a24e;font:700 7px var(--ui-title-font);letter-spacing:.08em;border-top:1px solid #5e4d3755}
+.biome-system-group:first-child{border-top:0}
+.biome-system-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:4px 6px;border-bottom:1px solid #5e4d3733}
+.biome-system-row span{display:grid;min-width:0;gap:1px}
+.biome-system-row b{color:#cdbd9e;font:700 8px var(--ui-body-font)}
+.biome-system-row small{overflow:hidden;color:#8f7f63;font-size:7px;text-overflow:ellipsis;white-space:nowrap}
+.biome-system-row>strong{color:#e8c77b;font:700 8px var(--ui-body-font);text-align:right}
 .biome-chip-line{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:7px 0;color:#cdbd9e}
 .biome-badge{display:inline-flex;align-items:center;padding:3px 6px;border:1px solid #8f7b59;border-radius:2px;background:#3a3226;color:#e8d7b2;font:700 8px var(--ui-title-font);letter-spacing:.07em}
 .biome-badge.is-rare{border-color:#c8a24e;background:#4b3c20;color:#efd28d}
@@ -522,8 +536,9 @@ html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
 .biome-stock small{color:#9f8d6c;font-size:8px}
 .biome-row-actions{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:800px){
- .biome-economy-grid,.biome-region-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .biome-economy-grid,.biome-region-summary,.biome-system-readout{grid-template-columns:repeat(2,minmax(0,1fr))}
  .biome-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .biome-system-row small{white-space:normal}
  .biome-resource-row,.biome-fauna-row{grid-template-columns:1fr}
  .biome-row-actions{justify-content:flex-start}
 }

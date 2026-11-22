@@ -2,14 +2,14 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "1f6723bed710706d2c8d9a8a4a513e344b94c280",
-  "sourceHash": "82b041d507ecc304360ece47d6d7c4a124f36d54f133822c7455778003af6e04",
-  "generatedAt": "2026-11-22T17:32:26+00:00",
+  "commit": "e3994894de3809252453b31e37045cc1dd8c62a0",
+  "sourceHash": "6c24f5e9980c35df3330a351ad8b21434c436cb33634b9a14c9ab277cecd41da",
+  "generatedAt": "2026-11-22T18:04:12+00:00",
   "totals": {
-    "total": 1498,
-    "implemented": 1494,
+    "total": 1564,
+    "implemented": 1560,
     "open": 4,
-    "sections": 36
+    "sections": 37
   },
   "collisions": [
     {
@@ -31758,6 +31758,1740 @@
       "implemented": 102,
       "open": 0,
       "total": 102
+    },
+    {
+      "id": "1.2.21",
+      "title": "Cross-biome systems: climate, soil, water, seasons, land use and recovery",
+      "points": [
+        {
+          "id": "1.2.21.1",
+          "label": "Each biome has a climatic temperature range",
+          "key": "temperature-range",
+          "group": "climate",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.2",
+          "label": "Each biome has a typical precipitation range",
+          "key": "precipitation-range",
+          "group": "climate",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.3",
+          "label": "Humidity affects plant growth and soil",
+          "key": "humidity-growth-soil",
+          "group": "climate",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.4",
+          "label": "Elevation changes temperature and vegetation",
+          "key": "elevation-temperature-vegetation",
+          "group": "climate",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.5",
+          "label": "Insolation affects local plant development",
+          "key": "insolation-plants",
+          "group": "climate",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.6",
+          "label": "Wind affects vegetation and erosion",
+          "key": "wind-vegetation-erosion",
+          "group": "climate",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.7",
+          "label": "Climate zones contain several related biomes",
+          "key": "climate-zones-multiple-biomes",
+          "group": "climate",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.8",
+          "label": "Local deviations create regional variants",
+          "key": "local-variants",
+          "group": "climate",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.9",
+          "label": "Different soil types",
+          "key": "soil-types",
+          "group": "soil",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.10",
+          "label": "Different nutrient contents",
+          "key": "nutrients",
+          "group": "soil",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.11",
+          "label": "Different water storage capacity",
+          "key": "water-capacity",
+          "group": "soil",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.12",
+          "label": "Soil compaction",
+          "key": "compaction",
+          "group": "soil",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.13",
+          "label": "Soil erosion",
+          "key": "erosion",
+          "group": "soil",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.14",
+          "label": "Humus formation",
+          "key": "humus",
+          "group": "soil",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.15",
+          "label": "Soil organisms",
+          "key": "soil-organisms",
+          "group": "soil",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.16",
+          "label": "Soil salinity",
+          "key": "salinity",
+          "group": "soil",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.17",
+          "label": "Frost and thaw processes",
+          "key": "frost-thaw",
+          "group": "soil",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.18",
+          "label": "Regeneration and long-term soil change",
+          "key": "soil-regeneration",
+          "group": "soil",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.19",
+          "label": "Precipitation and evaporation",
+          "key": "precipitation-evaporation",
+          "group": "water",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.20",
+          "label": "Surface water",
+          "key": "surface-water",
+          "group": "water",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.21",
+          "label": "Groundwater",
+          "key": "groundwater",
+          "group": "water",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.22",
+          "label": "River and lake systems",
+          "key": "rivers-lakes",
+          "group": "water",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.23",
+          "label": "Floodplain areas",
+          "key": "floodplains",
+          "group": "water",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.24",
+          "label": "Seasonal water availability",
+          "key": "seasonal-water",
+          "group": "water",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.25",
+          "label": "Water quality",
+          "key": "water-quality",
+          "group": "water",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.26",
+          "label": "Water scarcity",
+          "key": "water-scarcity",
+          "group": "water",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.27",
+          "label": "Moisture gradients",
+          "key": "moisture-gradients",
+          "group": "water",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.28",
+          "label": "Effects on plants, animals and agriculture",
+          "key": "plants-animals-agriculture",
+          "group": "water",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.29",
+          "label": "Each biome has its own seasonal appearance",
+          "key": "seasonal-appearance",
+          "group": "season",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.30",
+          "label": "Different plant reactions to the seasons",
+          "key": "plant-season-reactions",
+          "group": "season",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.31",
+          "label": "Changes in animal activity",
+          "key": "animal-activity",
+          "group": "season",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.32",
+          "label": "Seasonal resource availability",
+          "key": "seasonal-resources",
+          "group": "season",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.33",
+          "label": "Changing snow and frost lines",
+          "key": "snow-frost-line",
+          "group": "season",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.34",
+          "label": "Changing water levels",
+          "key": "water-levels",
+          "group": "season",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.35",
+          "label": "Changing agricultural use",
+          "key": "farm-use",
+          "group": "season",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.36",
+          "label": "Seasonal hazards and diseases",
+          "key": "seasonal-hazards",
+          "group": "season",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.37",
+          "label": "Clearing",
+          "key": "clearing",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.38",
+          "label": "Afforestation",
+          "key": "afforestation",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.39",
+          "label": "Overgrazing",
+          "key": "grazing",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.40",
+          "label": "Agricultural use",
+          "key": "farming",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.41",
+          "label": "Irrigation",
+          "key": "irrigation",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.42",
+          "label": "Drainage",
+          "key": "drainage",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.43",
+          "label": "Mining",
+          "key": "mining",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.44",
+          "label": "Road and settlement building",
+          "key": "roads-settlement",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.45",
+          "label": "Pollution",
+          "key": "pollution",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.46",
+          "label": "Slash-and-burn",
+          "key": "slash-burn",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.47",
+          "label": "Restoration of natural habitats",
+          "key": "habitat-restoration",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.48",
+          "label": "Long-term landscape change through intensive use",
+          "key": "long-term-landscape",
+          "group": "land-use",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.49",
+          "label": "Vegetation regeneration after disturbance",
+          "key": "vegetation-recovery",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.50",
+          "label": "Forest regrowth after clearing",
+          "key": "forest-regrowth",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.51",
+          "label": "Plant colonisation of bare ground",
+          "key": "colonization",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.52",
+          "label": "Return of animal populations",
+          "key": "fauna-return",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.53",
+          "label": "Long-term soil regeneration",
+          "key": "soil-recovery",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.54",
+          "label": "Water recovery after pollution",
+          "key": "water-recovery",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.55",
+          "label": "Recovery depends on climate, soil and human use",
+          "key": "recovery-context",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.56",
+          "label": "Not all damage is short-lived or fully reversible",
+          "key": "irreversible-damage",
+          "group": "recovery",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.57",
+          "label": "Display the prevailing biome",
+          "key": "display-biome",
+          "group": "display",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.58",
+          "label": "Display biome variants",
+          "key": "display-variants",
+          "group": "display",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.59",
+          "label": "Display vegetation density",
+          "key": "display-density",
+          "group": "display",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.60",
+          "label": "Display typical resources",
+          "key": "display-resources",
+          "group": "display",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.61",
+          "label": "Display the most important animal species",
+          "key": "display-fauna",
+          "group": "display",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.62",
+          "label": "Display climatic conditions",
+          "key": "display-climate",
+          "group": "display",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.63",
+          "label": "Display special hazards",
+          "key": "display-hazards",
+          "group": "display",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.64",
+          "label": "Display agricultural suitability",
+          "key": "display-agriculture",
+          "group": "display",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.65",
+          "label": "Display movement modifiers",
+          "key": "display-movement",
+          "group": "display",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        },
+        {
+          "id": "1.2.21.66",
+          "label": "Display ecological changes",
+          "key": "display-changes",
+          "group": "display",
+          "status": "implemented",
+          "docEvidence": "",
+          "probe": "not-sampled",
+          "missing": [],
+          "consumers": [
+            "js/world/cross-biome-data.js#BIOME_SYSTEM_REQUIREMENTS (catalog)",
+            "js/world/cross-biome-data.js#BIOME_CLIMATE_ZONES (climate)",
+            "js/world/cross-biome-data.js#BIOME_SOIL_TYPES (soil)",
+            "js/systems/cross-biome-state.js#getCrossBiomeProfile (profile)",
+            "js/systems/biome-resource-state.js#advanceCrossBiomeAnnual (simulation)",
+            "js/systems/biome-resource-state.js#irrigateBiomeRegion (gameplay)",
+            "js/systems/biome-resource-state.js#reforestBiomeRegion (gameplay)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/presentation/management-ui.js#act (ui)",
+            "js/core/save-runtime.js#serializeBiomeAtlasState (persistence)"
+          ],
+          "tests": [
+            "tests/systems/cross-biome-systems.test.js"
+          ]
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/world/cross-biome-data.js",
+          "symbol": "BIOME_SYSTEM_REQUIREMENTS",
+          "role": "catalog",
+          "valid": true
+        },
+        {
+          "file": "js/world/cross-biome-data.js",
+          "symbol": "BIOME_CLIMATE_ZONES",
+          "role": "climate",
+          "valid": true
+        },
+        {
+          "file": "js/world/cross-biome-data.js",
+          "symbol": "BIOME_SOIL_TYPES",
+          "role": "soil",
+          "valid": true
+        },
+        {
+          "file": "js/systems/cross-biome-state.js",
+          "symbol": "getCrossBiomeProfile",
+          "role": "profile",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-resource-state.js",
+          "symbol": "advanceCrossBiomeAnnual",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-resource-state.js",
+          "symbol": "irrigateBiomeRegion",
+          "role": "gameplay",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-resource-state.js",
+          "symbol": "reforestBiomeRegion",
+          "role": "gameplay",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/biome-panel.js",
+          "symbol": "renderBiomePanel",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/management-ui.js",
+          "symbol": "act",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/core/save-runtime.js",
+          "symbol": "serializeBiomeAtlasState",
+          "role": "persistence",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/systems/cross-biome-systems.test.js",
+          "valid": true
+        }
+      ],
+      "source": "js/world/cross-biome-data.js",
+      "note": "66 runtime requirements from BIOME_SYSTEM_REQUIREMENTS.",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "probeAvailable": false,
+      "probeObserved": 0,
+      "implemented": 66,
+      "open": 0,
+      "total": 66
     },
     {
       "id": "2.1",

@@ -1,13 +1,58 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.43.0`
-**Next development line:** `3.44.0-dev`
+**Current production version:** `3.44.0`
+**Next development line:** `3.45.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.44.0 — Cross-biome systems connect climate, soil, water, seasons, land use and recovery
+
+1.2.21 adds a slow ecological memory to every one of the 36 existing biome
+regions. It is not a second simulation: the 1.2.19 atlas still owns the region
+graph, resources, wildlife and annual pass, and the new layer reads and writes
+only the fields the rest of the game already uses.
+
+- **66/66 points implemented and audited.** Eight climate zones and twelve
+  climate envelopes give each biome its temperature and precipitation range;
+  elevation, humidity, insolation and wind feed plant growth, soil life and
+  erosion. Fourteen real soil types model nutrients, water capacity,
+  compaction, humus, organisms, salinity and frost. Four local variants per
+  biome plus four seasonal faces per biome make regional deviation visible.
+- **A real annual ecology step.** The existing year boundary now moves
+  groundwater, pollution, water quality, nutrients, humus, soil life,
+  compaction, salinity and legacy from rainfall, irrigation, drainage, farming,
+  grazing, mining, settlement, roads, protection and restoration. Land-use
+  footprints fade; legacy damage is deliberately sticky and some loss is not
+  reversible within a reign.
+- **Player actions use real gold, wood and time.** Irrigate, drain, reforest,
+  clean water, burn-and-sow and restore habitat are wired through the existing
+  management dispatcher. They write atlas history, change later annual passes,
+  and slash-and-burn is limited once per year before any gold is spent.
+- **Everything is readable in the BIOME tab.** The region card shows climate,
+  soil, water, season, land-use and recovery sections, the ten explicit readouts
+  (prevailing biome, variants, density, resources, animals, climate, hazards,
+  farm suitability, movement, change) and a collapsible 66-row live ledger.
+  The tab header summarises climate-zone, soil, variant, water-stress,
+  irreversible-scar and regeneration counts.
+- **No new per-frame work.** The panel is a pure reader over the snapshot. The
+  ecological pass runs once per region per year and is bounded by the existing
+  building, road, fauna and resource rows. There is no tile loop in render or
+  tick.
+- **Save-compatible by construction.** Each region persists a compact `systems`
+  DTO; old 1.2.19 saves derive safe deterministic defaults from their own
+  sample and seed. Invalid modern records are rejected, and save schema 13 is
+  unchanged.
+
+Verification: new focused 9-test suite, one full `npm test`, the deterministic
+25-year campaign with no Game Over, the real BIOME browser reference (all 66
+rows, all five new actions, save/reload equality, no console or page errors),
+and both Pages deployments reporting the same `version.json`.
+
+---
 
 ## 3.43.0 — Every active point is visible in the HAZARDS renderer
 
